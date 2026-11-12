@@ -32,5 +32,5 @@
     "skills:duplicates": "node scripts/report-skill-identity-overlaps.mjs",
     "skills:formula-audit": "node scripts/audit-os-skill-formulas.mjs"
   },
-  "pandoraRelease": "2026.11.13.707"
+  "pandoraRelease": "2026.11.13.708"
 }
