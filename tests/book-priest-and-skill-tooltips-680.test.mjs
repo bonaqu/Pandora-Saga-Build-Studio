@@ -51,6 +51,7 @@ test('Book lists all supported ally numeric summaries and distinct priest stat b
 test('Path rich tooltip has one reusable source for Buffs, Effects and triggered items',()=>{
  assert.match(app,/window\.PandoraSkillPreview=Object\.freeze\(\{/);
  assert.match(app,/skillHover\(node,localized\)/);
+ assert.match(app,/button.addEventListener\('pointermove',event=>\{/);
  assert.match(app,/entry\.reqs/);
  assert.match(app,/path-skill-hover-tooltip/);
  assert.match(book,/root\.PandoraSkillPreview\?\.attach\(label,id\)/);

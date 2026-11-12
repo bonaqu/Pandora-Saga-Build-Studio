@@ -2323,6 +2323,14 @@ function skillHover(button,skill){
   if(event.pointerType==='touch')return;
   queueSkillPreview(button,show);
  });
+ // A Hero Book section can be rebuilt underneath a stationary pointer.
+ // Pointer movement recovers the preview even when the native enter event
+ // was lost during that redraw; never reset an existing hover timer.
+ button.addEventListener('pointermove',event=>{
+  if(event.pointerType==='touch'||activeSkillPreviewOwner===button||
+   pendingSkillPreview?.button===button)return;
+  queueSkillPreview(button,show);
+ });
  button.addEventListener('pointerleave',clear);
  button.addEventListener('focus',()=>{if(button.matches(':focus-visible'))show()});
  button.addEventListener('blur',clear);

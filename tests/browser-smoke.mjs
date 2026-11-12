@@ -346,6 +346,10 @@ async function main(){
  const sourceId=await calculatedSkill.getAttribute('data-source-skill-id');
  assert.ok(Number(sourceId)>0,'Calculation row must attach its real OS skill ID');
  await calculatedSkill.hover();
+ // Real pointer remains on the skill even when layout/sprite hydration shifts
+ // a Book row. Rehover when it is no longer the active hit target.
+ if(!await calculatedSkill.evaluate(node=>node.matches(':hover')))
+  await calculatedSkill.hover();
  const richEffect=page.locator('#path-skill-hover-tooltip');
  await richEffect.waitFor({state:'visible',timeout:5000});
  assert.ok((await richEffect.locator('strong').first().innerText()).trim().length>2,
