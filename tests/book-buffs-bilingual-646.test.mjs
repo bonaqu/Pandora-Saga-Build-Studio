@@ -15,8 +15,8 @@ test('Buff section and select guide editors receive independent RU/EN default fi
  assert.match(source,/section\('Личные умения','Self buffs','self'\)/);
  assert.match(source,/section\('Усиления от союзников','Ally buffs','party'\)/);
  assert.doesNotMatch(source,/section\('ОЗ и ОМ','Vitals'\)/);
- assert.match(source,/select\(passiveGroup,'Сила гильдии','Physical','guildHp'/);
- assert.match(source,/select\(passiveGroup,'Дух гильдии','Spirit','guildMp'/);
+ assert.match(source,/\['guildHp',1,600000001,true\]/);
+ assert.match(source,/\['guildMp',2,600000011,true\]/);
  assert.match(source,/guideLabel\(field.firstChild,'buffs.setting.'\+key,\s*ru,en,options\)/);
  assert.match(source,/\'buffs.section.\'\+\(stableId\|\|sectionIndex\+\+\),ru,en,options/);
  assert.doesNotMatch(source,/name,name,options/);
