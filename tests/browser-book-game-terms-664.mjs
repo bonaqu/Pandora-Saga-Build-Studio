@@ -61,8 +61,9 @@ export async function runHeroBookGameNames664Smoke(browser,base){
      nameEn:'A bad EN name',description:'Текст источника',
      descriptionEn:'Source description',requirements:[{branch:'hymn',amount:8}],
      available:false}]},
-    legacyBuffs:{gratia:{value:5},lapisMedio:{value:10},
-     enchantEnhance:{value:4},enchantMagic:{value:3}},
+    priestCast:window.PandoraOSCalculator.priestCastPreviews({
+     spi:134,blessing:90,hymn:30,skills:terms.skills
+    }),
     resistances:{status:{stun:15}},
     procPreview:{entries:[{code:'EP_ONHIT_SKILL_EXEC',
      source:'Тестовый предмет',trigger:'При ударе',triggerEn:'On hit',
@@ -75,7 +76,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
     heroBranchCaps:terms.classes.ENCHANTER.branchCaps,
     skillIconForId:id=>terms.skills[String(id)]?.iconId?
      'assets/skills/icons/skill_'+terms.skills[String(id)].iconId+'.webp':null,
-    buffs:{priestEnabled:true,priestBlessing:12},
+    buffs:{priestEnabled:true,priestSpi:134,priestBlessing:90,priestHymn:30},
     combatSkillCards:{combatLunge:{
      name:terms.skills['100051001'].name,
      nameEn:terms.englishSkills['100051001'].n,
@@ -127,6 +128,8 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   for(const name of ['Знак атаки','Знак защиты','Чары усиления','Рывок']){
    assert.ok(buffsRu.includes(name),'Book buffs must use exact OS skill name: '+name);
   }
+  assert.match(buffsRu,/СИЛ \+9 · ПРВ \+9 · ИНТ \+9/,
+   'Book support spell preview must use OS-approved priest magnitudes');
   assert.equal(buffsRu.includes('Гимны'),false);
   const buffsEn=await render({lang:'en',chapter:'buffs'});
   for(const name of ['Velox','Lapis Medio','Enchantment','Lunge'])

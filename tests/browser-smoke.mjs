@@ -528,6 +528,24 @@ async function main(){
  assert.equal(await page.locator('#stageBookPanel [data-book-setting="priestBlessing"]').inputValue(),'90');
  assert.equal(await page.locator('#stageBookPanel [data-book-setting="priestHymn"]').inputValue(),'30');
  assert.ok(await page.locator('#stageBookPanel .stage-legacy-buff-previews').count()>=1);
+ const priestPanel=page.locator('#stageBookPanel .stage-legacy-buff-previews').first();
+ await priestPanel.locator('summary').click();
+ const value=async key=>(await priestPanel.locator('[data-priest-preview="'+key+'"] strong').innerText()).trim();
+ assert.equal(await value('gratia'),'+22','Current OS Gratia must replace obsolete Remaked +20');
+ assert.equal(await value('lapisMedio'),'+12');
+ const priestEnglish=(await page.locator('html').getAttribute('lang'))==='en';
+ assert.equal(await value('encouragement'),priestEnglish?
+  'STR +9 · AGI +9 · INT +9':'СИЛ +9 · ПРВ +9 · ИНТ +9');
+ assert.equal(await value('groupBarrier'),'-28%');
+ assert.equal(await value('holyWeapon'),'+10');
+ assert.equal(await value('minstrel'),priestEnglish?
+  'Accuracy +24 · Evasion +24':'Точность +24 · Уклонение +24');
+ assert.equal(await value('sage'),'+16%');
+ assert.equal(await value('enchantEnhance'),'—',
+  'Unverified current OS enchantment must not display a historical numeric guess');
+ assert.equal(await priestPanel.locator('[data-priest-preview="toxify"]').count(),0,
+  'Alchemy self-skills do not belong to external priest previews');
+
  const elementalGroup=page.locator('#stageBookPanel .stage-book-buff-group').filter({
   has:page.locator('[data-guide-key="buffs.section.elemental"]')});
  assert.equal(await elementalGroup.count(),1,

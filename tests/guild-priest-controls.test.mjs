@@ -117,12 +117,13 @@ test('external priest speed/defense reflect selected skills and actual Blessing 
   assert.equal(result.combat.defense.priestBonus,0);
  }
 });
-test('alchemy skill preview labels are current Remaked/OS RU-EN identities',()=>{
+test('alchemy source names remain correct but never appear as external priest casts',()=>{
  const book=source('pandora-studio-hero-book.js'),skills=JSON.parse(source('data/os/skills.json'));
  assert.equal(skills['220001001'].name,'Яд');
  assert.equal(skills['220001002'].name,'Усиление яда');
- assert.match(book,/\['toxify','Яд','Сила эффекта','\+','Toxify'\]/);
- assert.match(book,/\['toxicAura','Усиление яда','Сила эффекта','\+','Toxic Aura'\]/);
+ const preview=book.slice(book.indexOf('if(modifiers?.priestCast&&buffs.priestEnabled===true)'),
+  book.indexOf('// Use the same exact OS icon resolution'));
+ assert.doesNotMatch(preview,/\['toxify'|'toxicAura'/);
  assert.match(book,/'priestHymn','Песнопения'/);
 });
 
