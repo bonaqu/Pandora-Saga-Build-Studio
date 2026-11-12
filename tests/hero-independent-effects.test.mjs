@@ -86,7 +86,9 @@ test('defense separates natural regeneration and status resistance from summary 
 });
 test('UI route owns every source of information once; no mirrored result panels',()=>{
  const source=read('pandora-studio-hero-book.js'),css=read('pandora-studio-theme.css');
- assert.match(source,/if\(chosen==='summary'\)summaryPage\(body,modifiers,copyOptions\)/);
+ assert.match(source,/if\(chosen==='summary'\)\{/);
+ assert.match(source,/summaryPage\(body,modifiers,copyOptions\)/);
+ assert.match(source,/mountedBookNotice\(body,\{buffs\},document\.documentElement\?\.lang==='en'\)/);
  assert.match(source,/if\(chosen==='attack'\)attackPage\(/);
  assert.match(source,/if\(chosen==='defense'\)defensePage\(/);
  assert.match(source,/if\(chosen==='effects'\)skillEffectsPage\(body,\{modifiers,gameTerms,skillIconForId\}\)/);

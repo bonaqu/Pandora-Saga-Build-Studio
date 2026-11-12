@@ -48,6 +48,21 @@ const hints=Object.freeze({
  'Сопр. магии':['Общее сопротивление магическим воздействиям.','Overall magic resistance.']
 });
 const help=Object.freeze({
+ 'attack.weaponBase':[
+  'Базовая физическая атака выбранного оружия (W) из игрового каталога. Это не итоговая АТК: на неё дополнительно влияют характеристики, заточка и усиления.',
+  'Base physical attack (W) of the equipped weapon from the game catalog. This is not total ATK, which also depends on attributes, refinement and buffs.'],
+ 'attack.mountedRelease':[
+  'Доля характеристик, доступная верхом по формуле Remaked. Зависит от профессии, мастерства «Верховая езда» и титула чести. При расчёте верхом доля ограничена 100%; совпадение с текущим сервером не подтверждено.',
+  'Attribute availability while mounted in the Remaked formula, based on class, Riding mastery and Honor title. Mounted calculations cap it at 100%; current-server parity is not confirmed.'],
+ 'defense.resistStatus:evil':[
+  'Сопротивление проклятиям. Название подтверждено описанием игровой «Ритуальной маски» в OS.',
+  'Resistance to curses; confirmed by the OS Ritual Mask item description.'],
+ 'defense.resistStatus:curse':[
+  'Сопротивление слабости. Это отдельный параметр, не сопротивление проклятиям.',
+  'Resistance to weakness. It is distinct from curse resistance.'],
+ 'defense.resistStatus:madness':[
+  'Сопротивление безумию. Название подтверждено описанием рассветных штанов для кролля в OS.',
+  'Resistance to madness, confirmed by the OS Rapin Dawn Pants item description.'],
  'defense.hpRecoverySpeed':['Индекс скорости восстановления ОЗ. Не ОЗ/сек.','HP recovery speed index, not HP per second.'],
  'defense.mpRecoverySpeed':['Индекс скорости восстановления ОМ. Не ОМ/сек.','MP recovery speed index, not MP per second.'],
  'defense.hpRecoveryAmount':['Расчётное количество ОЗ при пассивном восстановлении.','Estimated HP amount of passive recovery.'],
