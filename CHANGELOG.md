@@ -1,5 +1,14 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.678.0 — 2026.11.12.678 · Current-OS Gratia (Velox): source-validated SPI and Blessing coefficient update for active priest buff
+
+- Current-OS Gratia (Velox): source-validated SPI and Blessing coefficient update for active priest buff
+- Keeps the Remaked historical floor-per-source calculation but uses current OS 320007001 TARGET [10,0,5,5] for active Gratia, matching the informational Skill Effects preview. Existing legacy formula stays available for archival comparisons only.
+- Attack-speed index only; no unsupported packet damage, user-build migration, D1 write or automatic defensive skill activation.
+- Regression covers 22 vs historical 20 for caster SPI 134/Blessing 90, disabled/invalid source safeguards, UI display and unchanged ATK.
+- Browser acceptance and deployed Pages state must be verified separately.
+
+
 ## 0.677.0 — 2026.11.12.677 · Hero Book Skill Effects: source-audited scaling-only read-only previews; fixed buffs stay in Buffs
 
 - Hero Book Skill Effects: source-audited scaling-only read-only previews; fixed buffs stay in Buffs

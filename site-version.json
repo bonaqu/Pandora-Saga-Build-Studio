@@ -1,4 +1,4 @@
 {
-  "release": "2026.11.12.677",
-  "notes": "Hero Book Skill Effects: source-audited scaling-only read-only previews; fixed buffs stay in Buffs"
+  "release": "2026.11.12.678",
+  "notes": "Current-OS Gratia (Velox): source-validated SPI and Blessing coefficient update for active priest buff"
 }

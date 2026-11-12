@@ -2640,11 +2640,18 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  // selected external-priest buff is applied, never all available spells.
  const priestSourceMatches=(id,ep,expected)=>{
   const record=combatContext.skillCatalog?.[String(id)];
+  if(Number(record?.id)!==id)return false;
   const matches=(record?.funcs||[]).filter(x=>x?.ep===ep&&x.dir==='TARGET');
   return matches.length===1&&Array.isArray(matches[0].fv1)&&
    matches[0].fv1.length===expected.length&&
    matches[0].fv1.every((v,i)=>v===expected[i]);
  };
+ // Remaked SkillView uses floor steps from caster stats/mastery. Modern OS
+ // changes Gratia to [10,0,5,5]; the historical nested 6%*1.9 shortcut
+ // must not be used for an active buff with the new OS coefficients.
+ const gratiaPreview=priestValid&&priest.blessing>=8&&
+  priestSourceMatches(320007001,'EP_ATTACKINTERVAL_SCALE',[10,0,5,5])?
+  5+Math.floor(priest.spi*10/100)+Math.floor(priest.blessing*5/100):null;
  const groupBarrier=priestValid&&priest.blessing>=26&&
   chosenPriestSong.has(320003001)&&
   priestSourceMatches(320003001,'EP_ONDAMAGE_FIN_DAMAGE_SCALE',[0,0,-20,-10])?
@@ -2665,12 +2672,12 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
    priestHoly:holyWeapon,known:(previous?.known||0)+holyWeapon
   };
  }
- const priestApplied={groupBarrier,holyWeapon,
+ const priestApplied={groupBarrier,holyWeapon,gratiaPreview,
   source:'Remaked floor steps guarded by current OS TARGET coefficients',
   verified:false};
  const priestEffects=priestActive?{
-  gratia:priestValid&&priest.blessing>=8&&attributeBuffs?.priestGratia===true?
-   legacyBuffs.gratia.value:0,
+  gratia:attributeBuffs?.priestGratia===true&&Number.isFinite(gratiaPreview)?
+   gratiaPreview:0,
   lapisMedio:priestValid&&priest.blessing>=12&&attributeBuffs?.priestLapisMedio===true?
    legacyBuffs.lapisMedio.value:0,
   minstrel:priestValid&&priest.hymn>=8&&chosenPriestSong.has(340001001)?

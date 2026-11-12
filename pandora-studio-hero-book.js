@@ -855,7 +855,8 @@ function buffsPage(body,options){
   [320008001,'priestLapisMedio',12]]){
   const row=remakedBuffRows.find(item=>item.id===id);
   const benefit=id===320007001?'gratia':id===320008001?'lapisMedio':'encouragement';
-  const amount=modifiers?.legacyBuffs?.[benefit]?.value;
+  const amount=id===320007001?modifiers?.priestApplied?.gratiaPreview:
+   modifiers?.legacyBuffs?.[benefit]?.value;
   const summary=Number.isFinite(amount)?
    (id===320007001?(english?'Attack speed +':'Скорость атаки +'):
     id===320008001?(english?'Defense +':'Защита +'):
