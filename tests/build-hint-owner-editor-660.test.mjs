@@ -21,7 +21,8 @@ test('owner hint copy uses the existing inline CAS editor, not a new modal',()=>
  assert.match(render,/'data-owner-copy-key':key,text:libraryText\(key\)/);
  assert.match(app,/for\(const node of panel\.querySelectorAll\('\[data-owner-copy-key\]'\)\)/);
  assert.match(app,/return saveGuidePatch\('book\.'\+id,\{\[editLang\]:next\}\)/);
- assert.match(app,/button\.dataset\.buildActionHint===key\)button\.dataset\.guideHint=current/);
+ assert.match(app,/if\(locale\.fieldKey\(button\.dataset\.buildActionHint\)===id\)/);
+ assert.match(app,/button\.dataset\.guideHint=locale\.text\(button\.dataset\.buildActionHint,lang\)/);
  assert.match(css,/\.build-hint-owner-panel\{min-width:0/);
  assert.match(css,/\.build-hint-owner-row\{display:grid/);
  // A player still sees exactly four direct button actions in each card.
