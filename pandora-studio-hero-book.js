@@ -615,7 +615,7 @@ function buffsPage(body,options){
   Array.from({length:13},(_,i)=>[i,i===0?
    (english?'Manual guild buffs':'Ручной выбор усилений'):
    (english?'Guild Lv. ':'Гильдия Ур. ')+i]));
- const guildLevelInput=guild.querySelector('[data-book-setting="guildLevel"]');
+ const guildLevelInput=guild.querySelector?.('[data-book-setting="guildLevel"]');
  if(guildLevelInput){
   for(let i=1;i<=12;i++){
    const opt=guildLevelInput.options[i],hint=sourceSkill(0,i);
@@ -684,7 +684,7 @@ function buffsPage(body,options){
  select(activeGroup,'Магистр битвы','Combat','guildAll',opts([0,1,2,3,4,5,6]));
  select(activeGroup,'Магистр магии','Arouse','guildArouse',opts([0,'2%','4%','6%']));
  for(const [key,i] of [['guildHealing',8],['guildAll',9],['guildArouse',10]]){
-  const el=activeGroup.querySelector('[data-book-setting="'+key+'"]');
+  const el=activeGroup.querySelector?.('[data-book-setting="'+key+'"]');
   if(!el)continue;
   const selected=Number(buffs[key]||0);
   const details=sourceSkill(i,selected>0?selected:1);
@@ -1300,7 +1300,7 @@ function defensePage(body,calc,english,options={}){
 }
 // All chapters share the Summary disclosure affordance and remember user state.
 function collapseBookSections(body,page){
- if(page==='summary')return;
+ if(page==='summary'||typeof body.querySelectorAll!=='function')return;
  let index=0;
  for(const section of [...body.children].filter(node=>node.tagName==='SECTION')){
   const heading=section.querySelector(':scope > strong, :scope > .stage-chapter-heading');
