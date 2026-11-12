@@ -1,5 +1,15 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.660.0 — 2026.11.12.660 · Owner-only editable RU/EN build action hints
+
+- An owner-only collapsible “Button hints” panel appears inside the authenticated saved-build library. Five short action explanations are editable beside their real labels using the existing tiny pencil and inline text control. No secondary modal or nested interactive buttons.
+- The same CAS D1 writing, blur saving, Escape cancellation, Undo and RU/EN override isolation apply. Saving and Undo synchronize the existing mounted action button's game-style popup without remounting saved cards or altering user-created builds.
+- Responsive compact three-column editor rows with keyboard focus and wrapping on narrow viewports. Panel stays expanded across normal library re-renders.
+- Added a Node regression against player-data exposure and a dedicated isolated real Chromium owner D1-mock scenario for RU/EN writes, keyboard cancellation, tooltip update, mobile layout and preserved character identity.
+- Synchronized package, Pages asset versions, footer and social preview. No Worker API change, account migration, game formula or production D1 mutation.
+
+
+
 ## 0.659.0 — 2026.11.12.659 · Unified four-action library hover help
 
 - Open, Overwrite, Share and Delete use the already established PandoraGuideTooltip styling and lifecycle, with short RU/EN explanations. Delete uses a precise alternative for local-only copies.
