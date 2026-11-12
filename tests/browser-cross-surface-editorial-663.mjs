@@ -82,6 +82,9 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   // or keyboard interaction, to suppress password-manager interference.
   await wikiInput.click();
   await wikiInput.fill('search that stays');
+  const wikiBindings=JSON.parse(await wikiInput.getAttribute('data-owner-interface-bindings'));
+  assert.equal(wikiBindings.placeholder.key,'searchPlaceholder');
+  assert.equal(wikiBindings['aria-label'].key,'searchAria');
   await wikiInput.evaluate(node=>{window.__copyWikiSearch=node});
   const wikiPanel=page.locator('#detailContent .studio-owner-interface-editor');
   await wikiPanel.locator('summary').click();
@@ -121,6 +124,9 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   await picker.locator('.stage-picker-list').waitFor({state:'visible'});
   const equipInput=picker.locator('input[type="search"]');
   await equipInput.fill('no item exists');
+  const gearBindings=JSON.parse(await equipInput.getAttribute('data-owner-interface-bindings'));
+  assert.equal(gearBindings.placeholder.key,'pickerSearchPlaceholder');
+  assert.equal(gearBindings['aria-label'].key,'pickerSearchAria');
   await equipInput.evaluate(node=>{window.__copyGearSearch=node});
   const equipPanel=picker.locator('.studio-owner-interface-editor');
   await equipPanel.locator('summary').click();
