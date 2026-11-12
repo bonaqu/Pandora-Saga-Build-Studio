@@ -101,8 +101,8 @@ test('real character-sheet pipeline combines Holy + Enchantment only when both e
  assert.equal(both.auraDamage.elements.light.priestEnhanceBonus,26);
  assert.equal(enchantedOnly.auraDamage.elements.light,undefined,
   'Enhancement must not invent Holy aura on its own');
- assert.equal(both.combat.attack.known,plain.combat.attack.known,
-  'Unverified aura modeling cannot alter physical attack');
+ assert.deepEqual(both.combat.attack,plain.combat.attack,
+  'Unverified aura modeling cannot alter physical attack, even without an equipped attack kernel');
  assert.equal(both.hp,plain.hp);
  assert.equal(both.mp,plain.mp);
  const noWeapon=C.base({...ctx,combatContext:{
