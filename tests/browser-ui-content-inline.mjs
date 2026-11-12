@@ -112,6 +112,11 @@ export async function runUIContentInlineSmoke(browser,base){
    document.querySelector('#catalogStatus')?.textContent?.includes('навыков'),
    null,{timeout:25000});
   await page.locator('#hero').click();
+  const actions=page.locator('#stageBookPanel .stage-result-section-head .stage-guide-actions').first();
+  const buttons=actions.locator('button');
+  assert.equal(await buttons.count(),2);
+  const pair=await buttons.evaluateAll(nodes=>nodes.map(n=>({x:n.getBoundingClientRect().left,w:n.getBoundingClientRect().width})));
+  assert.ok(pair[0].x+pair[0].w<=pair[1].x,'Hero Book owner buttons must not overlap');
   const firstGroup=page.locator('#stageBookPanel details.stage-result-section').first();
   await firstGroup.waitFor({state:'visible'});
   const bookActions=firstGroup.locator('summary .stage-guide-actions');
