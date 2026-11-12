@@ -69,7 +69,7 @@ test('shared owner editor reuses CAS, blur and Escape without wrapping buttons',
  assert.match(app,/if\(!adminEditing\|\|!adminToken\)return null;/);
  assert.match(app,/ownerCopyLabel\(label,section,key,ru,en\)/);
  assert.match(app,/label\.dispatchEvent\(new MouseEvent\('dblclick'/);
- assert.match(app,/data\.ownerInterfaceSuffix=suffix/);
+ assert.match(app,/node\.dataset\.ownerInterfaceSuffix=suffix/);
  assert.match(app,/function bindOwnerInterfaceText\(node,section,key,ru,en,attribute='text'/);
  assert.match(app,/node\.dataset\.ownerInterfaceKey=key/);
  assert.match(app,/ownerCopyKey\(section,id\)!==key/);
@@ -79,7 +79,7 @@ test('shared owner editor reuses CAS, blur and Escape without wrapping buttons',
  assert.match(app,/key\.startsWith\('book\.skill-ui\.'\)/);
  assert.match(app,/key\.startsWith\('book\.stats-ui\.'\)/);
  assert.match(app,/owner-dialog\|wiki-ui\|skill-ui\|stats-ui/);
- assert.match(app,/return saveGuidePatch\('book\.'\+ownerCopyKey\(section,key\),\{\[editLang\]:next\}\)/);
+ assert.match(app,/onCommit:next=>saveGuidePatch\('book\.'\+ownerCopyKey\(section,key\),\{\[editLang\]:next\}\)/);
  assert.match(app,/\beditWikiValue\(node,ownerCopy\(section,key,ru,en\)/);
  assert.match(app,/function refreshVisibleOwnerCopy\(recordKey\)/);
 });
