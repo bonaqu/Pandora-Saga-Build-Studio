@@ -1,5 +1,11 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.691.0 — 2026.11.12.691 · Source-gated priest Exorcism casting requirement and exact model thresholds for Dark Aura SPI
+
+- Source-gated priest Exorcism casting requirement and exact model thresholds for Dark Aura SPI; validates Holy casting branch requirement, preserves older default; Dark Aura models exact future source-coefficient steps without claiming observed server damage.
+- Full Node/Chromium and postmerge Pages + Worker D1 read-only checks required.
+
+
 ## 0.690.0 — 2026.11.12.690 · Active priest defense and song bonuses use identical current OS source-gated preview vectors
 
 - Active priest defense and song bonuses use identical current OS source-gated preview vectors. Damage model uncertainty remains explicit; all selections retain source fidelity, with no D1 changes.

@@ -29,3 +29,9 @@ Unresolved: effect stage ordering, elemental mitigation, aura proc trigger, pois
 ## 0.690.0 — active priest source parity (13 Nov 2026 release sequence)
 
 Active Lapis, Minstrel and Sage effects now consume the **same current-OS-source-validated previews** as the Hero Book skill rows; previously an archived Remaked Lapis fallback could apply even after the source vector changed, and songs could apply generic FV1 without validating the complete known current chain. Every supported priest magnitude now requires the checked-in OS FV1 **and zero FV2**; an unsupported secondary coefficient falls back to unknown/off, not an invented applied bonus. The existing on/off and Blessing/Hymn gates are retained. The Holy/Enhancement modeled aura continues only on explicit selections, without D1 mutations.
+
+## 0.691.0 — caster Exorcism requirement and dark aura step thresholds
+
+The source 330051001 Holy Weapon requires caster **Exorcism ≥26**. The external priest panel exposes the independent Exorcism setting (default 26 to preserve older builds); source cast/previews and selected Holy+Enhancement now reject a lower specified rank. The effect magnitude still scales with **caster SPI**, not Exorcism. This is a branch gate, not an extra invented bonus. Character state imports and guest drafts preserve this setting without D1 catalog writes.
+
+The current OS Dark Aura vector `EP_AURADARK_CONSTANT [8,0,0,15]` has the modeled step `15 + floor(SPI×8/100)`. Its next integer SPI threshold is `ceil((floor(SPI×8/100)+1)×100/8)`. At SPI134 the **modeled** aura is 25, next change at SPI138; at SPI138 the model becomes 26 and next threshold is SPI150. Unlike the historical Remaked Gloom tier output (73–206), these are OS coefficient **model** milestones, not observed server damage.

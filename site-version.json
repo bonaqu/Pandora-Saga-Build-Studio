@@ -1,4 +1,4 @@
 {
-  "release": "2026.11.12.690",
-  "notes": "Active priest defense and song bonuses use identical current OS source-gated preview vectors"
+  "release": "2026.11.12.691",
+  "notes": "Source-gated priest Exorcism casting requirement and exact model thresholds for Dark Aura SPI"
 }

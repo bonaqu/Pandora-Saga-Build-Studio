@@ -1316,12 +1316,22 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
   detailEn:'Swift Arrow: OS +30% attack interval modifier; final fire rate not observed'});
  // Self-cast Dark Aura uses the modern OS source vector rather than the
  // historical Remaked 73–206 tier table (a different ruleset).
+ // An exact NEXT breakpoint can be derived from the OS coefficient [8,0,0,15].
+ // This is a threshold of the model, not verified on the live server.
+ const darkAuraTier=Number.isSafeInteger(stats.spi)&&stats.spi>=0?
+  Math.floor(stats.spi*8/100):null;
+ const darkAuraNextSpi=darkAuraTier===null?null:
+  Math.ceil((darkAuraTier+1)*100/8);
  add(430051001,'offense',[
   ['EP_AURADARK_CONSTANT',[8,0,0,15]]
- ],()=>validStat('spi')?15+Math.floor(stats.spi*.08):null,
+ ],()=>darkAuraTier===null?null:15+darkAuraTier,
  {branch:'darkness',modelOnly:true,unit:' урона тьмой (модель)',
-  detailRu:'Темная аура: модель OS, 15 + ⌊СД × 8%⌋; исторические пороги Remaked не являются параметрами OS',
-  detailEn:'Dark Aura: OS model 15 + floor(SPI × 8%); archived Remaked tiers differ'});
+  detailRu:'Темная аура: модель OS, 15 + ⌊СД × 8%⌋'+
+   (darkAuraNextSpi===null?'':'; следующий порог СД: '+darkAuraNextSpi)+
+   '; исторические пороги Remaked относятся к другой версии',
+  detailEn:'Dark Aura: OS model 15 + floor(SPI × 8%)'+
+   (darkAuraNextSpi===null?'':'; next SPI breakpoint: '+darkAuraNextSpi)+
+   '; archived Remaked tiers refer to different historical values'});
  add(213703001,'offense',[
   ['EP_DOUBLE_MISSILE',[20,0,30,-85]],
   ['EP_ATTACKRANGE_CONST',[0,0,900,100]],
@@ -2595,12 +2605,12 @@ function guildPassiveAtLevel(level=0){
 // Read-only external-priest per-cast magnitudes. The exact Remaked floor
 // rules are retained, but every coefficient and constant is checked against
 // current OS data. No selection flag or combat mutation is involved.
-function priestCastPreviews({spi,blessing,hymn,skills=null}={}){
+function priestCastPreviews({spi,blessing,hymn,exorcism=26,skills=null}={}){
  const result={gratia:null,lapisMedio:null,encouragement:null,
   groupBarrier:null,holyWeapon:null,minstrel:null,sage:null,
   peaceful:null,enchantAuraRate:null,enchantAuraFlat:null,
   enchantElementRate:null,holyEnhanced:null,verified:false};
- if(![spi,blessing,hymn].every(n=>Number.isSafeInteger(n)&&n>=0&&n<=500)||
+ if(![spi,blessing,hymn,exorcism].every(n=>Number.isSafeInteger(n)&&n>=0&&n<=500)||
   !skills||typeof skills!=='object')return result;
  const exact=(id,ep,values)=>{
   const source=skills[String(id)];
@@ -2620,7 +2630,7 @@ function priestCastPreviews({spi,blessing,hymn,skills=null}={}){
   result.encouragement=Math.floor(blessing/10);
  if(exact(320003001,'EP_ONDAMAGE_FIN_DAMAGE_SCALE',[0,0,-20,-10]))
   result.groupBarrier=-10-Math.floor(blessing/5);
- if(exact(330051001,'EP_AURAHOLY_CONSTANT',[6,0,0,2]))
+ if(exorcism>=26&&exact(330051001,'EP_AURAHOLY_CONSTANT',[6,0,0,2]))
   result.holyWeapon=2+Math.floor(spi*6/100);
  // OS Enchantment is THREE independent caster-driven vectors. Historical
  // Remaked Calc('DAMAura') uses base+flat+ceil(base×rate/100) for auras.
@@ -2934,7 +2944,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   .every(n=>Number.isSafeInteger(n)&&n>=0&&n<=500);
  const priestCast=priestCastPreviews({
   spi:priest?.spi,blessing:priest?.blessing,hymn:priest?.hymn,
-  skills:combatContext.skillCatalog
+  exorcism:priest?.exorcism??26,skills:combatContext.skillCatalog
  });
  const legacyBuffs=legacyBuffPreview({
   spi:priestValid?priest.spi:stats.spi,
@@ -3008,8 +3018,8 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   -10-Math.floor(priest.blessing/5):0;
  const holyWeapon=priestValid&&combatContext.weapon&&
   chosenPriestSong.has(330051001)&&
-  priestSourceMatches(330051001,'EP_AURAHOLY_CONSTANT',[6,0,0,2])?
-  2+Math.floor(priest.spi*6/100):0;
+  Number.isSafeInteger(priestCast.holyWeapon)?
+  priestCast.holyWeapon:0;
  const priestEnchantment=priestValid&&
   chosenPriestSong.has(320011001)&&
   Number.isFinite(priestCast.enchantAuraRate)&&
