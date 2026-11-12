@@ -1755,7 +1755,7 @@ function renderStageAttributes(calculated=undefined){
   onItem:id=>openWiki('item',String(id)),
   copy:override,canEdit:Boolean(adminEditing&&adminToken),
   onTextEdit:(node,key,field,initial)=>editWikiValue(node,initial,{
-   type:'text',
+   type:field==='hintRu'||field==='hintEn'?'textarea':'text',
    onCommit:value=>saveGuidePatch('book.'+key,{[field]:value}),
    // The editor must finish and restore its original label before the Book
    // is refreshed; never unmount an input during its D1 save request.
