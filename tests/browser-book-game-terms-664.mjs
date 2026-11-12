@@ -100,7 +100,10 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   // so its lazy-loaded icon does not load until the reader expands it.
   const songs=page.locator('#book-source-qa .stage-song-skills');
   if(await songs.count())await songs.locator('summary').click();
-  const required=[310001001,310004001,310021001,310022001,310023001,340001001];
+  const required=[310001001,310004001,310021001,310022001,310023001];
+  const songIcon=page.locator('#book-source-qa .stage-song-skills .stage-effect-skill-label img[src$="skill_340001001.webp"]');
+  assert.equal(await songIcon.count(),1,
+   'The source song icon stays present even when its subchapter is collapsed');
   // The new collapsed subchapters use lazy-loaded artwork; force each source
   // icon into the scrollport before checking that the original sprite loaded.
   for(const id of required){
