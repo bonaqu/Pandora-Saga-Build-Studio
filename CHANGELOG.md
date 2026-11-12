@@ -1,5 +1,16 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.672.0 — 2026.11.12.672 · Unified Hero Book cards, buffs and priest songs
+
+- Potion health/status/skill-item and Defense experience sections now use the same interactive glyph, header and right-chevron as other Hero Book chapters, without counts in titles; expanded state survives recalculation.
+- Offensive skills now share the Healing row layout and include eligible self-class boosts even when not activated; missing mastery and inactive state are explained.
+- Elemental weapon effects chapter always has a recognizable header, with active Phoenix Flame preview when equipped.
+- Source-backed readable effects for personal, allied and priest buffs; original OS icons in elemental resistance toggles; compact alignment of guild icons next to skill titles.
+- Remaked stat/hymn floor interpolation is adapted to current OS Song coefficient records: enabled Minstrel Song contributes to accuracy and evasion, and Sage Song exposes an elemental-damage rate. Client stacking still needs game validation; further skills remain tracked in issue #5.
+- Mandatory Node and Chromium checks on PR plus post-publication Pages/Worker/D1 checks.
+
+
+
 ## 0.671.0 — 2026.11.12.671 · Hero Book guild, priest, attack and effects
 
 - All seven manual guild passives, source-backed skill ranks and descriptions, compact icons, full counter and source-backed manual damage mitigation / EXP calculations.
