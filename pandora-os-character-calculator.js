@@ -829,6 +829,69 @@ function racialWeaponPreview({racialPassiveId=null,skillCatalog=null,weapon=null
   excluded:['server attack-stage rounding','mounted restrictions',
    'magic and skill damage interactions','weapon class-specific exceptions']};
 }
+// Defensive-skill previews use current OS records, not translations or
+// estimated end-of-combat formulas. Source-only magnitudes are distinguished
+// from actually enabled effects. A null number means mastery scaling or
+// state-machine behavior cannot yet be calculated exactly.
+const defensivePreviewSkillIds=Object.freeze([
+ 100053001,100057001,168052001,260001001,260005001,
+ 260008001,168055001,920120001
+]);
+const defensiveEffectIds=Object.freeze(new Set([
+ 'EP_DAMAGERATE_SCALE','EP_ARMORCLASS_SCALE','EP_AVOIDANCE_CONST',
+ 'EP_AVOIDANCE_SCALE','EP_PROTECTION_NUMB','EP_PROTECTION_TUMBLE',
+ 'EP_PROTECTION_MOVEBAN','EP_CRITICAL_SAFE','EP_BLOCK_ATK'
+]));
+function defensiveSkillPreview({skillCatalog=null,jobKey=null,level=1,
+ branchMasteries={},weaponKind='BARE_HAND',branchLabels={},englishBranches={}}={}){
+ if(!skillCatalog||typeof skillCatalog!=='object'||typeof jobKey!=='string'||
+  !Number.isInteger(level)||level<1)return [];
+ return defensivePreviewSkillIds.flatMap(id=>{
+  const record=skillCatalog[String(id)];
+  if(!record||record.id!==id||!record.classes?.[jobKey]||
+   !['MYSELF','TOGGLE','PASSIVE'].includes(record.skillType))return [];
+  const effects=(record.funcs||[]).filter(f=>f?.dir==='TARGET'&&
+   defensiveEffectIds.has(f.ep));
+  if(!effects.length)return [];
+  const reasons=[],reasonsEn=[];
+  if(Number(record.charLevel||0)>level){
+   reasons.push('Требуется уровень '+record.charLevel);
+   reasonsEn.push('Requires level '+record.charLevel);
+  }
+  for(const req of record.reqs||[]){
+   if(!req||typeof req.branch!=='string'||!Number.isInteger(req.amount))continue;
+   if(Number(branchMasteries?.[req.branch]||0)<req.amount){
+    reasons.push('Требуется мастерство «'+
+     (branchLabels[req.branch]||req.branch)+'»: '+req.amount);
+    reasonsEn.push('Requires '+(englishBranches[req.branch]||req.branch)+
+     ' mastery '+req.amount);
+   }
+  }
+  if(Array.isArray(record.weaponUse)&&record.weaponUse.length&&
+   !record.weaponUse.includes(weaponKind)){
+   reasons.push('Не подходит экипированное оружие');
+   reasonsEn.push('Equipped weapon is incompatible');
+  }
+  if(record.learnable===false||record.prereq!=null){
+   reasons.push('Изучение умения не подтверждено');
+   reasonsEn.push('Skill learning not confirmed');
+  }
+  const values=effects.map(f=>({
+   ep:f.ep,
+   // Only source constants with zero coefficients may be shown as exact
+   // static magnitudes; conditional or scaled magnitudes stay unknown.
+   amount:Array.isArray(f.fv1)&&f.fv1.length===4&&
+    f.fv1.every(Number.isFinite)&&f.fv1.slice(0,3).every(x=>x===0)?
+    f.fv1[3]:null,
+   coefficients:Array.isArray(f.fv1)?f.fv1.slice():[]
+  }));
+  return [{id,name:record.name,description:record.desc||'',
+   type:record.skillType,available:reasons.length===0,
+   reason:reasons.join(' · '),reasonEn:reasonsEn.join(' · '),
+   minimumLevel:record.charLevel||0,requirements:record.reqs||[],
+   effects:values,source:'current Pandora Saga OS skill catalog'}];
+ });
+}
 // Source-only class passive: EP_ONHIT_FIN_DAMAGE_CONST describes per-hit
 // final damage, not the character-sheet ATK total. The server's hit kernel
 // is not verified; show its availability without manufacturing a flat bonus.
@@ -2372,7 +2435,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   verified:false,excluded:['unstructured refinement bonuses','unpublished set effects',
     'unverified passive and conditional skills','other group/temporary buffs']};
 }
-root.PandoraOSCalculator=Object.freeze({resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
+root.PandoraOSCalculator=Object.freeze({defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
  base,characterSheetPhysicalAttackRange,classBase,classBaseComponents,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,racialWeaponPreview,incredibleStrengthPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
  recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,consumableSkillPreview,statusCurePreview,harmfulConsumablePreview,gemstonePreview,legacyBuffPreview,songSkillPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,racialUtilityPreview,elementalMagicPreview,elementalRefinementPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive
 });
