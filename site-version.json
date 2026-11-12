@@ -1,4 +1,4 @@
 {
-  "release": "2026.11.12.660",
-  "notes": "Owner-only in-place RU/EN tooltip copy editor with CAS, Undo and live card updates"
+  "release": "2026.11.12.661",
+  "notes": "D1-editable RU/EN build card action labels with separate icons and live owner updates"
 }
