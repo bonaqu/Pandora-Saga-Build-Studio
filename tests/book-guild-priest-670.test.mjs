@@ -54,8 +54,8 @@ test('guild-level physical and magical resistance and experience flow to results
  assert.equal(guildPart.magicReduction,6);
  assert.equal(guildPart.experience,6);
  const engine=read('pandora-os-character-calculator.js');
- assert.match(engine,/resistances\.mitigation\.physical-=guildPassives\.physicalReduction/);
- assert.match(engine,/resistances\.mitigation\.magic-=guildPassives\.magicReduction/);
+ assert.match(engine,/resistances\.mitigation\.physical-=guildPhysical/);
+ assert.match(engine,/resistances\.mitigation\.magic-=guildMagical/);
  assert.match(engine,/experienceBonus\.entries\.push/);
  assert.match(app,/effectiveGuildBuffs\.attributes/);
 });
