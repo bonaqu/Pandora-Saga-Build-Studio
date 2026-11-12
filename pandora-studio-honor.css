@@ -6,7 +6,7 @@
  background:linear-gradient(145deg,#2d2117,#17110d);color:#f4d9ae;
  padding:8px 10px;box-shadow:0 9px 28px #000b;
  font:500 11px/1.42 Manrope,Arial,sans-serif;
- white-space:normal;overflow-wrap:anywhere;pointer-events:none}
+ white-space:pre-line;overflow-wrap:anywhere;pointer-events:none}
 .stage-guide-popup[hidden]{display:none!important}
 .stage-guide-label{cursor:help;text-decoration:underline dotted #92745080;
  text-underline-offset:3px}
