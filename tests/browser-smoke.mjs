@@ -310,7 +310,7 @@ async function main(){
  assert.equal(await page.locator('#stageBookPanel .stage-combat-quick').count(),0);
  const elemental=page.locator('#stageBookPanel .stage-active-elemental');
  assert.equal(await elemental.count(),1,'The elemental-weapon chapter stays discoverable');
- assert.equal((await elemental.locator('summary').innerText()).trim(),
+ assert.equal((await elemental.locator('summary').innerText()).replace(/\s+/g,' ').trim(),
   '✦ Эффекты стихийных оружий ⌄');
  assert.equal(await elemental.locator('summary .stage-result-chevron').count(),1);
  await page.locator('#stageAttributes [data-book-page="attack"]').press('ArrowRight');
@@ -357,7 +357,7 @@ async function main(){
  assert.match(await statusCures.innerText(),/Противоядие/);
  const skillItems=page.locator('#stageAttributes .stage-consumable-skills');
  assert.equal(await skillItems.count(),1);
- assert.equal((await skillItems.locator('summary').innerText()).trim(),
+ assert.equal((await skillItems.locator('summary').innerText()).replace(/\s+/g,' ').trim(),
   '✦ Предметы, активирующие умения ⌄');
  assert.equal(await skillItems.locator('summary .stage-result-chevron').count(),1);
  assert.equal(await page.locator('#stageAttributes .stage-result-tile').count(),0,
