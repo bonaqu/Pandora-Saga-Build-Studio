@@ -3509,7 +3509,60 @@ function skillExecutionChains({skillCatalog=null,jobKey=null,level=1,onHit=false
  }
  return out;
 }
-root.PandoraOSCalculator=Object.freeze({skillExecutionChains,priestCastPreviews,movementSkillSourcePreview,utilitySkillSourcePreview,scalingSkillPreview,directStrikeCoefficientPreview,elementalSpellCoefficientPreview,defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
+// Exact OS crafting ingredients and output counts, not server cast success.
+const craftRecipes=Object.freeze([
+ {id:220002001,branch:'alchemy',rank:8,uses:[[50022,'CASTER',1],[65011,'CASTER',1]],out:[50056,'TARGET',1]},
+ {id:220003001,branch:'alchemy',rank:26,uses:[[50021,'CASTER',1],[65011,'CASTER',1]],out:[50057,'TARGET',1]},
+ {id:220004001,branch:'alchemy',rank:41,uses:[[50025,'TARGET',1],[50024,'TARGET',1],[65011,'TARGET',1]],out:[50061,'TARGET',1]},
+ {id:320010001,branch:'blessing',rank:41,uses:[[65011,'CASTER',1]],out:[50059,'TARGET',1]}
+]);
+function craftingSkillPreview({skillCatalog=null,jobKey=null,level=1,
+ branchCaps={},branchMasteries={},branchLabels={},englishBranches={}}={}){
+ const out={rows:[],rejected:[],verified:false,
+  source:'current OS skill recipe IDs; quantities exact, inventory unverified'};
+ if(!skillCatalog||typeof jobKey!=='string'||!Number.isSafeInteger(level)||
+  level<1||level>55)return out;
+ for(const recipe of craftRecipes){
+  const skill=skillCatalog[String(recipe.id)];
+  if(skill?.id!==recipe.id||skill.learnable!==true||
+   skill.skillType!=='MYSELF'||skill.prereq!==null||skill.charLevel!==0||
+   skill.branch!==recipe.branch||!skill.classes?.[jobKey]||
+   !Array.isArray(skill.reqs)||skill.reqs.length!==1||
+   skill.reqs[0]?.branch!==recipe.branch||
+   skill.reqs[0]?.amount!==recipe.rank||
+   !Array.isArray(skill.funcs))continue;
+  const cap=branchCaps?.[recipe.branch];
+  if(!Number.isSafeInteger(cap)||cap<recipe.rank)continue;
+  const rows=[...recipe.uses.map(([id,dir,qty])=>({
+   ep:'EP_CONSUME_ITEM',id,dir,qty})),{
+   ep:'EP_ADDITION_ITEM',id:recipe.out[0],dir:recipe.out[1],qty:recipe.out[2]}];
+  const equal=(f,x)=>f?.ep===x.ep&&f.dir===x.dir&&
+   Array.isArray(f.fv1)&&f.fv1.length===4&&
+   f.fv1.every((n,i)=>n===(i===3?x.id:0))&&
+   Array.isArray(f.fv2)&&f.fv2.length===4&&
+   f.fv2.every((n,i)=>n===(i===3?x.qty:0));
+  // All source IDs, directions, quantities and the number of effects
+  // must match. A mutated/extended recipe must not show a partial result.
+  if(skill.funcs.length!==rows.length||!rows.every((x,i)=>equal(skill.funcs[i],x))){
+   out.rejected.push(recipe.id);continue;
+  }
+  const rank=branchMasteries?.[recipe.branch];
+  const legal=Number.isSafeInteger(rank)&&rank>=0&&rank<=cap;
+  const ready=legal&&rank>=recipe.rank;
+  out.rows.push({id:skill.id,name:skill.name,
+   uses:recipe.uses.map(([id,,quantity])=>({id,quantity})),
+   produces:{id:recipe.out[0],quantity:recipe.out[2]},
+   requirementsMet:ready,ingredientsChecked:false,
+   reasonRu:ready?'':legal?'Нужно мастерство «'+
+    (branchLabels?.[recipe.branch]||recipe.branch)+'»: '+recipe.rank:
+    'Мастерство выходит за пределы профессии',
+   reasonEn:ready?'':legal?'Requires '+
+    (englishBranches?.[recipe.branch]||recipe.branch)+' mastery: '+recipe.rank:
+    'Mastery exceeds the class limit',sourceOnly:true});
+ }
+ return out;
+}
+root.PandoraOSCalculator=Object.freeze({skillExecutionChains,craftingSkillPreview,priestCastPreviews,movementSkillSourcePreview,utilitySkillSourcePreview,scalingSkillPreview,directStrikeCoefficientPreview,elementalSpellCoefficientPreview,defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
  base,characterSheetPhysicalAttackRange,classBase,classBaseComponents,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,racialWeaponPreview,incredibleStrengthPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
  recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,consumableSkillPreview,statusCurePreview,harmfulConsumablePreview,gemstonePreview,legacyBuffPreview,songSkillPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,racialUtilityPreview,elementalMagicPreview,elementalRefinementPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive
 });
