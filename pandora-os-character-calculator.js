@@ -298,18 +298,27 @@ function potionRecovery({vit,records=[],honorTitle=0,runeJoEun=false,
 // Current OS skill 260007001 requires Warding 26 and supplies exactly
 // three TARGET resistance effects. The duplicate CASTER Numb is not additive.
 function wardingStatusPassive({jobKey=null,wardingMastery=0,wardingCap=null,skillCatalog=null}={}){
- if(!Number.isInteger(wardingMastery)||wardingMastery<26||
-  !Number.isInteger(wardingCap)||wardingCap<26||
+ if(!Number.isSafeInteger(wardingMastery)||wardingMastery<26||
+  !Number.isSafeInteger(wardingCap)||wardingCap<26||
   wardingMastery>wardingCap||!jobKey||!skillCatalog)return null;
  const skill=skillCatalog['260007001'];
- if(skill?.skillType!=='PASSIVE'||skill.branch!=='warding'||
-  !skill.classes?.[jobKey]||
-  !skill.reqs?.some(req=>req.branch==='warding'&&req.amount===26))return null;
- const values={},keys={EP_IMMUNE_STUN:'stun',EP_IMMUNE_NUMB:'numb',EP_IMMUNE_TUMBLE:'tumble'};
+ if(skill?.id!==260007001||skill.learnable!==true||
+  skill.skillType!=='PASSIVE'||skill.branch!=='warding'||
+  skill.charLevel!==0||skill.prereq!==null||!skill.classes?.[jobKey]||
+  !Array.isArray(skill.reqs)||skill.reqs.length!==1||
+  skill.reqs[0]?.branch!=='warding'||skill.reqs[0]?.amount!==26||
+  !Array.isArray(skill.funcs))return null;
+ const keys={EP_IMMUNE_STUN:'stun',EP_IMMUNE_NUMB:'numb',EP_IMMUNE_TUMBLE:'tumble'};
+ const values={};
  for(const [ep,key] of Object.entries(keys)){
-  const matches=skill.funcs?.filter(row=>row.ep===ep&&row.dir==='TARGET')||[];
-  if(matches.length!==1||!Number.isFinite(matches[0].fv1?.[3]))return null;
-  values[key]=matches[0].fv1[3];
+  // CASTER Numb is not another TARGET effect.
+  const rows=skill.funcs.filter(x=>x.ep===ep&&x.dir==='TARGET');
+  if(rows.length!==1||!Array.isArray(rows[0].fv1)||
+   !Array.isArray(rows[0].fv2)||rows[0].fv1.length!==4||
+   rows[0].fv2.length!==4||
+   rows[0].fv1.some((v,i)=>v!==(i===3?15:0))||
+   rows[0].fv2.some(v=>v!==0))return null;
+  values[key]=15;
  }
  return values;
 }
@@ -1206,6 +1215,17 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  ],()=>pct(dodgeBase,-50),
  {unit:' уклонения',detailRu:'Снижение от базового уклонения; защита от крита не является числом',
   detailEn:'Reduced base evasion; critical protection is not a numeric magnitude'});
+ // Warding 26 is applied to Defense separately. Skill Effects is read-only,
+ // and reuses the identical three-TARGET source gate, ignoring CASTER Numb.
+ const wardingProof=wardingStatusPassive({jobKey,wardingMastery:26,
+  wardingCap:cap('warding'),skillCatalog});
+ if(wardingProof)add(260007001,'defense',[
+  ['EP_IMMUNE_STUN',[0,0,0,15]],
+  ['EP_IMMUNE_NUMB',[0,0,0,15]],
+  ['EP_IMMUNE_TUMBLE',[0,0,0,15]]
+ ],()=>wardingProof.stun,{branch:'warding',unit:' сопротивления',
+  detailRu:'По +15 к оглушению, заморозке и падению',
+  detailEn:'+15 each to stun, numb and tumble resistance'});
  // Selected buffs already use these two OS coefficient vectors and the
  // matching floor stages. Share those exact results with Skill Effects.
  const quickDodge=coefficientModel(260005001,'EP_AVOIDANCE_CONST',
