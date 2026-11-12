@@ -48,21 +48,24 @@ const hints=Object.freeze({
  'Сопр. магии':['Общее сопротивление магическим воздействиям.','Overall magic resistance.']
 });
 const help=Object.freeze({
+ 'attack.mountedToggle':[
+  'Отметь, если персонаж сражается верхом. Это меняет отображаемые боевые характеристики. Некоторые значения верхом пока нельзя точно рассчитать.',
+  'Select when your hero is fighting while mounted. Combat stats update automatically; some mounted values cannot yet be calculated precisely.'],
  'attack.weaponBase':[
-  'Базовая физическая атака выбранного оружия (W) из игрового каталога. Это не итоговая АТК: на неё дополнительно влияют характеристики, заточка и усиления.',
-  'Base physical attack (W) of the equipped weapon from the game catalog. This is not total ATK, which also depends on attributes, refinement and buffs.'],
+  'Исходная атака экипированного оружия без бонусов героя. Итоговая АТК показана в результатах расчёта.',
+  'The equipped weapon’s attack before your hero’s bonuses. Total ATK appears in the results.'],
  'attack.mountedRelease':[
-  'Доля характеристик, доступная верхом по формуле Remaked. Зависит от профессии, мастерства «Верховая езда» и титула чести. При расчёте верхом доля ограничена 100%; совпадение с текущим сервером не подтверждено.',
-  'Attribute availability while mounted in the Remaked formula, based on class, Riding mastery and Honor title. Mounted calculations cap it at 100%; current-server parity is not confirmed.'],
+  'Доля характеристик, учитываемая при езде верхом. Зависит от профессии, мастерства верховой езды и титула чести.',
+  'The share of attributes applied while mounted. Depends on your class, Riding mastery and Honor title.'],
  'defense.resistStatus:evil':[
-  'Сопротивление проклятиям. Название подтверждено описанием игровой «Ритуальной маски» в OS.',
-  'Resistance to curses; confirmed by the OS Ritual Mask item description.'],
+  'Уменьшает воздействие проклятий.',
+  'Reduces the effects of curses.'],
  'defense.resistStatus:curse':[
   'Сопротивление слабости. Это отдельный параметр, не сопротивление проклятиям.',
   'Resistance to weakness. It is distinct from curse resistance.'],
  'defense.resistStatus:madness':[
-  'Сопротивление безумию. Название подтверждено описанием рассветных штанов для кролля в OS.',
-  'Resistance to madness, confirmed by the OS Rapin Dawn Pants item description.'],
+  'Уменьшает воздействие безумия.',
+  'Reduces the effects of madness.'],
  'defense.hpRecoverySpeed':['Индекс скорости восстановления ОЗ. Не ОЗ/сек.','HP recovery speed index, not HP per second.'],
  'defense.mpRecoverySpeed':['Индекс скорости восстановления ОМ. Не ОМ/сек.','MP recovery speed index, not MP per second.'],
  'defense.hpRecoveryAmount':['Расчётное количество ОЗ при пассивном восстановлении.','Estimated HP amount of passive recovery.'],

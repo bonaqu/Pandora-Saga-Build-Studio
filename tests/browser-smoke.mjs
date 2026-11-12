@@ -271,24 +271,35 @@ async function main(){
  assert.equal(await page.locator('#stageBookPanel [data-chapter-group] > strong.stage-guide-label').count(),0);
  const mount=page.locator('#stageBookPanel [data-book-setting="mounted"]');
  assert.equal(await mount.count(),1,'The riding switch must be available on Attack');
+ const mountedText=page.locator('#stageBookPanel [data-guide-key="attack.mountedToggle"]');
+ assert.equal((await mountedText.innerText()).trim(),'Верхом');
+ const visibleMountedHint=await mountedText.getAttribute('data-guide-hint');
+ assert.match(visibleMountedHint||'',/сражается верхом/);
+ // The prior chapter's test scrolled its 43 results; begin the new page at
+ // its top, then let the chapter entrance animation settle before hover.
+ await page.locator('#stageBookPanel').evaluate(el=>{el.scrollTop=0});
+ await page.waitForTimeout(350);
+ await mountedText.hover();
+ await page.waitForTimeout(850);
+ const mountedHoverProbe=await mountedText.evaluate(el=>({hover:el.matches(':hover'),
+  connected:el.isConnected,tag:el.tagName,rect:el.getBoundingClientRect().toJSON()}));
+ assert.equal(await page.locator('#stage-guide-tooltip').isVisible(),true,
+  'Mounted tooltip should open on pointer hover: '+JSON.stringify(mountedHoverProbe));
+ assert.match(await page.locator('#stage-guide-tooltip').innerText(),/сражается верхом/);
+ await page.locator('#stage-guide-tooltip').waitFor({state:'hidden',timeout:3000}).catch(()=>{});
+ assert.equal(await page.locator('#stageBookPanel .stage-mounted-note').count(),0,
+  'The hover explanation must not occupy a permanent paragraph');
  assert.equal(await mount.isChecked(),false);
  await mount.check();
  assert.equal(await mount.isChecked(),true,'Mounted mode must survive live rerender');
- assert.equal(await page.locator('#stageBookPanel .stage-mounted-note').count(),1);
- await mount.uncheck();
- assert.equal(await mount.isChecked(),false,'On-foot mode must be restorable');
- assert.equal(await page.locator('#stageBookPanel .stage-mounted-note').count(),0);
- // A mounted build must be explained in Results and Defense too, without
- // changing tabs unexpectedly or losing the persisted riding switch.
- await mount.check();
  await page.locator('#stageAttributes [data-book-page="summary"]').click();
- assert.equal(await page.locator('#stageBookPanel .stage-mounted-note').count(),1);
+ assert.equal(await page.locator('#stageBookPanel .stage-mounted-note').count(),0);
  await page.locator('#stageAttributes [data-book-page="defense"]').click();
- assert.equal(await page.locator('#stageBookPanel .stage-mounted-note').count(),1);
+ assert.equal(await page.locator('#stageBookPanel .stage-mounted-note').count(),0);
  await page.locator('#stageAttributes [data-book-page="attack"]').click();
  assert.equal(await mount.isChecked(),true);
  await mount.uncheck();
- assert.equal(await page.locator('#stageBookPanel .stage-mounted-note').count(),0);
+ assert.equal(await mount.isChecked(),false,'On-foot mode must be restorable');
  assert.equal(await page.locator('#stageBookPanel .stage-combat-quick').count(),0);
  assert.equal(await page.locator('#stageBookPanel .stage-active-elemental').count(),0,
   'Conditional weapon procs appear only if such a weapon is equipped');
@@ -373,7 +384,8 @@ async function main(){
  assert.equal(await page.locator('#stageAttributes .stage-book-arrow').first().getAttribute('aria-label'),'Previous page');
  assert.equal(await page.locator('#stageAttributes .stage-book-close').getAttribute('aria-label'),'Return to portrait');
  await page.locator('#stageAttributes [data-book-page="buffs"]').click();
- assert.match(await page.locator('#stageBookPanel .stage-attribute-note').first().innerText(),/Settings apply to this build/);
+ assert.equal((await page.locator('#stageBookPanel').innerText()).includes('Settings apply to this build'),false,
+  'Buffs no longer show the redundant introductory sentence');
  assert.ok((await page.locator('#stageBookPanel').innerText()).includes('Guild'));
  assert.equal(await page.locator('#stageBookPanel .stage-honor-term').innerText(),'passive skill');
  assert.equal(await page.locator('#stageBookPanel .stage-book-honor-link').count(),0);

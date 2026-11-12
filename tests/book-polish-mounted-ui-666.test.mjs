@@ -25,31 +25,31 @@ test('book shows OS Cverg racial label and preserves exact original racial passi
   'book-dwarven-racial-survival-'+hash.toString(16).padStart(8,'0'));
 });
 
-test('mounted source warning has one D1-editable bilingual default and appears across three chapters',()=>{
- const text='Верхом: предварительный расчёт по Remaked. Защита и скорость обычной атаки верхом не отображаются.';
- const key=host.PandoraUILocale.bookFieldKey(text);
- assert.ok(key);
- assert.equal(host.PandoraUILocale.text(key,'en'),
-  'Mounted: preliminary Remaked estimate. Defense and normal attack speed are unavailable while riding.');
- const s=get('pandora-studio-hero-book.js');
- assert.match(s,/function mountedBookNotice\(body,options,english\)/);
- assert.match(s,/mountedBookNotice\(body,options,english\);/);
- assert.match(s,/mountedBookNotice\(body,\{buffs\},document\.documentElement\?\.lang==='en'\)/);
- assert.match(s,/if\(chosen==='defense'\)defensePage\(body,modifiers,document\.documentElement\?\.lang==='en',\s*\{\.\.\.copyOptions,buffs\}\)/);
+test('Mounted has its hint on the clickable word, not a permanent technical paragraph',()=>{
+ const entry=guide.field({},'attack.mountedToggle','Верхом','Mounted');
+ assert.match(entry.hintRu,/сражается верхом/);
+ assert.match(entry.hintEn,/while mounted/);
+ assert.doesNotMatch(entry.hintRu,/Remaked|формул|сервер|UI/i);
+ const source=get('pandora-studio-hero-book.js');
+ assert.match(source,/guideLabel\(toggle\.querySelector\('\.stage-mounted-label'\),'attack\.mountedToggle'/);
+ assert.doesNotMatch(source,/function mountedBookNotice\(/);
+ assert.doesNotMatch(source,/mountedBookNotice\(body/);
+ assert.match(source,/for:'stageBookMountedToggle'/);
+ assert.doesNotMatch(source,/body\.append\(make\('p',\{class:'stage-attribute-note',text:english\?/);
 });
 
 test('secondary weapon W and riding stat share honest RU/EN explanation, no server-parity claim',()=>{
  for(const [key,ru,en] of [
-  ['attack.weaponBase','Базовая физическая атака','Base physical attack'],
-  ['attack.mountedRelease','Доля характеристик','Attribute availability']]){
+  ['attack.weaponBase','Исходная атака','equipped weapon'],
+  ['attack.mountedRelease','Доля характеристик','share of attributes']]){
   const row=guide.field({},key,'test','test');
   assert.match(row.hintRu,new RegExp(ru));
   assert.match(row.hintEn,new RegExp(en));
-  assert.match(row.hintRu,/не (?:итоговая|подтверждено)/i);
+  assert.doesNotMatch(row.hintRu,/Remaked|сервер|формула|W\)/i);
  }
  const mounted=guide.field({},'attack.mountedRelease','Характеристики верхом','Mounted attributes');
- assert.match(mounted.hintRu,/100%/);
- assert.match(mounted.hintEn,/100%/);
+ assert.match(mounted.hintRu,/верхов/);
+ assert.match(mounted.hintEn,/Riding mastery/);
 });
 
 test('individual Curse, Weakness and Madness resistance labels mirror OS item descriptions',()=>{
@@ -62,7 +62,7 @@ test('individual Curse, Weakness and Madness resistance labels mirror OS item de
   assert.ok(items[id].desc.includes(needle),id);
   const hint=guide.field({},'defense.resistStatus:'+kind,kind,kind);
   assert.ok(hint.hintRu.includes(needle.slice(0,4)),kind);
-  assert.ok(hint.hintEn.length>30,kind);
+  assert.ok(hint.hintEn.length>=20,kind);
  }
 });
 

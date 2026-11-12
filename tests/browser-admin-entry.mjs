@@ -1312,7 +1312,7 @@ export async function runAdminEntrySmoke(browser,base){
   await bookEdit.click();
   const bookInput=page.locator('#stageBookPanel .account-copy-edit-host [contenteditable]').first();
   await bookInput.waitFor({state:'visible'});
-  const longBookCopy='Настройки персонажа обновляют итоговые характеристики в других разделах Книги героя. Текст тестовой правки сохраняется полностью.';
+  const longBookCopy='Выбери усиления жреца, которые действуют на героя. Проверка длинного текста и сохранения без потери введённых данных.';
   await bookInput.fill(longBookCopy);
   const editorHeight=await bookInput.evaluate(node=>node.getBoundingClientRect().height);
   assert.ok(editorHeight>=34,'Long copy must remain visible in an expanding editor');
@@ -1325,7 +1325,7 @@ export async function runAdminEntrySmoke(browser,base){
   await page.locator('#locale [data-locale="en"]').click();
   await page.locator('#stageBookPanel p.stage-attribute-note').first().waitFor({state:'visible'});
   assert.match(await page.locator('#stageBookPanel p.stage-attribute-note').first().innerText(),
-   /Settings apply to this build immediately/);
+   /Selected attack and defense signs and Battle Prayer/);
   await page.locator('#locale [data-locale="ru"]').click();
   assert.equal(await page.locator('#stageBookPanel p.stage-attribute-note').first().innerText(),
    longBookCopy,'RU saved copy survives EN->RU and does not change the hero');
