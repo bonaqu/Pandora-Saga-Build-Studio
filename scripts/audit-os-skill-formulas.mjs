@@ -29,7 +29,7 @@ export function auditOsSkillFormulaCoverage({skills,classes,calculator}={}){
    sourceEffects:[...new Set(source.funcs.map(x=>x?.ep).filter(Boolean))].sort(),
    classCount:Object.values(source.classes||{}).filter(Boolean).length,
    sourcePreview:false,numericPreview:false,coefficientModel:false,
-   sourceModules:[],targetSideOnly:false});
+   sourceParameter:false,sourceModules:[],targetSideOnly:false});
  }
  // Theoretical class-cap inspection, NOT a legal single build or proof
  // of server parity. Walk existing formula modules before flagging gaps.
@@ -67,10 +67,13 @@ export function auditOsSkillFormulaCoverage({skills,classes,calculator}={}){
   const result=calculator.scalingSkillPreview({skillCatalog:skills,
    jobKey,level:55,branchCaps,branchMasteries,stats,combat,
    weaponKind:'BARE_HAND',hasShield:true});
-  for(const row of [...(result.offense||[]),...(result.defense||[]),...(result.movement||[])]){
+  for(const row of [...(result.offense||[]),...(result.defense||[]),...(result.movement||[]),...(result.utility||[])]){
    const record=mark(row.id,'skill-effects',{numeric:Number.isFinite(row.amount)});
    if(Array.isArray(row.coefficientModels)&&row.coefficientModels.length>0)
     record.coefficientModel=true;
+   if(Array.isArray(row.sourceParameters)&&row.sourceParameters.some(p=>
+    p?.confidence==='source-parameter'&&Number.isSafeInteger(p.amount)))
+    record.sourceParameter=true;
   }
   // The Healing chapter has its own Remaked numerical stages and OS skill
   // gates. Include BOTH 45 and 55: level-50 CLERIC upgrades replace
@@ -117,7 +120,7 @@ export function auditOsSkillFormulaCoverage({skills,classes,calculator}={}){
     numeric:true,targetSide:row.incoming===true});
   }
  }
- const statusKeys=['numeric-preview','coefficient-model','qualitative-preview',
+ const statusKeys=['numeric-preview','coefficient-model','source-parameter','qualitative-preview',
   'passive-source','internal-or-triggered-source','unmodeled-learnable'];
  const byStatus=Object.fromEntries(statusKeys.map(key=>[key,0]));
  const rows=[...coverage.values()].map(item=>{
@@ -125,6 +128,7 @@ export function auditOsSkillFormulaCoverage({skills,classes,calculator}={}){
   if(!item.learnable||item.triggeredChild)status='internal-or-triggered-source';
   else if(item.numericPreview)status='numeric-preview';
   else if(item.coefficientModel)status='coefficient-model';
+  else if(item.sourceParameter)status='source-parameter';
   else if(item.sourcePreview)status='qualitative-preview';
   else if(item.skillType==='PASSIVE')status='passive-source';
   else status='unmodeled-learnable';

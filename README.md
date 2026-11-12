@@ -1,6 +1,8 @@
 # Pandora Saga Build Studio
 
-**Текущую версию** см. в [site-version.json](site-version.json) и [CHANGELOG.md](CHANGELOG.md). [Read-only сверка D1 и Pages](docs/D1_LIVE_CATALOG_PARITY_2026-11-08.md) (`npm run catalog:parity:live`, также автоматически после Pages deploy и ежедневно). Список активных проблем и проверенных веток — [Issue triage](docs/ISSUE_TRIAGE_2026-11-08.md) и [Branch audit](docs/LEGACY_BRANCH_RETIREMENT_2026-11-08.md). Ниже сохранены исторические заметки прошлых релизов.
+**Для разработчиков и ИИ-агентов:** [правила GitHub, обязательные проверки и быстрый безопасный процесс](docs/REPOSITORY_OPERATIONS_AND_FAST_DELIVERY.md) · [AGENTS.md](AGENTS.md). Актуальные настройки/PR проверяйте в GitHub перед работой.
+
+**Текущую версию** см. в [site-version.json](site-version.json) и [CHANGELOG.md](CHANGELOG.md). [Read-only сверка D1 и Pages](docs/D1_LIVE_CATALOG_PARITY_2026-11-08.md) (`npm run catalog:parity:live`, по текущим рабочим правилам — после релиза или вручную; ежедневные запуски отключены). Список активных проблем и проверенных веток — [Issue triage](docs/ISSUE_TRIAGE_2026-11-08.md) и [Branch audit](docs/LEGACY_BRANCH_RETIREMENT_2026-11-08.md). Ниже сохранены исторические заметки прошлых релизов.
 
 **0.375.0:** редактор сохраняет раскрытое состояние между главной, библиотекой билдов и энциклопедией; свёрнутый переключатель остаётся слева без мигания. Вкладки энциклопедии и подразделы «Чести» теперь переименовываются с RU/EN по отдельности, не меняя внутренних ключей. Единый поиск и замена связей по игровому названию вместо ручных ID. «Честь» без дублирования стартовых очков, с иконками рангов и наградами. Согласованные паттерны: [docs/APPROVED_UI_UX_GUIDELINES.md](docs/APPROVED_UI_UX_GUIDELINES.md).
 
