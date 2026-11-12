@@ -1,4 +1,4 @@
 {
-  "release": "2026.11.12.674",
-  "notes": "Source-gated Lightness, Swift Arrow and Blessed Repose active buffs: OS coefficients, Remaked index channels and regression tests"
+  "release": "2026.11.12.675",
+  "notes": "Hero Book defensive skills now honor equipped shield and weapon eligibility consistently with active combat gates"
 }

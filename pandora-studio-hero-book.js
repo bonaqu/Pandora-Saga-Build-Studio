@@ -1109,7 +1109,8 @@ function renderSongSkills(body,modifiers,gameTerms={},skillIconForId=()=>null){
 // buff toggles or the 43 main result values.
 function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>null,
  remakedBuffRows=[],availability={},combatSkillCards={},
- heroJobKey=null,heroLevel=1,heroMasteries={},heroWeaponKind='BARE_HAND'}={}){
+ heroJobKey=null,heroLevel=1,heroMasteries={},heroWeaponKind='BARE_HAND',
+ heroHasShield=false}={}){
  const en=document.documentElement?.lang==='en';
  const spells=modifiers?.healingSpells?.rows||[];
  if(spells.length){
@@ -1305,7 +1306,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
  const defensive=root.PandoraOSCalculator?.defensiveSkillPreview?.({
   skillCatalog:gameTerms.skills,jobKey:heroJobKey,level:heroLevel,
   branchMasteries:heroMasteries,weaponKind:heroWeaponKind,
-  branchLabels:gameTerms.branchLabels||{},
+  hasShield:heroHasShield,branchLabels:gameTerms.branchLabels||{},
   englishBranches:gameTerms.englishBranches||{}
  })||[];
  if(defensive.length){
@@ -1776,7 +1777,8 @@ function decorateChapterCaptions(body,page,options){
 function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPage=()=>{},onClose=()=>{},modifiers=null,
  buffs={},vitalsBuffs={},onBuff=()=>{},onVital=()=>{},honorTitles=[],availability={},
  combatSkillCards={},resistanceSkillChoices=[],remakedBuffRows=[],
- heroJobKey=null,heroLevel=1,heroMasteries={},
+ heroJobKey=null,heroLevel=1,heroMasteries={},heroWeaponKind='BARE_HAND',
+ heroHasShield=false,
  itemById=()=>null,onItem=()=>{},gameTerms={},
  copy={},onTextEdit=null,canEdit=false,onHonor=()=>{}}={}){
  root.PandoraGuideTooltip?.dismiss();
@@ -1882,7 +1884,8 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
   honorTitles,availability,combatSkillCards,resistanceSkillChoices,modifiers,
   gameTerms,remakedBuffRows,skillIconForId,...copyOptions});
  if(chosen==='effects')skillEffectsPage(body,{modifiers,gameTerms,skillIconForId,
-  remakedBuffRows,availability,combatSkillCards,heroJobKey,heroLevel,heroMasteries});
+  remakedBuffRows,availability,combatSkillCards,heroJobKey,heroLevel,heroMasteries,
+   heroWeaponKind,heroHasShield});
  if(chosen==='recovery'){
   const english=document.documentElement?.lang==='en';
   const percent=modifiers?.potion?.percent;
