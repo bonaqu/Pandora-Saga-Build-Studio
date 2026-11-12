@@ -42,6 +42,9 @@ export async function runHonorGuideSmoke(browser,base){
   // Regression: Honor used to return from renderWiki before attaching the
   // universal search listener. Search the article, not the OS record index.
   const honorSearch=page.locator('input[name="pandora-studio-encyclopedia-filter"]');
+  // The Wiki search intentionally starts readonly to reject password-manager
+  // autofill. A real user click unlocks it before typing.
+  await honorSearch.click();
   await honorSearch.fill('Эль Ведд');
   await page.waitForFunction(()=>
    document.querySelector('#honor-gain')?.hidden===false&&
@@ -274,6 +277,7 @@ export async function runHonorGuideSmoke(browser,base){
   assert.equal((await page.locator('.wiki-honor-title').innerText()).trim(),
    'Honor');
   const honorSearchEn=page.locator('input[name="pandora-studio-encyclopedia-filter"]');
+  await honorSearchEn.click();
   await honorSearchEn.fill('Honor ranks');
   await page.waitForFunction(()=>document.querySelector('#honor-ranks')?.hidden===false);
   assert.equal(await panel.locator('.wiki-honor-section:not([hidden])').count(),1);
