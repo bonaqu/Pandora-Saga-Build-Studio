@@ -605,43 +605,94 @@ function buffsPage(body,options){
   (document.documentElement?.lang==='en'?'Level ':'Уровень ')+i+' · +'+n]);
  const guildLevel=Number(buffs.guildLevel)||0;
  const guildPreview=root.PandoraOSCalculator?.guildPassiveAtLevel(guildLevel);
- const vitals=section('ОЗ и ОМ','Vitals');
- const lifeSign=remakedBuffRows.find(row=>row.id===320005001);
- toggle(vitals,'Знак жизни','lifeSign',true,true,lifeSign?{
-  name:lifeSign.name,nameEn:lifeSign.nameEn,
-  desc:lifeSign.description,
-  descEn:gameTerms.englishSkills?.['320005001']?.d||lifeSign.description,
-  icon:skillIconForId(320005001),
-  summary:english?'Ally buff · adds HP':'От союзника · увеличивает ОЗ'
- }:null);
+ const guildSource=root.PandoraGuildSkillSource||[];
+ const sourceSkill=(i,rank)=>guildSource[i]?.levels?.[Math.max(0,rank-1)]||{};
+ const guildRate=[0,2,4,6,9,12,15];
  const guild=section('Гильдия','Guild','guild');
  select(guild,'Уровень гильдии','Guild level','guildLevel',
   Array.from({length:13},(_,i)=>[i,i===0?
    (english?'Manual guild buffs':'Ручной выбор усилений'):
-   (english?'Guild level ':'Гильдия · уровень ')+i]));
- if(!guildLevel){
-  select(guild,'Гильдейское ОЗ','Guild HP','guildHp',opts([0,'2%','4%','6%','9%','12%','15%']),true);
-  select(guild,'Гильдейское ОМ','Guild MP','guildMp',opts([0,'2%','4%','6%','9%','12%','15%']),true);
- }else guild.append(make('p',{class:'stage-attribute-note',text:english?
-  'HP and MP passives depend on guild level.':'Бонусы ОЗ и ОМ зависят от уровня гильдии.'}));
- if(guildLevel&&guildPreview){
-  const rate=[0,2,4,6,9,12,15][guildPreview.guildHp]||0;
-  const lines=[
-   (english?'HP and MP ':'ОЗ и ОМ ')+rate+'%',
-   (english?'HP/MP recovery ':'Восстановление ОЗ/ОМ ')+
-    ([0,5,8][guildPreview.guildLifeRecovery]||0)+'%',
-   (english?'Incoming physical/magical damage −':'Получаемый физический/магический урон −')+
-    guildPreview.physicalReduction+'%',
-   (english?'Monster experience +':'Опыт с монстров +')+guildPreview.experience+'%'
-  ];
-  const preview=make('div',{class:'stage-guild-level-effects'});
-  for(const line of lines)preview.append(make('span',{text:line}));
-  guild.append(preview,make('p',{class:'stage-attribute-note',text:english?
-   'HP, MP and recovery bonuses are applied. Other values are shown for reference.':
-   'Учитываются бонусы ОЗ, ОМ и восстановления. Остальные значения — справочные.'}));
+   (english?'Guild Lv. ':'Гильдия Ур. ')+i]));
+ const guildLevelInput=guild.querySelector('[data-book-setting="guildLevel"]');
+ if(guildLevelInput){
+  for(let i=1;i<=12;i++){
+   const opt=guildLevelInput.options[i],hint=sourceSkill(0,i);
+   if(opt)opt.title=english?hint.en||'':hint.ru||'';
+  }
+  if(guildLevel){
+   const description=sourceSkill(0,guildLevel);
+   root.PandoraGuideTooltip?.attach(guildLevelInput,
+    (english?description.en:description.ru)||'',{hoverDelay:450});
+  }
  }
- select(guild,'Все характеристики','All attributes','guildAll',opts([0,1,2,3,4,5,6]));
- select(guild,'Пробуждение','Awakening','guildArouse',opts([0,'2%','4%','6%']));
+ const passiveGroup=make('div',{class:'stage-guild-subsection stage-guild-passives'});
+ const passiveTitle=make('strong',{text:english?'Пассивные усиления гильдии':'Пассивные усиления гильдии'});
+ passiveGroup.append(passiveTitle);
+ guideLabel(passiveTitle,'buffs.guild.passiveHeading',
+  'Пассивные усиления гильдии','Passive guild enhancements',options,
+  'Усиливаются автоматически с повышением уровня гильдии.',
+  'Automatically grow with the guild level.');
+ guild.append(passiveGroup);
+ const passiveSpecs=[
+  {key:'guildHp',i:1,id:600000001,rank:guildPreview?.guildHp||0,rate:guildRate[guildPreview?.guildHp]||0},
+  {key:'guildMp',i:2,id:600000011,rank:guildPreview?.guildMp||0,rate:guildRate[guildPreview?.guildMp]||0},
+  {key:'guildLifeRecovery',i:3,id:600000021,rank:guildPreview?.guildLifeRecovery||0,rate:[0,5,8][guildPreview?.guildLifeRecovery]||0},
+  {key:'guildManaRecovery',i:4,id:600000031,rank:guildPreview?.guildManaRecovery||0,rate:[0,5,8][guildPreview?.guildManaRecovery]||0},
+  {key:'physicalReduction',i:5,id:600000071,rank:(guildPreview?.physicalReduction||0)/3,rate:guildPreview?.physicalReduction||0},
+  {key:'magicReduction',i:6,id:600000081,rank:(guildPreview?.magicReduction||0)/3,rate:guildPreview?.magicReduction||0},
+  {key:'experience',i:7,id:600000061,rank:Math.max(0,(guildPreview?.experience||0)-1),rate:guildPreview?.experience||0}
+ ];
+ if(!guildLevel){
+  select(passiveGroup,'Сила гильдии','Physical','guildHp',
+   opts([0,'2%','4%','6%','9%','12%','15%']),true);
+  select(passiveGroup,'Дух гильдии','Spirit','guildMp',
+   opts([0,'2%','4%','6%','9%','12%','15%']),true);
+  select(passiveGroup,'Восстановление силы','Physical Recovery',
+   'guildLifeRecovery',opts([0,5,8]));
+  select(passiveGroup,'Восстановление духа','Spirit Recovery',
+   'guildManaRecovery',opts([0,5,8]));
+ }else for(const spec of passiveSpecs){
+  if(!spec.rank)continue;
+  const source=guildSource[spec.i]||{},description=sourceSkill(spec.i,spec.rank);
+  const line=make('div',{class:'stage-guild-passive-row',
+   'data-guild-passive':spec.key});
+  const sprite=skillIconForId(spec.id);
+  if(sprite)line.append(make('img',{src:sprite,alt:'',width:30,height:30,
+   loading:'lazy',class:'stage-guild-skill-icon'}));
+  const name=make('span',{class:'stage-guild-passive-name',text:english?
+   source.sourceNameEn||spec.key:source.nameRu||spec.key});
+  line.append(name,make('strong',{text:
+   (spec.key==='physicalReduction'||spec.key==='magicReduction'?'−':'+')+
+   spec.rate+'%'}));
+  guideLabel(name,'buffs.guild.passive.'+spec.key+'.'+spec.rank,
+   source.nameRu||spec.key,source.sourceNameEn||spec.key,options,
+   description.ru||'',description.en||'');
+  passiveGroup.append(line);
+ }
+ const activeGroup=make('div',{class:'stage-guild-subsection stage-guild-actives'});
+ const activeTitle=make('strong',{text:english?'Active guild enhancements':'Активные усиления гильдии'});
+ activeGroup.append(activeTitle);
+ guideLabel(activeTitle,'buffs.guild.activeHeading',
+  'Активные усиления гильдии','Active guild enhancements',options,
+  'Умения главы гильдии действуют на находящихся рядом союзников.',
+  'The guild leader activates these skills for nearby allies.');
+ guild.append(activeGroup);
+ select(activeGroup,'Магистр исцеления','Healing','guildHealing',
+  opts([0,10,20,30]));
+ select(activeGroup,'Магистр битвы','Combat','guildAll',opts([0,1,2,3,4,5,6]));
+ select(activeGroup,'Магистр магии','Arouse','guildArouse',opts([0,'2%','4%','6%']));
+ for(const [key,i] of [['guildHealing',8],['guildAll',9],['guildArouse',10]]){
+  const el=activeGroup.querySelector('[data-book-setting="'+key+'"]');
+  if(!el)continue;
+  const selected=Number(buffs[key]||0);
+  const details=sourceSkill(i,selected>0?selected:1);
+  const hint=english?details.en:details.ru;
+  if(hint)root.PandoraGuideTooltip?.attach(el,hint,{hoverDelay:450});
+  for(let n=1;n<el.options.length;n++){
+   const source=sourceSkill(i,n);
+   el.options[n].title=(english?source.en:source.ru)||'';
+  }
+ }
  const honor=section('Честь','Honor','honor');
  const honorTerm=make('span',{class:'stage-honor-term',text:english?'passive skill':'пассивное умение'});
  const honorHeading=honor.firstChild||honor.children?.[0];
@@ -729,11 +780,7 @@ function buffsPage(body,options){
   }
   party.append(group);
  }
- if(!guildLevel){
-  select(guild,'Гильдия: скорость ОЗ','Guild: HP recovery','guildLifeRecovery',opts([0,5,8]));
-  select(guild,'Гильдия: скорость ОМ','Guild: MP recovery','guildManaRecovery',opts([0,5,8]));
- }
- select(guild,'Гильдейское лечение','Guild healing','guildHealing',opts([0,10,20,30]));
+
  if(modifiers?.legacyBuffs&&buffs.priestEnabled===true){
   const details=make('details',{class:'stage-legacy-buff-previews'});
   details.append(make('summary',{text:'Мощность поддерживающих навыков'}));
