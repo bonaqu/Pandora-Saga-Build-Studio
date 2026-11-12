@@ -935,8 +935,14 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  const seen=new Set();
  const add=(id,group,required,compute,options={})=>{
   const record=skill(id);
+  const predecessor=options.predecessor==null?null:skill(options.predecessor);
+  const sourceChainValid=options.predecessor==null?record?.prereq==null:
+   record?.prereq===options.predecessor&&predecessor?.id===options.predecessor&&
+   predecessor?.learnable===true&&predecessor?.name===record?.name&&
+   predecessor?.skillType===record?.skillType&&
+   predecessor?.classes?.[jobKey]===1;
   if(!record||Number(record.id)!==id||record.learnable!==true||
-   record.prereq!=null||!Array.isArray(record.reqs)||
+   !sourceChainValid||!Array.isArray(record.reqs)||
    !Array.isArray(record.funcs)||!required.every(([ep,coeff])=>exact(record,ep,coeff))||
    seen.has(id))return;
   const recipient=options.recipient===true;
@@ -1039,7 +1045,7 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  if(mastery('alchemy')>=61)
   add(220001003,'offense',[
    ['EP_AURAPOISON_CONSTANT',[0,10,15,6]]
-  ],manual,{branch:'alchemy',
+  ],manual,{branch:'alchemy',predecessor:220001001,
    detailRu:'Усиленный яд · мастерство алхимии 61; итоговый урон ауры не подтверждён',
    detailEn:'Advanced poison, Alchemy 61; aura damage magnitude unverified'});
  else
@@ -1059,12 +1065,14 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  add(conjurerUpgrade?420002002:420002001,'defense',[
   ['EP_MANA_SHIELD',conjurerUpgrade?[0,0,20,10]:[0,0,10,10]]
  ],manual,{branch:'embody',
+  predecessor:conjurerUpgrade?420002001:null,
   detailRu:'Зависит от мастерства воплощения; расчёт поглощения ОМ не подтверждён',
   detailEn:'Depends on Embodiment mastery; MP absorption unverified'});
  add(conjurerUpgrade?420004002:420004001,'defense',[
   ['EP_CASTINGCANCEL_RESISTANCE_CONST',
    conjurerUpgrade?[15,0,15,1]:[10,0,10,1]]
  ],manual,{branch:'embody',
+  predecessor:conjurerUpgrade?420004001:null,
   detailRu:'Зависит от СД и мастерства воплощения; округление не подтверждено',
   detailEn:'Depends on SPI and Embodiment mastery; rounding unverified'});
  add(320011001,'offense',[
