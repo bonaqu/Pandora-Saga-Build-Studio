@@ -508,7 +508,8 @@ function gameClassName(id,ru,en,terms={},english=false){
 }
 function buffsPage(body,options){
  const {buffs={},vitalsBuffs={},onBuff=()=>{},onVital=()=>{},honorTitles=[],
-  availability={},combatSkillCards={},resistanceSkillChoices=[],modifiers,gameTerms={}}=options;
+  availability={},combatSkillCards={},resistanceSkillChoices=[],modifiers,gameTerms={},
+  remakedBuffRows=[],skillIconForId=()=>null}=options;
  const english=document.documentElement?.lang==='en';
  // Count selected effects, never mastery input numbers or a disabled priest.
  const guildSelected=Number(buffs.guildLevel)>0;
@@ -529,7 +530,9 @@ function buffsPage(body,options){
    return false;
   return selected(value);
  }).length+Object.entries(vitalsBuffs).filter(([key,value])=>
-  !(guildSelected&&['guildHp','guildMp'].includes(key))&&selected(value)).length+selectedResistanceSkills;
+  !(guildSelected&&['guildHp','guildMp'].includes(key))&&selected(value)).length+
+  selectedResistanceSkills+remakedBuffRows.filter(row=>!row.existing&&
+   row.selected&&row.available).length;
  const status=make('div',{class:'stage-buff-overview'},[
   make('span',{text:english?'Configured enhancements':'Выбранные усиления'}),
   make('strong',{text:String(configured)}),
@@ -557,7 +560,9 @@ function buffsPage(body,options){
   entry.value=String(selected);field.append(entry);parent.append(field);
  };
  const toggle=(parent,name,key,vital=false,allowed=true,skill=null)=>{
-  const selected=(vital?vitalsBuffs:buffs)[key]===true;
+  const selected=key.startsWith('legacySkill:')?
+   Array.isArray(buffs.remakedSkillIds)&&buffs.remakedSkillIds.includes(Number(key.slice(12))):
+   (vital?vitalsBuffs:buffs)[key]===true;
   const node=make('label',{class:'stage-book-check'+(skill?' stage-combat-buff':'')});
   const checkbox=make('input',{type:'checkbox','data-book-setting':key,
    checked:selected&&allowed,disabled:!allowed,
@@ -576,7 +581,8 @@ function buffsPage(body,options){
   if(typeof description==='string'&&description.trim())
    root.PandoraGuideTooltip?.attach(info,description,{hoverDelay:650});
   if(skill&&!allowed)
-   info.append(make('small',{text:skill.reason||'Недоступно для героя'}));
+   info.append(make('small',{text:(english?skill.reasonEn:skill.reason)||
+    (english?'Unavailable to this hero':'Недоступно для героя')}));
   else if(skill?.summary)info.append(make('small',{text:skill.summary}));
   node.append(info);parent.append(node);
  };
@@ -650,12 +656,29 @@ function buffsPage(body,options){
  priest.append(make('p',{class:'stage-attribute-note',text:english?
   'Selected attack and defense signs and Battle Prayer affect the build; other values are previews.':
   'На билд влияют выбранные знаки атаки и защиты, а также Ободрение. Остальное — предварительный просмотр.'}));
- const skills=section('Боевые умения','Combat skills');
- for(const [key,label] of [['combatLunge','Рывок'],['combatWarCry','Боевой клич'],
+ const skills=section('Личные умения','Self buffs','self');
+ for(const [key,label] of [['combatLunge','Рывок'],
   ['combatRage','Яростная атака'],['combatDefender','Бастион (нужен щит)'],
-  ['combatWindAssist','Помощь ветра'],['combatWindBlessing','Благословение ветра'],
   ['combatConcentration','Сосредоточенность']])
   toggle(skills,label,key,false,availability[key]===true,combatSkillCards[key]);
+ const party=section('Усиления от союзников','Ally buffs','party');
+ for(const [key,label] of [['combatWarCry','Боевой клич'],
+  ['combatWindAssist','Помощь ветра'],['combatWindBlessing','Благословение ветра']])
+  toggle(party,label,key,false,availability[key]===true,combatSkillCards[key]);
+ // One source-controlled setting per Remaked enhancement. The entries
+ // already represented by Life Sign, priest and elemental resistance tools
+ // deliberately stay in their original sections, without duplicate inputs.
+ for(const row of remakedBuffRows){
+  if(row.existing||!row.name)continue;
+  const target=row.scope==='party'?party:skills;
+  const description=english?gameTerms.englishSkills?.[String(row.id)]?.d:row.description;
+  toggle(target,english?row.nameEn:row.name,'legacySkill:'+row.id,false,
+   row.available,{name:row.name,nameEn:row.nameEn,icon:skillIconForId(row.id),
+    desc:row.description,descEn:description||row.description,
+    reason:row.reason,reasonEn:row.reasonEn,
+    summary:row.counted?(english?'Included in results':'Учтено в результатах'):
+     (english?'Effect preview':'Предпросмотр эффекта')});
+ }
  if(resistanceSkillChoices.length){
   const group=make('details',{class:'stage-legacy-buff-previews stage-resistance-skill-controls'});
   group.append(make('summary',{text:english?
@@ -681,7 +704,7 @@ function buffsPage(body,options){
    ]));
    group.append(row);
   }
-  skills.append(group);
+  party.append(group);
  }
  if(!guildLevel){
   select(guild,'Гильдия: скорость ОЗ','Guild: HP recovery','guildLifeRecovery',opts([0,5,8]));
@@ -1283,7 +1306,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
   {...copyOptions,buffs});
  if(chosen==='buffs')buffsPage(body,{buffs,vitalsBuffs,onBuff,onVital,
   honorTitles,availability,combatSkillCards,resistanceSkillChoices,modifiers,
-  gameTerms,...copyOptions});
+  gameTerms,remakedBuffRows,skillIconForId,...copyOptions});
  if(chosen==='effects')skillEffectsPage(body,{modifiers,gameTerms,skillIconForId});
  if(chosen==='recovery'){
   const english=document.documentElement?.lang==='en';
