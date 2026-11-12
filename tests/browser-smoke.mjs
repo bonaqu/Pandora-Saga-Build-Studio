@@ -342,6 +342,11 @@ async function main(){
  assert.match(await offense.innerText(),/Боевой клич|Массовая сосредоточенность/);
  assert.equal(await page.locator('#stageBookPanel input[type="checkbox"]').count(),0,
   'Read-only Skill Effects must never activate a defensive skill');
+ const calculatedSkill=offense.locator('.stage-effect-skill-label').first();
+ await calculatedSkill.hover();
+ await page.locator('#path-skill-hover-tooltip').waitFor({state:'visible',timeout:5000});
+ assert.match(await page.locator('#path-skill-hover-tooltip').innerText(),/Боевой клич|Массовая сосредоточенность/);
+ await offense.locator('summary').hover();
  if(await offense.count()&&await healing.count()){
   const normalize=async selector=>selector.locator('summary').evaluate(node=>{
    const css=getComputedStyle(node);
@@ -387,8 +392,15 @@ async function main(){
  const skillHint=skillItems.locator('[data-triggered-skill-id]').first();
  assert.ok(await skillHint.count()>0,'Each triggered skill has a dedicated hover target');
  await skillHint.hover();
- await page.locator('#stage-guide-tooltip').waitFor({state:'visible',timeout:4000});
- assert.ok((await page.locator('#stage-guide-tooltip').innerText()).trim().length>8);
+ const richPotionSkill=page.locator('#path-skill-hover-tooltip');
+ await richPotionSkill.waitFor({state:'visible',timeout:5000});
+ assert.equal(await richPotionSkill.locator('.path-skill-preview-item').count(),1,
+  'Potion-triggered skills reuse the same Path skill preview');
+ assert.ok(await richPotionSkill.locator('strong').first().innerText(),
+  'The rich skill tooltip must contain the original game skill name');
+ assert.equal(await richPotionSkill.locator('img').count(),1,
+  'A skill tooltip includes its original game icon');
+ await page.locator('#stageAttributes .stage-consumable-skills summary').hover();
  assert.equal(await page.locator('#stageAttributes .stage-result-tile').count(),0,
   'Potion effects do not repeat potion-effectiveness total');
  await page.locator('#stageAttributes [data-book-page="effects"]').click();
