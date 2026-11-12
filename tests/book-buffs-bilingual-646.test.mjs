@@ -12,7 +12,8 @@ test('Buff section and select guide editors receive independent RU/EN default fi
  const source=read('pandora-studio-hero-book.js');
  assert.match(source,/const section=\(ru,en,stableId=null\)=>/);
  assert.match(source,/const select=\(parent,ru,en,key,levels,vital=false,compact=false\)=>/);
- assert.match(source,/section\('Боевые умения','Combat skills'\)/);
+ assert.match(source,/section\('Личные умения','Self buffs','self'\)/);
+ assert.match(source,/section\('Усиления от союзников','Ally buffs','party'\)/);
  assert.match(source,/section\('ОЗ и ОМ','Vitals'\)/);
  assert.match(source,/select\(guild,'Гильдейское ОЗ','Guild HP','guildHp'/);
  assert.match(source,/select\(guild,'Гильдейское ОМ','Guild MP','guildMp'/);
