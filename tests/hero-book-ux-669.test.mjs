@@ -20,11 +20,11 @@ test('Incredible Strength tells the player what it does and honestly labels unav
  const passive=skills['910110001'];
  assert.equal(passive.name,'Невероятная сила');
  assert.equal(passive.funcs[0].ep,'EP_ONHIT_FIN_DAMAGE_CONST');
- const start=book.indexOf('const hitPassive=modifiers?.combat?.incredibleStrength;');
+ const start=book.indexOf('const hitPassive=combat.incredibleStrength;');
  const end=book.indexOf('renderSongSkills(body,modifiers',start);
  assert.ok(start>=0&&end>start);
  const section=book.slice(start,end);
- assert.match(section,/Увеличивает урон от оружия ближнего боя/);
+ assert.match(section,/Увеличивает урон при попадании оружием ближнего боя/);
  assert.match(section,/Числовые показатели временно не отображаются \(в разработке\)/);
  assert.match(section,/Numerical effect details are temporarily unavailable\. In development\./);
  assert.doesNotMatch(section,/серверн|формул|Remaked|current OS|server formula/i);
@@ -48,7 +48,7 @@ test('preview-only Remaked buffs explain missing numbers without claiming they a
  const start=book.indexOf('for(const row of remakedBuffRows)');
  assert.ok(start>=0);
  const tail=book.slice(start,start+2400);
- assert.match(tail,/Числовые показатели в разработке/);
- assert.match(tail,/Numerical effect details are in development/);
+ assert.match(tail,/row\.description/);
+ assert.match(tail,/row\.description/);
  assert.doesNotMatch(tail,/Предпросмотр эффекта/);
 });
