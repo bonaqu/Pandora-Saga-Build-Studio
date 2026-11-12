@@ -1814,7 +1814,7 @@ function renderStagePicker(focusSearch=false){
  }
  const top=h('div',{class:'stage-picker-head'},[
   bindOwnerInterfaceText(h('strong',{}),'equipment','pickerChoosePrefix',
-   'Выбор: ','Choose: ','text',gearSlotName(selectedSlot)),
+   'Выбор:','Choose:','text',' '+gearSlotName(selectedSlot)),
   bindOwnerInterfaceText(h('button',{type:'button',
    disabled:!record,onclick:()=>{stageSlotView='details';renderStagePicker()}}),
    'equipment','pickerDetails','Свойства →','Details →'),
@@ -1826,7 +1826,7 @@ function renderStagePicker(focusSearch=false){
  bindOwnerInterfaceText(search,'equipment','pickerSearchPlaceholder',
   'Поиск по названию','Search by name','placeholder');
  bindOwnerInterfaceText(search,'equipment','pickerSearchAria',
-  'Поиск предмета для ','Search equipment for ','aria-label',gearSlotName(selectedSlot));
+  'Поиск предмета для','Search equipment for','aria-label',' '+gearSlotName(selectedSlot));
  const count=h('small',{class:'stage-picker-count'});
  const list=h('div',{class:'stage-picker-list',role:'list'});
  const more=h('button',{type:'button',class:'stage-picker-more'});
@@ -1930,11 +1930,11 @@ function renderStagePicker(focusSearch=false){
  if(outfitNote)root.append(outfitNote);
  root.append(search);
  if(adminEditing&&adminToken)root.append(ownerInterfaceEditor('equipment',[
-  ['pickerChoosePrefix','Выбор: ','Choose: ','Заголовок слота','Slot heading'],
+  ['pickerChoosePrefix','Выбор:','Choose:','Заголовок слота','Slot heading'],
   ['pickerDetails','Свойства →','Details →','Переход к свойствам','Open properties'],
   ['pickerClose','Закрыть выбор','Close item picker','Закрытие','Close picker'],
   ['pickerSearchPlaceholder','Поиск по названию','Search by name','Поле поиска','Search placeholder'],
-  ['pickerSearchAria','Поиск предмета для ','Search equipment for ','Название поиска','Search accessible name'],
+  ['pickerSearchAria','Поиск предмета для','Search equipment for','Название поиска','Search accessible name'],
   ['pickerUnequip','Снять предмет','Unequip item','Снять предмет','Unequip action'],
   ['pickerOutfitNote','Платье занимает броню и штаны. Выбор штанов снимет его.',
    'Armor and pants are occupied by one outfit. Choosing pants removes it.',
