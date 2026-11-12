@@ -2607,7 +2607,9 @@ function priestCastPreviews({spi,blessing,hymn,skills=null}={}){
   const effects=(source?.funcs||[]).filter(f=>f?.dir==='TARGET'&&f.ep===ep);
   return source?.id===id&&effects.length===1&&
    Array.isArray(effects[0].fv1)&&effects[0].fv1.length===4&&
-   effects[0].fv1.every((v,i)=>v===values[i]);
+   effects[0].fv1.every((v,i)=>v===values[i])&&
+   Array.isArray(effects[0].fv2)&&effects[0].fv2.length===4&&
+   effects[0].fv2.every(v=>v===0);
  };
  if(exact(320007001,'EP_ATTACKINTERVAL_SCALE',[10,0,5,5]))
   result.gratia=5+Math.floor(spi*10/100)+Math.floor(blessing*5/100);
@@ -2975,16 +2977,9 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  // Current OS spell-effect records carry a new constant term relative to
  // historic Remaked. Keep its floor-by-stat structure, but use the OS source
  // parameters instead of hardcoding the historical +5 or +0 offsets.
- const priestSongValue=(id,ep)=>{
-  if(!priestValid)return 0;
-  const record=combatContext.skillCatalog?.[String(id)];
-  const effect=record?.funcs?.find(row=>row.ep===ep&&row.dir==='TARGET');
-  const coeff=effect?.fv1;
-  if(!Array.isArray(coeff)||coeff.length!==4||!coeff.every(Number.isFinite)||
-   coeff[0]<0||coeff[2]<0||coeff[3]<0)return 0;
-  return coeff[3]+Math.floor(priest.spi*coeff[0]/100)+
-   Math.floor(priest.hymn*coeff[2]/100);
- };
+ // Active songs must use the SAME current-OS-source-gated values as the
+ // priest skill rows; a syntactically valid but different effect vector must
+ // not become an unintended attack-speed, accuracy or magic-damage bonus.
  const chosenPriestSong=new Set(Array.isArray(attributeBuffs?.remakedSkillIds)?
   attributeBuffs.remakedSkillIds:[]);
  // The two current OS coefficients extend the original Remaked step formula:
@@ -2997,7 +2992,9 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   const matches=(record?.funcs||[]).filter(x=>x?.ep===ep&&x.dir==='TARGET');
   return matches.length===1&&Array.isArray(matches[0].fv1)&&
    matches[0].fv1.length===expected.length&&
-   matches[0].fv1.every((v,i)=>v===expected[i]);
+   matches[0].fv1.every((v,i)=>v===expected[i])&&
+   Array.isArray(matches[0].fv2)&&matches[0].fv2.length===4&&
+   matches[0].fv2.every(v=>v===0);
  };
  // Remaked SkillView uses floor steps from caster stats/mastery. Modern OS
  // changes Gratia to [10,0,5,5]; the historical nested 6%*1.9 shortcut
@@ -3056,13 +3053,16 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  const priestEffects=priestActive?{
   gratia:attributeBuffs?.priestGratia===true&&Number.isFinite(gratiaPreview)?
    gratiaPreview:0,
-  lapisMedio:priestValid&&priest.blessing>=12&&attributeBuffs?.priestLapisMedio===true?
-   legacyBuffs.lapisMedio.value:0,
-  minstrel:priestValid&&priest.hymn>=8&&chosenPriestSong.has(340001001)?
-   priestSongValue(340001003,'EP_TOHIT_CONST'):0,
+  lapisMedio:priestValid&&priest.blessing>=12&&
+   attributeBuffs?.priestLapisMedio===true&&
+   Number.isFinite(priestCast.lapisMedio)?
+   priestCast.lapisMedio:0,
+  minstrel:priestValid&&priest.hymn>=8&&
+   chosenPriestSong.has(340001001)&&
+   Number.isFinite(priestCast.minstrel)?priestCast.minstrel:0,
   sageElementDamage:priestValid&&priest.hymn>=30&&priest.blessing>=71&&
-   chosenPriestSong.has(340004001)?
-   priestSongValue(340004003,'EP_ELEMENT_DAMAGE_SCALE'):0
+   chosenPriestSong.has(340004001)&&
+   Number.isFinite(priestCast.sage)?priestCast.sage:0
  }:{};
  // Gem-type selection determines which weapon enhancement table is active.
  // A saved older build without a chosen gem preserves the legacy physical

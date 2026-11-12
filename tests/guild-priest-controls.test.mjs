@@ -73,7 +73,8 @@ test('external priest buffs require correct Blessing mastery and valid numbers',
  assert.match(engine,/priestValid&&priest\.blessing>=8&&/);
  assert.match(engine,/priestSourceMatches\(320007001,'EP_ATTACKINTERVAL_SCALE',\[10,0,5,5\]\)/);
  assert.match(engine,/attributeBuffs\?\.priestGratia===true&&Number\.isFinite\(gratiaPreview\)/);
- assert.match(engine,/priestValid&&priest\.blessing>=12&&attributeBuffs\?\.priestLapisMedio/);
+ assert.match(engine,/priestValid&&priest\.blessing>=12&&\s*attributeBuffs\?\.priestLapisMedio/);
+ assert.match(engine,/Number\.isFinite\(priestCast\.lapisMedio\)/);
  assert.match(engine,/Number\.isSafeInteger\(n\)&&n>=0&&n<=500/);
  assert.match(book,/\[320007001,'priestGratia',8\]/);
  assert.match(book,/\[320008001,'priestLapisMedio',12\]/);

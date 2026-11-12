@@ -1,4 +1,4 @@
 {
-  "release": "2026.11.12.689",
-  "notes": "Source-gated priest aura enchantment, Peaceful Hymn, Dark Aura, Poison and attack-skill models with caster controls"
+  "release": "2026.11.12.690",
+  "notes": "Active priest defense and song bonuses use identical current OS source-gated preview vectors"
 }

@@ -25,3 +25,7 @@ The Priest section stays expanded; each caster-dependent skill has an inline SPI
 Source-validated aura enhancement only applies if explicitly selected and only to existing elemental weapon auras; it does not change physical attack or HP, does not inject an aura on an unequipped weapon and is `verified:false`.
 
 Unresolved: effect stage ordering, elemental mitigation, aura proc trigger, poison duration, direct hit damage packets, server-specific tier mapping.
+
+## 0.690.0 — active priest source parity (13 Nov 2026 release sequence)
+
+Active Lapis, Minstrel and Sage effects now consume the **same current-OS-source-validated previews** as the Hero Book skill rows; previously an archived Remaked Lapis fallback could apply even after the source vector changed, and songs could apply generic FV1 without validating the complete known current chain. Every supported priest magnitude now requires the checked-in OS FV1 **and zero FV2**; an unsupported secondary coefficient falls back to unknown/off, not an invented applied bonus. The existing on/off and Blessing/Hymn gates are retained. The Holy/Enhancement modeled aura continues only on explicit selections, without D1 mutations.
