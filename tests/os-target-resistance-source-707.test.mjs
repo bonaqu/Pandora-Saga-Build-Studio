@@ -84,7 +84,9 @@ test('300 synthetic selected spell combinations never double count target modifi
   const selected=[chosen,chosen,more,...divine?[330004001,330004001]:[]];
   const out=C.resistanceSkillPreview({skillCatalog:skills,selected});
   const expected={};
-  for(const skill of [divine?choices()[0]:null,choices().find(x=>x.id===chosen)].filter(Boolean))
+  const selectedElement=choices().find(x=>x.incoming&&selected.includes(x.id));
+  assert.ok(selectedElement,'the lowest canonical selected OS ID wins in old multi-selection saves');
+  for(const skill of [divine?choices()[0]:null,selectedElement].filter(Boolean))
    for(const [key,value] of Object.entries(skill.effects))
     expected[key]=(expected[key]||0)+value;
   assert.deepEqual(out.bonuses,expected,'selection '+i);
