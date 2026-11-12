@@ -26,7 +26,7 @@ Sources: [historical status guide](https://wikiwiki.jp/pandoras/%E7%8A%B6%E6%85%
 
 | Source | What the current planner calculates | Scope of proof |
 | --- | --- | --- |
-| [Remaked legacy Calc RESPDebuff/RESMDebuff](https://github.com/bonaqu/Pandora-Saga-Simulator-remaked/blob/master/js/calc.js) | `floor(VIT/28)*7` for body; `floor(SPI/28)*7` for mind | Confirmed **legacy code arithmetic**; not independent proof of 2026 OS combat rolls |
+| [Remaked legacy Calc RESPDebuff/RESMDebuff](https://github.com/bonaqu/Pandora-Saga-Simulator-remaked/blob/bonaqu_projects/js/calc.js) | `floor(VIT/28)*7` for body; `floor(SPI/28)*7` for mind | Confirmed **legacy code arithmetic**; not independent proof of 2026 OS combat rolls |
 | Current OS structured item and Soul `EP_IMMUNE_*` + `EP_BLOCK_BREAK_RESIST` | Twelve separate bonuses, item refinement min/max gates, other equipment passives | Confirmed source-effect handling in Build Studio; does not guarantee actual status success chance |
 | Current OS `EP_IMMUNE_VIT_TYPE` and `EP_IMMUNE_SPI_TYPE` | Separate grouped body/mind item bonuses | **Not** automatically added to each individual status |
 | OS racial/honor/warding inputs | Documented source-backed dwarf/human passives, chosen honor and strict Warding 26 TARGET effect vector | No double counting of extra CASTER effect; other active/conditional mechanics remain excluded |
