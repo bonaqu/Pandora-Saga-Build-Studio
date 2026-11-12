@@ -400,6 +400,13 @@ async function main(){
  await skillItems.locator('summary').click();
  const skillHint=skillItems.locator('[data-triggered-skill-id]').first();
  assert.ok(await skillHint.count()>0,'Each triggered skill has a dedicated hover target');
+ const itemOpener=skillItems.locator('button.stage-potion-source').first();
+ assert.ok(await itemOpener.count()>0,'Item navigation must remain a separate button');
+ assert.equal(await skillHint.evaluate(node=>node.closest('button')===null),true,
+  'Skill tooltip target must not be nested inside the item navigation button');
+ await skillHint.click();
+ assert.equal(await skillItems.count(),1,
+  'Clicking a skill reference must not navigate to the consumable item');
  await skillHint.hover();
  const richPotionSkill=page.locator('#path-skill-hover-tooltip');
  await richPotionSkill.waitFor({state:'visible',timeout:5000});

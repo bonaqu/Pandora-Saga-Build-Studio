@@ -1917,14 +1917,19 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
    for(const entry of consumableSkills){
     const item=itemById(entry.id);
     const displayName=item?.name||entry.name;
-    const row=make(item?'button':'div',{class:'stage-potion-item',
+    // Navigation and skill previews must be independent keyboard targets.
+    const row=make('div',{class:'stage-potion-item'});
+    const itemLink=make(item?'button':'span',{
+     class:'stage-potion-source',
      ...(item?{type:'button','aria-label':(english?'Open item: ':
-      'Открыть предмет: ')+displayName,onclick:()=>onItem(entry.id)}:{})});
+      'Открыть предмет: ')+displayName,onclick:()=>onItem(entry.id)}:{})
+    });
     if(item){
      const src=icon(item);
      if(src){const picture=make('img',{src,alt:'',loading:'lazy'});
-      picture.onerror=()=>picture.remove();row.append(picture);}
+      picture.onerror=()=>picture.remove();itemLink.append(picture);}
     }
+    itemLink.append(make('span',{class:'stage-potion-name',text:displayName}));
     // Each activated skill has its own OS source tooltip. A single
     // concatenated string cannot reveal individual descriptions on hover.
     const skillNames=make('strong',{class:'stage-consumable-skill-names'});
@@ -1944,7 +1949,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
        {hoverDelay:450});
      skillNames.append(badge);
     }
-    row.append(make('span',{class:'stage-potion-name',text:displayName}),skillNames);
+    row.append(itemLink,skillNames);
     section.append(row);
    }
    body.append(section);
