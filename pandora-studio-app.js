@@ -1383,6 +1383,12 @@ function closeStageGearMenu(restoreFocus=false){
 }
 function openStageEquipmentSlot(index,view='auto'){
  closeStageGearMenu();
+ // A slot picker is a NEW portrait-screen flow, never a child of the Book.
+ // Closing the picker must return to the hero portrait, not reopen the Book.
+ if(stageAttributesPage){
+  stageAttributesPage=null;
+  window.PandoraStageAttributes?.resetDisclosureState?.();
+ }
  const visual=window.PandoraUIPlanner.visualEquipment(state.equipment,index,catalog.equipment);
  const shared=Boolean(visual.shared);
  selectedSlot=shared&&(view==='properties'||view==='souls')?visual.sourceSlot:index;
@@ -1756,7 +1762,9 @@ function renderStageAttributes(calculated=undefined){
   onBuff:(key,value)=>setAttributeBuff(key,value),
   onVital:(key,value)=>setVitalsEnhancement(key,value),
   onClose:()=>{
-   stageAttributesPage=null;renderStageAttributes();saveView();
+   stageAttributesPage=null;
+   window.PandoraStageAttributes?.resetDisclosureState?.();
+   renderStageAttributes();saveView();
    $('portraitBookOpen')?.focus({preventScroll:true});
   },
   onPage:name=>{

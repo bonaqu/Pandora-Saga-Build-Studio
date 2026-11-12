@@ -54,6 +54,12 @@ export async function runRemakedBuffParity669Smoke(browser,base){
    .filter({hasText:'Личные умения'});
   assert.equal(await party.count(),1);
   assert.equal(await personal.count(),1);
+  assert.equal(await party.getAttribute('open'),null,
+   'Party buffs start collapsed');
+  assert.equal(await personal.getAttribute('open'),null,
+   'Personal buffs start collapsed');
+  await party.locator('summary').click();
+  await personal.locator('summary').click();
   const groupBuff=party.locator('[data-book-setting="legacySkill:100055001"]');
   const blessing=party.locator('[data-book-setting="legacySkill:330004001"]');
   const coldBlood=personal.locator('[data-book-setting="legacySkill:142051001"]');

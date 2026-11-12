@@ -17,14 +17,15 @@ test('legacy and current OS priest magnitudes disagree; only OS values reach the
  assert.deepEqual([current.gratia,current.lapisMedio,current.encouragement,
   current.groupBarrier,current.holyWeapon,current.minstrel,current.sage],
   [22,12,9,-28,10,24,16]);
- const section=book.slice(book.indexOf('if(modifiers?.priestCast&&buffs.priestEnabled===true)'),
+ const section=book.slice(book.indexOf('function buffsPage('),
   book.indexOf('// Use the same exact OS icon resolution'));
- assert.ok(section.includes('const value=priestValues[id]'));
+ assert.ok(section.includes('const priestValues=modifiers?.priestCast||{}'));
  assert.ok(!section.includes('modifiers.legacyBuffs[id]'));
- assert.ok(section.includes("'data-priest-preview':id"));
- assert.ok(section.includes("!verified?'—'"));
- assert.ok(section.includes("'СИЛ +'"));
- assert.ok(section.includes("'Точность +'"));
+ assert.ok(section.includes('const amount=priestValues?.[benefit]'));
+ assert.ok(section.includes('row.id===330051001?priestValues.holyWeapon'));
+ assert.ok(section.includes('row.id===320003001?priestValues.groupBarrier'));
+ assert.ok(section.includes('row.id===340001001?priestValues.minstrel'));
+ assert.ok(!section.includes('stage-legacy-buff-grid'));
  assert.ok(!section.includes("['toxify'"));
  assert.ok(!section.includes("['toxicAura'"));
 });

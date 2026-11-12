@@ -40,7 +40,7 @@ test('riding setting and riding-stat percentage are co-located, never duplicated
 });
 
 test('preview-only Remaked buffs explain missing numbers without claiming they affect results',()=>{
- const start=book.indexOf('for(const row of remakedBuffRows)');
+ const start=book.indexOf('for(const row of [...remakedBuffRows,...additionalPriestRows])');
  assert.ok(start>=0);
  const tail=book.slice(start,start+2400);
  assert.match(tail,/row\.description/);

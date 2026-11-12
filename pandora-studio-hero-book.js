@@ -9,9 +9,9 @@ const bookEnglish=Object.freeze({
  'Зелья и умения': "Potions & skills",
  'Эффекты': "Effects",
  'Усиления': "Buffs",
- 'Одновременно действует только одно умение. Выбор нового заменяет предыдущее. Умения можно применять к союзникам и врагам.': 'Only one resistance spell can be active. Selecting a new one replaces the previous one. These spells may target allies or enemies.',
  'Эффекты умений': 'Skill effects',
  'Эффекты зелий': 'Potion effects',
+ 'Одновременно действует только одно умение, выбор нового заменяет предыдущие.': 'Only one spell can be active at a time. Selecting another replaces the previous one.',
  'Параметры появятся после загрузки игровых данных.': "Stats appear when game data has loaded.",
  'Результаты расчёта': "Calculated results",
  'Выберите раздел, чтобы посмотреть подробности.': "Select a chapter for details.",
@@ -277,13 +277,18 @@ const bookLineFragmentEntries=Object.entries(bookLineFragments);
 // caption. This does not depend on array positions or future dictionary edits.
 function bookEditorialKey(ru){
  if(!Object.hasOwn(bookEnglish,ru))return null;
- const slug=bookEnglish[ru].toLowerCase().normalize('NFKD')
+ // The short exclusive-resistance copy retains its previous D1 editorial
+ // identity so existing RU/EN owner edits are neither lost nor orphaned.
+ const resistanceNote=ru==='Одновременно действует только одно умение, выбор нового заменяет предыдущие.';
+ const slugSource=resistanceNote?'Only one resistance spell can be active. Selecting a new one replaces the previous one. These spells may target allies or enemies.':bookEnglish[ru];
+ const slug=slugSource.toLowerCase().normalize('NFKD')
   .replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,43)||'caption';
  // Preserve the existing D1 owner key across the corrected Cverg label.
  // A canonical game-term fix must never orphan an administrator's edits.
  const stableSource=ru==='Расовая стойкость цверга'?'Расовая стойкость дворфа':ru;
+ const hashSource=resistanceNote?'Одновременно действует только одно умение. Выбор нового заменяет предыдущее. Умения можно применять к союзникам и врагам.':stableSource;
  let hash=2166136261;
- for(const letter of stableSource){hash=Math.imul(hash^letter.codePointAt(0),16777619)>>>0}
+ for(const letter of hashSource){hash=Math.imul(hash^letter.codePointAt(0),16777619)>>>0}
  return 'book-'+slug+'-'+hash.toString(16).padStart(8,'0');
 }
 function bookText(value){
@@ -390,11 +395,28 @@ const bookPages=Object.freeze([
  ['summary','Результаты расчёта'],['attack','Атака'],['defense','Защита'],
  ['buffs','Усиления'],['effects','Эффекты умений'],['recovery','Эффекты зелий']
 ]);
-// Remember only the reader's collapsed groups while the Book is mounted.
-// All four groups are expanded on first visit; this state is UI-only.
+// Default visibility is chapter-specific. User changes stay in memory while
+// reading this Book, but a fresh Book session starts from these defaults.
 const collapsedSummaryGroups=new Set();
 const collapsedBookGroups=new Set();
+const expandedBookGroups=new Set();
 const expandedBookDetails=new Set();
+function bookSectionStartsOpen(page,node){
+ // Attack preserves the prior behavior: generated SECTION groups start open,
+ // but original details (weapon/proc panels) retain their own open state.
+ if(page==='attack')return node?.tagName!=='DETAILS'||node.open===true;
+ if(page==='defense')return node?.dataset?.chapterGroup==='recovery';
+ if(page==='buffs')return node?.dataset?.bookSection==='priest';
+ if(page==='effects')return node?.classList?.contains('stage-healing-spells')&&
+  !node.classList.contains('stage-attacking-skills')&&
+  !node.classList.contains('stage-defensive-skills');
+ // Potion Effects, guild, honor, elemental resistances and all others closed.
+ return false;
+}
+function resetDisclosureState(){
+ collapsedSummaryGroups.clear();collapsedBookGroups.clear();
+ expandedBookGroups.clear();expandedBookDetails.clear();
+}
 // Keep the source-backed Hero Book results in one ordered matrix.
 // A missing calculator branch stays unknown (—), never a fabricated zero.
 function summaryRows(calc){
@@ -666,8 +688,11 @@ function buffsPage(body,options){
     key==='guildHealing'?(english?'HP/MP recovery speed':'скорость восстановления ОЗ/ОМ'):
     key==='guildAll'?(english?'all attributes':'все характеристики'):
      (english?'physical/magical attack':'физ./маг. атака');
-   return [rank,title+' · '+meaning+' '+
-    (key.includes('Reduction')?'−':'+')+rate+(key==='guildAll'?'':'%')];
+   // The full official title/meaning is in the visible sibling label and
+   // hover help; keep the selected option brief enough for a single row.
+   return [rank,roman[rank]+' · '+
+    (key.includes('Reduction')?'−':'+')+rate+
+    (key==='guildAll'?'':'%')];
   });
   select(parent,source.nameRu||key,source.sourceNameEn||key,key,levels,vital);
   const input=parent.querySelector?.('[data-book-setting="'+key+'"]');
@@ -684,6 +709,8 @@ function buffsPage(body,options){
  };
 
  const guild=section('Гильдия','Guild','guild');
+ if(guild.dataset)guild.dataset.bookSection='guild';
+ else guild.setAttribute?.('data-book-section','guild');
  select(guild,'Уровень гильдии','Guild level','guildLevel',
   Array.from({length:13},(_,i)=>[i,i===0?
    (english?'Manual guild buffs':'Ручной выбор усилений'):
@@ -713,8 +740,10 @@ function buffsPage(body,options){
   {key:'guildMp',i:2,id:600000011,rank:guildPreview?.guildMp||0,rate:guildRate[guildPreview?.guildMp]||0},
   {key:'guildLifeRecovery',i:3,id:600000021,rank:guildPreview?.guildLifeRecovery||0,rate:[0,5,8][guildPreview?.guildLifeRecovery]||0},
   {key:'guildManaRecovery',i:4,id:600000031,rank:guildPreview?.guildManaRecovery||0,rate:[0,5,8][guildPreview?.guildManaRecovery]||0},
-  {key:'physicalReduction',i:5,id:600000071,rank:(guildPreview?.physicalReduction||0)/3,rate:guildPreview?.physicalReduction||0},
-  {key:'magicReduction',i:6,id:600000081,rank:(guildPreview?.magicReduction||0)/3,rate:guildPreview?.magicReduction||0},
+  {key:'physicalReduction',i:5,id:600000071,
+   rank:[0,3,6,10].indexOf(guildPreview?.physicalReduction||0),rate:guildPreview?.physicalReduction||0},
+  {key:'magicReduction',i:6,id:600000081,
+   rank:[0,3,6,10].indexOf(guildPreview?.magicReduction||0),rate:guildPreview?.magicReduction||0},
   {key:'experience',i:7,id:600000061,rank:Math.max(0,(guildPreview?.experience||0)-1),rate:guildPreview?.experience||0}
  ];
  if(!guildLevel){
@@ -846,6 +875,8 @@ function buffsPage(body,options){
  const despairKnown=osVector(100058001,'EP_DAMAGERATE_SCALE',[0,0,35,40])&&
   osVector(100058001,'EP_ONDAMAGE_FIN_DAMAGE_SCALE',[0,0,0,100]);
  const priest=section('Усиления жреца','Priest buffs');
+ if(priest.dataset)priest.dataset.bookSection='priest';
+ else priest.setAttribute?.('data-book-section','priest');
  toggle(priest,english?'Use external priest':'Учитывать усиления другого жреца','priestEnabled');
  const priestFields=make('div',{class:'stage-priest-fields'});
  for(const [key,ru,en] of [
@@ -882,6 +913,10 @@ function buffsPage(body,options){
   [320007001,'priestGratia',8],
   [320008001,'priestLapisMedio',12]]){
   const row=remakedBuffRows.find(item=>item.id===id);
+  const canonical=gameTerms.skills?.[String(id)],
+   officialName=row?.name||canonical?.name||key,
+   officialEnglish=row?.nameEn||
+    gameTerms.englishSkills?.[String(id)]?.n||officialName;
   const benefit=id===320007001?'gratia':id===320008001?'lapisMedio':'encouragement';
   const amount=priestValues?.[benefit];
   const summary=Number.isFinite(amount)?(
@@ -892,9 +927,9 @@ function buffsPage(body,options){
    (id===320007001?(english?'Attack speed +':'Скорость атаки +'):
     (english?'Defense +':'Защита +'))+amount
   ):(english?'Exact amount not confirmed by OS':'Точное значение не подтверждено данными OS');
-  toggle(priest,row?.name||key,key,false,
+  toggle(priest,english?officialEnglish:officialName,key,false,
    buffs.priestEnabled===true&&Number(buffs.priestBlessing)>=required,
-   {id,name:row?.name||key,nameEn:row?.nameEn||key,
+   {id,name:officialName,nameEn:officialEnglish,
     icon:skillIconForId(id),desc:row?.description,
     descEn:gameTerms.englishSkills?.[String(id)]?.d||row?.description,
     externalPriest:true,
@@ -956,7 +991,21 @@ function buffsPage(body,options){
    'Прибавка атаки не подтверждена текущими данными OS.';
   return readableBuffEffects[id]?.[english?1:0]||'';
  };
- for(const row of remakedBuffRows){
+ // A direct Hero Book render may not receive the higher-level Remaked
+ // choices array (e.g. previews, editor tests). Recover the six external
+ // priest skills by their official OS IDs instead of silently omitting them.
+ const ownIds=new Set(remakedBuffRows.map(row=>row.id));
+ const additionalPriestRows=[
+  320003001,320011001,330051001,340001001,340003001,340004001
+ ].filter(id=>!ownIds.has(id)).map(id=>{
+  const source=gameTerms.skills?.[String(id)];
+  if(!source||source.id!==id||source.learnable!==true)return null;
+  return {id,name:source.name,
+   nameEn:gameTerms.englishSkills?.[String(id)]?.n||source.name,
+   description:source.desc||'',available:true,existing:false,counted:false,
+   scope:'party',reason:'',reasonEn:''};
+ }).filter(Boolean);
+ for(const row of [...remakedBuffRows,...additionalPriestRows]){
   if(row.existing||!row.name)continue;
   // Blessing- and Hymn-dependent spells are received from another priest.
   // A fixed party effect without caster-attribute scaling remains with allies.
@@ -996,13 +1045,17 @@ function buffsPage(body,options){
       const value=row.id===340001001?priestValues.minstrel:
        row.id===340004001?priestValues.sage:
        row.id===320003001?priestValues.groupBarrier:
-       row.id===330051001?priestValues.holyWeapon:null;
+       row.id===330051001?priestValues.holyWeapon:
+       row.id===430051001?priestValues.gloomyEffect:
+       row.id===340003001?priestValues.peaceful:null;
       if(Number.isFinite(value)){
        if(row.id===340001001)return (english?'Accuracy +':'Точность +')+value+
         (english?' · Evasion +':' · Уклонение +')+value;
        if(row.id===340004001)return (english?'Elemental damage +':'Стихийный урон +')+value+'%';
        if(row.id===320003001)return (english?'Incoming physical/magic damage ':'Получаемый физ./маг. урон ')+value+'%';
        if(row.id===330051001)return (english?'Holy weapon aura +':'Святая аура оружия +')+value;
+       if(row.id===430051001)return (english?'Dark weapon aura +':'Тёмная аура оружия +')+value;
+       if(row.id===340003001)return (english?'Protected-hit threshold ':'Порог защищённого удара ')+value;
       }
       if(row.id===340003001)return english?
        'Protection threshold depends on priest SPR/Hymn; exact figure not confirmed.':
@@ -1020,8 +1073,8 @@ function buffsPage(body,options){
   const group=section('Усиления сопротивлений стихиям',
    'Elemental resistance buffs','elemental');
   group.append(make('p',{class:'stage-attribute-note',text:english?
-   'Only one resistance spell can be active. Selecting a new one replaces the previous one. These spells may target allies or enemies.':
-   'Одновременно действует только одно умение. Выбор нового заменяет предыдущее. Умения можно применять к союзникам и врагам.'}));
+   'Only one spell can be active at a time. Selecting another replaces the previous one.':
+   'Одновременно действует только одно умение, выбор нового заменяет предыдущие.'}));
   const ru={fire:'Огонь',ice:'Лёд',lightning:'Молния',poison:'Яд',
    charm:'Чары',light:'Свет',dark:'Тьма',magic:'Магия'};
   const en={fire:'Fire',ice:'Ice',lightning:'Lightning',poison:'Poison',
@@ -1040,70 +1093,6 @@ function buffsPage(body,options){
   }
  }
 
- if(modifiers?.priestCast&&buffs.priestEnabled===true){
-  const details=make('details',{class:'stage-legacy-buff-previews'});
-  details.append(make('summary',{text:english?
-   'Support skill potency':'Мощность поддерживающих навыков'}));
-  // NEVER show legacy Remaked preview amounts as if they were current OS.
-  // Actual numerical values must pass priestCastPreviews' OS source checks;
-  // absent/changed source data means unknown, not a guessed fallback.
-  const entries=[
-   ['gratia','Знак атаки','Скорость атаки','+'],
-   ['lapisMedio','Знак защиты','Защита','+'],
-   ['encouragement','Ободрение','СИЛ, ПРВ, ИНТ','+','Battle Prayer'],
-   ['groupBarrier','Божественная защита','Получаемый физ./маг. урон',''],
-   ['holyWeapon','Священное оружие','Святая аура оружия','+'],
-   ['gloomyEffect','Темная аура','Урон тьмой','+'],
-   ['enchantEnhance','Чары усиления (магическая атака)','Магическая атака','+'],
-   ['enchantMagic','Чары усиления (аура)','Аура оружия','+'],
-   ['minstrel','Песнь поэта','Точность и уклонение','+'],
-   ['sage','Песнь чар','Стихийный урон','+']
-  ];
-  const gameIds={
-   gratia:320007001,lapisMedio:320008001,encouragement:320012001,
-   groupBarrier:320003001,holyWeapon:330051001,gloomyEffect:430051001,
-   enchantEnhance:320011001,enchantMagic:320011001,
-   minstrel:340001001,sage:340004001
-  };
-  const rows=make('div',{class:'stage-legacy-buff-grid'});
-  for(const [id,label,kind,prefix,labelEn] of entries){
-   const value=priestValues[id];
-   const verified=Number.isFinite(value);
-   const gameId=gameIds[id];
-   const defaultEn=labelEn||bookEnglish[label]||label;
-   const canonical=gameSkillName(gameId,label,defaultEn,gameTerms,english);
-   const title=id==='enchantEnhance'?canonical+(english?' · magic attack':' · магическая атака'):
-    id==='enchantMagic'?canonical+(english?' · aura':' · аура'):canonical;
-   const skillTitle=make('span',{text:title});
-   root.PandoraSkillPreview?.attach(skillTitle,gameId);
-   const kindLabel=english?(kind==='СИЛ, ПРВ, ИНТ'?'STR, AGI, INT':
-    bookEnglish[kind]||kind):kind;
-   const unit=id==='sage'||id==='groupBarrier'?'%':'';
-   const amount=!verified?'—':id==='encouragement'?
-    (english?'STR +':'СИЛ +')+value+' · '+
-    (english?'AGI +':'ПРВ +')+value+' · '+
-    (english?'INT +':'ИНТ +')+value:
-    id==='minstrel'?(english?'Accuracy +':'Точность +')+value+
-     (english?' · Evasion +':' · Уклонение +')+value:
-    prefix+value+unit;
-   const small=verified?kindLabel:
-    kindLabel+' · '+(english?'Current OS amount not verified':
-     'Точное значение не подтверждено данными OS');
-   const row=make('div',{class:'stage-legacy-buff-row',
-    'data-priest-preview':id},[
-    make('span',{class:'stage-legacy-buff-copy'},[
-     skillTitle,make('small',{text:small})
-    ]),
-    make('strong',{text:amount})
-   ]);
-   rows.append(row);
-  }
-  details.append(rows);
-  details.append(make('p',{class:'stage-legacy-buff-intro',text:english?
-   'Preview for the external priest with the entered SPR, Blessing and Hymn. Only current OS source-validated numbers are displayed; previewing does not activate buffs.':
-   'Предпросмотр усилений другого жреца с указанными СД, Благословением и Песнопениями. Показаны только проверенные по данным OS числа; просмотр не включает усиления.'}));
-  priest.append(details);
- }
 
 }
 
@@ -1648,7 +1637,8 @@ function collapseBookSections(body,page){
    'data-book-collapse':key});
   for(const attr of section.attributes)if(attr.name!=='class')
    disclosure.setAttribute(attr.name,attr.value);
-  disclosure.open=!collapsedBookGroups.has(key);
+  disclosure.open=expandedBookGroups.has(key)||
+   (!collapsedBookGroups.has(key)&&bookSectionStartsOpen(page,section));
   const title=make('summary',{class:'stage-result-section-head'});
   title.append(make('span',{class:'stage-result-symbol',
    'aria-hidden':'true',text:'✦'}));
@@ -1664,8 +1654,8 @@ function collapseBookSections(body,page){
   section.replaceWith(disclosure);
   disclosure.prepend(title);
   disclosure.addEventListener('toggle',()=>{
-   if(disclosure.open)collapsedBookGroups.delete(key);
-   else collapsedBookGroups.add(key);
+   if(disclosure.open){expandedBookGroups.add(key);collapsedBookGroups.delete(key)}
+   else {expandedBookGroups.delete(key);collapsedBookGroups.add(key)}
   });
  }
  // Pre-existing <details> chapters must have the exact same heading as
@@ -1681,7 +1671,8 @@ function collapseBookSections(body,page){
   detail.classList.add('stage-book-disclosure');
   detail.dataset.bookCollapse=key;
   detail.dataset.bookDetail='true';
-  detail.open=expandedBookDetails.has(key)||(!collapsedBookGroups.has(key)&&detail.open);
+  detail.open=expandedBookDetails.has(key)||
+   (!collapsedBookGroups.has(key)&&bookSectionStartsOpen(page,detail));
   const text=make('strong',{class:'stage-book-detail-title'});
   while(header.firstChild)text.append(header.firstChild);
   header.className='stage-result-section-head';
@@ -1755,8 +1746,10 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
    if(!key)continue;
    if(group.open){collapsedBookGroups.delete(key);
     if(group.dataset.bookDetail==='true')expandedBookDetails.add(key);
+    else expandedBookGroups.add(key);
    }else {collapsedBookGroups.add(key);
     if(group.dataset.bookDetail==='true')expandedBookDetails.delete(key);
+    else expandedBookGroups.delete(key);
    }
   }
  const storedScroll=reusePanel?stablePanel.scrollTop:0;
@@ -2006,6 +1999,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
  }else target.append(body);
 }
 root.PandoraStageAttributes=Object.freeze({render,bookPages,bookText,bookEditorialKey,
- bookEditorialDefaults:bookEnglish,summaryRows,attackChapterGroups,defenseChapterGroups,
+ bookEditorialDefaults:bookEnglish,resetDisclosureState,
+ summaryRows,attackChapterGroups,defenseChapterGroups,
  gameSkillName,gameBranchName,gameClassName});
 })(typeof window==='undefined'?globalThis:window);

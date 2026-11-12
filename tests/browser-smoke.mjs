@@ -336,9 +336,14 @@ async function main(){
  const healing=page.locator('#stageBookPanel .stage-healing-spells:not(.stage-attacking-skills):not(.stage-defensive-skills)');
  const defensive=page.locator('#stageBookPanel .stage-defensive-skills');
  assert.equal(await defensive.count(),1,'Variable defensive-skill chapter must be present');
+ assert.equal(await defensive.getAttribute('open'),null,
+  'Defense skill effects start collapsed; Healing is the only open effect group');
+ await defensive.locator('summary').click();
  assert.match(await defensive.innerText(),/Помощь ветра/);
  assert.doesNotMatch(await defensive.innerText(),/Быстрый отход|Ускользание/,
   'Fixed-value skills must stay out of the Skill Effects preview');
+ assert.equal(await offense.getAttribute('open'),null,'Offensive skills start collapsed');
+ await offense.locator('summary').click();
  assert.match(await offense.innerText(),/Боевой клич|Массовая сосредоточенность/);
  assert.equal(await page.locator('#stageBookPanel input[type="checkbox"]').count(),0,
   'Read-only Skill Effects must never activate a defensive skill');
@@ -373,6 +378,9 @@ async function main(){
   assert.match(recovery,/Ориентировочное действие навыка/);
   await page.locator('#stageAttributes [data-book-page="recovery"]').click();
  await page.locator('#stageAttributes .stage-mana-consumables').waitFor({state:'visible',timeout:20000});
+ assert.equal(await page.locator('#stageAttributes .stage-mana-consumables').getAttribute('open'),null,
+  'All Potion Effects start collapsed');
+ await page.locator('#stageAttributes .stage-mana-consumables summary').click();
  assert.match(await page.locator('#stageAttributes .stage-mana-consumables').innerText(),/Легкое восстанавливающее зелье/);
  assert.match(await page.locator('#stageAttributes .stage-mana-consumables').innerText(),/ОМ/);
  const hpOnly=page.locator('#stageAttributes .stage-health-consumables');
@@ -475,6 +483,10 @@ async function main(){
  assert.equal(await page.locator('#stageBookPanel .stage-honor-term').innerText(),'passive skill');
  assert.equal(await page.locator('#stageBookPanel .stage-book-honor-link').count(),0);
  assert.equal((await page.locator('#stageBookPanel').innerText()).includes('129,000'),false);
+ const guildDisclosure=page.locator('#stageBookPanel [data-book-section="guild"]');
+ assert.equal(await guildDisclosure.getAttribute('open'),null,
+  'Guild starts closed when opening the Buffs chapter');
+ await guildDisclosure.locator('summary').click();
  const oldScroll=await page.locator('#stageBookPanel').evaluate(panel=>{
   window.__psBookStablePanel=panel;panel.scrollTop=90;return panel.scrollTop;
  });
@@ -527,25 +539,18 @@ async function main(){
  assert.equal(await page.locator('#stageBookPanel [data-book-setting="priestSpi"]').inputValue(),'134');
  assert.equal(await page.locator('#stageBookPanel [data-book-setting="priestBlessing"]').inputValue(),'90');
  assert.equal(await page.locator('#stageBookPanel [data-book-setting="priestHymn"]').inputValue(),'30');
- assert.ok(await page.locator('#stageBookPanel .stage-legacy-buff-previews').count()>=1);
- const priestPanel=page.locator('#stageBookPanel .stage-legacy-buff-previews').first();
- await priestPanel.locator('summary').click();
- const value=async key=>(await priestPanel.locator('[data-priest-preview="'+key+'"] strong').innerText()).trim();
- assert.equal(await value('gratia'),'+22','Current OS Gratia must replace obsolete Remaked +20');
- assert.equal(await value('lapisMedio'),'+12');
- const priestEnglish=(await page.locator('html').getAttribute('lang'))==='en';
- assert.equal(await value('encouragement'),priestEnglish?
-  'STR +9 · AGI +9 · INT +9':'СИЛ +9 · ПРВ +9 · ИНТ +9');
- assert.equal(await value('groupBarrier'),'-28%');
- assert.equal(await value('holyWeapon'),'+10');
- assert.equal(await value('minstrel'),priestEnglish?
-  'Accuracy +24 · Evasion +24':'Точность +24 · Уклонение +24');
- assert.equal(await value('sage'),'+16%');
- assert.equal(await value('enchantEnhance'),'—',
-  'Unverified current OS enchantment must not display a historical numeric guess');
- assert.equal(await priestPanel.locator('[data-priest-preview="toxify"]').count(),0,
-  'Alchemy self-skills do not belong to external priest previews');
-
+ // The priest magnitude now belongs under each actual skill name;
+ // the historical duplicate potency accordion must not come back.
+ assert.equal(await page.locator('#stageBookPanel .stage-legacy-buff-previews').count(),0);
+ const priestSkillLine=async key=>page.locator(
+  '#stageBookPanel [data-book-setting="'+key+'"]')
+  .locator('xpath=ancestor::*[contains(@class,"stage-combat-buff")][1]')
+  .innerText();
+ assert.match(await priestSkillLine('priestGratia'),/Attack speed \+22|Скорость атаки \+22/);
+ assert.match(await priestSkillLine('priestLapisMedio'),/Defense \+12|Защита \+12/);
+ // The same priest edits remain available inline beside caster-scaled skills.
+ assert.ok(await page.locator('#stageBookPanel .stage-ally-skill-row').count()===0,
+  '0.688.0 does not add speculative independent-caster fields');
  const elementalGroup=page.locator('#stageBookPanel .stage-book-buff-group').filter({
   has:page.locator('[data-guide-key="buffs.section.elemental"]')});
  assert.equal(await elementalGroup.count(),1,
@@ -553,6 +558,9 @@ async function main(){
  assert.equal(await elementalGroup.locator('summary.stage-result-section-head').count(),1,
   'Use the same disclosure geometry as the other Buffs sections');
  assert.equal(await elementalGroup.locator('input[data-book-setting^="resistSkill:"]').count(),5);
+ assert.equal(await elementalGroup.getAttribute('open'),null,
+  'Elemental resistance starts collapsed');
+ await elementalGroup.locator('summary').click();
  const fire=elementalGroup.locator('[data-book-setting="resistSkill:410003001"]');
  const ice=elementalGroup.locator('[data-book-setting="resistSkill:410015001"]');
  await fire.check();

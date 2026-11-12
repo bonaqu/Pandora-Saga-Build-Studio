@@ -1,5 +1,12 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.688.0 — 2026.11.12.688 · Hero Book default disclosures, inline priest potency, compact guild rows, and equipment portrait return
+
+- Hero Book default disclosures, inline priest potency, compact guild rows, and equipment portrait return. Defense recovery alone and Buffs priest + Skill Effects healing open by default; Attack unchanged. Guild/elemental/honor and all potions initially collapsed. Priest potency is displayed in native skill rows, not duplicate secondary grid.
+- Slot navigation exits Hero Book to portrait, panels have consistent scroll-aware widths. Current combat formulas and D1 are not changed.
+- Full Node+Chromium PR validation and post-merge Pages/Worker read-only readiness required.
+
+
 ## 0.687.0 — 2026.11.12.687 · Deterministic current OS formula-coverage census of all skills and effect families
 
 - Deterministic current OS formula-coverage census of all skills and effect families; fully read-only and explicitly not a live server formula guarantee.

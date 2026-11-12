@@ -96,7 +96,25 @@ export async function runHeroBookGameNames664Smoke(browser,base){
    assert.ok(ru.includes(name),'Hero Book must use exact current OS skill name '+name);
   assert.ok(!ru.includes('Невероятная сила'),
    'Passive on-hit skills must not occupy the castable Skill Effects inspector');
+  // The current Book's 340001001 song magnitude is grouped with the
+  // offensive skill inspector, not the unused historical song subchapter.
+  // Healing alone starts expanded, so open Offensive for its lazy icon.
+  const offense=page.locator('#book-source-qa .stage-attacking-skills');
+  assert.equal(await offense.getAttribute('open'),null,
+   'Skill Effects start with offensive previews collapsed');
+  await offense.locator('summary').click();
   const required=[310001001,310004001,310021001,310022001,310023001,340001001];
+  // The new collapsed subchapters use lazy-loaded artwork; force each source
+  // icon into the scrollport before checking that the original sprite loaded.
+  for(const id of required){
+   const img=page.locator('#book-source-qa .stage-effect-skill-label img[src$="skill_'+id+'.webp"]').first();
+   await img.scrollIntoViewIfNeeded({timeout:12000});
+  }
+  // Explicitly expanding a chapter is an intentional user action; ask the
+  // browser to load its original art rather than waiting on offscreen lazy
+  // images after subsequent scroll restoration.
+  await page.locator('#book-source-qa .stage-effect-skill-label img')
+   .evaluateAll(images=>images.forEach(img=>{img.loading='eager';}));
   await page.waitForFunction(ids=>ids.every(id=>{
    const img=document.querySelector('#book-source-qa .stage-effect-skill-label img[src$="skill_'+id+'.webp"]');
    return img?.complete&&img.naturalWidth>0;
@@ -149,6 +167,18 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   assert.match(await triggered.innerText(),/Лечение/);
   await triggered.hover();
   const rich=page.locator('#path-skill-hover-tooltip');
+  // This Book is rebuilt several times in the same isolated scenario.
+  // If the delayed hover was interrupted by scroll/sprite layout, recover
+  // with a genuine pointer move inside the *same* linked skill.
+  if(!await triggered.evaluate(node=>node.matches(':hover')))
+   await triggered.hover();
+  await page.waitForTimeout(600);
+  if(!await rich.isVisible()){
+   const bounds=await triggered.boundingBox();
+   assert.ok(bounds&&bounds.width>=6,'Skill source hover target must be measurable');
+   await page.mouse.move(bounds.x+bounds.width/2-2,bounds.y+bounds.height/2);
+   await page.mouse.move(bounds.x+bounds.width/2+2,bounds.y+bounds.height/2);
+  }
   await rich.waitFor({state:'visible',timeout:5000});
   assert.match(await rich.locator('strong').first().innerText(),/Лечение/);
   assert.ok(await rich.locator('img').count()>0,
