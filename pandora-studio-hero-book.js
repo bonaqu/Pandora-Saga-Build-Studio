@@ -496,6 +496,10 @@ function gameBranchName(branch,terms={},english=false){
     ({benevolence:'Исцеление',hymn:'Песнопения',blessing:'Благословение'})[branch])||
    branch;
 }
+function gameClassName(id,ru,en,terms={},english=false){
+ return (english?terms.englishClasses?.[id]?.n:terms.classes?.[id]?.name)||
+  (english?en:ru);
+}
 function buffsPage(body,options){
  const {buffs={},vitalsBuffs={},onBuff=()=>{},onVital=()=>{},honorTitles=[],
   availability={},combatSkillCards={},resistanceSkillChoices=[],modifiers,gameTerms={}}=options;
@@ -713,7 +717,9 @@ function buffsPage(body,options){
     toxify:220001001,toxicAura:220001002
    }[id];
    const defaultEn=labelEn||bookEnglish[label]||label;
-   const title=gameSkillName(gameId,label,defaultEn,gameTerms,english);
+   const canonical=gameSkillName(gameId,label,defaultEn,gameTerms,english);
+   const title=id==='enchantEnhance'?canonical+(english?' · magic attack':' · магическая атака'):
+    id==='enchantMagic'?canonical+(english?' · aura':' · аура'):canonical;
    row.append(make('span',{class:'stage-legacy-buff-copy'},[
     make('span',{text:title}),
     make('small',{text:english?(kind==='СИЛ, ПРВ, ИНТ'?'STR, AGI, INT':
@@ -783,7 +789,10 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={}}={}){
      (en?'Preview · '+(row.requiresEn||row.requires||'Requirements not met'):
       'Предпросмотр · '+(row.id==='heal'?
        // The OS class ACOLYTE is «Адепт», not an automatic «Аколит».
-       'Адепт, уровень 18':row.requires||'Требования не выполнены'))})
+       gameClassName('ACOLYTE','Адепт','Acolyte',gameTerms,false)+', уровень 18':
+       row.id==='sanctuary'?
+       gameClassName('CLERIC','Клирик','Cleric',gameTerms,false)+', уровень 45':
+       row.requires||'Требования не выполнены'))})
    ]));
   }
   body.append(group);
@@ -1374,5 +1383,6 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
  }else target.append(body);
 }
 root.PandoraStageAttributes=Object.freeze({render,bookPages,bookText,bookEditorialKey,
- bookEditorialDefaults:bookEnglish,summaryRows,attackChapterGroups,defenseChapterGroups});
+ bookEditorialDefaults:bookEnglish,summaryRows,attackChapterGroups,defenseChapterGroups,
+ gameSkillName,gameBranchName,gameClassName});
 })(typeof window==='undefined'?globalThis:window);
