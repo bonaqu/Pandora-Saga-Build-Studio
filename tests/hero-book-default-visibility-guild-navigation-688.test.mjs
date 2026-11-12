@@ -61,5 +61,8 @@ test('short resistance sentence retains D1 editor key of previous longer copy',(
 
 test('resistance copy states exactly the exclusive-selection rule',()=>{
  assert.match(book,/Одновременно действует только одно умение, выбор нового заменяет предыдущие\./);
- assert.doesNotMatch(book,/Умения можно применять к союзникам и врагам/);
+ const renderedNote=book.slice(book.indexOf("const elementalSkills="),
+  book.indexOf("  const ru={fire:",book.indexOf("const elementalSkills=")));
+ assert.ok(renderedNote.includes('Одновременно действует только одно умение, выбор нового заменяет предыдущие.'));
+ assert.doesNotMatch(renderedNote,/Умения можно применять к союзникам и врагам/);
 });
