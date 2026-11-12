@@ -555,6 +555,23 @@ async function main(){
  assert.equal(await casterField.count(),1,
   'OS caster-dependent skill gets one inline caster stat editor');
  assert.ok(await page.locator('#stageBookPanel .stage-ally-skill-row').count()>=3);
+ const blessingInline=page.locator(
+  '#stageBookPanel [data-book-setting="caster-priestBlessing-320007001"]');
+ assert.equal(await blessingInline.count(),1,
+  'Gratia needs both caster SPR and Blessing fields in its own row');
+ assert.equal(await page.locator(
+  '#stageBookPanel [data-book-setting="caster-priestBlessing-320011001"]').count(),1,
+  'Enhance Enchantment has a separate inline Blessing input');
+ assert.equal(await page.locator(
+  '#stageBookPanel [data-book-setting="caster-priestHymn-340001001"]').count(),1,
+  'Minstrel Song has independent SPR and Hymn inputs');
+ await blessingInline.fill('100');
+ await blessingInline.press('Tab');
+ assert.equal(await page.locator(
+  '#stageBookPanel [data-book-setting="priestBlessing"]').inputValue(),'100');
+ assert.match(await priestSkillLine('priestGratia'),/Attack speed \+23|Скорость атаки \+23/);
+ await page.locator('#stageBookPanel [data-book-setting="priestBlessing"]').fill('90');
+ await page.locator('#stageBookPanel [data-book-setting="priestBlessing"]').press('Tab');
  await casterField.fill('140');
  await casterField.press('Tab');
  assert.equal(await page.locator('#stageBookPanel [data-book-setting="priestSpi"]').inputValue(),'140');

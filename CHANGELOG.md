@@ -1,5 +1,11 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.693.0 — 2026.11.12.693 · Dual caster coefficient inputs on priest skill rows: SPR plus Blessing or Hymn mastery
+
+- Dual caster coefficient inputs on priest skill rows: SPR plus Blessing or Hymn mastery. Both controls edit one shared caster profile with no new server formula assumption; responsive single-row UI and browser verification.
+- Full Node/Chromium PR acceptance and postmerge Pages/Worker/D1 read-only.
+
+
 ## 0.692.0 — 2026.11.12.692 · Source-validated scalable Cold Blood and Quick Avoidance models replace stale flat plus ten
 
 - Source-validated scalable Cold Blood and Quick Avoidance models replace stale flat plus ten; both model numbers are source validated but live combat parity remains unverified. Full CI + Pages/Worker readiness required.

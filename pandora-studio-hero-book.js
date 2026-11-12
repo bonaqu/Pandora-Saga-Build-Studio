@@ -655,22 +655,38 @@ function buffsPage(body,options){
   if(skill?.summary)
    info.append(make('small',{text:skill.summary}));
   node.append(info);
-  if(skill?.casterStatKey){
-   const field=make('label',{class:'stage-ally-caster-field'});
-   const statLabel=skill.casterStatKey==='priestBlessing'?
-    (english?'Blessing':'Благословение'):
-    skill.casterStatKey==='priestHymn'?
-     (english?'Hymn':'Песнопения'):(english?'SPR':'СД');
-   field.append(make('span',{text:statLabel}));
-   field.append(make('input',{type:'number',min:0,max:500,step:1,
-    'data-book-setting':'caster-'+skill.casterStatKey+'-'+skill.id,
-    'data-caster-source-key':skill.casterStatKey,
-    'aria-label':(english?'Ally caster ':'Характеристика союзника: ')+
-     statLabel+' · '+displayName,
-    value:String(buffs[skill.casterStatKey]??0),
-    disabled:buffs.priestEnabled!==true,
-    onchange:event=>onBuff(skill.casterStatKey,event.target.value)}));
-   parent.append(make('div',{class:'stage-ally-skill-row'},[node,field]));
+  // A few OS spells scale with BOTH caster SPR and branch mastery. Their
+  // two fields stay on the right of the SAME skill row, using one persisted
+  // priest profile. Never create another independent caster for a skill.
+  const statKeys=Array.isArray(skill?.casterStatKeys)&&
+   skill.casterStatKeys.length?
+   [...new Set(skill.casterStatKeys)]:
+   skill?.casterStatKey?[skill.casterStatKey]:[];
+  if(statKeys.length){
+   const fields=make('div',{class:'stage-ally-caster-fields'});
+   const shortName={
+    priestSpi:[english?'SPR':'СД',english?'Priest SPR':'СД жреца'],
+    priestBlessing:[english?'Bless.':'Бл.',english?'Blessing mastery':'Мастерство Благословения'],
+    priestHymn:[english?'Hymn':'Пес.',english?'Hymn mastery':'Мастерство Песнопения']
+   };
+   for(const key of statKeys){
+    if(!shortName[key])continue;
+    const [short,full]=shortName[key];
+    const field=make('label',{class:'stage-ally-caster-field'});
+    field.append(make('span',{text:short}));
+    field.append(make('input',{type:'number',min:0,max:500,step:1,
+     'data-book-setting':'caster-'+key+'-'+skill.id,
+     'data-caster-source-key':key,
+     'aria-label':(english?'Ally caster ':'Характеристика союзника: ')+
+      full+' · '+displayName,
+     value:String(buffs[key]??0),
+     disabled:buffs.priestEnabled!==true,
+     onchange:event=>onBuff(key,event.target.value)}));
+    fields.append(field);
+   }
+   if(fields.childNodes.length)
+    parent.append(make('div',{class:'stage-ally-skill-row'},[node,fields]));
+   else parent.append(node);
   }else parent.append(node);
  };
  const opts=(units)=>units.map((n,i)=>[i,i===0?bookText('Выключено'):
@@ -953,6 +969,8 @@ function buffsPage(body,options){
     descEn:gameTerms.englishSkills?.[String(id)]?.d||row?.description,
     externalPriest:true,
     casterStatKey:id===320012001?'priestBlessing':'priestSpi',
+    casterStatKeys:id===320012001?['priestBlessing']:
+     ['priestSpi','priestBlessing'],
     summary});
  }
  for(const [key,label] of [['combatWarCry','Боевой клич'],
@@ -1073,6 +1091,11 @@ function buffsPage(body,options){
     externalPriest:externalPriestSkill,
     casterStatKey:externalPriestSkill?(
      [320003001].includes(row.id)?'priestBlessing':'priestSpi'):null,
+    casterStatKeys:externalPriestSkill?(
+     row.id===320003001?['priestBlessing']:
+     row.id===320011001?['priestSpi','priestBlessing']:
+     [340001001,340003001,340004001].includes(row.id)?
+      ['priestSpi','priestHymn']:['priestSpi']):null,
     pending:!row.counted,
     summary:row.counted?({
      100055001:english?'Accuracy +20 and +15%':'Точность +20 и +15%',
