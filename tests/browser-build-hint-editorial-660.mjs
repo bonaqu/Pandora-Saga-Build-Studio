@@ -69,10 +69,11 @@ export async function runOwnerBuildHints660Smoke(browser,base){
   const panel=page.locator('.build-hint-owner-panel');
   await panel.waitFor({state:'visible'});
   await panel.locator('summary').click();
-  assert.equal(await panel.locator('.build-hint-owner-row').count(),9);
+  assert.equal(await panel.locator('.build-hint-owner-row').count(),13);
   for(const key of ['libraryCardOpen','libraryCardOverwrite','libraryCardShare',
    'libraryCardDelete','libraryHintOpen','libraryHintOverwrite','libraryHintShare',
-   'libraryHintDelete','libraryHintDeleteLocal']){
+   'libraryHintDelete','libraryHintDeleteLocal','librarySearchInputLabel',
+   'librarySearchPlaceholder','librarySearchEmpty','libraryEmpty']){
    assert.equal(await panel.locator('[data-owner-copy-pencil="'+key+'"]').count(),1,
     'Exactly one owner pencil per semantic text: '+key);
   }
@@ -138,7 +139,7 @@ export async function runOwnerBuildHints660Smoke(browser,base){
    overflow:el.scrollWidth-el.clientWidth,
    rows:el.querySelectorAll('.build-hint-owner-row').length
   }));
-  assert.equal(geo.rows,9);
+  assert.equal(geo.rows,13);
   assert.ok(geo.overflow<=4,'Mobile hint editor must not overflow horizontally');
   assert.equal(await page.locator('.build-card h3').first().innerText(),name);
   assert.deepEqual(errors,[]);
