@@ -103,7 +103,7 @@ function gearIssueLabel(message){
  const value=String(message||'');
  return en[value]||value.replace(/^Требуется уровень (\d+)$/,'Requires level $1');
 }
-function fresh(){return{race:null,gender:0,job:null,level:1,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),mastery:{},masteryFormat:2,masteryAuto:true,stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},soulOwners:{},socketCapacities:{},refinements:{},gems:{},vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},attributeBuffs:{guildAll:0,honorCuriosity:false,proelium:false,proeliumPotency:0,potionEffectsEnabled:false,guildLifeRecovery:0,guildManaRecovery:0,guildHealing:0,guildLevel:0,priestEnabled:true,priestSpi:134,priestBlessing:90,priestHymn:30,priestGratia:false,priestLapisMedio:false,priestEncouragement:false,resistanceSkillIds:[]},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
+function fresh(){return{race:null,gender:0,job:null,level:1,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),mastery:{},masteryFormat:2,masteryAuto:true,stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},soulOwners:{},socketCapacities:{},refinements:{},gems:{},vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},attributeBuffs:{guildAll:0,honorCuriosity:false,mounted:false,proelium:false,proeliumPotency:0,potionEffectsEnabled:false,guildLifeRecovery:0,guildManaRecovery:0,guildHealing:0,guildLevel:0,priestEnabled:true,priestSpi:134,priestBlessing:90,priestHymn:30,priestGratia:false,priestLapisMedio:false,priestEncouragement:false,resistanceSkillIds:[]},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
 let state=fresh(),activeTab=bootView.tab==='equipment'?'wiki':(['character','builds','wiki'].includes(bootView.tab)?bootView.tab:'character'),catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,approvedSkillIdNames=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,wikiShown=100,selectedSocket=0,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='',wikiItemType='equipment',wikiElementFilter='all',wikiEffectFilter='all',wikiSkillFilter=['player','racial','guild','special','variants','other','unknown','all'].includes(bootView.wikiSkillFilter)?bootView.wikiSkillFilter:'player',wikiItemLayout=bootView.wikiLayout==='grid'?'grid':'list',wikiItemEligibility='all';
 // A damaged browser draft must not prevent the independent saved-build library
 // from loading. Keep the original storage untouched for manual recovery.
@@ -842,7 +842,8 @@ function setAttributeBuff(key,value){
   current.honorTitle=current.honorCuriosity?1:0;
  }else if(['proelium','potionEffectsEnabled','combatLunge','combatWarCry',
   'combatRage','combatDefender','combatWindAssist','combatWindBlessing',
-  'combatConcentration','priestEnabled','priestGratia','priestLapisMedio','priestEncouragement'].includes(key)){
+  'combatConcentration','priestEnabled','priestGratia','priestLapisMedio','priestEncouragement',
+  'mounted'].includes(key)){
   current[key]=value===true;
   if(current.combatRage&&key==='combatRage')current.combatDefender=false;
   if(current.combatDefender&&key==='combatDefender')current.combatRage=false;
@@ -1695,6 +1696,10 @@ function renderStageAttributes(calculated=undefined){
  }
  window.PandoraStageAttributes.render(root,{
   page:stageAttributesPage,items,
+  skillIconForId:id=>{
+   const record=skillMap[String(id)];
+   return record?skillIcon(record.branch,id,record):null;
+  },
   modifiers:calculated===undefined?previewBaseStats():calculated,
   icon:rec=>itemIcon(rec),
   buffs:state.attributeBuffs||{},vitalsBuffs:state.vitalsBuffs||{},
