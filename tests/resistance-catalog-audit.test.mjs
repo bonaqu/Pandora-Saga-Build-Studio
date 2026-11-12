@@ -26,7 +26,13 @@ test('entire OS item/Soul/Forth resistance catalog covers every improvement rank
  for(const [kind,objects] of datasets)for(const [id,item] of Object.entries(objects)){
   recordCount++;
   for(let grade=0;grade<=10;grade++){
-   const upgraded=kind==='item'?itemForth[id]?.[String(grade)]:null;
+   // Forth rows are cumulative. The last reached breakpoint remains
+   // active until a later OS threshold replaces its full snapshot.
+   const steps=kind==='item'?itemForth[id]:null;
+   const matched=steps?Object.keys(steps).map(Number)
+    .filter(level=>Number.isSafeInteger(level)&&level<=grade)
+    .sort((a,b)=>b-a)[0]:undefined;
+   const upgraded=matched===undefined?null:steps[String(matched)];
    const included=[...(item.effects||[]),...(Array.isArray(upgraded)?upgraded:[])];
    const relevant=included.filter(e=>Object.hasOwn(direct,e.func));
    if(Array.isArray(upgraded))forthChecks+=upgraded.length;

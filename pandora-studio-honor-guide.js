@@ -44,8 +44,8 @@ const hints=Object.freeze({
  'Сопр. свету':['Сопротивление магии света.','Light magic resistance.'],
  'Сопр. тьме':['Сопротивление магии тьмы.','Dark magic resistance.'],
  // OS fields are current; the 6/5 membership list is historical, not a verified server-roll rule.
- 'Сопр. аном. тел.':["Сопротивляемость аномальным состояниям тела.\\nПо классификации Pandora Saga: оглушение, падение, отравление, кровотечение, ожог, заморозка.\\nРасчёт: +7 за каждые полные 28 ВЫН, плюс известные бонусы персонажа. Отдельные сопротивления — в разделе «Защита».","Physical Status Ailment Resistance.\\nClassic Pandora Saga grouping: stun, knockdown, poison, bleeding, burn, freeze.\\nCalculation: +7 per full 28 VIT plus known character bonuses. Individual resistances are shown in Defense."],
- 'Сопр. аном. дух.':["Сопротивляемость аномальным состояниям духа.\\nПо классификации Pandora Saga: сон, безумие, немота, слабость, болезнь.\\nРасчёт: +7 за каждые полные 28 СД, плюс известные бонусы персонажа. Отдельные сопротивления — в разделе «Защита».","Mental Status Ailment Resistance.\\nClassic Pandora Saga grouping: sleep, madness, silence, weakness, disease.\\nCalculation: +7 per full 28 SPI plus known character bonuses. Individual resistances are shown in Defense."],
+ 'Сопр. аном. тел.':["Сопротивляемость аномальным состояниям тела.\nПо классификации Pandora Saga: оглушение, падение, отравление, кровотечение, ожог, заморозка.\nРасчёт: +7 за каждые полные 28 ВЫН, плюс известные бонусы персонажа. Отдельные сопротивления — в разделе «Защита».","Physical Status Ailment Resistance.\nClassic Pandora Saga grouping: stun, knockdown, poison, bleeding, burn, freeze.\nCalculation: +7 per full 28 VIT plus known character bonuses. Individual resistances are shown in Defense."],
+ 'Сопр. аном. дух.':["Сопротивляемость аномальным состояниям духа.\nПо классификации Pandora Saga: сон, безумие, немота, слабость, болезнь.\nРасчёт: +7 за каждые полные 28 СД, плюс известные бонусы персонажа. Отдельные сопротивления — в разделе «Защита».","Mental Status Ailment Resistance.\nClassic Pandora Saga grouping: sleep, madness, silence, weakness, disease.\nCalculation: +7 per full 28 SPI plus known character bonuses. Individual resistances are shown in Defense."],
  'Сопр. магии':['Общее сопротивление магическим воздействиям.','Overall magic resistance.']
 });
 const help=Object.freeze({
@@ -58,15 +58,18 @@ const help=Object.freeze({
  'attack.mountedRelease':[
   'Доля характеристик, учитываемая при езде верхом. Зависит от профессии, мастерства верховой езды и титула чести.',
   'The share of attributes applied while mounted. Depends on your class, Riding mastery and Honor title.'],
- 'defense.resistStatus:evil':[
-  'Уменьшает воздействие проклятий.',
-  'Reduces the effects of curses.'],
- 'defense.resistStatus:curse':[
-  'Сопротивление слабости. Это отдельный параметр, не сопротивление проклятиям.',
-  'Resistance to weakness. It is distinct from curse resistance.'],
- 'defense.resistStatus:madness':[
-  'Уменьшает воздействие безумия.',
-  'Reduces the effects of madness.'],
+ 'defense.resistStatus:burn':['Ожог — негативное состояние, связанное с огнём. Этот параметр помогает ему противостоять.','Burn is a harmful fire-related condition. This stat helps resist it.'],
+ 'defense.resistStatus:stun':['Оглушение временно мешает персонажу действовать.','Stun temporarily prevents actions.'],
+ 'defense.resistStatus:numb':['Заморозка ограничивает действия персонажа.','Freeze restricts the character’s actions.'],
+ 'defense.resistStatus:tumble':['Падение — состояние, при котором персонаж оказывается на земле.','Knockdown makes the character fall to the ground.'],
+ 'defense.resistStatus:knockback':['Отбрасывание перемещает персонажа назад.','Knockback pushes the character backward.'],
+ 'defense.resistStatus:sleep':['Сон временно не позволяет действовать.','Sleep temporarily prevents actions.'],
+ 'defense.resistStatus:silence':['Немота мешает применять некоторые умения.','Silence prevents the use of certain skills.'],
+ 'defense.resistStatus:evil':['Сопротивление проклятиям — отдельным негативным воздействиям.','Resistance to curses, a separate harmful condition.'],
+ 'defense.resistStatus:curse':['Сопротивление слабости — отдельному состоянию, не проклятию.','Resistance to Weakness, a distinct condition from Curse.'],
+ 'defense.resistStatus:disease':['Болезнь — отдельное негативное состояние персонажа.','Disease is a separate harmful condition.'],
+ 'defense.resistStatus:madness':['Сопротивление безумию — состоянию, нарушающему управление персонажем.','Resistance to madness, which disrupts control over the character.'],
+ 'defense.resistStatus:blockBreak':['Защита от эффектов, позволяющих противнику преодолеть блок.','Resistance to effects that overcome a block.'],
  'defense.hpRecoverySpeed':['Индекс скорости восстановления ОЗ. Не ОЗ/сек.','HP recovery speed index, not HP per second.'],
  'defense.mpRecoverySpeed':['Индекс скорости восстановления ОМ. Не ОМ/сек.','MP recovery speed index, not MP per second.'],
  'defense.hpRecoveryAmount':['Расчётное количество ОЗ при пассивном восстановлении.','Estimated HP amount of passive recovery.'],

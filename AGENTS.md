@@ -14,6 +14,14 @@ These repository-level rules are durable instructions for future coding sessions
 - The full historical body/mind status family membership is documented in `docs/OS_LOCALIZATION_AND_STATUS_GROUPS_2026-11-12.md`. Show both families in bilingual summary tooltips and the Defense explanatory section; family resistance is distinct from individual state resistance. Historical membership must NOT be promoted into an unverified OS server-roll or invented stacking formula.
 - Add source-by-ID RU/EN regression tests for any new gameplay terminology, skill or enhancement labels before release.
 
+## Status-resistance UX, D1 and formula boundaries (2026-11-13)
+- Current OS `itemForth` is **cumulative by breakpoint** (not an effect only at that exact grade). Look up the highest validated threshold ≤ grade; do not sum snapshots and do not parse historical narrative if a canonical Forth record already exists. Tests must cover +0…+10, including sparse between-threshold examples and known OS item IDs. Preserve canonical ID validation, D1 overrides and item state lifecycle.
+
+- In **Результаты расчёта**, body/mind resistance rows use the existing label tooltip; do **not** reintroduce a large or separate ⓘ warning. Real line breaks only; legacy literal `\\n` must be displayed as newlines, never HTML.
+- Defense's body/mind explanation shares the existing `guideedit.book.summary.40/.41` RU/EN D1 records, not independent hardcoded copy. All twelve individual resistances have short `defense.resistStatus:<channel>` RU/EN hints stored through `guideedit.book.*`. Use the unified multiline editor for hints and preserve D1 CAS behavior.
+- Item/Soul `EP_IMMUNE_*` and grouped `EP_IMMUNE_VIT_TYPE/SPI_TYPE` are separate inputs. Keep the source-backed honor/racial/Warding contributions isolated; **do not treat group resistance or historical elemental dependencies as a verified individual 2026 OS status-roll formula**. The `verified:false` source limitation stays visible in code/audits until independently supported.
+- Preferred RU status is `Немота` / EN `Silence` (not improvised `Молчание`); existing OS label IDs and historical sources take priority over loose translation.
+
 ## Shared priest UI and numerical display (2026-11-12)
 - In the external priest section edit SPR (СД), Blessing and Hymn **once each**; do not duplicate caster input fields alongside priest skills. Keep persisted legacy Benevolence/Exorcism values and original requirements intact.
 - Only add contextual input fields for allied skills when OS/Remaked source evidence proves an independent caster dependency. Natural Recovery presently has a fixed source effect vector, so no speculative extra field.

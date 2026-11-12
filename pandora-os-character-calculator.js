@@ -88,6 +88,22 @@ function refinementEffects(record,grade){
  return result;
 }
 // Official current OS itemForth level snapshots override narrative parsing.
+// Official OS itemForth rows are cumulative breakpoint snapshots: a +3
+// bonus remains at +4 and +5, until a new breakpoint appears. The checked-in
+// 162 items never remove a previous effect channel at a higher breakpoint.
+// [] is authoritative zero below the first step; null means no OS Forth row.
+function forthSnapshotAtGrade(itemForth,id,grade){
+ const byGrade=itemForth?.[String(id)];
+ if(!byGrade||typeof byGrade!=='object'||Array.isArray(byGrade))return null;
+ let nearest=-1;
+ for(const [key,rows] of Object.entries(byGrade)){
+  const level=Number(key);
+  if(!Number.isSafeInteger(level)||level<1||level>grade||
+   !Array.isArray(rows)||level<=nearest)continue;
+  nearest=level;
+ }
+ return nearest<0?[]:byGrade[String(nearest)];
+}
 function sourceEffects(source,record,grade,itemForth=null){
  if(!record||typeof record!=='object'||
   !Number.isInteger(grade)||grade<0||grade>10)return [];
@@ -109,10 +125,10 @@ function sourceEffects(source,record,grade,itemForth=null){
  // bonuses of an unrelated equipment entry.
  const canonical=Number.isSafeInteger(record.id)&&
   key==='item:'+record.id;
- const snapshot=canonical?itemForth?.[String(record.id)]?.[String(grade)]:null;
+ const snapshot=canonical?forthSnapshotAtGrade(itemForth,record.id,grade):null;
  if(Array.isArray(snapshot))return [...primary,...safeRows(snapshot)];
- // Support the explicit legacy refinement-description fallback when no
- // structured snapshot exists; never use it as a second bonus to a snapshot.
+ // Only an item without a structured Forth record uses narrative fallback;
+ // never double count it alongside the official cumulative grade snapshots.
  return [...primary,...refinementEffects(record,grade)];
 }
 
@@ -2861,7 +2877,7 @@ function elementalRefinementPreview({records=[],itemForth=null,gemSelections=[]}
    row.itemId===item.id&&row.grade===grade&&row.gem?.element==='fire'&&
    ['physical','magical'].includes(row.gem?.type));
   if(!hasFireGem)continue;
-  const gradeEffects=itemForth[String(item.id)]?.[String(grade)];
+  const gradeEffects=forthSnapshotAtGrade(itemForth,item.id,grade);
   if(!Array.isArray(gradeEffects))continue;
   const matches=gradeEffects.filter(e=>e?.func==='EP_ELEMENT_DAMAGE_SCALE_FIRE');
   if(matches.length!==1||!Number.isFinite(matches[0].a)||
