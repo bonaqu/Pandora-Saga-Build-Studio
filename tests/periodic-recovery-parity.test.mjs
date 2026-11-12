@@ -10,31 +10,32 @@ const preview=(level,benevolence,jobKey,spi=60)=>calc.periodicRecoveryPreview({
  level,spi,benevolence,jobKey,skillCatalog:catalog,
  benevolenceCap:classes[jobKey]?.branchCaps?.benevolence??null});
 
-test('Legacy 2-second HP pulses use SPI/mastery floors rather than hero level',()=>{
+test('OS-source HP periodic parameters floor SPI, mastery and level independently; exact tick timing unverified',()=>{
  const rows=preview(45,41,'CLERIC',60).rows;
  assert.deepEqual(rows.map(x=>[x.id,x.amount,x.available]),[
-  [310002001,15+6+4,true],
-  [310022001,7+12+4,true]]);
+  [310002001,10+6+4+4,true],
+  [310022001,5+12+2+2,true]]);
  assert.equal(rows.every(x=>x.kind==='hp'),true);
  assert.equal(preview(55,50,'CLERIC',100).rows[0].amount,30);
  assert.equal(preview(1,0,'CLERIC',100).rows[0].available,false);
 });
-test('Remaked LPsec uses SPI rather than level, and mastery is not counted twice',()=>{
+test('OS periodic coefficient uses a separate level term and no double-counting',()=>{
  const sameSPI=[preview(45,41,'CLERIC',74),preview(55,41,'CLERIC',74)];
- assert.deepEqual(sameSPI[0].rows.map(x=>x.amount),sameSPI[1].rows.map(x=>x.amount));
+ assert.equal(sameSPI[1].rows[0].amount-sameSPI[0].rows[0].amount,1);
+ assert.equal(sameSPI[1].rows[1].amount-sameSPI[0].rows[1].amount,0);
  const low=preview(45,41,'CLERIC',9).rows;
  const high=preview(45,41,'CLERIC',10).rows;
  assert.equal(high[0].amount-low[0].amount,1);
  assert.equal(high[1].amount-low[1].amount,1);
- assert.equal(preview(45,40,'CLERIC',60).rows[0].amount,25);
- assert.equal(preview(45,41,'CLERIC',60).rows[0].amount,25);
+ assert.equal(preview(45,40,'CLERIC',60).rows[0].amount,24);
+ assert.equal(preview(45,41,'CLERIC',60).rows[0].amount,24);
  const huge=preview(45,41,'CLERIC',105).rows;
- assert.equal(huge[0].amount,29);
- assert.equal(huge[1].amount,32);
+ assert.equal(huge[0].amount,28);
+ assert.equal(huge[1].amount,30);
 });
 test('MP pulse only appears for compatible classes and valid OS skill records',()=>{
  const ascetic=preview(20,0,'ASCETIC').rows;
- assert.equal(ascetic.find(x=>x.id===330005001)?.amount,5);
+ assert.equal(ascetic.find(x=>x.id===330005001)?.amount,2);
  assert.equal(ascetic.find(x=>x.id===330005001)?.available,true);
  assert.equal(preview(20,0,'CLERIC').rows.some(x=>x.kind==='mp'),false);
  const empty=calc.periodicRecoveryPreview({level:20,spi:40,benevolence:80,
@@ -114,7 +115,7 @@ test('class caps block impossible HP skill without affecting unrelated MP regene
  assert.equal(preview(19,0,'ASCETIC').rows.find(x=>x.kind==='mp')?.available,false);
  assert.equal(preview(20,0,'ASCETIC').rows.find(x=>x.kind==='mp')?.available,true);
 });
-test('source-checking changes eligibility only, not historical recovery magnitude or max HP/MP',()=>{
+test('source-checking changes eligibility only, not projected recovery magnitude or max HP/MP',()=>{
  const baseline={classData:classes.CLERIC,
   raceData:{vit:30,str:20,agi:25,dex:20,spi:75,int:70},
   jobData:{vit:0,str:0,agi:0,dex:0,spi:0,int:0},
@@ -125,7 +126,8 @@ test('source-checking changes eligibility only, not historical recovery magnitud
    [310002001]:{...catalog[310002001],funcs:[]}}}});
  assert.ok(valid&&tampered);
  assert.deepEqual(valid.periodicRecovery.rows.map(x=>x.amount),
-  [15+Math.floor(75/10)+Math.floor(41/10),7+Math.floor(75/5)+Math.floor(41/10)]);
+  [10+Math.floor(55*.10)+Math.floor(75*.10)+Math.floor(41*.10),
+    5+Math.floor(55*.05)+Math.floor(75*.20)+Math.floor(41*.05)]);
  assert.equal(tampered.periodicRecovery.rows.some(x=>x.id===310002001),false);
  assert.equal(valid.hp,tampered.hp);
  assert.equal(valid.mp,tampered.mp);
