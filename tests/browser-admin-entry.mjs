@@ -1304,6 +1304,15 @@ export async function runAdminEntrySmoke(browser,base){
    tab:document.querySelector('#stageBookTab_buffs')?.getAttribute('aria-selected')
   }));
   console.log('Book editorial probe',JSON.stringify(bookDebug));
+  // The editorial note lives inside an intentionally collapsed resistance
+  // subsection. Expand it as a reader would before using the inline pencil.
+  const showBookNote=async()=>{ 
+   const details=page.locator('#stageBookPanel .stage-resistance-skill-controls');
+   await details.waitFor({state:'attached'});
+   if(!(await details.evaluate(node=>node.open)))
+    await details.locator('> summary').click();
+  };
+  await showBookNote();
   const bookCaption=page.locator(
    '#stageBookPanel p.stage-attribute-note[data-owner-copy-key]').first();
   await bookCaption.waitFor({state:'visible',timeout:20000});
@@ -1315,7 +1324,7 @@ export async function runAdminEntrySmoke(browser,base){
   await bookEdit.click();
   const bookInput=page.locator('#stageBookPanel .account-copy-edit-host [contenteditable]').first();
   await bookInput.waitFor({state:'visible'});
-  const longBookCopy='Выбери усиления жреца, которые действуют на героя. Проверка длинного текста и сохранения без потери введённых данных.';
+  const longBookCopy='Отмечай только действующие на героя эффекты. Проверка длинного текста и сохранения без потери введённых данных.';
   await bookInput.fill(longBookCopy);
   const editorHeight=await bookInput.evaluate(node=>node.getBoundingClientRect().height);
   assert.ok(editorHeight>=34,'Long copy must remain visible in an expanding editor');
@@ -1326,10 +1335,12 @@ export async function runAdminEntrySmoke(browser,base){
   const bookSaved=JSON.parse(townOverrides.get('guideedit.book.ui.label.'+bookKey)||'null');
   assert.equal(bookSaved?.ru,longBookCopy,'Real in-screen copy write must reach D1 transport mock');
   await page.locator('#locale [data-locale="en"]').click();
+  await showBookNote();
   await page.locator('#stageBookPanel p.stage-attribute-note').first().waitFor({state:'visible'});
   assert.match(await page.locator('#stageBookPanel p.stage-attribute-note').first().innerText(),
-   /Selected attack and defense signs and Battle Prayer/);
+   /Select only effects currently affecting this hero/);
   await page.locator('#locale [data-locale="ru"]').click();
+  await showBookNote();
   assert.equal(await page.locator('#stageBookPanel p.stage-attribute-note').first().innerText(),
    longBookCopy,'RU saved copy survives EN->RU and does not change the hero');
   assert.deepEqual(errors,[]);
