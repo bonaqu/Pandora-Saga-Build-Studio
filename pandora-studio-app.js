@@ -1806,8 +1806,8 @@ function renderStagePicker(focusSearch=false){
     ['pickerItemClose','Закрыть настройку','Close item settings','Закрытие настроек','Close settings'],
     ['pickerItemSettings','Настройка предмета','Item settings','Название вкладок','Tabs accessible name'],
     ['pickerSoulSearchAria','Поиск души','Find Soul','Поиск душ','Soul search'],
-    ['pickerSoulSlotAria','Слот души ','Soul slot ','Название слота','Soul slot name'],
-    ['pickerSoulSlotCaption','Слот ','Slot ','Подпись слота','Slot caption'],
+    ['pickerSoulSlotAria','Слот души','Soul slot','Название слота','Soul slot name'],
+    ['pickerSoulSlotCaption','Слот','Slot','Подпись слота','Slot caption'],
     ['pickerEmptySoul','пусто','empty','Пустой слот','Empty slot']
    ],'Подписи свойств и душ','Item and Soul labels');
    if(panel)root.insertBefore(panel,root.querySelector('.stage-rich-body')||null);
@@ -8029,6 +8029,17 @@ function refreshVisibleOwnerCopy(recordKey){
   if(attr==='text')node.textContent=value;
   else if(['placeholder','aria-label','title'].includes(attr))
    node.setAttribute(attr,value);
+ }
+ // The editable word "empty" is separate from dynamic Soul slot IDs.
+ // Reconstruct only that aria suffix after a successful owner CAS or Undo.
+ if(key==='equipment.picker-empty-soul'){
+  for(const button of document.querySelectorAll('#stagePicker [data-soul-empty-slot]')){
+   const number=button.dataset.soulEmptySlot;
+   const suffix=' '+number+': '+ownerCopy('equipment','pickerEmptySoul','пусто','empty');
+   button.dataset.ownerInterfaceSuffix=suffix;
+   button.setAttribute('aria-label',
+    ownerCopy('equipment','pickerSoulSlotAria','Слот души','Soul slot')+suffix);
+  }
  }
  if(key==='equipment.soul-search'){
   // A D1 save or Undo must update the live placeholder, not reset the query.
