@@ -159,6 +159,7 @@ export async function runUIContentInlineSmoke(browser,base){
   await failedBook.press('Tab');
   await firstGroup.locator('summary [data-guide-key="summary.group.0"] .ui-content-inline-error')
    .waitFor({state:'visible',timeout:12000});
+  assert.match(await firstGroup.locator('summary [data-guide-key="summary.group.0"] .ui-content-inline-error').textContent(),/^Не сохранено:/);
   assert.equal(await failedBook.textContent(),
    'Неопубликованный текст должен остаться для повторной попытки');
   assert.equal(await failedBook.getAttribute('contenteditable'),'plaintext-only');
@@ -436,6 +437,7 @@ export async function runUIContentInlineSmoke(browser,base){
   const inlineFailure=page.locator('#studioToast .ui-content-inline-error');
   await inlineFailure.waitFor({state:'visible',timeout:12000});
   assert.match(await inlineFailure.textContent(),/changed in another window|изменили в другом окне/i);
+  assert.match(await inlineFailure.textContent(),/^Not saved:/);
   assert.equal(await toastEditor.textContent(),'Uncommitted owner text survives conflict');
   assert.equal(await page.locator('#studioToast .studio-toast-content>strong').count(),1);
   await toastEditor.press('Escape');
