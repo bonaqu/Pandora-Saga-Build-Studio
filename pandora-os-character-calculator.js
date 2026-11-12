@@ -1338,18 +1338,33 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
   detailEn:'Dark Aura: 15 + floor(SPI × 8%)'+
    (darkAuraNextSpi===null?'':'; next SPI breakpoint: '+darkAuraNextSpi)+
    ''});
+ // For multi-projectile attacks the source exposes multiple independent
+ // coefficients. Never fold a secondary hit modifier into the character ATK,
+ // infer shot count damage, or treat a range field as confirmed metres.
  add(213703001,'offense',[
   ['EP_DOUBLE_MISSILE',[20,0,30,-85]],
   ['EP_ATTACKRANGE_CONST',[0,0,900,100]],
   ['EP_ATTACKCARRY_CONST',[0,0,900,100]]
- ],manual,{
-  detailRu:'Двойной выстрел: сила и дальность зависят от параметров навыка; итоговый расчёт не подтверждён',
-  detailEn:'Double Shot: dependent missile/range effects; final magnitude unverified'});
+ ],manual,{branch:'archery',
+  models:[
+   coefficientModel(213703001,'EP_DOUBLE_MISSILE','str','archery',
+    'Модификатор снаряда','Projectile modifier'),
+   coefficientModel(213703001,'EP_ATTACKRANGE_CONST',null,'archery',
+    'Параметр дальности','Range parameter'),
+   coefficientModel(213703001,'EP_ATTACKCARRY_CONST',null,'archery',
+    'Параметр переноса','Carry parameter')
+  ],
+  detailRu:'Повторный выстрел из арбалета: сила и дальность от СИЛ и Стрельбы',
+  detailEn:'Second crossbow shot: STR and Archery scaling'});
+ // The follow-up attack changes with Assassin mastery. Its coefficient is
+ // available; actual second-hit damage and triggering remain separate.
  add(233200101,'offense',[
   ['EP_INCREASE_ATTACK',[0,0,45,-100]]
- ],manual,{
-  detailRu:'Волна: изменяемое усиление атаки; точная формула не подтверждена',
-  detailEn:'Wave: scaling attack increase; final formula unverified'});
+ ],manual,{branch:'assassin',
+  models:[coefficientModel(233200101,'EP_INCREASE_ATTACK',null,'assassin',
+   'Модификатор повторного удара','Follow-up attack modifier')],
+  detailRu:'Дополнительный удар при подходящем оружии от мастерства Убийства',
+  detailEn:'Follow-up hit from Assassination mastery with compatible weapon'});
  const concentrationRate=coefficientModel(410000101,
   'EP_ELEMENT_DAMAGE_SCALE',null,'element',
   'Сила следующей магической атаки','Next elemental spell rate','%');
