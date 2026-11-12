@@ -903,6 +903,90 @@ function defensiveSkillPreview({skillCatalog=null,jobKey=null,level=1,
    effects:values,source:'Current game skill catalog'}];
  });
 }
+// Direct strike coefficient projections for currently learnable OS skills.
+// The source coefficient is NOT a final damage number: hit count, weapon,
+// target defense, procs and stage rounding remain explicitly unknown.
+function directStrikeCoefficientPreview({skillCatalog,jobKey,level,
+ branchMasteries={},branchCaps={},weaponKind='BARE_HAND'}={}){
+ if(!skillCatalog||typeof skillCatalog!=='object'||Array.isArray(skillCatalog)||
+  typeof jobKey!=='string'||!Number.isSafeInteger(level)||level<1||level>55)
+  return [];
+ const entries=Object.values(skillCatalog),output=[];
+ const branchRank=b=>Number(branchMasteries?.[b]??0);
+ const cap=b=>Number(branchCaps?.[b]??0);
+ const validRecord=s=>s?.learnable===true&&
+  Number.isSafeInteger(s.id)&&s.id>0&&
+  skillCatalog[String(s.id)]===s&&s.classes?.[jobKey]&&
+  typeof s.branch==='string'&&Number.isSafeInteger(cap(s.branch))&&
+  cap(s.branch)>0&&
+  Array.isArray(s.reqs)&&s.reqs.every(req=>typeof req?.branch==='string'&&
+   Number.isSafeInteger(req.amount)&&req.amount>=0&&
+   Number.isSafeInteger(cap(req.branch))&&cap(req.branch)>=req.amount)&&
+  ['ENEMY','BOLT','BREATH','RADIATION','SPHERE'].includes(s.skillType);
+ // Validate the strike effect and its triggering attack as one source
+ // signature, including successor validity before suppressing a predecessor.
+ const strikeVector=s=>{
+  const hit=(s?.funcs||[]).filter(x=>x?.ep==='EP_ONHIT_DAMAGE_SCALE'&&
+   x?.dir==='CASTER');
+  if(hit.length!==1||!Array.isArray(hit[0].fv1)||
+   hit[0].fv1.length!==4||
+   !hit[0].fv1.every(Number.isSafeInteger)||
+   !Array.isArray(hit[0].fv2)||
+   hit[0].fv2.length!==4||hit[0].fv2.some(x=>x!==0))return null;
+  const [statPart,reserved,masteryPart,constant]=hit[0].fv1;
+  if(statPart!==0||reserved!==0||masteryPart<0||masteryPart>100||
+   constant< -100||constant>150)return null;
+  if(!(s.funcs||[]).some(x=>
+   ['EP_PLAYER_ATTACK','EP_PLAYER_ATTACK2'].includes(x?.ep)&&
+   x?.dir==='TARGET'))return null;
+  return {masteryPart,constant};
+ };
+ for(const s of entries){
+  if(!validRecord(s))continue;
+  const rank=branchRank(s.branch);
+  if(!Number.isSafeInteger(rank)||rank<0||rank>cap(s.branch))continue;
+  const vector=strikeVector(s);
+  if(!vector)continue;
+  const {masteryPart,constant}=vector;
+  if(s.prereq!=null){
+   const previous=skillCatalog[String(s.prereq)];
+   if(!previous||previous.id!==s.prereq||previous.learnable!==true||
+    previous.branch!==s.branch)continue;
+   // An advanced skill is a REPLACEMENT, not an extra theoretical rank:
+   // show it only after its current OS level/mastery conditions are met.
+   if(level<Number(s.charLevel||0)||
+    s.reqs.some(req=>branchRank(req.branch)<req.amount))continue;
+  }
+  // A learned successor with the same supported source family replaces
+  // its predecessor, as in Double Slash -> Cut. It does not add a second hit.
+  const upgraded=entries.some(next=>next?.prereq===s.id&&
+   validRecord(next)&&strikeVector(next)&&next.branch===s.branch&&
+   level>=Number(next.charLevel||0)&&
+   next.reqs.every(req=>branchRank(req.branch)>=req.amount));
+  if(upgraded)continue;
+  const coefficient=constant+Math.floor(rank*masteryPart/100);
+  if(!Number.isSafeInteger(coefficient))continue;
+  const reasons=[];
+  if(level<Number(s.charLevel||0))
+   reasons.push('Требуется уровень '+s.charLevel);
+  for(const req of s.reqs)if(branchRank(req.branch)<req.amount)
+   reasons.push('Требуется мастерство «'+req.branch+'»: '+req.amount);
+  if(Array.isArray(s.weaponUse)&&s.weaponUse.length&&
+   !s.weaponUse.includes(weaponKind))
+   reasons.push('Не подходит экипированное оружие');
+  output.push({id:s.id,name:s.name,description:s.desc||'',
+   amount:null,unit:'',available:reasons.length===0,
+   reason:reasons.join(' · '),uncertain:true,recipient:false,
+   detailRu:'Коэффициент удара по данным OS; итоговый урон, число попаданий и округление цели не подтверждены',
+   detailEn:'OS strike coefficient; final damage, hit count and target rounding are not verified',
+   coefficientModels:[{
+    ep:'EP_ONHIT_DAMAGE_SCALE',labelRu:'Коэффициент удара',
+    labelEn:'Strike coefficient',amount:coefficient,unit:'%',
+    confidence:'coefficient-model'}],
+   source:'current OS skill attack effect coefficient model'});
+ }
+ return output.sort((a,b)=>a.id-b.id);
+}
 // Hero Book Skill Effects is a READ-ONLY magnitude inspector, NOT active
 // skill toggles. Only build-dependent outcomes belong here. Whitelisted
 // source vectors are cross-checked against the live OS catalog; unknown
@@ -1228,6 +1312,11 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
    Math.floor(mastery('hymn')*.08):null,
   {song:true,branch:'hymn',unit:'% стихийного урона',
    detailRu:'СД и мастерство Песнопения',detailEn:'SPI and Hymn mastery'});
+ }
+ for(const strike of directStrikeCoefficientPreview({
+  skillCatalog,jobKey,level,branchMasteries,branchCaps,weaponKind
+ })){
+  if(!seen.has(strike.id))result.offense.push(strike);
  }
  return result;
 }
@@ -2866,7 +2955,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   verified:false,excluded:['unstructured refinement bonuses','unpublished set effects',
     'unverified passive and conditional skills','other group/temporary buffs']};
 }
-root.PandoraOSCalculator=Object.freeze({priestCastPreviews,scalingSkillPreview,defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
+root.PandoraOSCalculator=Object.freeze({priestCastPreviews,scalingSkillPreview,directStrikeCoefficientPreview,defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
  base,characterSheetPhysicalAttackRange,classBase,classBaseComponents,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,racialWeaponPreview,incredibleStrengthPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
  recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,consumableSkillPreview,statusCurePreview,harmfulConsumablePreview,gemstonePreview,legacyBuffPreview,songSkillPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,racialUtilityPreview,elementalMagicPreview,elementalRefinementPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive
 });

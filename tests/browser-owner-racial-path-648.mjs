@@ -36,6 +36,20 @@ export async function runOwnerRacialPath648Smoke(browser,base){
  });
  const page=await context.newPage();
  page.on('pageerror',e=>errors.push(e.message));
+ // Inline copy changes the visible label optimistically before its D1-style
+ // mock request resolves. Verify persistence AFTER the write, not just the DOM.
+ const savedOverride=async(key,expected)=>{
+  for(let attempt=0;attempt<120;attempt++){
+   const value=values[key];
+   if(typeof value==='string'){
+    try{if(JSON.stringify(JSON.parse(value))===JSON.stringify(expected))return}
+    catch{}
+   }
+   await page.waitForTimeout(50);
+  }
+  assert.deepEqual(JSON.parse(values[key]),expected,
+   'Edited text did not persist in the mocked D1 override');
+ };
  const openSpecial=async()=>{
   const expand=page.locator('.right [data-path-group="special"]');
   await expand.waitFor({state:'visible'});
@@ -75,7 +89,7 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   await page.waitForFunction(()=>document.querySelector(
    '.right .path-racial-owner-row strong')?.textContent==='Расовые умения QA',
    null,{timeout:12000});
-  assert.deepEqual(JSON.parse(values['guideedit.book.path.racial-branch']),
+  await savedOverride('guideedit.book.path.racial-branch',
    {ru:'Расовые умения QA'});
   const group=page.locator('.right .game-tree-head-row').filter({
    has:page.locator('[data-path-group="special"]')});
@@ -101,7 +115,7 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   await page.waitForFunction(()=>document.querySelector(
    '.right .path-racial-owner-row strong')?.textContent==='Race traits QA',
    null,{timeout:12000});
-  assert.deepEqual(JSON.parse(values['guideedit.book.path.racial-branch']),
+  await savedOverride('guideedit.book.path.racial-branch',
    {ru:'Расовые умения QA',en:'Race traits QA'});
   assert.equal(await en.locator('button.path-racial-unavailable').isDisabled(),true);
   // New D1 caption: never edit or persist the computed number of skills.
@@ -117,7 +131,7 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   await page.waitForFunction(()=>document.querySelector(
    '#pathSkillGallery .path-more-copy')?.textContent==='More skills QA',
    null,{timeout:12000});
-  assert.deepEqual(JSON.parse(values['guideedit.book.path.skill-show-more']),
+  await savedOverride('guideedit.book.path.skill-show-more',
    {en:'More skills QA'});
   assert.match(await more.locator('button.path-more-pencil').getAttribute('aria-label'),
    /More skills QA/);
@@ -151,7 +165,7 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   await page.waitForFunction(()=>document.querySelector(
    '#pathSkillDetails .path-skill-previous-label .path-owner-copy-text')
    ?.textContent==='Prerequisite QA',null,{timeout:12000});
-  assert.deepEqual(JSON.parse(values['guideedit.book.path.skill-previous-label']),
+  await savedOverride('guideedit.book.path.skill-previous-label',
    {en:'Prerequisite QA'});
   assert.equal(await prereq.locator('.path-skill-previous-value').innerText(),requiredName,
    'D1 text changes must not rename the required source skill');

@@ -41,3 +41,7 @@ For example, current OS Отчаянье stores `[0,0,35,40]` → a model rate o
 
 ## Acceptance matrix for gameplay validation
 For each modeled skill capture current client/server build, skill ID, class, level, weapon, buffs, stat before and after, exact mastery, raw displayed attack/avoidance/etc., and an A/B comparison at coefficient step boundaries. Confirm whether each term is separately floored, rounded once, or affected by other party buffs. Until then, keep the model label.
+
+## 0.685.0 — direct-hit coefficient class coverage
+
+Extended the same explicitly unverified coefficient display to **19 learnable source skills** with an `EP_ONHIT_DAMAGE_SCALE` CASTER vector and a corresponding `EP_PLAYER_ATTACK` / `EP_PLAYER_ATTACK2` trigger. Class branch caps, weapon restrictions, required mastery, character level and prerequisite upgrades are enforced. Internal, non-learnable triggered variants cannot appear as separate player abilities. Source vectors must match the safe zero-attribute/zero-reserved structure; the model is `fv1[3] + floor(branchMastery * fv1[2] / 100)` and is **not** final damage against a target. Some skills are inaccessible to particular classes even when the raw OS classes map lists them. 250 artificial cases exercise the preview independently of actual gameplay.

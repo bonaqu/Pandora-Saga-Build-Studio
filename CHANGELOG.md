@@ -1,5 +1,11 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.685.0 — 2026.11.12.685 · Read-only direct strike coefficient previews for source-backed learnable attack skills
+
+- Read-only direct strike coefficient previews for source-backed learnable attack skills; no target damage, critical combat stage changes, no D1 writes.
+- Mandatory Node/Chromium and published Pages/Worker readiness checks.
+
+
 ## 0.684.0 — 2026.11.12.684 · Source-gated OS coefficient models for 11 scalable skills, with separate unverified previews and 250 regression scenarios
 
 - Source-gated OS coefficient models for 11 scalable skills, with separate unverified previews and 250 regression scenarios. Source-only mathematical models are explicitly not confirmed server combat output and never change the character.
