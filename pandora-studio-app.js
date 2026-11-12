@@ -2899,10 +2899,14 @@ function wikiLink(text,type,id,highlight=null){
  const displayId=type==='skill'?String(id):
   wikiIndex?.canonical?.(type,id)||String(id);
  const href='#wiki/'+encodeURIComponent(type)+'/'+encodeURIComponent(displayId)+(highlight==null?'':'/'+encodeURIComponent(highlight));
- return h('a',{class:'wiki-link',href,text,onclick:event=>{
+ const link=h('a',{class:'wiki-link',href,text,onclick:event=>{
   if(event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
   event.preventDefault();openWiki(type,displayId,highlight);
  }});
+ // References inside item, Soul, NPC, monster and recipe articles use the
+ // same rich skill preview as Hero Path, rather than plain text or titles.
+ if(type==='skill')window.PandoraSkillPreview?.attach(link,displayId);
+ return link;
 }
 function guardEncyclopediaSearch(input){
  // Some password managers ignore autocomplete="off". Prevent automatic
