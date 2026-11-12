@@ -937,8 +937,19 @@ function buffsPage(body,options){
     }[row.id]):
      // Game-client description is useful even where current OS stacking is
      // not confirmed. Never present historical previews as final damage.
-     buffEffectText(row.id)||description||row.description||
-     (english?'Exact effect not yet confirmed':'Точный эффект пока не подтверждён')});
+     (()=>{const basic=buffEffectText(row.id)||description||row.description||
+      (english?'Exact effect not yet confirmed':'Точный эффект пока не подтверждён');
+      const current=modifiers?.combat?.priestSong;
+      const enabled=buffs.priestEnabled===true&&row.selected;
+      if(!enabled)return basic;
+      const value=row.id===340001001?current?.minstrel:
+       row.id===340004001?current?.sageElementDamage:null;
+      if(!Number.isFinite(value)||!value)return basic;
+      return basic+' · '+(row.id===340001001?
+       (english?'Accuracy and evasion +':'Точность и уклонение +'):
+       (english?'Elemental damage +':'Стихийный урон +'))+
+       value+(row.id===340004001?'%':'');
+     })()});
  }
  if(resistanceSkillChoices.length){
   const group=make('details',{class:'stage-legacy-buff-previews stage-resistance-skill-controls'});
@@ -1192,6 +1203,11 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   addOffense(142051001,'Хладнокровие','Cold Blood',
    percent(combat.critical.coldBlood)+'%',
    en?'Critical hit chance':'Шанс критического удара');
+ if(Number(combat.priestSong?.minstrel)>0)
+  addOffense(340001001,'Песнь поэта','Minstrel Song',
+   percent(combat.priestSong.minstrel),
+   en?'Accuracy and evasion gained from the other priest':
+    'Прибавка к точности и уклонению от другого жреца');
  // Show possible offensive skills from this character's profession as well
  // as already-active effects. A locked mastery is explicit, never an applied
  // bonus. The source records provide exact names, requirements and icons.
@@ -1330,6 +1346,10 @@ function attackChapterGroups(calc){
    (entry.kind==='bow'?'Дальность стрельбы':'Дальность атаки')+' · '+entry.source,
    (entry.kind==='bow'?'Bow range':'Attack range')+' · '+entry.source,entry.amount);
  });
+ const song=calc.combat?.priestSong;
+ if(Number(song?.sageElementDamage)>0)
+  put(2,'priestSageElement','Песнь чар · стихийный урон',
+   'Sage Song · elemental damage',song.sageElementDamage,'%');
  const aura=calc.auraDamage?.elements||{};
  for(const [key,entry]of Object.entries(aura)){
   const term=elementTerms[key];if(!term)continue;
