@@ -40,7 +40,8 @@ test('race/weapon effects move to Attack once, and incompatible weapon does not 
  assert.equal(hero.combat.racialWeapon.matchesCategory,true);
  const rows=flatten(book.attackChapterGroups(hero));
  assert.deepEqual(rows.filter(r=>r.key.startsWith('racialWeapon')).map(r=>[r.value,r.unit]),
-  [[10,''],[12,'%']]);
+  [[hero.combat.racialWeapon.flat,''],
+   [hero.combat.attack.racialBonus-hero.combat.racialWeapon.flat,'']]);
  assert.equal(flatten(book.defenseChapterGroups(hero))
   .filter(r=>r.key.startsWith('racialWeapon')).length,0);
  const incorrect=character('HUMAN',900010001,items[401]);
