@@ -12,7 +12,7 @@ const head=html.split('</head>')[0];
 const pkg=JSON.parse(read('package.json'));
 const site='https://bonaqu.github.io/Pandora-Saga-Build-Studio/';
 const version='0.'+Number(pkg.pandoraRelease.split('.')[3])+'.0';
-const imageUrl=site+'assets/social-preview.jpg?v='+pkg.pandoraRelease;
+const imageUrl=site+'assets/social-preview.png?v='+pkg.pandoraRelease;
 const content=(field,isName=false)=>{
  const re=new RegExp('<meta '+(isName?'name':'property')+'="'+field+'" content="([^"]+)">','g');
  const values=[...head.matchAll(re)].map(m=>m[1]);
@@ -20,21 +20,6 @@ const content=(field,isName=false)=>{
  return values[0];
 };
 
-function jpegDimensions(bytes){
- assert.equal(bytes[0],255);assert.equal(bytes[1],216);
- for(let i=2;i<bytes.length-9;){
-  if(bytes[i++]!==255)continue;
-  let mark=bytes[i++];
-  while(mark===255)mark=bytes[i++];
-  if(mark===216||mark===1)continue;
-  if(mark===217||mark===218)break;
-  const length=bytes.readUInt16BE(i);
-  if([192,193,194,195,198,199,201,202].includes(mark))
-   return{width:bytes.readUInt16BE(i+5),height:bytes.readUInt16BE(i+3)};
-  i+=length;
- }
- throw Error('No JPEG frame marker');
-}
 test('static homepage exposes Telegram/Open Graph identity, photo and consistent release',()=>{
  assert.match(head,/<title>Pandora Saga \| Build Studio<\/title>/);
  assert.match(head,/rel="canonical" href="https:\/\/bonaqu\.github\.io\/Pandora-Saga-Build-Studio\/"/);
@@ -45,9 +30,9 @@ test('static homepage exposes Telegram/Open Graph identity, photo and consistent
  assert.equal(content('og:locale'),'en_US');
  assert.equal(content('og:locale:alternate'),'ru_RU');
  assert.equal(content('og:image'),imageUrl);
- assert.equal(content('og:image:type'),'image/jpeg');
- assert.equal(content('og:image:width'),'1920');
- assert.equal(content('og:image:height'),'1080');
+ assert.equal(content('og:image:type'),'image/png');
+ assert.equal(content('og:image:width'),'1280');
+ assert.equal(content('og:image:height'),'640');
  assert.match(content('og:image:alt'),/character planner/i);
  assert.equal(content('twitter:card',true),'summary_large_image');
  assert.equal(content('twitter:title',true),'Pandora Saga | Build Studio');
@@ -64,15 +49,17 @@ test('static homepage exposes Telegram/Open Graph identity, photo and consistent
   head.indexOf('property="og:title"')<head.indexOf('<link rel="stylesheet"'),
   'The crawler must see static metadata before any script or stylesheet');
 });
-test('published cover is a genuine self-hosted 1920×1080 JPEG with no external asset hosting',()=>{
- const jpeg=readFileSync(new URL('assets/social-preview.jpg',root));
- assert.ok(jpeg.length>50000&&jpeg.length<600000,'Keep the OG image well below common preview size limits');
- assert.deepEqual(jpegDimensions(jpeg),{width:1920,height:1080});
+test('published preview is the same 1280×640 self-hosted PNG used on GitHub',()=>{
+ const png=readFileSync(new URL('assets/social-preview.png',root));
+ assert.ok(png.length>50000&&png.length<600000,'Keep the OG image well below common preview size limits');
+ assert.equal(png.subarray(0,8).toString('hex'),'89504e470d0a1a0a');
+ assert.equal(png.readUInt32BE(16),1280);
+ assert.equal(png.readUInt32BE(20),640);
 });
 test('a simulated future release automatically refreshes both social descriptions and image cache keys',()=>{
  const folder=mkdtempSync(join(tmpdir(),'pandora-social-release-'));
  const inputs=['index.html','package.json','site-version.json','ROADMAP.md',
-  'CHANGELOG.md','pandora-studio-update-manager.js','scripts/release-version.mjs'];
+  'CHANGELOG.md','pandora-studio-update-manager.js','scripts/release-version.mjs','assets/social-preview.png'];
  try{
   for(const file of inputs){
    const to=join(folder,file);mkdirSync(dirname(to),{recursive:true});
@@ -89,7 +76,7 @@ test('a simulated future release automatically refreshes both social description
   const next=readFileSync(join(folder,'index.html'),'utf8');
   for(const field of ['og:description','twitter:description'])
    assert.match(next,new RegExp((field==='og:description'?'property':'name')+'="'+field+'" content="[^"]*Version: '+nextVersion.replaceAll('.','\\.')+'"'));
-  assert.equal((next.match(new RegExp('assets/social-preview\\.jpg\\?v='+nextRelease.replaceAll('.','\\.'),'g'))||[]).length,2);
+  assert.equal((next.match(new RegExp('assets/social-preview\\.png\\?v='+nextRelease.replaceAll('.','\\.'),'g'))||[]).length,2);
   assert.ok(!next.includes('Version: '+version+'"'),
    'A new release cannot preserve the previous share-card version');
  }finally{rmSync(folder,{recursive:true,force:true})}

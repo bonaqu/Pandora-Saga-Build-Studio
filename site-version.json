@@ -1,4 +1,4 @@
 {
-  "release": "2026.11.13.704",
-  "notes": "Канонические RU/EN названия OS по ID и исправление английских названий усилений"
+  "release": "2026.11.13.705",
+  "notes": "Same PNG artwork for GitHub and website Open Graph previews; PR protection check"
 }

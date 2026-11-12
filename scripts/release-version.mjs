@@ -42,10 +42,20 @@ function check(){
  if(socialDescriptions.length!==2||
     socialDescriptions.some(m=>!m[1].includes('Version: '+expectedVersion)))
   mismatches.push('crawler-visible OG/X descriptions and site release');
- const socialImage='https://bonaqu.github.io/Pandora-Saga-Build-Studio/assets/social-preview.jpg?v='+release;
+ const socialImage='https://bonaqu.github.io/Pandora-Saga-Build-Studio/assets/social-preview.png?v='+release;
  const imageTags=[...html.matchAll(/<meta (?:property="og:image"|name="twitter:image") content="([^"]+)">/g)];
  if(imageTags.length!==2||imageTags.some(m=>m[1]!==socialImage))
   mismatches.push('canonical same-origin social image and cache key');
+ const previewPng=readFileSync(path('assets/social-preview.png'));
+ if(previewPng.length<24||previewPng.subarray(0,8).toString('hex')!=='89504e470d0a1a0a'||
+    previewPng.readUInt32BE(16)!==1280||previewPng.readUInt32BE(20)!==640)
+  mismatches.push('social-preview PNG signature or 1280×640 dimensions');
+ for(const tag of [
+  '<meta property="og:image:type" content="image/png">',
+  '<meta property="og:image:width" content="1280">',
+  '<meta property="og:image:height" content="640">'
+ ])if(!html.includes(tag))mismatches.push('incorrect PNG Open Graph metadata: '+tag);
+
  if(!html.includes('<meta property="og:title" content="Pandora Saga | Build Studio">')||
     !html.includes('<meta name="twitter:card" content="summary_large_image">'))
   mismatches.push('static share title or wide image card');
