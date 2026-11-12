@@ -8,6 +8,12 @@ These repository-level rules are durable instructions for future coding sessions
 - Cloudflare D1 is authoritative for game data. Do not claim successful **production writes/rollback** from mocked CAS browser tests or read-only readiness. Issue #203 requires separate owner approval for any live temporary write.
 - Owner-editable RU/EN UI copy uses existing D1 override keys and unified inline editors. Do not reveal internal IDs in player-facing text.
 
+## Mandatory RU/EN source naming and status explanations (2026-11-12)
+- Current OS data are authoritative for **all user-visible game identity names**: RU uses the exact skill/item/soul/class ID in `data/os/*.json` and branch key in `data/os/meta.json:branchLabels`; EN uses the matching ID in `data/os/strings.en.json` and its `branches` table. Never autotranslate, invent labels or substitute similar historical Remaked terms. Only use an approved Legacy mapping after verifying the same current OS ID.
+- `exorcism` is «Экзорцизм» / Exorcism, **not** «Изгнание»; `alchemy` «Ремесло» / Alchemy, `brush` «Рубящий удар» / Cleave, `darkness` «Магия тьмы» / Darkness. Pass canonical lookup into each calculation/requirement renderer; avoid stale manual mini-dictionaries. Keep current D1 admin overrides and stable internal keys intact.
+- The full historical body/mind status family membership is documented in `docs/OS_LOCALIZATION_AND_STATUS_GROUPS_2026-11-12.md`. Show both families in bilingual summary tooltips and the Defense explanatory section; family resistance is distinct from individual state resistance. Historical membership must NOT be promoted into an unverified OS server-roll or invented stacking formula.
+- Add source-by-ID RU/EN regression tests for any new gameplay terminology, skill or enhancement labels before release.
+
 ## Shared priest UI and numerical display (2026-11-12)
 - In the external priest section edit SPR (СД), Blessing and Hymn **once each**; do not duplicate caster input fields alongside priest skills. Keep persisted legacy Benevolence/Exorcism values and original requirements intact.
 - Only add contextual input fields for allied skills when OS/Remaked source evidence proves an independent caster dependency. Natural Recovery presently has a fixed source effect vector, so no speculative extra field.

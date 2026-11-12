@@ -43,8 +43,9 @@ const hints=Object.freeze({
  'Сопр. чарам':['Сопротивление магии чар.','Charm magic resistance.'],
  'Сопр. свету':['Сопротивление магии света.','Light magic resistance.'],
  'Сопр. тьме':['Сопротивление магии тьмы.','Dark magic resistance.'],
- 'Сопр. аном. тел.':['Устойчивость к физическим негативным состояниям.\nНапример: ожог, оглушение, заморозка, падение.','Resistance to physical status ailments.\nExamples: burn, stun, freeze, knockdown.'],
- 'Сопр. аном. дух.':['Устойчивость к психическим негативным состояниям.\nНапример: сон, немота, безумие.','Resistance to mental status ailments.\nExamples: sleep, silence, madness.'],
+ // OS fields are current; the 6/5 membership list is historical, not a verified server-roll rule.
+ 'Сопр. аном. тел.':["Сопротивляемость аномальным состояниям тела.\\nПо классификации Pandora Saga: оглушение, падение, отравление, кровотечение, ожог, заморозка.\\nРасчёт: +7 за каждые полные 28 ВЫН, плюс известные бонусы персонажа. Отдельные сопротивления — в разделе «Защита».","Physical Status Ailment Resistance.\\nClassic Pandora Saga grouping: stun, knockdown, poison, bleeding, burn, freeze.\\nCalculation: +7 per full 28 VIT plus known character bonuses. Individual resistances are shown in Defense."],
+ 'Сопр. аном. дух.':["Сопротивляемость аномальным состояниям духа.\\nПо классификации Pandora Saga: сон, безумие, немота, слабость, болезнь.\\nРасчёт: +7 за каждые полные 28 СД, плюс известные бонусы персонажа. Отдельные сопротивления — в разделе «Защита».","Mental Status Ailment Resistance.\\nClassic Pandora Saga grouping: sleep, madness, silence, weakness, disease.\\nCalculation: +7 per full 28 SPI plus known character bonuses. Individual resistances are shown in Defense."],
  'Сопр. магии':['Общее сопротивление магическим воздействиям.','Overall magic resistance.']
 });
 const help=Object.freeze({
