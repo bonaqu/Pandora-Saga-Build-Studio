@@ -50,6 +50,10 @@ test('on-hit child, chance metadata and direction must match full source',()=>{
   s=>{s[430057001].funcs.find(f=>f.ep==='EP_ONHIT_SKILL_EXEC').fv2[3]=31;},
   s=>{s[430057001].funcs.find(f=>f.ep==='EP_ONHIT_SKILL_EXEC').dir='CASTER_OR_TARGET';},
   s=>{s[430057001].funcs.find(f=>f.ep==='EP_ONHIT_SKILL_EXEC').fv1[3]=999999999;},
+  s=>{s[430057001].funcs.find(f=>f.ep==='EP_ONHIT_SKILL_EXEC').fv1[3]=213607002;},
+  s=>{s[430057001].funcs.find(f=>f.ep==='EP_ONHIT_SKILL_EXEC').fv2=[0,0,0,100];},
+  s=>{s[430057002].name='Сторонний эффект';},
+  s=>{s[430057001].funcs.push(structuredClone(s[430057001].funcs.find(f=>f.ep==='EP_ONHIT_SKILL_EXEC')));},
   s=>{s[430057002].funcs.push({ep:'EP_SKILL_EXEC',dir:'TARGET',fv1:[0,0,0,430057001],fv2:[0,0,0,0]});}
  ];
  for(const mutate of probes){
