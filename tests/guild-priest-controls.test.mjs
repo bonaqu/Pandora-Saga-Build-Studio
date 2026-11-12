@@ -73,8 +73,8 @@ test('external priest buffs require correct Blessing mastery and valid numbers',
  assert.match(engine,/priestValid&&priest\.blessing>=8&&attributeBuffs\?\.priestGratia/);
  assert.match(engine,/priestValid&&priest\.blessing>=12&&attributeBuffs\?\.priestLapisMedio/);
  assert.match(engine,/Number\.isSafeInteger\(n\)&&n>=0&&n<=500/);
- assert.match(book,/Number\(buffs\.priestBlessing\)>=8/);
- assert.match(book,/Number\(buffs\.priestBlessing\)>=12/);
+ assert.match(book,/\[320007001,'priestGratia',8\]/);
+ assert.match(book,/\[320008001,'priestLapisMedio',12\]/);
 });
 test('Hero Book buff names use Remaked approved RU identities',()=>{
  const book=source('pandora-studio-hero-book.js');
