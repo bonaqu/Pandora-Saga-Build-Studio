@@ -1246,6 +1246,7 @@ main{padding-top:10px}
 .stage-heal-row small{grid-column:1/-1;font-size:10px;color:#baa281;line-height:1.35}
 
 /* Shared original OS skill icons in Healing, periodic effects, songs and passives. */
+.stage-guide-popup{white-space:pre-line;overflow-wrap:anywhere;line-height:1.45}
 .stage-effect-skill-label{display:inline-flex;align-items:center;gap:8px;min-width:0;max-width:100%}
 .stage-effect-skill-label>img{width:26px;height:26px;flex:0 0 26px;object-fit:contain}
 .stage-effect-skill-label>span{min-width:0;overflow-wrap:anywhere}
