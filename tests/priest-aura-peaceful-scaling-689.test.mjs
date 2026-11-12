@@ -68,17 +68,18 @@ test('250 synthetic edge cases are source-only and stable across mastery/SPR thr
  assert.equal(cases,250);
  assert.equal(JSON.stringify(skills),source);
 });
-test('Book puts model magnitudes underneath source skill name and next to caster inputs',()=>{
+test('Book displays magnitude alongside source skill and one shared priest profile',()=>{
  const book=read('pandora-studio-hero-book.js');
  const css=read('pandora-studio-hero-book-additions.css');
  const app=read('pandora-studio-app.js');
- assert.match(book,/class:'stage-ally-skill-row'/);
- assert.match(book,/casterStatKey/);
+ assert.doesNotMatch(book,/class:'stage-ally-skill-row'/);
+ assert.doesNotMatch(book,/casterStatKey/);
  assert.match(book,/priestValues\.holyEnhanced/);
  assert.match(book,/priestValues\.peaceful/);
  assert.match(book,/priestBenevolence/);
- assert.match(book,/skill\.modelOnly\?'≈ '/);
- assert.match(css,/\.stage-ally-caster-field>input/);
+  assert.match(book,/const priestFields=make\('div',\{class:'stage-priest-fields'\}\)/);
+ assert.doesNotMatch(book,/skill\.modelOnly\?'≈ '/);
+ assert.doesNotMatch(css,/\.stage-ally-caster-field>input/);
  assert.match(app,/priestBenevolence:61/);
  assert.match(app,/benevolence:snap\.attributeBuffs\?\.priestBenevolence/);
 });

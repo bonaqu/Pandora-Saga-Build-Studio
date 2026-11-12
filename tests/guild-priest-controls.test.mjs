@@ -86,7 +86,7 @@ test('Hero Book buff names use Remaked approved RU identities',()=>{
   assert.ok(book.includes(name),'Missing approved Remaked name: '+name);
  assert.match(book,/'Песнь поэта': "Minstrel's Song"/);
  assert.match(book,/'Песнь чар': "Sage's Song"/);
- assert.match(book,/priestSpi','priestBlessing','priestHymn','priestEnabled'/);
+ assert.match(book,/priestSpi','priestBlessing','priestHymn','priestBenevolence','priestExorcism','priestEnabled'/);
 });
 
 // One table-driven test covers boundary thresholds without multiplying test processes.
