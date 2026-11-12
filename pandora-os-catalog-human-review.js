@@ -46,6 +46,178 @@ const sectionNames={
  zoneDrops:'Добыча по локациям',limit:'Пределы мастерства',
  expCurve:'Опыт мастерства',get:'Начисление мастерства',branchNames:'Названия веток'
 };
+
+function describeZoneDrops(previous,current,ctx,add,unknown){
+ const zones=(value,side)=>{
+  const out=new Map();
+  if(!Array.isArray(value)){unknown(side+': неверный список локаций');return out}
+  value.forEach(entry=>{
+   if(!entry||entry.map==null){unknown(side+': локация без ID');return}
+   const id=String(entry.map);
+   if(out.has(id)){unknown(side+': дублируется локация №'+id);return}
+   out.set(id,entry);
+  });return out;
+ };
+ const before=zones(previous,'Старая версия'),after=zones(current,'Новая версия');
+ const sourceName=(section,id,entity)=>{
+  const row=ctx?.upstream?.[section]?.[id]||ctx?.baseline?.[section]?.[id];
+  const label=row?.name?.ru||row?.name;
+  if(typeof label==='string'&&label.trim())return label;
+  unknown('Название '+entity+' №'+id+' не найдено в каталоге');
+  return entity+' №'+id+' (название не найдено)';
+ };
+ const ruleType=row=>row?.kind==='csv'?'Таблица CSV':
+  row?.kind==='hook'?'Обработчик добычи':'Неизвестный тип '+String(row?.kind);
+ const monster=row=>row?.mob==null?'без указанного монстра':
+  'монстр «'+sourceName('monsters',row.mob,'монстра')+'»';
+ const items=row=>Array.isArray(row?.items)?
+  row.items.map(i=>sourceName('items',i.i,'предмета')).join(', '):'состав неизвестен';
+ const identity=row=>String(row?.kind)+'|'+String(row?.mob??'')+'|'+
+  (Array.isArray(row?.items)?row.items.map(i=>String(i.i)).sort().join(','):'?');
+ const owner=row=>String(row?.kind)+'|'+String(row?.mob??'');
+ const summary=row=>ruleType(row)+' · '+monster(row)+' · '+items(row)+
+  ' (base='+String(row?.base??'—')+', perMember='+String(row?.perMember??'—')+')';
+ const format=x=>x===undefined?'не указано':x!==null&&typeof x==='object'?JSON.stringify(x):x;
+ let changed=0,locations=[];
+ for(const id of new Set([...before.keys(),...after.keys()])){
+  const oldZone=before.get(id),newZone=after.get(id);
+  if(same(oldZone,newZone))continue;
+  const label=sourceName('maps',id,'локации');
+  changed++;if(locations.length<3)locations.push('«'+label+'»');
+  const prefix='Локация «'+label+'»';
+  if(!oldZone||!newZone){
+   add(prefix+' · Правила добычи',oldZone?'есть':'нет',newZone?'есть':'нет');
+   add(prefix+' · Число правил',oldZone?.rows?.length||0,newZone?.rows?.length||0);
+   unknown(prefix+': добавлена либо удалена локация целиком');continue;
+  }
+  for(const key of new Set([...Object.keys(oldZone),...Object.keys(newZone)]))
+   if(!['map','rows'].includes(key)&&!same(oldZone[key],newZone[key])){
+    unknown(prefix+': неизвестное поле '+key);
+    add(prefix+' · Поле '+key+' (назначение неизвестно)',format(oldZone[key]),format(newZone[key]));
+   }
+  if(!Array.isArray(oldZone.rows)||!Array.isArray(newZone.rows)){
+   unknown(prefix+': список правил добычи повреждён');continue;
+  }
+  const old=oldZone.rows,now=newZone.rows,usedA=new Set(),usedB=new Set();
+  let found=0;
+  const pair=(i,j)=>{
+   usedA.add(i);usedB.add(j);
+   const a=old[i],b=now[j];
+   if(same(a,b))return;
+   const title=prefix+' · '+ruleType(b)+' · '+monster(b)+' · '+items(b);
+   for(const field of new Set([...Object.keys(a||{}),...Object.keys(b||{})])){
+    if(['kind','mob','items'].includes(field)||same(a?.[field],b?.[field]))continue;
+    const decoded={base:'Базовое значение (base; единицы не подтверждены)',
+     perMember:'Значение на участника (perMember; единицы не подтверждены)'}[field];
+    if(!decoded)unknown(title+': неизвестное поле '+field);
+    add(title+' · '+(decoded||'Поле '+field+' (смысл неизвестен)'),
+     format(a?.[field]),format(b?.[field]));found++;
+   }
+   const mapItems=(rule)=>{
+    const m=new Map();
+    for(const item of (Array.isArray(rule?.items)?rule.items:[])){
+     if(!item||item.i==null){unknown(title+': отсутствует номер предмета');continue}
+     const id=String(item.i);
+     if(m.has(id))unknown(title+': повтор предмета №'+id+'; сравнение неоднозначно');
+     else m.set(id,item);
+    }return m;
+   };
+   const left=mapItems(a),right=mapItems(b);
+   for(const id of new Set([...left.keys(),...right.keys()])){
+    const x=left.get(id),y=right.get(id);
+    if(same(x,y))continue;
+    const itemTitle=prefix+' · '+ruleType(b)+' · '+monster(b)+
+     ' · предмет «'+sourceName('items',id,'предмета')+'»';
+    if(!x||!y){
+     add(itemTitle+' · Присутствие в правиле',x?'есть':'нет',y?'есть':'нет');
+     found++;continue;
+    }
+    for(const k of new Set([...Object.keys(x),...Object.keys(y)])){
+     if(k==='i'||same(x[k],y[k]))continue;
+     const decoded={lo:'Нижняя граница (lo)',hi:'Верхняя граница (hi)'}[k];
+     if(!decoded)unknown(itemTitle+': неизвестное поле '+k);
+     add(itemTitle+' · '+(decoded||'Поле '+k+' (смысл неизвестен)'),
+      format(x[k]),format(y[k]));found++;
+    }
+   }
+  };
+  const match=fn=>{
+   const groups=(rows,used)=>{
+    const out=new Map();
+    rows.forEach((row,i)=>{
+     if(used.has(i))return;
+     const key=fn(row),list=out.get(key)||[];
+     list.push(i);out.set(key,list);
+    });return out;
+   };
+   const left=groups(old,usedA),right=groups(now,usedB);
+   for(const [key,indices] of left){
+    const ids=right.get(key)||[];
+    if(indices.length===1&&ids.length===1)pair(indices[0],ids[0]);
+    else if(indices.length&&ids.length){
+     unknown(prefix+': одинаковые признаки нескольких правил; соответствие неоднозначно');
+     add(prefix+' · Повторяющиеся правила · '+ruleType(old[indices[0]]),
+      indices.map(i=>summary(old[i])).join('; '),ids.map(i=>summary(now[i])).join('; '));
+     indices.forEach(i=>usedA.add(i));ids.forEach(i=>usedB.add(i));found++;
+    }
+   }
+  };
+  match(identity); // stable item set; ignores row ordering
+  match(owner);    // item set changed, but only one unmatched rule per monster/type
+  old.forEach((row,i)=>{if(!usedA.has(i)){
+   add(prefix+' · Удалено правило · '+ruleType(row)+' · '+monster(row),
+    summary(row),'отсутствует');found++;
+  }});
+  now.forEach((row,i)=>{if(!usedB.has(i)){
+   add(prefix+' · Добавлено правило · '+ruleType(row)+' · '+monster(row),
+    'отсутствовало',summary(row));found++;
+  }});
+  if(!found&&!same(old,now)){
+   unknown(prefix+': поменялся только порядок строк; значение порядка не подтверждено');
+   add(prefix+' · Порядок правил','прежний порядок','новый порядок');
+  }
+ }
+ return 'Затронуто '+changed+' '+plural(changed,'локация','локации','локаций')+
+  (locations.length?': '+locations.join(', ')+(changed>3?' и другие':''):'')+
+  '. Далее показаны точные отличия в правилах добычи. base и perMember не пересчитываются в проценты: единицы источника не подтверждены.';
+}
+function describeNestedTable(section,a,b,add,unknown){
+ const labels={ratio:'Относительный параметр (ratio)',flat:'Постоянная прибавка (flat)',
+  ability:'Очки характеристик',skill:'Очки умений',skillLimit:'Ограничение умений',
+  expReq:'Опыт до уровня',req:'Требуемое значение',cumulative:'Накопленное значение',
+  normal:'Обычный режим',special:'Особый режим',diff:'Разница уровней',
+  mod:'Поправка',atk:'Атака',def:'Защита',magicDef:'Магическая защита',
+  plus:'Уровень заточки',weapon:'Оружие',armor:'Броня',
+  thresholdSec:'Порог времени (секунды)',...names};
+ const valueOf=x=>x===undefined?'не указано':x!==null&&typeof x==='object'?JSON.stringify(x):x;
+ const labelFor=(key,position)=>labels[key]||(/^\d+$/.test(key)?
+  position===0&&['weaponPlus','magicPlus'].includes(section)?'Заточка +'+key:
+  position===0&&['exp','abilityPoint'].includes(section)?'Уровень '+key:
+  'Запись '+(Number(key)+1):'Исходный код «'+key+'»');
+ const label=path=>[sectionNames[section]||section,...path.map((k,i)=>labelFor(String(k),i))].join(' · ');
+ const walk=(x,y,path=[],depth=0)=>{
+  if(same(x,y))return;
+  if(depth>7){unknown(label(path)+': слишком глубокая структура');add(label(path),valueOf(x),valueOf(y));return}
+  if(plain(x)&&plain(y)){
+   for(const k of new Set([...Object.keys(x),...Object.keys(y)]))
+    walk(x[k],y[k],[...path,k],depth+1);
+  }else if(Array.isArray(x)&&Array.isArray(y)&&x.length===y.length){
+   for(let i=0;i<x.length;i++)walk(x[i],y[i],[...path,String(i)],depth+1);
+   if(x.some((entry,i)=>plain(entry)&&plain(y[i])&&
+    ['diff','plus','id','map'].some(k=>entry[k]!=null&&y[i][k]!=null&&entry[k]!==y[i][k])))
+    unknown(label(path)+': изменена последовательность идентификаторов, строки могли сместиться');
+  }else{
+   if(Array.isArray(x)||Array.isArray(y)||plain(x)||plain(y))
+    unknown(label(path)+': сложное изменение структуры');
+   for(const k of path)if(!labels[k]&&!/^\d+$/.test(String(k))&&
+    !['WARRIOR','SCOUT','MAGE','ACOLYTE','HUMAN','ELF','DWARF','MYLIN','ENKIDU','LAPIN'].includes(k))
+     unknown(label(path)+': значение исходного кода «'+k+'» не подтверждено');
+   add(label(path),valueOf(x),valueOf(y));
+  }
+ };
+ walk(a,b);
+}
+
 function describeCompound(kind,before,after,ctx,add,unknown){
  const old=before||{},next=after||{};
  const enumerate=(rows,key)=>{
@@ -183,18 +355,17 @@ function describeCompound(kind,before,after,ctx,add,unknown){
  }
  if(kind==='tables'||kind==='expertise'){
   const sections=[];
-  for(const name of fields(old,next)){
-   if(same(old[name],next[name]))continue;
-   sections.push(sectionNames[name]||'Другой раздел');
-   // No inferred gameplay arithmetic; display only what is definitely different.
-   if(typeof old[name]==='number'||typeof next[name]==='number')
-     safeAdd(sectionNames[name]||'Другой раздел',old[name],next[name]);
-   else safeAdd(sectionNames[name]||'Другой раздел','прежняя версия','изменены данные');
-   if(!sectionNames[name])unknown('Неизвестный раздел: '+name);
+  for(const section of fields(old,next)){
+   if(same(old[section],next[section]))continue;
+   const title=sectionNames[section]||'Раздел «'+section+'»';
+   sections.push(title);
+   if(!sectionNames[section])unknown('Неизвестное обозначение раздела '+section);
+   if(kind==='tables'&&section==='zoneDrops')
+    sections[sections.length-1]=title+': '+describeZoneDrops(old[section],next[section],ctx,safeAdd,unknown);
+   else describeNestedTable(section,old[section],next[section],safeAdd,unknown);
   }
-  unknown('Игровые формулы и ограничения требуют полной отдельной проверки');
-  return 'Изменены разделы: '+sections.join(', ')+
-    '. Для проверки формул нужны исходные значения и правила расчёта.';
+  return 'Изменены игровые разделы: '+sections.join('; ')+
+   '. Значения источника расшифрованы для сравнения, но правила расчёта и публикацию нужно проверить отдельно.';
  }
  unknown('Неизвестный составной раздел');
  return 'Изменён состав данных, правила расчёта пока не подтверждены.';
