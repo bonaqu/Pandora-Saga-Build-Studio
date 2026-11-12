@@ -196,7 +196,11 @@ function describeNestedTable(section,a,b,add,unknown){
   plus:'Уровень заточки',weapon:'Оружие',armor:'Броня',
   thresholdSec:'Порог времени (секунды)',...names};
  const valueOf=x=>x===undefined?'не указано':x!==null&&typeof x==='object'?JSON.stringify(x):x;
- const labelFor=(key,position)=>labels[key]||(/^\d+$/.test(key)?
+ const labelFor=(key,position)=>key.startsWith('diff=')?'Разница уровней '+key.slice(5):
+  key.startsWith('plus=')?'Заточка +'+key.slice(5):
+  key.startsWith('map=')?'Локация №'+key.slice(4):
+  key.startsWith('id=')?'Запись №'+key.slice(3):
+  labels[key]||(/^\d+$/.test(key)?
   position===0&&['weaponPlus','magicPlus'].includes(section)?'Заточка +'+key:
   position===0&&['exp','abilityPoint'].includes(section)?'Уровень '+key:
   'Запись '+(Number(key)+1):'Исходный код «'+key+'»');
@@ -207,15 +211,34 @@ function describeNestedTable(section,a,b,add,unknown){
   if(plain(x)&&plain(y)){
    for(const k of new Set([...Object.keys(x),...Object.keys(y)]))
     walk(x[k],y[k],[...path,k],depth+1);
-  }else if(Array.isArray(x)&&Array.isArray(y)&&x.length===y.length){
-   for(let i=0;i<x.length;i++)walk(x[i],y[i],[...path,String(i)],depth+1);
-   if(x.some((entry,i)=>plain(entry)&&plain(y[i])&&
-    ['diff','plus','id','map'].some(k=>entry[k]!=null&&y[i][k]!=null&&entry[k]!==y[i][k])))
-    unknown(label(path)+': изменена последовательность идентификаторов, строки могли сместиться');
+  }else if(Array.isArray(x)&&Array.isArray(y)){
+   const identity=['diff','plus','id','map'].find(k=>
+    [x,y].every(rows=>rows.every(row=>plain(row)&&row[k]!=null)&&
+     new Set(rows.map(row=>String(row[k]))).size===rows.length));
+   if(identity){
+    // Source order can change without any value changing. Do not compare
+    // unrelated entries by array index when they have stable game identities.
+    const before=new Map(x.map(row=>[String(row[identity]),row]));
+    const after=new Map(y.map(row=>[String(row[identity]),row]));
+    for(const id of new Set([...before.keys(),...after.keys()]))
+     walk(before.get(id),after.get(id),[...path,identity+'='+id],depth+1);
+    if(![...before.keys()].every((id,i)=>[...after.keys()][i]===id)){
+     unknown(label(path)+': порядок записей изменился; значение порядка не подтверждено');
+     add(label(path)+' · Порядок записей','прежний порядок','новый порядок');
+    }
+   }else if(x.length===y.length&&x.every((entry,i)=>
+    (entry===null||typeof entry!=='object')&&
+    (y[i]===null||typeof y[i]!=='object'))){
+    for(let i=0;i<x.length;i++)walk(x[i],y[i],[...path,String(i)],depth+1);
+   }else{
+    unknown(label(path)+': невозможно однозначно сопоставить строки массива');
+    add(label(path)+' · Состав записей',valueOf(x),valueOf(y));
+   }
   }else{
    if(Array.isArray(x)||Array.isArray(y)||plain(x)||plain(y))
     unknown(label(path)+': сложное изменение структуры');
    for(const k of path)if(!labels[k]&&!/^\d+$/.test(String(k))&&
+    !/^(diff|plus|map|id)=/.test(String(k))&&
     !['WARRIOR','SCOUT','MAGE','ACOLYTE','HUMAN','ELF','DWARF','MYLIN','ENKIDU','LAPIN'].includes(k))
      unknown(label(path)+': значение исходного кода «'+k+'» не подтверждено');
    add(label(path),valueOf(x),valueOf(y));
