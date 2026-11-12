@@ -510,9 +510,6 @@ function buffsPage(body,options){
  const {buffs={},vitalsBuffs={},onBuff=()=>{},onVital=()=>{},honorTitles=[],
   availability={},combatSkillCards={},resistanceSkillChoices=[],modifiers,gameTerms={}}=options;
  const english=document.documentElement?.lang==='en';
- body.append(make('p',{class:'stage-attribute-note',text:english?
-  'Settings apply to this build immediately. Values update in the other Hero Book chapters.':
-  'Все настройки применяются к текущему билду сразу. Числа обновляются в остальных главах книги.'}));
  // Count selected effects, never mastery input numbers or a disabled priest.
  const guildSelected=Number(buffs.guildLevel)>0;
  const selected=value=>value===true||
@@ -747,7 +744,11 @@ function gameSkillBadge(id,ru,en,terms,english,skillIconForId){
  const label=make('span',{class:'stage-effect-skill-label'});
  const source=skillIconForId?.(id);
  if(source){
-  const picture=make('img',{src:source,alt:'',loading:'lazy'});
+  // Hard-limit intrinsic OS sprites even if an optional CSS file fails to load.
+  const picture=make('img',{src:source,alt:'',loading:'lazy',
+   width:26,height:26,class:'stage-effect-skill-icon',
+   style:'display:block;width:26px;height:26px;min-width:26px;max-width:26px;'+
+    'min-height:26px;max-height:26px;flex:0 0 26px;object-fit:contain'});
   picture.onerror=()=>{
    // When an original sprite fails, use only the known original-client
    // question mark, not unrelated artwork from another skill.
@@ -1095,23 +1096,19 @@ function appendWeaponConditions(body,calc,items,english){
  }
  body.append(panel);
 }
-function mountedBookNotice(body,options,english){
- if(options.buffs?.mounted!==true)return;
- body.append(make('p',{class:'stage-attribute-note stage-mounted-note',
-  text:english?
-   'Mounted: preliminary Remaked estimate. Defense and normal attack speed are unavailable while riding.':
-   'Верхом: предварительный расчёт по Remaked. Защита и скорость обычной атаки верхом не отображаются.'}));
-}
 function attackPage(body,calc,items,english,options={}){
- // A saved character state, not a temporary UI-only preview.
- const toggle=make('label',{class:'stage-book-check stage-mounted-toggle'},[
-  make('input',{type:'checkbox','data-book-setting':'mounted',
-   checked:options.buffs?.mounted===true,
+ // A saved character setting. The help belongs to the actual word
+ // “Верхом” instead of a paragraph permanently occupying Attack's height.
+ const toggle=make('div',{class:'stage-book-check stage-mounted-toggle'},[
+  make('input',{id:'stageBookMountedToggle',type:'checkbox',
+   'data-book-setting':'mounted',checked:options.buffs?.mounted===true,
    onchange:event=>options.onBuff?.('mounted',event.target.checked)}),
-  make('span',{text:english?'Mounted':'Верхом'})
+  make('label',{for:'stageBookMountedToggle',class:'stage-mounted-label',
+   tabindex:0,text:english?'Mounted':'Верхом'})
  ]);
+ guideLabel(toggle.querySelector('.stage-mounted-label'),'attack.mountedToggle',
+  'Верхом','Mounted',options);
  body.append(toggle);
- mountedBookNotice(body,options,english);
  appendChapterGroups(body,attackChapterGroups(calc),english,
   'Нет подтверждённых дополнительных атакующих параметров.',
   'No supported additional attack metrics.',{...options,page:'attack'});
@@ -1119,7 +1116,6 @@ function attackPage(body,calc,items,english,options={}){
  appendItemEvents(body,calc,english,'attack');
 }
 function defensePage(body,calc,english,options={}){
- mountedBookNotice(body,options,english);
  appendChapterGroups(body,defenseChapterGroups(calc),english,
   'Нет подтверждённых дополнительных защитных параметров.',
   'No supported additional defense metrics.',{...options,page:'defense'});
@@ -1280,10 +1276,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
  const body=make('div',{class:'stage-attribute-scroll stage-book-page',
   id:'stageBookPanel',role:'tabpanel','aria-labelledby':'stageBookTab_'+chosen,
   'data-book-visible':chosen});
- if(chosen==='summary'){
-  mountedBookNotice(body,{buffs},document.documentElement?.lang==='en');
-  summaryPage(body,modifiers,copyOptions);
- }
+ if(chosen==='summary')summaryPage(body,modifiers,copyOptions);
  if(chosen==='attack')attackPage(body,modifiers,items,document.documentElement?.lang==='en',
   {...copyOptions,buffs,onBuff});
  if(chosen==='defense')defensePage(body,modifiers,document.documentElement?.lang==='en',
