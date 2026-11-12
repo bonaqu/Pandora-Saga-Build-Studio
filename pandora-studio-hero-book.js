@@ -649,9 +649,9 @@ function buffsPage(body,options){
  ];
  if(!guildLevel){
   select(passiveGroup,'Сила гильдии','Physical','guildHp',
-   opts([0,'2%','4%','6%','9%','12%','15%']),true);
+   opts([0,'2%','4%','6%','9%','12%']),true);
   select(passiveGroup,'Дух гильдии','Spirit','guildMp',
-   opts([0,'2%','4%','6%','9%','12%','15%']),true);
+   opts([0,'2%','4%','6%','9%','12%']),true);
   select(passiveGroup,'Восстановление силы','Physical Recovery',
    'guildLifeRecovery',opts([0,5,8]));
   select(passiveGroup,'Восстановление духа','Spirit Recovery',
@@ -684,7 +684,7 @@ function buffsPage(body,options){
  guild.append(activeGroup);
  select(activeGroup,'Магистр исцеления','Healing','guildHealing',
   opts([0,10,20,30]));
- select(activeGroup,'Магистр битвы','Combat','guildAll',opts([0,1,2,3,4,5,6]));
+ select(activeGroup,'Магистр битвы','Combat','guildAll',opts([0,1,2,3]));
  select(activeGroup,'Магистр магии','Arouse','guildArouse',opts([0,'2%','4%','6%']));
  for(const [key,i] of [['guildHealing',8],['guildAll',9],['guildArouse',10]]){
   const el=activeGroup.querySelector?.('[data-book-setting="'+key+'"]');
