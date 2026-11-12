@@ -905,6 +905,10 @@ function buffsPage(body,options){
   [320007001,'priestGratia',8],
   [320008001,'priestLapisMedio',12]]){
   const row=remakedBuffRows.find(item=>item.id===id);
+  const canonical=gameTerms.skills?.[String(id)],
+   officialName=row?.name||canonical?.name||key,
+   officialEnglish=row?.nameEn||
+    gameTerms.englishSkills?.[String(id)]?.n||officialName;
   const benefit=id===320007001?'gratia':id===320008001?'lapisMedio':'encouragement';
   const amount=priestValues?.[benefit];
   const summary=Number.isFinite(amount)?(
@@ -915,9 +919,9 @@ function buffsPage(body,options){
    (id===320007001?(english?'Attack speed +':'Скорость атаки +'):
     (english?'Defense +':'Защита +'))+amount
   ):(english?'Exact amount not confirmed by OS':'Точное значение не подтверждено данными OS');
-  toggle(priest,row?.name||key,key,false,
+  toggle(priest,english?officialEnglish:officialName,key,false,
    buffs.priestEnabled===true&&Number(buffs.priestBlessing)>=required,
-   {id,name:row?.name||key,nameEn:row?.nameEn||key,
+   {id,name:officialName,nameEn:officialEnglish,
     icon:skillIconForId(id),desc:row?.description,
     descEn:gameTerms.englishSkills?.[String(id)]?.d||row?.description,
     externalPriest:true,
@@ -979,7 +983,21 @@ function buffsPage(body,options){
    'Прибавка атаки не подтверждена текущими данными OS.';
   return readableBuffEffects[id]?.[english?1:0]||'';
  };
- for(const row of remakedBuffRows){
+ // A direct Hero Book render may not receive the higher-level Remaked
+ // choices array (e.g. previews, editor tests). Recover the six external
+ // priest skills by their official OS IDs instead of silently omitting them.
+ const ownIds=new Set(remakedBuffRows.map(row=>row.id));
+ const additionalPriestRows=[
+  320003001,320011001,330051001,340001001,340003001,340004001
+ ].filter(id=>!ownIds.has(id)).map(id=>{
+  const source=gameTerms.skills?.[String(id)];
+  if(!source||source.id!==id||source.learnable!==true)return null;
+  return {id,name:source.name,
+   nameEn:gameTerms.englishSkills?.[String(id)]?.n||source.name,
+   description:source.desc||'',available:true,existing:false,counted:false,
+   scope:'party',reason:'',reasonEn:''};
+ }).filter(Boolean);
+ for(const row of [...remakedBuffRows,...additionalPriestRows]){
   if(row.existing||!row.name)continue;
   // Blessing- and Hymn-dependent spells are received from another priest.
   // A fixed party effect without caster-attribute scaling remains with allies.
