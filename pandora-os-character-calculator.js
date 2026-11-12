@@ -952,6 +952,10 @@ function directStrikeCoefficientPreview({skillCatalog,jobKey,level,
    const previous=skillCatalog[String(s.prereq)];
    if(!previous||previous.id!==s.prereq||previous.learnable!==true||
     previous.branch!==s.branch)continue;
+   // An advanced skill is a REPLACEMENT, not an extra theoretical rank:
+   // show it only after its current OS level/mastery conditions are met.
+   if(level<Number(s.charLevel||0)||
+    s.reqs.some(req=>branchRank(req.branch)<req.amount))continue;
   }
   // A learned successor with the same supported source family replaces
   // its predecessor, as in Double Slash -> Cut. It does not add a second hit.
