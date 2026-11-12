@@ -1310,7 +1310,7 @@ export async function runAdminEntrySmoke(browser,base){
    const details=page.locator('#stageBookPanel .stage-resistance-skill-controls');
    await details.waitFor({state:'attached'});
    if(!(await details.evaluate(node=>node.open)))
-    await details.locator('> summary').click();
+    await details.locator(':scope > summary').click();
   };
   await showBookNote();
   const bookCaption=page.locator(
