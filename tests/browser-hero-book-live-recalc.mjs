@@ -121,21 +121,20 @@ export async function runHeroBookLiveRecalcSmoke(browser,base){
   await page.locator('#stageAttributes [data-book-page="buffs"]').click();
   const authored=key=>page.locator('#stageBookPanel [data-guide-key="'+key+'"]');
   for(const [key,text] of [
-   ['buffs.section.0','Vitals'],['buffs.guild','Guild'],
-   ['buffs.section.honor','Honor · passive skill'],['buffs.section.1','Priest buffs'],
+   ['buffs.section.0','Priest buffs'],['buffs.guild','Guild'],
+   ['buffs.section.honor','Honor · passive skill'],
    ['buffs.section.self','Self buffs'],['buffs.section.party','Ally buffs'],
-   ['buffs.setting.guildHp','Guild HP'],
-   ['buffs.setting.guildMp','Guild MP'],
-   ['buffs.setting.guildAll','All attributes'],
-   ['buffs.setting.guildLifeRecovery','Guild: HP recovery']
+   ['buffs.setting.guildHp','Physical'],
+   ['buffs.setting.guildMp','Spirit'],
+   ['buffs.setting.guildAll','Combat'],
+   ['buffs.setting.guildLifeRecovery','Physical Recovery']
   ])assert.equal(await authored(key).innerText(),text,'EN '+key);
   await page.locator('#locale [data-locale="ru"]').click();
   for(const [key,text] of [
-   ['buffs.section.0','ОЗ и ОМ'],['buffs.guild','Гильдия'],
-   ['buffs.section.1','Усиления жреца'],
-    ['buffs.section.self','Личные умения'],['buffs.section.party','Усиления от союзников'],
-   ['buffs.setting.guildHp','Гильдейское ОЗ'],
-   ['buffs.setting.guildAll','Все характеристики']
+   ['buffs.section.0','Усиления жреца'],['buffs.guild','Гильдия'],
+   ['buffs.section.self','Личные умения'],['buffs.section.party','Усиления от союзников'],
+   ['buffs.setting.guildHp','Сила гильдии'],
+   ['buffs.setting.guildAll','Магистр битвы']
   ])assert.equal(await authored(key).innerText(),text,'RU '+key);
   assert.deepEqual(errors,[]);
   console.log('Chromium live Hero Book passed: DEX 9→10→20, green Tactics 85→65, auto and slider');
