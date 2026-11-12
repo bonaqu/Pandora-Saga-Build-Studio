@@ -75,5 +75,6 @@ test('conditional source UI is collapsed and describes uncertainty in plain lang
  assert.match(book,/stage-skill-onhit-effects/);
  assert.match(book,/onHit:true/);
  assert.match(book,/Эти эффекты могут запускаться при попадании/);
- assert.match(book,/gameTerms\.englishSkills\?\.\[String\(id\)\]\?\.n\|\|russian/);
+ assert.match(book,/gameTerms\.englishSkills\?\.\[String\(entry\.id\)\]/);
+ assert.match(book,/const description=\(en\?source\?\.d:null\)/);
 });
