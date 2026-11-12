@@ -602,12 +602,12 @@ function buffsPage(body,options){
   const description=english?skill?.descEn||skill?.desc:skill?.desc;
   if(typeof description==='string'&&description.trim())
    root.PandoraGuideTooltip?.attach(info,description,{hoverDelay:650});
-  if(skill&&!allowed)
+  // An external-priest checkbox is grey while not enabled, but its benefit
+  // stays readable. It is NOT a profession restriction of the recipient.
+  if(skill&&!allowed&&!skill.externalPriest)
    info.append(make('small',{text:(english?skill.reasonEn:skill.reason)||
     (english?'Unavailable to this hero':'Недоступно для героя')}));
-  // Preview-only caveats matter only after the player enables the buff.
-  // Ordinary numerical effect summaries remain visible before selection.
-  else if(skill?.summary&&(!skill.pending||selected))
+  if(skill?.summary)
    info.append(make('small',{text:skill.summary}));
   node.append(info);parent.append(node);
  };
@@ -794,13 +794,15 @@ function buffsPage(body,options){
     id===320008001?(english?'Defense +':'Защита +'):
      (english?'STR, AGI and INT +':'СИЛ, ПРВ и ИНТ +'))+amount:
    (english?'Depends on priest parameters':'Зависит от параметров жреца');
-  toggle(party,row?.name||key,key,false,
+  toggle(priest,row?.name||key,key,false,
    buffs.priestEnabled===true&&Number(buffs.priestBlessing)>=required,
    {name:row?.name||key,nameEn:row?.nameEn||key,
     icon:skillIconForId(id),desc:row?.description,
     descEn:gameTerms.englishSkills?.[String(id)]?.d||row?.description,
-    summary,reason: 'Нужен другой жрец с Благословением '+required,
-    reasonEn:'External priest needs Blessing '+required});
+    externalPriest:true,
+    summary:buffs.priestEnabled?summary:(english?
+     'Scales with the other priest’s attributes and mastery':
+     'Зависит от СД и мастерства другого жреца')});
  }
  for(const [key,label] of [['combatWarCry','Боевой клич'],
   ['combatWindAssist','Помощь ветра'],['combatWindBlessing','Благословение ветра']])
@@ -810,13 +812,17 @@ function buffsPage(body,options){
  // deliberately stay in their original sections, without duplicate inputs.
  for(const row of remakedBuffRows){
   if(row.existing||!row.name)continue;
-  const externalPriestSkill=[320011001,330051001,340001001,340004001]
-   .includes(row.id);
+  // Blessing- and Hymn-dependent spells are received from another priest.
+  // A fixed party effect without caster-attribute scaling remains with allies.
+  const externalPriestSkill=[320003001,320011001,330051001,
+   340001001,340003001,340004001].includes(row.id);
   const target=externalPriestSkill?priest:row.scope==='party'?party:skills;
   const description=english?gameTerms.englishSkills?.[String(row.id)]?.d:row.description;
   const priestReady=!externalPriestSkill||(
    buffs.priestEnabled===true&&
+   (row.id!==320003001||Number(buffs.priestBlessing)>=26)&&
    (row.id!==340001001||Number(buffs.priestHymn)>=8)&&
+   (row.id!==340003001||Number(buffs.priestHymn)>=30)&&
    (row.id!==340004001||(Number(buffs.priestHymn)>=30&&
     Number(buffs.priestBlessing)>=71)));
   toggle(target,english?row.nameEn:row.name,'legacySkill:'+row.id,false,
@@ -825,6 +831,7 @@ function buffsPage(body,options){
     nameEn:row.nameEn,icon:skillIconForId(row.id),
     desc:row.description,descEn:description||row.description,
     reason:row.reason,reasonEn:row.reasonEn,
+    externalPriest:externalPriestSkill,
     pending:!row.counted,
     summary:row.counted?({
      100055001:english?'Accuracy +20 and +15%':'Точность +20 и +15%',
@@ -833,7 +840,11 @@ function buffsPage(body,options){
      260005001:english?'Evasion +10':'Уклонение +10',
      260008001:english?'Evasion +100':'Уклонение +100'
     }[row.id]):
-     (english?'Numerical effect details are in development':'Числовые показатели в разработке')});
+     // Game-client description is useful even where current OS stacking is
+     // not confirmed. Never present historical previews as final damage.
+     (english?description||row.description:row.description)||
+     (english?'Effect has not been quantified yet':
+      'Числовой эффект ещё не подтверждён')});
  }
  if(resistanceSkillChoices.length){
   const group=make('details',{class:'stage-legacy-buff-previews stage-resistance-skill-controls'});
