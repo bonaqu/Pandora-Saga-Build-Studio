@@ -15,7 +15,8 @@ test('owner hint copy uses the existing inline CAS editor, not a new modal',()=>
  assert.match(render,/editor\.open=buildHintEditorExpanded/);
  assert.match(render,/buildHintEditorExpanded=editor\.open/);
  assert.match(render,/rows\.append\(h\('div',\{class:'build-hint-owner-row'\}/);
- for(const key of ['libraryHintOpen','libraryHintOverwrite',
+ for(const key of ['libraryCardOpen','libraryCardOverwrite',
+  'libraryCardShare','libraryCardDelete','libraryHintOpen','libraryHintOverwrite',
   'libraryHintShare','libraryHintDelete','libraryHintDeleteLocal'])
   assert.match(render,new RegExp("\\['"+key+"','"));
  assert.match(render,/'data-owner-copy-key':key,text:libraryText\(key\)/);
@@ -37,6 +38,6 @@ test('the owner panel does not enumerate or expose user-owned identities',()=>{
  assert.ok(a>0&&b>a);
  const body=app.slice(a,b);
  assert.doesNotMatch(body,/\bb\.name\b|state\.name|token|sharedUrl|password|\.id\b/);
- assert.match(body,/'Подсказки кнопок','Button hints'/);
+ assert.match(body,/'Кнопки и подсказки','Buttons and hints'/);
  assert.match(body,/'Локальная копия','Local copy'/);
 });
