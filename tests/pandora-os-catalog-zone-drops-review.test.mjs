@@ -63,8 +63,8 @@ test('new source rules show what was added without shifting an unrelated rule',(
   kind:'csv',base:0.8,perMember:0,items:[{i:52001,lo:1,hi:2}]
  });
  const result=render(old,next);
- assert.ok(result.rows.some(row=>row.label.includes('Добавлено правило')&&
-  row.after.includes(catalog.items['52001'].name)&&row.after.includes('базовое значение: 0,8')));
+ assert.ok(result.rows.some(row=>row.label.includes('Добавлены попытки добычи')&&
+  row.after.includes(catalog.items['52001'].name)&&(row.afterFull??row.after).includes('Базовый шанс попытки: 0,8%')));
  assert.ok(!result.rows.some(row=>row.label.includes('Базовое значение')&&row.before==='0,3'));
 });
 

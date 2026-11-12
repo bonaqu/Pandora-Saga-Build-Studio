@@ -564,12 +564,50 @@
       }
       return wrap;
     }
+
+    // Prefer the largest modeled changes across different monsters, not four
+    // adjacent gems from the same loot pool. Full details stay searchable.
+    function impactSamples(entries){
+      const significance=e=>Math.max(...e.before.map((v,i)=>Math.abs(v-e.after[i])));
+      const ranked=[...entries].sort((a,b)=>significance(b)-significance(a));
+      const chosen=[],seen=new Set();
+      for(const entry of ranked){
+        const key=entry.mapName+'|'+entry.mobName+'|'+entry.kind;
+        if(seen.has(key))continue;
+        chosen.push(entry);seen.add(key);
+        if(chosen.length===4)return chosen;
+      }
+      for(const entry of ranked)if(!chosen.includes(entry)){
+        chosen.push(entry);
+        if(chosen.length===4)break;
+      }
+      return chosen;
+    }
+
     function fieldPreview(change,description) {
       const content=h('div',{class:'os-sync-explanation'});
       if(description.rows.length>1)content.append(h('small',{
         class:'os-sync-result-count',
         text:tr('Изменено параметров: ','Changed parameters: ')+description.rows.length}));
       content.append(h('p',{class:'os-sync-change-summary',text:description.summary}));
+      // Show the game-level meaning up front, not only technical field changes.
+      const impacts=description.impacts||[];
+      const notable=impactSamples(impacts);
+      if(impacts.length){
+        const panel=h('div',{class:'os-sync-impact-preview'});
+        panel.append(h('strong',{text:tr(
+          'Как изменится расчётный шанс выпадения (модель сайта OS)',
+          'How estimated drop chances change (OS website model)')}));
+        for(const effect of notable)
+          panel.append(h('p',{class:'os-sync-impact-line',text:effect.preview}));
+        if(impacts.length>4)panel.append(h('small',{class:'muted',
+          text:tr('Ещё ','And ')+(impacts.length-4)+
+            tr(' изменений — открой подробности ниже.',' more changes — see details below.')}));
+        panel.append(h('small',{class:'muted',text:tr(
+          'Соло / 4 / 8 активных участников на карте. Только этот источник дропа; не подтверждение работы игрового сервера.',
+          'Solo / 4 / 8 active party members on this map. This loot source only; not verified game-server behavior.')}));
+        content.append(panel);
+      }
       if(description.caution)content.append(h('p',{
         class:'os-sync-change-caution',text:description.caution}));
       const details=h('details',{class:'os-sync-field-details'});
@@ -1024,14 +1062,30 @@
       const ruCount=mode==='server'&&russianToggle.checked?verifiedRussian.length:0;
       const sourceWarning=mode==='archive'
         ?'\nИСТОЧНИК: сохранённая копия проекта. Данные могут быть СТАРЕЕ текущей игры.':'\nИСТОЧНИК: текущая игра.';
+      const selectedChanges=changes.filter(checked);
+      const selectedDescriptions=selectedChanges.map(describe);
+      const selectedImpacts=selectedDescriptions.flatMap(d=>d.impacts||[]);
+      const impactPreview=selectedImpacts.length?
+        '\n\nРАСЧЁТНОЕ ИЗМЕНЕНИЕ ШАНСОВ В BUILD STUDIO:\n'+
+        impactSamples(selectedImpacts).map(e=>'• '+e.preview).join('\n')+
+        (selectedImpacts.length>4?'\n• И ещё '+(selectedImpacts.length-4)+
+          ' изменений (смотри подробную сверку).':'')+
+        '\nМодель расчёта взята с сайта OS; сам сервер не проверен.':'';
+      const otherPreview=selectedDescriptions.filter(d=>!(d.impacts||[]).length)
+        .slice(0,2).map(d=>'\n• '+d.title+': '+d.summary.slice(0,200)).join('');
+      const atomicWarning=selectedChanges.some(e=>e.dataset==='tables')?
+        '\n\nВАЖНО: выбран весь набор «Игровые формулы», не один предмет. '+
+        'После подтверждения обновятся все таблицы этого раздела в D1. '+
+        'Применить только одну строку внутри невозможно.':'';
       const uncertainWarning=uncertain
         ?'\nВНИМАНИЕ: '+uncertain+' выбранных изменений требуют ручной проверки.':'';
       if (!confirm('Применить выбранные изменения игрового каталога?\n'+
         'Новых: '+added+'; изменённых: '+changed+'; удалённых: '+removed+
         '; переносов описаний: '+formatted+'; русских описаний: '+ruCount+'.'+
         sourceWarning+(ruCount?'\nРусские описания — проверенная копия проекта, не текст игрового JSON.':'')+
-        uncertainWarning+
-        '\nНичего не было опубликовано до этого подтверждения.'))return;
+        uncertainWarning+atomicWarning+impactPreview+otherPreview+
+        '\n\nОбновляется ТОЛЬКО сайт Build Studio (D1), не сервер игры. '+
+        'Ничего не опубликовано до этого подтверждения.'))return;
       setBusy(true);
       try {
         const current=await request('/api/admin/catalog/status',{});
@@ -1063,7 +1117,7 @@
           snapshot,extraCounts:prepared.extraCounts,expectedActive:activeSnapshot});
         // The server has already committed this snapshot: never report a rollback
         // if a subsequent local UI refresh fails.
-        status.textContent='Данные опубликованы ('+result.active+'). '+
+        status.textContent='Изменения опубликованы в каталоге Build Studio (D1: '+result.active+'). Игровой сервер не изменён. '+
           (ruCount?'Проверенные русские описания добавлены. ':'')+
           'GitHub не изменён.';
         publishedSnapshot=result.active;

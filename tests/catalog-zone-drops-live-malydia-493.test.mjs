@@ -31,8 +31,11 @@ test('real current OS disappearance: 85 exact rows in Malydia, all counted and n
  assert.equal(output.uncertain,true,'atomic tables must still require explicit approval');
  assert.equal(output.unexplained,false,'repeated rules with exact counts are not ambiguous');
  assert.equal(output.technical.length,0);
- assert.equal(output.rows.length,97,'1 total + 48 grouped differences with count and original parameters');
- const counts=output.rows.filter(row=>row.label.includes('Количество одинаковых записей'));
+ assert.equal(output.rows.length,97+output.impacts.length,'48 source rule groups plus per-item chances');
+ assert.equal(output.impacts.length,182,'real Malydia model affects 182 map/monster/item combinations');
+ assert.ok(output.impacts.some(e=>e.preview.includes('Призрачный рекрут')&&
+  e.preview.includes('Имперская медаль Мальдии')&&e.preview.includes('32,11% → 22,75%')));
+ const counts=output.rows.filter(row=>row.label.includes('Число независимых попыток по модели OS'));
  assert.equal(counts.length,48,'show every distinct removed row content');
  assert.ok(counts.some(row=>row.label.includes('Призрачный рекрут')&&
   row.label.includes('Имперская медаль Мальдии')&&row.before==='6'&&row.after==='4'));
@@ -54,7 +57,7 @@ test('duplicate rule multiplicity remains exact, even if one copy survives',()=>
   items:[{i:80098,lo:0,hi:0}]};
  const make=n=>({zoneDrops:[{map:2005102,rows:Array.from({length:n},()=>clone(rule))}]});
  const result=compare(make(3),make(1));
- const change=result.rows.find(row=>row.label.includes('Количество одинаковых записей'));
+ const change=result.rows.find(row=>row.label.includes('Число независимых попыток по модели OS'));
  assert.equal(change.before,'3');
  assert.equal(change.after,'1');
  assert.match(result.summary,/Итого удалено 2, добавлено 0/);
@@ -63,8 +66,8 @@ test('duplicate rule multiplicity remains exact, even if one copy survives',()=>
 });
 
 test('all duplicate copies retained in different order are not reported as removed',()=>{
- const first={kind:'hook',base:0.3,items:[{i:85100,lo:0,hi:0}]};
- const second={kind:'hook',base:0.1,items:[{i:85101,lo:0,hi:0}]};
+ const first={kind:'hook',base:0.3,perMember:0,items:[{i:85100,lo:0,hi:0}]};
+ const second={kind:'hook',base:0.1,perMember:0,items:[{i:85101,lo:0,hi:0}]};
  const make=rows=>({zoneDrops:[{map:2005102,rows}]});
  const result=compare(make([first,first,second]),make([second,first,first]));
  assert.match(result.summary,/Итого удалено 0, добавлено 0/);
