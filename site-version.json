@@ -1,4 +1,4 @@
 {
-  "release": "2026.11.12.659",
-  "notes": "Compact RU/EN game-style hints on four saved-build actions, D1-backed labels and searchable library parity"
+  "release": "2026.11.12.660",
+  "notes": "Owner-only in-place RU/EN tooltip copy editor with CAS, Undo and live card updates"
 }
