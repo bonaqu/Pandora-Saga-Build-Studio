@@ -836,7 +836,8 @@ function buffsPage(body,options){
  const inspirationKnown=osVector(320006001,'EP_SKILL_DELAY_FIN',[0,0,0,50]);
  const naturalKnown=osVector(330005001,'EP_HEAL_MANA_REGENERATOR',[0,10,0,0],[0,0,0,2]);
  const restKnown=osVector(320002001,'EP_HEAL_TIME_SCALE',[0,0,0,90]);
- const despairKnown=osVector(100058001,'EP_DAMAGERATE_SCALE',[0,0,35,40]);
+ const despairKnown=osVector(100058001,'EP_DAMAGERATE_SCALE',[0,0,35,40])&&
+  osVector(100058001,'EP_ONDAMAGE_FIN_DAMAGE_SCALE',[0,0,0,100]);
  const priest=section('Усиления жреца','Priest buffs');
  toggle(priest,english?'Use external priest':'Учитывать усиления другого жреца','priestEnabled');
  const priestFields=make('div',{class:'stage-priest-fields'});

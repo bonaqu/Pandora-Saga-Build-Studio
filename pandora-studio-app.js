@@ -2905,7 +2905,8 @@ function wikiLink(text,type,id,highlight=null){
  }});
  // References inside item, Soul, NPC, monster and recipe articles use the
  // same rich skill preview as Hero Path, rather than plain text or titles.
- if(type==='skill')window.PandoraSkillPreview?.attach(link,displayId);
+ if(type==='skill'&&typeof window!=='undefined')
+  window.PandoraSkillPreview?.attach(link,displayId);
  return link;
 }
 function guardEncyclopediaSearch(input){
