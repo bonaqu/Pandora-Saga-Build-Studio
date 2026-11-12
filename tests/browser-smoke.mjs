@@ -264,12 +264,20 @@ async function main(){
  assert.equal(await page.locator('#stageBookPanel').getAttribute('data-book-visible'),'attack');
  assert.equal(await page.locator('#stageBookPanel .stage-result-tile').count(),0,
   'Attack chapter must not repeat any of the 43 calculated results');
- assert.equal(await page.locator('#stageBookPanel [data-chapter-stat="weaponPhysical"]').count(),1,
-  'Independent weapon damage belongs to Set.ATK, not total ATK');
+ assert.equal(await page.locator('#stageBookPanel [data-chapter-stat="weaponPhysical"]').count(),0,
+  'Old passive +1 must not be presented as physical attack of the equipped weapon');
+ assert.equal(await page.locator('#stageBookPanel [data-chapter-stat="weaponBase"]').count(),0,
+  'An unarmed hero has no equipped weapon W to display');
  assert.equal(await page.locator('#stageBookPanel [data-chapter-group] > strong.stage-guide-label').count(),0);
- const weaponDamageLabel=page.locator('#stageBookPanel [data-chapter-stat="weaponPhysical"] span');
- assert.equal(await weaponDamageLabel.getAttribute('tabindex'),null,
-  'Unexplained parameter must not become a fake keyboard control');
+ const mount=page.locator('#stageBookPanel [data-book-setting="mounted"]');
+ assert.equal(await mount.count(),1,'The riding switch must be available on Attack');
+ assert.equal(await mount.isChecked(),false);
+ await mount.check();
+ assert.equal(await mount.isChecked(),true,'Mounted mode must survive live rerender');
+ assert.equal(await page.locator('#stageBookPanel .stage-mounted-note').count(),1);
+ await mount.uncheck();
+ assert.equal(await mount.isChecked(),false,'On-foot mode must be restorable');
+ assert.equal(await page.locator('#stageBookPanel .stage-mounted-note').count(),0);
  assert.equal(await page.locator('#stageBookPanel .stage-combat-quick').count(),0);
  assert.equal(await page.locator('#stageBookPanel .stage-active-elemental').count(),0,
   'Conditional weapon procs appear only if such a weapon is equipped');
