@@ -22,6 +22,12 @@ Sources: [historical status guide](https://wikiwiki.jp/pandoras/%E7%8A%B6%E6%85%
 
 **Защита → Сопротивления отдельным состояниям:** the expandable reference uses the **same** D1 summary keys `guideedit.book.summary.40` (body) and `guideedit.book.summary.41` (mind), plus the D1-editable header `guideedit.book.defense.statusFamilyCaption`. In owner mode, each paragraph can be edited via its pencil or double click, saved through the existing D1 editor; RU and EN are separate, no independent duplicate copy. The 12 individual names have standard hover descriptions in the existing `guideedit.book.defense.resistStatus:<key>` namespace. All editor descriptions are **plain text**, rendered with newlines. Historical double-escaped `\\n` in a D1 override is normalized on display without changing the override's bytes.
 
+## Cumulative Forth breakpoints for individual resistance (0.703.0)
+
+`data/os/itemForth.json` stores **full cumulative grade snapshots only when a threshold changes**. The 162 original item records have no loss of previously existing effect names between their subsequent published breakpoints. For +4/+5 an effect introduced at +3 must remain active until another threshold is crossed. Previously `sourceEffects` selected `itemForth[id][exactGrade]` only and fell through to incomplete narrative parsing, dropping known effects at 342 intermediate item-grade combinations.
+
+`forthSnapshotAtGrade` now selects the highest existing threshold **not exceeding** the equipped grade, never sums all snapshots or double-counts earlier effects. Before the first threshold an official Forth record yields no Forth bonus; for items without a structured Forth table the existing legacy narrative fallback remains. The same source lookup is used by conditional fire-element refinement preview; invalid item IDs, grade or source structure still fail closed. Regression: all 162 × 11 grade cases, real item 15077 block-break 1/3/5/7 at grade 0/3/6/9, real item 15024 knockback 5→10 at +7 and higher, items 14603/14613 silence +2 per two refinement steps.
+
 ## Source and accuracy matrix
 
 | Source | What the current planner calculates | Scope of proof |
