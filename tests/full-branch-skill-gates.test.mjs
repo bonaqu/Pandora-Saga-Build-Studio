@@ -28,8 +28,13 @@ test('frontend passes every known green mastery branch instead of Slash only',()
  changed[260006001].reqs=[{branch:'exorcism',amount:29}];
  assert.equal(combat('ASCETIC',{combatWindAssist:true},changed,branchMasteries).supportSkills.windAssist,true);
  changed[260006001].reqs=[{branch:'exorcism',amount:30}];
- assert.equal(combat('ASCETIC',{combatWindAssist:true},changed,branchMasteries).supportSkills.windAssist,false,
-  'Blue Potential does not satisfy green mastery requirement');
+ assert.equal(combat('ASCETIC',{combatWindAssist:true},changed,branchMasteries).supportSkills.windAssist,true,
+  'Wind Assist is received from an ally; the ally owns casting mastery');
+ // Self-only concentration still requires green Slash mastery.
+ assert.equal(combat('WARRIOR',{combatConcentration:true},skills,
+  {slash:25}).activeSkills.concentration,false);
+ assert.equal(combat('WARRIOR',{combatConcentration:true},skills,
+  {slash:26}).activeSkills.concentration,true);
 });
 test('unlearnable and unresolved combat skill records cannot grant active bonuses',()=>{
  const selected={combatWarCry:true,combatRage:true};
