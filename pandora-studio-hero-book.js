@@ -1298,6 +1298,39 @@ function defensePage(body,calc,english,options={}){
  }
  appendItemEvents(body,calc,english,'defense');
 }
+// All chapters share the Summary disclosure affordance and remember user state.
+function collapseBookSections(body,page){
+ if(page==='summary')return;
+ let index=0;
+ for(const section of [...body.children].filter(node=>node.tagName==='SECTION')){
+  const heading=section.querySelector(':scope > strong, :scope > .stage-chapter-heading');
+  if(!heading)continue;
+  const key=page+':'+(section.dataset.chapterGroup||section.dataset.bookSection||index++);
+  const disclosure=make('details',{class:section.className+' stage-book-disclosure',
+   'data-book-collapse':key});
+  for(const attr of section.attributes)if(attr.name!=='class')
+   disclosure.setAttribute(attr.name,attr.value);
+  disclosure.open=!collapsedBookGroups.has(key);
+  const title=make('summary',{class:'stage-result-section-head'});
+  title.append(make('span',{class:'stage-result-symbol',
+   'aria-hidden':'true',text:'✦'}));
+  if(heading.classList.contains('stage-chapter-heading')){
+   while(heading.firstChild)title.append(heading.firstChild);
+   heading.remove();
+  }else title.append(heading);
+  for(const actions of [...section.querySelectorAll(':scope > .stage-guide-actions')])
+   title.append(actions);
+  title.append(make('span',{class:'stage-result-chevron',
+   'aria-hidden':'true',text:'⌄'}));
+  while(section.firstChild)disclosure.append(section.firstChild);
+  section.replaceWith(disclosure);
+  disclosure.prepend(title);
+  disclosure.addEventListener('toggle',()=>{
+   if(disclosure.open)collapsedBookGroups.delete(key);
+   else collapsedBookGroups.add(key);
+  });
+ }
+}
 // Stable text identities: editing a caption never mutates the game skill or
 // item catalog. Details retain their live record counts after localization.
 const chapterCaptionSpecs=Object.freeze([
@@ -1552,6 +1585,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
   }
  }
  decorateChapterCaptions(body,chosen,copyOptions);
+ collapseBookSections(body,chosen);
  // Existing chapter tabs and guide labels already own a dedicated editor.
  // Suppress generic pencils there and on actionable game/item controls.
  for(const node of body.querySelectorAll?.('[data-book-editorial-key]')||[]){
