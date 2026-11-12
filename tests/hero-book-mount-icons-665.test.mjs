@@ -83,7 +83,8 @@ test('skill effects draw original skill icons using the same catalog resolver as
  const book=read('pandora-studio-hero-book.js');
  const app=read('pandora-studio-app.js');
  assert.match(book,/function gameSkillBadge\(/);
- assert.match(book,/gameSkillBadge\(hitPassive\.id\|\|910110001/);
+ assert.match(book,/gameSkillBadge\(id,ru,enName/);
+ assert.match(book,/addOffense\(hitPassive\.id\|\|910110001/);
  assert.match(book,/renderSongSkills\(body,modifiers,gameTerms,skillIconForId\)/);
  assert.match(book,/skillEffectsPage\(body,\{modifiers,gameTerms,skillIconForId\}\)/);
  assert.match(app,/skillIconForId:id=>\{/);
