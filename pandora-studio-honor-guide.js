@@ -43,8 +43,8 @@ const hints=Object.freeze({
  'Сопр. чарам':['Сопротивление магии чар.','Charm magic resistance.'],
  'Сопр. свету':['Сопротивление магии света.','Light magic resistance.'],
  'Сопр. тьме':['Сопротивление магии тьмы.','Dark magic resistance.'],
- 'Сопр. аном. тел.':['Устойчивость к физическим негативным состояниям.','Resistance to physical status ailments.'],
- 'Сопр. аном. дух.':['Устойчивость к психическим негативным состояниям.','Resistance to mental status ailments.'],
+ 'Сопр. аном. тел.':['Устойчивость к физическим негативным состояниям.\nНапример: ожог, оглушение, заморозка, падение.','Resistance to physical status ailments.\nExamples: burn, stun, freeze, knockdown.'],
+ 'Сопр. аном. дух.':['Устойчивость к психическим негативным состояниям.\nНапример: сон, немота, безумие.','Resistance to mental status ailments.\nExamples: sleep, silence, madness.'],
  'Сопр. магии':['Общее сопротивление магическим воздействиям.','Overall magic resistance.']
 });
 const help=Object.freeze({
