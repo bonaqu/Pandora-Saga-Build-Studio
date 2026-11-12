@@ -36,12 +36,11 @@ const copy=[
   ['viewAria','Вид Энциклопедии','Encyclopedia view'],
   ['viewList','☰ Список','☰ List'],['viewGrid','▦ Сетка','▦ Grid']]],
  ['skill-ui',[
-  ['intro','Просматривайте умения и требования в «Пути героя».',
-   'View skills and their requirements in Hero Path.'],
-  ['open','Открыть умения','Open skills']]],
+  ['searchPlaceholder','Найти умение','Find skill'],
+  ['filterAria','Фильтр навыков','Skill filter']]],
  ['stats-ui',[
-  ['heading','Характеристики','Attributes'],
-  ['available','Свободные очки','Available points']]]
+  ['remainingPrefix','Свободно:','Available:'],
+  ['spentPrefix','Потрачено:','Spent:']]]
 ];
 
 test('27 static RU/EN D1 editor strings span equipment, wiki, skills and stats',()=>{
@@ -82,6 +81,10 @@ test('shared owner editor reuses CAS, blur and Escape without wrapping buttons',
  assert.match(app,/onCommit:next=>saveGuidePatch\('book\.'\+ownerCopyKey\(section,key\),\{\[editLang\]:next\}\)/);
  assert.match(app,/\beditWikiValue\(node,ownerCopy\(section,key,ru,en\)/);
  assert.match(app,/function refreshVisibleOwnerCopy\(recordKey\)/);
+ assert.match(app,/\$\('pathSkillStatus'\)/);
+ assert.match(app,/\$\('pathSkillSearch'\)/);
+ assert.match(app,/ownerInterfaceEditor\('skill-ui'/);
+ assert.match(app,/ownerInterfaceEditor\('stats-ui'/);
 });
 
 test('search terms, actual item stats, skill packets, and character state remain unedited',()=>{
