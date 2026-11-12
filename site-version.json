@@ -1,4 +1,4 @@
 {
-  "release": "2026.11.12.685",
-  "notes": "Read-only direct strike coefficient previews for source-backed learnable attack skills"
+  "release": "2026.11.12.686",
+  "notes": "Source-checked preliminary INT and mastery models for six learnable elemental/dark spells"
 }
