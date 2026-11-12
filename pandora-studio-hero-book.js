@@ -1365,6 +1365,37 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   }
   body.append(group);
  }
+ // Conditional hits are not the same as always-on skill cast links.
+ const conditional=root.PandoraOSCalculator?.skillExecutionChains?.({
+  skillCatalog:gameTerms.skills,jobKey:heroJobKey,level:heroLevel,
+  branchMasteries:heroMasteries,branchCaps:heroBranchCaps,
+  branchLabels:gameTerms.branchLabels,englishBranches:gameTerms.englishBranches,
+  weaponKind:heroWeaponKind,onHit:true
+ });
+ if(conditional?.rows?.length){
+  const section=make('details',{class:'stage-attribute-row stage-skill-onhit-effects'});
+  section.append(make('summary',{text:en?'Effects on hit':'Эффекты при попадании'}));
+  section.append(make('p',{class:'stage-periodic-hint',text:en?
+   'These effects may follow a hit. Their activation chance and duration are not confirmed.':
+   'Эти эффекты могут запускаться при попадании. Их шанс срабатывания и длительность пока не подтверждены.'}));
+  for(const entry of conditional.rows){
+   const source=gameTerms.englishSkills?.[String(entry.id)];
+   // The internal OS child typically repeats the parent skill's name.
+   // Prefer the actual official game description over a confusing duplicate.
+   const description=(en?source?.d:null)||
+    gameTerms.skills?.[String(entry.id)]?.desc||'';
+   const requirements=entry.requirementsMet?
+    (en?'Level and mastery requirements met':'Требования уровня и мастерства выполнены'):
+    (en?entry.reasonEn:entry.reasonRu);
+   section.append(make('div',{class:'stage-heal-row stage-skill-onhit-row'+
+    (entry.requirementsMet?'':' stage-book-unavailable')},[
+    gameSkillBadge(entry.id,entry.name,source?.n||entry.name,gameTerms,en,skillIconForId),
+    make('small',{text:description}),
+    make('small',{text:requirements})
+   ]));
+  }
+  body.append(section);
+ }
 if(!spells.length&&!periodic.length&&!rows.offense?.length&&!rows.defense?.length&&!rows.movement?.length&&!rows.utility?.length)
   body.append(make('p',{class:'stage-attribute-note',text:en?
    'Only skills with build-dependent effect values appear here. Fixed buffs belong in Buffs.':

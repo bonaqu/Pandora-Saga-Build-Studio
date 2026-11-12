@@ -133,6 +133,17 @@ export function auditOsSkillFormulaCoverage({skills,classes,calculator}={}){
    record.executionPaths=Math.max(record.executionPaths||0,chain.paths.length);
   }
  }
+ const onHitSourceRows=entries.flatMap(([,s])=>s.funcs.filter(f=>f?.ep==='EP_ONHIT_SKILL_EXEC'));
+ const eligibleOnHitRoots=new Set();
+ for(const jobKey of classNames){
+  const caps=classes[jobKey].branchCaps;
+  const conditional=calculator.skillExecutionChains({skillCatalog:skills,jobKey,
+   level:55,branchCaps:caps,branchMasteries:caps,onHit:true});
+  for(const skill of conditional.rows){
+   eligibleOnHitRoots.add(skill.id);
+   coverage.get(skill.id).onHitExecution=true;
+  }
+ }
  const statusKeys=['numeric-preview','coefficient-model','source-parameter','qualitative-preview',
   'passive-source','internal-or-triggered-source','unmodeled-learnable'];
  const byStatus=Object.fromEntries(statusKeys.map(key=>[key,0]));
@@ -155,7 +166,9 @@ export function auditOsSkillFormulaCoverage({skills,classes,calculator}={}){
    inspectedClasses:classNames.length,statuses:byStatus,
    executionChains:{sourceLinks:execRows.length,
     zeroTargetSentinels:execRows.filter(f=>f.fv1?.[3]===0).length,
-    eligibleSkillRoots:eligibleExecRoots.size}},
+    eligibleSkillRoots:eligibleExecRoots.size,
+    onHitSourceLinks:onHitSourceRows.length,
+    onHitEligibleSkillRoots:eligibleOnHitRoots.size}},
   rows};
 }
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
