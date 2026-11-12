@@ -20,7 +20,10 @@ test('class-specific scaling skills appear with unknown magnitudes, not made-up 
   const result=rows(job);
   const item=result.offense.find(x=>x.id===id);
   assert.ok(item,job+' must contain the actual varying skill '+id);
-  assert.equal(item.amount,null,id+' magnitude must stay unknown');
+  if(id===100058001){
+   assert.ok(Number.isFinite(item.amount),'Desperation has a Remaked/OS estimate');
+   assert.equal(item.modelOnly,true);
+  }else assert.equal(item.amount,null,id+' final magnitude stays unknown');
   assert.equal(item.uncertain,true);
   assert.equal(selected(rows('WARRIOR').offense,id),false);
  }

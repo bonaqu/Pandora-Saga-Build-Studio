@@ -46,7 +46,8 @@ test('Book lists all supported ally numeric summaries and distinct priest stat b
  assert.match(book,/50% от обычного/);
  assert.match(book,/\+5 ОМ каждые 2 секунды/);
  assert.match(book,/базовый коэффициент \+40%/);
- assert.match(book,/точный итог не подтверждён/);
+ assert.match(book,/расчётная модель/);
+ assert.match(book,/priestValues\.holyEnhanced/);
 });
 test('Path rich tooltip has one reusable source for Buffs, Effects and triggered items',()=>{
  assert.match(app,/window\.PandoraSkillPreview=Object\.freeze\(\{/);

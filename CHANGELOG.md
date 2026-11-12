@@ -1,5 +1,11 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.689.0 — 2026.11.12.689 · Source-gated priest aura enchantment, Peaceful Hymn, Dark Aura, Poison and attack-skill models with caster controls
+
+- Source-gated priest aura enchantment, Peaceful Hymn, Dark Aura, Poison and attack-skill models with caster controls. All new unproven combined magnitudes marked as models (≈) and no direct unconfirmed skill damage applied to actual build stats.
+- 250 synthetic rank/SPR cases; mandatory full Node/Chromium and postmerge read-only Worker/D1 readiness.
+
+
 ## 0.688.0 — 2026.11.12.688 · Hero Book default disclosures, inline priest potency, compact guild rows, and equipment portrait return
 
 - Hero Book default disclosures, inline priest potency, compact guild rows, and equipment portrait return. Defense recovery alone and Buffs priest + Skill Effects healing open by default; Attack unchanged. Guild/elemental/honor and all potions initially collapsed. Priest potency is displayed in native skill rows, not duplicate secondary grid.

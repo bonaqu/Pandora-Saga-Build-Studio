@@ -55,8 +55,9 @@ test('only source-backed self-cast skills accessible to the job are shown',()=>{
   'Blessing 61 is impossible for this class, never claim the skill is possible');
  const sniper=inspect('SNIPER',{branchMasteries:{archery:40,warding:45},
   weaponKind:'CROSSBOW'});
- assert.equal(find(sniper.offense,213605001).amount,null,
-  'Current source proves scaling, not an exact live formula');
+ assert.ok(Number.isFinite(find(sniper.offense,213605001).amount),
+  'Sniping displays a modeled attack gain, not final live damage');
+ assert.equal(find(sniper.offense,213605001).modelOnly,true);
  assert.equal(find(sniper.defense,260005001).amount,null);
  assert.ok(!ids(sniper.offense).includes(320011001));
 });
