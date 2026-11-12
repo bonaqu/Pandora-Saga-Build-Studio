@@ -2516,16 +2516,20 @@ function healingSourceGate({id,cleric,jobKey,level,benevolence,benevolenceCap,
    skill.reqs[0]?.amount!==requiredMastery))||
   !Array.isArray(skill.funcs)||skill.funcs.length!==1)return null;
  const effect=skill.funcs[0];
+ const expectedFV2=id==='restoration'?[0,0,0,2]:[0,0,0,0];
  if(effect.ep!==spec.ep||effect.dir!=='TARGET'||
   !Array.isArray(effect.fv1)||effect.fv1.length!==4||
-  effect.fv1.some((n,i)=>n!==effectValues[i]))return null;
+  effect.fv1.some((n,i)=>n!==effectValues[i])||
+  !Array.isArray(effect.fv2)||effect.fv2.length!==4||
+  effect.fv2.some((n,i)=>n!==expectedFV2[i]))return null;
  if(prereq!=null&&!skillCatalog?.[String(prereq)])return null;
  if(id==='sanctuary'){
   const linked=skillCatalog?.['310023002'];
   if(Number(linked?.id)!==310023002||!Array.isArray(linked.funcs)||
    linked.funcs.length!==1||linked.funcs[0].ep!=='EP_HEAL_LIFE'||
    linked.funcs[0].dir!=='TARGET'||
-   JSON.stringify(linked.funcs[0].fv1)!=='[200,0,200,100]')return null;
+   JSON.stringify(linked.funcs[0].fv1)!=='[200,0,200,100]'||
+   JSON.stringify(linked.funcs[0].fv2)!=='[0,0,0,0]')return null;
  }
  return skillId;
 }
@@ -2535,23 +2539,36 @@ function healingSpellsPreview({level,int,spi,benevolence=0,healingPercent=100,
   ![int,spi,benevolence,healingPercent].every(n=>Number.isFinite(n)&&n>=0))
   return null;
  const cleric=jobKey==='CLERIC'&&level>=50;
- const calc=(raw)=>Math.floor(raw*healingPercent/100);
- const firstAid=cleric?25+level*2.5+benevolence*2.8+int*3:
-  25+level*2.5+benevolence*1.4+int;
- const heal=cleric?105+level*2+benevolence*5+int*10:
-  50+level*2+benevolence*3+int*6;
- const aura=cleric?150+level*2+benevolence*4+int*8.5:
-  150+level*2+benevolence*3+int*6;
- const sanctuary=100+level*2+benevolence*2+int*2;
- const restore=7+Math.floor(benevolence/10)+Math.floor(spi/5);
+ // Remaked Healing-view stages, CURRENT OS coefficients [INT,level,mastery,
+ // constant]. The archival enhanced Heal and Sanctuary level terms are stale.
+ // Preserve raw fractions until the final skill-healing percentage floor.
+ const fv=key=>{
+  if(key==='sanctuary')return [200,0,200,100]; // OS triggered 310023002
+  const spec=healingSourceSpecs[key];
+  const option=cleric&&spec?.cleric?spec.cleric:spec?.standard;
+  return option?.[5]??null;
+ };
+ const calc=key=>{
+  const v=fv(key);
+  if(!Array.isArray(v)||v.length!==4||!v.every(Number.isFinite))return null;
+  const raw=v[3]+int*v[0]/100+level*v[1]/100+
+   benevolence*v[2]/100;
+  return Math.floor(raw*healingPercent/100);
+ };
+ // OS periodic FV1=[SPI%,level%,Healing%,flat]. Remaked's independent
+ // component floors survive; FV2[3]=2 is NOT assigned an unknown tick time.
+ const recoveryFV=healingSourceSpecs.restoration.standard[5];
+ const restore=recoveryFV[3]+Math.floor(spi*recoveryFV[0]/100)+
+  Math.floor(level*recoveryFV[1]/100)+
+  Math.floor(benevolence*recoveryFV[2]/100);
  const rows=[
-  {id:'firstAid',name:'Первая помощь',amount:calc(firstAid),requires:'Мастерство исцеления 8',
+  {id:'firstAid',name:'Первая помощь',amount:calc('firstAid'),requires:'Мастерство исцеления 8',
    requiresEn:'Healing mastery 8',scaledBySkill:true},
-  {id:'heal',name:'Лечение',amount:calc(heal),requires:'Ветвь аколита, уровень 18',
+  {id:'heal',name:'Лечение',amount:calc('heal'),requires:'Ветвь аколита, уровень 18',
    requiresEn:'Acolyte class, level 18',scaledBySkill:true},
-  {id:'healingAura',name:'Массовое исцеление',amount:calc(aura),
+  {id:'healingAura',name:'Массовое исцеление',amount:calc('healingAura'),
    requires:'Мастерство исцеления 54',requiresEn:'Healing mastery 54',scaledBySkill:true},
-  {id:'sanctuary',name:'Храм',amount:calc(sanctuary),
+  {id:'sanctuary',name:'Храм',amount:calc('sanctuary'),
    requires:'Клирик, уровень 45',requiresEn:'Cleric class, level 45',scaledBySkill:true},
   {id:'restoration',name:'Восстановление',amount:restore,
    requires:'Мастерство исцеления 41',requiresEn:'Healing mastery 41',scaledBySkill:false}
@@ -2563,7 +2580,7 @@ function healingSpellsPreview({level,int,spi,benevolence=0,healingPercent=100,
   row.nameEn=healingSourceSpecs[row.id].nameEn;
   row.available=skillId!==null;
  }
- return {formulaSource:'Remaked Legacy js/calc.js, Flag[5], Status.LSk',
+ return {formulaSource:'Remaked Healing-view stages + current OS FV1; triggered Sanctuary 310023002',
   clericLevel50:cleric,verified:false,rows,
   notes:'Восстановление — периодическая величина; множитель лечения навыками не применяется.'};
 }
@@ -2746,12 +2763,21 @@ function periodicRecoveryPreview({level,spi,benevolence=0,jobKey=null,
   !Number.isFinite(spi)||spi<0||
   !Number.isInteger(benevolence)||benevolence<0||typeof jobKey!=='string')
   return null;
+ // Current OS periodic event FV1: [SPI%, level%, Healing%, constant].
+ // Calculate each component with the existing Remaked floor semantics;
+ // never claim FV2[3]=2 proves live tick interval or duration.
+ const osMagnitude=id=>{
+  const v=periodicSkillProof[id].fv1;
+  return v[3]+Math.floor(spi*v[0]/100)+Math.floor(level*v[1]/100)+
+   Math.floor(benevolence*v[2]/100);
+ };
  const candidates=[
-  {id:310002001,key:'regenerate',amount:15+Math.floor(spi/10)+Math.floor(benevolence/10),
+  {id:310002001,key:'regenerate',amount:osMagnitude(310002001),
    kind:'hp',name:'Регенерация'},
-  {id:310022001,key:'restoration',amount:7+Math.floor(spi/5)+Math.floor(benevolence/10),
+  {id:310022001,key:'restoration',amount:osMagnitude(310022001),
    kind:'hp',name:'Восстановление'},
-  {id:330005001,key:'natural',amount:5,kind:'mp',name:'Природное восстановление'}
+  {id:330005001,key:'natural',amount:osMagnitude(330005001),
+   kind:'mp',name:'Природное восстановление'}
  ];
  const rows=[];
  for(const candidate of candidates){
@@ -2771,7 +2797,7 @@ function periodicRecoveryPreview({level,spi,benevolence=0,jobKey=null,
   rows.push({...candidate,available,required:proof.required,
    skillLevel:proof.charLevel,verified:false});
  }
- return {rows,verified:false,source:'Remaked Legacy js/calc.js:1009-1026 (SPI-based LPsec)'};
+ return {rows,verified:false,source:'Remaked independent floors + source-validated OS SPI/level/mastery FV1; tick timing unverified'};
 }
 
 // Historical Remaked Legacy js/equip.js weapon-gem switch for enhancement +1..+10.
