@@ -2179,7 +2179,9 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  if(oldDivineBlessing)mergedBuffIds.add(330004001);
  const resistanceSkills=resistanceSkillPreview({
   skillCatalog:combatContext.skillCatalog,
-  selected:(attributeBuffs.resistanceSkillIds||[]).filter(id=>id!==330004001)
+  selected:root.PandoraRemakedBuffs?.applied?
+   (attributeBuffs.resistanceSkillIds||[]).filter(id=>id!==330004001):
+   (attributeBuffs.resistanceSkillIds||[])
  });
  const resistanceBonuses={...effects.bonuses};
  const groupBuffs=root.PandoraRemakedBuffs?.applied({
