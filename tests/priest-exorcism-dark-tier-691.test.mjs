@@ -66,6 +66,6 @@ test('caster field persists through normal character state without changing skil
  assert.match(app,/priestBenevolence:61,priestExorcism:26/);
  assert.match(app,/exorcism:snap\.attributeBuffs\?\.priestExorcism\?\?26/);
  assert.match(app,/\['priestExorcism',500\]/);
- assert.match(book,/\['priestExorcism','Изгнание','Exorcism mastery'\]/);
+ assert.doesNotMatch(book,/\['priestExorcism','Изгнание','Exorcism mastery'\]/);
  assert.match(book,/row\.id!==330051001\|\|Number\(buffs\.priestExorcism\)>=26/);
 });

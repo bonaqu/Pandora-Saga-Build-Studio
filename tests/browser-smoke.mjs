@@ -375,7 +375,7 @@ async function main(){
   const recovery=await page.locator('#stageAttributes .stage-periodic-recovery').innerText();
   assert.match(recovery,/Регенерация/);
   assert.match(recovery,/Восстановление/);
-  assert.match(recovery,/Ориентировочное действие навыка/);
+  assert.match(recovery,/Действие навыка не относится к пассивному восстановлению героя/);
   await page.locator('#stageAttributes [data-book-page="recovery"]').click();
  await page.locator('#stageAttributes .stage-mana-consumables').waitFor({state:'visible',timeout:20000});
  assert.equal(await page.locator('#stageAttributes .stage-mana-consumables').getAttribute('open'),null,
@@ -548,33 +548,17 @@ async function main(){
   .innerText();
  assert.match(await priestSkillLine('priestGratia'),/Attack speed \+22|Скорость атаки \+22/);
  assert.match(await priestSkillLine('priestLapisMedio'),/Defense \+12|Защита \+12/);
- // External-caster inputs are intentionally shared with the priest profile:
- // changing the row input updates the same SPR and all affected skill values.
- const casterField=page.locator(
-  '#stageBookPanel [data-book-setting="caster-priestSpi-320007001"]');
- assert.equal(await casterField.count(),1,
-  'OS caster-dependent skill gets one inline caster stat editor');
- assert.ok(await page.locator('#stageBookPanel .stage-ally-skill-row').count()>=3);
- const blessingInline=page.locator(
-  '#stageBookPanel [data-book-setting="caster-priestBlessing-320007001"]');
- assert.equal(await blessingInline.count(),1,
-  'Gratia needs both caster SPR and Blessing fields in its own row');
- assert.equal(await page.locator(
-  '#stageBookPanel [data-book-setting="caster-priestBlessing-320011001"]').count(),1,
-  'Enhance Enchantment has a separate inline Blessing input');
- assert.equal(await page.locator(
-  '#stageBookPanel [data-book-setting="caster-priestHymn-340001001"]').count(),1,
-  'Minstrel Song has independent SPR and Hymn inputs');
- await blessingInline.fill('100');
- await blessingInline.press('Tab');
- assert.equal(await page.locator(
-  '#stageBookPanel [data-book-setting="priestBlessing"]').inputValue(),'100');
+ // All priest skill magnitudes share exactly three top-level priest inputs.
+ assert.equal(await page.locator('#stageBookPanel .stage-priest-fields input').count(),3);
+ assert.equal(await page.locator('#stageBookPanel [data-book-setting^="caster-priest"]').count(),0);
+ assert.equal(await page.locator('#stageBookPanel .stage-ally-skill-row').count(),0);
+ await page.locator('#stageBookPanel [data-book-setting="priestBlessing"]').fill('100');
+ await page.locator('#stageBookPanel [data-book-setting="priestBlessing"]').press('Tab');
  assert.match(await priestSkillLine('priestGratia'),/Attack speed \+23|Скорость атаки \+23/);
  await page.locator('#stageBookPanel [data-book-setting="priestBlessing"]').fill('90');
  await page.locator('#stageBookPanel [data-book-setting="priestBlessing"]').press('Tab');
- await casterField.fill('140');
- await casterField.press('Tab');
- assert.equal(await page.locator('#stageBookPanel [data-book-setting="priestSpi"]').inputValue(),'140');
+ await page.locator('#stageBookPanel [data-book-setting="priestSpi"]').fill('140');
+ await page.locator('#stageBookPanel [data-book-setting="priestSpi"]').press('Tab');
  assert.match(await priestSkillLine('priestGratia'),/Attack speed \+23|Скорость атаки \+23/);
  await page.locator('#stageBookPanel [data-book-setting="priestSpi"]').fill('134');
  await page.locator('#stageBookPanel [data-book-setting="priestSpi"]').press('Tab');

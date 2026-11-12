@@ -567,7 +567,7 @@ function buffsPage(body,options){
  const selectedResistanceSkills=selectedResistanceSkill==null?0:1;
  const configured=Object.entries(buffs).filter(([key,value])=>{
   if(key==='proelium'||key==='resistanceSkillIds'||key==='guildLevel')return false;
-  if(['priestSpi','priestBlessing','priestHymn','priestEnabled',
+  if(['priestSpi','priestBlessing','priestHymn','priestBenevolence','priestExorcism','priestEnabled',
    'honorCuriosity','proeliumPotency'].includes(key))return false;
   if(key.startsWith('priest')&&buffs.priestEnabled!==true)return false;
   if(key==='priestGratia'&&!(Number(buffs.priestBlessing)>=8))return false;
@@ -655,39 +655,7 @@ function buffsPage(body,options){
   if(skill?.summary)
    info.append(make('small',{text:skill.summary}));
   node.append(info);
-  // A few OS spells scale with BOTH caster SPR and branch mastery. Their
-  // two fields stay on the right of the SAME skill row, using one persisted
-  // priest profile. Never create another independent caster for a skill.
-  const statKeys=Array.isArray(skill?.casterStatKeys)&&
-   skill.casterStatKeys.length?
-   [...new Set(skill.casterStatKeys)]:
-   skill?.casterStatKey?[skill.casterStatKey]:[];
-  if(statKeys.length){
-   const fields=make('div',{class:'stage-ally-caster-fields'});
-   const shortName={
-    priestSpi:[english?'SPR':'СД',english?'Priest SPR':'СД жреца'],
-    priestBlessing:[english?'Bless.':'Бл.',english?'Blessing mastery':'Мастерство Благословения'],
-    priestHymn:[english?'Hymn':'Пес.',english?'Hymn mastery':'Мастерство Песнопения']
-   };
-   for(const key of statKeys){
-    if(!shortName[key])continue;
-    const [short,full]=shortName[key];
-    const field=make('label',{class:'stage-ally-caster-field'});
-    field.append(make('span',{text:short}));
-    field.append(make('input',{type:'number',min:0,max:500,step:1,
-     'data-book-setting':'caster-'+key+'-'+skill.id,
-     'data-caster-source-key':key,
-     'aria-label':(english?'Ally caster ':'Характеристика союзника: ')+
-      full+' · '+displayName,
-     value:String(buffs[key]??0),
-     disabled:buffs.priestEnabled!==true,
-     onchange:event=>onBuff(key,event.target.value)}));
-    fields.append(field);
-   }
-   if(fields.children?.length||fields.childNodes?.length)
-    parent.append(make('div',{class:'stage-ally-skill-row'},[node,fields]));
-   else parent.append(node);
-  }else parent.append(node);
+  parent.append(node);
  };
  const opts=(units)=>units.map((n,i)=>[i,i===0?bookText('Выключено'):
   (document.documentElement?.lang==='en'?'Level ':'Уровень ')+i+' · +'+n]);
@@ -915,9 +883,7 @@ function buffsPage(body,options){
  for(const [key,ru,en] of [
   ['priestSpi','СД жреца','Priest SPR'],
   ['priestBlessing','Благословение','Blessing mastery'],
-  ['priestHymn','Песнопения','Hymn mastery'],
-  ['priestBenevolence','Исцеление','Benevolence mastery'],
-  ['priestExorcism','Изгнание','Exorcism mastery']
+  ['priestHymn','Песнопения','Hymn mastery']
  ]){
   const label=make('label',{class:'stage-book-field'},[
    make('span',{text:english?en:ru})]);
@@ -961,16 +927,13 @@ function buffsPage(body,options){
     (english?'INT +':'ИНТ +')+amount:
    (id===320007001?(english?'Attack speed +':'Скорость атаки +'):
     (english?'Defense +':'Защита +'))+amount
-  ):(english?'Exact amount not confirmed by OS':'Точное значение не подтверждено данными OS');
+  ):null;
   toggle(priest,english?officialEnglish:officialName,key,false,
    buffs.priestEnabled===true&&Number(buffs.priestBlessing)>=required,
    {id,name:officialName,nameEn:officialEnglish,
     icon:skillIconForId(id),desc:row?.description,
     descEn:gameTerms.englishSkills?.[String(id)]?.d||row?.description,
     externalPriest:true,
-    casterStatKey:id===320012001?'priestBlessing':'priestSpi',
-    casterStatKeys:id===320012001?['priestBlessing']:
-     ['priestSpi','priestBlessing'],
     summary});
  }
  for(const [key,label] of [['combatWarCry','Боевой клич'],
@@ -1033,10 +996,7 @@ function buffsPage(body,options){
    const skill=selfModelRows.find(row=>row.id===id&&row.available);
    const model=skill?.coefficientModels?.[0];
    if(model&&Number.isSafeInteger(model.amount))
-    return (english?'OS coefficient model ≈ +':'Модель по коэффициентам OS ≈ +')+
-     model.amount+(id===142051001?
-      (english?' critical chance':' к шансу крита'):
-      (english?' evasion':' к уклонению'));
+    return (id===142051001?(english?'Critical chance +':'Шанс крита +'):(english?'Evasion +':'Уклонение +'))+model.amount;
    return english?'Only a matching class, weapon and source model can provide a value.':
     'Для расчёта нужны подходящие класс, оружие и данные навыка.';
   }
@@ -1089,18 +1049,10 @@ function buffsPage(body,options){
     desc:row.description,descEn:description||row.description,
     reason:row.reason,reasonEn:row.reasonEn,
     externalPriest:externalPriestSkill,
-    casterStatKey:externalPriestSkill?(
-     [320003001].includes(row.id)?'priestBlessing':'priestSpi'):null,
-    casterStatKeys:externalPriestSkill?(
-     row.id===320003001?['priestBlessing']:
-     row.id===320011001?['priestSpi','priestBlessing']:
-     [340001001,340003001,340004001].includes(row.id)?
-      ['priestSpi','priestHymn']:['priestSpi']):null,
     pending:!row.counted,
     summary:row.counted?({
      100055001:english?'Accuracy +20 and +15%':'Точность +20 и +15%',
-     320002001:restKnown?(english?'MP recovery speed +90 idx':'Скорость восстановления ОМ +90 инд.'):
-      (english?'Recovery speed not confirmed':'Скорость восстановления не подтверждена'),
+     320002001:restKnown?(english?'MP recovery speed +90 idx':'Скорость восстановления ОМ +90 инд.'):null,
      330004001:english?'Magic resistance +25':'Сопротивление магии +25',
      142051001:buffEffectText(142051001),
      260005001:buffEffectText(260005001),
@@ -1124,32 +1076,32 @@ function buffsPage(body,options){
        if(row.id===330051001){
         const stacked=buffs.remakedSkillIds?.includes(320011001)&&
          Number.isFinite(priestValues.holyEnhanced);
-        return stacked?(english?'Holy weapon aura ≈ +':'Святая аура оружия ≈ +')+
-         priestValues.holyEnhanced+(english?' (with Enhance Enchantment, model)':
-          ' (с Чарами усиления, модель)'):
+        return stacked?(english?'Holy weapon aura +':'Святая аура оружия +')+
+         priestValues.holyEnhanced+(english?' (with Enhance Enchantment)':
+          ' (с Чарами усиления)'):
          (english?'Holy weapon aura +':'Святая аура оружия +')+value;
        }
-       if(row.id===340003001)return (english?'Modeled protected-hit threshold ≈ ':
-        'Расчётный порог защищённого удара ≈ ')+value;
+       if(row.id===340003001)return (english?'Protected-hit threshold: ':
+        'Порог защищённого удара: ')+value;
       }
       if(row.id===340003001)return english?
-       'Protection threshold depends on priest SPR/Hymn; exact figure not confirmed.':
-       'Порог защиты зависит от СД/Песнопения жреца; точное значение не подтверждено.';
+       'Protection threshold depends on priest SPR and Hymn.':
+       'Порог защиты зависит от СД и Песнопения жреца.';
       if(row.id===320011001&&Number.isFinite(priestValues.enchantAuraRate)&&
        Number.isFinite(priestValues.enchantAuraFlat)){
        const holy=Number.isFinite(priestValues.holyEnhanced)?
-        (english?' · Holy aura with both buffs ≈ +':' · Святая аура с обоими усилениями ≈ +')+
+        (english?' · Holy aura with both buffs +':' · Святая аура с обоими усилениями +')+
         priestValues.holyEnhanced:'';
        return (english?'Aura +':'Аура +')+priestValues.enchantAuraFlat+
         ' · '+(english?'Aura scaling +':'Усиление ауры +')+
         priestValues.enchantAuraRate+'% · '+
         (english?'Elemental spell bonus +':'Бонус стихийной магии +')+
         priestValues.enchantElementRate+'%'+holy+
-        (english?' (source model)':' (расчётная модель)');
+        '';
       }
       if(row.id===320011001)return english?
-       'Caster scaling exists; incomplete OS source model.':
-       'Эффект зависит от параметров жреца; модель пока недоступна.';
+       'Depends on priest SPR and Blessing.':
+       'Зависит от СД и Благословения жреца.';
       return basic;
      })()});
  }
@@ -1294,8 +1246,8 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    ]));
   }
   details.append(make('p',{class:'stage-periodic-hint',text:en?
-   'Estimated action of the skill, not permanent natural recovery.':
-   'Ориентировочное действие навыка, не постоянное восстановление героя.'}));
+   'Skill recovery is distinct from passive hero recovery.':
+   'Действие навыка не относится к пассивному восстановлению героя.'}));
   body.append(details);
  }
  // Skill Effects shows the theoretical effect of a CAST, independently
@@ -1320,25 +1272,20 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   for(const skill of skills){
    const source=gameTerms.englishSkills?.[String(skill.id)];
    const amount=Number.isFinite(skill.amount)?
-    (skill.modelOnly?'≈ ':'')+(skill.amount>0?'+':'')+String(skill.amount)+
+    (skill.amount>0?'+':'')+String(skill.amount)+
      (en?skill.unit.replace(' защиты',' DEF').replace(' уклонения',' evasion')
       .replace(' АТК',' ATK').replace(' точности и уклонения',' accuracy & evasion')
       .replace(' урона светом',' holy damage').replace(' урона тьмой',' dark damage')
       .replace(' к СИЛ, ПРВ и ИНТ',' STR, AGI and INT')
       .replace(' инд.',' idx').replace(' урона',' damage'):skill.unit):
     '—';
-   const basis=skill.modelOnly?(en?
-    'Estimated from Remaked method and current OS vectors':
-    'Расчётная модель по Remaked и коэффициентам OS'):
-    skill.uncertain?(en?'Exact calculation not confirmed':
-     'Точный расчёт пока не подтверждён'):'';
    const ready=skill.recipient?(en?
     'Effect on this hero when cast by an ally':
     'Эффект при применении союзником к этому герою'):
     skill.available?(en?'Preview when cast':'Значение при применении'):
     (en?'Requirements not met':'Требования ещё не выполнены')+
      (skill.reason?' · '+skill.reason:'');
-   const detail=[ready,basis,en?
+   const detail=[ready,en?
     (skill.detailEn||source?.d||skill.description):
     (skill.detailRu||skill.description)].filter(Boolean).join(' · ');
    const modelParts=(skill.coefficientModels||[]).filter(part=>
@@ -1351,13 +1298,12 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     make('strong',{text:amount}),
     make('small',{text:detail})
    ]);
-   if(modelParts.length){
+   if(modelParts.length&&!Number.isFinite(skill.amount)){
     const parts=modelParts.map(part=>
      (en?part.labelEn:part.labelRu)+' '+
      (part.amount>0?'+':'')+part.amount+part.unit).join(' · ');
     preview.append(make('small',{class:'stage-skill-os-coefficient-model',
-     text:(en?'OS coefficient model (server rounding not confirmed): ':
-      'Модель по коэффициентам OS (округление на сервере не подтверждено): ')+
+     text:(en?'Skill parameters: ':'Параметры умения: ')+
       parts}));
    }
    section.append(preview);
