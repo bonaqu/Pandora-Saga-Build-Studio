@@ -6,6 +6,8 @@ The checked-in OS snapshot [meta.json](../data/os/meta.json) declares `baseLocal
 
 ## Resistance families
 
+The historic sources disagree on whether the body list includes knockdown: [the status page](https://wikiwiki.jp/pandoras/%E7%8A%B6%E6%85%8B%E5%A4%89%E5%8C%96) lists five without knockdown; [the historical equipment index](https://wikiwiki.jp/pandoras/%E3%82%B9%E3%83%86%E3%83%BC%E3%82%BF%E3%82%B9%E8%AA%BF%E6%95%B4%E8%A3%85%E5%82%99%E4%B8%80%E8%A6%A7) explicitly includes knockdown as a sixth. The UI uses the latter listing without asserting current OS combat-engine parity.
+
 Current OS effect channels `EP_IMMUNE_VIT_TYPE` and `EP_IMMUNE_SPI_TYPE` provide physical and mental status-family effects. Current RU OS Soul 102007 gives body resistance +20, Soul 102014 gives mind resistance +20, and race skill 900010002 gives body resistance +15. They are distinct from `EP_IMMUNE_STUN`, `EP_IMMUNE_TUMBLE`, etc.
 
 The *historical* Pandora Saga taxonomy lists:
