@@ -684,7 +684,7 @@ function buffsPage(body,options){
     desc:row.description,descEn:description||row.description,
     reason:row.reason,reasonEn:row.reasonEn,
     summary:row.counted?(english?'Included in results':'Учтено в результатах'):
-     (english?'Effect preview':'Предпросмотр эффекта')});
+     (english?'Numerical effect details are in development':'Числовые показатели в разработке')});
  }
  if(resistanceSkillChoices.length){
   const group=make('details',{class:'stage-legacy-buff-previews stage-resistance-skill-controls'});
@@ -886,8 +886,11 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     gameSkillBadge(hitPassive.id||910110001,'Невероятная сила',
      'Incredible Strength',gameTerms,en,skillIconForId)]),
    make('p',{text:en?
-    'Melee weapon hit-damage passive. It does not increase the ATK stat. The exact damage per hit is not calculated without a verified server formula.':
-    'Пассивка усиливает урон при попадании оружием ближнего боя, но не показатель АТК. Точный урон удара без подтверждённой серверной формулы не рассчитывается.'})
+    'Increases damage dealt with melee weapons.':
+    'Увеличивает урон от оружия ближнего боя.'}),
+   make('small',{class:'stage-hit-passive-pending',text:en?
+    'Numerical effect details are temporarily unavailable. In development.':
+    'Числовые показатели временно не отображаются. В разработке.'})
   ]));
  }
  renderSongSkills(body,modifiers,gameTerms,skillIconForId);
@@ -945,8 +948,6 @@ function attackChapterGroups(calc){
    (entry.kind==='bow'?'Дальность стрельбы':'Дальность атаки')+' · '+entry.source,
    (entry.kind==='bow'?'Bow range':'Attack range')+' · '+entry.source,entry.amount);
  });
- put(0,'mountedRelease','Характеристики верхом','Mounted attributes',
-  calc.mountedRelease?.known,'%');
  const aura=calc.auraDamage?.elements||{};
  for(const [key,entry]of Object.entries(aura)){
   const term=elementTerms[key];if(!term)continue;
@@ -1138,6 +1139,19 @@ function attackPage(body,calc,items,english,options={}){
  ]);
  guideLabel(toggle.querySelector('.stage-mounted-label'),'attack.mountedToggle',
   'Верхом','Mounted',options);
+ // Show the riding percentage with the on/off control in ONE compact row.
+ // Reuse the original editable label/hint key rather than orphan D1 edits.
+ const mountedStat=make('span',{class:'stage-mounted-stat','data-chapter-stat':'mountedRelease'});
+ const mountedName=make('span',{class:'stage-mounted-stat-name',
+  text:english?'Mounted attributes':'Характеристики верхом'});
+ mountedStat.append(mountedName);
+ guideLabel(mountedName,'attack.mountedRelease',
+  'Характеристики верхом','Mounted attributes',options);
+ const riding=calc?.mountedRelease?.known;
+ const percent=Number.isFinite(riding)?
+  new Intl.NumberFormat(english?'en-US':'ru-RU',{maximumFractionDigits:1}).format(riding)+'%':'—';
+ mountedStat.append(make('strong',{class:'stage-mounted-percent',text:percent}));
+ toggle.append(mountedStat);
  body.append(toggle);
  appendChapterGroups(body,attackChapterGroups(calc),english,
   'Нет подтверждённых дополнительных атакующих параметров.',
