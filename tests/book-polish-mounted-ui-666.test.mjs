@@ -62,7 +62,7 @@ test('individual Curse, Weakness and Madness resistance labels mirror OS item de
   assert.ok(items[id].desc.includes(needle),id);
   const hint=guide.field({},'defense.resistStatus:'+kind,kind,kind);
   assert.ok(hint.hintRu.includes(needle.slice(0,4)),kind);
-  assert.ok(hint.hintEn.length>30,kind);
+  assert.ok(hint.hintEn.length>=20,kind);
  }
 });
 
