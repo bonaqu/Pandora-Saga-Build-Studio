@@ -958,6 +958,13 @@ function ownerCopyLabel(node,section,key,ru,en,{onCommitted,onFinished}={}){
 // data (item names, active slot, levels, search queries) are never edited.
 function bindOwnerInterfaceText(node,section,key,ru,en,attribute='text',suffix=''){
  if(!node)return node;
+ // A search field has independently editable placeholder AND aria-label.
+ // Store one descriptor per attribute: binding the second must not erase
+ // the first. Never serialize its live value or user-entered search query.
+ let bindings={};
+ try{bindings=JSON.parse(node.dataset.ownerInterfaceBindings||'{}')}catch{}
+ bindings[attribute]={section,key,ru,en,suffix};
+ node.dataset.ownerInterfaceBindings=JSON.stringify(bindings);
  node.dataset.ownerInterfaceSection=section;
  node.dataset.ownerInterfaceKey=key;
  node.dataset.ownerInterfaceRu=ru;
@@ -8020,15 +8027,19 @@ function refreshVisibleOwnerCopy(recordKey){
  }
  // Attribute/text copy changes patch the existing mounted control only:
  // never replace an active search field, picker, selection or character.
- for(const node of document.querySelectorAll('[data-owner-interface-section][data-owner-interface-key]')){
-  const {ownerInterfaceSection:section,ownerInterfaceKey:id,
-   ownerInterfaceRu:ru,ownerInterfaceEn:en,
-   ownerInterfaceAttribute:attr,ownerInterfaceSuffix:suffix}=node.dataset;
-  if(ownerCopyKey(section,id)!==key||node.querySelector?.('.wiki-inline-input'))continue;
-  const value=ownerCopy(section,id,ru,en)+(suffix||'');
-  if(attr==='text')node.textContent=value;
-  else if(['placeholder','aria-label','title'].includes(attr))
-   node.setAttribute(attr,value);
+ for(const node of document.querySelectorAll('[data-owner-interface-bindings]')){
+  if(node.querySelector?.('.wiki-inline-input'))continue;
+  let bindings={};
+  try{bindings=JSON.parse(node.dataset.ownerInterfaceBindings||'{}')}catch{}
+  for(const [attr,field] of Object.entries(bindings)){
+   const {section,id,ru,en,suffix}={
+    section:field.section,id:field.key,ru:field.ru,en:field.en,suffix:field.suffix};
+   if(ownerCopyKey(section,id)!==key)continue;
+   const value=ownerCopy(section,id,ru,en)+(suffix||'');
+   if(attr==='text')node.textContent=value;
+   else if(['placeholder','aria-label','title'].includes(attr))
+    node.setAttribute(attr,value);
+  }
  }
  // The editable word "empty" is separate from dynamic Soul slot IDs.
  // Reconstruct only that aria suffix after a successful owner CAS or Undo.
@@ -8037,6 +8048,12 @@ function refreshVisibleOwnerCopy(recordKey){
    const number=button.dataset.soulEmptySlot;
    const suffix=' '+number+': '+ownerCopy('equipment','pickerEmptySoul','пусто','empty');
    button.dataset.ownerInterfaceSuffix=suffix;
+   let bindings={};
+   try{bindings=JSON.parse(button.dataset.ownerInterfaceBindings||'{}')}catch{}
+   if(bindings['aria-label']){
+    bindings['aria-label'].suffix=suffix;
+    button.dataset.ownerInterfaceBindings=JSON.stringify(bindings);
+   }
    button.setAttribute('aria-label',
     ownerCopy('equipment','pickerSoulSlotAria','Слот души','Soul slot')+suffix);
   }
