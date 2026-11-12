@@ -74,8 +74,8 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   await page.locator('.modal').getByRole('button',{name:'Войти',exact:true}).click();
   await page.locator('#ownerDock').waitFor({state:'visible',timeout:15000});
 
-  // Encyclopedia: the actual search input keeps its text and identity.
-  await page.locator('#nav [data-tab="wiki"]').click();
+  // The encyclopedia remains open after admin login. The top nav is hidden
+  // inside the workbench, so never attempt to click a hidden active tab.
   const wikiInput=page.locator('input[name="pandora-studio-encyclopedia-filter"]');
   await wikiInput.waitFor({state:'visible'});
   await wikiInput.fill('search that stays');
@@ -94,7 +94,8 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   await cancel.press('Escape');
   assert.equal(writes.length,1);
 
-  // Skills: a read-only launch page remains separate from real Hero Path data.
+  // Skills: close the real workbench before choosing a different section.
+  await page.locator('#dockClose').click();
   await page.locator('#nav [data-tab="skills"]').click();
   const skills=page.locator('#detailContent .studio-owner-interface-editor');
   await skills.locator('summary').click();
@@ -105,11 +106,11 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   assert.match(await page.locator('#detailContent .button-action').first().innerText(),
    /Перейти к навыкам/);
 
-  // Equipment: edit a real picker search without clearing its query or changing equipment.
+  // Equipment: the nav reappears only after the workbench has closed.
+  await page.locator('#dockClose').click();
   await page.locator('#nav [data-tab="character"]').click();
   await page.locator('.equipment-slot[data-slot-index="0"]').click();
   const picker=page.locator('#stagePicker');
-  const gearSearch=picker.locator('.stage-picker-list').count();
   await picker.locator('.stage-picker-list').waitFor({state:'visible'});
   const equipInput=picker.locator('input[type="search"]');
   await equipInput.fill('no item exists');
@@ -139,7 +140,7 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
 
   // Changing language reads each language's independent stored RU/EN field.
   await picker.locator('.stage-picker-head button[aria-label="Закрыть настройку"]').click();
-  await page.locator('#dockClose').click();
+  if(await page.locator('#dockClose').isVisible())await page.locator('#dockClose').click();
   await page.locator('#locale [data-locale="en"]').click();
   await page.locator('#nav [data-tab="wiki"]').click();
   await wikiInput.waitFor({state:'visible'});
