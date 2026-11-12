@@ -73,7 +73,7 @@ test('physical and mental anomaly hover help keeps first description plus separa
  assert.match(mental.hintRu,/^Устойчивость[^\n]+\nНапример: сон, немота, безумие\./);
  assert.match(physical.hintEn,/\nExamples: burn, stun/);
  assert.match(mental.hintEn,/\nExamples: sleep, silence/);
- assert.match(read('pandora-studio-theme.css'),/\.stage-guide-popup\{white-space:pre-line/);
+ assert.match(read('pandora-studio-hero-book-additions.css'),/\.stage-guide-popup\{white-space:pre-line/);
 });
 
 test('skill effects draw original skill icons using the same catalog resolver as Path and Buffs',()=>{
