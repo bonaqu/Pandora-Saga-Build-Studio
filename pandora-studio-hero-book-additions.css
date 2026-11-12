@@ -32,3 +32,44 @@
 #stageAttributes .stage-mounted-label{flex:1 1 auto;min-width:0;cursor:pointer;color:#f4d39f}
 #stageAttributes .stage-mounted-label[data-guide-key]{text-decoration:underline dotted #b99561;text-underline-offset:3px}
 #stageAttributes .stage-mounted-label:focus-visible{outline:2px solid #eac084;outline-offset:2px}
+
+/* Original client artwork has a thin gold rim like the Path skill icons. */
+#stageAttributes .stage-effect-skill-label>img,
+#book-source-qa .stage-effect-skill-label>img{
+ box-sizing:border-box!important;
+ border:1px solid #cf9d53!important;
+ border-radius:3px;background:#1e160e;
+ box-shadow:0 0 0 1px #614325,0 1px 3px #080603aa;
+}
+#stageAttributes .stage-mounted-toggle{
+ display:flex;align-items:center;flex-wrap:wrap;
+ column-gap:9px;row-gap:5px;
+}
+#stageAttributes .stage-mounted-toggle>.stage-mounted-label{
+ flex:0 0 auto;cursor:pointer;
+}
+#stageAttributes .stage-mounted-stat{
+ display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;
+ flex:1 1 180px;min-width:0;justify-content:flex-end;
+ border-left:1px solid #795735;padding-left:10px;
+}
+#stageAttributes .stage-mounted-stat-name{
+ flex:0 1 auto;min-width:0;font:500 11px/1.3 Manrope,Arial,sans-serif;
+ color:#d7c099;overflow-wrap:anywhere;
+}
+#stageAttributes .stage-mounted-stat>.stage-guide-actions{
+ flex:0 0 auto;margin-left:0;
+}
+#stageAttributes .stage-mounted-percent{
+ font:700 17px/1.1 Georgia,serif;color:#f7d39b;
+ white-space:nowrap;font-variant-numeric:tabular-nums;
+}
+#stageAttributes .stage-hit-passive-pending{
+ display:block;font-size:11px;color:#c5aa83;line-height:1.4;
+}
+@media(max-width:520px){
+ #stageAttributes .stage-mounted-stat{
+  flex:1 1 100%;justify-content:flex-start;
+  padding:5px 0 0;border-left:0;border-top:1px solid #795735;
+ }
+}
