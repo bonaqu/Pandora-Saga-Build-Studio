@@ -591,7 +591,14 @@ function buffsPage(body,options){
  const guildLevel=Number(buffs.guildLevel)||0;
  const guildPreview=root.PandoraOSCalculator?.guildPassiveAtLevel(guildLevel);
  const vitals=section('ОЗ и ОМ','Vitals');
- toggle(vitals,'Знак жизни','lifeSign',true);
+ const lifeSign=remakedBuffRows.find(row=>row.id===320005001);
+ toggle(vitals,'Знак жизни','lifeSign',true,true,lifeSign?{
+  name:lifeSign.name,nameEn:lifeSign.nameEn,
+  desc:lifeSign.description,
+  descEn:gameTerms.englishSkills?.['320005001']?.d||lifeSign.description,
+  icon:skillIconForId(320005001),
+  summary:english?'Ally buff · adds HP':'От союзника · увеличивает ОЗ'
+ }:null);
  const guild=section('Гильдия','Guild','guild');
  select(guild,'Уровень гильдии','Guild level','guildLevel',
   Array.from({length:13},(_,i)=>[i,i===0?
