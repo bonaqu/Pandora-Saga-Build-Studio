@@ -615,7 +615,8 @@ function buffsPage(body,options){
     (skill.name||name)):bookText(name);
   const info=make('span',{class:'stage-combat-buff-copy',text:displayName});
   const description=english?skill?.descEn||skill?.desc:skill?.desc;
-  if(typeof description==='string'&&description.trim())
+  const rich=skill?.id!=null&&root.PandoraSkillPreview?.attach(info,skill.id);
+  if(!rich&&typeof description==='string'&&description.trim())
    root.PandoraGuideTooltip?.attach(info,description,{hoverDelay:650});
   // An external-priest checkbox is grey while not enabled, but its benefit
   // stays readable. It is NOT a profession restriction of the recipient.
@@ -1072,6 +1073,7 @@ function gameSkillBadge(id,ru,en,terms,english,skillIconForId){
   label.append(picture);
  }
  label.append(make('span',{text:gameSkillName(id,ru,en,terms,english)}));
+ root.PandoraSkillPreview?.attach(label,id);
  return label;
 }
 function renderSongSkills(body,modifiers,gameTerms={},skillIconForId=()=>null){
@@ -1879,10 +1881,11 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
      const badge=make('span',{class:'stage-consumable-skill-name',
       tabindex:0,'data-triggered-skill-id':skill.id,text:name});
      const description=english?(translated?.d||source?.desc):(source?.desc);
-     root.PandoraGuideTooltip?.attach(badge,
-      description|| (english?'No description in the game catalog.':
-       'Описание умения пока отсутствует в игровом каталоге.'),
-      {hoverDelay:450});
+     if(!root.PandoraSkillPreview?.attach(badge,skill.id))
+      root.PandoraGuideTooltip?.attach(badge,
+       description|| (english?'No description in the game catalog.':
+        'Описание умения пока отсутствует в игровом каталоге.'),
+       {hoverDelay:450});
      skillNames.append(badge);
     }
     row.append(make('span',{class:'stage-potion-name',text:displayName}),skillNames);
