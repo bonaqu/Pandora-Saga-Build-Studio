@@ -51,6 +51,14 @@ test('right-hand equipment content retains width with independent scrollbar',()=
  assert.match(css,/#stagePicker \.stage-rich-body>\.stage-enchant-fieldset/);
  assert.match(css,/scrollbar-width:thin/);
 });
+test('short resistance sentence retains D1 editor key of previous longer copy',()=>{
+ const host={};
+ Function('window',book)(host);
+ const editable=host.PandoraStageAttributes.bookEditorialKey('Одновременно действует только одно умение, выбор нового заменяет предыдущие.');
+ assert.equal(editable,'book-only-one-resistance-spell-can-be-active-sel-a8cce804');
+ assert.match(book,/'Одновременно действует только одно умение, выбор нового заменяет предыдущие.': 'Only one spell can be active at a time. Selecting another replaces the previous one.'/);
+});
+
 test('resistance copy states exactly the exclusive-selection rule',()=>{
  assert.match(book,/Одновременно действует только одно умение, выбор нового заменяет предыдущие\./);
  assert.doesNotMatch(book,/Умения можно применять к союзникам и врагам/);
