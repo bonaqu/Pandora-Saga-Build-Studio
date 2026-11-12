@@ -903,6 +903,68 @@ function defensiveSkillPreview({skillCatalog=null,jobKey=null,level=1,
    effects:values,source:'Current game skill catalog'}];
  });
 }
+// A narrowly bounded **hypothesis**, not a final elemental spell damage
+// formula. The Legacy spell-damage kernel was not available for independent
+// OS confirmation. Only six learnable source identities with a zero fv1[1]
+// term qualify; other elemental spells have a different vector structure.
+const modeledElementalSpellBranches=Object.freeze({
+ 410001001:'element',410002001:'element',410004001:'element',
+ 430001001:'darkness',430052001:'darkness',430053001:'darkness'
+});
+function elementalSpellCoefficientPreview({skillCatalog,jobKey,level,
+ branchMasteries={},branchCaps={},stats={}}={}){
+ if(!skillCatalog||typeof skillCatalog!=='object'||Array.isArray(skillCatalog)||
+  typeof jobKey!=='string'||!Number.isSafeInteger(level)||level<1||level>55)
+  return [];
+ const intelligence=stats?.int;
+ if(!Number.isSafeInteger(intelligence)||intelligence<0||intelligence>1000)
+  return [];
+ const out=[];
+ for(const [key,branch] of Object.entries(modeledElementalSpellBranches)){
+  const id=Number(key),skill=skillCatalog[key];
+  if(!skill||skill.id!==id||skill.learnable!==true||
+   skill.prereq!=null||skill.branch!==branch||
+   !skill.classes?.[jobKey]||
+   !['BOLT','RADIATION','ENEMY'].includes(skill.skillType)||
+   !Array.isArray(skill.reqs)||!Array.isArray(skill.funcs))continue;
+  const cap=branchCaps?.[branch],rank=branchMasteries?.[branch]??0;
+  if(!Number.isSafeInteger(cap)||cap<=0||
+   !Number.isSafeInteger(rank)||rank<0||rank>cap||
+   !skill.reqs.every(req=>req?.branch===branch&&
+    Number.isSafeInteger(req.amount)&&req.amount>=0&&
+    req.amount<=cap))continue;
+  const effects=skill.funcs.filter(effect=>
+   effect?.ep==='EP_ELEMENT_DAMAGE'&&effect.dir==='TARGET');
+  if(effects.length!==1)continue;
+  const {fv1,fv2}=effects[0];
+  if(!Array.isArray(fv1)||fv1.length!==4||
+   !fv1.every(Number.isSafeInteger)||fv1[1]!==0||
+   fv1[0]<0||fv1[0]>350||fv1[2]<0||fv1[2]>350||
+   fv1[3]< -100||fv1[3]>500||
+   !Array.isArray(fv2)||fv2.length!==4||fv2.some(n=>n!==0))continue;
+  const amount=fv1[3]+Math.floor(intelligence*fv1[0]/100)+
+   Math.floor(rank*fv1[2]/100);
+  if(!Number.isSafeInteger(amount))continue;
+  const reasons=[];
+  if(level<Number(skill.charLevel||0))
+   reasons.push('Требуется уровень '+skill.charLevel);
+  for(const req of skill.reqs)if(rank<req.amount)
+   reasons.push('Требуется мастерство «'+branch+'»: '+req.amount);
+  const secondary=skill.funcs.some(effect=>effect.ep!=='EP_ELEMENT_DAMAGE');
+  out.push({id,name:skill.name,description:skill.desc||'',
+   amount:null,unit:'',available:reasons.length===0,
+   reason:reasons.join(' · '),uncertain:true,recipient:false,
+   detailRu:'Предположение по INT и мастерству: точный урон, сопротивление цели, округление и '+
+    (secondary?'дополнительные эффекты не подтверждены':'порядок применения не подтверждены'),
+   detailEn:'INT and mastery assumption; final damage, target resistance, rounding and '+
+    (secondary?'secondary effects unverified':'application order unverified'),
+   coefficientModels:[{ep:'EP_ELEMENT_DAMAGE',
+    labelRu:'Расчётная основа заклинания',labelEn:'Modeled spell basis',
+    amount,unit:'',confidence:'coefficient-model'}],
+   source:'current OS elemental spell source; provisional INT/mastery hypothesis'});
+ }
+ return out.sort((a,b)=>a.id-b.id);
+}
 // Direct strike coefficient projections for currently learnable OS skills.
 // The source coefficient is NOT a final damage number: hit count, weapon,
 // target defense, procs and stage rounding remain explicitly unknown.
@@ -1317,6 +1379,11 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
   skillCatalog,jobKey,level,branchMasteries,branchCaps,weaponKind
  })){
   if(!seen.has(strike.id))result.offense.push(strike);
+ }
+ for(const spell of elementalSpellCoefficientPreview({
+  skillCatalog,jobKey,level,branchMasteries,branchCaps,stats
+ })){
+  if(!seen.has(spell.id))result.offense.push(spell);
  }
  return result;
 }
@@ -2955,7 +3022,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   verified:false,excluded:['unstructured refinement bonuses','unpublished set effects',
     'unverified passive and conditional skills','other group/temporary buffs']};
 }
-root.PandoraOSCalculator=Object.freeze({priestCastPreviews,scalingSkillPreview,directStrikeCoefficientPreview,defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
+root.PandoraOSCalculator=Object.freeze({priestCastPreviews,scalingSkillPreview,directStrikeCoefficientPreview,elementalSpellCoefficientPreview,defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
  base,characterSheetPhysicalAttackRange,classBase,classBaseComponents,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,racialWeaponPreview,incredibleStrengthPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
  recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,consumableSkillPreview,statusCurePreview,harmfulConsumablePreview,gemstonePreview,legacyBuffPreview,songSkillPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,racialUtilityPreview,elementalMagicPreview,elementalRefinementPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive
 });

@@ -1,5 +1,11 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.686.0 — 2026.11.12.686 · Source-checked preliminary INT and mastery models for six learnable elemental/dark spells
+
+- Source-checked preliminary INT and mastery models for six learnable elemental/dark spells; read-only hypotheses only. No combat or D1 mutations.
+- Full Node/Chromium PR tests and post-merge Pages/Worker readiness.
+
+
 ## 0.685.0 — 2026.11.12.685 · Read-only direct strike coefficient previews for source-backed learnable attack skills
 
 - Read-only direct strike coefficient previews for source-backed learnable attack skills; no target damage, critical combat stage changes, no D1 writes.
