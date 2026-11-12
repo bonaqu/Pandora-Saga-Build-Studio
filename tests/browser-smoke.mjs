@@ -426,10 +426,10 @@ async function main(){
  const guildPassives=page.locator('#stageBookPanel .stage-guild-passive-row');
  assert.equal(await guildPassives.count(),7,'Guild Lv.10 grants seven individual passive effects');
  assert.match(await guildPassives.first().innerText(),/12%/);
- assert.match(await guildPassives.first().innerText(),/Сила гильдии V|Physical V/,
+ assert.match(await guildPassives.first().innerText(),/Сила гильдии V|Reveille Lv5/,
   'Automatic guild passive title must include its canonical Roman rank');
- assert.ok((await guildPassives.last().innerText()).includes('V'),
-  'Experience passive also displays the original skill rank');
+ assert.match(await guildPassives.last().innerText(),/V|Lv5/,
+  'Experience passive also displays its original source rank');
  assert.equal(await page.locator('#stageBookPanel .stage-guild-actives [data-book-setting="guildAll"]').count(),1);
  assert.equal(await page.locator('#stageBookPanel .stage-guild-actives [data-book-setting="guildArouse"]').count(),1);
  await page.locator('#stageBookPanel [data-book-setting="priestEnabled"]').check();
