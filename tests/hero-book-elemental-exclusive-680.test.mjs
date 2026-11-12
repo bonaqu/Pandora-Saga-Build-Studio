@@ -15,7 +15,9 @@ test('five elemental casts remain a separate standard group with mutual exclusiv
  assert.doesNotMatch(book,/stage-resistance-skill-controls/);
  assert.doesNotMatch(book,/Вражеский навык|Incoming skill/);
  assert.match(app,/current\.resistanceSkillIds=value===true\?\[id\]:\[\]/);
- assert.doesNotMatch(app,/if\(value===true\)selected\.add\(id\);else selected\.delete\(id\)/);
+ const branch=app.slice(app.indexOf("}else if(key.startsWith('resistSkill:'))"),
+  app.indexOf("}else if(key==='honorTitle')"));
+ assert.doesNotMatch(branch,/selected\.add\(id\)|selected\.delete\(id\)/);
  const css=read('pandora-studio-hero-book-additions.css');
  assert.doesNotMatch(css,/#stageAttributes \.stage-resistance-skill-controls>/);
 });

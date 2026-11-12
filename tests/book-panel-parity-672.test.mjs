@@ -71,9 +71,9 @@ test('external priest selected Minstrel/Sage songs use live OS rank coefficients
 });
 
 test('only genuine OS resistance skill sprites are considered, no invented assets',()=>{
- assert.match(book,/const sprite=skillIconForId\(skill\.id\)/);
- assert.match(book,/stage-resistance-skill-icon/);
- assert.match(book,/picture\.onerror=\(\)=>picture\.remove\(\)/);
+ assert.match(book,/const elementalSkills=resistanceSkillChoices\.filter/);
+ assert.match(book,/icon:skillIconForId\(skill\.id\)/);
+ assert.match(book,/toggle\(group,skill\.name,'resistSkill:'\+skill\.id/);
  for(const id of [410003001,410015001,410025001,430054001,440005501])
   assert.ok(skills[String(id)]?.funcs?.length,'expected current OS resistance skill '+id);
 });
