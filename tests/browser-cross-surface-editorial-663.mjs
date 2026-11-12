@@ -78,6 +78,9 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   // inside the workbench, so never attempt to click a hidden active tab.
   const wikiInput=page.locator('input[name="pandora-studio-encyclopedia-filter"]');
   await wikiInput.waitFor({state:'visible'});
+  // Encyclopedia search is intentionally readonly until a real pointer
+  // or keyboard interaction, to suppress password-manager interference.
+  await wikiInput.click();
   await wikiInput.fill('search that stays');
   await wikiInput.evaluate(node=>{window.__copyWikiSearch=node});
   const wikiPanel=page.locator('#detailContent .studio-owner-interface-editor');
