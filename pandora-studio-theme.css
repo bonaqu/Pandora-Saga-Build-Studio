@@ -1245,6 +1245,19 @@ main{padding-top:10px}
 .stage-heal-row strong{font-size:13px;font-variant-numeric:tabular-nums;color:#ffdfa9}
 .stage-heal-row small{grid-column:1/-1;font-size:10px;color:#baa281;line-height:1.35}
 
+/* Shared original OS skill icons in Healing, periodic effects, songs and passives. */
+.stage-effect-skill-label{display:inline-flex;align-items:center;gap:8px;min-width:0;max-width:100%}
+.stage-effect-skill-label>img{width:26px;height:26px;flex:0 0 26px;object-fit:contain}
+.stage-effect-skill-label>span{min-width:0;overflow-wrap:anywhere}
+.stage-effect-skill-heading{display:flex;align-items:center;min-width:0}
+.stage-heal-row{align-items:center}
+.stage-heal-row>.stage-effect-skill-label{font-weight:650;font-size:11px;color:#e7cda4}
+.stage-periodic-row>.stage-effect-skill-label{color:#f0d8ae}
+.stage-mounted-toggle{align-items:center;border:1px solid #795735;background:#302116;
+ border-radius:5px;padding:11px 12px;font-weight:650;color:#f4d39f}
+.stage-mounted-toggle:has(input:checked){border-color:#d5a763;background:#42301d}
+.stage-mounted-note{font-size:11px;line-height:1.45;color:#d5ba93}
+
 /* Explicit conditional item-coverage status, kept collapsed by default. */
 .stage-coverage-list{border-top:1px solid #7b593b;padding-top:7px}
 .stage-coverage-list summary{cursor:pointer;color:#efc68b;font-size:11px;line-height:1.45}
