@@ -42,7 +42,8 @@ test('manual effect ranks are validated, preserved and included in actual calcul
   'Auto guild selection replaces manual passives, without double counting');
 });
 test('priest buff text remains legible when externally disabled and old ally signs are moved',()=>{
- assert.match(guild,/toggle\(priest,row\?\.name\|\|key,key/);
+ assert.match(guild,/toggle\(priest,english\?officialEnglish:officialName,key/);
+ assert.match(guild,/officialName=row\?\.name\|\|canonical\?\.name\|\|key/);
  assert.match(guild,/externalPriest:true/);
  assert.match(guild,/if\(skill&&!allowed&&!skill\.externalPriest\)/);
  assert.match(guild,/if\(skill\?\.summary\)/);
