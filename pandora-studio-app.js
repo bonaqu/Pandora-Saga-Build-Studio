@@ -8435,14 +8435,24 @@ function editWikiValue(node,initial,{type='text',options=[],min=0,max=100000,int
  if(!adminEditing||!adminToken||
   node.querySelector('input,select,textarea,[data-owner-text-field]'))return;
  const before=String(initial??''),visibleNodes=[...node.childNodes];
+ const ownerSay=(ru,en)=>lang==='en'?en:ru;
  let finished=false,saving=false;
- const control=type==='select'?h('select',{class:'wiki-inline-select','aria-label':'Выбери значение'}):
+ const inlineError=message=>{
+  let feedback=node.querySelector('.ui-content-inline-error');
+  if(!feedback){
+   feedback=h('small',{class:'ui-content-inline-error',role:'alert'});
+   node.append(feedback);
+  }
+  feedback.textContent=message;
+ };
+ const control=type==='select'?h('select',{class:'wiki-inline-select','aria-label':ownerSay('Выбери значение','Choose a value')}):
   type==='textarea'||type==='text'?ownerPlainTextField({
    multiline:type==='textarea',rows:6,
    class:'wiki-inline-input wiki-owner-plaintext owner-editor-unified',
-   'aria-label':type==='textarea'?'Изменить описание':'Изменить значение'}):
+   'aria-label':type==='textarea'?ownerSay('Изменить описание','Edit description'):
+    ownerSay('Изменить значение','Edit value')}):
   h('input',{type:'number',class:'wiki-inline-input',
-   'aria-label':'Изменить значение',min:String(min),max:String(max),
+   'aria-label':ownerSay('Изменить значение','Edit value'),min:String(min),max:String(max),
    step:integer?'1':'any'});
  if(type==='select'){
   for(const option of options){
@@ -8461,11 +8471,14 @@ function editWikiValue(node,initial,{type='text',options=[],min=0,max=100000,int
   if(type==='number'&&value===null&&before===''){finished=true;restore();return}
    if(type==='number'&&(value===null||!Number.isFinite(value)||value<min||value>max||
    (integer&&!Number.isInteger(value)))){
-   control.setCustomValidity('Введите корректное значение');control.reportValidity();control.focus();return;
+   control.setCustomValidity(ownerSay('Введите корректное значение',
+    'Enter a valid value'));control.reportValidity();control.focus();return;
   }
   if(type!=='number'&&type!=='select'&&(value.length>2000||(!value&&type==='text'))){
-   if(control.setCustomValidity){control.setCustomValidity('Некорректная длина текста');control.reportValidity()}
-   else showStudioToast('Некорректная длина текста','warning');
+   const message=ownerSay('Некорректная длина текста',
+    'Invalid text length');
+   if(control.setCustomValidity){control.setCustomValidity(message);control.reportValidity()}
+   else inlineError(message);
    control.focus();return;
   }
   if(String(value)===before){finished=true;restore();return}
@@ -8484,18 +8497,11 @@ function editWikiValue(node,initial,{type='text',options=[],min=0,max=100000,int
     control.setAttribute('contenteditable','plaintext-only');
     control.removeAttribute('aria-disabled');
    }else control.disabled=false;
+   const message=ownerSay('Не сохранено: ','Not saved: ')+
+    String(error.message||ownerSay('Ошибка','Error'));
    if(control.setCustomValidity){
-    control.setCustomValidity('Не сохранено: '+String(error.message||'Ошибка'));control.reportValidity()
-   }else{
-    // Same inline error on every player-facing screen and the owner dock.
-    // Do not open a global toast that could unmount the failed D1 editor.
-    let feedback=node.querySelector('.ui-content-inline-error');
-    if(!feedback){
-     feedback=h('small',{class:'ui-content-inline-error',role:'alert'});
-     node.append(feedback);
-    }
-    feedback.textContent='Не сохранено: '+String(error.message||'Ошибка');
-   }
+    control.setCustomValidity(message);control.reportValidity();
+   }else inlineError(message);
    control.focus()}
  };
  control.oninput=()=>{
