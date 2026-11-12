@@ -275,6 +275,10 @@ async function main(){
  assert.equal((await mountedText.innerText()).trim(),'Верхом');
  const visibleMountedHint=await mountedText.getAttribute('data-guide-hint');
  assert.match(visibleMountedHint||'',/сражается верхом/);
+ // The prior chapter's test scrolled its 43 results; begin the new page at
+ // its top, then let the chapter entrance animation settle before hover.
+ await page.locator('#stageBookPanel').evaluate(el=>{el.scrollTop=0});
+ await page.waitForTimeout(350);
  await mountedText.hover();
  await page.waitForTimeout(850);
  const mountedHoverProbe=await mountedText.evaluate(el=>({hover:el.matches(':hover'),
