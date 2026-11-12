@@ -921,7 +921,7 @@ const modeledElementalSpellBranches=Object.freeze({
  430001001:'darkness',430052001:'darkness',430053001:'darkness'
 });
 function elementalSpellCoefficientPreview({skillCatalog,jobKey,level,
- branchMasteries={},branchCaps={},stats={}}={}){
+ branchMasteries={},branchCaps={},branchLabels={},englishBranches={},stats={}}={}){
  if(!skillCatalog||typeof skillCatalog!=='object'||Array.isArray(skillCatalog)||
   typeof jobKey!=='string'||!Number.isSafeInteger(level)||level<1||level>55)
   return [];
@@ -954,15 +954,20 @@ function elementalSpellCoefficientPreview({skillCatalog,jobKey,level,
   const amount=fv1[3]+Math.floor(intelligence*fv1[0]/100)+
    Math.floor(rank*fv1[2]/100);
   if(!Number.isSafeInteger(amount))continue;
-  const reasons=[];
-  if(level<Number(skill.charLevel||0))
+  const reasons=[],reasonsEn=[];
+  if(level<Number(skill.charLevel||0)){
    reasons.push('Требуется уровень '+skill.charLevel);
-  for(const req of skill.reqs)if(rank<req.amount)
-   reasons.push('Требуется мастерство «'+branch+'»: '+req.amount);
+   reasonsEn.push('Requires level '+skill.charLevel);
+  }
+  for(const req of skill.reqs)if(rank<req.amount){
+   reasons.push('Требуется мастерство «'+(branchLabels[branch]||branch)+'»: '+req.amount);
+   reasonsEn.push('Requires '+(englishBranches[branch]||branch)+' mastery: '+req.amount);
+  }
   const secondary=skill.funcs.some(effect=>effect.ep!=='EP_ELEMENT_DAMAGE');
   out.push({id,name:skill.name,description:skill.desc||'',
    amount:null,unit:'',available:reasons.length===0,
-   reason:reasons.join(' · '),uncertain:true,recipient:false,
+   reason:reasons.join(' · '),reasonEn:reasonsEn.join(' · '),
+   uncertain:true,recipient:false,
    detailRu:'Предположение по INT и мастерству: точный урон, сопротивление цели, округление и '+
     (secondary?'дополнительные эффекты не подтверждены':'порядок применения не подтверждены'),
    detailEn:'INT and mastery assumption; final damage, target resistance, rounding and '+
@@ -978,7 +983,8 @@ function elementalSpellCoefficientPreview({skillCatalog,jobKey,level,
 // The source coefficient is NOT a final damage number: hit count, weapon,
 // target defense, procs and stage rounding remain explicitly unknown.
 function directStrikeCoefficientPreview({skillCatalog,jobKey,level,
- branchMasteries={},branchCaps={},weaponKind='BARE_HAND'}={}){
+ branchMasteries={},branchCaps={},branchLabels={},englishBranches={},
+ weaponKind='BARE_HAND'}={}){
  if(!skillCatalog||typeof skillCatalog!=='object'||Array.isArray(skillCatalog)||
   typeof jobKey!=='string'||!Number.isSafeInteger(level)||level<1||level>55)
   return [];
@@ -1037,17 +1043,24 @@ function directStrikeCoefficientPreview({skillCatalog,jobKey,level,
   if(upgraded)continue;
   const coefficient=constant+Math.floor(rank*masteryPart/100);
   if(!Number.isSafeInteger(coefficient))continue;
-  const reasons=[];
-  if(level<Number(s.charLevel||0))
+  const reasons=[],reasonsEn=[];
+  if(level<Number(s.charLevel||0)){
    reasons.push('Требуется уровень '+s.charLevel);
-  for(const req of s.reqs)if(branchRank(req.branch)<req.amount)
-   reasons.push('Требуется мастерство «'+req.branch+'»: '+req.amount);
+   reasonsEn.push('Requires level '+s.charLevel);
+  }
+  for(const req of s.reqs)if(branchRank(req.branch)<req.amount){
+   reasons.push('Требуется мастерство «'+(branchLabels[req.branch]||req.branch)+'»: '+req.amount);
+   reasonsEn.push('Requires '+(englishBranches[req.branch]||req.branch)+' mastery: '+req.amount);
+  }
   if(Array.isArray(s.weaponUse)&&s.weaponUse.length&&
-   !s.weaponUse.includes(weaponKind))
+   !s.weaponUse.includes(weaponKind)){
    reasons.push('Не подходит экипированное оружие');
+   reasonsEn.push('Incompatible equipped weapon');
+  }
   output.push({id:s.id,name:s.name,description:s.desc||'',
    amount:null,unit:'',available:reasons.length===0,
-   reason:reasons.join(' · '),uncertain:true,recipient:false,
+   reason:reasons.join(' · '),reasonEn:reasonsEn.join(' · '),
+   uncertain:true,recipient:false,
    detailRu:'Коэффициент удара по данным OS; итоговый урон, число попаданий и округление цели не подтверждены',
    detailEn:'OS strike coefficient; final damage, hit count and target rounding are not verified',
    coefficientModels:[{
@@ -1203,6 +1216,33 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  ],()=>Number.isFinite(dodgeBase)?Math.floor(15+dodgeBase*.15):null,
  {recipient:true,detailRu:'Уклонение получателя',
   detailEn:'Recipient evasion bonus'});
+ // Purify is a two-step current OS cast. The root triggers a distinct
+ // internal TARGET resistance effect; +100 is NOT permanent character status
+ // resistance, nor proof of duration, proc probability or a server hit roll.
+ const purify=skill(310014001),inner=skill(310014002);
+ const purifyChain=purify?.id===310014001&&purify.learnable===true&&
+  purify.name==='Полное исцеление'&&purify.skillType==='ALLY'&&
+  purify.branch==='benevolence'&&purify.prereq==null&&
+  Array.isArray(purify.reqs)&&purify.reqs.length===1&&
+  purify.reqs[0]?.branch==='benevolence'&&purify.reqs[0]?.amount===71&&
+  Array.isArray(purify.funcs)&&purify.funcs.length===2&&
+  inner?.id===310014002&&inner.learnable===false&&
+  inner.name===purify.name&&inner.skillType==='ALLY'&&
+  Array.isArray(inner.funcs)&&inner.funcs.length===2&&
+  exact(inner,'EP_IMMUNE_VIT_TYPE',[0,0,0,100])&&
+  exact(inner,'EP_IMMUNE_SPI_TYPE',[0,0,0,100]);
+ if(purifyChain)add(310014001,'defense',[
+  ['EP_RECOVERY_HEALTH',[0,0,0,0]],
+  ['EP_SKILL_EXEC',[0,0,0,310014002]]
+ ],manual,{recipient:true,modelOnly:true,
+  models:[
+   {ep:'EP_IMMUNE_VIT_TYPE',labelRu:'Состояния тела',labelEn:'Body ailments',
+    amount:100,unit:'',confidence:'coefficient-model'},
+   {ep:'EP_IMMUNE_SPI_TYPE',labelRu:'Состояния духа',labelEn:'Mind ailments',
+    amount:100,unit:'',confidence:'coefficient-model'}
+  ],
+  detailRu:'Полное исцеление при наложении союзником. Эти значения не прибавляются к постоянным сопротивлениям героя',
+  detailEn:'Purify from an ally. These values are not permanent status resistance bonuses'});
  // Personal combat effects: previews use the unbuffed weapon/armor/dodge
  // kernel already available in the calculator, without activating anything.
  add(100052001,'offense',[
@@ -1469,12 +1509,14 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
    detailRu:'СД и мастерство Песнопения',detailEn:'SPI and Hymn mastery'});
  }
  for(const strike of directStrikeCoefficientPreview({
-  skillCatalog,jobKey,level,branchMasteries,branchCaps,weaponKind
+  skillCatalog,jobKey,level,branchMasteries,branchCaps,weaponKind,
+  branchLabels,englishBranches
  })){
   if(!seen.has(strike.id))result.offense.push(strike);
  }
  for(const spell of elementalSpellCoefficientPreview({
-  skillCatalog,jobKey,level,branchMasteries,branchCaps,stats
+  skillCatalog,jobKey,level,branchMasteries,branchCaps,stats,
+  branchLabels,englishBranches
  })){
   if(!seen.has(spell.id))result.offense.push(spell);
  }
