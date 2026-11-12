@@ -1,5 +1,15 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.661.0 — 2026.11.12.661 · D1-editable four-card action labels
+
+- Open, Overwrite, Share and Delete have four distinct RU/EN `libraryCard*` content keys. The existing decorative icon spans remain separate; button labels are plain readable text with no duplicated symbols.
+- Owner-only “Buttons and hints” area now groups action captions and compact hover descriptions. Editing uses the existing inline pencil, RU/EN CAS D1 save, Escape and Undo. Regular players see only the original four card actions.
+- Saving and undoing an action label update the mounted button caption directly without remounting the current character or modifying stored builds.
+- Prevent legacy literal text localization from overriding explicitly keyed editorial labels during render. New Node semantics regression and extended real Chromium owner save checks.
+- Release metadata, GitHub Pages asset cache keys, footer and Telegram/social preview synchronized. No game formulas, Cloudflare Worker endpoints, account logic or production D1 migrations.
+
+
+
 ## 0.660.0 — 2026.11.12.660 · Owner-only editable RU/EN build action hints
 
 - An owner-only collapsible “Button hints” panel appears inside the authenticated saved-build library. Five short action explanations are editable beside their real labels using the existing tiny pencil and inline text control. No secondary modal or nested interactive buttons.
