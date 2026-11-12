@@ -129,17 +129,21 @@ function describeZoneDrops(previous,current,ctx,add,unknown){
     const itemTitle=prefix+' · '+ruleType(b)+' · '+monster(b)+
      ' · предмет «'+sourceName('items',id,'предмета')+'»';
     if(!x||!y){
-     add(itemTitle+' · Присутствие в правиле',x?'есть':'нет',y?'есть':'нет');
-     add(itemTitle+' · Границы (lo / hi)',x?String(x.lo??'—')+' / '+String(x.hi??'—'):'не было',
+     const entry=add(itemTitle+' · Присутствие в правиле',x?'есть':'нет',y?'есть':'нет');
+     if(entry){entry.linkedItemId=id;entry.linkedItemName=sourceName('items',id,'предмета')}
+     const bounds=add(itemTitle+' · Границы (lo / hi)',x?String(x.lo??'—')+' / '+String(x.hi??'—'):'не было',
       y?String(y.lo??'—')+' / '+String(y.hi??'—'):'нет');
+     if(bounds){bounds.linkedItemId=id;bounds.linkedItemName=sourceName('items',id,'предмета')}
      found++;continue;
     }
     for(const k of new Set([...Object.keys(x),...Object.keys(y)])){
      if(k==='i'||same(x[k],y[k]))continue;
      const decoded={lo:'Нижняя граница (lo)',hi:'Верхняя граница (hi)'}[k];
      if(!decoded)unknown(itemTitle+': неизвестное поле '+k);
-     add(itemTitle+' · '+(decoded||'Поле '+k+' (смысл неизвестен)'),
-      format(x[k]),format(y[k]));found++;
+     const entry=add(itemTitle+' · '+(decoded||'Поле '+k+' (смысл неизвестен)'),
+      format(x[k]),format(y[k]));
+     if(entry){entry.linkedItemId=id;entry.linkedItemName=sourceName('items',id,'предмета')}
+     found++;
     }
    }
   };
@@ -234,7 +238,7 @@ function describeCompound(kind,before,after,ctx,add,unknown){
  const fields=(left,right)=>new Set([...Object.keys(left||{}),...Object.keys(right||{})]);
  let touched=0;
  const safeAdd=(title,a,b)=>{if(touched>=60){unknown('Остались изменения вне первых 60 строк');return}
-   add(title,a,b);touched++};
+   const row=add(title,a,b);touched++;return row};
  const shortItem=id=>{
   const result=itemName(id,ctx);
   if(result==='Предмет без подтверждённого названия')
@@ -376,7 +380,7 @@ function describeCompound(kind,before,after,ctx,add,unknown){
 function describe(change,ctx={}){
  let title=typeof (change.after?.name||change.before?.name)==='string'
   ?(change.after?.name||change.before?.name):change.title;
- let summary='',caution='',uncertain=false;
+ let summary='',caution='',uncertain=false,unexplained=false;
  const rows=[],technical=[];
  const readable=(text,label)=>{
   if(typeof text!=='string')return text;
@@ -425,8 +429,12 @@ function describe(change,ctx={}){
    beforeFull:beforeText===null?undefined:beforeText,
    afterFull:afterText===null?undefined:afterText,
    difference:delta===null||delta===0?'':(delta>0?'+':'−')+value(Math.abs(delta))});
+  return rows.at(-1);
  };
- const unknown=(path)=>{uncertain=true;technical.push(path)};
+ const unknown=(path)=>{uncertain=true;
+  if(!/^(Обмены применяются только целым разделом|Сундуки публикуются только полным разделом)$/.test(path))
+   unexplained=true;
+  technical.push(path)};
  function walk(a,b,prefix='',depth=0){
   if(same(a,b))return;
   if(plain(a)&&plain(b)&&depth<3){
@@ -590,8 +598,10 @@ function describe(change,ctx={}){
    :'Текст на экране совпадает, но исходные данные различаются. Проверь подробности и выбирай вручную.';
   if(earlierCaution)caution+=' '+earlierCaution;
  }
- if(uncertain&&!caution)caution='Часть параметров требует ручной проверки перед публикацией.';
- return {title,summary,rows,technical,uncertain,caution,service:kind==='meta'};
+ if(uncertain&&!caution)caution=unexplained?
+   'Некоторые обозначения или соответствия строк не подтверждены. Проверь их перед публикацией.':
+   'Расшифровка доступна, но изменение целого игрового раздела требует ручной проверки перед публикацией.';
+ return {title,summary,rows,technical,uncertain,unexplained,caution,service:kind==='meta'};
 }
 root.PandoraCatalogHumanReview=Object.freeze({describe});
 })(typeof window==='undefined'?globalThis:window);
