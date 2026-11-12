@@ -3423,6 +3423,14 @@ function skillExecutionChains({skillCatalog=null,jobKey=null,level=1,onHit=false
  if(!skillCatalog||typeof jobKey!=='string'||!Number.isSafeInteger(level)||
   level<1||level>55)return out;
  const rootEP=onHit?'EP_ONHIT_SKILL_EXEC':'EP_SKILL_EXEC';
+ // The four current OS on-hit sources are distinct identity bindings.
+ // Merely pointing to another existing ID is NOT evidence for that skill.
+ const onHitSources=Object.freeze({
+  100103001:{child:100103050,dir:'CASTER',fv2:[0,0,0,100]},
+  142502001:{child:142502050,dir:'CASTER',fv2:[0,0,0,100]},
+  213607001:{child:213607002,dir:'CASTER',fv2:[0,0,15,15]},
+  430057001:{child:430057002,dir:'TARGET',fv2:[0,0,50,30]}
+ });
  const get=id=>{
   const r=skillCatalog[String(id)];
   return Number.isSafeInteger(id)&&id>0&&r?.id===id&&Array.isArray(r.funcs)?r:null;
@@ -3434,19 +3442,24 @@ function skillExecutionChains({skillCatalog=null,jobKey=null,level=1,onHit=false
   // Conditional on-hit root, then any ordinary OS internal child links.
   const calls=s.funcs.filter(f=>f?.ep===(onHit&&visited.size===0?rootEP:'EP_SKILL_EXEC'));
   if(!calls.length)return [[id]];
+  if(onHit&&visited.size===0&&calls.length!==1)return null;
   const paths=[];
   for(const f of calls){
    const a=f?.fv1,b=f?.fv2;
    const hit=onHit&&visited.size===0;
    // Current OS on-hit descriptors: these are raw source bytes, NOT
    // a guaranteed percentage chance, duration or number of strikes.
-   const directionOK=hit?['CASTER','TARGET'].includes(f.dir):f.dir==='TARGET';
+   const expected=hit?onHitSources[id]:null;
+   const child=hit?get(a?.[3]):null;
+   // An existing but unrelated internal skill is not the expected trigger.
+   const onHitIdentity=!hit||(expected&&a?.[3]===expected.child&&
+    child?.learnable===false&&child.name===s.name&&child.branch===s.branch);
+   const directionOK=hit?f.dir===expected?.dir:f.dir==='TARGET';
    const fv2OK=hit?
-    [[0,0,0,100],[0,0,15,15],[0,0,50,30]].some(v=>
-     Array.isArray(b)&&b.length===4&&v.every((n,i)=>n===b[i])):
+    Array.isArray(b)&&b.length===4&&expected?.fv2.every((n,i)=>n===b[i]):
     Array.isArray(b)&&b.length===4&&
      (b.every(x=>x===0)||(b[0]===0&&b[1]===0&&b[2]===9&&b[3]===9));
-   if(!directionOK||!Array.isArray(a)||a.length!==4||
+   if(!onHitIdentity||!directionOK||!Array.isArray(a)||a.length!==4||
     a.slice(0,3).some(x=>x!==0)||!Number.isSafeInteger(a[3])||a[3]<=0||
     !fv2OK)return null;
    const children=trace(a[3],seen);
