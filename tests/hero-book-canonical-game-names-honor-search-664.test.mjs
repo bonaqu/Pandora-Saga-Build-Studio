@@ -54,7 +54,7 @@ test('Book receives official skill and class source objects without changing gam
  assert.match(app,/gameTerms:\{skills:skillMap,englishSkills:officialEnglish\?\.skills\|\|\{\}/);
  assert.match(app,/branchLabels:catalog\.meta\?\.branchLabels\|\|\{\}/);
  assert.match(app,/classes:catalog\.classes\|\|\{\},englishClasses:officialEnglish\?\.classes\|\|\{\}/);
- assert.match(source,/renderSongSkills\(body,modifiers,gameTerms,skillIconForId\)/);
+ assert.match(source,/scalingSkillPreview\?\.\(/);
  assert.match(source,/gameClassName\('ACOLYTE','Адепт'/);
  assert.match(source,/gameSkillBadge\(entry\.id,entry\.name,null,gameTerms,en,skillIconForId\)/);
  assert.match(source,/gameSkillBadge\(row\.skillId\|\|/);
