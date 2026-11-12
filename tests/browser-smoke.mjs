@@ -38,6 +38,7 @@ import {runHonorGuideSmoke} from './browser-honor-guide.mjs';
 import {runAdminEntrySmoke,runInlineMilestonesSmoke} from './browser-admin-entry.mjs';
 import {runInnateSkillMasterySmoke} from './browser-innate-skill-mastery.mjs';
 import {runHeroBookLiveRecalcSmoke} from './browser-hero-book-live-recalc.mjs';
+import {runHeroBookGameNames664Smoke} from './browser-book-game-terms-664.mjs';
 import {runOriginSharedSnapshotSmoke} from './browser-origin-shared-snapshot.mjs';
 import {runBuildComparisonSmoke,runSavedBuildEnglishSmoke} from './browser-build-comparison.mjs';
 import {runSavedBuildGridSmoke} from './browser-build-grid-640.mjs';
@@ -91,6 +92,7 @@ const scenarios=[
   ['legacy-class-cap',runLegacySkillCapSmoke],
   ['innate-l1-mastery',runInnateSkillMasterySmoke],
   ['hero-book-live-recalc',runHeroBookLiveRecalcSmoke],
+  ['hero-book-game-terms-664',runHeroBookGameNames664Smoke],
   ['origin-shared-snapshot',runOriginSharedSnapshotSmoke],
   ['two-handed-gear',runTwoHandedSmoke],
   ['one-piece-outfit-and-soul-scroll',runOutfitSoulScrollSmoke],
