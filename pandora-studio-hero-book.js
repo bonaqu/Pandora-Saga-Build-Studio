@@ -1333,7 +1333,39 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   }
   body.append(section);
  }
- if(!spells.length&&!periodic.length&&!rows.offense?.length&&!rows.defense?.length&&!rows.movement?.length&&!rows.utility?.length)
+  // Structural links from the official OS IDs, not extra stats.
+ const chains=root.PandoraOSCalculator?.skillExecutionChains?.({
+  skillCatalog:gameTerms.skills,jobKey:heroJobKey,level:heroLevel,
+  branchMasteries:heroMasteries,branchCaps:heroBranchCaps,
+  branchLabels:gameTerms.branchLabels,englishBranches:gameTerms.englishBranches,
+  weaponKind:heroWeaponKind
+ });
+ if(chains?.rows?.length){
+  const group=make('details',{class:'stage-attribute-row stage-healing-spells stage-skill-chain-effects'});
+  group.append(make('summary',{text:en?'Linked skill effects':'Связанные эффекты умений'}));
+  group.append(make('p',{class:'stage-periodic-hint',text:en?
+   'Some skills launch other actions. The links do not guarantee extra damage, hits or duration.':
+   'Некоторые умения запускают дополнительные действия. Это не гарантированный урон, число попаданий или длительность.'}));
+  const canonical=id=>{
+   const ru=gameTerms.skills?.[String(id)]?.name||'';
+   return en?(gameTerms.englishSkills?.[String(id)]?.n||ru):ru;
+  };
+  for(const chain of chains.rows){
+   const source=gameTerms.englishSkills?.[String(chain.id)];
+   const paths=chain.paths.map(path=>path.slice(1).map(canonical).join(' → '));
+   const status=chain.requirementsMet?
+    (en?'Level and mastery requirements met':'Требования уровня и мастерства выполнены'):
+    (en?chain.reasonEn:chain.reasonRu);
+   group.append(make('div',{class:'stage-heal-row stage-skill-chain-row'+
+    (chain.requirementsMet?'':' stage-book-unavailable')},[
+    gameSkillBadge(chain.id,chain.name,source?.n||chain.name,gameTerms,en,skillIconForId),
+    make('small',{text:(en?'Linked actions: ':'Связанные действия: ')+paths.join(' / ')}),
+    make('small',{text:status})
+   ]));
+  }
+  body.append(group);
+ }
+if(!spells.length&&!periodic.length&&!rows.offense?.length&&!rows.defense?.length&&!rows.movement?.length&&!rows.utility?.length)
   body.append(make('p',{class:'stage-attribute-note',text:en?
    'Only skills with build-dependent effect values appear here. Fixed buffs belong in Buffs.':
    'Здесь показаны только умения, сила которых зависит от билда. Постоянные усиления — во вкладке «Усиления».'}));
