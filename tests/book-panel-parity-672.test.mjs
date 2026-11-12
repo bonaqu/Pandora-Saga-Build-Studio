@@ -26,15 +26,17 @@ test('defense and all three potion subsections reuse Results glyph and chevron',
  assert.doesNotMatch(book,/['"]Снятие состояний['"]\)\+' · '\+cures\.length/);
  const css=read('pandora-studio-hero-book-additions.css');
  assert.match(css,/stage-book-detail-title/);
- assert.match(book,/class:'stage-heal-row stage-offense-skill-row'/);
+ assert.match(book,/stage-offense-skill-row/);
  assert.doesNotMatch(css,/#stageAttributes \\.stage-offense-skill-row\\s*\\{/);
 });
 
 test('offensive skills are selected from current class and reuse healing rows',()=>{
  assert.match(book,/heroJobKey=null,heroLevel=1,heroMasteries=\{\}/);
  assert.match(app,/heroJobKey:cls,heroLevel:state\.level,heroMasteries:branchMasteries/);
- assert.match(book,/const classOffense=Object\.values\(gameTerms\.skills\|\|\{\}\)/);
- assert.match(book,/stage-heal-row stage-offense-skill-row/);
+ assert.match(book,/scalingSkillPreview\?\.\(/);
+ assert.match(book,/branchCaps:heroBranchCaps/);
+ assert.match(book,/stage-heal-row/);
+ assert.match(book,/stage-offense-skill-row/);
  assert.ok(skills['100058001'].funcs.some(f=>f.ep==='EP_DAMAGERATE_SCALE'));
  assert.ok(skills['213605001'].funcs.some(f=>f.ep==='EP_TOHIT_CONST'));
  assert.ok(skills['910110001'].funcs.some(f=>f.ep==='EP_ONHIT_FIN_DAMAGE_CONST'));

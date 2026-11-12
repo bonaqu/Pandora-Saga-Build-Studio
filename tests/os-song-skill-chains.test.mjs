@@ -115,6 +115,7 @@ test('Hero Book groups song effects with skill effects, not configuration contro
  const buffs=book.slice(buffsStart,songsStart);
  const skills=book.slice(skillsStart,book.indexOf('function render(target,',skillsStart));
  assert.doesNotMatch(buffs,/const songRows=|stage-song-skills/);
- assert.match(skills,/renderSongSkills\(body,modifiers,gameTerms,skillIconForId\)/);
+ assert.match(skills,/scalingSkillPreview\?\.\(/);
+ assert.doesNotMatch(skills,/renderSongSkills\(body,modifiers,gameTerms,skillIconForId\)/);
  assert.match(book.slice(songsStart,skillsStart),/stage-song-skills/);
 });

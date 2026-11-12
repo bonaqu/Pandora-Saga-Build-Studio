@@ -33,10 +33,12 @@ test('class, level and exact OS source gate this passive',()=>{
  assert.equal(C.incredibleStrengthPreview({...options,
   skillCatalog:{...skills,910110001:damage}}),null);
 });
-test('Hero Book explains hit damage separately and never claims unverified ATK',()=>{
+test('passive on-hit effect remains in combat preview but is not a castable Skill Effects row',()=>{
  const book=read('pandora-studio-hero-book.js');
- assert.match(book,/const hitPassive=combat\.incredibleStrength/);
- assert.match(book,/Невероятная сила/);
- assert.match(book,/не показатель АТК/);
+ const effects=book.slice(book.indexOf('function skillEffectsPage('),
+  book.indexOf('// Remaked uses three DISTINCT source matrices'));
+ assert.doesNotMatch(effects,/hitPassive|incredibleStrength/);
+ assert.match(effects,/scalingSkillPreview/);
+ assert.match(read('pandora-os-character-calculator.js'),/incredibleStrengthPreview/);
 });
 test.todo('game-client parity #386: full level-45 Enkidu Dragoon +8 Zephyr ATK 219 and 266 with War Cry; current Legacy strength rate yields 231/281');

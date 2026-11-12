@@ -1,5 +1,14 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.677.0 — 2026.11.12.677 · Hero Book Skill Effects: source-audited scaling-only read-only previews; fixed buffs stay in Buffs
+
+- Hero Book Skill Effects: source-audited scaling-only read-only previews; fixed buffs stay in Buffs
+- Audited 224 source player skills and 59 TARGET-coefficient candidates; separated fixed/conditional/passive and caster-vs-recipient scaling. Read-only offensive and defensive effect values use current character attributes, trained mastery, source-validated OS coefficients, proven Remaked floor rules and live equipment context — not enabled buff switches.
+- Exact values are shown only for source-supported calculations. Unknown mastery-dependent server scaling is explicitly marked unknown; impossible class/branch caps are excluded. Removed static Support-skill rows and passive Incredible Strength from the informational Skill Effects page; unchanged Buffs activation, D1, build saves and permanent combat state.
+- Regression suite and detailed audit: docs/HERO_BOOK_SCALING_SKILL_AUDIT_2026-11-12.md.
+- Browser acceptance and deployed Pages state must be verified separately.
+
+
 ## 0.676.0 — 2026.11.12.676 · Show applied Lightness and Blessed Repose speed indices in Skill effects and passive recovery
 
 - Show applied Lightness and Blessed Repose speed indices in Skill effects and passive recovery

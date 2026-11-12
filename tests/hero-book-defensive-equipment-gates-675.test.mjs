@@ -33,7 +33,8 @@ test('Hero Book receives the real equipment gates from its render caller',()=>{
  const app=read('pandora-studio-app.js'),book=read('pandora-studio-hero-book.js');
  assert.match(app,/heroWeaponKind:equippedWeapon\?\.kind\|\|'BARE_HAND'/);
  assert.match(app,/heroHasShield:Boolean\(equippedShield\)/);
- assert.match(book,/heroWeaponKind,heroHasShield\}\);/);
- assert.match(book,/hasShield:heroHasShield,branchLabels:/);
+ assert.match(app,/heroBranchCaps:catalog\.classes\?\.\[cls\]\?\.branchCaps\|\|\{\}/);
+ assert.match(book,/heroBranchCaps,heroWeaponKind,heroHasShield\}\);/);
+ assert.match(book,/weaponKind:heroWeaponKind,hasShield:heroHasShield/);
  assert.match(book,/heroHasShield=false/);
 });
