@@ -343,9 +343,11 @@ async function main(){
  assert.equal(await page.locator('#stageBookPanel input[type="checkbox"]').count(),0,
   'Read-only Skill Effects must never activate a defensive skill');
  const calculatedSkill=offense.locator('.stage-effect-skill-label').first();
+ const calculatedName=(await calculatedSkill.innerText()).trim();
  await calculatedSkill.hover();
  await page.locator('#path-skill-hover-tooltip').waitFor({state:'visible',timeout:5000});
- assert.match(await page.locator('#path-skill-hover-tooltip').innerText(),/Боевой клич|Массовая сосредоточенность/);
+ assert.ok((await page.locator('#path-skill-hover-tooltip').innerText()).includes(calculatedName),
+  'Rich tooltip shows the exact same OS name as the calculation row');
  await offense.locator('summary').hover();
  if(await offense.count()&&await healing.count()){
   const normalize=async selector=>selector.locator('summary').evaluate(node=>{
