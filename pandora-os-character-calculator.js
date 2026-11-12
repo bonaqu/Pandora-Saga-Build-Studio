@@ -919,7 +919,10 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
   return rows.length===1&&Array.isArray(rows[0].fv1)&&
    rows[0].fv1.length===4&&rows[0].fv1.every((n,i)=>n===values[i])&&
    Array.isArray(rows[0].fv2)&&rows[0].fv2.length===4&&
-   rows[0].fv2.every(n=>n===0);
+   rows[0].fv2.every((n,i)=>n===(
+    ep==='EP_SKILL_EXEC_COUNT'?[0,0,0,4]:
+    ['EP_MANA_SHIELD','EP_CASTINGCANCEL_RESISTANCE_CONST'].includes(ep)?
+     [0,0,0,15]:[0,0,0,0])[i]);
  };
  const mastery=branch=>Number(branchMasteries?.[branch]??0);
  const cap=branch=>Number(branchCaps?.[branch]??0);
