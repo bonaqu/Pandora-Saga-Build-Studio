@@ -96,6 +96,12 @@ const libraryCopy=Object.freeze({
  libraryShare:['🔗 Поделиться','🔗 Share'],
  libraryDelete:['Удалить','Delete'],
  libraryCompare:['Сравнить','Compare'],
+ // Card button captions contain no icon: icons are separate aria-hidden spans.
+ // These keys are owner-editable without nesting the pencil in a button.
+ libraryCardOpen:['Открыть','Open'],
+ libraryCardOverwrite:['Перезаписать','Overwrite'],
+ libraryCardShare:['Поделиться','Share'],
+ libraryCardDelete:['Удалить','Delete'],
  // Short, safe authored explanations for the four saved-build actions.
  // They are rendered as plain text by PandoraGuideTooltip, never HTML.
  libraryHintOpen:['Загрузить этого героя в редактор.','Load this character in the editor.'],
@@ -367,7 +373,7 @@ function localize(root,lang='ru'){
  let node;
  while((node=walker.nextNode())){
   const parent=node.parentElement;
-  if(!parent||parent.closest('h3, .build-share-slot, .build-name-input'))continue;
+  if(!parent||parent.closest('h3, .build-share-slot, .build-name-input, .build-card-action-label'))continue;
   const raw=node.nodeValue,trimmed=raw.trim(),key=literalKey(trimmed);
   // Only a standalone, literal label can be edited. Never mark a build name
   // or a mixed element containing a checkbox, icon, link, or runtime value.
