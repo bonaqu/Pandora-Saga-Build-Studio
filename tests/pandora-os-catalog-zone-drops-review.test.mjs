@@ -64,7 +64,7 @@ test('new source rules show what was added without shifting an unrelated rule',(
  });
  const result=render(old,next);
  assert.ok(result.rows.some(row=>row.label.includes('Добавлено правило')&&
-  row.after.includes(catalog.items['52001'].name)&&row.after.includes('base=0.8')));
+  row.after.includes(catalog.items['52001'].name)&&row.after.includes('базовое значение: 0.8')));
  assert.ok(!result.rows.some(row=>row.label.includes('Базовое значение')));
 });
 
