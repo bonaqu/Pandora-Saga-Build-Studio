@@ -20,8 +20,8 @@ test('class-specific scaling skills appear with unknown magnitudes, not made-up 
   const result=rows(job);
   const item=result.offense.find(x=>x.id===id);
   assert.ok(item,job+' must contain the actual varying skill '+id);
-  if(id===100058001){
-   assert.ok(Number.isFinite(item.amount),'Desperation has a Remaked/OS estimate');
+  if([100058001,410000101].includes(id)){
+   assert.ok(Number.isFinite(item.amount),'Source-backed value for '+id);
    assert.equal(item.modelOnly,true);
   }else assert.equal(item.amount,null,id+' final magnitude stays unknown');
   assert.equal(item.uncertain,true);
@@ -50,7 +50,7 @@ test('Conjurer level 50 selects current OS shield and wind trail variants only',
   assert.equal(selected(before,newId),false);
   assert.equal(selected(after,oldId),false);
   const row=after.find(x=>x.id===newId);
-  assert.equal(row?.amount,null);
+  assert.equal(row?.amount,newId===420002002?17:15);
   assert.equal(row?.available,true);
  }
 });
