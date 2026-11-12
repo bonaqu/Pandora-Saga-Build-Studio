@@ -2057,6 +2057,13 @@ function renderOriginStats(calculated=undefined){
  root.replaceChildren();
  const list=h('div',{class:'origin-stat-list'}),entries=[];
  const tr=(ru,en)=>lang==='en'?en:ru;
+ // Keep the legacy standalone computation fixture executable without its
+ // workbench context; the real app injects the shared D1 copy binder.
+ const statCaption=(key,ru,en)=> {
+  const node=h('span',{text:tr(ru,en)+' '});
+  return typeof bindOwnerInterfaceText==='function'?
+   bindOwnerInterfaceText(node,'stats-ui',key,ru,en,'text',' '):node;
+ };
  // Saved stats remain invested-only. The input is the absolute race/class baseline + investment.
  function refresh(known=undefined){
   // Interactive handlers call refresh() without a snapshot so edits always
@@ -2064,12 +2071,10 @@ function renderOriginStats(calculated=undefined){
   const snap=attributeSnapshot(),estimate=known===undefined?previewBaseStats():known;
   if(snap){
    summary.replaceChildren(
-    bindOwnerInterfaceText(h('span',{}),'stats-ui','remainingPrefix',
-     'Свободно:','Available:','text',' '),
+    statCaption('remainingPrefix','Свободно:','Available:'),
     h('span',{text:String(snap.remaining)+' / '+String(snap.total)}),
     h('span',{text:' · '}),
-    bindOwnerInterfaceText(h('span',{}),'stats-ui','spentPrefix',
-     'Потрачено:','Spent:','text',' '),
+    statCaption('spentPrefix','Потрачено:','Spent:'),
     h('span',{text:String(snap.spent)})
    );
   }else summary.textContent=
@@ -2130,7 +2135,8 @@ function renderOriginStats(calculated=undefined){
   list.append(wrap);entries.push({i,input,result,caption,minus,plus,name});
  });
  root.append(list);
- if(adminEditing&&adminToken)root.append(ownerInterfaceEditor('stats-ui',[
+ if(typeof adminEditing!=='undefined'&&adminEditing&&adminToken)
+  root.append(ownerInterfaceEditor('stats-ui',[
   ['remainingPrefix','Свободно:','Available:','Свободные очки','Available points'],
   ['spentPrefix','Потрачено:','Spent:','Вложенные очки','Spent points']
  ],'Подписи очков героя','Hero point labels'));
