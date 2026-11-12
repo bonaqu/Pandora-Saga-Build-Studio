@@ -377,6 +377,7 @@ const bookPages=Object.freeze([
 // All four groups are expanded on first visit; this state is UI-only.
 const collapsedSummaryGroups=new Set();
 const collapsedBookGroups=new Set();
+const expandedBookDetails=new Set();
 // Keep the source-backed Hero Book results in one ordered matrix.
 // A missing calculator branch stays unknown (—), never a fabricated zero.
 function summaryRows(calc){
@@ -856,9 +857,8 @@ function buffsPage(body,options){
     icon:skillIconForId(id),desc:row?.description,
     descEn:gameTerms.englishSkills?.[String(id)]?.d||row?.description,
     externalPriest:true,
-    summary:buffs.priestEnabled?summary:(english?
-     'Scales with the other priest’s attributes and mastery':
-     'Зависит от СД и мастерства другого жреца')});
+    summary:(english?gameTerms.englishSkills?.[String(id)]?.d:row?.description)||
+     (english?row?.nameEn:row?.name)||''});
  }
  for(const [key,label] of [['combatWarCry','Боевой клич'],
   ['combatWindAssist','Помощь ветра'],['combatWindBlessing','Благословение ветра']])
@@ -866,6 +866,45 @@ function buffsPage(body,options){
  // One source-controlled setting per Remaked enhancement. The entries
  // already represented by Life Sign, priest and elemental resistance tools
  // deliberately stay in their original sections, without duplicate inputs.
+ const readableBuffEffects={
+  100058001:['Увеличивает атаку и получаемый урон до следующего удара.',
+    'Increases damage dealt and taken until the next hit.'],
+  213702001:['Ускоряет стрельбу из арбалета на 30%.','Crossbow attack speed +30%.'],
+  213605001:['Повышает атаку, точность и дальность стрельбы. Во время действия нельзя двигаться.',
+    'Increases attack, accuracy and firing range; movement is disabled.'],
+  260002001:['Скорость передвижения +30%.','Movement speed +30%.'],
+  220001001:['Добавляет яд к атакам оружием. Сила эффекта зависит от мастерства.',
+    'Adds poison aura damage to weapon attacks, scaling with mastery.'],
+  430051001:['Добавляет урон тьмой к оружию, но наносит урон владельцу при атаках.',
+    'Adds dark aura damage to attacks but also damages the wielder.'],
+  168052001:['Уклонение −50%. Улучшает защиту от критических ударов.',
+    'Evasion −50%; provides protection against critical hits.'],
+  320002001:['Скорость восстановления ОМ союзников +90%.',
+    'Allies’ MP recovery speed +90%.'],
+  320006001:['Ускоряет применение умений союзниками.',
+    'Speeds up allies’ skill execution.'],
+  330005001:['Периодически восстанавливает ОМ цели.',
+    'Periodically restores MP to the target.'],
+  340003001:['Защищает союзников от небольших попаданий. Сила защиты зависит от жреца.',
+    'Negates small incoming hits to allies; potency depends on the priest.'],
+  320003001:['Уменьшает получаемый группой урон. Сила зависит от Благословения жреца.',
+    'Reduces damage taken by the party, scaling with priest Blessing.'],
+  330051001:['Добавляет святую ауру оружию союзника. Сила зависит от СД жреца.',
+    'Adds holy damage aura to an ally’s weapon, scaling with priest SPR.'],
+  320011001:['Усиливает ауру оружия и магический урон союзника. Эффект зависит от жреца.',
+    'Boosts an ally’s weapon aura and magical damage, scaling with the priest.'],
+  340001001:['Повышает точность и уклонение ближайших союзников.',
+    'Raises accuracy and evasion for nearby allies.'],
+  340004001:['Повышает магическую атаку союзников и сокращает перезарядку умений.',
+    'Increases allies’ magical damage and reduces skill cooldown.'],
+  142051001:['Шанс критического удара +10%.','Critical hit chance +10%.'],
+  260005001:['Уклонение +10.','Evasion +10.'],
+  260008001:['Уклонение +100 до двух полученных ударов.',
+    'Evasion +100 until hit twice.'],
+  100055001:['Точность +20 и дополнительно +15%.',
+    'Accuracy +20 plus +15%.']
+ };
+ const buffEffectText=id=>readableBuffEffects[id]?.[english?1:0]||'';
  for(const row of remakedBuffRows){
   if(row.existing||!row.name)continue;
   // Blessing- and Hymn-dependent spells are received from another priest.
@@ -898,9 +937,19 @@ function buffsPage(body,options){
     }[row.id]):
      // Game-client description is useful even where current OS stacking is
      // not confirmed. Never present historical previews as final damage.
-     (english?description||row.description:row.description)||
-     (english?'Effect has not been quantified yet':
-      'Числовой эффект ещё не подтверждён')});
+     (()=>{const basic=buffEffectText(row.id)||description||row.description||
+      (english?'Exact effect not yet confirmed':'Точный эффект пока не подтверждён');
+      const current=modifiers?.combat?.priestSong;
+      const enabled=buffs.priestEnabled===true&&row.selected;
+      if(!enabled)return basic;
+      const value=row.id===340001001?current?.minstrel:
+       row.id===340004001?current?.sageElementDamage:null;
+      if(!Number.isFinite(value)||!value)return basic;
+      return basic+' · '+(row.id===340001001?
+       (english?'Accuracy and evasion +':'Точность и уклонение +'):
+       (english?'Elemental damage +':'Стихийный урон +'))+
+       value+(row.id===340004001?'%':'');
+     })()});
  }
  if(resistanceSkillChoices.length){
   const group=make('details',{class:'stage-legacy-buff-previews stage-resistance-skill-controls'});
@@ -920,6 +969,13 @@ function buffsPage(body,options){
    const row=make('label',{class:'stage-book-check stage-resistance-skill-row'});
    row.append(make('input',{type:'checkbox','data-book-setting':'resistSkill:'+skill.id,
     checked:selected,onchange:event=>onBuff('resistSkill:'+skill.id,event.target.checked)}));
+   const sprite=skillIconForId(skill.id);
+   if(sprite){
+    const picture=make('img',{src:sprite,alt:'',loading:'lazy',
+     width:26,height:26,class:'stage-resistance-skill-icon'});
+    picture.onerror=()=>picture.remove();
+    row.append(picture);
+   }
    row.append(make('span',{class:'stage-combat-buff-copy'},[
     make('strong',{text:english?skill.nameEn:skill.name}),
     make('small',{text:(skill.incoming?(english?'Incoming skill · ':'Вражеский навык · '):
@@ -1032,7 +1088,9 @@ function renderSongSkills(body,modifiers,gameTerms={},skillIconForId=()=>null){
 }
 // Mirrors Remaked SkillView: individual skill outcomes, never the selected
 // buff toggles or the 43 main result values.
-function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>null}={}){
+function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>null,
+ remakedBuffRows=[],availability={},combatSkillCards={},
+ heroJobKey=null,heroLevel=1,heroMasteries={}}={}){
  const en=document.documentElement?.lang==='en';
  const spells=modifiers?.healingSpells?.rows||[];
  if(spells.length){
@@ -1098,12 +1156,12 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
  const offenseHeading=make('strong',{text:en?'Offensive skills':'Атакующие умения'});
  offense.append(offenseHeading);
  const addOffense=(id,ru,enName,amount,detail)=>{
-  const row=make('div',{class:'stage-offense-skill-row'});
-  const label=gameSkillBadge(id,ru,enName,gameTerms,en,skillIconForId);
-  const caption=make('div',{class:'stage-offense-skill-details'});
-  caption.append(label);
-  if(detail)caption.append(make('small',{text:detail}));
-  row.append(caption,make('strong',{text:amount}));
+  // Same three-column visual rhythm as the existing healing skill rows:
+  // icon+name, computed value, then a full-width description.
+  const row=make('div',{class:'stage-heal-row stage-offense-skill-row'});
+  row.append(gameSkillBadge(id,ru,enName,gameTerms,en,skillIconForId),
+   make('strong',{text:amount}));
+  if(detail)row.append(make('small',{text:detail}));
   offense.append(row);
  };
  const percent=value=>Number.isFinite(value)?(value>0?'+':'')+value:'—';
@@ -1145,6 +1203,81 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   addOffense(142051001,'Хладнокровие','Cold Blood',
    percent(combat.critical.coldBlood)+'%',
    en?'Critical hit chance':'Шанс критического удара');
+ if(Number(combat.priestSong?.minstrel)>0)
+  addOffense(340001001,'Песнь поэта','Minstrel Song',
+   percent(combat.priestSong.minstrel),
+   en?'Accuracy and evasion gained from the other priest':
+    'Прибавка к точности и уклонению от другого жреца');
+ // Show possible offensive skills from this character's profession as well
+ // as already-active effects. A locked mastery is explicit, never an applied
+ // bonus. The source records provide exact names, requirements and icons.
+ const covered=new Set([320001001,100052001,100053001,100054001,
+  100055001,142051001]);
+ const offensiveEffects=new Set(['EP_DAMAGERATE_SCALE','EP_DAMAGERATE_CONST',
+  'EP_CRITICALRATE_CONST','EP_TOHIT_CONST','EP_TOHIT_SCALE',
+  'EP_ONHIT_FIN_DAMAGE_CONST','EP_ATTACKINTERVAL_SCALE',
+  'EP_AURAPOISON_CONSTANT','EP_AURADARK_CONSTANT']);
+ const classOffense=Object.values(gameTerms.skills||{}).filter(skill=>
+  Number.isInteger(skill?.id)&&skill.id<900000000&&
+  ['MYSELF','TOGGLE','PASSIVE'].includes(skill.skillType)&&
+  skill.classes?.[heroJobKey]&&
+  skill.funcs?.some(f=>f.dir==='TARGET'&&offensiveEffects.has(f.ep)));
+ const sourceOffense=[...new Set([100058001,213702001,213605001,
+  220001001,430051001,142051001,
+  ...classOffense.map(skill=>skill.id)])];
+ for(const id of sourceOffense){
+  const record=gameTerms.skills?.[String(id)];
+  if(!record||!record.classes?.[heroJobKey])continue;
+  const existing=remakedBuffRows.find(x=>x.id===id);
+  // The original Remaked selection knows mastery/weapon requirements for
+  // its listed buffs; for other class skills check the same OS reqs.
+  const missing=(record.reqs||[]).find(req=>
+   Number(heroMasteries?.[req.branch]??0)<Number(req.amount||0));
+  const levelBlocked=Number(heroLevel)<Number(record.charLevel||0);
+  const row=existing||{
+   id,name:record.name,
+   nameEn:gameTerms.englishSkills?.[String(id)]?.n||record.name,
+   description:record.desc||'',
+   available:!missing&&!levelBlocked&&record.learnable!==false,
+   selected:false,existing:false,
+   reason:missing?'Требуется мастерство «'+
+    (gameTerms.branchLabels?.[missing.branch]||missing.branch)+'»: '+missing.amount:
+    levelBlocked?'Требуется уровень '+record.charLevel:'',
+   reasonEn:missing?'Requires '+
+    (gameTerms.englishBranches?.[missing.branch]||missing.branch)+' mastery '+missing.amount:
+    levelBlocked?'Requires level '+record.charLevel:''
+  };
+  if(row.existing||!row.name||
+   (row.reason==='Недоступно для этой профессии'||
+    row.reasonEn==='Unavailable to this class'))continue;
+  const enabled=row.available&&row.selected;
+  if(covered.has(id)&&enabled)continue;
+  const description=gameTerms.englishSkills?.[String(id)]?.d||row.description;
+  const effect=(record.funcs||[]).find(x=>x.dir==='TARGET'&&
+   ['EP_DAMAGERATE_SCALE','EP_ATTACKINTERVAL_SCALE','EP_CRITICALRATE_CONST',
+    'EP_TOHIT_CONST','EP_AURAPOISON_CONSTANT','EP_AURADARK_CONSTANT']
+    .includes(x.ep));
+  const names={
+   EP_DAMAGERATE_SCALE:[en?'Attack':'Атака','%'],
+   EP_ATTACKINTERVAL_SCALE:[en?'Attack speed':'Скорость атаки','%'],
+   EP_CRITICALRATE_CONST:[en?'Critical chance':'Шанс крита','%'],
+   EP_TOHIT_CONST:[en?'Accuracy':'Точность',''],
+   EP_AURAPOISON_CONSTANT:[en?'Poison aura':'Аура яда',''],
+   EP_AURADARK_CONSTANT:[en?'Dark aura':'Аура тьмы','']
+  };
+  const name=names[effect?.ep];
+  const bare=Number(effect?.fv1?.[3]);
+  // If the current OS record includes mastery coefficients, the source
+  // number is a reference magnitude, not a verified total for the hero.
+  const staticEffect=effect?.fv1?.slice(0,3).every(v=>v===0)===true;
+  const amount=staticEffect&&Number.isFinite(bare)&&name?
+   name[0]+' '+(bare>0?'+':'')+bare+name[1]:'—';
+  const condition=enabled?(en?'Selected in Buffs':'Выбрано в усилениях'):
+   row.available?(en?'Not active · enable in Buffs':'Не активно · включи в «Усилениях»'):
+   (en?row.reasonEn:row.reason)|| (en?'Requirements not met':'Требования не выполнены');
+  addOffense(id,row.name,row.nameEn,enabled?amount:'—',
+   condition+' · '+(en?description||row.description:row.description));
+ }
  const hitPassive=combat.incredibleStrength;
  if(hitPassive?.applies===true){
   // The OS source describes on-hit final damage, not character-sheet ATK.
@@ -1213,6 +1346,10 @@ function attackChapterGroups(calc){
    (entry.kind==='bow'?'Дальность стрельбы':'Дальность атаки')+' · '+entry.source,
    (entry.kind==='bow'?'Bow range':'Attack range')+' · '+entry.source,entry.amount);
  });
+ const song=calc.combat?.priestSong;
+ if(Number(song?.sageElementDamage)>0)
+  put(2,'priestSageElement','Песнь чар · стихийный урон',
+   'Sage Song · elemental damage',song.sageElementDamage,'%');
  const aura=calc.auraDamage?.elements||{};
  for(const [key,entry]of Object.entries(aura)){
   const term=elementTerms[key];if(!term)continue;
@@ -1357,11 +1494,13 @@ function appendWeaponConditions(body,calc,items,english){
  const active=items.map(row=>({row,
   bonus:root.PandoraConditionalItemBonuses?.activeFor?.(row)}))
   .filter(x=>x.bonus&&(x.bonus.phoenix||x.bonus.rows.length));
- if(!active.length)return;
  const panel=make('details',{class:'stage-attribute-row stage-active-elemental'});
  panel.open=true;
  panel.append(make('summary',{text:(english?'Elemental weapon effects':
-  'Эффекты стихийных оружий')+' · '+active.length}));
+  'Эффекты стихийных оружий')}));
+ if(!active.length)panel.append(make('p',{class:'stage-attribute-note',
+  text:english?'No supported elemental weapon effect is active on the equipped weapon.':
+   'На экипированном оружии нет активных подтверждённых стихийных эффектов.'}));
  for(const {row,bonus}of active){
   const rec=row.record||{},name=rec.name||'Оружие';
   panel.append(make('strong',{text:name+' · '+(english?'Fire +':'Огонь +')+
@@ -1461,7 +1600,7 @@ function defensePage(body,calc,english,options={}){
  if(exp.length){
   const panel=make('details',{class:'stage-attribute-row stage-experience-effects'});
   panel.append(make('summary',{text:(english?'Experience gain bonuses':
-   'Бонусы к опыту')+' · '+exp.length}));
+   'Бонусы к опыту')}));
   for(const e of exp)panel.append(make('p',{text:e.source+': '+
    (e.percent>0?'+':'')+e.percent+'%'}));
   body.append(panel);
@@ -1500,6 +1639,32 @@ function collapseBookSections(body,page){
    else collapsedBookGroups.add(key);
   });
  }
+ // Pre-existing <details> chapters must have the exact same heading as
+ // sections above: left glyph, editable title, and chevron on the right.
+ // Keep them as details (no nested disclosure, no duplicate headers).
+ for(const detail of [...body.children].filter(node=>node.tagName==='DETAILS'&&
+  !node.hasAttribute('data-book-collapse'))){
+  const header=detail.querySelector(':scope > summary');
+  if(!header)continue;
+  const identifier=[...detail.classList].find(x=>x.startsWith('stage-')&&
+   x!=='stage-attribute-row'&&x!=='stage-book-disclosure')||'section';
+  const key=page+':detail:'+identifier;
+  detail.classList.add('stage-book-disclosure');
+  detail.dataset.bookCollapse=key;
+  detail.dataset.bookDetail='true';
+  detail.open=expandedBookDetails.has(key)||(!collapsedBookGroups.has(key)&&detail.open);
+  const text=make('strong',{class:'stage-book-detail-title'});
+  while(header.firstChild)text.append(header.firstChild);
+  header.className='stage-result-section-head';
+  header.append(make('span',{class:'stage-result-symbol',
+   'aria-hidden':'true',text:'✦'}),text,make('span',{
+    class:'stage-result-chevron','aria-hidden':'true',text:'⌄'}));
+  detail.addEventListener('toggle',()=>{
+   if(detail.open){expandedBookDetails.add(key);collapsedBookGroups.delete(key)}
+   else {expandedBookDetails.delete(key);collapsedBookGroups.add(key)}
+  });
+ }
+
 }
 // Stable text identities: editing a caption never mutates the game skill or
 // item catalog. Details retain their live record counts after localization.
@@ -1512,6 +1677,8 @@ const chapterCaptionSpecs=Object.freeze([
  ['recovery','enabled','.stage-potion-book .stage-book-check > span','Показывать восстановление от зелий','Show potion recovery'],
  ['recovery','mana','.stage-mana-consumables > strong','Предметы восстановления ОМ','MP recovery items'],
  ['recovery','health','.stage-health-consumables > summary','Предметы восстановления ОЗ','HP recovery items'],
+ ['defense','experience','.stage-experience-effects > summary','Бонусы к опыту','Experience gain bonuses'],
+ ['attack','elemental','.stage-active-elemental > summary','Эффекты стихийных оружий','Elemental weapon effects'],
  ['recovery','cures','.stage-status-cures > summary','Снятие состояний','Remove status effects'],
  ['recovery','skillItems','.stage-consumable-skills > summary','Предметы, активирующие умения','Items that activate skills']
 ]);
@@ -1523,11 +1690,12 @@ function decorateChapterCaptions(body,page,options){
   let label=node;
   if(node.tagName?.toLowerCase()==='summary'){
    const text=String(node.textContent||'');
-   const suffix=text.match(/\s·\s\d+(?:\s(?:предметов|items))?$/)?.[0]||'';
+   // Chapter headers never display record counts: quantities belong inside.
+   // The original text is replaced with a D1-editable caption below.
    node.replaceChildren();
    label=make('span',{text:ru});
    node.append(label);
-   if(suffix)node.append(document.createTextNode(suffix));
+
   }
   guideLabel(label,section+'.caption.'+key,ru,en,options);
  }
@@ -1535,6 +1703,7 @@ function decorateChapterCaptions(body,page,options){
 function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPage=()=>{},onClose=()=>{},modifiers=null,
  buffs={},vitalsBuffs={},onBuff=()=>{},onVital=()=>{},honorTitles=[],availability={},
  combatSkillCards={},resistanceSkillChoices=[],remakedBuffRows=[],
+ heroJobKey=null,heroLevel=1,heroMasteries={},
  itemById=()=>null,onItem=()=>{},gameTerms={},
  copy={},onTextEdit=null,canEdit=false,onHonor=()=>{}}={}){
  root.PandoraGuideTooltip?.dismiss();
@@ -1553,8 +1722,11 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
   for(const group of stablePanel.querySelectorAll?.('details[data-book-collapse]')||[]){
    const key=group.dataset.bookCollapse;
    if(!key)continue;
-   if(group.open)collapsedBookGroups.delete(key);
-   else collapsedBookGroups.add(key);
+   if(group.open){collapsedBookGroups.delete(key);
+    if(group.dataset.bookDetail==='true')expandedBookDetails.add(key);
+   }else {collapsedBookGroups.add(key);
+    if(group.dataset.bookDetail==='true')expandedBookDetails.delete(key);
+   }
   }
  const storedScroll=reusePanel?stablePanel.scrollTop:0;
  if(reusePanel){
@@ -1636,7 +1808,8 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
  if(chosen==='buffs')buffsPage(body,{buffs,vitalsBuffs,onBuff,onVital,
   honorTitles,availability,combatSkillCards,resistanceSkillChoices,modifiers,
   gameTerms,remakedBuffRows,skillIconForId,...copyOptions});
- if(chosen==='effects')skillEffectsPage(body,{modifiers,gameTerms,skillIconForId});
+ if(chosen==='effects')skillEffectsPage(body,{modifiers,gameTerms,skillIconForId,
+  remakedBuffRows,availability,combatSkillCards,heroJobKey,heroLevel,heroMasteries});
  if(chosen==='recovery'){
   const english=document.documentElement?.lang==='en';
   const percent=modifiers?.potion?.percent;
@@ -1698,7 +1871,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
   const lifeItems=modifiers?.consumableRecovery?.healthRows||[];
   if(lifeItems.length){
    const health=make('details',{class:'stage-attribute-row stage-health-consumables'});
-   health.append(make('summary',{text:(english?'HP recovery items':'Предметы восстановления ОЗ')+' · '+lifeItems.length}));
+   health.append(make('summary',{text:(english?'HP recovery items':'Предметы восстановления ОЗ')}));
    for(const entry of lifeItems){
     const item=itemById(entry.id);
     const row=make(item?'button':'div',{class:'stage-potion-item',
@@ -1721,7 +1894,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
   const cures=modifiers?.statusCures?.rows||[];
   if(cures.length){
    const panel=make('details',{class:'stage-attribute-row stage-status-cures'});
-   panel.append(make('summary',{text:(english?'Remove status effects':'Снятие состояний')+' · '+cures.length+(english?' items':' предметов')}));
+   panel.append(make('summary',{text:(english?'Remove status effects':'Снятие состояний')}));
    for(const entry of cures){
     const item=itemById(entry.id);
     const row=make(item?'button':'div',{class:'stage-potion-item',
@@ -1742,8 +1915,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
   if(consumableSkills.length){
    const section=make('details',{class:'stage-attribute-row stage-consumable-skills'});
    section.append(make('summary',{text:(english?
-    'Items that activate skills':'Предметы, активирующие умения')+
-    ' · '+consumableSkills.length}));
+    'Items that activate skills':'Предметы, активирующие умения')}));
    for(const entry of consumableSkills){
     const item=itemById(entry.id);
     const displayName=item?.name||entry.name;

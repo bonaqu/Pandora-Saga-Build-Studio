@@ -308,14 +308,26 @@ async function main(){
  await mount.uncheck();
  assert.equal(await mount.isChecked(),false,'On-foot mode must be restorable');
  assert.equal(await page.locator('#stageBookPanel .stage-combat-quick').count(),0);
- assert.equal(await page.locator('#stageBookPanel .stage-active-elemental').count(),0,
-  'Conditional weapon procs appear only if such a weapon is equipped');
+ const elemental=page.locator('#stageBookPanel .stage-active-elemental');
+ assert.equal(await elemental.count(),1,'The elemental-weapon chapter stays discoverable');
+ assert.equal((await elemental.locator('summary').innerText()).replace(/\s+/g,' ').trim(),
+  '✦ Эффекты стихийных оружий ⌄');
+ assert.equal(await elemental.locator('summary .stage-result-chevron').count(),1);
  await page.locator('#stageAttributes [data-book-page="attack"]').press('ArrowRight');
  assert.equal(await page.locator('#stageBookPanel').getAttribute('data-book-visible'),'defense');
   assert.equal(await page.locator('#stageBookPanel .stage-result-tile').count(),0,
   'Defense chapter must not repeat calculated DEF or evasion');
  assert.equal(await page.locator('#stageBookPanel [data-chapter-stat="hpRecoveryAmount"]').count(),1);
+ const exp=page.locator('#stageBookPanel .stage-experience-effects');
+ if(await exp.count()){
+  const header=exp.locator('summary');
+  assert.equal((await header.innerText()).replace(/\s+/g,' ').trim(),'✦ Бонусы к опыту ⌄');
+  assert.equal(await header.locator('.stage-result-chevron').count(),1);
+ }
  await page.locator('#stageAttributes [data-book-page="effects"]').click();
+ const offense=page.locator('#stageBookPanel .stage-attacking-skills');
+ if(await offense.count())
+  assert.equal(await offense.locator('.stage-offense-skill-row:not(.stage-heal-row)').count(),0);
   await page.locator('#stageAttributes .stage-periodic-recovery').waitFor({state:'visible',timeout:20000});
   await page.locator('#stageAttributes .stage-periodic-recovery summary').click();
   const recovery=await page.locator('#stageAttributes .stage-periodic-recovery').innerText();
@@ -328,17 +340,26 @@ async function main(){
  assert.match(await page.locator('#stageAttributes .stage-mana-consumables').innerText(),/ОМ/);
  const hpOnly=page.locator('#stageAttributes .stage-health-consumables');
  await hpOnly.waitFor({state:'visible',timeout:20000});
- await hpOnly.locator('summary').click();
+ const healthHeading=hpOnly.locator('summary');
+ assert.equal((await healthHeading.innerText()).replace(/\s+/g,' ').trim(),'✦ Предметы восстановления ОЗ ⌄');
+ assert.equal(await healthHeading.locator('.stage-result-chevron').count(),1);
+ await healthHeading.click();
  assert.equal(await hpOnly.locator('.stage-potion-item').count(),12);
  assert.match(await hpOnly.innerText(),/Легкое исцеляющее зелье/);
  const statusCures=page.locator('#stageAttributes .stage-status-cures');
  await statusCures.waitFor({state:'visible',timeout:20000});
- await statusCures.locator('summary').click();
+ const cureHeader=statusCures.locator('summary');
+ assert.equal((await cureHeader.innerText()).replace(/\s+/g,' ').trim(),'✦ Снятие состояний ⌄');
+ await cureHeader.click();
  assert.equal(await statusCures.locator('.stage-potion-item').count(),10);
   assert.match(await statusCures.innerText(),/Чудесное зелье/);
  assert.match(await statusCures.innerText(),/Панацея/);
  assert.match(await statusCures.innerText(),/Противоядие/);
- assert.ok(await page.locator('#stageAttributes .stage-consumable-skills').count()>0);
+ const skillItems=page.locator('#stageAttributes .stage-consumable-skills');
+ assert.equal(await skillItems.count(),1);
+ assert.equal((await skillItems.locator('summary').innerText()).replace(/\s+/g,' ').trim(),
+  '✦ Предметы, активирующие умения ⌄');
+ assert.equal(await skillItems.locator('summary .stage-result-chevron').count(),1);
  assert.equal(await page.locator('#stageAttributes .stage-result-tile').count(),0,
   'Potion effects do not repeat potion-effectiveness total');
  await page.locator('#stageAttributes [data-book-page="effects"]').click();

@@ -86,7 +86,7 @@ test('skill effects draw original skill icons using the same catalog resolver as
  assert.match(book,/gameSkillBadge\(id,ru,enName/);
  assert.match(book,/addOffense\(hitPassive\.id\|\|910110001/);
  assert.match(book,/renderSongSkills\(body,modifiers,gameTerms,skillIconForId\)/);
- assert.match(book,/skillEffectsPage\(body,\{modifiers,gameTerms,skillIconForId\}\)/);
+ assert.match(book,/skillEffectsPage\(body,\{modifiers,gameTerms,skillIconForId,/);
  assert.match(app,/skillIconForId:id=>\{/);
  assert.match(app,/return record\?skillIcon\(record\.branch,id,record\):null/);
  assert.match(book,/stage-book-check stage-mounted-toggle/);

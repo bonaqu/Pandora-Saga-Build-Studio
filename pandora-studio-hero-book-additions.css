@@ -287,3 +287,93 @@
  #stageAttributes .stage-offense-skill-row{align-items:flex-start;flex-wrap:wrap}
  #stageAttributes .stage-offense-skill-row>strong{margin-left:auto}
 }
+
+
+/* 0.672: all potion/experience subsections use the Results-header geometry. */
+#stageAttributes .stage-book-detail-title{
+ flex:1 1 auto;display:flex;align-items:center;min-width:0;
+ font:600 18px/1.25 'Cormorant Garamond',Georgia,serif;
+ color:#efd0a0;overflow-wrap:anywhere
+}
+#stageAttributes .stage-book-detail-title>.stage-guide-actions{
+ margin-left:auto;flex:0 0 auto
+}
+#stageAttributes .stage-book-disclosure.stage-attribute-row>summary.stage-result-section-head{
+ display:flex;align-items:center;gap:9px;min-height:43px;margin:0;
+ padding:8px 9px;list-style:none;cursor:pointer;
+ border-bottom:1px solid transparent;background:#362519
+}
+#stageAttributes .stage-book-disclosure.stage-attribute-row[open]>summary.stage-result-section-head{
+ border-bottom-color:#795736
+}
+#stageAttributes .stage-book-disclosure.stage-attribute-row>summary.stage-result-section-head::-webkit-details-marker{display:none}
+#stageAttributes .stage-book-disclosure.stage-attribute-row>summary.stage-result-section-head .stage-result-chevron{
+ margin-left:auto;flex:0 0 auto
+}
+#stageAttributes .stage-book-disclosure.stage-attribute-row>summary.stage-result-section-head .stage-result-symbol{
+ flex:0 0 auto
+}
+/* Match the existing healing skill rows, rather than an independent card UI. */
+#stageAttributes .stage-attacking-skills{
+ display:grid;gap:8px;padding:10px;box-sizing:border-box;
+ background:linear-gradient(140deg,#35251a,#21170f)
+}
+#stageAttributes .stage-offense-skill-row{
+ display:grid;grid-template-columns:minmax(0,1fr) auto;
+ align-items:center;gap:2px 10px;min-width:0;
+ border:0;border-top:1px solid #795537;border-radius:0;
+ padding:6px 0;background:none
+}
+#stageAttributes .stage-offense-skill-row>small{
+ grid-column:1 / -1;overflow-wrap:anywhere;
+ font:500 10px/1.4 Manrope,Arial,sans-serif;color:#baa281
+}
+#stageAttributes .stage-offense-skill-row>strong{
+ font-size:13px;color:#ffdfa9
+}
+#stageAttributes .stage-book-disclosure.stage-attacking-skills>.stage-offense-skill-row{
+ margin:0 10px;max-width:calc(100% - 20px)
+}
+/* Guild icon belongs beside the name, with one full-width selector beneath. */
+#stageAttributes .stage-guild-skill-field{
+ grid-template-columns:30px minmax(0,1fr);
+ grid-template-rows:auto auto;gap:4px 8px;
+ padding:5px 6px;border:1px solid #66472e;border-radius:4px;
+ background:#2b1e14
+}
+#stageAttributes .stage-guild-skill-field>.stage-guild-skill-icon{
+ grid-column:1;grid-row:1;align-self:center
+}
+#stageAttributes .stage-guild-skill-field>span{
+ grid-column:2;grid-row:1;align-self:center
+}
+#stageAttributes .stage-guild-skill-field>select{
+ grid-column:1 / -1;grid-row:2;margin:0
+}
+/* Real source skill icons for elemental resistance choices. */
+#stageAttributes .stage-resistance-skill-row{
+ display:grid;grid-template-columns:18px 26px minmax(0,1fr);
+ align-items:center;gap:7px;min-width:0;
+ border:1px solid #715131;border-radius:4px;
+ padding:7px;background:#2a1d14
+}
+#stageAttributes .stage-resistance-skill-row:not(:has(>img)){
+ grid-template-columns:18px minmax(0,1fr)
+}
+#stageAttributes .stage-resistance-skill-row .stage-resistance-skill-icon{
+ display:block;width:26px!important;height:26px!important;
+ min-width:26px;max-width:26px;min-height:26px;max-height:26px;
+ object-fit:contain;border:1px solid #a7814c;border-radius:3px
+}
+#stageAttributes .stage-resistance-skill-controls{
+ box-sizing:border-box;min-width:0;border:1px solid #735435;
+ border-radius:5px;overflow:clip;background:#231912
+}
+#stageAttributes .stage-resistance-skill-controls>summary{
+ padding:9px 10px;min-height:37px;cursor:pointer;
+ background:#372619;color:#f2d4a4;
+ font:650 12px/1.4 Manrope,Arial,sans-serif
+}
+#stageAttributes .stage-resistance-skill-controls>:not(summary){
+ margin:7px 9px;max-width:calc(100% - 18px)
+}
