@@ -57,4 +57,5 @@ test('Path rich tooltip has one reusable source for Buffs, Effects and triggered
  assert.match(book,/root\.PandoraSkillPreview\?\.attach\(info,skill\.id\)/);
  assert.match(book,/root\.PandoraSkillPreview\?\.attach\(skillTitle,gameId\)/);
  assert.match(app,/id:combatSkillCatalog\.supportSkillIds\[kind\]/);
+ assert.match(app,/if\(type==='skill'\)window\.PandoraSkillPreview\?\.attach\(link,displayId\)/);
 });
