@@ -1128,6 +1128,12 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
   if(!recipient&&options.song===true&&!songSkillPreview({
    skillCatalog,jobKey,level,branchMasteries,branchCaps}).rows.some(x=>x.id===id))return;
   const issues=[];
+  // An impossible allocation may still have a mathematically valid source
+  // coefficient. It must never show as a usable skill for this profession.
+  if(!recipient&&options.branch&&
+   (!Number.isSafeInteger(mastery(options.branch))||
+    mastery(options.branch)<0||mastery(options.branch)>cap(options.branch)))
+   issues.push('Мастерство превышает предел профессии');
   if(!recipient&&level<Number(record.charLevel||0))
    issues.push('Требуется уровень '+record.charLevel);
   if(!recipient)for(const req of record.reqs){
