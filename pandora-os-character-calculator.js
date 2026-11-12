@@ -714,7 +714,11 @@ function supportSkillAvailability({selected={},skillCatalog=null,jobKey=null,lev
   // Both wind skills can be cast by an ally. Requirements gate the caster,
   // not the hero receiving the chosen party effect.
   result[kind]=Boolean(selected?.[setting]===true&&source&&
-   skill?.learnable!==false);
+   skill?.id===supportSkillIds[kind]&&skill.learnable!==false&&
+   skill.prereq==null&&Number.isInteger(skill.charLevel)&&
+   skill.charLevel>=0&&skill.charLevel<=55&&
+   Array.isArray(skill.reqs)&&skill.reqs.every(req=>
+    typeof req?.branch==='string'&&Number.isInteger(req.amount)&&req.amount>=0));
  }
  return result;
 }
@@ -772,8 +776,14 @@ function activeCombatSkills({selected={},jobKey=null,level=1,hasShield=false,
  // An ally's War Cry affects any party member. Retain fallback only
  // for calculator fixtures without a current OS skill catalog.
  const warCry=validLevel&&selected?.combatWarCry===true&&
-  (skillCatalog?Boolean(combatSkillSource(skillCatalog,'warCry')?.record):
-   meleeLineage.has(jobKey)&&level>=28);
+  (skillCatalog?(()=>{
+   const rec=combatSkillSource(skillCatalog,'warCry')?.record;
+   return Boolean(rec?.id===combatSkillIds.warCry&&rec.learnable!==false&&
+    rec.prereq==null&&Number.isInteger(rec.charLevel)&&
+    rec.charLevel>=0&&rec.charLevel<=55&&Array.isArray(rec.reqs)&&
+    rec.reqs.every(req=>typeof req?.branch==='string'&&
+     Number.isInteger(req.amount)&&req.amount>=0));
+  })():meleeLineage.has(jobKey)&&level>=28);
  const raging=permitted('raging','combatRage',meleeLineage,35);
  const defender=permitted('defender','combatDefender',knightLineage,35)&&hasShield&&!raging;
  const lunge=permitted('lunge','combatLunge',warriorBuffClasses,18);
