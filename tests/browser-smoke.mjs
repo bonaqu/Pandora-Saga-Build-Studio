@@ -384,7 +384,8 @@ async function main(){
  assert.equal(await page.locator('#stageAttributes .stage-book-arrow').first().getAttribute('aria-label'),'Previous page');
  assert.equal(await page.locator('#stageAttributes .stage-book-close').getAttribute('aria-label'),'Return to portrait');
  await page.locator('#stageAttributes [data-book-page="buffs"]').click();
- assert.match(await page.locator('#stageBookPanel .stage-attribute-note').first().innerText(),/Settings apply to this build/);
+ assert.equal((await page.locator('#stageBookPanel').innerText()).includes('Settings apply to this build'),false,
+  'Buffs no longer show the redundant introductory sentence');
  assert.ok((await page.locator('#stageBookPanel').innerText()).includes('Guild'));
  assert.equal(await page.locator('#stageBookPanel .stage-honor-term').innerText(),'passive skill');
  assert.equal(await page.locator('#stageBookPanel .stage-book-honor-link').count(),0);
