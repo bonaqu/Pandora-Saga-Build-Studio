@@ -277,6 +277,11 @@ async function main(){
  assert.equal((await mountedText.innerText()).trim(),'Верхом');
  const visibleMountedHint=await mountedText.getAttribute('data-guide-hint');
  assert.match(visibleMountedHint||'',/сражается верхом/);
+ const mountedRate=page.locator('#stageBookPanel .stage-mounted-toggle .stage-mounted-percent');
+ assert.match((await mountedRate.innerText()).trim(),/^\d+(?:[,.]\d+)?%$/,
+  'Mounted attributes percentage must share the switch row');
+ assert.equal(await page.locator('#stageBookPanel .stage-chapter-entry[data-chapter-stat="mountedRelease"]').count(),0,
+  'Mounted percentage should not be repeated in a distant Attack card');
  // The prior chapter's test scrolled its 43 results; begin the new page at
  // its top, then let the chapter entrance animation settle before hover.
  await page.locator('#stageBookPanel').evaluate(el=>{el.scrollTop=0});
