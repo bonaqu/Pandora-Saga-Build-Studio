@@ -1,5 +1,13 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.695.0 — 2026.11.12.695 · Shared source-derived Skill Effects and selected buffs
+
+- «Хладнокровие» и «Быстрое уклонение» показывают во вкладке «Эффекты умений» те же вычисленные значения, что и применяемые усиления, с округлением по исходникам Remaked/OS.
+- Проверка равенства выбранного эффекта и предпросмотра на 250 дополнительных наборах мастерства и ПРВ, с сохранением исходных данных.
+- Убрано «≈» из отображения уже рассчитанного периодического восстановления ОЗ/ОМ. Алгоритмы и хранилище билдов не изменялись.
+- Обязательные Node/Chromium и публикационные проверки выполняются до объявления релиза.
+
+
 ## 0.694.0 — 2026.11.12.694 · Shared priest profile and concise skill results
 
 - Exactly three shared external priest inputs; no skill-row duplicates. Historical saved masteries and ability gates are preserved.

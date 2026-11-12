@@ -58,7 +58,8 @@ test('only source-backed self-cast skills accessible to the job are shown',()=>{
  assert.ok(Number.isFinite(find(sniper.offense,213605001).amount),
   'Sniping displays a modeled attack gain, not final live damage');
  assert.equal(find(sniper.offense,213605001).modelOnly,true);
- assert.equal(find(sniper.defense,260005001).amount,null);
+ assert.equal(find(sniper.defense,260005001).amount,19,
+  'Skill Effects use the same floored value as the selected Quick Avoidance buff');
  assert.ok(!ids(sniper.offense).includes(320011001));
 });
 
