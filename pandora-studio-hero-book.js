@@ -536,7 +536,9 @@ function buffsPage(body,options){
  }).length+guildPassiveCount+Object.entries(vitalsBuffs).filter(([key,value])=>
   !(guildSelected&&['guildHp','guildMp'].includes(key))&&selected(value)).length+
   selectedResistanceSkills+remakedBuffRows.filter(row=>!row.existing&&
-   row.selected&&row.available).length;
+   row.selected&&row.available&&
+   (![320011001,330051001,340001001,340004001].includes(row.id)||
+    buffs.priestEnabled===true)).length;
  const status=make('div',{class:'stage-buff-overview'},[
   make('span',{text:english?'Configured enhancements':'Выбранные усиления'}),
   make('strong',{text:String(configured)}),
@@ -626,7 +628,7 @@ function buffsPage(body,options){
   }
  }
  const passiveGroup=make('div',{class:'stage-guild-subsection stage-guild-passives'});
- const passiveTitle=make('strong',{text:english?'Пассивные усиления гильдии':'Пассивные усиления гильдии'});
+ const passiveTitle=make('strong',{text:english?'Passive guild enhancements':'Пассивные усиления гильдии'});
  passiveGroup.append(passiveTitle);
  guideLabel(passiveTitle,'buffs.guild.passiveHeading',
   'Пассивные усиления гильдии','Passive guild enhancements',options,
@@ -719,22 +721,40 @@ function buffsPage(body,options){
   label.append(input);priestFields.append(label);
  }
  priest.append(priestFields);
- toggle(priest,english?'Velox · attack speed · Blessing 8':'Знак атаки · скорость атаки · Благословение 8','priestGratia',
-  false,buffs.priestEnabled===true&&Number(buffs.priestBlessing)>=8);
- toggle(priest,english?'Lapis Medio · defense · Blessing 12':'Знак защиты · защита · Благословение 12','priestLapisMedio',
-  false,buffs.priestEnabled===true&&Number(buffs.priestBlessing)>=12);
- toggle(priest,english?'Battle Prayer · STR, AGI, INT · Blessing 61':
-  'Ободрение · СИЛ, ПРВ, ИНТ · Благословение 61','priestEncouragement',
-  false,buffs.priestEnabled===true&&Number(buffs.priestBlessing)>=61);
- priest.append(make('p',{class:'stage-attribute-note',text:english?
-  'Selected attack and defense signs and Battle Prayer affect the build; other values are previews.':
-  'На билд влияют выбранные знаки атаки и защиты, а также Ободрение. Остальное — предварительный просмотр.'}));
  const skills=section('Личные умения','Self buffs','self');
  for(const [key,label] of [['combatLunge','Рывок'],
   ['combatRage','Яростная атака'],['combatDefender','Бастион (нужен щит)'],
   ['combatConcentration','Сосредоточенность']])
   toggle(skills,label,key,false,availability[key]===true,combatSkillCards[key]);
  const party=section('Усиления от союзников','Ally buffs','party');
+ const lifeSign=remakedBuffRows.find(row=>row.id===320005001);
+ toggle(party,'Знак жизни','lifeSign',true,true,lifeSign?{
+  name:lifeSign.name,nameEn:lifeSign.nameEn,
+  desc:lifeSign.description,
+  descEn:gameTerms.englishSkills?.['320005001']?.d||lifeSign.description,
+  icon:skillIconForId(320005001),
+  summary:english?'Maximum HP +250 and +15%':'Максимум ОЗ +250 и +15%'
+ }:null);
+ for(const [id,key,required] of [
+  [320012001,'priestEncouragement',61],
+  [320007001,'priestGratia',8],
+  [320008001,'priestLapisMedio',12]]){
+  const row=remakedBuffRows.find(item=>item.id===id);
+  const benefit=id===320007001?'gratia':id===320008001?'lapisMedio':'encouragement';
+  const amount=modifiers?.legacyBuffs?.[benefit]?.value;
+  const summary=Number.isFinite(amount)?
+   (id===320007001?(english?'Attack speed +':'Скорость атаки +'):
+    id===320008001?(english?'Defense +':'Защита +'):
+     (english?'STR, AGI and INT +':'СИЛ, ПРВ и ИНТ +'))+amount:
+   (english?'Depends on priest parameters':'Зависит от параметров жреца');
+  toggle(party,row?.name||key,key,false,
+   buffs.priestEnabled===true&&Number(buffs.priestBlessing)>=required,
+   {name:row?.name||key,nameEn:row?.nameEn||key,
+    icon:skillIconForId(id),desc:row?.description,
+    descEn:gameTerms.englishSkills?.[String(id)]?.d||row?.description,
+    summary,reason: 'Нужен другой жрец с Благословением '+required,
+    reasonEn:'External priest needs Blessing '+required});
+ }
  for(const [key,label] of [['combatWarCry','Боевой клич'],
   ['combatWindAssist','Помощь ветра'],['combatWindBlessing','Благословение ветра']])
   toggle(party,label,key,false,availability[key]===true,combatSkillCards[key]);
@@ -743,14 +763,27 @@ function buffsPage(body,options){
  // deliberately stay in their original sections, without duplicate inputs.
  for(const row of remakedBuffRows){
   if(row.existing||!row.name)continue;
-  const target=row.scope==='party'?party:skills;
+  const externalPriestSkill=[320011001,330051001,340001001,340004001]
+   .includes(row.id);
+  const target=externalPriestSkill?priest:row.scope==='party'?party:skills;
   const description=english?gameTerms.englishSkills?.[String(row.id)]?.d:row.description;
+  const priestReady=!externalPriestSkill||(
+   buffs.priestEnabled===true&&
+   (row.id!==340001001||Number(buffs.priestHymn)>=8)&&
+   (row.id!==340004001||(Number(buffs.priestHymn)>=30&&
+    Number(buffs.priestBlessing)>=71)));
   toggle(target,english?row.nameEn:row.name,'legacySkill:'+row.id,false,
-   row.available,{name:row.name,nameEn:row.nameEn,icon:skillIconForId(row.id),
+   row.available&&priestReady,{name:row.name,nameEn:row.nameEn,icon:skillIconForId(row.id),
     desc:row.description,descEn:description||row.description,
     reason:row.reason,reasonEn:row.reasonEn,
     pending:!row.counted,
-    summary:row.counted?(english?'Included in results':'Учтено в результатах'):
+    summary:row.counted?({
+     100055001:english?'Accuracy +20 and +15%':'Точность +20 и +15%',
+     330004001:english?'Magic resistance +25':'Сопротивление магии +25',
+     142051001:english?'Critical chance +10%':'Шанс крита +10%',
+     260005001:english?'Evasion +10':'Уклонение +10',
+     260008001:english?'Evasion +100':'Уклонение +100'
+    }[row.id]):
      (english?'Numerical effect details are in development':'Числовые показатели в разработке')});
  }
  if(resistanceSkillChoices.length){
@@ -764,7 +797,7 @@ function buffsPage(body,options){
    charm:'Чары',light:'Свет',dark:'Тьма',magic:'Магия'};
   const en={fire:'Fire',ice:'Ice',lightning:'Lightning',poison:'Poison',
    charm:'Charm',light:'Light',dark:'Dark',magic:'Magic'};
-  for(const skill of resistanceSkillChoices){
+  for(const skill of resistanceSkillChoices.filter(s=>s.id!==330004001)){
    const selected=Array.isArray(buffs.resistanceSkillIds)&&buffs.resistanceSkillIds.includes(skill.id);
    const effect=Object.entries(skill.effects).map(([type,value])=>
     (english?(en[type]||type):(ru[type]||type))+' '+(value>0?'+':'')+value).join(' · ');
