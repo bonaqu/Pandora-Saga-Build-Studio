@@ -350,13 +350,21 @@ async function main(){
  const calculatedSkill=offense.locator('.stage-effect-skill-label').first();
  const sourceId=await calculatedSkill.getAttribute('data-source-skill-id');
  assert.ok(Number(sourceId)>0,'Calculation row must attach its real OS skill ID');
- await calculatedSkill.hover();
- // Real pointer remains on the skill even when layout/sprite hydration shifts
- // a Book row. Rehover when it is no longer the active hit target.
- if(!await calculatedSkill.evaluate(node=>node.matches(':hover')))
-  await calculatedSkill.hover();
+ // Re-establish a native pointer enter after a Book redraw. Some Chromium
+ // layouts can rebuild a row under a stationary cursor and lose that event.
  const richEffect=page.locator('#path-skill-hover-tooltip');
- await richEffect.waitFor({state:'visible',timeout:5000});
+ for(let attempt=0;attempt<2;attempt++){
+  await page.mouse.move(1,1);
+  await calculatedSkill.hover();
+  if(!await calculatedSkill.evaluate(node=>node.matches(':hover')))
+   await calculatedSkill.hover();
+  try{
+   await richEffect.waitFor({state:'visible',timeout:2500});
+   break;
+  }catch(error){
+   if(attempt===1)throw error;
+  }
+ }
  assert.ok((await richEffect.locator('strong').first().innerText()).trim().length>2,
   'Rich effect tooltip must show the canonical skill title');
  assert.equal(await richEffect.locator('.path-skill-preview-item').count(),1);
