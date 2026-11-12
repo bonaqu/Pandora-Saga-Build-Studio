@@ -53,6 +53,10 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   await input.waitFor({state:'visible',timeout:10000});
   await input.fill(value);
   await input.press('Tab');
+  // The mock Worker records D1 before the client receives its CAS response.
+  // Wait until the inline editor has actually finished saving and unmounted,
+  // not just until its contenteditable text equals the typed draft.
+  await input.waitFor({state:'detached',timeout:15000});
   const recordKey='guideedit.book.'+section+'.'+key.replace(/[A-Z]/g,ch=>'-'+ch.toLowerCase());
   await page.waitForFunction(({section,key,value})=>
    document.querySelector('[data-owner-copy-section="'+section+
