@@ -1341,7 +1341,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   weaponKind:heroWeaponKind
  });
  if(chains?.rows?.length){
-  const group=make('details',{class:'stage-attribute-row stage-healing-spells stage-skill-chain-effects'});
+  const group=make('details',{class:'stage-attribute-row stage-skill-chain-effects'});
   group.append(make('summary',{text:en?'Linked skill effects':'Связанные эффекты умений'}));
   group.append(make('p',{class:'stage-periodic-hint',text:en?
    'Some skills launch other actions. The links do not guarantee extra damage, hits or duration.':
