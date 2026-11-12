@@ -148,7 +148,7 @@
 | Окно выбора экипировки | 10 | `book.equipment.picker-search-placeholder`, `picker-no-matches`, `picker-outfit-note` |
 | Свойства предмета и души | 6 | `book.equipment.picker-item-settings`, `picker-soul-search-aria`, `picker-empty-soul` |
 | Энциклопедия | 7 | `book.wiki-ui.search-placeholder`, `view-grid`, `back-top-aria` |
-| Вспомогательный экран умений | 2 | `book.skill-ui.intro`, `open` |
-| Экран характеристик | 2 | `book.stats-ui.heading`, `available` |
+| Поиск умений в «Пути героя» | 2 | `book.skill-ui.search-placeholder`, `filter-aria` |
+| Сводка очков в «Происхождении» | 2 | `book.stats-ui.remaining-prefix`, `spent-prefix` |
 
 Редактор показывает текст рядом с короткой подписью на *той же странице* в компактном owner-only `details` с карандашом. Пишутся только `ru/en` поля автора. Отредактированная строка применяется к существующему элементу `data-owner-interface-*` без потери запроса, открытого предмета, положения скролла и свойств героя. Число слота и имя души остаются не редактируемыми D1 данными суффикса. Сохранение и Undo используют одну функцию обновления DOM. Стартовые RU/EN значения остаются в файлах как offline fallback, их **физическая загрузка в D1 не выполняется**. Полный аудит оставшихся runtime-строк и безопасность в продакшн-админсеансе ещё не закрыты.
