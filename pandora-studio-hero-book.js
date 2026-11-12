@@ -1303,6 +1303,31 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     'Увеличивает урон при попадании оружием ближнего боя. Точная прибавка ещё не подтверждена.');
  }
  if(offense.children.length>1)body.append(offense);
+ // Keep active support skills visible alongside attack/healing effects.
+ // All numbers below are already applied to the character preview:
+ // these are SPEED INDICES, not extra MP restored or movement distance.
+ const supportRows=[
+  {id:260002001,ru:'Легкость',en:'Lightness',
+   amount:combat.movementSpeed?.lightness,
+   detailRu:'Прибавка к индексу скорости передвижения',
+   detailEn:'Movement-speed index bonus'},
+  {id:320002001,ru:'Благословенный покой',en:'Blessed Repose',
+   amount:modifiers?.regeneration?.mp?.allyBuff,
+   detailRu:'Прибавка к индексу скорости восстановления ОМ',
+   detailEn:'MP recovery-speed index bonus'}
+ ].filter(row=>Number.isFinite(row.amount)&&row.amount>0);
+ if(supportRows.length){
+  const section=make('section',{class:'stage-attribute-row stage-healing-spells stage-supporting-skills'});
+  section.append(make('strong',{text:en?'Support skills':'Поддерживающие умения'}));
+  for(const row of supportRows){
+   const label=gameSkillBadge(row.id,row.ru,row.en,gameTerms,en,skillIconForId);
+   section.append(make('div',{class:'stage-heal-row stage-support-skill-row'},[
+    label,make('strong',{text:'+'+row.amount+(en?' idx':' инд.')}),
+    make('small',{text:en?row.detailEn:row.detailRu})
+   ]));
+  }
+  body.append(section);
+ }
  const defensive=root.PandoraOSCalculator?.defensiveSkillPreview?.({
   skillCatalog:gameTerms.skills,jobKey:heroJobKey,level:heroLevel,
   branchMasteries:heroMasteries,weaponKind:heroWeaponKind,
@@ -1478,6 +1503,10 @@ function defenseChapterGroups(calc){
   'HP recovery speed',r?.hp?.total,' инд.',true);
  put(0,'mpRecoverySpeed','Скорость восстановления ОМ',
   'MP recovery speed',r?.mp?.total,' инд.',true);
+ // Expose the independent ally component without counting it twice:
+ // mpRecoverySpeed already includes this index once in the total.
+ put(0,'mpRecoveryRepose','Благословенный покой · прибавка к скорости ОМ',
+  'Blessed Repose · MP speed bonus',r?.mp?.allyBuff,' инд.');
  const statuses={
   burn:['Ожоги','Burn'],stun:['Оглушение','Stun'],
   numb:['Заморозка','Freeze'],tumble:['Падение','Knockdown'],
@@ -1744,6 +1773,7 @@ function collapseBookSections(body,page){
 const chapterCaptionSpecs=Object.freeze([
  ['effects','healing','.stage-healing-spells > strong','Лечащие умения','Healing skills'],
  ['effects','offense','.stage-attacking-skills > strong','Атакующие умения','Offensive skills'],
+ ['effects','support','.stage-supporting-skills > strong','Поддерживающие умения','Support skills'],
  ['effects','defense','.stage-defensive-skills > strong','Защитные умения','Defensive skills'],
  ['effects','periodic','.stage-periodic-recovery > summary','Восстановление каждые 2 секунды','Recovery every 2 seconds'],
  ['effects','songs','.stage-song-skills > summary','Песни для выбранного класса','Songs available to this class'],
