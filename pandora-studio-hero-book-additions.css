@@ -73,3 +73,78 @@
   padding:5px 0 0;border-left:0;border-top:1px solid #795735;
  }
 }
+
+/* Hero Book chapter disclosure: same control geometry as Calculation Results. */
+.stage-book-disclosure.stage-book-buff-group,
+.stage-book-disclosure.stage-attribute-row{
+ display:block;min-width:0;overflow:clip;padding:0;margin:0;
+ border:1px solid #80613f;border-radius:7px;
+ background:linear-gradient(145deg,#352416,#1e1711)
+}
+.stage-book-disclosure[open]{border-color:#a47d4b}
+.stage-book-disclosure>.stage-result-section-head{
+ display:flex;align-items:center;gap:8px;padding:8px 9px;
+ list-style:none;min-height:43px;cursor:pointer;
+}
+.stage-book-disclosure>.stage-result-section-head>strong{
+ flex:1 1 auto;min-width:0
+}
+.stage-book-disclosure>.stage-result-section-head::-webkit-details-marker{display:none}
+.stage-book-disclosure>.stage-result-section-head>:not(.stage-result-symbol):not(.stage-result-chevron):not(.stage-guide-actions){
+ min-width:0
+}
+.stage-book-disclosure[open]>.stage-result-section-head{
+ border-bottom:1px solid #755434
+}
+.stage-book-disclosure[open]>.stage-result-section-head>.stage-result-chevron{
+ transform:rotate(180deg)
+}
+.stage-book-disclosure.stage-book-buff-group> :not(summary){
+ margin:8px 10px
+}
+.stage-book-disclosure.stage-chapter-group>.stage-chapter-grid{
+ padding:9px
+}
+.stage-book-disclosure.stage-attribute-row> :not(summary){
+ margin:8px 10px
+}
+.stage-book-disclosure.stage-attribute-row>.stage-chapter-grid{
+ margin:0;padding:9px
+}
+/* Source-backed guild skills share one compact icon/label/value rhythm. */
+.stage-guild-subsection{
+ display:grid;gap:7px;padding:8px;border:1px solid #755331;
+ border-radius:5px;background:linear-gradient(120deg,#302217,#1d150f)
+}
+.stage-guild-subsection>strong{
+ color:#eed2a3;font:600 16px 'Cormorant Garamond',Georgia,serif
+}
+.stage-guild-passive-row{
+ display:flex;align-items:center;gap:8px;min-width:0;
+ padding:6px 7px;border:1px solid #785536;border-radius:4px;
+ background:#291d14
+}
+.stage-guild-passive-name{
+ flex:1 1 auto;min-width:0;color:#ead0ab;font-size:12px;
+ overflow-wrap:anywhere
+}
+.stage-guild-passive-row>strong{
+ flex:0 0 auto;color:#f0ca8b;font:700 13px Manrope,Arial,sans-serif
+}
+.stage-guild-skill-icon{
+ width:30px;height:30px;min-width:30px;max-width:30px;
+ object-fit:contain;flex:0 0 30px;
+ background:#1d130e;border:1px solid #8f683e;border-radius:3px
+}
+.stage-guild-skill-field{
+ display:grid;grid-template-columns:30px minmax(0,1fr);
+ gap:5px 8px;align-items:center
+}
+.stage-guild-skill-field>.stage-guild-skill-icon{grid-column:1;grid-row:1 / 3}
+.stage-guild-skill-field>span,.stage-guild-skill-field>select{
+ grid-column:2;min-width:0
+}
+@media(max-width:430px){
+ .stage-book-disclosure>.stage-result-section-head{padding:7px;gap:6px}
+ .stage-book-disclosure.stage-book-buff-group> :not(summary){margin:7px}
+}
