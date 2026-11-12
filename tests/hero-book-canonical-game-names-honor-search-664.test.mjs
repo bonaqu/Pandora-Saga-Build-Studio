@@ -28,7 +28,7 @@ test('all 327 Remaked-approved mapped skill names retain their OS Russian identi
   assert.equal(book.gameSkillName(id,'Automatically translated','Auto translated',gameTerms),
    skills[id].name,'Book always respects actual OS game name');
   assert.equal(book.gameSkillName(id,'Wrong','English fallback',gameTerms,true),
-   english.skills[id]?.n||'English fallback',
+   english.skills[id]?.n||skills[id].name,
    'Never invent an English name for a skill absent from official EN snapshot: '+id);
  }
 });
