@@ -109,7 +109,7 @@ test('monthly navigation is readable at end-of-article and not pinned to 100px',
  const view=read('pandora-studio-honor-view.js');
  assert.match(view,/Math\.min\(100,scroller\.clientHeight\*\.22\)/);
  assert.match(view,/monthlyTop<=paneTop\+Math\.min\(280,scroller\.clientHeight\*\.43\)/);
- assert.match(view,/else if\(remaining<=36\|\|monthlyVisible\)current='monthly'/);
+ assert.match(view,/else if\(visibleSections\.includes\('monthly'\)&&\(remaining<=36\|\|monthlyVisible\)\)/);
  assert.match(view,/selectSection\(current\)/);
 });
 
