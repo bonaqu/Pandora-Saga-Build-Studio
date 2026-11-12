@@ -101,6 +101,12 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   const songs=page.locator('#book-source-qa .stage-song-skills');
   if(await songs.count())await songs.locator('summary').click();
   const required=[310001001,310004001,310021001,310022001,310023001,340001001];
+  // The new collapsed subchapters use lazy-loaded artwork; force each source
+  // icon into the scrollport before checking that the original sprite loaded.
+  for(const id of required){
+   const img=page.locator('#book-source-qa .stage-effect-skill-label img[src$="skill_'+id+'.webp"]').first();
+   await img.scrollIntoViewIfNeeded({timeout:12000});
+  }
   await page.waitForFunction(ids=>ids.every(id=>{
    const img=document.querySelector('#book-source-qa .stage-effect-skill-label img[src$="skill_'+id+'.webp"]');
    return img?.complete&&img.naturalWidth>0;
