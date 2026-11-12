@@ -49,7 +49,7 @@ export async function runOriginSharedSnapshotSmoke(browser,base){
   await book.locator('[data-book-page="buffs"]').click();
 
   await clear();
-  await page.locator('#stageBookPanel [data-book-setting="guildHp"]').selectOption('6');
+  await page.locator('#stageBookPanel [data-book-setting="guildHp"]').selectOption('5');
   assert.equal(await count(),1,
    'A guild-HP change must reuse one snapshot between vitals and enhancement readout');
   const secondHp=Number(await page.locator('#originHp').innerText());

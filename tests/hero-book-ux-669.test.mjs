@@ -25,7 +25,7 @@ test('Incredible Strength tells the player what it does and honestly labels unav
  assert.ok(start>=0&&end>start);
  const section=book.slice(start,end);
  assert.match(section,/Увеличивает урон от оружия ближнего боя/);
- assert.match(section,/Числовые показатели временно не отображаются\. В разработке\./);
+ assert.match(section,/Числовые показатели временно не отображаются \(в разработке\)/);
  assert.match(section,/Numerical effect details are temporarily unavailable\. In development\./);
  assert.doesNotMatch(section,/серверн|формул|Remaked|current OS|server formula/i);
  assert.doesNotMatch(section,/\+10%|\+5%/);
@@ -47,7 +47,7 @@ test('riding setting and riding-stat percentage are co-located, never duplicated
 test('preview-only Remaked buffs explain missing numbers without claiming they affect results',()=>{
  const start=book.indexOf('for(const row of remakedBuffRows)');
  assert.ok(start>=0);
- const tail=book.slice(start,start+1250);
+ const tail=book.slice(start,start+2400);
  assert.match(tail,/Числовые показатели в разработке/);
  assert.match(tail,/Numerical effect details are in development/);
  assert.doesNotMatch(tail,/Предпросмотр эффекта/);

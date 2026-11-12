@@ -2346,3 +2346,4 @@ textarea:focus-visible,select:focus-visible{
 footer #catalogStatus{min-width:0;overflow-wrap:anywhere}
 footer .footer-version{margin-inline-start:auto;align-self:center;white-space:nowrap;font-variant-numeric:tabular-nums;color:#bca68b}
 @media(max-width:460px){footer{align-items:stretch;gap:5px}footer .footer-version{align-self:flex-end;margin-inline-start:0}}
+

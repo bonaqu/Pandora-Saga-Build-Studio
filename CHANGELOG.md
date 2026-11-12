@@ -1,5 +1,15 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.670.0 — 2026.11.12.670 · Guild skills, ally buffs, priest preview and Hero Book disclosures
+
+- Original Remaked guild RU/EN per-level tooltips and OS skill icons. Seven guild passives appear separately at level 10, with a truthful selected-buff counter; three active Guild Master skills have separate controls.
+- Guild physical/magical damage mitigation and experience passives now enter calculated results, alongside existing guild HP, MP and recovery effects.
+- Life Sign and original priest signs are grouped with ally buffs; source-backed priest song and weapon enhancements have their own caster-parameter section. Divine Blessing is no longer duplicated in the elemental-resistance list.
+- Skill effect summaries use numeric game values when supported, rather than the generic claim that they are counted.
+- Attack, Defense, Buffs, Skill Effects and Potion Effects sections support collapsible headings, preserving state across recalculations.
+- Unconfirmed rune and server scaling formulas are not invented; Node and Chromium validation required before publication.
+
+
 ## 0.669.0 — 2026.11.12.669 · Remaked party and self-buff coverage
 
 - Linked all 36 Remaked enhancement skill flags to original current OS primary skill IDs. Three unmatched rune slots intentionally remain outside calculated current-game effects.

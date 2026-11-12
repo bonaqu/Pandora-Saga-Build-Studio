@@ -2170,12 +2170,22 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  if(!hpBonus||!mpBonus)return null;
  const potion=potionRecovery({vit:stats.vit,records:combinedRecords,honorTitle:extra.honor.id,
   level,itemForth,...potionContext,runeJoEun:false});
+ // Saved pre-670 Divine Blessing resistance selections remain valid.
+ // Consolidate its single effect under Allied Buffs without double counting.
+ const oldDivineBlessing=Array.isArray(attributeBuffs?.resistanceSkillIds)&&
+  attributeBuffs.resistanceSkillIds.includes(330004001);
+ const mergedBuffIds=new Set(Array.isArray(attributeBuffs?.remakedSkillIds)?
+  attributeBuffs.remakedSkillIds:[]);
+ if(oldDivineBlessing)mergedBuffIds.add(330004001);
  const resistanceSkills=resistanceSkillPreview({
-  skillCatalog:combatContext.skillCatalog,selected:attributeBuffs.resistanceSkillIds
+  skillCatalog:combatContext.skillCatalog,
+  selected:root.PandoraRemakedBuffs?.applied?
+   (attributeBuffs.resistanceSkillIds||[]).filter(id=>id!==330004001):
+   (attributeBuffs.resistanceSkillIds||[])
  });
  const resistanceBonuses={...effects.bonuses};
  const groupBuffs=root.PandoraRemakedBuffs?.applied({
-  selected:attributeBuffs?.remakedSkillIds,skills:combatContext.skillCatalog,
+  selected:[...mergedBuffIds],skills:combatContext.skillCatalog,
   jobKey:combatContext.jobKey,level,weapon:combatContext.weapon,
   branchMasteries:combatContext.branchMasteries})||{};
  if(groupBuffs.providence)
@@ -2192,6 +2202,16 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  const targetResistance=targetResistancePreview({records:combinedRecords,itemForth});
  const rawProcPreview=conditionalProcPreview({records:combinedRecords,itemForth,skills:combatContext.skillCatalog});
  const experienceBonus=experienceBonusPreview({records:combinedRecords,itemForth});
+ // Guild passives are selected together at a guild level, not just displayed
+ // as a reference. Their mitigation and EXP effects are independent of HP/MP.
+ const guildPassives=guildPassiveAtLevel(Number(attributeBuffs?.guildLevel??0));
+ if(guildPassives&&resistances){
+  resistances.mitigation.physical-=guildPassives.physicalReduction;
+  resistances.mitigation.magic-=guildPassives.magicReduction;
+ }
+ if(guildPassives?.experience>0&&experienceBonus)
+  experienceBonus.entries.push({source:'Гильдия · Опыт',
+   percent:guildPassives.experience});
  const battleMapCloaks=battleMapCloakPreview({
   records:combinedRecords,itemForth,skills:combatContext.skillCatalog
  });

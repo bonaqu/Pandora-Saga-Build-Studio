@@ -49,7 +49,7 @@ test('priest and guild controls persist and combat applies only manually selecte
  assert.match(engine,/const priestEffects=priestActive/);
  assert.match(engine,/priestBonus:priestSpeed/);
  assert.match(engine,/priestBonus:priestDefense/);
- assert.match(book,/class:'stage-guild-level-effects'/);
+ assert.match(book,/class:'stage-guild-passive-row'/);
  assert.match(book,/Ручной выбор усилений/);
 });
 
@@ -73,8 +73,8 @@ test('external priest buffs require correct Blessing mastery and valid numbers',
  assert.match(engine,/priestValid&&priest\.blessing>=8&&attributeBuffs\?\.priestGratia/);
  assert.match(engine,/priestValid&&priest\.blessing>=12&&attributeBuffs\?\.priestLapisMedio/);
  assert.match(engine,/Number\.isSafeInteger\(n\)&&n>=0&&n<=500/);
- assert.match(book,/Number\(buffs\.priestBlessing\)>=8/);
- assert.match(book,/Number\(buffs\.priestBlessing\)>=12/);
+ assert.match(book,/\[320007001,'priestGratia',8\]/);
+ assert.match(book,/\[320008001,'priestLapisMedio',12\]/);
 });
 test('Hero Book buff names use Remaked approved RU identities',()=>{
  const book=source('pandora-studio-hero-book.js');
@@ -139,8 +139,8 @@ test('selected buff summary does not count unavailable priest skills or numeric 
  assert.equal(selectedCount({...priest,priestBlessing:12},{}),2,'Lapis unlocks at 12');
  assert.equal(selectedCount({...priest,priestEnabled:false},{}),0,'disabled priest yields zero');
  assert.equal(selectedCount({...priest,priestBlessing:12,guildLevel:10,
-  guildLifeRecovery:2,guildManaRecovery:2}, {guildHp:6,guildMp:6}),3,
-  'automatic guild level is one configured choice, not four stale manual ranks');
+  guildLifeRecovery:2,guildManaRecovery:2}, {guildHp:6,guildMp:6}),9,
+  'level 10 counts all seven passive effects, plus two active priest signs');
 });
 
 test('new hero preloads an editable priest and legacy snapshots merge missing values',()=>{

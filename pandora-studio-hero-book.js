@@ -376,6 +376,7 @@ const bookPages=Object.freeze([
 // Remember only the reader's collapsed groups while the Book is mounted.
 // All four groups are expanded on first visit; this state is UI-only.
 const collapsedSummaryGroups=new Set();
+const collapsedBookGroups=new Set();
 // Keep the source-backed Hero Book results in one ordered matrix.
 // A missing calculator branch stays unknown (—), never a fabricated zero.
 function summaryRows(calc){
@@ -513,13 +514,17 @@ function buffsPage(body,options){
  const english=document.documentElement?.lang==='en';
  // Count selected effects, never mastery input numbers or a disabled priest.
  const guildSelected=Number(buffs.guildLevel)>0;
+ const guildLevelCount=Number(buffs.guildLevel)||0;
+ const guildPassiveCount=guildSelected?1+(guildLevelCount>=2?2:0)+
+  (guildLevelCount>=4?2:0)+(guildLevelCount>=6?2:0):0;
  const selected=value=>value===true||
   (typeof value==='number'&&value>0)||
   (typeof value==='string'&&value!==''&&value!=='0');
  const selectedResistanceSkills=Array.isArray(buffs.resistanceSkillIds)?
-  buffs.resistanceSkillIds.filter(id=>resistanceSkillChoices.some(s=>s.id===id)).length:0;
+  buffs.resistanceSkillIds.filter(id=>id!==330004001&&
+   resistanceSkillChoices.some(s=>s.id===id)).length:0;
  const configured=Object.entries(buffs).filter(([key,value])=>{
-  if(key==='proelium'||key==='resistanceSkillIds')return false;
+  if(key==='proelium'||key==='resistanceSkillIds'||key==='guildLevel')return false;
   if(['priestSpi','priestBlessing','priestHymn','priestEnabled',
    'honorCuriosity','proeliumPotency'].includes(key))return false;
   if(key.startsWith('priest')&&buffs.priestEnabled!==true)return false;
@@ -529,10 +534,13 @@ function buffsPage(body,options){
   if(guildSelected&&['guildLifeRecovery','guildManaRecovery'].includes(key))
    return false;
   return selected(value);
- }).length+Object.entries(vitalsBuffs).filter(([key,value])=>
+ }).length+guildPassiveCount+Object.entries(vitalsBuffs).filter(([key,value])=>
   !(guildSelected&&['guildHp','guildMp'].includes(key))&&selected(value)).length+
   selectedResistanceSkills+remakedBuffRows.filter(row=>!row.existing&&
-   row.selected&&row.available).length;
+   (row.selected||(row.id===330004001&&
+    buffs.resistanceSkillIds?.includes(330004001)))&&row.available&&
+   (![320011001,330051001,340001001,340004001].includes(row.id)||
+    buffs.priestEnabled===true)).length;
  const status=make('div',{class:'stage-buff-overview'},[
   make('span',{text:english?'Configured enhancements':'Выбранные усиления'}),
   make('strong',{text:String(configured)}),
@@ -549,10 +557,18 @@ function buffsPage(body,options){
  };
  const select=(parent,ru,en,key,levels,vital=false,compact=false)=>{
   const name=english?en:ru;
-  const field=make(compact?'div':'label',{class:'stage-book-field'+(compact?' stage-book-choice-only':'')},
+  const guildIcons={guildHp:600000001,guildMp:600000011,
+   guildLifeRecovery:600000021,guildManaRecovery:600000031,
+   guildHealing:600000211,guildAll:600000221,guildArouse:600000231};
+  const guildIcon=guildIcons[key]?skillIconForId(guildIcons[key]):null;
+  const field=make(compact?'div':'label',{class:'stage-book-field'+
+   (compact?' stage-book-choice-only':'')+
+   (guildIcon?' stage-guild-skill-field':'')},
    compact?[]:[make('span',{text:name})]);
   if(!compact)guideLabel(field.firstChild,'buffs.setting.'+key,
    ru,en,options);
+  if(guildIcon)field.insertBefore(make('img',{src:guildIcon,alt:'',
+   width:30,height:30,loading:'lazy',class:'stage-guild-skill-icon'}),field.firstChild);
   const entry=make('select',{'aria-label':name,'data-book-setting':key,
    onchange:event=>(vital?onVital:onBuff)(key,event.target.value)});
   const selected=(vital?vitalsBuffs:buffs)[key]??0;
@@ -561,7 +577,8 @@ function buffsPage(body,options){
  };
  const toggle=(parent,name,key,vital=false,allowed=true,skill=null)=>{
   const selected=key.startsWith('legacySkill:')?
-   Array.isArray(buffs.remakedSkillIds)&&buffs.remakedSkillIds.includes(Number(key.slice(12))):
+   (Array.isArray(buffs.remakedSkillIds)&&buffs.remakedSkillIds.includes(Number(key.slice(12)))||
+    (key==='legacySkill:330004001'&&buffs.resistanceSkillIds?.includes(330004001))):
    (vital?vitalsBuffs:buffs)[key]===true;
   const node=make('label',{class:'stage-book-check'+(skill?' stage-combat-buff':'')});
   const checkbox=make('input',{type:'checkbox','data-book-setting':key,
@@ -593,43 +610,94 @@ function buffsPage(body,options){
   (document.documentElement?.lang==='en'?'Level ':'Уровень ')+i+' · +'+n]);
  const guildLevel=Number(buffs.guildLevel)||0;
  const guildPreview=root.PandoraOSCalculator?.guildPassiveAtLevel(guildLevel);
- const vitals=section('ОЗ и ОМ','Vitals');
- const lifeSign=remakedBuffRows.find(row=>row.id===320005001);
- toggle(vitals,'Знак жизни','lifeSign',true,true,lifeSign?{
-  name:lifeSign.name,nameEn:lifeSign.nameEn,
-  desc:lifeSign.description,
-  descEn:gameTerms.englishSkills?.['320005001']?.d||lifeSign.description,
-  icon:skillIconForId(320005001),
-  summary:english?'Ally buff · adds HP':'От союзника · увеличивает ОЗ'
- }:null);
+ const guildSource=root.PandoraGuildSkillSource||[];
+ const sourceSkill=(i,rank)=>guildSource[i]?.levels?.[Math.max(0,rank-1)]||{};
+ const guildRate=[0,2,4,6,9,12,15];
  const guild=section('Гильдия','Guild','guild');
  select(guild,'Уровень гильдии','Guild level','guildLevel',
   Array.from({length:13},(_,i)=>[i,i===0?
    (english?'Manual guild buffs':'Ручной выбор усилений'):
-   (english?'Guild level ':'Гильдия · уровень ')+i]));
- if(!guildLevel){
-  select(guild,'Гильдейское ОЗ','Guild HP','guildHp',opts([0,'2%','4%','6%','9%','12%','15%']),true);
-  select(guild,'Гильдейское ОМ','Guild MP','guildMp',opts([0,'2%','4%','6%','9%','12%','15%']),true);
- }else guild.append(make('p',{class:'stage-attribute-note',text:english?
-  'HP and MP passives depend on guild level.':'Бонусы ОЗ и ОМ зависят от уровня гильдии.'}));
- if(guildLevel&&guildPreview){
-  const rate=[0,2,4,6,9,12,15][guildPreview.guildHp]||0;
-  const lines=[
-   (english?'HP and MP ':'ОЗ и ОМ ')+rate+'%',
-   (english?'HP/MP recovery ':'Восстановление ОЗ/ОМ ')+
-    ([0,5,8][guildPreview.guildLifeRecovery]||0)+'%',
-   (english?'Incoming physical/magical damage −':'Получаемый физический/магический урон −')+
-    guildPreview.physicalReduction+'%',
-   (english?'Monster experience +':'Опыт с монстров +')+guildPreview.experience+'%'
-  ];
-  const preview=make('div',{class:'stage-guild-level-effects'});
-  for(const line of lines)preview.append(make('span',{text:line}));
-  guild.append(preview,make('p',{class:'stage-attribute-note',text:english?
-   'HP, MP and recovery bonuses are applied. Other values are shown for reference.':
-   'Учитываются бонусы ОЗ, ОМ и восстановления. Остальные значения — справочные.'}));
+   (english?'Guild Lv. ':'Гильдия Ур. ')+i]));
+ const guildLevelInput=guild.querySelector?.('[data-book-setting="guildLevel"]');
+ if(guildLevelInput){
+  for(let i=1;i<=12;i++){
+   const opt=guildLevelInput.options[i],hint=sourceSkill(0,i);
+   if(opt)opt.title=english?hint.en||'':hint.ru||'';
+  }
+  if(guildLevel){
+   const description=sourceSkill(0,guildLevel);
+   root.PandoraGuideTooltip?.attach(guildLevelInput,
+    (english?description.en:description.ru)||'',{hoverDelay:450});
+  }
  }
- select(guild,'Все характеристики','All attributes','guildAll',opts([0,1,2,3,4,5,6]));
- select(guild,'Пробуждение','Awakening','guildArouse',opts([0,'2%','4%','6%']));
+ const passiveGroup=make('div',{class:'stage-guild-subsection stage-guild-passives'});
+ const passiveTitle=make('strong',{text:english?'Passive guild enhancements':'Пассивные усиления гильдии'});
+ passiveGroup.append(passiveTitle);
+ guideLabel(passiveTitle,'buffs.guild.passiveHeading',
+  'Пассивные усиления гильдии','Passive guild enhancements',options,
+  'Усиливаются автоматически с повышением уровня гильдии.',
+  'Automatically grow with the guild level.');
+ guild.append(passiveGroup);
+ const passiveSpecs=[
+  {key:'guildHp',i:1,id:600000001,rank:guildPreview?.guildHp||0,rate:guildRate[guildPreview?.guildHp]||0},
+  {key:'guildMp',i:2,id:600000011,rank:guildPreview?.guildMp||0,rate:guildRate[guildPreview?.guildMp]||0},
+  {key:'guildLifeRecovery',i:3,id:600000021,rank:guildPreview?.guildLifeRecovery||0,rate:[0,5,8][guildPreview?.guildLifeRecovery]||0},
+  {key:'guildManaRecovery',i:4,id:600000031,rank:guildPreview?.guildManaRecovery||0,rate:[0,5,8][guildPreview?.guildManaRecovery]||0},
+  {key:'physicalReduction',i:5,id:600000071,rank:(guildPreview?.physicalReduction||0)/3,rate:guildPreview?.physicalReduction||0},
+  {key:'magicReduction',i:6,id:600000081,rank:(guildPreview?.magicReduction||0)/3,rate:guildPreview?.magicReduction||0},
+  {key:'experience',i:7,id:600000061,rank:Math.max(0,(guildPreview?.experience||0)-1),rate:guildPreview?.experience||0}
+ ];
+ if(!guildLevel){
+  select(passiveGroup,'Сила гильдии','Physical','guildHp',
+   opts([0,'2%','4%','6%','9%','12%']),true);
+  select(passiveGroup,'Дух гильдии','Spirit','guildMp',
+   opts([0,'2%','4%','6%','9%','12%']),true);
+  select(passiveGroup,'Восстановление силы','Physical Recovery',
+   'guildLifeRecovery',opts([0,5,8]));
+  select(passiveGroup,'Восстановление духа','Spirit Recovery',
+   'guildManaRecovery',opts([0,5,8]));
+ }else for(const spec of passiveSpecs){
+  if(!spec.rank)continue;
+  const source=guildSource[spec.i]||{},description=sourceSkill(spec.i,spec.rank);
+  const line=make('div',{class:'stage-guild-passive-row',
+   'data-guild-passive':spec.key});
+  const sprite=skillIconForId(spec.id);
+  if(sprite)line.append(make('img',{src:sprite,alt:'',width:30,height:30,
+   loading:'lazy',class:'stage-guild-skill-icon'}));
+  const name=make('span',{class:'stage-guild-passive-name',text:english?
+   source.sourceNameEn||spec.key:source.nameRu||spec.key});
+  line.append(name,make('strong',{text:
+   (spec.key==='physicalReduction'||spec.key==='magicReduction'?'−':'+')+
+   spec.rate+'%'}));
+  guideLabel(name,'buffs.guild.passive.'+spec.key+'.'+spec.rank,
+   source.nameRu||spec.key,source.sourceNameEn||spec.key,options,
+   description.ru||'',description.en||'');
+  passiveGroup.append(line);
+ }
+ const activeGroup=make('div',{class:'stage-guild-subsection stage-guild-actives'});
+ const activeTitle=make('strong',{text:english?'Active guild enhancements':'Активные усиления гильдии'});
+ activeGroup.append(activeTitle);
+ guideLabel(activeTitle,'buffs.guild.activeHeading',
+  'Активные усиления гильдии','Active guild enhancements',options,
+  'Умения главы гильдии действуют на находящихся рядом союзников.',
+  'The guild leader activates these skills for nearby allies.');
+ guild.append(activeGroup);
+ select(activeGroup,'Магистр исцеления','Healing','guildHealing',
+  opts([0,10,20,30]));
+ select(activeGroup,'Магистр битвы','Combat','guildAll',opts([0,1,2,3]));
+ select(activeGroup,'Магистр магии','Arouse','guildArouse',opts([0,'2%','4%','6%']));
+ for(const [key,i] of [['guildHealing',8],['guildAll',9],['guildArouse',10]]){
+  const el=activeGroup.querySelector?.('[data-book-setting="'+key+'"]');
+  if(!el)continue;
+  const selected=Number(buffs[key]||0);
+  const details=sourceSkill(i,selected>0?selected:1);
+  const hint=english?details.en:details.ru;
+  if(hint)root.PandoraGuideTooltip?.attach(el,hint,{hoverDelay:450});
+  for(let n=1;n<el.options.length;n++){
+   const source=sourceSkill(i,n);
+   el.options[n].title=(english?source.en:source.ru)||'';
+  }
+ }
  const honor=section('Честь','Honor','honor');
  const honorTerm=make('span',{class:'stage-honor-term',text:english?'passive skill':'пассивное умение'});
  const honorHeading=honor.firstChild||honor.children?.[0];
@@ -656,22 +724,40 @@ function buffsPage(body,options){
   label.append(input);priestFields.append(label);
  }
  priest.append(priestFields);
- toggle(priest,english?'Velox · attack speed · Blessing 8':'Знак атаки · скорость атаки · Благословение 8','priestGratia',
-  false,buffs.priestEnabled===true&&Number(buffs.priestBlessing)>=8);
- toggle(priest,english?'Lapis Medio · defense · Blessing 12':'Знак защиты · защита · Благословение 12','priestLapisMedio',
-  false,buffs.priestEnabled===true&&Number(buffs.priestBlessing)>=12);
- toggle(priest,english?'Battle Prayer · STR, AGI, INT · Blessing 61':
-  'Ободрение · СИЛ, ПРВ, ИНТ · Благословение 61','priestEncouragement',
-  false,buffs.priestEnabled===true&&Number(buffs.priestBlessing)>=61);
- priest.append(make('p',{class:'stage-attribute-note',text:english?
-  'Selected attack and defense signs and Battle Prayer affect the build; other values are previews.':
-  'На билд влияют выбранные знаки атаки и защиты, а также Ободрение. Остальное — предварительный просмотр.'}));
  const skills=section('Личные умения','Self buffs','self');
  for(const [key,label] of [['combatLunge','Рывок'],
   ['combatRage','Яростная атака'],['combatDefender','Бастион (нужен щит)'],
   ['combatConcentration','Сосредоточенность']])
   toggle(skills,label,key,false,availability[key]===true,combatSkillCards[key]);
  const party=section('Усиления от союзников','Ally buffs','party');
+ const lifeSign=remakedBuffRows.find(row=>row.id===320005001);
+ toggle(party,'Знак жизни','lifeSign',true,true,lifeSign?{
+  name:lifeSign.name,nameEn:lifeSign.nameEn,
+  desc:lifeSign.description,
+  descEn:gameTerms.englishSkills?.['320005001']?.d||lifeSign.description,
+  icon:skillIconForId(320005001),
+  summary:english?'Maximum HP +250 and +15%':'Максимум ОЗ +250 и +15%'
+ }:null);
+ for(const [id,key,required] of [
+  [320012001,'priestEncouragement',61],
+  [320007001,'priestGratia',8],
+  [320008001,'priestLapisMedio',12]]){
+  const row=remakedBuffRows.find(item=>item.id===id);
+  const benefit=id===320007001?'gratia':id===320008001?'lapisMedio':'encouragement';
+  const amount=modifiers?.legacyBuffs?.[benefit]?.value;
+  const summary=Number.isFinite(amount)?
+   (id===320007001?(english?'Attack speed +':'Скорость атаки +'):
+    id===320008001?(english?'Defense +':'Защита +'):
+     (english?'STR, AGI and INT +':'СИЛ, ПРВ и ИНТ +'))+amount:
+   (english?'Depends on priest parameters':'Зависит от параметров жреца');
+  toggle(party,row?.name||key,key,false,
+   buffs.priestEnabled===true&&Number(buffs.priestBlessing)>=required,
+   {name:row?.name||key,nameEn:row?.nameEn||key,
+    icon:skillIconForId(id),desc:row?.description,
+    descEn:gameTerms.englishSkills?.[String(id)]?.d||row?.description,
+    summary,reason: 'Нужен другой жрец с Благословением '+required,
+    reasonEn:'External priest needs Blessing '+required});
+ }
  for(const [key,label] of [['combatWarCry','Боевой клич'],
   ['combatWindAssist','Помощь ветра'],['combatWindBlessing','Благословение ветра']])
   toggle(party,label,key,false,availability[key]===true,combatSkillCards[key]);
@@ -680,14 +766,29 @@ function buffsPage(body,options){
  // deliberately stay in their original sections, without duplicate inputs.
  for(const row of remakedBuffRows){
   if(row.existing||!row.name)continue;
-  const target=row.scope==='party'?party:skills;
+  const externalPriestSkill=[320011001,330051001,340001001,340004001]
+   .includes(row.id);
+  const target=externalPriestSkill?priest:row.scope==='party'?party:skills;
   const description=english?gameTerms.englishSkills?.[String(row.id)]?.d:row.description;
+  const priestReady=!externalPriestSkill||(
+   buffs.priestEnabled===true&&
+   (row.id!==340001001||Number(buffs.priestHymn)>=8)&&
+   (row.id!==340004001||(Number(buffs.priestHymn)>=30&&
+    Number(buffs.priestBlessing)>=71)));
   toggle(target,english?row.nameEn:row.name,'legacySkill:'+row.id,false,
-   row.available,{name:row.name,nameEn:row.nameEn,icon:skillIconForId(row.id),
+   row.available&&priestReady,{
+    name:row.id===330004001?'Божественное благословение':row.name,
+    nameEn:row.nameEn,icon:skillIconForId(row.id),
     desc:row.description,descEn:description||row.description,
     reason:row.reason,reasonEn:row.reasonEn,
     pending:!row.counted,
-    summary:row.counted?(english?'Included in results':'Учтено в результатах'):
+    summary:row.counted?({
+     100055001:english?'Accuracy +20 and +15%':'Точность +20 и +15%',
+     330004001:english?'Magic resistance +25':'Сопротивление магии +25',
+     142051001:english?'Critical chance +10%':'Шанс крита +10%',
+     260005001:english?'Evasion +10':'Уклонение +10',
+     260008001:english?'Evasion +100':'Уклонение +100'
+    }[row.id]):
      (english?'Numerical effect details are in development':'Числовые показатели в разработке')});
  }
  if(resistanceSkillChoices.length){
@@ -701,7 +802,7 @@ function buffsPage(body,options){
    charm:'Чары',light:'Свет',dark:'Тьма',magic:'Магия'};
   const en={fire:'Fire',ice:'Ice',lightning:'Lightning',poison:'Poison',
    charm:'Charm',light:'Light',dark:'Dark',magic:'Magic'};
-  for(const skill of resistanceSkillChoices){
+  for(const skill of resistanceSkillChoices.filter(s=>s.id!==330004001)){
    const selected=Array.isArray(buffs.resistanceSkillIds)&&buffs.resistanceSkillIds.includes(skill.id);
    const effect=Object.entries(skill.effects).map(([type,value])=>
     (english?(en[type]||type):(ru[type]||type))+' '+(value>0?'+':'')+value).join(' · ');
@@ -717,11 +818,7 @@ function buffsPage(body,options){
   }
   party.append(group);
  }
- if(!guildLevel){
-  select(guild,'Гильдия: скорость ОЗ','Guild: HP recovery','guildLifeRecovery',opts([0,5,8]));
-  select(guild,'Гильдия: скорость ОМ','Guild: MP recovery','guildManaRecovery',opts([0,5,8]));
- }
- select(guild,'Гильдейское лечение','Guild healing','guildHealing',opts([0,10,20,30]));
+
  if(modifiers?.legacyBuffs&&buffs.priestEnabled===true){
   const details=make('details',{class:'stage-legacy-buff-previews'});
   details.append(make('summary',{text:'Мощность поддерживающих навыков'}));
@@ -894,7 +991,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     'Увеличивает урон от оружия ближнего боя.'}),
    make('small',{class:'stage-hit-passive-pending',text:en?
     'Numerical effect details are temporarily unavailable. In development.':
-    'Числовые показатели временно не отображаются. В разработке.'})
+    'Числовые показатели временно не отображаются (в разработке).'})
   ]));
  }
  renderSongSkills(body,modifiers,gameTerms,skillIconForId);
@@ -1206,6 +1303,39 @@ function defensePage(body,calc,english,options={}){
  }
  appendItemEvents(body,calc,english,'defense');
 }
+// All chapters share the Summary disclosure affordance and remember user state.
+function collapseBookSections(body,page){
+ if(page==='summary'||typeof body.querySelectorAll!=='function')return;
+ let index=0;
+ for(const section of [...body.children].filter(node=>node.tagName==='SECTION')){
+  const heading=section.querySelector(':scope > strong, :scope > .stage-chapter-heading');
+  if(!heading)continue;
+  const key=page+':'+(section.dataset.chapterGroup||section.dataset.bookSection||index++);
+  const disclosure=make('details',{class:section.className+' stage-book-disclosure',
+   'data-book-collapse':key});
+  for(const attr of section.attributes)if(attr.name!=='class')
+   disclosure.setAttribute(attr.name,attr.value);
+  disclosure.open=!collapsedBookGroups.has(key);
+  const title=make('summary',{class:'stage-result-section-head'});
+  title.append(make('span',{class:'stage-result-symbol',
+   'aria-hidden':'true',text:'✦'}));
+  if(heading.classList.contains('stage-chapter-heading')){
+   while(heading.firstChild)title.append(heading.firstChild);
+   heading.remove();
+  }else title.append(heading);
+  for(const actions of [...section.querySelectorAll(':scope > .stage-guide-actions')])
+   title.append(actions);
+  title.append(make('span',{class:'stage-result-chevron',
+   'aria-hidden':'true',text:'⌄'}));
+  while(section.firstChild)disclosure.append(section.firstChild);
+  section.replaceWith(disclosure);
+  disclosure.prepend(title);
+  disclosure.addEventListener('toggle',()=>{
+   if(disclosure.open)collapsedBookGroups.delete(key);
+   else collapsedBookGroups.add(key);
+  });
+ }
+}
 // Stable text identities: editing a caption never mutates the game skill or
 // item catalog. Details retain their live record counts after localization.
 const chapterCaptionSpecs=Object.freeze([
@@ -1252,6 +1382,13 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
    if(!Number.isInteger(index)||index<0||index>3)continue;
    if(node.open)collapsedSummaryGroups.delete(index);
    else collapsedSummaryGroups.add(index);
+  }
+ if(reusePanel&&page!=='summary')
+  for(const group of stablePanel.querySelectorAll?.('details[data-book-collapse]')||[]){
+   const key=group.dataset.bookCollapse;
+   if(!key)continue;
+   if(group.open)collapsedBookGroups.delete(key);
+   else collapsedBookGroups.add(key);
   }
  const storedScroll=reusePanel?stablePanel.scrollTop:0;
  if(reusePanel){
@@ -1460,6 +1597,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
   }
  }
  decorateChapterCaptions(body,chosen,copyOptions);
+ collapseBookSections(body,chosen);
  // Existing chapter tabs and guide labels already own a dedicated editor.
  // Suppress generic pencils there and on actionable game/item controls.
  for(const node of body.querySelectorAll?.('[data-book-editorial-key]')||[]){

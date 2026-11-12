@@ -406,7 +406,11 @@ async function main(){
   'Changing guild settings must not remount the entire scrolling Hero Book');
  assert.equal(await page.locator('#stageBookPanel').evaluate(panel=>panel.scrollTop),oldScroll);
  await page.locator('#stageBookPanel [data-book-setting="guildLevel"]').selectOption('10');
- assert.match(await page.locator('#stageBookPanel .stage-guild-level-effects').innerText(),/12%/);
+ const guildPassives=page.locator('#stageBookPanel .stage-guild-passive-row');
+ assert.equal(await guildPassives.count(),7,'Guild Lv.10 grants seven individual passive effects');
+ assert.match(await guildPassives.first().innerText(),/12%/);
+ assert.equal(await page.locator('#stageBookPanel .stage-guild-actives [data-book-setting="guildAll"]').count(),1);
+ assert.equal(await page.locator('#stageBookPanel .stage-guild-actives [data-book-setting="guildArouse"]').count(),1);
  await page.locator('#stageBookPanel [data-book-setting="priestEnabled"]').check();
  const priestRows=page.locator('#stageBookPanel .stage-legacy-buff-row');
  if(await priestRows.count()){
