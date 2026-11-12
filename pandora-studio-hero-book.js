@@ -333,7 +333,17 @@ function guideLabel(node,key,ru,en,options={},fallbackRu='',fallbackEn=''){
   guide?.field(options.overrides||{},key,ru,en,fallbackRu,fallbackEn);
  const english=document.documentElement?.lang==='en';
  const label=english?(info?.en||en):(info?.ru||ru);
- const hint=english?info?.hintEn:info?.hintRu;
+ const originalHint=english?info?.hintEn:info?.hintRu;
+ // A recovery-speed index is not a number of seconds. Preserve the D1
+ // description, adding the missing unit explanation once, in both locales.
+ const recoveryIndex=/^(defense)\.(hpRecoverySpeed|mpRecoverySpeed)$/.test(key);
+ const indexHelp=english?
+  'idx is a recovery-speed index, not seconds. A higher value means faster passive recovery; it depends on attributes and guild bonuses.':
+  '«инд.» — индекс скорости восстановления, а не секунды. Чем он выше, тем быстрее пассивное восстановление; на индекс влияют характеристики и усиления гильдии.';
+ const hint=recoveryIndex?
+  [meaningfulGuideHint(originalHint)?originalHint:'',
+   !String(originalHint||'').includes(english?'idx is a recovery-speed index':'«инд.» — индекс скорости')?indexHelp:''
+  ].filter(Boolean).join('\n\n'):originalHint;
  node.textContent=label;
  if(meaningfulGuideHint(hint))root.PandoraGuideTooltip?.attach(node,hint,{hoverDelay:650});
  node.setAttribute('data-guide-key',key);
@@ -942,13 +952,22 @@ function buffsPage(body,options){
       const current=modifiers?.combat?.priestSong;
       const enabled=buffs.priestEnabled===true&&row.selected;
       if(!enabled)return basic;
+      const applied=modifiers?.priestApplied;
       const value=row.id===340001001?current?.minstrel:
-       row.id===340004001?current?.sageElementDamage:null;
+       row.id===340004001?current?.sageElementDamage:
+       row.id===320003001?applied?.groupBarrier:
+       row.id===330051001?applied?.holyWeapon:null;
       if(!Number.isFinite(value)||!value)return basic;
-      return basic+' · '+(row.id===340001001?
+      const label=row.id===340001001?
        (english?'Accuracy and evasion +':'Точность и уклонение +'):
-       (english?'Elemental damage +':'Стихийный урон +'))+
-       value+(row.id===340004001?'%':'');
+       row.id===340004001?
+        (english?'Elemental damage +':'Стихийный урон +'):
+       row.id===320003001?
+        (english?'Incoming damage ':'Получаемый урон '):
+        (english?'Holy weapon aura +':'Святая аура оружия +');
+      return basic+' · '+label+
+       (value>0?'+':'')+value+
+       ([340004001,320003001].includes(row.id)?'%':'');
      })()});
  }
  if(resistanceSkillChoices.length){
@@ -1090,7 +1109,7 @@ function renderSongSkills(body,modifiers,gameTerms={},skillIconForId=()=>null){
 // buff toggles or the 43 main result values.
 function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>null,
  remakedBuffRows=[],availability={},combatSkillCards={},
- heroJobKey=null,heroLevel=1,heroMasteries={}}={}){
+ heroJobKey=null,heroLevel=1,heroMasteries={},heroWeaponKind='BARE_HAND'}={}){
  const en=document.documentElement?.lang==='en';
  const spells=modifiers?.healingSpells?.rows||[];
  if(spells.length){
@@ -1152,7 +1171,9 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
  const combat=modifiers?.combat||{};
  const active=combat.activeSkills||{},base=combat.attack?.mountedBase??combat.attack?.walkingBase;
  const values=combat.activeSkillValues||{};
- const offense=make('section',{class:'stage-attribute-row stage-attacking-skills'});
+ // Use the identical shared Healing-section layout; avoid an unrelated
+ // visual variant just because this group describes attacking skills.
+ const offense=make('section',{class:'stage-attribute-row stage-healing-spells stage-attacking-skills'});
  const offenseHeading=make('strong',{text:en?'Offensive skills':'Атакующие умения'});
  offense.append(offenseHeading);
  const addOffense=(id,ru,enName,amount,detail)=>{
@@ -1182,14 +1203,6 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   addOffense(100052001,'Яростная атака','Raging Attack',
    boost==null?'—':percent(boost)+(en?' ATK':' АТК'),
    en?'Attack increase · defense is reduced':'Повышает атаку, снижает защиту');
- }
- if(active.defender){
-  const rate=values.defender?.EP_DAMAGERATE_SCALE;
-  const boost=Number.isFinite(base)&&Number.isFinite(rate)?
-   Math.floor(base*rate/100):null;
-  addOffense(100053001,'Бастион','Defender',
-   boost==null?'—':percent(boost)+(en?' ATK':' АТК'),
-   en?'Attack reduction · defense increases':'Уменьшает атаку, повышает защиту');
  }
  if(active.concentration)
   addOffense(100054001,'Сосредоточенность','Concentration',
@@ -1221,7 +1234,9 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   Number.isInteger(skill?.id)&&skill.id<900000000&&
   ['MYSELF','TOGGLE','PASSIVE'].includes(skill.skillType)&&
   skill.classes?.[heroJobKey]&&
-  skill.funcs?.some(f=>f.dir==='TARGET'&&offensiveEffects.has(f.ep)));
+  skill.funcs?.some(f=>f.dir==='TARGET'&&offensiveEffects.has(f.ep)&&
+   // An attack penalty or damage reduction belongs under Defensive Skills.
+   !(f.ep==='EP_DAMAGERATE_SCALE'&&Number(f.fv1?.[3])<=0)));
  const sourceOffense=[...new Set([100058001,213702001,213605001,
   220001001,430051001,142051001,
   ...classOffense.map(skill=>skill.id)])];
@@ -1287,6 +1302,59 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     'Увеличивает урон при попадании оружием ближнего боя. Точная прибавка ещё не подтверждена.');
  }
  if(offense.children.length>1)body.append(offense);
+ const defensive=root.PandoraOSCalculator?.defensiveSkillPreview?.({
+  skillCatalog:gameTerms.skills,jobKey:heroJobKey,level:heroLevel,
+  branchMasteries:heroMasteries,weaponKind:heroWeaponKind,
+  branchLabels:gameTerms.branchLabels||{},
+  englishBranches:gameTerms.englishBranches||{}
+ })||[];
+ if(defensive.length){
+  // Exactly the same shared section + row component as Healing Skills.
+  const group=make('section',{class:'stage-attribute-row stage-healing-spells stage-defensive-skills'});
+  group.append(make('strong',{text:en?'Defensive skills':'Защитные умения'}));
+  const names={
+   EP_DAMAGERATE_SCALE:[en?'Attack':'Атака','%'],
+   EP_ARMORCLASS_SCALE:[en?'Defense':'Защита','%'],
+   EP_AVOIDANCE_CONST:[en?'Evasion':'Уклонение',''],
+   EP_AVOIDANCE_SCALE:[en?'Evasion':'Уклонение','%']
+  };
+  const protection={
+   EP_PROTECTION_NUMB:[en?'Protects against slow effects':'Защищает от замедления'],
+   EP_PROTECTION_TUMBLE:[en?'Protects against knockdown':'Защищает от падения'],
+   EP_PROTECTION_MOVEBAN:[en?'Protects against immobilization':'Защищает от неподвижности'],
+   EP_CRITICAL_SAFE:[en?'Protects against critical hits':'Защита от критических ударов'],
+   EP_BLOCK_ATK:[en?'Blocks incoming attacks':'Блокирование атак']
+  };
+  for(const skill of defensive){
+   const typed=skill.effects.filter(f=>names[f.ep]);
+   const main=typed[0];
+   const label=main?names[main.ep]:null;
+   const sign=main?.amount>0?'+':'';
+   const amount=label&&Number.isFinite(main.amount)?
+    label[0]+' '+sign+main.amount+label[1]:'—';
+   const extra=skill.effects.map(f=>
+    protection[f.ep]?.[0]||
+    (f!==main&&names[f.ep]&&Number.isFinite(f.amount)?
+     names[f.ep][0]+' '+(f.amount>0?'+':'')+f.amount+names[f.ep][1]:''))
+    .filter(Boolean);
+   const enSource=gameTerms.englishSkills?.[String(skill.id)];
+   const availabilityText=skill.available?
+    (en?'Requirements met; preview when used':
+     'Требования выполнены · эффект при применении'):
+    (en?skill.reasonEn:skill.reason);
+   const detail=[availabilityText,
+    en?(enSource?.d||skill.description):skill.description,
+    ...extra].filter(Boolean).join(' · ');
+   group.append(make('div',{class:'stage-heal-row'+
+    (skill.available?'':' stage-book-unavailable')},[
+     gameSkillBadge(skill.id,skill.name,enSource?.n||skill.name,
+      gameTerms,en,skillIconForId),
+     make('strong',{text:amount}),
+     make('small',{text:detail})
+   ]));
+  }
+  body.append(group);
+ }
  renderSongSkills(body,modifiers,gameTerms,skillIconForId);
  if(offense.children.length===1&&!spells.length&&!periodic.length&&!(modifiers?.songSkills?.rows||[]).length)
   body.append(make('p',{class:'stage-attribute-note',text:en?
@@ -1597,14 +1665,18 @@ function defensePage(body,calc,english,options={}){
   ]));
  }
  const exp=calc?.experienceBonus?.entries||[];
+ // The chapter exists even without an equipped experience bonus. Otherwise
+ // a new hero appears to have "lost" it until a qualifying item is equipped.
+ const expPanel=make('details',{class:'stage-attribute-row stage-experience-effects'});
+ expPanel.append(make('summary',{text:english?'Experience gain bonuses':
+  'Бонусы к опыту'}));
  if(exp.length){
-  const panel=make('details',{class:'stage-attribute-row stage-experience-effects'});
-  panel.append(make('summary',{text:(english?'Experience gain bonuses':
-   'Бонусы к опыту')}));
-  for(const e of exp)panel.append(make('p',{text:e.source+': '+
+  for(const e of exp)expPanel.append(make('p',{text:e.source+': '+
    (e.percent>0?'+':'')+e.percent+'%'}));
-  body.append(panel);
- }
+ }else expPanel.append(make('p',{class:'stage-attribute-note',
+  text:english?'No experience bonuses are currently active.':
+   'Сейчас нет активных бонусов к опыту.'}));
+ body.append(expPanel);
  appendItemEvents(body,calc,english,'defense');
 }
 // All chapters share the Summary disclosure affordance and remember user state.
@@ -1671,6 +1743,7 @@ function collapseBookSections(body,page){
 const chapterCaptionSpecs=Object.freeze([
  ['effects','healing','.stage-healing-spells > strong','Лечащие умения','Healing skills'],
  ['effects','offense','.stage-attacking-skills > strong','Атакующие умения','Offensive skills'],
+ ['effects','defense','.stage-defensive-skills > strong','Защитные умения','Defensive skills'],
  ['effects','periodic','.stage-periodic-recovery > summary','Восстановление каждые 2 секунды','Recovery every 2 seconds'],
  ['effects','songs','.stage-song-skills > summary','Песни для выбранного класса','Songs available to this class'],
  ['recovery','potions','.stage-potion-book > strong','Эффекты зелий','Potion effects'],
@@ -1927,8 +2000,25 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
      if(src){const picture=make('img',{src,alt:'',loading:'lazy'});
       picture.onerror=()=>picture.remove();row.append(picture);}
     }
-    row.append(make('span',{class:'stage-potion-name',text:displayName}),
-     make('strong',{text:entry.skills.map(skill=>skill.name).join(' · ')}));
+    // Each activated skill has its own OS source tooltip. A single
+    // concatenated string cannot reveal individual descriptions on hover.
+    const skillNames=make('strong',{class:'stage-consumable-skill-names'});
+    for(const [index,skill] of entry.skills.entries()){
+     if(index)skillNames.append(make('span',{class:'stage-skill-separator',text:' · '}));
+     const source=gameTerms.skills?.[String(skill.id)];
+     const translated=gameTerms.englishSkills?.[String(skill.id)];
+     const name=english?(translated?.n||source?.name||skill.name):
+      (source?.name||skill.name);
+     const badge=make('span',{class:'stage-consumable-skill-name',
+      tabindex:0,'data-triggered-skill-id':skill.id,text:name});
+     const description=english?(translated?.d||source?.desc):(source?.desc);
+     root.PandoraGuideTooltip?.attach(badge,
+      description|| (english?'No description in the game catalog.':
+       'Описание умения пока отсутствует в игровом каталоге.'),
+      {hoverDelay:450});
+     skillNames.append(badge);
+    }
+    row.append(make('span',{class:'stage-potion-name',text:displayName}),skillNames);
     section.append(row);
    }
    body.append(section);

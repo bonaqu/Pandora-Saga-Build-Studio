@@ -829,6 +829,69 @@ function racialWeaponPreview({racialPassiveId=null,skillCatalog=null,weapon=null
   excluded:['server attack-stage rounding','mounted restrictions',
    'magic and skill damage interactions','weapon class-specific exceptions']};
 }
+// Defensive-skill previews use current OS records, not translations or
+// estimated end-of-combat formulas. Source-only magnitudes are distinguished
+// from actually enabled effects. A null number means mastery scaling or
+// state-machine behavior cannot yet be calculated exactly.
+const defensivePreviewSkillIds=Object.freeze([
+ 100053001,100057001,168052001,260001001,260005001,
+ 260008001,168055001,920120001
+]);
+const defensiveEffectIds=Object.freeze(new Set([
+ 'EP_DAMAGERATE_SCALE','EP_ARMORCLASS_SCALE','EP_AVOIDANCE_CONST',
+ 'EP_AVOIDANCE_SCALE','EP_PROTECTION_NUMB','EP_PROTECTION_TUMBLE',
+ 'EP_PROTECTION_MOVEBAN','EP_CRITICAL_SAFE','EP_BLOCK_ATK'
+]));
+function defensiveSkillPreview({skillCatalog=null,jobKey=null,level=1,
+ branchMasteries={},weaponKind='BARE_HAND',branchLabels={},englishBranches={}}={}){
+ if(!skillCatalog||typeof skillCatalog!=='object'||typeof jobKey!=='string'||
+  !Number.isInteger(level)||level<1)return [];
+ return defensivePreviewSkillIds.flatMap(id=>{
+  const record=skillCatalog[String(id)];
+  if(!record||record.id!==id||!record.classes?.[jobKey]||
+   !['MYSELF','TOGGLE','PASSIVE'].includes(record.skillType))return [];
+  const effects=(record.funcs||[]).filter(f=>f?.dir==='TARGET'&&
+   defensiveEffectIds.has(f.ep));
+  if(!effects.length)return [];
+  const reasons=[],reasonsEn=[];
+  if(Number(record.charLevel||0)>level){
+   reasons.push('Требуется уровень '+record.charLevel);
+   reasonsEn.push('Requires level '+record.charLevel);
+  }
+  for(const req of record.reqs||[]){
+   if(!req||typeof req.branch!=='string'||!Number.isInteger(req.amount))continue;
+   if(Number(branchMasteries?.[req.branch]||0)<req.amount){
+    reasons.push('Требуется мастерство «'+
+     (branchLabels[req.branch]||req.branch)+'»: '+req.amount);
+    reasonsEn.push('Requires '+(englishBranches[req.branch]||req.branch)+
+     ' mastery '+req.amount);
+   }
+  }
+  if(Array.isArray(record.weaponUse)&&record.weaponUse.length&&
+   !record.weaponUse.includes(weaponKind)){
+   reasons.push('Не подходит экипированное оружие');
+   reasonsEn.push('Equipped weapon is incompatible');
+  }
+  if(record.learnable===false||record.prereq!=null){
+   reasons.push('Изучение умения не подтверждено');
+   reasonsEn.push('Skill learning not confirmed');
+  }
+  const values=effects.map(f=>({
+   ep:f.ep,
+   // Only source constants with zero coefficients may be shown as exact
+   // static magnitudes; conditional or scaled magnitudes stay unknown.
+   amount:Array.isArray(f.fv1)&&f.fv1.length===4&&
+    f.fv1.every(Number.isFinite)&&f.fv1.slice(0,3).every(x=>x===0)?
+    f.fv1[3]:null,
+   coefficients:Array.isArray(f.fv1)?f.fv1.slice():[]
+  }));
+  return [{id,name:record.name,description:record.desc||'',
+   type:record.skillType,available:reasons.length===0,
+   reason:reasons.join(' · '),reasonEn:reasonsEn.join(' · '),
+   minimumLevel:record.charLevel||0,requirements:record.reqs||[],
+   effects:values,source:'Current game skill catalog'}];
+ });
+}
 // Source-only class passive: EP_ONHIT_FIN_DAMAGE_CONST describes per-hit
 // final damage, not the character-sheet ATK total. The server's hit kernel
 // is not verified; show its availability without manufacturing a flat bonus.
@@ -2334,6 +2397,40 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  };
  const chosenPriestSong=new Set(Array.isArray(attributeBuffs?.remakedSkillIds)?
   attributeBuffs.remakedSkillIds:[]);
+ // The two current OS coefficients extend the original Remaked step formula:
+ // barrier EP_ONDAMAGE_FIN_DAMAGE_SCALE [0,0,-20,-10] and holy aura
+ // EP_AURAHOLY_CONSTANT [6,0,0,2]. Only the receiving hero's explicitly
+ // selected external-priest buff is applied, never all available spells.
+ const priestSourceMatches=(id,ep,expected)=>{
+  const record=combatContext.skillCatalog?.[String(id)];
+  const matches=(record?.funcs||[]).filter(x=>x?.ep===ep&&x.dir==='TARGET');
+  return matches.length===1&&Array.isArray(matches[0].fv1)&&
+   matches[0].fv1.length===expected.length&&
+   matches[0].fv1.every((v,i)=>v===expected[i]);
+ };
+ const groupBarrier=priestValid&&priest.blessing>=26&&
+  chosenPriestSong.has(320003001)&&
+  priestSourceMatches(320003001,'EP_ONDAMAGE_FIN_DAMAGE_SCALE',[0,0,-20,-10])?
+  -10-Math.floor(priest.blessing/5):0;
+ const holyWeapon=priestValid&&combatContext.weapon&&
+  chosenPriestSong.has(330051001)&&
+  priestSourceMatches(330051001,'EP_AURAHOLY_CONSTANT',[6,0,0,2])?
+  2+Math.floor(priest.spi*6/100):0;
+ if(resistances&&groupBarrier){
+  resistances.mitigation.physical+=groupBarrier;
+  resistances.mitigation.magic+=groupBarrier;
+  resistances.mitigation.priestGroupBarrier=groupBarrier;
+ }
+ if(auraDamage&&holyWeapon){
+  const previous=auraDamage.elements.light;
+  auraDamage.elements.light={
+   base:previous?.base||0,flat:previous?.flat||0,percent:previous?.percent||0,
+   priestHoly:holyWeapon,known:(previous?.known||0)+holyWeapon
+  };
+ }
+ const priestApplied={groupBarrier,holyWeapon,
+  source:'Remaked floor steps guarded by current OS TARGET coefficients',
+  verified:false};
  const priestEffects=priestActive?{
   gratia:priestValid&&priest.blessing>=8&&attributeBuffs?.priestGratia===true?
    legacyBuffs.gratia.value:0,
@@ -2365,14 +2462,14 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   vitalFormulas:{hp:hpFormula,mp:mpFormula},resistanceSkills,
   hpRaw:rawHp.base+level*rawHp.lv+stats.vit*rawHp.vit,
   mpRaw:rawMp.base+level*rawMp.lv+stats.spi*rawMp.spi,
-  stats,basic,effects,honor:extra.honor,potion,resistances,targetResistance,procPreview,experienceBonus,battleMapCloaks,specialEquipment,regeneration,legacyBuffs,songSkills,otherEquipment,
+  stats,basic,effects,honor:extra.honor,potion,resistances,targetResistance,procPreview,experienceBonus,battleMapCloaks,specialEquipment,regeneration,legacyBuffs,priestApplied,songSkills,otherEquipment,
   recoveryAmount,healingSkill,healingSpells,periodicRecovery,consumableRecovery,consumableSkills,statusCures,harmfulConsumables,combat,gemstones,auraDamage,attackRange,racialEffects,elementalMagic,elementalRefinement,mountedRelease,unison,coverage,
   attributeBuffs:{flat:extra.flat,trace:extra.trace},supplementalFlat,supplementalSource,
   rounding:'floor-class-cents',source:'current game server / Modern current-vitals class formula',
   verified:false,excluded:['unstructured refinement bonuses','unpublished set effects',
     'unverified passive and conditional skills','other group/temporary buffs']};
 }
-root.PandoraOSCalculator=Object.freeze({resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
+root.PandoraOSCalculator=Object.freeze({defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
  base,characterSheetPhysicalAttackRange,classBase,classBaseComponents,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,racialWeaponPreview,incredibleStrengthPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
  recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,consumableSkillPreview,statusCurePreview,harmfulConsumablePreview,gemstonePreview,legacyBuffPreview,songSkillPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,racialUtilityPreview,elementalMagicPreview,elementalRefinementPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive
 });

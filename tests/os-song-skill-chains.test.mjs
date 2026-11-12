@@ -103,7 +103,7 @@ test('bilingual song UI stays collapsed and communicates preview-only conditions
  assert.match(stage,/Требования выполнены/);
  assert.match(style,/\.stage-song-skill-row/);
  assert.match(calc,/const songSkills=songSkillPreview/);
- assert.match(calc,/regeneration,legacyBuffs,songSkills,otherEquipment/);
+ assert.match(calc,/regeneration,legacyBuffs,priestApplied,songSkills,otherEquipment/);
 });
 
 test('Hero Book groups song effects with skill effects, not configuration controls',()=>{

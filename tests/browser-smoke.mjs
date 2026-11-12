@@ -319,15 +319,33 @@ async function main(){
   'Defense chapter must not repeat calculated DEF or evasion');
  assert.equal(await page.locator('#stageBookPanel [data-chapter-stat="hpRecoveryAmount"]').count(),1);
  const exp=page.locator('#stageBookPanel .stage-experience-effects');
- if(await exp.count()){
-  const header=exp.locator('summary');
-  assert.equal((await header.innerText()).replace(/\s+/g,' ').trim(),'✦ Бонусы к опыту ⌄');
-  assert.equal(await header.locator('.stage-result-chevron').count(),1);
- }
+ assert.equal(await exp.count(),1,
+  'Experience-bonus chapter MUST be present even without any active bonus');
+ const xpHeader=exp.locator('summary');
+ assert.equal((await xpHeader.innerText()).replace(/\s+/g,' ').trim(),'✦ Бонусы к опыту ⌄');
+ assert.equal(await xpHeader.locator('.stage-result-chevron').count(),1);
+ await xpHeader.click();
+ assert.ok((await exp.innerText()).includes('бонусов к опыту'));
+ const recoveryHelp=page.locator('#stageBookPanel [data-guide-key="defense.hpRecoverySpeed"]');
+ assert.equal(await recoveryHelp.count(),1);
+ await recoveryHelp.hover();
+ await page.locator('#stage-guide-tooltip').waitFor({state:'visible',timeout:4000});
+ assert.match(await page.locator('#stage-guide-tooltip').innerText(),/индекс скорости восстановления/);
  await page.locator('#stageAttributes [data-book-page="effects"]').click();
  const offense=page.locator('#stageBookPanel .stage-attacking-skills');
- if(await offense.count())
+ const healing=page.locator('#stageBookPanel .stage-healing-spells:not(.stage-attacking-skills):not(.stage-defensive-skills)');
+ const defensive=page.locator('#stageBookPanel .stage-defensive-skills');
+ assert.equal(await defensive.count(),1,'Defensive-skill chapter must be present');
+ assert.match(await defensive.innerText(),/Безболезненность/);
+ if(await offense.count()&&await healing.count()){
+  const normalize=async selector=>selector.locator('summary').evaluate(node=>{
+   const css=getComputedStyle(node);
+   return {padding:css.padding,font:css.font,background:css.backgroundColor};
+  });
+  assert.deepEqual(await normalize(offense),await normalize(healing),
+   'Offensive and Healing headers must share exact geometry');
   assert.equal(await offense.locator('.stage-offense-skill-row:not(.stage-heal-row)').count(),0);
+ }
   await page.locator('#stageAttributes .stage-periodic-recovery').waitFor({state:'visible',timeout:20000});
   await page.locator('#stageAttributes .stage-periodic-recovery summary').click();
   const recovery=await page.locator('#stageAttributes .stage-periodic-recovery').innerText();
@@ -360,6 +378,12 @@ async function main(){
  assert.equal((await skillItems.locator('summary').innerText()).replace(/\s+/g,' ').trim(),
   '✦ Предметы, активирующие умения ⌄');
  assert.equal(await skillItems.locator('summary .stage-result-chevron').count(),1);
+ await skillItems.locator('summary').click();
+ const skillHint=skillItems.locator('[data-triggered-skill-id]').first();
+ assert.ok(await skillHint.count()>0,'Each triggered skill has a dedicated hover target');
+ await skillHint.hover();
+ await page.locator('#stage-guide-tooltip').waitFor({state:'visible',timeout:4000});
+ assert.ok((await page.locator('#stage-guide-tooltip').innerText()).trim().length>8);
  assert.equal(await page.locator('#stageAttributes .stage-result-tile').count(),0,
   'Potion effects do not repeat potion-effectiveness total');
  await page.locator('#stageAttributes [data-book-page="effects"]').click();

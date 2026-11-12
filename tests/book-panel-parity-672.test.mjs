@@ -26,7 +26,8 @@ test('defense and all three potion subsections reuse Results glyph and chevron',
  assert.doesNotMatch(book,/['"]Снятие состояний['"]\)\+' · '\+cures\.length/);
  const css=read('pandora-studio-hero-book-additions.css');
  assert.match(css,/stage-book-detail-title/);
- assert.match(css,/\.stage-offense-skill-row/);
+ assert.match(book,/class:'stage-heal-row stage-offense-skill-row'/);
+ assert.doesNotMatch(css,/#stageAttributes \\.stage-offense-skill-row\\s*\\{/);
 });
 
 test('offensive skills are selected from current class and reuse healing rows',()=>{
