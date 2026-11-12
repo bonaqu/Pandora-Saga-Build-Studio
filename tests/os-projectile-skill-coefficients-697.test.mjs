@@ -52,7 +52,8 @@ test('invalid source, branch cap and equip requirements cannot create a damage e
  bad['233200101'].funcs.find(x=>x.ep==='EP_INCREASE_ATTACK').fv2[3]=1;
  assert.equal(by(preview('PREDATOR',{archery:40},'CROSSBOW',bad),213703001),undefined);
  assert.equal(by(preview('ASSASSIN',{assassin:40},'2H_TRUMP_WEAPON',bad),233200101),undefined);
- assert.ok(by(preview('PREDATOR',{archery:40},'CROSSBOW',bad),213605001));
+ assert.ok(by(preview('PREDATOR',{archery:40},'CROSSBOW',bad),220001001),
+  'Corrupt projectile data must not suppress an unrelated Poison skill');
  assert.equal(by(preview('PREDATOR',{archery:75},'CROSSBOW'),213703001)?.coefficientModels.length,0);
  assert.equal(by(preview('PREDATOR',{archery:40},'BOW'),213703001)?.available,false);
  assert.equal(by(preview('ASSASSIN',{assassin:40},'BARE_HAND'),233200101)?.available,false);
