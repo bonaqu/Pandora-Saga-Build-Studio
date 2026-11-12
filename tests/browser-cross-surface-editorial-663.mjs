@@ -108,21 +108,42 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   await cancel.press('Escape');
   assert.equal(writes.length,2);
 
-  // Skills: close the real workbench before choosing a different section.
+  // Skills: work inside the real right-hand Hero Path instead of the
+  // retired standalone skills workbench, which has no navigation tab.
   await page.locator('#dockClose').click();
-  await page.locator('#nav [data-tab="skills"]').click();
-  const skills=page.locator('#detailContent .studio-owner-interface-editor');
+  await page.locator('#pathSkillsTab').click();
+  const pathSearch=page.locator('#pathSkillSearch');
+  await pathSearch.waitFor({state:'visible'});
+  await pathSearch.fill('spell name stays');
+  await pathSearch.evaluate(node=>{window.__copySkillSearch=node});
+  const skills=page.locator('#pathSkillsPage .studio-owner-interface-editor');
   await skills.locator('summary').click();
   assert.equal(await skills.locator('.studio-owner-interface-row').count(),2);
-  await edit('skill-ui','intro','Умения изучаются в Пути героя.');
-  assert.match(await page.locator('#detailContent .muted').first().innerText(),/Умения изучаются/);
-  await edit('skill-ui','open','Перейти к навыкам');
-  assert.match(await page.locator('#detailContent .button-action').first().innerText(),
-   /Перейти к навыкам/);
+  await edit('skill-ui','searchPlaceholder','Найти редкое умение');
+  assert.equal(await pathSearch.getAttribute('placeholder'),'Найти редкое умение');
+  assert.equal(await pathSearch.inputValue(),'spell name stays');
+  assert.equal(await pathSearch.evaluate(node=>node===window.__copySkillSearch),true);
+  await edit('skill-ui','filterAria','Выбрать тип умений');
+  assert.equal(await page.locator('#pathSkillStatus').getAttribute('aria-label'),
+   'Выбрать тип умений');
 
-  // Equipment: the nav reappears only after the workbench has closed.
-  await page.locator('#dockClose').click();
-  await page.locator('#nav [data-tab="character"]').click();
+  // Live Origin stats: D1 controls edit captions only, not remaining points.
+  await page.locator('#originTabs [data-origin-tab="stats"]').click();
+  const stats=page.locator('#originStats .studio-owner-interface-editor');
+  await stats.waitFor({state:'visible'});
+  await stats.locator('summary').click();
+  assert.equal(await stats.locator('.studio-owner-interface-row').count(),2);
+  const originalSummary=await page.locator('#originStatSummary').innerText();
+  await edit('stats-ui','remainingPrefix','Осталось:');
+  await edit('stats-ui','spentPrefix','Распределено:');
+  const updatedSummary=await page.locator('#originStatSummary').innerText();
+  assert.match(updatedSummary,/Осталось:/);
+  assert.match(updatedSummary,/Распределено:/);
+  assert.equal(updatedSummary.replace('Осталось:','Свободно:').replace(
+   'Распределено:','Потрачено:'),originalSummary,
+   'Copy changes must not affect allocated or available points');
+
+  // Equipment: choose a real character slot without a hidden nav tab.
   await page.locator('.equipment-slot[data-slot-index="0"]').click();
   const picker=page.locator('#stagePicker');
   await picker.locator('.stage-picker-list').waitFor({state:'visible'});
