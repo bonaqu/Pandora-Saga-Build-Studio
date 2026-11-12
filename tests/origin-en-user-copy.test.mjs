@@ -10,7 +10,7 @@ test('Origin and advanced editor share canonical RU/EN stat labels',()=>{
  assert.match(origin,/name:'Ловкость',nameEn:'Dexterity',code:'dex'/);
  assert.match(origin,/name:'Сила духа',nameEn:'Spirit',code:'spi'/);
  assert.match(code,/ORIGIN_STAT_LABELS\[i\]\.nameEn:ORIGIN_STAT_LABELS\[i\]\.name/);
- assert.match(origin,/tr\('Свободно: ','Available: '\)/);
+ assert.match(origin,/statCaption\('remainingPrefix','Свободно:','Available:'\)/);
  assert.match(origin,/tr\('Итог','Total'\)/);
 });
 
