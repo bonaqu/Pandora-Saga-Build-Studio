@@ -2170,12 +2170,20 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  if(!hpBonus||!mpBonus)return null;
  const potion=potionRecovery({vit:stats.vit,records:combinedRecords,honorTitle:extra.honor.id,
   level,itemForth,...potionContext,runeJoEun:false});
+ // Saved pre-670 Divine Blessing resistance selections remain valid.
+ // Consolidate its single effect under Allied Buffs without double counting.
+ const oldDivineBlessing=Array.isArray(attributeBuffs?.resistanceSkillIds)&&
+  attributeBuffs.resistanceSkillIds.includes(330004001);
+ const mergedBuffIds=new Set(Array.isArray(attributeBuffs?.remakedSkillIds)?
+  attributeBuffs.remakedSkillIds:[]);
+ if(oldDivineBlessing)mergedBuffIds.add(330004001);
  const resistanceSkills=resistanceSkillPreview({
-  skillCatalog:combatContext.skillCatalog,selected:attributeBuffs.resistanceSkillIds
+  skillCatalog:combatContext.skillCatalog,
+  selected:(attributeBuffs.resistanceSkillIds||[]).filter(id=>id!==330004001)
  });
  const resistanceBonuses={...effects.bonuses};
  const groupBuffs=root.PandoraRemakedBuffs?.applied({
-  selected:attributeBuffs?.remakedSkillIds,skills:combatContext.skillCatalog,
+  selected:[...mergedBuffIds],skills:combatContext.skillCatalog,
   jobKey:combatContext.jobKey,level,weapon:combatContext.weapon,
   branchMasteries:combatContext.branchMasteries})||{};
  if(groupBuffs.providence)
