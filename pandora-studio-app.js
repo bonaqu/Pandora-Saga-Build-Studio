@@ -976,6 +976,23 @@ function bindOwnerInterfaceText(node,section,key,ru,en,attribute='text',suffix='
  else node.setAttribute(attribute,value);
  return node;
 }
+// Commit-time update uses the exact successful inline edit value; this
+// cannot accidentally revive an older default before the owner copy cache
+// refreshes. Undo independently derives the restored value from D1.
+function applyOwnerInterfaceEditedValue(section,key,visible){
+ for(const node of document.querySelectorAll('[data-owner-interface-bindings]')){
+  if(node.querySelector?.('.wiki-inline-input'))continue;
+  let bindings={};
+  try{bindings=JSON.parse(node.dataset.ownerInterfaceBindings||'{}')}catch{}
+  for(const [attr,field] of Object.entries(bindings)){
+   if(field.section!==section||field.key!==key)continue;
+   const value=visible+(field.suffix||'');
+   if(attr==='text')node.textContent=value;
+   else if(['placeholder','aria-label','title'].includes(attr))
+    node.setAttribute(attr,value);
+  }
+ }
+}
 // Compact non-modal owner-only copy editor reused by Equipment, Wiki, Skills.
 // It is absent for players and never wraps a real interactive action button.
 function ownerInterfaceEditor(section,rows,headingRu='Подписи интерфейса',headingEn='Interface labels'){
@@ -986,7 +1003,9 @@ function ownerInterfaceEditor(section,rows,headingRu='Подписи интер�
  for(const [key,ru,en,shortRu,shortEn] of rows){
   const label=h('span',{class:'studio-owner-interface-value',
    text:ownerCopy(section,key,ru,en)});
-  ownerCopyLabel(label,section,key,ru,en);
+  ownerCopyLabel(label,section,key,ru,en,{
+   onCommitted:visible=>applyOwnerInterfaceEditedValue(section,key,visible)
+  });
   const pencil=h('button',{type:'button',class:'ui-content-pencil studio-owner-interface-pencil',
    text:'✎',
    'aria-label':(lang==='en'?'Edit caption: ':'Изменить надпись: ')+ownerCopy(section,key,ru,en),
