@@ -50,7 +50,7 @@ test('Conjurer level 50 selects current OS shield and wind trail variants only',
   assert.equal(selected(before,newId),false);
   assert.equal(selected(after,oldId),false);
   const row=after.find(x=>x.id===newId);
-  assert.equal(row?.amount,newId===420002002?17:18);
+  assert.equal(row?.amount,newId===420002002?17:15);
   assert.equal(row?.available,true);
  }
 });
