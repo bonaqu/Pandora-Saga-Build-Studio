@@ -8,8 +8,10 @@ import {resolve} from 'node:path';
 const local=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 
 export function auditOsSkillFormulaCoverage({skills,classes,calculator}={}){
- if(!skills||!classes||typeof calculator?.scalingSkillPreview!=='function')
-  throw Error('Expected pinned skill/class catalog and OS formula inspector');
+ const modules=['scalingSkillPreview','healingSpellsPreview',
+  'periodicRecoveryPreview','songSkillPreview','resistanceSkillChoices'];
+ if(!skills||!classes||!modules.every(name=>typeof calculator?.[name]==='function'))
+  throw Error('Expected pinned skill/class catalog and all OS formula inspectors');
  const entries=Object.entries(skills).sort((a,b)=>Number(a[0])-Number(b[0]));
  const coverage=new Map();
  const effectNames=new Set();
