@@ -1,4 +1,4 @@
 {
-  "release": "2026.11.12.696",
-  "notes": "Four additional source-scaled magical skill parameters"
+  "release": "2026.11.12.697",
+  "notes": "Source coefficients for projectile and follow-up attacks"
 }
