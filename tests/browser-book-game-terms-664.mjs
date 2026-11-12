@@ -96,6 +96,10 @@ export async function runHeroBookGameNames664Smoke(browser,base){
    assert.ok(ru.includes(name),'Hero Book must use exact current OS skill name '+name);
   assert.ok(!ru.includes('Невероятная сила'),
    'Passive on-hit skills must not occupy the castable Skill Effects inspector');
+  // Only Healing opens by default. The archived song subchapter is closed,
+  // so its lazy-loaded icon does not load until the reader expands it.
+  const songs=page.locator('#book-source-qa .stage-song-skills');
+  if(await songs.count())await songs.locator('summary').click();
   const required=[310001001,310004001,310021001,310022001,310023001,340001001];
   await page.waitForFunction(ids=>ids.every(id=>{
    const img=document.querySelector('#book-source-qa .stage-effect-skill-label img[src$="skill_'+id+'.webp"]');
