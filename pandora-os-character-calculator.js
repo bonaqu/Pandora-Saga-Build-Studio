@@ -2397,6 +2397,40 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  };
  const chosenPriestSong=new Set(Array.isArray(attributeBuffs?.remakedSkillIds)?
   attributeBuffs.remakedSkillIds:[]);
+ // The two current OS coefficients extend the original Remaked step formula:
+ // barrier EP_ONDAMAGE_FIN_DAMAGE_SCALE [0,0,-20,-10] and holy aura
+ // EP_AURAHOLY_CONSTANT [6,0,0,2]. Only the receiving hero's explicitly
+ // selected external-priest buff is applied, never all available spells.
+ const priestSourceMatches=(id,ep,expected)=>{
+  const record=combatContext.skillCatalog?.[String(id)];
+  const matches=(record?.funcs||[]).filter(x=>x?.ep===ep&&x.dir==='TARGET');
+  return matches.length===1&&Array.isArray(matches[0].fv1)&&
+   matches[0].fv1.length===expected.length&&
+   matches[0].fv1.every((v,i)=>v===expected[i]);
+ };
+ const groupBarrier=priestValid&&priest.blessing>=26&&
+  chosenPriestSong.has(320003001)&&
+  priestSourceMatches(320003001,'EP_ONDAMAGE_FIN_DAMAGE_SCALE',[0,0,-20,-10])?
+  -10-Math.floor(priest.blessing/5):0;
+ const holyWeapon=priestValid&&combatContext.weapon&&
+  chosenPriestSong.has(330051001)&&
+  priestSourceMatches(330051001,'EP_AURAHOLY_CONSTANT',[6,0,0,2])?
+  2+Math.floor(priest.spi*6/100):0;
+ if(resistances&&groupBarrier){
+  resistances.mitigation.physical+=groupBarrier;
+  resistances.mitigation.magic+=groupBarrier;
+  resistances.mitigation.priestGroupBarrier=groupBarrier;
+ }
+ if(auraDamage&&holyWeapon){
+  const previous=auraDamage.elements.light;
+  auraDamage.elements.light={
+   base:previous?.base||0,flat:previous?.flat||0,percent:previous?.percent||0,
+   priestHoly:holyWeapon,known:(previous?.known||0)+holyWeapon
+  };
+ }
+ const priestApplied={groupBarrier,holyWeapon,
+  source:'Remaked floor steps guarded by current OS TARGET coefficients',
+  verified:false};
  const priestEffects=priestActive?{
   gratia:priestValid&&priest.blessing>=8&&attributeBuffs?.priestGratia===true?
    legacyBuffs.gratia.value:0,
@@ -2428,7 +2462,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   vitalFormulas:{hp:hpFormula,mp:mpFormula},resistanceSkills,
   hpRaw:rawHp.base+level*rawHp.lv+stats.vit*rawHp.vit,
   mpRaw:rawMp.base+level*rawMp.lv+stats.spi*rawMp.spi,
-  stats,basic,effects,honor:extra.honor,potion,resistances,targetResistance,procPreview,experienceBonus,battleMapCloaks,specialEquipment,regeneration,legacyBuffs,songSkills,otherEquipment,
+  stats,basic,effects,honor:extra.honor,potion,resistances,targetResistance,procPreview,experienceBonus,battleMapCloaks,specialEquipment,regeneration,legacyBuffs,priestApplied,songSkills,otherEquipment,
   recoveryAmount,healingSkill,healingSpells,periodicRecovery,consumableRecovery,consumableSkills,statusCures,harmfulConsumables,combat,gemstones,auraDamage,attackRange,racialEffects,elementalMagic,elementalRefinement,mountedRelease,unison,coverage,
   attributeBuffs:{flat:extra.flat,trace:extra.trace},supplementalFlat,supplementalSource,
   rounding:'floor-class-cents',source:'current game server / Modern current-vitals class formula',
