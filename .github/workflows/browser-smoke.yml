@@ -25,7 +25,9 @@ concurrency:
 
 jobs:
   browser:
-    runs-on: ubuntu-latest
+    # Playwright 1.55.1 cannot install Chromium on the newer ubuntu-26.04 image.
+    # Pin the supported Ubuntu LTS image rather than silently skipping smoke.
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
