@@ -70,7 +70,9 @@ test('external priest buffs require correct Blessing mastery and valid numbers',
  assert.equal(skills['320008001'].name,'Знак защиты');
  assert.equal(skills['320007001'].reqs.find(x=>x.branch==='blessing').amount,8);
  assert.equal(skills['320008001'].reqs.find(x=>x.branch==='blessing').amount,12);
- assert.match(engine,/priestValid&&priest\.blessing>=8&&attributeBuffs\?\.priestGratia/);
+ assert.match(engine,/priestValid&&priest\.blessing>=8&&/);
+ assert.match(engine,/priestSourceMatches\(320007001,'EP_ATTACKINTERVAL_SCALE',\[10,0,5,5\]\)/);
+ assert.match(engine,/attributeBuffs\?\.priestGratia===true&&Number\.isFinite\(gratiaPreview\)/);
  assert.match(engine,/priestValid&&priest\.blessing>=12&&attributeBuffs\?\.priestLapisMedio/);
  assert.match(engine,/Number\.isSafeInteger\(n\)&&n>=0&&n<=500/);
  assert.match(book,/\[320007001,'priestGratia',8\]/);
@@ -89,21 +91,23 @@ test('Hero Book buff names use Remaked approved RU identities',()=>{
 // One table-driven test covers boundary thresholds without multiplying test processes.
 test('external priest speed/defense reflect selected skills and actual Blessing thresholds',()=>{
  const classes=JSON.parse(source('data/os/classes.json'));
+ const skills=JSON.parse(source('data/os/skills.json'));
  const z={vit:0,str:0,agi:0,dex:0,spi:0,int:0};
  function preview(blessing,{enabled=true,spi=134,hymn=30,selected=true}={}){
   return calc.base({classData:classes.WARRIOR,
    raceData:{vit:40,str:50,agi:30,dex:20,spi:70,int:15},
    jobData:z,allocation:z,level:45,
    attributeBuffs:{priestGratia:selected,priestLapisMedio:selected},
-   combatContext:{jobKey:'WARRIOR',skillCatalog:{},
+   combatContext:{jobKey:'WARRIOR',skillCatalog:skills,
     legacyBuffMasteries:{blessing:0,hymn:0,alchemy:0},
     externalPriest:{enabled,spi,blessing,hymn}}});
  }
  for(const mastery of [0,7,8,11,12,90]){
   const result=preview(mastery);
   const magnitudes=calc.legacyBuffPreview({spi:134,blessing:mastery,hymn:30});
+  const currentGratia=5+Math.floor(134*10/100)+Math.floor(mastery*5/100);
   assert.equal(result.combat.attackSpeed.priestBonus,
-   mastery>=8?magnitudes.gratia.value:0,'Velox at Blessing '+mastery);
+   mastery>=8?currentGratia:0,'Current OS Velox at Blessing '+mastery);
   assert.equal(result.combat.defense.priestBonus,
    mastery>=12?magnitudes.lapisMedio.value:0,'Lapis at Blessing '+mastery);
  }
