@@ -1,5 +1,11 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.682.0 — 2026.11.12.682 · Independent item navigation and skill tooltip targets in Hero Book consumables
+
+- Independent item navigation and skill tooltip targets in Hero Book consumables.
+- Full Node/Chromium PR acceptance and post-merge Pages/Worker checks required.
+
+
 ## 0.681.0 — 2026.11.12.681 · Shared Path skill previews for equipment and Soul procs; legacy Divine Blessing remains independent
 
 - Shared Path skill previews for equipment and Soul procs; legacy Divine Blessing remains independent
