@@ -1,5 +1,13 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.674.0 — 2026.11.12.674 · Source-gated Lightness, Swift Arrow and Blessed Repose active buffs: OS coefficients, Remaked index channels and regression tests
+
+- Source-gated Lightness, Swift Arrow and Blessed Repose active buffs: OS coefficients, Remaked index channels and regression tests
+- Legacy Remaked MoveSPD explicitly adds +30 for Lightness. Swift Arrow uses the existing attack-interval index channel. Blessed Repose uses the OS MP recovery-speed index; game-client stacking remains unverified and no extra MP per tick is invented.
+- Four focused test cases cover gating, numeric application and forged source coefficients. Full PR Node and Chromium acceptance remains required.
+- Browser acceptance and deployed Pages state must be verified separately.
+
+
 ## 0.673.0 — 2026.11.12.673 · Hero Book experience, skill groups, tooltips and priest effects
 
 - Defensive chapter: experience-bonus disclosure is always visible, including a clear empty state when no XP source is active.

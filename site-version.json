@@ -1,4 +1,4 @@
 {
-  "release": "2026.11.12.673",
-  "notes": "Hero Book: permanent XP chapter, equal Healing/Offense/Defense UI, item skill hover guides, INT index help and priest barrier/holy source effects"
+  "release": "2026.11.12.674",
+  "notes": "Source-gated Lightness, Swift Arrow and Blessed Repose active buffs: OS coefficients, Remaked index channels and regression tests"
 }
