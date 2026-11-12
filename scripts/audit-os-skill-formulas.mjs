@@ -9,7 +9,7 @@ const local=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 
 export function auditOsSkillFormulaCoverage({skills,classes,calculator}={}){
  const modules=['scalingSkillPreview','healingSpellsPreview',
-  'periodicRecoveryPreview','songSkillPreview','resistanceSkillChoices'];
+  'periodicRecoveryPreview','songSkillPreview','resistanceSkillChoices','skillExecutionChains'];
  if(!skills||!classes||!modules.every(name=>typeof calculator?.[name]==='function'))
   throw Error('Expected pinned skill/class catalog and all OS formula inspectors');
  const entries=Object.entries(skills).sort((a,b)=>Number(a[0])-Number(b[0]));
@@ -120,6 +120,19 @@ export function auditOsSkillFormulaCoverage({skills,classes,calculator}={}){
     numeric:true,targetSide:row.incoming===true});
   }
  }
+ const execRows=entries.flatMap(([,s])=>s.funcs.filter(f=>f?.ep==='EP_SKILL_EXEC'));
+ const eligibleExecRoots=new Set();
+ for(const key of classNames){
+  const caps=classes[key].branchCaps;
+  const preview=calculator.skillExecutionChains({skillCatalog:skills,jobKey:key,
+   level:55,branchCaps:caps,branchMasteries:caps});
+  for(const chain of preview.rows){
+   eligibleExecRoots.add(chain.id);
+   const record=coverage.get(chain.id);
+   record.executionChain=true;
+   record.executionPaths=Math.max(record.executionPaths||0,chain.paths.length);
+  }
+ }
  const statusKeys=['numeric-preview','coefficient-model','source-parameter','qualitative-preview',
   'passive-source','internal-or-triggered-source','unmodeled-learnable'];
  const byStatus=Object.fromEntries(statusKeys.map(key=>[key,0]));
@@ -139,7 +152,10 @@ export function auditOsSkillFormulaCoverage({skills,classes,calculator}={}){
   methodology:'28 theoretical class-max snapshots at levels 45/55; cross-module census, not legal full character builds',
   certainty:'numbers are simulator previews/models, NOT server parity proof; incoming TARGET effects are not self passives',
   summary:{skillRecords:rows.length,effectRecords,uniqueEffectTypes:effectNames.size,
-   inspectedClasses:classNames.length,statuses:byStatus},
+   inspectedClasses:classNames.length,statuses:byStatus,
+   executionChains:{sourceLinks:execRows.length,
+    zeroTargetSentinels:execRows.filter(f=>f.fv1?.[3]===0).length,
+    eligibleSkillRoots:eligibleExecRoots.size}},
   rows};
 }
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
