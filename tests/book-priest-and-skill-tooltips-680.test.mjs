@@ -35,6 +35,7 @@ test('source mismatch is fail-closed for each priest numeric line',()=>{
  assert.equal(r.lapisMedio,12);
 });
 test('Book lists all supported ally numeric summaries and distinct priest stat bonuses',()=>{
+ assert.match(book,/Одновременно действует только одно умение/);
  assert.match(book,/priestValues=modifiers\?\.priestCast\|\|\{\}/);
  assert.match(book,/СИЛ \+/);
  assert.match(book,/ПРВ \+/);

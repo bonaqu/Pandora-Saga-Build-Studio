@@ -1340,7 +1340,7 @@ export async function runAdminEntrySmoke(browser,base){
   await showBookNote();
   await page.locator('#stageBookPanel p.stage-attribute-note').first().waitFor({state:'visible'});
   assert.match(await page.locator('#stageBookPanel p.stage-attribute-note').first().innerText(),
-   /Select only effects currently affecting this hero/);
+   /Only one resistance spell can be active/);
   await page.locator('#locale [data-locale="ru"]').click();
   await showBookNote();
   assert.equal(await page.locator('#stageBookPanel p.stage-attribute-note').first().innerText(),

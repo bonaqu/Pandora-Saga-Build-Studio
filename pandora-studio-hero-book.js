@@ -9,6 +9,7 @@ const bookEnglish=Object.freeze({
  'Зелья и умения': "Potions & skills",
  'Эффекты': "Effects",
  'Усиления': "Buffs",
+ 'Одновременно действует только одно умение. Выбор нового заменяет предыдущее. Умения можно применять к союзникам и врагам.': 'Only one resistance spell can be active. Selecting a new one replaces the previous one. These spells may target allies or enemies.',
  'Эффекты умений': 'Skill effects',
  'Эффекты зелий': 'Potion effects',
  'Параметры появятся после загрузки игровых данных.': "Stats appear when game data has loaded.",
