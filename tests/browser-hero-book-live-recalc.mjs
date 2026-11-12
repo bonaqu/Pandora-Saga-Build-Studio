@@ -123,7 +123,7 @@ export async function runHeroBookLiveRecalcSmoke(browser,base){
   for(const [key,text] of [
    ['buffs.section.0','Vitals'],['buffs.guild','Guild'],
    ['buffs.section.honor','Honor · passive skill'],['buffs.section.1','Priest buffs'],
-   ['buffs.section.2','Combat skills'],
+   ['buffs.section.self','Self buffs'],['buffs.section.party','Ally buffs'],
    ['buffs.setting.guildHp','Guild HP'],
    ['buffs.setting.guildMp','Guild MP'],
    ['buffs.setting.guildAll','All attributes'],
@@ -132,7 +132,8 @@ export async function runHeroBookLiveRecalcSmoke(browser,base){
   await page.locator('#locale [data-locale="ru"]').click();
   for(const [key,text] of [
    ['buffs.section.0','ОЗ и ОМ'],['buffs.guild','Гильдия'],
-   ['buffs.section.1','Усиления жреца'],['buffs.section.2','Боевые умения'],
+   ['buffs.section.1','Усиления жреца'],
+    ['buffs.section.self','Личные умения'],['buffs.section.party','Усиления от союзников'],
    ['buffs.setting.guildHp','Гильдейское ОЗ'],
    ['buffs.setting.guildAll','Все характеристики']
   ])assert.equal(await authored(key).innerText(),text,'RU '+key);
