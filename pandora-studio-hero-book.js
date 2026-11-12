@@ -521,7 +521,8 @@ function buffsPage(body,options){
   (typeof value==='number'&&value>0)||
   (typeof value==='string'&&value!==''&&value!=='0');
  const selectedResistanceSkills=Array.isArray(buffs.resistanceSkillIds)?
-  buffs.resistanceSkillIds.filter(id=>resistanceSkillChoices.some(s=>s.id===id)).length:0;
+  buffs.resistanceSkillIds.filter(id=>id!==330004001&&
+   resistanceSkillChoices.some(s=>s.id===id)).length:0;
  const configured=Object.entries(buffs).filter(([key,value])=>{
   if(key==='proelium'||key==='resistanceSkillIds'||key==='guildLevel')return false;
   if(['priestSpi','priestBlessing','priestHymn','priestEnabled',
@@ -536,7 +537,8 @@ function buffsPage(body,options){
  }).length+guildPassiveCount+Object.entries(vitalsBuffs).filter(([key,value])=>
   !(guildSelected&&['guildHp','guildMp'].includes(key))&&selected(value)).length+
   selectedResistanceSkills+remakedBuffRows.filter(row=>!row.existing&&
-   row.selected&&row.available&&
+   (row.selected||(row.id===330004001&&
+    buffs.resistanceSkillIds?.includes(330004001)))&&row.available&&
    (![320011001,330051001,340001001,340004001].includes(row.id)||
     buffs.priestEnabled===true)).length;
  const status=make('div',{class:'stage-buff-overview'},[
@@ -575,7 +577,8 @@ function buffsPage(body,options){
  };
  const toggle=(parent,name,key,vital=false,allowed=true,skill=null)=>{
   const selected=key.startsWith('legacySkill:')?
-   Array.isArray(buffs.remakedSkillIds)&&buffs.remakedSkillIds.includes(Number(key.slice(12))):
+   (Array.isArray(buffs.remakedSkillIds)&&buffs.remakedSkillIds.includes(Number(key.slice(12)))||
+    (key==='legacySkill:330004001'&&buffs.resistanceSkillIds?.includes(330004001))):
    (vital?vitalsBuffs:buffs)[key]===true;
   const node=make('label',{class:'stage-book-check'+(skill?' stage-combat-buff':'')});
   const checkbox=make('input',{type:'checkbox','data-book-setting':key,
@@ -773,7 +776,9 @@ function buffsPage(body,options){
    (row.id!==340004001||(Number(buffs.priestHymn)>=30&&
     Number(buffs.priestBlessing)>=71)));
   toggle(target,english?row.nameEn:row.name,'legacySkill:'+row.id,false,
-   row.available&&priestReady,{name:row.name,nameEn:row.nameEn,icon:skillIconForId(row.id),
+   row.available&&priestReady,{
+    name:row.id===330004001?'Божественное благословение':row.name,
+    nameEn:row.nameEn,icon:skillIconForId(row.id),
     desc:row.description,descEn:description||row.description,
     reason:row.reason,reasonEn:row.reasonEn,
     pending:!row.counted,
@@ -1377,6 +1382,13 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
    if(!Number.isInteger(index)||index<0||index>3)continue;
    if(node.open)collapsedSummaryGroups.delete(index);
    else collapsedSummaryGroups.add(index);
+  }
+ if(reusePanel&&page!=='summary')
+  for(const group of stablePanel.querySelectorAll?.('details[data-book-collapse]')||[]){
+   const key=group.dataset.bookCollapse;
+   if(!key)continue;
+   if(group.open)collapsedBookGroups.delete(key);
+   else collapsedBookGroups.add(key);
   }
  const storedScroll=reusePanel?stablePanel.scrollTop:0;
  if(reusePanel){
