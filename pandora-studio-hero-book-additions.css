@@ -148,3 +148,100 @@
  .stage-book-disclosure>.stage-result-section-head{padding:7px;gap:6px}
  .stage-book-disclosure.stage-book-buff-group> :not(summary){margin:7px}
 }
+
+
+/* Prevent the old guild-field grid from stretching a 30px game sprite
+   across the label+select rows. Identical bounds for manual/automatic mode. */
+#stageAttributes .stage-guild-skill-field{
+ display:grid;grid-template-columns:30px minmax(0,1fr);
+ grid-template-rows:auto auto;align-items:center;
+ gap:5px 8px;min-width:0;min-height:0
+}
+#stageAttributes .stage-guild-skill-field>.stage-guild-skill-icon,
+#stageAttributes .stage-guild-passive-row>.stage-guild-skill-icon{
+ display:block!important;grid-column:1;grid-row:1 / 3;
+ place-self:center;width:30px!important;height:30px!important;
+ min-width:30px!important;max-width:30px!important;
+ min-height:30px!important;max-height:30px!important;
+ flex:0 0 30px!important;object-fit:contain!important
+}
+#stageAttributes .stage-guild-skill-field>span{grid-column:2;grid-row:1;min-width:0}
+#stageAttributes .stage-guild-skill-field>select{grid-column:2;grid-row:2;min-width:0}
+#stageAttributes .stage-guild-skill-field>span,
+#stageAttributes .stage-guild-passive-name{line-height:1.4;overflow-wrap:anywhere}
+#stageAttributes .stage-guild-skill-field select{font-size:11px;max-width:100%}
+#stageAttributes .stage-guild-passive-row{
+ min-height:44px;box-sizing:border-box;align-items:center
+}
+/* Consistent boxed chapters, including experience and every potion subsection. */
+#stageAttributes .stage-experience-effects,
+#stageAttributes .stage-source-events,
+#stageAttributes .stage-active-elemental,
+#stageAttributes .stage-health-consumables,
+#stageAttributes .stage-status-cures,
+#stageAttributes .stage-consumable-skills,
+#stageAttributes .stage-battle-map-cloaks,
+#stageAttributes .stage-potion-book,
+#stageAttributes .stage-mana-consumables,
+#stageAttributes .stage-periodic-recovery,
+#stageAttributes .stage-song-skills{
+ display:block;min-width:0;max-width:100%;box-sizing:border-box;
+ border:1px solid #89683f;border-radius:6px;
+ padding:0;background:linear-gradient(145deg,#342317,#211811);
+ overflow:clip
+}
+#stageAttributes :is(.stage-experience-effects,.stage-source-events,
+.stage-active-elemental,.stage-health-consumables,.stage-status-cures,
+.stage-consumable-skills,.stage-battle-map-cloaks,
+.stage-periodic-recovery,.stage-song-skills)>summary{
+ padding:10px;min-height:42px;display:flex;align-items:center;
+ font:650 12px/1.4 Manrope,Arial,sans-serif;color:#f1d19d;
+ background:#392719;cursor:pointer;list-style:none;
+ border-bottom:1px solid transparent
+}
+#stageAttributes :is(.stage-experience-effects,.stage-source-events,
+.stage-active-elemental,.stage-health-consumables,.stage-status-cures,
+.stage-consumable-skills,.stage-battle-map-cloaks,
+.stage-periodic-recovery,.stage-song-skills)[open]>summary{
+ border-bottom-color:#785638
+}
+#stageAttributes .stage-book-disclosure>.stage-result-section-head{margin:0}
+#stageAttributes .stage-book-disclosure> :not(summary){
+ box-sizing:border-box;max-width:calc(100% - 20px)
+}
+#stageAttributes .stage-book-disclosure>.stage-potion-item,
+#stageAttributes :is(.stage-health-consumables,.stage-status-cures,
+.stage-consumable-skills,.stage-potion-book,.stage-mana-consumables)>
+.stage-potion-item{
+ box-sizing:border-box;min-width:0;width:calc(100% - 20px);
+ max-width:calc(100% - 20px);margin:6px 10px
+}
+#stageAttributes .stage-book-disclosure>.stage-chapter-grid{
+ max-width:100%;box-sizing:border-box
+}
+#stageAttributes .stage-potion-item{
+ flex-wrap:wrap;min-width:0;max-width:100%;box-sizing:border-box
+}
+#stageAttributes .stage-potion-item .stage-potion-name{
+ min-width:0;flex:1 1 110px;overflow-wrap:anywhere
+}
+#stageAttributes .stage-potion-item>strong{
+ flex:0 1 auto;max-width:100%;white-space:normal;
+ overflow-wrap:anywhere;text-align:right
+}
+#stageAttributes .stage-experience-effects>p,
+#stageAttributes .stage-battle-map-cloaks>p,
+#stageAttributes .stage-active-elemental>p,
+#stageAttributes .stage-source-events>p{
+ display:flex;gap:8px;align-items:center;
+ margin:6px 10px;padding:8px 9px;
+ border:1px solid #65482f;border-radius:4px;background:#291e15;
+ color:#e8cda7;font-size:11px;line-height:1.5;overflow-wrap:anywhere
+}
+#stageAttributes .stage-guild-passive-row .stage-guide-actions{
+ flex:0 0 auto;white-space:nowrap
+}
+@media(max-width:440px){
+ #stageAttributes .stage-book-disclosure>.stage-potion-item{margin:5px 7px;width:calc(100% - 14px);max-width:calc(100% - 14px)}
+ #stageAttributes .stage-guild-subsection{padding:6px;gap:6px}
+}
