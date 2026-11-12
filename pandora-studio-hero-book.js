@@ -1396,6 +1396,41 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   }
   body.append(section);
  }
+ // Exact game recipes, separate from combat effects and buffs.
+ const crafted=root.PandoraOSCalculator?.craftingSkillPreview?.({
+  skillCatalog:gameTerms.skills,jobKey:heroJobKey,level:heroLevel,
+  branchCaps:heroBranchCaps,branchMasteries:heroMasteries,
+  branchLabels:gameTerms.branchLabels,englishBranches:gameTerms.englishBranches
+ });
+ const sourceItemName=id=>{
+  const ru=gameTerms.items?.[String(id)]?.name;
+  return ru?(en?(gameTerms.englishItems?.[String(id)]?.n||ru):ru):null;
+ };
+ const recipes=(crafted?.rows||[]).filter(r=>
+  [...r.uses,r.produces].every(item=>sourceItemName(item.id)));
+ if(recipes.length){
+  const section=make('details',{class:'stage-attribute-row stage-skill-crafting-effects'});
+  section.append(make('summary',{text:en?'Making items with skills':'Создание предметов умениями'}));
+  section.append(make('p',{class:'stage-periodic-hint',text:en?
+   'Source recipes. Ingredients are required; your inventory is not checked here.':
+   'Рецепты из игровых данных. Нужны указанные ингредиенты; наличие в сумке здесь не проверяется.'}));
+  for(const recipe of recipes){
+   const english=gameTerms.englishSkills?.[String(recipe.id)];
+   const part=item=>String(item.quantity)+' × '+sourceItemName(item.id);
+   const recipeLine=recipe.uses.map(part).join(' + ')+' → '+part(recipe.produces);
+   const requirements=recipe.requirementsMet?
+    (en?'Mastery requirement met':'Мастерства достаточно'):
+    (en?recipe.reasonEn:recipe.reasonRu);
+   section.append(make('div',{class:'stage-heal-row stage-skill-crafting-row'+
+    (recipe.requirementsMet?'':' stage-book-unavailable')},[
+    gameSkillBadge(recipe.id,recipe.name,english?.n||recipe.name,
+     gameTerms,en,skillIconForId),
+    make('small',{text:recipeLine}),
+    make('small',{text:requirements})
+   ]));
+  }
+  body.append(section);
+ }
 if(!spells.length&&!periodic.length&&!rows.offense?.length&&!rows.defense?.length&&!rows.movement?.length&&!rows.utility?.length)
   body.append(make('p',{class:'stage-attribute-note',text:en?
    'Only skills with build-dependent effect values appear here. Fixed buffs belong in Buffs.':
