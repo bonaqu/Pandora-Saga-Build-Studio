@@ -54,10 +54,10 @@ test('Book receives official skill and class source objects without changing gam
  assert.match(app,/gameTerms:\{skills:skillMap,englishSkills:officialEnglish\?\.skills\|\|\{\}/);
  assert.match(app,/branchLabels:catalog\.meta\?\.branchLabels\|\|\{\}/);
  assert.match(app,/classes:catalog\.classes\|\|\{\},englishClasses:officialEnglish\?\.classes\|\|\{\}/);
- assert.match(source,/renderSongSkills\(body,modifiers,gameTerms\)/);
+ assert.match(source,/renderSongSkills\(body,modifiers,gameTerms,skillIconForId\)/);
  assert.match(source,/gameClassName\('ACOLYTE','Адепт'/);
- assert.match(source,/gameSkillName\(entry\.id,entry\.name,null,gameTerms,en\)/);
- assert.match(source,/gameSkillName\(row\.skillId\|\|/);
+ assert.match(source,/gameSkillBadge\(entry\.id,entry\.name,null,gameTerms,en,skillIconForId\)/);
+ assert.match(source,/gameSkillBadge\(row\.skillId\|\|/);
  assert.doesNotMatch(source,/hymn:'Гимны'|benevolence:'Healing',hymn:'Hymns'/,
   'Do not restore ad-hoc English-to-Russian branch translations');
  const defense=book.summaryRows({defense:{known:47}}).flatMap(group=>group.rows);

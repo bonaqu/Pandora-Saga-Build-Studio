@@ -96,7 +96,7 @@ test('song preview never adds a toggle-only effect to ordinary HP/MP/combat stat
 test('bilingual song UI stays collapsed and communicates preview-only conditions',()=>{
  const stage=read('pandora-studio-hero-book.js'),style=read('pandora-studio-theme.css'),calc=read('pandora-os-character-calculator.js');
  assert.match(stage,/make\('details',\{class:'stage-legacy-buff-previews stage-song-skills'\}\)/);
- assert.match(stage,/gameSkillName\([\s\S]*?entry\.id,entry\.name,entry\.nameEn,gameTerms,english\)/);
+ assert.match(stage,/gameSkillBadge\(entry\.id,entry\.name,entry\.nameEn,gameTerms,english,skillIconForId\)/);
  assert.match(stage,/english\?entry.descriptionEn:entry.description/);
  assert.match(stage,/Бонусы не прибавляются к билду автоматически/);
  assert.match(stage,/Requirements met/);
@@ -115,6 +115,6 @@ test('Hero Book groups song effects with skill effects, not configuration contro
  const buffs=book.slice(buffsStart,songsStart);
  const skills=book.slice(skillsStart,book.indexOf('function render(target,',skillsStart));
  assert.doesNotMatch(buffs,/const songRows=|stage-song-skills/);
- assert.match(skills,/renderSongSkills\(body,modifiers,gameTerms\)/);
+ assert.match(skills,/renderSongSkills\(body,modifiers,gameTerms,skillIconForId\)/);
  assert.match(book.slice(songsStart,skillsStart),/stage-song-skills/);
 });

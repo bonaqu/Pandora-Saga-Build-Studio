@@ -1,5 +1,14 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.665.0 — 2026.11.12.665 · Hero Book skill artwork, game-native resistance names and mounted stat preview
+
+- «Эффекты умений»: иконки настоящих OS-навыков для пяти лечащих заклинаний, периодических умений, песен и «Невероятной силы» через общий каталог рисунков.
+- «Защита»: названия сопротивлений строго по описаниям OS-предметов — проклятие, слабость, безумие; RU/EN пояснения для аномалий тела и духа дополнены второй строкой.
+- «Атака»: показана настоящая базовая атака надетого оружия W вместо вводящего в заблуждение отдельного бонуса; «Характеристики верхом» и сохраняемый переключатель «Верхом».
+- Исторические формулы Remaked дают расчётный вид АТК, точности, уклонения, скорости передвижения, каста и отката при езде; неизвестные показатели защиты и скорости обычных атак не выдумываются. Node-регрессии и общие CI-проверки обязательны до слияния.
+- Browser acceptance and deployed Pages state must be verified separately.
+
+
 ## 0.664.0 — 2026.11.12.664 · Canonical game Book terminology and Honor search
 
 - Hero Book «Эффекты умений» and «Усиления» now resolve skill titles by actual numeric current-game skill IDs, with the existing Remaked-approved 327-to-OS identity mapping and official OS RU/EN catalogue as the source of truth. The canonical names cover healing previews, periodic HP/MP recovery, songs, combat buffs and the priest's legacy skill effects.
