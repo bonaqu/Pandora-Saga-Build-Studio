@@ -72,7 +72,8 @@ test('external priest group barrier and holy weapon use Remaked floors and CURRE
  assert.equal(preview([320003001,330051001],{enabled:false,spi:134,blessing:90,hymn:30}).priestApplied.groupBarrier,0);
  assert.equal(preview([320003001,330051001],{enabled:true,spi:134,blessing:25,hymn:30}).priestApplied.groupBarrier,0);
  assert.match(src,/priestSourceMatches\(320003001,'EP_ONDAMAGE_FIN_DAMAGE_SCALE',\[0,0,-20,-10\]\)/);
- assert.match(src,/priestSourceMatches\(330051001,'EP_AURAHOLY_CONSTANT',\[6,0,0,2\]\)/);
+ assert.match(src,/chosenPriestSong\.has\(330051001\)/);
+ assert.match(src,/Number\.isSafeInteger\(priestCast\.holyWeapon\)/);
 });
 
 test('individual triggered skill names use OS descriptions and site-native tooltip',()=>{
