@@ -95,5 +95,8 @@ test('skill effects draw original skill icons using the same catalog resolver as
  const rows=a.flatMap(g=>g.rows);
  assert.equal(rows.find(x=>x.key==='weaponBase').value,100);
  assert.ok(!rows.some(x=>x.key==='weaponPhysical'));
- assert.equal(rows.find(x=>x.key==='mountedRelease').ru,'Характеристики верхом');
+ assert.equal(rows.find(x=>x.key==='mountedRelease'),undefined,
+  'Riding percentage now shares the Mounted checkbox row, not a duplicate Attack metric');
+ assert.match(book,/class:'stage-mounted-stat','data-chapter-stat':'mountedRelease'/);
+ assert.match(book,/guideLabel\(mountedName,'attack\.mountedRelease'/);
 });
