@@ -1,4 +1,4 @@
 {
-  "release": "2026.11.12.668",
-  "notes": "Hero Book 26px skill icons, Mounted inline hint, concise Buffs UI and nonoverlapping owner tools"
+  "release": "2026.11.12.669",
+  "notes": "Remaked 36 skill buffs: allied effects for any recipient, self-cast requirements and current-OS combat effects"
 }
