@@ -7,6 +7,7 @@ const guideSource=read('pandora-studio-honor-guide.js');
 const bookSource=read('pandora-studio-hero-book.js');
 const appSource=read('pandora-studio-app.js');
 const css=read('pandora-studio-hero-book-additions.css');
+const hoverCss=read('pandora-studio-honor.css');
 const ui={};
 Function('window',guideSource)(ui);
 const guide=ui.PandoraHonorGuide;
@@ -27,6 +28,8 @@ test('body/mind explanations contain real newlines in both locales',()=>{
   assert.ok(hint[0].includes(ru));
   assert.ok(hint[1].includes(en));
   assert.match(hint[0],/«Защита»/);
+  assert.match(hoverCss,/\.stage-guide-popup\{[^}]*white-space:pre-line;/s,
+   'true newlines must remain visible in the hover popup');
  }
 });
 
