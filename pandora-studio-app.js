@@ -838,9 +838,15 @@ function setAttributeBuff(key,value){
   const id=Number(key.slice('resistSkill:'.length));
   if(!Number.isSafeInteger(id)||!window.PandoraOSCalculator
    .resistanceSkillChoices(catalog.skills||{}).some(row=>row.id===id))return;
-  // Single-choice elemental resistance spell, independent of Divine Blessing.
+  // Elemental skills are exclusive, but a legacy save may contain the
+  // independent Divine Blessing alias. Keep that unrelated buff intact.
   if(id===330004001)return;
-  current.resistanceSkillIds=value===true?[id]:[];
+  const oldDivine=Array.isArray(current.resistanceSkillIds)&&
+   current.resistanceSkillIds.includes(330004001);
+  current.resistanceSkillIds=[
+   ...(oldDivine?[330004001]:[]),
+   ...(value===true?[id]:[])
+  ];
  }else if(key==='honorTitle'){
   const id=Number(value);
   if(!Number.isInteger(id)||id<0||id>=window.PandoraOSCalculator.honorTitles.length)return;

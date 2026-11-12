@@ -14,7 +14,9 @@ test('five elemental casts remain a separate standard group with mutual exclusiv
  assert.match(book,/toggle\(group,skill\.name,'resistSkill:'\+skill\.id/);
  assert.doesNotMatch(book,/stage-resistance-skill-controls/);
  assert.doesNotMatch(book,/Вражеский навык|Incoming skill/);
- assert.match(app,/current\.resistanceSkillIds=value===true\?\[id\]:\[\]/);
+ assert.match(app,/current\.resistanceSkillIds=\[/);
+ assert.match(app,/\.\.\.\(oldDivine\?\[330004001\]:\[\]\)/);
+ assert.match(app,/\.\.\.\(value===true\?\[id\]:\[\]\)/);
  const branch=app.slice(app.indexOf("}else if(key.startsWith('resistSkill:'))"),
   app.indexOf("}else if(key==='honorTitle')"));
  assert.doesNotMatch(branch,/selected\.add\(id\)|selected\.delete\(id\)/);

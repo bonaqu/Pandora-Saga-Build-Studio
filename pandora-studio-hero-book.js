@@ -1434,7 +1434,7 @@ function appendChapterGroups(body,groups,english,emptyRu,emptyEn,options={}){
   section.append(grid);body.append(section);
  }
 }
-function appendItemEvents(body,calc,english,kind){
+function appendItemEvents(body,calc,english,kind,gameTerms={}){
  const rows=[];
  const belongs=code=>kind==='attack'?/^EP_ONHIT_/.test(code):
   /^EP_ONDAMAGE_|^EP_ALL_CRITICAL$|^EP_RACE_TOUGH_HEART$|^EP_HEAL_LIFE_REGENERATOR$|^EP_DESTINE_WARDING$/.test(code);
@@ -1445,7 +1445,11 @@ function appendItemEvents(body,calc,english,kind){
  for(const entry of calc?.procPreview?.entries||[]){
   if(!belongs(entry.code))continue;
   const tail=entry.chance==null?'':' · '+entry.chance+'%';
-  rows.push({source:entry.source,
+  rows.push({source:entry.source,skillId:entry.skillId,
+   triggerRu:entry.trigger||'Срабатывание',
+   triggerEn:entry.triggerEn||entry.trigger||'Trigger',
+   skillName:entry.skillName,skillNameEn:entry.skillNameEn,
+   tail,
    ru:(entry.trigger||'Срабатывание')+' · '+entry.skillName+tail,
    en:(entry.triggerEn||entry.trigger||'Trigger')+' · '+
     (entry.skillNameEn||entry.skillName)+tail});
@@ -1454,8 +1458,27 @@ function appendItemEvents(body,calc,english,kind){
  const panel=make('details',{class:'stage-attribute-row stage-source-events'});
  panel.append(make('summary',{text:(english?'Item and Soul triggers':
   'Срабатывания предметов и душ')+' · '+rows.length}));
- for(const row of rows)panel.append(make('p',{text:
-  row.source+' · '+(english?row.en:row.ru)}));
+ for(const row of rows){
+  const skill=gameTerms.skills?.[String(row.skillId)];
+  const valid=Number.isSafeInteger(row.skillId)&&row.skillId>0&&
+   skill?.id===row.skillId;
+  if(!valid){
+   panel.append(make('p',{text:row.source+' · '+(english?row.en:row.ru)}));
+   continue;
+  }
+  const line=make('p',{class:'stage-source-proc-skill'});
+  line.append(document.createTextNode(row.source+' · '+
+   (english?row.triggerEn:row.triggerRu)+' · '));
+  const translated=gameTerms.englishSkills?.[String(row.skillId)];
+  const name=english?(translated?.n||row.skillNameEn||skill.name):
+   (skill.name||row.skillName);
+  const skillLink=make('span',{class:'stage-consumable-skill-name',text:name});
+  // Identical icon, level, mastery and description to Path; no new style.
+  root.PandoraSkillPreview?.attach(skillLink,row.skillId);
+  line.append(skillLink);
+  if(row.tail)line.append(document.createTextNode(row.tail));
+  panel.append(line);
+ }
  body.append(panel);
 }
 function appendWeaponConditions(body,calc,items,english){
@@ -1530,7 +1553,7 @@ function attackPage(body,calc,items,english,options={}){
   'Нет подтверждённых дополнительных атакующих параметров.',
   'No supported additional attack metrics.',{...options,page:'attack'});
  appendWeaponConditions(body,calc,items,english);
- appendItemEvents(body,calc,english,'attack');
+ appendItemEvents(body,calc,english,'attack',options.gameTerms);
 }
 function defensePage(body,calc,english,options={}){
  appendChapterGroups(body,defenseChapterGroups(calc),english,
@@ -1577,7 +1600,7 @@ function defensePage(body,calc,english,options={}){
   text:english?'No experience bonuses are currently active.':
    'Сейчас нет активных бонусов к опыту.'}));
  body.append(expPanel);
- appendItemEvents(body,calc,english,'defense');
+ appendItemEvents(body,calc,english,'defense',options.gameTerms);
 }
 // All chapters share the Summary disclosure affordance and remember user state.
 function collapseBookSections(body,page){
@@ -1776,9 +1799,9 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
   'data-book-visible':chosen});
  if(chosen==='summary')summaryPage(body,modifiers,copyOptions);
  if(chosen==='attack')attackPage(body,modifiers,items,document.documentElement?.lang==='en',
-  {...copyOptions,buffs,onBuff});
+  {...copyOptions,buffs,onBuff,gameTerms});
  if(chosen==='defense')defensePage(body,modifiers,document.documentElement?.lang==='en',
-  {...copyOptions,buffs});
+  {...copyOptions,buffs,gameTerms});
  if(chosen==='buffs')buffsPage(body,{buffs,vitalsBuffs,onBuff,onVital,
   honorTitles,availability,combatSkillCards,resistanceSkillChoices,modifiers,
   gameTerms,remakedBuffRows,skillIconForId,...copyOptions});

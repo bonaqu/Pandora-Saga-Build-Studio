@@ -36,7 +36,8 @@ test('Hero Book UI and aria descriptions follow document language on rerender',(
 });
 
 test('equipment effects, item procs and experience preview headings follow RU/EN selection',()=>{
- assert.match(code,/function appendItemEvents\(body,calc,english,kind\)/);
+ assert.match(code,/function appendItemEvents\(body,calc,english,kind,gameTerms=\{\}\)/);
+ assert.match(code,/root\.PandoraSkillPreview\?\.attach\(skillLink,row\.skillId\)/);
  assert.match(code,/calc\?\.specialEquipment\?\.entries/);
  assert.match(code,/english\?'Item and Soul triggers'/);
  assert.match(code,/english\?'Experience gain bonuses'/);
