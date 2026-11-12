@@ -2192,6 +2192,16 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  const targetResistance=targetResistancePreview({records:combinedRecords,itemForth});
  const rawProcPreview=conditionalProcPreview({records:combinedRecords,itemForth,skills:combatContext.skillCatalog});
  const experienceBonus=experienceBonusPreview({records:combinedRecords,itemForth});
+ // Guild passives are selected together at a guild level, not just displayed
+ // as a reference. Their mitigation and EXP effects are independent of HP/MP.
+ const guildPassives=guildPassiveAtLevel(Number(attributeBuffs?.guildLevel??0));
+ if(guildPassives&&resistances){
+  resistances.mitigation.physical-=guildPassives.physicalReduction;
+  resistances.mitigation.magic-=guildPassives.magicReduction;
+ }
+ if(guildPassives?.experience>0&&experienceBonus)
+  experienceBonus.entries.push({source:'Гильдия · Опыт',
+   percent:guildPassives.experience});
  const battleMapCloaks=battleMapCloakPreview({
   records:combinedRecords,itemForth,skills:combatContext.skillCatalog
  });
