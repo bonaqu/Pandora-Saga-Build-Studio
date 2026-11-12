@@ -114,6 +114,9 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   await page.locator('#pathSkillsTab').click();
   const pathSearch=page.locator('#pathSkillSearch');
   await pathSearch.waitFor({state:'visible'});
+  // Hero Path search has the same password-manager guard as Encyclopedia:
+  // a real click unlocks its intentional temporary readonly state.
+  await pathSearch.click();
   await pathSearch.fill('spell name stays');
   await pathSearch.evaluate(node=>{window.__copySkillSearch=node});
   const skills=page.locator('#pathSkillsPage .studio-owner-interface-editor');
