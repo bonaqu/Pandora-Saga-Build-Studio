@@ -951,6 +951,8 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  // 3*floor(AGI/20) + floor(AGI/10); typed as a speed index, not hits/sec.
  const speedBase=100+3*Math.floor(stats.agi/10)+3*Math.floor(stats.agi/20);
  const priestSpeed=Math.max(0,Number(priestEffects?.gratia)||0);
+ const priestMinstrel=Number.isFinite(priestEffects?.minstrel)?
+  Math.max(0,Number(priestEffects.minstrel)):0;
  const attackSpeed={base:speedBase,equipment:equipped.attackSpeedFlat,
   lunge:actives.lunge?effect('lunge','EP_ATTACKINTERVAL_SCALE'):0,
   priestBonus:priestSpeed,
@@ -1003,13 +1005,13 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
   (mounted?Math.ceil(accuracyBase*mountedRate)-accuracyBase:0)+accuracyBonus+hunterEye+
   (actives.concentration?effect('concentration','EP_TOHIT_CONST'):0)+
   (otherBuffs.thirdEye?Math.floor(otherBuffs.thirdEye.flat+
-   accuracyBase*otherBuffs.thirdEye.percent/100):0);
+   accuracyBase*otherBuffs.thirdEye.percent/100):0)+priestMinstrel;
  const observedDodge=dodge+
   (mounted?Math.ceil(dodgeBase*mountedRate)-dodgeBase:0)+quickStep+
   (supportSkills.windAssist?Math.floor(
   supportSkillValues.windAssist.EP_AVOIDANCE_CONST+
   dodgeBase*supportSkillValues.windAssist.EP_AVOIDANCE_SCALE/100):0)+
-  (otherBuffs.quickStep?.dodge||0)+(otherBuffs.avoidance?.dodge||0);
+  (otherBuffs.quickStep?.dodge||0)+(otherBuffs.avoidance?.dodge||0)+priestMinstrel;
  // Distinct from OS web-calculator combat damage: the observed client
  // character sheet floors both the PEN/mastery percentage and the final gap.
  // Leave the minimum unavailable if the weapon or actual green is unknown.
@@ -1046,6 +1048,9 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
   (racialPassiveId===900060003?10:0);
  return {attack:attackWithRange,magicAttack,defense:effectiveDefense,activeSkills:actives,
   racialWeapon,incredibleStrength,
+  priestSong:{minstrel:priestMinstrel,
+   sageElementDamage:Number(priestEffects?.sageElementDamage)||0,
+   verified:false,source:'Remaked SPR/Hymn scaling + current OS skill function'},
   activeSkillValues:activeValues,secondary,supportSkills,supportSkillValues,
   guildArouse,guildAtk,attackSpeed,castingSpeed,castTime,manaCost,
   frontAccuracy,rangedEvasion,
@@ -1060,14 +1065,14 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
    activeBonus:actives.concentration?effect('concentration','EP_TOHIT_CONST'):0,
    thirdEye:otherBuffs.thirdEye?Math.floor(otherBuffs.thirdEye.flat+
     accuracyBase*otherBuffs.thirdEye.percent/100):0,
-   known:accuracyKnown},
+   minstrel:priestMinstrel,known:accuracyKnown},
   dodge:{base:dodgeBase,agilityStep:dodgeStep,equipment:evEquip,
    passive:quickStep,honor:title.dodge||0,
    windAssist:supportSkills.windAssist?Math.floor(
     supportSkillValues.windAssist.EP_AVOIDANCE_CONST+
     dodgeBase*supportSkillValues.windAssist.EP_AVOIDANCE_SCALE/100):0,
    additionalSelf:(otherBuffs.quickStep?.dodge||0)+(otherBuffs.avoidance?.dodge||0),
-   known:observedDodge},
+   minstrel:priestMinstrel,known:observedDodge},
   critical:{base:critBase,equipment:critEquip,
    racial:racialPassiveId===900040001?5:0,
    coldBlood:otherBuffs.coldBlood?.critical||0,known:critical},
@@ -2314,11 +2319,31 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  });
  // OS skill 320007001 requires Blessing 8; 320008001 requires Blessing 12.
  // A previously selected checkbox must not bypass these requirements.
+ // Current OS spell-effect records carry a new constant term relative to
+ // historic Remaked. Keep its floor-by-stat structure, but use the OS source
+ // parameters instead of hardcoding the historical +5 or +0 offsets.
+ const priestSongValue=(id,ep)=>{
+  if(!priestValid)return 0;
+  const record=combatContext.skillCatalog?.[String(id)];
+  const effect=record?.funcs?.find(row=>row.ep===ep&&row.dir==='TARGET');
+  const coeff=effect?.fv1;
+  if(!Array.isArray(coeff)||coeff.length!==4||!coeff.every(Number.isFinite)||
+   coeff[0]<0||coeff[2]<0||coeff[3]<0)return 0;
+  return coeff[3]+Math.floor(priest.spi*coeff[0]/100)+
+   Math.floor(priest.hymn*coeff[2]/100);
+ };
+ const chosenPriestSong=new Set(Array.isArray(attributeBuffs?.remakedSkillIds)?
+  attributeBuffs.remakedSkillIds:[]);
  const priestEffects=priestActive?{
   gratia:priestValid&&priest.blessing>=8&&attributeBuffs?.priestGratia===true?
    legacyBuffs.gratia.value:0,
   lapisMedio:priestValid&&priest.blessing>=12&&attributeBuffs?.priestLapisMedio===true?
-   legacyBuffs.lapisMedio.value:0
+   legacyBuffs.lapisMedio.value:0,
+  minstrel:priestValid&&priest.hymn>=8&&chosenPriestSong.has(340001001)?
+   priestSongValue(340001003,'EP_TOHIT_CONST'):0,
+  sageElementDamage:priestValid&&priest.hymn>=30&&priest.blessing>=71&&
+   chosenPriestSong.has(340004001)?
+   priestSongValue(340004003,'EP_ELEMENT_DAMAGE_SCALE'):0
  }:{};
  // Gem-type selection determines which weapon enhancement table is active.
  // A saved older build without a chosen gem preserves the legacy physical
