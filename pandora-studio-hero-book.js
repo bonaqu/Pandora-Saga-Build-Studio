@@ -1277,7 +1277,8 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
       .replace(' АТК',' ATK').replace(' точности и уклонения',' accuracy & evasion')
       .replace(' урона светом',' holy damage').replace(' урона тьмой',' dark damage')
       .replace(' к СИЛ, ПРВ и ИНТ',' STR, AGI and INT')
-      .replace(' инд.',' idx').replace(' урона',' damage'):skill.unit):
+      .replace(' инд.',' idx').replace(' сопротивления',' resistance')
+      .replace(' урона',' damage'):skill.unit):
     '—';
    const ready=skill.recipient?(en?
     'Effect on this hero when cast by an ally':

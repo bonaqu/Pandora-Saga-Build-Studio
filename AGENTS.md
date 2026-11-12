@@ -21,6 +21,9 @@ These repository-level rules are durable instructions for future coding sessions
 ## Multi-hit and projectile effects (2026-11-12)
 - `EP_DOUBLE_MISSILE` together with `EP_ATTACKRANGE_CONST`/`EP_ATTACKCARRY_CONST`, and `EP_INCREASE_ATTACK`, produce independent source-scaled coefficients. Display them as **parameters**, not final hit damage or true distance. Source vectors, class, weapon and mastery cap must pass before projection. Never merge these channels into base physical ATK without source proof.
 
+## Warding 26 source validation (2026-11-12)
+- Passive 260007001 adds +15 TARGET stun/numb/tumble. Its additional CASTER numb is not an extra bonus. Use the same strict FV1/FV2, class and requirement validation in the read-only Skill Effects and applied Defense calculation. No double-counting.
+
 ## Fast, safe verification
 1. Identify the affected UI handler and existing related test before coding. Reuse current equipment open/replace/unequip paths instead of duplicating mutations.
 2. Fetch related files in batches; make one coherent patch, with a focused Node regression and an isolated Chromium scenario before a PR.
