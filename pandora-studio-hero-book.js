@@ -1279,7 +1279,10 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    'stage-defensive-skills','stage-defense-skill-row'],
   ['movement','Скорость передвижения · параметры умений',
    'Movement speed · skill parameters',
-   'stage-movement-skills','stage-defense-skill-row']
+   'stage-movement-skills','stage-defense-skill-row'],
+  ['utility','Контроль и ресурсы · параметры умений',
+   'Control & resources · skill parameters',
+   'stage-utility-skills','stage-defense-skill-row']
  ]){
   const skills=rows[groupName]||[];
   if(!skills.length)continue;
@@ -1296,7 +1299,9 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
       .replace(' инд.',' idx').replace(' сопротивления',' resistance')
       .replace(' урона',' damage'):skill.unit):
     '—';
-   const ready=skill.recipient?(en?
+   const ready=skill.hostile?(en?'Source parameters on an enemy target':
+    'Исходные параметры на противнике'):
+    skill.recipient?(en?
     'Effect on this hero when cast by an ally':
     'Эффект при применении союзником к этому герою'):
     skill.available?(en?'Preview when cast':'Значение при применении'):
@@ -1305,9 +1310,10 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    const detail=[ready,en?
     (skill.detailEn||source?.d||skill.description):
     (skill.detailRu||skill.description)].filter(Boolean).join(' · ');
-   const modelParts=(skill.coefficientModels||[]).filter(part=>
+   const modelParts=[...(skill.coefficientModels||[]),
+    ...(skill.sourceParameters||[])].filter(part=>
     Number.isSafeInteger(part?.amount)&&
-    part.confidence==='coefficient-model');
+    ['coefficient-model','source-parameter'].includes(part.confidence));
    const preview=make('div',{class:'stage-heal-row '+rowClass+
     (!skill.available?' stage-book-unavailable':'')},[
     gameSkillBadge(skill.id,skill.name,source?.n||skill.name,
@@ -1327,7 +1333,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   }
   body.append(section);
  }
- if(!spells.length&&!periodic.length&&!rows.offense?.length&&!rows.defense?.length&&!rows.movement?.length)
+ if(!spells.length&&!periodic.length&&!rows.offense?.length&&!rows.defense?.length&&!rows.movement?.length&&!rows.utility?.length)
   body.append(make('p',{class:'stage-attribute-note',text:en?
    'Only skills with build-dependent effect values appear here. Fixed buffs belong in Buffs.':
    'Здесь показаны только умения, сила которых зависит от билда. Постоянные усиления — во вкладке «Усиления».'}));
