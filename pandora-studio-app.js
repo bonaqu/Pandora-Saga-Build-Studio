@@ -874,9 +874,12 @@ function setAttributeBuff(key,value){
  }else if(key==='proeliumPotency'){
   const n=Number(value);if(!Number.isInteger(n)||n<0||n>100)return;
   current.proeliumPotency=n;
- }else if(['guildLifeRecovery','guildManaRecovery','guildHealing'].includes(key)){
+ }else if(['guildLifeRecovery','guildManaRecovery','guildHealing',
+  'guildPhysicalReduction','guildMagicReduction','guildExperience'].includes(key)){
   if(key!=='guildHealing'&&Number(current.guildLevel)>0)return;
-  const n=Number(value),limit=key==='guildHealing'?3:2;
+  const n=Number(value),limit=key==='guildHealing'?3:
+   key==='guildExperience'?8:
+   ['guildPhysicalReduction','guildMagicReduction'].includes(key)?3:2;
   if(!Number.isInteger(n)||n<0||n>limit)return;
   current[key]=n;
  }else return;
@@ -7097,7 +7100,8 @@ function sanitizeSharedState(original){
   if(Number.isInteger(guild)&&guild>=0&&guild<=6)safe.attributeBuffs.guildAll=guild;
   if(Number.isInteger(potency)&&potency>=0&&potency<=100)safe.attributeBuffs.proeliumPotency=potency;
   for(const [key,limit] of [['guildLevel',12],['priestSpi',500],['priestBlessing',500],['priestHymn',500],
-   ['guildLifeRecovery',2],['guildManaRecovery',2],['guildHealing',3],['guildArouse',3]]){
+   ['guildLifeRecovery',2],['guildManaRecovery',2],['guildHealing',3],['guildArouse',3],
+   ['guildPhysicalReduction',3],['guildMagicReduction',3],['guildExperience',8]]){
    const level=rawAttributes[key];
    if(Number.isInteger(level)&&level>=0&&level<=limit)safe.attributeBuffs[key]=level;
   }
