@@ -7411,15 +7411,6 @@ function bindAccountCopyEditors(panel){
     },
     onCommitted:next=>{
      node.textContent=editLang===lang?next:locale.text(key,lang);
-     // The action remains mounted while owner copy is saved. Refresh its
-     // read-only guide text immediately without rerendering the card or
-     // changing any saved build state.
-     if(key.startsWith('libraryHint')&&panel.id!=='accountPanel'){
-      const current=editLang===lang?next:locale.text(key,lang);
-      for(const button of panel.querySelectorAll('[data-build-action-hint]')){
-       if(button.dataset.buildActionHint===key)button.dataset.guideHint=current;
-      }
-     }
      if(panel.id==='studioToast')refreshOpenAuthoredToast();
     },
     onFinished:()=>{node.hidden=false;host.remove();if(pencil)pencil.hidden=false}
@@ -7786,6 +7777,14 @@ function refreshVisibleUICopy(recordKey){
   const pencil=node.nextElementSibling;
   if(pencil?.dataset?.ownerCopyPencil===key)
    pencil.setAttribute('aria-label',(lang==='en'?'Edit caption: ':'Изменить надпись: ')+value);
+ }
+ // The same routine handles save, Undo and owner reset. Do not replace
+ // the card: update the live guide dataset from the committed RU/EN value.
+ if(isLibrary){
+  for(const button of document.querySelectorAll('#detailContent [data-build-action-hint]')){
+   if(locale.fieldKey(button.dataset.buildActionHint)===id)
+    button.dataset.guideHint=locale.text(button.dataset.buildActionHint,lang);
+  }
  }
 }
 // An Origin copy Undo refreshes visible captions without remounting the build.
