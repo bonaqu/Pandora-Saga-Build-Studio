@@ -66,8 +66,12 @@ function describeZoneDrops(previous,current,ctx,add,unknown){
   unknown('Название '+entity+' №'+id+' не найдено в каталоге');
   return entity+' №'+id+' (название не найдено)';
  };
- const ruleType=row=>row?.kind==='csv'?'Таблица CSV':
-  row?.kind==='hook'?'Обработчик добычи':'Неизвестный тип '+String(row?.kind);
+ const ruleType=row=>{
+  if(row?.kind==='csv')return 'Таблица CSV';
+  if(row?.kind==='hook')return 'Обработчик добычи';
+  unknown('Неизвестный тип правила добычи: '+String(row?.kind));
+  return 'Неизвестный тип '+String(row?.kind);
+ };
  const monster=row=>row?.mob==null?'без указанного монстра':
   'монстр «'+sourceName('monsters',row.mob,'монстра')+'»';
  const items=row=>Array.isArray(row?.items)?
