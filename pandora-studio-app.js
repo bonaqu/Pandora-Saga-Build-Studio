@@ -953,6 +953,73 @@ function ownerCopyLabel(node,section,key,ru,en,{onCommitted,onFinished}={}){
   if(event.target===node&&(event.key==='F2'||event.key==='Enter'))edit(event);
  });
 }
+// Shared, explicit copy binding for labels, buttons and search attributes.
+// Each field has a static RU/EN source and a stable D1 key. Variable game
+// data (item names, active slot, levels, search queries) are never edited.
+function bindOwnerInterfaceText(node,section,key,ru,en,attribute='text',suffix=''){
+ if(!node)return node;
+ // A search field has independently editable placeholder AND aria-label.
+ // Store one descriptor per attribute: binding the second must not erase
+ // the first. Never serialize its live value or user-entered search query.
+ let bindings={};
+ try{bindings=JSON.parse(node.dataset.ownerInterfaceBindings||'{}')}catch{}
+ bindings[attribute]={section,key,ru,en,suffix};
+ node.dataset.ownerInterfaceBindings=JSON.stringify(bindings);
+ node.dataset.ownerInterfaceSection=section;
+ node.dataset.ownerInterfaceKey=key;
+ node.dataset.ownerInterfaceRu=ru;
+ node.dataset.ownerInterfaceEn=en;
+ node.dataset.ownerInterfaceAttribute=attribute;
+ node.dataset.ownerInterfaceSuffix=suffix;
+ const value=ownerCopy(section,key,ru,en)+suffix;
+ if(attribute==='text')node.textContent=value;
+ else node.setAttribute(attribute,value);
+ return node;
+}
+// Commit-time update uses the exact successful inline edit value; this
+// cannot accidentally revive an older default before the owner copy cache
+// refreshes. Undo independently derives the restored value from D1.
+function applyOwnerInterfaceEditedValue(section,key,visible){
+ for(const node of document.querySelectorAll('[data-owner-interface-bindings]')){
+  if(node.querySelector?.('.wiki-inline-input'))continue;
+  let bindings={};
+  try{bindings=JSON.parse(node.dataset.ownerInterfaceBindings||'{}')}catch{}
+  for(const [attr,field] of Object.entries(bindings)){
+   if(field.section!==section||field.key!==key)continue;
+   const value=visible+(field.suffix||'');
+   if(attr==='text')node.textContent=value;
+   else if(['placeholder','aria-label','title'].includes(attr))
+    node.setAttribute(attr,value);
+  }
+ }
+}
+// Compact non-modal owner-only copy editor reused by Equipment, Wiki, Skills.
+// It is absent for players and never wraps a real interactive action button.
+function ownerInterfaceEditor(section,rows,headingRu='Подписи интерфейса',headingEn='Interface labels'){
+ if(!adminEditing||!adminToken)return null;
+ const box=h('details',{class:'studio-owner-interface-editor'});
+ box.append(h('summary',{text:lang==='en'?headingEn:headingRu}));
+ const items=h('div',{class:'studio-owner-interface-fields'});
+ for(const [key,ru,en,shortRu,shortEn] of rows){
+  const label=h('span',{class:'studio-owner-interface-value',
+   text:ownerCopy(section,key,ru,en)});
+  ownerCopyLabel(label,section,key,ru,en,{
+   onCommitted:visible=>applyOwnerInterfaceEditedValue(section,key,visible)
+  });
+  const pencil=h('button',{type:'button',class:'ui-content-pencil studio-owner-interface-pencil',
+   text:'✎',
+   'aria-label':(lang==='en'?'Edit caption: ':'Изменить надпись: ')+ownerCopy(section,key,ru,en),
+   onclick:event=>{
+    event.preventDefault();event.stopPropagation();
+    label.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
+   }});
+  items.append(h('div',{class:'studio-owner-interface-row'},[
+   h('span',{class:'studio-owner-interface-name',
+    text:lang==='en'?(shortEn||en):(shortRu||ru)}),label,pencil]));
+ }
+ box.append(items);
+ return box;
+}
 const equipmentCopy=(key,ru,en)=>ownerCopy('equipment',key,ru,en);
 const equipmentCopyLabel=(node,key,ru,en,options)=>
  ownerCopyLabel(node,'equipment',key,ru,en,options);
@@ -1692,6 +1759,8 @@ function renderStagePicker(focusSearch=false){
   const plan=window.PandoraEquipmentPlan;
   window.PandoraStageItemUI.render(root,{
    copyLabel:equipmentCopy,editLabel:equipmentCopyLabel,
+   bindInterfaceText:(node,key,ru,en,attribute='text',suffix='')=>
+    bindOwnerInterfaceText(node,'equipment',key,ru,en,attribute,suffix),
    canEdit:Boolean(adminEditing&&adminToken),
    record,item:equipped,slot:key,capacity,
    slotLabel:(lang==='en'?'Slot: ':'Слот: ')+gearSlotName(selectedSlot),
@@ -1758,6 +1827,17 @@ function renderStagePicker(focusSearch=false){
       '"][data-enchant-value="'+focusValue+'"]')?.focus({preventScroll:true});
    }
   });
+  if(adminEditing&&adminToken){
+   const panel=ownerInterfaceEditor('equipment',[
+    ['pickerItemClose','Закрыть настройку','Close item settings','Закрытие настроек','Close settings'],
+    ['pickerItemSettings','Настройка предмета','Item settings','Название вкладок','Tabs accessible name'],
+    ['pickerSoulSearchAria','Поиск души','Find Soul','Поиск душ','Soul search'],
+    ['pickerSoulSlotAria','Слот души','Soul slot','Название слота','Soul slot name'],
+    ['pickerSoulSlotCaption','Слот','Slot','Подпись слота','Slot caption'],
+    ['pickerEmptySoul','пусто','empty','Пустой слот','Empty slot']
+   ],'Подписи свойств и душ','Item and Soul labels');
+   if(panel)root.insertBefore(panel,root.querySelector('.stage-rich-body')||null);
+  }
   if(preserveScroll){
    const body=root.querySelector('.stage-rich-body');
    if(body)body.scrollTop=oldBodyScroll;
@@ -1772,31 +1852,37 @@ function renderStagePicker(focusSearch=false){
   return;
  }
  const top=h('div',{class:'stage-picker-head'},[
-  h('strong',{text:(lang==='en'?'Choose: ':'Выбор: ')+gearSlotName(selectedSlot)}),
-  h('button',{type:'button',text:lang==='en'?'Details →':'Свойства →',
+  bindOwnerInterfaceText(h('strong',{}),'equipment','pickerChoosePrefix',
+   'Выбор:','Choose:','text',' '+gearSlotName(selectedSlot)),
+  bindOwnerInterfaceText(h('button',{type:'button',
    disabled:!record,onclick:()=>{stageSlotView='details';renderStagePicker()}}),
-  h('button',{type:'button',text:'✕','aria-label':lang==='en'?'Close item picker':'Закрыть выбор',
-   onclick:()=>closeStagePicker()})
+   'equipment','pickerDetails','Свойства →','Details →'),
+  bindOwnerInterfaceText(h('button',{type:'button',text:'✕',
+   onclick:()=>closeStagePicker()}),'equipment','pickerClose',
+   'Закрыть выбор','Close item picker','aria-label')
  ]);
- const search=h('input',{type:'search',value:stageSlotQuery,
-  placeholder:lang==='en'?'Search by name':'Поиск по названию',
-  'aria-label':(lang==='en'?'Search equipment for ':'Поиск предмета для ')+gearSlotName(selectedSlot)});
+ const search=h('input',{type:'search',value:stageSlotQuery});
+ bindOwnerInterfaceText(search,'equipment','pickerSearchPlaceholder',
+  'Поиск по названию','Search by name','placeholder');
+ bindOwnerInterfaceText(search,'equipment','pickerSearchAria',
+  'Поиск предмета для','Search equipment for','aria-label',' '+gearSlotName(selectedSlot));
  const count=h('small',{class:'stage-picker-count'});
  const list=h('div',{class:'stage-picker-list',role:'list'});
  const more=h('button',{type:'button',class:'stage-picker-more'});
- const remove=h('button',{type:'button',text:lang==='en'?'Unequip item':'Снять предмет',
+ const remove=bindOwnerInterfaceText(h('button',{type:'button',
   disabled:!equipped&&!(selectedSlot===5&&window.PandoraUIPlanner.occupiesBodyAndLegs(equippedRecord(3))),
   onclick:()=>{
    // Use the exact same removal semantics as the rail context menu.
    if(!equipped&&selectedSlot===5&&window.PandoraUIPlanner.occupiesBodyAndLegs(equippedRecord(3)))
     unequipStageEquipmentSlot(3);
    else unequipStageEquipmentSlot(selectedSlot);
-  }});
+  }}),'equipment','pickerUnequip','Снять предмет','Unequip item');
  const bottom=h('div',{class:'stage-picker-foot'},[remove,more]);
  const isSharedPants=selectedSlot===5&&window.PandoraUIPlanner.occupiesBodyAndLegs(equippedRecord(3));
- const outfitNote=isSharedPants?h('small',{class:'stage-outfit-note',
-  text:lang==='en'?'Armor and pants are occupied by one outfit. Choosing pants removes it.':
-   'Платье занимает броню и штаны. Выбор штанов снимет его.'}):null;
+ const outfitNote=isSharedPants?bindOwnerInterfaceText(h('small',{class:'stage-outfit-note'}),
+  'equipment','pickerOutfitNote',
+  'Платье занимает броню и штаны. Выбор штанов снимет его.',
+  'Armor and pants are occupied by one outfit. Choosing pants removes it.'):null;
  const records=catalog.live&&Number.isInteger(state.race)&&Number.isInteger(state.job)?window.PandoraUIPlanner.planningEquippable(
   Object.values(catalog.equipment||{}),key,jobKeys[state.job],state.level,
   window.PandoraStudioRules.equipment)
@@ -1815,10 +1901,15 @@ function renderStagePicker(focusSearch=false){
   count.textContent=lang==='en'?
    matches.length+' matching · '+Math.min(matches.length,stageSlotShown)+' shown':
    matches.length+' подходящих · '+Math.min(matches.length,stageSlotShown)+' показано';
-  if(!catalog.live)list.append(h('p',{class:'muted',text:lang==='en'?'The catalog is still loading.':'Каталог ещё не загружен.'}));
-  else if(!Number.isInteger(state.race)||!Number.isInteger(state.job))list.append(h('p',{class:'muted',text:lang==='en'?'Choose a race and class first.':'Сначала выберите расу и профессию.'}));
-  else if(!matches.length)list.append(h('p',{class:'muted',text:lang==='en'?'No compatible items. Try another search or slot.':
-   'Нет совместимых предметов. Измени поиск или слот.'}));
+  if(!catalog.live)list.append(bindOwnerInterfaceText(h('p',{class:'muted'}),
+   'equipment','pickerLoading','Каталог ещё не загружен.','The catalog is still loading.'));
+  else if(!Number.isInteger(state.race)||!Number.isInteger(state.job))
+   list.append(bindOwnerInterfaceText(h('p',{class:'muted'}),
+    'equipment','pickerOriginFirst','Сначала выберите расу и профессию.',
+    'Choose a race and class first.'));
+  else if(!matches.length)list.append(bindOwnerInterfaceText(h('p',{class:'muted'}),
+   'equipment','pickerNoMatches','Нет совместимых предметов. Измени поиск или слот.',
+   'No compatible items. Try another search or slot.'));
   for(const rec of matches.slice(0,stageSlotShown)){
    const selected=!isSharedPants&&String(equipped?.id)===String(rec.id);
    const future=Number(rec.level)>state.level;
@@ -1876,7 +1967,24 @@ function renderStagePicker(focusSearch=false){
  more.addEventListener('click',()=>{stageSlotShown+=48;draw()});
  root.append(top);
  if(outfitNote)root.append(outfitNote);
- root.append(search,count,list,bottom);draw();
+ root.append(search);
+ if(adminEditing&&adminToken)root.append(ownerInterfaceEditor('equipment',[
+  ['pickerChoosePrefix','Выбор:','Choose:','Заголовок слота','Slot heading'],
+  ['pickerDetails','Свойства →','Details →','Переход к свойствам','Open properties'],
+  ['pickerClose','Закрыть выбор','Close item picker','Закрытие','Close picker'],
+  ['pickerSearchPlaceholder','Поиск по названию','Search by name','Поле поиска','Search placeholder'],
+  ['pickerSearchAria','Поиск предмета для','Search equipment for','Название поиска','Search accessible name'],
+  ['pickerUnequip','Снять предмет','Unequip item','Снять предмет','Unequip action'],
+  ['pickerOutfitNote','Платье занимает броню и штаны. Выбор штанов снимет его.',
+   'Armor and pants are occupied by one outfit. Choosing pants removes it.',
+   'Подсказка костюма','Outfit note'],
+  ['pickerLoading','Каталог ещё не загружен.','The catalog is still loading.','Загрузка','Loading'],
+  ['pickerOriginFirst','Сначала выберите расу и профессию.',
+   'Choose a race and class first.','Выбор расы','Choose race first'],
+  ['pickerNoMatches','Нет совместимых предметов. Измени поиск или слот.',
+   'No compatible items. Try another search or slot.','Нет предметов','No matching items']
+ ],'Подписи выбора экипировки','Equipment picker labels'));
+ root.append(count,list,bottom);draw();
  if(focusSearch)search.focus({preventScroll:true});
 }
 function attributeSnapshot(){
@@ -1949,16 +2057,30 @@ function renderOriginStats(calculated=undefined){
  root.replaceChildren();
  const list=h('div',{class:'origin-stat-list'}),entries=[];
  const tr=(ru,en)=>lang==='en'?en:ru;
+ // Keep the legacy standalone computation fixture executable without its
+ // workbench context; the real app injects the shared D1 copy binder.
+ const statCaption=(key,ru,en)=> {
+  const node=h('span',{text:tr(ru,en)+' '});
+  return typeof bindOwnerInterfaceText==='function'?
+   bindOwnerInterfaceText(node,'stats-ui',key,ru,en,'text',' '):node;
+ };
  // Saved stats remain invested-only. The input is the absolute race/class baseline + investment.
  function refresh(known=undefined){
   // Interactive handlers call refresh() without a snapshot so edits always
   // recompute; only a caller-owned, same-state initial render may reuse one.
   const snap=attributeSnapshot(),estimate=known===undefined?previewBaseStats():known;
-  summary.textContent=snap?
-   tr('Свободно: ','Available: ')+snap.remaining+' / '+snap.total+
-    tr(' · Потрачено: ',' · Spent: ')+snap.spent:
+  if(snap){
+   summary.replaceChildren(
+    statCaption('remainingPrefix','Свободно:','Available:'),
+    h('span',{text:String(snap.remaining)+' / '+String(snap.total)}),
+    h('span',{text:' · '}),
+    statCaption('spentPrefix','Потрачено:','Spent:'),
+    h('span',{text:String(snap.spent)})
+   );
+  }else summary.textContent=
    tr('Выберите расу и профессию · ','Choose a race and class · ')+
-    tr('Бюджет уровня: ','Level budget: ')+(window.PandoraAttributeProgression.budget(state.level)??'—');
+   tr('Бюджет уровня: ','Level budget: ')+
+   (window.PandoraAttributeProgression.budget(state.level)??'—');
   summary.classList.toggle('over-budget',!!snap?.overBudget);
   for(const row of entries){
    const base=snap?.base[row.i],spent=Number(state.stats[STATS[row.i]]||0);
@@ -2012,7 +2134,13 @@ function renderOriginStats(calculated=undefined){
   wrap.append(title,minus,input,plus,box);
   list.append(wrap);entries.push({i,input,result,caption,minus,plus,name});
  });
- root.append(list);refresh(calculated);
+ root.append(list);
+ if(typeof adminEditing!=='undefined'&&adminEditing&&adminToken)
+  root.append(ownerInterfaceEditor('stats-ui',[
+  ['remainingPrefix','Свободно:','Available:','Свободные очки','Available points'],
+  ['spentPrefix','Потрачено:','Spent:','Вложенные очки','Spent points']
+ ],'Подписи очков героя','Hero point labels'));
+ refresh(calculated);
 }
 function renderOriginPassives(){
  const root=$('originPassives');if(!root)return;
@@ -2438,6 +2566,24 @@ function renderPathCopyControls(){
   wrapper.querySelector('.path-tab-pencil')?.remove();
   wrapper.append(pencil);
  }
+ // These are the real user-visible Hero Path skills controls. The legacy
+ // workbench "skills" tab is not present in the site's navigation.
+ const search=$('pathSkillSearch'),filter=$('pathSkillStatus');
+ if(search)bindOwnerInterfaceText(search,'skill-ui','searchPlaceholder',
+  'Найти умение','Find skill','placeholder');
+ if(filter)bindOwnerInterfaceText(filter,'skill-ui','filterAria',
+  'Фильтр навыков','Skill filter','aria-label');
+ $('ownerSkillSearchCopy')?.remove();
+ if(editing&&!$('pathSkillsPage')?.hidden){
+  const owner=ownerInterfaceEditor('skill-ui',[
+   ['searchPlaceholder','Найти умение','Find skill','Поле поиска','Search placeholder'],
+   ['filterAria','Фильтр навыков','Skill filter','Фильтр умений','Skill filter']
+  ],'Подписи умений','Skill labels');
+  if(owner){
+   owner.id='ownerSkillSearchCopy';
+   document.querySelector('#pathSkillsPage .path-skills-filter')?.after(owner);
+  }
+ }
 }
 function renderPathPages(){
  const grow=heroPathPage==='growth';
@@ -2724,6 +2870,11 @@ function renderWiki(root){
   if(reduced)updateListTop();
  });
  browse.addEventListener('scroll',updateListTop,{passive:true});
+ bindOwnerInterfaceText(listTop,'wiki-ui','backTop',
+  '↑ В начало списка','↑ Back to top');
+ bindOwnerInterfaceText(listTop,'wiki-ui','backTopAria',
+  'Прокрутить список энциклопедии к началу',
+  'Scroll the encyclopedia list to the beginning','aria-label');
  listPanel.append(browse,listTop);
  const controls=h('div',{class:'wiki-controls'}),categories=h('div',{class:'wiki-categories'});
  const wt=(ru,en)=>lang==='en'?en:ru;
@@ -2823,6 +2974,10 @@ function renderWiki(root){
  }
  const search=h('input',{type:'search',value:wikiSearch,placeholder:lang==='en'?'Search by name':'Поиск по названию','aria-label':lang==='en'?'Search encyclopedia':'Поиск по энциклопедии',name:'pandora-studio-encyclopedia-filter',autocomplete:'off','data-lpignore':'true','data-1p-ignore':'true','data-bwignore':'true',spellcheck:'false'});
  guardEncyclopediaSearch(search);
+ bindOwnerInterfaceText(search,'wiki-ui','searchPlaceholder',
+  'Поиск по названию','Search by name','placeholder');
+ bindOwnerInterfaceText(search,'wiki-ui','searchAria',
+  'Поиск по энциклопедии','Search encyclopedia','aria-label');
  controls.append(categories,search);
  // Add owner-authored monster cards without asserting a nonexistent OS numeric ID.
  // Future-map reports can be linked to existing OR newly created encyclopedia cards.
@@ -3081,8 +3236,10 @@ function renderWiki(root){
  }
  const view=h('div',{class:'wiki-equipment-view',role:'group',
   'aria-label':wt('Вид Энциклопедии','Encyclopedia view')});
- for(const [id,ru,en]of[['list','☰ Список','☰ List'],['grid','▦ Сетка','▦ Grid']])
-  view.append(h('button',{type:'button',text:wt(ru,en),
+ bindOwnerInterfaceText(view,'wiki-ui','viewAria',
+  'Вид Энциклопедии','Encyclopedia view','aria-label');
+ for(const [id,ru,en]of[['list','☰ Список','☰ List'],['grid','▦ Сетка','▦ Grid']]){
+  const button=h('button',{type:'button',text:wt(ru,en),
    'data-layout':id,'aria-pressed':String(wikiItemLayout===id),
    class:wikiItemLayout===id?'chosen':'',
    onclick:()=>{
@@ -3094,8 +3251,21 @@ function renderWiki(root){
     }
     browse.classList.toggle('wiki-gear-grid',id==='grid');
     saveView();
-   }}));
+   }});
+  bindOwnerInterfaceText(button,'wiki-ui',id==='list'?'viewList':'viewGrid',ru,en);
+  view.append(button);
+ }
  controls.append(view);
+ if(adminEditing&&adminToken)controls.append(ownerInterfaceEditor('wiki-ui',[
+  ['searchPlaceholder','Поиск по названию','Search by name','Подсказка поиска','Search placeholder'],
+  ['searchAria','Поиск по энциклопедии','Search encyclopedia','Название поиска','Search accessible name'],
+  ['backTop','↑ В начало списка','↑ Back to top','В начало','Back to top'],
+  ['backTopAria','Прокрутить список энциклопедии к началу',
+   'Scroll the encyclopedia list to the beginning','Описание перехода','Top-button description'],
+  ['viewAria','Вид Энциклопедии','Encyclopedia view','Переключатель вида','View selector'],
+  ['viewList','☰ Список','☰ List','Режим списка','List mode'],
+  ['viewGrid','▦ Сетка','▦ Grid','Режим сетки','Grid mode']
+ ],'Подписи энциклопедии','Encyclopedia labels'));
  const layout=h('div',{class:'wiki-layout'});
  layout.append(listPanel,detail);root.append(controls,layout);
  if(wikiSelection.type==='honor'){
@@ -6087,9 +6257,11 @@ function renderCharacter(root){
 // Legacy duplicate skill editor retired; all changes happen in the live Hero Path.
 function renderSkills(root){
  root.append(h('p',{class:'muted',text:lang==='en'?
-  'View skills and their requirements in Hero Path.':'Просматривайте умения и требования в «Пути героя».'}));
- root.append(h('button',{class:'button-action',text:lang==='en'?'Open skills':'Открыть умения',onclick:()=>{
-  closeWorkbench();heroPathPage='skills';renderPathPages();saveView();
+  'View skills and their requirements in Hero Path.':
+  'Просматривайте умения и требования в «Пути героя».'}));
+ root.append(h('button',{class:'button-action',
+  text:lang==='en'?'Open skills':'Открыть умения',onclick:()=>{
+   closeWorkbench();heroPathPage='skills';renderPathPages();saveView();
  }}));
 }
 function itemName(r){return window.PandoraItemPresentation.displayName(
@@ -6098,14 +6270,18 @@ function renderStats(root){
  const tr=(ru,en)=>lang==='en'?en:ru;
  const statName=i=>lang==='en'?ORIGIN_STAT_LABELS[i].nameEn:ORIGIN_STAT_LABELS[i].name;
  const icons=['♥','⚔','➶','✥','✦','❂'];
- const overview=h('div',{class:'stat-editor-overview'}),header=h('h3',{text:tr('Характеристики','Attributes')});
- const points=h('div',{class:'stat-total'},[h('strong',{text:'—'}),h('span',{text:tr('Свободные очки','Available points')})]);
+ const overview=h('div',{class:'stat-editor-overview'}),
+  header=h('h3',{text:tr('Характеристики','Attributes')});
+ const points=h('div',{class:'stat-total'},[
+  h('strong',{text:'—'}),h('span',{text:tr('Свободные очки','Available points')})
+ ]);
  overview.append(header,points);root.append(overview);
  const grid=h('div',{class:'stat-grid'}),controls=[];
  function refresh(){
   const s=attributeSnapshot();
   points.querySelector('strong').textContent=s?String(s.remaining):'—';
-  points.querySelector('span').textContent=s?tr('Свободно из ','Available out of ')+s.total:tr('Свободные очки','Available points');
+  points.querySelector('span').textContent=s?tr('Свободно из ','Available out of ')+s.total:
+   tr('Свободные очки','Available points');
   overview.classList.toggle('over-budget',!!s?.overBudget);
   const estimate=previewBaseStats();
   for(const v of controls){
@@ -7862,7 +8038,7 @@ function refreshVisibleOriginCopy(recordKey){
 function refreshVisibleOwnerCopy(recordKey){
  const key=String(recordKey).replace(/^guideedit\.book\./,'');
  if(key.startsWith('owner-dock.')){refreshOwnerUI();return}
-  if(!/^(equipment|path|catalog-sync|honor-view|owner-history|owner-dialog)\./.test(key))return;
+  if(!/^(equipment|path|catalog-sync|honor-view|owner-history|owner-dialog|wiki-ui|skill-ui|stats-ui)\./.test(key))return;
  for(const node of document.querySelectorAll('[data-owner-copy-section][data-owner-copy-id]')){
   const {ownerCopySection:section,ownerCopyId:id,ownerCopyRu:ru,ownerCopyEn:en}=node.dataset;
   if(ownerCopyKey(section,id)!==key||node.querySelector('.wiki-inline-input'))continue;
@@ -7893,6 +8069,39 @@ function refreshVisibleOwnerCopy(recordKey){
   if(section==='catalog-sync'&&id.startsWith('hint'))
    for(const target of document.querySelectorAll('[data-guide-owner-key]'))
     if(target.dataset.guideOwnerKey===id)target.dataset.guideHint=value;
+ }
+ // Attribute/text copy changes patch the existing mounted control only:
+ // never replace an active search field, picker, selection or character.
+ for(const node of document.querySelectorAll('[data-owner-interface-bindings]')){
+  if(node.querySelector?.('.wiki-inline-input'))continue;
+  let bindings={};
+  try{bindings=JSON.parse(node.dataset.ownerInterfaceBindings||'{}')}catch{}
+  for(const [attr,field] of Object.entries(bindings)){
+   const {section,id,ru,en,suffix}={
+    section:field.section,id:field.key,ru:field.ru,en:field.en,suffix:field.suffix};
+   if(ownerCopyKey(section,id)!==key)continue;
+   const value=ownerCopy(section,id,ru,en)+(suffix||'');
+   if(attr==='text')node.textContent=value;
+   else if(['placeholder','aria-label','title'].includes(attr))
+    node.setAttribute(attr,value);
+  }
+ }
+ // The editable word "empty" is separate from dynamic Soul slot IDs.
+ // Reconstruct only that aria suffix after a successful owner CAS or Undo.
+ if(key==='equipment.picker-empty-soul'){
+  for(const button of document.querySelectorAll('#stagePicker [data-soul-empty-slot]')){
+   const number=button.dataset.soulEmptySlot;
+   const suffix=' '+number+': '+ownerCopy('equipment','pickerEmptySoul','пусто','empty');
+   button.dataset.ownerInterfaceSuffix=suffix;
+   let bindings={};
+   try{bindings=JSON.parse(button.dataset.ownerInterfaceBindings||'{}')}catch{}
+   if(bindings['aria-label']){
+    bindings['aria-label'].suffix=suffix;
+    button.dataset.ownerInterfaceBindings=JSON.stringify(bindings);
+   }
+   button.setAttribute('aria-label',
+    ownerCopy('equipment','pickerSoulSlotAria','Слот души','Soul slot')+suffix);
+  }
  }
  if(key==='equipment.soul-search'){
   // A D1 save or Undo must update the live placeholder, not reset the query.
@@ -7949,7 +8158,7 @@ async function undoOwnerEdit(){
       window.PandoraAccountUI?.refresh?.();
      // UI copy does not affect catalogs or builds; preserve active inputs.
      saveView();
-    }else if(/^guideedit\.book\.(equipment|path|catalog-sync|honor-view|owner-dock|owner-history|owner-dialog)\./.test(last.key)){
+    }else if(/^guideedit\.book\.(equipment|path|catalog-sync|honor-view|owner-dock|owner-history|owner-dialog|wiki-ui|skill-ui|stats-ui)\./.test(last.key)){
      refreshVisibleOwnerCopy(last.key);saveView();
     }else await refreshOwnerCatalog();
   }catch(e){alert('Не удалось отменить изменение: '+e.message)}
@@ -8299,7 +8508,8 @@ async function saveGuidePatchNow(key,fields){
   if(key.startsWith('book.equipment.')||key.startsWith('book.path.')||
      key.startsWith('book.catalog-sync.')||key.startsWith('book.honor-view.')||
      key.startsWith('book.owner-dock.')||key.startsWith('book.owner-history.')||
-     key.startsWith('book.owner-dialog.'))
+     key.startsWith('book.owner-dialog.')||key.startsWith('book.wiki-ui.')||
+     key.startsWith('book.skill-ui.')||key.startsWith('book.stats-ui.'))
    refreshVisibleOwnerCopy('guideedit.'+key);
   if(activeTab==='wiki'&&wikiSelection.type==='honor'&&
      !key.startsWith('book.catalog-sync.')){

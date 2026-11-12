@@ -589,3 +589,32 @@
  display:block;box-sizing:border-box;width:100%;min-width:0;max-width:100%;
  min-height:36px;white-space:pre-wrap;overflow-wrap:anywhere}
 .shared-receiver-dialog .shared-unsaved-warning-row{margin-top:2px}
+
+
+/* Reusable owner-only editorial control for the picker, encyclopedia and
+   skills/stats workbench. Never change the size or behavior of player actions. */
+.studio-owner-interface-editor{margin:8px 0 10px;min-width:0;max-width:100%;
+ border:1px solid #886942;border-radius:6px;
+ background:linear-gradient(135deg,#302318,#1c1510);
+ color:#ebd3ab;font:500 11px/1.45 Manrope,Arial,sans-serif}
+.studio-owner-interface-editor>summary{padding:9px 12px;cursor:pointer;
+ font-weight:700;color:#f2d19f}
+.studio-owner-interface-editor>summary:focus-visible{outline:2px solid #e8b979;
+ outline-offset:2px}
+.studio-owner-interface-fields{padding:3px 9px 10px;display:grid;gap:6px}
+.studio-owner-interface-row{display:grid;grid-template-columns:minmax(85px,110px) minmax(0,1fr) 24px;
+ gap:7px;align-items:center;min-width:0;padding:7px 9px;
+ border:1px solid #6f5235;border-radius:4px;background:#231a13}
+.studio-owner-interface-name{color:#d4b389;overflow-wrap:anywhere}
+.studio-owner-interface-value{min-width:0;white-space:normal;overflow-wrap:anywhere;
+ color:#efdac0}
+.studio-owner-interface-pencil{margin:0;justify-self:end}
+.studio-owner-interface-row:has([data-owner-text-field]){grid-template-columns:minmax(80px,100px) minmax(0,1fr) 24px;
+ align-items:start}
+.studio-owner-interface-row [contenteditable]{max-width:100%;min-width:0;
+ overflow-wrap:anywhere;white-space:pre-wrap}
+@media(max-width:560px){
+ .studio-owner-interface-fields{padding:3px 6px 7px}
+ .studio-owner-interface-row{grid-template-columns:minmax(65px,82px) minmax(0,1fr) 22px;
+  gap:5px;padding:6px}
+}

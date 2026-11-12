@@ -307,12 +307,21 @@ function render(root,api){
  const hasSouls=plan.canSocket(slot,record,cap);
  if(mode==='gems'||mode==='souls'&&!hasSouls){api.changeMode('details');return}
  const english=document.documentElement?.lang==='en',tr=(ru,en)=>english?en:ru;
+ const copy=(key,ru,en)=>api.copyLabel?.(key,ru,en)||tr(ru,en);
+ // Bind only immutable user-facing prefixes; numeric slots, Soul names and
+ // selected state stay outside the D1 editorial value.
+ const bind=(node,key,ru,en,attribute='text',suffix='')=>{
+  if(api.bindInterfaceText)return api.bindInterfaceText(node,key,ru,en,attribute,suffix);
+  const value=copy(key,ru,en)+suffix;
+  if(attribute==='text')node.textContent=value;
+  else node.setAttribute(attribute,value);
+  return node;
+ };
  const head=el('div',{class:'stage-picker-head'},[
   el('strong',{text:api.slotLabel||tr('Слот: ','Slot: ')+slot}),
-  el('button',{type:'button',text:'✕',onclick:api.close,
-   'aria-label':tr('Закрыть настройку','Close item settings')})
+  bind(el('button',{type:'button',text:'✕',onclick:api.close}),
+   'pickerItemClose','Закрыть настройку','Close item settings','aria-label')
  ]);root.append(head);
- const copy=(key,ru,en)=>api.copyLabel?.(key,ru,en)||tr(ru,en);
  const editable=(node,key,ru,en,options)=>{api.editLabel?.(node,key,ru,en,options);return node};
  const labeledAction=(button,key,ru,en,prefix='')=>{
   if(!api.canEdit)return button;
@@ -335,8 +344,8 @@ function render(root,api){
   wrapper.append(button,pencil);
   return wrapper;
  };
- const tabs=el('nav',{class:'stage-rich-tabs'+(hasSouls?' has-souls':' no-souls'),
-  role:'group','aria-label':tr('Настройка предмета','Item settings')});
+ const tabs=bind(el('nav',{class:'stage-rich-tabs'+(hasSouls?' has-souls':' no-souls'),
+  role:'group'}),'pickerItemSettings','Настройка предмета','Item settings','aria-label');
  const sections=[
   ['choose',tr('Выбор','Choose')],
   ['details',tr('Свойства','Properties')]
@@ -443,12 +452,15 @@ function render(root,api){
   for(let i=0;i<cap;i++){
    const value=souls[i],soul=value&&api.catalog.souls?.[String(value.id)],selected=i===api.selectedSocket;
    const button=el('button',{type:'button',class:selected?'selected':'','aria-pressed':String(selected),
-    'aria-label':tr('Слот души ','Soul slot ')+(i+1)+': '+(soul?.name||tr('пусто','empty')),
     'data-socket-index':String(i),onclick:()=>api.openSocket(i)});
+   bind(button,'pickerSoulSlotAria','Слот души','Soul slot','aria-label',
+    ' '+(i+1)+': '+(soul?.name||copy('pickerEmptySoul','пусто','empty')));
+   if(!soul)button.dataset.soulEmptySlot=String(i+1);
    const src=soul&&icons(soul,'soul');
    if(src){const image=el('img',{src,alt:''});image.onerror=()=>image.replaceWith(el('span',{text:'✦'}));button.append(image)}
    else button.append(el('span',{class:'stage-soul-slot-empty',text:soul?'✦':'+'}));
-   button.append(el('small',{text:tr('Слот ','Slot ')+(i+1)}));
+   button.append(bind(el('small',{}),'pickerSoulSlotCaption',
+    'Слот','Slot','text',' '+(i+1)));
    row.append(button);attachPreview(button,soul,icons,'soul');
   }
   body.append(editable(el('h4',{
@@ -456,9 +468,9 @@ function render(root,api){
    'soulSlotsHeading','Слоты душ','Soul slots'),row);
   const searchRu='Поиск совместимой души',searchEn='Find a compatible Soul';
   const query=el('input',{type:'search',placeholder:copy('soulSearch',searchRu,searchEn),
-   'aria-label':tr('Поиск души','Find Soul'),
    'data-soul-query':'1','data-equipment-copy-placeholder':'soulSearch',
     value:api.soulQuery||''});
+  bind(query,'pickerSoulSearchAria','Поиск души','Find Soul','aria-label');
   const list=el('div',{class:'stage-rich-list'});
   const draw=()=>{
    list.replaceChildren();const needle=String(query.value||'').trim().toLocaleLowerCase('ru');

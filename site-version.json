@@ -1,4 +1,4 @@
 {
-  "release": "2026.11.12.662",
-  "notes": "Editable search field and empty-state RU/EN labels with preserved query and live D1 updates"
+  "release": "2026.11.12.663",
+  "notes": "27 RU/EN D1-editable interface strings across equipment, Wiki, skills and stats with no-remount owner editors"
 }

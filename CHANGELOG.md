@@ -1,5 +1,16 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.663.0 — 2026.11.12.663 · Bulk RU/EN D1 copy in four workbench families
+
+- **27 semantic RU/EN editorial fields in one release**: Equipment item picker (10); Item settings and Soul search/slots (6); Encyclopedia search, return-to-top and list/grid view (7); Hero Path skill-search placeholder/filter accessible name (2); visible Origin stats remaining/spent-point prefixes (2).
+- One shared, compact owner-only inline editor is reused across all four screen families; pencils open the existing editable text with CAS, autosave-on-blur, Esc cancellation and Undo. Each field stores only RU/EN authored copy under the existing `guideedit.book.*` namespace; shipped defaults remain the offline fallback.
+- Live copy refresh updates mounted captions, search placeholders, accessible names, button text and bounded dynamic prefixes without rebuilding the current input, item picker or skill screen. Soul names, player query, character equipment/attributes, game IDs and real-time counts remain external to D1 editorial copy.
+- Responsive editor rows, plain-text display, and independent accessibility labels for the Wiki and equipment searches, Soul slots and picker controls. No editable action appears to ordinary users.
+- Node data contracts and a real Chromium mock-D1 walkthrough of Encyclopedia, Skills, equipment chooser and item settings. Full CI and live read-only Pages/Worker/D1 readiness are required before claiming publication.
+- No game math, Worker route, D1 schema, authentication, user builds or scheduled workflow changes.
+
+
+
 ## 0.662.0 — 2026.11.12.662 · Owner RU/EN edits for search and empty states
 
 - Four existing semantic RU/EN D1 keys for the saved-build search field label, search placeholder, no matches and empty library are exposed via the existing compact owner-only inline copy editor.
