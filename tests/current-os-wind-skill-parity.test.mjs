@@ -30,13 +30,13 @@ test('Remaked Wind Assist floor(15+15% base Dodge) stacks once for Ascetic',()=>
  assert.equal(active.dodge.known-before.dodge.known,36);
  assert.equal(active.attack.known,before.attack.known);
 });
-test('Wind Blessing gives Archer +40 movement and does not affect other classes',()=>{
+test('Wind Blessing affects recipients of any class and any level',()=>{
  const before=preview('ARCHER'),active=preview('ARCHER',{combatWindBlessing:true});
  assert.equal(active.supportSkills.windBlessing,true);
  assert.equal(active.movementSpeed.active,40);
  assert.equal(active.movementSpeed.known-before.movementSpeed.known,40);
- assert.equal(preview('WIZARD',{combatWindBlessing:true}).supportSkills.windBlessing,false);
- assert.equal(preview('ARCHER',{combatWindBlessing:true},skills,27).movementSpeed.active,0);
+ assert.equal(preview('WIZARD',{combatWindBlessing:true}).supportSkills.windBlessing,true);
+ assert.equal(preview('ARCHER',{combatWindBlessing:true},skills,27).movementSpeed.active,40);
 });
 test('missing source and corrupted EP cannot create unsupported wind buffs',()=>{
  const corrupt=JSON.parse(JSON.stringify(skills));
@@ -63,7 +63,8 @@ test('book controls are built from both actual skill records and saved choices',
 test('Wind skill source fails closed for unseen prerequisites and non-learnable skills',()=>{
  const chosen={combatWindAssist:true},modified=JSON.parse(JSON.stringify(skills));
  modified[260006001].reqs=[{branch:'exorcism',amount:26}];
- assert.equal(preview('ASCETIC',chosen,modified).supportSkills.windAssist,false);
+ assert.equal(preview('ASCETIC',chosen,modified).supportSkills.windAssist,true,
+  'Receiving an ally spell never requires the caster mastery');
  const stats={vit:40,str:50,agi:70,dex:35,spi:30,int:50};
  const allowed=C.combatPreview({stats,level:45,jobKey:'ASCETIC',
   combatBuffs:chosen,skillCatalog:modified,branchMasteries:{exorcism:26}});
