@@ -822,6 +822,21 @@ function buffsPage(body,options){
    honorSelect.parentNode?.append(hint);
   }
  }
+ // Source-gated informational magnitudes. These never activate a buff.
+ const priestValues=modifiers?.priestCast||{};
+ const osVector=(id,ep,vector,secondary=[0,0,0,0])=>{
+  const record=gameTerms.skills?.[String(id)];
+  const effects=(record?.funcs||[]).filter(f=>f?.ep===ep&&f.dir==='TARGET');
+  return record?.id===id&&effects.length===1&&
+   Array.isArray(effects[0].fv1)&&effects[0].fv1.length===4&&
+   effects[0].fv1.every((n,i)=>n===vector[i])&&
+   Array.isArray(effects[0].fv2)&&effects[0].fv2.length===4&&
+   effects[0].fv2.every((n,i)=>n===secondary[i]);
+ };
+ const inspirationKnown=osVector(320006001,'EP_SKILL_DELAY_FIN',[0,0,0,50]);
+ const naturalKnown=osVector(330005001,'EP_HEAL_MANA_REGENERATOR',[0,10,0,0],[0,0,0,2]);
+ const restKnown=osVector(320002001,'EP_HEAL_TIME_SCALE',[0,0,0,90]);
+ const despairKnown=osVector(100058001,'EP_DAMAGERATE_SCALE',[0,0,35,40]);
  const priest=section('Усиления жреца','Priest buffs');
  toggle(priest,english?'Use external priest':'Учитывать усиления другого жреца','priestEnabled');
  const priestFields=make('div',{class:'stage-priest-fields'});
@@ -848,7 +863,7 @@ function buffsPage(body,options){
  const party=section('Усиления от союзников','Ally buffs','party');
  const lifeSign=remakedBuffRows.find(row=>row.id===320005001);
  toggle(party,'Знак жизни','lifeSign',true,true,lifeSign?{
-  name:lifeSign.name,nameEn:lifeSign.nameEn,
+  id:320005001,name:lifeSign.name,nameEn:lifeSign.nameEn,
   desc:lifeSign.description,
   descEn:gameTerms.englishSkills?.['320005001']?.d||lifeSign.description,
   icon:skillIconForId(320005001),
@@ -860,21 +875,22 @@ function buffsPage(body,options){
   [320008001,'priestLapisMedio',12]]){
   const row=remakedBuffRows.find(item=>item.id===id);
   const benefit=id===320007001?'gratia':id===320008001?'lapisMedio':'encouragement';
-  const amount=id===320007001?modifiers?.priestApplied?.gratiaPreview:
-   modifiers?.legacyBuffs?.[benefit]?.value;
-  const summary=Number.isFinite(amount)?
+  const amount=priestValues?.[benefit];
+  const summary=Number.isFinite(amount)?(
+   id===320012001?
+    (english?'STR +':'СИЛ +')+amount+' · '+
+    (english?'AGI +':'ПРВ +')+amount+' · '+
+    (english?'INT +':'ИНТ +')+amount:
    (id===320007001?(english?'Attack speed +':'Скорость атаки +'):
-    id===320008001?(english?'Defense +':'Защита +'):
-     (english?'STR, AGI and INT +':'СИЛ, ПРВ и ИНТ +'))+amount:
-   (english?'Depends on priest parameters':'Зависит от параметров жреца');
+    (english?'Defense +':'Защита +'))+amount
+  ):(english?'Exact amount not confirmed by OS':'Точное значение не подтверждено данными OS');
   toggle(priest,row?.name||key,key,false,
    buffs.priestEnabled===true&&Number(buffs.priestBlessing)>=required,
-   {name:row?.name||key,nameEn:row?.nameEn||key,
+   {id,name:row?.name||key,nameEn:row?.nameEn||key,
     icon:skillIconForId(id),desc:row?.description,
     descEn:gameTerms.englishSkills?.[String(id)]?.d||row?.description,
     externalPriest:true,
-    summary:(english?gameTerms.englishSkills?.[String(id)]?.d:row?.description)||
-     (english?row?.nameEn:row?.name)||''});
+    summary});
  }
  for(const [key,label] of [['combatWarCry','Боевой клич'],
   ['combatWindAssist','Помощь ветра'],['combatWindBlessing','Благословение ветра']])
@@ -883,8 +899,8 @@ function buffsPage(body,options){
  // already represented by Life Sign, priest and elemental resistance tools
  // deliberately stay in their original sections, without duplicate inputs.
  const readableBuffEffects={
-  100058001:['Увеличивает атаку и получаемый урон до следующего удара.',
-    'Increases damage dealt and taken until the next hit.'],
+  100058001:['Атака: базовый коэффициент +40%, коэффициент масштабирования мастерства 35. Итоговая прибавка зависит от билда; получаемый урон +100%.',
+    'Attack: base coefficient +40%, mastery scaling coefficient 35. Total depends on build; incoming damage +100%.'],
   213702001:['Ускоряет стрельбу из арбалета на 30%.','Crossbow attack speed +30%.'],
   213605001:['Повышает атаку, точность и дальность стрельбы. Во время действия нельзя двигаться.',
     'Increases attack, accuracy and firing range; movement is disabled.'],
@@ -895,12 +911,12 @@ function buffsPage(body,options){
     'Adds dark aura damage to attacks but also damages the wielder.'],
   168052001:['Уклонение −50%. Улучшает защиту от критических ударов.',
     'Evasion −50%; provides protection against critical hits.'],
-  320002001:['Скорость восстановления ОМ союзников +90%.',
-    'Allies’ MP recovery speed +90%.'],
-  320006001:['Ускоряет применение умений союзниками.',
-    'Speeds up allies’ skill execution.'],
-  330005001:['Периодически восстанавливает ОМ цели.',
-    'Periodically restores MP to the target.'],
+  320002001:['Скорость восстановления ОМ союзников +90 инд.',
+    'Allies’ MP recovery speed +90 idx.'],
+  320006001:['Время каста: 50% от обычного (−50%).',
+    'Casting time: 50% of normal (−50%).'],
+  330005001:['+5 ОМ каждые 2 секунды при применении.',
+    '+5 MP every 2 seconds when applied.'],
   340003001:['Защищает союзников от небольших попаданий. Сила защиты зависит от жреца.',
     'Negates small incoming hits to allies; potency depends on the priest.'],
   320003001:['Уменьшает получаемый группой урон. Сила зависит от Благословения жреца.',
@@ -920,7 +936,18 @@ function buffsPage(body,options){
   100055001:['Точность +20 и дополнительно +15%.',
     'Accuracy +20 plus +15%.']
  };
- const buffEffectText=id=>readableBuffEffects[id]?.[english?1:0]||'';
+ const buffEffectText=id=>{
+  if(id===320006001&&!inspirationKnown)return english?
+   'Casting time not verified in current OS.':
+   'Время применения не подтверждено текущими данными OS.';
+  if(id===330005001&&!naturalKnown)return english?
+   'MP recovery magnitude not verified in OS.':
+   'Количество ОМ не подтверждено текущими данными OS.';
+  if(id===100058001&&!despairKnown)return english?
+   'Attack magnitude not verified in OS.':
+   'Прибавка атаки не подтверждена текущими данными OS.';
+  return readableBuffEffects[id]?.[english?1:0]||'';
+ };
  for(const row of remakedBuffRows){
   if(row.existing||!row.name)continue;
   // Blessing- and Hymn-dependent spells are received from another priest.
@@ -939,13 +966,15 @@ function buffsPage(body,options){
   toggle(target,english?row.nameEn:row.name,'legacySkill:'+row.id,false,
    row.available&&priestReady,{
     name:row.id===330004001?'Божественное благословение':row.name,
-    nameEn:row.nameEn,icon:skillIconForId(row.id),
+    id:row.id,nameEn:row.nameEn,icon:skillIconForId(row.id),
     desc:row.description,descEn:description||row.description,
     reason:row.reason,reasonEn:row.reasonEn,
     externalPriest:externalPriestSkill,
     pending:!row.counted,
     summary:row.counted?({
      100055001:english?'Accuracy +20 and +15%':'Точность +20 и +15%',
+     320002001:restKnown?(english?'MP recovery speed +90 idx':'Скорость восстановления ОМ +90 инд.'):
+      (english?'Recovery speed not confirmed':'Скорость восстановления не подтверждена'),
      330004001:english?'Magic resistance +25':'Сопротивление магии +25',
      142051001:english?'Critical chance +10%':'Шанс крита +10%',
      260005001:english?'Evasion +10':'Уклонение +10',
