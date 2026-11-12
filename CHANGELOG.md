@@ -1,5 +1,15 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.662.0 — 2026.11.12.662 · Owner RU/EN edits for search and empty states
+
+- Four existing semantic RU/EN D1 keys for the saved-build search field label, search placeholder, no matches and empty library are exposed via the existing compact owner-only inline copy editor.
+- The live input, active query, filtering, caret, user-scoped saved builds and scrolling remain untouched while CAS writes or Undo update only the displayed text/attributes.
+- Dynamic no-results and no-saved-builds notices now have explicit markers for exact in-place refresh; no duplicate native browser tooltips or additional player-facing controls.
+- Node tests verify the copy registry and that the refresh path cannot change the search query; real Chromium with six simulated builds checks D1 save, RU/EN independence, no-match filter and 390px viewport.
+- No formula changes, account migration, Worker/D1 schema updates or production D1 writes. Release, assets, OG/Twitter preview and footer synchronized.
+
+
+
 ## 0.661.0 — 2026.11.12.661 · D1-editable four-card action labels
 
 - Open, Overwrite, Share and Delete have four distinct RU/EN `libraryCard*` content keys. The existing decorative icon spans remain separate; button labels are plain readable text with no duplicated symbols.
