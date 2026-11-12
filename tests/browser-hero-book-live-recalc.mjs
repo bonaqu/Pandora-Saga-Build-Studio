@@ -119,6 +119,9 @@ export async function runHeroBookLiveRecalcSmoke(browser,base){
   // D1 override has been saved. No production owner session is needed.
   await page.locator('#locale [data-locale="en"]').click();
   await page.locator('#stageAttributes [data-book-page="buffs"]').click();
+  const guild=page.locator('#stageBookPanel [data-book-section="guild"]');
+  assert.equal(await guild.getAttribute('open'),null,'Guild starts closed');
+  await guild.locator('summary').click();
   const authored=key=>page.locator('#stageBookPanel [data-guide-key="'+key+'"]');
   for(const [key,text] of [
    ['buffs.section.0','Priest buffs'],['buffs.guild','Guild'],

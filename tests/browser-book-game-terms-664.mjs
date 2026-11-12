@@ -96,7 +96,25 @@ export async function runHeroBookGameNames664Smoke(browser,base){
    assert.ok(ru.includes(name),'Hero Book must use exact current OS skill name '+name);
   assert.ok(!ru.includes('Невероятная сила'),
    'Passive on-hit skills must not occupy the castable Skill Effects inspector');
-  const required=[310001001,310004001,310021001,310022001,310023001,340001001];
+  // Only Healing opens by default. The archived song subchapter is closed,
+  // so its lazy-loaded icon does not load until the reader expands it.
+  const songs=page.locator('#book-source-qa .stage-song-skills');
+  if(await songs.count())await songs.locator('summary').click();
+  const required=[310001001,310004001,310021001,310022001,310023001];
+  const songIcon=page.locator('#book-source-qa .stage-song-skills .stage-effect-skill-label img[src$="skill_340001001.webp"]');
+  assert.equal(await songIcon.count(),1,
+   'The source song icon stays present even when its subchapter is collapsed');
+  // The new collapsed subchapters use lazy-loaded artwork; force each source
+  // icon into the scrollport before checking that the original sprite loaded.
+  for(const id of required){
+   const img=page.locator('#book-source-qa .stage-effect-skill-label img[src$="skill_'+id+'.webp"]').first();
+   await img.scrollIntoViewIfNeeded({timeout:12000});
+  }
+  // Explicitly expanding a chapter is an intentional user action; ask the
+  // browser to load its original art rather than waiting on offscreen lazy
+  // images after subsequent scroll restoration.
+  await page.locator('#book-source-qa .stage-effect-skill-label img')
+   .evaluateAll(images=>images.forEach(img=>{img.loading='eager';}));
   await page.waitForFunction(ids=>ids.every(id=>{
    const img=document.querySelector('#book-source-qa .stage-effect-skill-label img[src$="skill_'+id+'.webp"]');
    return img?.complete&&img.naturalWidth>0;

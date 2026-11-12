@@ -39,6 +39,9 @@ export async function runOriginSharedSnapshotSmoke(browser,base){
   const count=()=>page.evaluate(()=>window.__originBaseCalls);
   const clear=()=>page.evaluate(()=>{window.__originBaseCalls=0});
   await book.locator('[data-book-page="buffs"]').click();
+  const guild=page.locator('#stageBookPanel [data-book-section="guild"]');
+  assert.equal(await guild.getAttribute('open'),null,'Guild starts collapsed');
+  await guild.locator('summary').click();
   await clear();
   await page.locator('#stageBookPanel [data-book-setting="guildAll"]').selectOption('1');
   assert.equal(await count(),1,
