@@ -63,7 +63,10 @@ export async function runHeroBookGameNames664Smoke(browser,base){
      available:false}]},
     legacyBuffs:{gratia:{value:5},lapisMedio:{value:10},
      enchantEnhance:{value:4},enchantMagic:{value:3}},
-    resistances:{status:{stun:15}}
+    resistances:{status:{stun:15}},
+    procPreview:{entries:[{code:'EP_ONHIT_SKILL_EXEC',
+     source:'Тестовый предмет',trigger:'При ударе',triggerEn:'On hit',
+     skillId:310004001,skillName:'Лечение',skillNameEn:'Heal',chance:15}]}
    };
    window.PandoraStageAttributes.render(host,{
     page:chapter,modifiers:calc,gameTerms:terms,
@@ -133,6 +136,21 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   assert.ok(defenseRu.includes('15'),'Defense numeric effect is unchanged');
   const defenseEn=await render({lang:'en',chapter:'defense'});
   assert.ok(defenseEn.includes('Stun'),'Defense bilingual label remains independent');
+  await render({lang:'ru',chapter:'attack'});
+  const procPanel=page.locator('#book-source-qa .stage-source-events');
+  assert.equal(await procPanel.count(),1);
+  await procPanel.locator('summary').click();
+  const triggered=procPanel.locator('[data-source-skill-id="310004001"]');
+  assert.equal(await triggered.count(),1,
+   'Item/Soul effect names must attach their canonical skill source ID');
+  assert.match(await triggered.innerText(),/Лечение/);
+  await triggered.hover();
+  const rich=page.locator('#path-skill-hover-tooltip');
+  await rich.waitFor({state:'visible',timeout:5000});
+  assert.match(await rich.locator('strong').first().innerText(),/Лечение/);
+  assert.ok(await rich.locator('img').count()>0,
+   'Item/Soul triggered skill tooltip must use the real Path icon');
+  await procPanel.locator('summary').hover();
   assert.deepEqual(errors,[]);
   console.log('Chromium Book 664: OS/Remaked RU+EN skills, Hymn/Песнопения, Адепт, buffs and defense');
  }finally{await context.close()}
