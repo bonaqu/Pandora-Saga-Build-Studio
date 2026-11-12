@@ -483,6 +483,10 @@ async function main(){
  assert.equal(await page.locator('#stageBookPanel .stage-honor-term').innerText(),'passive skill');
  assert.equal(await page.locator('#stageBookPanel .stage-book-honor-link').count(),0);
  assert.equal((await page.locator('#stageBookPanel').innerText()).includes('129,000'),false);
+ const guildDisclosure=page.locator('#stageBookPanel [data-book-section="guild"]');
+ assert.equal(await guildDisclosure.getAttribute('open'),null,
+  'Guild starts closed when opening the Buffs chapter');
+ await guildDisclosure.locator('summary').click();
  const oldScroll=await page.locator('#stageBookPanel').evaluate(panel=>{
   window.__psBookStablePanel=panel;panel.scrollTop=90;return panel.scrollTop;
  });
