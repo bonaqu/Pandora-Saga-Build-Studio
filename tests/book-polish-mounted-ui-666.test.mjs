@@ -16,6 +16,12 @@ test('book shows OS Cverg racial label and preserves exact original racial passi
  assert.ok(s.includes("'Расовая стойкость цверга'"));
  assert.ok(!s.includes('Расовая стойкость дворфа'));
  assert.equal(book.bookEditorialDefaults['Расовая стойкость цверга'],'Dwarven racial survival');
+ // Keep historical D1 edit identity after correcting the default label.
+ let hash=2166136261;
+ for(const letter of 'Расовая стойкость дворфа')
+  hash=Math.imul(hash^letter.codePointAt(0),16777619)>>>0;
+ assert.equal(book.bookEditorialKey('Расовая стойкость цверга'),
+  'book-dwarven-racial-survival-'+hash.toString(16).padStart(8,'0'));
 });
 
 test('mounted source warning has one D1-editable bilingual default and appears across three chapters',()=>{
