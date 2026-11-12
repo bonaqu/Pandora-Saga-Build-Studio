@@ -4,6 +4,24 @@
 
 The checked-in OS snapshot [meta.json](../data/os/meta.json) declares `baseLocale: "ru"` and official `branchLabels`. Russian IDs/names originate from [skills.json](../data/os/skills.json), [classes.json](../data/os/classes.json) and matching item/Soul tables. EN names come from [strings.en.json](../data/os/strings.en.json), by the same ID or branch key. Never auto-translate names or infer identity from visual resemblance to old Remaked terms. In particular `exorcism` = **Экзорцизм / Exorcism**, `alchemy` = **Ремесло / Alchemy**, `brush` = **Рубящий удар / Cleave**, `darkness` = **Магия тьмы / Darkness**.
 
+## Current-source English skill naming regression (0.704.0)
+
+The pinned 2026 OS snapshot contains **569** Russian skill identities but only **553** official `strings.en.json.skills[id].n` entries. The remaining **16** are not translated by the site: their canonical Russian skill name is displayed unchanged instead of inventing an English variant. Game-backed names are rendered by exact ID, whereas editorial UI headings stay separate, so a shared Russian term cannot mislabel a spell:
+
+| OS skill ID | Canonical Russian | Canonical OS English | Previously incorrect UI-only alias |
+| --- | --- | --- | --- |
+| 100052001 | Яростная атака | Raging Soul | Rage Attack |
+| 260006001 | Помощь ветра | Speedy Gale | Wind Assist |
+| 320004001 | Благословение ветра | Accelerate | Wind Blessing |
+| 320005001 | Знак жизни | Divine Aid | Sign of Life |
+| 330051001 | Священное оружие | Bless Weapon | Holy Weapon |
+| 430051001 | Темная аура | Gloom | Dark Aura |
+| 310012001 | Пробуждение | Vivify | Awakening |
+
+Some generic interface captions deliberately have different English wording from a same-spelled skill. This is not a translation error in the UI: e.g., the **Recovery** section versus skill `310022001 Восстановление / Restoration`, **Poison** element versus `220001001 Яд / Toxify`, or **Knockdown** resistance versus `500000015 Падение / Tripped`. Code must use an ID to choose a game name and never replace the generic UI dictionary wholesale.
+
+Source: [current RU skill records](../data/os/skills.json), [current EN catalog](../data/os/strings.en.json), and exact-ID regression `tests/os-canonical-ui-names-704.test.mjs`. These are current OS **site data**; no live server-client label parity claim is made beyond the pinned source snapshot.
+
 ## Resistance families
 
 The historic sources disagree on whether the body list includes knockdown: [the status page](https://wikiwiki.jp/pandoras/%E7%8A%B6%E6%85%8B%E5%A4%89%E5%8C%96) lists five without knockdown; [the historical equipment index](https://wikiwiki.jp/pandoras/%E3%82%B9%E3%83%86%E3%83%BC%E3%82%BF%E3%82%B9%E8%AA%BF%E6%95%B4%E8%A3%85%E5%82%99%E4%B8%80%E8%A6%A7) explicitly includes knockdown as a sixth. The UI uses the latter listing without asserting current OS combat-engine parity.
