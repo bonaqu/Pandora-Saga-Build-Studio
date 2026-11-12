@@ -1,5 +1,15 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.679.0 — 2026.11.12.679 · Source-complete variable self-skill previews and exclusive OS level-50/green-mastery variants
+
+- Source-complete variable self-skill previews and exclusive OS level-50/green-mastery variants
+- Add source-gated information-only magnitude rows for Desperation, Double Shot, Wave, Warlock magic Concentration. Skill functions depend on trained mastery/character values but live packet magnitude is not confirmed, so each shows — with an explanation.
+- Poison offers exactly one current green-mastery variant (standard at alchemy below 61 or advanced at 61+). Conjurer at level 50 gets newer OS Mana Shield and Follow the Wind variants instead of both standard and 50+ rows.
+- Source ID, exact coefficient/fv2 vector, class, level and achievable branch requirements checked. No activation of skills, no new combat/damage numbers, no persisted-build or production D1 changes.
+- Four regression tests for class, level, variant selection and forged coefficients.
+- Browser acceptance and deployed Pages state must be verified separately.
+
+
 ## 0.678.0 — 2026.11.12.678 · Current-OS Gratia (Velox): source-validated SPI and Blessing coefficient update for active priest buff
 
 - Current-OS Gratia (Velox): source-validated SPI and Blessing coefficient update for active priest buff
