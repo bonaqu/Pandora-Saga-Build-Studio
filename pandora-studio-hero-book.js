@@ -1077,7 +1077,8 @@ function renderSongSkills(body,modifiers,gameTerms={},skillIconForId=()=>null){
 }
 // Mirrors Remaked SkillView: individual skill outcomes, never the selected
 // buff toggles or the 43 main result values.
-function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>null}={}){
+function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>null,
+ remakedBuffRows=[],availability={},combatSkillCards={}}={}){
  const en=document.documentElement?.lang==='en';
  const spells=modifiers?.healingSpells?.rows||[];
  if(spells.length){
@@ -1143,12 +1144,12 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
  const offenseHeading=make('strong',{text:en?'Offensive skills':'Атакующие умения'});
  offense.append(offenseHeading);
  const addOffense=(id,ru,enName,amount,detail)=>{
-  const row=make('div',{class:'stage-offense-skill-row'});
-  const label=gameSkillBadge(id,ru,enName,gameTerms,en,skillIconForId);
-  const caption=make('div',{class:'stage-offense-skill-details'});
-  caption.append(label);
-  if(detail)caption.append(make('small',{text:detail}));
-  row.append(caption,make('strong',{text:amount}));
+  // Same three-column visual rhythm as the existing healing skill rows:
+  // icon+name, computed value, then a full-width description.
+  const row=make('div',{class:'stage-heal-row stage-offense-skill-row'});
+  row.append(gameSkillBadge(id,ru,enName,gameTerms,en,skillIconForId),
+   make('strong',{text:amount}));
+  if(detail)row.append(make('small',{text:detail}));
   offense.append(row);
  };
  const percent=value=>Number.isFinite(value)?(value>0?'+':'')+value:'—';
@@ -1190,6 +1191,47 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   addOffense(142051001,'Хладнокровие','Cold Blood',
    percent(combat.critical.coldBlood)+'%',
    en?'Critical hit chance':'Шанс критического удара');
+ // Show possible offensive skills from this character's profession as well
+ // as already-active effects. A locked mastery is explicit, never an applied
+ // bonus. The source records provide exact names, requirements and icons.
+ const covered=new Set([320001001,100052001,100053001,100054001,
+  100055001,142051001]);
+ const sourceOffense=[100058001,213702001,213605001,
+  220001001,430051001,142051001];
+ for(const id of sourceOffense){
+  const row=remakedBuffRows.find(x=>x.id===id);
+  if(!row||row.existing||!row.name||
+   (row.reason==='Недоступно для этой профессии'||
+    row.reasonEn==='Unavailable to this class'))continue;
+  const record=gameTerms.skills?.[String(id)];
+  if(!record)continue;
+  const enabled=row.available&&row.selected;
+  const description=gameTerms.englishSkills?.[String(id)]?.d||row.description;
+  const effect=(record.funcs||[]).find(x=>x.dir==='TARGET'&&
+   ['EP_DAMAGERATE_SCALE','EP_ATTACKINTERVAL_SCALE','EP_CRITICALRATE_CONST',
+    'EP_TOHIT_CONST','EP_AURAPOISON_CONSTANT','EP_AURADARK_CONSTANT']
+    .includes(x.ep));
+  const names={
+   EP_DAMAGERATE_SCALE:[en?'Attack':'Атака','%'],
+   EP_ATTACKINTERVAL_SCALE:[en?'Attack speed':'Скорость атаки','%'],
+   EP_CRITICALRATE_CONST:[en?'Critical chance':'Шанс крита','%'],
+   EP_TOHIT_CONST:[en?'Accuracy':'Точность',''],
+   EP_AURAPOISON_CONSTANT:[en?'Poison aura':'Аура яда',''],
+   EP_AURADARK_CONSTANT:[en?'Dark aura':'Аура тьмы','']
+  };
+  const name=names[effect?.ep];
+  const bare=Number(effect?.fv1?.[3]);
+  // If the current OS record includes mastery coefficients, the source
+  // number is a reference magnitude, not a verified total for the hero.
+  const staticEffect=effect?.fv1?.slice(0,3).every(v=>v===0)===true;
+  const amount=staticEffect&&Number.isFinite(bare)&&name?
+   name[0]+' '+(bare>0?'+':'')+bare+name[1]:'—';
+  const condition=enabled?(en?'Selected in Buffs':'Выбрано в усилениях'):
+   row.available?(en?'Not active · enable in Buffs':'Не активно · включи в «Усилениях»'):
+   (en?row.reasonEn:row.reason)|| (en?'Requirements not met':'Требования не выполнены');
+  addOffense(id,row.name,row.nameEn,enabled?amount:'—',
+   condition+' · '+(en?description||row.description:row.description));
+ }
  const hitPassive=combat.incredibleStrength;
  if(hitPassive?.applies===true){
   // The OS source describes on-hit final damage, not character-sheet ATK.
@@ -1715,7 +1757,8 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
  if(chosen==='buffs')buffsPage(body,{buffs,vitalsBuffs,onBuff,onVital,
   honorTitles,availability,combatSkillCards,resistanceSkillChoices,modifiers,
   gameTerms,remakedBuffRows,skillIconForId,...copyOptions});
- if(chosen==='effects')skillEffectsPage(body,{modifiers,gameTerms,skillIconForId});
+ if(chosen==='effects')skillEffectsPage(body,{modifiers,gameTerms,skillIconForId,
+  remakedBuffRows,availability,combatSkillCards});
  if(chosen==='recovery'){
   const english=document.documentElement?.lang==='en';
   const percent=modifiers?.potion?.percent;
