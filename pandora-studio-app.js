@@ -3276,6 +3276,7 @@ function renderWiki(root){
    if(!root.isConnected)return;
    window.PandoraHonorView?.render({
     browse,detail,make:h,lang,article:window.PandoraHonorGuide?.article(override),
+    searchQuery:wikiSearch,
     editable:adminEditing&&Boolean(adminToken),
     label:(group,id,ru,en)=>wikiTitle(group,id,ru,en),
     copy:(key,ru,en)=>ownerCopy('honor-view',key,ru,en),
@@ -3336,6 +3337,18 @@ function renderWiki(root){
    });
   };
   wikiRenderSelected=renderHonor;
+  // Honor does not use the OS record index. Its search must be connected
+  // before the early return which bypasses the usual Wiki draw() listener.
+  search.addEventListener('input',()=>{
+   wikiSearch=search.value;wikiShown=100;
+   if(wikiSearchTimer!==null)clearTimeout(wikiSearchTimer);
+   wikiSearchTimer=setTimeout(()=>{
+    wikiSearchTimer=null;
+    if(!root.isConnected||activeTab!=='wiki'||wikiSelection.type!=='honor')return;
+    renderHonor();
+    browse.scrollTop=0;detail.scrollTop=0;
+   },100);
+  });
   renderHonor();
   // Honor's reward cloaks and PvP map links use the same indexed catalog as
   // the rest of Wiki. Opening Honor before its first async load used to leave
