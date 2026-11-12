@@ -750,6 +750,62 @@ function buffsPage(body,options){
   'passive skill',options);
  select(honor,'Пассивное умение за честь','Honor passive skill',
   'honorTitle',honorTitles.map(x=>[x.id,english?x.en:x.ru]),false,true);
+ const honorEffectLabels={
+  allAttributes:['Все характеристики','All attributes'],
+  healingSkills:['Эффективность лечащих умений','Healing skill potency'],
+  attackPercent:['Физическая атака','Physical attack'],
+  fireMagic:['Магический урон огнём','Fire magic damage'],
+  fire:['Сопротивление огню','Fire resistance'],
+  ice:['Сопротивление льду','Ice resistance'],
+  burn:['Сопротивление ожогу','Burn resistance'],
+  iceMagic:['Магический урон льдом','Ice magic damage'],
+  castingResist:['Сопротивление прерыванию заклинаний','Cast interruption resistance'],
+  freeze:['Сопротивление заморозке','Freeze resistance'],
+  accuracy:['Точность','Accuracy'],lightningMagic:['Магия молний','Lightning magic'],
+  lightning:['Сопротивление молниям','Lightning resistance'],
+  knockdown:['Сопротивление падению','Knockdown resistance'],
+  weaponPhysical:['Физический урон оружия','Physical weapon damage'],
+  mountedRelease:['Характеристики верхом','Mounted attribute share'],
+  incomingCriticalChance:['Шанс входящего критического удара','Incoming critical chance'],
+  incomingCriticalDamage:['Критический урон по персонажу','Incoming critical damage'],
+  light:['Сопротивление свету','Light resistance'],
+  dark:['Сопротивление тьме','Dark resistance'],
+  charm:['Сопротивление чарам','Charm resistance'],
+  mentalState:['Сопротивление аномалиям духа','Mental status resistance'],
+  magic:['Сопротивление магии','Magic resistance'],
+  physicalState:['Сопротивление аномалиям тела','Physical status resistance'],
+  potionRecovery:['Эффективность зелий','Potion efficiency'],
+  defense:['Защита','Defense'],
+  incomingPhysical:['Получаемый физический урон','Incoming physical damage'],
+  dodge:['Уклонение','Evasion'],
+  rangedDodge:['Уклонение от стрел','Ranged evasion'],
+  frontAttack:['Урон при атаке спереди','Front attack damage']
+ };
+ const honorDescription=(item)=>{
+  if(!item)return '';
+  if(!item.id)return english?'No Honor bonus selected.':'Титул не выбран.';
+  return Object.entries(item.effects||{}).map(([key,value])=>{
+   const label=honorEffectLabels[key]?.[english?1:0]||key;
+   return label+' '+(value>0?'+':'')+value+
+    (['allAttributes','defense','accuracy','dodge'].includes(key)?'':'%');
+  }).join(' · ');
+ };
+ const honorSelect=honor.querySelector?.('[data-book-setting="honorTitle"]');
+ if(honorSelect){
+  for(const entry of honorTitles){
+   if(honorSelect.options?.[entry.id])
+    honorSelect.options[entry.id].title=honorDescription(entry);
+  }
+  const current=honorTitles.find(item=>item.id===Number(buffs.honorTitle||0));
+  const description=honorDescription(current);
+  if(description){
+   root.PandoraGuideTooltip?.attach(honorSelect,description,{hoverDelay:400});
+   const hint=make('span',{class:'stage-honor-selected-hint',tabindex:0,
+    'aria-label':description,text:'ⓘ'});
+   root.PandoraGuideTooltip?.attach(hint,description,{hoverDelay:400});
+   honorSelect.parentNode?.append(hint);
+  }
+ }
  const priest=section('Усиления жреца','Priest buffs');
  toggle(priest,english?'Use external priest':'Учитывать усиления другого жреца','priestEnabled');
  const priestFields=make('div',{class:'stage-priest-fields'});
@@ -1091,8 +1147,12 @@ function attackChapterGroups(calc){
   Number.isSafeInteger(racial.id)){
   put(0,'racialWeaponFlat:'+racial.id,racial.ru+' · урон (ед.)',
    racial.en+' · damage (flat)',racial.flat);
-  put(0,'racialWeaponRate:'+racial.id,racial.ru+' · урон (%)',
-   racial.en+' · damage (%)',racial.percent,'%');
+  const numericRate=Number.isFinite(combat.attack?.racialBonus)?
+   combat.attack.racialBonus-racial.flat:null;
+  put(0,'racialWeaponRate:'+racial.id,
+   racial.ru+' · прибавка от '+racial.percent+'%',
+   racial.en+' · bonus from '+racial.percent+'%',
+   numericRate,'',true);
  }
  if(Number.isFinite(range.racialGeneral)&&range.racialGeneral===range.racialCarry)
   put(0,'racialRange','Зоркость · дальность','Sharpsight · range',
@@ -1250,8 +1310,9 @@ function appendWeaponConditions(body,calc,items,english){
   .filter(x=>x.bonus&&(x.bonus.phoenix||x.bonus.rows.length));
  if(!active.length)return;
  const panel=make('details',{class:'stage-attribute-row stage-active-elemental'});
- panel.append(make('summary',{text:(english?'Conditional elemental weapons':
-  'Условные эффекты стихийного оружия')+' · '+active.length}));
+ panel.open=true;
+ panel.append(make('summary',{text:(english?'Elemental weapon effects':
+  'Эффекты стихийных оружий')+' · '+active.length}));
  for(const {row,bonus}of active){
   const rec=row.record||{},name=rec.name||'Оружие';
   panel.append(make('strong',{text:name+' · '+(english?'Fire +':'Огонь +')+
