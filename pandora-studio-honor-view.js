@@ -123,6 +123,9 @@ function render({browse,detail,make,lang='ru',article,editable=false,
    if(!visible)browse.append(editorial('p','wiki-honor-search-empty',
     'searchEmpty','По запросу ничего не найдено.','No Honor matches found.'));
   }
+  // Mark the applied query only after all rows have been filtered.
+  // Also allows accessibility tests to wait for the debounced render.
+  detail.dataset.honorSearchQuery=String(searchQuery||'');
   browse.scrollTop=0;detail.scrollTop=0;
   return;
  }
@@ -619,6 +622,9 @@ function render({browse,detail,make,lang='ru',article,editable=false,
    detail.append(editorial('p','wiki-honor-search-empty',
     'searchEmpty','По запросу ничего не найдено.','No Honor matches found.'));
  }
+ // Expose the last *applied* search query for asynchronous screen state.
+ // A typed input is not proof that the debounced Honor list has refreshed.
+ detail.dataset.honorSearchQuery=String(searchQuery||'');
  browse.scrollTop=oldBrowseScroll;detail.scrollTop=oldDetailScroll;
  // #detailContent is the real scroll plane, not the browser document.
  // Use the last section crossing the reading line for wheel/keyboard/drag.
