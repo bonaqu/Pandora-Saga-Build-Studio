@@ -1162,7 +1162,9 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
  const combat=modifiers?.combat||{};
  const active=combat.activeSkills||{},base=combat.attack?.mountedBase??combat.attack?.walkingBase;
  const values=combat.activeSkillValues||{};
- const offense=make('section',{class:'stage-attribute-row stage-attacking-skills'});
+ // Use the identical shared Healing-section layout; avoid an unrelated
+ // visual variant just because this group describes attacking skills.
+ const offense=make('section',{class:'stage-attribute-row stage-healing-spells stage-attacking-skills'});
  const offenseHeading=make('strong',{text:en?'Offensive skills':'Атакующие умения'});
  offense.append(offenseHeading);
  const addOffense=(id,ru,enName,amount,detail)=>{
@@ -1941,8 +1943,25 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
      if(src){const picture=make('img',{src,alt:'',loading:'lazy'});
       picture.onerror=()=>picture.remove();row.append(picture);}
     }
-    row.append(make('span',{class:'stage-potion-name',text:displayName}),
-     make('strong',{text:entry.skills.map(skill=>skill.name).join(' · ')}));
+    // Each activated skill has its own OS source tooltip. A single
+    // concatenated string cannot reveal individual descriptions on hover.
+    const skillNames=make('strong',{class:'stage-consumable-skill-names'});
+    for(const [index,skill] of entry.skills.entries()){
+     if(index)skillNames.append(make('span',{class:'stage-skill-separator',text:' · '}));
+     const source=gameTerms.skills?.[String(skill.id)];
+     const translated=gameTerms.englishSkills?.[String(skill.id)];
+     const name=english?(translated?.n||source?.name||skill.name):
+      (source?.name||skill.name);
+     const badge=make('span',{class:'stage-consumable-skill-name',
+      tabindex:0,'data-triggered-skill-id':skill.id,text:name});
+     const description=english?(translated?.d||source?.desc):(source?.desc);
+     root.PandoraGuideTooltip?.attach(badge,
+      description|| (english?'No description in the game catalog.':
+       'Описание умения пока отсутствует в игровом каталоге.'),
+      {hoverDelay:450});
+     skillNames.append(badge);
+    }
+    row.append(make('span',{class:'stage-potion-name',text:displayName}),skillNames);
     section.append(row);
    }
    body.append(section);
