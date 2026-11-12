@@ -9,7 +9,7 @@ const local=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 
 export function auditOsSkillFormulaCoverage({skills,classes,calculator}={}){
  const modules=['scalingSkillPreview','healingSpellsPreview',
-  'periodicRecoveryPreview','songSkillPreview','resistanceSkillChoices','skillExecutionChains'];
+  'periodicRecoveryPreview','songSkillPreview','resistanceSkillChoices','skillExecutionChains','craftingSkillPreview'];
  if(!skills||!classes||!modules.every(name=>typeof calculator?.[name]==='function'))
   throw Error('Expected pinned skill/class catalog and all OS formula inspectors');
  const entries=Object.entries(skills).sort((a,b)=>Number(a[0])-Number(b[0]));
@@ -74,6 +74,14 @@ export function auditOsSkillFormulaCoverage({skills,classes,calculator}={}){
    if(Array.isArray(row.sourceParameters)&&row.sourceParameters.some(p=>
     p?.confidence==='source-parameter'&&Number.isSafeInteger(p.amount)))
     record.sourceParameter=true;
+  }
+  // Fixed OS ingredient and output counts are numerically exact, while
+  // live inventory ownership and execution success remain unverified.
+  for(const jobKey of classNames){
+   const caps=classes[jobKey].branchCaps;
+   const data=calculator.craftingSkillPreview({skillCatalog:skills,
+    jobKey,level:45,branchCaps:caps,branchMasteries:caps});
+   for(const recipe of data.rows)mark(recipe.id,'skill-crafting',{numeric:true});
   }
   // The Healing chapter has its own Remaked numerical stages and OS skill
   // gates. Include BOTH 45 and 55: level-50 CLERIC upgrades replace

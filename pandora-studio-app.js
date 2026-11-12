@@ -1746,6 +1746,7 @@ function renderStageAttributes(calculated=undefined){
   heroHasShield:Boolean(equippedShield),
   honorTitles:window.PandoraOSCalculator.honorTitles,
   gameTerms:{skills:skillMap,englishSkills:officialEnglish?.skills||{},
+   items:catalogSource?.items||{},englishItems:officialEnglish?.items||{},
    branchLabels:catalog.meta?.branchLabels||{},
    englishBranches:officialEnglish?.branches||{},
    classes:catalog.classes||{},englishClasses:officialEnglish?.classes||{}},
