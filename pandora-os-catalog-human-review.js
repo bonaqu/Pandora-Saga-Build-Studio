@@ -47,6 +47,94 @@ const sectionNames={
  expCurve:'Опыт мастерства',get:'Начисление мастерства',branchNames:'Названия веток'
 };
 
+
+// The public OS calculator (sp/Nl/JR in pandorasaga-os.com assets, 2026-11-13)
+// models independent rolls: clamp(base + perMember*(party-1),0,100)/itemCount.
+// This is a website probability projection, NOT verified game-server mechanics.
+function analyzeZoneLootImpact(oldZones,newZones,ctx){
+ const allowed=new Set(['mob','kind','base','perMember','items','t','ws','quest']);
+ const allowedItem=new Set(['i','lo','hi','slotN','slotP']);
+ const entries=zones=>{
+  const result=new Map();
+  if(!Array.isArray(zones))return result;
+  for(const zone of zones){
+   if(!Number.isSafeInteger(zone?.map)||!Array.isArray(zone.rows))continue;
+   for(const row of zone.rows){
+    if(!plain(row)||!['hook','csv'].includes(row.kind)||!Array.isArray(row.items)||!row.items.length)continue;
+    const ids=row.items.map(i=>i?.i);
+    const malformed=ids.some(id=>!Number.isSafeInteger(id)||id<=0)||
+     new Set(ids).size!==ids.length||Object.keys(row).some(k=>!allowed.has(k))||
+     row.items.some(i=>!plain(i)||Object.keys(i).some(k=>!allowedItem.has(k)));
+    const conditional=Boolean(row.t||row.ws||row.quest);
+    const invalid=malformed||conditional||!Number.isFinite(row.base)||
+     !Number.isFinite(row.perMember)||row.base<0||row.perMember<0||
+     row.mob!=null&&!Number.isSafeInteger(row.mob);
+    for(const id of new Set(ids.filter(id=>Number.isSafeInteger(id)&&id>0))){
+     const key=[zone.map,row.mob??'*',row.kind,id].join('|');
+     const group=result.get(key)||{mapId:zone.map,mobId:row.mob??null,kind:row.kind,
+      itemId:id,rolls:[],invalid:false,reason:''};
+     group.rolls.push({base:row.base,perMember:row.perMember,n:row.items.length});
+     if(invalid){group.invalid=true;group.reason=conditional?
+      'действует дополнительное условие (время, мир или квест)':
+      'неизвестные либо повреждённые параметры источника'}
+     result.set(key,group);
+    }
+   }
+  }
+  return result;
+ };
+ const a=entries(oldZones),b=entries(newZones);
+ const name=(section,id,fallback)=>{
+  const entry=ctx?.upstream?.[section]?.[id]||ctx?.baseline?.[section]?.[id];
+  const n=entry?.name?.ru||entry?.name;
+  return typeof n==='string'&&n.trim()?n:fallback+' №'+id;
+ };
+ const chance=(group,party)=>{
+  if(group?.invalid)return null;
+  let noDrop=1;
+  for(const r of group?.rolls||[]){
+   const members=Math.max(1,Math.min(8,Math.floor(party)));
+   const p=Math.max(0,Math.min(100,r.base+r.perMember*(members-1)));
+   noDrop*=1-p/(100*r.n);
+  }
+  return Math.round((1-noDrop)*100*1e4)/1e4;
+ };
+ const percent=(n,other)=>{
+  const precision=Math.round(n*100)===Math.round(other*100)&&n!==other?4:2;
+  return new Intl.NumberFormat('ru-RU',
+   {minimumFractionDigits:precision,maximumFractionDigits:precision}).format(n)+'%';
+ };
+ const impacts=[],skipped=[];
+ for(const key of new Set([...a.keys(),...b.keys()])){
+  const old=a.get(key),next=b.get(key);
+  if(same(old?.rolls||[],next?.rolls||[])&&!old?.invalid&&!next?.invalid)continue;
+  const group=old||next;
+  const mapName=name('maps',group.mapId,'Локация');
+  const mobName=group.mobId==null?'любой монстр этой карты':name('monsters',group.mobId,'Монстр');
+  const itemName=name('items',group.itemId,'Предмет');
+  const title='«'+mapName+'» · '+mobName+' · «'+itemName+'»';
+  const sizes=[1,4,8],before=sizes.map(n=>chance(old,n)),after=sizes.map(n=>chance(next,n));
+  if(before.concat(after).some(n=>n===null)){
+   skipped.push({title,reason:old?.reason||next?.reason||'дополнительные условия'});continue;
+  }
+  if(sizes.every((n,i)=>before[i]===after[i]))continue;
+  const oldText=before.map((x,i)=>percent(x,after[i])).join(' / ');
+  const newText=after.map((x,i)=>percent(x,before[i])).join(' / ');
+  const direction=sizes.every((n,i)=>after[i]<=before[i])?'снизился':
+   sizes.every((n,i)=>after[i]>=before[i])?'вырос':'изменился';
+  const impact={title,mapName,mobName,itemName,itemId:String(group.itemId),kind:group.kind,
+   direction,oldRolls:old?.rolls?.length||0,newRolls:next?.rolls?.length||0,
+   oldText,newText,before,after};
+  impact.preview=title+': соло '+percent(before[0],after[0])+' → '+percent(after[0],before[0])+
+   '; 4 игрока '+percent(before[1],after[1])+' → '+percent(after[1],before[1])+
+   '; 8 игроков '+percent(before[2],after[2])+' → '+percent(after[2],before[2]);
+  impacts.push(impact);
+ }
+ impacts.sort((x,y)=>x.mapName.localeCompare(y.mapName,'ru')||
+  x.mobName.localeCompare(y.mobName,'ru')||x.itemName.localeCompare(y.itemName,'ru'));
+ return {impacts,skipped};
+}
+
 function describeZoneDrops(previous,current,ctx,add,unknown){
  // Match exact source rules as a MULTISET before trying to infer edited fields.
  // Duplicates are real source rows: 3 identical rules -> 1 means 2 removed,
@@ -88,10 +176,20 @@ function describeZoneDrops(previous,current,ctx,add,unknown){
  const owner=row=>String(row?.kind)+'|'+String(row?.mob??'');
  const fingerprint=row=>JSON.stringify(canonical(row));
  const numeral=n=>value(n);
- const detailed=row=>kind(row)+' · '+monster(row)+' · предметы: '+itemNames(row)+
-  '; базовое значение: '+(row?.base==null?'не указано':numeral(row.base))+
-  '; на участника: '+(row?.perMember==null?'не указано':numeral(row.perMember))+
-  ' (единицы значений не подтверждены)';
+ const detailed=row=>{
+  const verified=['hook','csv'].includes(row?.kind)&&
+   Number.isFinite(row.base)&&Number.isFinite(row.perMember);
+  const text=verified?
+   (row.kind==='hook'?'Зональная попытка':'Отдельная попытка добычи карты')+
+    ': при успехе выбирается один случайный предмет из списка. '+
+    'Базовый шанс попытки: '+numeral(row.base)+'%; '+
+    'за каждого следующего активного участника на карте: +'+
+    numeral(row.perMember)+' процентного пункта. '+
+    'Учитывается не более 8 участников (расчёт сайта OS).':
+   'Параметры не подтверждены: base='+String(row?.base??'—')+
+    ', perMember='+String(row?.perMember??'—')+'.';
+  return kind(row)+' · '+monster(row)+' · предметы: '+itemNames(row)+'; '+text;
+ };
  const display=x=>x===undefined?'не указано':x!==null&&typeof x==='object'?JSON.stringify(x):x;
  const grouped=(rows,used,signature)=>{
   const map=new Map();
@@ -209,9 +307,9 @@ function describeZoneDrops(previous,current,ctx,add,unknown){
    const oldCount=original.get(key)?.length||0;
    const newCount=latest.get(key)?.length||0;
    removedTotal+=positions.length;
-   const title=prefix+' · Убрано правило: '+kind(row)+' · '+monster(row)+
+   const title=prefix+' · Уменьшено число попыток добычи · '+kind(row)+' · '+monster(row)+
     ' · '+itemNames(row);
-   add(title+' · Количество одинаковых записей',oldCount,newCount);
+   add(title+' · Число независимых попыток по модели OS',oldCount,newCount);
    const source=add(title+' · Содержание удалённых копий',detailed(row),
     'удалено '+positions.length+' из '+oldCount+'; осталось '+newCount+' '+
      plural(newCount,'одинаковое правило','одинаковых правила','одинаковых правил'));
@@ -225,9 +323,9 @@ function describeZoneDrops(previous,current,ctx,add,unknown){
    const oldCount=original.get(key)?.length||0;
    const newCount=latest.get(key)?.length||0;
    addedTotal+=positions.length;
-   const title=prefix+' · Добавлено правило: '+kind(row)+' · '+monster(row)+
+   const title=prefix+' · Добавлены попытки добычи · '+kind(row)+' · '+monster(row)+
     ' · '+itemNames(row);
-   add(title+' · Количество одинаковых записей',oldCount,newCount);
+   add(title+' · Число независимых попыток по модели OS',oldCount,newCount);
    add(title+' · Содержание добавленных копий','было '+oldCount+' '+plural(oldCount,'одинаковое правило','одинаковых правила','одинаковых правил'),
     'стало '+newCount+': '+detailed(row));
   }
@@ -468,7 +566,7 @@ function describe(change,ctx={}){
  let title=typeof (change.after?.name||change.before?.name)==='string'
   ?(change.after?.name||change.before?.name):change.title;
  let summary='',caution='',uncertain=false,unexplained=false;
- const rows=[],technical=[];
+ const rows=[],technical=[],impacts=[];
  const readable=(text,label)=>{
   if(typeof text!=='string')return text;
   const en=/английск/i.test(label),language=en?'en':'ru';
@@ -621,6 +719,38 @@ function describe(change,ctx={}){
   title={trades:'Обмены у NPC',tables:'Игровые формулы',expertise:'Мастерство',
    chests:'Содержимое сундуков'}[kind]||title;
   summary=describeCompound(kind,change.before,change.after,ctx,add,unknown);
+
+  if(kind==='tables'&&!same(change.before?.zoneDrops,change.after?.zoneDrops)){
+   const results=analyzeZoneLootImpact(change.before?.zoneDrops,change.after?.zoneDrops,ctx);
+   impacts.push(...results.impacts);
+   for(const effect of impacts){
+    const label='Расчётный шанс '+(effect.kind==='hook'?'зональной':'дропа карты')+
+     ' добычи · '+effect.title+' · Соло / 4 / 8 игроков';
+    const row=add(label,effect.oldText,effect.newText);
+    if(row){
+     row.linkedItemId=effect.itemId;row.linkedItemName=effect.itemName;
+     row.note='Модель открытого калькулятора сайта OS: '+effect.oldRolls+' → '+
+      effect.newRolls+' независимых попыток. Для общего списка один бросок выбирает один предмет. '+
+      'Учитываются активные участники группы на карте (до восьми). '+
+      'Это шанс только этого источника, не всех способов добычи; '+
+      'фактическая механика игрового сервера не подтверждена.';
+    }
+   }
+   for(const effect of results.skipped){
+    add('Шанс не вычислен · '+effect.title,'не подтверждено','нужна проверка: '+effect.reason);
+    unknown(effect.title+': '+effect.reason);
+   }
+   if(impacts.length){
+    const down=impacts.filter(effect=>effect.direction==='снизился').length;
+    const up=impacts.filter(effect=>effect.direction==='вырос').length;
+    summary+=' По калькулятору сайта OS изменились шансы в '+impacts.length+
+     ' '+plural(impacts.length,'случая','случаев','случаев')+
+     ' (ниже: '+down+', выше: '+up+'). Точные цифры для соло и группы — ниже.';
+    caution='Публикация заменит целиком раздел «Игровые формулы» в D1 Build Studio, '+
+     'а не изменит саму игру. Шансы рассчитаны по открытой модели сайта OS; '+
+     'фактическое поведение игрового сервера отдельно не подтверждено.';
+   }
+  }
   // Atomic datasets cannot be partly published even when many individual differences can be read.
   uncertain=true;
  }else{
@@ -688,7 +818,7 @@ function describe(change,ctx={}){
  if(uncertain&&!caution)caution=unexplained?
    'Некоторые обозначения или соответствия строк не подтверждены. Проверь их перед публикацией.':
    'Расшифровка доступна, но изменение целого игрового раздела требует ручной проверки перед публикацией.';
- return {title,summary,rows,technical,uncertain,unexplained,caution,service:kind==='meta'};
+ return {title,summary,rows,impacts,technical,uncertain,unexplained,caution,service:kind==='meta'};
 }
 root.PandoraCatalogHumanReview=Object.freeze({describe});
 })(typeof window==='undefined'?globalThis:window);
