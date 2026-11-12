@@ -1215,7 +1215,7 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
   ['EP_TOHIT_CONST',[0,0,30,20]]
  ],()=>Number.isFinite(unmountedAtk)?
    Math.ceil(unmountedAtk*(20+Math.floor(mastery('archery')*.30))/100):null,
- {branch:'archery',modelOnly:true,unit:' АТК (модель)',
+ {branch:'archery',modelOnly:true,unit:' АТК',
   models:[
    coefficientModel(213605001,'EP_DAMAGERATE_SCALE',null,'archery',
     'Коэффициент атаки','Attack scaling','%'),
@@ -1240,7 +1240,7 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
    ['EP_AURAPOISON_CONSTANT',[0,10,15,6]]
   ],()=>5+1+Math.floor(level*.10)+Math.floor(mastery('alchemy')*.15),
  {branch:'alchemy',predecessor:220001001,modelOnly:true,
-  unit:' урона ядом (модель)',
+  unit:' урона ядом',
   detailRu:'Усиленный яд · мастерство алхимии 61; итоговый урон ауры не подтверждён',
    detailEn:'Advanced poison, Alchemy 61; aura damage magnitude unverified'});
  else
@@ -1301,7 +1301,7 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
   ['EP_DAMAGERATE_SCALE',[0,0,35,40]]
  ],()=>Number.isFinite(unmountedAtk)?
   Math.ceil(unmountedAtk*(40+Math.floor(mastery('slash')*.35))/100):null,
- {modelOnly:true,unit:' АТК (модель)',
+ {modelOnly:true,unit:' АТК',
   models:[coefficientModel(100058001,'EP_DAMAGERATE_SCALE',
    null,'slash','Коэффициент физической атаки','Physical attack scaling','%')],
   detailRu:'Отчаянье: расчётная прибавка АТК по базе Remaked и коэффициентам OS; получаемый урон +100%',
@@ -1311,7 +1311,7 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  // the skill effect coefficient; no unproven firing-frequency conversion.
  add(213702001,'offense',[
   ['EP_ATTACKINTERVAL_SCALE',[0,0,0,30]]
- ],()=>30,{modelOnly:true,branch:'archery',unit:'% ускорения (эффект)',
+ ],()=>30,{modelOnly:true,branch:'archery',unit:'% скорости стрельбы',
   detailRu:'Стремительная стрела: +30% к показателю скорости стрельбы по данным OS; итоговая частота атак не измерена',
   detailEn:'Swift Arrow: OS +30% attack interval modifier; final fire rate not observed'});
  // Self-cast Dark Aura uses the modern OS source vector rather than the
@@ -1325,13 +1325,13 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  add(430051001,'offense',[
   ['EP_AURADARK_CONSTANT',[8,0,0,15]]
  ],()=>darkAuraTier===null?null:15+darkAuraTier,
- {branch:'darkness',modelOnly:true,unit:' урона тьмой (модель)',
-  detailRu:'Темная аура: модель OS, 15 + ⌊СД × 8%⌋'+
+ {branch:'darkness',modelOnly:true,unit:' урона тьмой',
+  detailRu:'Тёмная аура: 15 + ⌊СД × 8%⌋'+
    (darkAuraNextSpi===null?'':'; следующий порог СД: '+darkAuraNextSpi)+
-   '; исторические пороги Remaked относятся к другой версии',
-  detailEn:'Dark Aura: OS model 15 + floor(SPI × 8%)'+
+   '',
+  detailEn:'Dark Aura: 15 + floor(SPI × 8%)'+
    (darkAuraNextSpi===null?'':'; next SPI breakpoint: '+darkAuraNextSpi)+
-   '; archived Remaked tiers refer to different historical values'});
+   ''});
  add(213703001,'offense',[
   ['EP_DOUBLE_MISSILE',[20,0,30,-85]],
   ['EP_ATTACKRANGE_CONST',[0,0,900,100]],

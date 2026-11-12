@@ -1,5 +1,12 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.694.0 — 2026.11.12.694 · Shared priest profile and concise skill results
+
+- Exactly three shared external priest inputs; no skill-row duplicates. Historical saved masteries and ability gates are preserved.
+- Shorter bilingual source-based skill descriptions and Dark Aura floor tier without technical model labels; no changes to mathematical outputs or D1.
+- Release acceptance: Node + Chromium, then Pages + Worker/D1 read-only readiness.
+
+
 ## 0.693.0 — 2026.11.12.693 · Dual caster coefficient inputs on priest skill rows: SPR plus Blessing or Hymn mastery
 
 - Dual caster coefficient inputs on priest skill rows: SPR plus Blessing or Hymn mastery. Both controls edit one shared caster profile with no new server formula assumption; responsive single-row UI and browser verification.
