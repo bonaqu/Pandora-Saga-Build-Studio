@@ -255,40 +255,6 @@
 #stageAttributes .stage-honor-selected-hint:focus-visible{
  outline:2px solid #eec590;outline-offset:2px
 }
-#stageAttributes .stage-attacking-skills{
- display:grid;gap:7px;min-width:0;box-sizing:border-box;
- border:1px solid #8a663e;border-radius:6px;
- padding:10px;background:linear-gradient(145deg,#382619,#221711)
-}
-#stageAttributes .stage-offense-skill-row{
- display:flex;align-items:center;gap:10px;min-width:0;
- border:1px solid #795736;border-radius:4px;
- padding:8px;background:#291d14
-}
-#stageAttributes .stage-offense-skill-details{
- display:grid;gap:5px;min-width:0;flex:1
-}
-#stageAttributes .stage-offense-skill-details>small{
- font:500 11px/1.5 Manrope,Arial,sans-serif;
- color:#d8b995;overflow-wrap:anywhere
-}
-#stageAttributes .stage-offense-skill-row>strong{
- flex:0 0 auto;color:#f4d69e;
- font:700 13px Manrope,Arial,sans-serif;
- font-variant-numeric:tabular-nums
-}
-#stageAttributes .stage-book-disclosure.stage-attacking-skills>.stage-offense-skill-row{
- margin:7px 9px;max-width:calc(100% - 18px)
-}
-#stageAttributes .stage-book-disclosure.stage-attacking-skills>.stage-result-section-head{
- padding:8px 9px
-}
-@media(max-width:430px){
- #stageAttributes .stage-offense-skill-row{align-items:flex-start;flex-wrap:wrap}
- #stageAttributes .stage-offense-skill-row>strong{margin-left:auto}
-}
-
-
 /* 0.672: all potion/experience subsections use the Results-header geometry. */
 #stageAttributes .stage-book-detail-title{
  flex:1 1 auto;display:flex;align-items:center;min-width:0;
@@ -312,27 +278,6 @@
 }
 #stageAttributes .stage-book-disclosure.stage-attribute-row>summary.stage-result-section-head .stage-result-symbol{
  flex:0 0 auto
-}
-/* Match the existing healing skill rows, rather than an independent card UI. */
-#stageAttributes .stage-attacking-skills{
- display:grid;gap:8px;padding:10px;box-sizing:border-box;
- background:linear-gradient(140deg,#35251a,#21170f)
-}
-#stageAttributes .stage-offense-skill-row{
- display:grid;grid-template-columns:minmax(0,1fr) auto;
- align-items:center;gap:2px 10px;min-width:0;
- border:0;border-top:1px solid #795537;border-radius:0;
- padding:6px 0;background:none
-}
-#stageAttributes .stage-offense-skill-row>small{
- grid-column:1 / -1;overflow-wrap:anywhere;
- font:500 10px/1.4 Manrope,Arial,sans-serif;color:#baa281
-}
-#stageAttributes .stage-offense-skill-row>strong{
- font-size:13px;color:#ffdfa9
-}
-#stageAttributes .stage-book-disclosure.stage-attacking-skills>.stage-offense-skill-row{
- margin:0 10px;max-width:calc(100% - 20px)
 }
 /* Guild icon belongs beside the name, with one full-width selector beneath. */
 #stageAttributes .stage-guild-skill-field{
@@ -377,3 +322,24 @@
 #stageAttributes .stage-resistance-skill-controls>:not(summary){
  margin:7px 9px;max-width:calc(100% - 18px)
 }
+
+/* Offensive and healing skills deliberately share the SAME DOM and styles;
+   only the group title and actual skill results differ. */
+#stageAttributes .stage-healing-spells.stage-attacking-skills{
+ /* No custom sizing, spacing or borders: inherited from Healing Skills. */
+}
+#stageAttributes .stage-consumable-skill-names{
+ display:flex;flex-wrap:wrap;justify-content:flex-end;gap:3px;
+ min-width:0;max-width:100%;white-space:normal;text-align:right;
+}
+#stageAttributes .stage-consumable-skill-name{
+ cursor:help;max-width:100%;overflow-wrap:anywhere;
+ color:#f3d8ac;text-decoration:underline dotted #ac8653;
+ text-underline-offset:3px;
+}
+#stageAttributes .stage-consumable-skill-name:hover,
+#stageAttributes .stage-consumable-skill-name:focus-visible{
+ color:#ffe6be;text-decoration-color:#f1d5a3;
+ outline-offset:3px;
+}
+#stageAttributes .stage-skill-separator{color:#a7865a}
