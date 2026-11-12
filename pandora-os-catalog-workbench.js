@@ -382,7 +382,7 @@
       if(filterKind==='needsReview')return describe(change).uncertain;
       if(filterKind==='links')return describe(change).rows.some(row=>row.linkChanged);
       if(filterKind==='sameVisible')return describe(change).rows.some(row=>row.sameVisible);
-      if(filterKind==='readable')return !describe(change).uncertain;
+      if(filterKind==='readable')return !describe(change).unexplained;
       return filterKind==='all'||change.kind===filterKind;
     }
     function setBusy(value) {
@@ -428,7 +428,7 @@
         needsReview:changes.filter(row=>describe(row).uncertain).length,
         links:changes.filter(row=>describe(row).rows.some(field=>field.linkChanged)).length,
         sameVisible:changes.filter(row=>describe(row).rows.some(field=>field.sameVisible)).length,
-        readable:changes.filter(row=>!describe(row).uncertain).length
+        readable:changes.filter(row=>!describe(row).unexplained).length
       };
       for(const [id,ru,en]of filterChoices){
         const button=filterButtons.get(id);
@@ -728,7 +728,8 @@
             text:description.service?tr('Служебные данные · ручная проверка','Technical data · manual review'):
               hasLinks?tr('Игровая ссылка · требуется ручная проверка','Game link · manual review'):
               visuallySame?tr('Видимый текст совпадает · требуется ручная проверка','Same visible text · manual review'):
-              description.uncertain?tr('Есть нерасшифрованные параметры','Some parameters are unexplained'):
+              description.unexplained?tr('Есть нерасшифрованные параметры','Some parameters are unexplained'):
+              description.uncertain?tr('Расшифровано · требуется ручная проверка','Explained · manual approval required'):
               tr('Значения расшифрованы · проверь перед выбором','Values explained · verify before selecting')});
           if(variantTotal.get(description.title)>1)
             helper.textContent+=tr(' · Вариант ',' · Variant ')+variantOrder.get(change.id)+
