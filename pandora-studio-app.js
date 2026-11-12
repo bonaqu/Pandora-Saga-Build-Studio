@@ -6371,6 +6371,7 @@ function newBlankBuild(){
  return true;
 }
 let buildSearchQuery='',newBuildPromptOpen=false,newBuildDraftName=null;
+let buildHintEditorExpanded=false;
 // Retired legacy-import UI: old guest builds stay in their original local
 // backup and cannot be migrated into an account through the player interface.
 // Only the character being actively edited can continue as an unsaved draft.
@@ -6508,6 +6509,7 @@ function renderBuilds(root){
  }
  // This renderer is independent from the Origin and Hero Path local helpers.
  const tr=(ru,en)=>lang==='en'?en:ru;
+ const libraryText=key=>window.PandoraUILocale.text(key,lang);
  const toolbar=h('div',{class:'build-toolbar'});
  const name=h('input',{type:'text',class:'build-name-input',maxLength:'70',value:state.name||'Новый герой','aria-label':'Название билда'});
  const choice=h('div',{class:'new-build-choice',hidden:!newBuildPromptOpen});
@@ -6546,6 +6548,31 @@ function renderBuilds(root){
    onclick:()=>{reportCloudStatus('Проверяем облако…');void loadCloudBuilds()}}));
  root.append(toolbar,choice,h('p',{class:'cloud-library-status',role:'status',
   text:cloudStatusText(cloudLibraryStatus)}));
+ // Owner-only inline editing of these five authored explanations. Keep the
+ // four player action buttons intact; do not nest pencils in real actions.
+ if(adminEditing&&adminToken){
+  const editor=h('details',{class:'build-hint-owner-panel'});
+  editor.open=buildHintEditorExpanded;
+  editor.addEventListener('toggle',()=>{
+   if(editor.isConnected)buildHintEditorExpanded=editor.open;
+  });
+  editor.append(h('summary',{text:tr('Подсказки кнопок','Button hints')}));
+  const rows=h('div',{class:'build-hint-owner-list'});
+  for(const [key,ru,en] of [
+   ['libraryHintOpen','Открыть','Open'],
+   ['libraryHintOverwrite','Перезаписать','Overwrite'],
+   ['libraryHintShare','Поделиться','Share'],
+   ['libraryHintDelete','Удалить','Delete'],
+   ['libraryHintDeleteLocal','Локальная копия','Local copy']
+  ]){
+   rows.append(h('div',{class:'build-hint-owner-row'},[
+    h('span',{class:'build-hint-owner-action',text:tr(ru,en)}),
+    h('span',{class:'build-hint-owner-value',
+     'data-owner-copy-key':key,text:libraryText(key)})
+   ]));
+  }
+  editor.append(rows);root.append(editor);
+ }
  const comparisonSlot=h('section',{'data-build-compare-slot':''});
  root.append(comparisonSlot);
  let comparison=null;
@@ -6556,7 +6583,6 @@ function renderBuilds(root){
  const syncCompareCheckboxes=()=>{
   for(const row of searchable)row.check.checked=compareIds.includes(row.build.id);
  };
- const libraryText=key=>window.PandoraUILocale.text(key,lang);
  const search=(builds.length>5||Boolean(buildSearchQuery.trim()))?h('input',{type:'search',class:'build-library-search',
   'aria-label':libraryText('librarySearchInputLabel'),
   placeholder:libraryText('librarySearchPlaceholder'),value:buildSearchQuery}):null;
@@ -7751,6 +7777,14 @@ function refreshVisibleUICopy(recordKey){
   const pencil=node.nextElementSibling;
   if(pencil?.dataset?.ownerCopyPencil===key)
    pencil.setAttribute('aria-label',(lang==='en'?'Edit caption: ':'Изменить надпись: ')+value);
+ }
+ // The same routine handles save, Undo and owner reset. Do not replace
+ // the card: update the live guide dataset from the committed RU/EN value.
+ if(isLibrary){
+  for(const button of document.querySelectorAll('#detailContent [data-build-action-hint]')){
+   if(locale.fieldKey(button.dataset.buildActionHint)===id)
+    button.dataset.guideHint=locale.text(button.dataset.buildActionHint,lang);
+  }
  }
 }
 // An Origin copy Undo refreshes visible captions without remounting the build.
