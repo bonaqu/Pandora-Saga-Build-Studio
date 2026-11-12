@@ -1143,7 +1143,8 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
    amount,unit:options.unit||'',available:issues.length===0,
    reason:issues.join(' · '),recipient,
    detailRu:options.detailRu||'',detailEn:options.detailEn||'',
-   uncertain:amount===null,
+   uncertain:amount===null||options.modelOnly===true,
+   modelOnly:options.modelOnly===true,
    coefficientModels:Array.isArray(options.models)?
     options.models.filter(x=>x?.confidence==='coefficient-model'):[],
    source:'Remaked + OS skill catalog'});
@@ -1212,7 +1213,9 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  add(213605001,'offense',[
   ['EP_DAMAGERATE_SCALE',[0,0,30,20]],
   ['EP_TOHIT_CONST',[0,0,30,20]]
- ],manual,{branch:'archery',
+ ],()=>Number.isFinite(unmountedAtk)?
+   Math.ceil(unmountedAtk*(20+Math.floor(mastery('archery')*.30))/100):null,
+ {branch:'archery',modelOnly:true,unit:' АТК (модель)',
   models:[
    coefficientModel(213605001,'EP_DAMAGERATE_SCALE',null,'archery',
     'Коэффициент атаки','Attack scaling','%'),
@@ -1235,14 +1238,17 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  if(mastery('alchemy')>=61)
   add(220001003,'offense',[
    ['EP_AURAPOISON_CONSTANT',[0,10,15,6]]
-  ],manual,{branch:'alchemy',predecessor:220001001,
-   detailRu:'Усиленный яд · мастерство алхимии 61; итоговый урон ауры не подтверждён',
+  ],()=>5+1+Math.floor(level*.10)+Math.floor(mastery('alchemy')*.15),
+ {branch:'alchemy',predecessor:220001001,modelOnly:true,
+  unit:' урона ядом (модель)',
+  detailRu:'Усиленный яд · мастерство алхимии 61; итоговый урон ауры не подтверждён',
    detailEn:'Advanced poison, Alchemy 61; aura damage magnitude unverified'});
  else
   add(220001001,'offense',[
    ['EP_AURAPOISON_CONSTANT',[0,10,5,5]]
-  ],manual,{branch:'alchemy',
-   detailRu:'Зависит от мастерства алхимии; итоговый урон ауры не подтверждён',
+  ],()=>5+Math.floor(level*.10)+Math.floor(mastery('alchemy')*.05),
+ {branch:'alchemy',modelOnly:true,unit:' урона ядом (модель)',
+  detailRu:'Зависит от мастерства алхимии; итоговый урон ауры не подтверждён',
    detailEn:'Depends on Alchemy mastery; poison aura damage unverified'});
  add(330002001,'defense',[
   ['EP_ABSOLUTE_MAGIC',[20,0,20,10]]
@@ -1293,10 +1299,29 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  // manufacture arithmetic by assuming a fixed per-point denominator.
  add(100058001,'offense',[
   ['EP_DAMAGERATE_SCALE',[0,0,35,40]]
- ],manual,{models:[coefficientModel(100058001,'EP_DAMAGERATE_SCALE',
+ ],()=>Number.isFinite(unmountedAtk)?
+  Math.ceil(unmountedAtk*(40+Math.floor(mastery('slash')*.35))/100):null,
+ {modelOnly:true,unit:' АТК (модель)',
+  models:[coefficientModel(100058001,'EP_DAMAGERATE_SCALE',
    null,'slash','Коэффициент физической атаки','Physical attack scaling','%')],
-  detailRu:'Отчаянье: изменяемая сила эффекта; серверное округление не подтверждено',
-  detailEn:'Desperation: scaling damage effect; final rounding unverified'});
+  detailRu:'Отчаянье: расчётная прибавка АТК по базе Remaked и коэффициентам OS; получаемый урон +100%',
+  detailEn:'Desperation: modeled ATK gain from Remaked stages and OS vectors; incoming damage +100%'});
+ // Swift Arrow is an attack-interval enhancement with fixed OS source
+ // [0,0,0,30], not direct +30 weapon damage. The displayed percentage is
+ // the skill effect coefficient; no unproven firing-frequency conversion.
+ add(213702001,'offense',[
+  ['EP_ATTACKINTERVAL_SCALE',[0,0,0,30]]
+ ],()=>30,{modelOnly:true,branch:'archery',unit:'% ускорения (эффект)',
+  detailRu:'Стремительная стрела: +30% к показателю скорости стрельбы по данным OS; итоговая частота атак не измерена',
+  detailEn:'Swift Arrow: OS +30% attack interval modifier; final fire rate not observed'});
+ // Self-cast Dark Aura uses the modern OS source vector rather than the
+ // historical Remaked 73–206 tier table (a different ruleset).
+ add(430051001,'offense',[
+  ['EP_AURADARK_CONSTANT',[8,0,0,15]]
+ ],()=>validStat('spi')?15+Math.floor(stats.spi*.08):null,
+ {branch:'darkness',modelOnly:true,unit:' урона тьмой (модель)',
+  detailRu:'Темная аура: модель OS, 15 + ⌊СД × 8%⌋; исторические пороги Remaked не являются параметрами OS',
+  detailEn:'Dark Aura: OS model 15 + floor(SPI × 8%); archived Remaked tiers differ'});
  add(213703001,'offense',[
   ['EP_DOUBLE_MISSILE',[20,0,30,-85]],
   ['EP_ATTACKRANGE_CONST',[0,0,900,100]],
@@ -2572,7 +2597,9 @@ function guildPassiveAtLevel(level=0){
 // current OS data. No selection flag or combat mutation is involved.
 function priestCastPreviews({spi,blessing,hymn,skills=null}={}){
  const result={gratia:null,lapisMedio:null,encouragement:null,
-  groupBarrier:null,holyWeapon:null,minstrel:null,sage:null,verified:false};
+  groupBarrier:null,holyWeapon:null,minstrel:null,sage:null,
+  peaceful:null,enchantAuraRate:null,enchantAuraFlat:null,
+  enchantElementRate:null,holyEnhanced:null,verified:false};
  if(![spi,blessing,hymn].every(n=>Number.isSafeInteger(n)&&n>=0&&n<=500)||
   !skills||typeof skills!=='object')return result;
  const exact=(id,ep,values)=>{
@@ -2593,6 +2620,23 @@ function priestCastPreviews({spi,blessing,hymn,skills=null}={}){
   result.groupBarrier=-10-Math.floor(blessing/5);
  if(exact(330051001,'EP_AURAHOLY_CONSTANT',[6,0,0,2]))
   result.holyWeapon=2+Math.floor(spi*6/100);
+ // OS Enchantment is THREE independent caster-driven vectors. Historical
+ // Remaked Calc('DAMAura') uses base+flat+ceil(base×rate/100) for auras.
+ // The resulting combination remains a labeled source-derived model.
+ if(exact(320011001,'EP_AURADAMAGE_SCALE',[20,0,20,10])&&
+  exact(320011001,'EP_AURADAMAGE_CONST',[5,0,10,5])&&
+  exact(320011001,'EP_ELEMENT_DAMAGE_SCALE',[0,0,20,10])){
+  result.enchantAuraRate=10+Math.floor(spi*.20)+Math.floor(blessing*.20);
+  result.enchantAuraFlat=5+Math.floor(spi*.05)+Math.floor(blessing*.10);
+  result.enchantElementRate=10+Math.floor(blessing*.20);
+  if(Number.isFinite(result.holyWeapon))
+   result.holyEnhanced=result.holyWeapon+result.enchantAuraFlat+
+    Math.ceil(result.holyWeapon*result.enchantAuraRate/100);
+ }
+ const peaceful=songChains.find(x=>x.id===340003001);
+ if(peaceful&&songSourceMatches(skills,peaceful)&&
+  exact(340003003,'EP_DAMAGE_CLEAR',[60,0,30,10]))
+  result.peaceful=10+Math.floor(spi*.60)+Math.floor(hymn*.30);
  const minstrel=songChains.find(x=>x.id===340001001);
  if(songSourceMatches(skills,minstrel)&&
   exact(340001003,'EP_TOHIT_CONST',[13,0,13,4])&&
@@ -2969,6 +3013,16 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   chosenPriestSong.has(330051001)&&
   priestSourceMatches(330051001,'EP_AURAHOLY_CONSTANT',[6,0,0,2])?
   2+Math.floor(priest.spi*6/100):0;
+ const priestEnchantment=priestValid&&
+  chosenPriestSong.has(320011001)&&
+  Number.isFinite(priestCast.enchantAuraRate)&&
+  Number.isFinite(priestCast.enchantAuraFlat)&&
+  Number.isFinite(priestCast.enchantElementRate)?{
+   rate:priestCast.enchantAuraRate,
+   flat:priestCast.enchantAuraFlat,
+   magicRate:priestCast.enchantElementRate,
+   verified:false,model:'Remaked aura stages with current OS effect coefficients'
+  }:null;
  if(resistances&&groupBarrier){
   resistances.mitigation.physical+=groupBarrier;
   resistances.mitigation.magic+=groupBarrier;
@@ -2981,7 +3035,22 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
    priestHoly:holyWeapon,known:(previous?.known||0)+holyWeapon
   };
  }
- const priestApplied={groupBarrier,holyWeapon,gratiaPreview,
+ // Enhance Enchantment raises EXISTING elemental weapon auras. Do not
+ // create aura damage for a weapon that has no corresponding aura.
+ if(auraDamage&&priestEnchantment&&combatContext.weapon){
+  for(const [element,entry] of Object.entries(auraDamage.elements)){
+   if(!Number.isFinite(entry?.known)||entry.known<=0)continue;
+   const boost=Math.ceil(entry.known*priestEnchantment.rate/100);
+   auraDamage.elements[element]={
+    ...entry,priestEnhanceFlat:priestEnchantment.flat,
+    priestEnhanceRate:priestEnchantment.rate,
+    priestEnhanceBonus:priestEnchantment.flat+boost,
+    known:entry.known+priestEnchantment.flat+boost,
+    modeled:true
+   };
+  }
+ }
+ const priestApplied={groupBarrier,holyWeapon,gratiaPreview,priestEnchantment,
   source:'Remaked floor steps guarded by current OS TARGET coefficients',
   verified:false};
  const priestEffects=priestActive?{
