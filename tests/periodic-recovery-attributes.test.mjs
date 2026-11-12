@@ -14,7 +14,7 @@ const build=records=>calc.base({
  level:45,records,combatContext:{jobKey:'CLERIC',
  benevolenceMastery:41,skillCatalog:skills}
 });
-test('equipped +SPI contributes to Remaked two-second spell preview, not through hero level',()=>{
+test('equipped +SPI updates OS periodic source magnitudes without altering passive recovery',()=>{
  const plain=build([]);
  const equipped=build([['item:123',{id:123,slot:'head',name:'SPI test headgear',
   effects:[{func:'EP_SPIRITUAL_CONST',a:2}]},0]]);
@@ -23,10 +23,10 @@ test('equipped +SPI contributes to Remaked two-second spell preview, not through
  assert.equal(equipped.stats.spi,61);
  const amount=preview=>Object.fromEntries(preview.periodicRecovery.rows.map(x=>[x.key,x.amount]));
  const p=amount(plain),e=amount(equipped);
- assert.equal(p.regenerate,15+5+4);
- assert.equal(p.restoration,7+11+4);
- assert.equal(e.regenerate,15+6+4);
- assert.equal(e.restoration,7+12+4);
+ assert.equal(p.regenerate,10+4+4+5);
+ assert.equal(p.restoration,5+2+2+11);
+ assert.equal(e.regenerate,10+4+4+6);
+ assert.equal(e.restoration,5+2+2+12);
  assert.equal(e.regenerate-p.regenerate,1);
  assert.equal(e.restoration-p.restoration,1);
  assert.equal(plain.regeneration.hp.total,equipped.regeneration.hp.total,

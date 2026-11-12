@@ -9,14 +9,14 @@ const classes=JSON.parse(read('data/os/classes.json'));
 const sample={level:50,int:90,spi:70,benevolence:60,healingPercent:120,skillCatalog:skills};
 const withJob=(jobKey,extra={})=>({...sample,jobKey,
  benevolenceCap:classes[jobKey].branchCaps.benevolence,...extra});
-test('ordinary healing exact Legacy FirstAid/Heal/HealingAura/Sanctuary formulas',()=>{
+test('OS-coefficient healing FirstAid/Heal/HealingAura/Sanctuary formulas with Remaked floor stage',()=>{
  const p=preview(withJob('PRIEST'));
- assert.deepEqual(p.rows.map(x=>x.amount),[388,1044,1164,600,27]);
+ assert.deepEqual(p.rows.map(x=>x.amount),[388,1044,1164,480,24]);
  assert.equal(p.clericLevel50,false);
 });
 test('Cleric level 50 switches to special healing coefficients and floor rounding',()=>{
  const p=preview(withJob('CLERIC'));
- assert.deepEqual(p.rows.map(x=>x.amount),[705,1686,1506,600,27]);
+ assert.deepEqual(p.rows.map(x=>x.amount),[705,1680,1506,480,24]);
  assert.equal(p.clericLevel50,true);
  assert.ok(p.rows.every(x=>x.available));
  assert.deepEqual(p.rows.map(x=>x.skillId),
@@ -29,7 +29,7 @@ test('Cleric level 49 uses ordinary coefficients rather than level 50 bonuses',(
 });
 test('Restoration per-period value does not get scaled by skill healing percentage',()=>{
  const p=preview(withJob('PRIEST',{healingPercent:250}));
- assert.equal(p.rows[4].amount,27);
+ assert.equal(p.rows[4].amount,24);
  assert.equal(p.rows[4].scaledBySkill,false);
 });
 test('unlearned skills retain theoretical numbers but are marked unavailable',()=>{
