@@ -531,7 +531,8 @@ function buffsPage(body,options){
   if(key==='priestGratia'&&!(Number(buffs.priestBlessing)>=8))return false;
   if(key==='priestLapisMedio'&&!(Number(buffs.priestBlessing)>=12))return false;
   if(key==='priestEncouragement'&&!(Number(buffs.priestBlessing)>=61))return false;
-  if(guildSelected&&['guildLifeRecovery','guildManaRecovery'].includes(key))
+  if(guildSelected&&['guildLifeRecovery','guildManaRecovery',
+    'guildPhysicalReduction','guildMagicReduction','guildExperience'].includes(key))
    return false;
   return selected(value);
  }).length+guildPassiveCount+Object.entries(vitalsBuffs).filter(([key,value])=>
@@ -559,6 +560,8 @@ function buffsPage(body,options){
   const name=english?en:ru;
   const guildIcons={guildHp:600000001,guildMp:600000011,
    guildLifeRecovery:600000021,guildManaRecovery:600000031,
+   guildPhysicalReduction:600000071,guildMagicReduction:600000081,
+   guildExperience:600000061,
    guildHealing:600000211,guildAll:600000221,guildArouse:600000231};
   const guildIcon=guildIcons[key]?skillIconForId(guildIcons[key]):null;
   const field=make(compact?'div':'label',{class:'stage-book-field'+
@@ -568,7 +571,9 @@ function buffsPage(body,options){
   if(!compact)guideLabel(field.firstChild,'buffs.setting.'+key,
    ru,en,options);
   if(guildIcon)field.insertBefore(make('img',{src:guildIcon,alt:'',
-   width:30,height:30,loading:'lazy',class:'stage-guild-skill-icon'}),field.firstChild);
+   width:30,height:30,loading:'lazy',class:'stage-guild-skill-icon',
+   style:'display:block;width:30px;height:30px;min-width:30px;max-width:30px;'+
+    'min-height:30px;max-height:30px;object-fit:contain;align-self:center'}),field.firstChild);
   const entry=make('select',{'aria-label':name,'data-book-setting':key,
    onchange:event=>(vital?onVital:onBuff)(key,event.target.value)});
   const selected=(vital?vitalsBuffs:buffs)[key]??0;
@@ -613,6 +618,48 @@ function buffsPage(body,options){
  const guildSource=root.PandoraGuildSkillSource||[];
  const sourceSkill=(i,rank)=>guildSource[i]?.levels?.[Math.max(0,rank-1)]||{};
  const guildRate=[0,2,4,6,9,12,15];
+ const guildRatesBySkill={
+  guildHp:[0,2,4,6,9,12,15],guildMp:[0,2,4,6,9,12,15],
+  guildLifeRecovery:[0,5,8],guildManaRecovery:[0,5,8],
+  guildPhysicalReduction:[0,3,6,10],guildMagicReduction:[0,3,6,10],
+  guildExperience:[0,2,3,4,5,6,7,8,10],
+  guildHealing:[0,10,20,30],guildAll:[0,1,2,3],guildArouse:[0,2,4,6]
+ };
+ const guildChoice=(parent,key,sourceIndex,firstSkillId,vital=false)=>{
+  const source=guildSource[sourceIndex]||{},rates=guildRatesBySkill[key];
+  const roman=['','I','II','III','IV','V','VI','VII','VIII'];
+  const levels=rates.map((rate,rank)=>{
+   if(!rank)return [0,bookText('Выключено')];
+   const item=gameTerms.skills?.[String(firstSkillId+rank-1)];
+   const official=english?gameTerms.englishSkills?.[String(item?.id)]?.n:item?.name;
+   const title=official||((english?source.sourceNameEn:source.nameRu)||key)+' '+roman[rank];
+   const meaning=key==='guildHp'?(english?'maximum HP':'максимум ОЗ'):
+    key==='guildMp'?(english?'maximum MP':'максимум ОМ'):
+    key==='guildLifeRecovery'||key==='guildManaRecovery'?
+     (english?'recovery speed':'скорость восстановления'):
+    key==='guildPhysicalReduction'?(english?'physical damage taken':'получаемый физический урон'):
+    key==='guildMagicReduction'?(english?'magical damage taken':'получаемый магический урон'):
+    key==='guildExperience'?(english?'monster EXP':'опыт за монстров'):
+    key==='guildHealing'?(english?'HP/MP recovery speed':'скорость восстановления ОЗ/ОМ'):
+    key==='guildAll'?(english?'all attributes':'все характеристики'):
+     (english?'physical/magical attack':'физ./маг. атака');
+   return [rank,title+' · '+meaning+' '+
+    (key.includes('Reduction')?'−':'+')+rate+(key==='guildAll'?'':'%')];
+  });
+  select(parent,source.nameRu||key,source.sourceNameEn||key,key,levels,vital);
+  const input=parent.querySelector?.('[data-book-setting="'+key+'"]');
+  if(!input)return;
+  const rank=Number((vital?vitalsBuffs:buffs)[key]||0);
+  const hint=sourceSkill(sourceIndex,Math.max(rank,1));
+  const caption=parent.querySelector?.('[data-guide-key="buffs.setting.'+key+'"]');
+  if(rank>0&&(english?hint.en:hint.ru))
+   root.PandoraGuideTooltip?.attach(caption||input,english?hint.en:hint.ru,{hoverDelay:500});
+  for(let n=1;n<input.options.length;n++){
+   const desc=sourceSkill(sourceIndex,n);
+   input.options[n].title=(english?desc.en:desc.ru)||'';
+  }
+ };
+
  const guild=section('Гильдия','Guild','guild');
  select(guild,'Уровень гильдии','Guild level','guildLevel',
   Array.from({length:13},(_,i)=>[i,i===0?
@@ -648,32 +695,40 @@ function buffsPage(body,options){
   {key:'experience',i:7,id:600000061,rank:Math.max(0,(guildPreview?.experience||0)-1),rate:guildPreview?.experience||0}
  ];
  if(!guildLevel){
-  select(passiveGroup,'Сила гильдии','Physical','guildHp',
-   opts([0,'2%','4%','6%','9%','12%']),true);
-  select(passiveGroup,'Дух гильдии','Spirit','guildMp',
-   opts([0,'2%','4%','6%','9%','12%']),true);
-  select(passiveGroup,'Восстановление силы','Physical Recovery',
-   'guildLifeRecovery',opts([0,5,8]));
-  select(passiveGroup,'Восстановление духа','Spirit Recovery',
-   'guildManaRecovery',opts([0,5,8]));
+  for(const [key,idx,id,vital] of [
+   ['guildHp',1,600000001,true],['guildMp',2,600000011,true],
+   ['guildLifeRecovery',3,600000021,false],
+   ['guildManaRecovery',4,600000031,false],
+   ['guildPhysicalReduction',5,600000071,false],
+   ['guildMagicReduction',6,600000081,false],
+   ['guildExperience',7,600000061,false]])
+   guildChoice(passiveGroup,key,idx,id,vital);
  }else for(const spec of passiveSpecs){
   if(!spec.rank)continue;
   const source=guildSource[spec.i]||{},description=sourceSkill(spec.i,spec.rank);
   const line=make('div',{class:'stage-guild-passive-row',
    'data-guild-passive':spec.key});
-  const sprite=skillIconForId(spec.id);
+  const id=spec.id+spec.rank-1;
+  const sprite=skillIconForId(id)||skillIconForId(spec.id);
   if(sprite)line.append(make('img',{src:sprite,alt:'',width:30,height:30,
-   loading:'lazy',class:'stage-guild-skill-icon'}));
-  const name=make('span',{class:'stage-guild-passive-name',text:english?
-   source.sourceNameEn||spec.key:source.nameRu||spec.key});
+   loading:'lazy',class:'stage-guild-skill-icon',
+   style:'display:block;width:30px;height:30px;min-width:30px;'+
+    'max-width:30px;min-height:30px;max-height:30px;object-fit:contain'}));
+  const record=gameTerms.skills?.[String(id)];
+  const recordEn=gameTerms.englishSkills?.[String(id)]?.n;
+  const suffix=['','I','II','III','IV','V','VI','VII','VIII'][spec.rank]||spec.rank;
+  const title=(english?recordEn:record?.name)||
+   ((english?source.sourceNameEn:source.nameRu)||spec.key)+' '+suffix;
+  const name=make('span',{class:'stage-guild-passive-name',text:title});
   line.append(name,make('strong',{text:
    (spec.key==='physicalReduction'||spec.key==='magicReduction'?'−':'+')+
    spec.rate+'%'}));
   guideLabel(name,'buffs.guild.passive.'+spec.key+'.'+spec.rank,
-   source.nameRu||spec.key,source.sourceNameEn||spec.key,options,
+   record?.name||source.nameRu+' '+suffix,recordEn||source.sourceNameEn+' '+suffix,options,
    description.ru||'',description.en||'');
   passiveGroup.append(line);
  }
+
  const activeGroup=make('div',{class:'stage-guild-subsection stage-guild-actives'});
  const activeTitle=make('strong',{text:english?'Active guild enhancements':'Активные усиления гильдии'});
  activeGroup.append(activeTitle);
@@ -682,22 +737,11 @@ function buffsPage(body,options){
   'Умения главы гильдии действуют на находящихся рядом союзников.',
   'The guild leader activates these skills for nearby allies.');
  guild.append(activeGroup);
- select(activeGroup,'Магистр исцеления','Healing','guildHealing',
-  opts([0,10,20,30]));
- select(activeGroup,'Магистр битвы','Combat','guildAll',opts([0,1,2,3]));
- select(activeGroup,'Магистр магии','Arouse','guildArouse',opts([0,'2%','4%','6%']));
- for(const [key,i] of [['guildHealing',8],['guildAll',9],['guildArouse',10]]){
-  const el=activeGroup.querySelector?.('[data-book-setting="'+key+'"]');
-  if(!el)continue;
-  const selected=Number(buffs[key]||0);
-  const details=sourceSkill(i,selected>0?selected:1);
-  const hint=english?details.en:details.ru;
-  if(hint)root.PandoraGuideTooltip?.attach(el,hint,{hoverDelay:450});
-  for(let n=1;n<el.options.length;n++){
-   const source=sourceSkill(i,n);
-   el.options[n].title=(english?source.en:source.ru)||'';
-  }
- }
+ for(const [key,idx,id] of [
+  ['guildHealing',8,600000211],['guildAll',9,600000221],
+  ['guildArouse',10,600000231]])
+  guildChoice(activeGroup,key,idx,id);
+
  const honor=section('Честь','Honor','honor');
  const honorTerm=make('span',{class:'stage-honor-term',text:english?'passive skill':'пассивное умение'});
  const honorHeading=honor.firstChild||honor.children?.[0];
