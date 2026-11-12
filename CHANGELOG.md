@@ -1,5 +1,13 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.675.0 — 2026.11.12.675 · Hero Book defensive skills now honor equipped shield and weapon eligibility consistently with active combat gates
+
+- Hero Book defensive skills now honor equipped shield and weapon eligibility consistently with active combat gates
+- Defensive preview now uses equipped-shield gate for Bastion, same as combat availability; Hero Book forwards actual weapon kind and shield presence from validated equipment.
+- Three focused tests cover profession, level, equipped shield, and UI data routing. No combat formulas or existing saved builds changed.
+- Browser acceptance and deployed Pages state must be verified separately.
+
+
 ## 0.674.0 — 2026.11.12.674 · Source-gated Lightness, Swift Arrow and Blessed Repose active buffs: OS coefficients, Remaked index channels and regression tests
 
 - Source-gated Lightness, Swift Arrow and Blessed Repose active buffs: OS coefficients, Remaked index channels and regression tests
