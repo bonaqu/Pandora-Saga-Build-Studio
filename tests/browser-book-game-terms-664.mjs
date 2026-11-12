@@ -167,6 +167,18 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   assert.match(await triggered.innerText(),/Лечение/);
   await triggered.hover();
   const rich=page.locator('#path-skill-hover-tooltip');
+  // This Book is rebuilt several times in the same isolated scenario.
+  // If the delayed hover was interrupted by scroll/sprite layout, recover
+  // with a genuine pointer move inside the *same* linked skill.
+  if(!await triggered.evaluate(node=>node.matches(':hover')))
+   await triggered.hover();
+  await page.waitForTimeout(600);
+  if(!await rich.isVisible()){
+   const bounds=await triggered.boundingBox();
+   assert.ok(bounds&&bounds.width>=6,'Skill source hover target must be measurable');
+   await page.mouse.move(bounds.x+bounds.width/2-2,bounds.y+bounds.height/2);
+   await page.mouse.move(bounds.x+bounds.width/2+2,bounds.y+bounds.height/2);
+  }
   await rich.waitFor({state:'visible',timeout:5000});
   assert.match(await rich.locator('strong').first().innerText(),/Лечение/);
   assert.ok(await rich.locator('img').count()>0,
