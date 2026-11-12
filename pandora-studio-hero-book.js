@@ -1264,7 +1264,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
  }
  // Skill Effects shows the theoretical effect of a CAST, independently
  // of whether the player enabled that skill in the Buffs chapter.
- // Static skills stay in Buffs/Encyclopedia, not this magnitude inspector.
+ // Fixed legacy buffs remain in Buffs; audited OS movement parameters are shown separately.
  const rows=root.PandoraOSCalculator?.scalingSkillPreview?.({
   skillCatalog:gameTerms.skills,jobKey:heroJobKey,level:heroLevel,
   branchMasteries:heroMasteries,branchCaps:heroBranchCaps,
@@ -1276,7 +1276,10 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   ['offense','Атакующие умения','Offensive skills',
    'stage-attacking-skills','stage-offense-skill-row'],
   ['defense','Защитные умения','Defensive skills',
-   'stage-defensive-skills','stage-defense-skill-row']
+   'stage-defensive-skills','stage-defense-skill-row'],
+  ['movement','Скорость передвижения · параметры умений',
+   'Movement speed · skill parameters',
+   'stage-movement-skills','stage-defense-skill-row']
  ]){
   const skills=rows[groupName]||[];
   if(!skills.length)continue;
@@ -1324,7 +1327,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   }
   body.append(section);
  }
- if(!spells.length&&!periodic.length&&!rows.offense?.length&&!rows.defense?.length)
+ if(!spells.length&&!periodic.length&&!rows.offense?.length&&!rows.defense?.length&&!rows.movement?.length)
   body.append(make('p',{class:'stage-attribute-note',text:en?
    'Only skills with build-dependent effect values appear here. Fixed buffs belong in Buffs.':
    'Здесь показаны только умения, сила которых зависит от билда. Постоянные усиления — во вкладке «Усиления».'}));
