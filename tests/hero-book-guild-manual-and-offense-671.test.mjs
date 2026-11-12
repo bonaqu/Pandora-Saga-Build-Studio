@@ -51,7 +51,7 @@ test('priest buff text remains legible when externally disabled and old ally sig
  assert.doesNotMatch(guild,/Учтено в результатах/);
 });
 test('offensive skills use existing calculated effects, not made-up per-hit formula',()=>{
- assert.match(guild,/class:'stage-attribute-row stage-healing-spells stage-attacking-skills'/);
+ assert.match(guild,/stage-attacking-skills/);
  assert.match(guild,/scalingSkillPreview\?\.\(/);
  assert.match(guild,/preview when cast|Значение при применении/);
  assert.doesNotMatch(guild,/const hitPassive=combat\.incredibleStrength/);

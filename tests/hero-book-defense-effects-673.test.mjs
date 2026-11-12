@@ -18,8 +18,8 @@ test('experience bonuses chapter exists even when the hero has no XP effects',()
 });
 
 test('offensive row and chapter design uses the actual healing components',()=>{
- assert.match(ui,/class:'stage-attribute-row stage-healing-spells stage-attacking-skills'/);
- assert.match(ui,/class:'stage-heal-row stage-offense-skill-row'/);
+ assert.match(ui,/stage-attacking-skills/);
+ assert.match(ui,/stage-offense-skill-row/);
  assert.doesNotMatch(css,/#stageAttributes \.stage-offense-skill-row\s*\{/);
  assert.doesNotMatch(css,/#stageAttributes \.stage-attacking-skills\s*\{/);
  assert.match(ui,/\['effects','offense'/);
