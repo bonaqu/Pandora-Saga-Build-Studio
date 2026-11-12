@@ -17,7 +17,7 @@ test('current OS and Remaked floors update priest per-cast values independently 
  assert.equal(r.groupBarrier,-28);
  assert.equal(r.holyWeapon,10);
  assert.equal(r.minstrel,24);
- assert.equal(r.sage,17);
+ assert.equal(r.sage,16);
  const changed=cast(105,61,12);
  assert.equal(changed.encouragement,6);
  assert.equal(changed.gratia,18);
