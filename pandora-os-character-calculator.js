@@ -889,7 +889,7 @@ function defensiveSkillPreview({skillCatalog=null,jobKey=null,level=1,
    type:record.skillType,available:reasons.length===0,
    reason:reasons.join(' · '),reasonEn:reasonsEn.join(' · '),
    minimumLevel:record.charLevel||0,requirements:record.reqs||[],
-   effects:values,source:'current Pandora Saga OS skill catalog'}];
+   effects:values,source:'Current game skill catalog'}];
  });
 }
 // Source-only class passive: EP_ONHIT_FIN_DAMAGE_CONST describes per-hit
