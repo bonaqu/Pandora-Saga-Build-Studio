@@ -1621,7 +1621,9 @@ function renderStageAttributes(calculated=undefined){
  const missingCombatMastery=ability=>{
   const req=ability?.reqs?.find(req=>(branchMasteries[req.branch]??0)<req.amount);
   if(!req)return null;
-  const branchName=catalog.meta?.branchLabels?.[req.branch]||req.branch;
+  const branchName=(bookEn?officialEnglish?.branches?.[req.branch]:
+   catalog.meta?.branchLabels?.[req.branch])||
+   catalog.meta?.branchLabels?.[req.branch]||req.branch;
   return bookEn?'Requires '+req.amount+' '+branchName+' mastery':
    'Требуется мастерство «'+branchName+'»: '+req.amount;
  };
@@ -1658,7 +1660,11 @@ function renderStageAttributes(calculated=undefined){
     !ability.weaponUse.includes(equippedWeapon?.kind??'BARE_HAND')?
     (bookEn?'Unavailable with current weapon':'Недоступно с выбранным оружием'):null);
   combatSkillCards[setting]=ability?{
-   name:ability.name,desc:ability.desc,level:ability.charLevel,summary,reason,
+   name:ability.name,
+   nameEn:officialEnglish?.skills?.[String(id)]?.n||ability.name,
+   desc:ability.desc,
+   descEn:officialEnglish?.skills?.[String(id)]?.d||ability.desc,
+   level:ability.charLevel,summary,reason,
    icon:skillIcon(ability.branch,0,ability)
   }:null;
  }
@@ -1679,7 +1685,11 @@ function renderStageAttributes(calculated=undefined){
     (bookEn?' movement speed':' к скорости передвижения');
   const reason=unavailableReason(ability,false);
   combatSkillCards[setting]=ability?{
-   name:ability.name,desc:ability.desc,level:ability.charLevel,summary,reason,
+   name:ability.name,
+   nameEn:officialEnglish?.skills?.[String(combatSkillCatalog.supportSkillIds[kind])]?.n||ability.name,
+   desc:ability.desc,
+   descEn:officialEnglish?.skills?.[String(combatSkillCatalog.supportSkillIds[kind])]?.d||ability.desc,
+   level:ability.charLevel,summary,reason,
    icon:skillIcon(ability.branch,0,ability)
   }:null;
  }
@@ -1689,6 +1699,10 @@ function renderStageAttributes(calculated=undefined){
   icon:rec=>itemIcon(rec),
   buffs:state.attributeBuffs||{},vitalsBuffs:state.vitalsBuffs||{},
   availability,combatSkillCards,honorTitles:window.PandoraOSCalculator.honorTitles,
+  gameTerms:{skills:skillMap,englishSkills:officialEnglish?.skills||{},
+   branchLabels:catalog.meta?.branchLabels||{},
+   englishBranches:officialEnglish?.branches||{},
+   classes:catalog.classes||{},englishClasses:officialEnglish?.classes||{}},
   resistanceSkillChoices:window.PandoraOSCalculator.resistanceSkillChoices(skillMap)
    .map(row=>({...row,nameEn:officialEnglish?.skills?.[String(row.id)]?.n||row.name})),
   itemById:id=>catalogSource?.items?.[String(id)]||null,
