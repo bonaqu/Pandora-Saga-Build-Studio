@@ -272,8 +272,11 @@ function bookEditorialKey(ru){
  if(!Object.hasOwn(bookEnglish,ru))return null;
  const slug=bookEnglish[ru].toLowerCase().normalize('NFKD')
   .replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,43)||'caption';
+ // Preserve the existing D1 owner key across the corrected Cverg label.
+ // A canonical game-term fix must never orphan an administrator's edits.
+ const stableSource=ru==='Расовая стойкость цверга'?'Расовая стойкость дворфа':ru;
  let hash=2166136261;
- for(const letter of ru){hash=Math.imul(hash^letter.codePointAt(0),16777619)>>>0}
+ for(const letter of stableSource){hash=Math.imul(hash^letter.codePointAt(0),16777619)>>>0}
  return 'book-'+slug+'-'+hash.toString(16).padStart(8,'0');
 }
 function bookText(value){
