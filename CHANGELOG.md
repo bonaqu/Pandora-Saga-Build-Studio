@@ -1,5 +1,14 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.668.0 — 2026.11.12.668 · Hero Book visual and help repairs
+
+- Fixed the oversized skill icons in Effects: hard 26×26 px markup bounds plus guarded CSS, preserving original OS icon identities and fallbacks.
+- Moved Mounted help to the visible word itself with editable RU/EN D1 wording, removed technical paragraphs in Attack/Defense/Summary, and simplified game-facing explanations.
+- Removed redundant introductory paragraph from Buffs.
+- Stabilized admin name/hint buttons as two separate, nonoverlapping controls, including the compact header and mobile breakpoint.
+- Added Node assertions and actual Chromium icon-size and hover/owner-toolbar smoke. No game formulas or user D1 overrides changed.
+
+
 ## 0.667.0 — 2026.11.12.667 · Owner inline editing resilience, bilingual CAS failures and draft preservation
 
 - Единый административный редактор D1 предотвращает повторное открытие того же текста двойным кликом или клавишей F2: незаписанный черновик больше не заменяется вложенным полем.
