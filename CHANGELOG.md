@@ -1,5 +1,16 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.680.0 — 2026.11.12.680 · Uniform exclusive elemental resistance buffs, numeric priest and ally summaries, and shared rich skill tooltips
+
+- Uniform exclusive elemental resistance buffs, numeric priest and ally summaries, and shared rich skill tooltips
+- Elemental resistance skills are a standalone sibling section directly after Ally Buffs, using the same Book section and checkbox components. The five target spells are mutually exclusive: selecting another clears the previous; both UI and engine reject stacking old multi-choice builds. An older Divine Blessing alias remains independent.
+- Skill hover in Book effects, ally/priest buffs and consumable-triggered skill names now calls the existing Hero Path rich tooltip controller. Same original OS icon, canonical bilingual name, skill description, level and branch mastery requirements; one tooltip lifecycle and keyboard handling.
+- The priest's SD/Blessing/Hymn inputs now produce source-verified per-cast numerical captions even before enabling the buff. STR/AGI/INT are shown separately; group protection, holy aura and supported song magnitudes use matching current OS vectors and Remaked floor steps. Unknown stacking remains explicitly unverified.
+- Existing Remaked/OS fixed source values are shown for Blessed Repose (+90 MP recovery-speed index), Inspiration (cast time 50% of normal), and Natural Recovery (+5 MP per 2 sec); Despair shows confirmed source coefficients and labels its undetermined final character-specific damage. No automatic skill activation or additional unverified combat formula.
+- Regression tests cover exclusive resistance rules, OS coefficients, rich tooltip markup, and full Chromium book interactions. No production D1 writes, no build migrations.
+- Browser acceptance and deployed Pages state must be verified separately.
+
+
 ## 0.679.0 — 2026.11.12.679 · Source-complete variable self-skill previews and exclusive OS level-50/green-mastery variants
 
 - Source-complete variable self-skill previews and exclusive OS level-50/green-mastery variants
