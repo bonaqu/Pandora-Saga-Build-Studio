@@ -30,7 +30,10 @@ test('all projections are separate from unknown final server magnitudes',()=>{
  ]){
   const x=row(job,id,mastery);
   assert.ok(x,'missing source-backed skill '+id);
-  assert.equal(x.amount,null,'No final hit/stacking amount was verified for '+id);
+  if([100058001,213605001].includes(id)){
+   assert.ok(Number.isFinite(x.amount),'Numeric model required for '+id);
+   assert.equal(x.modelOnly,true,'Estimated attack must not claim parity');
+  }else assert.equal(x.amount,null,'Final damage is unknown for '+id);
   assert.equal(x.uncertain,true);
   assert.ok(x.coefficientModels.length>0,id);
   for(const p of x.coefficientModels)assert.equal(p.confidence,'coefficient-model');
@@ -65,7 +68,9 @@ test('250 artificial legal mastery scenarios are deterministic, monotone and rea
   const ax=model(a,ep),bx=model(b,ep);
   assert.ok(ax&&bx,'model missing at '+id+' '+rank);
   assert.ok(bx.amount>=ax.amount,'model not monotone at '+id+' '+rank);
-  assert.equal(a.amount,null);
+  if([100058001,213605001].includes(id)){
+   assert.equal(a.modelOnly,true);assert.ok(Number.isFinite(a.amount));
+  }else assert.equal(a.amount,null);
   checked++;
  }
  assert.equal(checked,250);
