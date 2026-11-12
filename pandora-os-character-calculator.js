@@ -840,10 +840,17 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  weaponEnhancementType='physical',records=[],itemForth=null,
  jobKey=null,meleeMastery=0,magicMastery=0,techniqueInnate=0,
  techniqueTrained=0,guildArouse=0,combatBuffs={},skillCatalog=null,
- priestEffects={},branchMasteries={}}={}){
+ priestEffects={},branchMasteries={},ridingMastery=0}={}){
  if(!Number.isInteger(level)||level<1||level>55||
   !['dex','agi','str'].every(key=>Number.isFinite(stats[key])&&stats[key]>=0)||
   !Number.isInteger(honorTitle)||honorTitle<0||honorTitle>=honorTitles.length)return null;
+ // Remaked Calc(ATK/ACC/Dodge/MoveSPD/CastSPD/Cooldown) uses a
+ // class/riding/honor-dependent percentage while Flag[7] is enabled.
+ // Keep the unmounted path byte-for-byte numerically identical.
+ const mounted=combatBuffs?.mounted===true;
+ const mountedStatus=mountedReleasePreview({jobKey,ridingMastery,honorTitle});
+ if(mounted&&!mountedStatus)return null;
+ const mountedRate=mounted?Math.min(100,Math.max(0,mountedStatus.known))/100:1;
  const title=honorTitles[honorTitle].effects,read=key=>{
   const n=bonuses[key]??0;return Number.isFinite(n)?n:null;
  };
@@ -890,7 +897,9 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const activeValues=Object.fromEntries(Object.keys(combatSkillIds).map(kind=>[
   kind,combatSkillSource(skillCatalog,kind)?.effects||{}]));
  const effect=(kind,ep)=>activeValues[kind][ep]??0;
- const baseAtk=attack?.raw??attack?.known??null;
+ const walkingBaseAtk=attack?.raw??attack?.known??null;
+ const baseAtk=walkingBaseAtk===null?null:
+  (mounted?Math.ceil(walkingBaseAtk*mountedRate):walkingBaseAtk);
  const guildRate=[0,.02,.04,.06][guildArouse];
  if(guildRate===undefined)return null;
  const guildAtk=baseAtk===null?null:Math.ceil(baseAtk*guildRate);
@@ -905,18 +914,19 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const priestDefense=Math.max(0,Number(priestEffects?.lapisMedio)||0);
  const effectiveDefense={...defense,activeBonus:activeDef,
   priestBonus:priestDefense,raw:defense.raw+activeDef+priestDefense,
-  known:Math.floor(defense.raw+activeDef+priestDefense)};
+  known:mounted?null:Math.floor(defense.raw+activeDef+priestDefense)};
  const atkPct=attack?equipped.attackPercent.map(e=>({
-  ...e,bonus:Math.ceil((attack.raw??attack.known)*e.rate/100)})):[];
+  ...e,bonus:Math.ceil(baseAtk*e.rate/100)})):[];
  const atkExtras=equipped.attackFlat+atkPct.reduce((sum,e)=>sum+e.bonus,0);
  // Racial percentage uses the weapon+refinement base, before unrelated
  // flat equipment ATK/buffs. Real client confirms integer truncation.
  const racialAttackBonus=baseAtk!==null&&racialWeapon?.matchesCategory===true?
   racialWeapon.flat+Math.floor(baseAtk*racialWeapon.percent/100):0;
  const effectiveAttack=attack?{...attack,flatEquipment:equipped.attackFlat,
+  walkingBase:walkingBaseAtk,mountedBase:mounted?baseAtk:null,
   percentEquipment:atkPct,racialBonus:racialAttackBonus,
   activeBonus:activeAtk,guildBonus:guildAtk,
-  known:Math.ceil((attack.raw??attack.known)+attack.honor+atkExtras+
+  known:Math.ceil(baseAtk+(mounted&&honorTitle===3?Math.floor(baseAtk*.02):attack.honor)+atkExtras+
    racialAttackBonus+activeAtk+guildAtk)}:null;
  const accuracyPercent=equipped.accuracyPercent.map(e=>({
   ...e,bonus:Math.ceil(accuracyBase*e.rate/100)}));
@@ -928,13 +938,13 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const attackSpeed={base:speedBase,equipment:equipped.attackSpeedFlat,
   lunge:actives.lunge?effect('lunge','EP_ATTACKINTERVAL_SCALE'):0,
   priestBonus:priestSpeed,
-  known:speedBase+equipped.attackSpeedFlat+priestSpeed+
-   (actives.lunge?effect('lunge','EP_ATTACKINTERVAL_SCALE'):0),verified:false};
+  known:(mounted?null:speedBase+equipped.attackSpeedFlat+priestSpeed+
+   (actives.lunge?effect('lunge','EP_ATTACKINTERVAL_SCALE'):0)),verified:false};
  // Legacy Calc('CastSPD'): 100 + 5*floor(DEX/10), without temporary casts.
  const castingBase=100+5*Math.floor(stats.dex/10);
  const castingEquipment=secondary.castSpeedReduction+secondary.castSpeedFinal;
  const castingSpeed={base:castingBase,equipment:castingEquipment,
-  known:castingBase+castingEquipment,
+  known:(mounted?100+Math.ceil((castingBase-100)*mountedRate):castingBase)+castingEquipment,
   verified:false,excluded:['active spell buffs','unknown Soul conditions']};
  // Legacy Calc('ReduceMP'): 100-floor(INT^2/1000). OS Elf
  // EP_RACE_MANA_COSTCUT 900020001 = 15; equipped same-EP reductions stack.
@@ -956,7 +966,7 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const windMove=supportSkills.windBlessing?
   supportSkillValues.windBlessing.EP_MOVESPEED_SCALE:0;
  const movementSpeed={base:100,equipment:equipped.movement,
-  active:windMove,known:100+equipped.movement+windMove,
+  active:windMove,known:(mounted?Math.ceil(100*mountedRate):100)+equipped.movement+windMove,
   townEquipment:secondary.townMovement,
   town:100+equipped.movement+windMove+secondary.townMovement,verified:false};
  const skillDelayEquipment=equipped.skillDelay;
@@ -966,14 +976,19 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const weaponPhysical=(meleeLineage.has(jobKey)?1+Math.floor(meleeMastery/10):0)
   +(title.weaponPhysical||0);
  const backAttack=15,frontAttack=title.frontAttack||0;
- const cooldown=Number.isFinite(stats.int)?100-2*Math.floor(stats.int/10)+secondary.cooldown:null;
+ const cooldown=Number.isFinite(stats.int)?100+
+  (mounted?Math.ceil(-2*Math.floor(stats.int/10)*mountedRate):
+   -2*Math.floor(stats.int/10))+secondary.cooldown:null;
  // Remaked Calc('ACC') writes the regular and front accuracy from the
  // same computed subtotal, plus independent EquipOpt[63] for front. Current
  // OS data has no verified front-only field mapping, so the explicitly
  // supported front component equals regular accuracy (not a new buff).
- const accuracyKnown=accuracy+accuracyBonus+hunterEye+
+ const accuracyKnown=accuracy+
+  (mounted?Math.ceil(accuracyBase*mountedRate)-accuracyBase:0)+accuracyBonus+hunterEye+
   (actives.concentration?effect('concentration','EP_TOHIT_CONST'):0);
- const observedDodge=dodge+quickStep+(supportSkills.windAssist?Math.floor(
+ const observedDodge=dodge+
+  (mounted?Math.ceil(dodgeBase*mountedRate)-dodgeBase:0)+quickStep+
+  (supportSkills.windAssist?Math.floor(
   supportSkillValues.windAssist.EP_AVOIDANCE_CONST+
   dodgeBase*supportSkillValues.windAssist.EP_AVOIDANCE_SCALE/100):0);
  // Distinct from OS web-calculator combat damage: the observed client
@@ -1016,6 +1031,8 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
   guildArouse,guildAtk,attackSpeed,castingSpeed,castTime,manaCost,
   frontAccuracy,rangedEvasion,
   weaponPhysical,backAttack,frontAttack,cooldown,
+  mounted:{enabled:mounted,rate:mountedStatus?.known??null,verified:false,
+   source:'Remaked Legacy Calc: Flag[7]'},
   spellDamageEquipmentRate,castInterruption,movementSpeed,skillDelayEquipment,
   skillDelayFinalEquipment,mpRecoveryEquipmentRate,backAttackEquipmentRate,
   criticalDamage,criticalIncoming,criticalIncomingDamage,
