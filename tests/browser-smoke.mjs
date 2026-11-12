@@ -278,6 +278,17 @@ async function main(){
  await mount.uncheck();
  assert.equal(await mount.isChecked(),false,'On-foot mode must be restorable');
  assert.equal(await page.locator('#stageBookPanel .stage-mounted-note').count(),0);
+ // A mounted build must be explained in Results and Defense too, without
+ // changing tabs unexpectedly or losing the persisted riding switch.
+ await mount.check();
+ await page.locator('#stageAttributes [data-book-page="summary"]').click();
+ assert.equal(await page.locator('#stageBookPanel .stage-mounted-note').count(),1);
+ await page.locator('#stageAttributes [data-book-page="defense"]').click();
+ assert.equal(await page.locator('#stageBookPanel .stage-mounted-note').count(),1);
+ await page.locator('#stageAttributes [data-book-page="attack"]').click();
+ assert.equal(await mount.isChecked(),true);
+ await mount.uncheck();
+ assert.equal(await page.locator('#stageBookPanel .stage-mounted-note').count(),0);
  assert.equal(await page.locator('#stageBookPanel .stage-combat-quick').count(),0);
  assert.equal(await page.locator('#stageBookPanel .stage-active-elemental').count(),0,
   'Conditional weapon procs appear only if such a weapon is equipped');
