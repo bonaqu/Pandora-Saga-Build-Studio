@@ -1200,16 +1200,16 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  ],()=>pct(dodgeBase,-50),
  {unit:' уклонения',detailRu:'Снижение от базового уклонения; защита от крита не является числом',
   detailEn:'Reduced base evasion; critical protection is not a numeric magnitude'});
- // The coefficients below depend on trained mastery or current attributes.
- // Neither Legacy nor OS establishes their full final rounding/stacking:
- // list only the genuine variable effect, and show an explicit unknown value.
+ // Selected buffs already use these two OS coefficient vectors and the
+ // matching floor stages. Share those exact results with Skill Effects.
+ const quickDodge=coefficientModel(260005001,'EP_AVOIDANCE_CONST',
+  'agi','warding','Уклонение','Evasion');
  add(260005001,'defense',[
   ['EP_AVOIDANCE_CONST',[5,0,15,10]]
- ],manual,{branch:'warding',
-  models:[coefficientModel(260005001,'EP_AVOIDANCE_CONST',
-   'agi','warding','Уклонение','Evasion')],
-  detailRu:'Зависит от ПРВ и мастерства уклонения; точная величина не подтверждена',
-  detailEn:'Depends on AGI and Warding mastery; magnitude unverified'});
+ ],()=>quickDodge?.amount??null,{branch:'warding',modelOnly:true,
+  unit:' уклонения',models:[quickDodge],
+  detailRu:'ПРВ и мастерство уклонения',
+  detailEn:'AGI and Warding mastery'});
  add(213605001,'offense',[
   ['EP_DAMAGERATE_SCALE',[0,0,30,20]],
   ['EP_TOHIT_CONST',[0,0,30,20]]
@@ -1226,13 +1226,13 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
   ],
   detailRu:'Зависит от мастерства стрельбы; величина не подтверждена',
   detailEn:'Depends on Archery mastery; magnitude unverified'});
+ const coldBlood=coefficientModel(142051001,'EP_CRITICALRATE_CONST',
+  null,'brush','Шанс критического удара','Critical chance','%');
  add(142051001,'offense',[
   ['EP_CRITICALRATE_CONST',[0,0,20,10]]
- ],manual,{branch:'brush',
-  models:[coefficientModel(142051001,'EP_CRITICALRATE_CONST',
-   null,'brush','Шанс критического удара','Critical chance','%')],
-  detailRu:'Зависит от мастерства рубящих; величина не подтверждена',
-  detailEn:'Depends on Cleaving mastery; magnitude unverified'});
+ ],()=>coldBlood?.amount??null,{branch:'brush',modelOnly:true,
+  unit:'%',models:[coldBlood],
+  detailRu:'Мастерство рубящих',detailEn:'Cleaving mastery'});
  // The same poison enchant has a mastery-61 OS variant. Show only the
  // version the current green mastery can actually cast, never both at once.
  if(mastery('alchemy')>=61)

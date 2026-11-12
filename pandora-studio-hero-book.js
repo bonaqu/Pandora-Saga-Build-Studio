@@ -1234,7 +1234,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    if(!Number.isFinite(entry?.amount))continue;
    details.append(make('div',{class:'stage-periodic-row'},[
     gameSkillBadge(entry.id,entry.name,null,gameTerms,en,skillIconForId),
-    make('strong',{text:'≈ '+entry.amount+' '+(entry.kind==='hp'?
+    make('strong',{text:String(entry.amount)+' '+(entry.kind==='hp'?
      (en?'HP':'ОЗ'):(en?'MP':'ОМ'))}),
     make('small',{text:entry.available?(en?'Available when using the skill':
      'Доступно при использовании умения'):

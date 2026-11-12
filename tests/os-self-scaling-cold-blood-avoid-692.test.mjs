@@ -43,6 +43,37 @@ test('250 synthetic source formula cases preserve floor thresholds and input sta
  assert.equal(checked,250);
  assert.equal(JSON.stringify(skills),before);
 });
+test('Skill Effects and selected buffs agree in 250 mastery/AGI cases',()=>{
+ const before=JSON.stringify(skills);
+ const combat={attack:{walkingBase:160},defense:{directRaw:80},
+  accuracy:{base:80},dodge:{base:100}};
+ let tested=0;
+ for(let mastery=41;mastery<=90;mastery++)for(const agi of [40,60,70,100,134]){
+  const currentStats={...stats,agi};
+  const a=C.scalingSkillPreview({skillCatalog:skills,jobKey:'JUGGERNAUT',
+   level:45,stats:currentStats,combat,branchMasteries:{brush:mastery},
+   branchCaps:classes.JUGGERNAUT.branchCaps,weaponKind:'1H_AXE'});
+  const b=C.scalingSkillPreview({skillCatalog:skills,jobKey:'SNIPER',
+   level:45,stats:currentStats,combat,branchMasteries:{warding:mastery},
+   branchCaps:classes.SNIPER.branchCaps,weaponKind:'BARE_HAND'});
+  const cold=a.offense.find(x=>x.id===142051001);
+  const quick=b.defense.find(x=>x.id===260005001);
+  assert.ok(cold?.available,'Cold Blood requirements at '+mastery);
+  assert.ok(quick?.available,'Quick Avoidance requirements at '+mastery);
+  const chosenCold=B.applied({...base,jobKey:'JUGGERNAUT',
+   selected:[142051001],stats:currentStats,branchMasteries:{brush:mastery}});
+  const chosenQuick=B.applied({...base,jobKey:'SNIPER',weapon:null,
+   selected:[260005001],stats:currentStats,branchMasteries:{warding:mastery}});
+  assert.equal(cold.amount,chosenCold.coldBlood.critical);
+  assert.equal(quick.amount,chosenQuick.quickStep.dodge);
+  assert.equal(cold.modelOnly,true);
+  assert.equal(quick.modelOnly,true);
+  tested++;
+ }
+ assert.equal(tested,250);
+ assert.equal(JSON.stringify(skills),before);
+});
+
 test('invalid OS vector, stat, class and weapon fail closed',()=>{
  const forged=structuredClone(skills);
  forged['142051001'].funcs.find(f=>f.ep==='EP_CRITICALRATE_CONST').fv1[2]=99;
