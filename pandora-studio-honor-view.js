@@ -17,12 +17,21 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  warId=null,warLink=()=>null,backButton=()=>null,
  label=(group,id,ru,en)=>lang==='en'?en:ru,editLabel=()=>{},
   copy=(key,ru,en)=>lang==='en'?en:ru,editCopy=()=>{},
- mapOptions=[],onOpenLocations=()=>{}}={}){
+ mapOptions=[],onOpenLocations=()=>{},searchQuery=''}={}){
  if(!browse||!detail||!article||typeof make!=='function')return;
  // Re-rendering after admin edits must never accumulate scroll observers.
  stopObserving();
  const en=lang==='en',tr=(ru,english)=>en?english:ru,
   fmt=new Intl.NumberFormat(en?'en-US':'ru-RU');
+ // Search the actual RU/EN authored Honor content, not an OS 'honor'
+ // catalog category. Use the same Unicode/ё normalization as Wiki.
+ const terms=String(searchQuery||'').normalize('NFKC').toLocaleLowerCase()
+  .replace(/ё/g,'е').trim().split(/\s+/u).filter(Boolean);
+ const matches=node=>{
+  const text=String(typeof node==='string'?node:node?.textContent||'')
+   .normalize('NFKC').toLocaleLowerCase().replace(/ё/g,'е');
+  return terms.every(term=>text.includes(term));
+ };
  const oldBrowseScroll=browse.scrollTop,oldDetailScroll=detail.scrollTop;
  const oldSection=detail.querySelector('.wiki-honor-nav-link.selected')?.dataset.honorSection||
   browse.querySelector('.wiki-honor-nav-link.selected')?.dataset.honorSection||'overview';
@@ -105,6 +114,18 @@ function render({browse,detail,make,lang='ru',article,editable=false,
     en?article.overview.gainEn:article.overview.gainRu));
   }else detail.append(editorial('h3','wiki-honor-title','warNotFound',
    'Война не найдена','War not found'));
+  if(terms.length){
+   let visible=0;
+   for(const entry of browse.querySelectorAll('.wiki-honor-war-link')){
+    entry.hidden=!matches(entry);
+    if(!entry.hidden)visible++;
+   }
+   if(!visible)browse.append(editorial('p','wiki-honor-search-empty',
+    'searchEmpty','По запросу ничего не найдено.','No Honor matches found.'));
+  }
+  // Mark the applied query only after all rows have been filtered.
+  // Also allows accessibility tests to wait for the debounced render.
+  detail.dataset.honorSearchQuery=String(searchQuery||'');
   browse.scrollTop=0;detail.scrollTop=0;
   return;
  }
@@ -420,8 +441,9 @@ function render({browse,detail,make,lang='ru',article,editable=false,
      choice.classList.toggle('chosen',active);choice.setAttribute('aria-pressed',String(active));
     }
     for(const card of rankGrid.children)
-     card.hidden=key==='standard'?card.dataset.rankType!=='standard':
-      key==='monthly'?card.dataset.rankType!=='monthly':false;
+     card.hidden=(key==='standard'?card.dataset.rankType!=='standard':
+      key==='monthly'?card.dataset.rankType!=='monthly':false)||
+      (terms.length>0&&card.dataset.honorSearchMatch==='false');
    }});
   const caption=node('span','wiki-honor-filter-caption',label);
   button.append(caption,node('span','wiki-honor-filter-count',' · '+count));
@@ -564,6 +586,45 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  const note=en?o.monthlyNoteEn:o.monthlyNoteRu;
  monthly.append(editableText(node('p','wiki-honor-note',note),
   note,'honor.overview',en?'monthlyNoteEn':'monthlyNoteRu',true));
+ // Search in Honor has no wikiIndex.search('honor') records. Filter the actual
+ // four article sections, link rows, rank cards and monthly rewards instead.
+ // The existing rank type filter is retained; searching never changes it.
+ if(terms.length){
+  const sections=[...detail.querySelectorAll('.wiki-honor-section')];
+  for(const block of sections){
+   const head=block.querySelector('.wiki-honor-heading-row');
+   const headerMatch=matches(head);
+   const rankCards=[...block.querySelectorAll('.wiki-honor-rank')];
+   const monthlyCards=[...block.querySelectorAll('.wiki-honor-monthly-card')];
+   const listRows=[...block.querySelectorAll('.wiki-honor-list-row')];
+   for(const card of rankCards){
+    card.dataset.honorSearchMatch=String(matches(card));
+    card.hidden=!headerMatch&&card.dataset.honorSearchMatch!=='true'||
+     (oldFilter==='standard'&&card.dataset.rankType!=='standard')||
+     (oldFilter==='monthly'&&card.dataset.rankType!=='monthly');
+   }
+   for(const card of monthlyCards)card.hidden=!headerMatch&&!matches(card);
+   for(const card of listRows)card.hidden=!headerMatch&&!matches(card);
+   const other=[...block.children].filter(el=>
+    !el.classList.contains('wiki-honor-rank-list')&&
+    !el.classList.contains('wiki-honor-monthly-list')&&
+    !el.classList.contains('wiki-honor-list-section'));
+   const generalMatch=other.some(matches);
+   const matchedChildren=[...rankCards,...monthlyCards,...listRows]
+    .some(card=>!card.hidden);
+   block.hidden=!(headerMatch||generalMatch||matchedChildren);
+  }
+  for(const entry of nav){
+   const target=detail.querySelector('#honor-'+entry.dataset.honorSection);
+   entry.hidden=target?.hidden===true;
+  }
+  if(!sections.some(section=>!section.hidden))
+   detail.append(editorial('p','wiki-honor-search-empty',
+    'searchEmpty','По запросу ничего не найдено.','No Honor matches found.'));
+ }
+ // Expose the last *applied* search query for asynchronous screen state.
+ // A typed input is not proof that the debounced Honor list has refreshed.
+ detail.dataset.honorSearchQuery=String(searchQuery||'');
  browse.scrollTop=oldBrowseScroll;detail.scrollTop=oldDetailScroll;
  // #detailContent is the real scroll plane, not the browser document.
  // Use the last section crossing the reading line for wheel/keyboard/drag.
@@ -577,17 +638,21 @@ function render({browse,detail,make,lang='ru',article,editable=false,
   // before the last heading can rise to that line.
   const paneTop=scroller.getBoundingClientRect().top;
   const readingLine=paneTop+Math.min(100,scroller.clientHeight*.22);
-  let current=sidebar[0][0];
+  const visibleSections=sidebar.map(([id])=>id).filter(id=>
+   detail.querySelector('#honor-'+id)?.hidden===false);
+  let current=visibleSections[0]||'overview';
   for(const [id]of sidebar){
-   if(detail.querySelector('#honor-'+id)?.getBoundingClientRect().top<=readingLine)
+   const part=detail.querySelector('#honor-'+id);
+   if(part&&!part.hidden&&part.getBoundingClientRect().top<=readingLine)
     current=id;
   }
   const remaining=scroller.scrollHeight-scroller.clientHeight-scroller.scrollTop;
   const monthlyTop=detail.querySelector('#honor-monthly')?.getBoundingClientRect().top;
   const monthlyVisible=Number.isFinite(monthlyTop)&&
    monthlyTop<=paneTop+Math.min(280,scroller.clientHeight*.43);
-  if(scroller.scrollTop<=3)current='overview';
-  else if(remaining<=36||monthlyVisible)current='monthly';
+  if(scroller.scrollTop<=3)current=visibleSections[0]||'overview';
+  else if(visibleSections.includes('monthly')&&(remaining<=36||monthlyVisible))
+   current='monthly';
   selectSection(current);
  };
  const onScroll=()=>{

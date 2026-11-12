@@ -481,9 +481,28 @@ function summaryPage(body,calc,options={}){
   body.append(section);
  }
 }
+// Verified game terminology comes from the same OS catalog/Remaked-approved
+// names displayed in Path and Wiki. Never derive skill names from translated
+// English keywords, branch abbreviations or a guessed profession.
+function gameSkillName(id,ru,en,terms={},english=false){
+ const skill=terms.skills?.[String(id)];
+ if(english)return terms.englishSkills?.[String(id)]?.n||
+  skill?.nameEn||en||skill?.name||ru;
+ return skill?.name||ru;
+}
+function gameBranchName(branch,terms={},english=false){
+ return (english?terms.englishBranches?.[branch]:terms.branchLabels?.[branch])||
+  (english?({benevolence:'Grace',hymn:'Hymn',blessing:'Blessing'})[branch]:
+    ({benevolence:'Исцеление',hymn:'Песнопения',blessing:'Благословение'})[branch])||
+   branch;
+}
+function gameClassName(id,ru,en,terms={},english=false){
+ return (english?terms.englishClasses?.[id]?.n:terms.classes?.[id]?.name)||
+  (english?en:ru);
+}
 function buffsPage(body,options){
  const {buffs={},vitalsBuffs={},onBuff=()=>{},onVital=()=>{},honorTitles=[],
-  availability={},combatSkillCards={},resistanceSkillChoices=[],modifiers}=options;
+  availability={},combatSkillCards={},resistanceSkillChoices=[],modifiers,gameTerms={}}=options;
  const english=document.documentElement?.lang==='en';
  body.append(make('p',{class:'stage-attribute-note',text:english?
   'Settings apply to this build immediately. Values update in the other Hero Book chapters.':
@@ -546,9 +565,13 @@ function buffsPage(body,options){
    img.onerror=()=>img.remove();
    node.append(img);
   }
-  const info=make('span',{class:'stage-combat-buff-copy',text:name});
-  if(typeof skill?.desc==='string'&&skill.desc.trim())
-   root.PandoraGuideTooltip?.attach(info,skill.desc,{hoverDelay:650});
+  // A real source-backed skill always wins over a hand-written toggle label.
+  const displayName=skill?(english?(skill.nameEn||skill.name||bookText(name)):
+    (skill.name||name)):bookText(name);
+  const info=make('span',{class:'stage-combat-buff-copy',text:displayName});
+  const description=english?skill?.descEn||skill?.desc:skill?.desc;
+  if(typeof description==='string'&&description.trim())
+   root.PandoraGuideTooltip?.attach(info,description,{hoverDelay:650});
   if(skill&&!allowed)
    info.append(make('small',{text:skill.reason||'Недоступно для героя'}));
   else if(skill?.summary)info.append(make('small',{text:skill.summary}));
@@ -685,9 +708,22 @@ function buffsPage(body,options){
    if(!effect||!Number.isFinite(effect.value))continue;
    const row=make('div',{class:'stage-legacy-buff-row'});
    const kindLabel=english&&kind==='СИЛ, ПРВ, ИНТ'?'STR, AGI, INT':kind;
+   // Exact identifiers here are OS skills, not machine-translated labels.
+   const gameId={
+    gratia:320007001,lapisMedio:320008001,encouragement:320012001,
+    groupBarrier:320003001,holyWeapon:330051001,gloomyEffect:430051001,
+    enchantEnhance:320011001,enchantMagic:320011001,
+    minstrelSong:340001001,sageSong:340004001,
+    toxify:220001001,toxicAura:220001002
+   }[id];
+   const defaultEn=labelEn||bookEnglish[label]||label;
+   const canonical=gameSkillName(gameId,label,defaultEn,gameTerms,english);
+   const title=id==='enchantEnhance'?canonical+(english?' · magic attack':' · магическая атака'):
+    id==='enchantMagic'?canonical+(english?' · aura':' · аура'):canonical;
    row.append(make('span',{class:'stage-legacy-buff-copy'},[
-    make('span',{text:english&&labelEn?labelEn:label}),
-    make('small',{text:kindLabel})
+    make('span',{text:title}),
+    make('small',{text:english?(kind==='СИЛ, ПРВ, ИНТ'?'STR, AGI, INT':
+     bookEnglish[kind]||kind):kindLabel})
    ]),make('strong',{text:prefix+effect.value}));
    rows.append(row);
   }
@@ -699,22 +735,20 @@ function buffsPage(body,options){
 
 }
 
-function renderSongSkills(body,modifiers){
+function renderSongSkills(body,modifiers,gameTerms={}){
  const english=document.documentElement?.lang==='en';
  const songRows=modifiers?.songSkills?.rows||[];
  if(songRows.length){
-  const branchLabels=english?
-   {benevolence:'Healing',hymn:'Hymns',blessing:'Blessing'}:
-   {benevolence:'Исцеление',hymn:'Гимны',blessing:'Благословение'};
   const details=make('details',{class:'stage-legacy-buff-previews stage-song-skills'});
   details.append(make('summary',{text:english?'Songs available to this class':
    'Песни для выбранного класса'}));
   const rows=make('div',{class:'stage-song-skill-list'});
   for(const entry of songRows){
    const requirements=entry.requirements.map(req=>
-    (branchLabels[req.branch]||req.branch)+' '+req.amount).join(' · ');
+    gameBranchName(req.branch,gameTerms,english)+' '+req.amount).join(' · ');
    const card=make('div',{class:'stage-song-skill-row'});
-   card.append(make('strong',{text:english?entry.nameEn:entry.name}),
+   card.append(make('strong',{text:gameSkillName(
+    entry.id,entry.name,entry.nameEn,gameTerms,english)}),
     make('small',{text:english?entry.descriptionEn:entry.description}),
     make('span',{class:entry.available?'stage-song-skill-ready':'stage-song-skill-locked',
      text:(entry.available?
@@ -731,7 +765,7 @@ function renderSongSkills(body,modifiers){
 }
 // Mirrors Remaked SkillView: individual skill outcomes, never the selected
 // buff toggles or the 43 main result values.
-function skillEffectsPage(body,{modifiers=null}={}){
+function skillEffectsPage(body,{modifiers=null,gameTerms={}}={}){
  const en=document.documentElement?.lang==='en';
  const spells=modifiers?.healingSpells?.rows||[];
  if(spells.length){
@@ -744,31 +778,44 @@ function skillEffectsPage(body,{modifiers=null}={}){
    const available=row.available===true;
    group.append(make('div',{class:'stage-heal-row'+
     (available?'':' stage-book-unavailable')},[
-    make('span',{text:en?(row.nameEn||row.name):row.name}),
+    // Source IDs are stable for all five Remaked healing previews, including
+    // locked skills which deliberately have a null available skillId.
+    make('span',{text:gameSkillName(row.skillId||
+     ({firstAid:310001001,heal:310004001,healingAura:310021001,
+       sanctuary:310023001,restoration:310022001})[row.id],
+     row.name,row.nameEn,gameTerms,en)}),
     make('strong',{text:amount}),
     make('small',{text:available?(en?'Available':'Доступно'):
      (en?'Preview · '+(row.requiresEn||row.requires||'Requirements not met'):
-      'Предпросмотр · '+(row.requires||'Требования не выполнены'))})
+      'Предпросмотр · '+(row.id==='heal'?
+       // The OS class ACOLYTE is «Адепт», not an automatic «Аколит».
+       gameClassName('ACOLYTE','Адепт','Acolyte',gameTerms,false)+', уровень 18':
+       row.id==='sanctuary'?
+       gameClassName('CLERIC','Клирик','Cleric',gameTerms,false)+', уровень 45':
+       row.requires||'Требования не выполнены'))})
    ]));
   }
   body.append(group);
  }
  const periodic=modifiers?.periodicRecovery?.rows||[];
  if(periodic.length){
-  const skillNamesEn={310002001:'Regenerate',310022001:'Restoration',330005001:'Mana Restore'};
+  // The OS English source supplies localized names by numeric skill ID.
+  // Do not translate Russian game names heuristically.
   const details=make('details',{class:'stage-attribute-row stage-periodic-recovery'});
   details.append(make('summary',{text:en?'Recovery every 2 seconds':
    'Восстановление каждые 2 секунды'}));
   for(const entry of periodic){
    if(!Number.isFinite(entry?.amount))continue;
    details.append(make('div',{class:'stage-periodic-row'},[
-    make('span',{text:en?(skillNamesEn[entry.id]||entry.name):entry.name}),
+    make('span',{text:gameSkillName(entry.id,entry.name,null,gameTerms,en)}),
     make('strong',{text:'≈ '+entry.amount+' '+(entry.kind==='hp'?
      (en?'HP':'ОЗ'):(en?'MP':'ОМ'))}),
     make('small',{text:entry.available?(en?'Available when using the skill':
      'Доступно при использовании умения'):
-     entry.required>0?(en?'Requires healing mastery '+entry.required:
-      'Для изучения нужно мастерство '+entry.required):
+     entry.required>0?(en?'Requires '+gameBranchName('benevolence',gameTerms,true)+
+      ' mastery '+entry.required:
+      'Требуется мастерство «'+gameBranchName('benevolence',gameTerms,false)+
+      '»: '+entry.required):
       (en?'Not yet available':'Пока недоступно')})
    ]));
   }
@@ -786,7 +833,7 @@ function skillEffectsPage(body,{modifiers=null}={}){
     'Пассивка усиливает урон при попадании оружием ближнего боя, но не показатель АТК. Точный урон удара без подтверждённой серверной формулы не рассчитывается.'})
   ]));
  }
- renderSongSkills(body,modifiers);
+ renderSongSkills(body,modifiers,gameTerms);
  if(!hitPassive?.applies&&!spells.length&&!periodic.length&&!(modifiers?.songSkills?.rows||[]).length)
   body.append(make('p',{class:'stage-attribute-note',text:en?
    'Calculated skill effects appear here when game records and requirements are available.':
@@ -1102,7 +1149,7 @@ function decorateChapterCaptions(body,page,options){
 }
 function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{},modifiers=null,
  buffs={},vitalsBuffs={},onBuff=()=>{},onVital=()=>{},honorTitles=[],availability={},
- combatSkillCards={},resistanceSkillChoices=[],itemById=()=>null,onItem=()=>{},
+ combatSkillCards={},resistanceSkillChoices=[],itemById=()=>null,onItem=()=>{},gameTerms={},
  copy={},onTextEdit=null,canEdit=false,onHonor=()=>{}}={}){
  root.PandoraGuideTooltip?.dismiss();
  // Keep the same scrolling pane mounted on ordinary value changes: re-attaching
@@ -1192,8 +1239,9 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
  if(chosen==='attack')attackPage(body,modifiers,items,document.documentElement?.lang==='en',copyOptions);
  if(chosen==='defense')defensePage(body,modifiers,document.documentElement?.lang==='en',copyOptions);
  if(chosen==='buffs')buffsPage(body,{buffs,vitalsBuffs,onBuff,onVital,
-  honorTitles,availability,combatSkillCards,resistanceSkillChoices,modifiers,...copyOptions});
- if(chosen==='effects')skillEffectsPage(body,{modifiers});
+  honorTitles,availability,combatSkillCards,resistanceSkillChoices,modifiers,
+  gameTerms,...copyOptions});
+ if(chosen==='effects')skillEffectsPage(body,{modifiers,gameTerms});
  if(chosen==='recovery'){
   const english=document.documentElement?.lang==='en';
   const percent=modifiers?.potion?.percent;
@@ -1335,5 +1383,6 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
  }else target.append(body);
 }
 root.PandoraStageAttributes=Object.freeze({render,bookPages,bookText,bookEditorialKey,
- bookEditorialDefaults:bookEnglish,summaryRows,attackChapterGroups,defenseChapterGroups});
+ bookEditorialDefaults:bookEnglish,summaryRows,attackChapterGroups,defenseChapterGroups,
+ gameSkillName,gameBranchName,gameClassName});
 })(typeof window==='undefined'?globalThis:window);

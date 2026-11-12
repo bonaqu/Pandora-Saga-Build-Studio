@@ -39,6 +39,60 @@ export async function runHonorGuideSmoke(browser,base){
   assert.equal(await panel.locator('.wiki-honor-rank:not([hidden])').count(),9);
   await rankFilters.nth(0).click();
   assert.equal(await panel.locator('.wiki-honor-rank:not([hidden])').count(),12);
+  // Regression: Honor used to return from renderWiki before attaching the
+  // universal search listener. Search the article, not the OS record index.
+  const honorSearch=page.locator('input[name="pandora-studio-encyclopedia-filter"]');
+  // The Wiki search intentionally starts readonly to reject password-manager
+  // autofill. A real user click unlocks it before typing.
+  await honorSearch.click();
+  await honorSearch.fill('Эль Ведд');
+  await page.waitForFunction(query=>
+   document.querySelector('.wiki-page')?.dataset.honorSearchQuery===query,
+   'Эль Ведд',{timeout:5000});
+  await page.waitForFunction(()=>
+   document.querySelector('#honor-gain')?.hidden===false&&
+   document.querySelector('#honor-ranks')?.hidden===true);
+  const locationMatches=await panel.locator('.wiki-honor-list-row:not([hidden])').allInnerTexts();
+  assert.ok(locationMatches.length>0,'Honor search must find at least one PvP location');
+  assert.ok(locationMatches.every(text=>/Эль Ведд/u.test(text)),
+   'Only matching Honor entries may remain visible: '+locationMatches.join(' | '));
+  const navVisible=await page.locator('.wiki-honor-nav-link:not([hidden])').count();
+  const matchingSections=await panel.locator('.wiki-honor-section:not([hidden])').allInnerTexts();
+  assert.equal(navVisible,matchingSections.length,
+   'Honor sidebar must expose exactly the sections containing search matches');
+  assert.ok(matchingSections.length>0&&matchingSections.every(text=>/Эль Ведд/u.test(text)),
+   'Honor sections must match the location name');
+  await honorSearch.fill('Герцог');
+  await page.waitForFunction(query=>
+   document.querySelector('.wiki-page')?.dataset.honorSearchQuery===query,
+   'Герцог',{timeout:5000});
+  await page.waitForFunction(()=>
+   document.querySelector('#honor-monthly')?.hidden===false);
+  const matchingMonthly=await panel.locator('.wiki-honor-monthly-card:not([hidden])')
+   .allInnerTexts();
+  // Both «Герцог» and «Эрцгерцог» are valid substring matches. Honor's
+  // real search is case-insensitive and must not drop the second title.
+  assert.ok(matchingMonthly.length>=2&&
+   matchingMonthly.every(text=>/герцог/iu.test(text)),
+   'Honor monthly ranks include Duke and Archduke: '+matchingMonthly.join(' | '));
+  await honorSearch.fill('несуществующийнеизвестныйранг');
+  await page.waitForFunction(query=>
+   document.querySelector('.wiki-page')?.dataset.honorSearchQuery===query,
+   'несуществующийнеизвестныйранг',{timeout:5000});
+  await panel.locator('.wiki-honor-search-empty').waitFor({state:'visible'});
+  assert.equal(await panel.locator('.wiki-honor-section:not([hidden])').count(),0);
+  await honorSearch.fill('');
+  await page.waitForFunction(()=>
+   document.querySelector('.wiki-page')?.dataset.honorSearchQuery==='',
+   null,{timeout:5000});
+  await page.waitForFunction(()=>
+   document.querySelectorAll('.wiki-honor-section:not([hidden])').length===4);
+  assert.equal(await panel.locator('.wiki-honor-rank:not([hidden])').count(),12);
+  assert.equal(await page.locator('.wiki-honor-nav-link:not([hidden])').count(),4);
+  await rankFilters.nth(1).click();
+  assert.equal(await panel.locator('.wiki-honor-rank:not([hidden])').count(),9,
+   'Rank type filters work after a search round trip');
+  await rankFilters.nth(0).click();
   assert.equal(await panel.locator('.wiki-honor-joining').count(),0,
    'Starting Honor belongs to the Squire rank, not a duplicated callout');
   // In-world entity cards: match the established spawn-location design.
@@ -244,6 +298,34 @@ export async function runHonorGuideSmoke(browser,base){
   await page.locator('.wiki-honor-title').waitFor({state:'visible'});
   assert.equal((await page.locator('.wiki-honor-title').innerText()).trim(),
    'Honor');
+  const honorSearchEn=page.locator('input[name="pandora-studio-encyclopedia-filter"]');
+  await honorSearchEn.click();
+  await honorSearchEn.fill('Honor ranks');
+  await page.waitForFunction(query=>
+   document.querySelector('.wiki-page')?.dataset.honorSearchQuery===query,
+   'Honor ranks',{timeout:5000});
+  await page.waitForFunction(()=>document.querySelector('#honor-ranks')?.hidden===false);
+  const matchingEnglish=await panel.locator('.wiki-honor-section:not([hidden])')
+   .allInnerTexts();
+  // Honor uses unordered word matching, just like other Wiki searches:
+  // "Honor ranks" may find a sentence containing both words separately.
+  assert.ok(matchingEnglish.length>0&&
+   matchingEnglish.every(text=>['honor','ranks'].every(term=>
+    text.toLocaleLowerCase().includes(term))),
+   'Every visible English Honor section must contain all searched words');
+  await honorSearchEn.fill('totally-unknown-honor-record');
+  await page.waitForFunction(query=>
+   document.querySelector('.wiki-page')?.dataset.honorSearchQuery===query,
+   'totally-unknown-honor-record',{timeout:5000});
+  await panel.locator('.wiki-honor-search-empty').waitFor({state:'visible'});
+  assert.match(await panel.locator('.wiki-honor-search-empty').innerText(),
+   /No Honor matches found/);
+  await honorSearchEn.fill('');
+  await page.waitForFunction(()=>
+   document.querySelector('.wiki-page')?.dataset.honorSearchQuery==='',
+   null,{timeout:5000});
+  await page.waitForFunction(()=>document.querySelectorAll(
+   '.wiki-honor-section:not([hidden])').length===4);
   assert.match(await panel.locator('#honor-rank-7').innerText(),/Count/);
   assert.doesNotMatch(await panel.locator('.wiki-honor-list-section').first()
    .innerText(),/Покинутые земли Мальдии|Подземные руины Астира/);
