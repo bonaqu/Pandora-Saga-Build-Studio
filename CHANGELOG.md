@@ -1,5 +1,14 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.676.0 — 2026.11.12.676 · Show applied Lightness and Blessed Repose speed indices in Skill effects and passive recovery
+
+- Show applied Lightness and Blessed Repose speed indices in Skill effects and passive recovery
+- A compact shared skill-effect group shows the already calculated +30 movement index and +90 allied MP recovery index, if selected, with current OS skill icons and descriptions.
+- The Defense chapter also exposes Blessed Repose as an independent MP speed source alongside the total, without adding it twice or confusing it with MP per tick.
+- Three focused regression cases and no formula, D1 or saved-build changes.
+- Browser acceptance and deployed Pages state must be verified separately.
+
+
 ## 0.675.0 — 2026.11.12.675 · Hero Book defensive skills now honor equipped shield and weapon eligibility consistently with active combat gates
 
 - Hero Book defensive skills now honor equipped shield and weapon eligibility consistently with active combat gates

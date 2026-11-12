@@ -1,4 +1,4 @@
 {
-  "release": "2026.11.12.675",
-  "notes": "Hero Book defensive skills now honor equipped shield and weapon eligibility consistently with active combat gates"
+  "release": "2026.11.12.676",
+  "notes": "Show applied Lightness and Blessed Repose speed indices in Skill effects and passive recovery"
 }
