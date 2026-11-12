@@ -27,7 +27,10 @@ test('CAS rejection restores the same draft and editability with a local accessi
  assert.match(method,/control\.removeAttribute\('aria-disabled'\)/);
  assert.match(method,/node\.removeAttribute\('aria-busy'\)/);
  assert.match(method,/class:'ui-content-inline-error',role:'alert'/);
- assert.match(method,/feedback\.textContent='Не сохранено: '/);
+ assert.match(method,/ownerSay\('Не сохранено: ','Not saved: '\)/);
+ assert.match(method,/inlineError\(message\)/);
+ assert.match(method,/ownerSay\('Некорректная длина текста'/);
+ assert.match(method,/ownerSay\('Выбери значение','Choose a value'\)/);
  assert.match(method,/node\.replaceChildren\(\.\.\.visibleNodes\)/);
  assert.doesNotMatch(method,/else showStudioToast\('Не сохранено:/,
   'Transient global toast must not replace the active inline editor');
