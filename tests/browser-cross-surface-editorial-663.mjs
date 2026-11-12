@@ -90,12 +90,16 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   assert.equal(await wikiInput.getAttribute('placeholder'),'Искать в справочнике…');
   assert.equal(await wikiInput.inputValue(),'search that stays');
   assert.equal(await wikiInput.evaluate(node=>node===window.__copyWikiSearch),true);
-  // Escape cancels without a second D1 write, on the same live page.
+  await edit('wiki-ui','searchAria','Искать записи энциклопедии');
+  assert.equal(await wikiInput.getAttribute('aria-label'),'Искать записи энциклопедии');
+  assert.equal(await wikiInput.getAttribute('placeholder'),'Искать в справочнике…',
+   'The aria edit must not overwrite the separately edited placeholder');
+  // Escape cancels without another D1 write, on the same live page.
   await row('wiki-ui','searchAria').locator('.studio-owner-interface-pencil').click();
   const cancel=row('wiki-ui','searchAria').locator('[data-owner-text-field]');
   await cancel.fill('Не сохранять');
   await cancel.press('Escape');
-  assert.equal(writes.length,1);
+  assert.equal(writes.length,2);
 
   // Skills: close the real workbench before choosing a different section.
   await page.locator('#dockClose').click();
@@ -125,6 +129,10 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   assert.equal(await equipInput.getAttribute('placeholder'),'Найти снаряжение…');
   assert.equal(await equipInput.inputValue(),'no item exists');
   assert.equal(await equipInput.evaluate(node=>node===window.__copyGearSearch),true);
+  await edit('equipment','pickerSearchAria','Искать снаряжение для');
+  assert.match(await equipInput.getAttribute('aria-label'),/Искать снаряжение для/);
+  assert.equal(await equipInput.getAttribute('placeholder'),'Найти снаряжение…',
+   'Equipment aria and placeholder must remain independent');
   await edit('equipment','pickerNoMatches','Совместимого снаряжения нет.');
   await picker.locator('.stage-picker-list .muted')
    .getByText('Совместимого снаряжения нет.').waitFor({state:'visible'});
