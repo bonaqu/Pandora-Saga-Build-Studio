@@ -13,6 +13,6 @@ test('debugger-only formula disclaimers are not placed in ordinary player book',
 test('Warding passive requires actual class branch capacity of 26 or more',()=>{
  const calculator=read('pandora-os-character-calculator.js');
  assert.match(calculator,/wardingCap:classData\.branchCaps\?\.warding/);
- assert.match(calculator,/!Number\.isInteger\(wardingCap\)\|\|wardingCap<26/);
+ assert.match(calculator,/!Number\.isSafeInteger\(wardingCap\)\|\|wardingCap<26/);
  assert.match(calculator,/wardingMastery>wardingCap/);
 });
