@@ -40,7 +40,7 @@ export async function runOwnerBuildHints660Smoke(browser,base){
   if(path==='/api/admin/override'&&method==='POST'){
    assert.equal(req.headers().authorization,'Bearer '+ownerToken);
    const body=req.postDataJSON();
-   assert.match(body.key,/^guideedit\.book\.ui\.label\.library-hint-/);
+   assert.match(body.key,/^guideedit\.book\.ui\.label\.library-(?:hint-|card-)/);
    assert.equal(body.expectedValue,Object.hasOwn(values,body.key)?values[body.key]:null,
     'CAS keeps the previous version');
    values[body.key]=body.value;writes.push(body);
@@ -69,7 +69,7 @@ export async function runOwnerBuildHints660Smoke(browser,base){
   const panel=page.locator('.build-hint-owner-panel');
   await panel.waitFor({state:'visible'});
   await panel.locator('summary').click();
-  assert.equal(await panel.locator('.build-hint-owner-row').count(),5);
+  assert.equal(await panel.locator('.build-hint-owner-row').count(),9);
   const edit=async(key,text)=>{
    await panel.locator('[data-owner-copy-pencil="'+key+'"]').click();
    const field=panel.locator('.account-copy-edit-host [contenteditable]');
@@ -100,6 +100,16 @@ export async function runOwnerBuildHints660Smoke(browser,base){
   await cancel.press('Escape');
   assert.equal(JSON.parse(values[key]).ru,russian);
   assert.equal(writes.length,1,'Escape never writes to D1');
+  // Owner edits a card label while the hero is mounted. The icon remains
+  // separate and the accessible button name updates without card remount.
+  await edit('libraryCardOpen','Открыть персонажа');
+  const labelKey='guideedit.book.ui.label.library-card-open';
+  assert.equal(JSON.parse(values[labelKey]).ru,'Открыть персонажа');
+  assert.equal(await card.locator('.build-card-action-label').first().innerText(),
+   'Открыть персонажа');
+  assert.equal(await card.locator('.build-card-action-icon').first().innerText(),'📂');
+  assert.equal(await card.locator('[data-build-action-hint="libraryHintOpen"]')
+   .getAttribute('data-guide-hint'),russian);
 
   await page.locator('#dockClose').click();
   await page.locator('#locale [data-locale="en"]').click();
@@ -110,6 +120,11 @@ export async function runOwnerBuildHints660Smoke(browser,base){
   const english='Opens the saved character.';
   await edit('libraryHintOpen',english);
   assert.deepEqual(JSON.parse(values[key]),{ru:russian,en:english});
+  await edit('libraryCardOpen','View character');
+  assert.deepEqual(JSON.parse(values[labelKey]),{
+   ru:'Открыть персонажа',en:'View character'});
+  assert.equal(await page.locator('.build-card').first()
+   .locator('.build-card-action-label').first().innerText(),'View character');
   assert.equal(await page.locator('.build-card').first().locator(
    '[data-build-action-hint="libraryHintOpen"]').getAttribute('data-guide-hint'),english);
   await page.setViewportSize({width:390,height:800});
@@ -117,7 +132,7 @@ export async function runOwnerBuildHints660Smoke(browser,base){
    overflow:el.scrollWidth-el.clientWidth,
    rows:el.querySelectorAll('.build-hint-owner-row').length
   }));
-  assert.equal(geo.rows,5);
+  assert.equal(geo.rows,9);
   assert.ok(geo.overflow<=4,'Mobile hint editor must not overflow horizontally');
   assert.equal(await page.locator('.build-card h3').first().innerText(),name);
   assert.deepEqual(errors,[]);
