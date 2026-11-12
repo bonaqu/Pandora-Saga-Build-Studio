@@ -1,5 +1,14 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.681.0 — 2026.11.12.681 · Shared Path skill previews for equipment and Soul procs; legacy Divine Blessing remains independent
+
+- Shared Path skill previews for equipment and Soul procs; legacy Divine Blessing remains independent
+- Hero Book Attack/Defense item and Soul on-hit proc skill names now use the existing one-owner Path/Origin rich tooltip, with current OS icon, level/mastery requirements and description (RU/EN). Unknown source IDs remain plain text, never fabricated skill metadata.
+- Preserve the 330004001 Divine Blessing alias in pre-existing saved builds when switching between the five mutually exclusive elemental resistance spells; it remains an independent ally effect. Current elemental selections are still exclusive.
+- Add regression coverage and browser hover acceptance; no modifications to live damage formulas, account sessions, stored user builds or production D1 data.
+- Browser acceptance and deployed Pages readiness must be verified separately.
+
+
 ## 0.680.0 — 2026.11.12.680 · Uniform exclusive elemental resistance buffs, numeric priest and ally summaries, and shared rich skill tooltips
 
 - Uniform exclusive elemental resistance buffs, numeric priest and ally summaries, and shared rich skill tooltips
