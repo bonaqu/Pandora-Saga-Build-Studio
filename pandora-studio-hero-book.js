@@ -337,6 +337,10 @@ function meaningfulGuideHint(value){
  if(typeof value!=='string'||!value.trim())return false;
  return !/^(?:Описание параметра\.?|Параметр персонажа\.?|Название раздела Книги героя\.?|Описание раздела «[^»]+»\.?|Stat description\.?|Character statistic\.?|Hero Book chapter title\.?|Description of .+\.?)$/i.test(value.trim());
 }
+// Some older D1 copies contain a literal backslash+n instead of a newline.
+function guideDisplayText(value){
+ return typeof value==='string'?value.replace(/\\n/g,'\n'):value;
+}
 function guideLabel(node,key,ru,en,options={},fallbackRu='',fallbackEn=''){
  if(!node)return node;
  const guide=root.PandoraHonorGuide;
@@ -345,7 +349,7 @@ function guideLabel(node,key,ru,en,options={},fallbackRu='',fallbackEn=''){
   guide?.field(options.overrides||{},key,ru,en,fallbackRu,fallbackEn);
  const english=document.documentElement?.lang==='en';
  const label=english?(info?.en||en):(info?.ru||ru);
- const originalHint=english?info?.hintEn:info?.hintRu;
+ const originalHint=guideDisplayText(english?info?.hintEn:info?.hintRu);
  // A recovery-speed index is not a number of seconds. Preserve the D1
  // description, adding the missing unit explanation once, in both locales.
  const recoveryIndex=/^(defense)\.(hpRecoverySpeed|mpRecoverySpeed)$/.test(key);
@@ -522,16 +526,7 @@ function summaryPage(body,calc,options={}){
     make('strong',{text})
    ]);
    guideLabel(tile.firstChild,'summary.'+summaryIndex++,result.ru,result.en,options);
-   // Keep the existing tooltip, but add a visible focusable hint affordance.
-   if(['Сопр. аном. тел.','Сопр. аном. дух.'].includes(result.ru)){
-    const hint=tile.firstChild?.dataset?.guideHint;
-    if(hint){
-     const info=make('span',{class:'stage-status-family-info',tabindex:0,
-      'aria-label':en?'Status group explanation':'Какие состояния учитываются',text:'ⓘ'});
-     root.PandoraGuideTooltip?.attach(info,hint,{hoverDelay:350});
-     tile.firstChild.append(info);
-    }
-   }
+   grid.append(tile);
    grid.append(tile);
   }
   section.append(heading,grid);
@@ -1489,17 +1484,45 @@ function appendChapterGroups(body,groups,english,emptyRu,emptyEn,options={}){
   heading.append(title);section.append(heading);
   guideLabel(title,(options.page||'attack')+'.group.'+group.key,group.ru,group.en,options);
   if(group.key==='status'&&options.page==='defense'){
-   const hints=root.PandoraHonorGuide?.hints||{};
-   const bodyHint=hints['Сопр. аном. тел.']?.[english?1:0]||'';
-   const mindHint=hints['Сопр. аном. дух.']?.[english?1:0]||'';
-   if(bodyHint&&mindHint){
-    const help=make('details',{class:'stage-status-family-guide'});
-    help.append(make('summary',{text:english?
-     'What are body and mind ailments?':
-     'Какие состояния относятся к телу и духу?'}));
-    help.append(make('p',{text:bodyHint}),make('p',{text:mindHint}));
-    section.append(help);
+   // Share the summary tooltip's existing D1 key, not another stale copy.
+   const familyRows=summaryRows({}).flatMap(entry=>entry.rows);
+   const family=[['Сопр. аном. тел.','Physical conditions'],
+    ['Сопр. аном. дух.','Mental conditions']];
+   const help=make('details',{class:'stage-status-family-guide'});
+   const caption=make('span',{text:english?
+    'What are body and mind ailments?':
+    'Какие состояния относятся к телу и духу?'});
+   help.append(make('summary',{},[caption]));
+   guideLabel(caption,'defense.statusFamilyCaption',
+    'Какие состояния относятся к телу и духу?',
+    'What are body and mind ailments?',options);
+   for(const [ru,en] of family){
+    const index=familyRows.findIndex(row=>row.ru===ru);
+    if(index<0)continue;
+    const record=root.PandoraHonorGuide?.summary(options.overrides||{},index,ru,en);
+    const description=guideDisplayText(english?record?.hintEn:record?.hintRu);
+    if(!description)continue;
+    const copy=make('span',{class:'stage-status-family-copy',text:description});
+    const paragraph=make('p',{class:'stage-status-family-paragraph'},[copy]);
+    if(options.editable&&typeof options.onTextEdit==='function'){
+     const field=english?'hintEn':'hintRu',key='summary.'+index;
+     const edit=event=>{
+      event.preventDefault();event.stopPropagation();
+      root.PandoraGuideTooltip?.dismiss();
+      options.onTextEdit(copy,key,field,description);
+     };
+     copy.addEventListener('dblclick',edit);
+     copy.setAttribute('aria-keyshortcuts','F2');
+     copy.addEventListener('keydown',event=>{if(event.key==='F2')edit(event)});
+     copy.tabIndex=0;
+     paragraph.append(make('button',{type:'button',class:'stage-guide-edit-name',
+      text:'✎',title:english?'Edit status explanation':'Изменить пояснение',
+      'aria-label':english?'Edit status explanation':'Изменить пояснение',
+      onclick:edit}));
+    }
+    help.append(paragraph);
    }
+   section.append(help);
   }
   const grid=make('div',{class:'stage-chapter-grid'});
   for(const row of group.rows){
