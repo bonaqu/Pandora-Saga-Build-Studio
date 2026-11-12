@@ -57,7 +57,7 @@ const readableWeapon=record=>{
  return ['Не подходит выбранное оружие','Current weapon is incompatible'];
 };
 function enabled(row,{skills={},jobKey=null,level=1,weapon=null,branchMasteries={},
- branchLabels={},englishBranches={}}={}){
+ branchCaps=null,branchLabels={},englishBranches={}}={}){
  const source=skills?.[String(row.id)];
  if(!source||Number(source.id)!==row.id||
   !Array.isArray(source.funcs)||!source.funcs.some(effect=>effect.dir==='TARGET'))
@@ -69,6 +69,15 @@ function enabled(row,{skills={},jobKey=null,level=1,weapon=null,branchMasteries=
  if(row.scope==='party')return {allowed:true,ru:'',en:''};
  if(!source.classes?.[jobKey])return {allowed:false,
   ru:'Недоступно для этой профессии',en:'Unavailable to this class'};
+ // Source class assignment is broader than actual trainable branch caps.
+ // A hypothetical 41 Warding on a Warrior (max 5) cannot activate a buff.
+ if(branchCaps&&typeof branchCaps==='object'&&source.branch){
+  const limit=branchCaps[source.branch],trained=branchMasteries?.[source.branch]??0;
+  if(!Number.isSafeInteger(limit)||limit<=0||
+   !Number.isSafeInteger(trained)||trained<0||trained>limit)
+   return {allowed:false,ru:'Мастерство превышает предел профессии',
+    en:'Skill mastery exceeds class cap'};
+ }
  if(!Number.isInteger(level)||level<Number(source.charLevel||0))
   return {allowed:false,ru:'Требуется уровень '+source.charLevel,
    en:'Requires level '+source.charLevel};
@@ -109,12 +118,12 @@ function exactConstant(record,ep,expected){
   found[0].fv2.every(v=>v===0);
 }
 function choices({skills={},englishSkills={},jobKey=null,level=1,weapon=null,
- branchMasteries={},branchLabels={},englishBranches={},selected=[]}={}){
+ branchMasteries={},branchCaps=null,branchLabels={},englishBranches={},selected=[]}={}){
  const active=new Set(selectedIds(selected));
  return definitions.map(row=>{
   const record=skills[String(row.id)];
   const gate=enabled(row,{skills,jobKey,level,weapon,branchMasteries,
-   branchLabels,englishBranches});
+   branchCaps,branchLabels,englishBranches});
   return {...row,name:record?.name||'',nameEn:englishSkills[String(row.id)]?.n||
    record?.name||'',description:record?.desc||'',
    selected:active.has(row.id),available:gate.allowed,
@@ -133,12 +142,22 @@ function effect(record,ep){
  if(rows.length!==1||!Number.isFinite(rows[0].fv1?.[3]))return null;
  return rows[0].fv1[3];
 }
+function scalingEffect(record,ep,values){
+ const rows=(record?.funcs||[]).filter(f=>f?.ep===ep&&f?.dir==='TARGET');
+ return rows.length===1&&Array.isArray(rows[0].fv1)&&
+  rows[0].fv1.length===4&&rows[0].fv1.every((v,i)=>v===values[i])&&
+  Array.isArray(rows[0].fv2)&&rows[0].fv2.length===4&&
+  rows[0].fv2.every(v=>v===0);
+}
+// Current OS adds caster-mastery/recipient-attribute coefficient terms
+// to two legacy toggles marked "not implemented" in archived Remaked.
+// These are source-coefficient MODELS, not observed server action results.
 function applied({selected=[],skills={},jobKey=null,level=1,weapon=null,
- branchMasteries={}}={}){
+ branchMasteries={},branchCaps=null,stats={}}={}){
  const chosen=new Set(selectedIds(selected)),result={};
  for(const row of definitions){
   if(!chosen.has(row.id)||!numericIds.has(row.id))continue;
-  const gate=enabled(row,{skills,jobKey,level,weapon,branchMasteries});
+  const gate=enabled(row,{skills,jobKey,level,weapon,branchMasteries,branchCaps});
   if(!gate.allowed)continue;
   const record=skills[String(row.id)];
   if(row.id===100055001){
@@ -149,11 +168,17 @@ function applied({selected=[],skills={},jobKey=null,level=1,weapon=null,
    const magic=effect(record,'EP_MAGIC_RESISTANCE_CONST');
    if(magic===25)result.providence={magic};
   }else if(row.id===142051001){
-   const critical=effect(record,'EP_CRITICALRATE_CONST');
-   if(critical===10)result.coldBlood={critical};
+   const rank=branchMasteries?.brush;
+   if(scalingEffect(record,'EP_CRITICALRATE_CONST',[0,0,20,10])&&
+    Number.isSafeInteger(rank)&&rank>=0&&rank<=100)
+    result.coldBlood={critical:10+Math.floor(rank*20/100),modeled:true};
   }else if(row.id===260005001){
-   const dodge=effect(record,'EP_AVOIDANCE_CONST');
-   if(dodge===10)result.quickStep={dodge};
+   const rank=branchMasteries?.warding,agi=stats?.agi;
+   if(scalingEffect(record,'EP_AVOIDANCE_CONST',[5,0,15,10])&&
+    Number.isSafeInteger(rank)&&rank>=0&&rank<=100&&
+    Number.isSafeInteger(agi)&&agi>=0&&agi<=500)
+    result.quickStep={dodge:10+Math.floor(agi*5/100)+
+     Math.floor(rank*15/100),modeled:true};
   }else if(row.id===260008001){
    const dodge=effect(record,'EP_AVOIDANCE_CONST');
    if(dodge===100)result.avoidance={dodge};
