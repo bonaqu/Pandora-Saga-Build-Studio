@@ -44,7 +44,7 @@ test('the book attaches only meaningful descriptions and retains the owner edito
 test('gameplay hints use the shared delayed tooltip and not browser title attributes',()=>{
  const code=load('pandora-studio-hero-book.js');
  assert.match(code,/PandoraGuideTooltip\?\.attach\(node,hint,\{hoverDelay:650\}\)/);
- assert.match(code,/PandoraGuideTooltip\?\.attach\(info,skill\.desc,\{hoverDelay:650\}\)/);
+ assert.match(code,/PandoraGuideTooltip\?\.attach\(info,description,\{hoverDelay:650\}\)/);
  assert.doesNotMatch(code,/\{title:skill\.desc\}/);
  assert.doesNotMatch(code,/row\.setAttribute\('title',kind\)/);
  assert.match(code,/class:'stage-legacy-buff-copy'/);
