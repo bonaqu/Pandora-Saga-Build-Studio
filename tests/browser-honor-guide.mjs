@@ -70,8 +70,11 @@ export async function runHonorGuideSmoke(browser,base){
    document.querySelector('#honor-monthly')?.hidden===false);
   const matchingMonthly=await panel.locator('.wiki-honor-monthly-card:not([hidden])')
    .allInnerTexts();
-  assert.ok(matchingMonthly.length>0&&matchingMonthly.every(text=>/Герцог/u.test(text)),
-   'Honor monthly ranks must match the search term, not a fixed count');
+  // Both «Герцог» and «Эрцгерцог» are valid substring matches. Honor's
+  // real search is case-insensitive and must not drop the second title.
+  assert.ok(matchingMonthly.length>=2&&
+   matchingMonthly.every(text=>/герцог/iu.test(text)),
+   'Honor monthly ranks include Duke and Archduke: '+matchingMonthly.join(' | '));
   await honorSearch.fill('несуществующийнеизвестныйранг');
   await page.waitForFunction(query=>
    document.querySelector('.wiki-page')?.dataset.honorSearchQuery===query,
