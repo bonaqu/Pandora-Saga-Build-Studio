@@ -2,6 +2,14 @@
 
 These repository-level rules are durable instructions for future coding sessions.
 
+## GitHub repository operations and time-efficient PR delivery (2026-11-13)
+- **Read `docs/REPOSITORY_OPERATIONS_AND_FAST_DELIVERY.md` before touching GitHub branches, CI, release numbering or production readiness.** It records verified owner settings and the playbook. Settings can change; recheck API/Ruleset and current HEAD rather than assuming the snapshot remains current.
+- Main branch is `bonaqu_projects`. Active Ruleset **Protect bonaqu_projects** (#27159457) requires a PR, **zero** independent approvals, the **exact** GitHub Actions checks `Unit regressions and release consistency` and `browser`, strict branch freshness, no force push or protected-branch deletion. Use Merge/Squash, never Rebase. Do **not** bypass checks or push directly to main. Ruleset: https://github.com/bonaqu/Pandora-Saga-Build-Studio/settings/rules/27159457 .
+- Repository allows auto-merge, but it is **opt-in per PR**. Auto-delete merged PR branches is on; orphan branches without a PR are a separate cleanup. PRs with overlapping release edits must be integrated against the latest main and rechecked, never blindly force-updated. Preserve ongoing independent PR work.
+- **Both named required checks must run for every PR**, including Markdown-only and test-only changes. Never add `pull_request.paths-ignore` or commit `[skip ci]` to these two workflows: omitted required checks stay Pending and can deadlock the protected PR. Keep Chromium's conservative impact selector: quick for proven docs/copy/style-only diffs, full for gameplay/source/uncertain changes. Even quick must launch real Chromium; manual single-scenario runs never substitute for the required `browser` check.
+- **Fast without cutting corners:** batch related reads, inspect dependent call paths/test fixtures before changes, ship coherent patches, run focused Node and isolated browser diagnostics first, preflight release metadata before the full Node suite, then let the final mandatory CI run exactly once per revision. On failure read the first failing test/log before rerunning. Avoid needless release bumps for documentation/CI-only patches; when code/site assets change bump release files together. After a release verify Pages **and** live Worker/D1 read-only readiness; never infer a real production write from mock tests. Never run background/daily CI without an owner request.
+
+
 ## Source of truth and safety
 - Work in `bonaqu_projects` through focused PRs. Inspect current branch HEAD, open PRs and relevant issues **once**, before editing.
 - Keep all gameplay formulas, character state, saved Souls and catalog data unchanged unless the issue requires a verified change.

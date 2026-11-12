@@ -3,10 +3,6 @@ name: Studio quality checks
 on:
   pull_request:
     branches: [bonaqu_projects]
-    paths-ignore:
-      - '**/*.md'
-      - 'docs/**'
-      - 'artifacts/**'
   workflow_dispatch:
 
 permissions:
@@ -28,12 +24,12 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: '22'
+      - name: Check release metadata and HTML asset versions
+        run: npm run release:check
       - name: Run full Node test suite
         run: npm test
       - name: Syntax-check opt-in cloud lifecycle script without writing to D1
         run: node --check scripts/check-live-d1-ephemeral.mjs
-      - name: Check release metadata and HTML asset versions
-        run: npm run release:check
       - name: Audit original local game icons (manifest and WebP)
         run: npm run assets:audit
       - name: Report source-only RU/EN name coverage
