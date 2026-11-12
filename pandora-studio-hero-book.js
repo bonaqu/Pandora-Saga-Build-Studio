@@ -999,7 +999,29 @@ function buffsPage(body,options){
   100055001:['Точность +20 и дополнительно +15%.',
     'Accuracy +20 plus +15%.']
  };
+ // One shared source model for Buffs and Skill Effects avoids misleading
+ // old fixed "+10" text on skills that now scale with trained mastery/AGI.
+ const selfModelRows=(()=>{
+  const rows=root.PandoraOSCalculator?.scalingSkillPreview?.({
+   skillCatalog:gameTerms.skills,jobKey:options.heroJobKey,
+   level:options.heroLevel,branchMasteries:options.heroMasteries,
+   branchCaps:options.heroBranchCaps,weaponKind:options.heroWeaponKind,
+   hasShield:options.heroHasShield,stats:modifiers?.stats,
+   combat:modifiers?.combat});
+  return [...(rows?.offense||[]),...(rows?.defense||[])];
+ })();
  const buffEffectText=id=>{
+  if(id===142051001||id===260005001){
+   const skill=selfModelRows.find(row=>row.id===id&&row.available);
+   const model=skill?.coefficientModels?.[0];
+   if(model&&Number.isSafeInteger(model.amount))
+    return (english?'OS coefficient model ≈ +':'Модель по коэффициентам OS ≈ +')+
+     model.amount+(id===142051001?
+      (english?' critical chance':' к шансу крита'):
+      (english?' evasion':' к уклонению'));
+   return english?'Only a matching class, weapon and source model can provide a value.':
+    'Для расчёта нужны подходящие класс, оружие и данные навыка.';
+  }
   if(id===320006001&&!inspirationKnown)return english?
    'Casting time not verified in current OS.':
    'Время применения не подтверждено текущими данными OS.';

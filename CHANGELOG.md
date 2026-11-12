@@ -1,5 +1,10 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.692.0 — 2026.11.12.692 · Source-validated scalable Cold Blood and Quick Avoidance models replace stale flat plus ten
+
+- Source-validated scalable Cold Blood and Quick Avoidance models replace stale flat plus ten; both model numbers are source validated but live combat parity remains unverified. Full CI + Pages/Worker readiness required.
+
+
 ## 0.691.0 — 2026.11.12.691 · Source-gated priest Exorcism casting requirement and exact model thresholds for Dark Aura SPI
 
 - Source-gated priest Exorcism casting requirement and exact model thresholds for Dark Aura SPI; validates Holy casting branch requirement, preserves older default; Dark Aura models exact future source-coefficient steps without claiming observed server damage.

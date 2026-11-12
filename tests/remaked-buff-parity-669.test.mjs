@@ -57,7 +57,8 @@ test('Cold Blood requires cleave mastery 21 AND an axe, never just a checkbox',(
  const stale=B.applied({...common,selected:[142051001]});
  assert.deepEqual(stale,{});
  assert.deepEqual(B.applied({...common,selected:[142051001],
-  branchMasteries:{brush:21},weapon:{kind:'2H_AXE'}}).coldBlood,{critical:10});
+  branchMasteries:{brush:21},weapon:{kind:'2H_AXE'}}).coldBlood,
+  {critical:14,modeled:true});
 });
 
 test('Iron Scale needs Defense mastery 21, other self buffs keep class and weapon checks',()=>{
@@ -80,12 +81,14 @@ test('Iron Scale needs Defense mastery 21, other self buffs keep class and weapo
 test('only exact source IDs and verified game effects enter numeric results',()=>{
  const chosen=[100055001,330004001,142051001,260005001,260008001];
  const ctx={...common,jobKey:'WARRIOR',weapon:{kind:'1H_AXE'},
-  branchMasteries:{brush:21,warding:41},selected:chosen};
+  branchMasteries:{brush:21,warding:41},
+  stats:{vit:40,str:50,agi:70,dex:35,spi:30,int:50},
+  selected:chosen};
  const result=B.applied(ctx);
  assert.deepEqual(result.thirdEye,{flat:20,percent:15});
  assert.deepEqual(result.providence,{magic:25});
- assert.deepEqual(result.coldBlood,{critical:10});
- assert.deepEqual(result.quickStep,{dodge:10});
+ assert.deepEqual(result.coldBlood,{critical:14,modeled:true});
+ assert.deepEqual(result.quickStep,{dodge:19,modeled:true});
  assert.deepEqual(result.avoidance,{dodge:100});
  const bad=structuredClone(os);
  bad['100055001'].funcs.find(x=>x.ep==='EP_TOHIT_SCALE').fv1[3]=150;
@@ -104,7 +107,7 @@ test('calculated effects change real stats while ordinary self buffs stay gated'
  const active=C.combatPreview(ctx);
  const flat=Math.floor(20+(45+35)*.15);
  assert.equal(active.accuracy.known,base.accuracy.known+flat);
- assert.equal(active.critical.known,base.critical.known+10);
+ assert.equal(active.critical.known,base.critical.known+14);
  assert.equal(active.dodge.known,base.dodge.known+100);
  const wrong=C.combatPreview({...ctx,jobKey:'SNIPER',branchMasteries:{}});
  assert.equal(wrong.critical.coldBlood,0);

@@ -1470,7 +1470,7 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const critBase=1+Math.floor(stats.dex/10);
  const otherBuffs=root.PandoraRemakedBuffs?.applied({
   selected:combatBuffs?.remakedSkillIds,skills:skillCatalog,jobKey,level,
-  weapon,branchMasteries})||{};
+  weapon,branchMasteries,stats})||{};
  if(![techniqueInnate,techniqueTrained,meleeMastery,magicMastery]
   .every(v=>Number.isInteger(v)&&v>=0))return null;
  // Executed Legacy ACC/Dodge: floor(innate + trained/10), not
