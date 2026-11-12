@@ -18,8 +18,8 @@ test('cross-module census counts modeled OS abilities once regardless of UI tab'
  assert.equal(audit.summary.effectRecords,1070);
  assert.equal(audit.summary.uniqueEffectTypes,283);
  assert.equal(audit.summary.inspectedClasses,28);
- assert.equal(audit.summary.statuses['unmodeled-learnable'],124,
-  'previous combat-inspector-only census missed 17 already modeled IDs');
+ assert.equal(audit.summary.statuses['unmodeled-learnable'],123,
+  'cross-module coverage and triggered OS helper classification must be complete');
  assert.equal(audit.summary.statuses['numeric-preview'],53);
  assert.match(audit.methodology,/cross-module census/);
  assert.match(audit.certainty,/NOT server parity proof/);
@@ -41,7 +41,8 @@ test('all current OS healing ranks remain source-backed in separate Remaked stag
   assert.equal(item.targetSideOnly,false);
  }
  assert.equal(row(audit,310023002).status,'internal-or-triggered-source',
-  'Sanctuary execution helper is not an independently learnable spell');
+  'Sanctuary execution helper has no caster class and is triggered by 310023001');
+ assert.equal(row(audit,310023002).triggeredChild,true);
 });
 test('periodic recovery, song sources and duplicate family IDs retain provenance',()=>{
  const audit=report();
@@ -96,5 +97,5 @@ test('audit leaves OS source immutable and produces deterministic statuses',()=>
  assert.deepEqual(report(),report());
  assert.equal(JSON.stringify(skills),source);
  assert.equal(JSON.stringify(classes),caps);
- assert.equal(report().summary.statuses['internal-or-triggered-source'],335);
+ assert.equal(report().summary.statuses['internal-or-triggered-source'],336);
 });
