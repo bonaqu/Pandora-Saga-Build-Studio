@@ -655,7 +655,8 @@ function buffsPage(body,options){
      (english?'Hymn':'Песнопения'):(english?'SPR':'СД');
    field.append(make('span',{text:statLabel}));
    field.append(make('input',{type:'number',min:0,max:500,step:1,
-    'data-book-setting':skill.casterStatKey,
+    'data-book-setting':'caster-'+skill.casterStatKey+'-'+skill.id,
+    'data-caster-source-key':skill.casterStatKey,
     'aria-label':(english?'Ally caster ':'Характеристика союзника: ')+
      statLabel+' · '+displayName,
     value:String(buffs[skill.casterStatKey]??0),
