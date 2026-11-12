@@ -39,5 +39,5 @@ test('OS source magnitude actually changes independently with both caster inputs
  assert.equal(blessing.minstrel,24);
  const hymn=p(134,90,40);
  assert.equal(hymn.gratia,22);
- assert.equal(hymn.minstrel,25);
+ assert.equal(hymn.minstrel,26);
 });

@@ -684,7 +684,7 @@ function buffsPage(body,options){
      onchange:event=>onBuff(key,event.target.value)}));
     fields.append(field);
    }
-   if(fields.childNodes.length)
+   if(fields.children?.length||fields.childNodes?.length)
     parent.append(make('div',{class:'stage-ally-skill-row'},[node,fields]));
    else parent.append(node);
   }else parent.append(node);
