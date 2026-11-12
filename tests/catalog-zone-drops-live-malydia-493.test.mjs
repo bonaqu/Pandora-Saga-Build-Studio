@@ -37,9 +37,9 @@ test('real current OS disappearance: 85 exact rows in Malydia, all counted and n
  assert.ok(counts.some(row=>row.label.includes('Призрачный рекрут')&&
   row.label.includes('Имперская медаль Мальдии')&&row.before==='6'&&row.after==='4'));
  assert.ok(counts.some(row=>row.label.includes('Тыквенный корнеход')&&
-  row.label.includes('Тыква')&&row.before==='9'&&row.after==='0'));
+  row.label.includes('Тыква')&&row.before==='27'&&row.after==='18'));
  assert.ok(counts.some(row=>row.label.includes('Корнеход Жатвы')&&
-  row.label.includes('Тыква')&&row.before==='9'&&row.after==='0'));
+  row.label.includes('Тыква')&&row.before==='27'&&row.after==='18'));
  assert.ok(output.rows.some(row=>row.label.includes('Рецепт: Бронзовый венец')));
  assert.ok(output.rows.some(row=>row.label.includes('Гранат')&&
   row.label.includes('Лунный камень')));
