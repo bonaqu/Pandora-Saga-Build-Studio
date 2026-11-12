@@ -56,6 +56,6 @@ test('offensive skills use existing calculated effects, not made-up per-hit form
  assert.match(guild,/combat\.accuracy\?\.thirdEye/);
  assert.match(guild,/const hitPassive=combat\.incredibleStrength/);
  assert.match(guild,/Точная прибавка ещё не подтверждена/);
- assert.match(guild,/combat\.attack\?\.racialBonus-racial\.flat/);
+ assert.match(guild,/combat\.attack\.racialBonus-racial\.flat/);
  assert.match(guild,/Эффекты стихийных оружий/);
 });
