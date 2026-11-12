@@ -1,4 +1,4 @@
 {
-  "release": "2026.11.12.692",
-  "notes": "Source-validated scalable Cold Blood and Quick Avoidance models replace stale flat plus ten"
+  "release": "2026.11.12.693",
+  "notes": "Dual caster coefficient inputs on priest skill rows: SPR plus Blessing or Hymn mastery"
 }
