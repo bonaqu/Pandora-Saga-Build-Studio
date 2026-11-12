@@ -1034,53 +1034,68 @@ function buffsPage(body,options){
   }
  }
 
- if(modifiers?.legacyBuffs&&buffs.priestEnabled===true){
+ if(modifiers?.priestCast&&buffs.priestEnabled===true){
   const details=make('details',{class:'stage-legacy-buff-previews'});
-  details.append(make('summary',{text:'Мощность поддерживающих навыков'}));
+  details.append(make('summary',{text:english?
+   'Support skill potency':'Мощность поддерживающих навыков'}));
+  // NEVER show legacy Remaked preview amounts as if they were current OS.
+  // Actual numerical values must pass priestCastPreviews' OS source checks;
+  // absent/changed source data means unknown, not a guessed fallback.
   const entries=[
    ['gratia','Знак атаки','Скорость атаки','+'],
    ['lapisMedio','Знак защиты','Защита','+'],
    ['encouragement','Ободрение','СИЛ, ПРВ, ИНТ','+','Battle Prayer'],
-   ['groupBarrier','Божественная защита','Получаемый физический урон',''],
-   ['holyWeapon','Священное оружие','Усиление','+'],
-   ['gloomyEffect','Темная аура','Усиление','+'],
-   ['enchantEnhance','Чары усиления (магическая атака)','Усиление','+'],
-   ['enchantMagic','Чары усиления (аура)','Усиление','+'],
-   ['minstrelSong','Песнь поэта','Точность и уклонение','+'],
-   ['sageSong','Песнь чар','Усиление магии','+'],
-   ['toxify','Яд','Сила эффекта','+','Toxify'],
-   ['toxicAura','Усиление яда','Сила эффекта','+','Toxic Aura']
+   ['groupBarrier','Божественная защита','Получаемый физ./маг. урон',''],
+   ['holyWeapon','Священное оружие','Святая аура оружия','+'],
+   ['gloomyEffect','Темная аура','Урон тьмой','+'],
+   ['enchantEnhance','Чары усиления (магическая атака)','Магическая атака','+'],
+   ['enchantMagic','Чары усиления (аура)','Аура оружия','+'],
+   ['minstrel','Песнь поэта','Точность и уклонение','+'],
+   ['sage','Песнь чар','Стихийный урон','+']
   ];
+  const gameIds={
+   gratia:320007001,lapisMedio:320008001,encouragement:320012001,
+   groupBarrier:320003001,holyWeapon:330051001,gloomyEffect:430051001,
+   enchantEnhance:320011001,enchantMagic:320011001,
+   minstrel:340001001,sage:340004001
+  };
   const rows=make('div',{class:'stage-legacy-buff-grid'});
   for(const [id,label,kind,prefix,labelEn] of entries){
-   const effect=modifiers.legacyBuffs[id];
-   if(!effect||!Number.isFinite(effect.value))continue;
-   const row=make('div',{class:'stage-legacy-buff-row'});
-   const kindLabel=english&&kind==='СИЛ, ПРВ, ИНТ'?'STR, AGI, INT':kind;
-   // Exact identifiers here are OS skills, not machine-translated labels.
-   const gameId={
-    gratia:320007001,lapisMedio:320008001,encouragement:320012001,
-    groupBarrier:320003001,holyWeapon:330051001,gloomyEffect:430051001,
-    enchantEnhance:320011001,enchantMagic:320011001,
-    minstrelSong:340001001,sageSong:340004001,
-    toxify:220001001,toxicAura:220001002
-   }[id];
+   const value=priestValues[id];
+   const verified=Number.isFinite(value);
+   const gameId=gameIds[id];
    const defaultEn=labelEn||bookEnglish[label]||label;
    const canonical=gameSkillName(gameId,label,defaultEn,gameTerms,english);
    const title=id==='enchantEnhance'?canonical+(english?' · magic attack':' · магическая атака'):
     id==='enchantMagic'?canonical+(english?' · aura':' · аура'):canonical;
    const skillTitle=make('span',{text:title});
    root.PandoraSkillPreview?.attach(skillTitle,gameId);
-   row.append(make('span',{class:'stage-legacy-buff-copy'},[
-    skillTitle,
-    make('small',{text:english?(kind==='СИЛ, ПРВ, ИНТ'?'STR, AGI, INT':
-     bookEnglish[kind]||kind):kindLabel})
-   ]),make('strong',{text:prefix+effect.value}));
+   const kindLabel=english?(kind==='СИЛ, ПРВ, ИНТ'?'STR, AGI, INT':
+    bookEnglish[kind]||kind):kind;
+   const unit=id==='sage'||id==='groupBarrier'?'%':'';
+   const amount=!verified?'—':id==='encouragement'?
+    (english?'STR +':'СИЛ +')+value+' · '+
+    (english?'AGI +':'ПРВ +')+value+' · '+
+    (english?'INT +':'ИНТ +')+value:
+    id==='minstrel'?(english?'Accuracy +':'Точность +')+value+
+     (english?' · Evasion +':' · Уклонение +')+value:
+    prefix+value+unit;
+   const small=verified?kindLabel:
+    kindLabel+' · '+(english?'Current OS amount not verified':
+     'Точное значение не подтверждено данными OS');
+   const row=make('div',{class:'stage-legacy-buff-row',
+    'data-priest-preview':id},[
+    make('span',{class:'stage-legacy-buff-copy'},[
+     skillTitle,make('small',{text:small})
+    ]),
+    make('strong',{text:amount})
+   ]);
    rows.append(row);
   }
   details.append(rows);
-  details.append(make('p',{class:'stage-legacy-buff-intro',text:
-   'Мощность при применении навыка. Просмотр не включает усиление на персонаже.'}));
+  details.append(make('p',{class:'stage-legacy-buff-intro',text:english?
+   'Preview for the external priest with the entered SPR, Blessing and Hymn. Only current OS source-validated numbers are displayed; previewing does not activate buffs.':
+   'Предпросмотр усилений другого жреца с указанными СД, Благословением и Песнопениями. Показаны только проверенные по данным OS числа; просмотр не включает усиления.'}));
   priest.append(details);
  }
 

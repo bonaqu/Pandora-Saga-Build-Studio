@@ -1,5 +1,11 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.683.0 — 2026.11.12.683 · Use current OS source-backed priest magnitudes in every Hero Book support preview
+
+- Use current OS source-backed priest magnitudes in every Hero Book support preview; unverified magnitude rendered as unknown, no combat formula or D1 changes.
+- Full Node/Chromium PR validation and Pages/Worker read-only release check required.
+
+
 ## 0.682.0 — 2026.11.12.682 · Independent item navigation and skill tooltip targets in Hero Book consumables
 
 - Independent item navigation and skill tooltip targets in Hero Book consumables.
