@@ -307,9 +307,12 @@ export async function runHonorGuideSmoke(browser,base){
   await page.waitForFunction(()=>document.querySelector('#honor-ranks')?.hidden===false);
   const matchingEnglish=await panel.locator('.wiki-honor-section:not([hidden])')
    .allInnerTexts();
+  // Honor uses unordered word matching, just like other Wiki searches:
+  // "Honor ranks" may find a sentence containing both words separately.
   assert.ok(matchingEnglish.length>0&&
-   matchingEnglish.every(text=>/Honor ranks/i.test(text)),
-   'Every visible English Honor section must match the phrase');
+   matchingEnglish.every(text=>['honor','ranks'].every(term=>
+    text.toLocaleLowerCase().includes(term))),
+   'Every visible English Honor section must contain all searched words');
   await honorSearchEn.fill('totally-unknown-honor-record');
   await page.waitForFunction(query=>
    document.querySelector('.wiki-page')?.dataset.honorSearchQuery===query,
