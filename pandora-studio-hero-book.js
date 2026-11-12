@@ -583,7 +583,10 @@ function buffsPage(body,options){
   if(skill&&!allowed)
    info.append(make('small',{text:(english?skill.reasonEn:skill.reason)||
     (english?'Unavailable to this hero':'Недоступно для героя')}));
-  else if(skill?.summary)info.append(make('small',{text:skill.summary}));
+  // Preview-only caveats matter only after the player enables the buff.
+  // Ordinary numerical effect summaries remain visible before selection.
+  else if(skill?.summary&&(!skill.pending||selected))
+   info.append(make('small',{text:skill.summary}));
   node.append(info);parent.append(node);
  };
  const opts=(units)=>units.map((n,i)=>[i,i===0?bookText('Выключено'):
@@ -683,6 +686,7 @@ function buffsPage(body,options){
    row.available,{name:row.name,nameEn:row.nameEn,icon:skillIconForId(row.id),
     desc:row.description,descEn:description||row.description,
     reason:row.reason,reasonEn:row.reasonEn,
+    pending:!row.counted,
     summary:row.counted?(english?'Included in results':'Учтено в результатах'):
      (english?'Numerical effect details are in development':'Числовые показатели в разработке')});
  }
