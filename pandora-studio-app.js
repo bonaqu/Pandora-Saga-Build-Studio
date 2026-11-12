@@ -6556,17 +6556,25 @@ function renderBuilds(root){
  const syncCompareCheckboxes=()=>{
   for(const row of searchable)row.check.checked=compareIds.includes(row.build.id);
  };
+ const libraryText=key=>window.PandoraUILocale.text(key,lang);
  const search=(builds.length>5||Boolean(buildSearchQuery.trim()))?h('input',{type:'search',class:'build-library-search',
-  'aria-label':'Найти сохранённый билд',placeholder:'Поиск по названию, классу, уровню…',
-  value:buildSearchQuery}):null;
+  'aria-label':libraryText('librarySearchInputLabel'),
+  placeholder:libraryText('librarySearchPlaceholder'),value:buildSearchQuery}):null;
  if(search)root.append(search);
- // Decorative icons and accessible localized labels share one layout.
- const cardAction=(icon,ru,en,onclick,kind='')=>h('button',{
-  type:'button',class:'button-action'+kind,onclick
- },[
-  h('span',{class:'build-card-action-icon','aria-hidden':'true',text:icon}),
-  h('span',{class:'build-card-action-label',text:tr(ru,en)})
- ]);
+ // One game-style hint popup is shared across all buttons and the Hero Book.
+ // Only authored RU/EN copy is passed to the read-only tooltip; never a
+ // saved build name, link/token, account or live server response.
+ const cardAction=(icon,ru,en,hintKey,onclick,kind='')=>{
+  const button=h('button',{
+   type:'button',class:'button-action'+kind,'data-build-action-hint':hintKey,
+   onclick
+  },[
+   h('span',{class:'build-card-action-icon','aria-hidden':'true',text:icon}),
+   h('span',{class:'build-card-action-label',text:tr(ru,en)})
+  ]);
+  window.PandoraGuideTooltip?.attach(button,libraryText(hintKey),{hoverDelay:350});
+  return button;
+ };
  for(const b of builds){
   const box=h('div',{class:'build-card'});
   const shareSlot=h('div',{class:'build-share-slot',role:'status'});
@@ -6642,13 +6650,14 @@ function renderBuilds(root){
    if(opening)target.querySelector('button')?.focus({preventScroll:true});
   };
   const cardActions=h('div',{class:'build-card-actions'},[
-   cardAction('📂','Открыть','Open',()=>{
+   cardAction('📂','Открыть','Open','libraryHintOpen',()=>{
     if(!unsavedBuild()){openSavedBuild(b);return}
     toggleCardChoice(openChoice);
    },' primary'),
-   cardAction('↻','Перезаписать','Overwrite',()=>toggleCardChoice(overwriteChoice)),
-   cardAction('🔗','Поделиться','Share',()=>createShared(b,shareSlot)),
-   cardAction('🗑','Удалить','Delete',()=>toggleCardChoice(deleteChoice),' build-card-delete')
+   cardAction('↻','Перезаписать','Overwrite','libraryHintOverwrite',()=>toggleCardChoice(overwriteChoice)),
+   cardAction('🔗','Поделиться','Share','libraryHintShare',()=>createShared(b,shareSlot)),
+   cardAction('🗑','Удалить','Delete',b.localOnly===true?
+    'libraryHintDeleteLocal':'libraryHintDelete',()=>toggleCardChoice(deleteChoice),' build-card-delete')
   ]);
   box.append(cardHead,
    ...(b.localOnly===true?[h('p',{class:'build-local-only-note',
@@ -6670,7 +6679,7 @@ function renderBuilds(root){
  root.append(grid);
  comparison=renderBuildComparison(comparisonSlot,syncCompareCheckboxes);
  if(search){
-  const none=h('p',{class:'muted',text:'Билды по запросу не найдены.',hidden:true});
+  const none=h('p',{class:'muted',text:libraryText('librarySearchEmpty'),hidden:true});
   root.append(none);
   const apply=()=>{
    let visible=0;
@@ -6687,7 +6696,7 @@ function renderBuilds(root){
   search.addEventListener('input',()=>{buildSearchQuery=search.value;apply()});
   apply();
  }
- if(!builds.length)root.append(h('p',{class:'muted',text:'Сохранённых билдов пока нет.'}));
+ if(!builds.length)root.append(h('p',{class:'muted',text:libraryText('libraryEmpty')}));
  window.PandoraUILocale.localize(root,lang);
  // Saved-build controls are mounted dynamically; bind the same D1 editor
  // used for authored account copy after every library render.
