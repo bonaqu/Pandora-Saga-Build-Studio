@@ -16,4 +16,20 @@ The *historical* Pandora Saga taxonomy lists:
 
 Sources: [historical status guide](https://wikiwiki.jp/pandoras/%E7%8A%B6%E6%85%8B%E5%A4%89%E5%8C%96) and [historic equipment/status-group index](https://wikiwiki.jp/pandoras/%E3%82%B9%E3%83%86%E3%83%BC%E3%82%BF%E3%82%B9%E8%AA%BF%E6%95%B4%E8%A3%85%E5%82%99%E4%B8%80%E8%A6%A7). Complete modern OS combat-roll membership and stacking stages are **not independently confirmed**. Do not add group values to individual resistance totals as if a server rule was established.
 
-Hero Book: **Результаты расчёта → Сопротивления** lists separate body and mind group values with ⓘ explanatory hints; **Защита → Сопротивления отдельным состояниям** shows individually modeled resistances and an expandable explanation. Group formula currently ported from Remaked: `floor(VIT/28)*7` for body, `floor(SPI/28)*7` for mind, plus known character effects. This is existing simulator arithmetic, not a new OS gameplay observation. All UI text RU/EN is source-grounded and independent of game calculations.
+## Hero Book and D1 editorial contract (0.703.0)
+
+**Результаты расчёта → Сопротивления:** the body and mind numbers have a normal label-hover/keyboard-focus hint, with no additional ⓘ icon. The descriptions contain real line breaks, mention the historic 6/5 members and direct players to **Защита**.
+
+**Защита → Сопротивления отдельным состояниям:** the expandable reference uses the **same** D1 summary keys `guideedit.book.summary.40` (body) and `guideedit.book.summary.41` (mind), plus the D1-editable header `guideedit.book.defense.statusFamilyCaption`. In owner mode, each paragraph can be edited via its pencil or double click, saved through the existing D1 editor; RU and EN are separate, no independent duplicate copy. The 12 individual names have standard hover descriptions in the existing `guideedit.book.defense.resistStatus:<key>` namespace. All editor descriptions are **plain text**, rendered with newlines. Historical double-escaped `\\n` in a D1 override is normalized on display without changing the override's bytes.
+
+## Source and accuracy matrix
+
+| Source | What the current planner calculates | Scope of proof |
+| --- | --- | --- |
+| [Remaked legacy Calc RESPDebuff/RESMDebuff](https://github.com/bonaqu/Pandora-Saga-Simulator-remaked/blob/master/js/calc.js) | `floor(VIT/28)*7` for body; `floor(SPI/28)*7` for mind | Confirmed **legacy code arithmetic**; not independent proof of 2026 OS combat rolls |
+| Current OS structured item and Soul `EP_IMMUNE_*` + `EP_BLOCK_BREAK_RESIST` | Twelve separate bonuses, item refinement min/max gates, other equipment passives | Confirmed source-effect handling in Build Studio; does not guarantee actual status success chance |
+| Current OS `EP_IMMUNE_VIT_TYPE` and `EP_IMMUNE_SPI_TYPE` | Separate grouped body/mind item bonuses | **Not** automatically added to each individual status |
+| OS racial/honor/warding inputs | Documented source-backed dwarf/human passives, chosen honor and strict Warding 26 TARGET effect vector | No double counting of extra CASTER effect; other active/conditional mechanics remain excluded |
+| [Historical classification/equipment guide](https://wikiwiki.jp/pandoras/%E3%82%B9%E3%83%86%E3%83%BC%E3%82%BF%E3%82%B9%E8%AA%BF%E6%95%B4%E8%A3%85%E5%82%99%E4%B8%80%E8%A6%A7) | Historic notes suggest elemental and base-attribute dependencies in individual status chances | Not verified for modern OS: **do not invent numeric scaling or present resistance as an exact probability** |
+
+The 12 individual status values currently reflect **known flat source bonuses**. Unknown multipliers, elemental-derived rolls, ailment duration and current server resistance caps are not included. Keep the existing `verified:false` flag; see Issue #476 for fuller source-based reconstruction.
