@@ -1079,8 +1079,8 @@ function buffsPage(body,options){
      320002001:restKnown?(english?'MP recovery speed +90 idx':'Скорость восстановления ОМ +90 инд.'):
       (english?'Recovery speed not confirmed':'Скорость восстановления не подтверждена'),
      330004001:english?'Magic resistance +25':'Сопротивление магии +25',
-     142051001:english?'Critical chance +10%':'Шанс крита +10%',
-     260005001:english?'Evasion +10':'Уклонение +10',
+     142051001:buffEffectText(142051001),
+     260005001:buffEffectText(260005001),
      260008001:english?'Evasion +100':'Уклонение +100'
     }[row.id]):
      // Game-client description is useful even where current OS stacking is

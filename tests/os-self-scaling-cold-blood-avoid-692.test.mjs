@@ -79,6 +79,9 @@ test('Book skill hints reuse their existing source-backed Skill Effects models',
  assert.match(book,/root\.PandoraOSCalculator\?\.scalingSkillPreview\?\.\(\{/);
  assert.match(book,/id===142051001\|\|id===260005001/);
  assert.match(book,/Модель по коэффициентам OS ≈ \+/);
+ assert.match(book,/142051001:buffEffectText\(142051001\)/);
+ assert.match(book,/260005001:buffEffectText\(260005001\)/);
+ assert.doesNotMatch(book,/142051001:english\?'Critical chance \+10%'/);
 });
 
 test('published class caps reject impossible mastery even with a valid global skill class flag',()=>{
