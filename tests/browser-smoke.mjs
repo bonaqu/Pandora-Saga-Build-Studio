@@ -411,10 +411,12 @@ async function main(){
  assert.ok(iconBounds.width>=29&&iconBounds.width<=31&&
   iconBounds.height>=29&&iconBounds.height<=31,
   'Guild skill image must never stretch beyond 30x30px: '+JSON.stringify(iconBounds));
+ const preManualCount=Number(await page.locator('#stageBookPanel .stage-buff-overview>strong').innerText());
  await page.locator('#stageBookPanel [data-book-setting="guildPhysicalReduction"]').selectOption('2');
  await page.locator('#stageBookPanel [data-book-setting="guildMagicReduction"]').selectOption('2');
  await page.locator('#stageBookPanel [data-book-setting="guildExperience"]').selectOption('5');
- assert.equal(await page.locator('#stageBookPanel .stage-buff-overview>strong').innerText(),'3');
+ assert.equal(Number(await page.locator('#stageBookPanel .stage-buff-overview>strong').innerText()),
+  preManualCount+3,'All three manually enabled guild passives must count separately');
   await page.locator('#stageBookPanel [data-book-setting="guildAll"]').selectOption('1');
  assert.equal(await page.locator('#stageBookPanel').evaluate(panel=>
   panel===window.__psBookStablePanel),true,
