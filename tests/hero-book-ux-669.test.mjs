@@ -16,19 +16,14 @@ test('effects use identical size-limited OS icons with visible golden frames',()
  assert.match(css,/border-radius:3px;background:#1e160e/);
 });
 
-test('Incredible Strength tells the player what it does and honestly labels unavailable figures',()=>{
+test('passive Incredible Strength is not a castable scaling Skill Effects row',()=>{
  const passive=skills['910110001'];
  assert.equal(passive.name,'Невероятная сила');
  assert.equal(passive.funcs[0].ep,'EP_ONHIT_FIN_DAMAGE_CONST');
- const start=book.indexOf('const hitPassive=combat.incredibleStrength;');
- const end=book.indexOf('renderSongSkills(body,modifiers',start);
- assert.ok(start>=0&&end>start);
- const section=book.slice(start,end);
- assert.match(section,/Увеличивает урон при попадании оружием ближнего боя/);
- assert.match(section,/Точная прибавка ещё не подтверждена/);
- assert.match(section,/Exact damage is not yet confirmed/);
- assert.doesNotMatch(section.match(/addOffense\\(hitPassive[\\s\\S]*?\\);/)?.[0]||'',/серверн|формул|Remaked|current OS|server formula/i);
- assert.doesNotMatch(section,/\+10%|\+5%/);
+ const section=book.slice(book.indexOf('function skillEffectsPage('),
+  book.indexOf('// Remaked uses three DISTINCT source matrices'));
+ assert.doesNotMatch(section,/hitPassive|incredibleStrength/);
+ assert.match(section,/scalingSkillPreview/);
 });
 
 test('riding setting and riding-stat percentage are co-located, never duplicated',()=>{

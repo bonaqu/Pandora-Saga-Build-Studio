@@ -52,10 +52,9 @@ test('priest buff text remains legible when externally disabled and old ally sig
 });
 test('offensive skills use existing calculated effects, not made-up per-hit formula',()=>{
  assert.match(guild,/class:'stage-attribute-row stage-healing-spells stage-attacking-skills'/);
- assert.match(guild,/combat\.critical\?\.coldBlood/);
- assert.match(guild,/combat\.accuracy\?\.thirdEye/);
- assert.match(guild,/const hitPassive=combat\.incredibleStrength/);
- assert.match(guild,/Точная прибавка ещё не подтверждена/);
+ assert.match(guild,/scalingSkillPreview\?\.\(/);
+ assert.match(guild,/preview when cast|Значение при применении/);
+ assert.doesNotMatch(guild,/const hitPassive=combat\.incredibleStrength/);
  assert.match(guild,/combat\.attack\.racialBonus-racial\.flat/);
  assert.match(guild,/Эффекты стихийных оружий/);
 });

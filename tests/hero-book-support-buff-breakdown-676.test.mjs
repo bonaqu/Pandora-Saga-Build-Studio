@@ -33,14 +33,12 @@ test('Lightness comes from the applied hero preview and is a speed index',()=>{
  assert.equal(on.movementSpeed.known-off.movementSpeed.known,30);
 });
 
-test('support skill rows reuse healing presentation and show only applied speed indices',()=>{
- assert.match(ui,/class:'stage-attribute-row stage-healing-spells stage-supporting-skills'/);
- assert.match(ui,/class:'stage-heal-row stage-support-skill-row'/);
- assert.match(ui,/id:260002001[\s\S]*?amount:combat\.movementSpeed\?\.lightness/);
- assert.match(ui,/id:320002001[\s\S]*?amount:modifiers\?\.regeneration\?\.mp\?\.allyBuff/);
- assert.match(ui,/supportRows\.length/);
- assert.match(ui,/gameSkillBadge\(row\.id,row\.ru,row\.en,gameTerms,en,skillIconForId\)/);
- assert.match(ui,/\['effects','support','\.stage-supporting-skills > strong','Поддерживающие умения','Support skills'\]/);
+test('fixed active recovery and movement bonuses are NOT Skill Effects rows',()=>{
+ const chapter=ui.slice(ui.indexOf('function skillEffectsPage('),
+  ui.indexOf('// Remaked uses three DISTINCT source matrices'));
+ assert.doesNotMatch(chapter,/stage-supporting-skills|supportRows/);
+ assert.doesNotMatch(chapter,/amount:combat\.movementSpeed\?\.lightness/);
+ assert.doesNotMatch(chapter,/amount:modifiers\?\.regeneration\?\.mp\?\.allyBuff/);
  assert.match(ui,/mpRecoveryRepose/);
  assert.match(ui,/r\?\.mp\?\.allyBuff,' инд\.'/);
 });
