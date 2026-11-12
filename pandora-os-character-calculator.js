@@ -935,6 +935,32 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
   blessing:'Благословение',exorcism:'Изгнание',hymn:'Песнопения',
   darkness:'Тьма',embody:'Воплощение'
  };
+ // Source-backed, READ-ONLY coefficient projections for OS skill effects.
+ // Interpretation of fv1: [attribute %, reserved, mastery %, constant] matches
+ // the known Remaked coefficient families. Unknown server rounding/stacking is
+ // explicitly NOT asserted: these models never feed character/combat totals.
+ const coefficientModel=(id,ep,statKey,branch,labelRu,labelEn,unit='')=>{
+  const matches=(skill(id)?.funcs||[]).filter(f=>f?.ep===ep&&f?.dir==='TARGET');
+  if(matches.length!==1)return null;
+  const f=matches[0],v=f.fv1;
+  if(!Array.isArray(v)||v.length!==4||
+   !v.every(Number.isSafeInteger)||v[1]!==0||
+   !Array.isArray(f.fv2)||f.fv2.length!==4||
+   !f.fv2.every(Number.isSafeInteger))return null;
+  if((!statKey&&v[0]!==0)||(!branch&&v[2]!==0))return null;
+  const stat=statKey?stats[statKey]:0;
+  const rank=branch?mastery(branch):0;
+  if(!Number.isSafeInteger(stat)||stat<0||
+   !Number.isSafeInteger(rank)||rank<0||
+   (branch&&(!Number.isSafeInteger(cap(branch))||
+    cap(branch)<=0||rank>cap(branch))))return null;
+  const amount=v[3]+Math.floor(stat*v[0]/100)+
+   Math.floor(rank*v[2]/100);
+  if(!Number.isSafeInteger(amount))return null;
+  return {ep,labelRu,labelEn,amount,unit,
+   // Model assumption, not a confirmed server result.
+   confidence:'coefficient-model'};
+ };
  const seen=new Set();
  const add=(id,group,required,compute,options={})=>{
   const record=skill(id);
@@ -971,7 +997,10 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
    amount,unit:options.unit||'',available:issues.length===0,
    reason:issues.join(' · '),recipient,
    detailRu:options.detailRu||'',detailEn:options.detailEn||'',
-   uncertain:amount===null,source:'Remaked + OS skill catalog'});
+   uncertain:amount===null,
+   coefficientModels:Array.isArray(options.models)?
+    options.models.filter(x=>x?.confidence==='coefficient-model'):[],
+   source:'Remaked + OS skill catalog'});
   seen.add(id);
  };
  const baseAtk=combat.attack?.mountedBase??combat.attack?.walkingBase;
@@ -1030,17 +1059,29 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  add(260005001,'defense',[
   ['EP_AVOIDANCE_CONST',[5,0,15,10]]
  ],manual,{branch:'warding',
+  models:[coefficientModel(260005001,'EP_AVOIDANCE_CONST',
+   'agi','warding','Уклонение','Evasion')],
   detailRu:'Зависит от ПРВ и мастерства уклонения; точная величина не подтверждена',
   detailEn:'Depends on AGI and Warding mastery; magnitude unverified'});
  add(213605001,'offense',[
   ['EP_DAMAGERATE_SCALE',[0,0,30,20]],
   ['EP_TOHIT_CONST',[0,0,30,20]]
  ],manual,{branch:'archery',
+  models:[
+   coefficientModel(213605001,'EP_DAMAGERATE_SCALE',null,'archery',
+    'Коэффициент атаки','Attack scaling','%'),
+   coefficientModel(213605001,'EP_TOHIT_CONST',null,'archery',
+    'Точность','Accuracy'),
+   coefficientModel(213605001,'EP_ATTACKRANGE_CONST',null,'archery',
+    'Параметр дальности','Range parameter')
+  ],
   detailRu:'Зависит от мастерства стрельбы; величина не подтверждена',
   detailEn:'Depends on Archery mastery; magnitude unverified'});
  add(142051001,'offense',[
   ['EP_CRITICALRATE_CONST',[0,0,20,10]]
  ],manual,{branch:'brush',
+  models:[coefficientModel(142051001,'EP_CRITICALRATE_CONST',
+   null,'brush','Шанс критического удара','Critical chance','%')],
   detailRu:'Зависит от мастерства рубящих; величина не подтверждена',
   detailEn:'Depends on Cleaving mastery; magnitude unverified'});
  // The same poison enchant has a mastery-61 OS variant. Show only the
@@ -1060,6 +1101,8 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  add(330002001,'defense',[
   ['EP_ABSOLUTE_MAGIC',[20,0,20,10]]
  ],manual,{branch:'exorcism',
+  models:[coefficientModel(330002001,'EP_ABSOLUTE_MAGIC',
+   'spi','exorcism','Параметр защиты от магии','Magic protection parameter')],
   detailRu:'Зависит от СД и мастерства изгнания; точный эффект не подтверждён',
   detailEn:'Depends on SPI and Exorcism mastery; magnitude unverified'});
  // Conjurer level 50 receives distinct OS source variants; show one rank
@@ -1069,6 +1112,9 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
   ['EP_MANA_SHIELD',conjurerUpgrade?[0,0,20,10]:[0,0,10,10]]
  ],manual,{branch:'embody',
   predecessor:conjurerUpgrade?420002001:null,
+  models:[coefficientModel(conjurerUpgrade?420002002:420002001,
+   'EP_MANA_SHIELD',null,'embody',
+   'Параметр магического щита','Mana shield parameter')],
   detailRu:'Зависит от мастерства воплощения; расчёт поглощения ОМ не подтверждён',
   detailEn:'Depends on Embodiment mastery; MP absorption unverified'});
  add(conjurerUpgrade?420004002:420004001,'defense',[
@@ -1076,6 +1122,9 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
    conjurerUpgrade?[15,0,15,1]:[10,0,10,1]]
  ],manual,{branch:'embody',
   predecessor:conjurerUpgrade?420004001:null,
+  models:[coefficientModel(conjurerUpgrade?420004002:420004001,
+   'EP_CASTINGCANCEL_RESISTANCE_CONST','spi','embody',
+   'Параметр сопротивления прерыванию','Interruption resistance parameter')],
   detailRu:'Зависит от СД и мастерства воплощения; округление не подтверждено',
   detailEn:'Depends on SPI and Embodiment mastery; rounding unverified'});
  add(320011001,'offense',[
@@ -1083,6 +1132,14 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
   ['EP_AURADAMAGE_CONST',[5,0,10,5]],
   ['EP_ELEMENT_DAMAGE_SCALE',[0,0,20,10]]
  ],manual,{branch:'blessing',
+  models:[
+   coefficientModel(320011001,'EP_AURADAMAGE_SCALE','spi','blessing',
+    'Коэффициент ауры','Aura scaling','%'),
+   coefficientModel(320011001,'EP_AURADAMAGE_CONST','spi','blessing',
+    'Добавка к ауре','Aura flat parameter'),
+   coefficientModel(320011001,'EP_ELEMENT_DAMAGE_SCALE',null,'blessing',
+    'Коэффициент стихийного урона','Elemental damage scaling','%')
+  ],
   detailRu:'Зависит от СД и Благословения; итоговое сложение ещё не подтверждено',
   detailEn:'Depends on SPI and Blessing; stacking unverified'});
  // Further independently verified VARIABLE self-cast effect vectors.
@@ -1090,7 +1147,8 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  // manufacture arithmetic by assuming a fixed per-point denominator.
  add(100058001,'offense',[
   ['EP_DAMAGERATE_SCALE',[0,0,35,40]]
- ],manual,{
+ ],manual,{models:[coefficientModel(100058001,'EP_DAMAGERATE_SCALE',
+   null,'slash','Коэффициент физической атаки','Physical attack scaling','%')],
   detailRu:'Отчаянье: изменяемая сила эффекта; серверное округление не подтверждено',
   detailEn:'Desperation: scaling damage effect; final rounding unverified'});
  add(213703001,'offense',[
@@ -1107,7 +1165,12 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
   detailEn:'Wave: scaling attack increase; final formula unverified'});
  add(410000101,'offense',[
   ['EP_ELEMENT_DAMAGE_SCALE',[0,0,30,20]]
- ],manual,{
+ ],manual,{models:[
+   coefficientModel(410000101,'EP_ELEMENT_DAMAGE_SCALE',null,'element',
+    'Коэффициент стихийного урона','Elemental damage scaling','%'),
+   coefficientModel(410000101,'EP_ELEMENT_BONUS',null,null,
+    'Параметр дополнительного эффекта','Additional effect parameter')
+  ],
   detailRu:'Магическая сосредоточенность: изменяемый стихийный урон; точный эффект не подтверждён',
   detailEn:'Magic Concentration: scaling element damage; final magnitude unverified'});
  // Legacy SkillView uses separate floor steps. For these entries the current
