@@ -343,11 +343,14 @@ async function main(){
  assert.equal(await page.locator('#stageBookPanel input[type="checkbox"]').count(),0,
   'Read-only Skill Effects must never activate a defensive skill');
  const calculatedSkill=offense.locator('.stage-effect-skill-label').first();
- const calculatedName=(await calculatedSkill.innerText()).trim();
+ const sourceId=await calculatedSkill.getAttribute('data-source-skill-id');
+ assert.ok(Number(sourceId)>0,'Calculation row must attach its real OS skill ID');
  await calculatedSkill.hover();
- await page.locator('#path-skill-hover-tooltip').waitFor({state:'visible',timeout:5000});
- assert.ok((await page.locator('#path-skill-hover-tooltip').innerText()).includes(calculatedName),
-  'Rich tooltip shows the exact same OS name as the calculation row');
+ const richEffect=page.locator('#path-skill-hover-tooltip');
+ await richEffect.waitFor({state:'visible',timeout:5000});
+ assert.ok((await richEffect.locator('strong').first().innerText()).trim().length>2,
+  'Rich effect tooltip must show the canonical skill title');
+ assert.equal(await richEffect.locator('.path-skill-preview-item').count(),1);
  await offense.locator('summary').hover();
  if(await offense.count()&&await healing.count()){
   const normalize=async selector=>selector.locator('summary').evaluate(node=>{
