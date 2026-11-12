@@ -333,7 +333,17 @@ function guideLabel(node,key,ru,en,options={},fallbackRu='',fallbackEn=''){
   guide?.field(options.overrides||{},key,ru,en,fallbackRu,fallbackEn);
  const english=document.documentElement?.lang==='en';
  const label=english?(info?.en||en):(info?.ru||ru);
- const hint=english?info?.hintEn:info?.hintRu;
+ const originalHint=english?info?.hintEn:info?.hintRu;
+ // A recovery-speed index is not a number of seconds. Preserve the D1
+ // description, adding the missing unit explanation once, in both locales.
+ const recoveryIndex=/^(defense)\.(hpRecoverySpeed|mpRecoverySpeed)$/.test(key);
+ const indexHelp=english?
+  'idx is a recovery-speed index, not seconds. A higher value means faster passive recovery; it depends on attributes and guild bonuses.':
+  '«инд.» — индекс скорости восстановления, а не секунды. Чем он выше, тем быстрее пассивное восстановление; на индекс влияют характеристики и усиления гильдии.';
+ const hint=recoveryIndex?
+  [meaningfulGuideHint(originalHint)?originalHint:'',
+   !String(originalHint||'').includes(english?'idx is a recovery-speed index':'«инд.» — индекс скорости')?indexHelp:''
+  ].filter(Boolean).join('\n\n'):originalHint;
  node.textContent=label;
  if(meaningfulGuideHint(hint))root.PandoraGuideTooltip?.attach(node,hint,{hoverDelay:650});
  node.setAttribute('data-guide-key',key);
@@ -1597,14 +1607,18 @@ function defensePage(body,calc,english,options={}){
   ]));
  }
  const exp=calc?.experienceBonus?.entries||[];
+ // The chapter exists even without an equipped experience bonus. Otherwise
+ // a new hero appears to have "lost" it until a qualifying item is equipped.
+ const expPanel=make('details',{class:'stage-attribute-row stage-experience-effects'});
+ expPanel.append(make('summary',{text:english?'Experience gain bonuses':
+  'Бонусы к опыту'}));
  if(exp.length){
-  const panel=make('details',{class:'stage-attribute-row stage-experience-effects'});
-  panel.append(make('summary',{text:(english?'Experience gain bonuses':
-   'Бонусы к опыту')}));
-  for(const e of exp)panel.append(make('p',{text:e.source+': '+
+  for(const e of exp)expPanel.append(make('p',{text:e.source+': '+
    (e.percent>0?'+':'')+e.percent+'%'}));
-  body.append(panel);
- }
+ }else expPanel.append(make('p',{class:'stage-attribute-note',
+  text:english?'No experience bonuses are currently active.':
+   'Сейчас нет активных бонусов к опыту.'}));
+ body.append(expPanel);
  appendItemEvents(body,calc,english,'defense');
 }
 // All chapters share the Summary disclosure affordance and remember user state.
