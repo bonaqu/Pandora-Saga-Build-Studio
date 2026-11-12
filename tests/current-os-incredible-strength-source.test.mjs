@@ -35,7 +35,7 @@ test('class, level and exact OS source gate this passive',()=>{
 });
 test('Hero Book explains hit damage separately and never claims unverified ATK',()=>{
  const book=read('pandora-studio-hero-book.js');
- assert.match(book,/modifiers\?\.combat\?\.incredibleStrength/);
+ assert.match(book,/const hitPassive=combat\.incredibleStrength/);
  assert.match(book,/Невероятная сила/);
  assert.match(book,/не показатель АТК/);
 });
