@@ -3415,12 +3415,14 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
     'unverified passive and conditional skills','other group/temporary buffs']};
 }
 // Current OS skill-execution graph: links are not automatic combat bonuses.
-function skillExecutionChains({skillCatalog=null,jobKey=null,level=1,
+function skillExecutionChains({skillCatalog=null,jobKey=null,level=1,onHit=false,
  branchMasteries={},branchCaps={},branchLabels={},englishBranches={},
  weaponKind='BARE_HAND'}={}){
- const out={rows:[],rejected:[],verified:false,source:'OS EP_SKILL_EXEC; timing and damage not verified'};
+ const out={rows:[],rejected:[],verified:false,
+  source:onHit?'OS on-hit links; chance not proven':'OS execution links; timing and damage not verified'};
  if(!skillCatalog||typeof jobKey!=='string'||!Number.isSafeInteger(level)||
   level<1||level>55)return out;
+ const rootEP=onHit?'EP_ONHIT_SKILL_EXEC':'EP_SKILL_EXEC';
  const get=id=>{
   const r=skillCatalog[String(id)];
   return Number.isSafeInteger(id)&&id>0&&r?.id===id&&Array.isArray(r.funcs)?r:null;
@@ -3429,17 +3431,24 @@ function skillExecutionChains({skillCatalog=null,jobKey=null,level=1,
   if(visited.has(id)||visited.size>=12)return null;
   const s=get(id);if(!s)return null;
   const seen=new Set(visited);seen.add(id);
-  const calls=s.funcs.filter(f=>f?.ep==='EP_SKILL_EXEC');
+  // Conditional on-hit root, then any ordinary OS internal child links.
+  const calls=s.funcs.filter(f=>f?.ep===(onHit&&visited.size===0?rootEP:'EP_SKILL_EXEC'));
   if(!calls.length)return [[id]];
   const paths=[];
   for(const f of calls){
    const a=f?.fv1,b=f?.fv2;
-   // Source FV2 [0,0,9,9] is a descriptor, not a proven hit count.
-   if(f.dir!=='TARGET'||!Array.isArray(a)||a.length!==4||
+   const hit=onHit&&visited.size===0;
+   // Current OS on-hit descriptors: these are raw source bytes, NOT
+   // a guaranteed percentage chance, duration or number of strikes.
+   const directionOK=hit?['CASTER','TARGET'].includes(f.dir):f.dir==='TARGET';
+   const fv2OK=hit?
+    [[0,0,0,100],[0,0,15,15],[0,0,50,30]].some(v=>
+     Array.isArray(b)&&b.length===4&&v.every((n,i)=>n===b[i])):
+    Array.isArray(b)&&b.length===4&&
+     (b.every(x=>x===0)||(b[0]===0&&b[1]===0&&b[2]===9&&b[3]===9));
+   if(!directionOK||!Array.isArray(a)||a.length!==4||
     a.slice(0,3).some(x=>x!==0)||!Number.isSafeInteger(a[3])||a[3]<=0||
-    !Array.isArray(b)||b.length!==4||
-    !(b.every(x=>x===0)||
-      b[0]===0&&b[1]===0&&b[2]===9&&b[3]===9))return null;
+    !fv2OK)return null;
    const children=trace(a[3],seen);
    if(!children)return null;
    for(const path of children){
@@ -3452,7 +3461,7 @@ function skillExecutionChains({skillCatalog=null,jobKey=null,level=1,
  for(const idString of Object.keys(skillCatalog).sort((a,b)=>Number(a)-Number(b))){
   const id=Number(idString),s=get(id);
   if(!s||idString!==String(id)||s.learnable!==true||!s.classes?.[jobKey]||
-   !s.funcs.some(f=>f?.ep==='EP_SKILL_EXEC'))continue;
+   !s.funcs.some(f=>f?.ep===rootEP))continue;
   if(!Array.isArray(s.reqs)||!s.reqs.every(r=>typeof r?.branch==='string'&&
    Number.isSafeInteger(r.amount)&&r.amount>=0))continue;
   if(s.reqs.some(r=>!Number.isFinite(branchCaps?.[r.branch])||
@@ -3481,6 +3490,7 @@ function skillExecutionChains({skillCatalog=null,jobKey=null,level=1,
   const edges=new Set();
   for(const path of paths)for(let i=1;i<path.length;i++)edges.add(path[i-1]+':'+path[i]);
   out.rows.push({id,name:s.name,paths,linkCount:edges.size,
+   trigger:onHit?'on-hit':'cast',
    requirementsMet:ru.length===0,reasonRu:ru.join(' · '),reasonEn:en.join(' · '),
    sourceOnly:true});
  }
