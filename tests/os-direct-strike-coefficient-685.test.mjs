@@ -81,3 +81,16 @@ test('every strike coefficient is rendered by the existing Path-style Hero Book 
  assert.match(book,/skill\.coefficientModels/);
  assert.match(book,/Модель по коэффициентам OS/);
 });
+
+test('malformed successor never hides predecessor or unrelated source-backed attacks',()=>{
+ const forged=structuredClone(skills);
+ forged['110101002'].funcs.find(x=>x.ep==='EP_ONHIT_DAMAGE_SCALE').fv1[2]=999;
+ const rows=preview('JUGGERNAUT',{slash:71},'1H_SWORD',forged);
+ assert.ok(by(rows,110101001),'valid predecessor must remain when upgrade is malformed');
+ assert.equal(by(rows,110101002),undefined);
+ assert.ok(by(rows,100102001),'unrelated slash attacks must survive the malformed upgrade');
+ const badLineage=structuredClone(skills);
+ badLineage['110101002'].prereq=999999999;
+ const unaffected=preview('JUGGERNAUT',{slash:71},'1H_SWORD',badLineage);
+ assert.ok(by(unaffected,100102001),'bad lineage must not abort all previews');
+});

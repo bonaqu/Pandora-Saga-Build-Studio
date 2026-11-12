@@ -923,34 +923,40 @@ function directStrikeCoefficientPreview({skillCatalog,jobKey,level,
    Number.isSafeInteger(req.amount)&&req.amount>=0&&
    Number.isSafeInteger(cap(req.branch))&&cap(req.branch)>=req.amount)&&
   ['ENEMY','BOLT','BREATH','RADIATION','SPHERE'].includes(s.skillType);
- for(const s of entries){
-  if(!validRecord(s))continue;
-  const rank=branchRank(s.branch);
-  if(!Number.isSafeInteger(rank)||rank<0||rank>cap(s.branch))continue;
-  const hit=(s.funcs||[]).filter(x=>x?.ep==='EP_ONHIT_DAMAGE_SCALE'&&
+ // Validate the strike effect and its triggering attack as one source
+ // signature, including successor validity before suppressing a predecessor.
+ const strikeVector=s=>{
+  const hit=(s?.funcs||[]).filter(x=>x?.ep==='EP_ONHIT_DAMAGE_SCALE'&&
    x?.dir==='CASTER');
   if(hit.length!==1||!Array.isArray(hit[0].fv1)||
    hit[0].fv1.length!==4||
    !hit[0].fv1.every(Number.isSafeInteger)||
    !Array.isArray(hit[0].fv2)||
-   hit[0].fv2.length!==4||hit[0].fv2.some(x=>x!==0))continue;
+   hit[0].fv2.length!==4||hit[0].fv2.some(x=>x!==0))return null;
   const [statPart,reserved,masteryPart,constant]=hit[0].fv1;
-  // This family has a stable [0,0,mastery %,base] source pattern;
-  // other forms need a separate reviewed model, never an arbitrary guess.
   if(statPart!==0||reserved!==0||masteryPart<0||masteryPart>100||
-   constant< -100||constant>150)continue;
+   constant< -100||constant>150)return null;
   if(!(s.funcs||[]).some(x=>
    ['EP_PLAYER_ATTACK','EP_PLAYER_ATTACK2'].includes(x?.ep)&&
-   x?.dir==='TARGET'))continue;
+   x?.dir==='TARGET'))return null;
+  return {masteryPart,constant};
+ };
+ for(const s of entries){
+  if(!validRecord(s))continue;
+  const rank=branchRank(s.branch);
+  if(!Number.isSafeInteger(rank)||rank<0||rank>cap(s.branch))continue;
+  const vector=strikeVector(s);
+  if(!vector)continue;
+  const {masteryPart,constant}=vector;
   if(s.prereq!=null){
    const previous=skillCatalog[String(s.prereq)];
    if(!previous||previous.id!==s.prereq||previous.learnable!==true||
-    previous.branch!==s.branch)return [];
+    previous.branch!==s.branch)continue;
   }
   // A learned successor with the same supported source family replaces
   // its predecessor, as in Double Slash -> Cut. It does not add a second hit.
   const upgraded=entries.some(next=>next?.prereq===s.id&&
-   validRecord(next)&&next.branch===s.branch&&
+   validRecord(next)&&strikeVector(next)&&next.branch===s.branch&&
    level>=Number(next.charLevel||0)&&
    next.reqs.every(req=>branchRank(req.branch)>=req.amount));
   if(upgraded)continue;
