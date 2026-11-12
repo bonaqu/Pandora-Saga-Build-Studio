@@ -96,7 +96,18 @@ function enabled(row,{skills={},jobKey=null,level=1,weapon=null,branchMasteries=
  }
  return {allowed:true,ru:'',en:''};
 }
-const numericIds=new Set([100055001,330004001,142051001,260005001,260008001]);
+// Do not infer an active effect from its name: these three source-gated
+// constant effects are present in both the 2026 OS catalogue and Remaked's
+// legacy buff slots. The game-client stacking order remains unverified.
+const numericIds=new Set([100055001,330004001,142051001,260005001,260008001,
+ 260002001,213702001,320002001]);
+function exactConstant(record,ep,expected){
+ const found=(record?.funcs||[]).filter(row=>row.ep===ep&&row.dir==='TARGET');
+ return found.length===1&&Array.isArray(found[0].fv1)&&
+  found[0].fv1.length===4&&found[0].fv1.every((v,i)=>v===[0,0,0,expected][i])&&
+  Array.isArray(found[0].fv2)&&found[0].fv2.length===4&&
+  found[0].fv2.every(v=>v===0);
+}
 function choices({skills={},englishSkills={},jobKey=null,level=1,weapon=null,
  branchMasteries={},branchLabels={},englishBranches={},selected=[]}={}){
  const active=new Set(selectedIds(selected));
@@ -146,6 +157,19 @@ function applied({selected=[],skills={},jobKey=null,level=1,weapon=null,
   }else if(row.id===260008001){
    const dodge=effect(record,'EP_AVOIDANCE_CONST');
    if(dodge===100)result.avoidance={dodge};
+  }else if(row.id===260002001){
+   // Remaked Flag 11_0, Calc(MoveSPD): additive +30 speed index.
+   if(exactConstant(record,'EP_MOVESPEED_SCALE',30))
+    result.lightness={movement:30};
+  }else if(row.id===213702001){
+   // Same OS EP_ATTACKINTERVAL_SCALE channel as the existing Lunge preview.
+   if(exactConstant(record,'EP_ATTACKINTERVAL_SCALE',30))
+    result.swiftArrow={attackSpeed:30};
+  }else if(row.id===320002001){
+   // An allied buff, never gated by the receiving hero's priest class.
+   // This is a recovery-speed index, NOT +90 MP per tick.
+   if(exactConstant(record,'EP_HEAL_TIME_SCALE',90))
+    result.blessedRepose={manaRecoverySpeed:90};
   }
  }
  return result;

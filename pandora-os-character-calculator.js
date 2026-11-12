@@ -1016,10 +1016,11 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const priestSpeed=Math.max(0,Number(priestEffects?.gratia)||0);
  const priestMinstrel=Number.isFinite(priestEffects?.minstrel)?
   Math.max(0,Number(priestEffects.minstrel)):0;
+ const swiftArrow=otherBuffs.swiftArrow?.attackSpeed||0;
  const attackSpeed={base:speedBase,equipment:equipped.attackSpeedFlat,
   lunge:actives.lunge?effect('lunge','EP_ATTACKINTERVAL_SCALE'):0,
-  priestBonus:priestSpeed,
-  known:(mounted?null:speedBase+equipped.attackSpeedFlat+priestSpeed+
+  swiftArrow,priestBonus:priestSpeed,
+  known:(mounted?null:speedBase+equipped.attackSpeedFlat+priestSpeed+swiftArrow+
    (actives.lunge?effect('lunge','EP_ATTACKINTERVAL_SCALE'):0)),verified:false};
  // Legacy Calc('CastSPD'): 100 + 5*floor(DEX/10), without temporary casts.
  const castingBase=100+5*Math.floor(stats.dex/10);
@@ -1046,10 +1047,12 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const castInterruption=equipped.castInterruptResist+(title.castingResist||0);
  const windMove=supportSkills.windBlessing?
   supportSkillValues.windBlessing.EP_MOVESPEED_SCALE:0;
+ const lightness=otherBuffs.lightness?.movement||0;
  const movementSpeed={base:100,equipment:equipped.movement,
-  active:windMove,known:(mounted?Math.ceil(100*mountedRate):100)+equipped.movement+windMove,
+  active:windMove,lightness,
+  known:(mounted?Math.ceil(100*mountedRate):100)+equipped.movement+windMove+lightness,
   townEquipment:secondary.townMovement,
-  town:100+equipped.movement+windMove+secondary.townMovement,verified:false};
+  town:100+equipped.movement+windMove+lightness+secondary.townMovement,verified:false};
  const skillDelayEquipment=equipped.skillDelay;
  const skillDelayFinalEquipment=equipped.skillDelayFinal;
  const mpRecoveryEquipmentRate=equipped.mpRecoveryRate;
@@ -2310,6 +2313,12 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  if(otherEquipment&&regeneration){
   regeneration.mp.equipment=otherEquipment.manaRecoverySpeed;
   regeneration.mp.total+=otherEquipment.manaRecoverySpeed;
+ }
+ // This selected PARTY_ALL skill increases the recovery-speed index, not the
+ // quantity of MP restored per tick. Keep equipment and ally sources separate.
+ if(regeneration&&groupBuffs.blessedRepose){
+  regeneration.mp.allyBuff=groupBuffs.blessedRepose.manaRecoverySpeed;
+  regeneration.mp.total+=groupBuffs.blessedRepose.manaRecoverySpeed;
  }
  // OS Rapin passive 900060002: EP_HEAL_TIME_SCALE fv1[3]=18.
  // This is an MP recovery *speed* index, not MP gained per tick.
