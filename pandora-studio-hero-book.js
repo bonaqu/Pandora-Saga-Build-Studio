@@ -1506,7 +1506,8 @@ function collapseBookSections(body,page){
  // Pre-existing <details> chapters must have the exact same heading as
  // sections above: left glyph, editable title, and chevron on the right.
  // Keep them as details (no nested disclosure, no duplicate headers).
- for(const detail of [...body.children].filter(node=>node.tagName==='DETAILS')){
+ for(const detail of [...body.children].filter(node=>node.tagName==='DETAILS'&&
+  !node.hasAttribute('data-book-collapse'))){
   const header=detail.querySelector(':scope > summary');
   if(!header)continue;
   const identifier=[...detail.classList].find(x=>x.startsWith('stage-')&&
