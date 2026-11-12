@@ -1,5 +1,11 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.690.0 — 2026.11.12.690 · Active priest defense and song bonuses use identical current OS source-gated preview vectors
+
+- Active priest defense and song bonuses use identical current OS source-gated preview vectors. Damage model uncertainty remains explicit; all selections retain source fidelity, with no D1 changes.
+- Node/Chromium PR verification and Pages/Worker readiness after merge.
+
+
 ## 0.689.0 — 2026.11.12.689 · Source-gated priest aura enchantment, Peaceful Hymn, Dark Aura, Poison and attack-skill models with caster controls
 
 - Source-gated priest aura enchantment, Peaceful Hymn, Dark Aura, Poison and attack-skill models with caster controls. All new unproven combined magnitudes marked as models (≈) and no direct unconfirmed skill damage applied to actual build stats.
