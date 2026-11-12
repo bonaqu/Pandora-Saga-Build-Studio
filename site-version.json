@@ -1,4 +1,4 @@
 {
-  "release": "2026.11.12.684",
-  "notes": "Source-gated OS coefficient models for 11 scalable skills, with separate unverified previews and 250 regression scenarios"
+  "release": "2026.11.12.685",
+  "notes": "Read-only direct strike coefficient previews for source-backed learnable attack skills"
 }
