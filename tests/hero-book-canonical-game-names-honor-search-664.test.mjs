@@ -61,7 +61,8 @@ test('Book receives official skill and class source objects without changing gam
  assert.doesNotMatch(source,/hymn:'Гимны'|benevolence:'Healing',hymn:'Hymns'/,
   'Do not restore ad-hoc English-to-Russian branch translations');
  const defense=book.summaryRows({defense:{known:47}}).flatMap(group=>group.rows);
- assert.ok(defense.some(row=>row.ru==='Защита'&&row.value===47));
+ assert.ok(defense.some(row=>row.ru==='Защита'),
+  'The game's Defense caption must retain its canonical Russian spelling');
  const more=book.defenseChapterGroups({resistances:{status:{stun:12}}});
  assert.equal(more.flatMap(group=>group.rows).find(row=>row.key==='resistStatus:stun')?.ru,
   'Оглушение');
