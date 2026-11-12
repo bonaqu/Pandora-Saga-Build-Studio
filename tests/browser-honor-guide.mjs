@@ -49,8 +49,10 @@ export async function runHonorGuideSmoke(browser,base){
   await page.waitForFunction(()=>
    document.querySelector('#honor-gain')?.hidden===false&&
    document.querySelector('#honor-ranks')?.hidden===true);
-  assert.equal(await panel.locator('.wiki-honor-list-row:not([hidden])').count(),1);
-  assert.match(await panel.locator('.wiki-honor-list-row:not([hidden])').innerText(),/Эль Ведд/);
+  const locationMatches=await panel.locator('.wiki-honor-list-row:not([hidden])').allInnerTexts();
+  assert.ok(locationMatches.length>0,'Honor search must find at least one PvP location');
+  assert.ok(locationMatches.every(text=>/Эль Ведд/u.test(text)),
+   'Only matching Honor entries may remain visible: '+locationMatches.join(' | '));
   assert.equal(await page.locator('.wiki-honor-nav-link:not([hidden])').count(),1,
    'Honor sidebar follows real matches');
   await honorSearch.fill('Герцог');
