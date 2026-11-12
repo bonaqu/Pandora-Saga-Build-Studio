@@ -285,10 +285,10 @@ function bookEditorialKey(ru){
   .replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,43)||'caption';
  // Preserve the existing D1 owner key across the corrected Cverg label.
  // A canonical game-term fix must never orphan an administrator's edits.
- const stableSource=resistanceNote?'Одновременно действует только одно умение. Выбор нового заменяет предыдущее. Умения можно применять к союзникам и врагам.':
-  ru==='Расовая стойкость цверга'?'Расовая стойкость дворфа':ru;
+ const stableSource=ru==='Расовая стойкость цверга'?'Расовая стойкость дворфа':ru;
+ const hashSource=resistanceNote?'Одновременно действует только одно умение. Выбор нового заменяет предыдущее. Умения можно применять к союзникам и врагам.':stableSource;
  let hash=2166136261;
- for(const letter of stableSource){hash=Math.imul(hash^letter.codePointAt(0),16777619)>>>0}
+ for(const letter of hashSource){hash=Math.imul(hash^letter.codePointAt(0),16777619)>>>0}
  return 'book-'+slug+'-'+hash.toString(16).padStart(8,'0');
 }
 function bookText(value){
