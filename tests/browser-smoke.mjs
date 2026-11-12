@@ -273,8 +273,14 @@ async function main(){
  assert.equal(await mount.count(),1,'The riding switch must be available on Attack');
  const mountedText=page.locator('#stageBookPanel [data-guide-key="attack.mountedToggle"]');
  assert.equal((await mountedText.innerText()).trim(),'Верхом');
+ const visibleMountedHint=await mountedText.getAttribute('data-guide-hint');
+ assert.match(visibleMountedHint||'',/сражается верхом/);
  await mountedText.hover();
- await page.locator('#stage-guide-tooltip').waitFor({state:'visible',timeout:3000});
+ await page.waitForTimeout(850);
+ const mountedHoverProbe=await mountedText.evaluate(el=>({hover:el.matches(':hover'),
+  connected:el.isConnected,tag:el.tagName,rect:el.getBoundingClientRect().toJSON()}));
+ assert.equal(await page.locator('#stage-guide-tooltip').isVisible(),true,
+  'Mounted tooltip should open on pointer hover: '+JSON.stringify(mountedHoverProbe));
  assert.match(await page.locator('#stage-guide-tooltip').innerText(),/сражается верхом/);
  await page.locator('#stage-guide-tooltip').waitFor({state:'hidden',timeout:3000}).catch(()=>{});
  assert.equal(await page.locator('#stageBookPanel .stage-mounted-note').count(),0,
