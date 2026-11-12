@@ -51,21 +51,23 @@ test('right-hand equipment content retains width with independent scrollbar',()=
  assert.match(css,/#stagePicker \.stage-rich-body>\.stage-enchant-fieldset/);
  assert.match(css,/scrollbar-width:thin/);
 });
-test('short resistance sentence retains D1 editor key of previous longer copy',()=>{
+test('new target-side resistance note retains historical D1 editor key',()=>{
  const host={};
  Function('window',book)(host);
- const editable=host.PandoraStageAttributes.bookEditorialKey('Одновременно действует только одно умение, выбор нового заменяет предыдущие.');
+ const editable=host.PandoraStageAttributes.bookEditorialKey('Эти умения направлены на противника. Здесь можно увидеть, как они изменят сопротивления вашего героя, если он окажется целью. Одновременно действует только одно умение, выбор нового заменяет предыдущие.');
  assert.equal(editable,'book-only-one-resistance-spell-can-be-active-sel-a8cce804');
- assert.match(book,/'Одновременно действует только одно умение, выбор нового заменяет предыдущие.': 'Only one spell can be active at a time. Selecting another replaces the previous one.'/);
+ assert.equal(host.PandoraStageAttributes.bookEditorialDefaults['Эти умения направлены на противника. Здесь можно увидеть, как они изменят сопротивления вашего героя, если он окажется целью. Одновременно действует только одно умение, выбор нового заменяет предыдущие.'],
+  'These spells target an enemy. Here you preview their signed effects on your hero as the target. Only one spell can be active at a time. Selecting another replaces the previous one.');
+ assert.equal(host.PandoraStageAttributes.bookEditorialDefaults['Одновременно действует только одно умение, выбор нового заменяет предыдущие.'],undefined);
 });
 
-test('shortened instruction keeps 350-character existing D1 editor limit',()=>{
+test('expanded target instruction retains the existing 350-character D1 editor limit',()=>{
  const host={};
  Function('window',book)(host);
  Function('window',read('pandora-studio-ui-locale.js'))(host);
  const key='book-only-one-resistance-spell-can-be-active-sel-a8cce804';
  assert.equal(host.PandoraUILocale.bookFieldKey(
-  'Одновременно действует только одно умение, выбор нового заменяет предыдущие.'),key);
+  'Эти умения направлены на противника. Здесь можно увидеть, как они изменят сопротивления вашего героя, если он окажется целью. Одновременно действует только одно умение, выбор нового заменяет предыдущие.'),key);
  assert.equal(host.PandoraUILocale.copyLimit(key),350);
  const edited='Отмечай только действующие на героя эффекты. Проверка длинного текста и сохранения без потери введённых данных.';
  assert.ok(edited.length>90&&edited.length<=host.PandoraUILocale.copyLimit(key));

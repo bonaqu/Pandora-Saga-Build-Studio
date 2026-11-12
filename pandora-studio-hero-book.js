@@ -11,7 +11,7 @@ const bookEnglish=Object.freeze({
  'Усиления': "Buffs",
  'Эффекты умений': 'Skill effects',
  'Эффекты зелий': 'Potion effects',
- 'Одновременно действует только одно умение, выбор нового заменяет предыдущие.': 'Only one spell can be active at a time. Selecting another replaces the previous one.',
+ 'Эти умения направлены на противника. Здесь можно увидеть, как они изменят сопротивления вашего героя, если он окажется целью. Одновременно действует только одно умение, выбор нового заменяет предыдущие.': 'These spells target an enemy. Here you preview their signed effects on your hero as the target. Only one spell can be active at a time. Selecting another replaces the previous one.',
  'Параметры появятся после загрузки игровых данных.': "Stats appear when game data has loaded.",
  'Результаты расчёта': "Calculated results",
  'Выберите раздел, чтобы посмотреть подробности.': "Select a chapter for details.",
@@ -279,7 +279,7 @@ function bookEditorialKey(ru){
  if(!Object.hasOwn(bookEnglish,ru))return null;
  // The short exclusive-resistance copy retains its previous D1 editorial
  // identity so existing RU/EN owner edits are neither lost nor orphaned.
- const resistanceNote=ru==='Одновременно действует только одно умение, выбор нового заменяет предыдущие.';
+ const resistanceNote=ru==='Эти умения направлены на противника. Здесь можно увидеть, как они изменят сопротивления вашего героя, если он окажется целью. Одновременно действует только одно умение, выбор нового заменяет предыдущие.';
  const slugSource=resistanceNote?'Only one resistance spell can be active. Selecting a new one replaces the previous one. These spells may target allies or enemies.':bookEnglish[ru];
  const slug=slugSource.toLowerCase().normalize('NFKD')
   .replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,43)||'caption';
@@ -1124,8 +1124,8 @@ function buffsPage(body,options){
   const group=section('Усиления сопротивлений стихиям',
    'Elemental resistance buffs','elemental');
   group.append(make('p',{class:'stage-attribute-note',text:english?
-   'Only one spell can be active at a time. Selecting another replaces the previous one.':
-   'Одновременно действует только одно умение, выбор нового заменяет предыдущие.'}));
+   'These spells target an enemy. Here you preview their signed effects on your hero as the target. Only one spell can be active at a time. Selecting another replaces the previous one.':
+   'Эти умения направлены на противника. Здесь можно увидеть, как они изменят сопротивления вашего героя, если он окажется целью. Одновременно действует только одно умение, выбор нового заменяет предыдущие.'}));
   const ru={fire:'Огонь',ice:'Лёд',lightning:'Молния',poison:'Яд',
    charm:'Чары',light:'Свет',dark:'Тьма',magic:'Магия'};
   const en={fire:'Fire',ice:'Ice',lightning:'Lightning',poison:'Poison',
