@@ -22,6 +22,12 @@ These repository-level rules are durable instructions for future coding sessions
 - Item/Soul `EP_IMMUNE_*` and grouped `EP_IMMUNE_VIT_TYPE/SPI_TYPE` are separate inputs. Keep the source-backed honor/racial/Warding contributions isolated; **do not treat group resistance or historical elemental dependencies as a verified individual 2026 OS status-roll formula**. The `verified:false` source limitation stays visible in code/audits until independently supported.
 - Preferred RU status is `Немота` / EN `Silence` (not improvised `Молчание`); existing OS label IDs and historical sources take priority over loose translation.
 
+## Canonical game labels and missing translations (2026-11-13, 0.704.0)
+- The **same OS skill ID** must render its current RU `data/os/skills.json[id].name` and EN `data/os/strings.en.json.skills[id].n`. Never auto-translate, transliterate, or insert a guessed English alias. Current snapshot: 569 skill IDs, only 553 with official EN; for the other 16, show **canonical RU** until a verified EN entry exists.
+- Generic UI captions may share a Russian word with a skill but have another meaning. Examples: section `Восстановление → Recovery` versus skill ID 310022001 `Восстановление → Restoration`; element `Яд → Poison` versus skill 220001001 `Яд → Toxify`; status `Падение → Knockdown` versus skill 500000015 `Падение → Tripped`. Do not globally replace these strings. Route game skill labels through `gameSkillName(id, ...)`, editorial captions through UI translation tables.
+- OS-verified EN self/party buff names: `100052001 Яростная атака / Raging Soul`, `260006001 Помощь ветра / Speedy Gale`, `320004001 Благословение ветра / Accelerate`, `320005001 Знак жизни / Divine Aid`; avoid historical convenient names like Rage Attack, Wind Assist, Wind Blessing, Sign of Life. Verify the current ID and source on every future naming change.
+- Regression `tests/os-canonical-ui-names-704.test.mjs` checks the 569 skill identities, missing EN fallback and ambiguous UI label pairs. Any new source labels need the same proof.
+
 ## Shared priest UI and numerical display (2026-11-12)
 - In the external priest section edit SPR (СД), Blessing and Hymn **once each**; do not duplicate caster input fields alongside priest skills. Keep persisted legacy Benevolence/Exorcism values and original requirements intact.
 - Only add contextual input fields for allied skills when OS/Remaked source evidence proves an independent caster dependency. Natural Recovery presently has a fixed source effect vector, so no speculative extra field.
