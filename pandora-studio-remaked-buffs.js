@@ -57,7 +57,7 @@ const readableWeapon=record=>{
  return ['Не подходит выбранное оружие','Current weapon is incompatible'];
 };
 function enabled(row,{skills={},jobKey=null,level=1,weapon=null,branchMasteries={},
- branchLabels={},englishBranches={}}={}){
+ branchCaps=null,branchLabels={},englishBranches={}}={}){
  const source=skills?.[String(row.id)];
  if(!source||Number(source.id)!==row.id||
   !Array.isArray(source.funcs)||!source.funcs.some(effect=>effect.dir==='TARGET'))
@@ -69,6 +69,15 @@ function enabled(row,{skills={},jobKey=null,level=1,weapon=null,branchMasteries=
  if(row.scope==='party')return {allowed:true,ru:'',en:''};
  if(!source.classes?.[jobKey])return {allowed:false,
   ru:'Недоступно для этой профессии',en:'Unavailable to this class'};
+ // Source class assignment is broader than actual trainable branch caps.
+ // A hypothetical 41 Warding on a Warrior (max 5) cannot activate a buff.
+ if(branchCaps&&typeof branchCaps==='object'&&source.branch){
+  const limit=branchCaps[source.branch],trained=branchMasteries?.[source.branch]??0;
+  if(!Number.isSafeInteger(limit)||limit<=0||
+   !Number.isSafeInteger(trained)||trained<0||trained>limit)
+   return {allowed:false,ru:'Мастерство превышает предел профессии',
+    en:'Skill mastery exceeds class cap'};
+ }
  if(!Number.isInteger(level)||level<Number(source.charLevel||0))
   return {allowed:false,ru:'Требуется уровень '+source.charLevel,
    en:'Requires level '+source.charLevel};
@@ -109,12 +118,12 @@ function exactConstant(record,ep,expected){
   found[0].fv2.every(v=>v===0);
 }
 function choices({skills={},englishSkills={},jobKey=null,level=1,weapon=null,
- branchMasteries={},branchLabels={},englishBranches={},selected=[]}={}){
+ branchMasteries={},branchCaps=null,branchLabels={},englishBranches={},selected=[]}={}){
  const active=new Set(selectedIds(selected));
  return definitions.map(row=>{
   const record=skills[String(row.id)];
   const gate=enabled(row,{skills,jobKey,level,weapon,branchMasteries,
-   branchLabels,englishBranches});
+   branchCaps,branchLabels,englishBranches});
   return {...row,name:record?.name||'',nameEn:englishSkills[String(row.id)]?.n||
    record?.name||'',description:record?.desc||'',
    selected:active.has(row.id),available:gate.allowed,
@@ -144,11 +153,11 @@ function scalingEffect(record,ep,values){
 // to two legacy toggles marked "not implemented" in archived Remaked.
 // These are source-coefficient MODELS, not observed server action results.
 function applied({selected=[],skills={},jobKey=null,level=1,weapon=null,
- branchMasteries={},stats={}}={}){
+ branchMasteries={},branchCaps=null,stats={}}={}){
  const chosen=new Set(selectedIds(selected)),result={};
  for(const row of definitions){
   if(!chosen.has(row.id)||!numericIds.has(row.id))continue;
-  const gate=enabled(row,{skills,jobKey,level,weapon,branchMasteries});
+  const gate=enabled(row,{skills,jobKey,level,weapon,branchMasteries,branchCaps});
   if(!gate.allowed)continue;
   const record=skills[String(row.id)];
   if(row.id===100055001){

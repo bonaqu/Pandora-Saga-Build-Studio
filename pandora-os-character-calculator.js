@@ -1446,7 +1446,7 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  weaponEnhancementType='physical',records=[],itemForth=null,
  jobKey=null,meleeMastery=0,magicMastery=0,techniqueInnate=0,
  techniqueTrained=0,guildArouse=0,combatBuffs={},skillCatalog=null,
- priestEffects={},branchMasteries={},ridingMastery=0}={}){
+ priestEffects={},branchMasteries={},branchCaps=null,ridingMastery=0}={}){
  if(!Number.isInteger(level)||level<1||level>55||
   !['dex','agi','str'].every(key=>Number.isFinite(stats[key])&&stats[key]>=0)||
   !Number.isInteger(honorTitle)||honorTitle<0||honorTitle>=honorTitles.length)return null;
@@ -1470,7 +1470,7 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const critBase=1+Math.floor(stats.dex/10);
  const otherBuffs=root.PandoraRemakedBuffs?.applied({
   selected:combatBuffs?.remakedSkillIds,skills:skillCatalog,jobKey,level,
-  weapon,branchMasteries,stats})||{};
+  weapon,branchMasteries,branchCaps,stats})||{};
  if(![techniqueInnate,techniqueTrained,meleeMastery,magicMastery]
   .every(v=>Number.isInteger(v)&&v>=0))return null;
  // Executed Legacy ACC/Dodge: floor(innate + trained/10), not
@@ -3086,7 +3086,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   guildArouse:attributeBuffs?.guildArouse??0,
   combatBuffs:attributeBuffs,
   honorTitle:extra.honor.id,racialPassiveId:potionContext?.racialPassiveId,
-  ...combatContext,weaponEnhancementType});
+  ...combatContext,branchCaps:classData.branchCaps,weaponEnhancementType});
  // An unavailable weapon/armor preview must NEVER erase otherwise valid HP/MP.
  if(!resistances||!regeneration)return null;
  return {hp:hpBase+hpBonus.total,mp:mpBase+mpBonus.total,

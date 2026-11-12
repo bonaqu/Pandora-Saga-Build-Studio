@@ -1646,6 +1646,7 @@ function renderStageAttributes(calculated=undefined){
  const remakedBuffRows=window.PandoraRemakedBuffs?.choices({
   skills:skillMap,englishSkills:officialEnglish?.skills||{},
   jobKey:cls,level:state.level,weapon:equippedWeapon,branchMasteries,
+  branchCaps:catalog.classes?.[cls]?.branchCaps||{},
   branchLabels:catalog.meta?.branchLabels||{},
   englishBranches:officialEnglish?.branches||{},
   selected:state.attributeBuffs?.remakedSkillIds||[]})||[];

@@ -52,7 +52,8 @@ test('invalid OS vector, stat, class and weapon fail closed',()=>{
  assert.equal(B.applied({...base,jobKey:'SNIPER',selected:[260005001],
   branchMasteries:{warding:41},skills:forged}).quickStep,undefined);
  assert.equal(B.applied({...base,jobKey:'SNIPER',selected:[142051001],
-  branchMasteries:{brush:21}}).coldBlood,undefined);
+  branchMasteries:{brush:21},branchCaps:classes.SNIPER.branchCaps})
+  .coldBlood,undefined,'No Cleaving can be trained by a Sniper');
  assert.equal(B.applied({...base,jobKey:'WARRIOR',selected:[142051001],
   branchMasteries:{brush:21},weapon:{kind:'BOW'}}).coldBlood,undefined);
  assert.equal(B.applied({...base,jobKey:'SNIPER',selected:[260005001],
@@ -78,4 +79,19 @@ test('Book skill hints reuse their existing source-backed Skill Effects models',
  assert.match(book,/root\.PandoraOSCalculator\?\.scalingSkillPreview\?\.\(\{/);
  assert.match(book,/id===142051001\|\|id===260005001/);
  assert.match(book,/Модель по коэффициентам OS ≈ \+/);
+});
+
+test('published class caps reject impossible mastery even with a valid global skill class flag',()=>{
+ const impossible=B.applied({...base,jobKey:'WARRIOR',
+  branchCaps:classes.WARRIOR.branchCaps,
+  selected:[260005001],branchMasteries:{warding:41}});
+ assert.equal(impossible.quickStep,undefined);
+ const valid=B.applied({...base,jobKey:'SNIPER',
+  branchCaps:classes.SNIPER.branchCaps,
+  selected:[260005001],branchMasteries:{warding:41}});
+ assert.equal(valid.quickStep.dodge,19);
+ const corrupt=B.applied({...base,jobKey:'WARRIOR',
+  branchCaps:classes.WARRIOR.branchCaps,
+  selected:[142051001],branchMasteries:{brush:99}});
+ assert.equal(corrupt.coldBlood,undefined);
 });
