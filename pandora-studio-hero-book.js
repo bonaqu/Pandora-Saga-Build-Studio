@@ -1124,8 +1124,8 @@ function buffsPage(body,options){
   const group=section('Усиления сопротивлений стихиям',
    'Elemental resistance buffs','elemental');
   group.append(make('p',{class:'stage-attribute-note',text:english?
-   'These spells target an enemy. Here you preview their signed effects on your hero as the target; one spell can be selected at a time.':
-   'Эти умения направлены на противника. Здесь можно увидеть, как они изменят сопротивления вашего героя, если он окажется целью. Одновременно выбирается одно умение.'}));
+   'These spells target an enemy. Here you preview their signed effects on your hero as the target. Only one spell can be active at a time. Selecting another replaces the previous one.':
+   'Эти умения направлены на противника. Здесь можно увидеть, как они изменят сопротивления вашего героя, если он окажется целью. Одновременно действует только одно умение, выбор нового заменяет предыдущие.'}));
   const ru={fire:'Огонь',ice:'Лёд',lightning:'Молния',poison:'Яд',
    charm:'Чары',light:'Свет',dark:'Тьма',magic:'Магия'};
   const en={fire:'Fire',ice:'Ice',lightning:'Lightning',poison:'Poison',
