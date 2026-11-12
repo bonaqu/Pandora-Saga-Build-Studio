@@ -36,7 +36,7 @@ test('skill requirements use correct OS RU and EN branch vocabulary',()=>{
  assert.doesNotMatch(row.reason,/Изгнание/);
  assert.match(bookSrc,/en\?skill\.reasonEn:skill\.reason/);
 });
-test('the two status categories expose complete localized history with discoverable controls',()=>{
+test('the two status categories expose bilingual D1-ready hover descriptions without redundant badge',()=>{
  const root={};Function('window',guideSrc)(root);
  const hints=root.PandoraHonorGuide.hints;
  for(const [key,wordsRu,wordsEn] of [
@@ -49,7 +49,8 @@ test('the two status categories expose complete localized history with discovera
   for(const word of wordsRu)assert.ok(hint[0].includes(word));
   for(const word of wordsEn)assert.ok(hint[1].includes(word));
  }
- assert.match(bookSrc,/stage-status-family-info/);
+ assert.doesNotMatch(bookSrc,/stage-status-family-info/);
+ assert.match(bookSrc,/guideDisplayText/);
  assert.match(bookSrc,/stage-status-family-guide/);
 });
 test('250 VIT and SPI test vectors calculate group resistance without copying individual statuses',()=>{
