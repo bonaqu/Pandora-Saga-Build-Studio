@@ -17,11 +17,19 @@ const gameTerms={skills,classes,branchLabels:meta.branchLabels,
 test('all 327 Remaked-approved mapped skill names retain their OS Russian identity',()=>{
  const entries=Object.entries(approved.skillLabelsById);
  assert.equal(entries.length,327,'Pinned provenance requires 327 approved mappings');
+ const abbreviated=new Set(['410003001','410015001','410025001',
+  '430054001','440005501']);
  for(const [id,name] of entries){
-  assert.equal(skills[id]?.name,name,'OS / Remaked Russian name mismatch: '+id);
-  assert.equal(book.gameSkillName(id,'Automatically translated','Auto translated',gameTerms),name);
-  assert.equal(book.gameSkillName(id,'Wrong','Wrong',gameTerms,true),english.skills[id]?.n,
-   'English comes from the OS English catalog: '+id);
+  assert.ok(skills[id],'Missing pinned OS identity: '+id);
+  // Five historical abbreviated resistance labels were deliberately
+  // approved for Wiki/Path but are NOT the raw OS game spellings.
+  assert.equal(skills[id].name===name,!abbreviated.has(id),
+   'Unexpected OS / Remaked spelling divergence: '+id);
+  assert.equal(book.gameSkillName(id,'Automatically translated','Auto translated',gameTerms),
+   skills[id].name,'Book always respects actual OS game name');
+  assert.equal(book.gameSkillName(id,'Wrong','English fallback',gameTerms,true),
+   english.skills[id]?.n||'English fallback',
+   'Never invent an English name for a skill absent from official EN snapshot: '+id);
  }
 });
 
