@@ -41,3 +41,14 @@ test('release consistency checks the new PNG instead of hard-coding JPEG',()=>{
  assert.match(release,/previewPng\.readUInt32BE\(16\)!==1280/);
  assert.doesNotMatch(release,/social-preview\.jpg/);
 });
+
+test('live Pages readiness validates the actual shared PNG and no longer expects JPEG',()=>{
+ const check=readFileSync(new URL('scripts/check-live-connections.mjs',root),'utf8');
+ assert.match(check,/assets\/social-preview\.png/);
+ assert.match(check,/image\/png/);
+ assert.match(check,/og:image:width/);
+ assert.match(check,/imageBytes\.readUInt32BE\(16\)===1280/);
+ assert.match(check,/createHash\('sha256'\)/);
+ assert.match(check,/65803dbe8d028422e601804c4a5f8cc383e7b1d0de6b7bfd92671aac7f99f37d/);
+ assert.doesNotMatch(check,/social-preview\.jpg|image\/jpeg/);
+});
