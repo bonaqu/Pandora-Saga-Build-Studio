@@ -107,6 +107,11 @@ export async function runHeroBookGameNames664Smoke(browser,base){
    const img=page.locator('#book-source-qa .stage-effect-skill-label img[src$="skill_'+id+'.webp"]').first();
    await img.scrollIntoViewIfNeeded({timeout:12000});
   }
+  // Explicitly expanding a chapter is an intentional user action; ask the
+  // browser to load its original art rather than waiting on offscreen lazy
+  // images after subsequent scroll restoration.
+  await page.locator('#book-source-qa .stage-effect-skill-label img')
+   .evaluateAll(images=>images.forEach(img=>{img.loading='eager';}));
   await page.waitForFunction(ids=>ids.every(id=>{
    const img=document.querySelector('#book-source-qa .stage-effect-skill-label img[src$="skill_'+id+'.webp"]');
    return img?.complete&&img.naturalWidth>0;
