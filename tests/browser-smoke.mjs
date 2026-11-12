@@ -378,6 +378,9 @@ async function main(){
   assert.match(recovery,/Ориентировочное действие навыка/);
   await page.locator('#stageAttributes [data-book-page="recovery"]').click();
  await page.locator('#stageAttributes .stage-mana-consumables').waitFor({state:'visible',timeout:20000});
+ assert.equal(await page.locator('#stageAttributes .stage-mana-consumables').getAttribute('open'),null,
+  'All Potion Effects start collapsed');
+ await page.locator('#stageAttributes .stage-mana-consumables summary').click();
  assert.match(await page.locator('#stageAttributes .stage-mana-consumables').innerText(),/Легкое восстанавливающее зелье/);
  assert.match(await page.locator('#stageAttributes .stage-mana-consumables').innerText(),/ОМ/);
  const hpOnly=page.locator('#stageAttributes .stage-health-consumables');
