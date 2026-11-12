@@ -376,6 +376,7 @@ const bookPages=Object.freeze([
 // Remember only the reader's collapsed groups while the Book is mounted.
 // All four groups are expanded on first visit; this state is UI-only.
 const collapsedSummaryGroups=new Set();
+const collapsedBookGroups=new Set();
 // Keep the source-backed Hero Book results in one ordered matrix.
 // A missing calculator branch stays unknown (—), never a fabricated zero.
 function summaryRows(calc){
@@ -513,13 +514,16 @@ function buffsPage(body,options){
  const english=document.documentElement?.lang==='en';
  // Count selected effects, never mastery input numbers or a disabled priest.
  const guildSelected=Number(buffs.guildLevel)>0;
+ const guildLevelCount=Number(buffs.guildLevel)||0;
+ const guildPassiveCount=guildSelected?1+(guildLevelCount>=2?2:0)+
+  (guildLevelCount>=4?2:0)+(guildLevelCount>=6?2:0):0;
  const selected=value=>value===true||
   (typeof value==='number'&&value>0)||
   (typeof value==='string'&&value!==''&&value!=='0');
  const selectedResistanceSkills=Array.isArray(buffs.resistanceSkillIds)?
   buffs.resistanceSkillIds.filter(id=>resistanceSkillChoices.some(s=>s.id===id)).length:0;
  const configured=Object.entries(buffs).filter(([key,value])=>{
-  if(key==='proelium'||key==='resistanceSkillIds')return false;
+  if(key==='proelium'||key==='resistanceSkillIds'||key==='guildLevel')return false;
   if(['priestSpi','priestBlessing','priestHymn','priestEnabled',
    'honorCuriosity','proeliumPotency'].includes(key))return false;
   if(key.startsWith('priest')&&buffs.priestEnabled!==true)return false;
@@ -529,7 +533,7 @@ function buffsPage(body,options){
   if(guildSelected&&['guildLifeRecovery','guildManaRecovery'].includes(key))
    return false;
   return selected(value);
- }).length+Object.entries(vitalsBuffs).filter(([key,value])=>
+ }).length+guildPassiveCount+Object.entries(vitalsBuffs).filter(([key,value])=>
   !(guildSelected&&['guildHp','guildMp'].includes(key))&&selected(value)).length+
   selectedResistanceSkills+remakedBuffRows.filter(row=>!row.existing&&
    row.selected&&row.available).length;
@@ -549,10 +553,18 @@ function buffsPage(body,options){
  };
  const select=(parent,ru,en,key,levels,vital=false,compact=false)=>{
   const name=english?en:ru;
-  const field=make(compact?'div':'label',{class:'stage-book-field'+(compact?' stage-book-choice-only':'')},
+  const guildIcons={guildHp:600000001,guildMp:600000011,
+   guildLifeRecovery:600000021,guildManaRecovery:600000031,
+   guildHealing:600000211,guildAll:600000221,guildArouse:600000231};
+  const guildIcon=guildIcons[key]?skillIconForId(guildIcons[key]):null;
+  const field=make(compact?'div':'label',{class:'stage-book-field'+
+   (compact?' stage-book-choice-only':'')+
+   (guildIcon?' stage-guild-skill-field':'')},
    compact?[]:[make('span',{text:name})]);
   if(!compact)guideLabel(field.firstChild,'buffs.setting.'+key,
    ru,en,options);
+  if(guildIcon)field.insertBefore(make('img',{src:guildIcon,alt:'',
+   width:30,height:30,loading:'lazy',class:'stage-guild-skill-icon'}),field.firstChild);
   const entry=make('select',{'aria-label':name,'data-book-setting':key,
    onchange:event=>(vital?onVital:onBuff)(key,event.target.value)});
   const selected=(vital?vitalsBuffs:buffs)[key]??0;
@@ -894,7 +906,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     'Увеличивает урон от оружия ближнего боя.'}),
    make('small',{class:'stage-hit-passive-pending',text:en?
     'Numerical effect details are temporarily unavailable. In development.':
-    'Числовые показатели временно не отображаются. В разработке.'})
+    'Числовые показатели временно не отображаются (в разработке).'})
   ]));
  }
  renderSongSkills(body,modifiers,gameTerms,skillIconForId);
