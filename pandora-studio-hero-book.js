@@ -1378,20 +1378,19 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   section.append(make('p',{class:'stage-periodic-hint',text:en?
    'These effects may follow a hit. Their activation chance and duration are not confirmed.':
    'Эти эффекты могут запускаться при попадании. Их шанс срабатывания и длительность пока не подтверждены.'}));
-  const childName=id=>{
-   const russian=gameTerms.skills?.[String(id)]?.name||'';
-   return en?(gameTerms.englishSkills?.[String(id)]?.n||russian):russian;
-  };
   for(const entry of conditional.rows){
    const source=gameTerms.englishSkills?.[String(entry.id)];
-   const list=entry.paths.map(path=>path.slice(1).map(childName).join(' → '));
+   // The internal OS child typically repeats the parent skill's name.
+   // Prefer the actual official game description over a confusing duplicate.
+   const description=(en?source?.d:null)||
+    gameTerms.skills?.[String(entry.id)]?.desc||'';
    const requirements=entry.requirementsMet?
     (en?'Level and mastery requirements met':'Требования уровня и мастерства выполнены'):
     (en?entry.reasonEn:entry.reasonRu);
    section.append(make('div',{class:'stage-heal-row stage-skill-onhit-row'+
     (entry.requirementsMet?'':' stage-book-unavailable')},[
     gameSkillBadge(entry.id,entry.name,source?.n||entry.name,gameTerms,en,skillIconForId),
-    make('small',{text:(en?'Possible linked effect: ':'Возможный связанный эффект: ')+list.join(' / ')}),
+    make('small',{text:description}),
     make('small',{text:requirements})
    ]));
   }
