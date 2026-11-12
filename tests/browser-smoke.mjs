@@ -400,7 +400,22 @@ async function main(){
  const oldScroll=await page.locator('#stageBookPanel').evaluate(panel=>{
   window.__psBookStablePanel=panel;panel.scrollTop=90;return panel.scrollTop;
  });
- await page.locator('#stageBookPanel [data-book-setting="guildAll"]').selectOption('1');
+ const guildManual=page.locator('#stageBookPanel .stage-guild-passives [data-book-setting]');
+ assert.equal(await guildManual.count(),7,
+  'Manual guild selection must expose all seven independent passives');
+ const icons=page.locator('#stageBookPanel .stage-guild-skill-field > img.stage-guild-skill-icon');
+ assert.ok(await icons.count()>=7,'Manual guild skills and leaders show original skill artwork');
+ const iconBounds=await icons.first().evaluate(node=>{
+  const box=node.getBoundingClientRect();return {width:box.width,height:box.height}
+ });
+ assert.ok(iconBounds.width>=29&&iconBounds.width<=31&&
+  iconBounds.height>=29&&iconBounds.height<=31,
+  'Guild skill image must never stretch beyond 30x30px: '+JSON.stringify(iconBounds));
+ await page.locator('#stageBookPanel [data-book-setting="guildPhysicalReduction"]').selectOption('2');
+ await page.locator('#stageBookPanel [data-book-setting="guildMagicReduction"]').selectOption('2');
+ await page.locator('#stageBookPanel [data-book-setting="guildExperience"]').selectOption('5');
+ assert.equal(await page.locator('#stageBookPanel .stage-buff-overview>strong').innerText(),'3');
+  await page.locator('#stageBookPanel [data-book-setting="guildAll"]').selectOption('1');
  assert.equal(await page.locator('#stageBookPanel').evaluate(panel=>
   panel===window.__psBookStablePanel),true,
   'Changing guild settings must not remount the entire scrolling Hero Book');
@@ -409,6 +424,10 @@ async function main(){
  const guildPassives=page.locator('#stageBookPanel .stage-guild-passive-row');
  assert.equal(await guildPassives.count(),7,'Guild Lv.10 grants seven individual passive effects');
  assert.match(await guildPassives.first().innerText(),/12%/);
+ assert.match(await guildPassives.first().innerText(),/Сила гильдии V|Physical V/,
+  'Automatic guild passive title must include its canonical Roman rank');
+ assert.ok((await guildPassives.last().innerText()).includes('V'),
+  'Experience passive also displays the original skill rank');
  assert.equal(await page.locator('#stageBookPanel .stage-guild-actives [data-book-setting="guildAll"]').count(),1);
  assert.equal(await page.locator('#stageBookPanel .stage-guild-actives [data-book-setting="guildArouse"]').count(),1);
  await page.locator('#stageBookPanel [data-book-setting="priestEnabled"]').check();
