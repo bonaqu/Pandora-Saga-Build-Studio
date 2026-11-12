@@ -84,6 +84,17 @@
  font:650 30px 'Cormorant Garamond',Georgia,serif}
 .wiki-honor-subtitle{text-transform:uppercase;letter-spacing:.11em;
  color:#b9a180;font-size:10px;margin:0 0 13px}
+/* Search filtering overrides grid/flex presentation rules, on desktop and
+   mobile, including the permanent Honor sidebar and rank type chips. */
+.wiki-honor-section[hidden],
+.wiki-honor-nav-link[hidden],
+.wiki-honor-rank[hidden],
+.wiki-honor-monthly-card[hidden],
+.wiki-honor-list-row[hidden],
+.wiki-honor-war-link[hidden]{display:none!important}
+.wiki-honor-search-empty{margin:10px 0;padding:12px;
+ border:1px solid #856642;border-radius:5px;background:#2b2118;
+ color:#e7c99c;font:500 12px/1.45 Manrope,Arial,sans-serif}
 .wiki-honor-section{display:grid;gap:10px;margin:0 0 17px;padding:12px;
  min-width:0;border:1px solid #765737;border-radius:5px;
  background:linear-gradient(135deg,#322419,#1e160f);scroll-margin-block-start:16px}
