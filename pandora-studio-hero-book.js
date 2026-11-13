@@ -1694,6 +1694,11 @@ function defenseChapterGroups(calc){
  // mpRecoverySpeed already includes this index once in the total.
  put(0,'mpRecoveryRepose','Благословенный покой · прибавка к скорости ОМ',
   'Blessed Repose · MP speed bonus',r?.mp?.allyBuff,' инд.');
+ // Instant MP pulse from another player. This is NOT passive MP regeneration.
+ if(calc.allyNaturalRecovery)
+  put(0,'mpNaturalAlly','Природное восстановление союзника · ОМ за срабатывание',
+   'Allied Natural Recovery · MP per pulse',
+   calc.allyNaturalRecovery.mpPerPulse,'',true);
  const statuses={
   burn:['Ожоги','Burn'],stun:['Оглушение','Stun'],
   numb:['Заморозка','Freeze'],tumble:['Падение','Knockdown'],
