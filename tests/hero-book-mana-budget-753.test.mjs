@@ -30,7 +30,8 @@ test('Hero Book uses current hero max MP only for available source-gated skills'
  const book=read('pandora-studio-hero-book.js');
  assert.match(book,/maxMana:modifiers\?\.mp/);
  assert.match(book,/baseCost:action\?\.mana/);
- assert.match(book,/showBaseManaBudget\(preview,action\)/);
+ assert.match(book,/showBaseManaBudget\(more,action\)/);
+ assert.match(book,/stage-skill-more/);
  assert.match(book,/Full запас|Полный запас/);
  assert.match(book,/Без восстановления и скидок на расход/);
  assert.match(book,/row\.kind==='mp'&&row\.id===330005001/);

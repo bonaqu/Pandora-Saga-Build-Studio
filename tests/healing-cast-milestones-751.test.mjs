@@ -146,5 +146,6 @@ test('Book presents the model in readable, compact Russian and English',()=>{
  assert.match(book,/Показатель расхода ОМ героя/);
  assert.match(book,/Показатель отката героя/);
  assert.match(book,/Точное время перезарядки с бонусами пока не установлено/);
- assert.match(book,/appendHealingBreakdown\(preview,row,pulse\)/);
+ assert.match(book,/appendHealingBreakdown\(more,row,pulse\)/);
+ assert.match(book,/stage-skill-more/);
 });
