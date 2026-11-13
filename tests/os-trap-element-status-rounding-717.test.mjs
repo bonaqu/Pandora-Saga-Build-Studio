@@ -42,7 +42,8 @@ test('mutated triggered vectors and nested chains fail closed, without hiding un
  for(const [root,child,at,vector,index] of cases){
   const changed=structuredClone(skills);
   changed[child].funcs[at][vector][index]++;
-  const job=Object.keys(jobs).find(j=>traps(j).rows.some(x=>x.id===root));
+  const job=Object.keys(jobs).find(j=>traps(j).rows.length===expected.length&&
+   traps(j).rows.some(x=>x.id===root));
   const result=traps(job,changed);
   assert.equal(result.rows.find(x=>x.id===root),undefined);
   assert.ok(result.rejected.includes(root));
