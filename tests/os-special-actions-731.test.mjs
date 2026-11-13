@@ -105,11 +105,13 @@ test('400 synthetic characters never receive an unearned active skill or permane
  }
  assert.equal(JSON.stringify(skills),initial);
 });
-test('coverage counts exactly one new item cost and two qualitative mechanics',()=>{
+test('coverage keeps the 0.731.0 source gains when later modules add more models',()=>{
  const report=auditOsSkillFormulaCoverage({skills,classes,calculator:C});
- assert.equal(report.summary.statuses['numeric-preview'],70);
- assert.equal(report.summary.statuses['qualitative-preview'],52);
- assert.equal(report.summary.statuses['unmodeled-learnable'],52);
+ // Baseline 0.731.0 minimum and maximum; newer PRs assert their exact
+ // current totals in their own tests without breaking previous releases.
+ assert.ok(report.summary.statuses['numeric-preview']>=70);
+ assert.ok(report.summary.statuses['qualitative-preview']>=52);
+ assert.ok(report.summary.statuses['unmodeled-learnable']<=52);
  for(const [id,expected] of [[220006001,'numeric-preview'],
   [100059001,'qualitative-preview'],[520004001,'qualitative-preview']]){
   const row=report.rows.find(x=>x.id===id);

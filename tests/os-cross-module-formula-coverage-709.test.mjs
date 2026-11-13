@@ -94,6 +94,65 @@ test('mutations of OS source coefficients remove only the affected coverage',()=
  changedPeriodic['310002001'].funcs[0].fv2[3]=99;
  assert.equal(row(report(changedPeriodic),310002001).sourceModules.includes('periodic-recovery'),false);
 });
+test('already applied party buffs appear once in the cross-module source audit',()=>{
+ const audit=report();
+ const repose=row(audit,320002001),life=row(audit,320005001);
+ assert.equal(repose.name,'Благословенный покой');
+ assert.equal(life.name,'Знак жизни');
+ for(const [item,module] of [
+  [repose,'party-recovery-buff'],[life,'party-max-hp-buff']
+ ]){
+  assert.equal(item.status,'numeric-preview');
+  assert.equal(item.numericPreview,true);
+  assert.equal(item.targetSideOnly,false,'Party buff is not an incoming enemy debuff');
+  assert.deepEqual(item.sourceModules,[module]);
+ }
+ assert.equal(audit.summary.statuses['numeric-preview'],72);
+ assert.equal(audit.summary.statuses['unmodeled-learnable'],50);
+
+ // Check the actual existing models, not invented replacement formulas.
+ const originalBuffs={};
+ Function('window',read('pandora-studio-remaked-buffs.js'))(originalBuffs);
+ const applied=originalBuffs.PandoraRemakedBuffs.applied({
+  selected:[320002001],skills,jobKey:'WARRIOR',level:1,
+  branchMasteries:{},branchCaps:classes.WARRIOR.branchCaps});
+ assert.deepEqual(applied.blessedRepose,{manaRecoverySpeed:90},
+  '90 means recovery speed index, not 90 MP per tick');
+ const tables=JSON.parse(read('data/os/tables.json'));
+ const params={classData:classes.WARRIOR,raceData:tables.raceInit.ELF,
+  jobData:tables.jobInit.WARRIOR,
+  allocation:{vit:0,str:0,agi:0,dex:0,spi:0,int:0},
+  level:45,records:[]};
+ const before=calculator.base({...params,enhancements:{lifeSign:false}});
+ const after=calculator.base({...params,enhancements:{lifeSign:true}});
+ assert.ok(before&&after);
+ assert.equal(after.hp-before.hp,250+Math.floor(before.hpBase*15/100));
+ assert.equal(after.mp,before.mp);
+});
+test('party source audit rejects mutated FV1/FV2/direction and preserves unrelated buffs',()=>{
+ const initial=report();
+ const edits=[
+  [320002001,source=>{source.funcs[0].fv1[3]=91}],
+  [320002001,source=>{source.funcs[0].dir='CASTER'}],
+  [320002001,source=>{source.funcs[0].fv2[0]=1}],
+  [320005001,source=>{source.funcs[1].fv1[3]=16}],
+  [320005001,source=>{source.funcs[0].fv2[3]=1}],
+  [320005001,source=>{source.funcs.push(structuredClone(source.funcs[0]))}]
+ ];
+ for(const [id,mutate] of edits){
+  const changed=structuredClone(skills);
+  mutate(changed[String(id)]);
+  const next=report(changed);
+  assert.equal(row(next,id).status,'unmodeled-learnable',String(id));
+  assert.deepEqual(row(next,id).sourceModules,[]);
+  const other=id===320002001?320005001:320002001;
+  assert.equal(row(next,other).status,'numeric-preview','Unrelated buff must survive');
+  assert.equal(next.summary.statuses['numeric-preview'],
+   initial.summary.statuses['numeric-preview']-1);
+  assert.equal(next.summary.statuses['unmodeled-learnable'],
+   initial.summary.statuses['unmodeled-learnable']+1);
+ }
+});
 test('missing formula module aborts the census rather than inventing unmodeled sources',()=>{
  const {healingSpellsPreview,...missing}=calculator;
  assert.throws(()=>auditOsSkillFormulaCoverage({skills,classes,calculator:missing}),
