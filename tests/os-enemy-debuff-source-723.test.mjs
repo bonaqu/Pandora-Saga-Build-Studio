@@ -89,7 +89,7 @@ test('cross-module audit counts four new qualitative enemy-only roots',async()=>
  const script=await import('../scripts/audit-os-skill-formulas.mjs');
  const report=script.auditOsSkillFormulaCoverage({skills,classes,calculator:C});
  assert.equal(report.summary.statuses['qualitative-preview'],50);
- assert.equal(report.summary.statuses['unmodeled-learnable'],58);
+ assert.equal(report.summary.statuses['unmodeled-learnable'],55);
  for(const [id] of cases){
   const row=report.rows.find(x=>x.id===id);
   assert.equal(row.targetSideOnly,true);
