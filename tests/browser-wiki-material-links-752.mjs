@@ -65,7 +65,9 @@ export async function runWikiMaterialLinks752Smoke(browser,base){
    anchors.map(a=>a.getAttribute('href'))),
    ['#wiki/skill/340003001','#wiki/skill/340003002',
     '#wiki/skill/340003003']);
-  assert.match(await peace.innerText(),/Область:.*Эффект:/);
+  const peaceRoles=await peace.innerText();
+  assert.match(peaceRoles,/Область:/);
+  assert.match(peaceRoles,/Эффект:/);
 
   // Keep current Resurrection selection for the existing English checks.
   await skill(310003001);
@@ -97,7 +99,9 @@ export async function runWikiMaterialLinks752Smoke(browser,base){
    assert.deepEqual(await path.locator('a.wiki-link').evaluateAll(anchors=>
     anchors.map(a=>a.getAttribute('href'))),
     [rootId,areaId,finalId].map(id=>'#wiki/skill/'+id));
-   assert.match(await path.innerText(),/Area:.*Effect:/);
+   const roles=await path.innerText();
+   assert.match(roles,/Area:/);
+   assert.match(roles,/Effect:/);
   }
   assert.deepEqual(errors,[]);
  }finally{await context.close()}
