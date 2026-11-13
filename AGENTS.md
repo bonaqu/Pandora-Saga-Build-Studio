@@ -10,6 +10,11 @@ These repository-level rules are durable instructions for future coding sessions
 - **Fast without cutting corners:** batch related reads, inspect dependent call paths/test fixtures before changes, ship coherent patches, run focused Node and isolated browser diagnostics first, preflight release metadata before the full Node suite, then let the final mandatory CI run exactly once per revision. On failure read the first failing test/log before rerunning. Avoid needless release bumps for documentation/CI-only patches; when code/site assets change bump release files together. After a release verify Pages **and** live Worker/D1 read-only readiness; never infer a real production write from mock tests. Never run background/daily CI without an owner request.
 
 
+## Further source-only abilities (0.734.0)
+- New `situationalSkillProofs` records retain the full, current OS source signatures and *all* linked helper skill signatures (including two-hop `410000201 → 410000202 → 410000203`). Avoid claiming a verified final teleport destination, plant damage, effect duration, trap success, or server speed-roll from an EP value.
+- Reuse the existing two Skill Effects sections with canonical RU/EN skill names and icons, never create separate top-level panels or permanent hero modifications.
+- Use class branch caps, level and exact FV1/FV2 source verification; fail closed on changed helpers. Recompute the census of all 569 records on each PR, and preserve tests for historic minima instead of hardcoding previous exact totals.
+
 ## Portal and movement source previews (0.733.0)
 - The exact current OS RU name for skill `410000301` is «Двойной портал»; English OS `strings.en.json` uses `Memorize`. Display each verbatim per selected locale, never free-translate skill titles.
 - `EP_CANCEL_MEMORIZE_IN_MAP` / `EP_WARP_MEMORY` are verified source action markers, not a confirmed destination, available map, travel success or live server outcome. The Book's existing «Особые действия» section may describe requirements, MP, cooldown and source effects, but must not modify hero stats or imply a server-confirmed teleport result.
