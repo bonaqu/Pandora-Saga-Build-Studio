@@ -123,7 +123,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   const offense=page.locator('#book-source-qa .stage-attacking-skills');
   assert.equal(await offense.getAttribute('open'),null,
    'Skill Effects start with offensive previews collapsed');
-  await offense.locator('summary').click();
+  await offense.locator(':scope > summary').click();
   const required=[310001001,310021001,310022001,310023001,340001001];
   // The new collapsed subchapters use lazy-loaded artwork; force each source
   // icon into the scrollport before checking that the original sprite loaded.
