@@ -1367,7 +1367,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     ({firstAid:310001001,heal:310004001,healingAura:310021001,
       sanctuary:310023001,restoration:310022001})[row.id]);
    if(!Number.isSafeInteger(sourceId))continue;
-   const pulse=row.kind==='hp'||row.scaledBySkill===false;
+   const pulse=row.kind==='hp'||sourceId===310002001||sourceId===310022001;
    const amount=String(row.amount)+(pulse?
     (en?' HP every 2 sec (model)':' ОЗ каждые 2 сек. (модель)'):
     (en?' HP (model)':' ОЗ (расчёт)'));
