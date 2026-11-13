@@ -410,6 +410,60 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   assert.equal(ogreBook.locked.count,0);
   assert.equal(ogreBook.missing.count,0);
   assert.doesNotMatch(ogreBook.ru.main,/материал|рецепт|создани|Ловушка × 2/i);
+  // Source-checked current spells share the same compact skill list;
+  // Fire Bolt, Blood Drain and Infect are one hit, NOT cast totals/DOT.
+  const spellBook=await page.evaluate(async()=>{
+   const terms=window.__bookGameTermsQA;
+   const tables=await (await fetch('data/os/tables.json')).json();
+   const stats={dex:70,int:80,spi:50};
+   const modifiers={combat:{spellDamageEquipmentRate:0,priestSong:{}},
+    priestApplied:{}};
+   const effects=window.PandoraOSTargetDamage.supportedSkillHits({
+    skillCatalog:terms.skills,classes:terms.classes,jobKey:'WARLOCK',
+    level:45,masteries:{element:50,darkness:25},
+    branchCaps:terms.classes.WARLOCK.branchCaps,
+    stats,equipment:[],tables,modifiers
+   });
+   const host=document.createElement('div');
+   host.id='book-ogre-spells-qa';host.style.width='780px';
+   document.body.append(host);
+   const render=language=>{
+    document.documentElement.lang=language;
+    window.PandoraStageAttributes.render(host,{
+     page:'effects',modifiers:{mp:450,stats,...modifiers,
+      healingSpells:{rows:[]},periodicRecovery:{rows:[]}},
+     gameTerms:terms,heroJobKey:'WARLOCK',heroLevel:45,
+     heroMasteries:{element:50,darkness:25},
+     heroBranchCaps:terms.classes.WARLOCK.branchCaps,
+     targetSkillDamages:effects
+    });
+    return [...host.querySelectorAll('.stage-target-damage-row')]
+     .map(row=>({text:row.textContent||'',
+      main:row.querySelector('strong')?.textContent||'',
+      details:row.querySelector('.stage-skill-more')?.textContent||''}));
+   };
+   return {effects:effects.map(({skillId,min,average,max})=>
+    [skillId,min,average,max]),ru:render('ru'),en:render('en')};
+  });
+  assert.deepEqual(spellBook.effects,[
+   [410001001,4,21,28],[430001001,10,48,71],
+   [430052001,1,5,9]
+  ]);
+  assert.equal(spellBook.ru.length,3,'one row for each learned hit');
+  assert.equal(spellBook.en.length,3);
+  assert.match(spellBook.ru[0].text,/Огненная стрела/);
+  assert.match(spellBook.ru[1].text,/Кража жизни/);
+  assert.match(spellBook.ru[2].text,/Ядовитый удар/);
+  assert.match(spellBook.ru[0].main,/Гигантский огр · 4–28 ОЗ/);
+  assert.match(spellBook.en[0].text,/Fire Bolt/);
+  assert.match(spellBook.en[1].text,/Blood Drain/);
+  assert.match(spellBook.en[2].text,/Infect/);
+  assert.match(spellBook.ru[0].details,/ИНТ 80.*Стихия 50/);
+  assert.match(spellBook.ru[2].details,/СД 50.*Тьма 25/);
+  assert.match(spellBook.en[1].details,/Average hit against.*48 HP/);
+  assert.doesNotMatch(spellBook.ru.map(row=>row.text).join(' '),
+   /материал|рецепт|изготовлени/i);
+
   assert.deepEqual(errors,[]);
   console.log('Chromium Book 664: OS/Remaked RU+EN skills, Hymn/Песнопения, Адепт, buffs and defense');
  }finally{await context.close()}
