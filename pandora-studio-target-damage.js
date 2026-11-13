@@ -7,7 +7,8 @@
 const target=Object.freeze({
  id:22104,name:'Гигантский огр',nameEn:'Ogre Bouncer',level:53,
  life:6126,vit:32,spi:18,ac:15,magicProtection:0,
- resists:{fire:0,cold:0,lightning:0,charm:0,holy:0,dark:-25,magic:17}
+ resists:{physical:0,fire:0,cold:0,lightning:0,
+  poison:-25,charm:0,holy:0,dark:-25,magic:17}
 });
 const n=v=>Number.isSafeInteger(v)&&v>=0;
 const trunc=Math.trunc;
@@ -22,6 +23,7 @@ const even=x=>{
 const schoolSuffixes=Object.freeze({
  EP_ELEMENT_DAMAGE_SCALE_FIRE:'fire',
  EP_ELEMENT_DAMAGE_SCALE_COLD:'cold',
+ EP_ELEMENT_DAMAGE_SCALE_POISON:'poison',
  EP_ELEMENT_DAMAGE_SCALE_LIGHTNING:'lightning',
  EP_ELEMENT_DAMAGE_SCALE_HOLY:'holy',
  EP_ELEMENT_DAMAGE_SCALE_DARK:'dark'
@@ -215,6 +217,945 @@ const directSpells=Object.freeze([
     ['EP_HEAL_LIFE_REGENERATOR','TARGET',[-4,0,-10,-4],[0,0,0,2]],
     ['EP_STOP_NATURAL_HEAL','TARGET',[0,0,0,1],[0,0,0,1]]]}}
 ]);
+const linkedSpells=Object.freeze([
+ {
+  "id": 240002001,
+  "path": [
+   {
+    "id": 240002001,
+    "learnable": true,
+    "kind": "POINT",
+    "element": null,
+    "stat": "DEX",
+    "branch": "trap",
+    "charLevel": 0,
+    "prereq": null,
+    "reqs": [
+     {
+      "branch": "trap",
+      "amount": 26
+     }
+    ],
+    "damage": null,
+    "effects": [
+     [
+      "EP_CONSUME_ITEM",
+      "CASTER",
+      [
+       0,
+       0,
+       0,
+       65007
+      ],
+      [
+       0,
+       0,
+       0,
+       1
+      ]
+     ],
+     [
+      "EP_SKILL_EXEC",
+      "TARGET",
+      [
+       0,
+       0,
+       0,
+       240002050
+      ],
+      [
+       0,
+       0,
+       0,
+       0
+      ]
+     ],
+     [
+      "EP_CANCEL_TRAP",
+      "CASTER",
+      [
+       0,
+       0,
+       0,
+       240002050
+      ],
+      [
+       0,
+       0,
+       0,
+       0
+      ]
+     ]
+    ]
+   },
+   {
+    "id": 240002050,
+    "learnable": false,
+    "kind": "CIRCLE",
+    "element": null,
+    "stat": "DEX",
+    "branch": "trap",
+    "charLevel": 0,
+    "prereq": null,
+    "reqs": [],
+    "damage": {
+     "kernel": "element",
+     "slotIndex": 0
+    },
+    "effects": [
+     [
+      "EP_ELEMENT_DAMAGE",
+      "TARGET",
+      [
+       350,
+       100,
+       70,
+       50
+      ],
+      [
+       0,
+       0,
+       0,
+       0
+      ]
+     ],
+     [
+      "EP_CAUSE_KNOCKBACK",
+      "TARGET",
+      [
+       0,
+       0,
+       0,
+       200
+      ],
+      [
+       0,
+       0,
+       0,
+       1
+      ]
+     ]
+    ]
+   }
+  ],
+  "damageIndex": 1
+ },
+ {
+  "id": 410014001,
+  "path": [
+   {
+    "id": 410014001,
+    "learnable": true,
+    "kind": "POINT",
+    "element": "COLD",
+    "stat": "INT",
+    "branch": "element",
+    "charLevel": 0,
+    "prereq": null,
+    "reqs": [
+     {
+      "branch": "element",
+      "amount": 54
+     }
+    ],
+    "damage": null,
+    "effects": [
+     [
+      "EP_SKILL_EXEC",
+      "TARGET",
+      [
+       0,
+       0,
+       0,
+       410014002
+      ],
+      [
+       0,
+       0,
+       0,
+       0
+      ]
+     ]
+    ]
+   },
+   {
+    "id": 410014002,
+    "learnable": false,
+    "kind": "SPHERE",
+    "element": "COLD",
+    "stat": "INT",
+    "branch": "element",
+    "charLevel": 0,
+    "prereq": null,
+    "reqs": [],
+    "damage": {
+     "kernel": "element",
+     "slotIndex": 0
+    },
+    "effects": [
+     [
+      "EP_ELEMENT_DAMAGE",
+      "TARGET",
+      [
+       150,
+       0,
+       48,
+       13
+      ],
+      [
+       0,
+       0,
+       0,
+       0
+      ]
+     ],
+     [
+      "EP_DESTINED_KNOCKBACK",
+      "TARGET",
+      [
+       0,
+       0,
+       0,
+       200
+      ],
+      [
+       0,
+       0,
+       0,
+       0
+      ]
+     ]
+    ]
+   }
+  ],
+  "damageIndex": 1
+ },
+ {
+  "id": 410014003,
+  "path": [
+   {
+    "id": 410014003,
+    "learnable": true,
+    "kind": "POINT",
+    "element": "COLD",
+    "stat": "INT",
+    "branch": "element",
+    "charLevel": 0,
+    "prereq": 410014001,
+    "reqs": [
+     {
+      "branch": "element",
+      "amount": 71
+     }
+    ],
+    "damage": null,
+    "effects": [
+     [
+      "EP_SKILL_EXEC",
+      "TARGET",
+      [
+       0,
+       0,
+       0,
+       410014004
+      ],
+      [
+       0,
+       0,
+       0,
+       0
+      ]
+     ]
+    ]
+   },
+   {
+    "id": 410014004,
+    "learnable": false,
+    "kind": "SPHERE",
+    "element": "COLD",
+    "stat": "INT",
+    "branch": "element",
+    "charLevel": 0,
+    "prereq": null,
+    "reqs": [],
+    "damage": {
+     "kernel": "element",
+     "slotIndex": 0
+    },
+    "effects": [
+     [
+      "EP_ELEMENT_DAMAGE",
+      "TARGET",
+      [
+       200,
+       0,
+       110,
+       13
+      ],
+      [
+       0,
+       0,
+       0,
+       0
+      ]
+     ],
+     [
+      "EP_DESTINED_KNOCKBACK",
+      "TARGET",
+      [
+       0,
+       0,
+       0,
+       200
+      ],
+      [
+       0,
+       0,
+       0,
+       0
+      ]
+     ]
+    ]
+   }
+  ],
+  "damageIndex": 1
+ },
+ {
+  "id": 410022001,
+  "path": [
+   {
+    "id": 410022001,
+    "learnable": true,
+    "kind": "BOLT",
+    "element": "LIGHTNING",
+    "stat": "INT",
+    "branch": "element",
+    "charLevel": 0,
+    "prereq": null,
+    "reqs": [
+     {
+      "branch": "element",
+      "amount": 12
+     }
+    ],
+    "damage": null,
+    "effects": [
+     [
+      "EP_SKILL_EXEC",
+      "TARGET",
+      [
+       0,
+       0,
+       0,
+       410022050
+      ],
+      [
+       0,
+       0,
+       0,
+       0
+      ]
+     ]
+    ]
+   },
+   {
+    "id": 410022050,
+    "learnable": false,
+    "kind": "SPHERE",
+    "element": "LIGHTNING",
+    "stat": "INT",
+    "branch": "element",
+    "charLevel": 0,
+    "prereq": null,
+    "reqs": [],
+    "damage": {
+     "kernel": "element",
+     "slotIndex": 0
+    },
+    "effects": [
+     [
+      "EP_ELEMENT_DAMAGE",
+      "TARGET",
+      [
+       100,
+       0,
+       150,
+       25
+      ],
+      [
+       0,
+       0,
+       0,
+       0
+      ]
+     ]
+    ]
+   }
+  ],
+  "damageIndex": 1
+ },
+ {
+  "id": 420007001,
+  "path": [
+   {
+    "id": 420007001,
+    "learnable": true,
+    "kind": "POINT",
+    "element": "NONE",
+    "stat": "SPI",
+    "branch": "embody",
+    "charLevel": 0,
+    "prereq": null,
+    "reqs": [
+     {
+      "branch": "embody",
+      "amount": 61
+     }
+    ],
+    "damage": null,
+    "effects": [
+     [
+      "EP_SKILL_EXEC",
+      "TARGET",
+      [
+       0,
+       0,
+       0,
+       420007002
+      ],
+      [
+       0,
+       0,
+       0,
+       0
+      ]
+     ]
+    ]
+   },
+   {
+    "id": 420007002,
+    "learnable": false,
+    "kind": "SPHBOLT",
+    "element": "CHARM",
+    "stat": "SPI",
+    "branch": "embody",
+    "charLevel": 0,
+    "prereq": null,
+    "reqs": [],
+    "damage": {
+     "kernel": "element",
+     "slotIndex": 0
+    },
+    "effects": [
+     [
+      "EP_ELEMENT_DAMAGE",
+      "TARGET",
+      [
+       60,
+       0,
+       80,
+       27
+      ],
+      [
+       0,
+       0,
+       0,
+       0
+      ]
+     ],
+     [
+      "EP_CAUSE_SLEEP",
+      "TARGET",
+      [
+       0,
+       0,
+       0,
+       20
+      ],
+      [
+       40,
+       0,
+       40,
+       0
+      ]
+     ],
+     [
+      "EP_DESTINED_KNOCKBACK",
+      "TARGET",
+      [
+       0,
+       0,
+       0,
+       300
+      ],
+      [
+       0,
+       0,
+       0,
+       0
+      ]
+     ]
+    ]
+   }
+  ],
+  "damageIndex": 1
+ },
+ {
+  "id": 430001003,
+  "path": [
+   {
+    "id": 430001003,
+    "learnable": true,
+    "kind": "ENEMY",
+    "element": "DARK",
+    "stat": "INT",
+    "branch": "darkness",
+    "charLevel": 45,
+    "prereq": 430001001,
+    "reqs": [
+     {
+      "branch": "darkness",
+      "amount": 21
+     }
+    ],
+    "damage": null,
+    "effects": [
+     [
+      "EP_SKILL_EXEC",
+      "TARGET",
+      [
+       0,
+       0,
+       0,
+       430001004
+      ],
+      [
+       0,
+       0,
+       0,
+       0
+      ]
+     ]
+    ]
+   },
+   {
+    "id": 430001004,
+    "learnable": false,
+    "kind": "SPHERE",
+    "element": "DARK",
+    "stat": "INT",
+    "branch": "darkness",
+    "charLevel": 0,
+    "prereq": null,
+    "reqs": [],
+    "damage": {
+     "kernel": "element",
+     "slotIndex": 1
+    },
+    "effects": [
+     [
+      "EP_LIFE_ABSORB",
+      "CASTER",
+      [
+       0,
+       0,
+       0,
+       50
+      ],
+      [
+       0,
+       0,
+       0,
+       0
+      ]
+     ],
+     [
+      "EP_ELEMENT_DAMAGE",
+      "TARGET",
+      [
+       180,
+       0,
+       80,
+       40
+      ],
+      [
+       0,
+       0,
+       0,
+       0
+      ]
+     ]
+    ]
+   }
+  ],
+  "damageIndex": 1
+ },
+ {
+  "id": 430052002,
+  "path": [
+   {
+    "id": 430052002,
+    "learnable": true,
+    "kind": "ENEMY",
+    "element": "DARK",
+    "stat": "SPI",
+    "branch": "darkness",
+    "charLevel": 45,
+    "prereq": 430052001,
+    "reqs": [
+     {
+      "branch": "darkness",
+      "amount": 8
+     }
+    ],
+    "damage": null,
+    "effects": [
+     [
+      "EP_SKILL_EXEC",
+      "TARGET",
+      [
+       0,
+       0,
+       0,
+       430052003
+      ],
+      [
+       0,
+       0,
+       0,
+       0
+      ]
+     ]
+    ]
+   },
+   {
+    "id": 430052003,
+    "learnable": false,
+    "kind": "SPHERE",
+    "element": "DARK",
+    "stat": "SPI",
+    "branch": "darkness",
+    "charLevel": 0,
+    "prereq": null,
+    "reqs": [],
+    "damage": {
+     "kernel": "element",
+     "slotIndex": 0
+    },
+    "effects": [
+     [
+      "EP_ELEMENT_DAMAGE",
+      "TARGET",
+      [
+       5,
+       0,
+       5,
+       15
+      ],
+      [
+       0,
+       0,
+       0,
+       0
+      ]
+     ],
+     [
+      "EP_CAUSE_POISON",
+      "TARGET",
+      [
+       180,
+       0,
+       180,
+       40
+      ],
+      [
+       0,
+       0,
+       30,
+       70
+      ]
+     ]
+    ]
+   }
+  ],
+  "damageIndex": 1
+ },
+ {
+  "id": 430053003,
+  "path": [
+   {
+    "id": 430053003,
+    "learnable": true,
+    "kind": "ENEMY",
+    "element": "DARK",
+    "stat": "SPI",
+    "branch": "darkness",
+    "charLevel": 45,
+    "prereq": 430053001,
+    "reqs": [
+     {
+      "branch": "darkness",
+      "amount": 26
+     }
+    ],
+    "damage": null,
+    "effects": [
+     [
+      "EP_SKILL_EXEC",
+      "TARGET",
+      [
+       0,
+       0,
+       0,
+       430053004
+      ],
+      [
+       0,
+       0,
+       0,
+       0
+      ]
+     ]
+    ]
+   },
+   {
+    "id": 430053004,
+    "learnable": false,
+    "kind": "SPHERE",
+    "element": "DARK",
+    "stat": "SPI",
+    "branch": "darkness",
+    "charLevel": 0,
+    "prereq": null,
+    "reqs": [],
+    "damage": {
+     "kernel": "element",
+     "slotIndex": 0
+    },
+    "effects": [
+     [
+      "EP_ELEMENT_DAMAGE",
+      "TARGET",
+      [
+       40,
+       0,
+       40,
+       26
+      ],
+      [
+       0,
+       0,
+       0,
+       0
+      ]
+     ],
+     [
+      "EP_SKILL_EXEC",
+      "TARGET",
+      [
+       0,
+       0,
+       0,
+       430053005
+      ],
+      [
+       0,
+       0,
+       0,
+       0
+      ]
+     ]
+    ]
+   },
+   {
+    "id": 430053005,
+    "learnable": false,
+    "kind": "ENEMY",
+    "element": "DARK",
+    "stat": "SPI",
+    "branch": "darkness",
+    "charLevel": 0,
+    "prereq": null,
+    "reqs": [],
+    "damage": null,
+    "effects": [
+     [
+      "EP_HEAL_LIFE_REGENERATOR",
+      "TARGET",
+      [
+       -4,
+       0,
+       -10,
+       -4
+      ],
+      [
+       0,
+       0,
+       0,
+       2
+      ]
+     ],
+     [
+      "EP_STOP_NATURAL_HEAL",
+      "TARGET",
+      [
+       0,
+       0,
+       0,
+       1
+      ],
+      [
+       0,
+       0,
+       0,
+       1
+      ]
+     ]
+    ]
+   }
+  ],
+  "damageIndex": 1
+ },
+ {
+  "id": 430056001,
+  "path": [
+   {
+    "id": 430056001,
+    "learnable": true,
+    "kind": "POINT",
+    "element": "POISON",
+    "stat": "INT",
+    "branch": "darkness",
+    "charLevel": 0,
+    "prereq": null,
+    "reqs": [
+     {
+      "branch": "darkness",
+      "amount": 54
+     }
+    ],
+    "damage": null,
+    "effects": [
+     [
+      "EP_SKILL_EXEC",
+      "TARGET",
+      [
+       0,
+       0,
+       0,
+       430056002
+      ],
+      [
+       0,
+       0,
+       0,
+       0
+      ]
+     ]
+    ]
+   },
+   {
+    "id": 430056002,
+    "learnable": false,
+    "kind": "SPHERE",
+    "element": "POISON",
+    "stat": "INT",
+    "branch": "darkness",
+    "charLevel": 0,
+    "prereq": null,
+    "reqs": [
+     {
+      "branch": "darkness",
+      "amount": 35
+     }
+    ],
+    "damage": {
+     "kernel": "element",
+     "slotIndex": 0
+    },
+    "effects": [
+     [
+      "EP_ELEMENT_DAMAGE",
+      "TARGET",
+      [
+       120,
+       0,
+       120,
+       15
+      ],
+      [
+       0,
+       0,
+       0,
+       0
+      ]
+     ],
+     [
+      "EP_CAUSE_CURSE",
+      "TARGET",
+      [
+       0,
+       0,
+       0,
+       15
+      ],
+      [
+       0,
+       0,
+       0,
+       20
+      ]
+     ]
+    ]
+   }
+  ],
+  "damageIndex": 1
+ }
+]);
+// Only one OS EP_ELEMENT_DAMAGE packet is calculated for each linked
+// action. Root -> attack -> optional status chain is strictly pinned.
+function sourceLinkedSpell({skillCatalog,classes,jobKey,level,masteries={},
+ branchCaps={}},spec){
+ const job=classes?.[jobKey],first=spec.path[0];
+ const root=skillCatalog?.[String(first.id)];
+ if(!job||job.id!==jobKey||!root||!n(level)||level<1||level>55||
+  level<first.charLevel||root.classes?.[jobKey]!==1)return null;
+ for(const req of first.reqs){
+  const cap=branchCaps[req.branch],mastery=masteries[req.branch]??0;
+  if(!n(req.amount)||!n(cap)||cap>100||
+   cap!==job.branchCaps?.[req.branch]||
+   cap<req.amount||!n(mastery)||mastery>cap||
+   mastery<req.amount)return null;
+ }
+ // Source skill effects and source chaining have to remain identical.
+ const exact=(record,node)=>{
+  if(record?.id!==node.id||record.learnable!==node.learnable||
+   record.skillType!==node.kind||record.element!==node.element||
+   record.powerStat!==node.stat||record.branch!==node.branch||
+   record.charLevel!==node.charLevel||record.prereq!==node.prereq||
+   JSON.stringify(record.reqs)!==JSON.stringify(node.reqs)||
+   JSON.stringify(record.damage)!==JSON.stringify(node.damage)||
+   record.funcs?.length!==node.effects.length)return false;
+  return node.effects.every(([ep,dir,fv1,fv2],i)=>{
+   const actual=record.funcs[i];
+   return actual?.ep===ep&&actual.dir===dir&&
+    JSON.stringify(actual.fv1)===JSON.stringify(fv1)&&
+    JSON.stringify(actual.fv2)===JSON.stringify(fv2);
+  });
+ };
+ for(let i=0;i<spec.path.length;i++){
+  const node=spec.path[i],skill=skillCatalog?.[String(node.id)];
+  if(!exact(skill,node))return null;
+  if(i===0)continue;
+  const parent=skillCatalog?.[String(spec.path[i-1].id)];
+  if(!parent?.funcs?.some(effect=>effect.ep==='EP_SKILL_EXEC'&&
+   effect.dir==='TARGET'&&effect.fv1?.[3]===node.id))return null;
+ }
+ if(first.prereq!=null&&
+  (skillCatalog?.[String(first.prereq)]?.id!==first.prereq||
+   skillCatalog[String(first.prereq)].learnable!==true))return null;
+ return root;
+}
 function sourceDirectSpell({skillCatalog,classes,jobKey,level,masteries={},
  branchCaps={}},spec){
  const skill=skillCatalog?.[String(spec.id)],job=classes?.[jobKey];
@@ -268,21 +1209,24 @@ function elementalHit(options={},spec=null){
  const {skillCatalog,classes,jobKey,level,masteries={},
   branchCaps={},stats={},equipment=[],tables={},itemForth={},unison={},
   modifiers=null}=options;
- const isTrap=!spec,skill=isTrap?
+ const isTrap=!spec,isLinked=!!spec?.path,skill=isTrap?
   sourceSkill(skillCatalog,classes,jobKey,level,masteries.trap,branchCaps):
-  sourceDirectSpell(options,spec);
+  isLinked?sourceLinkedSpell(options,spec):sourceDirectSpell(options,spec);
  if(!skill||!n(stats.int)||!Array.isArray(tables.lvModify)||
   !tables.magicPlus)return null;
- const effectSkill=isTrap?skillCatalog['240005003']:skill;
+ const effectSkill=isTrap?skillCatalog['240005003']:
+  isLinked?skillCatalog[String(spec.path[spec.damageIndex].id)]:skill;
  const powerKey={DEX:'dex',INT:'int',SPI:'spi'}[effectSkill.powerStat];
- const element=effectSkill.element?.toLowerCase();
+ // NONE/null in the OS calculator maps to attribute PHYSICAL (index 0).
+ const element=effectSkill.element?.toLowerCase()||'physical';
  const masteryKey=isTrap?'trap':spec.branch;
  const mastery=masteries[masteryKey]??0;
  const effect=effectSkill.funcs?.[effectSkill.damage?.slotIndex];
  // Pandora Saga OS public BuildCalculator _e indices:
  // FIRE=1 ->10%, COLD=2 ->20%, LIGHTNING=3 ->50%,
  // CHARM=5 ->0%, HOLY=7 ->25%, DARK=8 ->25%.
- const spread={fire:10,cold:20,lightning:50,charm:0,holy:25,dark:25}[element];
+ const spread={physical:30,fire:10,cold:20,lightning:50,
+  poison:0,charm:0,holy:25,dark:25}[element];
  if(!powerKey||!n(stats[powerKey])||!n(mastery)||!n(spread)||
   effect?.ep!=='EP_ELEMENT_DAMAGE'||effect.dir!=='TARGET'||
   !Array.isArray(effect.fv1)||effect.fv1.length!==4||
@@ -353,19 +1297,20 @@ function elementalHit(options={},spec=null){
   basePower,bonusRate,magicGemRate,magicGemFlat,
   gearDamageRate:equipmentEffects.general,
   levelPenalty:gap.magicDamageReduction,
-  hitKind:spec?.directPart?'direct-part':'single-hit',
+  hitKind:(spec?.directPart||isLinked)?'direct-part':'single-hit',
   model:'Pandora Saga OS public BuildCalculator / one elemental hit'};
 }
 function crawlingTrap(options={}){return elementalHit(options);}
 function supportedSkillHits(options={}){
  const hits=[],trap=crawlingTrap(options);
  if(trap)hits.push(trap);
- for(const spell of directSpells){
+ for(const spell of [...directSpells,...linkedSpells]){
   const result=elementalHit(options,spell);
   if(result)hits.push(result);
  }
  return hits;
 }
 root.PandoraOSTargetDamage=Object.freeze({crawlingTrap,supportedSkillHits,
- directSpells,equippedElementalEffects,monsterLevelModifier,roundEven:even,target});
+ directSpells,linkedSpells,equippedElementalEffects,
+ monsterLevelModifier,roundEven:even,target});
 })(typeof window==='undefined'?globalThis:window);
