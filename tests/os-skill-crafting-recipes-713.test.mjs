@@ -73,12 +73,11 @@ test('numeric crafting source counts as four models without a server-success cla
   assert.equal(row.targetSideOnly,false);
  }
 });
-test('Hero Book recipes display item names from canonical RU/EN catalogs',()=>{
- const book=read('pandora-studio-hero-book.js');
+test('Source-only os-skill-crafting-recipes-713 data is displayed in the Encyclopedia',()=>{
+ const wiki=read('pandora-studio-wiki-skill-insights.js');
  const app=read('pandora-studio-app.js');
- assert.match(book,/stage-skill-crafting-effects/);
- assert.match(book,/gameTerms\.englishItems\?\.\[String\(id\)\]\?\.n\|\|ru/);
- assert.match(book,/Нужны указанные ингредиенты/);
- assert.match(book,/recipe\.uses\.map\(part\)/);
- assert.match(app,/items:catalogSource\?\.items\|\|\{\},englishItems:officialEnglish\?\.items\|\|\{\}/);
+ const book=read('pandora-studio-hero-book.js');
+ assert.ok(wiki.includes('craftingSkillPreview'),'verified OS inspector retained');
+ assert.ok(app.includes('PandoraWikiSkillInsights?.inspect'),'Wiki uses source data');
+ assert.ok(!book.includes('stage-skill-crafting-effects'),'Do not print general skill catalog in Book');
 });
