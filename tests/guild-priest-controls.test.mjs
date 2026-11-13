@@ -70,10 +70,10 @@ test('external priest buffs require correct Blessing mastery and valid numbers',
  assert.equal(skills['320008001'].name,'Знак защиты');
  assert.equal(skills['320007001'].reqs.find(x=>x.branch==='blessing').amount,8);
  assert.equal(skills['320008001'].reqs.find(x=>x.branch==='blessing').amount,12);
- assert.match(engine,/priestValid&&priest\.blessing>=8&&/);
+ assert.match(engine,/priestCanCast\(320007001\)/);
  assert.match(engine,/priestSourceMatches\(320007001,'EP_ATTACKINTERVAL_SCALE',\[10,0,5,5\]\)/);
  assert.match(engine,/attributeBuffs\?\.priestGratia===true&&Number\.isFinite\(gratiaPreview\)/);
- assert.match(engine,/priestValid&&priest\.blessing>=12&&\s*attributeBuffs\?\.priestLapisMedio/);
+ assert.match(engine,/priestCanCast\(320008001\)&&\s*attributeBuffs\?\.priestLapisMedio/);
  assert.match(engine,/Number\.isFinite\(priestCast\.lapisMedio\)/);
  assert.match(engine,/Number\.isSafeInteger\(n\)&&n>=0&&n<=500/);
  assert.match(book,/\[320007001,'priestGratia',8\]/);
@@ -155,6 +155,6 @@ test('new hero preloads an editable priest and legacy snapshots merge missing va
  assert.match(app,/attributeBuffs:\{\.\.\.base\.attributeBuffs,\.\.\.record\(raw\.attributeBuffs\)\}/);
  assert.match(app,/attributeBuffs:\{\.\.\.base\.attributeBuffs,\.\.\.record\(draft\.attributeBuffs\)\}/);
  assert.match(app,/typeof rawAttributes\.priestEnabled==='boolean'/);
- assert.match(book,/\['priestSpi','СД жреца','Priest SPR'\]/);
+ assert.match(book,/\['priestSpi','СД жреца','Priest SPR',null\]/);
  assert.match(book,/disabled:buffs\.priestEnabled!==true/);
 });
