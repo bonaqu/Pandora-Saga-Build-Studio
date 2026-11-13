@@ -80,7 +80,7 @@ test('Book displays magnitude alongside source skill and one shared priest profi
   assert.match(book,/const priestFields=make\('div',\{class:'stage-priest-fields'\}\)/);
  assert.doesNotMatch(book,/skill\.modelOnly\?'≈ '/);
  assert.doesNotMatch(css,/\.stage-ally-caster-field>input/);
- assert.match(app,/priestBenevolence:61/);
+ assert.match(app,/priestBenevolence:0/);
  assert.match(app,/benevolence:0/);
  assert.match(app,/allyPeaceHymn:30/);
 });
