@@ -132,8 +132,8 @@ test('250 synthetic class/level/mastery vectors keep movement source data immuta
 test('Hero Book renders source-only movement group and the coverage audit counts it',()=>{
  const book=read('pandora-studio-hero-book.js');
  const audit=read('scripts/audit-os-skill-formulas.mjs');
- assert.match(book,/\['movement','Скорость передвижения · параметры умений'/);
- assert.match(book,/Movement speed · skill parameters/);
+ assert.match(book,/\['movement','Умения скорости передвижения'/);
+ assert.match(book,/Movement speed skills/);
  assert.match(book,/gameSkillBadge\(skill\.id,skill\.name,source\?\.n/);
  assert.match(audit,/\.\.\.\(result\.movement\|\|\[\]\)/);
 });

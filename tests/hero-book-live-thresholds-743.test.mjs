@@ -165,7 +165,7 @@ test('Book is build-scoped, bilingual, and external-buff block is not a toggle',
  assert.match(effects,/stage-skill-party-effects/);
  assert.match(effects,/skill\.recipient===true/);
  assert.match(effects,/applied===false/);
- assert.match(effects,/not enabled in the build/);
+ assert.doesNotMatch(effects,/not enabled in the build/);
  assert.doesNotMatch(effects,/Расчётная модель по игровым данным/);
  assert.match(effects,/const detail=en\?/);
  assert.doesNotMatch(effects,/row\.recipient\?\.applied=true/);
