@@ -1804,13 +1804,25 @@ function renderStageAttributes(calculated=undefined){
    icon:skillIcon(ability.branch,0,ability)
   }:null;
  }
+ // Exact current OS skill-vs-monster damage, only for the actually trained
+ // Zagonschik. No extra skill description or materials in the Hero Book.
+ const bookModifiers=calculated===undefined?previewBaseStats():calculated;
+ const targetSkillDamage=stageAttributesPage==='effects'&&cls==='DISTURBANCE'?
+  window.PandoraOSTargetDamage?.crawlingTrap({
+   skillCatalog:skillMap,classes:catalog.classes||{},jobKey:cls,
+   level:state.level,masteries:branchMasteries,
+   branchCaps:catalog.classes?.[cls]?.branchCaps||{},
+   stats:bookModifiers?.stats,equipment:items,tables:gameTables,
+   itemForth:gameItemForth,unison:catalogSource?.unison||{},
+   modifiers:bookModifiers
+  }):null;
  window.PandoraStageAttributes.render(root,{
-  page:stageAttributesPage,items,
+  page:stageAttributesPage,items,targetSkillDamage,
   skillIconForId:id=>{
    const record=skillMap[String(id)];
    return record?skillIcon(record.branch,id,record):null;
   },
-  modifiers:calculated===undefined?previewBaseStats():calculated,
+  modifiers:bookModifiers,
   icon:rec=>itemIcon(rec),
   buffs:state.attributeBuffs||{},vitalsBuffs:state.vitalsBuffs||{},
   availability,combatSkillCards,remakedBuffRows,

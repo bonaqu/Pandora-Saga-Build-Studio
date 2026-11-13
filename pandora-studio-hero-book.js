@@ -1338,7 +1338,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
  remakedBuffRows=[],availability={},combatSkillCards={},
  heroJobKey=null,heroLevel=1,heroMasteries={},heroBranchCaps={},
  heroWeaponKind='BARE_HAND',heroHasShield=false,
- onItem=()=>{},onSkill=null}={}){
+ targetSkillDamage=null,onItem=()=>{},onSkill=null}={}){
  const en=document.documentElement?.lang==='en';
  const gates=root.PandoraBookSkillThresholds;
  const healingNumber=new Intl.NumberFormat(en?'en-US':'ru-RU',
@@ -1538,6 +1538,19 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   weaponKind:heroWeaponKind,hasShield:heroHasShield,
   stats:modifiers?.stats,combat:modifiers?.combat
  })||{offense:[],defense:[]};
+ // Source-validated, learned spell only. Place it in the existing offense
+ // skill list; do not invent extra panels or expose item requirements.
+ const trapSource=gameTerms.skills?.['240005001'];
+ const hit=heroJobKey==='DISTURBANCE'&&
+  targetSkillDamage?.skillId===240005001&&
+  targetSkillDamage?.monsterId===22104&&
+  heroMasteries.trap>=41&&trapSource?.id===240005001&&
+  [targetSkillDamage.min,targetSkillDamage.average,targetSkillDamage.max]
+   .every(n=>Number.isSafeInteger(n)&&n>=0)&&
+  targetSkillDamage.min<=targetSkillDamage.average&&
+  targetSkillDamage.average<=targetSkillDamage.max?
+  {id:240005001,name:trapSource.name,available:true,recipient:false,
+   hostile:false,damageAgainstEnemy:targetSkillDamage}:null;
  for(const [groupName,captionRu,captionEn,sectionClass,rowClass] of [
   ['offense','Атакующие умения','Offensive skills',
    'stage-attacking-skills','stage-offense-skill-row'],
@@ -1552,15 +1565,15 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
  ]){
   // Only effects calculable for this hero remain here. Static source
   // coefficients and enemy-target descriptors live in the Encyclopedia.
-  const skills=(rows[groupName]||[]).filter(skill=>
+  const currentSkills=groupName==='offense'&&hit?
+   [...(rows[groupName]||[]),hit]:(rows[groupName]||[]);
+  const skills=currentSkills.filter(skill=>
    skill.available===true&&!skill.hostile&&!skill.recipient&&
-   (Number.isFinite(skill.amount)||
+   (skill.damageAgainstEnemy||
+    Number.isFinite(skill.amount)||
     (skill.coefficientModels||[]).some(part=>
      Number.isSafeInteger(part?.amount)&&
      part.confidence==='coefficient-model'&&
-     // The 19 directly cast physical strikes are source-checked
-     // mastery-dependent previews. Show only their coefficient, NEVER
-     // pretend it is final damage or a second attack packet.
      (part?.roundingParts?.method==='floor-components'||
       part.ep==='EP_ONHIT_DAMAGE_SCALE'))));
   if(!skills.length)continue;
@@ -1577,7 +1590,11 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    // for final target damage or added to persistent hero ATK.
    const singlePart=!Number.isFinite(skill.amount)&&modelParts.length===1?
     modelParts[0]:null;
-   const amount=Number.isFinite(skill.amount)?
+   const hitResult=skill.damageAgainstEnemy;
+   const amount=hitResult?
+    (en?hitResult.targetNameEn:hitResult.targetName)+' · '+
+     hitResult.min+'–'+hitResult.max+' '+(en?'HP':'ОЗ'):
+    Number.isFinite(skill.amount)?
     (skill.amount>0?'+':'')+String(skill.amount)+
      (en?skill.unit.replace(' защиты',' DEF').replace(' уклонения',' evasion')
       .replace(' АТК',' ATK').replace(' точности и уклонения',' accuracy & evasion')
@@ -1591,6 +1608,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    const detail=en?(skill.detailEn||source?.d||skill.description):
     (skill.detailRu||skill.description);
    const preview=make('div',{class:'stage-heal-row '+rowClass+
+    (hitResult?' stage-target-damage-row':'')+
     (!skill.available?' stage-book-unavailable':'')},[
     gameSkillBadge(skill.id,skill.name,source?.n||skill.name,
      gameTerms,en,skillIconForId,onSkill),
@@ -1600,6 +1618,18 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    const more=make('details',{class:'stage-skill-gate-help stage-skill-more'},[
     make('summary',{text:en?'More details':'Подробнее'})
    ]);
+   if(hitResult){
+    more.append(make('small',{class:'stage-target-damage-average',text:en?
+     'Average hit against '+hitResult.targetNameEn+': '+
+      hitResult.average+' HP':
+     'Средний урон по цели «'+hitResult.targetName+'»: '+
+      hitResult.average+' ОЗ'}));
+    more.append(make('small',{class:'stage-target-damage-stats',text:en?
+     'DEX '+hitResult.heroDex+' · INT '+hitResult.heroInt+
+      ' · Traps '+hitResult.trapMastery:
+     'ЛВК '+hitResult.heroDex+' · ИНТ '+hitResult.heroInt+
+      ' · Ловушки '+hitResult.trapMastery}));
+   }
    // General skill descriptions are available via its tooltip and Wiki.
    if(modelParts.length&&!Number.isFinite(skill.amount)){
     // A single source-checked result is already the main line;
@@ -2339,7 +2369,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
  combatSkillCards={},resistanceSkillChoices=[],remakedBuffRows=[],
  heroJobKey=null,heroLevel=1,heroMasteries={},heroBranchCaps={},
  heroWeaponKind='BARE_HAND',heroHasShield=false,
- itemById=()=>null,onItem=()=>{},onSkill=null,gameTerms={},
+ targetSkillDamage=null,itemById=()=>null,onItem=()=>{},onSkill=null,gameTerms={},
  copy={},onTextEdit=null,canEdit=false,onHonor=()=>{}}={}){
  root.PandoraGuideTooltip?.dismiss();
  // Keep the same scrolling pane mounted on ordinary value changes: re-attaching
@@ -2447,7 +2477,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
   gameTerms,remakedBuffRows,skillIconForId,...copyOptions});
  if(chosen==='effects')skillEffectsPage(body,{modifiers,gameTerms,skillIconForId,
   remakedBuffRows,availability,combatSkillCards,heroJobKey,heroLevel,heroMasteries,
-   heroBranchCaps,heroWeaponKind,heroHasShield,onItem,onSkill});
+   heroBranchCaps,heroWeaponKind,heroHasShield,targetSkillDamage,onItem,onSkill});
  if(chosen==='recovery'){
   const english=document.documentElement?.lang==='en';
   const percent=modifiers?.potion?.percent;

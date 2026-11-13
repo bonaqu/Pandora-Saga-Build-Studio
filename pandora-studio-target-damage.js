@@ -18,7 +18,7 @@ const even=x=>{
  return fraction<0.5?lo:fraction>0.5?lo+1:lo%2===0?lo:lo+1;
 };
 const elementalKeys=new Set(['EP_ELEMENT_DAMAGE_SCALE',
- 'EP_ELEMENT_DAMAGE_SCALE_CONST','EP_ELEMENT_DAMAGE_SCALE_FIRE',
+ 'EP_ELEMENT_DAMAGE_SCALE_FIRE',
  'EP_ELEMENT_BONUS']);
 const sourceEffect=(sum,e,weapon)=>{
  if(!e||!elementalKeys.has(e.func))return true;
@@ -38,8 +38,7 @@ function equippedElementalEffects({equipment=[],itemForth={},unison={}}={}){
   if(slot?.issue?.length)continue;
   const rec=slot?.record,grade=slot?.refinement??0;
   if(!n(rec?.id)||!n(grade)||grade>10)return null;
-  const owned=rec.slot!=='invalid';
-  if(!owned)return null;
+  if(typeof rec.slot!=='string')return null;
   items.set(String(rec.id),slot);
   const rules=Array.isArray(itemForth[String(rec.id)]?.[String(grade)])?
    itemForth[String(rec.id)][String(grade)]:[];
@@ -175,7 +174,7 @@ function crawlingTrap({skillCatalog,classes,jobKey,level,masteries={},
   amount=Math.max(1,amount);
   const effective=trunc(amount*(100-resistanceMagic-resistanceFire)/100)-
    absorption;
-  return Math.max(0,effective);
+  return effective<0?1:effective;
  };
  const [normalMin,normalAvg,normalMax]=sourcePoints.map(apply);
  let min=normalMin,average=normalAvg,max=normalMax;
