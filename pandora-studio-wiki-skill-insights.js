@@ -74,7 +74,7 @@ function inspect({skillCatalog,classes,id,calculator}={}){
   }
   // Every qualifying class uses the same verified source effects. A single
   // complete set of notes avoids repeated scans of all 28 class snapshots.
-  if(notes.length&&paths.length)break;
+  if(notes.length||paths.length||extra.length)break;
  }
  const result=notes.length||paths.length||extra.length?
   {notes,paths,extra,sourceOnly:true,finalAmount:null}:null;
