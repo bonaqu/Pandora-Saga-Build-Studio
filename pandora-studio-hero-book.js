@@ -1659,6 +1659,22 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
       ' · '+branchLabel[hitResult.heroMasteryKey]+' '+hitResult.heroMastery;
     more.append(make('small',{class:'stage-target-damage-stats',
      text:statsLine}));
+    // These are numeric contributions to THIS hit from the selected build,
+    // not a general skill description or an additional skill card.
+    const boostParts=[];
+    if(hitResult.bonusRate){
+     const value=(hitResult.bonusRate>0?'+':'')+hitResult.bonusRate+'%';
+     boostParts.push((en?'Damage boosts ':'Усиление урона ')+value);
+    }
+    if(hitResult.magicGemRate||hitResult.magicGemFlat){
+     const rate=(hitResult.magicGemRate>0?'+':'')+hitResult.magicGemRate+'%';
+     const flat=(hitResult.magicGemFlat>0?'+':'')+hitResult.magicGemFlat;
+     boostParts.push((en?'Magical refinement ':'Магическая заточка ')+
+      rate+' · '+flat+(en?' to hit power':' к силе удара'));
+    }
+    if(boostParts.length)more.append(make('small',{
+     class:'stage-target-damage-stats',text:boostParts.join(' · ')
+    }));
    }
    // General skill descriptions are available via its tooltip and Wiki.
    if(modelParts.length&&!Number.isFinite(skill.amount)){
