@@ -65,6 +65,8 @@ test('Hero Book retains numerical effects without server-internal caveats in cop
  assert.match(book,/Дальность оружия и действующие бонусы складываются/);
  assert.match(book,/Природное восстановление союзника · ОМ каждые 2 сек/);
  assert.doesNotMatch(book,/nextMelee|appendGate|stage-skill-next-mastery/);
- assert.match(read('pandora-studio-hero-path.js'),/milestone\.remaining/);
+ assert.doesNotMatch(read('pandora-studio-hero-path.js'),
+  /milestone\.remaining|path-next-melee|data-next-melee-skill-id/,
+  'Unwanted future mastery hint must stay out of the skill gallery');
  assert.match(book,/skill\.available===true/);
 });

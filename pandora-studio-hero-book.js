@@ -1350,7 +1350,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   node.append(make('small',{class:'stage-heal-mana-budget',text:en?
    'Full '+budget.maxMana+' MP: up to '+budget.casts+
     ' casts at the base cost ('+budget.remainder+
-    ' MP left at the regular cost.':
+    ' MP left at the regular cost).':
    'Полный запас '+budget.maxMana+' ОМ: до '+budget.casts+
     ' применений по базовой стоимости (остаток '+budget.remainder+
     ' ОМ).'}));

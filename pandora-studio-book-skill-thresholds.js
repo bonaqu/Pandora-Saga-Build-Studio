@@ -3,8 +3,6 @@
 // Current-build requirement notes only; the Encyclopedia owns full skill data.
 // Do not confuse trained GREEN mastery with spent skill-tree points.
 const MELEE=Object.freeze(['slash','thrust','brush','blow','defense']);
-const PARENT=Object.freeze([[100101001,3],[111201001,35],
- [100056001,70],[100057001,100]]);
 const good=n=>Number.isSafeInteger(n)&&n>=0;
 const group=(values,caps)=>{
  let sum=0;
@@ -45,26 +43,6 @@ function requirements({id,skillCatalog,jobKey,level=1,
  }
  if(!linesRu.length)return null;
  return {id:record.id,linesRu,linesEn,steps};
-}
-function nextMelee({skillCatalog,jobKey,branchMasteries={},branchCaps={},
- englishSkills={}}={}){
- const current=group(branchMasteries,branchCaps);
- const cap=group(branchCaps,branchCaps);
- if(current===null||cap===null)return null;
- const matches=PARENT.filter(([id,threshold])=>{
-  const rec=skillCatalog?.[String(id)];
-  return rec?.id===id&&rec.learnable===true&&
-   rec.classes?.[jobKey]===1&&rec.branchRaw==='MELEE'&&
-   rec.branch==='martial'&&rec.reqs?.length===1&&
-   rec.reqs[0]?.branch==='martial'&&rec.reqs[0]?.amount===threshold&&
-   cap>=threshold;
- });
- const next=matches.find(([,required])=>required>current);
- if(!next)return null;
- const [id,required]=next,skill=skillCatalog[String(id)];
- return {id,required,current,remaining:required-current,cap,
-  nameRu:skill.name,nameEn:englishSkills?.[String(id)]?.n||skill.name,
-  sourceOnly:true,learned:false};
 }
 // This is a count from the character's FULL calculated MP and the OS BASE
 // cost, not the current in-game MP or a promise about discounts / regeneration.
@@ -214,7 +192,7 @@ function directHealingBudget({row,action,maxMana}={}){
   remainder:budget.remainder,baseOnly:true};
 }
 root.PandoraBookSkillThresholds=Object.freeze({
- requirements,nextMelee,baseManaBudget,nextManaUse,directHealingBudget,
+ requirements,baseManaBudget,nextManaUse,directHealingBudget,
  sourceAction,inspiredCastTime,materialAction,materialUseBudget,MELEE
 });
 })(typeof window==='undefined'?globalThis:window);

@@ -112,47 +112,6 @@ test('full signed Ossify root rejects changed secondary game effects',()=>{
    undefined,'An altered source may not produce numeric Book values');
  }
 });
-test('Path keeps source-confirmed next MELEE milestone and current mastery',()=>{
- const caps=classes.JUGGERNAUT.branchCaps;
- const view=rank=>T.nextMelee({skillCatalog:skills,jobKey:'JUGGERNAUT',
-  branchCaps:caps,branchMasteries:trained(caps,rank),
-  englishSkills:english.skills});
- for(const [rank,id,required] of [[0,100101001,3],
-  [3,111201001,35],[34,111201001,35],
-  [35,100056001,70],[70,100057001,100]]){
-  const row=view(rank);
-  assert.equal(row.id,id);
-  assert.equal(row.required,required);
-  assert.equal(row.current,rank);
-  assert.equal(row.remaining,required-rank);
-  assert.equal(row.nameRu,skills[id].name);
-  assert.equal(row.nameEn,english.skills[id].n);
- }
- assert.equal(view(100),null);
- const current=T.requirements({id:100057001,skillCatalog:skills,
-  jobKey:'JUGGERNAUT',level:55,branchCaps:caps,
-  branchMasteries:trained(caps,100),
-  branchLabels:meta.branchLabels,englishBranches:english.branches});
- assert.deepEqual(current.linesRu,['Освоенное мастерство «Ближний бой»: 100 / 100']);
- assert.deepEqual(current.linesEn,['Trained Melee mastery: 100 / 100']);
- const first=T.requirements({id:310001001,skillCatalog:skills,
-  jobKey:'CLERIC',level:30,branchCaps:classes.CLERIC.branchCaps,
-  branchMasteries:{benevolence:8},branchLabels:meta.branchLabels,
-  englishBranches:english.branches});
- assert.match(first?.linesRu[0]||'',/Исцеление.*8 \/ 8/);
-});
-test('malformed or impossible source threshold cannot masquerade as player progress',()=>{
- const caps=classes.JUGGERNAUT.branchCaps;
- assert.equal(T.nextMelee({skillCatalog:skills,jobKey:'JUGGERNAUT',
-  branchCaps:caps,branchMasteries:{slash:999}}),null);
- const altered=structuredClone(skills);
- altered[100101001].reqs[0].amount=4;
- const next=T.nextMelee({skillCatalog:altered,jobKey:'JUGGERNAUT',
-  branchCaps:caps,branchMasteries:{}});
- assert.equal(next?.id,111201001,'False first requirement must fail closed');
- assert.equal(T.requirements({id:100057001,skillCatalog:skills,
-  jobKey:'JUGGERNAUT',branchCaps:caps,branchMasteries:{slash:999}}),null);
-});
 test('Book is build-scoped, bilingual, and external-buff block is not a toggle',()=>{
  const book=read('pandora-studio-hero-book.js');
  const effects=book.slice(book.indexOf('function skillEffectsPage('),
@@ -164,9 +123,9 @@ test('Book is build-scoped, bilingual, and external-buff block is not a toggle',
  assert.doesNotMatch(effects,/stage-skill-next-mastery|nextMelee|appendGate|stage-skill-gate-line/,
   'The Book contains current effects, not future skill unlocks');
  const path=read('pandora-studio-hero-path.js'),app=read('pandora-studio-app.js');
- assert.match(path,/class:'path-next-melee'/);
- assert.match(path,/data-next-melee-skill-id/);
- assert.ok(app.includes('nextMelee:window.PandoraBookSkillThresholds?.nextMelee'));
+ assert.doesNotMatch(path,/path-next-melee|data-next-melee-skill-id/);
+ assert.doesNotMatch(app,/nextMelee:window.PandoraBookSkillThresholds/);
+ assert.equal('nextMelee' in T,false);
  assert.match(effects,/stage-skill-party-effects/);
  assert.match(effects,/skill\.recipient===true/);
  assert.match(effects,/applied===false/);

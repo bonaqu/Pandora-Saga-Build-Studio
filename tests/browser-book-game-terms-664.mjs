@@ -231,6 +231,8 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   assert.match(en,/With Inspiration from an ally: 1.5 s of casting/);
   assert.doesNotMatch(en,/not a confirmed final combat result|final speed, duration|actual firing rate is not known/);
   assert.match(en,/Full 450 MP: up to 5 casts at the base cost/);
+  assert.match(en,/\(2 MP left at the regular cost\)\./,
+   'Complete English MP budget sentence');
   assert.doesNotMatch(en,/Material calculations|Crafting and materials|Aqua Elymus|Empty Bottle|Holy Water/,
    'Hero Book does not show recipes or material totals in English');
   assert.match(en,/Up to .* HP per target for 16 casts \(264 × 16\)/);

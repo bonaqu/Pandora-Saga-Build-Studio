@@ -2515,12 +2515,6 @@ function heroPathApi(){
    .filter(Boolean).join(' '),
   allocationReady:Boolean(gameTables?.abilityPoint&&catalog.classes?.[klass]),
   budget:budgetSummary(),selectedSkill,filter:pathSkillFilter,query:pathSkillQuery,
-  nextMelee:window.PandoraBookSkillThresholds?.nextMelee?.({
-   skillCatalog:catalog.skills,jobKey:klass,
-   branchCaps:branchCapacities(),
-   branchMasteries:trainedBranchMasteries(innateBranches()),
-   englishSkills:officialEnglish?.skills||{}
-  }),
   // Only established in-game attribute labels, never raw STR/AGI/etc codes.
   attributeLabel:raw=>{
    const source=ORIGIN_STAT_LABELS.find(row=>row.code===String(raw).toLowerCase());
