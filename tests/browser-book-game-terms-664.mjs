@@ -204,7 +204,10 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   assert.equal(en.includes('Acolyte class'),false,'Locked class hints do not clutter Book');
   assert.equal(en.includes('A bad EN name'),false);
   const offenseEn=page.locator('#book-source-qa .stage-attacking-skills');
-  await offenseEn.locator(':scope > summary').click();
+  // Re-rendering RU → EN can preserve an already expanded disclosure.
+  // Clicking it unconditionally would close the section under test.
+  if(await offenseEn.getAttribute('open')===null)
+   await offenseEn.locator(':scope > summary').click();
   const singerEn=offenseEn.locator('[data-skill-action-id="340001001"]');
   assert.equal(await singerEn.count(),1);
   await singerEn.locator('summary').click();
