@@ -10,6 +10,11 @@ These repository-level rules are durable instructions for future coding sessions
 - **Fast without cutting corners:** batch related reads, inspect dependent call paths/test fixtures before changes, ship coherent patches, run focused Node and isolated browser diagnostics first, preflight release metadata before the full Node suite, then let the final mandatory CI run exactly once per revision. On failure read the first failing test/log before rerunning. Avoid needless release bumps for documentation/CI-only patches; when code/site assets change bump release files together. After a release verify Pages **and** live Worker/D1 read-only readiness; never infer a real production write from mock tests. Never run background/daily CI without an owner request.
 
 
+## Combat combo source proofs (0.737.0)
+- Render new combat source models within the existing Book `stage-skill-combat-technique` accordion; verify full source signature and every linked `EP_ONHIT_SKILL_EXEC`, `EP_SKILL_EXEC_COMBO`, `EP_SKILL_EXEC_GETON`, `EP_SKILL_EXEC_CASTPOS` stage. Specifically validate `121703501` against `121703001`, `121703511`, `121703512`; `121707001` against `121707002` and `121707003`; `121704001` against `121704002`; `100103001` against `100103050`.
+- An OS strike count (3, 4), combo condition or source resource cost (2) is NOT evidence of actual hits, trigger probability, resulting HP damage or travel distance. Show source-only RU/EN descriptions and prerequisites without altering persistent character stats or D1.
+- Keep prior audit tests as baseline guarantees, and assert new exact counts only in the latest release test. Keep Node+Chromium gates and separate Pages/Worker read-only readiness.
+
 ## Specialist magic and defense source chains (0.736.0)
 - Keep specialized Skill Effects inside the existing «Дополнительные защитные умения» / «Особые магические умения» accordions. Verify official names through the current OS RU and EN IDs; do not invent class titles in notes.
 - For `440004002` check the full parent `440004001` and both nested child actions `440004003` → `440004004`, not just the first EP_SKILL_EXEC. For `330091001`, check linked `330091002`. Fail closed on any FV1/FV2 or source mismatch.
