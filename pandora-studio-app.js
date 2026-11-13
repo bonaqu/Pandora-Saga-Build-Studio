@@ -2620,6 +2620,19 @@ function heroPathApi(){
    document.querySelector('[data-skill-id="'+String(skill.id)+'"]')
     ?.focus({preventScroll:true});
    $('pathSkillDetails')?.scrollIntoView({block:'nearest',behavior:'smooth'});
+  },
+  onNavigateSkill:skill=>{
+   // A previous/advanced skill may be hidden by the current search or
+   // availability filter. Reset only the gallery controls, not the build.
+   const id=String(skill?.id??''),source=catalog.skills?.[id];
+   if(!source)return;
+   selectedSkill=source;pathSkillFilter='all';pathSkillQuery='';
+   pathSkillShown=24;
+   $('pathSkillStatus').value='all';$('pathSkillSearch').value='';
+   renderPathSkills();saveView();
+   document.querySelector('[data-skill-id="'+id+'"]')
+    ?.focus({preventScroll:true});
+   $('pathSkillDetails')?.scrollIntoView({block:'nearest',behavior:'smooth'});
   }
  };
 }
