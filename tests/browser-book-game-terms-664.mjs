@@ -57,6 +57,8 @@ export async function runHeroBookGameNames664Smoke(browser,base){
     healingPercent:100,skillCatalog:terms.skills
    }).rows.find(row=>row.id==='firstAid');
    skillRows[0].amount=firstAidLevel.amount;
+   skillRows[0].skillId=firstAidLevel.skillId;
+   skillRows[0].breakdown=firstAidLevel.breakdown;
    skillRows[0].nextLevel=firstAidLevel.nextLevel;
    const calc={
     mp:450,
@@ -88,6 +90,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
     heroMasteries:{hymn:8,blessing:78,exorcism:26},
     heroBranchCaps:terms.classes.ENCHANTER.branchCaps,
     onItem:id=>{window.__bookMaterialLastItem=String(id);},
+    onSkill:id=>{window.__bookLastSkill=String(id);},
     skillIconForId:id=>terms.skills[String(id)]?.iconId?
      'assets/skills/icons/skill_'+terms.skills[String(id)].iconId+'.webp':null,
     buffs:{priestEnabled:true,priestSpi:134,priestBlessing:90,priestHymn:30},
@@ -111,16 +114,21 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   // The source-backed current hero's healing card shows its actual action,
   // interval model, resource cost, cast and cooldown, not placeholder text.
   assert.match(ru,/14 ОЗ каждые 2 сек\./);
-  assert.match(ru,/Расход ОМ: 90/);
   assert.match(ru,/Полный запас 450 ОМ: до 5 применений по базовой стоимости/);
   assert.match(ru,/Следующий прирост за применение: \+3 ОЗ на уровне 46/);
-  assert.match(ru,/Базовое применение: 3 сек\./);
-  assert.match(ru,/Базовая перезарядка: 20 сек\./);
+  assert.match(ru,/До .* ОЗ на одну цель за 16 применений \(264 × 16\)/);
+  assert.match(ru,/Для ещё одного применения нужно \+26 ОМ к запасу/);
+  assert.doesNotMatch(ru,/Базовое применение: 3 сек\.|Базовая перезарядка: 20 сек\./,
+   'Base skill parameters belong to the skill Encyclopedia article');
   assert.match(ru,/С «Воодушевлением» от союзника: 1,5 сек\. применения/);
   assert.match(ru,/Расход ОМ: 78% от базового/);
   assert.match(ru,/Перезарядка: 86% от базовой/);
   assert.doesNotMatch(ru,/С «Воодушевлением» от союзника: 3 сек\./,
    'Never use the casting speed index to calculate cast seconds');
+  const directHeroSkill=page.locator('#book-source-qa [data-healing-skill-id="310001001"] button.stage-effect-skill-link');
+  assert.equal(await directHeroSkill.count(),1,'Hero Book skill name opens its full Wiki article');
+  await directHeroSkill.click();
+  assert.equal(await page.evaluate(()=>window.__bookLastSkill),'310001001');
   const compactHeal=page.locator('#book-source-qa .stage-healing-spells .stage-heal-row')
    .first().locator(':scope > .stage-skill-more');
   assert.equal(await compactHeal.count(),1,'One detail control per healing skill');
@@ -148,10 +156,14 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   await materialsPanel.locator(':scope > summary').click();
   const blessed=materialsPanel.locator('[data-material-skill-id="320010001"]');
   assert.match(await blessed.innerText(),/Освящение воды/);
-  assert.match(await blessed.innerText(),/Создание 1 × Святая вода/);
-  assert.match(await blessed.innerText(),/На применение: ОМ 4/);
-  assert.match(await blessed.innerText(),/Полный запас 450 ОМ: до 112 применений/);
-  assert.match(await blessed.innerText(),/112 × Пустая бутыль/);
+  assert.match(await blessed.innerText(),/До 112 применений/);
+  assert.match(await blessed.innerText(),/Полный запас 450 ОМ · остаток 2 ОМ/);
+  assert.match(await blessed.innerText(),/Материалы на 112 применений: 112 × Пустая бутыль/);
+  assert.match(await blessed.innerText(),/До ещё одного применения: \+2 ОМ к запасу/);
+  assert.doesNotMatch(await blessed.innerText(),/Создание 1 ×|На применение:|Базовая перезарядка/);
+  const wikiSkill=blessed.locator('button.stage-effect-skill-link');
+  await wikiSkill.click();
+  assert.equal(await page.evaluate(()=>window.__bookLastSkill),'320010001');
   await blessed.locator('button.stage-material-item-link').first().click();
   assert.equal(await page.evaluate(()=>window.__bookMaterialLastItem),'65011',
    'Item links open the original encyclopedia item');
@@ -197,9 +209,9 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   assert.equal(await singer.locator('details').count(),0,
    'Offense uses one disclosure for action, model details and requirements');
   await singer.locator(':scope > summary').click();
-  assert.match(await singer.innerText(),/Расход ОМ: 30/);
-  assert.match(await singer.innerText(),/Базовое применение: мгновенно/);
-  assert.match(await singer.innerText(),/Базовая перезарядка: 5 сек\./);
+  assert.match(await singer.innerText(),/Полный запас 450 ОМ: до 15 применений/);
+  assert.match(await singer.innerText(),/Для ещё одного применения нужно \+30 ОМ/);
+  assert.doesNotMatch(await singer.innerText(),/Базовое применение:|Базовая перезарядка:/);
   const required=[310001001,310021001,310022001,310023001,340001001];
   // The new collapsed subchapters use lazy-loaded artwork; force each source
   // icon into the scrollport before checking that the original sprite loaded.
@@ -239,11 +251,15 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   assert.match(en,/With Inspiration from an ally: 1.5 s of casting/);
   assert.doesNotMatch(en,/not a confirmed final combat result|final speed, duration|actual firing rate is not known/);
   assert.match(en,/Full 450 MP: up to 5 casts at the base cost/);
-  assert.match(en,/Crafting and materials \(1\)/);
+  assert.match(en,/Material calculations \(1\)/);
   assert.match(en,/Aqua Elymus/);
-  assert.match(en,/Creates 1 × Holy Water/);
-  assert.match(en,/Full 450 MP: up to 112 uses at base cost/);
-  assert.match(en,/112 × Empty Bottle/);
+  assert.match(en,/Up to 112 uses/);
+  assert.match(en,/Full 450 MP · 2 MP remaining/);
+  assert.match(en,/Materials for 112 uses:112 × Empty Bottle|Materials for 112 uses: 112 × Empty Bottle/);
+  assert.match(en,/\+2 MP to afford one more use/);
+  assert.doesNotMatch(en,/Creates 1 × Holy Water|Base cooldown/);
+  assert.match(en,/Up to .* HP per target for 16 casts \(264 × 16\)/);
+  assert.match(en,/One more cast needs \+26 MP capacity/);
   assert.match(en,/Next \+3 HP per cast at level 46/);
   assert.equal(en.includes('Mana Restore'),false,'Unavailable MP recovery belongs in Wiki');
   assert.equal(en.includes('Acolyte class'),false,'Locked class hints do not clutter Book');
@@ -256,10 +272,27 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   const singerEn=offenseEn.locator('[data-skill-action-id="340001001"]');
   assert.equal(await singerEn.count(),1);
   await singerEn.locator('summary').click();
-  assert.match(await singerEn.innerText(),/MP cost: 30/);
-  assert.match(await singerEn.innerText(),/Base casting: instant/);
-  assert.match(await singerEn.innerText(),/Base cooldown: 5 s/);
+  assert.match(await singerEn.innerText(),/Full 450 MP: up to 15 casts/);
+  assert.match(await singerEn.innerText(),/One more cast needs \+30 MP capacity/);
+  assert.doesNotMatch(await singerEn.innerText(),/Base casting:|Base cooldown:/);
 
+
+  const missingManaPanel=await page.evaluate(()=>{
+   const terms=window.__bookGameTermsQA;
+   const holder=document.createElement('div');holder.id='book-empty-mp-qa';
+   document.body.append(holder);
+   window.PandoraStageAttributes.render(holder,{
+    page:'effects',modifiers:{mp:null,stats:{},
+     healingSpells:{rows:[]},periodicRecovery:{rows:[]}},
+    gameTerms:terms,heroJobKey:'ENCHANTER',heroLevel:45,
+    heroMasteries:{blessing:78},
+    heroBranchCaps:terms.classes.ENCHANTER.branchCaps
+   });
+   const count=holder.querySelectorAll('.stage-material-actions').length;
+   holder.remove();return count;
+  });
+  assert.equal(missingManaPanel,0,
+   'Without the current character MP result, the Book must not list generic recipes');
   const buffsRu=await render({lang:'ru',chapter:'buffs'});
   for(const name of ['Знак атаки','Знак защиты','Чары усиления','Рывок']){
    assert.ok(buffsRu.includes(name),'Book buffs must use exact OS skill name: '+name);
