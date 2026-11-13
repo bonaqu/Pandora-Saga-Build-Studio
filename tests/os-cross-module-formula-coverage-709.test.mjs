@@ -18,7 +18,7 @@ test('cross-module census counts modeled OS abilities once regardless of UI tab'
  assert.equal(audit.summary.effectRecords,1070);
  assert.equal(audit.summary.uniqueEffectTypes,283);
  assert.equal(audit.summary.inspectedClasses,28);
- assert.equal(audit.summary.statuses['unmodeled-learnable'],105,
+ assert.equal(audit.summary.statuses['unmodeled-learnable'],100,
   'cross-module coverage and triggered OS helper classification must be complete');
  assert.equal(audit.summary.statuses['numeric-preview'],62);
  assert.equal(audit.summary.statuses['source-parameter'],3);

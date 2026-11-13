@@ -9,7 +9,7 @@ const local=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 
 export function auditOsSkillFormulaCoverage({skills,classes,calculator}={}){
  const modules=['scalingSkillPreview','healingSpellsPreview',
-  'periodicRecoveryPreview','songSkillPreview','resistanceSkillChoices','skillExecutionChains','craftingSkillPreview','trapSkillCostPreview','complexSkillSourcePreview'];
+  'periodicRecoveryPreview','songSkillPreview','resistanceSkillChoices','skillExecutionChains','craftingSkillPreview','trapSkillCostPreview','complexSkillSourcePreview','statusApplicationPreview'];
  if(!skills||!classes||!modules.every(name=>typeof calculator?.[name]==='function'))
   throw Error('Expected pinned skill/class catalog and all OS formula inspectors');
  const entries=Object.entries(skills).sort((a,b)=>Number(a[0])-Number(b[0]));
@@ -166,6 +166,13 @@ export function auditOsSkillFormulaCoverage({skills,classes,calculator}={}){
   const results=calculator.complexSkillSourcePreview({skillCatalog:skills,jobKey:key,
    level:55,branchCaps:caps,branchMasteries:caps});
   for(const row of results.rows)mark(row.id,'complex-source-mechanics');
+ }
+ // These are qualitative incoming TARGET effects, never permanent buffs.
+ for(const key of classNames){
+  const caps=classes[key].branchCaps;
+  const status=calculator.statusApplicationPreview({skillCatalog:skills,
+   jobKey:key,level:55,branchCaps:caps,branchMasteries:caps});
+  for(const row of status.rows)mark(row.id,'status-application-source',{targetSide:true});
  }
  const statusKeys=['numeric-preview','coefficient-model','source-parameter','qualitative-preview',
   'passive-source','internal-or-triggered-source','unmodeled-learnable'];

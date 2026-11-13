@@ -3943,6 +3943,44 @@ function trapSkillCostPreview({skillCatalog=null,jobKey=null,level=1,
  }
  return result;
 }
+// Six pinned learnable OS roots with state effects: descriptions only,
+// never guaranteed status chance, duration, target mitigation or damage.
+const statusApplicationProofs=Object.freeze([{"id":142501101,"type":"RADIATION","branch":"blow","level":0,"reqs":[["blow",41],["exorcism",21]],"status":["Оглушение","Stun","stun"],"blocking":false,"funcs":[["EP_CAUSE_STUN","TARGET",[0,0,0,4],[30,0,50,30]]]},{"id":168005001,"type":"ENEMY","branch":"defense","level":0,"reqs":[["defense",31]],"status":["Падение","Knockdown","tumble"],"blocking":true,"funcs":[["EP_CANCEL_BLOCKING","CASTER",[0,0,0,0],[0,0,0,0]],["EP_CAUSE_TUMBLE","TARGET",[0,0,0,3],[0,0,0,75]],["EP_SKILL_EXEC","TARGET",[0,0,0,168005050],[0,0,0,0]],["EP_SKILL_MARCH","CASTER",[0,0,0,500],[0,0,0,0]]]},{"id":410013001,"type":"ENEMY","branch":"charm","level":0,"reqs":[["charm",41]],"status":["Заморозка","Freeze","numb"],"blocking":false,"funcs":[["EP_CAUSE_NUMB","TARGET",[0,0,0,15],[40,0,40,50]]]},{"id":410021001,"type":"ENEMY","branch":"element","level":12,"reqs":[],"status":["Падение","Knockdown","tumble"],"blocking":false,"funcs":[["EP_ELEMENT_DAMAGE","TARGET",[40,30,70,22],[0,0,0,0]],["EP_CAUSE_TUMBLE","TARGET",[0,0,0,2],[0,0,0,100]]]},{"id":420003001,"type":"ENEMY","branch":"charm","level":0,"reqs":[["charm",12]],"status":["Сон","Sleep","sleep"],"blocking":false,"funcs":[["EP_ELEMENT_DAMAGE","TARGET",[40,30,70,27],[0,0,0,0]],["EP_CAUSE_SLEEP","TARGET",[0,0,0,20],[40,0,40,40]]]},{"id":430052001,"type":"ENEMY","branch":"darkness","level":0,"reqs":[["darkness",8]],"status":["Яд","Poison",null],"blocking":false,"funcs":[["EP_ELEMENT_DAMAGE","TARGET",[5,0,5,15],[0,0,0,0]],["EP_CAUSE_POISON","TARGET",[180,0,180,40],[0,0,30,70]]]}]);
+function statusApplicationPreview({skillCatalog=null,jobKey=null,level=1,
+ branchMasteries={},branchCaps={},branchLabels={},englishBranches={}}={}){
+ const out={rows:[],rejected:[],verified:false};
+ if(!skillCatalog||typeof jobKey!=='string'||!Number.isSafeInteger(level)||level<1||level>55)return out;
+ for(const proof of statusApplicationProofs){
+  const s=skillCatalog[String(proof.id)];
+  if(s?.id!==proof.id||s.learnable!==true||s.prereq!==null||
+   s.skillType!==proof.type||s.branch!==proof.branch||s.charLevel!==proof.level||
+   !s.classes?.[jobKey]||!Array.isArray(s.reqs)||s.reqs.length!==proof.reqs.length||
+   !proof.reqs.every(([branch,amount],i)=>s.reqs[i]?.branch===branch&&s.reqs[i]?.amount===amount)||
+   proof.reqs.some(([branch,amount])=>!Number.isSafeInteger(branchCaps?.[branch])||branchCaps[branch]<amount))continue;
+  const valid=Array.isArray(s.funcs)&&s.funcs.length===proof.funcs.length&&
+   proof.funcs.every((fv,i)=>{
+    const f=s.funcs[i];
+    return f?.ep===fv[0]&&f.dir===fv[1]&&
+     Array.isArray(f.fv1)&&f.fv1.length===4&&f.fv1.every((x,j)=>x===fv[2][j])&&
+     Array.isArray(f.fv2)&&f.fv2.length===4&&f.fv2.every((x,j)=>x===fv[3][j]);
+   });
+  if(!valid){out.rejected.push(proof.id);continue;}
+  const reasonRu=[],reasonEn=[];
+  if(level<proof.level){reasonRu.push('Требуется уровень '+proof.level);reasonEn.push('Requires level '+proof.level);}
+  for(const [branch,amount] of proof.reqs){
+   const rank=branchMasteries?.[branch],cap=branchCaps?.[branch];
+   if(Number.isSafeInteger(rank)&&rank>=amount&&rank<=cap)continue;
+   reasonRu.push('Нужно мастерство «'+(branchLabels?.[branch]||branch)+'»: '+amount);
+   reasonEn.push('Requires '+(englishBranches?.[branch]||branch)+' mastery: '+amount);
+  }
+  out.rows.push({id:proof.id,name:s.name,description:s.desc||'',
+   linkedStatus:{ru:proof.status[0],en:proof.status[1],key:proof.status[2]},
+   requiresBlocking:proof.blocking,requirementsMet:reasonRu.length===0,
+   reasonRu:reasonRu.join(' · '),reasonEn:reasonEn.join(' · '),
+   sourceOnly:true,targetSideOnly:true});
+ }
+ return out;
+}
 // Complex element attacks and status cures without invented damage or odds.
 // Full source signature is intentionally pinned to current OS records:
 // different FV1[1] and state effects cannot use the simple spell kernel.
@@ -4008,7 +4046,7 @@ function complexSkillSourcePreview({skillCatalog=null,jobKey=null,level=1,
  }
  return out;
 }
-root.PandoraOSCalculator=Object.freeze({skillExecutionChains,craftingSkillPreview,trapSkillCostPreview,complexSkillSourcePreview,priestCastPreviews,movementSkillSourcePreview,utilitySkillSourcePreview,scalingSkillPreview,directStrikeCoefficientPreview,elementalSpellCoefficientPreview,defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
+root.PandoraOSCalculator=Object.freeze({skillExecutionChains,craftingSkillPreview,trapSkillCostPreview,statusApplicationPreview,complexSkillSourcePreview,priestCastPreviews,movementSkillSourcePreview,utilitySkillSourcePreview,scalingSkillPreview,directStrikeCoefficientPreview,elementalSpellCoefficientPreview,defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
  base,characterSheetPhysicalAttackRange,classBase,classBaseComponents,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,racialWeaponPreview,incredibleStrengthPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
  recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,consumableSkillPreview,statusCurePreview,harmfulConsumablePreview,gemstonePreview,legacyBuffPreview,songSkillPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,racialUtilityPreview,elementalMagicPreview,elementalRefinementPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive
 });
