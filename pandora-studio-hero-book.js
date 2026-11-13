@@ -1431,7 +1431,34 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   }
   body.append(section);
  }
-if(!spells.length&&!periodic.length&&!rows.offense?.length&&!rows.defense?.length&&!rows.movement?.length&&!rows.utility?.length)
+ // Exact trap-item cost from the game, never guessed combat damage.
+ const trapCost=root.PandoraOSCalculator?.trapSkillCostPreview?.({
+  skillCatalog:gameTerms.skills,jobKey:heroJobKey,level:heroLevel,
+  branchCaps:heroBranchCaps,branchMasteries:heroMasteries,
+  branchLabels:gameTerms.branchLabels,englishBranches:gameTerms.englishBranches
+ });
+ const trapItem=sourceItemName(65007);
+ if(trapItem&&trapCost?.rows?.length){
+  const section=make('details',{class:'stage-attribute-row stage-skill-trap-costs'});
+  section.append(make('summary',{text:en?'Traps and ingredients':'Ловушки и расход материалов'}));
+  section.append(make('p',{class:'stage-periodic-hint',text:en?
+   'The number of traps needed is from game data. Trigger chance, final damage and inventory are not calculated here.':
+   'Количество ловушек взято из игровых данных. Шанс срабатывания, итоговый урон и наличие в сумке здесь не рассчитываются.'}));
+  for(const row of trapCost.rows){
+   const official=gameTerms.englishSkills?.[String(row.id)];
+   const status=row.requirementsMet?
+    (en?'Mastery requirement met':'Мастерства достаточно'):
+    (en?row.reasonEn:row.reasonRu);
+   section.append(make('div',{class:'stage-heal-row stage-skill-trap-cost-row'+
+    (row.requirementsMet?'':' stage-book-unavailable')},[
+    gameSkillBadge(row.id,row.name,official?.n||row.name,gameTerms,en,skillIconForId),
+    make('small',{text:(en?'Required: ':'Для применения нужно: ')+row.count+' × '+trapItem}),
+    make('small',{text:status})
+   ]));
+  }
+  body.append(section);
+ }
+if(!spells.length&&!periodic.length&&!rows.offense?.length&&!rows.defense?.length&&!rows.movement?.length&&!rows.utility?.length&&!chains?.rows?.length&&!conditional?.rows?.length&&!recipes?.length&&!trapCost?.rows?.length)
   body.append(make('p',{class:'stage-attribute-note',text:en?
    'Only skills with build-dependent effect values appear here. Fixed buffs belong in Buffs.':
    'Здесь показаны только умения, сила которых зависит от билда. Постоянные усиления — во вкладке «Усиления».'}));
