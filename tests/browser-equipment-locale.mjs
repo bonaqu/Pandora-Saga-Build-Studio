@@ -175,6 +175,25 @@ export async function runEquipmentLocaleSmoke(browser,base){
    /Быстрый удар с параметрами точности/);
   assert.match(await page.locator('.wiki-requirement-copy').innerText(),
    /Ближний бой\s+Суммарное освоенное мастерство: 3/);
+  // Three exceptional OS skills stay in the encyclopedia instead of
+  // becoming fake current-character buffs or apparently learnable barriers.
+  for(const id of [300001001,300002001]){
+   await page.goto(base+'/#wiki/skill/'+id,{waitUntil:'domcontentloaded'});
+   const notice=page.locator('.wiki-skill-access-notice');
+   await notice.waitFor({state:'visible',timeout:20000});
+   assert.match(await notice.innerText(),/Исцеление.*102/);
+   assert.match(await notice.innerText(),/90/);
+   assert.match(await notice.innerText(),/не подтверждены/);
+  }
+  await page.goto(base+'/#wiki/skill/260006002',{waitUntil:'domcontentloaded'});
+  const duplicateNote=page.locator('.wiki-skill-access-notice');
+  await duplicateNote.waitFor({state:'visible',timeout:20000});
+  assert.match(await duplicateNote.innerText(),/нет профессий/);
+  assert.match(await duplicateNote.innerText(),/Не следует прибавлять его второй раз/);
+  await duplicateNote.locator('a[href*="/wiki/skill/260006001"], a[href*="#wiki/skill/260006001"]').click();
+  await page.waitForFunction(()=>location.hash==='#wiki/skill/260006001');
+  // The original party skill owns real class access; the variant does not.
+  assert.equal(await page.locator('.wiki-skill-access-notice').count(),0);
   // Chest contents are shown as one visible list; original roll boundaries remain in the data.
   await page.goto(base+'/#wiki/chest/51003',{waitUntil:'domcontentloaded'});
   await page.locator('.wiki-chest-listed-100 .wiki-chest-reward').first().waitFor({state:'visible',timeout:20000});

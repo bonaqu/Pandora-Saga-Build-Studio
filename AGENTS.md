@@ -2,6 +2,11 @@
 
 These repository-level rules are durable instructions for future coding sessions.
 
+## Last three exceptional learnable-tag OS entries (0.744.0)
+- Catalog IDs `260006002` (classless Speedy Gale variant) and `300001001`/`300002001` (physical/magic barriers with Healing 102, highest present class cap 90) carry `learnable:true` in OS but have **no standard current class acquisition path**. That does not prove they are removed from the real server or can never be granted by special mechanics. Never auto-enable, double-count or treat the second Gale as a separate buff.
+- Only source-matched, bilingual **Encyclopedia** information can explain this, and links must preserve exact skill IDs. If game data or caps change, fail closed; don't persist these as D1 fields, don't revise source JSON, don't distort the formula coverage audit.
+- Do not inflate the source coverage number for an accessibility note: still 74 numeric, 97 qualitative, 3 unmodeled learnable entries. This Wiki classification is user-facing evidence of missing ordinary learnability, not a new combat formula.
+
 ## Build-dependent threshold information (0.743.0; approved by owner)
 - The Hero Book may show compact **current-character** gates, currently trained green proficiency and the nearest genuine upcoming skill threshold, optionally expanded; this is an explanation of the CURRENT build, not an Encyclopedia dump. For the four parent MELEE skills, show only the nearest future threshold and obtain OS RU/EN names by exact IDs; a mastery threshold is not proof that other conditions (equipment, use, resources) are satisfied.
 - Party buffs that explicitly TARGET the current hero can show a numeric recipient-side preview derived from the recipient's live attack/accuracy/evasion. Visually separate these from skills the hero can cast, never apply the effect automatically to hero totals, and explain the input base and next +1 breakpoint with no guaranteed game-server parity.

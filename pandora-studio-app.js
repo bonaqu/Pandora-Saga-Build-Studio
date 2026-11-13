@@ -4947,6 +4947,20 @@ function renderWiki(root){
     if(evidence){
      const section=h('section',{class:'wiki-skill-source-insight'});
      section.append(h('h4',{text:wt('Действие по игровым данным','Game-source mechanics')}));
+     if(evidence.accessNotice){
+      const access=evidence.accessNotice;
+      const note=h('div',{class:'wiki-skill-access-notice'},[
+       h('strong',{text:wt('Особенности изучения','Learning restrictions')}),
+       h('p',{text:lang==='en'?access.en:access.ru})
+      ]);
+      if(access.relatedSkillId&&wikiData.skills?.[String(access.relatedSkillId)]){
+       note.append(wikiLink(
+        wt('Основная версия: ','Main version: ')+
+         dataName('skill',String(access.relatedSkillId)),
+        'skill',String(access.relatedSkillId)));
+      }
+      section.append(note);
+     }
      const explanations=evidence.notes.map(n=>lang==='en'?(n.en||n.ru):(n.ru||n.en));
      for(const description of explanations.filter(Boolean))
       section.append(h('p',{class:'wiki-description',text:description}));
