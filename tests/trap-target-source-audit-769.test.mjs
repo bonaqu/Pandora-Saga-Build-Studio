@@ -49,7 +49,9 @@ test('Malformed target resistance fails closed; Hero Book stays build-only',()=>
  assert.equal(inspect({monsters:m}),null);
  const book=read('pandora-studio-hero-book.js');
  const path=read('pandora-studio-hero-path.js');
- assert.doesNotMatch(book,/audit-os-trap-target|240005003|22104/);
+ assert.doesNotMatch(book,/audit-os-trap-target|240005003/);
+ assert.match(book,/targetSkillDamage\?\.monsterId===22104/,
+  'A valid current character may now show OS-calculated damage by Ogre ID');
  assert.doesNotMatch(path,/path-next-melee|data-next-melee-skill-id/);
  assert.doesNotMatch(book,/stage-material-actions/);
 });

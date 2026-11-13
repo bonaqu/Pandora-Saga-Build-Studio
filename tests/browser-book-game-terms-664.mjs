@@ -363,6 +363,53 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   assert.match(strikeSummary.en.budget,/450 MP.*23 casts.*13 MP/);
   assert.match(strikeSummary.en.next.join(' '),
    /Next strike strength \+1%.*42 \(\+2\)/);
+  // Current build's exact OS skill-vs-Ogre outcome, shown as ONE skill row.
+  const ogreBook=await page.evaluate(async()=>{
+   const terms=window.__bookGameTermsQA;
+   const tables=await (await fetch('data/os/tables.json')).json();
+   const stats={dex:70,int:20};
+   const result=window.PandoraOSTargetDamage.crawlingTrap({
+    skillCatalog:terms.skills,classes:terms.classes,jobKey:'DISTURBANCE',
+    level:45,masteries:{trap:41},
+    branchCaps:terms.classes.DISTURBANCE.branchCaps,
+    stats,equipment:[],tables,
+    modifiers:{combat:{spellDamageEquipmentRate:0,priestSong:{}},priestApplied:{}}
+   });
+   const host=document.createElement('div');host.id='book-ogre-qa';
+   host.style.width='780px';document.body.append(host);
+   const render=(language,mastery,dmg)=>{
+    document.documentElement.lang=language;
+    window.PandoraStageAttributes.render(host,{
+     page:'effects',modifiers:{mp:450,stats,
+      combat:{spellDamageEquipmentRate:0},
+      healingSpells:{rows:[]},periodicRecovery:{rows:[]}},
+     gameTerms:terms,heroJobKey:'DISTURBANCE',heroLevel:45,
+     heroMasteries:{trap:mastery},
+     heroBranchCaps:terms.classes.DISTURBANCE.branchCaps,
+     targetSkillDamage:dmg
+    });
+    const row=host.querySelector('.stage-target-damage-row');
+    return {count:host.querySelectorAll('.stage-target-damage-row').length,
+     main:row?.textContent||'',strong:row?.querySelector('strong')?.textContent||'',
+     details:row?.querySelector('.stage-skill-more')?.textContent||''};
+   };
+   return {source:result,ru:render('ru',41,result),en:render('en',41,result),
+    locked:render('ru',40,result),missing:render('ru',41,null)};
+  });
+  assert.deepEqual([ogreBook.source.min,ogreBook.source.average,ogreBook.source.max],
+   [34,148,194]);
+  assert.equal(ogreBook.ru.count,1);
+  assert.match(ogreBook.ru.main,/Ползучая ловушка/);
+  assert.match(ogreBook.ru.strong,/Гигантский огр · 34–194 ОЗ/);
+  assert.match(ogreBook.ru.details,/Средний урон по цели.*148 ОЗ/);
+  assert.match(ogreBook.ru.details,/ЛВК 70 · ИНТ 20 · Ловушки 41/);
+  assert.equal(ogreBook.en.count,1);
+  assert.match(ogreBook.en.main,/Worm Bomb/);
+  assert.match(ogreBook.en.strong,/Ogre Bouncer · 34–194 HP/);
+  assert.match(ogreBook.en.details,/Average hit against.*148 HP/);
+  assert.equal(ogreBook.locked.count,0);
+  assert.equal(ogreBook.missing.count,0);
+  assert.doesNotMatch(ogreBook.ru.main,/материал|рецепт|создани|Ловушка × 2/i);
   assert.deepEqual(errors,[]);
   console.log('Chromium Book 664: OS/Remaked RU+EN skills, Hymn/Песнопения, Адепт, buffs and defense');
  }finally{await context.close()}
