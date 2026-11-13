@@ -10,6 +10,11 @@ These repository-level rules are durable instructions for future coding sessions
 - **Fast without cutting corners:** batch related reads, inspect dependent call paths/test fixtures before changes, ship coherent patches, run focused Node and isolated browser diagnostics first, preflight release metadata before the full Node suite, then let the final mandatory CI run exactly once per revision. On failure read the first failing test/log before rerunning. Avoid needless release bumps for documentation/CI-only patches; when code/site assets change bump release files together. After a release verify Pages **and** live Worker/D1 read-only readiness; never infer a real production write from mock tests. Never run background/daily CI without an owner request.
 
 
+## Skill Effects disclosure geometry (0.732.0)
+- `collapseBookSections()` normalizes top-level Skill Effects `<details>` to the shared `.stage-book-disclosure` header with a single `.stage-result-chevron`. Never add a second arrow using `summary::after` or a second clickable header.
+- The classes `.stage-skill-chain-effects`, `.stage-skill-onhit-effects`, `.stage-skill-crafting-effects`, `.stage-skill-trap-costs`, and `.stage-skill-complex-effects` must not override common header padding, background, typography or disclosure geometry. Preserve keyboard-native `summary` behavior and persisted disclosure state.
+- Chromium desktop smoke tests both actual present skill sections and isolated fixtures for all five class families, collapsed and expanded. No source skill IDs, D1 rows or character state need changing for this UI repair.
+
 ## Source of truth and safety
 - Work in `bonaqu_projects` through focused PRs. Inspect current branch HEAD, open PRs and relevant issues **once**, before editing.
 - Keep all gameplay formulas, character state, saved Souls and catalog data unchanged unless the issue requires a verified change.

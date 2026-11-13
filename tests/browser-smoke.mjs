@@ -378,6 +378,70 @@ async function main(){
    'Offensive and Healing headers must share exact geometry');
   assert.equal(await offense.locator('.stage-offense-skill-row:not(.stage-heal-row)').count(),0);
  }
+  // Regression: skill panels must use the same header as Healing and keep
+  // exactly one native shared chevron, even when the panel is expanded.
+  // Fixtures cover classes that may not exist on the default character.
+  const skillDisclosureAudit=await page.evaluate(()=>{
+   const parent=document.querySelector('#stageBookPanel');
+   const reference=parent?.querySelector('.stage-attacking-skills > summary.stage-result-section-head');
+   if(!parent||!reference)throw Error('Missing Skill Effects header reference');
+   const kinds=['stage-skill-chain-effects','stage-skill-onhit-effects',
+    'stage-skill-crafting-effects','stage-skill-trap-costs','stage-skill-complex-effects'];
+   const style=element=>{
+    const css=getComputedStyle(element);
+    return {padding:css.padding,font:css.font,background:css.backgroundColor,
+     minHeight:css.minHeight,display:css.display,gap:css.gap};
+   };
+   const expected=style(reference);
+   const inspect=(section,kind)=>{
+    const head=section.querySelector(':scope > summary');
+    return {kind,style:style(head),
+     after:getComputedStyle(head,'::after').content,
+     chevrons:head.querySelectorAll('.stage-result-chevron').length,
+     symbols:head.querySelectorAll('.stage-result-symbol').length,
+     listStyle:getComputedStyle(head).listStyleType};
+   };
+   const actual=[...parent.querySelectorAll('details.stage-book-disclosure')]
+    .filter(detail=>kinds.some(kind=>detail.classList.contains(kind)))
+    .map(detail=>inspect(detail,'actual'));
+   const fixture=kinds.map(kind=>{
+    const detail=document.createElement('details');
+    detail.className='stage-attribute-row stage-book-disclosure '+kind;
+    const summary=document.createElement('summary');
+    summary.className='stage-result-section-head';
+    summary.innerHTML='<span class="stage-result-symbol" aria-hidden="true">✦</span>'+
+     '<strong class="stage-book-detail-title">Проверка блока</strong>'+
+     '<span class="stage-result-chevron" aria-hidden="true">⌄</span>';
+    detail.append(summary,document.createElement('p'));
+    parent.append(detail);
+    const closed=inspect(detail,kind);
+    summary.click();
+    const opens=detail.open;
+    const open=inspect(detail,kind);
+    summary.click();
+    const closes=!detail.open;
+    detail.remove();
+    return {...closed,opens,closes,openAfter:open.after,
+     openChevrons:open.chevrons,openStyle:open.style};
+   });
+   return {expected,actual,fixture};
+  });
+  for(const row of [...skillDisclosureAudit.actual,...skillDisclosureAudit.fixture]){
+   assert.deepEqual(row.style,skillDisclosureAudit.expected,
+    'Skill Effects header geometry differs: '+row.kind);
+   assert.equal(row.after,'none','Duplicate pseudo arrow: '+row.kind);
+   assert.equal(row.chevrons,1,'Duplicate chevron: '+row.kind);
+   assert.equal(row.symbols,1,'Missing shared header emblem: '+row.kind);
+   assert.equal(row.listStyle,'none','Browser marker is visible: '+row.kind);
+  }
+  for(const row of skillDisclosureAudit.fixture){
+   assert.equal(row.opens,true,'Skill section did not expand: '+row.kind);
+   assert.equal(row.closes,true,'Skill section did not collapse: '+row.kind);
+   assert.equal(row.openAfter,'none','Opened section draws another arrow: '+row.kind);
+   assert.equal(row.openChevrons,1,'Opened section duplicates chevron: '+row.kind);
+   assert.deepEqual(row.openStyle,skillDisclosureAudit.expected,
+    'Opening changes header geometry: '+row.kind);
+  }
   await page.locator('#stageAttributes .stage-periodic-recovery').waitFor({state:'visible',timeout:20000});
   await page.locator('#stageAttributes .stage-periodic-recovery summary').click();
   const recovery=await page.locator('#stageAttributes .stage-periodic-recovery').innerText();
