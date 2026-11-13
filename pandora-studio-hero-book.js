@@ -1352,6 +1352,86 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    detail.append(make('small',{text:line}));
   node.append(detail);
  };
+ const healingNumber=new Intl.NumberFormat(en?'en-US':'ru-RU',
+  {maximumFractionDigits:2});
+ const skillAction=id=>root.PandoraOSCalculator?.healingActionPreview?.({
+  skillCatalog:gameTerms.skills,skillId:id,combat:modifiers?.combat});
+ const appendActionEffects=(node,action)=>{
+  if(!action)return;
+  if(action.castModel?.inspiration&&action.cast>0)
+   node.append(make('small',{class:'stage-heal-cast-preview',text:en?
+    'With Inspiration from an ally: '+healingNumber.format(action.castModel.seconds)+
+     ' s of casting (50% of the base, model)':
+    'С «Воодушевлением» от союзника: '+
+     healingNumber.format(action.castModel.seconds)+
+     ' сек. применения (50% базового времени, модель)'}));
+  if(Number.isFinite(action.manaRemainingIndex)&&
+   action.manaRemainingIndex!==100)
+   node.append(make('small',{class:'stage-attribute-note',text:en?
+    'Current hero’s MP-cost index: '+healingNumber.format(action.manaRemainingIndex)+
+     '%. Exact MP spent per cast has not been established.':
+    'Показатель расхода ОМ героя: '+healingNumber.format(action.manaRemainingIndex)+
+     '%. Точная стоимость применения после скидок пока не установлена.'}));
+  if(Number.isFinite(action.cooldownIndex)&&action.cooldownIndex!==100)
+   node.append(make('small',{class:'stage-attribute-note',text:en?
+    'Current hero’s cooldown index: '+healingNumber.format(action.cooldownIndex)+
+     '%. Exact cooldown seconds under bonuses are not established.':
+    'Показатель отката героя: '+healingNumber.format(action.cooldownIndex)+
+     '%. Точное время перезарядки с бонусами пока не установлено.'}));
+ };
+ const appendHealingBreakdown=(node,row,pulse)=>{
+  const parts=row?.breakdown;
+  if(!parts||![parts.flat,parts.statPart,parts.levelPart,
+   parts.masteryPart].every(Number.isFinite))return;
+  const details=make('details',{class:'stage-skill-gate-help stage-heal-breakdown'},[
+   make('summary',{text:en?'How the healing was calculated':
+    'Как рассчитано лечение'})
+  ]);
+  const stat=en?(parts.stat==='spi'?'SPR':'INT'):
+   (parts.stat==='spi'?'СД':'ИНТ');
+  details.append(make('small',{text:en?
+   'Base '+healingNumber.format(parts.flat)+' + from '+stat+' '+
+    healingNumber.format(parts.statPart)+' + from level '+
+    healingNumber.format(parts.levelPart)+' + from Healing mastery '+
+    healingNumber.format(parts.masteryPart):
+   'Основа '+healingNumber.format(parts.flat)+' + от '+stat+' '+
+    healingNumber.format(parts.statPart)+' + от уровня '+
+    healingNumber.format(parts.levelPart)+' + от Исцеления '+
+    healingNumber.format(parts.masteryPart)}));
+  details.append(make('small',{text:pulse?(en?
+   'Each part is rounded down separately. Result: '+row.amount+' every 2 seconds (model).':
+   'Каждая прибавка округляется вниз отдельно. Результат: '+row.amount+
+    ' каждые 2 секунды (модель).'):(en?
+   'Apply '+healingNumber.format(parts.healingPercent)+
+    '% healing effectiveness to their sum, then round down once.':
+   'К сумме применяется '+healingNumber.format(parts.healingPercent)+
+    '% эффективности лечения, затем результат один раз округляется вниз.')}));
+  node.append(details);
+ };
+ const appendHealingMilestones=(node,row,periodic)=>{
+  if(row.nextMastery&&Number.isSafeInteger(row.nextMastery.rank))
+   node.append(make('small',{class:'stage-heal-mastery-next',text:en?
+    'Next Healing mastery increase at '+row.nextMastery.rank+
+     ' (+'+row.nextMastery.remaining+'): +'+row.nextMastery.gain+' HP':
+    'Следующий прирост от Исцеления: '+row.nextMastery.rank+
+     ' (ещё '+row.nextMastery.remaining+'): +'+row.nextMastery.gain+' ОЗ'}));
+  const next=row.nextAttribute;
+  if(next&&Number.isSafeInteger(next.value)){
+   const stat=en?(periodic?'SPR':'INT'):(periodic?'СД':'ИНТ');
+   node.append(make('small',{class:'stage-heal-mastery-next',text:en?
+    'Next +'+next.gain+' HP at '+stat+' '+next.value+
+     ' (+'+next.remaining+' '+stat+')':
+    'Следующий прирост от '+stat+': при '+next.value+
+     ' (ещё '+next.remaining+') получится +'+next.gain+' ОЗ'}));
+  }
+  if(row.nextLevel&&Number.isSafeInteger(row.nextLevel.value)){
+   const next=row.nextLevel;
+   node.append(make('small',{class:'stage-heal-mastery-next',text:en?
+    'Next +'+next.gain+' per pulse at level '+next.value:
+    'Следующий прирост за срабатывание: +'+next.gain+
+     ' на уровне '+next.value}));
+  }
+ };
  const spells=(modifiers?.healingSpells?.rows||[]).filter(row=>row?.available===true);
  const periodic=(modifiers?.periodicRecovery?.rows||[]).filter(row=>row?.available===true);
  // Only the CURRENT hero's learnable healing spells, not hypothetical ally casts.
@@ -1372,6 +1452,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     (en?' HP every 2 sec (model)':' ОЗ каждые 2 сек. (модель)'):
     (en?' HP (model)':' ОЗ (расчёт)'));
    const gameSkill=gameTerms.skills?.[String(sourceId)];
+   const action=skillAction(sourceId);
    const kind=gameSkill?.skillType;
    const target=kind==='ALLY'?(en?'one target':'одна цель'):
     kind==='PARTY_ALL'?(en?'party':'группа'):
@@ -1393,12 +1474,9 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     make('strong',{text:amount}),
     make('small',{text:facts.join(' · ')})
    ]);
-   if(row.nextMastery&&Number.isSafeInteger(row.nextMastery.rank))
-    preview.append(make('small',{class:'stage-heal-mastery-next',text:en?
-     'Next healing increase: Healing mastery '+row.nextMastery.rank+
-      ' (+'+row.nextMastery.remaining+' mastery) gives +'+row.nextMastery.gain+' HP':
-     'Следующее усиление: Исцеление '+row.nextMastery.rank+
-      ' (+'+row.nextMastery.remaining+' мастерства) даст +'+row.nextMastery.gain+' ОЗ'}));
+   appendActionEffects(preview,action);
+   appendHealingMilestones(preview,row,pulse);
+   appendHealingBreakdown(preview,row,pulse);
    // Canonical Russian skill descriptions stay untouched; report actual
    // contradictions against OS skill-effect vectors without inventing a fix.
    if(sourceId===310022001&&gameSkill?.desc?.includes('3 с.'))
@@ -1414,8 +1492,8 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    group.append(preview);
   }
   group.append(make('small',{class:'stage-attribute-note',text:en?
-   'Healing uses your hero’s INT, SPR and trained Healing mastery. Periodic 2-second recovery follows Remaked and current OS source parameters; exact live timing and stacking have not been measured. Cast and cooldown above are base OS values before bonuses.':
-   'Лечение зависит от ИНТ, СД и освоенного Исцеления героя. Восстановление каждые 2 секунды рассчитано по модели Remaked и параметрам OS; реальный интервал и сложение эффектов отдельно не измерены. Время применения и перезарядка выше — базовые, без ускорений.'}));
+   'Healing uses this hero’s INT, SPR and trained Healing mastery. Inspiration shows a 50% casting-time model from Remaked; casting-speed and cooldown indices are NOT direct seconds. Two-second recovery follows Remaked/OS, while exact live tick timing and stacking remain unmeasured.':
+   'Лечение зависит от ИНТ, СД и освоенного Исцеления героя. «Воодушевление» сокращает расчётное время применения до 50% по Remaked. Скорость заклинаний и показатель отката не равны секундам. Период 2 секунды — модель Remaked/OS, а не отдельный замер живого сервера.'}));
   body.append(group);
  }
  // MP recovery is distinct from HP healing; Remaked MPsec and current OS agree on a modeled 2-second pulse.
@@ -1430,6 +1508,17 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     make('strong',{text:String(entry.amount)+' '+(en?'MP every 2 sec (model)':'ОМ каждые 2 сек. (модель)')}),
     make('small',{text:en?'Current hero skill, source-backed recovery':'Восстановление от умения самого героя'})
    ]);
+   const action=skillAction(entry.id);
+   if(action){
+    preview.append(make('small',{text:(en?'MP cost: ':'Расход ОМ: ')+
+     action.mana+' · '+(en?'Base cast: ':'Базовое применение: ')+
+     healingNumber.format(action.cast)+(en?' s':' сек.')+' · '+
+     (en?'Base cooldown: ':'Базовая перезарядка: ')+
+     healingNumber.format(action.cooldown)+(en?' s':' сек.')}));
+    appendActionEffects(preview,action);
+   }
+   appendHealingMilestones(preview,entry,true);
+   appendHealingBreakdown(preview,entry,true);
    appendGate(preview,entry.id);
    details.append(preview);
   }

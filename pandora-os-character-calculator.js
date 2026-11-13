@@ -2644,6 +2644,57 @@ function effectCoverage({records=[],itemForth=null}={}){
 // packets remain unverified; show unavailable spells as theoretical previews.
 // Remaked computes magnitudes; the OS skill catalogue decides whether the
 // corresponding spell is available to this character. Keep these independent.
+// Find the next TRUE increase after each source-specific integer floor.
+// The search limit is only a bounded preview, not an in-game stat cap.
+function nextHealingIncrease(current,amountAt,limit=1000){
+ if(!Number.isSafeInteger(current)||current<0||
+  !Number.isSafeInteger(limit)||limit<current||
+  typeof amountAt!=='function')return null;
+ const base=amountAt(current);
+ if(!Number.isFinite(base))return null;
+ for(let value=current+1;value<=limit;value++){
+  const result=amountAt(value);
+  if(Number.isFinite(result)&&result>base)
+   return {value,remaining:value-current,gain:result-base};
+ }
+ return null;
+}
+
+// Read-only action metadata for a CURRENT hero skill already gated above.
+// Only verified Inspiration/Remaked Status_78 scales cast seconds.
+// Casting-speed, cooldown and MP-cost indices do not prove final seconds.
+const healingActionSkillIds=new Set([
+ 310001001,310001002,310002001,310004001,310004002,
+ 310021001,310021002,310022001,310023001,330005001
+]);
+function healingActionPreview({skillCatalog=null,skillId=null,combat=null}={}){
+ if(!healingActionSkillIds.has(skillId))return null;
+ const record=skillCatalog?.[String(skillId)];
+ if(record?.id!==skillId||record.learnable!==true||
+  !Number.isFinite(record.mana)||record.mana<0||
+  !Number.isFinite(record.cast)||record.cast<0||
+  !Number.isFinite(record.cooldown)||record.cooldown<0||
+  !Array.isArray(record.funcs)||record.funcs.length===0)return null;
+ const spell=record.cast;
+ const time=combat?.castTime;
+ const inspiration=time?.known===50&&time.allyReduction===50&&
+  typeof time.source==='string'&&time.source.includes("Remaked Calc('CastSPD')");
+ const normal=time?.known===100&&time.allyReduction===0&&
+  typeof time.source==='string'&&time.source.includes("Remaked Calc('CastSPD')");
+ const castModel=inspiration||normal?{
+  seconds:inspiration?spell/2:spell,baseSeconds:spell,
+  percent:inspiration?50:100,inspiration,verified:false,
+  excluded:['casting-speed index','server cast-time rounding',
+   'unverified additional speed buffs']
+ }:null;
+ const cd=combat?.cooldown,mp=combat?.manaCost?.remaining;
+ const sourceIndex=n=>Number.isFinite(n)&&n>=0&&n<=100?n:null;
+ return {skillId,mana:record.mana,cast:spell,cooldown:record.cooldown,
+  castModel,cooldownIndex:sourceIndex(cd),manaRemainingIndex:sourceIndex(mp),
+  source:'current OS skills.json + Remaked CastSPD/ReduceMP/Cooldown indices',
+  verified:false};
+}
+
 const healingSourceSpecs=Object.freeze({
  firstAid:Object.freeze({standard:[310001001,'ALLY',0,8,null,[100,250,140,25]],
   cleric:[310001002,'ALLY',50,8,310001001,[300,250,280,25]],
@@ -2709,17 +2760,17 @@ function healingSpellsPreview({level,int,spi,benevolence=0,healingPercent=100,
   const option=cleric&&spec?.cleric?spec.cleric:spec?.standard;
   return option?.[5]??null;
  };
- const calc=(key,mastery=benevolence)=>{
+ const calc=(key,mastery=benevolence,healingInt=int)=>{
   const v=fv(key);
   if(!Array.isArray(v)||v.length!==4||!v.every(Number.isFinite))return null;
-  const raw=v[3]+int*v[0]/100+level*v[1]/100+
+  const raw=v[3]+healingInt*v[0]/100+level*v[1]/100+
    mastery*v[2]/100;
   return Math.floor(raw*healingPercent/100);
  };
  // Current OS FV2[3]=2 matches Remaked Calc('LPsec') «every 2 seconds».
  // Its duration/stacking in live OS still needs independent confirmation.
  const recoveryFV=healingSourceSpecs.restoration.standard[5];
- const restoreAt=mastery=>recoveryFV[3]+Math.floor(spi*recoveryFV[0]/100)+
+ const restoreAt=(mastery,healingSpi=spi)=>recoveryFV[3]+Math.floor(healingSpi*recoveryFV[0]/100)+
   Math.floor(level*recoveryFV[1]/100)+
   Math.floor(mastery*recoveryFV[2]/100);
  const restore=restoreAt(benevolence);
@@ -2742,6 +2793,19 @@ function healingSpellsPreview({level,int,spi,benevolence=0,healingPercent=100,
   row.nameEn=healingSourceSpecs[row.id].nameEn;
   row.available=skillId!==null;
   row.nextMastery=null;
+  row.nextAttribute=null;
+  row.breakdown=null;
+  if(row.available){
+   const periodic=row.id==='restoration',v=periodic?recoveryFV:fv(row.id);
+   const stat=periodic?spi:int;
+   row.breakdown={kind:periodic?'periodic':'direct',stat:periodic?'spi':'int',
+    flat:v[3],statPart:periodic?Math.floor(stat*v[0]/100):stat*v[0]/100,
+    levelPart:periodic?Math.floor(level*v[1]/100):level*v[1]/100,
+    masteryPart:periodic?Math.floor(benevolence*v[2]/100):benevolence*v[2]/100,
+    healingPercent:periodic?null:healingPercent};
+   row.nextAttribute=nextHealingIncrease(stat,
+    value=>periodic?restoreAt(benevolence,value):calc(row.id,benevolence,value));
+  }
   if(row.available&&Number.isSafeInteger(benevolence)&&
    Number.isSafeInteger(benevolenceCap)){
    // Next actual increase, not merely the next +1 green mastery point.
@@ -2938,9 +3002,9 @@ function periodicRecoveryPreview({level,spi,benevolence=0,jobKey=null,
  // Current OS periodic event FV1: [SPI%, level%, Healing%, constant].
  // Separate Remaked floors, current OS coefficients. Matching FV2[3]=2
  // agrees with Remaked's «every 2 seconds» model, not live tick measurement.
- const osMagnitude=(id,mastery=benevolence)=>{
+ const osMagnitude=(id,mastery=benevolence,healingSpi=spi,heroLevel=level)=>{
   const v=periodicSkillProof[id].fv1;
-  return v[3]+Math.floor(spi*v[0]/100)+Math.floor(level*v[1]/100)+
+  return v[3]+Math.floor(healingSpi*v[0]/100)+Math.floor(heroLevel*v[1]/100)+
    Math.floor(mastery*v[2]/100);
  };
  const candidates=[
@@ -2975,8 +3039,17 @@ function periodicRecoveryPreview({level,spi,benevolence=0,jobKey=null,
      remaining:rank-benevolence,gain:amount-candidate.amount};break;}
    }
   }
+  const v=proof.fv1;
+  const breakdown=available?{kind:'periodic',stat:'spi',flat:v[3],
+   statPart:Math.floor(spi*v[0]/100),levelPart:Math.floor(level*v[1]/100),
+   masteryPart:Math.floor(benevolence*v[2]/100),healingPercent:null}:null;
+  const nextAttribute=available?nextHealingIncrease(spi,
+   value=>osMagnitude(candidate.id,benevolence,value)):null;
+  const nextLevel=available?nextHealingIncrease(level,
+   value=>osMagnitude(candidate.id,benevolence,spi,value),55):null;
   rows.push({...candidate,available,required:proof.required,
-   skillLevel:proof.charLevel,intervalSeconds:2,nextMastery,verified:false});
+   skillLevel:proof.charLevel,intervalSeconds:2,
+   nextMastery,nextAttribute,nextLevel,breakdown,verified:false});
  }
  return {rows,verified:false,source:'Remaked 2-second LPsec/MPsec model + source-validated OS FV1/FV2; live timing not measured'};
 }
@@ -4931,6 +5004,6 @@ function supportEffectPreview({skillCatalog=null,jobKey=null,level=1,
  }
 root.PandoraOSCalculator=Object.freeze({alliedFreeWindPreview,alliedHpPulsePreview,alliedRecipientPreviews,alliedNaturalRecoveryPreview,alliedInspirationPreview,alliedPeaceSongPreview,skillExecutionChains,craftingSkillPreview,trapSkillCostPreview,tacticalSkillPreview,rangedAmmoPreview,combatTechniquePreview,specializedSkillPreview,supportEffectPreview,situationalSkillPreview,statusApplicationPreview,enemyDebuffPreview,complexSkillSourcePreview,priestCastPreviews,movementSkillSourcePreview,utilitySkillSourcePreview,scalingSkillPreview,directStrikeCoefficientPreview,elementalSpellCoefficientPreview,defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
  base,characterSheetPhysicalAttackRange,classBase,classBaseComponents,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,racialWeaponPreview,incredibleStrengthPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
- recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,consumableSkillPreview,statusCurePreview,harmfulConsumablePreview,gemstonePreview,legacyBuffPreview,songSkillPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,skillAttackRangePreview,racialUtilityPreview,elementalMagicPreview,elementalRefinementPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive
+ recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,healingActionPreview,periodicRecoveryPreview,consumableRecoveryPreview,consumableSkillPreview,statusCurePreview,harmfulConsumablePreview,gemstonePreview,legacyBuffPreview,songSkillPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,skillAttackRangePreview,racialUtilityPreview,elementalMagicPreview,elementalRefinementPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive
 });
 })(typeof window==='undefined'?globalThis:window);
