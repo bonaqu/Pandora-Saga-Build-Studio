@@ -884,11 +884,9 @@ function buffsPage(body,options){
    Array.isArray(effects[0].fv2)&&effects[0].fv2.length===4&&
    effects[0].fv2.every((n,i)=>n===secondary[i]);
  };
- const inspirationKnown=
-  gameTerms.skills?.['320006001']?.skillType==='ALLY'&&
-  gameTerms.skills?.['320006001']?.funcs?.length===2&&
-  osVector(320006001,'EP_CANCEL_IDENTITY',[0,0,0,0])&&
-  osVector(320006001,'EP_SKILL_DELAY_FIN',[0,0,0,50]);
+ const inspiration=root.PandoraOSCalculator?.alliedInspirationPreview?.({
+  skillCatalog:gameTerms.skills});
+ const inspirationKnown=inspiration?.castTimePercent===50;
  const naturalKnown=osVector(330005001,'EP_HEAL_MANA_REGENERATOR',[0,10,0,0],[0,0,0,2]);
  const restKnown=osVector(320002001,'EP_HEAL_TIME_SCALE',[0,0,0,90]);
  const despairKnown=osVector(100058001,'EP_DAMAGERATE_SCALE',[0,0,35,40])&&
@@ -897,20 +895,47 @@ function buffsPage(body,options){
  if(priest.dataset)priest.dataset.bookSection='priest';
  else priest.setAttribute?.('data-book-section','priest');
  toggle(priest,english?'Use external priest':'Учитывать усиления другого жреца','priestEnabled');
+ // "Жрец" is the current OS ENCHANTER class, NOT the earlier PRIEST
+ // ("Священник"). The latter has different green branch caps.
+ const priestClass='ENCHANTER';
+ const priestClassInfo=gameTerms.classes?.[priestClass];
+ const priestCaps=priestClassInfo?.branchCaps||{};
+ const priestCanLearn=id=>{
+  const skill=gameTerms.skills?.[String(id)];
+  return skill?.id===id&&skill.classes?.[priestClass]===1&&
+   (skill.reqs||[]).every(req=>(priestCaps[req.branch]||0)>=req.amount);
+ };
+  const selectedPriestIds=new Set([
+  ...(Array.isArray(buffs.remakedSkillIds)?buffs.remakedSkillIds:[]),
+  ...(buffs.priestGratia?[320007001]:[]),
+  ...(buffs.priestLapisMedio?[320008001]:[]),
+  ...(buffs.priestEncouragement?[320012001]:[])
+ ]);
+ const priestRequired=branch=>{
+  let minimum=0;
+  for(const id of selectedPriestIds){
+   if(!priestCanLearn(id))continue;
+   for(const req of gameTerms.skills?.[String(id)]?.reqs||[])
+    if(req.branch===branch)minimum=Math.max(minimum,req.amount);
+  }
+  return minimum;
+ };
  const priestFields=make('div',{class:'stage-priest-fields'});
- for(const [key,ru,en] of [
-  ['priestSpi','СД жреца','Priest SPR'],
-  ['priestBlessing','Благословение','Blessing mastery'],
-  ['priestHymn','Песнопения','Hymn mastery'],
-  ['priestBenevolence','Исцеление','Healing mastery'],
-  ['priestExorcism','Экзорцизм','Exorcism mastery']
+ for(const [key,ru,en,branch] of [
+  ['priestSpi','СД жреца','Priest SPR',null],
+  ['priestBlessing','Благословение','Blessing mastery','blessing'],
+  ['priestHymn','Песнопения','Hymn mastery','hymn']
  ]){
+  // A learnability threshold (e.g. Exorcism 26) is checked by OS class
+  // caps automatically; it does not enter the aura magnitude formula.
+  const min=branch?priestRequired(branch):0;
+  const max=branch?Number(priestCaps[branch]||0):500;
   const label=make('label',{class:'stage-book-field'},[
    make('span',{text:english?en:ru})]);
-  const input=make('input',{type:'number',min:0,max:500,step:1,
-   value:String(buffs[key]||0),'data-book-setting':key,
-   'aria-label':english?en:ru,
-   disabled:buffs.priestEnabled!==true,
+  const input=make('input',{type:'number',min,max,step:1,
+   value:String(Math.max(Math.min(min,max),Math.min(Number(buffs[key])||0,max))),
+   'data-book-setting':key,'aria-label':english?en:ru,
+   disabled:buffs.priestEnabled!==true||max<min,
    onchange:event=>onBuff(key,event.target.value)});
   label.append(input);priestFields.append(label);
  }
@@ -949,7 +974,7 @@ function buffsPage(body,options){
     (english?'Defense +':'Защита +'))+amount
   ):null;
   toggle(priest,english?officialEnglish:officialName,key,false,
-   buffs.priestEnabled===true&&Number(buffs.priestBlessing)>=required,
+   buffs.priestEnabled===true&&priestCanLearn(id),
    {id,name:officialName,nameEn:officialEnglish,
     icon:skillIconForId(id),desc:row?.description,
     descEn:gameTerms.englishSkills?.[String(id)]?.d||row?.description,
@@ -977,12 +1002,12 @@ function buffsPage(body,options){
     'Evasion −50%; provides protection against critical hits.'],
   320002001:['Скорость восстановления ОМ союзников +90 инд.',
     'Allies’ MP recovery speed +90 idx.'],
-  320006001:['Ускоряет применение умений. В данных навыка указано значение 50; точное итоговое время не подтверждено.',
-    'Speeds up skill casting. The skill data contains a value of 50; the final cast time has not been verified.'],
+  320006001:['Время применения умений — 50% от обычного (вдвое быстрее).',
+    'Skill cast time is 50% of normal (twice as fast).'],
   330005001:['+5 ОМ каждые 2 секунды при применении.',
     '+5 MP every 2 seconds when applied.'],
-  340003001:['Защищает союзников от небольших попаданий. Сила защиты зависит от жреца.',
-    'Negates small incoming hits to allies; potency depends on the priest.'],
+  340003001:['Защищает союзника от слабых попаданий. Сила зависит от СД и Песнопения союзного Клирика.',
+    'Protects an ally from small hits. Potency scales with allied Cleric SPR and Hymn.'],
   320003001:['Уменьшает получаемый группой урон. Сила зависит от Благословения жреца.',
     'Reduces damage taken by the party, scaling with priest Blessing.'],
   330051001:['Добавляет святую ауру оружию союзника. Сила зависит от СД жреца.',
@@ -1020,9 +1045,11 @@ function buffsPage(body,options){
    return english?'Only a matching class, weapon and source model can provide a value.':
     'Для расчёта нужны подходящие класс, оружие и данные навыка.';
   }
-  if(id===320006001&&!inspirationKnown)return english?
-   'Exact casting time is not known yet.':
-   'Точное время применения пока неизвестно.';
+  if(id===320006001)return inspirationKnown?
+   (english?'Cast time: ':'Время применения: ')+inspiration.castTimePercent+
+    (english?'% of normal (twice as fast)':'% обычного (вдвое быстрее)'):
+   (english?'Casting-speed value is unavailable in the current game data.':
+    'Нет подтверждённого значения ускорения в текущих игровых данных.');
   if(id===330005001&&!naturalKnown)return english?
    'Exact MP recovery is not known yet.':
    'Точное восстановление ОМ пока неизвестно.';
@@ -1050,18 +1077,11 @@ function buffsPage(body,options){
   // Blessing- and Hymn-dependent spells are received from another priest.
   // A fixed party effect without caster-attribute scaling remains with allies.
   const externalPriestSkill=[320003001,320011001,330051001,
-   340001001,340003001,340004001].includes(row.id);
+   340001001,340004001].includes(row.id);
   const target=externalPriestSkill?priest:row.scope==='party'?party:skills;
   const description=english?gameTerms.englishSkills?.[String(row.id)]?.d:row.description;
   const priestReady=!externalPriestSkill||(
-   buffs.priestEnabled===true&&
-   (row.id!==320003001||Number(buffs.priestBlessing)>=26)&&
-   (row.id!==330051001||Number(buffs.priestExorcism)>=26)&&
-   (row.id!==340001001||Number(buffs.priestHymn)>=8)&&
-   (row.id!==340003001||(Number(buffs.priestHymn)>=30&&
-    Number(buffs.priestBenevolence)>=61))&&
-   (row.id!==340004001||(Number(buffs.priestHymn)>=30&&
-    Number(buffs.priestBlessing)>=71)));
+   buffs.priestEnabled===true&&priestCanLearn(row.id));
   toggle(target,english?row.nameEn:row.name,'legacySkill:'+row.id,false,
    row.available&&priestReady,{
     name:row.name,
@@ -1087,7 +1107,13 @@ function buffsPage(body,options){
        row.id===340004001?priestValues.sage:
        row.id===320003001?priestValues.groupBarrier:
        row.id===330051001?priestValues.holyWeapon:
-       row.id===340003001?priestValues.peaceful:null;
+       row.id===340003001?
+        (selectedPriestIds.has(340003001)?root.PandoraOSCalculator
+         ?.alliedPeaceSongPreview?.({
+          spi:Number(buffs.allyPeaceSpi??134),
+          hymn:Number(buffs.allyPeaceHymn??30),
+          skills:gameTerms.skills,classes:gameTerms.classes
+         })?.value:null):null;
       if(Number.isFinite(value)){
        if(row.id===340001001)return (english?'Accuracy +':'Точность +')+value+
         (english?' · Evasion +':' · Уклонение +')+value;
@@ -1112,8 +1138,8 @@ function buffsPage(body,options){
         'Порог защищённого удара: ')+value;
       }
       if(row.id===340003001)return english?
-       'Protection threshold depends on priest SPR and Hymn.':
-       'Порог защиты зависит от СД и Песнопения жреца.';
+       'Select this allied buff to calculate protection with Cleric SPR and Hymn.':
+       'Выберите усиление: сила защиты рассчитывается по СД и Песнопениям союзного Клирика.';
       if(row.id===320011001&&Number.isFinite(priestValues.enchantAuraRate)&&
        Number.isFinite(priestValues.enchantAuraFlat)){
        // The Holy total is already shown under Bless Weapon, never duplicate it.
@@ -1128,6 +1154,32 @@ function buffsPage(body,options){
        'Зависит от СД и Благословения жреца.';
       return basic;
      })()});
+  if(row.id===340003001&&selectedPriestIds.has(340003001)){
+   const caster=make('div',{class:'stage-priest-fields stage-ally-peace-fields'});
+   const maxHymn=Number(gameTerms.classes?.CLERIC?.branchCaps?.hymn||0);
+   const details=gameTerms.skills?.['340003001'];
+   const requirements=Array.isArray(details?.reqs)?details.reqs:[];
+   const minHymn=requirements.find(x=>x.branch==='hymn')?.amount??30;
+   const minHealing=requirements.find(x=>x.branch==='benevolence')?.amount??61;
+   caster.append(make('small',{class:'stage-attribute-note stage-ally-peace-note',
+    text:(english?'Ally: Cleric · Healing ':'Союзник: Клирик · Исцеление ')+
+     minHealing+(english?' required (automatic)':' необходимо (учитывается автоматически)')}));
+   for(const [key,ru,en,min,max,defaultValue] of [
+    ['allyPeaceSpi','СД союзника','Ally SPR',0,500,134],
+    ['allyPeaceHymn','Песнопения союзника','Ally Hymn',minHymn,maxHymn,30]
+   ]){
+    const label=make('label',{class:'stage-book-field'},[
+     make('span',{text:english?en:ru})]);
+    const amount=Number(buffs[key]??defaultValue);
+    label.append(make('input',{type:'number',min,max,step:1,
+     value:String(Math.max(min,Math.min(Number.isFinite(amount)?amount:defaultValue,max))),
+     'aria-label':english?en:ru,'data-book-setting':key,
+     disabled:max<min,
+     onchange:event=>onBuff(key,event.target.value)}));
+    caster.append(label);
+   }
+   party.append(caster);
+  }
  }
  // A sibling of Ally Buffs using the exact same section and toggle
  // components; no nested accordion or separate resistance-only style.

@@ -42,11 +42,11 @@ test('Book lists all supported ally numeric summaries and distinct priest stat b
  assert.match(book,/ИНТ \+/);
  assert.match(book,/320002001:restKnown/);
  assert.match(book,/const inspirationKnown=/);
- assert.match(book,/skillType==='ALLY'/);
- assert.match(book,/osVector\(320006001,'EP_CANCEL_IDENTITY',\[0,0,0,0\]\)/);
- assert.match(book,/osVector\(320006001,'EP_SKILL_DELAY_FIN',\[0,0,0,50\]\)/);
+ assert.match(book,/alliedInspirationPreview\?\.\(/);
+ assert.match(engine,/skill\.skillType!=='ALLY'/);
+ assert.match(engine,/exact\('EP_SKILL_DELAY_FIN',\[0,0,0,50\]\)/);
  assert.match(book,/const naturalKnown=osVector\(330005001,'EP_HEAL_MANA_REGENERATOR'/);
- assert.match(book,/Ускоряет применение умений\. В данных навыка указано значение 50/);
+ assert.match(book,/Время применения умений — 50% от обычного/);
  assert.match(book,/\+5 ОМ каждые 2 секунды/);
  assert.match(book,/Атака усиливается в зависимости от мастерства/);
  assert.doesNotMatch(book,/базовый коэффициент \+40%/);

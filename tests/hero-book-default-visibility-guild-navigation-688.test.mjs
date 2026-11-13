@@ -24,7 +24,7 @@ test('priest strength lives under each supported skill, never in a second grid',
  assert.match(buffs,/summary:row\.counted/);
  assert.match(buffs,/priestValues\.holyWeapon/);
  assert.match(buffs,/priestValues\?\.\[benefit\]/);
- assert.match(buffs,/priestValues\.peaceful/);
+ assert.match(buffs,/alliedPeaceSongPreview\?\.\(/);
  assert.doesNotMatch(buffs,/class:'stage-legacy-buff-previews'/);
  assert.doesNotMatch(buffs,/stage-legacy-buff-grid/);
  assert.match(css,/\.stage-combat-buff-copy>small/);

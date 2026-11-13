@@ -44,10 +44,10 @@ test('changed source vector, disabled allied caster and unmet caster mastery fai
  assert.equal(hero([340004001],{...priest,blessing:70}).combat.priestSong.sageCooldownDelta,0);
 });
 
-test('Book keeps recipient-side allied buffs, five caster inputs and no duplicate Holy aura total',()=>{
+test('Book keeps allied buffs, three priest potency inputs and one Holy aura total',()=>{
  const book=read('pandora-studio-hero-book.js'),app=read('pandora-studio-app.js');
  for(const literal of ['Усиления от союзников','Усиления жреца','combatWarCry',
-  'combatWindAssist','combatWindBlessing','priestBenevolence','priestExorcism',
+  'combatWindAssist','combatWindBlessing','priestBlessing','priestHymn',
   'sageCooldownDelta'])assert.ok(book.includes(literal),literal);
  assert.match(app,/supportSkillAvailability\(/);
  const start=book.indexOf('if(row.id===320011001&&Number.isFinite(');

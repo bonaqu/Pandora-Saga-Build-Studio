@@ -8,18 +8,24 @@ const browser=read('tests/browser-smoke.mjs');
 const app=read('pandora-studio-app.js');
 const host={};Function('window',read('pandora-os-character-calculator.js'))(host);
 const C=host.PandoraOSCalculator,skills=JSON.parse(read('data/os/skills.json'));
-test('priest skill rows reuse all five shared caster profile fields',()=>{
+test('priest potency inputs remain three shared fields; gates are automatic',()=>{
  const fields=book.slice(book.indexOf('const priestFields=make('),book.indexOf('priest.append(priestFields);'));
- for(const key of ['priestSpi','priestBlessing','priestHymn','priestBenevolence','priestExorcism'])
+ for(const key of ['priestSpi','priestBlessing','priestHymn'])
   assert.ok(fields.includes("['"+key+"'"),key);
+ for(const key of ['priestBenevolence','priestExorcism'])
+  assert.ok(!fields.includes("['"+key+"'"),key);
  assert.doesNotMatch(book,/casterStatKeys|casterStatKey|stage-ally-skill-row/);
  assert.doesNotMatch(css,/stage-ally-caster-field|stage-ally-skill-row/);
  assert.match(browser,/stage-priest-fields input/);
 });
 test('old priest mastery persists for gates and never counts as a selected buff',()=>{
  for(const key of ['priestBenevolence','priestExorcism'])assert.ok(app.includes(key));
- assert.match(book,/row\.id!==330051001\|\|Number\(buffs\.priestExorcism\)>=26/);
- assert.match(book,/Number\(buffs\.priestBenevolence\)>=61/);
+ assert.match(book,/priestCanLearn\(row\.id\)/);
+ assert.match(book,/priestRequired\(branch\)/);
+ assert.match(book,/340003001/);
+ assert.match(book,/allyPeaceHymn/);
+ assert.match(book,/const priestClass='ENCHANTER'/);
+ assert.match(book,/330051001/);
  assert.match(book,/if\(\['priestSpi','priestBlessing','priestHymn','priestBenevolence','priestExorcism','priestEnabled'/);
 });
 test('changing the shared input still changes all dependent skill magnitudes by floored OS coefficients',()=>{

@@ -3066,6 +3066,26 @@ function guildPassiveAtLevel(level=0){
  return Object.freeze({level,guildHp:hp,guildMp:hp,guildLifeRecovery:regen,
   guildManaRecovery:regen,physicalReduction:reduction,magicReduction:reduction,experience:exp});
 }
+// Canonical current OS target effect: EP_SKILL_DELAY_FIN 50 gives the
+// acknowledged 100% -> 50% skill-use/casting-time model. The exact 50
+// is game data, not an unknown generic coefficient. Check BOTH effects
+// and all FV1/FV2 values; do not fabricate unrelated spell durations.
+function alliedInspirationPreview({skillCatalog=null}={}){
+ const skill=skillCatalog?.['320006001'];
+ const exact=(ep,values)=>{
+  const f=skill?.funcs?.filter(f=>f.ep===ep&&f.dir==='TARGET')||[];
+  return f.length===1&&Array.isArray(f[0].fv1)&&f[0].fv1.length===4&&
+   f[0].fv1.every((n,i)=>n===values[i])&&
+   Array.isArray(f[0].fv2)&&f[0].fv2.length===4&&
+   f[0].fv2.every(n=>n===0);
+ };
+ if(skill?.id!==320006001||skill.skillType!=='ALLY'||
+  skill.funcs?.length!==2||
+  !exact('EP_CANCEL_IDENTITY',[0,0,0,0])||
+  !exact('EP_SKILL_DELAY_FIN',[0,0,0,50]))return null;
+ return {id:320006001,castTimePercent:50,castTimeReductionPercent:50,
+  speedMultiplier:2,sourceConfirmed:true};
+}
 // Preserved Remaked Legacy Calc('Velox'...'ToxicAura') branch previews.
 // These are read-only magnitudes: never apply to combat stats merely because
 // the hero's level/mastery is high. The corresponding spell must be selected
@@ -3132,6 +3152,29 @@ function priestCastPreviews({spi,blessing,hymn,exorcism=26,skills=null}={}){
    result.sageCooldownDelta=-(5+Math.floor(spi*28/100)+Math.floor(hymn*17/100));
  }
  return result;
+}
+// An independent CLERIC ally may give Peace Song to any recipient,
+// irrespective of the current hero's class or the chosen ENCHANTER priest.
+// Healing 61 is a fixed acquisition gate; it does not amplify the spell.
+// Only SPR and Hymn enter the preserved current-OS coefficient formula.
+function alliedPeaceSongPreview({spi,hymn,skills=null,classes=null}={}){
+ const song=skills?.['340003001'],cleric=classes?.CLERIC;
+ if(song?.id!==340003001||song.classes?.CLERIC!==1||
+  JSON.stringify(song.reqs)!==JSON.stringify([
+   {branch:'benevolence',amount:61},{branch:'hymn',amount:30}])||
+  !Number.isSafeInteger(cleric?.branchCaps?.benevolence)||
+  cleric.branchCaps.benevolence<61||
+  !Number.isSafeInteger(cleric?.branchCaps?.hymn)||
+  cleric.branchCaps.hymn<30||
+  !Number.isSafeInteger(spi)||spi<0||spi>500||
+  !Number.isSafeInteger(hymn)||hymn<30||hymn>cleric.branchCaps.hymn)
+  return null;
+ const value=priestCastPreviews({spi,blessing:0,hymn,exorcism:26,skills}).peaceful;
+ return Number.isSafeInteger(value)?{
+  id:340003001,value,spi,hymn,minimumHymn:30,
+  maximumHymn:cleric.branchCaps.hymn,requiredHealing:61,
+  casterClass:'CLERIC',model:'current OS + Remaked floor'
+ }:null;
 }
 function legacyBuffPreview({spi,blessing=0,hymn=0,alchemy=0}={}){
  if(![spi,blessing,hymn,alchemy].every(n=>Number.isInteger(n)&&n>=0))return null;
@@ -3419,7 +3462,28 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  // External priest stats can come from an older or corrupted local build.
  // Only valid nonnegative integers may supply combat buffs.
  const priestValid=priestActive&&[priest.spi,priest.blessing,priest.hymn]
-  .every(n=>Number.isSafeInteger(n)&&n>=0&&n<=500);
+  .every(n=>Number.isSafeInteger(n)&&n>=0&&n<=500)&&
+  (!priest.classCaps||(['blessing','hymn'].every((branch,i)=>
+   Number.isSafeInteger(priest.classCaps[branch])&&
+   [priest.blessing,priest.hymn][i]<=priest.classCaps[branch])));
+ // Validate the source caster's profession and each skill's prerequisite.
+ // Missing classCaps keeps legacy direct calculator API behavior for older
+ // integrations; live Build Studio always supplies actual OS class caps.
+ const priestCanCast=id=>{
+  if(!priestValid)return false;
+  const skill=combatContext.skillCatalog?.[String(id)];
+  if(skill?.id!==id||(priest.classCaps&&
+   skill.classes?.[priest.jobKey]!==1))return false;
+  const branchValues={blessing:priest.blessing,hymn:priest.hymn,
+   benevolence:priest.benevolence,exorcism:priest.exorcism??26};
+  return (skill.reqs||[]).every(req=>
+   Number.isSafeInteger(branchValues[req.branch])&&
+   branchValues[req.branch]>=req.amount&&
+   (!priest.classCaps||
+    (Number.isSafeInteger(priest.classCaps[req.branch])&&
+     priest.classCaps[req.branch]>=req.amount&&
+     branchValues[req.branch]<=priest.classCaps[req.branch])));
+ };
  const priestCast=priestCastPreviews({
   spi:priest?.spi,blessing:priest?.blessing,hymn:priest?.hymn,
   exorcism:priest?.exorcism??26,skills:combatContext.skillCatalog
@@ -3487,18 +3551,18 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  // Remaked SkillView uses floor steps from caster stats/mastery. Modern OS
  // changes Gratia to [10,0,5,5]; the historical nested 6%*1.9 shortcut
  // must not be used for an active buff with the new OS coefficients.
- const gratiaPreview=priestValid&&priest.blessing>=8&&
+ const gratiaPreview=priestCanCast(320007001)&&
   priestSourceMatches(320007001,'EP_ATTACKINTERVAL_SCALE',[10,0,5,5])?
   5+Math.floor(priest.spi*10/100)+Math.floor(priest.blessing*5/100):null;
- const groupBarrier=priestValid&&priest.blessing>=26&&
+ const groupBarrier=priestCanCast(320003001)&&
   chosenPriestSong.has(320003001)&&
   priestSourceMatches(320003001,'EP_ONDAMAGE_FIN_DAMAGE_SCALE',[0,0,-20,-10])?
   -10-Math.floor(priest.blessing/5):0;
- const holyWeapon=priestValid&&combatContext.weapon&&
+ const holyWeapon=priestCanCast(330051001)&&combatContext.weapon&&
   chosenPriestSong.has(330051001)&&
   Number.isSafeInteger(priestCast.holyWeapon)?
   priestCast.holyWeapon:0;
- const priestEnchantment=priestValid&&
+ const priestEnchantment=priestCanCast(320011001)&&
   chosenPriestSong.has(320011001)&&
   Number.isFinite(priestCast.enchantAuraRate)&&
   Number.isFinite(priestCast.enchantAuraFlat)&&
@@ -3541,17 +3605,17 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  const priestEffects=priestActive?{
   gratia:attributeBuffs?.priestGratia===true&&Number.isFinite(gratiaPreview)?
    gratiaPreview:0,
-  lapisMedio:priestValid&&priest.blessing>=12&&
+  lapisMedio:priestCanCast(320008001)&&
    attributeBuffs?.priestLapisMedio===true&&
    Number.isFinite(priestCast.lapisMedio)?
    priestCast.lapisMedio:0,
-  minstrel:priestValid&&priest.hymn>=8&&
+  minstrel:priestCanCast(340001001)&&
    chosenPriestSong.has(340001001)&&
    Number.isFinite(priestCast.minstrel)?priestCast.minstrel:0,
-  sageElementDamage:priestValid&&priest.hymn>=30&&priest.blessing>=71&&
+  sageElementDamage:priestCanCast(340004001)&&
    chosenPriestSong.has(340004001)&&
    Number.isFinite(priestCast.sage)?priestCast.sage:0,
-  sageCooldownDelta:priestValid&&priest.hymn>=30&&priest.blessing>=71&&
+  sageCooldownDelta:priestCanCast(340004001)&&
    chosenPriestSong.has(340004001)&&
    Number.isFinite(priestCast.sageCooldownDelta)?priestCast.sageCooldownDelta:0
  }:{};
@@ -4661,7 +4725,7 @@ function supportEffectPreview({skillCatalog=null,jobKey=null,level=1,
   }
   return out;
  }
-root.PandoraOSCalculator=Object.freeze({skillExecutionChains,craftingSkillPreview,trapSkillCostPreview,tacticalSkillPreview,rangedAmmoPreview,combatTechniquePreview,specializedSkillPreview,supportEffectPreview,situationalSkillPreview,statusApplicationPreview,enemyDebuffPreview,complexSkillSourcePreview,priestCastPreviews,movementSkillSourcePreview,utilitySkillSourcePreview,scalingSkillPreview,directStrikeCoefficientPreview,elementalSpellCoefficientPreview,defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
+root.PandoraOSCalculator=Object.freeze({alliedInspirationPreview,alliedPeaceSongPreview,skillExecutionChains,craftingSkillPreview,trapSkillCostPreview,tacticalSkillPreview,rangedAmmoPreview,combatTechniquePreview,specializedSkillPreview,supportEffectPreview,situationalSkillPreview,statusApplicationPreview,enemyDebuffPreview,complexSkillSourcePreview,priestCastPreviews,movementSkillSourcePreview,utilitySkillSourcePreview,scalingSkillPreview,directStrikeCoefficientPreview,elementalSpellCoefficientPreview,defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
  base,characterSheetPhysicalAttackRange,classBase,classBaseComponents,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,racialWeaponPreview,incredibleStrengthPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
  recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,consumableSkillPreview,statusCurePreview,harmfulConsumablePreview,gemstonePreview,legacyBuffPreview,songSkillPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,skillAttackRangePreview,racialUtilityPreview,elementalMagicPreview,elementalRefinementPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive
 });

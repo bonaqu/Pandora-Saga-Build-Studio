@@ -451,3 +451,11 @@
 #stageAttributes .stage-skill-party-effects .stage-skill-party-row{
  grid-template-columns:minmax(0,1fr) auto
 }
+
+
+/* Reuse priest input geometry for the selected ally's Peace Song,
+   without introducing a separate accordion or permanent input panel. */
+.stage-ally-peace-fields{margin:0 0 6px 20px;align-items:end}
+.stage-ally-peace-fields .stage-ally-peace-note{
+ grid-column:1/-1;margin:0;font-size:11px;line-height:1.45;opacity:.85
+}
