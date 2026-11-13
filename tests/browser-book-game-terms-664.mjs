@@ -149,7 +149,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
    ['Массовая сосредоточенность','+35'],['Помощь ветра','+34']])
    assert.ok(partyText.includes(name)&&partyText.includes(amount),
     'Computed beneficiary bonus missing: '+name);
-  assert.match(partyText,/не включаются в билд автоматически/);
+  assert.doesNotMatch(partyText,/не включаются в билд автоматически/);
   const how=party.locator('.stage-skill-party-row .stage-skill-gate-help').first();
   await how.locator('summary').click();
   assert.match(await how.innerText(),/Следующая \+1 при значении/);
@@ -304,18 +304,25 @@ export async function runHeroBookGameNames664Smoke(browser,base){
      main:row.querySelector('strong')?.textContent,
      models:Array.from(row.querySelectorAll('.stage-skill-os-coefficient-model'))
       .map(node=>node.textContent),
+     next:Array.from(row.querySelectorAll('.stage-skill-coefficient-next'))
+      .map(node=>node.textContent),
      actions:row.querySelectorAll('[data-skill-action-id="142002001"]').length
     }:null;
    };
    return {ru:render('ru'),en:render('en')};
   });
-  assert.equal(strikeSummary.ru?.main,'—',
-   'Final target damage must remain unknown');
-  assert.match(strikeSummary.ru.models.join(' '),/Сила удара \+20%/);
+  assert.equal(strikeSummary.ru?.main,'Сила удара +20%',
+   'Show the hero’s calculated coefficient instead of a large empty dash');
+  assert.equal(strikeSummary.ru.models.length,0,
+   'Do not repeat the same coefficient in a second visual row');
+  assert.match(strikeSummary.ru.next.join(' '),
+   /Следующий прирост силы удара: \+1%.*42 \(ещё 2\)/);
   assert.equal(strikeSummary.ru.actions,1,
    'Available mastery-derived strike retains its OS base-cost disclosure');
-  assert.equal(strikeSummary.en?.main,'—');
-  assert.match(strikeSummary.en.models.join(' '),/Strike strength \+20%/);
+  assert.equal(strikeSummary.en?.main,'Strike strength +20%');
+  assert.equal(strikeSummary.en.models.length,0);
+  assert.match(strikeSummary.en.next.join(' '),
+   /Next strike strength \+1%.*42 \(\+2\)/);
   assert.deepEqual(errors,[]);
   console.log('Chromium Book 664: OS/Remaked RU+EN skills, Hymn/Песнопения, Адепт, buffs and defense');
  }finally{await context.close()}

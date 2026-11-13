@@ -86,5 +86,5 @@ test('models reuse Hero Book skill effects UI without changing stored character'
  assert.match(engine,/elementalSpellCoefficientPreview\(\{/);
  assert.match(engine,/result\.offense\.push\(spell\)/);
  assert.match(book,/skill\.coefficientModels/);
- assert.match(book,/Эффект:/);
+ assert.match(book,/stage-skill-primary-coefficient/);
 });

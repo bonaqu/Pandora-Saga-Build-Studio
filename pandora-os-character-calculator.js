@@ -1006,11 +1006,22 @@ function elementalSpellCoefficientPreview({skillCatalog,jobKey,level,
    reasons.push('Требуется мастерство «'+(branchLabels[branch]||branch)+'»: '+req.amount);
    reasonsEn.push('Requires '+(englishBranches[branch]||branch)+' mastery: '+req.amount);
   }
-  const secondary=skill.funcs.some(effect=>effect.ep!=='EP_ELEMENT_DAMAGE');
+  // Project the next INTEGER step from this exact OS coefficient vector.
+  // These are coefficient steps, not the final damage to a particular target.
+  const intNext=fv1[0]>0?Math.ceil((fromInt+1)*100/fv1[0]):null;
+  const masteryNext=fv1[2]>0?Math.ceil((fromMastery+1)*100/fv1[2]):null;
+  const hasRequirements=reasons.length===0;
+  const nextStat=hasRequirements&&Number.isSafeInteger(intNext)&&
+   intNext>intelligence&&intNext<=1000?
+   {stat:'int',value:intNext,remaining:intNext-intelligence,gain:1}:null;
+  const nextMastery=hasRequirements&&Number.isSafeInteger(masteryNext)&&
+   masteryNext>rank&&masteryNext<=cap?
+   {branch,value:masteryNext,remaining:masteryNext-rank,
+    gain:1,effect:'spell'}:null;
   out.push({id,name:skill.name,description:skill.desc||'',
    amount:null,unit:'',available:reasons.length===0,
    reason:reasons.join(' · '),reasonEn:reasonsEn.join(' · '),
-   uncertain:true,recipient:false,
+   uncertain:true,recipient:false,nextStat,nextMastery,
    detailRu:'Зависит от ИНТ и освоенного мастерства',
    detailEn:'Scales with INT and trained mastery',
    coefficientModels:[{ep:'EP_ELEMENT_DAMAGE',
@@ -1100,10 +1111,24 @@ function directStrikeCoefficientPreview({skillCatalog,jobKey,level,
    reasons.push('Не подходит экипированное оружие');
    reasonsEn.push('Incompatible equipped weapon');
   }
+  // Do not promise a rank milestone past the point where a learned
+  // successor REPLACES this skill (e.g. Double Slash -> Cut at 71).
+  const step=masteryPart>0?
+   Math.ceil((Math.floor(rank*masteryPart/100)+1)*100/masteryPart):null;
+  const replacedAtStep=Number.isSafeInteger(step)&&entries.some(next=>
+   next?.prereq===s.id&&validRecord(next)&&strikeVector(next)&&
+   next.branch===s.branch&&level>=Number(next.charLevel||0)&&
+   next.reqs.every(req=>
+    (req.branch===s.branch?step:branchRank(req.branch))>=req.amount));
+  const nextMastery=reasons.length===0&&Number.isSafeInteger(step)&&
+   step>rank&&step<=cap(s.branch)&&
+   constant+Math.floor(step*masteryPart/100)>coefficient&&!replacedAtStep?
+   {branch:s.branch,value:step,remaining:step-rank,
+    gain:1,effect:'strike'}:null;
   output.push({id:s.id,name:s.name,description:s.desc||'',
    amount:null,unit:'',available:reasons.length===0,
    reason:reasons.join(' · '),reasonEn:reasonsEn.join(' · '),
-   uncertain:true,recipient:false,
+   uncertain:true,recipient:false,nextMastery,
    detailRu:'Зависит от освоенного мастерства и оружия',
    detailEn:'Scales with trained mastery and equipped weapon',
    coefficientModels:[{
