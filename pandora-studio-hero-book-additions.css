@@ -400,23 +400,23 @@
 
 /* Uniform compact disclosure headers for verified, source-only skill sections. */
 #stageAttributes :is(.stage-skill-chain-effects,.stage-skill-onhit-effects,
- .stage-skill-crafting-effects,.stage-skill-trap-costs)>summary{
+ .stage-skill-crafting-effects,.stage-skill-trap-costs,.stage-skill-complex-effects)>summary{
  display:flex;align-items:center;gap:8px;list-style:none;cursor:pointer;
  font:650 12px/1.35 Manrope,Arial,sans-serif;color:#f3d29b;padding:5px 2px
 }
 #stageAttributes :is(.stage-skill-chain-effects,.stage-skill-onhit-effects,
- .stage-skill-crafting-effects,.stage-skill-trap-costs)>summary::-webkit-details-marker{
+ .stage-skill-crafting-effects,.stage-skill-trap-costs,.stage-skill-complex-effects)>summary::-webkit-details-marker{
  display:none
 }
 #stageAttributes :is(.stage-skill-chain-effects,.stage-skill-onhit-effects,
- .stage-skill-crafting-effects,.stage-skill-trap-costs)>summary:after{
+ .stage-skill-crafting-effects,.stage-skill-trap-costs,.stage-skill-complex-effects)>summary:after{
  content:'⌄';margin-left:auto;font-size:14px;line-height:1
 }
 #stageAttributes :is(.stage-skill-chain-effects,.stage-skill-onhit-effects,
- .stage-skill-crafting-effects,.stage-skill-trap-costs)[open]>summary:after{
+ .stage-skill-crafting-effects,.stage-skill-trap-costs,.stage-skill-complex-effects)[open]>summary:after{
  transform:rotate(180deg)
 }
 #stageAttributes :is(.stage-skill-chain-effects,.stage-skill-onhit-effects,
- .stage-skill-crafting-effects,.stage-skill-trap-costs)>summary:focus-visible{
+ .stage-skill-crafting-effects,.stage-skill-trap-costs,.stage-skill-complex-effects)>summary:focus-visible{
  outline:2px solid #e2b778;outline-offset:2px
 }

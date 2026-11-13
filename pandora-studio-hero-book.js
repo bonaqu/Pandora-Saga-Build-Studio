@@ -1458,7 +1458,44 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   }
   body.append(section);
  }
-if(!spells.length&&!periodic.length&&!rows.offense?.length&&!rows.defense?.length&&!rows.movement?.length&&!rows.utility?.length&&!chains?.rows?.length&&!conditional?.rows?.length&&!recipes?.length&&!trapCost?.rows?.length)
+ // Exact source descriptions for spells with unsupported damage kernels
+ // and cures. Never turn FV1 coefficients into unverified final numbers.
+ const sourceMechanics=root.PandoraOSCalculator?.complexSkillSourcePreview?.({
+  skillCatalog:gameTerms.skills,jobKey:heroJobKey,level:heroLevel,
+  branchCaps:heroBranchCaps,branchMasteries:heroMasteries,
+  branchLabels:gameTerms.branchLabels,englishBranches:gameTerms.englishBranches
+ });
+ if(sourceMechanics?.rows?.length){
+  const group=make('details',{class:'stage-attribute-row stage-skill-complex-effects'});
+  group.append(make('summary',{text:en?'More skill effects':'Другие эффекты умений'}));
+  group.append(make('p',{class:'stage-periodic-hint',text:en?
+   'Official game descriptions, not unverified final damage calculations.':
+   'Описания взяты из игровых данных. Неподтверждённые значения урона здесь не выдумываются.'}));
+  for(const entry of sourceMechanics.rows){
+   const official=gameTerms.englishSkills?.[String(entry.id)];
+   const description=(en?official?.d:null)||entry.description||'';
+   const caution=entry.kind==='elemental'?
+    (entry.hasSecondaryEffect?
+     (en?'Final damage and secondary status behaviour are not yet confirmed.':
+      'Точный урон и действие дополнительного состояния пока не подтверждены.'):
+     (en?'Final damage against a target is not yet confirmed.':
+      'Точный урон по цели пока не подтверждён.')):
+    (en?'Only the game description is confirmed; the result depends on the target’s conditions.':
+     'Подтверждено описание навыка. Результат зависит от состояний цели.');
+   const availability=entry.requirementsMet?
+    (en?'Level and mastery requirements met':'Требования уровня и мастерства выполнены'):
+    (en?entry.reasonEn:entry.reasonRu);
+   group.append(make('div',{class:'stage-heal-row stage-skill-complex-row'+
+    (entry.requirementsMet?'':' stage-book-unavailable')},[
+    gameSkillBadge(entry.id,entry.name,official?.n||entry.name,gameTerms,en,skillIconForId),
+    make('small',{text:description}),
+    make('small',{text:caution}),
+    make('small',{text:availability})
+   ]));
+  }
+  body.append(group);
+ }
+if(!spells.length&&!periodic.length&&!rows.offense?.length&&!rows.defense?.length&&!rows.movement?.length&&!rows.utility?.length&&!chains?.rows?.length&&!conditional?.rows?.length&&!recipes?.length&&!trapCost?.rows?.length&&!sourceMechanics?.rows?.length)
   body.append(make('p',{class:'stage-attribute-note',text:en?
    'Only skills with build-dependent effect values appear here. Fixed buffs belong in Buffs.':
    'Здесь показаны только умения, сила которых зависит от билда. Постоянные усиления — во вкладке «Усиления».'}));
