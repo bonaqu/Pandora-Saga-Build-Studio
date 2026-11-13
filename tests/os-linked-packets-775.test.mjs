@@ -27,15 +27,15 @@ const specIds=[240002001,410014001,410014003,410022001,420007001,
 test('Nine linked action paths are source-locked, one direct hit per current hero',()=>{
  assert.deepEqual(D.linkedSpells.map(p=>p.id),specIds);
  const targets=[
-  ['DISTURBANCE',{trap:60},240002001,[10,53,79],'physical'],
-  ['WARLOCK',{element:70},410014001,[2,10,16],'cold'],
-  ['WARLOCK',{element:90},410014003,[2,14,21],'cold'],
-  ['WARLOCK',{element:70},410022001,[1,13,26],'lightning'],
-  ['CONJURER',{embody:61},420007001,[4,18,22],'charm'],
-  ['CALAMITY',{darkness:70},430001003,[9,47,68],'dark'],
+  ['DISTURBANCE',{trap:60},240002001,[11,56,84],'physical'],
+  ['WARLOCK',{element:70},410014001,[2,13,20],'cold'],
+  ['WARLOCK',{element:90},410014003,[4,22,32],'cold'],
+  ['WARLOCK',{element:70},410022001,[2,19,37],'lightning'],
+  ['CONJURER',{embody:61},420007001,[5,22,27],'charm'],
+  ['CALAMITY',{darkness:70},430001003,[10,52,75],'dark'],
   ['CALAMITY',{darkness:70},430052002,[1,5,9],'dark'],
-  ['CALAMITY',{darkness:70},430053003,[3,18,29],'dark'],
-  ['CALAMITY',{darkness:70},430056001,[4,18,23],'poison']
+  ['CALAMITY',{darkness:70},430053003,[4,21,32],'dark'],
+  ['CALAMITY',{darkness:70},430056001,[6,27,34],'poison']
  ];
  for(const [job,masteries,id,triplet,element] of targets){
   const hit=get(calc(job,masteries),id);
