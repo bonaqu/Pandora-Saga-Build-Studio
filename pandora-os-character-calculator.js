@@ -1620,7 +1620,7 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
    coefficientModel(213703001,'EP_ATTACKRANGE_CONST',null,'archery',
     'Прибавка дальности (расчёт)','Estimated range bonus'),
    // Paired carry data is validated but not displayed as another bonus.
-  ].
+  ],
   detailRu:'Повторный выстрел из арбалета: сила и дальность от СИЛ и Стрельбы',
   detailEn:'Second crossbow shot: STR and Archery scaling'});
  // The follow-up attack changes with Assassin mastery. Its coefficient is
