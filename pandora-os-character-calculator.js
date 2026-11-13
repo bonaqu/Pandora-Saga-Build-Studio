@@ -708,10 +708,17 @@ function combatSkillSource(skillCatalog,kind){
  if(!skillCatalog)return {effects:combatSkillDefaults[kind],fromCatalog:false};
  const skill=skillCatalog[String(combatSkillIds[kind])];
  if(!skill||!Array.isArray(skill.funcs))return null;
+ // An external War Cry is valid for every recipient job, but every
+ // source action must still match its known target-side formula shape.
+ if(kind==='warCry'&&(skill.id!==combatSkillIds.warCry||
+  skill.skillType!=='PARTY_ALL'||skill.funcs.length!==2))return null;
  const effects={};
  for(const name of combatSkillRequirements[kind]){
   const rows=skill.funcs.filter(x=>x.ep===name&&x.dir==='TARGET');
   if(rows.length!==1||!Array.isArray(rows[0].fv1))return null;
+  if(kind==='warCry'&&(rows[0].fv1.length!==4||
+   !rows[0].fv1.slice(0,3).every(v=>v===0)||
+   JSON.stringify(rows[0].fv2)!=='[0,0,0,0]'))return null;
   const value=rows[0].fv1[3];
   if(!Number.isFinite(value)||Math.abs(value)>100)return null;
   effects[name]=value;
