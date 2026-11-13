@@ -1977,6 +1977,7 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
   racialWeapon,incredibleStrength,
   priestSong:{minstrel:priestMinstrel,
    sageElementDamage:Number(priestEffects?.sageElementDamage)||0,
+   sageCooldownDelta:Number(priestEffects?.sageCooldownDelta)||0,
    verified:false,source:'Remaked SPR/Hymn scaling + current OS skill function'},
   activeSkillValues:activeValues,secondary,supportSkills,supportSkillValues,
   guildArouse,guildAtk,attackSpeed,castingSpeed,castTime,manaCost,
@@ -3074,7 +3075,7 @@ function guildPassiveAtLevel(level=0){
 // current OS data. No selection flag or combat mutation is involved.
 function priestCastPreviews({spi,blessing,hymn,exorcism=26,skills=null}={}){
  const result={gratia:null,lapisMedio:null,encouragement:null,
-  groupBarrier:null,holyWeapon:null,minstrel:null,sage:null,
+  groupBarrier:null,holyWeapon:null,minstrel:null,sage:null,sageCooldownDelta:null,
   peaceful:null,enchantAuraRate:null,enchantAuraFlat:null,
   enchantElementRate:null,holyEnhanced:null,verified:false};
  if(![spi,blessing,hymn,exorcism].every(n=>Number.isSafeInteger(n)&&n>=0&&n<=500)||
@@ -3122,9 +3123,14 @@ function priestCastPreviews({spi,blessing,hymn,exorcism=26,skills=null}={}){
   exact(340001003,'EP_AVOIDANCE_CONST',[13,0,13,4]))
   result.minstrel=4+Math.floor(spi*13/100)+Math.floor(hymn*13/100);
  const sage=songChains.find(x=>x.id===340004001);
- if(songSourceMatches(skills,sage)&&
-  exact(340004003,'EP_ELEMENT_DAMAGE_SCALE',[8,0,8,4]))
-  result.sage=4+Math.floor(spi*8/100)+Math.floor(hymn*8/100);
+ if(songSourceMatches(skills,sage)){
+  if(exact(340004003,'EP_ELEMENT_DAMAGE_SCALE',[8,0,8,4]))
+   result.sage=4+Math.floor(spi*8/100)+Math.floor(hymn*8/100);
+  // Separate recipient-side current OS EP_SKILL_BENCH_FIN index model.
+  // Actual server cooldown seconds and buff stacking order are unverified.
+  if(exact(340004003,'EP_SKILL_BENCH_FIN',[-28,0,-17,-5]))
+   result.sageCooldownDelta=-(5+Math.floor(spi*28/100)+Math.floor(hymn*17/100));
+ }
  return result;
 }
 function legacyBuffPreview({spi,blessing=0,hymn=0,alchemy=0}={}){
@@ -3544,7 +3550,10 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
    Number.isFinite(priestCast.minstrel)?priestCast.minstrel:0,
   sageElementDamage:priestValid&&priest.hymn>=30&&priest.blessing>=71&&
    chosenPriestSong.has(340004001)&&
-   Number.isFinite(priestCast.sage)?priestCast.sage:0
+   Number.isFinite(priestCast.sage)?priestCast.sage:0,
+  sageCooldownDelta:priestValid&&priest.hymn>=30&&priest.blessing>=71&&
+   chosenPriestSong.has(340004001)&&
+   Number.isFinite(priestCast.sageCooldownDelta)?priestCast.sageCooldownDelta:0
  }:{};
  // Gem-type selection determines which weapon enhancement table is active.
  // A saved older build without a chosen gem preserves the legacy physical

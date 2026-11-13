@@ -524,8 +524,8 @@ async function main(){
   .innerText();
  assert.match(await priestSkillLine('priestGratia'),/Attack speed \+22|Скорость атаки \+22/);
  assert.match(await priestSkillLine('priestLapisMedio'),/Defense \+12|Защита \+12/);
- // All priest skill magnitudes share exactly three top-level priest inputs.
- assert.equal(await page.locator('#stageBookPanel .stage-priest-fields input').count(),3);
+ // All priest skill magnitudes share five compact top-level priest inputs.
+ assert.equal(await page.locator('#stageBookPanel .stage-priest-fields input').count(),5);
  assert.equal(await page.locator('#stageBookPanel [data-book-setting^="caster-priest"]').count(),0);
  assert.equal(await page.locator('#stageBookPanel .stage-ally-skill-row').count(),0);
  await page.locator('#stageBookPanel [data-book-setting="priestBlessing"]').fill('100');

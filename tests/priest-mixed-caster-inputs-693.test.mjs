@@ -8,10 +8,10 @@ const browser=read('tests/browser-smoke.mjs');
 const app=read('pandora-studio-app.js');
 const host={};Function('window',read('pandora-os-character-calculator.js'))(host);
 const C=host.PandoraOSCalculator,skills=JSON.parse(read('data/os/skills.json'));
-test('priest skill rows reuse exactly three shared profile fields',()=>{
+test('priest skill rows reuse all five shared caster profile fields',()=>{
  const fields=book.slice(book.indexOf('const priestFields=make('),book.indexOf('priest.append(priestFields);'));
- for(const key of ['priestSpi','priestBlessing','priestHymn'])assert.ok(fields.includes("['"+key+"'"),key);
- for(const key of ['priestBenevolence','priestExorcism'])assert.ok(!fields.includes("['"+key+"'"),key);
+ for(const key of ['priestSpi','priestBlessing','priestHymn','priestBenevolence','priestExorcism'])
+  assert.ok(fields.includes("['"+key+"'"),key);
  assert.doesNotMatch(book,/casterStatKeys|casterStatKey|stage-ally-skill-row/);
  assert.doesNotMatch(css,/stage-ally-caster-field|stage-ally-skill-row/);
  assert.match(browser,/stage-priest-fields input/);
