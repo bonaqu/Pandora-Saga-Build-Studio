@@ -105,9 +105,9 @@ test('Attack chapter exposes skill-specific RU/EN explanations, not a new perman
  assert.match(book,/function appendSkillAttackRange/);
  assert.match(book,/Дальность при использовании умений/);
  assert.match(book,/Range while using skills/);
- assert.match(book,/Расчётная прибавка к дальности/);
+ assert.match(book,/Прибавка к дальности/);
  assert.match(book,/Только при включённом умении/);
  assert.match(book,/Только при применении умения/);
- assert.match(book,/Точная дальность при действии умения пока неизвестна/);
+ assert.match(book,/не меняет постоянную дальность оружия/);
  assert.match(book,/appendSkillAttackRange\(body,calc,english,options\)/);
 });

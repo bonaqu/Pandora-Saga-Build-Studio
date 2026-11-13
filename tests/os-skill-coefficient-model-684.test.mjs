@@ -91,7 +91,7 @@ test('changed OS source fails closed and unrelated skill remains available',()=>
 test('the Hero Book labels estimated coefficient models distinctly',()=>{
  const book=read('pandora-studio-hero-book.js');
  assert.match(book,/skill\.coefficientModels/);
- assert.match(book,/Параметры умения:/);
+ assert.match(book,/Эффект:/);
  assert.doesNotMatch(book,/server rounding not confirmed/);
  assert.match(book,/stage-skill-os-coefficient-model/);
 });

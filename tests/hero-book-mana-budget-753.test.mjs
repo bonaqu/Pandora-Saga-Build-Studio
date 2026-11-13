@@ -33,7 +33,7 @@ test('Hero Book uses current hero max MP only for available source-gated skills'
  assert.match(book,/showBaseManaBudget\(more,action\)/);
  assert.match(book,/stage-skill-more/);
  assert.match(book,/Full запас|Полный запас/);
- assert.match(book,/Без восстановления и скидок на расход/);
+ assert.doesNotMatch(book,/Без восстановления и скидок на расход/);
  assert.match(book,/row\.kind==='mp'&&row\.id===330005001/);
  assert.match(book,/Как рассчитано восстановление ОМ/);
  assert.match(book,/row\.kind==='mp'\?'ОМ':'ОЗ'/);

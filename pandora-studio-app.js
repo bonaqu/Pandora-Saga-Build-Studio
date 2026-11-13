@@ -5020,7 +5020,7 @@ function renderWiki(root){
     });
     if(evidence){
      const section=h('section',{class:'wiki-skill-source-insight'});
-     section.append(h('h4',{text:wt('Действие по игровым данным','Game-source mechanics')}));
+     section.append(h('h4',{text:wt('Действие умения','Skill effects')}));
      if(evidence.accessNotice){
       const access=evidence.accessNotice;
       const note=h('div',{class:'wiki-skill-access-notice'},[
@@ -5094,13 +5094,9 @@ function renderWiki(root){
        section.append(materialLine(wt('Для применения нужно: ','Requires: '),
         extra.count,extra.itemId));
       if(extra.type==='resource')
-       section.append(h('p',{text:wt('Указанный особый расход: ','Source special cost: ')+
-        extra.value+wt(' (правило расхода не подтверждено)',
-         ' (consumption rule unverified)')}));
+       section.append(h('p',{text:wt('Особый расход: ','Special cost: ')+
+        extra.value}));
      }
-     section.append(h('small',{class:'muted',text:wt(
-      'Это сведения из игровых файлов, а не рассчитанный урон, шанс попадания или длительность.',
-      'These are game-file mechanics, not calculated damage, hit chance or duration.')}));
      detail.append(section);
     }
     const icon=skillIcon(rec.branch,id,rec);

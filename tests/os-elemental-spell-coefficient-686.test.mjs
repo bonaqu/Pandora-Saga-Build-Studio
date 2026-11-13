@@ -34,7 +34,7 @@ test('current OS parameters generate explicit INT/mastery model components, not 
   assert.equal(row.amount,null);
   assert.equal(row.uncertain,true);
   assert.equal(row.coefficientModels[0].confidence,'coefficient-model');
-  assert.match(row.detailRu,/Предположение/);
+  assert.match(row.detailRu,/Зависит от ИНТ и освоенного мастерства/);
  }
 });
 test('250 synthetic coefficient scenarios monotone and no combat/source mutation',()=>{
@@ -86,5 +86,5 @@ test('models reuse Hero Book skill effects UI without changing stored character'
  assert.match(engine,/elementalSpellCoefficientPreview\(\{/);
  assert.match(engine,/result\.offense\.push\(spell\)/);
  assert.match(book,/skill\.coefficientModels/);
- assert.match(book,/Параметры умения:/);
+ assert.match(book,/Эффект:/);
 });

@@ -609,7 +609,7 @@ async function main(){
  assert.match(await allySection.innerText(),/Скорость передвижения \+200|Movement-speed index \+200/);
  const windBlessing=allySection.locator('[data-book-setting="combatWindBlessing"]');
  await windBlessing.check();
- assert.match(await allySection.innerText(),/правило сложения не подтверждено|server stacking rule is unknown/);
+ assert.match(await allySection.innerText(),/прибавки показаны отдельно|bonuses are shown separately/);
  await windBlessing.uncheck();
  await wildWind.uncheck();
  // Healing belongs to the current hero's Skill Effects, not ally toggles.

@@ -79,7 +79,7 @@ test('every strike coefficient is rendered by the existing Path-style Hero Book 
  assert.match(calculator,/directStrikeCoefficientPreview\(\{/);
  assert.match(calculator,/result\.offense\.push\(strike\)/);
  assert.match(book,/skill\.coefficientModels/);
- assert.match(book,/Параметры умения:/);
+ assert.match(book,/Эффект:/);
 });
 
 test('malformed successor never hides predecessor or unrelated source-backed attacks',()=>{

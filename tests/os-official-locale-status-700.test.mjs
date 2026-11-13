@@ -34,7 +34,7 @@ test('skill requirements use correct OS RU and EN branch vocabulary',()=>{
  assert.ok(row);assert.equal(row.available,false);
  assert.match(row.reason,/Экзорцизм/);assert.match(row.reasonEn,/Exorcism/);
  assert.doesNotMatch(row.reason,/Изгнание/);
- assert.match(bookSrc,/en\?skill\.reasonEn:skill\.reason/);
+ assert.match(bookSrc,/const heroGate=id=>gates\?\.requirements\?\.\(\{/);
 });
 test('the two status categories expose bilingual D1-ready hover descriptions without redundant badge',()=>{
  const root={};Function('window',guideSrc)(root);

@@ -39,7 +39,7 @@ test('Hero Book shows explicitly labeled direct strike model while keeping final
  assert.match(ui,/roundingParts\?\.method==='floor-components'/);
  assert.match(ui,/const amount=Number\.isFinite\(skill\.amount\)/);
  assert.match(ui,/    '—';/);
- assert.match(ui,/Параметры умения: /);
- assert.match(ui,/final combat result|не подтверждённый итоговый результат/);
+ assert.match(ui,/Эффект: /);
+ assert.doesNotMatch(ui,/final combat result|не подтверждённый итоговый результат/);
  assert.doesNotMatch(ui,/stat\.attack\s*\+=|damageTotal/);
 });

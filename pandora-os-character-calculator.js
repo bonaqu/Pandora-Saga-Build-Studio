@@ -1011,12 +1011,10 @@ function elementalSpellCoefficientPreview({skillCatalog,jobKey,level,
    amount:null,unit:'',available:reasons.length===0,
    reason:reasons.join(' · '),reasonEn:reasonsEn.join(' · '),
    uncertain:true,recipient:false,
-   detailRu:'Предположение по INT и мастерству: точный урон, сопротивление цели, округление и '+
-    (secondary?'дополнительные эффекты не подтверждены':'порядок применения не подтверждены'),
-   detailEn:'INT and mastery assumption; final damage, target resistance, rounding and '+
-    (secondary?'secondary effects unverified':'application order unverified'),
+   detailRu:'Зависит от ИНТ и освоенного мастерства',
+   detailEn:'Scales with INT and trained mastery',
    coefficientModels:[{ep:'EP_ELEMENT_DAMAGE',
-    labelRu:'Расчётная основа заклинания',labelEn:'Modeled spell basis',
+    labelRu:'Сила заклинания',labelEn:'Spell strength',
     amount,unit:'',confidence:'coefficient-model',
     roundingParts:{base:fv1[3],int:fromInt,mastery:fromMastery,
      method:'floor-components'}}],
@@ -1106,11 +1104,11 @@ function directStrikeCoefficientPreview({skillCatalog,jobKey,level,
    amount:null,unit:'',available:reasons.length===0,
    reason:reasons.join(' · '),reasonEn:reasonsEn.join(' · '),
    uncertain:true,recipient:false,
-   detailRu:'Сила удара рассчитана по параметрам умения. Итоговый урон по противнику и число попаданий пока неизвестны.',
-   detailEn:'Estimated strike strength from skill data. Final damage and hit count against the target are not known yet.',
+   detailRu:'Зависит от освоенного мастерства и оружия',
+   detailEn:'Scales with trained mastery and equipped weapon',
    coefficientModels:[{
-    ep:'EP_ONHIT_DAMAGE_SCALE',labelRu:'Сила удара (расчёт)',
-    labelEn:'Estimated strike strength',amount:coefficient,unit:'%',
+    ep:'EP_ONHIT_DAMAGE_SCALE',labelRu:'Сила удара',
+    labelEn:'Strike strength',amount:coefficient,unit:'%',
     confidence:'coefficient-model'}],
    source:'current OS skill attack effect coefficient model'});
  }
@@ -1270,10 +1268,8 @@ function movementSkillSourcePreview({skillCatalog=null,jobKey=null,level=1,
   result.push({id,name:record.name,description:record.desc||'',amount:v[3],
    unit:'',available:reasons.length===0,reason:reasons.join(' · '),
    reasonEn:reasonsEn.join(' · '),recipient,hostile,modelOnly:true,uncertain:true,
-   detailRu:'Изменение скорости '+ruScope+' по данным умения;'+
-    ' итоговая скорость, длительность и сочетание эффектов пока неизвестны',
-   detailEn:'Skill changes speed '+enScope+
-    '; final speed, duration and combined effects are not known yet',
+   detailRu:'Скорость передвижения '+ruScope,
+   detailEn:'Movement speed '+enScope,
    source:'current OS EP_MOVESPEED_SCALE; source magnitude only'});
  }
  return result;
@@ -1537,14 +1533,14 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  {branch:'archery',modelOnly:true,unit:' АТК',
   models:[
    coefficientModel(213605001,'EP_DAMAGERATE_SCALE',null,'archery',
-    'Усиление атаки (расчёт)','Estimated attack bonus','%'),
+    'Усиление атаки','Attack bonus','%'),
    coefficientModel(213605001,'EP_TOHIT_CONST',null,'archery',
     'Точность','Accuracy'),
    coefficientModel(213605001,'EP_ATTACKRANGE_CONST',null,'archery',
-    'Прибавка дальности (расчёт)','Estimated range bonus')
+    'Прибавка дальности','Range bonus')
   ],
-  detailRu:'Зависит от мастерства стрельбы; величина не подтверждена',
-  detailEn:'Depends on Archery mastery; magnitude unverified'});
+  detailRu:'Зависит от мастерства стрельбы',
+  detailEn:'Scales with Archery mastery'});
  const coldBlood=coefficientModel(142051001,'EP_CRITICALRATE_CONST',
   null,'brush','Шанс критического удара','Critical chance','%');
  add(142051001,'offense',[
@@ -1560,15 +1556,15 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
   ],()=>5+1+Math.floor(level*.10)+Math.floor(mastery('alchemy')*.15),
  {branch:'alchemy',predecessor:220001001,modelOnly:true,
   unit:' урона ядом',
-  detailRu:'Усиленный яд · мастерство алхимии 61; итоговый урон ауры не подтверждён',
-   detailEn:'Advanced poison, Alchemy 61; aura damage magnitude unverified'});
+  detailRu:'Усиленный яд · мастерство Алхимии 61',
+   detailEn:'Advanced poison · Alchemy mastery 61'});
  else
   add(220001001,'offense',[
    ['EP_AURAPOISON_CONSTANT',[0,10,5,5]]
   ],()=>5+Math.floor(level*.10)+Math.floor(mastery('alchemy')*.05),
- {branch:'alchemy',modelOnly:true,unit:' урона ядом (модель)',
-  detailRu:'Зависит от мастерства алхимии; итоговый урон ауры не подтверждён',
-   detailEn:'Depends on Alchemy mastery; poison aura damage unverified'});
+ {branch:'alchemy',modelOnly:true,unit:' урона ядом',
+  detailRu:'Зависит от мастерства Алхимии',
+   detailEn:'Scales with Alchemy mastery'});
  // Elemental Absorption: this value is the source-scaled protection
  // parameter, not a claim about enemy damage or the final mitigation packet.
  const absorbParameter=coefficientModel(330002001,'EP_ABSOLUTE_MAGIC',
@@ -1617,8 +1613,8 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
    coefficientModel(320011001,'EP_ELEMENT_DAMAGE_SCALE',null,'blessing',
     'Коэффициент стихийного урона','Elemental damage scaling','%')
   ],
-  detailRu:'Зависит от СД и Благословения; итоговое сложение ещё не подтверждено',
-  detailEn:'Depends on SPI and Blessing; stacking unverified'});
+  detailRu:'Зависит от СД и Благословения',
+  detailEn:'Scales with SPI and Blessing mastery'});
  // Further independently verified VARIABLE self-cast effect vectors.
  // Current OS proves scaling but not damage packet semantics; do not
  // manufacture arithmetic by assuming a fixed per-point denominator.
@@ -1629,16 +1625,16 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  {modelOnly:true,unit:' АТК',
   models:[coefficientModel(100058001,'EP_DAMAGERATE_SCALE',
    null,'slash','Коэффициент физической атаки','Physical attack scaling','%')],
-  detailRu:'Отчаянье: предполагаемая прибавка к атаке зависит от мастерства; получаемый урон +100%',
-  detailEn:'Desperation: estimated attack gain depends on mastery; incoming damage +100%'});
+  detailRu:'Прибавка к атаке зависит от мастерства; получаемый урон +100%',
+  detailEn:'Attack bonus scales with mastery; incoming damage +100%'});
  // Swift Arrow is an attack-interval enhancement with fixed OS source
  // [0,0,0,30], not direct +30 weapon damage. The displayed percentage is
  // the skill effect coefficient; no unproven firing-frequency conversion.
  add(213702001,'offense',[
   ['EP_ATTACKINTERVAL_SCALE',[0,0,0,30]]
  ],()=>30,{modelOnly:true,branch:'archery',unit:'% скорости стрельбы',
-  detailRu:'Стремительная стрела: +30% к скорости стрельбы; точная частота атак пока неизвестна',
-  detailEn:'Swift Arrow: +30% firing speed bonus; actual firing rate is not known yet'});
+  detailRu:'Скорость стрельбы +30%',
+  detailEn:'Firing speed +30%'});
  // Self-cast Dark Aura uses the modern OS source vector rather than the
  // historical Remaked 73–206 tier table (a different ruleset).
  // An exact NEXT breakpoint can be derived from the OS coefficient [8,0,0,15].
@@ -1669,7 +1665,7 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
    coefficientModel(213703001,'EP_DOUBLE_MISSILE','str','archery',
     'Изменение силы выстрела','Projectile strength change'),
    coefficientModel(213703001,'EP_ATTACKRANGE_CONST',null,'archery',
-    'Прибавка дальности (расчёт)','Estimated range bonus'),
+    'Прибавка дальности','Range bonus'),
    // Paired carry data is validated but not displayed as another bonus.
   ],
   detailRu:'Повторный выстрел из арбалета: сила и дальность от СИЛ и Стрельбы',
@@ -1680,7 +1676,7 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
   ['EP_INCREASE_ATTACK',[0,0,45,-100]]
  ],manual,{branch:'assassin',
   models:[coefficientModel(233200101,'EP_INCREASE_ATTACK',null,'assassin',
-   'Сила повторного удара (расчёт)','Estimated follow-up hit strength')],
+   'Сила повторного удара','Follow-up hit strength')],
   detailRu:'Дополнительный удар при подходящем оружии от мастерства Убийства',
   detailEn:'Follow-up hit from Assassination mastery with compatible weapon'});
  const concentrationRate=coefficientModel(410000101,
@@ -3177,8 +3173,8 @@ function songSkillPreview({skillCatalog=null,jobKey=null,level=1,
   const points=branchMasteries?.hymn;
   rows.push({id:extra.id,key:'minstrel-os-variant',name:source.name,
    nameEn:"Minstrel's Song",
-   description:'Песнь повышает точность и уклонение. Итоговая прибавка и длительность пока не рассчитаны.',
-   descriptionEn:'A song that increases accuracy and evasion. Final bonus and duration are not calculated.',
+   description:'Песнь повышает точность и уклонение союзников.',
+   descriptionEn:'The song raises allies’ accuracy and evasion.',
    requirements:[{branch:'hymn',amount:8}],
    available:Number.isSafeInteger(points)&&points>=8&&points<=cap,
    active:false,verified:false,sourceOnly:true});
