@@ -177,6 +177,17 @@ function readiness(skill,api,seen=new Set(),skillIndex){
    !Number.isSafeInteger(need)||need<=0){
    problems.push(tr(api,'Неизвестное условие','Unknown requirement'));continue;
   }
+  // The MELEE parent uses trained proficiency across five child branches,
+  // rather than allocated points in the non-allocatable martial branch.
+  if(req.branch==='martial'&&skill.branchRaw==='MELEE'){
+   const name=api.branchName('melee'),cap=M.meleeGroupCap(api.branchCaps);
+   const trained=M.meleeGroupTrained(state,api.innate,api.branchCaps);
+   if(cap<need)problems.push(name+tr(api,
+    ': предел профессии ',': class maximum ')+cap+'/'+need);
+   if(trained<need)problems.push(name+tr(api,
+    ': освоено ',': trained ')+trained+'/'+need);
+   continue;
+  }
   const name=api.branchName(req.branch);
   // Saved investments survive profession changes, but they cannot unlock
   // requirements that the new profession has no capacity to train.
@@ -699,6 +710,18 @@ function viewSkills(target,details,api){
    reqList.append(authored(api,'skillRequirementsHeading','Требования по веткам','Branch requirements','strong','path-skill-requirements-title'));
    for(const req of requirements){
     if(!req||!req.branch)continue;
+    if(req.branch==='martial'&&skill.branchRaw==='MELEE'){
+     const cap=M.meleeGroupCap(api.branchCaps);
+     const available=M.MELEE.reduce((sum,key)=>sum+
+      M.branchPotential(api.state,key,api.innate,api.branchCaps),0);
+     const mastered=M.meleeGroupTrained(api.state,api.innate,api.branchCaps);
+     reqList.append(make('p',{text:api.branchName('melee')+
+      tr(api,' · порог ',' · threshold ')+req.amount+
+      tr(api,' · предел ',' · class cap ')+cap+
+      tr(api,' · изучено ',' · allocated ')+available+
+      tr(api,' · освоено ',' · trained ')+mastered}));
+     continue;
+    }
     const base=M.branchBase(api.innate,req.branch);
     const value=M.branchPotential(api.state,req.branch,api.innate,api.branchCaps);
     const green=M.branchMastery(api.state,req.branch,api.innate,api.branchCaps);

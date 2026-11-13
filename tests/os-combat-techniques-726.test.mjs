@@ -93,7 +93,13 @@ test('400 character combinations retain source facts without modifying permanent
   const weapon=i%2===0?'2H_SWORD':'BARE_HAND';
   for(const row of inspect(job,skills,level,points,weapon).rows){
    const source=skills[row.id];
-   const eligible=level>=source.charLevel&&source.reqs.every(r=>points[r.branch]>=r.amount)&&
+   // Four post-0.740 MELEE parent skills use combined trained green, not
+   // a zero-cap independently allocatable martial branch.
+   const eligible=level>=source.charLevel&&source.reqs.every(r=>
+    source.branchRaw==='MELEE'&&r.branch==='martial'?
+     ['slash','thrust','brush','blow','defense']
+      .reduce((sum,branch)=>sum+points[branch],0)>=r.amount:
+     points[r.branch]>=r.amount)&&
     (!source.weaponUse||source.weaponUse.includes(weapon));
    assert.equal(row.requirementsMet,eligible);
    assert.equal(row.finalAmount,null);

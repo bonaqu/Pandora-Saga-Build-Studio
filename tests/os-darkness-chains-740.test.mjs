@@ -86,11 +86,11 @@ test('every root/child wrong source value or direction rejects the described eff
 test('source-only spells increase qualitative coverage, not numeric damage',()=>{
  const report=auditOsSkillFormulaCoverage({skills,classes,calculator:C});
  assert.equal(report.summary.skillRecords,569);
- assert.deepEqual(report.summary.statuses,{
-  'numeric-preview':73,'coefficient-model':27,'source-parameter':3,
-  'qualitative-preview':94,'passive-source':29,
-  'internal-or-triggered-source':336,'unmodeled-learnable':7
- });
+ assert.equal(report.summary.statuses['numeric-preview'],73);
+ assert.equal(report.summary.statuses['coefficient-model'],27);
+ assert.equal(report.summary.statuses['source-parameter'],3);
+ assert.ok(report.summary.statuses['qualitative-preview']>=94);
+ assert.ok(report.summary.statuses['unmodeled-learnable']<=7);
  for(const [id] of cases){
   const r=report.rows.find(x=>x.id===id);
   assert.equal(r.status,'qualitative-preview');

@@ -2,6 +2,11 @@
 
 These repository-level rules are durable instructions for future coding sessions.
 
+## MELEE parent-group skills (0.741.0)
+- Current OS `branchRaw:MELEE` with `branch:'martial'` is a **group requirement** for exactly four pinned IDs: 100056001, 100057001, 100101001, 111201001. The OS class `branchCaps.martial=0` is not the actual group limit. Parent cap = sum of class caps for `slash,thrust,brush,blow,defense`; parent proficiency = sum of current **green trained** values for those same branches (respecting each child cap), never allocations or stored raw `martial` investment. Historical game skill reference supports the parent sum; current OS client outcome remains unmeasured.
+- Use `PandoraSkillProgression.meleeGroupCap/meleeGroupTrained` for Hero Path gates, and the read-only `combatTechniquePreview` for Hero Book source models. Display player-facing RU/EN parent labels, requirements and actual source status; no arbitrary reallocation, no permanently applied bonuses. The four source proofs must fail closed on any changed FV1/FV2, class/weapon metadata or `branchRaw` drift.
+- Current census: 73 numeric, 98 qualitative, 3 unmodeled IDs (260006002,300001001,300002001). Do not assert those are server-impossible; the former lacks permitted caster classes in source, the last two require benevolence 102 vs current cap 90. Historical 0.740 tests retain minimum coverage; exact current status goes in 0.741 tests. Do not invent final probabilities or combat values.
+
 ## GitHub repository operations and time-efficient PR delivery (2026-11-13)
 - **Read `docs/REPOSITORY_OPERATIONS_AND_FAST_DELIVERY.md` before touching GitHub branches, CI, release numbering or production readiness.** It records verified owner settings and the playbook. Settings can change; recheck API/Ruleset and current HEAD rather than assuming the snapshot remains current.
 - Main branch is `bonaqu_projects`. Active Ruleset **Protect bonaqu_projects** (#27159457) requires a PR, **zero** independent approvals, the **exact** GitHub Actions checks `Unit regressions and release consistency` and `browser`, strict branch freshness, no force push or protected-branch deletion. Use Merge/Squash, never Rebase. Do **not** bypass checks or push directly to main. Ruleset: https://github.com/bonaqu/Pandora-Saga-Build-Studio/settings/rules/27159457 .
