@@ -1285,6 +1285,14 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  };
  const mastery=branch=>Number(branchMasteries?.[branch]??0);
  const cap=branch=>Number(branchCaps?.[branch]??0);
+ // The user's verified MELEE parent uses combined TRAINED green mastery,
+ // not the zero-sized internal `martial` branch (0.741.0 class source).
+ const sourceRank=(skill,branch)=>skill?.branchRaw==='MELEE'&&
+  skill?.branch==='martial'&&branch==='martial'?
+  meleeSourceGroupValue(branchMasteries,branchCaps):mastery(branch);
+ const sourceCap=(skill,branch)=>skill?.branchRaw==='MELEE'&&
+  skill?.branch==='martial'&&branch==='martial'?
+  meleeSourceGroupValue(branchCaps,branchCaps):cap(branch);
  // Never auto-translate or approximate official OS mastery names.
  // The app passes Russian meta.branchLabels and English strings.en.branches.
  const branchName=(key,english=false)=>{
@@ -1332,8 +1340,15 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
    seen.has(id))return;
   const recipient=options.recipient===true;
   if(!recipient&&!record.classes?.[jobKey])return;
+  // Require the FULL signed OS root for the shared-mastery Ossify skill,
+  // including all linked protection actions, before calculating its ATK cost.
+  if(id===100057001&&!combatTechniquePreview({
+   skillCatalog,jobKey,level,branchMasteries,branchCaps,weaponKind
+  }).rows.some(row=>row.id===id))return;
   if(!recipient&&record.reqs.some(req=>typeof req?.branch!=='string'||
-   !Number.isInteger(req.amount)||req.amount<0||cap(req.branch)<req.amount))return;
+   !Number.isInteger(req.amount)||req.amount<0||
+   !Number.isSafeInteger(sourceCap(record,req.branch))||
+   sourceCap(record,req.branch)<req.amount))return;
   if(!recipient&&options.branch&&!cap(options.branch))return;
   if(!recipient&&options.song===true&&!songSkillPreview({
    skillCatalog,jobKey,level,branchMasteries,branchCaps}).rows.some(x=>x.id===id))return;
@@ -1350,9 +1365,14 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
    issuesEn.push('Requires level '+record.charLevel);
   }
   if(!recipient)for(const req of record.reqs){
-   if(mastery(req.branch)<req.amount){
-    issues.push('Требуется мастерство «'+branchName(req.branch)+'»: '+req.amount);
-    issuesEn.push('Requires '+branchName(req.branch,true)+' mastery: '+req.amount);
+   const trained=sourceRank(record,req.branch),limit=sourceCap(record,req.branch);
+   if(!Number.isSafeInteger(trained)||trained<req.amount||trained>limit){
+    const label=record.branchRaw==='MELEE'&&req.branch==='martial'?
+     (branchLabels.melee||'Ближний бой'):branchName(req.branch);
+    const englishLabel=record.branchRaw==='MELEE'&&req.branch==='martial'?
+     (englishBranches.melee||'Melee'):branchName(req.branch,true);
+    issues.push('Требуется мастерство «'+label+'»: '+req.amount);
+    issuesEn.push('Requires '+englishLabel+' mastery: '+req.amount);
    }
   }
   if(!recipient&&Array.isArray(record.weaponUse)&&record.weaponUse.length&&
