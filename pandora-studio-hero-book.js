@@ -1653,7 +1653,43 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   }
   body.append(group);
  }
-if(!spells.length&&!periodic.length&&!rows.offense?.length&&!rows.defense?.length&&!rows.movement?.length&&!rows.utility?.length&&!chains?.rows?.length&&!conditional?.rows?.length&&!recipes?.length&&!trapCost?.rows?.length&&!sourceMechanics?.rows?.length&&!statusesFromSkills?.rows?.length&&!enemyDebuffs?.rows?.length&&!tactical?.rows?.length&&!rangedAmmo?.rows?.length)
+
+ // These are skill-level sources, never persistent hero stat changes.
+ const techniques=root.PandoraOSCalculator?.combatTechniquePreview?.({
+  skillCatalog:gameTerms.skills,jobKey:heroJobKey,level:heroLevel,
+  branchMasteries:heroMasteries,branchCaps:heroBranchCaps,
+  weaponKind:heroWeaponKind,branchLabels:gameTerms.branchLabels,
+  englishBranches:gameTerms.englishBranches
+ });
+ if(techniques?.rows?.length){
+  const section=make('details',{class:'stage-attribute-row stage-skill-combat-technique'});
+  section.append(make('summary',{text:en?'Defense and combat techniques':'Защитные и боевые приёмы'}));
+  section.append(make('p',{class:'stage-periodic-hint',text:en?
+   'MP cost and cooldown come from current skill records. Final damage, hit chance, protection and duration are not calculated.':
+   'Расход ОМ и перезарядка взяты из игровых данных. Итоговый урон, шанс попадания, защита и длительность не рассчитаны.'}));
+  for(const row of techniques.rows){
+   const official=gameTerms.englishSkills?.[String(row.id)];
+   const prior=row.prerequisiteId?gameSkillName(
+    row.prerequisiteId,gameTerms.skills?.[String(row.prerequisiteId)]?.name,
+    gameTerms.englishSkills?.[String(row.prerequisiteId)]?.n,gameTerms,en):null;
+   const access=[row.requirementsMet?
+    (en?'Level, mastery and weapon requirements met':'Уровень, мастерство и оружие подходят'):
+    (en?row.reasonEn:row.reasonRu),
+    ...(prior?[en?'Upgrade requires '+prior:'Для улучшения требуется «'+prior+'»']:[])
+   ].join(' · ');
+   section.append(make('div',{class:'stage-heal-row stage-skill-combat-technique-row'+
+    (row.requirementsMet?'':' stage-book-unavailable')},[
+    gameSkillBadge(row.id,row.name,official?.n||row.name,gameTerms,en,skillIconForId),
+    make('strong',{text:en?
+     'MP: '+row.mana+' · Cooldown: '+row.cooldown+' s':
+     'ОМ: '+row.mana+' · Перезарядка: '+row.cooldown+' с'}),
+    make('small',{text:en?row.noteEn:row.noteRu}),
+    make('small',{text:access})
+   ]));
+  }
+  body.append(section);
+ }
+if(!spells.length&&!periodic.length&&!rows.offense?.length&&!rows.defense?.length&&!rows.movement?.length&&!rows.utility?.length&&!chains?.rows?.length&&!conditional?.rows?.length&&!recipes?.length&&!trapCost?.rows?.length&&!sourceMechanics?.rows?.length&&!statusesFromSkills?.rows?.length&&!enemyDebuffs?.rows?.length&&!tactical?.rows?.length&&!rangedAmmo?.rows?.length&&!techniques?.rows?.length)
   body.append(make('p',{class:'stage-attribute-note',text:en?
    'Only skills with build-dependent effect values appear here. Fixed buffs belong in Buffs.':
    'Здесь показаны только умения, сила которых зависит от билда. Постоянные усиления — во вкладке «Усиления».'}));
