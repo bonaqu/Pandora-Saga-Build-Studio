@@ -1354,6 +1354,18 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
  };
  const healingNumber=new Intl.NumberFormat(en?'en-US':'ru-RU',
   {maximumFractionDigits:2});
+ const showBaseManaBudget=(node,action)=>{
+  const budget=gates?.baseManaBudget?.({maxMana:modifiers?.mp,
+   baseCost:action?.mana});
+  if(!budget)return;
+  node.append(make('small',{class:'stage-heal-mana-budget',text:en?
+   'Full '+budget.maxMana+' MP: up to '+budget.casts+
+    ' casts at the base cost ('+budget.remainder+
+    ' MP left). Excludes recovery and MP discounts.':
+   'Полный запас '+budget.maxMana+' ОМ: до '+budget.casts+
+    ' применений по базовой стоимости (остаток '+budget.remainder+
+    ' ОМ). Без восстановления и скидок на расход.'}));
+ };
  const skillAction=id=>root.PandoraOSCalculator?.healingActionPreview?.({
   skillCatalog:gameTerms.skills,skillId:id,combat:modifiers?.combat});
  const appendActionEffects=(node,action)=>{
@@ -1383,6 +1395,22 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   const parts=row?.breakdown;
   if(!parts||![parts.flat,parts.statPart,parts.levelPart,
    parts.masteryPart].every(Number.isFinite))return;
+  // Natural Recovery 330005001 restores MP solely from hero level.
+  // Don't misleadingly display zero SPR / Healing coefficients as a
+  // prerequisite, and never label MP as HP.
+  if(row.kind==='mp'&&row.id===330005001){
+   const detail=make('details',{class:'stage-skill-gate-help stage-heal-breakdown'},[
+    make('summary',{text:en?'How MP recovery was calculated':
+     'Как рассчитано восстановление ОМ'})
+   ]);
+   detail.append(make('small',{text:en?
+    'Hero level '+heroLevel+' × 10%, rounded down = '+row.amount+
+     ' MP per pulse (every 2 seconds in the source model).':
+    'Уровень героя '+heroLevel+' × 10%, округление вниз = '+row.amount+
+     ' ОМ за срабатывание (каждые 2 секунды по модели исходников).'}));
+   node.append(detail);
+   return;
+  }
   const details=make('details',{class:'stage-skill-gate-help stage-heal-breakdown'},[
    make('summary',{text:en?'How the healing was calculated':
     'Как рассчитано лечение'})
@@ -1427,9 +1455,10 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   if(row.nextLevel&&Number.isSafeInteger(row.nextLevel.value)){
    const next=row.nextLevel;
    node.append(make('small',{class:'stage-heal-mastery-next',text:en?
-    'Next +'+next.gain+' per pulse at level '+next.value:
+    'Next +'+next.gain+' '+(row.kind==='mp'?'MP':'HP')+
+     ' per pulse at level '+next.value:
     'Следующий прирост за срабатывание: +'+next.gain+
-     ' на уровне '+next.value}));
+     (row.kind==='mp'?' ОМ':' ОЗ')+' на уровне '+next.value}));
   }
  };
  const spells=(modifiers?.healingSpells?.rows||[]).filter(row=>row?.available===true);
@@ -1475,6 +1504,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     make('small',{text:facts.join(' · ')})
    ]);
    appendActionEffects(preview,action);
+   showBaseManaBudget(preview,action);
    appendHealingMilestones(preview,row,pulse);
    appendHealingBreakdown(preview,row,pulse);
    // Canonical Russian skill descriptions stay untouched; report actual
@@ -1516,6 +1546,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
      (en?'Base cooldown: ':'Базовая перезарядка: ')+
      healingNumber.format(action.cooldown)+(en?' s':' сек.')}));
     appendActionEffects(preview,action);
+    showBaseManaBudget(preview,action);
    }
    appendHealingMilestones(preview,entry,true);
    appendHealingBreakdown(preview,entry,true);

@@ -66,5 +66,13 @@ function nextMelee({skillCatalog,jobKey,branchMasteries={},branchCaps={},
   nameRu:skill.name,nameEn:englishSkills?.[String(id)]?.n||skill.name,
   sourceOnly:true,learned:false};
 }
-root.PandoraBookSkillThresholds=Object.freeze({requirements,nextMelee,MELEE});
+// This is a count from the character's FULL calculated MP and the OS BASE
+// cost, not the current in-game MP or a promise about discounts / regeneration.
+function baseManaBudget({maxMana,baseCost}={}){
+ if(!Number.isSafeInteger(maxMana)||maxMana<0||
+  !Number.isSafeInteger(baseCost)||baseCost<=0)return null;
+ return {casts:Math.floor(maxMana/baseCost),remainder:maxMana%baseCost,
+  maxMana,baseCost,baseOnly:true,usesCurrentMana:false};
+}
+root.PandoraBookSkillThresholds=Object.freeze({requirements,nextMelee,baseManaBudget,MELEE});
 })(typeof window==='undefined'?globalThis:window);
