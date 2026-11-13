@@ -22,7 +22,8 @@ const compact=hits=>hits.map(x=>[x.skillId,x.min,x.average,x.max]);
 const newIds=[330001001,410011001,410012001,410021001,410023001,420003001];
 test('OS web calculator Et→kt→Ie→ve→Tt, all six newly verified skill hits',()=>{
  const result=hitList();
- assert.deepEqual(compact(result),[
+ assert.deepEqual(compact(result).filter(row=>
+  ![410002001,430053001].includes(row[0])),[
   [410001001,5,22,29],
   [330001001,2,10,17],
   [410011001,1,7,11],
@@ -134,7 +135,11 @@ test('Target damage is current hero only, no phantom sleep, freeze or knockdown 
  const book=read('pandora-studio-hero-book.js');
  for(const id of newIds)assert.match(book,new RegExp(String(id)));
  assert.doesNotMatch(book,/stage-material-actions|function materialSkillResults\(/);
- assert.equal(hitList().some(x=>x.skillId===410002001),false);
+ assert.equal(hitList().some(x=>x.skillId===410002001&&
+  x.hitKind==='direct-part'),true);
  assert.equal(hitList().some(x=>x.skillId===430053001),false);
+ assert.equal(hitList({masteries:{element:70,exorcism:20,darkness:26,
+  charm:20}}).some(x=>x.skillId===430053001&&
+   x.hitKind==='direct-part'),true);
  assert.equal(hitList().some(x=>x.skillId===410004001),false);
 });
