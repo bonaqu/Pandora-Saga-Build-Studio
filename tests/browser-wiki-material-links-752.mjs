@@ -49,6 +49,9 @@ export async function runWikiMaterialLinks752Smoke(browser,base){
   const close=page.locator('#dockClose');
   if(await close.isVisible())await close.click();
   await page.locator('#locale [data-locale="en"]').click();
+  // The locale switch closes the dock: reopen the same Wiki article before
+  // asserting visible content, matching a real user's navigation.
+  await page.locator('#nav [data-tab="wiki"]').click();
   await page.locator('.wiki-page .wiki-skill-source-material').waitFor({
    state:'visible',timeout:20000});
   const en=await page.locator('.wiki-page .wiki-skill-source-material').innerText();
