@@ -19,13 +19,8 @@ export async function runPathSkillNavigation761Smoke(browser,base){
   const gallery=page.locator('#pathSkillGallery');
   const details=page.locator('#pathSkillDetails');
   const query=page.locator('#pathSkillSearch');
-  const nextMastery=gallery.locator('.path-next-melee');
-  assert.equal(await nextMastery.count(),1,'Next class mastery belongs to the skill Path');
-  assert.match(await nextMastery.innerText(),/Ближний бой/);
-  const originalDraft=await page.evaluate(()=>localStorage.getItem('ps-build-studio.v1'));
-  await nextMastery.click();
-  assert.equal(await page.evaluate(()=>localStorage.getItem('ps-build-studio.v1')),
-   originalDraft,'Inspecting the next unlock cannot change hero build');
+  assert.equal(await gallery.locator('.path-next-melee').count(),0,
+   'No extra next-mastery button in the skill gallery');
   await query.click();await query.fill('Двойной удар');
   await gallery.locator('[data-skill-id="110101001"]').waitFor();
   await gallery.locator('[data-skill-id="110101001"]').click();
