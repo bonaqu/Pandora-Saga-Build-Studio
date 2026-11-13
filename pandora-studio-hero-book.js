@@ -1589,7 +1589,13 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    skill.available===true&&!skill.hostile&&!skill.recipient&&
    (Number.isFinite(skill.amount)||
     (skill.coefficientModels||[]).some(part=>
-     Number.isFinite(part?.amount)&&part?.roundingParts)));
+     Number.isSafeInteger(part?.amount)&&
+     part.confidence==='coefficient-model'&&
+     // The 19 directly cast physical strikes are source-checked
+     // mastery-dependent previews. Show only their coefficient, NEVER
+     // pretend it is final damage or a second attack packet.
+     (part?.roundingParts?.method==='floor-components'||
+      part.ep==='EP_ONHIT_DAMAGE_SCALE'))));
   if(!skills.length)continue;
   const section=make('section',{class:'stage-attribute-row stage-healing-spells '+sectionClass});
   section.append(make('strong',{text:en?captionEn:captionRu}));
