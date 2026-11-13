@@ -398,28 +398,10 @@
 .stage-status-family-paragraph{white-space:pre-line;padding:5px 3px;display:flex;gap:6px;align-items:flex-start}
 .stage-status-family-copy{white-space:pre-line;overflow-wrap:anywhere;min-width:0;flex:1}
 
-/* Uniform compact disclosure headers for verified, source-only skill sections. */
-#stageAttributes :is(.stage-skill-chain-effects,.stage-skill-onhit-effects,
- .stage-skill-crafting-effects,.stage-skill-trap-costs,.stage-skill-complex-effects)>summary{
- display:flex;align-items:center;gap:8px;list-style:none;cursor:pointer;
- font:650 12px/1.35 Manrope,Arial,sans-serif;color:#f3d29b;padding:5px 2px
-}
-#stageAttributes :is(.stage-skill-chain-effects,.stage-skill-onhit-effects,
- .stage-skill-crafting-effects,.stage-skill-trap-costs,.stage-skill-complex-effects)>summary::-webkit-details-marker{
- display:none
-}
-#stageAttributes :is(.stage-skill-chain-effects,.stage-skill-onhit-effects,
- .stage-skill-crafting-effects,.stage-skill-trap-costs,.stage-skill-complex-effects)>summary:after{
- content:'⌄';margin-left:auto;font-size:14px;line-height:1
-}
-#stageAttributes :is(.stage-skill-chain-effects,.stage-skill-onhit-effects,
- .stage-skill-crafting-effects,.stage-skill-trap-costs,.stage-skill-complex-effects)[open]>summary:after{
- transform:rotate(180deg)
-}
-#stageAttributes :is(.stage-skill-chain-effects,.stage-skill-onhit-effects,
- .stage-skill-crafting-effects,.stage-skill-trap-costs,.stage-skill-complex-effects)>summary:focus-visible{
- outline:2px solid #e2b778;outline-offset:2px
-}
+/* Skill Effects top-level <details> are normalized by collapseBookSections().
+   Each header already owns one .stage-result-chevron and uses the shared
+   .stage-book-disclosure / .stage-result-section-head geometry.
+   Do not add skill-specific summary::after arrows or restyle their headers. */
 
 /* Direct equipment/Soul source details inside individual status resistances. */
 #stageAttributes .stage-status-source-breakdown{

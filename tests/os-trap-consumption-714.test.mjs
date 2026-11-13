@@ -96,5 +96,8 @@ test('Hero Book explains uncertain mechanics and the actual game material in RU/
  assert.match(book,/Для применения нужно:/);
  assert.match(book,/sourceItemName\(65007\)/);
  assert.match(book,/!trapCost\?\.rows\?\.length/);
- assert.match(css,/stage-skill-trap-costs/);
+ // The section uses the common Hero Book header; legacy CSS pseudo arrows
+ // must NOT be required to consider a source-backed skill rendered.
+ assert.match(css,/\.stage-book-disclosure\.stage-attribute-row>summary\.stage-result-section-head/);
+ assert.doesNotMatch(css,/>summary:(?::after|after)/);
 });
