@@ -55,6 +55,8 @@ test('Book keeps recipient-side allied buffs, five caster inputs and no duplicat
  assert.ok(start>=0&&end>start);
  assert.doesNotMatch(book.slice(start,end),
   /Святая аура с обоими усилениями|Holy aura with both buffs/);
+ assert.equal(skills['330004001'].name,'Божественное благословление');
+ assert.doesNotMatch(book,/row\.id===330004001\?'Божественное благословение'/);
  assert.match(book,/priestValues\.holyEnhanced/);
  assert.match(book,/Показатель отката/);
  assert.match(book,/Песнь чар · снижение показателя отката/);
