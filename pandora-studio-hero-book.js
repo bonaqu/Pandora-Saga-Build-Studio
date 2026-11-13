@@ -1729,7 +1729,51 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   }
   body.append(section);
  }
-if(!spells.length&&!periodic.length&&!rows.offense?.length&&!rows.defense?.length&&!rows.movement?.length&&!rows.utility?.length&&!chains?.rows?.length&&!conditional?.rows?.length&&!recipes?.length&&!trapCost?.rows?.length&&!sourceMechanics?.rows?.length&&!statusesFromSkills?.rows?.length&&!enemyDebuffs?.rows?.length&&!tactical?.rows?.length&&!rangedAmmo?.rows?.length&&!techniques?.rows?.length&&!specialSkills?.defense?.length&&!specialSkills?.magic?.length)
+
+ // Source-verified cures, revives, transfers and dispels stay read-only.
+ const support=root.PandoraOSCalculator?.supportEffectPreview?.({
+  skillCatalog:gameTerms.skills,jobKey:heroJobKey,level:heroLevel,
+  branchCaps:heroBranchCaps,branchMasteries:heroMasteries,
+  branchLabels:gameTerms.branchLabels,englishBranches:gameTerms.englishBranches
+ });
+ for(const [kind,ruTitle,enTitle] of [
+  ['help','Помощь союзникам','Helping allies'],
+  ['magic','Обмен и рассеивание магии','Magic exchange and dispel']
+ ]){
+  const entries=support?.[kind]||[];
+  if(!entries.length)continue;
+  const section=make('details',{class:'stage-attribute-row stage-skill-support-effects stage-skill-support-'+kind});
+  section.append(make('summary',{text:en?enTitle:ruTitle}));
+  section.append(make('p',{class:'stage-periodic-hint',text:en?
+   'Skill costs are from game data. Items in your inventory, final recovery and target outcomes are not checked.':
+   'Расход взят из игровых данных. Наличие материалов, итоговое восстановление и результат на цели не проверяются.'}));
+  for(const row of entries){
+   const official=gameTerms.englishSkills?.[String(row.id)];
+   const previous=row.prerequisiteId?gameSkillName(row.prerequisiteId,
+    gameTerms.skills?.[String(row.prerequisiteId)]?.name,
+    gameTerms.englishSkills?.[String(row.prerequisiteId)]?.n,gameTerms,en):null;
+   const access=[row.requirementsMet?
+    (en?'Level and mastery requirements met':'Уровень и мастерство подходят'):
+    (en?row.reasonEn:row.reasonRu),
+    ...(previous?[en?'Upgrade requires '+previous:'Для улучшения требуется «'+previous+'»']:[])
+   ].join(' · ');
+   const itemName=row.requiredItemId?sourceItemName(row.requiredItemId):null;
+   section.append(make('div',{class:'stage-heal-row stage-skill-support-row'+
+    (row.requirementsMet?'':' stage-book-unavailable')},[
+    gameSkillBadge(row.id,row.name,official?.n||row.name,gameTerms,en,skillIconForId),
+    make('strong',{text:en?
+     'MP: '+row.mana+' · Cooldown: '+row.cooldown+' s':
+     'ОМ: '+row.mana+' · Перезарядка: '+row.cooldown+' с'}),
+    ...(itemName&&row.requiredItemCount?[make('small',{text:en?
+     'Required: '+row.requiredItemCount+' × '+itemName:
+     'Для применения нужно: '+row.requiredItemCount+' × '+itemName})]:[]),
+    make('small',{text:en?row.noteEn:row.noteRu}),
+    make('small',{text:access})
+   ]));
+  }
+  body.append(section);
+ }
+if(!spells.length&&!periodic.length&&!rows.offense?.length&&!rows.defense?.length&&!rows.movement?.length&&!rows.utility?.length&&!chains?.rows?.length&&!conditional?.rows?.length&&!recipes?.length&&!trapCost?.rows?.length&&!sourceMechanics?.rows?.length&&!statusesFromSkills?.rows?.length&&!enemyDebuffs?.rows?.length&&!tactical?.rows?.length&&!rangedAmmo?.rows?.length&&!techniques?.rows?.length&&!specialSkills?.defense?.length&&!specialSkills?.magic?.length&&!support?.help?.length&&!support?.magic?.length)
   body.append(make('p',{class:'stage-attribute-note',text:en?
    'Only skills with build-dependent effect values appear here. Fixed buffs belong in Buffs.':
    'Здесь показаны только умения, сила которых зависит от билда. Постоянные усиления — во вкладке «Усиления».'}));
