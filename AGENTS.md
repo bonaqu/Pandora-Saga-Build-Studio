@@ -10,6 +10,11 @@ These repository-level rules are durable instructions for future coding sessions
 - **Fast without cutting corners:** batch related reads, inspect dependent call paths/test fixtures before changes, ship coherent patches, run focused Node and isolated browser diagnostics first, preflight release metadata before the full Node suite, then let the final mandatory CI run exactly once per revision. On failure read the first failing test/log before rerunning. Avoid needless release bumps for documentation/CI-only patches; when code/site assets change bump release files together. After a release verify Pages **and** live Worker/D1 read-only readiness; never infer a real production write from mock tests. Never run background/daily CI without an owner request.
 
 
+## Linked elemental and state spell proofs (0.739.0)
+- Keep `410005001`, `410014001`, `410014003`, `410022001`, `410026001`, and `420007001` within the existing `specializedSkillPreview.magic` Book block. Use current OS RU and EN names, full root and child signatures, and class/mastery requirements.
+- Validate BOTH nested Meteor stages `410005002` / `410005003` and ALL Thunder Storm stages `410026002`, `410026003`, `410026004`. Verify source-graph effects including RANDPOS, GETON, sleep, stun and knockback. Fail closed if any stage's FV1/FV2 changes.
+- Source EP parameters do not prove actual final damage, probability, radius, hit count or status duration; show natural, clear RU/EN uncertainty. No new panels, permanent bonuses or D1 writes.
+
 ## Advanced melee and stealth source proofs (0.738.0)
 - Reuse the existing `combatTechniquePreview` and Hero Book `stage-skill-combat-technique` for seven additional OS root abilities. Require exact current full record including FV1/FV2, job, weapon and mastery; `350001001` must also verify the entire linked `350001002` immobilization effect for caster and target.
 - A label such as Double Strike or a 100/200 source parameter is NOT a verified hit, chance, damage or motion distance. On Blindside, describe the game-source invisibility prerequisite rather than pretending the calculator checked current stealth status. Do not add permanent stat effects or D1 writes.
