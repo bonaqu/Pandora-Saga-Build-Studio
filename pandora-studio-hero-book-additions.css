@@ -474,3 +474,12 @@
 #stageAttributes .stage-ally-natural-level input:focus-visible{
  outline:2px solid #e0b878;outline-offset:1px
 }
+
+/* A shared, conditional hypothetical Cleric profile reuses the compact
+   priest field grid, without another permanent widget or page. */
+#stageAttributes .stage-ally-hp-fields{
+ margin:0 0 5px 22px;align-items:end
+}
+#stageAttributes .stage-ally-hp-fields .stage-ally-peace-note{
+ grid-column:1/-1;font-size:11px;line-height:1.45;opacity:.85
+}

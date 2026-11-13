@@ -103,7 +103,9 @@ function gearIssueLabel(message){
  const value=String(message||'');
  return en[value]||value.replace(/^Требуется уровень (\d+)$/,'Requires level $1');
 }
-function fresh(){return{race:null,gender:0,job:null,level:1,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),mastery:{},masteryFormat:2,masteryAuto:true,stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},soulOwners:{},socketCapacities:{},refinements:{},gems:{},vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},attributeBuffs:{guildAll:0,honorCuriosity:false,mounted:false,proelium:false,proeliumPotency:0,potionEffectsEnabled:false,guildLifeRecovery:0,guildManaRecovery:0,guildHealing:0,guildLevel:0,priestClass:'ENCHANTER',priestEnabled:true,priestSpi:134,priestBlessing:90,priestHymn:30,priestBenevolence:0,priestExorcism:26,allyPeaceSpi:134,allyPeaceHymn:30,allyNaturalLevel:45,priestGratia:false,priestLapisMedio:false,priestEncouragement:false,resistanceSkillIds:[],remakedSkillIds:[]},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
+function fresh(){return{race:null,gender:0,job:null,level:1,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),mastery:{},masteryFormat:2,masteryAuto:true,stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},soulOwners:{},socketCapacities:{},refinements:{},gems:{},vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},attributeBuffs:{guildAll:0,honorCuriosity:false,mounted:false,proelium:false,proeliumPotency:0,potionEffectsEnabled:false,guildLifeRecovery:0,guildManaRecovery:0,guildHealing:0,guildLevel:0,priestClass:'ENCHANTER',priestEnabled:true,priestSpi:134,priestBlessing:90,priestHymn:30,priestBenevolence:0,priestExorcism:26,allyPeaceSpi:134,allyPeaceHymn:30,allyNaturalLevel:45,allyHealingLevel:45,
+ allyHealingSpi:134,allyHealingMastery:41,allyRegeneration:false,
+ allyRestoration:false,combatFreeWind:false,priestGratia:false,priestLapisMedio:false,priestEncouragement:false,resistanceSkillIds:[],remakedSkillIds:[]},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
 let state=fresh(),activeTab=bootView.tab==='equipment'?'wiki':(['character','builds','wiki'].includes(bootView.tab)?bootView.tab:'character'),catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,approvedSkillIdNames=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,wikiShown=100,selectedSocket=0,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='',wikiItemType='equipment',wikiElementFilter='all',wikiEffectFilter='all',wikiSkillFilter=['player','racial','guild','special','variants','other','unknown','all'].includes(bootView.wikiSkillFilter)?bootView.wikiSkillFilter:'player',wikiItemLayout=bootView.wikiLayout==='grid'?'grid':'list',wikiItemEligibility='all';
 // A damaged browser draft must not prevent the independent saved-build library
 // from loading. Keep the original storage untouched for manual recovery.
@@ -686,7 +688,7 @@ function previewBaseStats(snap=state){
   combatContext:{weapon,weaponGrade,weaponPlus:gameTables?.weaponPlus,
    magicPlus:gameTables?.magicPlus,
    jobKey:jobKeys[snap.job],benevolenceMastery,legacyBuffMasteries,ridingMastery,wardingMastery,
-   skillCatalog:catalog.skills||{},branchMasteries,
+   skillCatalog:catalog.skills||{},allyClasses:catalog.classes||{},branchMasteries,
    externalPriest:{enabled:snap.attributeBuffs?.priestEnabled===true,
     jobKey:'ENCHANTER',
     classCaps:catalog.classes?.ENCHANTER?.branchCaps||null,
@@ -902,6 +904,7 @@ function setAttributeBuff(key,value){
   current.honorTitle=current.honorCuriosity?1:0;
  }else if(['proelium','potionEffectsEnabled','combatLunge','combatWarCry',
   'combatRage','combatDefender','combatWindAssist','combatWindBlessing',
+  'combatFreeWind','allyRegeneration','allyRestoration',
   'combatConcentration','priestEnabled','priestGratia','priestLapisMedio','priestEncouragement',
   'mounted'].includes(key)){
   if(value===true&&key.startsWith('priest')){
@@ -909,7 +912,26 @@ function setAttributeBuff(key,value){
     priestEncouragement:320012001}[key];
    if(id&&!priestEligible(id))return;
   }
+  if(key==='combatFreeWind'&&value===true&&
+   !window.PandoraOSCalculator?.alliedFreeWindPreview?.({
+    skillCatalog:catalog.skills,classCatalog:catalog.classes}))return;
+  if(['allyRegeneration','allyRestoration'].includes(key)&&value===true){
+   const profile=window.PandoraOSCalculator?.alliedHpPulsePreview?.({
+    skillCatalog:catalog.skills,classCatalog:catalog.classes,
+    casterLevel:45,casterSpi:134,casterHealing:key==='allyRestoration'?41:21});
+   if(!profile?.[key==='allyRestoration'?'restoration':'regeneration'])return;
+   const min=key==='allyRestoration'?41:21;
+   const cap=Number(catalog.classes?.CLERIC?.branchCaps?.benevolence||0);
+   current.allyHealingMastery=Math.min(cap,
+    Math.max(min,Number(current.allyHealingMastery)||0));
+  }
   current[key]=value===true;
+  if(['allyRegeneration','allyRestoration'].includes(key)&&value!==true){
+   const min=(current.allyRestoration?41:current.allyRegeneration?21:0);
+   current.allyHealingMastery=Math.max(min,
+    Math.min(Number(catalog.classes?.CLERIC?.branchCaps?.benevolence||0),
+     Number(current.allyHealingMastery)||0));
+  }
   if(['priestGratia','priestLapisMedio','priestEncouragement'].includes(key))
    clampMastery();
   if(current.combatRage&&key==='combatRage')current.combatDefender=false;
@@ -926,6 +948,12 @@ function setAttributeBuff(key,value){
  }else if(key==='allyNaturalLevel'){
   const n=Number(value);if(!Number.isSafeInteger(n))return;
   current.allyNaturalLevel=Math.min(55,Math.max(20,n));
+ }else if(['allyHealingLevel','allyHealingSpi','allyHealingMastery'].includes(key)){
+  const n=Number(value);if(!Number.isSafeInteger(n)||n<0||n>500)return;
+  const cap=Number(catalog.classes?.CLERIC?.branchCaps?.benevolence||0);
+  const min=current.allyRestoration?41:current.allyRegeneration?21:0;
+  current[key]=key==='allyHealingLevel'?Math.min(55,Math.max(1,n)):
+   key==='allyHealingMastery'?Math.min(cap,Math.max(min,n)):n;
  }else if(['allyPeaceSpi','allyPeaceHymn'].includes(key)){
   const n=Number(value);if(!Number.isInteger(n)||n<0||n>500)return;
   const active=window.PandoraRemakedBuffs.selectedIds(
@@ -7294,11 +7322,13 @@ function sanitizeSharedState(original){
   if(['ENCHANTER','CLERIC'].includes(rawAttributes.priestClass))
    safe.attributeBuffs.priestClass=rawAttributes.priestClass;
   for(const [key,limit] of [['guildLevel',12],['priestSpi',500],['priestBlessing',500],['priestHymn',500],['priestBenevolence',500],['priestExorcism',500],['allyPeaceSpi',500],['allyPeaceHymn',45],['allyNaturalLevel',55],
+   ['allyHealingLevel',55],['allyHealingSpi',500],['allyHealingMastery',90],
    ['guildLifeRecovery',2],['guildManaRecovery',2],['guildHealing',3],['guildArouse',3],
    ['guildPhysicalReduction',3],['guildMagicReduction',3],['guildExperience',8]]){
    const level=rawAttributes[key];
    if(Number.isInteger(level)&&level>=0&&level<=limit&&
-    (key!=='allyNaturalLevel'||level>=20))safe.attributeBuffs[key]=level;
+    (key!=='allyNaturalLevel'||level>=20)&&
+    (key!=='allyHealingLevel'||level>=1))safe.attributeBuffs[key]=level;
   }
   if(Number.isInteger(rawAttributes.honorTitle)&&rawAttributes.honorTitle>=0&&
     rawAttributes.honorTitle<window.PandoraOSCalculator.honorTitles.length){
@@ -7309,6 +7339,8 @@ function sanitizeSharedState(original){
    safe.attributeBuffs.honorCuriosity=rawAttributes.honorCuriosity===true;
   }
   if(typeof rawAttributes.priestEnabled==='boolean')safe.attributeBuffs.priestEnabled=rawAttributes.priestEnabled;
+  for(const key of ['allyRegeneration','allyRestoration','combatFreeWind'])
+   if(rawAttributes[key]===true)safe.attributeBuffs[key]=true;
   if(rawAttributes.priestGratia===true)safe.attributeBuffs.priestGratia=true;
   if(rawAttributes.priestLapisMedio===true)safe.attributeBuffs.priestLapisMedio=true;
   safe.attributeBuffs.proelium=rawAttributes.proelium===true;

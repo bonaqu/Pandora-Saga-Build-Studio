@@ -599,6 +599,45 @@ async function main(){
   'xpath=ancestor::*[contains(@class,"stage-combat-buff")][1]');
  assert.match(await inspirationLabel.innerText(),/50%/);
  await inspirationSwitch.uncheck();
+ // Source-gated Wild Wind: 200 movement index from a separate SNIPER.
+ const wildWind=allySection.locator('[data-book-setting="combatFreeWind"]');
+ assert.equal(await wildWind.count(),1);
+ assert.equal(await wildWind.isDisabled(),false);
+ await wildWind.check();
+ assert.match(await allySection.innerText(),/Скорость передвижения \+200|Movement-speed index \+200/);
+ const windBlessing=allySection.locator('[data-book-setting="combatWindBlessing"]');
+ await windBlessing.check();
+ assert.match(await allySection.innerText(),/правило сложения не подтверждено|server stacking rule is unknown/);
+ await windBlessing.uncheck();
+ await wildWind.uncheck();
+ // Healing from another CLERIC uses three caster-only coefficients, and
+ // never changes the recipient's permanent HP or mastery allocation.
+ const regen=allySection.locator('[data-book-setting="allyRegeneration"]');
+ const restore=allySection.locator('[data-book-setting="allyRestoration"]');
+ assert.equal(await allySection.locator('.stage-ally-hp-fields').count(),0);
+ const countBeforeHeal=Number(await page.locator(
+  '#stageBookPanel .stage-buff-overview>strong').innerText());
+ await regen.check();
+ assert.equal(await allySection.locator('.stage-ally-hp-fields input').count(),3);
+ assert.equal(await allySection.locator('[data-book-setting="allyHealingMastery"]').getAttribute('min'),'21');
+ assert.match(await allySection.innerText(),/ОЗ \+31 за срабатывание|HP \+31 per recovery pulse/);
+ assert.equal(Number(await page.locator(
+  '#stageBookPanel .stage-buff-overview>strong').innerText()),countBeforeHeal+1);
+ await restore.check();
+ assert.equal(await allySection.locator('[data-book-setting="allyHealingMastery"]').getAttribute('min'),'41');
+ assert.match(await allySection.innerText(),/ОЗ \+35 за срабатывание|HP \+35 per recovery pulse/);
+ const allyHealing=allySection.locator('[data-book-setting="allyHealingMastery"]');
+ assert.equal(await allyHealing.getAttribute('max'),'90');
+ await allyHealing.fill('90');
+ await allyHealing.press('Tab');
+ assert.match(await allySection.innerText(),/ОЗ \+37 за срабатывание|HP \+37 per recovery pulse/);
+ await allyHealing.fill('0');
+ await allyHealing.press('Tab');
+ assert.equal(await allyHealing.inputValue(),'41');
+ await restore.uncheck();
+ assert.equal(await allySection.locator('[data-book-setting="allyHealingMastery"]').getAttribute('min'),'21');
+ await regen.uncheck();
+ assert.equal(await allySection.locator('.stage-ally-hp-fields').count(),0);
  const elementalGroup=page.locator('#stageBookPanel .stage-book-buff-group').filter({
   has:page.locator('[data-guide-key="buffs.section.elemental"]')});
  assert.equal(await elementalGroup.count(),1,
