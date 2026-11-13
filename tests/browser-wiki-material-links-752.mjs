@@ -73,6 +73,28 @@ export async function runWikiMaterialLinks752Smoke(browser,base){
   await page.goBack();
   await poison.waitFor({state:'visible',timeout:20000});
 
+  // A linked trap is an encyclopedic action, never a Book material forecast.
+  await skill(240005001);
+  const crawling=page.locator('.wiki-page .wiki-skill-source-chain').first();
+  assert.deepEqual(await crawling.locator('a.wiki-link')
+   .evaluateAll(a=>a.map(x=>x.getAttribute('href'))),[
+    '#wiki/skill/240005001','#wiki/skill/240005002','#wiki/skill/240005003'
+   ]);
+  assert.match(await crawling.innerText(),/Снаряд:/);
+  assert.match(await crawling.innerText(),/Огненный взрыв:/);
+  const trapCost=page.locator('.wiki-page .wiki-skill-source-material');
+  assert.match(await trapCost.innerText(),/Расход: 2 ×/);
+  assert.equal(await trapCost.locator('a.wiki-link').getAttribute('href'),'#wiki/item/65007');
+  await crawling.locator('a[href="#wiki/skill/240005003"]').click();
+  await page.waitForFunction(()=>location.hash.includes('#wiki/skill/240005003'));
+  await page.goBack();
+  await crawling.waitFor({state:'visible',timeout:20000});
+
+  await skill(240002001);
+  const explosive=page.locator('.wiki-page .wiki-skill-source-chain').first();
+  assert.match(await explosive.innerText(),/Область:/);
+  assert.equal(await explosive.locator('a.wiki-link').count(),2);
+
   await skill(340003001);
   const peace=page.locator('.wiki-page .wiki-skill-source-chain').first();
   assert.deepEqual(await peace.locator('a.wiki-link').evaluateAll(anchors=>
@@ -121,6 +143,10 @@ export async function runWikiMaterialLinks752Smoke(browser,base){
   const followupsEn=page.locator('.wiki-page .wiki-skill-recipe-followups');
   assert.match(await followupsEn.innerText(),/Uses the result:/);
   assert.match(await followupsEn.innerText(),/Toxify/);
+  await skill(240005001);
+  const trapEn=page.locator('.wiki-page .wiki-skill-source-chain').first();
+  assert.match(await trapEn.innerText(),/Projectile:/);
+  assert.match(await trapEn.innerText(),/Fire blast:/);
   await skill(220001003);
   const poisonEn=page.locator('.wiki-page .wiki-skill-source-material');
   assert.match(await poisonEn.innerText(),/Requires: 1 × Venom/);

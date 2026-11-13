@@ -233,8 +233,17 @@ function inspect({skillCatalog,classes,id,calculator}={}){
   // complete set of notes avoids repeated scans of all 28 class snapshots.
   if(notes.length||paths.length||extra.length)break;
  }
+ // A trap needs BOTH a valid execution chain and the strict, complete
+ // source proof used by trapSkillCostPreview. Generic execution graphs alone
+ // do not prove a trap's resulting effect.
+ const trapVerified=extra.some(x=>x.type==='trap')&&
+  paths.some(path=>path.length>=2&&path[0]===skill.id&&
+   path.every((nodeId,index)=>index===0||
+    skillCatalog[String(nodeId)]?.learnable===false));
  const result=notes.length||paths.length||extra.length?
-  {notes,paths,extra,sourceOnly:true,finalAmount:null}:null;
+  {notes,paths,extra,
+   ...(trapVerified?{pathKind:'trap'}:{}),
+   sourceOnly:true,finalAmount:null}:null;
  store.values.set(skill.id,result);
  return result;
 }

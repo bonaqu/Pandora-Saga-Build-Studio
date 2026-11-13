@@ -147,29 +147,10 @@ export async function runHeroBookGameNames664Smoke(browser,base){
    'точная частота атак пока неизвестна','Расчёты для текущего героя.'])
    assert.equal(ru.includes(phrase),false,
     'Skill Effects must not repeat technical caveats: '+phrase);
-  const materialsPanel=page.locator('#book-source-qa .stage-material-actions');
-  assert.equal(await materialsPanel.count(),1,
-   'Current-hero crafting has one folded group');
-  assert.equal(await materialsPanel.getAttribute('open'),null);
-  assert.equal(await materialsPanel.locator('.stage-material-action-row').count(),1,
-   'Only the learned craft is shown for this class');
-  await materialsPanel.locator(':scope > summary').click();
-  const blessed=materialsPanel.locator('[data-material-skill-id="320010001"]');
-  assert.match(await blessed.innerText(),/Освящение воды/);
-  assert.match(await blessed.innerText(),/До 112 применений/);
-  assert.match(await blessed.innerText(),/Полный запас 450 ОМ · остаток 2 ОМ/);
-  assert.match(await blessed.innerText(),/Материалы на 112 применений:\s*112 × Пустая бутыль/);
-  assert.match(await blessed.innerText(),/До ещё одного применения: \+2 ОМ к запасу/);
-  assert.doesNotMatch(await blessed.innerText(),/Создание 1 ×|На применение:|Базовая перезарядка/);
-  const wikiSkill=blessed.locator('button.stage-effect-skill-link');
-  await wikiSkill.click();
-  assert.equal(await page.evaluate(()=>window.__bookLastSkill),'320010001');
-  await blessed.locator('button.stage-material-item-link').first().click();
-  assert.equal(await page.evaluate(()=>window.__bookMaterialLastItem),'65011',
-   'Item links open the original encyclopedia item');
-  assert.equal(await blessed.locator('details').count(),0,
-   'One folded group without nested disclosures');
-  await materialsPanel.locator(':scope > summary').click();
+  assert.equal(await page.locator('#book-source-qa .stage-material-actions').count(),0,
+   'Item creation is never a Hero Book skill-effect chapter');
+  assert.doesNotMatch(ru,/Расчёт материалов|Создание и материалы|Освящение воды|Пустая бутыль/,
+   'Crafting belongs only to the Encyclopedia, even if affordable from current MP');
 
   assert.doesNotMatch(ru,/11 ОЗ каждые 2 сек\./,
    'Sanctuary is a direct heal, not a periodic pulse');
@@ -251,13 +232,8 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   assert.match(en,/With Inspiration from an ally: 1.5 s of casting/);
   assert.doesNotMatch(en,/not a confirmed final combat result|final speed, duration|actual firing rate is not known/);
   assert.match(en,/Full 450 MP: up to 5 casts at the base cost/);
-  assert.match(en,/Material calculations \(1\)/);
-  assert.match(en,/Aqua Elymus/);
-  assert.match(en,/Up to 112 uses/);
-  assert.match(en,/Full 450 MP · 2 MP remaining/);
-  assert.match(en,/Materials for 112 uses:\s*112 × Empty Bottle/);
-  assert.match(en,/\+2 MP to afford one more use/);
-  assert.doesNotMatch(en,/Creates 1 × Holy Water|Base cooldown/);
+  assert.doesNotMatch(en,/Material calculations|Crafting and materials|Aqua Elymus|Empty Bottle|Holy Water/,
+   'Hero Book does not show recipes or material totals in English');
   assert.match(en,/Up to .* HP per target for 16 casts \(264 × 16\)/);
   assert.match(en,/One more cast needs \+26 MP capacity/);
   assert.match(en,/Next \+3 HP per cast at level 46/);
@@ -292,7 +268,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
    holder.remove();return count;
   });
   assert.equal(missingManaPanel,0,
-   'Without the current character MP result, the Book must not list generic recipes');
+   'Item creation stays outside the Book regardless of MP');
   const buffsRu=await render({lang:'ru',chapter:'buffs'});
   for(const name of ['Знак атаки','Знак защиты','Чары усиления','Рывок']){
    assert.ok(buffsRu.includes(name),'Book buffs must use exact OS skill name: '+name);
