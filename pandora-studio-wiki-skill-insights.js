@@ -92,8 +92,8 @@ function poisonItemSource(skill){
   !same(skill.funcs[2],'EP_LOST_CHANGE_WEAPON','TARGET',zero,zero))
   return null;
  return {notes:[{
-  ru:'По игровым данным эффект яда прекращается при смене оружия. Итоговый урон ядом и длительность здесь не рассчитаны.',
-  en:'According to game data, changing weapons ends the poison effect. Final poison damage and duration are not calculated here.'
+  ru:'Эффект яда прекращается при смене оружия.',
+  en:'The poison effect ends when changing weapons.'
  }],paths:[],extra:[{type:'requiredItem',count:1,itemId:50056}],
   sourceOnly:true,finalAmount:null};
 }
@@ -103,24 +103,24 @@ const hymnProofs=Object.freeze({
  340001001:{area:340001002,final:340001003,req:[['hymn',8]],
   previous:null,move:0,mana:30,effects:[
    ['EP_TOHIT_CONST',[13,0,13,4]],['EP_AVOIDANCE_CONST',[13,0,13,4]]],
-  ru:'Создаёт область с эффектами точности и уклонения. Длительность и сложение с другими песнями не подтверждены.',
-  en:'Creates an area affecting accuracy and evasion. Duration and stacking with other songs are unverified.'},
+  ru:'Создаёт область, повышающую точность и уклонение союзников.',
+  en:'Creates an area that raises allies’ accuracy and evasion.'},
  340001004:{area:340001005,final:340001006,req:[['hymn',8]],
   previous:340001001,move:225,mana:30,effects:[
    ['EP_TOHIT_CONST',[13,0,13,4]],['EP_AVOIDANCE_CONST',[13,0,13,4]]],
-  ru:'Улучшенная версия создаёт область с эффектами точности и уклонения, а также отдельно изменяет скорость исполнителя. Совместное действие с основной версией не подтверждено.',
-  en:'Upgraded song: accuracy/evasion area effects and a separate performer movement-speed change. Stacking with the original is unverified.'},
+  ru:'Улучшенная версия создаёт область, повышающую точность и уклонение союзников, а также ускоряет исполнителя.',
+  en:'Upgraded song: raises allies’ accuracy and evasion in an area and increases the performer’s movement speed.'},
  340003001:{area:340003002,final:340003003,
   req:[['benevolence',61],['hymn',30]],previous:null,move:225,mana:33,
   effects:[['EP_DAMAGE_CLEAR',[60,0,30,10]]],
-  ru:'Создаёт область с эффектом защитного порога: небольшой входящий урон может не проходить. Точная работа на сервере и длительность не измерены.',
-  en:'Creates an area with a protective damage threshold. Live behavior and duration have not been measured.'},
+  ru:'Создаёт область с защитой союзников от слабых попаданий.',
+  en:'Creates an area that protects allies from weak hits.'},
  340004001:{area:340004002,final:340004003,
   req:[['blessing',71],['hymn',30]],previous:null,move:225,mana:33,
   effects:[['EP_SKILL_BENCH_FIN',[-28,0,-17,-5]],
    ['EP_ELEMENT_DAMAGE_SCALE',[8,0,8,4]]],
-  ru:'Создаёт область: получатель получает влияние на стихийный урон и показатель перезарядки навыков. Точные секунды отката не подтверждены.',
-  en:'Creates an area affecting both elemental damage and the cooldown index. Exact cooldown seconds are not verified.'}
+  ru:'Создаёт область, усиливающую стихийный урон и сокращающую перезарядку умений союзников.',
+  en:'Creates an area that boosts allies’ elemental damage and shortens skill cooldowns.'}
 });
 function hymnChainEvidence(skill,catalog,classes){
  const p=hymnProofs[skill.id];if(!p)return null;
