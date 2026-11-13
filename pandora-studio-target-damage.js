@@ -1219,7 +1219,7 @@ function elementalHit(options={},spec=null){
  const powerKey={DEX:'dex',INT:'int',SPI:'spi'}[effectSkill.powerStat];
  // NONE/null in the OS calculator maps to attribute PHYSICAL (index 0).
  const element=effectSkill.element?.toLowerCase()||'physical';
- const masteryKey=isTrap?'trap':spec.branch;
+ const masteryKey=isTrap?'trap':isLinked?spec.path[0].branch:spec.branch;
  const mastery=masteries[masteryKey]??0;
  const effect=effectSkill.funcs?.[effectSkill.damage?.slotIndex];
  // Pandora Saga OS public BuildCalculator _e indices:
