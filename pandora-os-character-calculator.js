@@ -1791,7 +1791,8 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  weaponEnhancementType='physical',records=[],itemForth=null,
  jobKey=null,meleeMastery=0,magicMastery=0,techniqueInnate=0,
  techniqueTrained=0,guildArouse=0,combatBuffs={},skillCatalog=null,
- priestEffects={},branchMasteries={},branchCaps=null,ridingMastery=0}={}){
+ priestEffects={},branchMasteries={},branchCaps=null,ridingMastery=0,
+ allyClasses=null}={}){
  if(!Number.isInteger(level)||level<1||level>55||
   !['dex','agi','str'].every(key=>Number.isFinite(stats[key])&&stats[key]>=0)||
   !Number.isInteger(honorTitle)||honorTitle<0||honorTitle>=honorTitles.length)return null;
@@ -1924,11 +1925,22 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const windMove=supportSkills.windBlessing?
   supportSkillValues.windBlessing.EP_MOVESPEED_SCALE:0;
  const lightness=otherBuffs.lightness?.movement||0;
+ const freeWind=combatBuffs?.combatFreeWind===true?
+  alliedFreeWindPreview({skillCatalog,classCatalog:allyClasses}):null;
+ const freeWindBonus=freeWind?.bonus||0;
+ const windStackUnknown=freeWindBonus>0&&windMove!==0;
+ const walkingMove=(mounted?Math.ceil(100*mountedRate):100)+
+  equipped.movement+windMove+lightness+freeWindBonus;
+ const townMove=100+equipped.movement+windMove+lightness+
+  secondary.townMovement+freeWindBonus;
  const movementSpeed={base:100,equipment:equipped.movement,
-  active:windMove,lightness,
-  known:(mounted?Math.ceil(100*mountedRate):100)+equipped.movement+windMove+lightness,
+  active:windMove,freeWind:freeWindBonus,endsOnMapChange:freeWind?.endsOnMapChange===true,
+  unknownStacking:windStackUnknown,lightness,
+  // Both the Free Wind and Wind Blessing source values are certain, but
+  // the joint server stacking rule is unknown. Never invent a total.
+  known:windStackUnknown?null:walkingMove,
   townEquipment:secondary.townMovement,
-  town:100+equipped.movement+windMove+lightness+secondary.townMovement,verified:false};
+  town:windStackUnknown?null:townMove,verified:false};
  const skillDelayEquipment=equipped.skillDelay;
  const skillDelayFinalEquipment=equipped.skillDelayFinal;
  const mpRecoveryEquipmentRate=equipped.mpRecoveryRate;
@@ -3175,6 +3187,78 @@ function alliedRecipientPreviews({skillCatalog=null,combat=null}={}){
   result.blessedRepose={bonus:90};
  return result;
 }
+// OS-only allied movement buff: the only ordinary learnable caster is
+// SNIPER (Warding 90 >= the skill requirement 66). This does not require
+// the receiving hero to learn Warding. Lost on changing the map.
+// Don't infer stacking with Wind Blessing (+40) from either source record.
+function alliedFreeWindPreview({skillCatalog=null,classCatalog=null}={}){
+ const skill=skillCatalog?.['260010001'];
+ const sniper=classCatalog?.SNIPER;
+ if(skill?.id!==260010001||skill.name!=='Вольный ветер'||
+  skill.skillType!=='ALLY'||skill.learnable!==true||
+  skill.prereq!==null||
+  JSON.stringify(skill.reqs)!=='[{"branch":"warding","amount":66}]'||
+  skill.classes?.SNIPER!==1||
+  !Number.isSafeInteger(sniper?.branchCaps?.warding)||
+  sniper.branchCaps.warding<66||
+  !Array.isArray(skill.funcs)||skill.funcs.length!==2)return null;
+ const exactly=(ep,first)=>{
+  const rows=skill.funcs.filter(f=>f.ep===ep&&f.dir==='TARGET');
+  return rows.length===1&&
+   JSON.stringify(rows[0].fv1)===JSON.stringify(first)&&
+   JSON.stringify(rows[0].fv2)==='[0,0,0,0]';
+ };
+ if(!exactly('EP_MOVESPEED_SCALE',[0,0,0,200])||
+  !exactly('EP_LOST_MAPCHANGE',[0,0,0,0]))return null;
+ return {id:skill.id,bonus:200,source:'current OS EP_MOVESPEED_SCALE',
+  endsOnMapChange:true,sourceConfirmed:true};
+}
+
+// Current OS target-side recovery: ally CLERIC may cast both. Mastery is
+// an independent coefficient input for the *hypothetical caster*, not skill
+// points spent by the receiving hero. Same independent floor stages as
+// Remaked LPsec/MPsec, but current OS FV1 values take precedence.
+// A source interval value of 2 is not proof of real-time tick seconds.
+function alliedHpPulsePreview({skillCatalog=null,classCatalog=null,
+ casterLevel=45,casterSpi=134,casterHealing=41}={}){
+ const cleric=classCatalog?.CLERIC;
+ if(!Number.isSafeInteger(casterLevel)||casterLevel<1||casterLevel>55||
+  !Number.isSafeInteger(casterSpi)||casterSpi<0||casterSpi>500||
+  !Number.isSafeInteger(casterHealing)||casterHealing<0||
+  !Number.isSafeInteger(cleric?.branchCaps?.benevolence)||
+  casterHealing>cleric.branchCaps.benevolence)return null;
+ const specs=[
+  {id:310002001,key:'regeneration',required:21,type:'ALLY',
+   fv1:[10,10,10,10]},
+  {id:310022001,key:'restoration',required:41,type:'PARTY_ALL',
+   fv1:[20,5,5,5]}
+ ];
+ const result={};
+ for(const spec of specs){
+  const skill=skillCatalog?.[String(spec.id)];
+  if(skill?.id!==spec.id||skill.skillType!==spec.type||
+   skill.learnable!==true||skill.prereq!==null||
+   skill.classes?.CLERIC!==1||!Number.isSafeInteger(skill.charLevel)||
+   casterLevel<skill.charLevel||
+   JSON.stringify(skill.reqs)!==JSON.stringify([
+    {branch:'benevolence',amount:spec.required}])||
+   !Array.isArray(skill.funcs)||skill.funcs.length!==1||
+   casterHealing<spec.required||
+   cleric.branchCaps.benevolence<spec.required)continue;
+  const fx=skill.funcs[0];
+  if(fx?.ep!=='EP_HEAL_LIFE_REGENERATOR'||fx.dir!=='TARGET'||
+   JSON.stringify(fx.fv1)!==JSON.stringify(spec.fv1)||
+   JSON.stringify(fx.fv2)!=='[0,0,0,2]')continue;
+  const [spiRate,levelRate,healingRate,flat]=fx.fv1;
+  result[spec.key]={id:spec.id,hpPerPulse:flat+
+   Math.floor(casterSpi*spiRate/100)+
+   Math.floor(casterLevel*levelRate/100)+
+   Math.floor(casterHealing*healingRate/100),
+   casterLevel,casterSpi,casterHealing,required:spec.required,
+   intervalSourceValue:2,model:true};
+ }
+ return result;
+}
 // Preserved Remaked Legacy Calc('Velox'...'ToxicAura') branch previews.
 // These are read-only magnitudes: never apply to combat stats merely because
 // the hero's level/mastery is high. The corresponding spell must be selected
@@ -3620,6 +3704,19 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
    skillCatalog:combatContext.skillCatalog,
    casterLevel:Number(attributeBuffs.allyNaturalLevel??45)
   }):null;
+ const allyHealingModels=alliedHpPulsePreview({
+  skillCatalog:combatContext.skillCatalog,
+  classCatalog:combatContext.allyClasses,
+  casterLevel:Number(attributeBuffs?.allyHealingLevel??45),
+  casterSpi:Number(attributeBuffs?.allyHealingSpi??134),
+  casterHealing:Number(attributeBuffs?.allyHealingMastery??41)
+ });
+ const allyHealing={
+  regeneration:attributeBuffs?.allyRegeneration===true?
+   allyHealingModels?.regeneration||null:null,
+  restoration:attributeBuffs?.allyRestoration===true?
+   allyHealingModels?.restoration||null:null
+ };
  // OS skill 320007001 requires Blessing 8; 320008001 requires Blessing 12.
  // A previously selected checkbox must not bypass these requirements.
  // Current OS spell-effect records carry a new constant term relative to
@@ -3736,7 +3833,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   hpRaw:rawHp.base+level*rawHp.lv+stats.vit*rawHp.vit,
   mpRaw:rawMp.base+level*rawMp.lv+stats.spi*rawMp.spi,
   stats,basic,effects,honor:extra.honor,potion,resistances,targetResistance,procPreview,experienceBonus,battleMapCloaks,specialEquipment,regeneration,legacyBuffs,priestApplied,priestCast,songSkills,otherEquipment,
-  recoveryAmount,healingSkill,healingSpells,periodicRecovery,allyNaturalRecovery,consumableRecovery,consumableSkills,statusCures,harmfulConsumables,combat,gemstones,auraDamage,attackRange,skillAttackRange,racialEffects,elementalMagic,elementalRefinement,mountedRelease,unison,coverage,
+  recoveryAmount,healingSkill,healingSpells,periodicRecovery,allyNaturalRecovery,allyHealing,consumableRecovery,consumableSkills,statusCures,harmfulConsumables,combat,gemstones,auraDamage,attackRange,skillAttackRange,racialEffects,elementalMagic,elementalRefinement,mountedRelease,unison,coverage,
   attributeBuffs:{flat:extra.flat,trace:extra.trace},supplementalFlat,supplementalSource,
   rounding:'floor-class-cents',source:'current game server / Modern current-vitals class formula',
   verified:false,excluded:['unstructured refinement bonuses','unpublished set effects',
@@ -4821,7 +4918,7 @@ function supportEffectPreview({skillCatalog=null,jobKey=null,level=1,
   }
   return out;
  }
-root.PandoraOSCalculator=Object.freeze({alliedRecipientPreviews,alliedNaturalRecoveryPreview,alliedInspirationPreview,alliedPeaceSongPreview,skillExecutionChains,craftingSkillPreview,trapSkillCostPreview,tacticalSkillPreview,rangedAmmoPreview,combatTechniquePreview,specializedSkillPreview,supportEffectPreview,situationalSkillPreview,statusApplicationPreview,enemyDebuffPreview,complexSkillSourcePreview,priestCastPreviews,movementSkillSourcePreview,utilitySkillSourcePreview,scalingSkillPreview,directStrikeCoefficientPreview,elementalSpellCoefficientPreview,defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
+root.PandoraOSCalculator=Object.freeze({alliedFreeWindPreview,alliedHpPulsePreview,alliedRecipientPreviews,alliedNaturalRecoveryPreview,alliedInspirationPreview,alliedPeaceSongPreview,skillExecutionChains,craftingSkillPreview,trapSkillCostPreview,tacticalSkillPreview,rangedAmmoPreview,combatTechniquePreview,specializedSkillPreview,supportEffectPreview,situationalSkillPreview,statusApplicationPreview,enemyDebuffPreview,complexSkillSourcePreview,priestCastPreviews,movementSkillSourcePreview,utilitySkillSourcePreview,scalingSkillPreview,directStrikeCoefficientPreview,elementalSpellCoefficientPreview,defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
  base,characterSheetPhysicalAttackRange,classBase,classBaseComponents,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,racialWeaponPreview,incredibleStrengthPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
  recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,consumableSkillPreview,statusCurePreview,harmfulConsumablePreview,gemstonePreview,legacyBuffPreview,songSkillPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,skillAttackRangePreview,racialUtilityPreview,elementalMagicPreview,elementalRefinementPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive
 });
