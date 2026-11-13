@@ -117,6 +117,13 @@ function exactConstant(record,ep,expected){
   Array.isArray(found[0].fv2)&&found[0].fv2.length===4&&
   found[0].fv2.every(v=>v===0);
 }
+// Both the source Evasion bonus and its two-hit end condition must match OS.
+function verifiedAvoidance(record){
+ return record?.id===260008001&&record.skillType==='MYSELF'&&
+  record.learnable===true&&Array.isArray(record.funcs)&&
+  record.funcs.length===2&&exactConstant(record,'EP_AVOIDANCE_CONST',100)&&
+  exactConstant(record,'EP_LOST_WARDING_DAMAGE',2);
+}
 function choices({skills={},englishSkills={},jobKey=null,level=1,weapon=null,
  branchMasteries={},branchCaps=null,branchLabels={},englishBranches={},selected=[]}={}){
  const active=new Set(selectedIds(selected));
@@ -128,7 +135,8 @@ function choices({skills={},englishSkills={},jobKey=null,level=1,weapon=null,
    record?.name||'',description:record?.desc||'',
    selected:active.has(row.id),available:gate.allowed,
    reason:gate.ru,reasonEn:gate.en,
-   counted:numericIds.has(row.id)};
+   counted:numericIds.has(row.id)&&
+     (row.id!==260008001||verifiedAvoidance(record))};
  });
 }
 function selectedIds(value){
@@ -180,8 +188,7 @@ function applied({selected=[],skills={},jobKey=null,level=1,weapon=null,
     result.quickStep={dodge:10+Math.floor(agi*5/100)+
      Math.floor(rank*15/100),modeled:true};
   }else if(row.id===260008001){
-   const dodge=effect(record,'EP_AVOIDANCE_CONST');
-   if(dodge===100)result.avoidance={dodge};
+   if(verifiedAvoidance(record))result.avoidance={dodge:100};
   }else if(row.id===260002001){
    // Remaked Flag 11_0, Calc(MoveSPD): additive +30 speed index.
    if(exactConstant(record,'EP_MOVESPEED_SCALE',30))
