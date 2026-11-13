@@ -1649,6 +1649,44 @@ function defenseChapterGroups(calc){
  }
  return groups.filter(g=>g.rows.length);
 }
+// Source breakdown of the existing 12 status totals. Equipment and Souls
+// are only ONE component of those totals; this does not model server rolls.
+function individualStatusSourceRows(traces,terms={},english=false,statusRows=[]){
+ if(!Array.isArray(traces)||!terms||typeof terms!=='object')return [];
+ const byEffect={
+  EP_IMMUNE_BURN:'burn',EP_IMMUNE_STUN:'stun',
+  EP_IMMUNE_NUMB:'numb',EP_IMMUNE_TUMBLE:'tumble',
+  EP_IMMUNE_KNOCKBACK:'knockback',EP_IMMUNE_SLEEP:'sleep',
+  EP_IMMUNE_SILENCE:'silence',EP_IMMUNE_EVIL:'evil',
+  EP_IMMUNE_CURSE:'curse',EP_IMMUNE_DISEASE:'disease',
+  EP_IMMUNE_RAVING:'madness',EP_BLOCK_BREAK_RESIST:'blockBreak'
+ };
+ const known=new Map(statusRows.filter(x=>
+  typeof x?.key==='string'&&x.key.startsWith('resistStatus:'))
+  .map(x=>[x.key.slice('resistStatus:'.length),english?x.en:x.ru]));
+ const sums=new Map();
+ for(const trace of traces){
+  const status=byEffect[trace?.func],match=String(trace?.source||'')
+   .match(/^(item|soul):([1-9][0-9]*)$/);
+  const amount=trace?.value;
+  if(!status||!known.has(status)||!match||
+   !Number.isFinite(amount)||amount===0)continue;
+  const id=Number(match[2]);
+  if(!Number.isSafeInteger(id))continue;
+  const rec=match[1]==='item'?terms.items?.[match[2]]:
+   terms.souls?.[match[2]];
+  if(rec?.id!==id||typeof rec.name!=='string'||!rec.name.trim())continue;
+  const en=match[1]==='item'?terms.englishItems?.[match[2]]?.n:
+   terms.englishSouls?.[match[2]]?.n;
+  const name=english&&typeof en==='string'&&en.trim()?en:rec.name;
+  const key=status+'|'+match[1]+':'+match[2];
+  const old=sums.get(key);
+  sums.set(key,{status,name,amount:(old?.amount||0)+amount});
+ }
+ return [...sums.values()].filter(x=>x.amount!==0).map(x=>({
+  status:x.status,name:x.name,amount:x.amount,label:known.get(x.status)
+ }));
+}
 function appendChapterGroups(body,groups,english,emptyRu,emptyEn,options={}){
  if(!groups.length){body.append(make('p',{class:'stage-attribute-note',
   text:english?emptyEn:emptyRu}));return;}
@@ -1716,7 +1754,26 @@ function appendChapterGroups(body,groups,english,emptyRu,emptyEn,options={}){
     row.ru,row.en,options);
    grid.append(entry);
   }
-  section.append(grid);body.append(section);
+  section.append(grid);
+   if(group.key==='status'&&options.page==='defense'){
+    const sources=individualStatusSourceRows(options.statusSourceTraces,
+     options.gameTerms,english,group.rows);
+    if(sources.length){
+     const breakdown=make('details',{class:'stage-status-source-breakdown'});
+     breakdown.append(make('summary',{text:english?
+      'Bonuses from equipment and Souls':'Вклад предметов и душ'}));
+     breakdown.append(make('p',{class:'stage-attribute-note',text:english?
+      'Direct item and Soul bonuses only. Titles, passives, sets and other effects may also change the totals above.':
+      'Здесь только прямые бонусы вещей и душ. Титулы, пассивные умения, комплекты и другие эффекты тоже могут влиять на итоговые значения выше.'}));
+     for(const source of sources){
+      const display=(source.amount>0?'+':'')+number.format(source.amount)+'%';
+      breakdown.append(make('div',{class:'stage-status-source-row',
+       text:source.label+': '+display+' · '+source.name}));
+     }
+     section.append(breakdown);
+    }
+   }
+   body.append(section);
  }
 }
 function appendItemEvents(body,calc,english,kind,gameTerms={}){
@@ -1843,7 +1900,8 @@ function attackPage(body,calc,items,english,options={}){
 function defensePage(body,calc,english,options={}){
  appendChapterGroups(body,defenseChapterGroups(calc),english,
   'Нет подтверждённых дополнительных защитных параметров.',
-  'No supported additional defense metrics.',{...options,page:'defense'});
+  'No supported additional defense metrics.',{...options,page:'defense',
+   statusSourceTraces:calc?.effects?.trace||[]});
  const conditional=calc?.battleMapCloaks?.entries||[];
  if(conditional.length){
   const panel=make('details',{class:'stage-attribute-row stage-battle-map-cloaks'});
