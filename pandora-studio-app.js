@@ -5055,20 +5055,40 @@ function renderWiki(root){
       const name=dataName('item',String(itemId));
       return source?name:null;
      };
+     // Verified source item IDs and quantities are real Wiki links.
+     // They lead to item provenance/loot/trades, never mutate inventory.
+     const ingredientLink=itemId=>wikiLink(
+      itemName(itemId),'item',String(itemId));
+     const materialLine=(label,count,itemId)=>{
+      const line=h('p',{class:'wiki-skill-source-material'});
+      line.append(h('span',{text:label+count+' × '}),ingredientLink(itemId));
+      return line;
+     };
      for(const extra of evidence.extra){
-      if(extra.type==='recipe'&&extra.uses.every(x=>itemName(x.id))&&
-       itemName(extra.produces.id)){
-       const parts=extra.uses.map(x=>x.quantity+' × '+itemName(x.id)).join(' + ')+
-        ' → '+extra.produces.quantity+' × '+itemName(extra.produces.id);
-       section.append(h('p',{class:'wiki-skill-source-recipe',
-        text:wt('Рецепт: ','Recipe: ')+parts}));
+      if(extra.type==='recipe'&&Array.isArray(extra.uses)&&
+       extra.uses.every(x=>itemName(x.id)&&Number.isSafeInteger(x.quantity)&&
+        x.quantity>0)&&itemName(extra.produces?.id)&&
+       Number.isSafeInteger(extra.produces.quantity)&&
+       extra.produces.quantity>0){
+       const recipe=h('p',{class:'wiki-skill-source-recipe'});
+       recipe.append(h('span',{text:wt('Рецепт: ','Recipe: ')}));
+       extra.uses.forEach((ingredient,index)=>{
+        if(index)recipe.append(h('span',{text:' + '}));
+        recipe.append(h('span',{text:ingredient.quantity+' × '}));
+        recipe.append(ingredientLink(ingredient.id));
+       });
+       recipe.append(h('span',{text:' → '+
+        extra.produces.quantity+' × '}),ingredientLink(extra.produces.id));
+       section.append(recipe);
       }
-      if(extra.type==='trap'&&itemName(extra.itemId))
-       section.append(h('p',{text:wt('Расход: ','Cost: ')+extra.count+
-        ' × '+itemName(extra.itemId)}));
-      if(extra.type==='requiredItem'&&itemName(extra.itemId))
-       section.append(h('p',{text:wt('Для применения нужно: ','Requires: ')+extra.count+
-        ' × '+itemName(extra.itemId)}));
+      if(extra.type==='trap'&&itemName(extra.itemId)&&
+       Number.isSafeInteger(extra.count)&&extra.count>0)
+       section.append(materialLine(wt('Расход: ','Cost: '),
+        extra.count,extra.itemId));
+      if(extra.type==='requiredItem'&&itemName(extra.itemId)&&
+       Number.isSafeInteger(extra.count)&&extra.count>0)
+       section.append(materialLine(wt('Для применения нужно: ','Requires: '),
+        extra.count,extra.itemId));
       if(extra.type==='resource')
        section.append(h('p',{text:wt('Указанный особый расход: ','Source special cost: ')+
         extra.value+wt(' (правило расхода не подтверждено)',
