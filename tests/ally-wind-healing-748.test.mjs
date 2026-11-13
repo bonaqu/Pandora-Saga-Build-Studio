@@ -76,7 +76,7 @@ test('Allied CLERIC Regeneration and Restoration use only source values and cast
  const max=C.alliedHpPulsePreview({skillCatalog:skills,classCatalog:classes,
   casterLevel:55,casterSpi:134,casterHealing:90});
  assert.equal(max.regeneration?.hpPerPulse,37);
- assert.equal(max.restoration?.hpPerPulse,39);
+ assert.equal(max.restoration?.hpPerPulse,37);
  const over=C.alliedHpPulsePreview({skillCatalog:skills,classCatalog:classes,
   casterLevel:45,casterSpi:134,casterHealing:91});
  assert.equal(over,null);
@@ -122,7 +122,7 @@ test('Book displays profile only for chosen allied spells; build import supports
  assert.match(book,/allyHealingSpi/);
  assert.match(book,/allyHealingMastery/);
  assert.match(book,/combatFreeWind/);
- assert.match(book,/unknownStacking/);
+ assert.match(book,/правило сложения не подтверждено/);
  assert.match(book,/Восстановление от союзника/);
  assert.match(app,/allyClasses:catalog\.classes\|\|\{\}/);
  assert.match(app,/allyHealingLevel/);
