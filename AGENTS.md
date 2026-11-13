@@ -63,6 +63,11 @@ These repository-level rules are durable instructions for future coding sessions
 - OS Purify root 310014001 triggers internal 310014002: once the IDs, learnable flags, requirements and FV1/FV2 match, display independent +100 body/mind **source parameters** read-only. Never add them to a character's permanent resistances or invent duration, real cure success, mitigation or target-roll results.
 - Both `directStrikeCoefficientPreview` and `elementalSpellCoefficientPreview` must receive the RU `meta.branchLabels` and EN `strings.en.branches` in addition to `scalingSkillPreview`. Never expose raw internal branch keys when approved current OS labels exist.
 
+## Attack reach and plain-language player guidance (2026-11-13, 0.719.0)
+- OS `weapon.range` is the weapon base distance; direct item `EP_RACE_RANGE` adds to melee/ranged and `EP_BOW_RANGE` to bow/crossbow. Elf racial passive ID 900020002 is RU «Зоркость» / official EN «Eagle Eye» and adds +500 to bow/crossbow only. The paired `EP_RACE_CARRY` and `EP_BOW_CARRY` are not extra bonuses.
+- Show source-derived estimated totals in calculation results and base/gear/race/total separately in Attack. Keep `verified:false`; unverified temporary skill modifiers and full live combat stacking excluded.
+- Use readable player-facing explanations without raw effect names, vectors, IDs, or internal system abbreviations.
+
 ## Fast, safe verification
 1. Identify the affected UI handler and existing related test before coding. Reuse current equipment open/replace/unequip paths instead of duplicating mutations.
 2. Fetch related files in batches; make one coherent patch, with a focused Node regression and an isolated Chromium scenario before a PR.
