@@ -1211,6 +1211,23 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
  heroJobKey=null,heroLevel=1,heroMasteries={},heroBranchCaps={},
  heroWeaponKind='BARE_HAND',heroHasShield=false}={}){
  const en=document.documentElement?.lang==='en';
+ const gates=root.PandoraBookSkillThresholds;
+ const heroGate=id=>gates?.requirements?.({
+  id,skillCatalog:gameTerms.skills,jobKey:heroJobKey,level:heroLevel,
+  branchMasteries:heroMasteries,branchCaps:heroBranchCaps,
+  branchLabels:gameTerms.branchLabels,englishBranches:gameTerms.englishBranches
+ });
+ const appendGate=(node,id)=>{
+  const info=heroGate(id);
+  if(!info?.steps?.length)return;
+  const detail=make('details',{class:'stage-skill-gate-help'},[
+   make('summary',{text:en?'Mastery and level requirements':
+    'Уровень и пороги мастерства'})
+  ]);
+  for(const line of en?info.linesEn:info.linesRu)
+   detail.append(make('small',{text:line}));
+  node.append(detail);
+ };
  const spells=(modifiers?.healingSpells?.rows||[]).filter(row=>row.available===true);
  if(spells.length){
   const group=make('section',{class:'stage-attribute-row stage-healing-spells'});
@@ -1220,7 +1237,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    const amount=String(row.amount)+(row.scaledBySkill?
     (en?' HP':' ОЗ'):(en?' / period':' / период'));
    const available=row.available===true;
-   group.append(make('div',{class:'stage-heal-row'+
+   const preview=make('div',{class:'stage-heal-row'+
     (available?'':' stage-book-unavailable')},[
     // Source IDs are stable for all five Remaked healing previews, including
     // locked skills which deliberately have a null available skillId.
@@ -1237,7 +1254,9 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
        row.id==='sanctuary'?
        gameClassName('CLERIC','Клирик','Cleric',gameTerms,false)+', уровень 45':
        row.requires||'Требования не выполнены'))})
-   ]));
+   ]);
+   appendGate(preview,row.skillId);
+   group.append(preview);
   }
   body.append(group);
  }
@@ -1250,7 +1269,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    'Восстановление каждые 2 секунды'}));
   for(const entry of periodic){
    if(!Number.isFinite(entry?.amount))continue;
-   details.append(make('div',{class:'stage-periodic-row'},[
+   const preview=make('div',{class:'stage-periodic-row'},[
     gameSkillBadge(entry.id,entry.name,null,gameTerms,en,skillIconForId),
     make('strong',{text:String(entry.amount)+' '+(entry.kind==='hp'?
      (en?'HP':'ОЗ'):(en?'MP':'ОМ'))}),
@@ -1261,7 +1280,9 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
       'Требуется мастерство «'+gameBranchName('benevolence',gameTerms,false)+
       '»: '+entry.required):
       (en?'Not yet available':'Пока недоступно')})
-   ]));
+   ]);
+   appendGate(preview,entry.id);
+   details.append(preview);
   }
   details.append(make('p',{class:'stage-periodic-hint',text:en?
    'Skill recovery is distinct from passive hero recovery.':
@@ -1311,7 +1332,10 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
       .replace(' инд.',' idx').replace(' сопротивления',' resistance')
       .replace(' урона',' damage'):skill.unit):
     '—';
-   const ready=skill.hostile?(en?'Source parameters on an enemy target':
+   const ready=skill.modelOnly?(en?
+    'Calculated source-based model, not a confirmed final combat result':
+    'Расчётная модель по игровым данным, не подтверждённый итоговый результат'):
+    skill.hostile?(en?'Source parameters on an enemy target':
     'Исходные параметры на противнике'):
     skill.recipient?(en?
     'Effect on this hero when cast by an ally':
@@ -1350,8 +1374,78 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
        p.base+' + ИНТ '+p.int+' + мастерство '+p.mastery+' = '+part.amount}));
     }
    }
+   appendGate(preview,skill.id);
    section.append(preview);
   }
+  body.append(section);
+ }
+ // Effects from party skills are not abilities learned by this profession.
+ // Still, their numeric effect ON this hero is derived from this hero's
+ // actual attack, accuracy and evasion. Never activate the buff automatically.
+ const fromParty=[...rows.offense,...rows.defense].filter(skill=>
+  skill.recipient===true&&skill.available===true&&
+  Number.isSafeInteger(skill.amount)&&skill.recipientBasis?.applied===false);
+ if(fromParty.length){
+  const section=make('details',{class:'stage-attribute-row stage-skill-party-effects'});
+  section.append(make('summary',{text:en?'Party buffs calculated for this hero':
+   'Усиления союзников для этого героя'}));
+  section.append(make('p',{class:'stage-periodic-hint',text:en?
+   'Potential effects if another character casts these skills on this hero. They are not enabled in the build.':
+   'Возможные прибавки, если другой персонаж применит эти умения на вашего героя. Они не включаются в билд автоматически.'}));
+  for(const skill of fromParty){
+   const source=gameTerms.englishSkills?.[String(skill.id)];
+   const basis=skill.recipientBasis;
+   const label={
+    physicalAttack:[en?'Base physical attack':'Базовая физическая атака',' ATK'],
+    accuracy:[en?'Accuracy':'Точность',''],
+    evasion:[en?'Evasion':'Уклонение','']
+   }[basis.source];
+   if(!label)continue;
+   const card=make('div',{class:'stage-heal-row stage-skill-party-row'},[
+    gameSkillBadge(skill.id,skill.name,source?.n||skill.name,gameTerms,en,skillIconForId),
+    make('strong',{text:'+'+skill.amount+(en?skill.unit:
+     skill.unit===' ATK'?' АТК':skill.unit)}),
+    make('small',{text:en?'Effect on this hero, if an ally uses the skill':
+     'Результат для этого героя при применении союзником'})
+   ]);
+   const how=make('details',{class:'stage-skill-gate-help'},[
+    make('summary',{text:en?'Calculation and next threshold':
+     'Расчёт и следующий порог'})
+   ]);
+   how.append(make('small',{text:label[0]+': '+basis.base+
+    ' · '+basis.flat+' + '+basis.percent+'% ('+
+    (en?'round down':'округлить вниз')+') = +'+skill.amount}));
+   if(basis.nextBase!=null)
+    how.append(make('small',{text:en?
+     'Next +1 at '+label[0].toLowerCase()+' '+basis.nextBase:
+     'Следующая +1 при значении «'+label[0]+'» '+basis.nextBase}));
+   card.append(how);
+   section.append(card);
+  }
+  body.append(section);
+ }
+ // A single current-build next milestone, not a duplicate skill catalog.
+ const nextMelee=gates?.nextMelee?.({
+  skillCatalog:gameTerms.skills,jobKey:heroJobKey,
+  branchMasteries:heroMasteries,branchCaps:heroBranchCaps,
+  englishSkills:gameTerms.englishSkills
+ });
+ if(nextMelee){
+  const section=make('details',{class:'stage-attribute-row stage-skill-next-mastery'});
+  section.append(make('summary',{text:(en?'Melee mastery · next threshold ':
+   'Мастерство ближнего боя · следующий порог ')+nextMelee.required}));
+  section.append(make('div',{class:'stage-skill-milestone-body'},[
+   gameSkillBadge(nextMelee.id,nextMelee.nameRu,nextMelee.nameEn,
+    gameTerms,en,skillIconForId),
+   make('small',{text:en?
+    'Trained: '+nextMelee.current+'/'+nextMelee.required+
+     ' · '+nextMelee.remaining+' more mastery points to this skill threshold':
+    'Освоено: '+nextMelee.current+'/'+nextMelee.required+
+     ' · до порога навыка ещё '+nextMelee.remaining}),
+   make('small',{text:en?
+    'This is a mastery requirement, not proof that all weapon and other conditions are met.':
+    'Это порог мастерства, а не подтверждение всех остальных условий использования умения.'})
+  ]));
   body.append(section);
  }
   // The Book is a calculator for the current hero, not a skill encyclopedia.
