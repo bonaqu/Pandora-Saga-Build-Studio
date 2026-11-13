@@ -64,8 +64,11 @@ test('caster field persists through normal character state without changing skil
  const app=read('pandora-studio-app.js');
  const book=read('pandora-studio-hero-book.js');
  assert.match(app,/priestBenevolence:61,priestExorcism:26/);
- assert.match(app,/exorcism:snap\.attributeBuffs\?\.priestExorcism\?\?26/);
+ assert.match(app,/exorcism:26/);
  assert.match(app,/\['priestExorcism',500\]/);
  assert.doesNotMatch(book,/\['priestExorcism','Изгнание','Exorcism mastery'\]/);
- assert.match(book,/row\.id!==330051001\|\|Number\(buffs\.priestExorcism\)>=26/);
+ assert.match(book,/priestCanLearn\(row\.id\)/);
+ const fields=book.slice(book.indexOf('const priestFields=make('),
+  book.indexOf('priest.append(priestFields);'));
+ assert.doesNotMatch(fields,/priestExorcism/);
 });
