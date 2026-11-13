@@ -75,13 +75,14 @@ test('Book displays magnitude alongside source skill and one shared priest profi
  assert.doesNotMatch(book,/class:'stage-ally-skill-row'/);
  assert.doesNotMatch(book,/casterStatKey/);
  assert.match(book,/priestValues\.holyEnhanced/);
- assert.match(book,/priestValues\.peaceful/);
- assert.match(book,/priestBenevolence/);
+ assert.match(book,/alliedPeaceSongPreview\?\.\(/);
+ assert.match(book,/stage-ally-peace-fields/);
   assert.match(book,/const priestFields=make\('div',\{class:'stage-priest-fields'\}\)/);
  assert.doesNotMatch(book,/skill\.modelOnly\?'≈ '/);
  assert.doesNotMatch(css,/\.stage-ally-caster-field>input/);
  assert.match(app,/priestBenevolence:61/);
- assert.match(app,/benevolence:snap\.attributeBuffs\?\.priestBenevolence/);
+ assert.match(app,/benevolence:0/);
+ assert.match(app,/allyPeaceHymn:30/);
 });
 
 test('real character-sheet pipeline combines Holy + Enchantment only when both enabled and a weapon exists',()=>{
