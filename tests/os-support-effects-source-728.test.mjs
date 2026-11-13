@@ -125,11 +125,11 @@ test('one exact resource preview and seven qualitative models improve the audit'
   assert.deepEqual(row.sourceModules,['support-effects-source']);
  }
 });
-test('Hero Book displays real item names without exposing internal effect codes',()=>{
- const src=read('pandora-studio-hero-book.js');
- for(const phrase of ['Помощь союзникам','Обмен и рассеивание магии',
-  'Helping allies','Magic exchange and dispel','supportEffectPreview',
-  'stage-skill-support-effects','sourceItemName(row.requiredItemId)'])
-  assert.ok(src.includes(phrase),phrase);
- assert.ok(src.includes('&&!support?.help?.length&&!support?.magic?.length'));
+test('Source-only os-support-effects-source-728 knowledge is readable in Wiki without fake results',()=>{
+ const wiki=read('pandora-studio-wiki-skill-insights.js');
+ const app=read('pandora-studio-app.js');
+ const book=read('pandora-studio-hero-book.js');
+ assert.ok(wiki.includes('supportEffectPreview'),'verified source projection retained');
+ assert.ok(app.includes('PandoraWikiSkillInsights?.inspect'),'Wiki owns reference skill notes');
+ assert.ok(!book.includes('stage-skill-support-effects'),'Book cannot show standalone source-only notes');
 });
