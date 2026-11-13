@@ -654,7 +654,8 @@ function viewSkills(target,details,api){
  // Preserve scroll while editing the same skill, but reveal a newly
  // selected skill at the top instead of leaving it outside the scroller.
  const changedSelection=target.dataset.selectedSkillId!==selectedId;
- grid.scrollTop=changedSelection?0:previousScroll;
+ if(changedSelection)grid.scrollTop=0;
+ else grid.scrollTop=previousScroll;
  target.dataset.selectedSkillId=selectedId;
  if(rows.length>(api.shown||24)){
   const ru='Показать ещё',en='Show more',key='skillShowMore';
@@ -744,33 +745,50 @@ function viewSkills(target,details,api){
    }
    details.append(reqList);
   }
-  // Navigate the CURRENT skill lineage without another full catalog,
-  // modal or detached action list. Class-gate every link and preserve ID.
-  const previous=skill.prereq!=null?
-   skillIndex.get(String(skill.prereq)):null;
-  const successors=api.skillCatalog.filter(row=>
-   row?.prereq!=null&&String(row.prereq)===String(skill.id)&&
-   allowedForJob(row,api.job));
+  // Preserve the existing separately editable RU/EN previous-skill
+  // caption and source name. Make the existing value keyboard-navigable,
+  // instead of adding a second previous-skill card or duplicate label.
+  const classCanOpen=allowedForJob;
   const navigate=related=>{
    if(typeof api.onNavigateSkill==='function')api.onNavigateSkill(related);
    else if(typeof api.onInspect==='function')api.onInspect(related);
   };
-  if((previous&&allowedForJob(previous,api.job))||successors.length){
+  if(skill.prereq){
+   const before=skillIndex.get(String(skill.prereq));
+   const title=authored(api,'skillPreviousLabel','Предыдущее умение',
+    'Previous skill','span','path-skill-previous-label');
+   const canNavigate=before?.name&&classCanOpen(before,api.job);
+   const current=before?.name?
+    make('span',{class:'path-skill-previous-value',text:before.name,
+     ...(canNavigate?{'role':'link',tabindex:'0',
+      'aria-label':tr(api,'Открыть умение ','Open skill ')+before.name,
+      onclick:()=>navigate(before),
+      onkeydown:event=>{
+       if(event.key==='Enter'||event.key===' '){
+        event.preventDefault();navigate(before)
+       }
+      }}:{})}):
+    authored(api,'skillPrerequisiteMissing','Умение отсутствует в каталоге',
+     'Skill not in catalog','span','path-skill-previous-value');
+   const row=make('p',{class:'path-skill-prereqs path-skill-previous-row'});
+   row.append(title,make('span',{class:'path-skill-previous-separator',text:': '}),current);
+   details.append(row);
+  }
+  const successors=api.skillCatalog.filter(row=>
+   row?.prereq!=null&&String(row.prereq)===String(skill.id)&&
+   classCanOpen(row,api.job));
+  if(successors.length){
    const lineage=make('nav',{class:'path-skill-lineage',
-    'aria-label':tr(api,'Связанные умения','Related skills')});
-   const link=(related,ru,en)=>{
+    'aria-label':tr(api,'Продолжение умения','Skill upgrades')});
+   for(const related of successors){
     const label=related.name||tr(api,'Умение без названия','Unnamed skill');
-    const button=make('button',{type:'button',class:'path-skill-lineage-link',
+    lineage.append(make('button',{type:'button',
+     class:'path-skill-lineage-link',
      'data-related-skill-id':String(related.id),
-     'aria-label':tr(api,ru,en)+': '+label,
-     text:tr(api,ru,en)+' · '+label,
-     onclick:()=>navigate(related)});
-    lineage.append(button);
-   };
-   if(previous&&allowedForJob(previous,api.job))
-    link(previous,'← Предыдущее','← Previous');
-   for(const next of successors)
-    link(next,'Следующее →','Next →');
+     'aria-label':tr(api,'Следующее умение: ','Next skill: ')+label,
+     text:tr(api,'Следующее → ','Next → ')+label,
+     onclick:()=>navigate(related)}));
+   }
    details.append(lineage);
   }
   // Raw effect codes remain in the encyclopedia, not the quick skill card.
