@@ -1194,7 +1194,7 @@ function buffsPage(body,options){
    const field=make('label',{class:'stage-book-field stage-ally-natural-level'},[
     make('span',{text:english?'Ally level':'Уровень союзника'})]);
    field.append(make('input',{type:'number',min:20,max:55,step:1,
-    value:String(buffs.allyNaturalLevel??45),
+    value:String(Math.max(20,Math.min(55,Number(buffs.allyNaturalLevel??45)||45))),
     'aria-label':english?'Ally level':'Уровень союзника',
     'data-book-setting':'allyNaturalLevel',
     onchange:event=>onBuff('allyNaturalLevel',event.target.value)}));
