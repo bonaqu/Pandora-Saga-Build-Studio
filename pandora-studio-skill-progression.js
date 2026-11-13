@@ -92,6 +92,13 @@ function setAuto(state,on,keys=[],innate={},caps={}){
 function groupAdeptness(state,branchKeys,innate={},caps={}){
  return branchKeys.reduce((sum,key)=>sum+branchMastery(state,key,innate,caps),0);
 }
+// The parent MELEE group aggregates trained green of five subbranches.
+function meleeGroupCap(caps={}){
+ return MELEE.reduce((sum,key)=>sum+(classLimit(key,caps)??0),0);
+}
+function meleeGroupTrained(state,innate={},caps={}){
+ return groupAdeptness(state,MELEE,innate,caps);
+}
 function prayerAdeptness(state,innate={},caps={}){return groupAdeptness(state,PRAYER,innate,caps)}
 function combatMasteries(state,innate={},caps={}){
  return {melee:groupAdeptness(state,MELEE,innate,caps),
@@ -136,6 +143,6 @@ function canAllocate(table,level,points,key,cap,amount){
 root.PandoraSkillProgression=Object.freeze({
  potential,trained,branchBase,branchPotential,branchMastery,trainedLimit,classLimit,migrateMastery,TRACK_MAX,
  setPotential,setTrained,setAuto,skillGrant,spending,canAllocate,
- groupAdeptness,prayerAdeptness,legacyPrayerSpirit,combatMasteries,PRAYER,MAGIC,TECHNIQUE,MELEE
+ groupAdeptness,meleeGroupCap,meleeGroupTrained,prayerAdeptness,legacyPrayerSpirit,combatMasteries,PRAYER,MAGIC,TECHNIQUE,MELEE
 });
 })(typeof window==='undefined'?globalThis:window);
