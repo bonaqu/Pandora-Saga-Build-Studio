@@ -53,7 +53,10 @@ export async function runWikiMaterialLinks752Smoke(browser,base){
   assert.equal(await poison.locator('a.wiki-link').getAttribute('href'),
    '#wiki/item/50056');
   assert.match(await page.locator('.wiki-page .wiki-skill-source-insight').innerText(),
-   /эффект яда прекращается при смене оружия/);
+   /Эффект яда прекращается при смене оружия/);
+  const plainInsight=await page.locator('.wiki-page .wiki-skill-source-insight').innerText();
+  assert.match(plainInsight,/Действие умения/);
+  assert.doesNotMatch(plainInsight,/Это сведения из игровых файлов|не рассчитанный урон/);
   await poison.locator('a.wiki-link').click();
   await page.waitForFunction(()=>location.hash.includes('#wiki/item/50056'));
   await page.goBack();

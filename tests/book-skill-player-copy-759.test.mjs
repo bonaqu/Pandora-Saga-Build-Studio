@@ -5,6 +5,7 @@ const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const root={};Function('window',read('pandora-os-character-calculator.js'))(root);
 Function('window',read('pandora-studio-wiki-skill-insights.js'))(root);
 const book=read('pandora-studio-hero-book.js');
+const wikiUi=read('pandora-studio-app.js');
 const skills=JSON.parse(read('data/os/skills.json'));
 const classes=JSON.parse(read('data/os/classes.json'));
 const calculator=root.PandoraOSCalculator;
@@ -42,4 +43,10 @@ test('Encyclopedia speaks about skill effects instead of confidence disclaimers'
  assert.match(song.notes[0].ru,/стихийный урон/);
  assert.match(song.notes[0].ru,/сокращающую перезарядку/);
  assert.doesNotMatch(song.notes[0].ru,/не подтвержд/);
+});
+
+test('Encyclopedia actions show no internal data-source caveat',()=>{
+ assert.match(wikiUi,/Действие умения/);
+ assert.doesNotMatch(wikiUi,/Это сведения из игровых файлов, а не рассчитанный урон/);
+ assert.doesNotMatch(wikiUi,/правило расхода не подтверждено/);
 });
