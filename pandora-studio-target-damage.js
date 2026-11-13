@@ -1110,6 +1110,182 @@ const linkedSpells=Object.freeze([
    }
   ],
   "damageIndex": 1
+ },
+ {
+   "id": 410026001,
+   "path": [
+     {
+       "id": 410026001,
+       "learnable": true,
+       "kind": "POINT",
+       "element": "LIGHTNING",
+       "stat": "INT",
+       "branch": "element",
+       "charLevel": 0,
+       "prereq": null,
+       "reqs": [
+         {
+           "branch": "element",
+           "amount": 61
+         },
+         {
+           "branch": "exorcism",
+           "amount": 40
+         }
+       ],
+       "damage": null,
+       "effects": [
+         [
+           "EP_SKILL_EXEC",
+           "TARGET",
+           [
+             0,
+             0,
+             0,
+             410026002
+           ],
+           [
+             0,
+             0,
+             0,
+             0
+           ]
+         ]
+       ]
+     },
+     {
+       "id": 410026002,
+       "learnable": false,
+       "kind": "SPHERE",
+       "element": "LIGHTNING",
+       "stat": "INT",
+       "branch": "element",
+       "charLevel": 0,
+       "prereq": null,
+       "reqs": [],
+       "damage": {
+         "kernel": "element",
+         "slotIndex": 0
+       },
+       "effects": [
+         [
+           "EP_ELEMENT_DAMAGE",
+           "TARGET",
+           [
+             200,
+             0,
+             50,
+             5
+           ],
+           [
+             0,
+             0,
+             0,
+             0
+           ]
+         ],
+         [
+           "EP_SKILL_EXEC_GETON",
+           "TARGET",
+           [
+             0,
+             0,
+             0,
+             410026003
+           ],
+           [
+             0,
+             0,
+             0,
+             0
+           ]
+         ],
+         [
+           "EP_SKILL_EXEC",
+           "TARGET",
+           [
+             0,
+             0,
+             0,
+             410026004
+           ],
+           [
+             0,
+             0,
+             0,
+             0
+           ]
+         ]
+       ]
+     },
+     {
+       "id": 410026004,
+       "learnable": false,
+       "kind": "ENEMY",
+       "element": "LIGHTNING",
+       "stat": "INT",
+       "branch": "element",
+       "charLevel": 0,
+       "prereq": null,
+       "reqs": [],
+       "damage": null,
+       "effects": [
+         [
+           "EP_MOVESPEED_SCALE",
+           "TARGET",
+           [
+             0,
+             0,
+             0,
+             -20
+           ],
+           [
+             0,
+             0,
+             0,
+             0
+           ]
+         ]
+       ]
+     }
+   ],
+   "damageIndex": 1,
+   "sidecars": [
+     {
+       "parent": 410026002,
+       "via": "EP_SKILL_EXEC_GETON",
+       "node": {
+         "id": 410026003,
+         "learnable": false,
+         "kind": "ENEMY",
+         "element": "LIGHTNING",
+         "stat": "INT",
+         "branch": "element",
+         "charLevel": 0,
+         "prereq": null,
+         "reqs": [],
+         "damage": null,
+         "effects": [
+           [
+             "EP_UNABLE_MOVE",
+             "TARGET",
+             [
+               0,
+               0,
+               0,
+               0
+             ],
+             [
+               0,
+               0,
+               0,
+               0
+             ]
+           ]
+         ]
+       }
+     }
+   ]
  }
 ]);
 // Only one OS EP_ELEMENT_DAMAGE packet is calculated for each linked
@@ -1150,6 +1326,15 @@ function sourceLinkedSpell({skillCatalog,classes,jobKey,level,masteries={},
   const parent=skillCatalog?.[String(spec.path[i-1].id)];
   if(!parent?.funcs?.some(effect=>effect.ep==='EP_SKILL_EXEC'&&
    effect.dir==='TARGET'&&effect.fv1?.[3]===node.id))return null;
+ }
+ // Storm's get-on movement effect is an independent side chain. Verify
+ // it explicitly, but never add its action to the direct hit amount.
+ for(const side of spec.sidecars||[]){
+  const related=skillCatalog?.[String(side.node.id)];
+  const parent=skillCatalog?.[String(side.parent)];
+  if(!exact(related,side.node)||
+   !parent?.funcs?.some(fx=>fx.ep===side.via&&fx.dir==='TARGET'&&
+    fx.fv1?.[3]===side.node.id))return null;
  }
  if(first.prereq!=null&&
   (skillCatalog?.[String(first.prereq)]?.id!==first.prereq||
