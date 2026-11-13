@@ -116,6 +116,30 @@ export function auditOsSkillFormulaCoverage({skills,classes,calculator}={}){
     mark(row.id,'song-source');
   }
  }
+ // These party-wide effects already have source-based calculations elsewhere:
+ // Blessed Repose changes MP recovery SPEED, and Life Sign adds max HP.
+ // Audit exact live OS vectors without re-applying either effect to a hero.
+ const partyBuffProofs=[
+  {id:320002001,module:'party-recovery-buff',vectors:[['EP_HEAL_TIME_SCALE',90]]},
+  {id:320005001,module:'party-max-hp-buff',
+   vectors:[['EP_MAXLIFE_CONST',250],['EP_MAXLIFE_SCALE',15]]}
+ ];
+ for(const proof of partyBuffProofs){
+  const source=skills[String(proof.id)];
+  if(source?.id!==proof.id||source?.skillType!=='PARTY_ALL'||
+   source?.learnable!==true||source?.prereq!==null||
+   !Array.isArray(source?.funcs)||source.funcs.length!==proof.vectors.length)
+   continue;
+  const correct=proof.vectors.every(([ep,value],index)=>{
+   const effect=source.funcs[index];
+   return effect?.ep===ep&&effect?.dir==='TARGET'&&
+    Array.isArray(effect.fv1)&&effect.fv1.length===4&&
+    effect.fv1.every((amount,i)=>amount===(i===3?value:0))&&
+    Array.isArray(effect.fv2)&&effect.fv2.length===4&&
+    effect.fv2.every(amount=>amount===0);
+  });
+  if(correct)mark(proof.id,proof.module,{numeric:true});
+ }
  // The five enemy elemental spells are modeled on the hero as incoming
  // target and are NOT own passive resistance. Divine Blessing is an
  // independent party buff. These exact signed source values are numeric
