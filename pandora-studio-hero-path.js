@@ -637,6 +637,19 @@ function viewSkills(target,details,api){
  rows.sort((a,b)=>Number(String(b.skill.id)===selectedId)-
   Number(String(a.skill.id)===selectedId));
  target.append(make('p',{class:'path-skill-count',text:skillCountLabel(rows.length,api.lang)}));
+ // Future MELEE unlocks are Path planning data, not Book skill effects.
+ const milestone=api.nextMelee;
+ const nextSkill=milestone?skillIndex.get(String(milestone.id)):null;
+ if(!api.query&&api.filter==='all'&&nextSkill&&
+  Number.isSafeInteger(milestone.remaining)&&milestone.remaining>0&&
+  typeof api.onNavigateSkill==='function'){
+  target.append(make('button',{type:'button',class:'path-next-melee',
+   'data-next-melee-skill-id':String(nextSkill.id),
+   text:tr(api,'Ближний бой · до «'+nextSkill.name+'» ещё '+
+    milestone.remaining+' мастерства →',
+    'Melee · '+milestone.remaining+' more mastery to '+nextSkill.name+' →'),
+   onclick:()=>api.onNavigateSkill(nextSkill)}));
+ }
  const grid=make('div',{class:'path-skill-grid'});
  for(const {skill,gate}of rows.slice(0,api.shown||24)){
   const item=make('button',{type:'button',class:'path-skill-card'+(gate.learned?' learned':' locked')+

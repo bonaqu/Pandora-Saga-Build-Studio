@@ -112,7 +112,7 @@ test('full signed Ossify root rejects changed secondary game effects',()=>{
    undefined,'An altered source may not produce numeric Book values');
  }
 });
-test('Book shows current level, green mastery and next user-confirmed MELEE threshold',()=>{
+test('Path keeps source-confirmed next MELEE milestone and current mastery',()=>{
  const caps=classes.JUGGERNAUT.branchCaps;
  const view=rank=>T.nextMelee({skillCatalog:skills,jobKey:'JUGGERNAUT',
   branchCaps:caps,branchMasteries:trained(caps,rank),
@@ -161,7 +161,12 @@ test('Book is build-scoped, bilingual, and external-buff block is not a toggle',
  assert.match(index,/pandora-studio-book-skill-thresholds\.js/);
  assert.match(effects,/PandoraBookSkillThresholds/);
  assert.match(effects,/stage-skill-gate-help/);
- assert.match(effects,/stage-skill-next-mastery/);
+ assert.doesNotMatch(effects,/stage-skill-next-mastery|nextMelee|appendGate|stage-skill-gate-line/,
+  'The Book contains current effects, not future skill unlocks');
+ const path=read('pandora-studio-hero-path.js'),app=read('pandora-studio-app.js');
+ assert.match(path,/class:'path-next-melee'/);
+ assert.match(path,/data-next-melee-skill-id/);
+ assert.ok(app.includes('nextMelee:window.PandoraBookSkillThresholds?.nextMelee'));
  assert.match(effects,/stage-skill-party-effects/);
  assert.match(effects,/skill\.recipient===true/);
  assert.match(effects,/applied===false/);

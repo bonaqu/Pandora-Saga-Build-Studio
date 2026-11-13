@@ -104,7 +104,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
    return host.querySelector('.stage-book-page')?.textContent||'';
   },{lang,chapter});
   const ru=await render({lang:'ru',chapter:'effects'});
-  for(const name of ['Первая помощь','Массовое исцеление','Песнь поэта','Песнопения'])
+  for(const name of ['Первая помощь','Массовое исцеление','Песнь поэта'])
    assert.ok(ru.includes(name),'Book effects need OS/Remaked RU '+name+'; seen '+ru.slice(0,600));
   const unavailableHeal=page.locator('#book-source-qa [data-healing-skill-id="310004001"]');
   assert.equal(await unavailableHeal.count(),0,'Unavailable Heal must not appear as a learned healing-skill row');
@@ -169,11 +169,10 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   await how.locator('summary').click();
   assert.match(await how.innerText(),/Следующая \+1 при значении/);
   assert.match(await how.innerText(),/165/);
-  const nextGroup=page.locator('#book-source-qa .stage-skill-next-mastery');
-  assert.equal(await nextGroup.count(),1);
-  await nextGroup.locator('summary').click();
-  assert.match(await nextGroup.innerText(),/Беспощадный удар/);
-  assert.match(await nextGroup.innerText(),/Освоено: 0\/3/);
+  assert.equal(await page.locator('#book-source-qa .stage-skill-next-mastery').count(),0,
+   'Next unlock is a Path hint, not a current calculated combat effect');
+  assert.equal(await page.locator('#book-source-qa .stage-skill-gate-line').count(),0,
+   'Known general prerequisites remain in Path and Encyclopedia');
   for(const name of ['Первая помощь','Храм','Восстановление'])
    assert.ok(ru.includes(name),'Hero Book must use exact current OS skill name '+name);
   assert.ok(!ru.includes('Невероятная сила'),
@@ -188,7 +187,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   const singer=offense.locator('[data-skill-action-id="340001001"]');
   assert.equal(await singer.count(),1,'Current ENCHANTER sees source action for Minstrel\'s Song');
   assert.equal(await singer.locator('details').count(),0,
-   'Offense uses one disclosure for action, model details and requirements');
+   'Offense uses one disclosure for this build\'s action and model details');
   await singer.locator(':scope > summary').click();
   assert.match(await singer.innerText(),/Полный запас 450 ОМ: до 15 применений/);
   assert.match(await singer.innerText(),/Для ещё одного применения нужно \+30 ОМ/);
@@ -227,7 +226,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   assert.ok(scroll.scrollWidth<=scroll.width+3,
    'Effect icons must not push healing rows beyond the Book: '+JSON.stringify(scroll));
   const en=await render({lang:'en',chapter:'effects'});
-  for(const term of ['First Aid','Healing Aura',"Minstrel's Song",'Hymn mastery'])
+  for(const term of ['First Aid','Healing Aura',"Minstrel's Song"])
    assert.ok(en.includes(term),'Book effects need original OS EN '+term+'; seen '+en.slice(0,700));
   assert.match(en,/With Inspiration from an ally: 1.5 s of casting/);
   assert.doesNotMatch(en,/not a confirmed final combat result|final speed, duration|actual firing rate is not known/);

@@ -783,3 +783,31 @@ test('Skill results pager uses stable filtered order, pins selection and keeps t
  assert.equal(walk(details).some(n=>n.className==='path-skill-list-nav'),false);
  assert.equal(details.hidden,true);
 });
+
+test('One source-derived next skill shortcut belongs to Path and respects search',()=>{
+ const skill={id:100057001,name:'Беспощадный удар',classes:{JUGGERNAUT:1},
+  learnable:true,reqs:[{branch:'martial',amount:100}]};
+ const other={id:100051001,name:'Рывок',classes:{JUGGERNAUT:1},
+  learnable:true,reqs:[]};
+ const api={state:{level:45,points:{}},job:'JUGGERNAUT',lang:'ru',
+  skillCatalog:[skill,other],catalogReady:true,query:'',filter:'all',
+  shown:24,selectedSkill:null,icon:()=>null,hover:()=>{},
+  branchName:key=>key,innate:{},
+  branchCaps:{slash:30,thrust:30,brush:30,blow:10,defense:20},
+  nextMelee:{id:100057001,current:70,required:100,remaining:30},
+  onNavigateSkill:chosen=>{api.selectedSkill=chosen;}};
+ const gallery=new BrowserElement('root'),details=new BrowserElement('root');
+ const render=()=>root.PandoraHeroPath.viewSkills(gallery,details,api);
+ const shortcut=()=>walk(gallery).find(node=>node.className==='path-next-melee');
+ render();
+ assert.match(shortcut().textContent,/Ближний бой.*Беспощадный удар.*30 мастерства/);
+ assert.equal(shortcut().attributes['data-next-melee-skill-id'],'100057001');
+ shortcut().listeners.click();
+ assert.equal(api.selectedSkill.id,100057001);
+ assert.equal(api.state.level,45);
+ api.lang='en';render();assert.match(shortcut().textContent,/Melee.*30 more mastery/);
+ api.query='Рывок';render();assert.equal(shortcut(),undefined);
+ api.query='';api.filter='known';render();assert.equal(shortcut(),undefined);
+ api.filter='all';api.nextMelee=null;render();assert.equal(shortcut(),undefined);
+ api.nextMelee={id:999,remaining:5};render();assert.equal(shortcut(),undefined);
+});

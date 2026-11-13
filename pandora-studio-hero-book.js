@@ -1341,18 +1341,6 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
  onItem=()=>{},onSkill=null}={}){
  const en=document.documentElement?.lang==='en';
  const gates=root.PandoraBookSkillThresholds;
- const heroGate=id=>gates?.requirements?.({
-  id,skillCatalog:gameTerms.skills,jobKey:heroJobKey,level:heroLevel,
-  branchMasteries:heroMasteries,branchCaps:heroBranchCaps,
-  branchLabels:gameTerms.branchLabels,englishBranches:gameTerms.englishBranches
- });
- const appendGate=(node,id)=>{
-  const info=heroGate(id);
-  if(!info?.steps?.length)return;
-  // Requirements live in the same compact disclosure as the skill result.
-  for(const line of en?info.linesEn:info.linesRu)
-   node.append(make('small',{class:'stage-skill-gate-line',text:line}));
- };
  const healingNumber=new Intl.NumberFormat(en?'en-US':'ru-RU',
   {maximumFractionDigits:2});
  const showBaseManaBudget=(node,action)=>{
@@ -1509,7 +1497,6 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    }));
    appendHealingMilestones(more,row,pulse);
    appendHealingBreakdown(more,row,pulse);
-   appendGate(more,sourceId);
    if(more.childElementCount>1)preview.append(more);
    group.append(preview);
   }
@@ -1536,7 +1523,6 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    }
    appendHealingMilestones(more,entry,true);
    appendHealingBreakdown(more,entry,true);
-   appendGate(more,entry.id);
    if(more.childElementCount>1)preview.append(more);
    details.append(preview);
   }
@@ -1682,7 +1668,6 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    // show how many casts the CURRENT hero can afford, in this disclosure.
    // Zero-cost skills and unavailable actions remain untouched.
    showBaseManaBudget(more,action);
-   appendGate(more,skill.id);
    if(more.childElementCount>1)preview.append(more);
    section.append(preview);
   }
@@ -1726,27 +1711,6 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    card.append(how);
    section.append(card);
   }
-  body.append(section);
- }
- // A single current-build next milestone, not a duplicate skill catalog.
- const nextMelee=gates?.nextMelee?.({
-  skillCatalog:gameTerms.skills,jobKey:heroJobKey,
-  branchMasteries:heroMasteries,branchCaps:heroBranchCaps,
-  englishSkills:gameTerms.englishSkills
- });
- if(nextMelee){
-  const section=make('details',{class:'stage-attribute-row stage-skill-next-mastery'});
-  section.append(make('summary',{text:(en?'Melee mastery · next threshold ':
-   'Мастерство ближнего боя · следующий порог ')+nextMelee.required}));
-  section.append(make('div',{class:'stage-skill-milestone-body'},[
-   gameSkillBadge(nextMelee.id,nextMelee.nameRu,nextMelee.nameEn,
-    gameTerms,en,skillIconForId,onSkill),
-   make('small',{text:en?
-    'Trained: '+nextMelee.current+'/'+nextMelee.required+
-     ' · '+nextMelee.remaining+' more mastery points to this skill threshold':
-    'Освоено: '+nextMelee.current+'/'+nextMelee.required+
-     ' · до порога навыка ещё '+nextMelee.remaining})
-  ]));
   body.append(section);
  }
   // The Book is a calculator for the current hero, not a skill encyclopedia.
