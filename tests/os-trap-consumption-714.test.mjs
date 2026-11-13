@@ -90,7 +90,7 @@ test('trap consumption is source-number arithmetic, not made-up combat damage',(
 });
 test('Hero Book explains uncertain mechanics and the actual game material in RU/EN',()=>{
  const book=read('pandora-studio-hero-book.js');
- const css=read('pandora-studio-theme.css');
+ const css=read('pandora-studio-hero-book-additions.css');
  assert.match(book,/stage-skill-trap-costs/);
  assert.match(book,/Количество ловушек взято из игровых данных/);
  assert.match(book,/Для применения нужно:/);
