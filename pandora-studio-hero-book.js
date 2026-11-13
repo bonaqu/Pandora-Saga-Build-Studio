@@ -585,6 +585,7 @@ function buffsPage(body,options){
   // mere presence in saved builds must not inflate the enhancement counter.
   if(['priestSpi','priestBlessing','priestHymn','priestBenevolence','priestExorcism','priestEnabled',
    'priestClass','allyPeaceSpi','allyPeaceHymn','allyNaturalLevel',
+   'allyHealingSpi','allyHealingLevel','allyHealingMastery',
    'honorCuriosity','proeliumPotency'].includes(key))return false;
   if(key.startsWith('priest')&&buffs.priestEnabled!==true)return false;
   if(key==='priestGratia'&&!(Number(buffs.priestBlessing)>=8))return false;
@@ -1004,6 +1005,81 @@ function buffsPage(body,options){
      (english?' (base ':' (база ')+preview.base+')':''):skill?.summary;
   toggle(party,label,key,false,availability[key]===true,
    skill?{...skill,summary}:null);
+ }
+ // These OS skills are not in the older Remaked Set.Buff toggles.
+ // They are separate recipient effects, never the hero's trained skills.
+ const windGust=root.PandoraOSCalculator?.alliedFreeWindPreview?.({
+  skillCatalog:gameTerms.skills,classCatalog:gameTerms.classes});
+ const wild=gameTerms.skills?.['260010001'];
+ const wildEn=gameTerms.englishSkills?.['260010001'];
+ toggle(party,wild?.name||'Вольный ветер','combatFreeWind',false,
+  Boolean(windGust),{
+   id:260010001,name:wild?.name,nameEn:wildEn?.n,
+   desc:wild?.desc,descEn:wildEn?.d,icon:skillIconForId(260010001),
+   reason:english?'Current OS skill unavailable':'Умение недоступно в игровых данных',
+   summary:windGust?(english?'Movement-speed index +200 · ends on map change':
+    'Скорость передвижения +200 · исчезает при смене карты'):null
+  });
+ if(buffs.combatFreeWind===true&&buffs.combatWindBlessing===true)
+  party.append(make('small',{class:'stage-attribute-note',text:english?
+   'Free Wind and Wind Blessing together: the server stacking rule is unknown, so no combined movement total is shown.':
+   '«Вольный ветер» и «Благословение ветра» вместе: правило сложения не подтверждено, поэтому общий итог скорости не рассчитывается.'}));
+ const healer=gameTerms.classes?.CLERIC;
+ const healerCap=Number(healer?.branchCaps?.benevolence||0);
+ const healingProfile={
+  skillCatalog:gameTerms.skills,classCatalog:gameTerms.classes,
+  casterLevel:Number(buffs.allyHealingLevel??45),
+  casterSpi:Number(buffs.allyHealingSpi??134),
+  casterHealing:Number(buffs.allyHealingMastery??41)
+ };
+ const eligibleHealing=root.PandoraOSCalculator?.alliedHpPulsePreview?.({
+  ...healingProfile,casterHealing:41})||{};
+ const healingPreview=root.PandoraOSCalculator?.alliedHpPulsePreview?.(
+  healingProfile)||{};
+ for(const [id,key,modelKey] of [
+  [310002001,'allyRegeneration','regeneration'],
+  [310022001,'allyRestoration','restoration']
+ ]){
+  const spell=gameTerms.skills?.[String(id)];
+  const amount=healingPreview[modelKey]?.hpPerPulse;
+  toggle(party,spell?.name||key,key,false,
+   Boolean(eligibleHealing[modelKey]),{
+    id,name:spell?.name,nameEn:gameTerms.englishSkills?.[String(id)]?.n,
+    desc:spell?.desc,descEn:gameTerms.englishSkills?.[String(id)]?.d,
+    icon:skillIconForId(id),
+    reason:english?'No verified allied caster':'Нет проверенного подходящего союзника',
+    summary:Number.isSafeInteger(amount)?
+     (english?'HP +':'ОЗ +')+amount+
+      (english?' per recovery pulse (model)':' за срабатывание (расчёт)'):
+     (english?'Caster parameters are unavailable':'Нет подходящих значений союзника')
+  });
+ }
+ if(buffs.allyRegeneration===true||buffs.allyRestoration===true){
+  const group=make('div',{class:'stage-priest-fields stage-ally-hp-fields'});
+  group.append(make('small',{class:'stage-attribute-note stage-ally-peace-note',
+   text:english?
+    'Ally Cleric · independent caster stats; skill requirements are automatic. Source interval value: 2 (actual seconds unverified).':
+    'Союзник Клирик · его параметры не расходуют очки героя. Требования учтены автоматически. Параметр периода в данных: 2 (секунды не подтверждены).'}));
+  const min=Math.max(buffs.allyRegeneration?21:0,buffs.allyRestoration?41:0);
+  const fields=[
+   ['allyHealingLevel','Уровень союзника','Ally level',1,55,45],
+   ['allyHealingSpi','СД союзника','Ally SPR',0,500,134],
+   ['allyHealingMastery','Исцеление союзника','Ally Healing mastery',
+    min,healerCap,41]
+  ];
+  for(const [key,ru,en,minValue,maxValue,defaultValue] of fields){
+   const label=make('label',{class:'stage-book-field'},[
+    make('span',{text:english?en:ru})]);
+   const amount=Number(buffs[key]??defaultValue);
+   label.append(make('input',{type:'number',min:minValue,max:maxValue,step:1,
+    value:String(Math.max(Math.min(minValue,maxValue),
+     Math.min(Number.isFinite(amount)?amount:defaultValue,maxValue))),
+    'aria-label':english?en:ru,'data-book-setting':key,
+    disabled:maxValue<minValue,
+    onchange:event=>onBuff(key,event.target.value)}));
+   group.append(label);
+  }
+  party.append(group);
  }
  // One source-controlled setting per Remaked enhancement. The entries
  // already represented by Life Sign, priest and elemental resistance tools
@@ -1699,6 +1775,15 @@ function defenseChapterGroups(calc){
   put(0,'mpNaturalAlly','Природное восстановление союзника · ОМ за срабатывание',
    'Allied Natural Recovery · MP per pulse',
    calc.allyNaturalRecovery.mpPerPulse,'',true);
+ for(const [key,ru,en] of [
+  ['regeneration','Регенерация от союзника · ОЗ за срабатывание',
+   'Allied Regeneration · HP per pulse'],
+  ['restoration','Восстановление от союзника · ОЗ за срабатывание',
+   'Allied Restoration · HP per pulse']]){
+  const amount=calc.allyHealing?.[key]?.hpPerPulse;
+  if(Number.isSafeInteger(amount))
+   put(0,'allyHealing:'+key,ru,en,amount,'',true);
+ }
  const statuses={
   burn:['Ожоги','Burn'],stun:['Оглушение','Stun'],
   numb:['Заморозка','Freeze'],tumble:['Падение','Knockdown'],
