@@ -2709,19 +2709,20 @@ function healingSpellsPreview({level,int,spi,benevolence=0,healingPercent=100,
   const option=cleric&&spec?.cleric?spec.cleric:spec?.standard;
   return option?.[5]??null;
  };
- const calc=key=>{
+ const calc=(key,mastery=benevolence)=>{
   const v=fv(key);
   if(!Array.isArray(v)||v.length!==4||!v.every(Number.isFinite))return null;
   const raw=v[3]+int*v[0]/100+level*v[1]/100+
-   benevolence*v[2]/100;
+   mastery*v[2]/100;
   return Math.floor(raw*healingPercent/100);
  };
- // OS periodic FV1=[SPI%,level%,Healing%,flat]. Remaked's independent
- // component floors survive; FV2[3]=2 is NOT assigned an unknown tick time.
+ // Current OS FV2[3]=2 matches Remaked Calc('LPsec') «every 2 seconds».
+ // Its duration/stacking in live OS still needs independent confirmation.
  const recoveryFV=healingSourceSpecs.restoration.standard[5];
- const restore=recoveryFV[3]+Math.floor(spi*recoveryFV[0]/100)+
+ const restoreAt=mastery=>recoveryFV[3]+Math.floor(spi*recoveryFV[0]/100)+
   Math.floor(level*recoveryFV[1]/100)+
-  Math.floor(benevolence*recoveryFV[2]/100);
+  Math.floor(mastery*recoveryFV[2]/100);
+ const restore=restoreAt(benevolence);
  const rows=[
   {id:'firstAid',name:'Первая помощь',amount:calc('firstAid'),requires:'Мастерство исцеления 8',
    requiresEn:'Healing mastery 8',scaledBySkill:true},
@@ -2740,6 +2741,16 @@ function healingSpellsPreview({level,int,spi,benevolence=0,healingPercent=100,
   row.skillId=skillId;
   row.nameEn=healingSourceSpecs[row.id].nameEn;
   row.available=skillId!==null;
+  row.nextMastery=null;
+  if(row.available&&Number.isSafeInteger(benevolence)&&
+   Number.isSafeInteger(benevolenceCap)){
+   // Next actual increase, not merely the next +1 green mastery point.
+   for(let rank=benevolence+1;rank<=Math.min(120,benevolenceCap);rank++){
+    const value=row.id==='restoration'?restoreAt(rank):calc(row.id,rank);
+    if(value>row.amount){row.nextMastery={rank,remaining:rank-benevolence,
+     gain:value-row.amount};break;}
+   }
+  }
  }
  return {formulaSource:'Remaked Healing-view stages + current OS FV1; triggered Sanctuary 310023002',
   clericLevel50:cleric,verified:false,rows,
@@ -2925,12 +2936,12 @@ function periodicRecoveryPreview({level,spi,benevolence=0,jobKey=null,
   !Number.isInteger(benevolence)||benevolence<0||typeof jobKey!=='string')
   return null;
  // Current OS periodic event FV1: [SPI%, level%, Healing%, constant].
- // Calculate each component with the existing Remaked floor semantics;
- // never claim FV2[3]=2 proves live tick interval or duration.
- const osMagnitude=id=>{
+ // Separate Remaked floors, current OS coefficients. Matching FV2[3]=2
+ // agrees with Remaked's «every 2 seconds» model, not live tick measurement.
+ const osMagnitude=(id,mastery=benevolence)=>{
   const v=periodicSkillProof[id].fv1;
   return v[3]+Math.floor(spi*v[0]/100)+Math.floor(level*v[1]/100)+
-   Math.floor(benevolence*v[2]/100);
+   Math.floor(mastery*v[2]/100);
  };
  const candidates=[
   {id:310002001,key:'regenerate',amount:osMagnitude(310002001),
@@ -2955,10 +2966,19 @@ function periodicRecoveryPreview({level,spi,benevolence=0,jobKey=null,
   // mastery should not block its verified, class-appropriate level-20 skill.
   const available=level>=proof.charLevel&&(
    candidate.kind==='mp'||validAllocation&&benevolence>=proof.required);
+  let nextMastery=null;
+  if(candidate.kind==='hp'&&available&&
+   Number.isSafeInteger(benevolenceCap)){
+   for(let rank=benevolence+1;rank<=Math.min(120,benevolenceCap);rank++){
+    const amount=osMagnitude(candidate.id,rank);
+    if(amount>candidate.amount){nextMastery={rank,
+     remaining:rank-benevolence,gain:amount-candidate.amount};break;}
+   }
+  }
   rows.push({...candidate,available,required:proof.required,
-   skillLevel:proof.charLevel,verified:false});
+   skillLevel:proof.charLevel,intervalSeconds:2,nextMastery,verified:false});
  }
- return {rows,verified:false,source:'Remaked independent floors + source-validated OS SPI/level/mastery FV1; tick timing unverified'};
+ return {rows,verified:false,source:'Remaked 2-second LPsec/MPsec model + source-validated OS FV1/FV2; live timing not measured'};
 }
 
 // Historical Remaked Legacy js/equip.js weapon-gem switch for enhancement +1..+10.
@@ -3135,9 +3155,10 @@ function alliedNaturalRecoveryPreview({skillCatalog=null,casterLevel=45}={}){
   JSON.stringify(effect.fv1)!=='[0,10,0,0]'||
   JSON.stringify(effect.fv2)!=='[0,0,0,2]')return null;
  // Snapshot coefficient: level 20 -> +2; 45 -> +4; 55 -> +5.
- // This is a pulse magnitude model, not a verified tick schedule in seconds.
+ // The 2-second interval agrees with legacy Remaked MPsec and OS FV2[3].
+ // Do not infer total duration or server-side stacking.
  return {id:330005001,mpPerPulse:Math.floor(casterLevel*.10),
-  casterLevel,intervalSourceValue:2,modeled:true};
+  casterLevel,intervalSourceValue:2,intervalSeconds:2,modeled:true};
 }
 // Existing party skills are received by the current hero. Their relevant
 // baseline is from the hero's actual current character sheet, not from
