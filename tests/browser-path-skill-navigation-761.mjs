@@ -19,7 +19,7 @@ export async function runPathSkillNavigation761Smoke(browser,base){
   const gallery=page.locator('#pathSkillGallery');
   const details=page.locator('#pathSkillDetails');
   const query=page.locator('#pathSkillSearch');
-  await query.fill('Двойной удар');
+  await query.click();await query.fill('Двойной удар');
   await gallery.locator('[data-skill-id="110101001"]').waitFor();
   await gallery.locator('[data-skill-id="110101001"]').click();
   assert.match(await details.locator('h3').innerText(),/Двойной удар/);
@@ -40,7 +40,7 @@ export async function runPathSkillNavigation761Smoke(browser,base){
   await back.click();
   assert.match(await details.locator('h3').innerText(),/Двойной удар/);
   await page.locator('[data-locale="en"]').click();
-  await query.fill('Slice');
+  await query.click();await query.fill('Slice');
   await gallery.locator('[data-skill-id="110101001"]').waitFor();
   await gallery.locator('[data-skill-id="110101001"]').click();
   assert.match(await details.locator('h3').innerText(),/Slice/);
