@@ -471,3 +471,25 @@
 .wiki-skill-access-notice>strong{font-size:12px;font-weight:650;color:var(--gold)}
 .wiki-skill-access-notice>p{margin:0;font-size:11px;line-height:1.5;overflow-wrap:anywhere}
 .wiki-skill-access-notice>.wiki-link{font-size:11px;overflow-wrap:anywhere}
+
+/* 0.752: source-exact skill recipe/material links are compact inline references.
+   Retain keyboard access, wiki history and long RU/EN item names. */
+.wiki-page .wiki-skill-source-recipe,
+.wiki-page .wiki-skill-source-material{
+ overflow-wrap:anywhere;line-height:1.8
+}
+.wiki-page .wiki-skill-source-recipe .wiki-link,
+.wiki-page .wiki-skill-source-material .wiki-link{
+ display:inline-flex;vertical-align:baseline;align-items:baseline;
+ width:auto;max-width:100%;min-height:0;margin:0 2px;padding:2px 5px;
+ border:1px solid #806042;border-radius:4px;background:#2b1d13;
+ color:#f0ce99;font:inherit;line-height:1.5;overflow-wrap:anywhere
+}
+.wiki-page .wiki-skill-source-recipe .wiki-link:hover,
+.wiki-page .wiki-skill-source-material .wiki-link:hover{
+ background:#49301d;border-color:#ddb17a;color:#ffe0ad
+}
+.wiki-page .wiki-skill-source-recipe .wiki-link:focus-visible,
+.wiki-page .wiki-skill-source-material .wiki-link:focus-visible{
+ outline:2px solid #f0c58b;outline-offset:2px
+}
