@@ -124,7 +124,7 @@ test('Book uses one current skill row and retains materials only in Wiki',()=>{
  assert.match(book,/stage-target-damage-row/);
  assert.match(book,/Средний урон по цели/);
  assert.match(book,/Average hit against/);
- assert.match(book,/heroMasteries\.trap>=41/);
+ assert.match(book,/mastery<required/);
  assert.doesNotMatch(book,/stage-material-actions|function materialSkillResults\(/);
  assert.doesNotMatch(book,/function monsterDamageSimulator\(/);
 });
