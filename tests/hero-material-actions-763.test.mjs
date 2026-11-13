@@ -64,7 +64,13 @@ test('All four recipes and five trap actions are sourced; impossible entries sta
  const trapRows=calc.trapSkillCostPreview(creator).rows;
  assert.deepEqual(recipeRows.map(r=>r.id),[220002001,220003001,220004001]);
  assert.deepEqual(trapRows.map(r=>r.id),
-  [240001001,240002001,240005001,240008001,240010001]);
+  [240001001,240002001,240005001,240010001],
+  'PREDATOR cap 70 does not reach the 71-mastery trap');
+ const advanced=opts('DISTURBANCE',{trap:71});
+ const highTrap=calc.trapSkillCostPreview(advanced).rows
+  .find(r=>r.id===240008001);
+ assert.equal(highTrap?.requirementsMet,true);
+ assert.ok(action('trap',highTrap,advanced));
  for(const row of recipeRows)assert.ok(action('craft',row,creator));
  for(const row of trapRows)assert.ok(action('trap',row,creator));
  const blessed=opts('ENCHANTER',{blessing:41});
