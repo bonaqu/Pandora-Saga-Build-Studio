@@ -107,7 +107,7 @@ test('Hero Book reads computed hits once, materials remain in the Encyclopedia',
  const book=read('pandora-studio-hero-book.js');
  const app=read('pandora-studio-app.js');
  assert.match(app,/PandoraOSTargetDamage\?\.supportedSkillHits/);
- assert.match(book,/calculatedById=new Map\(hits\.map/);
+ assert.match(book,/calculatedById=new Map\(relevantHits\.map/);
  assert.match(book,/stage-target-damage-row/);
  assert.match(book,/heroMasteryKey/);
  assert.doesNotMatch(book,/stage-material-actions|function materialSkillResults\(/);

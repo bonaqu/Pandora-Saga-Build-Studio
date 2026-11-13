@@ -1551,7 +1551,9 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   const required=source?.reqs?.find(r=>r.branch===branch)?.amount??0;
   if(![240005001,330001001,410001001,410011001,410012001,
     410021001,410023001,420003001,430001001,430052001,
-    410002001,430053001].includes(id)||
+    410002001,430053001,240002001,410014001,410014003,
+    410022001,420007001,430001003,430052002,430053003,
+    430056001].includes(id)||
    seenHits.has(id)||result.monsterId!==22104||
    source?.id!==id||source.classes?.[heroJobKey]!==1||
    !Number.isSafeInteger(mastery)||mastery<required||
@@ -1583,11 +1585,20 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   // Only effects calculable for this hero remain here. Static source
   // coefficients and enemy-target descriptors live in the Encyclopedia.
   const baseSkills=rows[groupName]||[];
-  const calculatedById=new Map(hits.map(row=>[row.id,row]));
+  // Specialised skill upgrades may keep the old source name and coefficient.
+  // If a higher variant is available for the CURRENT class and build,
+  // render one upgraded result instead of two indistinguishable rows.
+  const upgradedRoots=new Set(hits.map(row=>
+   gameTerms.skills?.[String(row.id)]?.prereq).filter(Number.isSafeInteger));
+  const relevantBase=groupName==='offense'?
+   baseSkills.filter(row=>!upgradedRoots.has(row.id)):baseSkills;
+  const relevantHits=groupName==='offense'?
+   hits.filter(row=>!upgradedRoots.has(row.id)):[];
+  const calculatedById=new Map(relevantHits.map(row=>[row.id,row]));
   const currentSkills=groupName==='offense'?[
-   ...baseSkills.map(row=>calculatedById.has(row.id)?
+   ...relevantBase.map(row=>calculatedById.has(row.id)?
     {...row,...calculatedById.get(row.id)}:row),
-   ...hits.filter(row=>!baseSkills.some(base=>base.id===row.id))
+   ...relevantHits.filter(row=>!relevantBase.some(base=>base.id===row.id))
   ]:baseSkills;
   const skills=currentSkills.filter(skill=>
    skill.available===true&&!skill.hostile&&!skill.recipient&&

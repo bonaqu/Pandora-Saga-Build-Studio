@@ -16,7 +16,10 @@ const fixture=(overrides={})=>({skillCatalog:skills,classes,jobKey:'WARLOCK',
  level:45,masteries:{element:70,exorcism:20,darkness:25,charm:20},
  branchCaps:classes.WARLOCK.branchCaps,stats:{dex:65,int:80,spi:50},
  equipment:[],tables,itemForth,unison,modifiers:mods(0),...overrides});
-const hitList=opts=>OS.supportedSkillHits(fixture(opts));
+// The 0.773 regression covers original direct skills; linked packets get
+// independent vectors in os-linked-packets-775.
+const hitList=opts=>OS.supportedSkillHits(fixture(opts))
+ .filter(x=>!OS.linkedSpells.some(p=>p.id===x.skillId));
 const packet=(hits,id)=>hits.find(x=>x.skillId===id);
 const compact=hits=>hits.map(x=>[x.skillId,x.min,x.average,x.max]);
 const newIds=[330001001,410011001,410012001,410021001,410023001,420003001];
