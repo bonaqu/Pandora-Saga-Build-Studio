@@ -97,6 +97,69 @@ function poisonItemSource(skill){
  }],paths:[],extra:[{type:'requiredItem',count:1,itemId:50056}],
   sourceOnly:true,finalAmount:null};
 }
+// Four OS hymns launch an area action and then a recipient-side effect.
+// This source whitelist documents links, not server timing or final combat.
+const hymnProofs=Object.freeze({
+ 340001001:{area:340001002,final:340001003,req:[['hymn',8]],
+  previous:null,move:0,mana:30,effects:[
+   ['EP_TOHIT_CONST',[13,0,13,4]],['EP_AVOIDANCE_CONST',[13,0,13,4]]],
+  ru:'Создаёт область с эффектами точности и уклонения. Длительность и сложение с другими песнями не подтверждены.',
+  en:'Creates an area affecting accuracy and evasion. Duration and stacking with other songs are unverified.'},
+ 340001004:{area:340001005,final:340001006,req:[['hymn',8]],
+  previous:340001001,move:225,mana:30,effects:[
+   ['EP_TOHIT_CONST',[13,0,13,4]],['EP_AVOIDANCE_CONST',[13,0,13,4]]],
+  ru:'Улучшенная версия создаёт область с эффектами точности и уклонения, а также отдельно изменяет скорость исполнителя. Совместное действие с основной версией не подтверждено.',
+  en:'Upgraded song: accuracy/evasion area effects and a separate performer movement-speed change. Stacking with the original is unverified.'},
+ 340003001:{area:340003002,final:340003003,
+  req:[['benevolence',61],['hymn',30]],previous:null,move:225,mana:33,
+  effects:[['EP_DAMAGE_CLEAR',[60,0,30,10]]],
+  ru:'Создаёт область с эффектом защитного порога: небольшой входящий урон может не проходить. Точная работа на сервере и длительность не измерены.',
+  en:'Creates an area with a protective damage threshold. Live behavior and duration have not been measured.'},
+ 340004001:{area:340004002,final:340004003,
+  req:[['blessing',71],['hymn',30]],previous:null,move:225,mana:33,
+  effects:[['EP_SKILL_BENCH_FIN',[-28,0,-17,-5]],
+   ['EP_ELEMENT_DAMAGE_SCALE',[8,0,8,4]]],
+  ru:'Создаёт область: получатель получает влияние на стихийный урон и показатель перезарядки навыков. Точные секунды отката не подтверждены.',
+  en:'Creates an area affecting both elemental damage and the cooldown index. Exact cooldown seconds are not verified.'}
+});
+function hymnChainEvidence(skill,catalog,classes){
+ const p=hymnProofs[skill.id];if(!p)return null;
+ const zero=[0,0,0,0];
+ const same=(f,ep,dir,v1,v2=zero)=>f?.ep===ep&&f.dir===dir&&
+  JSON.stringify(f.fv1)===JSON.stringify(v1)&&
+  JSON.stringify(f.fv2)===JSON.stringify(v2);
+ if(skill.learnable!==true||skill.skillType!=='TOGGLE'||
+  skill.branch!=='hymn'||skill.charLevel!==0||
+  skill.prereq!==p.previous||skill.mana!==p.mana||
+  skill.cast!==0||skill.cooldown!==5||
+  JSON.stringify(skill.reqs?.map(r=>[r.branch,r.amount]))!==JSON.stringify(p.req)||
+  skill.funcs?.length!==4||
+  !same(skill.funcs[0],'EP_SKILL_EXEC_COUNT','TARGET',
+   [0,0,0,p.area],[0,0,0,4])||
+  !same(skill.funcs[1],'EP_MOVESPEED_CONST','CASTER',[0,0,p.move,0])||
+  !same(skill.funcs[2],'EP_TOGGLE','CASTER',[0,0,-20,50],[0,0,0,5])||
+  !same(skill.funcs[3],'EP_STATE_CHANT','CASTER',zero)||
+  (p.previous!=null&&catalog?.[String(p.previous)]?.id!==p.previous))
+  return null;
+ // Raw classes lists can be broad; at least one current job must meet
+ // ALL of the genuine acquisition caps. The open build is irrelevant here.
+ if(!Object.entries(classes||{}).some(([job,entry])=>
+  skill.classes?.[job]===1&&p.req.every(([branch,rank])=>
+   Number.isSafeInteger(entry?.branchCaps?.[branch])&&
+   entry.branchCaps[branch]>=rank)))return null;
+ const area=catalog?.[String(p.area)],end=catalog?.[String(p.final)];
+ if(area?.id!==p.area||area.learnable!==false||
+  area.skillType!=='SPHERE'||area.branch!=='hymn'||
+  area.funcs?.length!==1||
+  !same(area.funcs[0],'EP_SKILL_EXEC','TARGET',[0,0,0,p.final])||
+  end?.id!==p.final||end.learnable!==false||
+  end.skillType!=='ALLY'||end.branch!=='hymn'||
+  end.funcs?.length!==p.effects.length||
+  !p.effects.every(([ep,vector],i)=>
+   same(end.funcs[i],ep,'TARGET',vector)))return null;
+ return {notes:[{ru:p.ru,en:p.en}],paths:[[skill.id,p.area,p.final]],
+  extra:[],pathKind:'hymn',sourceOnly:true,finalAmount:null};
+}
 function rowsOf(result){
  if(!result||typeof result!=='object')return [];
  return ['rows','defense','magic','help','stealth','other'].flatMap(
@@ -124,6 +187,11 @@ function inspect({skillCatalog,classes,id,calculator}={}){
  if(poison){
   store.values.set(skill.id,poison);
   return poison;
+ }
+ const hymn=hymnChainEvidence(skill,skillCatalog,classes);
+ if(hymn){
+  store.values.set(skill.id,hymn);
+  return hymn;
  }
  const jobs=Object.keys(classes).filter(job=>
   skill.classes?.[job]===1&&classes[job]?.branchCaps);
