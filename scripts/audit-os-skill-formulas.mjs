@@ -192,9 +192,12 @@ export function auditOsSkillFormulaCoverage({skills,classes,calculator}={}){
  // Exact OS ammunition counts; child effect results remain unmodeled.
  for(const jobKey of classNames){
   const caps=classes[jobKey].branchCaps;
-  const ammo=calculator.rangedAmmoPreview({skillCatalog:skills,jobKey,
-   level:55,branchCaps:caps,branchMasteries:caps,weaponKind:'BOW'});
-  for(const row of ammo.rows)mark(row.id,'skill-ammunition',{numeric:true});
+  for(const weaponKind of ['BOW','CROSSBOW']){
+   const ammo=calculator.rangedAmmoPreview({skillCatalog:skills,jobKey,
+    level:55,branchCaps:caps,branchMasteries:caps,weaponKind});
+   for(const row of ammo.rows)if(row.requirementsMet)
+    mark(row.id,'skill-ammunition',{numeric:true});
+  }
  }
  // Exact source records are qualitative: cast cost does not prove hit
  // probability, mitigation, server target selection or final damage.
