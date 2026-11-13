@@ -1325,12 +1325,114 @@ function renderSongSkills(body,modifiers,gameTerms={},skillIconForId=()=>null){
   body.append(details);
  }
 }
+
+/* Verified current-hero production and trap material costs only.
+ * This stays folded so ordinary combat/healing results are not crowded.
+ * Recipe discovery and full linked actions belong to the Encyclopedia. */
+function materialSkillResults(body,{modifiers,gameTerms,skillIconForId,
+ heroJobKey,heroLevel,heroMasteries,heroBranchCaps,onItem}){
+ const calc=root.PandoraOSCalculator,gates=root.PandoraBookSkillThresholds;
+ if(!calc||!gates||!gameTerms.skills||!gameTerms.items)return;
+ const opts={skillCatalog:gameTerms.skills,jobKey:heroJobKey,
+  level:heroLevel,branchMasteries:heroMasteries,
+  branchCaps:heroBranchCaps,branchLabels:gameTerms.branchLabels,
+  englishBranches:gameTerms.englishBranches};
+ const sources=[
+  ...(calc.craftingSkillPreview?.(opts)?.rows||[]).map(row=>['craft',row]),
+  ...(calc.trapSkillCostPreview?.(opts)?.rows||[]).map(row=>['trap',row])
+ ];
+ const actions=sources.map(([kind,row])=>gates.materialAction({
+  kind,row,skillCatalog:gameTerms.skills,items:gameTerms.items,
+  jobKey:heroJobKey,level:heroLevel,branchCaps:heroBranchCaps,
+  branchMasteries:heroMasteries
+ })).filter(Boolean);
+ if(!actions.length)return;
+ const en=document.documentElement?.lang==='en';
+ const amount=n=>new Intl.NumberFormat(en?'en-US':'ru-RU').format(n);
+ const sec=n=>new Intl.NumberFormat(en?'en-US':'ru-RU',
+  {maximumFractionDigits:2}).format(n);
+ const itemName=id=>{
+  const rec=gameTerms.items[String(id)];
+  return (en?(gameTerms.englishItems?.[String(id)]?.n||rec?.nameEn):
+   rec?.name)||rec?.name||String(id);
+ };
+ const itemLink=(id,quantity)=>{
+  const link=make('button',{type:'button',class:'stage-material-item-link',
+   text:amount(quantity)+' × '+itemName(id),
+   'aria-label':(en?'Encyclopedia: ':'Энциклопедия: ')+itemName(id),
+   onclick:()=>onItem?.(id)});
+  return link;
+ };
+ const pane=make('details',{class:'stage-attribute-row stage-material-actions',
+  'data-book-collapse':'material-actions'});
+ pane.append(make('summary',{text:(en?'Crafting and materials':'Создание и материалы')+
+  ' ('+actions.length+')'}));
+ for(const action of actions){
+  const skill=gameTerms.skills[String(action.skillId)];
+  const product=action.produces;
+  const row=make('div',{class:'stage-material-action-row',
+   'data-material-skill-id':String(action.skillId)});
+  const head=make('div',{class:'stage-material-action-head'});
+  head.append(gameSkillBadge(action.skillId,skill.name,
+   gameTerms.englishSkills?.[String(action.skillId)]?.n||skill.name,
+   gameTerms,en,skillIconForId));
+  head.append(make('strong',{text:product?
+   (en?'Creates ':'Создание ')+amount(product.quantity)+' × '+
+    itemName(product.id):
+   (en?'Uses ':'Расход ')+amount(action.materials[0].quantity)+' × '+
+    itemName(action.materials[0].id)}));
+  row.append(head);
+  const costs=make('div',{class:'stage-material-action-costs'});
+  costs.append(make('small',{text:(en?'Per use: ':'На применение: ')+
+   (en?'MP ':'ОМ ')+action.mana+' · '+
+   (en?'Cast ':'Применение ')+
+   (action.cast===0?(en?'instant':'мгновенно'):sec(action.cast)+
+    (en?' s':' сек.'))+' · '+
+   (en?'Cooldown ':'Перезарядка ')+sec(action.cooldown)+
+    (en?' s':' сек.')}));
+  const needs=make('div',{class:'stage-material-action-items'});
+  needs.append(make('small',{text:en?'Materials:':'Материалы:'}));
+  for(const [index,mat] of action.materials.entries()){
+   if(index)needs.append(make('span',{text:' + '}));
+   needs.append(itemLink(mat.id,mat.quantity));
+  }
+  if(product){
+   needs.append(make('span',{text:' → '}));
+   needs.append(itemLink(product.id,product.quantity));
+  }
+  costs.append(needs);
+  const budget=gates.materialUseBudget?.({action,maxMana:modifiers?.mp});
+  if(budget&&budget.casts>0){
+   const next=make('div',{class:'stage-material-action-budget'});
+   next.append(make('small',{text:en?
+    'Full '+amount(budget.maxMana)+' MP: up to '+
+     amount(budget.casts)+' uses at base cost; '+amount(budget.remainder)+
+     ' MP left. For these uses:':
+    'Полный запас '+amount(budget.maxMana)+' ОМ: до '+
+     amount(budget.casts)+' применений по базовой цене, остаток '+
+     amount(budget.remainder)+' ОМ. Для этого нужно:'}));
+   for(const [index,mat] of budget.materials.entries()){
+    if(index)next.append(make('span',{text:' + '}));
+    next.append(itemLink(mat.id,mat.quantity));
+   }
+   costs.append(next);
+  }
+  const inspiration=gates.inspiredCastTime?.({
+   action:{...action,baseOnly:true},castTime:modifiers?.combat?.castTime});
+  if(inspiration)costs.append(make('small',{text:en?
+   'With allied Inspiration: '+sec(inspiration.seconds)+' s casting':
+   'С «Воодушевлением» союзника: '+sec(inspiration.seconds)+' сек. применения'}));
+  row.append(costs);pane.append(row);
+ }
+ body.append(pane);
+}
+
 // Mirrors Remaked SkillView: individual skill outcomes, never the selected
 // buff toggles or the 43 main result values.
 function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>null,
  remakedBuffRows=[],availability={},combatSkillCards={},
  heroJobKey=null,heroLevel=1,heroMasteries={},heroBranchCaps={},
- heroWeaponKind='BARE_HAND',heroHasShield=false}={}){
+ heroWeaponKind='BARE_HAND',heroHasShield=false,onItem=()=>{}}={}){
  const en=document.documentElement?.lang==='en';
  const gates=root.PandoraBookSkillThresholds;
  const heroGate=id=>gates?.requirements?.({
@@ -1691,6 +1793,8 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   }
   body.append(section);
  }
+ materialSkillResults(body,{modifiers,gameTerms,skillIconForId,
+  heroJobKey,heroLevel,heroMasteries,heroBranchCaps,onItem});
  // Effects from party skills are not abilities learned by this profession.
  // Still, their numeric effect ON this hero is derived from this hero's
  // actual attack, accuracy and evasion. Never activate the buff automatically.
@@ -1761,7 +1865,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   // These verified OS models remain in the calculator for the source audit.
   if(!body.querySelector('.stage-healing-spells, .stage-periodic-recovery,'+
    '.stage-attacking-skills, .stage-defensive-skills,'+
-   '.stage-movement-skills, .stage-utility-skills'))
+   '.stage-movement-skills, .stage-utility-skills,.stage-material-actions'))
    body.append(make('p',{class:'stage-attribute-note',text:en?
     'No calculated skill effects for this build. Skill descriptions and requirements are in Encyclopedia → Skills.':
     'У текущего билда нет рассчитанных эффектов умений. Описания и требования смотри в Энциклопедии → Навыки.'}));
@@ -2489,7 +2593,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
   gameTerms,remakedBuffRows,skillIconForId,...copyOptions});
  if(chosen==='effects')skillEffectsPage(body,{modifiers,gameTerms,skillIconForId,
   remakedBuffRows,availability,combatSkillCards,heroJobKey,heroLevel,heroMasteries,
-   heroBranchCaps,heroWeaponKind,heroHasShield});
+   heroBranchCaps,heroWeaponKind,heroHasShield,onItem});
  if(chosen==='recovery'){
   const english=document.documentElement?.lang==='en';
   const percent=modifiers?.potion?.percent;

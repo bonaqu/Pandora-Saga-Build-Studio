@@ -121,7 +121,75 @@ function inspiredCastTime({action,castTime}={}){
   !castTime.source.includes("Remaked Calc('CastSPD')"))return null;
  return {baseSeconds:action.cast,seconds:action.cast/2,percent:50};
 }
+
+/*
+ * Character-specific projection of source-checked crafting/trap actions.
+ * Rows MUST come from craftingSkillPreview / trapSkillCostPreview; this
+ * second gate checks exact OS items and skill ownership before rendering.
+ */
+function materialAction({kind,row,skillCatalog,items,jobKey,level,
+ branchCaps={},branchMasteries={}}={}){
+ if(!['craft','trap'].includes(kind)||row?.requirementsMet!==true||
+  !Number.isSafeInteger(row.id))return null;
+ const action=sourceAction({skillCatalog,skillId:row.id,jobKey,level,
+  available:true,branchCaps,branchMasteries});
+ if(!action||!['MYSELF','POINT'].includes(action.skillType)||
+  (kind==='craft'&&action.skillType!=='MYSELF')||
+  (kind==='trap'&&action.skillType!=='POINT'))return null;
+ const skill=skillCatalog[String(row.id)];
+ const materials=kind==='craft'?row.uses:
+  [{id:row.itemId,quantity:row.count}];
+ if(!Array.isArray(materials)||!materials.length||
+  !materials.every(x=>Number.isSafeInteger(x?.id)&&x.id>0&&
+   Number.isSafeInteger(x.quantity)&&x.quantity>0&&
+   items?.[String(x.id)]?.id===x.id))return null;
+ const effect=(f,ep,id,count)=>f?.ep===ep&&
+  ['CASTER','TARGET'].includes(f.dir)&&
+  Array.isArray(f.fv1)&&f.fv1.length===4&&
+  Array.isArray(f.fv2)&&f.fv2.length===4&&
+  f.fv1.every((v,i)=>v===(i===3?id:0))&&
+  f.fv2.every((v,i)=>v===(i===3?count:0));
+ const consumed=skill.funcs.filter(f=>f?.ep==='EP_CONSUME_ITEM');
+ if(consumed.length!==materials.length||
+  !materials.every((x,i)=>effect(consumed[i],'EP_CONSUME_ITEM',
+   x.id,x.quantity)))return null;
+ let produces=null;
+ if(kind==='craft'){
+  const output=row.produces;
+  if(!Number.isSafeInteger(output?.id)||output.id<1||
+   !Number.isSafeInteger(output.quantity)||output.quantity<1||
+   items?.[String(output.id)]?.id!==output.id||
+   skill.funcs.length!==materials.length+1||
+   !effect(skill.funcs[skill.funcs.length-1],'EP_ADDITION_ITEM',
+    output.id,output.quantity))return null;
+  produces={id:output.id,quantity:output.quantity};
+ }else{
+  const children=skill.funcs.filter(f=>f?.ep==='EP_SKILL_EXEC');
+  if(!Number.isSafeInteger(row.linkedEffectId)||
+   children.length!==1||children[0]?.fv1?.[3]!==row.linkedEffectId)
+   return null;
+ }
+ return {kind,skillId:row.id,materials:materials.map(x=>({...x})),
+  produces,mana:action.mana,cast:action.cast,cooldown:action.cooldown,
+  sourceOnly:true};
+}
+/* Counts from FULL calculated MP; inputs are costs per cast, NOT inventory. */
+function materialUseBudget({action,maxMana}={}){
+ if(!action||!Array.isArray(action.materials))return null;
+ const budget=baseManaBudget({maxMana,baseCost:action.mana});
+ if(!budget)return null;
+ const materials=[];
+ for(const row of action.materials){
+  if(!Number.isSafeInteger(row?.id)||row.id<1||
+   !Number.isSafeInteger(row.quantity)||row.quantity<1||
+   !Number.isSafeInteger(row.quantity*budget.casts))return null;
+  materials.push({id:row.id,quantity:row.quantity*budget.casts});
+ }
+ return {casts:budget.casts,remainder:budget.remainder,
+  maxMana:budget.maxMana,materials,baseOnly:true};
+}
 root.PandoraBookSkillThresholds=Object.freeze({
- requirements,nextMelee,baseManaBudget,sourceAction,inspiredCastTime,MELEE
+ requirements,nextMelee,baseManaBudget,sourceAction,inspiredCastTime,
+ materialAction,materialUseBudget,MELEE
 });
 })(typeof window==='undefined'?globalThis:window);

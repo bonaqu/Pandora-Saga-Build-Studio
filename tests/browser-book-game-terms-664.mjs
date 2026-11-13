@@ -12,17 +12,18 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
   await page.locator('#startupOverlay').waitFor({state:'hidden',timeout:30000});
   const source=await page.evaluate(async()=>{
-   const [skills,meta,classes,english]=await Promise.all(
+   const [skills,meta,classes,english,items]=await Promise.all(
     ['data/os/skills.json','data/os/meta.json',
-     'data/os/classes.json','data/os/strings.en.json'].map(async path=>{
+     'data/os/classes.json','data/os/strings.en.json',
+     'data/os/items.json'].map(async path=>{
       const response=await fetch(path);
       if(!response.ok)throw Error('Missing pinned game source '+path);
       return response.json();
      }));
    window.__bookGameTermsQA={
-    skills,branchLabels:meta.branchLabels,classes,
-    englishSkills:english.skills,englishBranches:english.branches,
-    englishClasses:english.classes
+    skills,branchLabels:meta.branchLabels,classes,items,
+    englishSkills:english.skills,englishItems:english.items,
+    englishBranches:english.branches,englishClasses:english.classes
    };
    const host=document.createElement('div');
    host.id='book-source-qa';host.style.width='780px';host.style.height='620px';
@@ -86,6 +87,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
     heroJobKey:'ENCHANTER',heroLevel:45,
     heroMasteries:{hymn:8,blessing:78,exorcism:26},
     heroBranchCaps:terms.classes.ENCHANTER.branchCaps,
+    onItem:id=>{window.__bookMaterialLastItem=String(id);},
     skillIconForId:id=>terms.skills[String(id)]?.iconId?
      'assets/skills/icons/skill_'+terms.skills[String(id)].iconId+'.webp':null,
     buffs:{priestEnabled:true,priestSpi:134,priestBlessing:90,priestHymn:30},
@@ -137,6 +139,26 @@ export async function runHeroBookGameNames664Smoke(browser,base){
    'точная частота атак пока неизвестна','Расчёты для текущего героя.'])
    assert.equal(ru.includes(phrase),false,
     'Skill Effects must not repeat technical caveats: '+phrase);
+  const materialsPanel=page.locator('#book-source-qa .stage-material-actions');
+  assert.equal(await materialsPanel.count(),1,
+   'Current-hero crafting has one folded group');
+  assert.equal(await materialsPanel.getAttribute('open'),null);
+  assert.equal(await materialsPanel.locator('.stage-material-action-row').count(),1,
+   'Only the learned craft is shown for this class');
+  await materialsPanel.locator(':scope > summary').click();
+  const blessed=materialsPanel.locator('[data-material-skill-id="320010001"]');
+  assert.match(await blessed.innerText(),/Освящение воды/);
+  assert.match(await blessed.innerText(),/Создание 1 × Святая вода/);
+  assert.match(await blessed.innerText(),/На применение: ОМ 4/);
+  assert.match(await blessed.innerText(),/Полный запас 450 ОМ: до 112 применений/);
+  assert.match(await blessed.innerText(),/112 × Пустая бутыль/);
+  await blessed.locator('button.stage-material-item-link').first().click();
+  assert.equal(await page.evaluate(()=>window.__bookMaterialLastItem),'65011',
+   'Item links open the original encyclopedia item');
+  assert.equal(await blessed.locator('details').count(),0,
+   'One folded group without nested disclosures');
+  await materialsPanel.locator(':scope > summary').click();
+
   assert.doesNotMatch(ru,/11 ОЗ каждые 2 сек\./,
    'Sanctuary is a direct heal, not a periodic pulse');
   // Real browser proof: the source-only catalog remains outside the Book, but
@@ -217,6 +239,11 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   assert.match(en,/With Inspiration from an ally: 1.5 s of casting/);
   assert.doesNotMatch(en,/not a confirmed final combat result|final speed, duration|actual firing rate is not known/);
   assert.match(en,/Full 450 MP: up to 5 casts at the base cost/);
+  assert.match(en,/Crafting and materials \(1\)/);
+  assert.match(en,/Aqua Elymus/);
+  assert.match(en,/Creates 1 × Holy Water/);
+  assert.match(en,/Full 450 MP: up to 112 uses at base cost/);
+  assert.match(en,/112 × Empty Bottle/);
   assert.match(en,/Next \+3 HP per cast at level 46/);
   assert.equal(en.includes('Mana Restore'),false,'Unavailable MP recovery belongs in Wiki');
   assert.equal(en.includes('Acolyte class'),false,'Locked class hints do not clutter Book');
