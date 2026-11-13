@@ -68,6 +68,7 @@ export async function runPathSkillNavigation761Smoke(browser,base){
   const active=await gallery.locator('.path-skill-card[aria-current="true"]').getAttribute('data-skill-id');
   assert.equal(pinned,active);
   assert.ok(await gallery.locator('.path-skill-card').count()<=24);
+  await query.click();
   await query.fill('not-a-game-skill-766');
   await details.waitFor({state:'hidden'});
   assert.equal(await details.locator('.path-skill-list-nav').count(),0);
