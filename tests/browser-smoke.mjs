@@ -524,8 +524,13 @@ async function main(){
   .innerText();
  assert.match(await priestSkillLine('priestGratia'),/Attack speed \+22|Скорость атаки \+22/);
  assert.match(await priestSkillLine('priestLapisMedio'),/Defense \+12|Защита \+12/);
- // All priest skill magnitudes share five compact top-level priest inputs.
- assert.equal(await page.locator('#stageBookPanel .stage-priest-fields input').count(),5);
+ // The allied ENCHANTER only needs inputs that change the effect amount.
+ assert.equal(await page.locator('#stageBookPanel [data-book-section="priest"] .stage-priest-fields input').count(),3);
+ assert.equal(await page.locator('#stageBookPanel [data-book-setting="priestExorcism"]').count(),0);
+ assert.equal(await page.locator('#stageBookPanel [data-book-setting="priestBenevolence"]').count(),0);
+ assert.equal(await page.locator('#stageBookPanel [data-book-setting="priestClass"]').count(),0);
+ assert.equal(await page.locator('#stageBookPanel [data-book-setting="legacySkill:340003001"]').count(),1);
+ assert.equal(await page.locator('#stageBookPanel .stage-ally-peace-fields').count(),0);
  assert.equal(await page.locator('#stageBookPanel [data-book-setting^="caster-priest"]').count(),0);
  assert.equal(await page.locator('#stageBookPanel .stage-ally-skill-row').count(),0);
  await page.locator('#stageBookPanel [data-book-setting="priestBlessing"]').fill('100');
@@ -538,6 +543,27 @@ async function main(){
  assert.match(await priestSkillLine('priestGratia'),/Attack speed \+23|Скорость атаки \+23/);
  await page.locator('#stageBookPanel [data-book-setting="priestSpi"]').fill('134');
  await page.locator('#stageBookPanel [data-book-setting="priestSpi"]').press('Tab');
+ // Peace Song is an independent Cleric buff, even with priest disabled.
+ const priestSection=page.locator('#stageBookPanel [data-book-section="priest"]');
+ await priestSection.locator('[data-book-setting="legacySkill:330051001"]').check();
+ assert.equal(await page.locator('#stageBookPanel [data-book-setting="priestExorcism"]').count(),0);
+ await page.locator('#stageBookPanel [data-book-setting="priestEnabled"]').uncheck();
+ const allySection=page.locator('#stageBookPanel [data-guide-key="buffs.section.party"]').locator('xpath=ancestor::*[contains(@class,"stage-book-buff-group")][1]');
+ const peaceSwitch=allySection.locator('[data-book-setting="legacySkill:340003001"]');
+ assert.equal(await peaceSwitch.count(),1);
+ await peaceSwitch.check();
+ assert.equal(await allySection.locator('.stage-ally-peace-fields input').count(),2);
+ assert.equal(await allySection.locator('[data-book-setting="allyPeaceHymn"]').getAttribute('min'),'30');
+ assert.equal(await allySection.locator('[data-book-setting="allyPeaceHymn"]').getAttribute('max'),'45');
+ assert.match(await allySection.innerText(),/Порог защищённого удара: 99|Protected-hit threshold: 99/);
+ await allySection.locator('[data-book-setting="allyPeaceSpi"]').fill('135');
+ await allySection.locator('[data-book-setting="allyPeaceSpi"]').press('Tab');
+ assert.match(await allySection.innerText(),/Порог защищённого удара: 100|Protected-hit threshold: 100/);
+ await allySection.locator('[data-book-setting="allyPeaceHymn"]').fill('99');
+ await allySection.locator('[data-book-setting="allyPeaceHymn"]').press('Tab');
+ assert.equal(await allySection.locator('[data-book-setting="allyPeaceHymn"]').inputValue(),'45');
+ await allySection.locator('[data-book-setting="legacySkill:340003001"]').uncheck();
+ assert.equal(await allySection.locator('.stage-ally-peace-fields').count(),0);
  const elementalGroup=page.locator('#stageBookPanel .stage-book-buff-group').filter({
   has:page.locator('[data-guide-key="buffs.section.elemental"]')});
  assert.equal(await elementalGroup.count(),1,
