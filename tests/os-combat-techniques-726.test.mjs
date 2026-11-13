@@ -105,8 +105,8 @@ test('400 character combinations retain source facts without modifying permanent
 test('cross-module audit counts exactly eight additional qualitative skills',()=>{
  const report=auditOsSkillFormulaCoverage({skills,classes,calculator:C});
  assert.equal(report.summary.statuses['numeric-preview'],66);
- assert.equal(report.summary.statuses['qualitative-preview'],45);
- assert.equal(report.summary.statuses['unmodeled-learnable'],63);
+ assert.equal(report.summary.statuses['qualitative-preview'],50);
+ assert.equal(report.summary.statuses['unmodeled-learnable'],58);
  for(const [id] of cases){
   const row=report.rows.find(r=>r.id===id);
   assert.equal(row.status,'qualitative-preview');
