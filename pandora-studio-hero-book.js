@@ -1670,6 +1670,10 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
       action.mana+' · Базовое применение: '+seconds(action.cast)+
       ' · Базовая перезарядка: '+healingNumber.format(action.cooldown)+' сек.'}));
    }
+   // The same full-MP/base-cost calculation already used by healing:
+   // show how many casts the CURRENT hero can afford, in this disclosure.
+   // Zero-cost skills and unavailable actions remain untouched.
+   showBaseManaBudget(more,action);
    appendGate(more,skill.id);
    if(more.childElementCount>1)preview.append(more);
    section.append(preview);
