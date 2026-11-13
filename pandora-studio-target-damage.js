@@ -7,7 +7,7 @@
 const target=Object.freeze({
  id:22104,name:'Гигантский огр',nameEn:'Ogre Bouncer',level:53,
  life:6126,vit:32,spi:18,ac:15,magicProtection:0,
- resists:{fire:0,cold:0,lightning:0,holy:0,dark:-25,magic:17}
+ resists:{fire:0,cold:0,lightning:0,charm:0,holy:0,dark:-25,magic:17}
 });
 const n=v=>Number.isSafeInteger(v)&&v>=0;
 const trunc=Math.trunc;
@@ -185,6 +185,10 @@ const directSpells=Object.freeze([
  {id:410023001,branch:'element',kind:'ENEMY',element:'LIGHTNING',
   stat:'INT',req:0,charLevel:20,slot:0,effects:[
    ['EP_ELEMENT_DAMAGE','TARGET',[250,10,250,20],[0,0,0,0]]]},
+ {id:420003001,branch:'charm',kind:'ENEMY',element:'CHARM',
+  stat:'SPI',req:12,charLevel:0,slot:0,effects:[
+   ['EP_ELEMENT_DAMAGE','TARGET',[40,30,70,27],[0,0,0,0]],
+   ['EP_CAUSE_SLEEP','TARGET',[0,0,0,20],[40,0,40,40]]]},
  {id:430001001,branch:'darkness',kind:'ENEMY',element:'DARK',
   stat:'INT',req:21,charLevel:0,slot:1,effects:[
    ['EP_LIFE_ABSORB','CASTER',[0,0,0,50],[0,0,0,0]],
@@ -240,8 +244,8 @@ function elementalHit(options={},spec=null){
  const effect=effectSkill.funcs?.[effectSkill.damage?.slotIndex];
  // Pandora Saga OS public BuildCalculator _e indices:
  // FIRE=1 ->10%, COLD=2 ->20%, LIGHTNING=3 ->50%,
- // HOLY=7 ->25%, DARK=8 ->25%.
- const spread={fire:10,cold:20,lightning:50,holy:25,dark:25}[element];
+ // CHARM=5 ->0%, HOLY=7 ->25%, DARK=8 ->25%.
+ const spread={fire:10,cold:20,lightning:50,charm:0,holy:25,dark:25}[element];
  if(!powerKey||!n(stats[powerKey])||!n(mastery)||!n(spread)||
   effect?.ep!=='EP_ELEMENT_DAMAGE'||effect.dir!=='TARGET'||
   !Array.isArray(effect.fv1)||effect.fv1.length!==4||
