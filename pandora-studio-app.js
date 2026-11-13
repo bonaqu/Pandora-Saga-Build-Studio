@@ -1698,7 +1698,8 @@ function renderStageAttributes(calculated=undefined){
      state.gems?.[plan.refinementKey(Number(slot),entry)]),
     souls:plan.asSocketArray(state.souls?.[slot])
      .slice(0,plan.equippedSocketCapacity(state,Number(slot),entry,rec)??0)
-     .filter(Boolean).map(s=>catalog.souls?.[String(s.id)]||s)};
+     .map(s=>s&&catalog.souls?.[String(s.id)])
+     .filter(s=>s&&plan.validSoul(s,slotKeys[Number(slot)]))};
  });
  const cls=jobKeys[state.job],skillMap=catalog.skills||{};
  const jobBase=catalog.classes?.[cls]?.baseClass||cls;

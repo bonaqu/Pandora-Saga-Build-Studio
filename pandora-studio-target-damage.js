@@ -22,6 +22,12 @@ const elementalKeys=new Set(['EP_ELEMENT_DAMAGE_SCALE',
  'EP_ELEMENT_BONUS']);
 const sourceEffect=(sum,e,weapon)=>{
  if(!e||!elementalKeys.has(e.func))return true;
+ const grade=weapon?.refinement??0;
+ // Mirror the character sheet: source ranges apply to both equipment
+ // and socketed Souls, even when the catalog is owner-edited.
+ if((e.min!=null&&!Number.isSafeInteger(e.min))||
+    (e.max!=null&&!Number.isSafeInteger(e.max)))return false;
+ if((e.min!=null&&grade<e.min)||(e.max!=null&&grade>e.max))return true;
  if(!Number.isFinite(e.a))return false;
  if(e.func==='EP_ELEMENT_DAMAGE_SCALE_FIRE'){
   // OS item 1862 has a conditional bonus for *fire-refined* weapon only.
@@ -40,8 +46,19 @@ function equippedElementalEffects({equipment=[],itemForth={},unison={}}={}){
   if(!n(rec?.id)||!n(grade)||grade>10)return null;
   if(typeof rec.slot!=='string')return null;
   items.set(String(rec.id),slot);
-  const rules=Array.isArray(itemForth[String(rec.id)]?.[String(grade)])?
-   itemForth[String(rec.id)][String(grade)]:[];
+  // OS Forth rows are cumulative snapshots, sometimes only at +2,+4,+6.
+  // Reuse the nearest reached tier, exactly as sourceEffects does in the
+  // main character calculator; don't require an explicit +3/+5/+7 row.
+  const levels=itemForth[String(rec.id)];
+  if(levels!=null&&(typeof levels!=='object'||Array.isArray(levels)))return null;
+  let nearest=-1;
+  for(const [key,rows] of Object.entries(levels||{})){
+   const step=Number(key);
+   if(Number.isSafeInteger(step)&&step>=1&&step<=grade&&
+      Array.isArray(rows)&&step>nearest)nearest=step;
+  }
+  const rules=nearest<0?[]:levels[String(nearest)];
+  if(!Array.isArray(rec.effects)&&rec.effects!=null)return null;
   for(const e of [...(rec.effects||[]),...rules]){
    if(!sourceEffect(out,e,slot))return null;
   }
@@ -54,7 +71,9 @@ function equippedElementalEffects({equipment=[],itemForth={},unison={}}={}){
   const set=unison[id];
   if(!set)continue;
   if(!Array.isArray(set.members)||!Array.isArray(set.rows))return null;
-  const count=set.members.filter(x=>items.has(String(x))).length;
+  // The root is not its own companion; de-duplicate repeated member IDs.
+  const members=[...new Set(set.members.map(String).filter(key=>key!==id))];
+  const count=members.filter(key=>items.has(key)).length;
   const grade=slot.refinement??0;
   for(const row of set.rows){
    if(count<row.minC||count>row.maxC||
@@ -113,14 +132,23 @@ function sourceSkill(skillCatalog,classes,jobKey,level,mastery,caps){
   blast.element!=='FIRE'||blast.damage?.kernel!=='element'||
   blast.damage.slotIndex!==0)return null;
  const rootFx=rootSkill.funcs,boltFx=bolt.funcs,fx=blast.funcs;
- if(rootFx?.length!==2||rootFx[0]?.ep!=='EP_CONSUME_ITEM'||
-  rootFx[0]?.fv1?.[3]!==65007||rootFx[0]?.fv2?.[3]!==2||
-  rootFx[1]?.ep!=='EP_SKILL_EXEC'||rootFx[1]?.fv1?.[3]!==240005002||
-  boltFx?.length!==1||boltFx[0]?.ep!=='EP_SKILL_EXEC'||
-  boltFx[0]?.fv1?.[3]!==240005003||
-  fx?.length!==1||fx[0]?.ep!=='EP_ELEMENT_DAMAGE'||
-  fx[0]?.dir!=='TARGET'||JSON.stringify(fx[0].fv1)!=='[680,0,350,155]'||
-  JSON.stringify(fx[0].fv2)!=='[0,0,0,0]')return null;
+ const exact=(row,code,dir,a,b)=>
+  row?.ep===code&&row?.dir===dir&&
+  JSON.stringify(row.fv1)===JSON.stringify(a)&&
+  JSON.stringify(row.fv2)===JSON.stringify(b);
+ if(rootSkill.powerStat!=='DEX'||rootSkill.element!=='NONE'||
+  bolt.skillType!=='BOLT'||bolt.element!=='NONE'||
+  bolt.powerStat!=='DEX'||bolt.damage!==null||
+  blast.skillType!=='SPHERE'||
+  rootFx?.length!==2||boltFx?.length!==1||fx?.length!==1||
+  !exact(rootFx[0],'EP_CONSUME_ITEM','CASTER',
+   [0,0,0,65007],[0,0,0,2])||
+  !exact(rootFx[1],'EP_SKILL_EXEC','TARGET',
+   [0,0,0,240005002],[0,0,0,0])||
+  !exact(boltFx[0],'EP_SKILL_EXEC','TARGET',
+   [0,0,0,240005003],[0,0,0,0])||
+  !exact(fx[0],'EP_ELEMENT_DAMAGE','TARGET',
+   [680,0,350,155],[0,0,0,0]))return null;
  return rootSkill;
 }
 // Explicit source snapshots. Extra non-damage effects are checked but NEVER
@@ -250,6 +278,7 @@ function elementalHit(options={},spec=null){
   heroPowerKey:powerKey,heroPower:stats[powerKey],
   heroMasteryKey:masteryKey,heroMastery:mastery,
   basePower,bonusRate,magicGemRate,magicGemFlat,
+  gearDamageRate:equipmentEffects.general,
   levelPenalty:gap.magicDamageReduction,
   model:'Pandora Saga OS public BuildCalculator / one elemental hit'};
 }

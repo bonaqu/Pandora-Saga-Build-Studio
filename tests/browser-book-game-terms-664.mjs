@@ -368,6 +368,28 @@ export async function runHeroBookGameNames664Smoke(browser,base){
    const terms=window.__bookGameTermsQA;
    const tables=await (await fetch('data/os/tables.json')).json();
    const stats={dex:70,int:20};
+   const [allItems,itemForth]=await Promise.all([
+    fetch('data/os/items.json').then(r=>r.json()),
+    fetch('data/os/itemForth.json').then(r=>r.json())
+   ]);
+   const equipment=(id,grade,gem=null)=>[{
+    record:allItems[String(id)],refinement:grade,gem,issue:[],souls:[]
+   }];
+   const trapArgs={
+    skillCatalog:terms.skills,classes:terms.classes,jobKey:'DISTURBANCE',
+    level:45,masteries:{trap:41},
+    branchCaps:terms.classes.DISTURBANCE.branchCaps,stats,tables,itemForth
+   };
+   const coat=window.PandoraOSTargetDamage.crawlingTrap({
+    ...trapArgs,equipment:equipment(12605,3),
+    modifiers:{combat:{spellDamageEquipmentRate:1,priestSong:{}},
+     priestApplied:{}}
+   });
+   const gem=window.PandoraOSTargetDamage.crawlingTrap({
+    ...trapArgs,equipment:equipment(1,3,{type:'magical',element:'fire'}),
+    modifiers:{combat:{spellDamageEquipmentRate:0,priestSong:{}},
+     priestApplied:{}}
+   });
    const result=window.PandoraOSTargetDamage.crawlingTrap({
     skillCatalog:terms.skills,classes:terms.classes,jobKey:'DISTURBANCE',
     level:45,masteries:{trap:41},
@@ -394,7 +416,8 @@ export async function runHeroBookGameNames664Smoke(browser,base){
      details:row?.querySelector('.stage-skill-more')?.textContent||''};
    };
    return {source:result,ru:render('ru',41,result),en:render('en',41,result),
-    locked:render('ru',40,result),missing:render('ru',41,null)};
+    locked:render('ru',40,result),missing:render('ru',41,null),
+    coat:render('ru',41,coat),gem:render('ru',41,gem)};
   });
   assert.deepEqual([ogreBook.source.min,ogreBook.source.average,ogreBook.source.max],
    [34,148,194]);
@@ -409,6 +432,11 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   assert.match(ogreBook.en.details,/Average hit against.*148 HP/);
   assert.equal(ogreBook.locked.count,0);
   assert.equal(ogreBook.missing.count,0);
+  assert.match(ogreBook.coat.strong,/Гигантский огр · 35–196 ОЗ/);
+  assert.match(ogreBook.coat.details,/Усиление урона \+1%/);
+  assert.match(ogreBook.gem.details,/Магическая заточка \+5% · \+3 к силе удара/);
+  assert.equal(ogreBook.coat.count,1);
+  assert.equal(ogreBook.gem.count,1);
   assert.doesNotMatch(ogreBook.ru.main,/материал|рецепт|создани|Ловушка × 2/i);
   // Source-checked current spells share the same compact skill list;
   // Fire Bolt, Blood Drain and Infect are one hit, NOT cast totals/DOT.
