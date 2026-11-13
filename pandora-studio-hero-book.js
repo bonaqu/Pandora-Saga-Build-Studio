@@ -1778,7 +1778,8 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
  const situational=root.PandoraOSCalculator?.situationalSkillPreview?.({
   skillCatalog:gameTerms.skills,jobKey:heroJobKey,level:heroLevel,
   branchCaps:heroBranchCaps,branchMasteries:heroMasteries,
-  branchLabels:gameTerms.branchLabels,englishBranches:gameTerms.englishBranches
+  branchLabels:gameTerms.branchLabels,englishBranches:gameTerms.englishBranches,
+  weaponKind:heroWeaponKind
  });
  for(const [kind,ruTitle,enTitle] of [
   ['stealth','Скрытность и обнаружение','Stealth and detection'],
@@ -1807,6 +1808,12 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     make('strong',{text:en?
      'MP: '+row.mana+' · Cooldown: '+row.cooldown+' s':
      'ОМ: '+row.mana+' · Перезарядка: '+row.cooldown+' с'}),
+    ...(row.requiredItemId&&row.requiredItemCount?[make('small',{text:en?
+     'Item in game data: '+row.requiredItemCount+' × '+sourceItemName(row.requiredItemId):
+     'По игровым данным нужен предмет: '+row.requiredItemCount+' × '+sourceItemName(row.requiredItemId)})]:[]),
+    ...(Number.isSafeInteger(row.specialResourceValue)?[make('small',{text:en?
+     'Special resource entry: '+row.specialResourceValue+' (exact use unknown)':
+     'Особый расход по данным умения: '+row.specialResourceValue+' (точное действие неизвестно)'})]:[]),
     make('small',{text:en?row.noteEn:row.noteRu}),
     make('small',{text:access})
    ]));
