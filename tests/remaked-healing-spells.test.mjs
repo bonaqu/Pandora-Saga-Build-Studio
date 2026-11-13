@@ -93,6 +93,6 @@ test('base() supplies class cap and OS catalog; no automatic use or HP inflation
  assert.match(s,/skillCatalog:combatContext\.skillCatalog/);
  assert.match(stage,/gameSkillBadge\(sourceId,row\.name,row\.nameEn/);
  assert.match(stage,/const periodicHeals=periodic\.filter/);
- assert.match(stage,/gameSkillBadge\(entry\.id,entry\.name,null,gameTerms,en,skillIconForId\)/);
+ assert.match(stage,/gameSkillBadge\(entry\.id,entry\.name,null,gameTerms,en,skillIconForId,onSkill\)/);
  assert.match(stage,/en\?'Skill MP recovery'/);
 });

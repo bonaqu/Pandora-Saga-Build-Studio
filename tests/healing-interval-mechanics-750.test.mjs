@@ -69,8 +69,11 @@ test('Conflicting Russian OS descriptions are visible without rewriting canonica
  assert.match(book,/sourceId===310002001\|\|sourceId===310022001/);
  assert.match(book,/data-healing-skill-id/);
  assert.match(book,/Следующий прирост от Исцеления/);
- assert.match(book,/Базовое применение:/);
- assert.match(book,/Базовая перезарядка:/);
+ assert.doesNotMatch(book,/Базовое применение:/);
+ assert.doesNotMatch(book,/Базовая перезарядка:/);
+ const wiki=read('pandora-studio-app.js');
+ assert.match(wiki,/wt\('Подготовка, с','Cast, sec'\)/);
+ assert.match(wiki,/wt\('Перезарядка, с','Cooldown, sec'\)/);
  assert.doesNotMatch(book,/реальные секунды не подтверждены\./);
 });
 test('Tampered OS interval does not produce a two-second skill preview',()=>{

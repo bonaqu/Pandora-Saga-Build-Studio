@@ -58,13 +58,18 @@ test('bad OS skill metadata or a passive skill never becomes a castable action',
  assert.equal(action(340001001,'ENCHANTER',45,passive),null);
 });
 
-test('base action metadata stays in collapsed current-build cards, never source-only Wiki formulas',()=>{
+test('Book shows character-dependent action budget, while Wiki owns source metadata',()=>{
  const book=read('pandora-studio-hero-book.js');
  assert.match(book,/sourceAction\?\.\(\{/);
  assert.match(book,/data-skill-action-id/);
  assert.match(book,/branchCaps:heroBranchCaps,branchMasteries:heroMasteries/);
- assert.match(book,/Применение и затраты: Расход ОМ:/);
- assert.match(book,/Базовое применение/);
+ assert.match(book,/showBaseManaBudget\(more,action\)/);
+ assert.match(book,/nextManaUse/);
+ assert.doesNotMatch(book,/Применение и затраты: Расход ОМ:/);
+ assert.doesNotMatch(book,/Базовое применение/);
+ const wiki=read('pandora-studio-app.js');
+ assert.match(wiki,/wt\('Затраты ОМ','MP cost'\)/);
+ assert.match(wiki,/wt\('Подготовка, с','Cast, sec'\)/);
  assert.doesNotMatch(book,/Окончательные затраты и время с усилениями/);
  assert.doesNotMatch(book,/wiki-skill-source-material/);
 });

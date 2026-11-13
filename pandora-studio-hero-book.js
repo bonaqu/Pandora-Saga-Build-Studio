@@ -1276,8 +1276,14 @@ function buffsPage(body,options){
 
 // Use the same exact OS icon resolution as Path, Wiki and combat Buffs.
 // Never infer artwork from a translated display label.
-function gameSkillBadge(id,ru,en,terms,english,skillIconForId){
- const label=make('span',{class:'stage-effect-skill-label'});
+function gameSkillBadge(id,ru,en,terms,english,skillIconForId,onSkill=null){
+ const interactive=typeof onSkill==='function';
+ const skillName=gameSkillName(id,ru,en,terms,english);
+ const label=make(interactive?'button':'span',{
+  class:'stage-effect-skill-label'+(interactive?' stage-effect-skill-link':''),
+  ...(interactive?{type:'button',
+   'aria-label':(english?'Encyclopedia: ':'Энциклопедия: ')+skillName,
+   onclick:()=>onSkill(id)}:{})});
  const source=skillIconForId?.(id);
  if(source){
   // Hard-limit intrinsic OS sprites even if an optional CSS file fails to load.
@@ -1293,7 +1299,7 @@ function gameSkillBadge(id,ru,en,terms,english,skillIconForId){
   };
   label.append(picture);
  }
- label.append(make('span',{text:gameSkillName(id,ru,en,terms,english)}));
+ label.append(make('span',{text:skillName}));
  root.PandoraSkillPreview?.attach(label,id);
  return label;
 }
@@ -1326,11 +1332,11 @@ function renderSongSkills(body,modifiers,gameTerms={},skillIconForId=()=>null){
  }
 }
 
-/* Verified current-hero production and trap material costs only.
- * This stays folded so ordinary combat/healing results are not crowded.
- * Recipe discovery and full linked actions belong to the Encyclopedia. */
+/* Only numbers projected for the CURRENT hero belong here: how many
+ * uses are affordable from full MP and the multiplied material totals.
+ * Base recipe, product, cast and cooldown facts stay in the Encyclopedia. */
 function materialSkillResults(body,{modifiers,gameTerms,skillIconForId,
- heroJobKey,heroLevel,heroMasteries,heroBranchCaps,onItem}){
+ heroJobKey,heroLevel,heroMasteries,heroBranchCaps,onItem,onSkill}){
  const calc=root.PandoraOSCalculator,gates=root.PandoraBookSkillThresholds;
  if(!calc||!gates||!gameTerms.skills||!gameTerms.items)return;
  const opts={skillCatalog:gameTerms.skills,jobKey:heroJobKey,
@@ -1341,87 +1347,64 @@ function materialSkillResults(body,{modifiers,gameTerms,skillIconForId,
   ...(calc.craftingSkillPreview?.(opts)?.rows||[]).map(row=>['craft',row]),
   ...(calc.trapSkillCostPreview?.(opts)?.rows||[]).map(row=>['trap',row])
  ];
- const actions=sources.map(([kind,row])=>gates.materialAction({
-  kind,row,skillCatalog:gameTerms.skills,items:gameTerms.items,
-  jobKey:heroJobKey,level:heroLevel,branchCaps:heroBranchCaps,
-  branchMasteries:heroMasteries
- })).filter(Boolean);
+ const actions=sources.map(([kind,row])=>{
+  const action=gates.materialAction({kind,row,skillCatalog:gameTerms.skills,
+   items:gameTerms.items,jobKey:heroJobKey,level:heroLevel,
+   branchCaps:heroBranchCaps,branchMasteries:heroMasteries});
+  if(!action)return null;
+  const budget=gates.materialUseBudget?.({action,maxMana:modifiers?.mp});
+  if(!budget||budget.casts<=0)return null;
+  return {action,budget,next:gates.nextManaUse?.({
+   maxMana:budget.maxMana,baseCost:action.mana})};
+ }).filter(Boolean);
  if(!actions.length)return;
  const en=document.documentElement?.lang==='en';
- const amount=n=>new Intl.NumberFormat(en?'en-US':'ru-RU').format(n);
- const sec=n=>new Intl.NumberFormat(en?'en-US':'ru-RU',
-  {maximumFractionDigits:2}).format(n);
+ const format=new Intl.NumberFormat(en?'en-US':'ru-RU');
+ const amount=n=>format.format(n);
  const itemName=id=>{
   const rec=gameTerms.items[String(id)];
   return (en?(gameTerms.englishItems?.[String(id)]?.n||rec?.nameEn):
    rec?.name)||rec?.name||String(id);
  };
- const itemLink=(id,quantity)=>{
-  const link=make('button',{type:'button',class:'stage-material-item-link',
-   text:amount(quantity)+' × '+itemName(id),
-   'aria-label':(en?'Encyclopedia: ':'Энциклопедия: ')+itemName(id),
-   onclick:()=>onItem?.(id)});
-  return link;
- };
+ const itemLink=(id,quantity)=>make('button',{type:'button',
+  class:'stage-material-item-link',text:amount(quantity)+' × '+itemName(id),
+  'aria-label':(en?'Encyclopedia: ':'Энциклопедия: ')+itemName(id),
+  onclick:()=>onItem?.(id)});
  const pane=make('details',{class:'stage-attribute-row stage-material-actions',
   'data-book-collapse':'material-actions'});
- pane.append(make('summary',{text:(en?'Crafting and materials':'Создание и материалы')+
+ pane.append(make('summary',{text:(en?'Material calculations':'Расчёт материалов')+
   ' ('+actions.length+')'}));
- for(const action of actions){
+ for(const {action,budget,next} of actions){
   const skill=gameTerms.skills[String(action.skillId)];
-  const product=action.produces;
   const row=make('div',{class:'stage-material-action-row',
    'data-material-skill-id':String(action.skillId)});
   const head=make('div',{class:'stage-material-action-head'});
   head.append(gameSkillBadge(action.skillId,skill.name,
    gameTerms.englishSkills?.[String(action.skillId)]?.n||skill.name,
-   gameTerms,en,skillIconForId));
-  head.append(make('strong',{text:product?
-   (en?'Creates ':'Создание ')+amount(product.quantity)+' × '+
-    itemName(product.id):
-   (en?'Uses ':'Расход ')+amount(action.materials[0].quantity)+' × '+
-    itemName(action.materials[0].id)}));
+   gameTerms,en,skillIconForId,onSkill));
+  head.append(make('strong',{text:en?
+   'Up to '+amount(budget.casts)+' uses':
+   'До '+amount(budget.casts)+' применений'}));
   row.append(head);
   const costs=make('div',{class:'stage-material-action-costs'});
-  costs.append(make('small',{text:(en?'Per use: ':'На применение: ')+
-   (en?'MP ':'ОМ ')+action.mana+' · '+
-   (en?'Cast ':'Применение ')+
-   (action.cast===0?(en?'instant':'мгновенно'):sec(action.cast)+
-    (en?' s':' сек.'))+' · '+
-   (en?'Cooldown ':'Перезарядка ')+sec(action.cooldown)+
-    (en?' s':' сек.')}));
-  const needs=make('div',{class:'stage-material-action-items'});
-  needs.append(make('small',{text:en?'Materials:':'Материалы:'}));
-  for(const [index,mat] of action.materials.entries()){
-   if(index)needs.append(make('span',{text:' + '}));
-   needs.append(itemLink(mat.id,mat.quantity));
+  costs.append(make('small',{class:'stage-material-action-mp',
+   text:en?'Full '+amount(budget.maxMana)+' MP · '+
+    amount(budget.remainder)+' MP remaining':
+    'Полный запас '+amount(budget.maxMana)+' ОМ · остаток '+
+     amount(budget.remainder)+' ОМ'}));
+  const totals=make('div',{class:'stage-material-action-budget'});
+  totals.append(make('small',{text:(en?'Materials for ':'Материалы на ')+
+   amount(budget.casts)+(en?' uses:':' применений:')}));
+  for(const [index,mat] of budget.materials.entries()){
+   if(index)totals.append(make('span',{text:' + '}));
+   totals.append(itemLink(mat.id,mat.quantity));
   }
-  if(product){
-   needs.append(make('span',{text:' → '}));
-   needs.append(itemLink(product.id,product.quantity));
-  }
-  costs.append(needs);
-  const budget=gates.materialUseBudget?.({action,maxMana:modifiers?.mp});
-  if(budget&&budget.casts>0){
-   const next=make('div',{class:'stage-material-action-budget'});
-   next.append(make('small',{text:en?
-    'Full '+amount(budget.maxMana)+' MP: up to '+
-     amount(budget.casts)+' uses at base cost; '+amount(budget.remainder)+
-     ' MP left. For these uses:':
-    'Полный запас '+amount(budget.maxMana)+' ОМ: до '+
-     amount(budget.casts)+' применений по базовой цене, остаток '+
-     amount(budget.remainder)+' ОМ. Для этого нужно:'}));
-   for(const [index,mat] of budget.materials.entries()){
-    if(index)next.append(make('span',{text:' + '}));
-    next.append(itemLink(mat.id,mat.quantity));
-   }
-   costs.append(next);
-  }
-  const inspiration=gates.inspiredCastTime?.({
-   action:{...action,baseOnly:true},castTime:modifiers?.combat?.castTime});
-  if(inspiration)costs.append(make('small',{text:en?
-   'With allied Inspiration: '+sec(inspiration.seconds)+' s casting':
-   'С «Воодушевлением» союзника: '+sec(inspiration.seconds)+' сек. применения'}));
+  costs.append(totals);
+  if(next&&next.missing>0)costs.append(make('small',{
+   class:'stage-material-action-next',text:en?
+    '+'+amount(next.missing)+' MP to afford one more use':
+    'До ещё одного применения: +'+amount(next.missing)+' ОМ к запасу'
+  }));
   row.append(costs);pane.append(row);
  }
  body.append(pane);
@@ -1432,7 +1415,8 @@ function materialSkillResults(body,{modifiers,gameTerms,skillIconForId,
 function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>null,
  remakedBuffRows=[],availability={},combatSkillCards={},
  heroJobKey=null,heroLevel=1,heroMasteries={},heroBranchCaps={},
- heroWeaponKind='BARE_HAND',heroHasShield=false,onItem=()=>{}}={}){
+ heroWeaponKind='BARE_HAND',heroHasShield=false,
+ onItem=()=>{},onSkill=null}={}){
  const en=document.documentElement?.lang==='en';
  const gates=root.PandoraBookSkillThresholds;
  const heroGate=id=>gates?.requirements?.({
@@ -1460,6 +1444,14 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    'Полный запас '+budget.maxMana+' ОМ: до '+budget.casts+
     ' применений по базовой стоимости (остаток '+budget.remainder+
     ' ОМ).'}));
+  const next=gates?.nextManaUse?.({maxMana:budget.maxMana,
+   baseCost:budget.baseCost});
+  if(next?.missing>0)node.append(make('small',{
+   class:'stage-heal-mana-next',text:en?
+    'One more cast needs +'+healingNumber.format(next.missing)+' MP capacity':
+    'Для ещё одного применения нужно +'+
+     healingNumber.format(next.missing)+' ОМ к запасу'
+  }));
  };
  const skillAction=id=>root.PandoraOSCalculator?.healingActionPreview?.({
   skillCatalog:gameTerms.skills,skillId:id,combat:modifiers?.combat});
@@ -1570,32 +1562,29 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     (en?' HP':' ОЗ'));
    const gameSkill=gameTerms.skills?.[String(sourceId)];
    const action=skillAction(sourceId);
-   const kind=gameSkill?.skillType;
-   const target=kind==='ALLY'?(en?'one target':'одна цель'):
-    kind==='PARTY_ALL'?(en?'party':'группа'):
-    kind==='POINT'?(en?'chosen area':'выбранная область'):null;
-   const facts=[];
-   if(target)facts.push(en?'Target: '+target:'Цель: '+target);
-   if(Number.isFinite(gameSkill?.mana)&&gameSkill.mana>=0)
-    facts.push((en?'MP cost: ':'Расход ОМ: ')+gameSkill.mana);
-   if(Number.isFinite(gameSkill?.cast)&&gameSkill.cast>=0)
-    facts.push((en?'Base cast: ':'Базовое применение: ')+
-     (gameSkill.cast===0?(en?'instant':'мгновенно'):
-      gameSkill.cast+(en?' s':' сек.')));
-   if(Number.isFinite(gameSkill?.cooldown)&&gameSkill.cooldown>=0)
-    facts.push((en?'Base cooldown: ':'Базовая перезарядка: ')+
-     gameSkill.cooldown+(en?' s':' сек.'));
    const preview=make('div',{class:'stage-heal-row',
     'data-healing-skill-id':String(sourceId)},[
-    gameSkillBadge(sourceId,row.name,row.nameEn,gameTerms,en,skillIconForId),
-    make('strong',{text:amount}),
-    make('small',{text:facts.join(' · ')})
+    gameSkillBadge(sourceId,row.name,row.nameEn,gameTerms,en,skillIconForId,onSkill),
+    make('strong',{text:amount})
    ]);
    const more=make('details',{class:'stage-skill-gate-help stage-skill-more'},[
     make('summary',{text:en?'More details':'Подробнее'})
    ]);
    appendActionEffects(more,action);
    showBaseManaBudget(more,action);
+   // Combined capacity is defined only for direct, verified own heals.
+   // A periodic 2-second pulse cannot be multiplied by a made-up duration.
+   const totalHeal=!pulse?gates?.directHealingBudget?.({
+    row,action,maxMana:modifiers?.mp}):null;
+   if(totalHeal)more.append(make('small',{
+    class:'stage-heal-total-capacity',text:en?
+     'Up to '+healingNumber.format(totalHeal.total)+
+      ' HP per target for '+totalHeal.casts+' casts ('+
+      totalHeal.amount+' × '+totalHeal.casts+')':
+     'До '+healingNumber.format(totalHeal.total)+
+      ' ОЗ на одну цель за '+totalHeal.casts+' применений ('+
+      totalHeal.amount+' × '+totalHeal.casts+')'
+   }));
    appendHealingMilestones(more,row,pulse);
    appendHealingBreakdown(more,row,pulse);
    appendGate(more,sourceId);
@@ -1612,22 +1601,14 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   for(const entry of manaPulses){
    if(!Number.isFinite(entry?.amount))continue;
    const preview=make('div',{class:'stage-periodic-row'},[
-    gameSkillBadge(entry.id,entry.name,null,gameTerms,en,skillIconForId),
+    gameSkillBadge(entry.id,entry.name,null,gameTerms,en,skillIconForId,onSkill),
     make('strong',{text:String(entry.amount)+' '+(en?'MP every 2 sec':'ОМ каждые 2 сек.')})
    ]);
    const more=make('details',{class:'stage-skill-gate-help stage-skill-more'},[
     make('summary',{text:en?'More details':'Подробнее'})
    ]);
-   more.append(make('small',{text:en?
-    'Current hero skill, source-backed recovery':
-    'Восстановление от умения самого героя'}));
    const action=skillAction(entry.id);
    if(action){
-    more.append(make('small',{text:(en?'MP cost: ':'Расход ОМ: ')+
-     action.mana+' · '+(en?'Base cast: ':'Базовое применение: ')+
-     healingNumber.format(action.cast)+(en?' s':' сек.')+' · '+
-     (en?'Base cooldown: ':'Базовая перезарядка: ')+
-     healingNumber.format(action.cooldown)+(en?' s':' сек.')}));
     appendActionEffects(more,action);
     showBaseManaBudget(more,action);
    }
@@ -1704,14 +1685,14 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    const preview=make('div',{class:'stage-heal-row '+rowClass+
     (!skill.available?' stage-book-unavailable':'')},[
     gameSkillBadge(skill.id,skill.name,source?.n||skill.name,
-     gameTerms,en,skillIconForId),
+     gameTerms,en,skillIconForId,onSkill),
     ...(amount!==null?[make('strong',{class:singlePart?
      'stage-skill-primary-coefficient':'',text:amount})]:[])
    ]);
    const more=make('details',{class:'stage-skill-gate-help stage-skill-more'},[
     make('summary',{text:en?'More details':'Подробнее'})
    ]);
-   if(detail)more.append(make('small',{text:detail}));
+   // General skill descriptions are available via its tooltip and Wiki.
    if(modelParts.length&&!Number.isFinite(skill.amount)){
     // A single source-checked result is already the main line;
     // show secondary text only when the skill has MULTIPLE effects.
@@ -1762,15 +1743,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    if(action){
     more.classList.add('stage-skill-action-meta');
     more.setAttribute('data-skill-action-id',String(skill.id));
-    const seconds=value=>value===0?(en?'instant':'мгновенно'):
-     healingNumber.format(value)+(en?' s':' сек.');
-    more.append(make('small',{text:en?
-     'Use and costs: MP cost: '+action.mana+
-      ' · Base casting: '+seconds(action.cast)+
-      ' · Base cooldown: '+healingNumber.format(action.cooldown)+' s':
-     'Применение и затраты: Расход ОМ: '+
-      action.mana+' · Базовое применение: '+seconds(action.cast)+
-      ' · Базовая перезарядка: '+healingNumber.format(action.cooldown)+' сек.'}));
+    // Static action data is shown on this skill's Wiki page, not here.
     const inspired=gates?.inspiredCastTime?.({
      action,castTime:modifiers?.combat?.castTime
     });
@@ -1794,7 +1767,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   body.append(section);
  }
  materialSkillResults(body,{modifiers,gameTerms,skillIconForId,
-  heroJobKey,heroLevel,heroMasteries,heroBranchCaps,onItem});
+  heroJobKey,heroLevel,heroMasteries,heroBranchCaps,onItem,onSkill});
  // Effects from party skills are not abilities learned by this profession.
  // Still, their numeric effect ON this hero is derived from this hero's
  // actual attack, accuracy and evasion. Never activate the buff automatically.
@@ -1815,7 +1788,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    }[basis.source];
    if(!label)continue;
    const card=make('div',{class:'stage-heal-row stage-skill-party-row'},[
-    gameSkillBadge(skill.id,skill.name,source?.n||skill.name,gameTerms,en,skillIconForId),
+    gameSkillBadge(skill.id,skill.name,source?.n||skill.name,gameTerms,en,skillIconForId,onSkill),
     make('strong',{text:'+'+skill.amount+(en?skill.unit:
      skill.unit===' ATK'?' АТК':skill.unit)})
    ]);
@@ -1847,7 +1820,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    'Мастерство ближнего боя · следующий порог ')+nextMelee.required}));
   section.append(make('div',{class:'stage-skill-milestone-body'},[
    gameSkillBadge(nextMelee.id,nextMelee.nameRu,nextMelee.nameEn,
-    gameTerms,en,skillIconForId),
+    gameTerms,en,skillIconForId,onSkill),
    make('small',{text:en?
     'Trained: '+nextMelee.current+'/'+nextMelee.required+
      ' · '+nextMelee.remaining+' more mastery points to this skill threshold':
@@ -2485,7 +2458,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
  combatSkillCards={},resistanceSkillChoices=[],remakedBuffRows=[],
  heroJobKey=null,heroLevel=1,heroMasteries={},heroBranchCaps={},
  heroWeaponKind='BARE_HAND',heroHasShield=false,
- itemById=()=>null,onItem=()=>{},gameTerms={},
+ itemById=()=>null,onItem=()=>{},onSkill=null,gameTerms={},
  copy={},onTextEdit=null,canEdit=false,onHonor=()=>{}}={}){
  root.PandoraGuideTooltip?.dismiss();
  // Keep the same scrolling pane mounted on ordinary value changes: re-attaching
@@ -2593,7 +2566,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
   gameTerms,remakedBuffRows,skillIconForId,...copyOptions});
  if(chosen==='effects')skillEffectsPage(body,{modifiers,gameTerms,skillIconForId,
   remakedBuffRows,availability,combatSkillCards,heroJobKey,heroLevel,heroMasteries,
-   heroBranchCaps,heroWeaponKind,heroHasShield,onItem});
+   heroBranchCaps,heroWeaponKind,heroHasShield,onItem,onSkill});
  if(chosen==='recovery'){
   const english=document.documentElement?.lang==='en';
   const percent=modifiers?.potion?.percent;

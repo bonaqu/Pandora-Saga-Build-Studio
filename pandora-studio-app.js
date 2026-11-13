@@ -1829,6 +1829,7 @@ function renderStageAttributes(calculated=undefined){
    .map(row=>({...row,nameEn:officialEnglish?.skills?.[String(row.id)]?.n||row.name})),
   itemById:id=>catalogSource?.items?.[String(id)]||null,
   onItem:id=>openWiki('item',String(id)),
+  onSkill:id=>openWiki('skill',String(id)),
   copy:override,canEdit:Boolean(adminEditing&&adminToken),
   onTextEdit:(node,key,field,initial)=>editWikiValue(node,initial,{
    type:field==='hintRu'||field==='hintEn'?'textarea':'text',

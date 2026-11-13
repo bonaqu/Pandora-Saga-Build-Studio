@@ -531,3 +531,17 @@
 #stageAttributes .stage-material-item-link:focus-visible{
  outline:2px solid #f6d49c;outline-offset:2px;border-radius:2px
 }
+
+/* Book 0.764: the calculated skill name opens its full Encyclopedia article.
+   One inline control replaces the ordinary label, no extra button or card. */
+#stageAttributes button.stage-effect-skill-link{
+ appearance:none;display:inline-flex;align-items:center;min-width:0;
+ background:transparent;border:0;box-shadow:none;padding:2px 0;margin:0;
+ cursor:pointer;color:inherit;font:inherit;text-align:left;line-height:inherit;
+}
+#stageAttributes button.stage-effect-skill-link:hover>span{
+ text-decoration:underline;text-underline-offset:2px
+}
+#stageAttributes button.stage-effect-skill-link:focus-visible{
+ outline:2px solid #f6d49c;outline-offset:3px;border-radius:3px
+}
