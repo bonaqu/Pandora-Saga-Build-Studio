@@ -498,8 +498,8 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   }
   assert.match(spellBook.ru[0].main,/Гигантский огр · 4–28 ОЗ/);
   assert.match(spellBook.ru[0].details,/ИНТ 80.*Стихия 50/);
-  assert.match(spellBook.ru.at(-1).details,/СД 50.*Тьма 25/);
-  assert.match(spellBook.en.at(-2).details,/Average hit against.*48 HP/);
+  assert.match(spellBook.ru.find(row=>row.text.includes('Ядовитый удар'))?.details||'',/СД 50.*Тьма 25/);
+  assert.match(spellBook.en.find(row=>row.text.includes('Blood Drain'))?.details||'',/Average hit against.*48 HP/);
   assert.equal(spellBook.expanded.length,9);
   assert.equal(spellBook.expandedRu.length,9);
   assert.equal(spellBook.expandedEn.length,9);
