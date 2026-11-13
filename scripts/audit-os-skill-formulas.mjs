@@ -9,7 +9,7 @@ const local=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 
 export function auditOsSkillFormulaCoverage({skills,classes,calculator}={}){
  const modules=['scalingSkillPreview','healingSpellsPreview',
-  'periodicRecoveryPreview','songSkillPreview','resistanceSkillChoices','skillExecutionChains','craftingSkillPreview','trapSkillCostPreview','complexSkillSourcePreview','statusApplicationPreview'];
+  'periodicRecoveryPreview','songSkillPreview','resistanceSkillChoices','skillExecutionChains','craftingSkillPreview','trapSkillCostPreview','complexSkillSourcePreview','statusApplicationPreview','enemyDebuffPreview'];
  if(!skills||!classes||!modules.every(name=>typeof calculator?.[name]==='function'))
   throw Error('Expected pinned skill/class catalog and all OS formula inspectors');
  const entries=Object.entries(skills).sort((a,b)=>Number(a[0])-Number(b[0]));
@@ -173,6 +173,14 @@ export function auditOsSkillFormulaCoverage({skills,classes,calculator}={}){
   const status=calculator.statusApplicationPreview({skillCatalog:skills,
    jobKey:key,level:55,branchCaps:caps,branchMasteries:caps});
   for(const row of status.rows)mark(row.id,'status-application-source',{targetSide:true});
+ }
+ // Four class-gated, source-verified target effects are qualitative, not
+ // character attack/defense bonuses or final enemy damage formulae.
+ for(const jobKey of classNames){
+  const caps=classes[jobKey].branchCaps;
+  const skill=calculator.enemyDebuffPreview({skillCatalog:skills,jobKey,
+   level:55,branchCaps:caps,branchMasteries:caps});
+  for(const row of skill.rows)mark(row.id,'enemy-debuff-source',{targetSide:true});
  }
  const statusKeys=['numeric-preview','coefficient-model','source-parameter','qualitative-preview',
   'passive-source','internal-or-triggered-source','unmodeled-learnable'];
