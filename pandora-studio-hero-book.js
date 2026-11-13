@@ -1552,11 +1552,11 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    'stage-attacking-skills','stage-offense-skill-row'],
   ['defense','Защитные умения','Defensive skills',
    'stage-defensive-skills','stage-defense-skill-row'],
-  ['movement','Скорость передвижения · параметры умений',
-   'Movement speed · skill parameters',
+  ['movement','Умения скорости передвижения',
+   'Movement speed skills',
    'stage-movement-skills','stage-defense-skill-row'],
-  ['utility','Контроль и ресурсы · параметры умений',
-   'Control & resources · skill parameters',
+  ['utility','Контроль и ресурсы',
+   'Control & resources',
    'stage-utility-skills','stage-defense-skill-row']
  ]){
   // Only effects calculable for this hero remain here. Static source
@@ -1577,6 +1577,15 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   section.append(make('strong',{text:en?captionEn:captionRu}));
   for(const skill of skills){
    const source=gameTerms.englishSkills?.[String(skill.id)];
+   const modelParts=[...(skill.coefficientModels||[]),
+    ...(skill.sourceParameters||[])].filter(part=>
+    Number.isSafeInteger(part?.amount)&&
+    ['coefficient-model','source-parameter'].includes(part.confidence));
+   // A computed coefficient is a useful result, not a placeholder dash.
+   // Keep the label (strike/spell strength) so it is never mistaken
+   // for final target damage or added to persistent hero ATK.
+   const singlePart=!Number.isFinite(skill.amount)&&modelParts.length===1?
+    modelParts[0]:null;
    const amount=Number.isFinite(skill.amount)?
     (skill.amount>0?'+':'')+String(skill.amount)+
      (en?skill.unit.replace(' защиты',' DEF').replace(' уклонения',' evasion')
@@ -1585,30 +1594,32 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
       .replace(' к СИЛ, ПРВ и ИНТ',' STR, AGI and INT')
       .replace(' инд.',' idx').replace(' сопротивления',' resistance')
       .replace(' урона',' damage'):skill.unit):
-    '—';
+    singlePart?
+     (en?singlePart.labelEn:singlePart.labelRu)+' '+
+      (singlePart.amount>0?'+':'')+singlePart.amount+singlePart.unit:null;
    const detail=en?(skill.detailEn||source?.d||skill.description):
     (skill.detailRu||skill.description);
-   const modelParts=[...(skill.coefficientModels||[]),
-    ...(skill.sourceParameters||[])].filter(part=>
-    Number.isSafeInteger(part?.amount)&&
-    ['coefficient-model','source-parameter'].includes(part.confidence));
    const preview=make('div',{class:'stage-heal-row '+rowClass+
     (!skill.available?' stage-book-unavailable':'')},[
     gameSkillBadge(skill.id,skill.name,source?.n||skill.name,
      gameTerms,en,skillIconForId),
-    make('strong',{text:amount})
+    ...(amount!==null?[make('strong',{class:singlePart?
+     'stage-skill-primary-coefficient':'',text:amount})]:[])
    ]);
    const more=make('details',{class:'stage-skill-gate-help stage-skill-more'},[
     make('summary',{text:en?'More details':'Подробнее'})
    ]);
    if(detail)more.append(make('small',{text:detail}));
    if(modelParts.length&&!Number.isFinite(skill.amount)){
-    const parts=modelParts.map(part=>
-     (en?part.labelEn:part.labelRu)+' '+
-     (part.amount>0?'+':'')+part.amount+part.unit).join(' · ');
-    preview.append(make('small',{class:'stage-skill-os-coefficient-model',
-     text:(en?'Effect: ':'Эффект: ')+
-      parts}));
+    // A single source-checked result is already the main line;
+    // show secondary text only when the skill has MULTIPLE effects.
+    if(!singlePart){
+     const parts=modelParts.map(part=>
+      (en?part.labelEn:part.labelRu)+' '+
+      (part.amount>0?'+':'')+part.amount+part.unit).join(' · ');
+     preview.append(make('small',{class:'stage-skill-os-coefficient-model',
+      text:(en?'Effects: ':'Эффекты: ')+parts}));
+    }
     for(const part of modelParts){
      const p=part.roundingParts;
      if(p?.method!=='floor-components')continue;
@@ -1618,6 +1629,28 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
       'Расчёт (с округлением вниз): '+
        p.base+' + ИНТ '+p.int+' + мастерство '+p.mastery+' = '+part.amount}));
     }
+   }
+   // One next-step hint inside the existing disclosure, never a new panel.
+   if(skill.nextStat?.stat==='int'&&
+    Number.isSafeInteger(skill.nextStat.value)&&
+    Number.isSafeInteger(skill.nextStat.remaining)){
+    const next=skill.nextStat;
+    more.append(make('small',{class:'stage-skill-next-mastery',text:en?
+     'Next spell strength +'+next.gain+' at INT '+next.value+
+      ' (+'+next.remaining+' INT)':
+     'Следующий прирост силы заклинания: +'+next.gain+
+      ' при ИНТ '+next.value+' (ещё '+next.remaining+' ИНТ)'}));
+   }
+   if(skill.nextMastery&&Number.isSafeInteger(skill.nextMastery.value)&&
+    Number.isSafeInteger(skill.nextMastery.remaining)){
+    const next=skill.nextMastery;
+    const branch=gameBranchName(next.branch,gameTerms,en);
+    more.append(make('small',{class:'stage-skill-next-mastery',text:en?
+     'Next '+(next.effect==='strike'?'strike strength +1%':'spell strength +1')+
+      ' at '+branch+' '+next.value+' (+'+next.remaining+')':
+     'Следующий прирост '+(next.effect==='strike'?'силы удара: +1%':
+      'силы заклинания: +1')+' при мастерстве «'+branch+'» '+
+       next.value+' (ещё '+next.remaining+')'}));
    }
    const action=gates?.sourceAction?.({
     skillCatalog:gameTerms.skills,skillId:skill.id,
@@ -1653,9 +1686,6 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   const section=make('details',{class:'stage-attribute-row stage-skill-party-effects'});
   section.append(make('summary',{text:en?'Party buffs calculated for this hero':
    'Усиления союзников для этого героя'}));
-  section.append(make('p',{class:'stage-periodic-hint',text:en?
-   'Potential effects if another character casts these skills on this hero. They are not enabled in the build.':
-   'Возможные прибавки, если другой персонаж применит эти умения на вашего героя. Они не включаются в билд автоматически.'}));
   for(const skill of fromParty){
    const source=gameTerms.englishSkills?.[String(skill.id)];
    const basis=skill.recipientBasis;
@@ -1668,9 +1698,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    const card=make('div',{class:'stage-heal-row stage-skill-party-row'},[
     gameSkillBadge(skill.id,skill.name,source?.n||skill.name,gameTerms,en,skillIconForId),
     make('strong',{text:'+'+skill.amount+(en?skill.unit:
-     skill.unit===' ATK'?' АТК':skill.unit)}),
-    make('small',{text:en?'Effect on this hero, if an ally uses the skill':
-     'Результат для этого героя при применении союзником'})
+     skill.unit===' ATK'?' АТК':skill.unit)})
    ]);
    const how=make('details',{class:'stage-skill-gate-help'},[
     make('summary',{text:en?'Calculation and next threshold':
