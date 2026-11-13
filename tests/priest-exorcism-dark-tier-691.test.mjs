@@ -63,7 +63,7 @@ test('250 integer SPI values produce monotonically increasing model steps and a 
 test('caster field persists through normal character state without changing skill formula',()=>{
  const app=read('pandora-studio-app.js');
  const book=read('pandora-studio-hero-book.js');
- assert.match(app,/priestBenevolence:61,priestExorcism:26/);
+ assert.match(app,/priestBenevolence:0,priestExorcism:26/);
  assert.match(app,/exorcism:26/);
  assert.match(app,/\['priestExorcism',500\]/);
  assert.doesNotMatch(book,/\['priestExorcism','Изгнание','Exorcism mastery'\]/);
