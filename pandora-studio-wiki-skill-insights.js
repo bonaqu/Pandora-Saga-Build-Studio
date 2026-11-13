@@ -67,6 +67,36 @@ function accessNotice(skill,skillCatalog,classes){
   ru:'По игровым данным для изучения требуется мастерство «Исцеление» 102, а наибольший предел профессии в текущем каталоге — '+max+'. Обычный путь изучения с такими пределами недоступен. Особые способы получения этого умения не подтверждены.',
   en:'The game files require Healing mastery 102, but the highest class limit in the current catalog is '+max+'. Ordinary learning is not possible within these caps. Special acquisition methods are unverified.'};
 }
+// Two OS Toxify variants had a verified material cost but no Wiki evidence.
+// Pin the complete skill action signature: any drift disables this insight,
+// rather than inventing an item, count, damage, or duration.
+function poisonItemSource(skill){
+ const upgraded=skill.id===220001003;
+ if(skill.id!==220001001&&!upgraded)return null;
+ const rank=upgraded?61:12,previous=upgraded?220001001:null;
+ const same=(f,ep,dir,fv1,fv2)=>
+  f?.ep===ep&&f?.dir===dir&&
+  JSON.stringify(f.fv1)===JSON.stringify(fv1)&&
+  JSON.stringify(f.fv2)===JSON.stringify(fv2);
+ const zero=[0,0,0,0];
+ if(skill.learnable!==true||skill.skillType!=='MYSELF'||
+  skill.branch!=='alchemy'||skill.charLevel!==0||
+  skill.prereq!==previous||skill.mana!==15||skill.cast!==2||
+  skill.cooldown!==10||skill.reqs?.length!==1||
+  skill.reqs[0]?.branch!=='alchemy'||skill.reqs[0]?.amount!==rank||
+  skill.funcs?.length!==3||
+  !same(skill.funcs[0],'EP_AURAPOISON_CONSTANT','TARGET',
+   upgraded?[0,10,15,6]:[0,10,5,5],zero)||
+  !same(skill.funcs[1],'EP_CONSUME_ITEM','CASTER',
+   [0,0,0,50056],[0,0,0,1])||
+  !same(skill.funcs[2],'EP_LOST_CHANGE_WEAPON','TARGET',zero,zero))
+  return null;
+ return {notes:[{
+  ru:'По игровым данным эффект яда прекращается при смене оружия. Итоговый урон ядом и длительность здесь не рассчитаны.',
+  en:'According to game data, changing weapons ends the poison effect. Final poison damage and duration are not calculated here.'
+ }],paths:[],extra:[{type:'requiredItem',count:1,itemId:50056}],
+  sourceOnly:true,finalAmount:null};
+}
 function rowsOf(result){
  if(!result||typeof result!=='object')return [];
  return ['rows','defense','magic','help','stealth','other'].flatMap(
@@ -89,6 +119,11 @@ function inspect({skillCatalog,classes,id,calculator}={}){
   const result={notes:[],paths:[],extra:[],accessNotice:notice,
    sourceOnly:true,finalAmount:null};
   store.values.set(skill.id,result);return result;
+ }
+ const poison=poisonItemSource(skill);
+ if(poison){
+  store.values.set(skill.id,poison);
+  return poison;
  }
  const jobs=Object.keys(classes).filter(job=>
   skill.classes?.[job]===1&&classes[job]?.branchCaps);

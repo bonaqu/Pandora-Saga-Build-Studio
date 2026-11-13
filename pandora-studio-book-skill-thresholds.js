@@ -74,5 +74,27 @@ function baseManaBudget({maxMana,baseCost}={}){
  return {casts:Math.floor(maxMana/baseCost),remainder:maxMana%baseCost,
   maxMana,baseCost,baseOnly:true,usesCurrentMana:false};
 }
-root.PandoraBookSkillThresholds=Object.freeze({requirements,nextMelee,baseManaBudget,MELEE});
+// Source-gated base action metadata for currently available numeric effects.
+// This is the game's recorded activation cost/timing, never adjusted by
+// unknown server-side discounts, speed rules, or repeated-toggle behavior.
+const actionTypes=new Set(['MYSELF','ALLY','PARTY_ALL','POINT','ENEMY',
+ 'BOLT','TOGGLE','RADIATION']);
+function sourceAction({skillCatalog,skillId,jobKey,level,available}={}){
+ if(available!==true||!Number.isSafeInteger(skillId)||
+  typeof jobKey!=='string'||!good(level))return null;
+ const record=skillCatalog?.[String(skillId)];
+ if(record?.id!==skillId||record.learnable!==true||
+  record.classes?.[jobKey]!==1||!actionTypes.has(record.skillType)||
+  !Number.isSafeInteger(record.charLevel)||record.charLevel>level||
+  !Number.isSafeInteger(record.mana)||record.mana<0||
+  !Number.isFinite(record.cast)||record.cast<0||
+  !Number.isFinite(record.cooldown)||record.cooldown<0||
+  !Array.isArray(record.funcs)||record.funcs.length===0)return null;
+ return {skillId,skillType:record.skillType,mana:record.mana,
+  cast:record.cast,cooldown:record.cooldown,
+  baseOnly:true,serverFinalUnverified:true};
+}
+root.PandoraBookSkillThresholds=Object.freeze({
+ requirements,nextMelee,baseManaBudget,sourceAction,MELEE
+});
 })(typeof window==='undefined'?globalThis:window);

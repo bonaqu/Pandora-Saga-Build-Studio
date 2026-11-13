@@ -46,6 +46,21 @@ export async function runWikiMaterialLinks752Smoke(browser,base){
   await page.goBack();
   await holy.waitFor({state:'visible',timeout:20000});
 
+  // Both real OS Toxify skill variants consume the same exact Venom item.
+  await skill(220001001);
+  const poison=page.locator('.wiki-page .wiki-skill-source-material');
+  assert.match(await poison.innerText(),/Для применения нужно: 1 × Ядовитое зелье/);
+  assert.equal(await poison.locator('a.wiki-link').getAttribute('href'),
+   '#wiki/item/50056');
+  assert.match(await page.locator('.wiki-page .wiki-skill-source-insight').innerText(),
+   /эффект яда прекращается при смене оружия/);
+  await poison.locator('a.wiki-link').click();
+  await page.waitForFunction(()=>location.hash.includes('#wiki/item/50056'));
+  await page.goBack();
+  await poison.waitFor({state:'visible',timeout:20000});
+
+  // Keep current Resurrection selection for the existing English checks.
+  await skill(310003001);
   const close=page.locator('#dockClose');
   if(await close.isVisible())await close.click();
   await page.locator('#locale [data-locale="en"]').click();
@@ -58,6 +73,11 @@ export async function runWikiMaterialLinks752Smoke(browser,base){
   assert.match(en,/Requires: 3 ×/);
   assert.equal(await page.locator('.wiki-page .wiki-skill-source-material a.wiki-link')
    .getAttribute('href'),'#wiki/item/50059');
+  await skill(220001003);
+  const poisonEn=page.locator('.wiki-page .wiki-skill-source-material');
+  assert.match(await poisonEn.innerText(),/Requires: 1 × Venom/);
+  assert.equal(await poisonEn.locator('a.wiki-link').getAttribute('href'),
+   '#wiki/item/50056');
   assert.deepEqual(errors,[]);
  }finally{await context.close()}
 }

@@ -1646,6 +1646,29 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
        p.base+' + ИНТ '+p.int+' + мастерство '+p.mastery+' = '+part.amount}));
     }
    }
+   const action=gates?.sourceAction?.({
+    skillCatalog:gameTerms.skills,skillId:skill.id,
+    jobKey:heroJobKey,level:heroLevel,available:skill.available
+   });
+   if(action){
+    const apply=make('details',{class:'stage-skill-gate-help stage-skill-action-meta',
+     'data-skill-action-id':String(skill.id)},[
+     make('summary',{text:en?'Use and base costs':'Применение и базовые затраты'})
+    ]);
+    const seconds=value=>value===0?(en?'instant':'мгновенно'):
+     healingNumber.format(value)+(en?' s':' сек.');
+    apply.append(make('small',{text:en?
+     'OS MP cost: '+action.mana+
+      ' · Base casting: '+seconds(action.cast)+
+      ' · Base cooldown: '+healingNumber.format(action.cooldown)+' s':
+     'Расход ОМ по игровым данным: '+action.mana+
+      ' · Базовое применение: '+seconds(action.cast)+
+      ' · Базовая перезарядка: '+healingNumber.format(action.cooldown)+' сек.'}));
+    apply.append(make('small',{text:en?
+     'These are base skill-record values, not final resource costs or seconds after buffs. Repeat activation and uptime are not calculated.':
+     'Это базовые значения умения. Окончательные затраты и время с усилениями, повторные активации и длительность не рассчитываются.'}));
+    preview.append(apply);
+   }
    appendGate(preview,skill.id);
    section.append(preview);
   }
