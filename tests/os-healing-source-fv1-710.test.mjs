@@ -61,7 +61,7 @@ test('Sanctuary child is the healing source, not a Remaked-added hero-level bonu
  assert.equal(heal(50,50,70,60,100,forgery).rows[3].available,false);
 });
 
-test('OS current periodic FV1 restores level dependence without inventing two-second tick rate',()=>{
+test('OS periodic FV1 restores level dependence with the Remaked two-second source model',()=>{
  const a=periodic('CLERIC',45,60,41).rows;
  assert.deepEqual(a.map(x=>[x.id,x.amount]),[[310002001,24],[310022001,21]]);
  const b=periodic('CLERIC',55,60,41).rows;
@@ -73,7 +73,7 @@ test('OS current periodic FV1 restores level dependence without inventing two-se
  assert.match(calculator.periodicRecoveryPreview({
   level:55,spi:60,benevolence:41,jobKey:'CLERIC',
   benevolenceCap:classes.CLERIC.branchCaps.benevolence,skillCatalog:data}).source,
-  /tick timing unverified/);
+  /2-second LPsec\/MPsec model.*live timing not measured/);
 });
 
 test('source FV2 tampering invalidates specific healing/periodic skill, not whole hero',()=>{
