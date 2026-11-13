@@ -3153,6 +3153,29 @@ function priestCastPreviews({spi,blessing,hymn,exorcism=26,skills=null}={}){
  }
  return result;
 }
+// An independent CLERIC ally may give Peace Song to any recipient,
+// irrespective of the current hero's class or the chosen ENCHANTER priest.
+// Healing 61 is a fixed acquisition gate; it does not amplify the spell.
+// Only SPR and Hymn enter the preserved current-OS coefficient formula.
+function alliedPeaceSongPreview({spi,hymn,skills=null,classes=null}={}){
+ const song=skills?.['340003001'],cleric=classes?.CLERIC;
+ if(song?.id!==340003001||song.classes?.CLERIC!==1||
+  JSON.stringify(song.reqs)!==JSON.stringify([
+   {branch:'benevolence',amount:61},{branch:'hymn',amount:30}])||
+  !Number.isSafeInteger(cleric?.branchCaps?.benevolence)||
+  cleric.branchCaps.benevolence<61||
+  !Number.isSafeInteger(cleric?.branchCaps?.hymn)||
+  cleric.branchCaps.hymn<30||
+  !Number.isSafeInteger(spi)||spi<0||spi>500||
+  !Number.isSafeInteger(hymn)||hymn<30||hymn>cleric.branchCaps.hymn)
+  return null;
+ const value=priestCastPreviews({spi,blessing:0,hymn,exorcism:26,skills}).peaceful;
+ return Number.isSafeInteger(value)?{
+  id:340003001,value,spi,hymn,minimumHymn:30,
+  maximumHymn:cleric.branchCaps.hymn,requiredHealing:61,
+  casterClass:'CLERIC',model:'current OS + Remaked floor'
+ }:null;
+}
 function legacyBuffPreview({spi,blessing=0,hymn=0,alchemy=0}={}){
  if(![spi,blessing,hymn,alchemy].every(n=>Number.isInteger(n)&&n>=0))return null;
  const quotient=(value,parts)=>Math.floor(value/(100/parts));
@@ -4701,7 +4724,7 @@ function supportEffectPreview({skillCatalog=null,jobKey=null,level=1,
   }
   return out;
  }
-root.PandoraOSCalculator=Object.freeze({alliedInspirationPreview,skillExecutionChains,craftingSkillPreview,trapSkillCostPreview,tacticalSkillPreview,rangedAmmoPreview,combatTechniquePreview,specializedSkillPreview,supportEffectPreview,situationalSkillPreview,statusApplicationPreview,enemyDebuffPreview,complexSkillSourcePreview,priestCastPreviews,movementSkillSourcePreview,utilitySkillSourcePreview,scalingSkillPreview,directStrikeCoefficientPreview,elementalSpellCoefficientPreview,defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
+root.PandoraOSCalculator=Object.freeze({alliedInspirationPreview,alliedPeaceSongPreview,skillExecutionChains,craftingSkillPreview,trapSkillCostPreview,tacticalSkillPreview,rangedAmmoPreview,combatTechniquePreview,specializedSkillPreview,supportEffectPreview,situationalSkillPreview,statusApplicationPreview,enemyDebuffPreview,complexSkillSourcePreview,priestCastPreviews,movementSkillSourcePreview,utilitySkillSourcePreview,scalingSkillPreview,directStrikeCoefficientPreview,elementalSpellCoefficientPreview,defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
  base,characterSheetPhysicalAttackRange,classBase,classBaseComponents,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,racialWeaponPreview,incredibleStrengthPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
  recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,consumableSkillPreview,statusCurePreview,harmfulConsumablePreview,gemstonePreview,legacyBuffPreview,songSkillPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,skillAttackRangePreview,racialUtilityPreview,elementalMagicPreview,elementalRefinementPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive
 });
