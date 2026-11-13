@@ -1549,7 +1549,8 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   const id=result?.skillId,source=gameTerms.skills?.[String(id)];
   const branch=source?.branch,mastery=heroMasteries?.[branch]??0;
   const required=source?.reqs?.find(r=>r.branch===branch)?.amount??0;
-  if(![240005001,410001001,430001001,430052001].includes(id)||
+  if(![240005001,330001001,410001001,410011001,410012001,
+    410021001,410023001,420003001,430001001,430052001].includes(id)||
    seenHits.has(id)||result.monsterId!==22104||
    source?.id!==id||source.classes?.[heroJobKey]!==1||
    !Number.isSafeInteger(mastery)||mastery<required||

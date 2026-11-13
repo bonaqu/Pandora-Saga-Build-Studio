@@ -7,7 +7,7 @@
 const target=Object.freeze({
  id:22104,name:'Гигантский огр',nameEn:'Ogre Bouncer',level:53,
  life:6126,vit:32,spi:18,ac:15,magicProtection:0,
- resists:{fire:0,dark:-25,magic:17}
+ resists:{fire:0,cold:0,lightning:0,charm:0,holy:0,dark:-25,magic:17}
 });
 const n=v=>Number.isSafeInteger(v)&&v>=0;
 const trunc=Math.trunc;
@@ -17,9 +17,17 @@ const even=x=>{
  const lo=floor(x),fraction=x-lo;
  return fraction<0.5?lo:fraction>0.5?lo+1:lo%2===0?lo:lo+1;
 };
+// Source OS supports an elemental bonus for each damage school. Keep
+// separate keys so ice/lightning/holy/dark never leak into other hits.
+const schoolSuffixes=Object.freeze({
+ EP_ELEMENT_DAMAGE_SCALE_FIRE:'fire',
+ EP_ELEMENT_DAMAGE_SCALE_COLD:'cold',
+ EP_ELEMENT_DAMAGE_SCALE_LIGHTNING:'lightning',
+ EP_ELEMENT_DAMAGE_SCALE_HOLY:'holy',
+ EP_ELEMENT_DAMAGE_SCALE_DARK:'dark'
+});
 const elementalKeys=new Set(['EP_ELEMENT_DAMAGE_SCALE',
- 'EP_ELEMENT_DAMAGE_SCALE_FIRE',
- 'EP_ELEMENT_BONUS']);
+ 'EP_ELEMENT_BONUS',...Object.keys(schoolSuffixes)]);
 const sourceEffect=(sum,e,weapon)=>{
  if(!e||!elementalKeys.has(e.func))return true;
  const grade=weapon?.refinement??0;
@@ -29,10 +37,12 @@ const sourceEffect=(sum,e,weapon)=>{
     (e.max!=null&&!Number.isSafeInteger(e.max)))return false;
  if((e.min!=null&&grade<e.min)||(e.max!=null&&grade>e.max))return true;
  if(!Number.isFinite(e.a))return false;
- if(e.func==='EP_ELEMENT_DAMAGE_SCALE_FIRE'){
+ const school=schoolSuffixes[e.func];
+ if(school){
   // OS item 1862 has a conditional bonus for *fire-refined* weapon only.
-  if(weapon?.record?.id===1862&&weapon?.gem?.element!=='fire')return true;
-  sum.fire+=e.a;
+  if(school==='fire'&&weapon?.record?.id===1862&&
+     weapon?.gem?.element!=='fire')return true;
+  sum[school]=(sum[school]||0)+e.a;
  }else if(e.func==='EP_ELEMENT_BONUS')sum.penetration+=e.a;
  else sum.general+=e.a;
  return true;
@@ -157,6 +167,28 @@ const directSpells=Object.freeze([
  {id:410001001,branch:'element',kind:'BOLT',element:'FIRE',
   stat:'INT',req:0,charLevel:1,slot:0,effects:[
    ['EP_ELEMENT_DAMAGE','TARGET',[122,0,60,23],[0,0,0,0]]]},
+ {id:330001001,branch:'exorcism',kind:'BOLT',element:'HOLY',
+  stat:'INT',req:8,charLevel:0,slot:0,effects:[
+   ['EP_ELEMENT_DAMAGE','TARGET',[120,50,30,15],[0,0,0,0]]]},
+ {id:410011001,branch:'element',kind:'BOLT',element:'COLD',
+  stat:'INT',req:8,charLevel:0,slot:0,effects:[
+   ['EP_ELEMENT_DAMAGE','TARGET',[60,30,30,14],[0,0,0,0]],
+   ['EP_CAUSE_NUMB','TARGET',[0,0,0,4],[0,0,0,100]]]},
+ {id:410012001,branch:'element',kind:'BOLT',element:'COLD',
+  stat:'INT',req:21,charLevel:0,slot:0,effects:[
+   ['EP_ELEMENT_DAMAGE','TARGET',[250,30,30,55],[0,0,0,0]],
+   ['EP_CAUSE_NUMB','TARGET',[0,0,0,7],[0,0,0,200]]]},
+ {id:410021001,branch:'element',kind:'ENEMY',element:'LIGHTNING',
+  stat:'INT',req:0,charLevel:12,slot:0,effects:[
+   ['EP_ELEMENT_DAMAGE','TARGET',[40,30,70,22],[0,0,0,0]],
+   ['EP_CAUSE_TUMBLE','TARGET',[0,0,0,2],[0,0,0,100]]]},
+ {id:410023001,branch:'element',kind:'ENEMY',element:'LIGHTNING',
+  stat:'INT',req:0,charLevel:20,slot:0,effects:[
+   ['EP_ELEMENT_DAMAGE','TARGET',[250,10,250,20],[0,0,0,0]]]},
+ {id:420003001,branch:'charm',kind:'ENEMY',element:'CHARM',
+  stat:'SPI',req:12,charLevel:0,slot:0,effects:[
+   ['EP_ELEMENT_DAMAGE','TARGET',[40,30,70,27],[0,0,0,0]],
+   ['EP_CAUSE_SLEEP','TARGET',[0,0,0,20],[40,0,40,40]]]},
  {id:430001001,branch:'darkness',kind:'ENEMY',element:'DARK',
   stat:'INT',req:21,charLevel:0,slot:1,effects:[
    ['EP_LIFE_ABSORB','CASTER',[0,0,0,50],[0,0,0,0]],
@@ -210,7 +242,10 @@ function elementalHit(options={},spec=null){
  const masteryKey=isTrap?'trap':spec.branch;
  const mastery=masteries[masteryKey]??0;
  const effect=effectSkill.funcs?.[effectSkill.damage?.slotIndex];
- const spread={fire:10,dark:25}[element];
+ // Pandora Saga OS public BuildCalculator _e indices:
+ // FIRE=1 ->10%, COLD=2 ->20%, LIGHTNING=3 ->50%,
+ // CHARM=5 ->0%, HOLY=7 ->25%, DARK=8 ->25%.
+ const spread={fire:10,cold:20,lightning:50,charm:0,holy:25,dark:25}[element];
  if(!powerKey||!n(stats[powerKey])||!n(mastery)||!n(spread)||
   effect?.ep!=='EP_ELEMENT_DAMAGE'||effect.dir!=='TARGET'||
   !Array.isArray(effect.fv1)||effect.fv1.length!==4||
@@ -228,9 +263,10 @@ function elementalHit(options={},spec=null){
  const enchant=modifiers?.priestApplied?.priestEnchantment?.magicRate||0;
  if(!Number.isFinite(sage)||!Number.isFinite(enchant))return null;
  const bonusRate=equipmentEffects.general+
-  (element==='fire'?equipmentEffects.fire:0)+sage+enchant;
+  (equipmentEffects[element]||0)+sage+enchant;
  // EP_ELEMENT_BONUS pierces FIRE/COLD/LIGHTNING, but not DARK resistance.
- const penetration=element==='fire'?equipmentEffects.penetration:0;
+ const penetration=['fire','cold','lightning'].includes(element)?
+  equipmentEffects.penetration:0;
  const weapon=equipment.find(x=>x?.record?.slot==='weapon'&&!x?.issue?.length);
  let magicGemRate=0,magicGemFlat=0;
  if(weapon?.gem?.type==='magical'&&weapon.gem.element===element){
