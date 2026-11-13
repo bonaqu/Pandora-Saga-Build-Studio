@@ -93,6 +93,26 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   assert.equal(ru.includes('Природное восстановление'),false,'Unavailable recovery does not enter Book');
   assert.equal(ru.includes('Неверный автоперевод'),false);
   assert.equal(ru.includes('Гимны'),false);
+  // Real browser proof: the source-only catalog remains outside the Book, but
+  // exact recipient-side bonuses are again calculated for THIS build.
+  const party=page.locator('#book-source-qa .stage-skill-party-effects');
+  assert.equal(await party.count(),1,'Computed effects from allies must remain visible');
+  await party.locator('summary').first().click();
+  const partyText=await party.innerText();
+  for(const [name,amount] of [['Боевой клич','+42 АТК'],
+   ['Массовая сосредоточенность','+35'],['Помощь ветра','+34']])
+   assert.ok(partyText.includes(name)&&partyText.includes(amount),
+    'Computed beneficiary bonus missing: '+name);
+  assert.match(partyText,/не включаются в билд автоматически/);
+  const how=party.locator('.stage-skill-party-row .stage-skill-gate-help').first();
+  await how.locator('summary').click();
+  assert.match(await how.innerText(),/Следующая \+1 при значении/);
+  assert.match(await how.innerText(),/165/);
+  const nextGroup=page.locator('#book-source-qa .stage-skill-next-mastery');
+  assert.equal(await nextGroup.count(),1);
+  await nextGroup.locator('summary').click();
+  assert.match(await nextGroup.innerText(),/Беспощадный удар/);
+  assert.match(await nextGroup.innerText(),/Освоено: 0\/3/);
   for(const name of ['Первая помощь','Храм','Восстановление'])
    assert.ok(ru.includes(name),'Hero Book must use exact current OS skill name '+name);
   assert.ok(!ru.includes('Невероятная сила'),
