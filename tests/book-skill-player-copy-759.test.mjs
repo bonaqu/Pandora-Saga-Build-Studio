@@ -50,3 +50,20 @@ test('Encyclopedia actions show no internal data-source caveat',()=>{
  assert.doesNotMatch(wikiUi,/Это сведения из игровых файлов, а не рассчитанный урон/);
  assert.doesNotMatch(wikiUi,/правило расхода не подтверждено/);
 });
+
+test('Hero Book retains numerical effects without server-internal caveats in copy',()=>{
+ for(const phrase of [
+  'без подтверждённой серверной формулы','without a verified server formula',
+  'Only a matching class, weapon and source model',
+  'Casting-speed value is unavailable in the current game data',
+  'Current OS recovery coefficients are unavailable',
+  'Это порог мастерства, а не подтверждение',
+  'not proof that all weapon and other conditions are met',
+  'Временные умения без надёжного расчёта пока не включены',
+  'Temporary skills without a reliable calculation'
+ ])assert.ok(!book.includes(phrase),phrase);
+ assert.match(book,/Дальность оружия и действующие бонусы складываются/);
+ assert.match(book,/Природное восстановление союзника · ОМ каждые 2 сек/);
+ assert.match(book,/nextMelee\.remaining/);
+ assert.match(book,/skill\.available===true/);
+});

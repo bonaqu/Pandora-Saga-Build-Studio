@@ -2616,11 +2616,18 @@ function heroPathApi(){
    heroPathPage='skills';renderPathPages();saveView();
    $('pathSkillsTab')?.focus({preventScroll:true});
   },
-  onInspect:skill=>{
+  onInspect:(skill,context={})=>{
    selectedSkill=skill;renderPathSkills();
-   document.querySelector('[data-skill-id="'+String(skill.id)+'"]')
-    ?.focus({preventScroll:true});
-   $('pathSkillDetails')?.scrollIntoView({block:'nearest',behavior:'smooth'});
+   // Keep focus inside the new results pager; card inspection still focuses its card.
+   const details=$('pathSkillDetails'),direction=context?.pagerDirection;
+   const findStep=dir=>details?.querySelector('[data-skill-list-direction="'+dir+'"]');
+   const same=direction==='next'||direction==='previous'?findStep(direction):null;
+   const reverse=direction==='next'?findStep('previous'):
+    direction==='previous'?findStep('next'):null;
+   const focus=(same&&!same.disabled?same:reverse&&!reverse.disabled?reverse:null)||
+    document.querySelector('[data-skill-id="'+String(skill.id)+'"]');
+   focus?.focus({preventScroll:true});
+   details?.scrollIntoView({block:'nearest',behavior:'smooth'});
   },
   onNavigateSkill:skill=>{
    // A previous/advanced skill may be hidden by the current search or

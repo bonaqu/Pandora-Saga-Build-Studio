@@ -702,7 +702,7 @@ function viewSkills(target,details,api){
      'data-skill-list-direction':delta<0?'previous':'next',
      'aria-label':label,title:next?.name||null,
      disabled:!next,text:icon,
-     onclick:()=>{if(next)api.onInspect(next)}});
+     onclick:()=>{if(next)api.onInspect(next,{pagerDirection:delta<0?'previous':'next'})}});
    };
    listNav.append(move(-1,'←','Предыдущее в списке:','Previous in list:'),
     make('span',{class:'path-skill-list-position',text:

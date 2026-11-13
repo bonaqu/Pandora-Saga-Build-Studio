@@ -749,7 +749,8 @@ test('Skill results pager uses stable filtered order, pins selection and keeps t
  ];
  const api={state:{level:45,points:{}},job:'WARRIOR',lang:'ru',
   skillCatalog:skills,catalogReady:true,query:'удар',filter:'all',shown:2,
-  selectedSkill:skills[1],icon:()=>null,hover:()=>{},onInspect:skill=>{
+  selectedSkill:skills[1],icon:()=>null,hover:()=>{},onInspect:(skill,context)=>{
+   api.lastPagerDirection=context?.pagerDirection;
    api.selectedSkill=skill;render();
   }};
  const gallery=new BrowserElement('root'),details=new BrowserElement('root');
@@ -764,11 +765,13 @@ test('Skill results pager uses stable filtered order, pins selection and keeps t
  assert.equal(walk(gallery).filter(n=>n.className?.includes('path-skill-card')).length,2);
  assert.match(button('previous').attributes['aria-label'],/Альфа удар/);
  button('next').listeners.click();
+ assert.equal(api.lastPagerDirection,'next');
  assert.equal(api.selectedSkill.id,910100003);
  assert.equal(pinned(),'910100003','a result beyond the first two is pinned, not lost');
  assert.equal(position().textContent,'3 из 3');
  assert.equal(button('next').disabled,true);
  button('previous').listeners.click();
+ assert.equal(api.lastPagerDirection,'previous');
  assert.equal(api.selectedSkill.id,910100002,'previous returns to the original stable neighbor');
  assert.equal(api.query,'удар');
  assert.equal(api.filter,'all');
