@@ -1635,7 +1635,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     Number.isSafeInteger(skill.nextStat.value)&&
     Number.isSafeInteger(skill.nextStat.remaining)){
     const next=skill.nextStat;
-    more.append(make('small',{class:'stage-skill-next-mastery',text:en?
+    more.append(make('small',{class:'stage-skill-coefficient-next',text:en?
      'Next spell strength +'+next.gain+' at INT '+next.value+
       ' (+'+next.remaining+' INT)':
      'Следующий прирост силы заклинания: +'+next.gain+
@@ -1645,7 +1645,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     Number.isSafeInteger(skill.nextMastery.remaining)){
     const next=skill.nextMastery;
     const branch=gameBranchName(next.branch,gameTerms,en);
-    more.append(make('small',{class:'stage-skill-next-mastery',text:en?
+    more.append(make('small',{class:'stage-skill-coefficient-next',text:en?
      'Next '+(next.effect==='strike'?'strike strength +1%':'spell strength +1')+
       ' at '+branch+' '+next.value+' (+'+next.remaining+')':
      'Следующий прирост '+(next.effect==='strike'?'силы удара: +1%':

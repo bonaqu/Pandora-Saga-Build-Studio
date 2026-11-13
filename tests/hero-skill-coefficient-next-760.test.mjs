@@ -90,6 +90,6 @@ test('Book shows one primary coefficient without duplicate rows, and hints stay 
  assert.match(block,/if\(!singlePart\)/);
  assert.match(block,/skill\.nextStat/);
  assert.match(block,/skill\.nextMastery/);
- assert.match(block,/more\.append\(make\('small',\{class:'stage-skill-next-mastery'/);
+ assert.match(block,/more\.append\(make\('small',\{class:'stage-skill-coefficient-next'/);
  assert.doesNotMatch(block,/Расчётная модель по игровым данным|не подтверждённый итоговый результат/);
 });

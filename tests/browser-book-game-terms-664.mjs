@@ -149,7 +149,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
    ['Массовая сосредоточенность','+35'],['Помощь ветра','+34']])
    assert.ok(partyText.includes(name)&&partyText.includes(amount),
     'Computed beneficiary bonus missing: '+name);
-  assert.match(partyText,/не включаются в билд автоматически/);
+  assert.doesNotMatch(partyText,/не включаются в билд автоматически/);
   const how=party.locator('.stage-skill-party-row .stage-skill-gate-help').first();
   await how.locator('summary').click();
   assert.match(await how.innerText(),/Следующая \+1 при значении/);
@@ -304,7 +304,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
      main:row.querySelector('strong')?.textContent,
      models:Array.from(row.querySelectorAll('.stage-skill-os-coefficient-model'))
       .map(node=>node.textContent),
-     next:Array.from(row.querySelectorAll('.stage-skill-next-mastery'))
+     next:Array.from(row.querySelectorAll('.stage-skill-coefficient-next'))
       .map(node=>node.textContent),
      actions:row.querySelectorAll('[data-skill-action-id="142002001"]').length
     }:null;
