@@ -1663,7 +1663,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     const seconds=value=>value===0?(en?'instant':'мгновенно'):
      healingNumber.format(value)+(en?' s':' сек.');
     more.append(make('small',{text:en?
-     'Use and base costs: OS MP cost '+action.mana+
+     'Use and base costs: OS MP cost: '+action.mana+
       ' · Base casting: '+seconds(action.cast)+
       ' · Base cooldown: '+healingNumber.format(action.cooldown)+' s':
      'Применение и базовые затраты: Расход ОМ по игровым данным: '+
