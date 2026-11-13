@@ -586,6 +586,7 @@ function buffsPage(body,options){
   if(['priestSpi','priestBlessing','priestHymn','priestBenevolence','priestExorcism','priestEnabled',
    'priestClass','allyPeaceSpi','allyPeaceHymn','allyNaturalLevel',
    'allyHealingSpi','allyHealingLevel','allyHealingMastery',
+   'allyRegeneration','allyRestoration', // historical inert selections
    'honorCuriosity','proeliumPotency'].includes(key))return false;
   if(key.startsWith('priest')&&buffs.priestEnabled!==true)return false;
   if(key==='priestGratia'&&!(Number(buffs.priestBlessing)>=8))return false;
@@ -1024,63 +1025,6 @@ function buffsPage(body,options){
   party.append(make('small',{class:'stage-attribute-note',text:english?
    'Free Wind and Wind Blessing together: the server stacking rule is unknown, so no combined movement total is shown.':
    '«Вольный ветер» и «Благословение ветра» вместе: правило сложения не подтверждено, поэтому общий итог скорости не рассчитывается.'}));
- const healer=gameTerms.classes?.CLERIC;
- const healerCap=Number(healer?.branchCaps?.benevolence||0);
- const healingProfile={
-  skillCatalog:gameTerms.skills,classCatalog:gameTerms.classes,
-  casterLevel:Number(buffs.allyHealingLevel??45),
-  casterSpi:Number(buffs.allyHealingSpi??134),
-  casterHealing:Number(buffs.allyHealingMastery??41)
- };
- const eligibleHealing=root.PandoraOSCalculator?.alliedHpPulsePreview?.({
-  ...healingProfile,casterHealing:41})||{};
- const healingPreview=root.PandoraOSCalculator?.alliedHpPulsePreview?.(
-  healingProfile)||{};
- for(const [id,key,modelKey] of [
-  [310002001,'allyRegeneration','regeneration'],
-  [310022001,'allyRestoration','restoration']
- ]){
-  const spell=gameTerms.skills?.[String(id)];
-  const amount=healingPreview[modelKey]?.hpPerPulse;
-  toggle(party,spell?.name||key,key,false,
-   Boolean(eligibleHealing[modelKey]),{
-    id,name:spell?.name,nameEn:gameTerms.englishSkills?.[String(id)]?.n,
-    desc:spell?.desc,descEn:gameTerms.englishSkills?.[String(id)]?.d,
-    icon:skillIconForId(id),
-    reason:english?'No verified allied caster':'Нет проверенного подходящего союзника',
-    summary:Number.isSafeInteger(amount)?
-     (english?'HP +':'ОЗ +')+amount+
-      (english?' per recovery pulse (model)':' за срабатывание (расчёт)'):
-     (english?'Caster parameters are unavailable':'Нет подходящих значений союзника')
-  });
- }
- if(buffs.allyRegeneration===true||buffs.allyRestoration===true){
-  const group=make('div',{class:'stage-priest-fields stage-ally-hp-fields'});
-  group.append(make('small',{class:'stage-attribute-note stage-ally-peace-note',
-   text:english?
-    'Ally Cleric · independent caster stats; skill requirements are automatic. Source interval value: 2 (actual seconds unverified).':
-    'Союзник Клирик · его параметры не расходуют очки героя. Требования учтены автоматически. Параметр периода в данных: 2 (секунды не подтверждены).'}));
-  const min=Math.max(buffs.allyRegeneration?21:0,buffs.allyRestoration?41:0);
-  const fields=[
-   ['allyHealingLevel','Уровень союзника','Ally level',1,55,45],
-   ['allyHealingSpi','СД союзника','Ally SPR',0,500,134],
-   ['allyHealingMastery','Исцеление союзника','Ally Healing mastery',
-    min,healerCap,41]
-  ];
-  for(const [key,ru,en,minValue,maxValue,defaultValue] of fields){
-   const label=make('label',{class:'stage-book-field'},[
-    make('span',{text:english?en:ru})]);
-   const amount=Number(buffs[key]??defaultValue);
-   label.append(make('input',{type:'number',min:minValue,max:maxValue,step:1,
-    value:String(Math.max(Math.min(minValue,maxValue),
-     Math.min(Number.isFinite(amount)?amount:defaultValue,maxValue))),
-    'aria-label':english?en:ru,'data-book-setting':key,
-    disabled:maxValue<minValue,
-    onchange:event=>onBuff(key,event.target.value)}));
-   group.append(label);
-  }
-  party.append(group);
- }
  // One source-controlled setting per Remaked enhancement. The entries
  // already represented by Life Sign, priest and elemental resistance tools
  // deliberately stay in their original sections, without duplicate inputs.
@@ -1408,65 +1352,56 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    detail.append(make('small',{text:line}));
   node.append(detail);
  };
- const spells=(modifiers?.healingSpells?.rows||[]).filter(row=>row.available===true);
- if(spells.length){
+ const spells=(modifiers?.healingSpells?.rows||[]).filter(row=>row?.available===true);
+ const periodic=(modifiers?.periodicRecovery?.rows||[]).filter(row=>row?.available===true);
+ // Only the CURRENT hero's learnable healing spells, not hypothetical ally casts.
+ const directIds=new Set(spells.map(row=>row.skillId));
+ const periodicHeals=periodic.filter(row=>row.kind==='hp'&&!directIds.has(row.id));
+ const healingRows=[...spells,...periodicHeals];
+ if(healingRows.length){
   const group=make('section',{class:'stage-attribute-row stage-healing-spells'});
   group.append(make('strong',{text:en?'Healing skills':'Лечащие умения'}));
-  for(const row of spells){
-   if(!row||!Number.isFinite(row.amount))continue;
-   const amount=String(row.amount)+(row.scaledBySkill?
-    (en?' HP':' ОЗ'):(en?' / period':' / период'));
-   const available=row.available===true;
-   const preview=make('div',{class:'stage-heal-row'+
-    (available?'':' stage-book-unavailable')},[
-    // Source IDs are stable for all five Remaked healing previews, including
-    // locked skills which deliberately have a null available skillId.
-    gameSkillBadge(row.skillId||
-     ({firstAid:310001001,heal:310004001,healingAura:310021001,
-       sanctuary:310023001,restoration:310022001})[row.id],
-     row.name,row.nameEn,gameTerms,en,skillIconForId),
+  for(const row of healingRows){
+   if(!Number.isFinite(row?.amount))continue;
+   const sourceId=row.skillId||(Number.isInteger(row.id)?row.id:
+    ({firstAid:310001001,heal:310004001,healingAura:310021001,
+      sanctuary:310023001,restoration:310022001})[row.id]);
+   if(!Number.isSafeInteger(sourceId))continue;
+   const pulse=row.kind==='hp'||row.scaledBySkill===false;
+   const amount=String(row.amount)+(pulse?
+    (en?' HP per pulse (model)':' ОЗ за срабатывание (расчёт)'):
+    (en?' HP (model)':' ОЗ (расчёт)'));
+   const preview=make('div',{class:'stage-heal-row'},[
+    gameSkillBadge(sourceId,row.name,row.nameEn,gameTerms,en,skillIconForId),
     make('strong',{text:amount}),
-    make('small',{text:available?(en?'Available':'Доступно'):
-     (en?'Preview · '+(row.requiresEn||row.requires||'Requirements not met'):
-      'Предпросмотр · '+(row.id==='heal'?
-       // The OS class ACOLYTE is «Адепт», not an automatic «Аколит».
-       gameClassName('ACOLYTE','Адепт','Acolyte',gameTerms,false)+', уровень 18':
-       row.id==='sanctuary'?
-       gameClassName('CLERIC','Клирик','Cleric',gameTerms,false)+', уровень 45':
-       row.requires||'Требования не выполнены'))})
+    make('small',{text:en?'Available to this build':'Доступно этому персонажу'})
    ]);
-   appendGate(preview,row.skillId);
+   appendGate(preview,sourceId);
    group.append(preview);
   }
+  group.append(make('small',{class:'stage-attribute-note',text:en?
+   'Heals depend on this hero’s learned skills and attributes. Periodic values are per pulse; actual server tick seconds are unconfirmed.':
+   'Лечение зависит от умений и характеристик этого героя. Периодические значения — за срабатывание, реальные секунды не подтверждены.'}));
   body.append(group);
  }
- const periodic=(modifiers?.periodicRecovery?.rows||[]).filter(row=>row.available===true);
- if(periodic.length){
-  // The OS English source supplies localized names by numeric skill ID.
-  // Do not translate Russian game names heuristically.
+ // MP regen is distinct from HP healing; do not claim FV2[3]=2 are seconds.
+ const manaPulses=periodic.filter(row=>row.kind==='mp');
+ if(manaPulses.length){
   const details=make('details',{class:'stage-attribute-row stage-periodic-recovery'});
-  details.append(make('summary',{text:en?'Recovery every 2 seconds':
-   'Восстановление каждые 2 секунды'}));
-  for(const entry of periodic){
+  details.append(make('summary',{text:en?'Skill MP recovery':'Восстановление ОМ умениями'}));
+  for(const entry of manaPulses){
    if(!Number.isFinite(entry?.amount))continue;
    const preview=make('div',{class:'stage-periodic-row'},[
     gameSkillBadge(entry.id,entry.name,null,gameTerms,en,skillIconForId),
-    make('strong',{text:String(entry.amount)+' '+(entry.kind==='hp'?
-     (en?'HP':'ОЗ'):(en?'MP':'ОМ'))}),
-    make('small',{text:entry.available?(en?'Available when using the skill':
-     'Доступно при использовании умения'):
-     entry.required>0?(en?'Requires '+gameBranchName('benevolence',gameTerms,true)+
-      ' mastery '+entry.required:
-      'Требуется мастерство «'+gameBranchName('benevolence',gameTerms,false)+
-      '»: '+entry.required):
-      (en?'Not yet available':'Пока недоступно')})
+    make('strong',{text:String(entry.amount)+' '+(en?'MP':'ОМ')}),
+    make('small',{text:en?'Per pulse (model)':'За срабатывание (расчёт)'})
    ]);
    appendGate(preview,entry.id);
    details.append(preview);
   }
   details.append(make('p',{class:'stage-periodic-hint',text:en?
-   'Skill recovery is distinct from passive hero recovery.':
-   'Действие навыка не относится к пассивному восстановлению героя.'}));
+   'Skill recovery is not passive recovery. Actual server tick seconds are unconfirmed.':
+   'Восстановление от умения — не пассивное восстановление. Реальные секунды не подтверждены.'}));
   body.append(details);
  }
  // Skill Effects shows the theoretical effect of a CAST, independently
@@ -1775,15 +1710,6 @@ function defenseChapterGroups(calc){
   put(0,'mpNaturalAlly','Природное восстановление союзника · ОМ за срабатывание',
    'Allied Natural Recovery · MP per pulse',
    calc.allyNaturalRecovery.mpPerPulse,'',true);
- for(const [key,ru,en] of [
-  ['regeneration','Регенерация от союзника · ОЗ за срабатывание',
-   'Allied Regeneration · HP per pulse'],
-  ['restoration','Восстановление от союзника · ОЗ за срабатывание',
-   'Allied Restoration · HP per pulse']]){
-  const amount=calc.allyHealing?.[key]?.hpPerPulse;
-  if(Number.isSafeInteger(amount))
-   put(0,'allyHealing:'+key,ru,en,amount,'',true);
- }
  const statuses={
   burn:['Ожоги','Burn'],stun:['Оглушение','Stun'],
   numb:['Заморозка','Freeze'],tumble:['Падение','Knockdown'],
