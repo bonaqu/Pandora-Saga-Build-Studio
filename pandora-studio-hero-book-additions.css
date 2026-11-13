@@ -420,3 +420,18 @@
  .stage-skill-crafting-effects,.stage-skill-trap-costs,.stage-skill-complex-effects)>summary:focus-visible{
  outline:2px solid #e2b778;outline-offset:2px
 }
+
+/* Direct equipment/Soul source details inside individual status resistances. */
+#stageAttributes .stage-status-source-breakdown{
+ min-width:0;border-top:1px solid #74553155;margin-top:6px;padding-top:7px
+}
+#stageAttributes .stage-status-source-breakdown>summary{
+ cursor:pointer;font:650 11px/1.4 Manrope,Arial,sans-serif;color:#efcf98
+}
+#stageAttributes .stage-status-source-breakdown>summary:focus-visible{
+ outline:2px solid #e2b778;outline-offset:2px
+}
+#stageAttributes .stage-status-source-breakdown .stage-status-source-row{
+ color:#e0c7a6;font:500 11px/1.45 Manrope,Arial,sans-serif;
+ padding:3px 0;min-width:0;overflow-wrap:anywhere
+}

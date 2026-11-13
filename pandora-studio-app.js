@@ -1747,6 +1747,7 @@ function renderStageAttributes(calculated=undefined){
   honorTitles:window.PandoraOSCalculator.honorTitles,
   gameTerms:{skills:skillMap,englishSkills:officialEnglish?.skills||{},
    items:catalogSource?.items||{},englishItems:officialEnglish?.items||{},
+   souls:catalogSource?.souls||{},englishSouls:officialEnglish?.souls||{},
    branchLabels:catalog.meta?.branchLabels||{},
    englishBranches:officialEnglish?.branches||{},
    classes:catalog.classes||{},englishClasses:officialEnglish?.classes||{}},
