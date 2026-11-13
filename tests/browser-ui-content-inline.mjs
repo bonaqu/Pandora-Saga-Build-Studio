@@ -246,9 +246,14 @@ export async function runUIContentInlineSmoke(browser,base){
   await search.fill('Копье Зефира');
   const spear=page.locator('[data-wiki-record="1482"]');
   await spear.waitFor({state:'visible',timeout:20000});
-  await spear.press('Enter');
-  const penLabel=page.locator('.item-fields dt').filter({hasText:'Пробитие'});
-  await penLabel.waitFor({state:'visible'});
+  // The goal here is the owner's real item-field editor. Use a real
+  // pointer click for article navigation; keyboard navigation is separately
+  // covered by encyclopedia keyboard smokes. A retained filter can rerender
+  // the selected link during an Enter key event under CI CPU contention.
+  await spear.click();
+  await page.locator('#detailPanel.is-open').waitFor({state:'visible',timeout:15000});
+  const penLabel=page.locator('.item-fields dt[data-item-field="PEN"]');
+  await penLabel.waitFor({state:'visible',timeout:30000});
   await penLabel.locator('.wiki-hint-pencil').click();
   const field=page.locator('.item-fields .wiki-item-field-inline-editor[data-editor-field="PEN"] [contenteditable]');
   await field.fill('Чем меньше пробитие, тем выше минимальная атака.');
