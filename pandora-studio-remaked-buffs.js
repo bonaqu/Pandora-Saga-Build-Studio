@@ -169,12 +169,16 @@ function applied({selected=[],skills={},jobKey=null,level=1,weapon=null,
   if(!gate.allowed)continue;
   const record=skills[String(row.id)];
   if(row.id===100055001){
-   const flat=effect(record,'EP_TOHIT_CONST'),
-    percent=effect(record,'EP_TOHIT_SCALE');
-   if(flat===20&&percent===15)result.thirdEye={flat,percent};
+   // Both independent target effects and their FV2 vectors must match.
+   // A corrupted or expanded source must not silently alter hero accuracy.
+   if(record.funcs.length===2&&
+    exactConstant(record,'EP_TOHIT_CONST',20)&&
+    exactConstant(record,'EP_TOHIT_SCALE',15))
+    result.thirdEye={flat:20,percent:15};
   }else if(row.id===330004001){
-   const magic=effect(record,'EP_MAGIC_RESISTANCE_CONST');
-   if(magic===25)result.providence={magic};
+   if(record.funcs.length===1&&
+    exactConstant(record,'EP_MAGIC_RESISTANCE_CONST',25))
+    result.providence={magic:25};
   }else if(row.id===142051001){
    const rank=branchMasteries?.brush;
    if(scalingEffect(record,'EP_CRITICALRATE_CONST',[0,0,20,10])&&
