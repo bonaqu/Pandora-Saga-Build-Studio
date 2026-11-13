@@ -119,6 +119,16 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   assert.match(ru,/Показатель отката героя: 86%/);
   assert.doesNotMatch(ru,/С «Воодушевлением» от союзника: 3 сек\./,
    'Never use the casting speed index to calculate cast seconds');
+  const compactHeal=page.locator('#book-source-qa .stage-healing-spells .stage-heal-row')
+   .first().locator(':scope > .stage-skill-more');
+  assert.equal(await compactHeal.count(),1,'One detail control per healing skill');
+  assert.equal(await compactHeal.locator('details').count(),0,'No nested healing accordions');
+  assert.equal(await compactHeal.locator(':scope > small').first().isVisible(),false,
+   'Cost breakdown and thresholds stay out of the default view');
+  await compactHeal.locator(':scope > summary').click();
+  assert.equal(await compactHeal.locator(':scope > small').first().isVisible(),true,
+   'Player can reveal the existing calculated details');
+  await compactHeal.locator(':scope > summary').click();
 
   assert.match(ru,/В описании OS указано «3 с\.»/);
   assert.match(ru,/Описание OS упоминает ОМ/);
@@ -157,7 +167,9 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   await offense.locator(':scope > summary').click();
   const singer=offense.locator('[data-skill-action-id="340001001"]');
   assert.equal(await singer.count(),1,'Current ENCHANTER sees source action for Minstrel\'s Song');
-  await singer.locator('summary').click();
+  assert.equal(await singer.locator('details').count(),0,
+   'Offense uses one disclosure for action, model details and requirements');
+  await singer.locator(':scope > summary').click();
   assert.match(await singer.innerText(),/Расход ОМ по игровым данным: 30/);
   assert.match(await singer.innerText(),/Базовое применение: мгновенно/);
   assert.match(await singer.innerText(),/Базовая перезарядка: 5 сек\./);
