@@ -108,11 +108,11 @@ test('cross-module count increases for only three independently sourced quantiti
   assert.deepEqual(row.sourceModules,['skill-ammunition']);
  }
 });
-test('Book uses plain RU/EN names and does not claim final damage',()=>{
- const text=read('pandora-studio-hero-book.js');
- for(const phrase of ['Боеприпасы для умений','Ammunition for skills',
-  'Расход боеприпасов и ОМ','Ammo: ','Боеприпасы: ',
-  'rangedAmmoPreview','stage-skill-ranged-ammo'])
-  assert.ok(text.includes(phrase),phrase);
- assert.ok(text.includes('&&!rangedAmmo?.rows?.length'));
+test('Source-only os-ranged-ammunition-source-725 data is displayed in the Encyclopedia',()=>{
+ const wiki=read('pandora-studio-wiki-skill-insights.js');
+ const app=read('pandora-studio-app.js');
+ const book=read('pandora-studio-hero-book.js');
+ assert.ok(wiki.includes('rangedAmmoPreview'),'verified OS inspector retained');
+ assert.ok(app.includes('PandoraWikiSkillInsights?.inspect'),'Wiki uses source data');
+ assert.ok(!book.includes('stage-skill-ranged-ammo'),'Do not print general skill catalog in Book');
 });
