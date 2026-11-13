@@ -86,6 +86,11 @@ These repository-level rules are durable instructions for future coding sessions
 - Both range-bearing skills in Skill Effects must pass the same full ordered OS source proof as the Attack skill-range panel. The paired ATTACKCARRY vector must be checked but not listed as a second source of increased range.
 - Owner-editable new UI titles/help reuse standard RU/EN D1 guideLabel keys. Player descriptions must never say raw OS/Remaked/FV/EP internals or use unexplained developer coefficient labels; retain exact data and evidence in code and tests.
 
+## Four enemy debuff sources (2026-11-13, 0.723.0)
+- Source IDs 440001001 «Немощь» / Weakness, 440007001 «Слабость» / Weaken, 260004001 «Путающая рука» / Tangled Fingers, 440005001 «Мысленный удар» / Psionic Blast are **TARGET-side only**. Validate skill/class/branch/mastery/power stat and complete ordered FV1/FV2 vectors. Original RU and EN names must remain canonical by ID.
+- An enemy's final Attack/Defense/Accuracy/MP change, resistance, duration and negative scaling stages are not proven. Show effects only as descriptive source previews with eligibility, never insert them in the hero's own stats or invent final numbers. Treat the different ATTACK and ARMORCLASS CONST/SCALE channels independently and do not sum them as an assured target result.
+- Update the cross-module formula-coverage audit and tests whenever new roots become source-modeled; ensure one classification per learnable root.
+
 ## Fast, safe verification
 1. Identify the affected UI handler and existing related test before coding. Reuse current equipment open/replace/unequip paths instead of duplicating mutations.
 2. Fetch related files in batches; make one coherent patch, with a focused Node regression and an isolated Chromium scenario before a PR.

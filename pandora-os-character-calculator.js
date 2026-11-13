@@ -4086,6 +4086,59 @@ function trapSkillCostPreview({skillCatalog=null,jobKey=null,level=1,
  }
  return result;
 }
+// Four source-verified target effects. They do NOT modify hero's own
+// attack, defense, accuracy or MP and are not final target-side formulas.
+const enemyDebuffJobs=Object.freeze(["WARRIOR","GLADIATOR","KNIGHT","JUGGERNAUT","DRAGOON","GENERAL","PALADIN","SCOUT","ARCHER","AGENT","SNIPER","PREDATOR","ASSASSIN","DISTURBANCE","ACOLYTE","PRIEST","ASCETIC","CLERIC","ENCHANTER","MONK","EXORCIST","MAGE","WIZARD","DARKROAR","WARLOCK","CONJURER","JESTER","CALAMITY"]);
+const enemyDebuffProofs=Object.freeze([{"id":440001001,"branch":"charm","rank":8,"element":"CHARM","stat":"SPI","ru":"Уменьшает силу атаки противника","en":"Reduces the enemy's attack strength","noteRu":"Величина ослабления зависит от Чар и СД. Точный итог на цели пока неизвестен.","noteEn":"The weakening depends on Confusion mastery and Spirit. Final target effect is not known yet.","effects":[["EP_DAMAGERATE_SCALE","TARGET",[-10,0,-10,-30],[0,0,0,0]],["EP_DAMAGERATE_CONST","TARGET",[-10,0,-10,-30],[0,0,0,0]]]},{"id":440007001,"branch":"charm","rank":26,"element":"CHARM","stat":"SPI","ru":"Уменьшает защиту противника","en":"Reduces the enemy's defense","noteRu":"На защиту влияют два разных эффекта умения. Точное итоговое снижение неизвестно.","noteEn":"Two distinct skill effects affect defense. The exact final reduction is unknown.","effects":[["EP_ARMORCLASS_CONST","TARGET",[0,0,0,-25],[0,0,0,0]],["EP_ARMORCLASS_SCALE","TARGET",[0,0,-25,-25],[0,0,0,0]]]},{"id":260004001,"branch":"warding","rank":21,"element":"NONE","stat":"AGI","ru":"Уменьшает точность противника","en":"Reduces the enemy's accuracy","noteRu":"Сила ослабления зависит от мастерства «Уклонение». Точное значение на цели неизвестно.","noteEn":"The effect depends on Evasion mastery. The exact change on the target is unknown.","effects":[["EP_TOHIT_CONST","TARGET",[0,0,-50,-30],[0,0,0,0]]]},{"id":440005001,"branch":"charm","rank":21,"element":"CHARM","stat":"SPI","ru":"Уменьшает ОМ противника","en":"Reduces the enemy's MP","noteRu":"Умение воздействует на ОМ цели. Точное количество потерянных ОМ пока неизвестно.","noteEn":"The skill affects the target's MP. The exact amount of MP lost is not known yet.","effects":[["EP_MINDDAMAGE","TARGET",[70,10,40,15],[0,0,0,0]]]}]);
+function enemyDebuffPreview({skillCatalog=null,jobKey=null,level=1,
+ branchMasteries={},branchCaps={},branchLabels={},englishBranches={}}={}){
+ const out={rows:[],rejected:[],verified:false,targetSideOnly:true};
+ if(!skillCatalog||!enemyDebuffJobs.includes(jobKey)||
+  !Number.isSafeInteger(level)||level<1||level>55)return out;
+ for(const proof of enemyDebuffProofs){
+  const cap=branchCaps?.[proof.branch];
+  if(!Number.isSafeInteger(cap)||cap<proof.rank)continue;
+  const skill=skillCatalog[String(proof.id)];
+  const classes=skill?.classes||{};
+  const valid=skill?.id===proof.id&&skill.learnable===true&&
+   skill.prereq===null&&skill.skillType==='ENEMY'&&
+   skill.branch===proof.branch&&skill.element===proof.element&&
+   skill.powerStat===proof.stat&&skill.charLevel===0&&
+   skill.isLevelBased===false&&skill.reqLevel===proof.rank&&
+   skill.rangeFromWeapon===false&&skill.weaponUse===null&&
+   skill.damage===null&&classes[jobKey]===1&&
+   Object.keys(classes).length===enemyDebuffJobs.length&&
+   enemyDebuffJobs.every(job=>classes[job]===1)&&
+   Array.isArray(skill.reqs)&&skill.reqs.length===1&&
+   skill.reqs[0]?.branch===proof.branch&&
+   skill.reqs[0]?.amount===proof.rank&&
+   Array.isArray(skill.funcs)&&skill.funcs.length===proof.effects.length&&
+   proof.effects.every(([ep,dir,fv1,fv2],i)=>{
+    const f=skill.funcs[i];
+    return f?.ep===ep&&f.dir===dir&&Array.isArray(f.fv1)&&
+     f.fv1.length===4&&f.fv1.every((n,j)=>n===fv1[j])&&
+     Array.isArray(f.fv2)&&f.fv2.length===4&&
+     f.fv2.every((n,j)=>n===fv2[j]);
+   });
+  if(!valid){out.rejected.push(proof.id);continue}
+  const mastery=branchMasteries?.[proof.branch];
+  const legal=Number.isSafeInteger(mastery)&&mastery>=0&&mastery<=cap;
+  const ready=legal&&mastery>=proof.rank;
+  const labelRu=branchLabels?.[proof.branch]||'Мастерство';
+  const labelEn=englishBranches?.[proof.branch]||labelRu;
+  out.rows.push({id:proof.id,name:skill.name,description:skill.desc||'',
+   summaryRu:proof.ru,summaryEn:proof.en,
+   noteRu:proof.noteRu,noteEn:proof.noteEn,
+   requirementsMet:ready,
+   reasonRu:ready?'':legal?'Нужно мастерство «'+labelRu+'»: '+proof.rank:
+    'Мастерство выходит за пределы профессии',
+   reasonEn:ready?'':legal?'Requires '+labelEn+' mastery: '+proof.rank:
+    'Mastery exceeds the class limit',
+   sourceOnly:true,targetSideOnly:true,
+   finalAmount:null,appliedToHero:false});
+ }
+ return out;
+}
 // Six pinned learnable OS roots with state effects: descriptions only,
 // never guaranteed status chance, duration, target mitigation or damage.
 const statusApplicationProofs=Object.freeze([{"id":142501101,"type":"RADIATION","branch":"blow","level":0,"reqs":[["blow",41],["exorcism",21]],"status":["Оглушение","Stun","stun"],"blocking":false,"funcs":[["EP_CAUSE_STUN","TARGET",[0,0,0,4],[30,0,50,30]]]},{"id":168005001,"type":"ENEMY","branch":"defense","level":0,"reqs":[["defense",31]],"status":["Падение","Knockdown","tumble"],"blocking":true,"funcs":[["EP_CANCEL_BLOCKING","CASTER",[0,0,0,0],[0,0,0,0]],["EP_CAUSE_TUMBLE","TARGET",[0,0,0,3],[0,0,0,75]],["EP_SKILL_EXEC","TARGET",[0,0,0,168005050],[0,0,0,0]],["EP_SKILL_MARCH","CASTER",[0,0,0,500],[0,0,0,0]]]},{"id":410013001,"type":"ENEMY","branch":"charm","level":0,"reqs":[["charm",41]],"status":["Заморозка","Freeze","numb"],"blocking":false,"funcs":[["EP_CAUSE_NUMB","TARGET",[0,0,0,15],[40,0,40,50]]]},{"id":410021001,"type":"ENEMY","branch":"element","level":12,"reqs":[],"status":["Падение","Knockdown","tumble"],"blocking":false,"funcs":[["EP_ELEMENT_DAMAGE","TARGET",[40,30,70,22],[0,0,0,0]],["EP_CAUSE_TUMBLE","TARGET",[0,0,0,2],[0,0,0,100]]]},{"id":420003001,"type":"ENEMY","branch":"charm","level":0,"reqs":[["charm",12]],"status":["Сон","Sleep","sleep"],"blocking":false,"funcs":[["EP_ELEMENT_DAMAGE","TARGET",[40,30,70,27],[0,0,0,0]],["EP_CAUSE_SLEEP","TARGET",[0,0,0,20],[40,0,40,40]]]},{"id":430052001,"type":"ENEMY","branch":"darkness","level":0,"reqs":[["darkness",8]],"status":["Яд","Poison",null],"blocking":false,"funcs":[["EP_ELEMENT_DAMAGE","TARGET",[5,0,5,15],[0,0,0,0]],["EP_CAUSE_POISON","TARGET",[180,0,180,40],[0,0,30,70]]]}]);
@@ -4189,7 +4242,7 @@ function complexSkillSourcePreview({skillCatalog=null,jobKey=null,level=1,
  }
  return out;
 }
-root.PandoraOSCalculator=Object.freeze({skillExecutionChains,craftingSkillPreview,trapSkillCostPreview,statusApplicationPreview,complexSkillSourcePreview,priestCastPreviews,movementSkillSourcePreview,utilitySkillSourcePreview,scalingSkillPreview,directStrikeCoefficientPreview,elementalSpellCoefficientPreview,defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
+root.PandoraOSCalculator=Object.freeze({skillExecutionChains,craftingSkillPreview,trapSkillCostPreview,statusApplicationPreview,enemyDebuffPreview,complexSkillSourcePreview,priestCastPreviews,movementSkillSourcePreview,utilitySkillSourcePreview,scalingSkillPreview,directStrikeCoefficientPreview,elementalSpellCoefficientPreview,defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
  base,characterSheetPhysicalAttackRange,classBase,classBaseComponents,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,racialWeaponPreview,incredibleStrengthPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
  recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,consumableSkillPreview,statusCurePreview,harmfulConsumablePreview,gemstonePreview,legacyBuffPreview,songSkillPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,skillAttackRangePreview,racialUtilityPreview,elementalMagicPreview,elementalRefinementPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive
 });
