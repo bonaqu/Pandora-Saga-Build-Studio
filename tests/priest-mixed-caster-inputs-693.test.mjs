@@ -18,8 +18,10 @@ test('priest skill rows reuse all five shared caster profile fields',()=>{
 });
 test('old priest mastery persists for gates and never counts as a selected buff',()=>{
  for(const key of ['priestBenevolence','priestExorcism'])assert.ok(app.includes(key));
- assert.match(book,/row\.id!==330051001\|\|Number\(buffs\.priestExorcism\)>=26/);
- assert.match(book,/Number\(buffs\.priestBenevolence\)>=61/);
+ assert.match(book,/priestCanLearn\(row\.id\)/);
+ assert.match(book,/priestRequired\(branch\)/);
+ assert.match(book,/340003001/);
+ assert.match(book,/330051001/);
  assert.match(book,/if\(\['priestSpi','priestBlessing','priestHymn','priestBenevolence','priestExorcism','priestEnabled'/);
 });
 test('changing the shared input still changes all dependent skill magnitudes by floored OS coefficients',()=>{
