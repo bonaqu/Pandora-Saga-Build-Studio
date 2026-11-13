@@ -76,7 +76,7 @@ test('All four recipes and five trap actions are sourced; impossible entries sta
  const blessed=opts('ENCHANTER',{blessing:41});
  assert.equal(calc.craftingSkillPreview(blessed).rows.some(r=>r.id===320010001),true);
  const p=calc.craftingSkillPreview(blessed).rows.find(r=>r.id===320010001);
- assert.equal(action('craft',p,{...blessed,jobKey:'WARRIOR'}),null);
+ assert.equal(action('craft',p,opts('WARRIOR',{blessing:41})),null);
  assert.equal(action('craft',{...p,requirementsMet:false},blessed),null);
  assert.equal(action('craft',{...p,uses:[{id:65011,quantity:2}]},blessed),null);
  const mutated={...skills,'320010001':{
