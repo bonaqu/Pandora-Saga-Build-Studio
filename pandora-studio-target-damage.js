@@ -196,7 +196,24 @@ const directSpells=Object.freeze([
  {id:430052001,branch:'darkness',kind:'ENEMY',element:'DARK',
   stat:'SPI',req:8,charLevel:0,slot:0,effects:[
    ['EP_ELEMENT_DAMAGE','TARGET',[5,0,5,15],[0,0,0,0]],
-   ['EP_CAUSE_POISON','TARGET',[180,0,180,40],[0,0,30,70]]]}
+   ['EP_CAUSE_POISON','TARGET',[180,0,180,40],[0,0,30,70]]]},
+ // Direct elemental hit is calculable; subsequent burn/recovery changes are
+ // source-linked but never mislabelled as damage of the entire cast.
+ {id:410002001,branch:'element',kind:'RADIATION',element:'FIRE',
+  stat:'INT',req:26,charLevel:0,slot:0,directPart:true,effects:[
+   ['EP_ELEMENT_DAMAGE','TARGET',[100,0,100,50],[0,0,0,0]],
+   ['EP_SKILL_EXEC','TARGET',[0,0,0,500000005],[0,0,9,9]]],
+  linked:{id:500000005,kind:'ENEMY',branch:'race',element:null,
+   stat:'SPI',effects:[
+    ['EP_CAUSE_BURN','TARGET',[0,0,0,10],[0,0,0,100]]]}},
+ {id:430053001,branch:'darkness',kind:'ENEMY',element:'DARK',
+  stat:'SPI',req:26,charLevel:0,slot:0,directPart:true,effects:[
+   ['EP_ELEMENT_DAMAGE','TARGET',[40,0,40,26],[0,0,0,0]],
+   ['EP_SKILL_EXEC','TARGET',[0,0,0,430053002],[0,0,0,0]]],
+  linked:{id:430053002,kind:'ENEMY',branch:'darkness',element:'DARK',
+   stat:'SPI',effects:[
+    ['EP_HEAL_LIFE_REGENERATOR','TARGET',[-4,0,-10,-4],[0,0,0,2]],
+    ['EP_STOP_NATURAL_HEAL','TARGET',[0,0,0,1],[0,0,0,1]]]}}
 ]);
 function sourceDirectSpell({skillCatalog,classes,jobKey,level,masteries={},
  branchCaps={}},spec){
@@ -221,6 +238,26 @@ function sourceDirectSpell({skillCatalog,classes,jobKey,level,masteries={},
   if(fx?.ep!==expected[0]||fx.dir!==expected[1]||
    JSON.stringify(fx.fv1)!==JSON.stringify(expected[2])||
    JSON.stringify(fx.fv2)!==JSON.stringify(expected[3]))return null;
+ }
+ if(spec.linked){
+  const linked=skillCatalog?.[String(spec.linked.id)];
+  const l=spec.linked;
+  // A linked status skill is not an extra damage packet. Validate its full
+  // source signature, including effects and both coefficient arrays, to
+  // avoid showing a hit for an obsolete action chain.
+  if(linked?.id!==l.id||linked.learnable!==false||
+   linked.skillType!==l.kind||linked.branch!==l.branch||
+   linked.element!==l.element||linked.powerStat!==l.stat||
+   linked.damage!==null||linked.funcs?.length!==l.effects.length||
+   !linked.funcs.every((fx,i)=>{
+    const expected=l.effects[i];
+    return fx?.ep===expected[0]&&fx.dir===expected[1]&&
+     JSON.stringify(fx.fv1)===JSON.stringify(expected[2])&&
+     JSON.stringify(fx.fv2)===JSON.stringify(expected[3]);
+   }))return null;
+  const action=skill.funcs.find(row=>row.ep==='EP_SKILL_EXEC'&&
+   row.dir==='TARGET'&&row.fv1?.[3]===l.id);
+  if(!action)return null;
  }
  return skill;
 }
@@ -316,6 +353,7 @@ function elementalHit(options={},spec=null){
   basePower,bonusRate,magicGemRate,magicGemFlat,
   gearDamageRate:equipmentEffects.general,
   levelPenalty:gap.magicDamageReduction,
+  hitKind:spec?.directPart?'direct-part':'single-hit',
   model:'Pandora Saga OS public BuildCalculator / one elemental hit'};
 }
 function crawlingTrap(options={}){return elementalHit(options);}

@@ -1550,7 +1550,8 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   const branch=source?.branch,mastery=heroMasteries?.[branch]??0;
   const required=source?.reqs?.find(r=>r.branch===branch)?.amount??0;
   if(![240005001,330001001,410001001,410011001,410012001,
-    410021001,410023001,420003001,430001001,430052001].includes(id)||
+    410021001,410023001,420003001,430001001,430052001,
+    410002001,430053001].includes(id)||
    seenHits.has(id)||result.monsterId!==22104||
    source?.id!==id||source.classes?.[heroJobKey]!==1||
    !Number.isSafeInteger(mastery)||mastery<required||
@@ -1614,6 +1615,8 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    const hitResult=skill.damageAgainstEnemy;
    const amount=hitResult?
     (en?hitResult.targetNameEn:hitResult.targetName)+' · '+
+     (hitResult.hitKind==='direct-part'?
+      (en?'direct hit ':'прямой удар '):'')+
      hitResult.min+'–'+hitResult.max+' '+(en?'HP':'ОЗ'):
     Number.isFinite(skill.amount)?
     (skill.amount>0?'+':'')+String(skill.amount)+
@@ -1640,17 +1643,22 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     make('summary',{text:en?'More details':'Подробнее'})
    ]);
    if(hitResult){
+    const partial=hitResult.hitKind==='direct-part';
     more.append(make('small',{class:'stage-target-damage-average',text:en?
-     'Average hit against '+hitResult.targetNameEn+': '+
-      hitResult.average+' HP':
-     'Средний урон по цели «'+hitResult.targetName+'»: '+
-      hitResult.average+' ОЗ'}));
+     (partial?'Average direct hit against ':'Average hit against ')+
+      hitResult.targetNameEn+': '+hitResult.average+' HP':
+     (partial?'Средний прямой урон по цели «':'Средний урон по цели «')+
+      hitResult.targetName+'»: '+hitResult.average+' ОЗ'}));
     const statLabel=en?
      {dex:'DEX',int:'INT',spi:'SPI'}:
      {dex:'ЛВК',int:'ИНТ',spi:'СД'};
     const branchLabel=en?
-     {trap:'Traps',element:'Element',darkness:'Darkness'}:
-     {trap:'Ловушки',element:'Стихия',darkness:'Тьма'};
+     {...{trap:'Trapping',element:'Elemental',darkness:'Darkness',
+      exorcism:'Exorcism',charm:'Confusion'},
+      ...(gameTerms.englishBranches||{})}:
+     {...{trap:'Ловушки',element:'Магия стихий',darkness:'Магия тьмы',
+      exorcism:'Экзорцизм',charm:'Чары'},
+      ...(gameTerms.branchLabels||{})};
     const statsLine=hitResult.heroMasteryKey==='trap'?
      (en?'DEX ':'ЛВК ')+hitResult.heroDex+
       (en?' · INT ':' · ИНТ ')+hitResult.heroInt+

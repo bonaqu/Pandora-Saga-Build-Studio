@@ -447,7 +447,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
    const modifiers={combat:{spellDamageEquipmentRate:0,priestSong:{}},
     priestApplied:{}};
    const chosen={element:50,darkness:25};
-   const expanded={...chosen,exorcism:20,charm:20};
+   const expanded={...chosen,exorcism:20,charm:20,darkness:26};
    const calculated=masteries=>window.PandoraOSTargetDamage.supportedSkillHits({
     skillCatalog:terms.skills,classes:terms.classes,jobKey:'WARLOCK',
     level:45,masteries,branchCaps:terms.classes.WARLOCK.branchCaps,
@@ -483,30 +483,41 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   assert.deepEqual(spellBook.basic,[
    [410001001,4,21,28],[410011001,1,6,10],[410012001,12,55,78],
    [410021001,1,10,21],[410023001,3,27,48],
-   [430001001,10,48,71],[430052001,1,5,9]
+   [430001001,10,48,71],[430052001,1,5,9],
+   [410002001,10,46,61]
   ]);
-  assert.equal(spellBook.ru.length,7,'one compact row for each learned direct hit');
-  assert.equal(spellBook.en.length,7);
+  assert.equal(spellBook.ru.length,8,'one compact row for each learned direct hit');
+  assert.equal(spellBook.en.length,8);
   for(const [name,english] of [
    ['Огненная стрела','Fire Bolt'],['Ледяные осколки','Hailstone'],
    ['Ледяное копье','Ice Spear'],['Удар молнии','Shock'],
    ['Громовой разряд','Thunder Crash'],['Кража жизни','Blood Drain'],
-   ['Ядовитый удар','Infect']
+   ['Ядовитый удар','Infect'],['Огненная буря','Fire Storm']
   ]){
    assert.equal(spellBook.ru.filter(x=>x.text.includes(name)).length,1,name);
    assert.equal(spellBook.en.filter(x=>x.text.includes(english)).length,1,english);
   }
   assert.match(spellBook.ru[0].main,/Гигантский огр · 4–28 ОЗ/);
-  assert.match(spellBook.ru[0].details,/ИНТ 80.*Стихия 50/);
-  assert.match(spellBook.ru.find(row=>row.text.includes('Ядовитый удар'))?.details||'',/СД 50.*Тьма 25/);
+  assert.match(spellBook.ru[0].details,/ИНТ 80.*Магия стихий 50/);
+  assert.match(spellBook.ru.find(row=>row.text.includes('Ядовитый удар'))?.details||'',/СД 50.*Магия тьмы 25/);
   assert.match(spellBook.en.find(row=>row.text.includes('Blood Drain'))?.details||'',/Average hit against.*48 HP/);
-  assert.equal(spellBook.expanded.length,9);
-  assert.equal(spellBook.expandedRu.length,9);
-  assert.equal(spellBook.expandedEn.length,9);
+  assert.equal(spellBook.expanded.length,11);
+  assert.equal(spellBook.expandedRu.length,11);
+  assert.equal(spellBook.expandedEn.length,11);
   assert.equal(spellBook.expandedRu.filter(x=>x.text.includes('Святая стрела')).length,1);
   assert.equal(spellBook.expandedEn.filter(x=>x.text.includes('Pure Arrow')).length,1);
   assert.equal(spellBook.expandedRu.filter(x=>x.text.includes('Песчаный вихрь')).length,1);
   assert.equal(spellBook.expandedEn.filter(x=>x.text.includes('Sandstorm')).length,1);
+  const fireRow=spellBook.ru.find(row=>row.text.includes('Огненная буря'));
+  assert.match(fireRow?.main||'',/прямой удар 10–61 ОЗ/);
+  assert.match(fireRow?.details||'',/Средний прямой урон по цели.*46 ОЗ/);
+  const rotRow=spellBook.expandedRu.find(row=>row.text.includes('Гниение'));
+  assert.match(rotRow?.main||'',/прямой удар 3–30 ОЗ/);
+  assert.match(rotRow?.details||'',/Средний прямой урон по цели.*19 ОЗ/);
+  const rotEn=spellBook.expandedEn.find(row=>row.text.includes('Mind Venom'));
+  assert.match(rotEn?.main||'',/direct hit 3–30 HP/);
+  assert.match(rotEn?.details||'',/Average direct hit against.*19 HP/);
+  assert.equal(spellBook.expandedRu.some(x=>x.text.includes('Неотвратимый взрыв')),false);
   assert.doesNotMatch(spellBook.expandedRu.map(row=>row.text).join(' '),
    /материал|рецепт|изготовлени/i);
 
