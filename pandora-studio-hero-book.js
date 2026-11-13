@@ -1469,7 +1469,10 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     ...(row.statusResistanceKey?[make('small',{text:en?
      'Knockback resistance is shown in Defense; its server check is not confirmed.':
      'Сопротивление отбрасыванию показано в «Защите»; правило проверки на сервере не подтверждено.'})]:[]),
-    make('small',{text:status})
+    make('small',{text:status}),
+    ...(row.level50Variant?[make('small',{text:en?
+     'Saboteur: from level 50, game data contains a version with a stronger elemental attack and the same knockback. It is not yet known when the game switches to that version.':
+     'Загонщик: с 50-го уровня в игровых данных есть вариант с более сильным стихийным ударом и прежним отталкиванием. Когда игра переключает ловушку на этот вариант, пока неизвестно.'})]:[])
    ]));
   }
   body.append(section);
