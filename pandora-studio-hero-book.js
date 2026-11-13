@@ -901,7 +901,9 @@ function buffsPage(body,options){
  for(const [key,ru,en] of [
   ['priestSpi','СД жреца','Priest SPR'],
   ['priestBlessing','Благословение','Blessing mastery'],
-  ['priestHymn','Песнопения','Hymn mastery']
+  ['priestHymn','Песнопения','Hymn mastery'],
+  ['priestBenevolence','Исцеление','Healing mastery'],
+  ['priestExorcism','Экзорцизм','Exorcism mastery']
  ]){
   const label=make('label',{class:'stage-book-field'},[
    make('span',{text:english?en:ru})]);
@@ -1089,7 +1091,14 @@ function buffsPage(body,options){
       if(Number.isFinite(value)){
        if(row.id===340001001)return (english?'Accuracy +':'Точность +')+value+
         (english?' · Evasion +':' · Уклонение +')+value;
-       if(row.id===340004001)return (english?'Elemental damage +':'Стихийный урон +')+value+'%';
+       if(row.id===340004001){
+        const delta=priestValues.sageCooldownDelta;
+        return (english?'Elemental damage +':'Стихийный урон +')+value+'%'+
+         (Number.isFinite(delta)?
+          (english?' · Cooldown index ':' · Показатель отката ')+delta+
+           (english?' pp (estimate)':' п.п. (расчёт)'):
+          (english?' · Cooldown effect not calculated':' · Откат не рассчитан'));
+       }
        if(row.id===320003001)return (english?'Incoming physical/magic damage ':'Получаемый физ./маг. урон ')+value+'%';
        if(row.id===330051001){
         const stacked=buffs.remakedSkillIds?.includes(320011001)&&
@@ -1107,15 +1116,12 @@ function buffsPage(body,options){
        'Порог защиты зависит от СД и Песнопения жреца.';
       if(row.id===320011001&&Number.isFinite(priestValues.enchantAuraRate)&&
        Number.isFinite(priestValues.enchantAuraFlat)){
-       const holy=Number.isFinite(priestValues.holyEnhanced)?
-        (english?' · Holy aura with both buffs +':' · Святая аура с обоими усилениями +')+
-        priestValues.holyEnhanced:'';
+       // The Holy total is already shown under Bless Weapon, never duplicate it.
        return (english?'Aura +':'Аура +')+priestValues.enchantAuraFlat+
         ' · '+(english?'Aura scaling +':'Усиление ауры +')+
         priestValues.enchantAuraRate+'% · '+
         (english?'Elemental spell bonus +':'Бонус стихийной магии +')+
-        priestValues.enchantElementRate+'%'+holy+
-        '';
+        priestValues.enchantElementRate+'%';
       }
       if(row.id===320011001)return english?
        'Depends on priest SPR and Blessing.':
@@ -1523,6 +1529,10 @@ function attackChapterGroups(calc){
  if(Number(song?.sageElementDamage)>0)
   put(2,'priestSageElement','Песнь чар · стихийный урон',
    'Sage Song · elemental damage',song.sageElementDamage,'%');
+ // A source-derived cooldown index delta, NOT confirmed cooldown seconds.
+ if(Number(song?.sageCooldownDelta)<0)
+  put(2,'priestSageCooldown','Песнь чар · снижение показателя отката (расчёт)',
+   'Sage Song · cooldown index reduction (estimate)',song.sageCooldownDelta,' п.п.');
  const aura=calc.auraDamage?.elements||{};
  for(const [key,entry]of Object.entries(aura)){
   const term=elementTerms[key];if(!term)continue;
