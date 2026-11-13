@@ -9,7 +9,7 @@ const local=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 
 export function auditOsSkillFormulaCoverage({skills,classes,calculator}={}){
  const modules=['scalingSkillPreview','healingSpellsPreview',
-  'periodicRecoveryPreview','songSkillPreview','resistanceSkillChoices','skillExecutionChains','craftingSkillPreview','trapSkillCostPreview','complexSkillSourcePreview','statusApplicationPreview','enemyDebuffPreview','tacticalSkillPreview','rangedAmmoPreview','combatTechniquePreview','specializedSkillPreview'];
+  'periodicRecoveryPreview','songSkillPreview','resistanceSkillChoices','skillExecutionChains','craftingSkillPreview','trapSkillCostPreview','complexSkillSourcePreview','statusApplicationPreview','enemyDebuffPreview','tacticalSkillPreview','rangedAmmoPreview','combatTechniquePreview','specializedSkillPreview','supportEffectPreview'];
  if(!skills||!classes||!modules.every(name=>typeof calculator?.[name]==='function'))
   throw Error('Expected pinned skill/class catalog and all OS formula inspectors');
  const entries=Object.entries(skills).sort((a,b)=>Number(a[0])-Number(b[0]));
@@ -211,6 +211,15 @@ export function auditOsSkillFormulaCoverage({skills,classes,calculator}={}){
    level:55,branchCaps:caps,branchMasteries:caps});
   for(const row of [...special.defense,...special.magic])
    mark(row.id,'specialized-skill-source');
+ }
+ // Revive's exact Holy Water count is a numerical source, while other
+ // cures, exchanges and dispels have no proved final numerical outcome.
+ for(const jobKey of classNames){
+  const caps=classes[jobKey].branchCaps;
+  const support=calculator.supportEffectPreview({skillCatalog:skills,jobKey,
+   level:55,branchCaps:caps,branchMasteries:caps});
+  for(const row of [...support.help,...support.magic])
+   mark(row.id,'support-effects-source',{numeric:Number.isSafeInteger(row.requiredItemCount)});
  }
  const statusKeys=['numeric-preview','coefficient-model','source-parameter','qualitative-preview',
   'passive-source','internal-or-triggered-source','unmodeled-learnable'];
