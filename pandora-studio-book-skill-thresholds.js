@@ -188,8 +188,33 @@ function materialUseBudget({action,maxMana}={}){
  return {casts:budget.casts,remainder:budget.remainder,
   maxMana:budget.maxMana,materials,baseOnly:true};
 }
+
+/* The next extra use from this hero's full MP, always at the OS base cost. */
+function nextManaUse({maxMana,baseCost}={}){
+ const budget=baseManaBudget({maxMana,baseCost});
+ if(!budget)return null;
+ const required=(budget.casts+1)*baseCost;
+ if(!Number.isSafeInteger(required)||required<=budget.maxMana)return null;
+ return {casts:budget.casts,maxMana,required,
+  missing:required-maxMana,baseOnly:true};
+}
+/* Current-build total healing of ONE receiver, not extra party targets or
+ * periodically repeating effects. A validated current-hero heal preview is
+ * required before aggregation. */
+function directHealingBudget({row,action,maxMana}={}){
+ if(row?.available!==true||row?.breakdown?.kind!=='direct'||
+  row?.skillId!==action?.skillId||
+  !Number.isSafeInteger(row.amount)||row.amount<=0||
+  !Number.isSafeInteger(row.skillId))return null;
+ const budget=baseManaBudget({maxMana,baseCost:action.mana});
+ if(!budget||budget.casts<=0)return null;
+ const total=row.amount*budget.casts;
+ if(!Number.isSafeInteger(total)||total<row.amount)return null;
+ return {amount:row.amount,total,casts:budget.casts,maxMana,
+  remainder:budget.remainder,baseOnly:true};
+}
 root.PandoraBookSkillThresholds=Object.freeze({
- requirements,nextMelee,baseManaBudget,sourceAction,inspiredCastTime,
- materialAction,materialUseBudget,MELEE
+ requirements,nextMelee,baseManaBudget,nextManaUse,directHealingBudget,
+ sourceAction,inspiredCastTime,materialAction,materialUseBudget,MELEE
 });
 })(typeof window==='undefined'?globalThis:window);
