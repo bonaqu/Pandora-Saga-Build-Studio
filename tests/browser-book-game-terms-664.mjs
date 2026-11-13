@@ -281,7 +281,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
       'assets/skills/icons/skill_'+terms.skills[String(id)].iconId+'.webp':null
     });
     const row=Array.from(stage.querySelectorAll('.stage-offense-skill-row'))
-     .find(node=>node.textContent.includes(language==='en'?'Critical Strike':'Критический удар'));
+     .find(node=>node.textContent.includes(language==='en'?'Clobber':'Критический удар'));
     return row?{
      main:row.querySelector('strong')?.textContent,
      models:Array.from(row.querySelectorAll('.stage-skill-os-coefficient-model'))
