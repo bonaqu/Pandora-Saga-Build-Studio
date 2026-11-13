@@ -40,7 +40,8 @@ test('existing book receives computed skill values, not duplicate stat formulas'
  const a=read('pandora-studio-app.js'),ui=read('pandora-studio-hero-book.js');
  assert.match(a,/benevolenceMastery=window\.PandoraSkillProgression\.groupAdeptness/);
  assert.match(ui,/modifiers\?\.healingSpells\?\.rows/);
- assert.match(ui,/row\.scaledBySkill/);
+ assert.match(ui,/sourceId===310002001\|\|sourceId===310022001/);
+ assert.match(ui,/row\.nextMastery/);
 });
 
 test('healing preview respects OS skill catalog, race-independent class caps and actual learnability',()=>{
