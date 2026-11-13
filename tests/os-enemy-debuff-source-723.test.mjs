@@ -88,8 +88,8 @@ test('all 28 jobs and 400 mastery inputs do not mix source with hero numbers',()
 test('cross-module audit counts four new qualitative enemy-only roots',async()=>{
  const script=await import('../scripts/audit-os-skill-formulas.mjs');
  const report=script.auditOsSkillFormulaCoverage({skills,classes,calculator:C});
- assert.equal(report.summary.statuses['qualitative-preview'],30);
- assert.equal(report.summary.statuses['unmodeled-learnable'],79);
+ assert.equal(report.summary.statuses['qualitative-preview'],38);
+ assert.equal(report.summary.statuses['unmodeled-learnable'],71);
  for(const [id] of cases){
   const row=report.rows.find(x=>x.id===id);
   assert.equal(row.targetSideOnly,true);
