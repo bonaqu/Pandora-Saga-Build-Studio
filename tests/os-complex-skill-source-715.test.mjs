@@ -88,8 +88,8 @@ test('300 real class and mastery combinations never report an unavailable source
 test('qualitative mechanics improve source coverage without fake numeric spell output',()=>{
  const report=auditOsSkillFormulaCoverage({skills,classes:jobs,calculator:C});
  assert.equal(report.summary.statuses['numeric-preview'],62);
- assert.equal(report.summary.statuses['qualitative-preview'],12);
- assert.equal(report.summary.statuses['unmodeled-learnable'],100);
+ assert.equal(report.summary.statuses['qualitative-preview'],16);
+ assert.equal(report.summary.statuses['unmodeled-learnable'],96);
  for(const [id] of ids){
   const row=report.rows.find(x=>x.id===id);
   assert.deepEqual(row.sourceModules,['complex-source-mechanics']);
