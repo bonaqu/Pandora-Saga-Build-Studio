@@ -3194,7 +3194,7 @@ function alliedRecipientPreviews({skillCatalog=null,combat=null}={}){
 function alliedFreeWindPreview({skillCatalog=null,classCatalog=null}={}){
  const skill=skillCatalog?.['260010001'];
  const sniper=classCatalog?.SNIPER;
- if(skill?.id!==260010001||skill.name!=='Вольный ветер'||
+ if(skill?.id!==260010001||
   skill.skillType!=='ALLY'||skill.learnable!==true||
   skill.prereq!==null||
   JSON.stringify(skill.reqs)!=='[{"branch":"warding","amount":66}]'||
