@@ -62,6 +62,17 @@ test('Sparse cumulative OS refinement applies at intermediate forge grades',()=>
   equipment:[worn(12605,3)],itemForth,unison}),
   {general:1,fire:0,penetration:0});
 });
+test('Fire-only dagger bonus follows real OS +7/+8 thresholds and selected element',()=>{
+ const effects=(grade,gem)=>D.equippedElementalEffects({
+  equipment:[worn(1862,grade,{gem})],itemForth,unison
+ });
+ assert.equal(effects(6,{type:'magical',element:'fire'}).fire,0);
+ assert.equal(effects(7,{type:'magical',element:'fire'}).fire,1);
+ assert.equal(effects(8,{type:'magical',element:'fire'}).fire,2);
+ assert.equal(effects(8,{type:'magical',element:'dark'}).fire,0);
+ assert.equal(effects(8,null).fire,0);
+ assert.match(items['1862'].desc,/Магическая атака огнем/);
+});
 test('Only eligible active Souls participate and their exact bonus is counted once',()=>{
  assert.deepEqual(souls['101006'].slots,['weapon']);
  const full=D.equippedElementalEffects({
