@@ -3896,6 +3896,53 @@ function trapOutcomeMatches(catalog,root,proof){
    });
  });
 }
+
+/* A distinct nonlearnable level-50 source record, not a verified
+   automatic replacement for the regular Plant Mine. */
+function trapLevel50Source({catalog,root,jobKey,level,rank,cap,same,make}){
+ if(root?.id!==240002001||jobKey!=='DISTURBANCE')return null;
+ const variant=catalog['240002002'],child=catalog['240002051'];
+ const expected=[
+  make('EP_CONSUME_ITEM','CASTER',65007,1),
+  make('EP_SKILL_EXEC','TARGET',240002051,0),
+  make('EP_CANCEL_TRAP','CASTER',240002050,0)
+ ];
+ const effects=[
+  {ep:'EP_ELEMENT_DAMAGE',dir:'TARGET',fv1:[450,100,300,50],fv2:[0,0,0,0]},
+  {ep:'EP_CAUSE_KNOCKBACK',dir:'TARGET',fv1:[0,0,0,200],fv2:[0,0,0,1]}
+ ];
+ if(variant?.id!==240002002||variant.name!==root.name||
+  variant.skillType!=='POINT'||variant.learnable!==false||
+  variant.prereq!==root.id||variant.charLevel!==50||
+  variant.branch!=='trap'||variant.reqLevel!==26||
+  variant.classes?.DISTURBANCE!==1||
+  Object.keys(variant.classes||{}).length!==1||
+  !Array.isArray(variant.reqs)||variant.reqs.length!==1||
+  variant.reqs[0]?.branch!=='trap'||variant.reqs[0]?.amount!==26||
+  variant.mana!==root.mana||variant.cast!==root.cast||
+  variant.cooldown!==root.cooldown||variant.motion!==root.motion||
+  variant.range!==root.range||variant.rangeFromWeapon!==root.rangeFromWeapon||
+  !Array.isArray(variant.aoe)||!Array.isArray(root.aoe)||
+  variant.aoe.length!==root.aoe.length||
+  variant.aoe.some((v,i)=>v!==root.aoe[i])||
+  !Array.isArray(variant.funcs)||variant.funcs.length!==expected.length||
+  !expected.every((row,i)=>same(variant.funcs[i],row))||
+  child?.id!==240002051||child.name!==root.name||
+  child.skillType!=='CIRCLE'||child.learnable!==false||
+  child.branch!=='trap'||child.charLevel!==0||child.prereq!==null||
+  !Array.isArray(child.reqs)||child.reqs.length!==0||
+  !Array.isArray(child.aoe)||child.aoe.length!==2||
+  child.aoe[0]!==200||child.aoe[1]!==500||
+  child.damage?.kernel!=='element'||child.damage?.slotIndex!==0||
+  !Array.isArray(child.funcs)||child.funcs.length!==effects.length||
+  !effects.every((row,i)=>same(child.funcs[i],row)))return null;
+ return {requiredLevel:50,levelMet:level>=50,masteryMet:
+  Number.isSafeInteger(rank)&&Number.isSafeInteger(cap)&&rank>=26&&rank<=cap,
+  itemCount:1,linkedEffectId:240002051,
+  sourceEffectRu:'Более сильный стихийный удар; отталкивание остаётся',
+  sourceEffectEn:'Stronger elemental attack; knockback remains',
+  activationVerified:false,damageVerified:false,sourceOnly:true};
+}
 function trapSkillCostPreview({skillCatalog=null,jobKey=null,level=1,
  branchCaps={},branchMasteries={},branchLabels={},englishBranches={}}={}){
  const result={rows:[],rejected:[],verified:false,
@@ -3934,8 +3981,11 @@ function trapSkillCostPreview({skillCatalog=null,jobKey=null,level=1,
   const rank=branchMasteries?.trap;
   const legal=Number.isSafeInteger(rank)&&rank>=0&&rank<=cap;
   const ready=legal&&rank>=required;
+  const level50Variant=trapLevel50Source({
+   catalog:skillCatalog,root:record,jobKey,level,rank,cap,same,make});
   result.rows.push({id,name:record.name,itemId:65007,count,
    linkedEffectId:childId,requirementsMet:ready,
+   ...(level50Variant?{level50Variant}:{}),
    sourceEffectRu:trapOutcomeProofs[id].ru,
    sourceEffectEn:trapOutcomeProofs[id].en,
    statusResistanceKey:trapOutcomeProofs[id].resistanceKey,
