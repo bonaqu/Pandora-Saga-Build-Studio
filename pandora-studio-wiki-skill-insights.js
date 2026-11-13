@@ -165,6 +165,60 @@ function rowsOf(result){
  return ['rows','defense','magic','help','stealth','other'].flatMap(
   key=>Array.isArray(result[key])?result[key]:[]);
 }
+// Three composite OS spells: source-matched navigation and readable game
+// mechanics belong only to the Encyclopedia, never to the Hero Book.
+const compositeSkillNotes=Object.freeze({
+ 410002001:{
+  kind:'RADIATION',element:'FIRE',branch:'element',stat:'INT',
+  effects:[
+   ['EP_ELEMENT_DAMAGE','TARGET',[100,0,100,50],[0,0,0,0]],
+   ['EP_SKILL_EXEC','TARGET',[0,0,0,500000005],[0,0,9,9]]],
+  linked:500000005,childKind:'ENEMY',childBranch:'race',
+  childEffects:[['EP_CAUSE_BURN','TARGET',[0,0,0,10],[0,0,0,100]]],
+  ru:'Наносит прямой огненный урон и отдельно вызывает ожог.',
+  en:'Deals direct fire damage and separately applies a burn.'},
+ 430053001:{
+  kind:'ENEMY',element:'DARK',branch:'darkness',stat:'SPI',
+  effects:[
+   ['EP_ELEMENT_DAMAGE','TARGET',[40,0,40,26],[0,0,0,0]],
+   ['EP_SKILL_EXEC','TARGET',[0,0,0,430053002],[0,0,0,0]]],
+  linked:430053002,childKind:'ENEMY',childBranch:'darkness',
+  childEffects:[
+   ['EP_HEAL_LIFE_REGENERATOR','TARGET',[-4,0,-10,-4],[0,0,0,2]],
+   ['EP_STOP_NATURAL_HEAL','TARGET',[0,0,0,1],[0,0,0,1]]],
+  ru:'Наносит прямой урон тьмой и дополнительно влияет на восстановление ОЗ.',
+  en:'Deals direct dark damage and separately changes HP recovery.'},
+ 410004001:{
+  kind:'ENEMY',element:'FIRE',branch:'element',stat:'INT',
+  effects:[
+   ['EP_ELEM_DELAYED_BONUS','CASTER',[0,0,0,6],[0,0,0,180]],
+   ['EP_ELEMENT_DAMAGE','TARGET',[90,0,180,29],[0,0,0,0]]],
+  ru:'Вызывает отложенный огненный взрыв. Его мощность зависит от задержки.',
+  en:'Causes a delayed fire explosion whose power depends on the delay.'}
+});
+const sameGameEffect=(actual,expected)=>actual?.ep===expected[0]&&
+ actual.dir===expected[1]&&
+ JSON.stringify(actual.fv1)===JSON.stringify(expected[2])&&
+ JSON.stringify(actual.fv2)===JSON.stringify(expected[3]);
+function compositeActionEvidence(skill,skillCatalog){
+ const spec=compositeSkillNotes[skill.id];if(!spec)return null;
+ if(skill.learnable!==true||skill.skillType!==spec.kind||
+  skill.element!==spec.element||skill.branch!==spec.branch||
+  skill.powerStat!==spec.stat||!Array.isArray(skill.funcs)||
+  skill.funcs.length!==spec.effects.length||
+  !skill.funcs.every((fx,i)=>sameGameEffect(fx,spec.effects[i])))
+  return null;
+ const child=spec.linked!=null?skillCatalog[String(spec.linked)]:null;
+ if(spec.linked!=null&&(child?.id!==spec.linked||
+  child.learnable!==false||child.skillType!==spec.childKind||
+  child.branch!==spec.childBranch||!Array.isArray(child.funcs)||
+  child.funcs.length!==spec.childEffects.length||
+  !child.funcs.every((fx,i)=>sameGameEffect(fx,spec.childEffects[i]))))
+  return null;
+ return {notes:[{ru:spec.ru,en:spec.en}],
+  paths:child?[[skill.id,child.id]]:[],extra:[],
+  sourceOnly:true,finalAmount:null};
+}
 function inspect({skillCatalog,classes,id,calculator}={}){
  const skill=skillCatalog?.[String(id)];
  if(!skill||skill.id!==Number(id)||!skill.learnable||
@@ -187,6 +241,11 @@ function inspect({skillCatalog,classes,id,calculator}={}){
  if(poison){
   store.values.set(skill.id,poison);
   return poison;
+ }
+ const composite=compositeActionEvidence(skill,skillCatalog);
+ if(composite){
+  store.values.set(skill.id,composite);
+  return composite;
  }
  const hymn=hymnChainEvidence(skill,skillCatalog,classes);
  if(hymn){
