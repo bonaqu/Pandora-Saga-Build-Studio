@@ -257,6 +257,47 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   assert.ok(await rich.locator('img').count()>0,
    'Item/Soul triggered skill tooltip must use the real Path icon');
   await procPanel.locator('summary').hover();
+  // Real Book smoke: source-backed mastery coefficients belong to the
+  // CURRENT hero as an estimate, but must NOT become final attack damage.
+  const strikeSummary=await page.evaluate(()=>{
+   const terms=window.__bookGameTermsQA;
+   const stage=document.createElement('div');
+   stage.id='book-strike-qa';stage.style.width='780px';
+   stage.style.height='600px';stage.style.overflow='auto';
+   document.body.appendChild(stage);
+   const render=language=>{
+    document.documentElement.lang=language;
+    window.PandoraStageAttributes.render(stage,{
+     page:'effects',
+     modifiers:{stats:{vit:50,str:70,agi:45,dex:35,spi:18,int:12},
+      combat:{attack:{walkingBase:190},defense:{directRaw:100},
+       accuracy:{base:120},dodge:{base:90}},
+      healingSpells:{rows:[]},periodicRecovery:{rows:[]}},
+     gameTerms:terms,heroJobKey:'JUGGERNAUT',heroLevel:45,
+     heroMasteries:{brush:40,slash:41},
+     heroBranchCaps:terms.classes.JUGGERNAUT.branchCaps,
+     heroWeaponKind:'1H_AXE',
+     skillIconForId:id=>terms.skills[String(id)]?.iconId?
+      'assets/skills/icons/skill_'+terms.skills[String(id)].iconId+'.webp':null
+    });
+    const row=Array.from(stage.querySelectorAll('.stage-offense-skill-row'))
+     .find(node=>node.textContent.includes(language==='en'?'Critical Strike':'Критический удар'));
+    return row?{
+     main:row.querySelector('strong')?.textContent,
+     models:Array.from(row.querySelectorAll('.stage-skill-os-coefficient-model'))
+      .map(node=>node.textContent),
+     actions:row.querySelectorAll('[data-skill-action-id="142002001"]').length
+    }:null;
+   };
+   return {ru:render('ru'),en:render('en')};
+  });
+  assert.equal(strikeSummary.ru?.main,'—',
+   'Final target damage must remain unknown');
+  assert.match(strikeSummary.ru.models.join(' '),/Сила удара \(расчёт\) \+20%/);
+  assert.equal(strikeSummary.ru.actions,1,
+   'Available mastery-derived strike retains its OS base-cost disclosure');
+  assert.equal(strikeSummary.en?.main,'—');
+  assert.match(strikeSummary.en.models.join(' '),/Estimated strike strength \+20%/);
   assert.deepEqual(errors,[]);
   console.log('Chromium Book 664: OS/Remaked RU+EN skills, Hymn/Песнопения, Адепт, buffs and defense');
  }finally{await context.close()}
