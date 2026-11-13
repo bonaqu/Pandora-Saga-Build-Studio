@@ -9,7 +9,7 @@ const local=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 
 export function auditOsSkillFormulaCoverage({skills,classes,calculator}={}){
  const modules=['scalingSkillPreview','healingSpellsPreview',
-  'periodicRecoveryPreview','songSkillPreview','resistanceSkillChoices','skillExecutionChains','craftingSkillPreview','trapSkillCostPreview','complexSkillSourcePreview','statusApplicationPreview','enemyDebuffPreview','tacticalSkillPreview'];
+  'periodicRecoveryPreview','songSkillPreview','resistanceSkillChoices','skillExecutionChains','craftingSkillPreview','trapSkillCostPreview','complexSkillSourcePreview','statusApplicationPreview','enemyDebuffPreview','tacticalSkillPreview','rangedAmmoPreview'];
  if(!skills||!classes||!modules.every(name=>typeof calculator?.[name]==='function'))
   throw Error('Expected pinned skill/class catalog and all OS formula inspectors');
  const entries=Object.entries(skills).sort((a,b)=>Number(a[0])-Number(b[0]));
@@ -188,6 +188,13 @@ export function auditOsSkillFormulaCoverage({skills,classes,calculator}={}){
   const tactical=calculator.tacticalSkillPreview({skillCatalog:skills,jobKey,
    level:55,branchCaps:caps,branchMasteries:caps});
   for(const row of tactical.rows)mark(row.id,'tactical-skill-source');
+ }
+ // Exact OS ammunition counts; child effect results remain unmodeled.
+ for(const jobKey of classNames){
+  const caps=classes[jobKey].branchCaps;
+  const ammo=calculator.rangedAmmoPreview({skillCatalog:skills,jobKey,
+   level:55,branchCaps:caps,branchMasteries:caps,weaponKind:'BOW'});
+  for(const row of ammo.rows)mark(row.id,'skill-ammunition',{numeric:true});
  }
  const statusKeys=['numeric-preview','coefficient-model','source-parameter','qualitative-preview',
   'passive-source','internal-or-triggered-source','unmodeled-learnable'];
