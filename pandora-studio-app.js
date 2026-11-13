@@ -5044,7 +5044,11 @@ function renderWiki(root){
        const chain=h('div',{class:'wiki-skill-source-chain'});
        path.forEach((linkId,index)=>{
         if(index)chain.append(h('span',{text:' → ','aria-hidden':'true'}));
-        chain.append(wikiLink(dataName('skill',String(linkId)),
+        // Hymn roots, areas and recipient effects share the same source
+        // name. Explain the roles without changing their exact Wiki IDs.
+        const role=evidence.pathKind==='hymn'&&index>0?
+         (index===1?wt('Область: ','Area: '):wt('Эффект: ','Effect: ')):'';
+        chain.append(wikiLink(role+dataName('skill',String(linkId)),
          'skill',String(linkId)));
        });
        section.append(chain);

@@ -59,6 +59,16 @@ export async function runWikiMaterialLinks752Smoke(browser,base){
   await page.goBack();
   await poison.waitFor({state:'visible',timeout:20000});
 
+  await skill(340003001);
+  const peace=page.locator('.wiki-page .wiki-skill-source-chain').first();
+  assert.deepEqual(await peace.locator('a.wiki-link').evaluateAll(anchors=>
+   anchors.map(a=>a.getAttribute('href'))),
+   ['#wiki/skill/340003001','#wiki/skill/340003002',
+    '#wiki/skill/340003003']);
+  const peaceRoles=await peace.innerText();
+  assert.match(peaceRoles,/Область:/);
+  assert.match(peaceRoles,/Эффект:/);
+
   // Keep current Resurrection selection for the existing English checks.
   await skill(310003001);
   const close=page.locator('#dockClose');
@@ -78,6 +88,21 @@ export async function runWikiMaterialLinks752Smoke(browser,base){
   assert.match(await poisonEn.innerText(),/Requires: 1 × Venom/);
   assert.equal(await poisonEn.locator('a.wiki-link').getAttribute('href'),
    '#wiki/item/50056');
+  for(const [rootId,areaId,finalId] of [
+   [340001001,340001002,340001003],
+   [340001004,340001005,340001006],
+   [340003001,340003002,340003003],
+   [340004001,340004002,340004003]
+  ]){
+   await skill(rootId);
+   const path=page.locator('.wiki-page .wiki-skill-source-chain').first();
+   assert.deepEqual(await path.locator('a.wiki-link').evaluateAll(anchors=>
+    anchors.map(a=>a.getAttribute('href'))),
+    [rootId,areaId,finalId].map(id=>'#wiki/skill/'+id));
+   const roles=await path.innerText();
+   assert.match(roles,/Area:/);
+   assert.match(roles,/Effect:/);
+  }
   assert.deepEqual(errors,[]);
  }finally{await context.close()}
 }
