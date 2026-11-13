@@ -464,3 +464,10 @@
  }
 }
 
+
+
+/* 0.744.0: source-only acquisition notes belong to the skill encyclopedia. */
+.wiki-skill-access-notice{display:grid;gap:5px;min-width:0;margin-block:6px 8px}
+.wiki-skill-access-notice>strong{font-size:12px;font-weight:650;color:var(--gold)}
+.wiki-skill-access-notice>p{margin:0;font-size:11px;line-height:1.5;overflow-wrap:anywhere}
+.wiki-skill-access-notice>.wiki-link{font-size:11px;overflow-wrap:anywhere}
