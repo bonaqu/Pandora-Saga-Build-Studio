@@ -884,7 +884,11 @@ function buffsPage(body,options){
    Array.isArray(effects[0].fv2)&&effects[0].fv2.length===4&&
    effects[0].fv2.every((n,i)=>n===secondary[i]);
  };
- const inspirationKnown=osVector(320006001,'EP_SKILL_DELAY_FIN',[0,0,0,50]);
+ const inspirationKnown=
+  gameTerms.skills?.['320006001']?.skillType==='ALLY'&&
+  gameTerms.skills?.['320006001']?.funcs?.length===2&&
+  osVector(320006001,'EP_CANCEL_IDENTITY',[0,0,0,0])&&
+  osVector(320006001,'EP_SKILL_DELAY_FIN',[0,0,0,50]);
  const naturalKnown=osVector(330005001,'EP_HEAL_MANA_REGENERATOR',[0,10,0,0],[0,0,0,2]);
  const restKnown=osVector(320002001,'EP_HEAL_TIME_SCALE',[0,0,0,90]);
  const despairKnown=osVector(100058001,'EP_DAMAGERATE_SCALE',[0,0,35,40])&&
@@ -971,8 +975,8 @@ function buffsPage(body,options){
     'Evasion −50%; provides protection against critical hits.'],
   320002001:['Скорость восстановления ОМ союзников +90 инд.',
     'Allies’ MP recovery speed +90 idx.'],
-  320006001:['Время каста: 50% от обычного (−50%).',
-    'Casting time: 50% of normal (−50%).'],
+  320006001:['Ускоряет применение умений. В данных навыка указано значение 50; точное итоговое время не подтверждено.',
+    'Speeds up skill casting. The skill data contains a value of 50; the final cast time has not been verified.'],
   330005001:['+5 ОМ каждые 2 секунды при применении.',
     '+5 MP every 2 seconds when applied.'],
   340003001:['Защищает союзников от небольших попаданий. Сила защиты зависит от жреца.',

@@ -140,6 +140,31 @@ export function auditOsSkillFormulaCoverage({skills,classes,calculator}={}){
   });
   if(correct)mark(proof.id,proof.module,{numeric:true});
  }
+ // Audit two effects that already have their own Book / Remaked paths.
+ // Avoidance is a numerical +100 with an exact two-hit end condition.
+ // Inspiration is a source-only effect; never infer final cast duration.
+ const existingBuffProofs=[
+  {id:260008001,type:'MYSELF',numeric:true,module:'existing-self-avoidance',
+   vectors:[['EP_AVOIDANCE_CONST',100],['EP_LOST_WARDING_DAMAGE',2]]},
+  {id:320006001,type:'ALLY',numeric:false,module:'existing-ally-casting-source',
+   vectors:[['EP_CANCEL_IDENTITY',0],['EP_SKILL_DELAY_FIN',50]]}
+ ];
+ for(const proof of existingBuffProofs){
+  const source=skills[String(proof.id)];
+  if(source?.id!==proof.id||source?.skillType!==proof.type||
+   source?.learnable!==true||source?.prereq!==null||
+   !Array.isArray(source?.funcs)||source.funcs.length!==proof.vectors.length)
+   continue;
+  const exact=proof.vectors.every(([ep,value],index)=>{
+   const effect=source.funcs[index];
+   return effect?.ep===ep&&effect?.dir==='TARGET'&&
+    Array.isArray(effect.fv1)&&effect.fv1.length===4&&
+    effect.fv1.every((n,i)=>n===(i===3?value:0))&&
+    Array.isArray(effect.fv2)&&effect.fv2.length===4&&
+    effect.fv2.every(n=>n===0);
+  });
+  if(exact)mark(proof.id,proof.module,{numeric:proof.numeric});
+ }
  // The five enemy elemental spells are modeled on the hero as incoming
  // target and are NOT own passive resistance. Divine Blessing is an
  // independent party buff. These exact signed source values are numeric
