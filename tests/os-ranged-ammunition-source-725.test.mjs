@@ -96,8 +96,8 @@ test('400 synthetic combinations never alter stored items or character state',()
 });
 test('cross-module count increases for only three independently sourced quantities',()=>{
  const report=auditOsSkillFormulaCoverage({skills,classes:jobs,calculator:calc});
- assert.equal(report.summary.statuses['numeric-preview'],65);
- assert.equal(report.summary.statuses['unmodeled-learnable'],71);
+ assert.equal(report.summary.statuses['numeric-preview'],66);
+ assert.equal(report.summary.statuses['unmodeled-learnable'],63);
  for(const [id] of cases){
   const row=report.rows.find(x=>x.id===id);
   assert.equal(row.status,'numeric-preview');

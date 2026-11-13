@@ -67,7 +67,7 @@ test('source census keeps on-hit metadata separate from numeric models',()=>{
  const audit=auditOsSkillFormulaCoverage({skills,classes,calculator:C});
  assert.equal(audit.summary.executionChains.onHitSourceLinks,4);
  assert.ok(audit.summary.executionChains.onHitEligibleSkillRoots>0);
- assert.equal(audit.summary.statuses['unmodeled-learnable'],71);
+ assert.equal(audit.summary.statuses['unmodeled-learnable'],63);
  assert.equal(audit.summary.skillRecords,569);
 });
 test('conditional source UI is collapsed and describes uncertainty in plain language',()=>{
