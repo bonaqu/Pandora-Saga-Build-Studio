@@ -83,9 +83,9 @@ test('400 different characters never receive permanent bonuses from situational 
 });
 test('five new models and one crafting inspection per class in the audit',()=>{
  const report=auditOsSkillFormulaCoverage({skills,classes,calculator:C});
- assert.equal(report.summary.statuses['numeric-preview'],66);
+ assert.equal(report.summary.statuses['numeric-preview'],69);
  assert.equal(report.summary.statuses['qualitative-preview'],50);
- assert.equal(report.summary.statuses['unmodeled-learnable'],58);
+ assert.equal(report.summary.statuses['unmodeled-learnable'],55);
  for(const [id] of cases){
   const row=report.rows.find(x=>x.id===id);
   assert.equal(row.status,'qualitative-preview');
