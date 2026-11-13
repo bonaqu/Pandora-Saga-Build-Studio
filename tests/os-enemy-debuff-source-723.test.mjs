@@ -97,11 +97,11 @@ test('cross-module audit counts four new qualitative enemy-only roots',async()=>
   assert.ok(row.sourceModules.includes('enemy-debuff-source'));
  }
 });
-test('Book presents only readable enemy-side descriptions',()=>{
- const code=read('pandora-studio-hero-book.js');
- for(const name of ['Ослабление противника','Немощь','Слабость']){}
- assert.ok(code.includes('Ослабление противника'));
- assert.ok(code.includes('Weakening enemies'));
- assert.ok(code.includes('Эти умения действуют на противника, а не на вашего героя'));
- assert.ok(code.includes('root.PandoraOSCalculator?.enemyDebuffPreview?.('));
+test('Source-only os-enemy-debuff-source-723 knowledge belongs in the Encyclopedia, not build stats',()=>{
+ const wiki=read('pandora-studio-wiki-skill-insights.js');
+ const app=read('pandora-studio-app.js');
+ const book=read('pandora-studio-hero-book.js');
+ assert.ok(wiki.includes('enemyDebuffPreview'),'source inspector must stay enabled');
+ assert.ok(app.includes('PandoraWikiSkillInsights?.inspect'),'Wiki renders verified insights');
+ assert.ok(!book.includes('stage-skill-enemy-debuffs'),'Book must not duplicate Wiki metadata');
 });
