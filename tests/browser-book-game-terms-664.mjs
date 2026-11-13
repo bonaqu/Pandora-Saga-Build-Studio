@@ -556,7 +556,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   assert.match(spellBook.trapRu.find(x=>x.text.includes('Взрывающаяся ловушка'))?.main||'',
    /прямой удар 11–84 ОЗ/);
   assert.equal(spellBook.conjurerRu.filter(x=>x.text.includes('Песчаная буря')).length,1);
-  assert.equal(spellBook.conjurerEn.filter(x=>x.text.includes('Sandstorm')).length,1);
+  assert.equal(spellBook.conjurerEn.filter(x=>x.text.includes('Summon Sandman')).length,1);
   assert.match(spellBook.conjurerRu.find(x=>x.text.includes('Песчаная буря'))?.main||'',
    /прямой удар 5–27 ОЗ/);
   assert.doesNotMatch(spellBook.expandedRu.map(row=>row.text).join(' '),
