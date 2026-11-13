@@ -51,6 +51,27 @@ export async function runPathSkillNavigation761Smoke(browser,base){
   assert.match(await details.locator('h3').innerText(),/Dice/);
   assert.equal(await gallery.locator('[data-skill-id="110101002"]').getAttribute('aria-current'),'true');
   assert.match(await details.locator('[data-related-skill-id="110101001"]').getAttribute('aria-label'),/Previous/);
+  // Browse filtered results independently of the prerequisite/upgrade chain.
+  const listNav=details.locator('.path-skill-list-nav');
+  assert.equal(await listNav.count(),1);
+  assert.match(await listNav.locator('.path-skill-list-position').innerText(),/^\d+ \/ \d+$/);
+  const nextInList=listNav.locator('[data-skill-list-direction="next"]');
+  const previousInList=listNav.locator('[data-skill-list-direction="previous"]');
+  const move=await nextInList.isEnabled()?nextInList:previousInList;
+  assert.equal(await move.isEnabled(),true);
+  assert.match(await move.getAttribute('aria-label'),/(Next|Previous) in list:/);
+  const oldTitle=await details.locator('h3').innerText();
+  await move.click();
+  assert.notEqual(await details.locator('h3').innerText(),oldTitle);
+  assert.equal(await query.inputValue(),'');
+  const pinned=await gallery.locator('.path-skill-card').first().getAttribute('data-skill-id');
+  const active=await gallery.locator('.path-skill-card[aria-current="true"]').getAttribute('data-skill-id');
+  assert.equal(pinned,active);
+  assert.ok(await gallery.locator('.path-skill-card').count()<=24);
+  await query.click();
+  await query.fill('not-a-game-skill-766');
+  await details.waitFor({state:'hidden'});
+  assert.equal(await details.locator('.path-skill-list-nav').count(),0);
   assert.deepEqual(errors,[]);
   console.log('Chromium 761: RU/EN lineage links, selection, filters and 24-card limit');
  }finally{await context.close()}

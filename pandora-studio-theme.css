@@ -225,7 +225,7 @@ a.wiki-link{text-decoration:none;color:#eccb97}
 a.wiki-link:focus-visible{outline:2px solid #f5c883;outline-offset:1px}
 a.wiki-link:hover{text-decoration:none}
 
-/* 2026.10.30.25 — race carousel, in-place selection and hero-path controls */
+
 .racegrid{display:grid;grid-template-columns:minmax(0,1fr);gap:7px}
 .race-slide-frame{position:relative;width:100%;aspect-ratio:1 / 1.03;border:2px double #91704a;background:radial-gradient(circle at center,#4d3624,#100e0c 76%);overflow:hidden;box-shadow:inset 0 0 30px #0c080a}
 .race-slide-frame.selected{border-color:#efc784;box-shadow:0 0 18px #dba45960,inset 0 0 24px #b08b332d}
@@ -270,7 +270,7 @@ a.wiki-link:hover{text-decoration:none}
 @media(max-width:1200px){.race-slide-frame{aspect-ratio:1.35 / 1}}
 @media(max-width:790px){.racegrid{grid-template-columns:1fr}.race-slide-frame{aspect-ratio:1.35 / 1}.origin-passives{grid-template-columns:repeat(3,minmax(0,1fr));max-height:none}.origin-passive{flex-direction:column;text-align:center}.origin-passive b{white-space:normal}}
 @media(max-width:460px){.racegrid{grid-template-columns:1fr}.stage-picker{padding:8px}.stage-picker-head strong{font-size:19px}.stage-picker-foot button{padding:5px}.origin-passives{grid-template-columns:1fr}.origin-passive{flex-direction:row;text-align:left}}
-/* 2026.10.30.26 — viewport-bound workbench, inner scroll only */
+
 .studio-workbench-open{overflow:hidden}
 .studio-backdrop:not([hidden]){position:fixed;z-index:68;inset:0;background:#080603d9;backdrop-filter:blur(4px)}
 .stage-quickbar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:5px;margin:0 0 9px}
@@ -292,12 +292,12 @@ a.wiki-link:hover{text-decoration:none}
 @media(prefers-reduced-motion:reduce){.studio-backdrop,.detail.is-open{animation:none;transition:none}}
 .detail.is-open>.detail-title{margin-bottom:8px}
 .studio-workbench-open .top #nav{display:none}
-/* 2026.10.30.28 — status and focus */
+
 #iconStatus{color:#d3b484;min-width:170px}
 @media(max-width:900px){footer{flex-wrap:wrap;align-items:center;justify-content:flex-start}}
 .equipment-rail .equipment-slot[aria-expanded="true"]{outline:2px solid #ffdf9a;outline-offset:2px}
 
-/* 2026.10.30.29: height-bound three-column desktop studio. Scroll panes, not the page. */
+
 @media (min-width:1201px) and (min-height:800px) {
  .workspace{height:clamp(490px,calc(100dvh - 365px),900px);min-height:0;align-items:stretch}
  .workspace>.left,.workspace>.right{min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#866840 #1b1511}
@@ -313,7 +313,7 @@ a.wiki-link:hover{text-decoration:none}
  .workspace .hero-actions{flex-shrink:0}
 }
 
-/* 2026.10.30.30: in-portrait equipment information / Souls / gems */
+
 .race-sex-info{font-size:11px;color:#dfc28b;margin:7px 0}
 .stage-rich-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;flex-shrink:0}
 .stage-rich-tabs button,.stage-grade button,.stage-rich-switch{min-width:0;padding:7px 3px;border:1px solid #97704a;background:#301f15;color:#ead0a4;font-size:10px}
@@ -337,11 +337,11 @@ a.wiki-link:hover{text-decoration:none}
 .stage-rich-result{display:flex;align-items:center;gap:8px;background:#26190f;color:#edc898;border:1px solid #7b5635;padding:5px;text-align:left}
 .stage-rich-result img{width:34px;height:34px;object-fit:contain}
 .stage-rich-result:hover{border-color:#f0c47e;background:#49311e}
-.stage-hover-preview{position:fixed;z-index:240;width:min(320px,90vw);max-height:75vh;overflow:auto;background:#261a12;color:#f4d5a6;border:2px double #c89b5d;box-shadow:0 15px 50px #000e;pointer-events:none;padding:8px}/* 2026.10.30.30: skill milestones in the right-hand hero path */
+.stage-hover-preview{position:fixed;z-index:240;width:min(320px,90vw);max-height:75vh;overflow:auto;background:#261a12;color:#f4d5a6;border:2px double #c89b5d;box-shadow:0 15px 50px #000e;pointer-events:none;padding:8px}
 
 
 
-/* 2026.10.30.31: in-portrait, source-backed attribute inspection */
+
 .portrait-frame.attributes>img#hero,.portrait-frame.attributes>.ornament,.portrait-frame.attributes>.portrait-bottom{visibility:hidden}
 .stage-attributes{position:absolute;z-index:5;inset:0;display:flex;flex-direction:column;gap:7px;padding:11px;background:linear-gradient(155deg,#3b2919,#16100d 75%);color:#f2d8ac}
 .stage-attributes[hidden]{display:none}
@@ -358,7 +358,7 @@ a.wiki-link:hover{text-decoration:none}
 .stage-attribute-identity img{width:36px;height:36px;object-fit:contain}
 .stage-attribute-warning{font-size:10px;color:#e9b792;border-top:1px solid #9e6946;padding:9px 3px}
 
-/* 2026.10.30.33: eight portrait variants, actual class genealogy and uncropped hero art */
+
 #siteNotice,.gender-controls,#swapGender,.portrait-bottom,.mini-note,.footer-tech{display:none!important}
 .classgrid{display:block;max-height:none;overflow:visible;padding:0}
 .class-tree-node{margin:5px 0;border:1px solid #765839;background:#221911}
@@ -384,14 +384,14 @@ a.wiki-link:hover{text-decoration:none}
 }
 @media(max-width:700px){.class-tree-node.depth-2{margin-left:5px}}
 
-/* 2026.10.30.34 – gem type and element choice */
+
 .stage-enchant-fieldset{margin:7px 0;min-width:0;padding:8px;border:1px solid #977249;background:#21170f}
 .stage-enchant-fieldset legend{color:#f1cf95;font-size:12px;padding:0 5px}
 .stage-enchant-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
 .stage-enchant-options button{padding:8px 5px;border:1px solid #8b6940;background:#372419;color:#eed09d;font-size:11px}
 .stage-enchant-options button.chosen{border-color:#f1cb8b;background:#79502c;color:#fff3d7}
 
-/* 2026.10.30.38: no browser-native inconsistent scrollbars and fixed content-area restoration */
+
 :root{scrollbar-color:#967348 #1c140e;scrollbar-width:thin}
 *{scrollbar-width:thin;scrollbar-color:#967348 #1c140e}
 *::-webkit-scrollbar{width:9px;height:9px}
@@ -399,7 +399,7 @@ a.wiki-link:hover{text-decoration:none}
 *::-webkit-scrollbar-thumb{background:linear-gradient(#bc955b,#795330);border:1px solid #d5ac70;border-radius:8px}
 *::-webkit-scrollbar-thumb:hover{background:#c7a26b}
 
-/* 2026.10.30.39: desktop-first split layout, compact origin workspace and step-based class wizard */
+
 @media(min-width:1420px){
  main{max-width:1900px}
  .workspace{grid-template-columns:minmax(235px,275px) minmax(390px,0.94fr) minmax(380px,1.16fr);gap:12px}
@@ -2346,3 +2346,15 @@ textarea:focus-visible,select:focus-visible{
 footer #catalogStatus{min-width:0;overflow-wrap:anywhere}
 footer .footer-version{margin-inline-start:auto;align-self:center;white-space:nowrap;font-variant-numeric:tabular-nums;color:#bca68b}
 @media(max-width:460px){footer{align-items:stretch;gap:5px}footer .footer-version{align-self:flex-end;margin-inline-start:0}}
+
+/* One compact list pager, distinct from skill prerequisite/upgrades. */
+.path-skill-list-nav{display:flex;align-items:center;justify-content:flex-end;
+ gap:7px;min-width:0;margin:5px 0 8px}
+.path-skill-list-position{font:500 10px/1.3 Manrope,Arial,sans-serif;
+ color:#cbb794;font-variant-numeric:tabular-nums}
+.path-skill-list-step{display:grid;place-items:center;width:29px;height:27px;
+ padding:0;border:1px solid #94724b;border-radius:4px;
+ background:#332519;color:#efd09d;cursor:pointer;font-size:17px}
+.path-skill-list-step:hover:not(:disabled){background:#523922;border-color:#edc48b}
+.path-skill-list-step:disabled{opacity:.38;cursor:default}
+.path-skill-list-step:focus-visible{outline:2px solid #f2d18f;outline-offset:2px}

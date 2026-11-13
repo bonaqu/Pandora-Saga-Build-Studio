@@ -623,18 +623,19 @@ function viewSkills(target,details,api){
   target.append(authored(api,'skillCatalogLoading','Каталог умений загружается.','Loading skill catalog…'));return
  }
  const skillIndex=indexSkills(api.skillCatalog);
- const rows=api.skillCatalog.filter(skill=>allowedForJob(skill,api.job)&&
+ const ordered=api.skillCatalog.filter(skill=>allowedForJob(skill,api.job)&&
   matchesSkillSearch(typeof api.skillSearchText==='function'?
    api.skillSearchText(skill):String(skill.name||'')+' '+String(skill.id??''),api.query))
   .map(skill=>({skill,gate:readiness(skill,api,new Set(),skillIndex)})).filter(({gate})=>
    api.filter==='all'||(api.filter==='known'?gate.learned:!gate.learned));
- // Keep the inspected skill easy to find even when a direct jump opens a
- // record beyond the first 24 cards. Never mount hundreds of extra cards.
- const selectedId=api.selectedSkill?.id==null?'':String(api.selectedSkill.id);
- rows.sort((a,b)=>Number(String(b.skill.id)===selectedId)-
-  Number(String(a.skill.id)===selectedId)||
-  Number(b.gate.learned)-Number(a.gate.learned)||
+ // Stable order for browsing matches. Pinning the inspected skill changes
+ // card placement only, never what "previous/next in results" means.
+ ordered.sort((a,b)=>Number(b.gate.learned)-Number(a.gate.learned)||
   String(a.skill.name||'').localeCompare(String(b.skill.name||''),'ru'));
+ const selectedId=api.selectedSkill?.id==null?'':String(api.selectedSkill.id);
+ const rows=[...ordered];
+ rows.sort((a,b)=>Number(String(b.skill.id)===selectedId)-
+  Number(String(a.skill.id)===selectedId));
  target.append(make('p',{class:'path-skill-count',text:skillCountLabel(rows.length,api.lang)}));
  const grid=make('div',{class:'path-skill-grid'});
  for(const {skill,gate}of rows.slice(0,api.shown||24)){
@@ -689,8 +690,27 @@ function viewSkills(target,details,api){
  const selected=api.selectedSkill?rows.find(row=>String(row.skill.id)===String(api.selectedSkill.id)):null;
  if(selected){details.hidden=false;
   const skill=selected.skill,gate=selected.gate;
-  details.append(make('h3',{text:skill.name||tr(api,'Умение без названия','Unnamed skill')}),
-   skill.desc?make('p',{text:skill.desc}):
+  details.append(make('h3',{text:skill.name||tr(api,'Умение без названия','Unnamed skill')}));
+  const listIndex=ordered.findIndex(row=>String(row.skill.id)===selectedId);
+  if(listIndex>=0&&ordered.length>1&&typeof api.onInspect==='function'){
+   const listNav=make('nav',{class:'path-skill-list-nav',
+    'aria-label':tr(api,'Навигация по найденным умениям','Browse matching skills')});
+   const move=(delta,icon,ru,en)=>{
+    const next=ordered[listIndex+delta]?.skill;
+    const label=tr(api,ru,en)+(next?' '+next.name:'');
+    return make('button',{type:'button',class:'path-skill-list-step',
+     'data-skill-list-direction':delta<0?'previous':'next',
+     'aria-label':label,title:next?.name||null,
+     disabled:!next,text:icon,
+     onclick:()=>{if(next)api.onInspect(next)}});
+   };
+   listNav.append(move(-1,'←','Предыдущее в списке:','Previous in list:'),
+    make('span',{class:'path-skill-list-position',text:
+     tr(api,(listIndex+1)+' из '+ordered.length,(listIndex+1)+' / '+ordered.length)}),
+    move(1,'→','Следующее в списке:','Next in list:'));
+   details.append(listNav);
+  }
+  details.append(skill.desc?make('p',{text:skill.desc}):
     authored(api,'skillDescriptionUnavailable','Описание умения отсутствует.',
      'Skill description unavailable.'),
    gate.learned?
