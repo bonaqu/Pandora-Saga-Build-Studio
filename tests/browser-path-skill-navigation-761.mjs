@@ -39,13 +39,15 @@ export async function runPathSkillNavigation761Smoke(browser,base){
   await back.click();
   assert.match(await details.locator('h3').innerText(),/Двойной удар/);
   await page.locator('[data-locale="en"]').click();
-  await query.fill('Double');
+  await query.fill('Slice');
   await gallery.locator('[data-skill-id="110101001"]').waitFor();
   await gallery.locator('[data-skill-id="110101001"]').click();
+  assert.match(await details.locator('h3').innerText(),/Slice/);
   const nextEn=details.locator('[data-related-skill-id="110101002"]');
   assert.match(await nextEn.getAttribute('aria-label'),/Next/);
   await nextEn.click();
   assert.equal(await query.inputValue(),'');
+  assert.match(await details.locator('h3').innerText(),/Dice/);
   assert.equal(await gallery.locator('[data-skill-id="110101002"]').getAttribute('aria-current'),'true');
   assert.match(await details.locator('[data-related-skill-id="110101001"]').getAttribute('aria-label'),/Previous/);
   assert.deepEqual(errors,[]);
