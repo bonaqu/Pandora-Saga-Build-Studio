@@ -106,10 +106,11 @@ test('five source descriptions expand audit to 70 qualitative with no synthetic 
   assert.deepEqual(found.sourceModules,['combat-techniques-source']);
  }
 });
-test('Book keeps combat previews in one existing skill section with native name localization',()=>{
+test('Source-only os-combat-chains-737 knowledge belongs in the Encyclopedia, not build stats',()=>{
+ const wiki=read('pandora-studio-wiki-skill-insights.js');
+ const app=read('pandora-studio-app.js');
  const book=read('pandora-studio-hero-book.js');
- assert.match(book,/stage-skill-combat-technique/);
- assert.match(book,/Защитные и боевые приёмы/);
- assert.match(book,/gameTerms\.englishSkills\?\.\[String\(row\.id\)\]/);
- assert.match(book,/gameSkillBadge\(row\.id,row\.name,official\?\.n\|\|row\.name/);
+ assert.ok(wiki.includes('combatTechniquePreview'),'source inspector must stay enabled');
+ assert.ok(app.includes('PandoraWikiSkillInsights?.inspect'),'Wiki renders verified insights');
+ assert.ok(!book.includes('stage-skill-combat-technique'),'Book must not duplicate Wiki metadata');
 });
