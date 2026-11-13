@@ -3598,6 +3598,13 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   jobKey:combatContext.jobKey,skillCatalog:combatContext.skillCatalog,
   benevolenceCap:classData.branchCaps?.benevolence??null
  });
+ // This is an INDEPENDENT pulse applied by a hypothetical allied caster.
+ // Keep it outside standing MP recovery and never reuse recipient level.
+ const allyNaturalRecovery=attributeBuffs?.remakedSkillIds?.includes(330005001)?
+  alliedNaturalRecoveryPreview({
+   skillCatalog:combatContext.skillCatalog,
+   casterLevel:Number(attributeBuffs.allyNaturalLevel??45)
+  }):null;
  // OS skill 320007001 requires Blessing 8; 320008001 requires Blessing 12.
  // A previously selected checkbox must not bypass these requirements.
  // Current OS spell-effect records carry a new constant term relative to
@@ -3714,7 +3721,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   hpRaw:rawHp.base+level*rawHp.lv+stats.vit*rawHp.vit,
   mpRaw:rawMp.base+level*rawMp.lv+stats.spi*rawMp.spi,
   stats,basic,effects,honor:extra.honor,potion,resistances,targetResistance,procPreview,experienceBonus,battleMapCloaks,specialEquipment,regeneration,legacyBuffs,priestApplied,priestCast,songSkills,otherEquipment,
-  recoveryAmount,healingSkill,healingSpells,periodicRecovery,consumableRecovery,consumableSkills,statusCures,harmfulConsumables,combat,gemstones,auraDamage,attackRange,skillAttackRange,racialEffects,elementalMagic,elementalRefinement,mountedRelease,unison,coverage,
+  recoveryAmount,healingSkill,healingSpells,periodicRecovery,allyNaturalRecovery,consumableRecovery,consumableSkills,statusCures,harmfulConsumables,combat,gemstones,auraDamage,attackRange,skillAttackRange,racialEffects,elementalMagic,elementalRefinement,mountedRelease,unison,coverage,
   attributeBuffs:{flat:extra.flat,trace:extra.trace},supplementalFlat,supplementalSource,
   rounding:'floor-class-cents',source:'current game server / Modern current-vitals class formula',
   verified:false,excluded:['unstructured refinement bonuses','unpublished set effects',
