@@ -1582,7 +1582,42 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   }
   body.append(section);
  }
-if(!spells.length&&!periodic.length&&!rows.offense?.length&&!rows.defense?.length&&!rows.movement?.length&&!rows.utility?.length&&!chains?.rows?.length&&!conditional?.rows?.length&&!recipes?.length&&!trapCost?.rows?.length&&!sourceMechanics?.rows?.length&&!statusesFromSkills?.rows?.length&&!enemyDebuffs?.rows?.length)
+
+ // The tactical skill costs are read from catalog, not permanent hero effects.
+ const tactical=root.PandoraOSCalculator?.tacticalSkillPreview?.({
+  skillCatalog:gameTerms.skills,jobKey:heroJobKey,level:heroLevel,
+  branchCaps:heroBranchCaps,branchMasteries:heroMasteries,
+  branchLabels:gameTerms.branchLabels,englishBranches:gameTerms.englishBranches
+ });
+ if(tactical?.rows?.length){
+  const section=make('details',{class:'stage-attribute-row stage-skill-tactical-effects'});
+  section.append(make('summary',{text:en?'Tactical skills':'Тактические умения'}));
+  section.append(make('p',{class:'stage-periodic-hint',text:en?
+   'MP cost and cooldown come from the skill records. Taunt duration, transferred damage and barrier behavior are not calculated.':
+   'Расход ОМ и перезарядка взяты из игровых данных. Длительность провокации, передаваемый урон и действие стены не рассчитываются.'}));
+  for(const row of tactical.rows){
+   const official=gameTerms.englishSkills?.[String(row.id)];
+   const previous=row.prerequisiteId?gameSkillName(
+    row.prerequisiteId,gameTerms.skills?.[String(row.prerequisiteId)]?.name,
+    gameTerms.englishSkills?.[String(row.prerequisiteId)]?.n,gameTerms,en):null;
+   const access=[row.requirementsMet?
+    (en?'Level and mastery requirements met':'Уровень и мастерство подходят'):
+    (en?row.reasonEn:row.reasonRu),
+    ...(previous?[en?'Upgrade requires '+previous:
+     'Для улучшения требуется «'+previous+'»']:[])].join(' · ');
+   section.append(make('div',{class:'stage-heal-row stage-skill-tactical-row'+
+    (row.requirementsMet?'':' stage-book-unavailable')},[
+    gameSkillBadge(row.id,row.name,official?.n||row.name,gameTerms,en,skillIconForId),
+    make('strong',{text:en?
+     'MP: '+row.mana+' · Cooldown: '+row.cooldown+' s':
+     'ОМ: '+row.mana+' · Перезарядка: '+row.cooldown+' с'}),
+    make('small',{text:(en?official?.d:row.description)||''}),
+    make('small',{text:access})
+   ]));
+  }
+  body.append(section);
+ }
+if(!spells.length&&!periodic.length&&!rows.offense?.length&&!rows.defense?.length&&!rows.movement?.length&&!rows.utility?.length&&!chains?.rows?.length&&!conditional?.rows?.length&&!recipes?.length&&!trapCost?.rows?.length&&!sourceMechanics?.rows?.length&&!statusesFromSkills?.rows?.length&&!enemyDebuffs?.rows?.length&&!tactical?.rows?.length)
   body.append(make('p',{class:'stage-attribute-note',text:en?
    'Only skills with build-dependent effect values appear here. Fixed buffs belong in Buffs.':
    'Здесь показаны только умения, сила которых зависит от билда. Постоянные усиления — во вкладке «Усиления».'}));

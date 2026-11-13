@@ -65,7 +65,7 @@ test('tampered quantities, identities, directions, extra effects and order rejec
 test('numeric crafting source counts as four models without a server-success claim',()=>{
  const report=auditOsSkillFormulaCoverage({skills,classes,calculator:C});
  assert.equal(report.summary.statuses['numeric-preview'],62);
- assert.equal(report.summary.statuses['unmodeled-learnable'],96);
+ assert.equal(report.summary.statuses['unmodeled-learnable'],90);
  for(const [id] of cases){
   const row=report.rows.find(r=>r.id===id);
   assert.deepEqual(row.sourceModules,['skill-crafting']);

@@ -4242,7 +4242,59 @@ function complexSkillSourcePreview({skillCatalog=null,jobKey=null,level=1,
  }
  return out;
 }
-root.PandoraOSCalculator=Object.freeze({skillExecutionChains,craftingSkillPreview,trapSkillCostPreview,statusApplicationPreview,enemyDebuffPreview,complexSkillSourcePreview,priestCastPreviews,movementSkillSourcePreview,utilitySkillSourcePreview,scalingSkillPreview,directStrikeCoefficientPreview,elementalSpellCoefficientPreview,defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
+
+ // Six source-pinned tactical abilities: these are not final server outcomes.
+ function tacticalSkillSignature(s){
+  return {
+   skillType:s?.skillType??null,element:s?.element??null,learnable:s?.learnable===true,
+   mana:s?.mana??null,cast:s?.cast??null,cooldown:s?.cooldown??null,motion:s?.motion??null,
+   range:s?.range??null,rangeFromWeapon:s?.rangeFromWeapon===true,aoe:s?.aoe??null,
+   branch:s?.branch??null,reqLevel:s?.reqLevel??null,charLevel:s?.charLevel??null,
+   isLevelBased:s?.isLevelBased===true,prereq:s?.prereq??null,powerStat:s?.powerStat??null,
+   classes:Object.entries(s?.classes||{}).filter(([,v])=>v===1).map(([k])=>k).sort(),
+   reqs:Array.isArray(s?.reqs)?s.reqs.map(x=>[x.branch,x.amount]):null,
+   funcs:Array.isArray(s?.funcs)?s.funcs.map(f=>[f.ep,f.dir,f.fv1,f.fv2]):null,
+   damage:s?.damage??null,weaponUse:s?.weaponUse??null
+  };
+ }
+ const tacticalSkillProofs=Object.freeze([{"id":100000501,"signature":{"skillType":"ENEMY","element":null,"learnable":true,"mana":10,"cast":0,"cooldown":15,"motion":0,"range":2500,"rangeFromWeapon":false,"aoe":[0,0],"branch":"martial","reqLevel":0,"charLevel":5,"isLevelBased":true,"prereq":null,"powerStat":"STR","classes":["DRAGOON","GENERAL","GLADIATOR","JUGGERNAUT","KNIGHT","PALADIN","WARRIOR"],"reqs":[],"funcs":[["EP_SKILL_TARGET_ATTENTION","TARGET",[0,0,0,1],[0,0,0,100]]],"damage":null,"weaponUse":null}},{"id":100001001,"signature":{"skillType":"ENEMY","element":null,"learnable":true,"mana":12,"cast":0,"cooldown":10,"motion":0,"range":2500,"rangeFromWeapon":false,"aoe":[0,0],"branch":"martial","reqLevel":0,"charLevel":20,"isLevelBased":true,"prereq":null,"powerStat":"STR","classes":["GENERAL","KNIGHT","PALADIN"],"reqs":[],"funcs":[["EP_SKILL_TARGET_ATTENTION","TARGET",[0,0,0,10],[0,0,0,100]]],"damage":null,"weaponUse":null}},{"id":100002001,"signature":{"skillType":"PARTY_SINGLE","element":null,"learnable":true,"mana":16,"cast":4,"cooldown":10,"motion":0,"range":2000,"rangeFromWeapon":false,"aoe":[0,0],"branch":"defense","reqLevel":54,"charLevel":0,"isLevelBased":false,"prereq":null,"powerStat":"STR","classes":["ACOLYTE","AGENT","ARCHER","ASCETIC","ASSASSIN","CALAMITY","CLERIC","CONJURER","DARKROAR","DISTURBANCE","DRAGOON","ENCHANTER","EXORCIST","GENERAL","GLADIATOR","JESTER","JUGGERNAUT","KNIGHT","MAGE","MONK","PALADIN","PREDATOR","PRIEST","SCOUT","SNIPER","WARLOCK","WARRIOR","WIZARD"],"reqs":[["defense",54]],"funcs":[["EP_SKILL_SUBSTITUTE","TARGET",[0,0,0,2000],[0,0,0,0]],["EP_LOST_DIST","TARGET",[0,0,0,2000],[0,0,0,0]],["EP_LOST_DIST_CASTER","CASTER",[0,0,0,2000],[0,0,0,0]],["EP_LOST_MAPCHANGE","TARGET",[0,0,0,0],[0,0,0,0]],["EP_LOST_EFFECT","TARGET",[0,0,0,0],[0,0,0,0]],["EP_CANCEL_IDENTITY","TARGET",[0,0,0,0],[0,0,0,0]]],"damage":null,"weaponUse":null}},{"id":100002002,"signature":{"skillType":"PARTY_SINGLE","element":null,"learnable":true,"mana":16,"cast":4,"cooldown":0.5,"motion":0,"range":2500,"rangeFromWeapon":false,"aoe":[0,0],"branch":"defense","reqLevel":54,"charLevel":50,"isLevelBased":false,"prereq":100002001,"powerStat":"STR","classes":["GENERAL"],"reqs":[["defense",54]],"funcs":[["EP_SKILL_SUBSTITUTE","TARGET",[0,0,0,2500],[0,0,0,0]],["EP_LOST_DIST","TARGET",[0,0,0,2500],[0,0,0,0]],["EP_LOST_DIST_CASTER","CASTER",[0,0,0,2500],[0,0,0,0]],["EP_LOST_MAPCHANGE","TARGET",[0,0,0,0],[0,0,0,0]],["EP_LOST_EFFECT","TARGET",[0,0,0,0],[0,0,0,0]],["EP_CANCEL_IDENTITY","TARGET",[0,0,0,0],[0,0,0,0]]],"damage":null,"weaponUse":null}},{"id":420006001,"signature":{"skillType":"POINT","element":null,"learnable":true,"mana":79,"cast":5,"cooldown":120,"motion":1.5,"range":300,"rangeFromWeapon":false,"aoe":[0,0],"branch":"embody","reqLevel":50,"charLevel":0,"isLevelBased":false,"prereq":null,"powerStat":"INT","classes":["ACOLYTE","AGENT","ARCHER","ASCETIC","ASSASSIN","CALAMITY","CLERIC","CONJURER","DARKROAR","DISTURBANCE","DRAGOON","ENCHANTER","EXORCIST","GENERAL","GLADIATOR","JESTER","JUGGERNAUT","KNIGHT","MAGE","MONK","PALADIN","PREDATOR","PRIEST","SCOUT","SNIPER","WARLOCK","WARRIOR","WIZARD"],"reqs":[["embody",50]],"funcs":[["EP_POP_MAPOBJ","TARGET",[0,0,0,1000],[3000,0,3000,2000]]],"damage":null,"weaponUse":null}},{"id":420006002,"signature":{"skillType":"POINT","element":null,"learnable":true,"mana":79,"cast":5,"cooldown":20,"motion":1.5,"range":300,"rangeFromWeapon":false,"aoe":[0,0],"branch":"embody","reqLevel":50,"charLevel":50,"isLevelBased":false,"prereq":420006001,"powerStat":"INT","classes":["CONJURER"],"reqs":[["embody",50]],"funcs":[["EP_POP_MAPOBJ","TARGET",[0,0,0,1000],[3000,0,3000,2000]]],"damage":null,"weaponUse":null}}]);
+ function tacticalSkillPreview({skillCatalog=null,jobKey=null,level=1,
+  branchMasteries={},branchCaps={},branchLabels={},englishBranches={}}={}){
+  const out={rows:[],rejected:[],verified:false,sourceOnly:true};
+  if(!skillCatalog||typeof jobKey!=='string'||!Number.isSafeInteger(level)||
+   level<1||level>55)return out;
+  for(const proof of tacticalSkillProofs){
+   if(!proof.signature.classes.includes(jobKey))continue;
+   const skill=skillCatalog[String(proof.id)];
+   const parent=proof.signature.prereq&&tacticalSkillProofs.find(
+    x=>x.id===proof.signature.prereq);
+   if(!skill||skill.id!==proof.id||
+    JSON.stringify(tacticalSkillSignature(skill))!==JSON.stringify(proof.signature)||
+    (parent&&JSON.stringify(tacticalSkillSignature(
+     skillCatalog[String(parent.id)]))!==JSON.stringify(parent.signature))){
+    out.rejected.push(proof.id);continue;
+   }
+   if(proof.signature.reqs.some(([branch,amount])=>
+    !Number.isSafeInteger(branchCaps?.[branch])||branchCaps[branch]<amount))continue;
+   const ru=[],en=[];
+   if(level<skill.charLevel){
+    ru.push('Нужен уровень '+skill.charLevel);
+    en.push('Requires level '+skill.charLevel);
+   }
+   for(const [branch,amount] of proof.signature.reqs){
+    const rank=branchMasteries?.[branch],cap=branchCaps?.[branch];
+    if(Number.isSafeInteger(rank)&&rank>=amount&&rank<=cap)continue;
+    ru.push('Нужно мастерство «'+(branchLabels?.[branch]||branch)+'»: '+amount);
+    en.push('Requires '+(englishBranches?.[branch]||branch)+' mastery: '+amount);
+   }
+   out.rows.push({id:proof.id,name:skill.name,description:skill.desc||'',
+    mana:skill.mana,cooldown:skill.cooldown,prerequisiteId:skill.prereq,
+    requirementsMet:ru.length===0,reasonRu:ru.join(' · '),reasonEn:en.join(' · '),
+    sourceOnly:true,finalAmount:null,appliedToHero:false});
+  }
+  return out;
+ }
+root.PandoraOSCalculator=Object.freeze({skillExecutionChains,craftingSkillPreview,trapSkillCostPreview,tacticalSkillPreview,statusApplicationPreview,enemyDebuffPreview,complexSkillSourcePreview,priestCastPreviews,movementSkillSourcePreview,utilitySkillSourcePreview,scalingSkillPreview,directStrikeCoefficientPreview,elementalSpellCoefficientPreview,defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
  base,characterSheetPhysicalAttackRange,classBase,classBaseComponents,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,racialWeaponPreview,incredibleStrengthPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
  recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,consumableSkillPreview,statusCurePreview,harmfulConsumablePreview,gemstonePreview,legacyBuffPreview,songSkillPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,skillAttackRangePreview,racialUtilityPreview,elementalMagicPreview,elementalRefinementPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive
 });
