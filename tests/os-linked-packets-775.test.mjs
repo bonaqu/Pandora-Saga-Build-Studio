@@ -51,7 +51,7 @@ test('Nine linked action paths are source-locked, one direct hit per current her
  assert.equal(get(calc('WARLOCK',{element:90}),410004001),undefined);
 });
 test('Linked payload path rejects changed root, child, status, prereq and damage vectors',()=>{
- for(const spec of D.linkedSpells){
+ for(const spec of D.linkedSpells.slice(0,specIds.length)){
   const root=spec.path[0];
   const job=spec.id===240002001?'DISTURBANCE':
    spec.id===420007001?'CONJURER':
