@@ -897,8 +897,7 @@ function buffsPage(body,options){
  toggle(priest,english?'Use external priest':'Учитывать усиления другого жреца','priestEnabled');
  // "Жрец" is the current OS ENCHANTER class, NOT the earlier PRIEST
  // ("Священник"). The latter has different green branch caps.
- const priestClass=['ENCHANTER','CLERIC'].includes(buffs.priestClass)?
-  buffs.priestClass:'ENCHANTER';
+ const priestClass='ENCHANTER';
  const priestClassInfo=gameTerms.classes?.[priestClass];
  const priestCaps=priestClassInfo?.branchCaps||{};
  const priestCanLearn=id=>{
@@ -906,10 +905,7 @@ function buffsPage(body,options){
   return skill?.id===id&&skill.classes?.[priestClass]===1&&
    (skill.reqs||[]).every(req=>(priestCaps[req.branch]||0)>=req.amount);
  };
- select(priest,'Профессия союзника','Ally class','priestClass',
-  ['ENCHANTER','CLERIC'].map(id=>[id,
-   gameClassName(id,id,id,gameTerms,english)]));
- const selectedPriestIds=new Set([
+  const selectedPriestIds=new Set([
   ...(Array.isArray(buffs.remakedSkillIds)?buffs.remakedSkillIds:[]),
   ...(buffs.priestGratia?[320007001]:[]),
   ...(buffs.priestLapisMedio?[320008001]:[]),
@@ -925,15 +921,13 @@ function buffsPage(body,options){
   return minimum;
  };
  const priestFields=make('div',{class:'stage-priest-fields'});
- for(const [key,ru,en,branch,neededId] of [
-  ['priestSpi','СД жреца','Priest SPR',null,null],
-  ['priestBlessing','Благословение','Blessing mastery','blessing',null],
-  ['priestHymn','Песнопения','Hymn mastery','hymn',null],
-  ['priestBenevolence','Исцеление','Healing mastery','benevolence',340003001],
-  ['priestExorcism','Экзорцизм','Exorcism mastery','exorcism',330051001]
+ for(const [key,ru,en,branch] of [
+  ['priestSpi','СД жреца','Priest SPR',null],
+  ['priestBlessing','Благословение','Blessing mastery','blessing'],
+  ['priestHymn','Песнопения','Hymn mastery','hymn']
  ]){
-  // Hide optional mastery inputs unless a selected spell needs them.
-  if(neededId&&!selectedPriestIds.has(neededId))continue;
+  // A learnability threshold (e.g. Exorcism 26) is checked by OS class
+  // caps automatically; it does not enter the aura magnitude formula.
   const min=branch?priestRequired(branch):0;
   const max=branch?Number(priestCaps[branch]||0):500;
   const label=make('label',{class:'stage-book-field'},[
@@ -1012,8 +1006,8 @@ function buffsPage(body,options){
     'Skill cast time is 50% of normal (twice as fast).'],
   330005001:['+5 ОМ каждые 2 секунды при применении.',
     '+5 MP every 2 seconds when applied.'],
-  340003001:['Защищает союзников от небольших попаданий. Сила защиты зависит от жреца.',
-    'Negates small incoming hits to allies; potency depends on the priest.'],
+  340003001:['Защищает союзника от слабых попаданий. Сила зависит от СД и Песнопения союзного Клирика.',
+    'Protects an ally from small hits. Potency scales with allied Cleric SPR and Hymn.'],
   320003001:['Уменьшает получаемый группой урон. Сила зависит от Благословения жреца.',
     'Reduces damage taken by the party, scaling with priest Blessing.'],
   330051001:['Добавляет святую ауру оружию союзника. Сила зависит от СД жреца.',
@@ -1083,7 +1077,7 @@ function buffsPage(body,options){
   // Blessing- and Hymn-dependent spells are received from another priest.
   // A fixed party effect without caster-attribute scaling remains with allies.
   const externalPriestSkill=[320003001,320011001,330051001,
-   340001001,340003001,340004001].includes(row.id);
+   340001001,340004001].includes(row.id);
   const target=externalPriestSkill?priest:row.scope==='party'?party:skills;
   const description=english?gameTerms.englishSkills?.[String(row.id)]?.d:row.description;
   const priestReady=!externalPriestSkill||(
@@ -1113,7 +1107,13 @@ function buffsPage(body,options){
        row.id===340004001?priestValues.sage:
        row.id===320003001?priestValues.groupBarrier:
        row.id===330051001?priestValues.holyWeapon:
-       row.id===340003001?priestValues.peaceful:null;
+       row.id===340003001?
+        (selectedPriestIds.has(340003001)?root.PandoraOSCalculator
+         ?.alliedPeaceSongPreview?.({
+          spi:Number(buffs.allyPeaceSpi??134),
+          hymn:Number(buffs.allyPeaceHymn??30),
+          skills:gameTerms.skills,classes:gameTerms.classes
+         })?.value:null):null;
       if(Number.isFinite(value)){
        if(row.id===340001001)return (english?'Accuracy +':'Точность +')+value+
         (english?' · Evasion +':' · Уклонение +')+value;
@@ -1138,8 +1138,8 @@ function buffsPage(body,options){
         'Порог защищённого удара: ')+value;
       }
       if(row.id===340003001)return english?
-       'Protection threshold depends on priest SPR and Hymn.':
-       'Порог защиты зависит от СД и Песнопения жреца.';
+       'Select this allied buff to calculate protection with Cleric SPR and Hymn.':
+       'Выберите усиление: сила защиты рассчитывается по СД и Песнопениям союзного Клирика.';
       if(row.id===320011001&&Number.isFinite(priestValues.enchantAuraRate)&&
        Number.isFinite(priestValues.enchantAuraFlat)){
        // The Holy total is already shown under Bless Weapon, never duplicate it.
@@ -1154,6 +1154,32 @@ function buffsPage(body,options){
        'Зависит от СД и Благословения жреца.';
       return basic;
      })()});
+  if(row.id===340003001&&selectedPriestIds.has(340003001)){
+   const caster=make('div',{class:'stage-priest-fields stage-ally-peace-fields'});
+   const maxHymn=Number(gameTerms.classes?.CLERIC?.branchCaps?.hymn||0);
+   const details=gameTerms.skills?.['340003001'];
+   const requirements=Array.isArray(details?.reqs)?details.reqs:[];
+   const minHymn=requirements.find(x=>x.branch==='hymn')?.amount??30;
+   const minHealing=requirements.find(x=>x.branch==='benevolence')?.amount??61;
+   caster.append(make('small',{class:'stage-attribute-note stage-ally-peace-note',
+    text:(english?'Ally: Cleric · Healing ':'Союзник: Клирик · Исцеление ')+
+     minHealing+(english?' required (automatic)':' необходимо (учитывается автоматически)')}));
+   for(const [key,ru,en,min,max,defaultValue] of [
+    ['allyPeaceSpi','СД союзника','Ally SPR',0,500,134],
+    ['allyPeaceHymn','Песнопения союзника','Ally Hymn',minHymn,maxHymn,30]
+   ]){
+    const label=make('label',{class:'stage-book-field'},[
+     make('span',{text:english?en:ru})]);
+    const amount=Number(buffs[key]??defaultValue);
+    label.append(make('input',{type:'number',min,max,step:1,
+     value:String(Math.max(min,Math.min(Number.isFinite(amount)?amount:defaultValue,max))),
+     'aria-label':english?en:ru,'data-book-setting':key,
+     disabled:max<min,
+     onchange:event=>onBuff(key,event.target.value)}));
+    caster.append(label);
+   }
+   party.append(caster);
+  }
  }
  // A sibling of Ally Buffs using the exact same section and toggle
  // components; no nested accordion or separate resistance-only style.
