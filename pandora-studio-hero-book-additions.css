@@ -397,3 +397,26 @@
 .stage-status-family-guide>summary{cursor:pointer;color:var(--gold);font-weight:600}
 .stage-status-family-paragraph{white-space:pre-line;padding:5px 3px;display:flex;gap:6px;align-items:flex-start}
 .stage-status-family-copy{white-space:pre-line;overflow-wrap:anywhere;min-width:0;flex:1}
+
+/* Uniform compact disclosure headers for verified, source-only skill sections. */
+#stageAttributes :is(.stage-skill-chain-effects,.stage-skill-onhit-effects,
+ .stage-skill-crafting-effects,.stage-skill-trap-costs)>summary{
+ display:flex;align-items:center;gap:8px;list-style:none;cursor:pointer;
+ font:650 12px/1.35 Manrope,Arial,sans-serif;color:#f3d29b;padding:5px 2px
+}
+#stageAttributes :is(.stage-skill-chain-effects,.stage-skill-onhit-effects,
+ .stage-skill-crafting-effects,.stage-skill-trap-costs)>summary::-webkit-details-marker{
+ display:none
+}
+#stageAttributes :is(.stage-skill-chain-effects,.stage-skill-onhit-effects,
+ .stage-skill-crafting-effects,.stage-skill-trap-costs)>summary:after{
+ content:'⌄';margin-left:auto;font-size:14px;line-height:1
+}
+#stageAttributes :is(.stage-skill-chain-effects,.stage-skill-onhit-effects,
+ .stage-skill-crafting-effects,.stage-skill-trap-costs)[open]>summary:after{
+ transform:rotate(180deg)
+}
+#stageAttributes :is(.stage-skill-chain-effects,.stage-skill-onhit-effects,
+ .stage-skill-crafting-effects,.stage-skill-trap-costs)>summary:focus-visible{
+ outline:2px solid #e2b778;outline-offset:2px
+}
