@@ -98,11 +98,11 @@ test('five new models and one crafting inspection per class in the audit',()=>{
  auditOsSkillFormulaCoverage({skills,classes,calculator:counted});
  assert.equal(calls,Object.keys(classes).length);
 });
-test('Hero Book uses compact bilingual rows and standard skill tooltips',()=>{
- const src=read('pandora-studio-hero-book.js');
- for(const phrase of ['Скрытность и обнаружение','Stealth and detection',
-  'Особые действия','Other abilities','situationalSkillPreview',
-  'stage-skill-situational-row','gameSkillBadge'])
-  assert.ok(src.includes(phrase),phrase);
- assert.ok(src.includes('&&!situational?.stealth?.length&&!situational?.other?.length'));
+test('Source-only os-situational-actions-source-729 data is displayed in the Encyclopedia',()=>{
+ const wiki=read('pandora-studio-wiki-skill-insights.js');
+ const app=read('pandora-studio-app.js');
+ const book=read('pandora-studio-hero-book.js');
+ assert.ok(wiki.includes('situationalSkillPreview'),'verified OS inspector retained');
+ assert.ok(app.includes('PandoraWikiSkillInsights?.inspect'),'Wiki uses source data');
+ assert.ok(!book.includes('stage-skill-situational-other'),'Do not print general skill catalog in Book');
 });
