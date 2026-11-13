@@ -5113,6 +5113,26 @@ function renderWiki(root){
        recipe.append(h('span',{text:' → '+
         extra.produces.quantity+' × '}),ingredientLink(extra.produces.id));
        section.append(recipe);
+      // A crafted item may be the reagent for another learnable action.
+      // Reuse the existing exact item->skill index instead of naming
+      // unrelated skills or scanning the entire catalog per Wiki render.
+      const outputId=Number(extra.produces.id);
+      const followUps=window.PandoraWikiData
+       .itemSkillRelations(outputId,wikiData.skills)
+       .filter(row=>row.consumes.includes(outputId)&&
+        wikiData.skills?.[String(row.id)]?.learnable===true)
+       .slice(0,8);
+      if(followUps.length){
+       const used=h('p',{class:'wiki-skill-recipe-followups'});
+       used.append(h('span',{text:wt('Используют результат: ',
+        'Uses the result: ')}));
+       followUps.forEach((row,i)=>{
+        if(i)used.append(h('span',{text:' · '}));
+        used.append(wikiLink(dataName('skill',String(row.id)),
+         'skill',String(row.id)));
+       });
+       section.append(used);
+      }
       }
       if(extra.type==='trap'&&itemName(extra.itemId)&&
        Number.isSafeInteger(extra.count)&&extra.count>0)
