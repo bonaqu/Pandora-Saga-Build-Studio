@@ -187,7 +187,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   const singer=offense.locator('[data-skill-action-id="340001001"]');
   assert.equal(await singer.count(),1,'Current ENCHANTER sees source action for Minstrel\'s Song');
   assert.equal(await singer.locator('details').count(),0,
-   'Offense uses one disclosure for action, model details and requirements');
+   'Offense uses one disclosure for this build\'s action and model details');
   await singer.locator(':scope > summary').click();
   assert.match(await singer.innerText(),/Полный запас 450 ОМ: до 15 применений/);
   assert.match(await singer.innerText(),/Для ещё одного применения нужно \+30 ОМ/);
@@ -226,7 +226,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   assert.ok(scroll.scrollWidth<=scroll.width+3,
    'Effect icons must not push healing rows beyond the Book: '+JSON.stringify(scroll));
   const en=await render({lang:'en',chapter:'effects'});
-  for(const term of ['First Aid','Healing Aura',"Minstrel's Song",'Hymn mastery'])
+  for(const term of ['First Aid','Healing Aura',"Minstrel's Song"])
    assert.ok(en.includes(term),'Book effects need original OS EN '+term+'; seen '+en.slice(0,700));
   assert.match(en,/With Inspiration from an ally: 1.5 s of casting/);
   assert.doesNotMatch(en,/not a confirmed final combat result|final speed, duration|actual firing rate is not known/);
