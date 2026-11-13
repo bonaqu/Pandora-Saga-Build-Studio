@@ -50,6 +50,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
      amount:14,scaledBySkill:false,available:true}
    ];
    const calc={
+    mp:450,
     healingSpells:{rows:skillRows},
     stats:{vit:50,str:70,agi:70,dex:55,spi:80,int:35},
     combat:{incredibleStrength:{applies:true,id:910110001},
@@ -101,6 +102,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   // interval model, resource cost, cast and cooldown, not placeholder text.
   assert.match(ru,/14 ОЗ каждые 2 сек\. \(модель\)/);
   assert.match(ru,/Расход ОМ: 90/);
+  assert.match(ru,/Полный запас 450 ОМ: до 5 применений по базовой стоимости/);
   assert.match(ru,/Базовое применение: 3 сек\./);
   assert.match(ru,/Базовая перезарядка: 20 сек\./);
   assert.match(ru,/С «Воодушевлением» от союзника: 1,5 сек\. применения/);
@@ -181,6 +183,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   for(const term of ['First Aid','Healing Aura',"Minstrel's Song",'Hymn mastery'])
    assert.ok(en.includes(term),'Book effects need original OS EN '+term+'; seen '+en.slice(0,700));
   assert.match(en,/With Inspiration from an ally: 1.5 s of casting/);
+  assert.match(en,/Full 450 MP: up to 5 casts at the base cost/);
   assert.equal(en.includes('Mana Restore'),false,'Unavailable MP recovery belongs in Wiki');
   assert.equal(en.includes('Acolyte class'),false,'Locked class hints do not clutter Book');
   assert.equal(en.includes('A bad EN name'),false);
