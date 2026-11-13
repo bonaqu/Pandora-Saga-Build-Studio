@@ -79,8 +79,8 @@ test('400 synthetic class/mastery states do not misstate cost or eligibility',()
 });
 test('trap consumption is source-number arithmetic, not made-up combat damage',()=>{
  const audit=auditOsSkillFormulaCoverage({skills,classes:jobs,calculator:C});
- assert.equal(audit.summary.statuses['numeric-preview'],62);
- assert.equal(audit.summary.statuses['unmodeled-learnable'],90);
+ assert.equal(audit.summary.statuses['numeric-preview'],65);
+ assert.equal(audit.summary.statuses['unmodeled-learnable'],87);
  for(const [id] of cases){
   const rec=audit.rows.find(r=>r.id===id);
   assert.deepEqual(rec.sourceModules,['trap-materials']);

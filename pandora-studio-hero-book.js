@@ -1617,7 +1617,43 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   }
   body.append(section);
  }
-if(!spells.length&&!periodic.length&&!rows.offense?.length&&!rows.defense?.length&&!rows.movement?.length&&!rows.utility?.length&&!chains?.rows?.length&&!conditional?.rows?.length&&!recipes?.length&&!trapCost?.rows?.length&&!sourceMechanics?.rows?.length&&!statusesFromSkills?.rows?.length&&!enemyDebuffs?.rows?.length&&!tactical?.rows?.length)
+
+ // Ammunition consumption is sourced from each full OS root and child record.
+ const rangedAmmo=root.PandoraOSCalculator?.rangedAmmoPreview?.({
+  skillCatalog:gameTerms.skills,jobKey:heroJobKey,level:heroLevel,
+  branchMasteries:heroMasteries,branchCaps:heroBranchCaps,
+  weaponKind:heroWeaponKind,branchLabels:gameTerms.branchLabels,
+  englishBranches:gameTerms.englishBranches
+ });
+ if(rangedAmmo?.rows?.length){
+  const group=make('details',{class:'stage-attribute-row stage-skill-ranged-ammo'});
+  group.append(make('summary',{text:en?'Ammunition for skills':'Боеприпасы для умений'}));
+  group.append(make('p',{class:'stage-periodic-hint',text:en?
+   'Ammunition and MP are from the skill record. Actual inventory use and final damage are not calculated.':
+   'Расход боеприпасов и ОМ взят из игровых данных. Списание из инвентаря и итоговый урон не рассчитываются.'}));
+  for(const row of rangedAmmo.rows){
+   const official=gameTerms.englishSkills?.[String(row.id)];
+   const previous=row.prerequisiteId?gameSkillName(row.prerequisiteId,
+    gameTerms.skills?.[String(row.prerequisiteId)]?.name,
+    gameTerms.englishSkills?.[String(row.prerequisiteId)]?.n,gameTerms,en):null;
+   const access=[row.requirementsMet?
+    (en?'Level, mastery and weapon requirements met':'Уровень, мастерство и оружие подходят'):
+    (en?row.reasonEn:row.reasonRu),
+    ...(previous?[en?'Previous skill required: '+previous:
+     'Требуется предыдущее умение «'+previous+'»']:[])].join(' · ');
+   group.append(make('div',{class:'stage-heal-row stage-skill-ranged-ammo-row'+
+    (row.requirementsMet?'':' stage-book-unavailable')},[
+    gameSkillBadge(row.id,row.name,official?.n||row.name,gameTerms,en,skillIconForId),
+    make('strong',{text:en?
+     'Ammo: '+row.ammoCount+' · MP: '+row.mana:
+     'Боеприпасы: '+row.ammoCount+' · ОМ: '+row.mana}),
+    make('small',{text:en?row.noteEn:row.noteRu}),
+    make('small',{text:access})
+   ]));
+  }
+  body.append(group);
+ }
+if(!spells.length&&!periodic.length&&!rows.offense?.length&&!rows.defense?.length&&!rows.movement?.length&&!rows.utility?.length&&!chains?.rows?.length&&!conditional?.rows?.length&&!recipes?.length&&!trapCost?.rows?.length&&!sourceMechanics?.rows?.length&&!statusesFromSkills?.rows?.length&&!enemyDebuffs?.rows?.length&&!tactical?.rows?.length&&!rangedAmmo?.rows?.length)
   body.append(make('p',{class:'stage-attribute-note',text:en?
    'Only skills with build-dependent effect values appear here. Fixed buffs belong in Buffs.':
    'Здесь показаны только умения, сила которых зависит от билда. Постоянные усиления — во вкладке «Усиления».'}));

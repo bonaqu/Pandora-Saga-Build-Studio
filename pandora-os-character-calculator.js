@@ -4244,7 +4244,7 @@ function complexSkillSourcePreview({skillCatalog=null,jobKey=null,level=1,
 }
 
  // Six source-pinned tactical abilities: these are not final server outcomes.
- function tacticalSkillSignature(s){
+ function sourceVerifiedSkillSignature(s){
   return {
    skillType:s?.skillType??null,element:s?.element??null,learnable:s?.learnable===true,
    mana:s?.mana??null,cast:s?.cast??null,cooldown:s?.cooldown??null,motion:s?.motion??null,
@@ -4269,8 +4269,8 @@ function complexSkillSourcePreview({skillCatalog=null,jobKey=null,level=1,
    const parent=proof.signature.prereq&&tacticalSkillProofs.find(
     x=>x.id===proof.signature.prereq);
    if(!skill||skill.id!==proof.id||
-    JSON.stringify(tacticalSkillSignature(skill))!==JSON.stringify(proof.signature)||
-    (parent&&JSON.stringify(tacticalSkillSignature(
+    JSON.stringify(sourceVerifiedSkillSignature(skill))!==JSON.stringify(proof.signature)||
+    (parent&&JSON.stringify(sourceVerifiedSkillSignature(
      skillCatalog[String(parent.id)]))!==JSON.stringify(parent.signature))){
     out.rejected.push(proof.id);continue;
    }
@@ -4294,7 +4294,56 @@ function complexSkillSourcePreview({skillCatalog=null,jobKey=null,level=1,
   }
   return out;
  }
-root.PandoraOSCalculator=Object.freeze({skillExecutionChains,craftingSkillPreview,trapSkillCostPreview,tacticalSkillPreview,statusApplicationPreview,enemyDebuffPreview,complexSkillSourcePreview,priestCastPreviews,movementSkillSourcePreview,utilitySkillSourcePreview,scalingSkillPreview,directStrikeCoefficientPreview,elementalSpellCoefficientPreview,defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
+
+ // Bow-only OS ammunition sources. Count is a catalog parameter, not an
+ // inventory deduction or a final target-hit calculation.
+ const rangedAmmoProofs=Object.freeze([{"id":213603002,"root":{"skillType":"ENEMY","element":"NONE","learnable":true,"mana":32,"cast":2,"cooldown":10,"motion":1,"range":5000,"rangeFromWeapon":false,"aoe":[0,0],"branch":"archery","reqLevel":61,"charLevel":0,"isLevelBased":false,"prereq":213603001,"powerStat":"DEX","classes":["ACOLYTE","AGENT","ARCHER","ASCETIC","ASSASSIN","CALAMITY","CLERIC","CONJURER","DARKROAR","DISTURBANCE","DRAGOON","ENCHANTER","EXORCIST","GENERAL","GLADIATOR","JESTER","JUGGERNAUT","KNIGHT","MAGE","MONK","PALADIN","PREDATOR","PRIEST","SCOUT","SNIPER","WARLOCK","WARRIOR","WIZARD"],"reqs":[["archery",61]],"funcs":[["EP_SKILL_EXEC","TARGET",[0,0,0,213603003],[0,0,0,0]],["EP_CONSUME_AMMO","CASTER",[0,0,0,0],[0,0,0,1]]],"damage":null,"weaponUse":["BOW"]},"childId":213603003,"child":{"skillType":"SPHERE","element":"NONE","learnable":false,"mana":0,"cast":0,"cooldown":0,"motion":0,"range":5000,"rangeFromWeapon":false,"aoe":[600,0],"branch":"archery","reqLevel":0,"charLevel":0,"isLevelBased":true,"prereq":null,"powerStat":"DEX","classes":["ACOLYTE","AGENT","ARCHER","ASCETIC","ASSASSIN","CALAMITY","CLERIC","CONJURER","DARKROAR","DISTURBANCE","DRAGOON","ENCHANTER","EXORCIST","GENERAL","GLADIATOR","JESTER","JUGGERNAUT","KNIGHT","MAGE","MONK","PALADIN","PREDATOR","PRIEST","SCOUT","SNIPER","WARLOCK","WARRIOR","WIZARD"],"reqs":[],"funcs":[["EP_ONDAMAGE_FIN_DAMAGE_SCALE","TARGET",[0,0,30,-20],[0,0,0,0]],["EP_PLAYER_ATTACK2","TARGET",[0,0,0,1],[0,0,0,0]]],"damage":{"kernel":"physical","slotIndex":1},"weaponUse":["BOW"]},"parentId":213603001,"parent":{"skillType":"SPHERE","element":"NONE","learnable":true,"mana":15,"cast":1,"cooldown":5,"motion":1,"range":5000,"rangeFromWeapon":false,"aoe":[600,1],"branch":"archery","reqLevel":26,"charLevel":0,"isLevelBased":false,"prereq":null,"powerStat":"DEX","classes":["ACOLYTE","AGENT","ARCHER","ASCETIC","ASSASSIN","CALAMITY","CLERIC","CONJURER","DARKROAR","DISTURBANCE","DRAGOON","ENCHANTER","EXORCIST","GENERAL","GLADIATOR","JESTER","JUGGERNAUT","KNIGHT","MAGE","MONK","PALADIN","PREDATOR","PRIEST","SCOUT","SNIPER","WARLOCK","WARRIOR","WIZARD"],"reqs":[["archery",26]],"funcs":[["EP_ONHIT_DAMAGE_SCALE","CASTER",[0,0,10,-20],[0,0,0,0]],["EP_PLAYER_ATTACK2","TARGET",[0,0,0,1],[0,0,0,0]],["EP_CONSUME_AMMO","CASTER",[0,0,0,0],[0,0,0,1]]],"damage":{"kernel":"physical","slotIndex":1},"weaponUse":["BOW"]},"noteRu":"Связанное действие поражает цель несколько раз. Точные число попаданий и урон не установлены.","noteEn":"The linked action can hit repeatedly. Final damage and number of hits are not confirmed."},{"id":213608001,"root":{"skillType":"POINT","element":"FIRE","learnable":true,"mana":41,"cast":1,"cooldown":15,"motion":1,"range":4000,"rangeFromWeapon":false,"aoe":[0,0],"branch":"archery","reqLevel":0,"charLevel":50,"isLevelBased":true,"prereq":null,"powerStat":"STR","classes":["SNIPER"],"reqs":[],"funcs":[["EP_SKILL_EXEC","TARGET",[0,0,0,213608002],[0,0,0,0]],["EP_CONSUME_AMMO","CASTER",[0,0,0,0],[0,0,0,1]]],"damage":null,"weaponUse":["BOW"]},"childId":213608002,"child":{"skillType":"SPHERE","element":"FIRE","learnable":false,"mana":0,"cast":0,"cooldown":0,"motion":0,"range":0,"rangeFromWeapon":false,"aoe":[400,1],"branch":"archery","reqLevel":0,"charLevel":0,"isLevelBased":true,"prereq":null,"powerStat":"STR","classes":[],"reqs":[],"funcs":[["EP_CAUSE_BURN","TARGET",[0,0,0,5],[0,0,0,100]],["EP_ELEMENT_DAMAGE","TARGET",[0,0,80,60],[0,0,0,0]]],"damage":{"kernel":"element","slotIndex":1},"weaponUse":["BOW"]},"parentId":null,"parent":null,"noteRu":"Связанное действие предусматривает огненное поражение и поджог. Итоговый урон и вероятность не установлены.","noteEn":"The linked action has fire damage and burning. Final damage and chance are not confirmed."},{"id":213700501,"root":{"skillType":"ENEMY","element":"NONE","learnable":true,"mana":18,"cast":0,"cooldown":30,"motion":0.8,"range":4000,"rangeFromWeapon":false,"aoe":[0,0],"branch":"archery","reqLevel":50,"charLevel":0,"isLevelBased":false,"prereq":null,"powerStat":"DEX","classes":["ACOLYTE","AGENT","ARCHER","ASCETIC","ASSASSIN","CALAMITY","CLERIC","CONJURER","DARKROAR","DISTURBANCE","DRAGOON","ENCHANTER","EXORCIST","GENERAL","GLADIATOR","JESTER","JUGGERNAUT","KNIGHT","MAGE","MONK","PALADIN","PREDATOR","PRIEST","SCOUT","SNIPER","WARLOCK","WARRIOR","WIZARD"],"reqs":[["archery",50],["assassin",21]],"funcs":[["EP_SKILL_EXEC","TARGET",[0,0,0,213700550],[0,0,0,0]],["EP_CONSUME_AMMO","CASTER",[0,0,0,0],[0,0,0,1]]],"damage":null,"weaponUse":["BOW"]},"childId":213700550,"child":{"skillType":"BOLT","element":"NONE","learnable":false,"mana":0,"cast":0,"cooldown":0,"motion":0,"range":4000,"rangeFromWeapon":false,"aoe":[12000,4800],"branch":"archery","reqLevel":0,"charLevel":0,"isLevelBased":true,"prereq":null,"powerStat":"STR","classes":[],"reqs":[],"funcs":[["EP_ONHIT_KNOCKBACK","CASTER",[0,0,0,300],[0,0,0,100]],["EP_ONHIT_FIN_DAMAGE_SCALE","CASTER",[0,0,70,50],[0,0,0,0]],["EP_PLAYER_ATTACK2","TARGET",[0,0,0,1],[0,0,0,0]]],"damage":{"kernel":"physical","slotIndex":2},"weaponUse":null},"parentId":null,"parent":null,"noteRu":"Связанное действие предусматривает отталкивание при попадании. Итоговый урон и вероятность не установлены.","noteEn":"The linked action includes knockback on hit. Final damage and chance are not confirmed."}]);
+ function rangedAmmoPreview({skillCatalog=null,jobKey=null,level=1,
+  branchMasteries={},branchCaps={},weaponKind='BARE_HAND',
+  branchLabels={},englishBranches={}}={}){
+  const out={rows:[],rejected:[],verified:false,sourceOnly:true};
+  if(!skillCatalog||typeof jobKey!=='string'||!Number.isSafeInteger(level)||
+   level<1||level>55)return out;
+  for(const proof of rangedAmmoProofs){
+   if(!proof.root.classes.includes(jobKey))continue;
+   const source=skillCatalog[String(proof.id)];
+   const child=skillCatalog[String(proof.childId)];
+   const parent=proof.parentId?skillCatalog[String(proof.parentId)]:null;
+   const exact=source?.id===proof.id&&child?.id===proof.childId&&
+    JSON.stringify(sourceVerifiedSkillSignature(source))===JSON.stringify(proof.root)&&
+    JSON.stringify(sourceVerifiedSkillSignature(child))===JSON.stringify(proof.child)&&
+    (!proof.parentId||(parent?.id===proof.parentId&&
+     JSON.stringify(sourceVerifiedSkillSignature(parent))===JSON.stringify(proof.parent)));
+   if(!exact){out.rejected.push(proof.id);continue;}
+   if(proof.root.reqs.some(([branch,amount])=>
+    !Number.isSafeInteger(branchCaps?.[branch])||branchCaps[branch]<amount))continue;
+   const ammo=source.funcs.filter(f=>f.ep==='EP_CONSUME_AMMO'&&f.dir==='CASTER');
+   if(ammo.length!==1||!Number.isSafeInteger(ammo[0].fv2[3])||ammo[0].fv2[3]<1){
+    out.rejected.push(proof.id);continue;
+   }
+   const ru=[],en=[];
+   if(level<source.charLevel){
+    ru.push('Нужен уровень '+source.charLevel);en.push('Requires level '+source.charLevel);
+   }
+   for(const [branch,amount] of proof.root.reqs){
+    const rank=branchMasteries?.[branch],cap=branchCaps?.[branch];
+    if(Number.isSafeInteger(rank)&&rank>=amount&&rank<=cap)continue;
+    ru.push('Нужно мастерство «'+(branchLabels?.[branch]||branch)+'»: '+amount);
+    en.push('Requires '+(englishBranches?.[branch]||branch)+' mastery: '+amount);
+   }
+   if(weaponKind!=='BOW'){
+    ru.push('Требуется лук');en.push('Requires a bow');
+   }
+   out.rows.push({id:proof.id,name:source.name,description:source.desc||'',
+    ammoCount:ammo[0].fv2[3],mana:source.mana,cooldown:source.cooldown,
+    prerequisiteId:proof.parentId,linkedEffectId:proof.childId,
+    noteRu:proof.noteRu,noteEn:proof.noteEn,requirementsMet:ru.length===0,
+    reasonRu:ru.join(' · '),reasonEn:en.join(' · '),
+    sourceOnly:true,finalDamage:null,inventoryChecked:false,appliedToHero:false});
+  }
+  return out;
+ }
+root.PandoraOSCalculator=Object.freeze({skillExecutionChains,craftingSkillPreview,trapSkillCostPreview,tacticalSkillPreview,rangedAmmoPreview,statusApplicationPreview,enemyDebuffPreview,complexSkillSourcePreview,priestCastPreviews,movementSkillSourcePreview,utilitySkillSourcePreview,scalingSkillPreview,directStrikeCoefficientPreview,elementalSpellCoefficientPreview,defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
  base,characterSheetPhysicalAttackRange,classBase,classBaseComponents,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,racialWeaponPreview,incredibleStrengthPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
  recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,consumableSkillPreview,statusCurePreview,harmfulConsumablePreview,gemstonePreview,legacyBuffPreview,songSkillPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,skillAttackRangePreview,racialUtilityPreview,elementalMagicPreview,elementalRefinementPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive
 });

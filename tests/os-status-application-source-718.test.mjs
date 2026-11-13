@@ -61,8 +61,8 @@ test('poison has no invented individual status resistance roll',()=>{
 test('cross-module audit counts five new qualitative roots only once',()=>{
  const result=auditOsSkillFormulaCoverage({skills,classes:jobs,calculator:C});
  assert.equal(result.summary.statuses['qualitative-preview'],22);
- assert.equal(result.summary.statuses['unmodeled-learnable'],90);
- assert.equal(result.summary.statuses['numeric-preview'],62);
+ assert.equal(result.summary.statuses['unmodeled-learnable'],87);
+ assert.equal(result.summary.statuses['numeric-preview'],65);
  for(const [id] of expected){
   const row=result.rows.find(r=>r.id===id);
   assert.ok(row.sourceModules.includes('status-application-source'));
