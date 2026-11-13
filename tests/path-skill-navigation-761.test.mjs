@@ -26,8 +26,8 @@ test('Hero Path keeps class-gated OS lineage and bounded selected gallery',()=>{
  assert.equal(skills['110101001'].prereq,null);
  assert.equal(skills['110101002'].classes.JUGGERNAUT,1);
  assert.match(path,/const successors=api\.skillCatalog\.filter/);
- assert.match(path,/allowedForJob\(row,api\.job\)/);
- assert.match(path,/allowedForJob\(previous,api\.job\)/);
+ assert.match(path,/classCanOpen\(row,api\.job\)/);
+ assert.match(path,/classCanOpen\(before,api\.job\)/);
  assert.match(path,/api\.onNavigateSkill\(related\)/);
  assert.match(path,/aria-current/);
  assert.match(app,/onNavigateSkill:skill=>/);

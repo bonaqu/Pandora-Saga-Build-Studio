@@ -2346,11 +2346,3 @@ textarea:focus-visible,select:focus-visible{
 footer #catalogStatus{min-width:0;overflow-wrap:anywhere}
 footer .footer-version{margin-inline-start:auto;align-self:center;white-space:nowrap;font-variant-numeric:tabular-nums;color:#bca68b}
 @media(max-width:460px){footer{align-items:stretch;gap:5px}footer .footer-version{align-self:flex-end;margin-inline-start:0}}
-
-/* 0.761: lightweight previous/next links inside the existing skill details. */
-.path-skill-lineage{display:flex;flex-wrap:wrap;gap:4px 12px;align-items:center;margin:8px 0}
-.path-skill-lineage-link{border:0;background:transparent;color:#efc88f;cursor:pointer;
- font:600 11px/1.45 Manrope,Arial,sans-serif;text-align:left;padding:5px 2px;
- max-width:100%;overflow-wrap:anywhere}
-.path-skill-lineage-link:hover{text-decoration:underline;color:#ffe1ad}
-.path-skill-lineage-link:focus-visible{outline:2px solid #ffe1ad;outline-offset:2px;border-radius:2px}

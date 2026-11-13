@@ -761,7 +761,8 @@ function viewSkills(target,details,api){
    const current=before?.name?
     make('span',{class:'path-skill-previous-value',text:before.name,
      ...(canNavigate?{'role':'link',tabindex:'0',
-      'aria-label':tr(api,'Открыть умение ','Open skill ')+before.name,
+      'data-related-skill-id':String(before.id),
+      'aria-label':tr(api,'Предыдущее умение: ','Previous skill: ')+before.name,
       onclick:()=>navigate(before),
       onkeydown:event=>{
        if(event.key==='Enter'||event.key===' '){
