@@ -1648,7 +1648,8 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    }
    const action=gates?.sourceAction?.({
     skillCatalog:gameTerms.skills,skillId:skill.id,
-    jobKey:heroJobKey,level:heroLevel,available:skill.available
+    jobKey:heroJobKey,level:heroLevel,available:skill.available,
+    branchCaps:heroBranchCaps,branchMasteries:heroMasteries
    });
    if(action){
     const apply=make('details',{class:'stage-skill-gate-help stage-skill-action-meta',

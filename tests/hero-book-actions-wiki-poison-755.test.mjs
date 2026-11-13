@@ -11,9 +11,11 @@ const skillCatalog=JSON.parse(read('data/os/skills.json'));
 const classes=JSON.parse(read('data/os/classes.json'));
 const items=JSON.parse(read('data/os/items.json'));
 const english=JSON.parse(read('data/os/strings.en.json'));
-const action=(id,jobKey='ENCHANTER',level=45,source=skillCatalog,available=true)=>
+const action=(id,jobKey='ENCHANTER',level=45,source=skillCatalog,
+ available=true,masteries={hymn:8,blessing:78,slash:41})=>
  root.PandoraBookSkillThresholds.sourceAction({
-  skillCatalog:source,skillId:id,jobKey,level,available});
+  skillCatalog:source,skillId:id,jobKey,level,available,
+  branchCaps:classes[jobKey]?.branchCaps,branchMasteries:masteries});
 const inspect=(id,source=skillCatalog)=>
  root.PandoraWikiSkillInsights.inspect({
   skillCatalog:source,classes,id,calculator:root.PandoraOSCalculator});
@@ -34,6 +36,8 @@ test('current OS action cards expose only base MP/cast/cooldown and actual varia
  assert.equal(action(100102001,'ENCHANTER'),null);
  assert.equal(action(320011001,'ENCHANTER',44),null);
  assert.equal(action(340001001,'ENCHANTER',45,skillCatalog,false),null);
+ assert.equal(action(340001001,'ENCHANTER',45,skillCatalog,true,{hymn:7}),null);
+ assert.equal(action(100102001,'JUGGERNAUT',45,skillCatalog,true,{slash:40}),null);
 });
 
 test('bad OS skill metadata or a passive skill never becomes a castable action',()=>{
@@ -58,6 +62,7 @@ test('base action metadata stays in collapsed current-build cards, never source-
  const book=read('pandora-studio-hero-book.js');
  assert.match(book,/sourceAction\?\.\(\{/);
  assert.match(book,/data-skill-action-id/);
+ assert.match(book,/branchCaps:heroBranchCaps,branchMasteries:heroMasteries/);
  assert.match(book,/Расход ОМ по игровым данным/);
  assert.match(book,/Базовое применение/);
  assert.match(book,/Окончательные затраты и время с усилениями/);
