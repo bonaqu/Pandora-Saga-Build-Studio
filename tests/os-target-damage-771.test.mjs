@@ -18,7 +18,11 @@ const input=(overrides={})=>({
  stats:{dex:70,int:80,spi:50},equipment:[],tables,itemForth,unison,
  modifiers,...overrides
 });
-const hits=(overrides={})=>D.supportedSkillHits(input(overrides));
+// Keep 0.771 regression snapshots focused on the original three skills;
+// expanded school coverage is independently asserted in 0.773 tests.
+const legacyIds=new Set([410001001,430001001,430052001]);
+const hits=(overrides={})=>
+ D.supportedSkillHits(input(overrides)).filter(row=>legacyIds.has(row.skillId));
 const get=(list,id)=>list.find(x=>x.skillId===id);
 test('Published OS Et, kt, Ie, ve and Tt: three single-hit packets versus Giant Ogre',()=>{
  const values=hits();
