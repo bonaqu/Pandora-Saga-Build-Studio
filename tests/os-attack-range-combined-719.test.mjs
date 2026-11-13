@@ -63,7 +63,8 @@ test('book shows plain-language base, bonus, final and exact RU/EN skill name',(
  for(const phrase of ['calc?.attackRange?.totalRanged','calc?.attackRange?.totalMelee',
   'Дальность атаки надетого оружия','Зоркость · дальность стрельбы',
   'Eagle Eye · shooting range','Дальность атаки дальнего боя · всего',
-  'Временные умения без надёжного расчёта пока не включены'])assert.ok(book.includes(phrase),phrase);
+  'Дальность оружия и действующие бонусы складываются.'])assert.ok(book.includes(phrase),phrase);
+ assert.ok(!book.includes('Временные умения без надёжного расчёта пока не включены'));
  assert.ok(!book.includes('Sharpsight'));
  assert.ok(!book.includes('текущими данными OS.'));
 });

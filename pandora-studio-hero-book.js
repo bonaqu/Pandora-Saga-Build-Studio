@@ -189,7 +189,7 @@ const bookEnglish=Object.freeze({
  'Требуется мастерство': "Requires mastery",
  'Эффекты песен действуют после применения в игре. Бонусы не прибавляются к билду автоматически.': "Song effects apply only when activated in the game. No bonus is added to this build automatically.",
  'Ориентировочное действие навыка, не постоянное восстановление героя.': "Estimated action of the skill, not permanent natural recovery.",
- 'Пассивка усиливает урон при попадании оружием ближнего боя, но не показатель АТК. Точный урон удара без подтверждённой серверной формулы не рассчитывается.': "Melee weapon hit-damage passive. It does not increase the ATK stat. The exact damage per hit is not calculated without a verified server formula.",
+ 'Пассивка усиливает урон при попадании оружием ближнего боя, но не показатель АТК.': "Melee weapon hit-damage passive. It does not increase the ATK stat.",
  'Здесь появятся эффекты навыков, для которых доступны игровые данные и расчёт.': "Calculated skill effects appear here when game records and requirements are available.",
  'Условные эффекты стихийного оружия': "Conditional elemental weapons",
  'Пламя феникса · расчётный урон': "Phoenix Flame · estimated damage",
@@ -1083,20 +1083,20 @@ function buffsPage(body,options){
    const model=skill?.coefficientModels?.[0];
    if(model&&Number.isSafeInteger(model.amount))
     return (id===142051001?(english?'Critical chance +':'Шанс крита +'):(english?'Evasion +':'Уклонение +'))+model.amount;
-   return english?'Only a matching class, weapon and source model can provide a value.':
-    'Для расчёта нужны подходящие класс, оружие и данные навыка.';
+   return english?'No effect amount calculated for this build.':
+    'Для этого билда величина эффекта не рассчитана.';
   }
   if(id===320006001)return inspirationKnown?
    (english?'Cast time: ':'Время применения: ')+inspiration.castTimePercent+
     (english?'% of normal (twice as fast)':'% обычного (вдвое быстрее)'):
-   (english?'Casting-speed value is unavailable in the current game data.':
-    'Нет подтверждённого значения ускорения в текущих игровых данных.');
+   (english?'No cast speed calculated for this build.':
+    'Скорость применения для этого билда не рассчитана.');
   if(id===330005001)return naturalRecovery&&naturalKnown?
    (english?'MP +':'ОМ +')+naturalRecovery.mpPerPulse+
     (english?' every 2 sec · ally level ':' каждые 2 сек. · уровень союзника ')+
     naturalRecovery.casterLevel:
-   (english?'Current OS recovery coefficients are unavailable.':
-    'Коэффициенты восстановления отсутствуют в текущих игровых данных.');
+   (english?'No MP recovery amount calculated for this build.':
+    'Восстановление ОМ для этого билда не рассчитано.');
   if(id===100058001&&!despairKnown)return '';
   return readableBuffEffects[id]?.[english?1:0]||'';
  };
@@ -1745,10 +1745,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     'Trained: '+nextMelee.current+'/'+nextMelee.required+
      ' · '+nextMelee.remaining+' more mastery points to this skill threshold':
     'Освоено: '+nextMelee.current+'/'+nextMelee.required+
-     ' · до порога навыка ещё '+nextMelee.remaining}),
-   make('small',{text:en?
-    'This is a mastery requirement, not proof that all weapon and other conditions are met.':
-    'Это порог мастерства, а не подтверждение всех остальных условий использования умения.'})
+     ' · до порога навыка ещё '+nextMelee.remaining})
   ]));
   body.append(section);
  }
@@ -1896,8 +1893,8 @@ function defenseChapterGroups(calc){
   'Blessed Repose · MP speed bonus',r?.mp?.allyBuff,' инд.');
  // Instant MP pulse from another player. This is NOT passive MP regeneration.
  if(calc.allyNaturalRecovery)
-  put(0,'mpNaturalAlly','Природное восстановление союзника · ОМ каждые 2 сек. (модель)',
-   'Allied Natural Recovery · MP every 2 sec (model)',
+  put(0,'mpNaturalAlly','Природное восстановление союзника · ОМ каждые 2 сек.',
+   'Allied Natural Recovery · MP every 2 sec',
    calc.allyNaturalRecovery.mpPerPulse,'',true);
  const statuses={
   burn:['Ожоги','Burn'],stun:['Оглушение','Stun'],
@@ -2034,8 +2031,8 @@ function appendChapterGroups(body,groups,english,emptyRu,emptyEn,options={}){
   }
   section.append(grid);
   if(group.key==='weapon'&&options.page==='attack'){
-   const ru='Дальность оружия и действующие бонусы складываются. Временные умения без надёжного расчёта пока не включены.';
-   const en='Weapon range and active bonuses are added. Temporary skills without a reliable calculation are not included yet.';
+   const ru='Дальность оружия и действующие бонусы складываются.';
+   const en='Weapon range and active bonuses are added.';
    const hint=make('p',{class:'stage-attribute-note',text:english?en:ru});
    guideLabel(hint,'attack.rangeExplanation',ru,en,options);
    section.append(hint);
@@ -2223,16 +2220,16 @@ function attackPage(body,calc,items,english,options={}){
  toggle.append(mountedStat);
  body.append(toggle);
  appendChapterGroups(body,attackChapterGroups(calc),english,
-  'Нет подтверждённых дополнительных атакующих параметров.',
-  'No supported additional attack metrics.',{...options,page:'attack'});
+  'Для этого билда нет рассчитанных дополнительных атакующих показателей.',
+  'No additional attack metrics calculated for this build.',{...options,page:'attack'});
  appendSkillAttackRange(body,calc,english,options);
  appendWeaponConditions(body,calc,items,english);
  appendItemEvents(body,calc,english,'attack',options.gameTerms);
 }
 function defensePage(body,calc,english,options={}){
  appendChapterGroups(body,defenseChapterGroups(calc),english,
-  'Нет подтверждённых дополнительных защитных параметров.',
-  'No supported additional defense metrics.',{...options,page:'defense',
+  'Для этого билда нет рассчитанных дополнительных защитных показателей.',
+  'No additional defense metrics calculated for this build.',{...options,page:'defense',
    statusSourceTraces:calc?.effects?.trace||[]});
  const conditional=calc?.battleMapCloaks?.entries||[];
  if(conditional.length){

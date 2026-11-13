@@ -63,6 +63,8 @@ export async function runPathSkillNavigation761Smoke(browser,base){
   const oldTitle=await details.locator('h3').innerText();
   await move.click();
   assert.notEqual(await details.locator('h3').innerText(),oldTitle);
+  assert.equal(await listNav.locator('.path-skill-list-step:focus').count(),1,
+   'result navigation retains keyboard focus, including list boundaries');
   assert.equal(await query.inputValue(),'');
   const pinned=await gallery.locator('.path-skill-card').first().getAttribute('data-skill-id');
   const active=await gallery.locator('.path-skill-card[aria-current="true"]').getAttribute('data-skill-id');
