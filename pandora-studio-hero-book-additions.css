@@ -459,3 +459,18 @@
 .stage-ally-peace-fields .stage-ally-peace-note{
  grid-column:1/-1;margin:0;font-size:11px;line-height:1.45;opacity:.85
 }
+
+
+/* Inline potency input appears only for an enabled ally buff. Match the
+   existing priest control style; no additional full-width panel. */
+#stageAttributes .stage-ally-natural-level{
+ margin-left:22px;max-width:200px;min-width:0
+}
+#stageAttributes .stage-ally-natural-level input{
+ width:100%;min-width:0;box-sizing:border-box;padding:7px;
+ border:1px solid #86643e;border-radius:4px;background:#19120e;
+ color:#f1d6a7;font:600 13px Manrope,Arial,sans-serif
+}
+#stageAttributes .stage-ally-natural-level input:focus-visible{
+ outline:2px solid #e0b878;outline-offset:1px
+}
