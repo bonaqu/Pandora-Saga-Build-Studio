@@ -169,11 +169,10 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   await how.locator('summary').click();
   assert.match(await how.innerText(),/Следующая \+1 при значении/);
   assert.match(await how.innerText(),/165/);
-  const nextGroup=page.locator('#book-source-qa .stage-skill-next-mastery');
-  assert.equal(await nextGroup.count(),1);
-  await nextGroup.locator('summary').click();
-  assert.match(await nextGroup.innerText(),/Беспощадный удар/);
-  assert.match(await nextGroup.innerText(),/Освоено: 0\/3/);
+  assert.equal(await page.locator('#book-source-qa .stage-skill-next-mastery').count(),0,
+   'Next unlock is a Path hint, not a current calculated combat effect');
+  assert.equal(await page.locator('#book-source-qa .stage-skill-gate-line').count(),0,
+   'Known general prerequisites remain in Path and Encyclopedia');
   for(const name of ['Первая помощь','Храм','Восстановление'])
    assert.ok(ru.includes(name),'Hero Book must use exact current OS skill name '+name);
   assert.ok(!ru.includes('Невероятная сила'),

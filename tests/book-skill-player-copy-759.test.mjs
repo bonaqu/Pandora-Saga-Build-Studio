@@ -64,6 +64,7 @@ test('Hero Book retains numerical effects without server-internal caveats in cop
  ])assert.ok(!book.includes(phrase),phrase);
  assert.match(book,/Дальность оружия и действующие бонусы складываются/);
  assert.match(book,/Природное восстановление союзника · ОМ каждые 2 сек/);
- assert.match(book,/nextMelee\.remaining/);
+ assert.doesNotMatch(book,/nextMelee|appendGate|stage-skill-next-mastery/);
+ assert.match(read('pandora-studio-hero-path.js'),/milestone\.remaining/);
  assert.match(book,/skill\.available===true/);
 });
