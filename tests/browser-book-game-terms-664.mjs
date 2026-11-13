@@ -158,7 +158,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   assert.match(await blessed.innerText(),/Освящение воды/);
   assert.match(await blessed.innerText(),/До 112 применений/);
   assert.match(await blessed.innerText(),/Полный запас 450 ОМ · остаток 2 ОМ/);
-  assert.match(await blessed.innerText(),/Материалы на 112 применений: 112 × Пустая бутыль/);
+  assert.match(await blessed.innerText(),/Материалы на 112 применений:\s*112 × Пустая бутыль/);
   assert.match(await blessed.innerText(),/До ещё одного применения: \+2 ОМ к запасу/);
   assert.doesNotMatch(await blessed.innerText(),/Создание 1 ×|На применение:|Базовая перезарядка/);
   const wikiSkill=blessed.locator('button.stage-effect-skill-link');
@@ -255,7 +255,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   assert.match(en,/Aqua Elymus/);
   assert.match(en,/Up to 112 uses/);
   assert.match(en,/Full 450 MP · 2 MP remaining/);
-  assert.match(en,/Materials for 112 uses:112 × Empty Bottle|Materials for 112 uses: 112 × Empty Bottle/);
+  assert.match(en,/Materials for 112 uses:\s*112 × Empty Bottle/);
   assert.match(en,/\+2 MP to afford one more use/);
   assert.doesNotMatch(en,/Creates 1 × Holy Water|Base cooldown/);
   assert.match(en,/Up to .* HP per target for 16 casts \(264 × 16\)/);
