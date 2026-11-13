@@ -581,7 +581,10 @@ function buffsPage(body,options){
  const selectedResistanceSkills=selectedResistanceSkill==null?0:1;
  const configured=Object.entries(buffs).filter(([key,value])=>{
   if(key==='proelium'||key==='resistanceSkillIds'||key==='guildLevel')return false;
+  // Caster profiles are hypothetical inputs, NEVER selected buffs. Their
+  // mere presence in saved builds must not inflate the enhancement counter.
   if(['priestSpi','priestBlessing','priestHymn','priestBenevolence','priestExorcism','priestEnabled',
+   'priestClass','allyPeaceSpi','allyPeaceHymn','allyNaturalLevel',
    'honorCuriosity','proeliumPotency'].includes(key))return false;
   if(key.startsWith('priest')&&buffs.priestEnabled!==true)return false;
   if(key==='priestGratia'&&!(Number(buffs.priestBlessing)>=8))return false;
@@ -887,6 +890,10 @@ function buffsPage(body,options){
  const inspiration=root.PandoraOSCalculator?.alliedInspirationPreview?.({
   skillCatalog:gameTerms.skills});
  const inspirationKnown=inspiration?.castTimePercent===50;
+ const allyPreviews=root.PandoraOSCalculator?.alliedRecipientPreviews?.({
+  skillCatalog:gameTerms.skills,combat:modifiers?.combat})||{};
+ const naturalRecovery=root.PandoraOSCalculator?.alliedNaturalRecoveryPreview?.({
+  skillCatalog:gameTerms.skills,casterLevel:Number(buffs.allyNaturalLevel??45)});
  const naturalKnown=osVector(330005001,'EP_HEAL_MANA_REGENERATOR',[0,10,0,0],[0,0,0,2]);
  const restKnown=osVector(320002001,'EP_HEAL_TIME_SCALE',[0,0,0,90]);
  const despairKnown=osVector(100058001,'EP_DAMAGERATE_SCALE',[0,0,35,40])&&
@@ -981,9 +988,23 @@ function buffsPage(body,options){
     externalPriest:true,
     summary});
  }
- for(const [key,label] of [['combatWarCry','Боевой клич'],
-  ['combatWindAssist','Помощь ветра'],['combatWindBlessing','Благословение ветра']])
-  toggle(party,label,key,false,availability[key]===true,combatSkillCards[key]);
+ for(const [key,label,effect] of [
+  ['combatWarCry','Боевой клич','warCry'],
+  ['combatWindAssist','Помощь ветра','windAssist'],
+  ['combatWindBlessing','Благословение ветра','windBlessing']
+ ]){
+  const skill=combatSkillCards[key];
+  const preview=allyPreviews[effect];
+  const category=effect==='warCry'?(english?' attack':' атаки'):
+   effect==='windAssist'?(english?' evasion':' уклонения'):
+    (english?' movement-speed index':' к скорости передвижения');
+  const summary=preview?
+   '+'+preview.bonus+category+
+    (Number.isFinite(preview.base)?
+     (english?' (base ':' (база ')+preview.base+')':''):skill?.summary;
+  toggle(party,label,key,false,availability[key]===true,
+   skill?{...skill,summary}:null);
+ }
  // One source-controlled setting per Remaked enhancement. The entries
  // already represented by Life Sign, priest and elemental resistance tools
  // deliberately stay in their original sections, without duplicate inputs.
@@ -1004,8 +1025,8 @@ function buffsPage(body,options){
     'Allies’ MP recovery speed +90 idx.'],
   320006001:['Время применения умений — 50% от обычного (вдвое быстрее).',
     'Skill cast time is 50% of normal (twice as fast).'],
-  330005001:['+5 ОМ каждые 2 секунды при применении.',
-    '+5 MP every 2 seconds when applied.'],
+  330005001:['Восстанавливает ОМ союзнику. Количество зависит от уровня применяющего союзника.',
+    'Restores MP to an ally. The amount scales with the caster’s level.'],
   340003001:['Защищает союзника от слабых попаданий. Сила зависит от СД и Песнопения союзного Клирика.',
     'Protects an ally from small hits. Potency scales with allied Cleric SPR and Hymn.'],
   320003001:['Уменьшает получаемый группой урон. Сила зависит от Благословения жреца.',
@@ -1050,9 +1071,13 @@ function buffsPage(body,options){
     (english?'% of normal (twice as fast)':'% обычного (вдвое быстрее)'):
    (english?'Casting-speed value is unavailable in the current game data.':
     'Нет подтверждённого значения ускорения в текущих игровых данных.');
-  if(id===330005001&&!naturalKnown)return english?
-   'Exact MP recovery is not known yet.':
-   'Точное восстановление ОМ пока неизвестно.';
+  if(id===330005001)return naturalRecovery&&naturalKnown?
+   (english?'MP +':'ОМ +')+naturalRecovery.mpPerPulse+
+    (english?' per pulse (model) · caster level ':' за срабатывание (расчёт) · уровень союзника ')+
+    naturalRecovery.casterLevel+
+    (english?' · source interval 2':' · игровой параметр периода 2'):
+   (english?'Current OS recovery coefficients are unavailable.':
+    'Коэффициенты восстановления отсутствуют в текущих игровых данных.');
   if(id===100058001&&!despairKnown)return english?
    'Exact attack bonus is not known yet.':
    'Точная прибавка к атаке пока неизвестна.';
@@ -1091,9 +1116,17 @@ function buffsPage(body,options){
     externalPriest:externalPriestSkill,
     pending:!row.counted,
     summary:row.counted?({
-     100055001:english?'Accuracy +20 and +15%':'Точность +20 и +15%',
-     320002001:restKnown?(english?'MP recovery speed +90 idx':'Скорость восстановления ОМ +90 инд.'):null,
-     330004001:english?'Magic resistance +25':'Сопротивление магии +25',
+     100055001:allyPreviews.massConcentration?
+      (english?'Accuracy +':'Точность +')+
+       allyPreviews.massConcentration.bonus+
+       (english?' (base ':' (база ')+allyPreviews.massConcentration.base+')':
+      (english?'Accuracy +20 and +15%':'Точность +20 и +15%'),
+     320002001:restKnown&&allyPreviews.blessedRepose?
+      (english?'MP recovery-speed index +':'Скорость восстановления ОМ +')+
+       allyPreviews.blessedRepose.bonus:null,
+     330004001:allyPreviews.divineBlessing?
+      (english?'Magic resistance +':'Сопротивление магии +')+
+       allyPreviews.divineBlessing.bonus:null,
      142051001:buffEffectText(142051001),
      260005001:buffEffectText(260005001),
      260008001:english?'Evasion +100':'Уклонение +100'
@@ -1154,6 +1187,19 @@ function buffsPage(body,options){
        'Зависит от СД и Благословения жреца.';
       return basic;
      })()});
+  // An ally's Natural Recovery is affected by THAT caster's level, not by
+  // the recipient's level/mastery and not by an invented skill-point budget.
+  if(row.id===330005001&&Array.isArray(buffs.remakedSkillIds)&&
+   buffs.remakedSkillIds.includes(330005001)){
+   const field=make('label',{class:'stage-book-field stage-ally-natural-level'},[
+    make('span',{text:english?'Ally level':'Уровень союзника'})]);
+   field.append(make('input',{type:'number',min:20,max:55,step:1,
+    value:String(Math.max(20,Math.min(55,Number(buffs.allyNaturalLevel??45)||45))),
+    'aria-label':english?'Ally level':'Уровень союзника',
+    'data-book-setting':'allyNaturalLevel',
+    onchange:event=>onBuff('allyNaturalLevel',event.target.value)}));
+   party.append(field);
+  }
   if(row.id===340003001&&selectedPriestIds.has(340003001)){
    const caster=make('div',{class:'stage-priest-fields stage-ally-peace-fields'});
    const maxHymn=Number(gameTerms.classes?.CLERIC?.branchCaps?.hymn||0);
@@ -1648,6 +1694,11 @@ function defenseChapterGroups(calc){
  // mpRecoverySpeed already includes this index once in the total.
  put(0,'mpRecoveryRepose','Благословенный покой · прибавка к скорости ОМ',
   'Blessed Repose · MP speed bonus',r?.mp?.allyBuff,' инд.');
+ // Instant MP pulse from another player. This is NOT passive MP regeneration.
+ if(calc.allyNaturalRecovery)
+  put(0,'mpNaturalAlly','Природное восстановление союзника · ОМ за срабатывание',
+   'Allied Natural Recovery · MP per pulse',
+   calc.allyNaturalRecovery.mpPerPulse,'',true);
  const statuses={
   burn:['Ожоги','Burn'],stun:['Оглушение','Stun'],
   numb:['Заморозка','Freeze'],tumble:['Падение','Knockdown'],

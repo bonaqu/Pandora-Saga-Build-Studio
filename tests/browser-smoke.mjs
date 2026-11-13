@@ -566,6 +566,39 @@ async function main(){
  assert.equal(await allySection.locator('[data-book-setting="allyPeaceHymn"]').inputValue(),'45');
  await allySection.locator('[data-book-setting="legacySkill:340003001"]').uncheck();
  assert.equal(await allySection.locator('.stage-ally-peace-fields').count(),0);
+ // Other allied casting statistics are hypothetical inputs, not extra buffs.
+ const beforeNatural=Number(await page.locator(
+  '#stageBookPanel .stage-buff-overview>strong').innerText());
+ const naturalSwitch=allySection.locator(
+  '[data-book-setting="legacySkill:330005001"]');
+ assert.equal(await allySection.locator('[data-book-setting="allyNaturalLevel"]').count(),0);
+ await naturalSwitch.check();
+ const naturalInput=allySection.locator('[data-book-setting="allyNaturalLevel"]');
+ assert.equal(await naturalInput.count(),1);
+ assert.equal(await naturalInput.getAttribute('min'),'20');
+ assert.equal(await naturalInput.getAttribute('max'),'55');
+ assert.equal(Number(await page.locator(
+  '#stageBookPanel .stage-buff-overview>strong').innerText()),beforeNatural+1,
+  'Input defaults must never count as two extra selected buffs');
+ await naturalInput.fill('30');
+ await naturalInput.press('Tab');
+ assert.equal(await naturalInput.inputValue(),'30');
+ const naturalLabel=naturalSwitch.locator(
+  'xpath=ancestor::*[contains(@class,"stage-combat-buff")][1]');
+ assert.match(await naturalLabel.innerText(),/ОМ \+3|MP \+3/);
+ await naturalInput.fill('99');
+ await naturalInput.press('Tab');
+ assert.equal(await naturalInput.inputValue(),'55');
+ assert.match(await naturalLabel.innerText(),/ОМ \+5|MP \+5/);
+ await naturalSwitch.uncheck();
+ assert.equal(await allySection.locator('[data-book-setting="allyNaturalLevel"]').count(),0);
+ const inspirationSwitch=allySection.locator(
+  '[data-book-setting="legacySkill:320006001"]');
+ await inspirationSwitch.check();
+ const inspirationLabel=inspirationSwitch.locator(
+  'xpath=ancestor::*[contains(@class,"stage-combat-buff")][1]');
+ assert.match(await inspirationLabel.innerText(),/50%/);
+ await inspirationSwitch.uncheck();
  const elementalGroup=page.locator('#stageBookPanel .stage-book-buff-group').filter({
   has:page.locator('[data-guide-key="buffs.section.elemental"]')});
  assert.equal(await elementalGroup.count(),1,

@@ -708,10 +708,17 @@ function combatSkillSource(skillCatalog,kind){
  if(!skillCatalog)return {effects:combatSkillDefaults[kind],fromCatalog:false};
  const skill=skillCatalog[String(combatSkillIds[kind])];
  if(!skill||!Array.isArray(skill.funcs))return null;
+ // An external War Cry is valid for every recipient job, but every
+ // source action must still match its known target-side formula shape.
+ if(kind==='warCry'&&(skill.id!==combatSkillIds.warCry||
+  skill.skillType!=='PARTY_ALL'||skill.funcs.length!==2))return null;
  const effects={};
  for(const name of combatSkillRequirements[kind]){
   const rows=skill.funcs.filter(x=>x.ep===name&&x.dir==='TARGET');
   if(rows.length!==1||!Array.isArray(rows[0].fv1))return null;
+  if(kind==='warCry'&&(rows[0].fv1.length!==4||
+   !rows[0].fv1.slice(0,3).every(v=>v===0)||
+   JSON.stringify(rows[0].fv2)!=='[0,0,0,0]'))return null;
   const value=rows[0].fv1[3];
   if(!Number.isFinite(value)||Math.abs(value)>100)return null;
   effects[name]=value;
@@ -730,12 +737,20 @@ const supportRequirements=Object.freeze({
 });
 function supportSkillSource(skillCatalog,kind){
  const record=skillCatalog?.[String(supportSkillIds[kind])];
- if(!record||!Array.isArray(record.funcs)||!supportRequirements[kind])return null;
+ const required=supportRequirements[kind];
+ if(!record||!Array.isArray(record.funcs)||!required||
+  record.id!==supportSkillIds[kind]||
+  record.skillType!==(kind==='windAssist'?'PARTY_ALL':'ALLY')||
+  record.funcs.length!==required.length)return null;
  const values={};
- for(const ep of supportRequirements[kind]){
+ for(const ep of required){
   const found=record.funcs.filter(x=>x.ep===ep&&x.dir==='TARGET');
-  if(found.length!==1||!Number.isFinite(found[0].fv1?.[3])||
-   Math.abs(found[0].fv1[3])>100)return null;
+  if(found.length!==1||!Array.isArray(found[0].fv1)||
+   found[0].fv1.length!==4||
+   !found[0].fv1.slice(0,3).every(x=>x===0)||
+   !Number.isFinite(found[0].fv1[3])||
+   Math.abs(found[0].fv1[3])>100||
+   JSON.stringify(found[0].fv2)!=='[0,0,0,0]')return null;
   values[ep]=found[0].fv1[3];
  }
  return {record,values};
@@ -1956,12 +1971,16 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const rangedEvasion={known:title.rangedDodge||0,honor:title.rangedDodge||0,
   verified:false,source:"Remaked Calc('EVARange'), Status_67",
   excluded:['unmapped equipment and status-based ranged evasion']};
- // Remaked Calc('CastSPD') displays the 100% cast-time index unless
- // Flag 14_8 is active. That spell is not presently modeled by an
- // independently verified OS buff, so this is a Legacy baseline only.
- const castTime={known:100,base:100,verified:false,
-  source:"Remaked Calc('CastSPD'), Status_78",
-  excluded:['legacy Flag 14_8 and current game active cast-time changes']};
+ // Remaked Calc('CastSPD') sets Status_78 to 50 when legacy Flag 14_8
+ // is enabled. Current OS confirms the same target-side 50 effect vector.
+ // The recipient's selected ally buff changes the displayed percentage;
+ // neither caster mastery nor recipient job is involved.
+ const inspiration=combatBuffs?.remakedSkillIds?.includes(320006001)?
+  alliedInspirationPreview({skillCatalog}):null;
+ const castTime={known:inspiration?.castTimePercent??100,base:100,
+  allyReduction:inspiration?.castTimeReductionPercent??0,verified:false,
+  source:"Remaked Calc('CastSPD'), Status_78 + current OS Воодушевление",
+  excluded:['unverified cast-time stacking and individual spell duration']};
  // Exact TARGET passive effects from OS skills.json:
  // Enkidu 900050003: EP_ONHIT_CRITICAL_DAMAGERATE fv1[3]=10.
  // Dwarf 900030003: EP_CRITICAL_REGIST fv1[3]=5 (incoming crit chance).
@@ -3086,6 +3105,76 @@ function alliedInspirationPreview({skillCatalog=null}={}){
  return {id:320006001,castTimePercent:50,castTimeReductionPercent:50,
   speedMultiplier:2,sourceConfirmed:true};
 }
+// A separate ASCETIC/MONK/EXORCIST supplies this ally-targeted MP pulse.
+// The current OS vector uses the Level coefficient slot [1] = 10 and
+// interval slot fv2[3] = 2. Remaked's existing periodic-recovery formula
+// supplies independent floors. Caster level is hypothetical: never consume
+// the recipient's level, masteries or skill points to compute this spell.
+function alliedNaturalRecoveryPreview({skillCatalog=null,casterLevel=45}={}){
+ const skill=skillCatalog?.['330005001'];
+ if(skill?.id!==330005001||skill.skillType!=='ALLY'||
+  skill.learnable!==true||skill.charLevel!==20||skill.prereq!==null||
+  !Array.isArray(skill.reqs)||skill.reqs.length!==0||
+  !Array.isArray(skill.funcs)||skill.funcs.length!==1||
+  !Number.isSafeInteger(casterLevel)||casterLevel<20||casterLevel>55)
+  return null;
+ const effect=skill.funcs[0];
+ if(effect?.ep!=='EP_HEAL_MANA_REGENERATOR'||effect.dir!=='TARGET'||
+  JSON.stringify(effect.fv1)!=='[0,10,0,0]'||
+  JSON.stringify(effect.fv2)!=='[0,0,0,2]')return null;
+ // Snapshot coefficient: level 20 -> +2; 45 -> +4; 55 -> +5.
+ // This is a pulse magnitude model, not a verified tick schedule in seconds.
+ return {id:330005001,mpPerPulse:Math.floor(casterLevel*.10),
+  casterLevel,intervalSourceValue:2,modeled:true};
+}
+// Existing party skills are received by the current hero. Their relevant
+// baseline is from the hero's actual current character sheet, not from
+// a hypothetical ally's class or mastery. Keep these previews read-only;
+// opt-in combat is handled separately by the same formula channels.
+function alliedRecipientPreviews({skillCatalog=null,combat=null}={}){
+ const exact=(id,skillType,rows)=>{
+  const skill=skillCatalog?.[String(id)];
+  if(skill?.id!==id||skill.skillType!==skillType||
+   !Array.isArray(skill.funcs)||skill.funcs.length!==rows.length)return null;
+  const out={};
+  for(const [ep,vector] of rows){
+   const matches=skill.funcs.filter(f=>f.ep===ep&&f.dir==='TARGET');
+   if(matches.length!==1||JSON.stringify(matches[0].fv1)!==
+    JSON.stringify(vector)||JSON.stringify(matches[0].fv2)!=='[0,0,0,0]')
+    return null;
+   out[ep]=vector[3];
+  }
+  return out;
+ };
+ const result={warCry:null,massConcentration:null,windAssist:null,
+  windBlessing:null,divineBlessing:null,blessedRepose:null};
+ const atk=Number(combat?.attack?.mountedBase??combat?.attack?.walkingBase);
+ const acc=Number(combat?.accuracy?.base),ev=Number(combat?.dodge?.base);
+ if(exact(320001001,'PARTY_ALL',[
+  ['EP_DAMAGERATE_CONST',[0,0,0,10]],
+  ['EP_DAMAGERATE_SCALE',[0,0,0,20]]])&&
+  Number.isFinite(atk)&&atk>=0)
+  result.warCry={base:atk,bonus:10+Math.floor(atk*.2)};
+ if(exact(100055001,'PARTY_ALL',[
+  ['EP_TOHIT_CONST',[0,0,0,20]],
+  ['EP_TOHIT_SCALE',[0,0,0,15]]])&&
+  Number.isFinite(acc)&&acc>=0)
+  result.massConcentration={base:acc,bonus:Math.floor(20+acc*.15)};
+ if(exact(260006001,'PARTY_ALL',[
+  ['EP_AVOIDANCE_CONST',[0,0,0,15]],
+  ['EP_AVOIDANCE_SCALE',[0,0,0,15]]])&&
+  Number.isFinite(ev)&&ev>=0)
+  result.windAssist={base:ev,bonus:Math.floor(15+ev*.15)};
+ if(exact(320004001,'ALLY',[['EP_MOVESPEED_SCALE',[0,0,0,40]]]))
+  result.windBlessing={bonus:40};
+ if(exact(330004001,'PARTY_ALL',[
+  ['EP_MAGIC_RESISTANCE_CONST',[0,0,0,25]]]))
+  result.divineBlessing={bonus:25};
+ if(exact(320002001,'PARTY_ALL',[
+  ['EP_HEAL_TIME_SCALE',[0,0,0,90]]]))
+  result.blessedRepose={bonus:90};
+ return result;
+}
 // Preserved Remaked Legacy Calc('Velox'...'ToxicAura') branch previews.
 // These are read-only magnitudes: never apply to combat stats merely because
 // the hero's level/mastery is high. The corresponding spell must be selected
@@ -3524,6 +3613,13 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   jobKey:combatContext.jobKey,skillCatalog:combatContext.skillCatalog,
   benevolenceCap:classData.branchCaps?.benevolence??null
  });
+ // This is an INDEPENDENT pulse applied by a hypothetical allied caster.
+ // Keep it outside standing MP recovery and never reuse recipient level.
+ const allyNaturalRecovery=attributeBuffs?.remakedSkillIds?.includes(330005001)?
+  alliedNaturalRecoveryPreview({
+   skillCatalog:combatContext.skillCatalog,
+   casterLevel:Number(attributeBuffs.allyNaturalLevel??45)
+  }):null;
  // OS skill 320007001 requires Blessing 8; 320008001 requires Blessing 12.
  // A previously selected checkbox must not bypass these requirements.
  // Current OS spell-effect records carry a new constant term relative to
@@ -3640,7 +3736,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   hpRaw:rawHp.base+level*rawHp.lv+stats.vit*rawHp.vit,
   mpRaw:rawMp.base+level*rawMp.lv+stats.spi*rawMp.spi,
   stats,basic,effects,honor:extra.honor,potion,resistances,targetResistance,procPreview,experienceBonus,battleMapCloaks,specialEquipment,regeneration,legacyBuffs,priestApplied,priestCast,songSkills,otherEquipment,
-  recoveryAmount,healingSkill,healingSpells,periodicRecovery,consumableRecovery,consumableSkills,statusCures,harmfulConsumables,combat,gemstones,auraDamage,attackRange,skillAttackRange,racialEffects,elementalMagic,elementalRefinement,mountedRelease,unison,coverage,
+  recoveryAmount,healingSkill,healingSpells,periodicRecovery,allyNaturalRecovery,consumableRecovery,consumableSkills,statusCures,harmfulConsumables,combat,gemstones,auraDamage,attackRange,skillAttackRange,racialEffects,elementalMagic,elementalRefinement,mountedRelease,unison,coverage,
   attributeBuffs:{flat:extra.flat,trace:extra.trace},supplementalFlat,supplementalSource,
   rounding:'floor-class-cents',source:'current game server / Modern current-vitals class formula',
   verified:false,excluded:['unstructured refinement bonuses','unpublished set effects',
@@ -4725,7 +4821,7 @@ function supportEffectPreview({skillCatalog=null,jobKey=null,level=1,
   }
   return out;
  }
-root.PandoraOSCalculator=Object.freeze({alliedInspirationPreview,alliedPeaceSongPreview,skillExecutionChains,craftingSkillPreview,trapSkillCostPreview,tacticalSkillPreview,rangedAmmoPreview,combatTechniquePreview,specializedSkillPreview,supportEffectPreview,situationalSkillPreview,statusApplicationPreview,enemyDebuffPreview,complexSkillSourcePreview,priestCastPreviews,movementSkillSourcePreview,utilitySkillSourcePreview,scalingSkillPreview,directStrikeCoefficientPreview,elementalSpellCoefficientPreview,defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
+root.PandoraOSCalculator=Object.freeze({alliedRecipientPreviews,alliedNaturalRecoveryPreview,alliedInspirationPreview,alliedPeaceSongPreview,skillExecutionChains,craftingSkillPreview,trapSkillCostPreview,tacticalSkillPreview,rangedAmmoPreview,combatTechniquePreview,specializedSkillPreview,supportEffectPreview,situationalSkillPreview,statusApplicationPreview,enemyDebuffPreview,complexSkillSourcePreview,priestCastPreviews,movementSkillSourcePreview,utilitySkillSourcePreview,scalingSkillPreview,directStrikeCoefficientPreview,elementalSpellCoefficientPreview,defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
  base,characterSheetPhysicalAttackRange,classBase,classBaseComponents,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,racialWeaponPreview,incredibleStrengthPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
  recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,consumableSkillPreview,statusCurePreview,harmfulConsumablePreview,gemstonePreview,legacyBuffPreview,songSkillPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,skillAttackRangePreview,racialUtilityPreview,elementalMagicPreview,elementalRefinementPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive
 });

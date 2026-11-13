@@ -63,7 +63,7 @@ test('preview is linked to character model and player-only book, not applied as 
  const src=read('pandora-os-character-calculator.js'),ui=read('pandora-studio-hero-book.js');
  assert.match(src,/const periodicRecovery=periodicRecoveryPreview/);
  assert.match(src,/level,spi:stats.spi,benevolence:combatContext.benevolenceMastery/);
- assert.match(src,/healingSpells,periodicRecovery,consumableRecovery/);
+ assert.match(src,/healingSpells,periodicRecovery,allyNaturalRecovery,consumableRecovery/);
  assert.match(src,/const statusCures=statusCurePreview/);
  assert.match(ui,/modifiers\?\.periodicRecovery\?\.rows/);
  assert.match(ui,/Ориентировочное действие навыка/);
