@@ -976,8 +976,11 @@ function elementalSpellCoefficientPreview({skillCatalog,jobKey,level,
    fv1[0]<0||fv1[0]>350||fv1[2]<0||fv1[2]>350||
    fv1[3]< -100||fv1[3]>500||
    !Array.isArray(fv2)||fv2.length!==4||fv2.some(n=>n!==0))continue;
-  const amount=fv1[3]+Math.floor(intelligence*fv1[0]/100)+
-   Math.floor(rank*fv1[2]/100);
+  // Remaked coefficient-pattern preview: floor each contribution separately.
+  // The server's actual final elemental damage stages remain unverified.
+  const fromInt=Math.floor(intelligence*fv1[0]/100);
+  const fromMastery=Math.floor(rank*fv1[2]/100);
+  const amount=fv1[3]+fromInt+fromMastery;
   if(!Number.isSafeInteger(amount))continue;
   const reasons=[],reasonsEn=[];
   if(level<Number(skill.charLevel||0)){
@@ -999,7 +1002,9 @@ function elementalSpellCoefficientPreview({skillCatalog,jobKey,level,
     (secondary?'secondary effects unverified':'application order unverified'),
    coefficientModels:[{ep:'EP_ELEMENT_DAMAGE',
     labelRu:'Расчётная основа заклинания',labelEn:'Modeled spell basis',
-    amount,unit:'',confidence:'coefficient-model'}],
+    amount,unit:'',confidence:'coefficient-model',
+    roundingParts:{base:fv1[3],int:fromInt,mastery:fromMastery,
+     method:'floor-components'}}],
    source:'current OS elemental spell source; provisional INT/mastery hypothesis'});
  }
  return out.sort((a,b)=>a.id-b.id);
@@ -3570,6 +3575,321 @@ const trapSkillCostSources=Object.freeze([
  [240008001,71,1,240008002,true],
  [240010001,61,1,240010002,true]
 ]);
+// Current OS triggered trap actions, matched as complete source vectors.
+// These are descriptions of source effects, NOT proven activation odds,
+// final damage, duration or a server resistance roll.
+const trapOutcomeProofs=Object.freeze({
+ "240001001": {
+  "ru": "Ограничение движения цели",
+  "en": "Restricts target movement",
+  "resistanceKey": null,
+  "nodes": [
+   {
+    "id": 240001050,
+    "branch": "trap",
+    "skillType": "CIRCLE",
+    "funcs": [
+     {
+      "ep": "EP_DONT_MOVE",
+      "dir": "TARGET",
+      "fv1": [
+       20,
+       0,
+       0,
+       10
+      ],
+      "fv2": [
+       0,
+       0,
+       0,
+       0
+      ]
+     },
+     {
+      "ep": "EP_LOST_MAPCHANGE",
+      "dir": "CASTER",
+      "fv1": [
+       0,
+       0,
+       0,
+       0
+      ],
+      "fv2": [
+       0,
+       0,
+       0,
+       0
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "240002001": {
+  "ru": "Стихийный урон и отталкивание",
+  "en": "Elemental damage and knockback",
+  "resistanceKey": "knockback",
+  "nodes": [
+   {
+    "id": 240002050,
+    "branch": "trap",
+    "skillType": "CIRCLE",
+    "funcs": [
+     {
+      "ep": "EP_ELEMENT_DAMAGE",
+      "dir": "TARGET",
+      "fv1": [
+       350,
+       100,
+       70,
+       50
+      ],
+      "fv2": [
+       0,
+       0,
+       0,
+       0
+      ]
+     },
+     {
+      "ep": "EP_CAUSE_KNOCKBACK",
+      "dir": "TARGET",
+      "fv1": [
+       0,
+       0,
+       0,
+       200
+      ],
+      "fv2": [
+       0,
+       0,
+       0,
+       1
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "240005001": {
+  "ru": "Стихийный урон",
+  "en": "Elemental damage",
+  "resistanceKey": null,
+  "nodes": [
+   {
+    "id": 240005002,
+    "branch": "trap",
+    "skillType": "BOLT",
+    "funcs": [
+     {
+      "ep": "EP_SKILL_EXEC",
+      "dir": "TARGET",
+      "fv1": [
+       0,
+       0,
+       0,
+       240005003
+      ],
+      "fv2": [
+       0,
+       0,
+       0,
+       0
+      ]
+     }
+    ]
+   },
+   {
+    "id": 240005003,
+    "branch": "trap",
+    "skillType": "SPHERE",
+    "funcs": [
+     {
+      "ep": "EP_ELEMENT_DAMAGE",
+      "dir": "TARGET",
+      "fv1": [
+       680,
+       0,
+       350,
+       155
+      ],
+      "fv2": [
+       0,
+       0,
+       0,
+       0
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "240008001": {
+  "ru": "Уменьшение ОМ цели",
+  "en": "Reduces target MP",
+  "resistanceKey": null,
+  "nodes": [
+   {
+    "id": 240008002,
+    "branch": "trap",
+    "skillType": "CIRCLE",
+    "funcs": [
+     {
+      "ep": "EP_LOSSMANA_MAXMANA",
+      "dir": "TARGET",
+      "fv1": [
+       0,
+       0,
+       80,
+       30
+      ],
+      "fv2": [
+       0,
+       0,
+       0,
+       0
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "240010001": {
+  "ru": "Ограничение движения и создание препятствия",
+  "en": "Restricts movement and creates an obstacle",
+  "resistanceKey": null,
+  "nodes": [
+   {
+    "id": 240010002,
+    "branch": "trap",
+    "skillType": "CIRCLE",
+    "funcs": [
+     {
+      "ep": "EP_SKILL_EXEC",
+      "dir": "TARGET",
+      "fv1": [
+       0,
+       0,
+       0,
+       240010003
+      ],
+      "fv2": [
+       0,
+       0,
+       0,
+       0
+      ]
+     },
+     {
+      "ep": "EP_DONT_MOVE",
+      "dir": "TARGET",
+      "fv1": [
+       0,
+       0,
+       0,
+       1
+      ],
+      "fv2": [
+       0,
+       0,
+       0,
+       0
+      ]
+     }
+    ]
+   },
+   {
+    "id": 240010003,
+    "branch": "embody",
+    "skillType": "POINT",
+    "funcs": [
+     {
+      "ep": "EP_POP_MAPOBJ_ROUND",
+      "dir": "TARGET",
+      "fv1": [
+       0,
+       0,
+       0,
+       1001
+      ],
+      "fv2": [
+       3000,
+       0,
+       3000,
+       2000
+      ]
+     },
+     {
+      "ep": "EP_POP_MAPOBJ_ROUND",
+      "dir": "TARGET",
+      "fv1": [
+       0,
+       0,
+       0,
+       1001
+      ],
+      "fv2": [
+       3000,
+       0,
+       3000,
+       2000
+      ]
+     },
+     {
+      "ep": "EP_POP_MAPOBJ_ROUND",
+      "dir": "TARGET",
+      "fv1": [
+       0,
+       0,
+       0,
+       1001
+      ],
+      "fv2": [
+       3000,
+       0,
+       3000,
+       2000
+      ]
+     },
+     {
+      "ep": "EP_POP_MAPOBJ_ROUND",
+      "dir": "TARGET",
+      "fv1": [
+       0,
+       0,
+       0,
+       1001
+      ],
+      "fv2": [
+       3000,
+       0,
+       3000,
+       2000
+      ]
+     }
+    ]
+   }
+  ]
+ }
+});
+function trapOutcomeMatches(catalog,root,proof){
+ if(!proof||!Array.isArray(proof.nodes))return false;
+ return proof.nodes.every(p=>{
+  const s=catalog[String(p.id)];
+  return s?.id===p.id&&s.name===root.name&&s.learnable===false&&
+   s.prereq===null&&s.charLevel===0&&s.branch===p.branch&&
+   s.skillType===p.skillType&&Array.isArray(s.reqs)&&s.reqs.length===0&&
+   Array.isArray(s.funcs)&&s.funcs.length===p.funcs.length&&
+   p.funcs.every((expected,i)=>{
+    const got=s.funcs[i];
+    return got?.ep===expected.ep&&got.dir===expected.dir&&
+     Array.isArray(got.fv1)&&got.fv1.length===4&&
+     got.fv1.every((v,j)=>v===expected.fv1[j])&&
+     Array.isArray(got.fv2)&&got.fv2.length===4&&
+     got.fv2.every((v,j)=>v===expected.fv2[j]);
+   });
+ });
+}
 function trapSkillCostPreview({skillCatalog=null,jobKey=null,level=1,
  branchCaps={},branchMasteries={},branchLabels={},englishBranches={}}={}){
  const result={rows:[],rejected:[],verified:false,
@@ -3601,7 +3921,8 @@ function trapSkillCostPreview({skillCatalog=null,jobKey=null,level=1,
   if(!Array.isArray(record.funcs)||record.funcs.length!==expected.length||
    !expected.every((x,i)=>same(record.funcs[i],x))||
    child?.id!==childId||child.name!==record.name||
-   !path||!path.paths.some(p=>p[1]===childId)){
+   !path||!path.paths.some(p=>p[1]===childId)||
+   !trapOutcomeMatches(skillCatalog,record,trapOutcomeProofs[id])){
    result.rejected.push(id);continue;
   }
   const rank=branchMasteries?.trap;
@@ -3609,6 +3930,9 @@ function trapSkillCostPreview({skillCatalog=null,jobKey=null,level=1,
   const ready=legal&&rank>=required;
   result.rows.push({id,name:record.name,itemId:65007,count,
    linkedEffectId:childId,requirementsMet:ready,
+   sourceEffectRu:trapOutcomeProofs[id].ru,
+   sourceEffectEn:trapOutcomeProofs[id].en,
+   statusResistanceKey:trapOutcomeProofs[id].resistanceKey,
    inventoryChecked:false,sourceOnly:true,
    reasonRu:ready?'':legal?'Нужно мастерство «'+
     (branchLabels?.trap||'Ловушки')+'»: '+required:
@@ -3677,6 +4001,8 @@ function complexSkillSourcePreview({skillCatalog=null,jobKey=null,level=1,
   out.rows.push({id:ref.id,name:r.name,description:r.desc||'',
    kind:ref.kind,hasSecondaryEffect:ref.effects.length>1,
    sourceEffects:ref.effects.map(x=>x[0]),sourceOnly:true,
+   linkedStatus:ref.effects.some(x=>x[0]==='EP_CAUSE_NUMB')?
+    {key:'numb',ru:'Заморозка',en:'Freeze'}:null,
    requirementsMet:ru.length===0,
    reasonRu:ru.join(' · '),reasonEn:en.join(' · ')});
  }
