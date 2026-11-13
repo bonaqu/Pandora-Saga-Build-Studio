@@ -22,6 +22,13 @@ export async function runWikiMaterialLinks752Smoke(browser,base){
    anchors.map(a=>a.getAttribute('href'))),
   ids.map(id=>'#wiki/item/'+id),'Crafting inputs and result have their own item links');
   assert.match(await recipe.innerText(),/Рецепт: 1 ×.*\+ 1 ×.*→ 1 ×/);
+  const uses=page.locator('.wiki-page .wiki-skill-recipe-followups');
+  assert.match(await uses.innerText(),/Используют результат:/);
+  assert.deepEqual(await uses.locator('a.wiki-link').evaluateAll(a=>
+   a.map(x=>x.getAttribute('href'))),[
+   '#wiki/skill/220001001','#wiki/skill/220001003',
+   '#wiki/skill/220006001'
+  ]);
   const links=recipe.locator('a.wiki-link');
   assert.ok((await links.first().boundingBox())?.width>15,
    'Material references remain visible and compact');
@@ -31,6 +38,10 @@ export async function runWikiMaterialLinks752Smoke(browser,base){
   await page.goBack();
   await recipe.waitFor({state:'visible',timeout:20000});
 
+  await skill(320010001);
+  assert.deepEqual(await page.locator('.wiki-page .wiki-skill-recipe-followups a.wiki-link')
+   .evaluateAll(a=>a.map(x=>x.getAttribute('href'))),
+   ['#wiki/skill/310003001'],'Holy Water links to Resurrection');
   await skill(220004001);
   assert.deepEqual(await page.locator('.wiki-page .wiki-skill-source-recipe a.wiki-link')
    .evaluateAll(anchors=>anchors.map(a=>a.getAttribute('href'))),
@@ -106,6 +117,10 @@ export async function runWikiMaterialLinks752Smoke(browser,base){
   assert.match(en,/Requires: 3 ×/);
   assert.equal(await page.locator('.wiki-page .wiki-skill-source-material a.wiki-link')
    .getAttribute('href'),'#wiki/item/50059');
+  await skill(220002001);
+  const followupsEn=page.locator('.wiki-page .wiki-skill-recipe-followups');
+  assert.match(await followupsEn.innerText(),/Uses the result:/);
+  assert.match(await followupsEn.innerText(),/Toxify/);
   await skill(220001003);
   const poisonEn=page.locator('.wiki-page .wiki-skill-source-material');
   assert.match(await poisonEn.innerText(),/Requires: 1 × Venom/);

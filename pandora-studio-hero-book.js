@@ -1865,7 +1865,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   // These verified OS models remain in the calculator for the source audit.
   if(!body.querySelector('.stage-healing-spells, .stage-periodic-recovery,'+
    '.stage-attacking-skills, .stage-defensive-skills,'+
-   '.stage-movement-skills, .stage-utility-skills'))
+   '.stage-movement-skills, .stage-utility-skills,.stage-material-actions'))
    body.append(make('p',{class:'stage-attribute-note',text:en?
     'No calculated skill effects for this build. Skill descriptions and requirements are in Encyclopedia → Skills.':
     'У текущего билда нет рассчитанных эффектов умений. Описания и требования смотри в Энциклопедии → Навыки.'}));
