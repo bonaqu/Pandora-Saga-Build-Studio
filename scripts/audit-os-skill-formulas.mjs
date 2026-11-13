@@ -228,9 +228,11 @@ export function auditOsSkillFormulaCoverage({skills,classes,calculator}={}){
  for(const jobKey of classNames){
   const caps=classes[jobKey].branchCaps;
   const situational=calculator.situationalSkillPreview({skillCatalog:skills,
-   jobKey,level:55,branchCaps:caps,branchMasteries:caps});
+   jobKey,level:55,branchCaps:caps,branchMasteries:caps,weaponKind:'LANCE'});
   for(const row of [...situational.stealth,...situational.other])
-   mark(row.id,'situational-skill-source');
+   mark(row.id,'situational-skill-source',{
+    numeric:Number.isSafeInteger(row.requiredItemCount)});
+
  }
  const statusKeys=['numeric-preview','coefficient-model','source-parameter','qualitative-preview',
   'passive-source','internal-or-triggered-source','unmodeled-learnable'];
