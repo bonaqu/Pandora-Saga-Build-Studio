@@ -98,8 +98,9 @@ test('Encyclopedia links crafted reagents to actual learnable consumer skills',(
  assert.match(app,/wiki-skill-recipe-followups/);
  assert.match(app,/itemSkillRelations\(outputId,wikiData\.skills\)/);
  const bookSource=read('pandora-studio-hero-book.js');
- assert.match(bookSource,/materialSkillResults\(body,/);
- assert.match(bookSource,/stage-material-actions/);
- assert.match(bookSource,/onItem\?\.\(id\)/);
- assert.doesNotMatch(bookSource,/wiki-skill-source-recipe/);
+ assert.doesNotMatch(bookSource,/materialSkillResults\(body,/);
+ assert.doesNotMatch(bookSource,/stage-material-actions/);
+ const encyclopedia=read('pandora-studio-app.js');
+ assert.match(encyclopedia,/wiki-skill-source-recipe/);
+ assert.match(encyclopedia,/extra\.type==='trap'/);
 });

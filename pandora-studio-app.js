@@ -5076,8 +5076,20 @@ function renderWiki(root){
         if(index)chain.append(h('span',{text:' → ','aria-hidden':'true'}));
         // Hymn roots, areas and recipient effects share the same source
         // name. Explain the roles without changing their exact Wiki IDs.
+        const linked=wikiData.skills[String(linkId)];
+        // The full trap chain is proved by source item and action effects.
+        // Present the linked gameplay steps in readable language rather
+        // than pretending an unknown damage packet is calculable.
+        const trapRole=evidence.pathKind==='trap'&&index>0?
+         linked?.skillType==='BOLT'?wt('Снаряд: ','Projectile: '):
+         linked?.skillType==='CIRCLE'?wt('Область: ','Area: '):
+         linked?.skillType==='SPHERE'&&linked?.element==='FIRE'&&
+         linked?.funcs?.some(f=>f.ep==='EP_ELEMENT_DAMAGE')?
+          wt('Огненный взрыв: ','Fire blast: '):
+         wt('Эффект: ','Effect: '):'';
         const role=evidence.pathKind==='hymn'&&index>0?
-         (index===1?wt('Область: ','Area: '):wt('Эффект: ','Effect: ')):'';
+         (index===1?wt('Область: ','Area: '):wt('Эффект: ','Effect: ')):
+         trapRole;
         chain.append(wikiLink(role+dataName('skill',String(linkId)),
          'skill',String(linkId)));
        });

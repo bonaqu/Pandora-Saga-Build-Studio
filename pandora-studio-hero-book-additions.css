@@ -494,44 +494,6 @@
 .path-skill-previous-value[role="link"]{cursor:pointer;text-decoration:underline;text-underline-offset:2px}
 .path-skill-previous-value[role="link"]:focus-visible{outline:2px solid #ffe1ad;outline-offset:2px}
 
-/* Book 0.763: one folded workspace for the current hero's crafting/traps. */
-#stageAttributes .stage-material-actions{padding:0;overflow:clip}
-#stageAttributes .stage-material-actions>summary{
- padding:9px 11px;min-height:40px;cursor:pointer;
- font-size:12px;font-weight:650;color:#efd2a5;
- list-style:none
-}
-#stageAttributes .stage-material-actions[open]>summary{border-bottom:1px solid #705137}
-#stageAttributes .stage-material-action-row{
- margin:0 10px;padding:9px 0;min-width:0;border-bottom:1px solid #5b4431;
- display:flex;flex-direction:column;gap:5px;font-size:11px
-}
-#stageAttributes .stage-material-action-row:last-child{border-bottom:0}
-#stageAttributes .stage-material-action-head{
- display:flex;justify-content:space-between;align-items:center;
- flex-wrap:wrap;gap:4px 12px;min-width:0
-}
-#stageAttributes .stage-material-action-head>strong{
- font-size:11px;color:#f2d6a9;overflow-wrap:anywhere
-}
-#stageAttributes .stage-material-action-costs,
-#stageAttributes .stage-material-action-items,
-#stageAttributes .stage-material-action-budget{
- display:flex;gap:5px;align-items:baseline;flex-wrap:wrap;min-width:0
-}
-#stageAttributes .stage-material-action-costs{flex-direction:column;align-items:stretch}
-#stageAttributes .stage-material-action-items,
-#stageAttributes .stage-material-action-budget{gap:3px 6px}
-#stageAttributes .stage-material-item-link{
- display:inline;background:none;border:0;box-shadow:none;padding:2px 0;
- color:#eac18b;font:inherit;cursor:pointer;text-decoration:underline;
- text-underline-offset:2px;text-align:left;overflow-wrap:anywhere
-}
-#stageAttributes .stage-material-item-link:hover{color:#ffdda8}
-#stageAttributes .stage-material-item-link:focus-visible{
- outline:2px solid #f6d49c;outline-offset:2px;border-radius:2px
-}
-
 /* Book 0.764: the calculated skill name opens its full Encyclopedia article.
    One inline control replaces the ordinary label, no extra button or card. */
 #stageAttributes button.stage-effect-skill-link{

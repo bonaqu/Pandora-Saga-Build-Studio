@@ -65,24 +65,20 @@ test('Additional cast threshold is derived from full hero MP at OS base cost',()
  assert.equal(B.nextManaUse({maxMana:450.5,baseCost:4}),null);
  assert.equal(B.nextManaUse({maxMana:Number.MAX_SAFE_INTEGER,baseCost:2}),null);
 });
-test('Material section only renders hero-dependent quantities, not base source facts',()=>{
+test('Hero Book excludes crafting and material forecasts entirely',()=>{
  const book=read('pandora-studio-hero-book.js');
- const from=book.indexOf('function materialSkillResults(');
- const to=book.indexOf('// Mirrors Remaked SkillView:',from);
- assert.ok(from>0&&to>from);
- const section=book.slice(from,to);
- assert.match(section,/materialUseBudget/);
- assert.match(section,/nextManaUse/);
- assert.match(section,/budget\.casts<=0/);
- assert.match(section,/budget\.materials/);
- assert.match(section,/onItem\?\.\(id\)/);
- assert.doesNotMatch(section,/action\.cooldown|action\.cast|action\.produces/);
- assert.doesNotMatch(section,/Base casting|Базовое применение|На применение/);
+ const effects=book.slice(book.indexOf('function skillEffectsPage('),
+  book.indexOf('function chapterNumber('));
+ assert.ok(effects.includes('scalingSkillPreview'));
+ assert.ok(effects.includes('directHealingBudget'));
+ assert.doesNotMatch(book,/function materialSkillResults\(/);
+ assert.doesNotMatch(book,/materialSkillResults\(body/);
+ assert.doesNotMatch(effects,/craftingSkillPreview|trapSkillCostPreview|materialUseBudget/);
+ assert.doesNotMatch(book,/stage-material-actions/);
  const wiki=read('pandora-studio-app.js');
- assert.match(wiki,/wt\('Затраты ОМ','MP cost'\)/);
- assert.match(wiki,/wt\('Подготовка, с','Cast, sec'\)/);
- assert.match(wiki,/wt\('Перезарядка, с','Cooldown, sec'\)/);
- assert.match(wiki,/extra\.produces\.quantity/);
+ assert.match(wiki,/wiki-skill-source-recipe/);
+ assert.match(wiki,/extra\.type==='trap'/);
+ assert.match(wiki,/wiki-skill-source-material/);
 });
 test('One keyboard-accessible calculated skill badge opens full encyclopedia',()=>{
  const book=read('pandora-studio-hero-book.js');
