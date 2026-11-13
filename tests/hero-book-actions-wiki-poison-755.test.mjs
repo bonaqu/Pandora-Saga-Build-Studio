@@ -63,9 +63,9 @@ test('base action metadata stays in collapsed current-build cards, never source-
  assert.match(book,/sourceAction\?\.\(\{/);
  assert.match(book,/data-skill-action-id/);
  assert.match(book,/branchCaps:heroBranchCaps,branchMasteries:heroMasteries/);
- assert.match(book,/Расход ОМ по игровым данным/);
+ assert.match(book,/Применение и затраты: Расход ОМ:/);
  assert.match(book,/Базовое применение/);
- assert.match(book,/Окончательные затраты и время с усилениями/);
+ assert.doesNotMatch(book,/Окончательные затраты и время с усилениями/);
  assert.doesNotMatch(book,/wiki-skill-source-material/);
 });
 

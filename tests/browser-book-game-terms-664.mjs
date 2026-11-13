@@ -108,15 +108,15 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   assert.equal(ru.includes('Гимны'),false);
   // The source-backed current hero's healing card shows its actual action,
   // interval model, resource cost, cast and cooldown, not placeholder text.
-  assert.match(ru,/14 ОЗ каждые 2 сек\. \(модель\)/);
+  assert.match(ru,/14 ОЗ каждые 2 сек\./);
   assert.match(ru,/Расход ОМ: 90/);
   assert.match(ru,/Полный запас 450 ОМ: до 5 применений по базовой стоимости/);
   assert.match(ru,/Следующий прирост за применение: \+3 ОЗ на уровне 46/);
   assert.match(ru,/Базовое применение: 3 сек\./);
   assert.match(ru,/Базовая перезарядка: 20 сек\./);
   assert.match(ru,/С «Воодушевлением» от союзника: 1,5 сек\. применения/);
-  assert.match(ru,/Показатель расхода ОМ героя: 78%/);
-  assert.match(ru,/Показатель отката героя: 86%/);
+  assert.match(ru,/Расход ОМ: 78% от базового/);
+  assert.match(ru,/Перезарядка: 86% от базовой/);
   assert.doesNotMatch(ru,/С «Воодушевлением» от союзника: 3 сек\./,
    'Never use the casting speed index to calculate cast seconds');
   const compactHeal=page.locator('#book-source-qa .stage-healing-spells .stage-heal-row')
@@ -130,8 +130,13 @@ export async function runHeroBookGameNames664Smoke(browser,base){
    'Player can reveal the existing calculated details');
   await compactHeal.locator(':scope > summary').click();
 
-  assert.match(ru,/В описании OS указано «3 с\.»/);
-  assert.match(ru,/Описание OS упоминает ОМ/);
+  assert.doesNotMatch(ru,/В описании OS указано «3 с\.»/);
+  assert.doesNotMatch(ru,/Описание OS упоминает ОМ/);
+  for(const phrase of ['Расчётная модель по игровым данным',
+   'не подтверждённый итоговый результат','итоговая скорость, длительность',
+   'точная частота атак пока неизвестна','Расчёты для текущего героя.'])
+   assert.equal(ru.includes(phrase),false,
+    'Skill Effects must not repeat technical caveats: '+phrase);
   assert.doesNotMatch(ru,/11 ОЗ каждые 2 сек\./,
    'Sanctuary is a direct heal, not a periodic pulse');
   // Real browser proof: the source-only catalog remains outside the Book, but
@@ -170,7 +175,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   assert.equal(await singer.locator('details').count(),0,
    'Offense uses one disclosure for action, model details and requirements');
   await singer.locator(':scope > summary').click();
-  assert.match(await singer.innerText(),/Расход ОМ по игровым данным: 30/);
+  assert.match(await singer.innerText(),/Расход ОМ: 30/);
   assert.match(await singer.innerText(),/Базовое применение: мгновенно/);
   assert.match(await singer.innerText(),/Базовая перезарядка: 5 сек\./);
   const required=[310001001,310021001,310022001,310023001,340001001];
@@ -210,6 +215,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   for(const term of ['First Aid','Healing Aura',"Minstrel's Song",'Hymn mastery'])
    assert.ok(en.includes(term),'Book effects need original OS EN '+term+'; seen '+en.slice(0,700));
   assert.match(en,/With Inspiration from an ally: 1.5 s of casting/);
+  assert.doesNotMatch(en,/not a confirmed final combat result|final speed, duration|actual firing rate is not known/);
   assert.match(en,/Full 450 MP: up to 5 casts at the base cost/);
   assert.match(en,/Next \+3 HP per cast at level 46/);
   assert.equal(en.includes('Mana Restore'),false,'Unavailable MP recovery belongs in Wiki');
@@ -223,7 +229,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   const singerEn=offenseEn.locator('[data-skill-action-id="340001001"]');
   assert.equal(await singerEn.count(),1);
   await singerEn.locator('summary').click();
-  assert.match(await singerEn.innerText(),/OS MP cost: 30/);
+  assert.match(await singerEn.innerText(),/MP cost: 30/);
   assert.match(await singerEn.innerText(),/Base casting: instant/);
   assert.match(await singerEn.innerText(),/Base cooldown: 5 s/);
 
@@ -305,11 +311,11 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   });
   assert.equal(strikeSummary.ru?.main,'—',
    'Final target damage must remain unknown');
-  assert.match(strikeSummary.ru.models.join(' '),/Сила удара \(расчёт\) \+20%/);
+  assert.match(strikeSummary.ru.models.join(' '),/Сила удара \+20%/);
   assert.equal(strikeSummary.ru.actions,1,
    'Available mastery-derived strike retains its OS base-cost disclosure');
   assert.equal(strikeSummary.en?.main,'—');
-  assert.match(strikeSummary.en.models.join(' '),/Estimated strike strength \+20%/);
+  assert.match(strikeSummary.en.models.join(' '),/Strike strength \+20%/);
   assert.deepEqual(errors,[]);
   console.log('Chromium Book 664: OS/Remaked RU+EN skills, Hymn/Песнопения, Адепт, buffs and defense');
  }finally{await context.close()}

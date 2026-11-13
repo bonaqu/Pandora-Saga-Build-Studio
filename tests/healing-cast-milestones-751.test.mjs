@@ -143,9 +143,9 @@ test('Book presents the model in readable, compact Russian and English',()=>{
  assert.match(book,/Как рассчитано лечение/);
  assert.match(book,/Next Healing mastery increase/);
  assert.match(book,/Следующий прирост от /);
- assert.match(book,/Показатель расхода ОМ героя/);
- assert.match(book,/Показатель отката героя/);
- assert.match(book,/Точное время перезарядки с бонусами пока не установлено/);
+ assert.match(book,/Расход ОМ: /);
+ assert.match(book,/Перезарядка: /);
+ assert.doesNotMatch(book,/Точное время перезарядки с бонусами пока не установлено/);
  assert.match(book,/appendHealingBreakdown\(more,row,pulse\)/);
  assert.match(book,/stage-skill-more/);
 });

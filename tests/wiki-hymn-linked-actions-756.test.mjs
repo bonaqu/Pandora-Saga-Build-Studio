@@ -42,7 +42,8 @@ test('no invented 4-second timing or final cooldown in read-only paths',()=>{
   assert.doesNotMatch(e.notes[0].ru,/каждые 4 секунды/);
   assert.equal(e.paths[0].length,3);
  }
- assert.match(inspect(340004001).notes[0].ru,/Точные секунды отката не подтверждены/);
+ assert.match(inspect(340004001).notes[0].ru,/сокращающую перезарядку/);
+ assert.doesNotMatch(inspect(340004001).notes[0].ru,/не подтвержден/);
 });
 
 test('changed OS vectors, requirements and chain IDs cannot be presented as proven',()=>{
