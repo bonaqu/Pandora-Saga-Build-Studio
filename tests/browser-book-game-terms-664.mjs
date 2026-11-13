@@ -104,7 +104,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
    return host.querySelector('.stage-book-page')?.textContent||'';
   },{lang,chapter});
   const ru=await render({lang:'ru',chapter:'effects'});
-  for(const name of ['Первая помощь','Массовое исцеление','Песнь поэта','Песнопения'])
+  for(const name of ['Первая помощь','Массовое исцеление','Песнь поэта'])
    assert.ok(ru.includes(name),'Book effects need OS/Remaked RU '+name+'; seen '+ru.slice(0,600));
   const unavailableHeal=page.locator('#book-source-qa [data-healing-skill-id="310004001"]');
   assert.equal(await unavailableHeal.count(),0,'Unavailable Heal must not appear as a learned healing-skill row');

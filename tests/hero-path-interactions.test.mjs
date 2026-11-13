@@ -792,6 +792,8 @@ test('One source-derived next skill shortcut belongs to Path and respects search
  const api={state:{level:45,points:{}},job:'JUGGERNAUT',lang:'ru',
   skillCatalog:[skill,other],catalogReady:true,query:'',filter:'all',
   shown:24,selectedSkill:null,icon:()=>null,hover:()=>{},
+  branchName:key=>key,innate:{},
+  branchCaps:{slash:30,thrust:30,brush:30,blow:10,defense:20},
   nextMelee:{id:100057001,current:70,required:100,remaining:30},
   onNavigateSkill:chosen=>{api.selectedSkill=chosen;}};
  const gallery=new BrowserElement('root'),details=new BrowserElement('root');

@@ -641,7 +641,6 @@ function viewSkills(target,details,api){
  const milestone=api.nextMelee;
  const nextSkill=milestone?skillIndex.get(String(milestone.id)):null;
  if(!api.query&&api.filter==='all'&&nextSkill&&
-  allowedForJob(nextSkill,api.job)&&
   Number.isSafeInteger(milestone.remaining)&&milestone.remaining>0&&
   typeof api.onNavigateSkill==='function'){
   target.append(make('button',{type:'button',class:'path-next-melee',
