@@ -66,3 +66,10 @@ test('short guide tooltip Escape is handled before the workbench, including pend
  assert.match(src,/if\(event\.key!=='Escape'\|\|\(!current&&!pending\)\)return/);
  assert.match(src,/pending&&!pending\.node\.contains\(event\.target\)/);
 });
+
+test('Escape on editable guide fields reaches the editor even with a pending tooltip',()=>{
+ const src=load('pandora-studio-guide-tooltips.js');
+ assert.match(src,/\[data-owner-text-field\]/);
+ assert.match(src,/if\(editing\)return/);
+ assert.match(src,/event\.stopImmediatePropagation\(\)/);
+});

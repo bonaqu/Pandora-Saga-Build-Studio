@@ -121,11 +121,15 @@ if(typeof document!=='undefined'){
   if((current&&!current.contains(event.target))||
      (pending&&!pending.node.contains(event.target)))dismiss();
  },{capture:true});
- // Dismiss the guide hint before the host workbench interprets Escape as
- // navigation/close, including when pointer hover has not yet opened it.
+ // Escape dismisses a hint, but a focused text editor owns its own key.
+ // A hover tooltip may be pending while an owner editor is still active:
+ // cancel the hint without preventing the editor from restoring its draft.
  document.addEventListener('keydown',event=>{
   if(event.key!=='Escape'||(!current&&!pending))return;
+  const editing=event.target?.closest?.(
+   '[data-owner-text-field],.wiki-inline-input,[contenteditable="true"],[contenteditable="plaintext-only"]');
   dismiss();
+  if(editing)return;
   event.preventDefault();
   event.stopImmediatePropagation();
  },{capture:true});

@@ -170,6 +170,13 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(await failedBook.getAttribute('contenteditable'),'plaintext-only');
   assert.equal(await firstGroup.locator('summary [data-guide-key="summary.group.0"] [data-owner-text-field]').count(),1);
   assert.equal(JSON.parse(values['guideedit.book.summary.group.0']).hintRu,'Очки здоровья и маны героя');
+  // Arm a tooltip hover while the unsaved editor is focused. A capturing
+  // tooltip must not steal Escape from the editing control.
+  await failedBook.evaluate(node=>{
+   const label=node.closest('[data-guide-key]');
+   window.PandoraGuideTooltip.attach(label,'Test guide hint',{hoverDelay:3000});
+   label.dispatchEvent(new PointerEvent('pointerenter',{pointerType:'mouse'}));
+  });
   await failedBook.press('Escape');
   assert.equal(await firstGroup.locator('summary [data-guide-key="summary.group.0"] [data-owner-text-field]').count(),0);
   await page.locator('#stageAttributes .stage-book-close').click();
