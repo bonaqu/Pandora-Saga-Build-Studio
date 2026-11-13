@@ -3562,7 +3562,64 @@ function craftingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  }
  return out;
 }
-root.PandoraOSCalculator=Object.freeze({skillExecutionChains,craftingSkillPreview,priestCastPreviews,movementSkillSourcePreview,utilitySkillSourcePreview,scalingSkillPreview,directStrikeCoefficientPreview,elementalSpellCoefficientPreview,defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
+// Exact OS trap item costs; never infer trigger probability or damage.
+const trapSkillCostSources=Object.freeze([
+ [240001001,16,1,240001050,true],
+ [240002001,26,1,240002050,true],
+ [240005001,41,2,240005002,false],
+ [240008001,71,1,240008002,true],
+ [240010001,61,1,240010002,true]
+]);
+function trapSkillCostPreview({skillCatalog=null,jobKey=null,level=1,
+ branchCaps={},branchMasteries={},branchLabels={},englishBranches={}}={}){
+ const result={rows:[],rejected:[],verified:false,
+  source:'Current OS trap material costs; damage, inventory and activation unverified'};
+ if(!skillCatalog||typeof jobKey!=='string'||!Number.isSafeInteger(level)||
+  level<1||level>55)return result;
+ const make=(ep,dir,id,n)=>({ep,dir,fv1:[0,0,0,id],fv2:[0,0,0,n]});
+ const same=(f,x)=>f?.ep===x.ep&&f.dir===x.dir&&
+  Array.isArray(f.fv1)&&f.fv1.length===4&&f.fv1.every((v,i)=>v===x.fv1[i])&&
+  Array.isArray(f.fv2)&&f.fv2.length===4&&f.fv2.every((v,i)=>v===x.fv2[i]);
+ // The linked effect must itself pass the strict full-source graph audit.
+ const chains=skillExecutionChains({skillCatalog,jobKey,level,branchCaps,
+  branchMasteries,branchLabels,englishBranches});
+ for(const [id,required,count,childId,cancel] of trapSkillCostSources){
+  const record=skillCatalog[String(id)],cap=branchCaps?.trap;
+  if(record?.id!==id||record.learnable!==true||record.skillType!=='POINT'||
+   record.branch!=='trap'||record.prereq!==null||record.charLevel!==0||
+   !record.classes?.[jobKey]||!Array.isArray(record.reqs)||
+   record.reqs.length!==1||record.reqs[0]?.branch!=='trap'||
+   record.reqs[0]?.amount!==required||
+   !Number.isSafeInteger(cap)||cap<required)continue;
+  const expected=[
+   make('EP_CONSUME_ITEM','CASTER',65007,count),
+   make('EP_SKILL_EXEC','TARGET',childId,0),
+   ...(cancel?[make('EP_CANCEL_TRAP','CASTER',childId,0)]:[])
+  ];
+  const child=skillCatalog[String(childId)];
+  const path=chains.rows.find(x=>x.id===id);
+  if(!Array.isArray(record.funcs)||record.funcs.length!==expected.length||
+   !expected.every((x,i)=>same(record.funcs[i],x))||
+   child?.id!==childId||child.name!==record.name||
+   !path||!path.paths.some(p=>p[1]===childId)){
+   result.rejected.push(id);continue;
+  }
+  const rank=branchMasteries?.trap;
+  const legal=Number.isSafeInteger(rank)&&rank>=0&&rank<=cap;
+  const ready=legal&&rank>=required;
+  result.rows.push({id,name:record.name,itemId:65007,count,
+   linkedEffectId:childId,requirementsMet:ready,
+   inventoryChecked:false,sourceOnly:true,
+   reasonRu:ready?'':legal?'Нужно мастерство «'+
+    (branchLabels?.trap||'Ловушки')+'»: '+required:
+    'Мастерство выходит за пределы профессии',
+   reasonEn:ready?'':legal?'Requires '+
+    (englishBranches?.trap||'Trap')+' mastery: '+required:
+    'Mastery exceeds the class limit'});
+ }
+ return result;
+}
+root.PandoraOSCalculator=Object.freeze({skillExecutionChains,craftingSkillPreview,trapSkillCostPreview,priestCastPreviews,movementSkillSourcePreview,utilitySkillSourcePreview,scalingSkillPreview,directStrikeCoefficientPreview,elementalSpellCoefficientPreview,defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
  base,characterSheetPhysicalAttackRange,classBase,classBaseComponents,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,racialWeaponPreview,incredibleStrengthPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
  recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,consumableSkillPreview,statusCurePreview,harmfulConsumablePreview,gemstonePreview,legacyBuffPreview,songSkillPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,racialUtilityPreview,elementalMagicPreview,elementalRefinementPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive
 });
