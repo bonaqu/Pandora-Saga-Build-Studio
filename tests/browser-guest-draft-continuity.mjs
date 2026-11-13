@@ -215,7 +215,13 @@ export async function runGuestDraftContinuitySmoke(browser,base){
      .getAttribute('aria-expanded'),'true',
      'Header sign-in should leave the profile accessible');
     await page.locator('#profileTrigger').click();
-    assert.equal(await panel.getAttribute('aria-hidden'),'true');
+    // During its 170ms closing animation aria-hidden is temporarily true,
+    // then intentionally removed when the hidden attribute takes over.
+    // Assert the stable closed state instead of racing that transition.
+    await page.waitForFunction(()=>
+     document.querySelector('#accountPanel')?.hidden===true&&
+     document.querySelector('#profileTrigger')?.getAttribute('aria-expanded')==='false',
+     null,{timeout:12000});
     await panel.waitFor({state:'hidden'});
     await page.locator('#profileTrigger').click();
     await panel.waitFor({state:'visible'});
