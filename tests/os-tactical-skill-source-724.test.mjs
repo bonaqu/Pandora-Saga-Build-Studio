@@ -85,10 +85,11 @@ test('audit counts six additional qualitative skills, each once',()=>{
   assert.deepEqual(row.sourceModules,['tactical-skill-source']);
  }
 });
-test('Hero Book uses readable game labels and has no invented final combat result',()=>{
- const code=read('pandora-studio-hero-book.js');
- for(const word of ['Тактические умения','Tactical skills','Расход ОМ и перезарядка',
-  'Перезарядка: ','MP: ','tacticalSkillPreview','prerequisiteId'])
-  assert.ok(code.includes(word),word);
- assert.ok(code.includes('&&!tactical?.rows?.length'));
+test('Source-only os-tactical-skill-source-724 knowledge is readable in Wiki without fake results',()=>{
+ const wiki=read('pandora-studio-wiki-skill-insights.js');
+ const app=read('pandora-studio-app.js');
+ const book=read('pandora-studio-hero-book.js');
+ assert.ok(wiki.includes('tacticalSkillPreview'),'verified source projection retained');
+ assert.ok(app.includes('PandoraWikiSkillInsights?.inspect'),'Wiki owns reference skill notes');
+ assert.ok(!book.includes('stage-skill-tactical-effects'),'Book cannot show standalone source-only notes');
 });
