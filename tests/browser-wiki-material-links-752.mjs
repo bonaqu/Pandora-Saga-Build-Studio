@@ -72,6 +72,26 @@ export async function runWikiMaterialLinks752Smoke(browser,base){
   assert.match(peaceRoles,/Область:/);
   assert.match(peaceRoles,/Эффект:/);
 
+  // Follow the exact prerequisite chain without changing the build.
+  await page.goto(base+'/#wiki/skill/110101001',{waitUntil:'domcontentloaded'});
+  await page.locator('#startupOverlay').waitFor({state:'hidden',timeout:30000});
+  const nextSkill=page.locator('.wiki-page .wiki-prerequisite a[href="#wiki/skill/110101002"]');
+  await nextSkill.waitFor({state:'visible',timeout:20000});
+  assert.match(await nextSkill.innerText(),/Порез/);
+  await nextSkill.click();
+  await page.waitForFunction(()=>location.hash.includes('#wiki/skill/110101002'));
+  assert.equal(await page.locator('.wiki-page .wiki-prerequisite a[href="#wiki/skill/110101001"]').count(),1);
+
+  // Ordinary recipes remain visible; special internal actions stay discoverable.
+  await page.goto(base+'/#wiki/item/50056',{waitUntil:'domcontentloaded'});
+  await page.locator('.wiki-page .wiki-effect-usage-row').first().waitFor({state:'visible',timeout:20000});
+  assert.ok(await page.locator('.wiki-page .wiki-effect-usage-row a[href="#wiki/skill/220002001"]').count());
+  await page.goto(base+'/#wiki/item/70003',{waitUntil:'domcontentloaded'});
+  const special=page.locator('.wiki-page details.wiki-special-skill-uses');
+  await special.waitFor({state:'visible',timeout:20000});
+  assert.equal(await special.getAttribute('open'),null);
+  assert.match(await special.locator('summary').innerText(),/Дополнительные действия/);
+
   // Keep current Resurrection selection for the existing English checks.
   await skill(310003001);
   const close=page.locator('#dockClose');
