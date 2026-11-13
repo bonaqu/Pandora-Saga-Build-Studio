@@ -78,7 +78,7 @@ test('400 class/mastery/level allocations never turn tactics into passive stats'
 test('audit counts six additional qualitative skills, each once',()=>{
  const report=auditOsSkillFormulaCoverage({skills,classes:jobs,calculator:calc});
  assert.equal(report.summary.statuses['qualitative-preview'],22);
- assert.equal(report.summary.statuses['unmodeled-learnable'],90);
+ assert.equal(report.summary.statuses['unmodeled-learnable'],87);
  for(const [id] of cases){
   const row=report.rows.find(x=>x.id===id);
   assert.equal(row.status,'qualitative-preview');
