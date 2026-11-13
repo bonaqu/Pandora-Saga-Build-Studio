@@ -34,7 +34,7 @@ test('Wiki shows direct learnable successor with shared class',()=>{
  assert.deepEqual(wiki.skillSuccessors('wat',skills),[]);
  const tampered={...skills,'110101002':{...skills['110101002'],learnable:false}};
  assert.deepEqual(wiki.skillSuccessors(110101001,tampered),[]);
- const foreign={...skills,'110101002':{...skills['110101002'],classes:{MAGE:1}}};
+ const foreign={...skills,'110101002':{...skills['110101002'],classes:{UNREGISTERED:1}}};
  assert.deepEqual(wiki.skillSuccessors(110101001,foreign),[]);
  assert.match(read('pandora-studio-app.js'),/PandoraWikiData\.skillSuccessors/);
 });
