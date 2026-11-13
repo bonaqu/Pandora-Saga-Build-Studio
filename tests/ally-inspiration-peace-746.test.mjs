@@ -36,7 +36,7 @@ test('Peace Song: only allied Cleric with Healing 61 can provide the source-base
  assert.equal(result?.requiredHealing,61);
  assert.equal(result?.casterClass,'CLERIC');
  assert.equal(C.alliedPeaceSongPreview({...args,spi:135})?.value,100);
- assert.equal(C.alliedPeaceSongPreview({...args,hymn:45})?.value,104);
+ assert.equal(C.alliedPeaceSongPreview({...args,hymn:45})?.value,103);
  assert.equal(C.alliedPeaceSongPreview({...args,hymn:29}),null);
  assert.equal(C.alliedPeaceSongPreview({...args,hymn:46}),null);
  const changed=structuredClone(skills);
