@@ -174,6 +174,7 @@ const compositeSkillNotes=Object.freeze({
    ['EP_ELEMENT_DAMAGE','TARGET',[100,0,100,50],[0,0,0,0]],
    ['EP_SKILL_EXEC','TARGET',[0,0,0,500000005],[0,0,9,9]]],
   linked:500000005,childKind:'ENEMY',childBranch:'race',
+  childElement:null,childStat:'SPI',
   childEffects:[['EP_CAUSE_BURN','TARGET',[0,0,0,10],[0,0,0,100]]],
   ru:'Наносит прямой огненный урон и отдельно вызывает ожог.',
   en:'Deals direct fire damage and separately applies a burn.'},
@@ -183,6 +184,7 @@ const compositeSkillNotes=Object.freeze({
    ['EP_ELEMENT_DAMAGE','TARGET',[40,0,40,26],[0,0,0,0]],
    ['EP_SKILL_EXEC','TARGET',[0,0,0,430053002],[0,0,0,0]]],
   linked:430053002,childKind:'ENEMY',childBranch:'darkness',
+  childElement:'DARK',childStat:'SPI',
   childEffects:[
    ['EP_HEAL_LIFE_REGENERATOR','TARGET',[-4,0,-10,-4],[0,0,0,2]],
    ['EP_STOP_NATURAL_HEAL','TARGET',[0,0,0,1],[0,0,0,1]]],
@@ -211,7 +213,9 @@ function compositeActionEvidence(skill,skillCatalog){
  const child=spec.linked!=null?skillCatalog[String(spec.linked)]:null;
  if(spec.linked!=null&&(child?.id!==spec.linked||
   child.learnable!==false||child.skillType!==spec.childKind||
-  child.branch!==spec.childBranch||!Array.isArray(child.funcs)||
+  child.branch!==spec.childBranch||
+  child.element!==spec.childElement||child.powerStat!==spec.childStat||
+  child.damage!==null||!Array.isArray(child.funcs)||
   child.funcs.length!==spec.childEffects.length||
   !child.funcs.every((fx,i)=>sameGameEffect(fx,spec.childEffects[i]))))
   return null;
