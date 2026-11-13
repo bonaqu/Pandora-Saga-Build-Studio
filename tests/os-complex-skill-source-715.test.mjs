@@ -107,6 +107,6 @@ test('Hero Book shows official descriptions and plain uncertainty, not internal 
  assert.match(src,/Результат зависит от состояний цели/);
  // The section uses the common Hero Book header; legacy CSS pseudo arrows
  // must NOT be required to consider a source-backed skill rendered.
- assert.match(css,/\\.stage-book-disclosure\\.stage-attribute-row>summary\\.stage-result-section-head/);
+ assert.match(css,/\.stage-book-disclosure\.stage-attribute-row>summary\.stage-result-section-head/);
  assert.doesNotMatch(css,/>summary:(?::after|after)/);
 });

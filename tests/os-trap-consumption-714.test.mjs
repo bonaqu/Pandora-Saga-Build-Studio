@@ -98,6 +98,6 @@ test('Hero Book explains uncertain mechanics and the actual game material in RU/
  assert.match(book,/!trapCost\?\.rows\?\.length/);
  // The section uses the common Hero Book header; legacy CSS pseudo arrows
  // must NOT be required to consider a source-backed skill rendered.
- assert.match(css,/\\.stage-book-disclosure\\.stage-attribute-row>summary\\.stage-result-section-head/);
+ assert.match(css,/\.stage-book-disclosure\.stage-attribute-row>summary\.stage-result-section-head/);
  assert.doesNotMatch(css,/>summary:(?::after|after)/);
 });
