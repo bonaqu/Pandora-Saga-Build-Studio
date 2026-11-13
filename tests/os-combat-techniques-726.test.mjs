@@ -119,12 +119,11 @@ test('cross-module audit counts exactly eight additional qualitative skills',()=
   assert.deepEqual(row.sourceModules,['combat-techniques-source']);
  }
 });
-test('Hero Book uses readable labels and no internal effect identifiers',()=>{
- const src=read('pandora-studio-hero-book.js');
- for(const phrase of ['Защитные и боевые приёмы','Defense and combat techniques',
-  'Расход ОМ и перезарядка','stage-skill-combat-technique',
-  'combatTechniquePreview','gameSkillBadge'])
-  assert.ok(src.includes(phrase),phrase);
- assert.ok(src.includes('&&!techniques?.rows?.length'));
- assert.ok(!src.includes('EP_SKILL_PARRY_BENCH'));
+test('Source-only os-combat-techniques-726 knowledge belongs in the Encyclopedia, not build stats',()=>{
+ const wiki=read('pandora-studio-wiki-skill-insights.js');
+ const app=read('pandora-studio-app.js');
+ const book=read('pandora-studio-hero-book.js');
+ assert.ok(wiki.includes('combatTechniquePreview'),'source inspector must stay enabled');
+ assert.ok(app.includes('PandoraWikiSkillInsights?.inspect'),'Wiki renders verified insights');
+ assert.ok(!book.includes('stage-skill-combat-technique'),'Book must not duplicate Wiki metadata');
 });
