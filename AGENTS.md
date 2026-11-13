@@ -68,6 +68,10 @@ These repository-level rules are durable instructions for future coding sessions
 - Show source-derived estimated totals in calculation results and base/gear/race/total separately in Attack. Keep `verified:false`; unverified temporary skill modifiers and full live combat stacking excluded.
 - Use readable player-facing explanations without raw effect names, vectors, IDs, or internal system abbreviations.
 
+## Saboteur level-50 trap variant (2026-11-13, 0.720.0)
+- Current game class DISTURBANCE is «Загонщик» / Saboteur. Learnable Plant Mine 240002001 triggers 240002050; nonlearnable, class-only, level-50 record 240002002 requires 240002001 and triggers 240002051 while cancelling 240002050. Both cost one item 65007. Enhanced elemental vector [450,100,300,50] differs from basic [350,100,70,50]; knockback vector is unchanged.
+- The source alone does NOT confirm when the game switches to the upgraded effect, or the final damage. Strictly validate the second root and its child and show a conditional source explanation only. Do not silently change the normal trap's calculation or its requirements.
+
 ## Fast, safe verification
 1. Identify the affected UI handler and existing related test before coding. Reuse current equipment open/replace/unequip paths instead of duplicating mutations.
 2. Fetch related files in batches; make one coherent patch, with a focused Node regression and an isolated Chromium scenario before a PR.
