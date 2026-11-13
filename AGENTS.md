@@ -81,6 +81,11 @@ These repository-level rules are durable instructions for future coding sessions
 - An active inline text editor owns Escape. A pending/visible guide tooltip must dismiss itself without intercepting that key; otherwise failed CAS edits cannot be cancelled reliably.
 - The isolated Chromium ui-content-inline flow arms a pending tooltip before editor Escape, verifies cancellation and preserves normal tooltip dismissal elsewhere.
 
+## Human-readable skill effect models and range breakdown (2026-11-13, 0.722.0)
+- Render individual skill-range terms as source constant and independently floored Ranged mastery contribution, never as automatically applied permanent attack distance or proven full active-skill reach. Use official bilingual mastery name and existing skill icon/hover tooltip in Attack.
+- Both range-bearing skills in Skill Effects must pass the same full ordered OS source proof as the Attack skill-range panel. The paired ATTACKCARRY vector must be checked but not listed as a second source of increased range.
+- Owner-editable new UI titles/help reuse standard RU/EN D1 guideLabel keys. Player descriptions must never say raw OS/Remaked/FV/EP internals or use unexplained developer coefficient labels; retain exact data and evidence in code and tests.
+
 ## Fast, safe verification
 1. Identify the affected UI handler and existing related test before coding. Reuse current equipment open/replace/unequip paths instead of duplicating mutations.
 2. Fetch related files in batches; make one coherent patch, with a focused Node regression and an isolated Chromium scenario before a PR.
