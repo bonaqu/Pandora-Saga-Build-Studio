@@ -155,6 +155,12 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   assert.equal(await offense.getAttribute('open'),null,
    'Skill Effects start with offensive previews collapsed');
   await offense.locator(':scope > summary').click();
+  const singer=offense.locator('[data-skill-action-id="340001001"]');
+  assert.equal(await singer.count(),1,'Current ENCHANTER sees source action for Minstrel\'s Song');
+  await singer.locator('summary').click();
+  assert.match(await singer.innerText(),/Расход ОМ по игровым данным: 30/);
+  assert.match(await singer.innerText(),/Базовое применение: мгновенно/);
+  assert.match(await singer.innerText(),/Базовая перезарядка: 5 сек\./);
   const required=[310001001,310021001,310022001,310023001,340001001];
   // The new collapsed subchapters use lazy-loaded artwork; force each source
   // icon into the scrollport before checking that the original sprite loaded.
@@ -197,6 +203,17 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   assert.equal(en.includes('Mana Restore'),false,'Unavailable MP recovery belongs in Wiki');
   assert.equal(en.includes('Acolyte class'),false,'Locked class hints do not clutter Book');
   assert.equal(en.includes('A bad EN name'),false);
+  const offenseEn=page.locator('#book-source-qa .stage-attacking-skills');
+  // Re-rendering RU → EN can preserve an already expanded disclosure.
+  // Clicking it unconditionally would close the section under test.
+  if(await offenseEn.getAttribute('open')===null)
+   await offenseEn.locator(':scope > summary').click();
+  const singerEn=offenseEn.locator('[data-skill-action-id="340001001"]');
+  assert.equal(await singerEn.count(),1);
+  await singerEn.locator('summary').click();
+  assert.match(await singerEn.innerText(),/OS MP cost: 30/);
+  assert.match(await singerEn.innerText(),/Base casting: instant/);
+  assert.match(await singerEn.innerText(),/Base cooldown: 5 s/);
 
   const buffsRu=await render({lang:'ru',chapter:'buffs'});
   for(const name of ['Знак атаки','Знак защиты','Чары усиления','Рывок']){
