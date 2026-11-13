@@ -1338,7 +1338,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
  remakedBuffRows=[],availability={},combatSkillCards={},
  heroJobKey=null,heroLevel=1,heroMasteries={},heroBranchCaps={},
  heroWeaponKind='BARE_HAND',heroHasShield=false,
- targetSkillDamage=null,onItem=()=>{},onSkill=null}={}){
+ targetSkillDamage=null,targetSkillDamages=[],onItem=()=>{},onSkill=null}={}){
  const en=document.documentElement?.lang==='en';
  const gates=root.PandoraBookSkillThresholds;
  const healingNumber=new Intl.NumberFormat(en?'en-US':'ru-RU',
@@ -1540,17 +1540,32 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
  })||{offense:[],defense:[]};
  // Source-validated, learned spell only. Place it in the existing offense
  // skill list; do not invent extra panels or expose item requirements.
- const trapSource=gameTerms.skills?.['240005001'];
- const hit=heroJobKey==='DISTURBANCE'&&
-  targetSkillDamage?.skillId===240005001&&
-  targetSkillDamage?.monsterId===22104&&
-  heroMasteries.trap>=41&&trapSource?.id===240005001&&
-  [targetSkillDamage.min,targetSkillDamage.average,targetSkillDamage.max]
-   .every(n=>Number.isSafeInteger(n)&&n>=0)&&
-  targetSkillDamage.min<=targetSkillDamage.average&&
-  targetSkillDamage.average<=targetSkillDamage.max?
-  {id:240005001,name:trapSource.name,available:true,recipient:false,
-   hostile:false,damageAgainstEnemy:targetSkillDamage}:null;
+ const rawHits=[
+  ...(Array.isArray(targetSkillDamages)?targetSkillDamages:[]),
+  ...(targetSkillDamage?[targetSkillDamage]:[])
+ ];
+ const seenHits=new Set(),hits=[];
+ for(const result of rawHits){
+  const id=result?.skillId,source=gameTerms.skills?.[String(id)];
+  const branch=source?.branch,mastery=heroMasteries?.[branch]??0;
+  const required=source?.reqs?.find(r=>r.branch===branch)?.amount??0;
+  if(![240005001,410001001,430001001,430052001].includes(id)||
+   seenHits.has(id)||result.monsterId!==22104||
+   source?.id!==id||source.classes?.[heroJobKey]!==1||
+   !Number.isSafeInteger(mastery)||mastery<required||
+   !Number.isSafeInteger(heroBranchCaps?.[branch])||
+   mastery>heroBranchCaps[branch]||
+   heroLevel<source.charLevel||
+   ![result.min,result.average,result.max].every(n=>
+    Number.isSafeInteger(n)&&n>=0)||
+   result.min>result.average||result.average>result.max)continue;
+  seenHits.add(id);
+  hits.push({id,name:source.name,available:true,recipient:false,
+   hostile:false,damageAgainstEnemy:result,
+   // The actual target hit replaces provisional coefficient previews;
+   // don't show a second, easily confused "attack value".
+   coefficientModels:[],sourceParameters:[],nextStat:null});
+ }
  for(const [groupName,captionRu,captionEn,sectionClass,rowClass] of [
   ['offense','Атакующие умения','Offensive skills',
    'stage-attacking-skills','stage-offense-skill-row'],
@@ -1565,8 +1580,13 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
  ]){
   // Only effects calculable for this hero remain here. Static source
   // coefficients and enemy-target descriptors live in the Encyclopedia.
-  const currentSkills=groupName==='offense'&&hit?
-   [...(rows[groupName]||[]),hit]:(rows[groupName]||[]);
+  const baseSkills=rows[groupName]||[];
+  const calculatedById=new Map(hits.map(row=>[row.id,row]));
+  const currentSkills=groupName==='offense'?[
+   ...baseSkills.map(row=>calculatedById.has(row.id)?
+    {...row,...calculatedById.get(row.id)}:row),
+   ...hits.filter(row=>!baseSkills.some(base=>base.id===row.id))
+  ]:baseSkills;
   const skills=currentSkills.filter(skill=>
    skill.available===true&&!skill.hostile&&!skill.recipient&&
    (skill.damageAgainstEnemy||
@@ -1624,11 +1644,21 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
       hitResult.average+' HP':
      'Средний урон по цели «'+hitResult.targetName+'»: '+
       hitResult.average+' ОЗ'}));
-    more.append(make('small',{class:'stage-target-damage-stats',text:en?
-     'DEX '+hitResult.heroDex+' · INT '+hitResult.heroInt+
-      ' · Traps '+hitResult.trapMastery:
-     'ЛВК '+hitResult.heroDex+' · ИНТ '+hitResult.heroInt+
-      ' · Ловушки '+hitResult.trapMastery}));
+    const statLabel=en?
+     {dex:'DEX',int:'INT',spi:'SPI'}:
+     {dex:'ЛВК',int:'ИНТ',spi:'СД'};
+    const branchLabel=en?
+     {trap:'Traps',element:'Element',darkness:'Darkness'}:
+     {trap:'Ловушки',element:'Стихия',darkness:'Тьма'};
+    const statsLine=hitResult.heroMasteryKey==='trap'?
+     (en?'DEX ':'ЛВК ')+hitResult.heroDex+
+      (en?' · INT ':' · ИНТ ')+hitResult.heroInt+
+      (en?' · Traps ':' · Ловушки ')+hitResult.trapMastery:
+     statLabel[hitResult.heroPowerKey]+' '+hitResult.heroPower+
+      (hitResult.heroPowerKey==='int'?'':(en?' · INT ':' · ИНТ ')+hitResult.heroInt)+
+      ' · '+branchLabel[hitResult.heroMasteryKey]+' '+hitResult.heroMastery;
+    more.append(make('small',{class:'stage-target-damage-stats',
+     text:statsLine}));
    }
    // General skill descriptions are available via its tooltip and Wiki.
    if(modelParts.length&&!Number.isFinite(skill.amount)){
@@ -2369,7 +2399,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
  combatSkillCards={},resistanceSkillChoices=[],remakedBuffRows=[],
  heroJobKey=null,heroLevel=1,heroMasteries={},heroBranchCaps={},
  heroWeaponKind='BARE_HAND',heroHasShield=false,
- targetSkillDamage=null,itemById=()=>null,onItem=()=>{},onSkill=null,gameTerms={},
+ targetSkillDamage=null,targetSkillDamages=[],itemById=()=>null,onItem=()=>{},onSkill=null,gameTerms={},
  copy={},onTextEdit=null,canEdit=false,onHonor=()=>{}}={}){
  root.PandoraGuideTooltip?.dismiss();
  // Keep the same scrolling pane mounted on ordinary value changes: re-attaching
@@ -2477,7 +2507,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
   gameTerms,remakedBuffRows,skillIconForId,...copyOptions});
  if(chosen==='effects')skillEffectsPage(body,{modifiers,gameTerms,skillIconForId,
   remakedBuffRows,availability,combatSkillCards,heroJobKey,heroLevel,heroMasteries,
-   heroBranchCaps,heroWeaponKind,heroHasShield,targetSkillDamage,onItem,onSkill});
+   heroBranchCaps,heroWeaponKind,heroHasShield,targetSkillDamage,targetSkillDamages,onItem,onSkill});
  if(chosen==='recovery'){
   const english=document.documentElement?.lang==='en';
   const percent=modifiers?.potion?.percent;
