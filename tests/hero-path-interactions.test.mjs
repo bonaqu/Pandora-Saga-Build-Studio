@@ -740,3 +740,43 @@ test('missing prerequisite copy can be edited without changing unknown source ID
  assert.ok(!walk(details).some(n=>n.className==='path-owner-pencil'));
  assert.equal(missing.prereq,91004);
 });
+
+test('Skill results pager uses stable filtered order, pins selection and keeps the search',()=>{
+ const skills=[
+  {id:910100001,name:'Альфа удар',classes:{WARRIOR:1},learnable:true,reqs:[]},
+  {id:910100002,name:'Бета удар',classes:{WARRIOR:1},learnable:true,reqs:[]},
+  {id:910100003,name:'Гамма удар',classes:{WARRIOR:1},learnable:true,reqs:[]}
+ ];
+ const api={state:{level:45,points:{}},job:'WARRIOR',lang:'ru',
+  skillCatalog:skills,catalogReady:true,query:'удар',filter:'all',shown:2,
+  selectedSkill:skills[1],icon:()=>null,hover:()=>{},onInspect:skill=>{
+   api.selectedSkill=skill;render();
+  }};
+ const gallery=new BrowserElement('root'),details=new BrowserElement('root');
+ const render=()=>root.PandoraHeroPath.viewSkills(gallery,details,api);
+ const button=direction=>walk(details).find(node=>
+  node.attributes?.['data-skill-list-direction']===direction);
+ const position=()=>walk(details).find(node=>node.className==='path-skill-list-position');
+ const pinned=()=>walk(gallery).find(node=>node.attributes?.['data-skill-id'])?.attributes?.['data-skill-id'];
+ render();
+ assert.equal(position().textContent,'2 из 3');
+ assert.equal(pinned(),'910100002');
+ assert.equal(walk(gallery).filter(n=>n.className?.includes('path-skill-card')).length,2);
+ assert.match(button('previous').attributes['aria-label'],/Альфа удар/);
+ button('next').listeners.click();
+ assert.equal(api.selectedSkill.id,910100003);
+ assert.equal(pinned(),'910100003','a result beyond the first two is pinned, not lost');
+ assert.equal(position().textContent,'3 из 3');
+ assert.equal(button('next').disabled,true);
+ button('previous').listeners.click();
+ assert.equal(api.selectedSkill.id,910100002,'previous returns to the original stable neighbor');
+ assert.equal(api.query,'удар');
+ assert.equal(api.filter,'all');
+ assert.equal(api.shown,2);
+ api.lang='en';render();
+ assert.equal(position().textContent,'2 / 3');
+ assert.match(button('next').attributes['aria-label'],/Next in list: Гамма удар/);
+ api.query='отсутствует';render();
+ assert.equal(walk(details).some(n=>n.className==='path-skill-list-nav'),false);
+ assert.equal(details.hidden,true);
+});

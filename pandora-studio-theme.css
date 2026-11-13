@@ -2346,3 +2346,15 @@ textarea:focus-visible,select:focus-visible{
 footer #catalogStatus{min-width:0;overflow-wrap:anywhere}
 footer .footer-version{margin-inline-start:auto;align-self:center;white-space:nowrap;font-variant-numeric:tabular-nums;color:#bca68b}
 @media(max-width:460px){footer{align-items:stretch;gap:5px}footer .footer-version{align-self:flex-end;margin-inline-start:0}}
+
+/* One compact list pager, distinct from skill prerequisite/upgrades. */
+.path-skill-list-nav{display:flex;align-items:center;justify-content:flex-end;
+ gap:7px;min-width:0;margin:5px 0 8px}
+.path-skill-list-position{font:500 10px/1.3 Manrope,Arial,sans-serif;
+ color:#cbb794;font-variant-numeric:tabular-nums}
+.path-skill-list-step{display:grid;place-items:center;width:29px;height:27px;
+ padding:0;border:1px solid #94724b;border-radius:4px;
+ background:#332519;color:#efd09d;cursor:pointer;font-size:17px}
+.path-skill-list-step:hover:not(:disabled){background:#523922;border-color:#edc48b}
+.path-skill-list-step:disabled{opacity:.38;cursor:default}
+.path-skill-list-step:focus-visible{outline:2px solid #f2d18f;outline-offset:2px}
