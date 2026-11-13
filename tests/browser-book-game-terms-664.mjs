@@ -287,7 +287,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
     document.documentElement.lang=language;
     window.PandoraStageAttributes.render(stage,{
      page:'effects',
-     modifiers:{stats:{vit:50,str:70,agi:45,dex:35,spi:18,int:12},
+     modifiers:{mp:450,stats:{vit:50,str:70,agi:45,dex:35,spi:18,int:12},
       combat:{attack:{walkingBase:190},defense:{directRaw:100},
        accuracy:{base:120},dodge:{base:90}},
       healingSpells:{rows:[]},periodicRecovery:{rows:[]}},
@@ -306,7 +306,8 @@ export async function runHeroBookGameNames664Smoke(browser,base){
       .map(node=>node.textContent),
      next:Array.from(row.querySelectorAll('.stage-skill-coefficient-next'))
       .map(node=>node.textContent),
-     actions:row.querySelectorAll('[data-skill-action-id="142002001"]').length
+     actions:row.querySelectorAll('[data-skill-action-id="142002001"]').length,
+     budget:row.querySelector('.stage-heal-mana-budget')?.textContent||''
     }:null;
    };
    return {ru:render('ru'),en:render('en')};
@@ -319,8 +320,10 @@ export async function runHeroBookGameNames664Smoke(browser,base){
    /Следующий прирост силы удара: \+1%.*42 \(ещё 2\)/);
   assert.equal(strikeSummary.ru.actions,1,
    'Available mastery-derived strike retains its OS base-cost disclosure');
+  assert.match(strikeSummary.ru.budget,/450 ОМ.*23 применени.*13 ОМ/);
   assert.equal(strikeSummary.en?.main,'Strike strength +20%');
   assert.equal(strikeSummary.en.models.length,0);
+  assert.match(strikeSummary.en.budget,/450 MP.*23 casts.*13 MP/);
   assert.match(strikeSummary.en.next.join(' '),
    /Next strike strength \+1%.*42 \(\+2\)/);
   assert.deepEqual(errors,[]);
