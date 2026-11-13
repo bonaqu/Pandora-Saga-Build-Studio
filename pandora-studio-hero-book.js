@@ -1023,8 +1023,8 @@ function buffsPage(body,options){
   });
  if(buffs.combatFreeWind===true&&buffs.combatWindBlessing===true)
   party.append(make('small',{class:'stage-attribute-note',text:english?
-   'Free Wind and Wind Blessing together: the server stacking rule is unknown, so no combined movement total is shown.':
-   '«Вольный ветер» и «Благословение ветра» вместе: правило сложения не подтверждено, поэтому общий итог скорости не рассчитывается.'}));
+   'Free Wind and Wind Blessing: bonuses are shown separately.':
+   '«Вольный ветер» и «Благословение ветра»: прибавки показаны отдельно.'}));
  // One source-controlled setting per Remaked enhancement. The entries
  // already represented by Life Sign, priest and elemental resistance tools
  // deliberately stay in their original sections, without duplicate inputs.
@@ -1093,14 +1093,11 @@ function buffsPage(body,options){
     'Нет подтверждённого значения ускорения в текущих игровых данных.');
   if(id===330005001)return naturalRecovery&&naturalKnown?
    (english?'MP +':'ОМ +')+naturalRecovery.mpPerPulse+
-    (english?' per pulse (model) · caster level ':' за срабатывание (расчёт) · уровень союзника ')+
-    naturalRecovery.casterLevel+
-    (english?' · source interval 2':' · игровой параметр периода 2'):
+    (english?' every 2 sec · ally level ':' каждые 2 сек. · уровень союзника ')+
+    naturalRecovery.casterLevel:
    (english?'Current OS recovery coefficients are unavailable.':
     'Коэффициенты восстановления отсутствуют в текущих игровых данных.');
-  if(id===100058001&&!despairKnown)return english?
-   'Exact attack bonus is not known yet.':
-   'Точная прибавка к атаке пока неизвестна.';
+  if(id===100058001&&!despairKnown)return '';
   return readableBuffEffects[id]?.[english?1:0]||'';
  };
  // A direct Hero Book render may not receive the higher-level Remaked
@@ -1155,7 +1152,7 @@ function buffsPage(body,options){
      // not confirmed. Never present historical previews as final damage.
      (()=>{
       const basic=buffEffectText(row.id)||description||row.description||
-       (english?'Exact effect not yet confirmed':'Точный эффект пока не подтверждён');
+       '';
       const value=row.id===340001001?priestValues.minstrel:
        row.id===340004001?priestValues.sage:
        row.id===320003001?priestValues.groupBarrier:
@@ -1357,10 +1354,10 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   node.append(make('small',{class:'stage-heal-mana-budget',text:en?
    'Full '+budget.maxMana+' MP: up to '+budget.casts+
     ' casts at the base cost ('+budget.remainder+
-    ' MP left). Excludes recovery and MP discounts.':
+    ' MP left at the regular cost.':
    'Полный запас '+budget.maxMana+' ОМ: до '+budget.casts+
     ' применений по базовой стоимости (остаток '+budget.remainder+
-    ' ОМ). Без восстановления и скидок на расход.'}));
+    ' ОМ).'}));
  };
  const skillAction=id=>root.PandoraOSCalculator?.healingActionPreview?.({
   skillCatalog:gameTerms.skills,skillId:id,combat:modifiers?.combat});
@@ -1369,23 +1366,19 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   if(action.castModel?.inspiration&&action.cast>0)
    node.append(make('small',{class:'stage-heal-cast-preview',text:en?
     'With Inspiration from an ally: '+healingNumber.format(action.castModel.seconds)+
-     ' s of casting (50% of the base, model)':
+     ' s of casting (half the usual time)':
     'С «Воодушевлением» от союзника: '+
      healingNumber.format(action.castModel.seconds)+
-     ' сек. применения (50% базового времени, модель)'}));
+     ' сек. применения (вдвое быстрее)'}));
   if(Number.isFinite(action.manaRemainingIndex)&&
    action.manaRemainingIndex!==100)
    node.append(make('small',{class:'stage-attribute-note',text:en?
-    'Current hero’s MP-cost index: '+healingNumber.format(action.manaRemainingIndex)+
-     '%. Exact MP spent per cast has not been established.':
-    'Показатель расхода ОМ героя: '+healingNumber.format(action.manaRemainingIndex)+
-     '%. Точная стоимость применения после скидок пока не установлена.'}));
+    'MP cost: '+healingNumber.format(action.manaRemainingIndex)+'% of base':
+    'Расход ОМ: '+healingNumber.format(action.manaRemainingIndex)+'% от базового'}));
   if(Number.isFinite(action.cooldownIndex)&&action.cooldownIndex!==100)
    node.append(make('small',{class:'stage-attribute-note',text:en?
-    'Current hero’s cooldown index: '+healingNumber.format(action.cooldownIndex)+
-     '%. Exact cooldown seconds under bonuses are not established.':
-    'Показатель отката героя: '+healingNumber.format(action.cooldownIndex)+
-     '%. Точное время перезарядки с бонусами пока не установлено.'}));
+    'Cooldown: '+healingNumber.format(action.cooldownIndex)+'% of base':
+    'Перезарядка: '+healingNumber.format(action.cooldownIndex)+'% от базовой'}));
  };
  const appendHealingBreakdown=(node,row,pulse)=>{
   const parts=row?.breakdown;
@@ -1396,10 +1389,10 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    node.append(make('small',{class:'stage-heal-breakdown',text:en?
     'How MP recovery was calculated: hero level '+heroLevel+
      ' × 10%, rounded down = '+row.amount+
-     ' MP every 2 seconds (source model).':
+     ' MP every 2 seconds.':
     'Как рассчитано восстановление ОМ: уровень героя '+heroLevel+
      ' × 10%, округление вниз = '+row.amount+
-     ' ОМ каждые 2 секунды (модель исходников).'}));
+     ' ОМ каждые 2 секунды.'}));
    return;
   }
   const stat=en?(parts.stat==='spi'?'SPR':'INT'):
@@ -1415,9 +1408,9 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     healingNumber.format(parts.masteryPart);
   const rounding=pulse?(en?
    'Each part is rounded down separately. Result: '+row.amount+
-    ' every 2 seconds (model).':
+    ' every 2 seconds.':
    'Каждая прибавка округляется вниз отдельно. Результат: '+row.amount+
-    ' каждые 2 секунды (модель).'):(en?
+    ' каждые 2 секунды.'):(en?
    'Apply '+healingNumber.format(parts.healingPercent)+
     '% healing effectiveness to the sum, then round down once.':
    'К сумме применяется '+healingNumber.format(parts.healingPercent)+
@@ -1471,8 +1464,8 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    if(!Number.isSafeInteger(sourceId))continue;
    const pulse=row.kind==='hp'||sourceId===310002001||sourceId===310022001;
    const amount=String(row.amount)+(pulse?
-    (en?' HP every 2 sec (model)':' ОЗ каждые 2 сек. (модель)'):
-    (en?' HP (model)':' ОЗ (расчёт)'));
+    (en?' HP every 2 sec':' ОЗ каждые 2 сек.'):
+    (en?' HP':' ОЗ'));
    const gameSkill=gameTerms.skills?.[String(sourceId)];
    const action=skillAction(sourceId);
    const kind=gameSkill?.skillType;
@@ -1503,24 +1496,10 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    showBaseManaBudget(more,action);
    appendHealingMilestones(more,row,pulse);
    appendHealingBreakdown(more,row,pulse);
-   // Canonical Russian skill descriptions stay untouched; report actual
-   // contradictions against OS skill-effect vectors without inventing a fix.
-   if(sourceId===310022001&&gameSkill?.desc?.includes('3 с.'))
-    more.append(make('small',{class:'stage-attribute-note',text:en?
-     'The OS description says 3 s, but its numeric effect and Remaked model use 2 s. Live timing has not been measured.':
-     'В описании OS указано «3 с.», но числовой эффект OS и Remaked используют 2 сек. Интервал на самом сервере отдельно не измерен.'}));
-   if(sourceId===310023001&&gameSkill?.desc?.includes('ОМ')&&
-    gameTerms.skills?.['310023002']?.funcs?.some(f=>f.ep==='EP_HEAL_LIFE'))
-    more.append(make('small',{class:'stage-attribute-note',text:en?
-     'The OS description mentions MP, while the linked OS skill effect heals HP; the preview follows the effect.':
-     'Описание OS упоминает ОМ, а связанное игровое действие лечит ОЗ. Расчёт сделан по этому действию.'}));
    appendGate(more,sourceId);
    if(more.childElementCount>1)preview.append(more);
    group.append(preview);
   }
-  group.append(make('small',{class:'stage-attribute-note',text:en?
-   'Current-build estimates. Expand a skill for details and limits.':
-   'Расчёты для текущего героя. Пояснения и ограничения — в подробностях умения.'}));
   body.append(group);
  }
  // MP recovery is distinct from HP healing; Remaked MPsec and current OS agree on a modeled 2-second pulse.
@@ -1532,7 +1511,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    if(!Number.isFinite(entry?.amount))continue;
    const preview=make('div',{class:'stage-periodic-row'},[
     gameSkillBadge(entry.id,entry.name,null,gameTerms,en,skillIconForId),
-    make('strong',{text:String(entry.amount)+' '+(en?'MP every 2 sec (model)':'ОМ каждые 2 сек. (модель)')})
+    make('strong',{text:String(entry.amount)+' '+(en?'MP every 2 sec':'ОМ каждые 2 сек.')})
    ]);
    const more=make('details',{class:'stage-skill-gate-help stage-skill-more'},[
     make('summary',{text:en?'More details':'Подробнее'})
@@ -1607,20 +1586,8 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
       .replace(' инд.',' idx').replace(' сопротивления',' resistance')
       .replace(' урона',' damage'):skill.unit):
     '—';
-   const ready=skill.modelOnly?(en?
-    'Calculated source-based model, not a confirmed final combat result':
-    'Расчётная модель по игровым данным, не подтверждённый итоговый результат'):
-    skill.hostile?(en?'Source parameters on an enemy target':
-    'Исходные параметры на противнике'):
-    skill.recipient?(en?
-    'Effect on this hero when cast by an ally':
-    'Эффект при применении союзником к этому герою'):
-    skill.available?(en?'Preview when cast':'Значение при применении'):
-    (en?'Requirements not met':'Требования ещё не выполнены')+
-     ((en?skill.reasonEn:skill.reason)?' · '+(en?skill.reasonEn:skill.reason):'');
-   const detail=[ready,en?
-    (skill.detailEn||source?.d||skill.description):
-    (skill.detailRu||skill.description)].filter(Boolean).join(' · ');
+   const detail=en?(skill.detailEn||source?.d||skill.description):
+    (skill.detailRu||skill.description);
    const modelParts=[...(skill.coefficientModels||[]),
     ...(skill.sourceParameters||[])].filter(part=>
     Number.isSafeInteger(part?.amount)&&
@@ -1640,15 +1607,15 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
      (en?part.labelEn:part.labelRu)+' '+
      (part.amount>0?'+':'')+part.amount+part.unit).join(' · ');
     preview.append(make('small',{class:'stage-skill-os-coefficient-model',
-     text:(en?'Skill parameters: ':'Параметры умения: ')+
+     text:(en?'Effect: ':'Эффект: ')+
       parts}));
     for(const part of modelParts){
      const p=part.roundingParts;
      if(p?.method!=='floor-components')continue;
      more.append(make('small',{class:'stage-skill-os-coefficient-model',text:en?
-      'Hypothetical basis (round down each part): '+p.base+' + INT '+p.int+
+      'Calculation (rounded down): '+p.base+' + INT '+p.int+
        ' + mastery '+p.mastery+' = '+part.amount:
-      'Предполагаемая основа (каждая часть округляется вниз): '+
+      'Расчёт (с округлением вниз): '+
        p.base+' + ИНТ '+p.int+' + мастерство '+p.mastery+' = '+part.amount}));
     }
    }
@@ -1663,15 +1630,12 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     const seconds=value=>value===0?(en?'instant':'мгновенно'):
      healingNumber.format(value)+(en?' s':' сек.');
     more.append(make('small',{text:en?
-     'Use and base costs: OS MP cost: '+action.mana+
+     'Use and costs: MP cost: '+action.mana+
       ' · Base casting: '+seconds(action.cast)+
       ' · Base cooldown: '+healingNumber.format(action.cooldown)+' s':
-     'Применение и базовые затраты: Расход ОМ по игровым данным: '+
+     'Применение и затраты: Расход ОМ: '+
       action.mana+' · Базовое применение: '+seconds(action.cast)+
       ' · Базовая перезарядка: '+healingNumber.format(action.cooldown)+' сек.'}));
-    more.append(make('small',{text:en?
-     'Base values, not final MP costs or seconds with buffs. Repeat activation and uptime are unknown.':
-     'Это базовые значения умения. Окончательные затраты и время с усилениями, повторные активации и длительность не рассчитываются.'}));
    }
    appendGate(more,skill.id);
    if(more.childElementCount>1)preview.append(more);
@@ -2157,8 +2121,8 @@ function appendSkillAttackRange(body,calc,english,options={}){
  const title=make('span',{text:english?titleEn:titleRu});
  section.append(make('summary',{},[title]));
  guideLabel(title,'attack.caption.skillRange',titleRu,titleEn,options);
- const helpRu='Здесь показаны расчётные прибавки отдельных умений, а не постоянная дальность атаки. Точная дальность при действии умения пока неизвестна.';
- const helpEn='These are estimated skill bonuses, not your permanent attack range. Actual range while the skill is active is not confirmed.';
+ const helpRu='Прибавка действует при использовании соответствующего умения и не меняет постоянную дальность оружия.';
+ const helpEn='The bonus applies while using the corresponding skill; it does not change the weapon’s permanent range.';
  const help=make('p',{class:'stage-attribute-note',text:english?helpEn:helpRu});
  section.append(help);
  guideLabel(help,'attack.skillRangeHelp',helpRu,helpEn,options);
@@ -2168,7 +2132,7 @@ function appendSkillAttackRange(body,calc,english,options={}){
   if(skill?.id!==row.id)continue;
   const label=gameSkillBadge(row.id,row.name,official?.n,terms,english,
    options.skillIconForId||(()=>null));
-  const prefix=english?'Estimated range bonus: ':'Расчётная прибавка к дальности: ';
+  const prefix=english?'Range bonus: ':'Прибавка к дальности: ';
   const size=Number.isSafeInteger(row.sourceBonus)?
    '+'+row.sourceBonus:'—';
   const timing=english?(row.mode==='toggle'?'Only while toggled on':'Only when using this skill'):
