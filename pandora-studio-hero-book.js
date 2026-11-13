@@ -1689,7 +1689,47 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   }
   body.append(section);
  }
-if(!spells.length&&!periodic.length&&!rows.offense?.length&&!rows.defense?.length&&!rows.movement?.length&&!rows.utility?.length&&!chains?.rows?.length&&!conditional?.rows?.length&&!recipes?.length&&!trapCost?.rows?.length&&!sourceMechanics?.rows?.length&&!statusesFromSkills?.rows?.length&&!enemyDebuffs?.rows?.length&&!tactical?.rows?.length&&!rangedAmmo?.rows?.length&&!techniques?.rows?.length)
+
+ // Two compact groups for verified OS source effects, never passive bonuses.
+ const specialSkills=root.PandoraOSCalculator?.specializedSkillPreview?.({
+  skillCatalog:gameTerms.skills,jobKey:heroJobKey,level:heroLevel,
+  branchCaps:heroBranchCaps,branchMasteries:heroMasteries,
+  branchLabels:gameTerms.branchLabels,englishBranches:gameTerms.englishBranches
+ });
+ for(const [kind,ruTitle,enTitle] of [
+  ['defense','Дополнительные защитные умения','Additional defensive skills'],
+  ['magic','Особые магические умения','Special magic skills']
+ ]){
+  const entries=specialSkills?.[kind]||[];
+  if(!entries.length)continue;
+  const section=make('details',{class:'stage-attribute-row stage-skill-specialized-'+kind});
+  section.append(make('summary',{text:en?enTitle:ruTitle}));
+  section.append(make('p',{class:'stage-periodic-hint',text:en?
+   'Skill costs and requirements come from current game data. Final damage, protection and success chances are not calculated.':
+   'Расход ОМ и требования взяты из игровых данных. Итоговый урон, защита и шансы действия не рассчитаны.'}));
+  for(const row of entries){
+   const official=gameTerms.englishSkills?.[String(row.id)];
+   const prior=row.prerequisiteId?gameSkillName(row.prerequisiteId,
+    gameTerms.skills?.[String(row.prerequisiteId)]?.name,
+    gameTerms.englishSkills?.[String(row.prerequisiteId)]?.n,gameTerms,en):null;
+   const access=[row.requirementsMet?
+    (en?'Level and mastery requirements met':'Уровень и мастерство подходят'):
+    (en?row.reasonEn:row.reasonRu),
+    ...(prior?[en?'Upgrade requires '+prior:'Для улучшения требуется «'+prior+'»']:[])
+   ].join(' · ');
+   section.append(make('div',{class:'stage-heal-row stage-skill-specialized-row'+
+    (row.requirementsMet?'':' stage-book-unavailable')},[
+    gameSkillBadge(row.id,row.name,official?.n||row.name,gameTerms,en,skillIconForId),
+    make('strong',{text:en?
+     'MP: '+row.mana+' · Cooldown: '+row.cooldown+' s':
+     'ОМ: '+row.mana+' · Перезарядка: '+row.cooldown+' с'}),
+    make('small',{text:en?row.noteEn:row.noteRu}),
+    make('small',{text:access})
+   ]));
+  }
+  body.append(section);
+ }
+if(!spells.length&&!periodic.length&&!rows.offense?.length&&!rows.defense?.length&&!rows.movement?.length&&!rows.utility?.length&&!chains?.rows?.length&&!conditional?.rows?.length&&!recipes?.length&&!trapCost?.rows?.length&&!sourceMechanics?.rows?.length&&!statusesFromSkills?.rows?.length&&!enemyDebuffs?.rows?.length&&!tactical?.rows?.length&&!rangedAmmo?.rows?.length&&!techniques?.rows?.length&&!specialSkills?.defense?.length&&!specialSkills?.magic?.length)
   body.append(make('p',{class:'stage-attribute-note',text:en?
    'Only skills with build-dependent effect values appear here. Fixed buffs belong in Buffs.':
    'Здесь показаны только умения, сила которых зависит от билда. Постоянные усиления — во вкладке «Усиления».'}));

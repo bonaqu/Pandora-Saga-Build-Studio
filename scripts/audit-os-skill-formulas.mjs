@@ -9,7 +9,7 @@ const local=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 
 export function auditOsSkillFormulaCoverage({skills,classes,calculator}={}){
  const modules=['scalingSkillPreview','healingSpellsPreview',
-  'periodicRecoveryPreview','songSkillPreview','resistanceSkillChoices','skillExecutionChains','craftingSkillPreview','trapSkillCostPreview','complexSkillSourcePreview','statusApplicationPreview','enemyDebuffPreview','tacticalSkillPreview','rangedAmmoPreview','combatTechniquePreview'];
+  'periodicRecoveryPreview','songSkillPreview','resistanceSkillChoices','skillExecutionChains','craftingSkillPreview','trapSkillCostPreview','complexSkillSourcePreview','statusApplicationPreview','enemyDebuffPreview','tacticalSkillPreview','rangedAmmoPreview','combatTechniquePreview','specializedSkillPreview'];
  if(!skills||!classes||!modules.every(name=>typeof calculator?.[name]==='function'))
   throw Error('Expected pinned skill/class catalog and all OS formula inspectors');
  const entries=Object.entries(skills).sort((a,b)=>Number(a[0])-Number(b[0]));
@@ -203,6 +203,14 @@ export function auditOsSkillFormulaCoverage({skills,classes,calculator}={}){
   const techniques=calculator.combatTechniquePreview({skillCatalog:skills,jobKey,
    level:55,branchCaps:caps,branchMasteries:caps,weaponKind:'2H_SWORD'});
   for(const row of techniques.rows)mark(row.id,'combat-techniques-source');
+ }
+ // Separate source-qualified defense and magic entries without final-roll claims.
+ for(const jobKey of classNames){
+  const caps=classes[jobKey].branchCaps;
+  const special=calculator.specializedSkillPreview({skillCatalog:skills,jobKey,
+   level:55,branchCaps:caps,branchMasteries:caps});
+  for(const row of [...special.defense,...special.magic])
+   mark(row.id,'specialized-skill-source');
  }
  const statusKeys=['numeric-preview','coefficient-model','source-parameter','qualitative-preview',
   'passive-source','internal-or-triggered-source','unmodeled-learnable'];
