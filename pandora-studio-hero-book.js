@@ -957,8 +957,8 @@ function buffsPage(body,options){
  // already represented by Life Sign, priest and elemental resistance tools
  // deliberately stay in their original sections, without duplicate inputs.
  const readableBuffEffects={
-  100058001:['Атака: базовый коэффициент +40%, коэффициент масштабирования мастерства 35. Итоговая прибавка зависит от билда; получаемый урон +100%.',
-    'Attack: base coefficient +40%, mastery scaling coefficient 35. Total depends on build; incoming damage +100%.'],
+  100058001:['Атака усиливается в зависимости от мастерства. При этом персонаж получает на 100% больше урона.',
+    'Attack increases with mastery. Incoming damage also increases by 100%.'],
   213702001:['Ускоряет стрельбу из арбалета на 30%.','Crossbow attack speed +30%.'],
   213605001:['Повышает атаку, точность и дальность стрельбы. Во время действия нельзя двигаться.',
     'Increases attack, accuracy and firing range; movement is disabled.'],
@@ -1943,16 +1943,22 @@ function appendSkillAttackRange(body,calc,english,options={}){
  if(!rows.length)return;
  const section=make('details',{class:'stage-attribute-row stage-skill-attack-range',
   'data-book-section':'skillRange'});
- section.append(make('summary',{text:english?
-  'Range while using skills':'Дальность при использовании умений'}));
- section.append(make('p',{class:'stage-attribute-note',text:english?
-  'These are estimated skill bonuses, not your permanent attack range. Actual range while the skill is active is not confirmed.':
-  'Здесь показаны расчётные прибавки отдельных умений, а не постоянная дальность атаки. Точная дальность при действии умения пока неизвестна.'}));
+ const titleRu='Дальность при использовании умений';
+ const titleEn='Range while using skills';
+ const title=make('span',{text:english?titleEn:titleRu});
+ section.append(make('summary',{},[title]));
+ guideLabel(title,'attack.caption.skillRange',titleRu,titleEn,options);
+ const helpRu='Здесь показаны расчётные прибавки отдельных умений, а не постоянная дальность атаки. Точная дальность при действии умения пока неизвестна.';
+ const helpEn='These are estimated skill bonuses, not your permanent attack range. Actual range while the skill is active is not confirmed.';
+ const help=make('p',{class:'stage-attribute-note',text:english?helpEn:helpRu});
+ section.append(help);
+ guideLabel(help,'attack.skillRangeHelp',helpRu,helpEn,options);
  const terms=options.gameTerms||{};
  for(const row of rows){
   const skill=terms.skills?.[String(row.id)],official=terms.englishSkills?.[String(row.id)];
   if(skill?.id!==row.id)continue;
-  const label=gameSkillName(row.id,row.name,official?.n,terms,english);
+  const label=gameSkillBadge(row.id,row.name,official?.n,terms,english,
+   options.skillIconForId||(()=>null));
   const prefix=english?'Estimated range bonus: ':'Расчётная прибавка к дальности: ';
   const size=Number.isSafeInteger(row.sourceBonus)?
    '+'+row.sourceBonus:'—';
@@ -1962,8 +1968,16 @@ function appendSkillAttackRange(body,calc,english,options={}){
    (english?row.reasonEn:row.reasonRu);
   section.append(make('div',{class:'stage-heal-row stage-skill-attack-range-row'+
    (row.available?'':' stage-book-unavailable'),'data-range-skill':String(row.id)},[
-   make('strong',{text:label}),
+   make('strong',{},[label]),
    make('small',{text:prefix+size}),
+   ...(Number.isSafeInteger(row.sourceConstant)&&
+    Number.isSafeInteger(row.sourceMasteryPart)?[
+    make('small',{text:english?
+     'From skill: +'+row.sourceConstant+' · from '+
+       gameBranchName('archery',terms,true)+' mastery: +'+row.sourceMasteryPart:
+     'От умения: +'+row.sourceConstant+' · от мастерства «'+
+       gameBranchName('archery',terms,false)+'»: +'+row.sourceMasteryPart})
+   ]:[]),
    make('small',{text:timing+' · '+state})
   ]));
  }
@@ -2251,7 +2265,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
   'data-book-visible':chosen});
  if(chosen==='summary')summaryPage(body,modifiers,copyOptions);
  if(chosen==='attack')attackPage(body,modifiers,items,document.documentElement?.lang==='en',
-  {...copyOptions,buffs,onBuff,gameTerms});
+  {...copyOptions,buffs,onBuff,gameTerms,skillIconForId});
  if(chosen==='defense')defensePage(body,modifiers,document.documentElement?.lang==='en',
   {...copyOptions,buffs,gameTerms});
  if(chosen==='buffs')buffsPage(body,{buffs,vitalsBuffs,onBuff,onVital,

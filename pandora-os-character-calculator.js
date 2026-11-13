@@ -1091,11 +1091,11 @@ function directStrikeCoefficientPreview({skillCatalog,jobKey,level,
    amount:null,unit:'',available:reasons.length===0,
    reason:reasons.join(' · '),reasonEn:reasonsEn.join(' · '),
    uncertain:true,recipient:false,
-   detailRu:'Коэффициент удара по данным OS; итоговый урон, число попаданий и округление цели не подтверждены',
-   detailEn:'OS strike coefficient; final damage, hit count and target rounding are not verified',
+   detailRu:'Сила удара рассчитана по параметрам умения. Итоговый урон по противнику и число попаданий пока неизвестны.',
+   detailEn:'Estimated strike strength from skill data. Final damage and hit count against the target are not known yet.',
    coefficientModels:[{
-    ep:'EP_ONHIT_DAMAGE_SCALE',labelRu:'Коэффициент удара',
-    labelEn:'Strike coefficient',amount:coefficient,unit:'%',
+    ep:'EP_ONHIT_DAMAGE_SCALE',labelRu:'Сила удара (расчёт)',
+    labelEn:'Estimated strike strength',amount:coefficient,unit:'%',
     confidence:'coefficient-model'}],
    source:'current OS skill attack effect coefficient model'});
  }
@@ -1174,11 +1174,11 @@ function utilitySkillSourcePreview({skillCatalog=null,jobKey=null,level=1,
    sourceParameters:rule.parts.map(([labelRu,labelEn,amount,unit])=>({
     labelRu,labelEn,amount,unit,confidence:'source-parameter'})),
    detailRu:hostile?
-    'Параметры OS для цели; итоговое уклонение, лечение и сложение эффектов не установлены':
-    'Параметры OS; порядок итогового расхода ОЗ и расчёта перезарядки не установлен',
+    'Умение действует на цель; итоговое уклонение, лечение и сочетание эффектов пока не установлены':
+    'Итоговый расход ОЗ и время перезарядки умения пока не установлены',
    detailEn:hostile?
-    'OS target parameters; final evasion, healing and effect stacking are unknown':
-    'OS parameters; final HP cost and cooldown calculation order are unknown',
+    'Skill affects the target; final evasion, healing and combined effects remain unknown':
+    'Final HP cost and cooldown calculation are not known yet',
    source:'Current OS effect vectors, source parameters only'});
  }
  return out;
@@ -1255,10 +1255,10 @@ function movementSkillSourcePreview({skillCatalog=null,jobKey=null,level=1,
   result.push({id,name:record.name,description:record.desc||'',amount:v[3],
    unit:'',available:reasons.length===0,reason:reasons.join(' · '),
    reasonEn:reasonsEn.join(' · '),recipient,hostile,modelOnly:true,uncertain:true,
-   detailRu:'Исходный параметр скорости OS '+ruScope+
-    '; итоговая скорость, длительность и сложение эффектов не установлены',
-   detailEn:'OS movement source parameter '+enScope+
-    '; final speed, duration and stacking are not established',
+   detailRu:'Изменение скорости '+ruScope+' по данным умения;'+
+    ' итоговая скорость, длительность и сочетание эффектов пока неизвестны',
+   detailEn:'Skill changes speed '+enScope+
+    '; final speed, duration and combined effects are not known yet',
    source:'current OS EP_MOVESPEED_SCALE; source magnitude only'});
  }
  return result;
@@ -1475,7 +1475,10 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
   unit:' уклонения',models:[quickDodge],
   detailRu:'ПРВ и мастерство уклонения',
   detailEn:'AGI and Warding mastery'});
- add(213605001,'offense',[
+ const skillRangeSource=skillAttackRangePreview({skillCatalog,jobKey,level,
+  branchMasteries,branchCaps,weapon:{slot:'weapon',kind:weaponKind}});
+ const verifiedRangeSource=id=>skillRangeSource.rows.some(row=>row.id===id);
+ if(verifiedRangeSource(213605001))add(213605001,'offense',[
   ['EP_DAMAGERATE_SCALE',[0,0,30,20]],
   ['EP_TOHIT_CONST',[0,0,30,20]]
  ],()=>Number.isFinite(unmountedAtk)?
@@ -1483,11 +1486,11 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  {branch:'archery',modelOnly:true,unit:' АТК',
   models:[
    coefficientModel(213605001,'EP_DAMAGERATE_SCALE',null,'archery',
-    'Коэффициент атаки','Attack scaling','%'),
+    'Усиление атаки (расчёт)','Estimated attack bonus','%'),
    coefficientModel(213605001,'EP_TOHIT_CONST',null,'archery',
     'Точность','Accuracy'),
    coefficientModel(213605001,'EP_ATTACKRANGE_CONST',null,'archery',
-    'Параметр дальности','Range parameter')
+    'Прибавка дальности (расчёт)','Estimated range bonus')
   ],
   detailRu:'Зависит от мастерства стрельбы; величина не подтверждена',
   detailEn:'Depends on Archery mastery; magnitude unverified'});
@@ -1575,16 +1578,16 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  {modelOnly:true,unit:' АТК',
   models:[coefficientModel(100058001,'EP_DAMAGERATE_SCALE',
    null,'slash','Коэффициент физической атаки','Physical attack scaling','%')],
-  detailRu:'Отчаянье: расчётная прибавка АТК по базе Remaked и коэффициентам OS; получаемый урон +100%',
-  detailEn:'Desperation: modeled ATK gain from Remaked stages and OS vectors; incoming damage +100%'});
+  detailRu:'Отчаянье: предполагаемая прибавка к атаке зависит от мастерства; получаемый урон +100%',
+  detailEn:'Desperation: estimated attack gain depends on mastery; incoming damage +100%'});
  // Swift Arrow is an attack-interval enhancement with fixed OS source
  // [0,0,0,30], not direct +30 weapon damage. The displayed percentage is
  // the skill effect coefficient; no unproven firing-frequency conversion.
  add(213702001,'offense',[
   ['EP_ATTACKINTERVAL_SCALE',[0,0,0,30]]
  ],()=>30,{modelOnly:true,branch:'archery',unit:'% скорости стрельбы',
-  detailRu:'Стремительная стрела: +30% к показателю скорости стрельбы по данным OS; итоговая частота атак не измерена',
-  detailEn:'Swift Arrow: OS +30% attack interval modifier; final fire rate not observed'});
+  detailRu:'Стремительная стрела: +30% к скорости стрельбы; точная частота атак пока неизвестна',
+  detailEn:'Swift Arrow: +30% firing speed bonus; actual firing rate is not known yet'});
  // Self-cast Dark Aura uses the modern OS source vector rather than the
  // historical Remaked 73–206 tier table (a different ruleset).
  // An exact NEXT breakpoint can be derived from the OS coefficient [8,0,0,15].
@@ -1597,28 +1600,27 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
   ['EP_AURADARK_CONSTANT',[8,0,0,15]]
  ],()=>darkAuraTier===null?null:15+darkAuraTier,
  {branch:'darkness',modelOnly:true,unit:' урона тьмой',
-  detailRu:'Тёмная аура: 15 + ⌊СД × 8%⌋'+
+  detailRu:'Тёмная аура: 15 + целая часть от 8% СД'+
    (darkAuraNextSpi===null?'':'; следующий порог СД: '+darkAuraNextSpi)+
    '',
-  detailEn:'Dark Aura: 15 + floor(SPI × 8%)'+
+  detailEn:'Dark Aura: 15 + whole-number part of 8% Spirit'+
    (darkAuraNextSpi===null?'':'; next SPI breakpoint: '+darkAuraNextSpi)+
    ''});
  // For multi-projectile attacks the source exposes multiple independent
  // coefficients. Never fold a secondary hit modifier into the character ATK,
  // infer shot count damage, or treat a range field as confirmed metres.
- add(213703001,'offense',[
+ if(verifiedRangeSource(213703001))add(213703001,'offense',[
   ['EP_DOUBLE_MISSILE',[20,0,30,-85]],
   ['EP_ATTACKRANGE_CONST',[0,0,900,100]],
   ['EP_ATTACKCARRY_CONST',[0,0,900,100]]
  ],manual,{branch:'archery',
   models:[
    coefficientModel(213703001,'EP_DOUBLE_MISSILE','str','archery',
-    'Модификатор снаряда','Projectile modifier'),
+    'Изменение силы выстрела','Projectile strength change'),
    coefficientModel(213703001,'EP_ATTACKRANGE_CONST',null,'archery',
-    'Параметр дальности','Range parameter'),
-   coefficientModel(213703001,'EP_ATTACKCARRY_CONST',null,'archery',
-    'Параметр переноса','Carry parameter')
-  ],
+    'Прибавка дальности (расчёт)','Estimated range bonus'),
+   // Paired carry data is validated but not displayed as another bonus.
+  ].
   detailRu:'Повторный выстрел из арбалета: сила и дальность от СИЛ и Стрельбы',
   detailEn:'Second crossbow shot: STR and Archery scaling'});
  // The follow-up attack changes with Assassin mastery. Its coefficient is
@@ -1627,7 +1629,7 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
   ['EP_INCREASE_ATTACK',[0,0,45,-100]]
  ],manual,{branch:'assassin',
   models:[coefficientModel(233200101,'EP_INCREASE_ATTACK',null,'assassin',
-   'Модификатор повторного удара','Follow-up attack modifier')],
+   'Сила повторного удара (расчёт)','Estimated follow-up hit strength')],
   detailRu:'Дополнительный удар при подходящем оружии от мастерства Убийства',
   detailEn:'Follow-up hit from Assassination mastery with compatible weapon'});
  const concentrationRate=coefficientModel(410000101,

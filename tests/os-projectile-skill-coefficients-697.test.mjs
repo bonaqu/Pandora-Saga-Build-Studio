@@ -21,7 +21,9 @@ test('OS source coefficients are visible for crossbow duplicate attack and unarm
  assert.equal(double?.available,true);
  assert.equal(effect(double,'EP_DOUBLE_MISSILE'),-85+Math.floor(70*.20)+Math.floor(40*.30));
  assert.equal(effect(double,'EP_ATTACKRANGE_CONST'),100+Math.floor(40*9));
- assert.equal(effect(double,'EP_ATTACKCARRY_CONST'),100+Math.floor(40*9));
+ assert.equal(effect(double,'EP_ATTACKCARRY_CONST'),undefined,
+  'Carry mirrors range but must not look like an extra independent bonus');
+ assert.deepEqual(skills['213703001'].funcs[1].fv1,skills['213703001'].funcs[2].fv1);
  const wave=by(preview('ASSASSIN',{assassin:60},'2H_TRUMP_WEAPON'),233200101);
  assert.equal(wave?.amount,null,'Do not treat second hit coefficient as total attack');
  assert.equal(wave?.available,true);
@@ -38,7 +40,7 @@ test('250 varying STR/mastery conditions compute each component independently an
   assert.equal(effect(skill,'EP_DOUBLE_MISSILE'),
    -85+Math.floor(strength*.20)+Math.floor(rank*.30));
   assert.equal(effect(skill,'EP_ATTACKRANGE_CONST'),100+Math.floor(rank*9));
-  assert.equal(effect(skill,'EP_ATTACKCARRY_CONST'),100+Math.floor(rank*9));
+  assert.equal(effect(skill,'EP_ATTACKCARRY_CONST'),undefined);
   assert.equal(effect(wave,'EP_INCREASE_ATTACK'),-100+Math.floor(rank*.45));
   count++;
  }
