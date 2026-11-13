@@ -72,6 +72,15 @@ These repository-level rules are durable instructions for future coding sessions
 - Current game class DISTURBANCE is «Загонщик» / Saboteur. Learnable Plant Mine 240002001 triggers 240002050; nonlearnable, class-only, level-50 record 240002002 requires 240002001 and triggers 240002051 while cancelling 240002050. Both cost one item 65007. Enhanced elemental vector [450,100,300,50] differs from basic [350,100,70,50]; knockback vector is unchanged.
 - The source alone does NOT confirm when the game switches to the upgraded effect, or the final damage. Strictly validate the second root and its child and show a conditional source explanation only. Do not silently change the normal trap's calculation or its requirements.
 
+## Skill-specific attack reach (2026-11-13, 0.721.0)
+- Current OS 213605001 «Точная стрельба» / Sniper Nest belongs to SNIPER «Стрелок» Lv45, weapon BOW/CROSSBOW, TOGGLE; 213703001 «Двойной выстрел» / Arrow Fusillade belongs to PREDATOR «Охотник» Lv50, weapon CROSSBOW, MYSELF. Validate complete ordered source effects including paired ATTACKRANGE and ATTACKCARRY vectors; carry is a mirror, not twice the bonus.
+- Only model `FV1[3]+floor(archery*FV1[2]/100)` as the effect coefficient. It is **not** proven final skill range, cannot be added to permanent attack reach, and is not automatically active even when eligibility is met. Report activation and requirements in ordinary RU/EN text.
+- Apply source changes to both Skill Effects and Attack consistently and keep the 43-field Summary matrix unchanged.
+
+## Tooltip and owner-editor Escape priority (2026-11-13, 0.721.0)
+- An active inline text editor owns Escape. A pending/visible guide tooltip must dismiss itself without intercepting that key; otherwise failed CAS edits cannot be cancelled reliably.
+- The isolated Chromium ui-content-inline flow arms a pending tooltip before editor Escape, verifies cancellation and preserves normal tooltip dismissal elsewhere.
+
 ## Fast, safe verification
 1. Identify the affected UI handler and existing related test before coding. Reuse current equipment open/replace/unequip paths instead of duplicating mutations.
 2. Fetch related files in batches; make one coherent patch, with a focused Node regression and an isolated Chromium scenario before a PR.

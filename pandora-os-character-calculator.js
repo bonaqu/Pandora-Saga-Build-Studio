@@ -2243,6 +2243,86 @@ function racialUtilityPreview({racialPassiveId=null,skillCatalog=null}={}){
    trigger:'conditional survival',verified:false},verified:false};
 }
 
+// Two class-specific OS skill effects affect shooting distance only while
+// their own action is in force. The source vector is a modeled bonus, never
+// the permanent weapon reach or a proven final skill-specific distance.
+const skillRangeProofs=Object.freeze([
+ {id:213605001,job:'SNIPER',level:45,type:'TOGGLE',
+  weapons:['BOW','CROSSBOW'],effects:[
+   ['EP_DAMAGERATE_SCALE',[0,0,30,20],[0,0,0,0]],
+   ['EP_TOHIT_CONST',[0,0,30,20],[0,0,0,0]],
+   ['EP_ATTACKRANGE_CONST',[0,0,300,200],[0,0,0,0]],
+   ['EP_ATTACKCARRY_CONST',[0,0,300,200],[0,0,0,0]],
+   ['EP_UNABLE_MOVE',[0,0,0,0],[0,0,0,0]],
+   ['EP_TOGGLE',[0,0,0,3],[0,0,-1,2]]
+  ]},
+ {id:213703001,job:'PREDATOR',level:50,type:'MYSELF',
+  weapons:['CROSSBOW'],effects:[
+   ['EP_DOUBLE_MISSILE',[20,0,30,-85],[0,0,0,0]],
+   ['EP_ATTACKRANGE_CONST',[0,0,900,100],[0,0,0,0]],
+   ['EP_ATTACKCARRY_CONST',[0,0,900,100],[0,0,0,0]]
+  ]}
+]);
+function skillAttackRangePreview({skillCatalog=null,jobKey=null,level=1,
+ branchMasteries={},branchCaps={},weapon=null}={}){
+ const output={rows:[],rejected:[],verified:false,
+  appliedToPermanentRange:false};
+ if(!skillCatalog||typeof jobKey!=='string'||
+  !Number.isSafeInteger(level)||level<1||level>55)return output;
+ const mastery=branchMasteries?.archery;
+ const cap=branchCaps?.archery;
+ for(const proof of skillRangeProofs){
+  if(proof.job!==jobKey)continue;
+  const s=skillCatalog[String(proof.id)];
+  const sourceValid=s?.id===proof.id&&s.learnable===true&&
+   s.prereq===null&&s.charLevel===proof.level&&
+   s.isLevelBased===true&&s.skillType===proof.type&&
+   s.branch==='archery'&&s.classes?.[jobKey]===1&&
+   Object.keys(s.classes||{}).length===1&&
+   Array.isArray(s.reqs)&&s.reqs.length===0&&
+   Array.isArray(s.weaponUse)&&
+   s.weaponUse.length===proof.weapons.length&&
+   s.weaponUse.every((kind,i)=>kind===proof.weapons[i])&&
+   Array.isArray(s.funcs)&&s.funcs.length===proof.effects.length&&
+   proof.effects.every(([ep,fv1,fv2],i)=>{
+    const f=s.funcs[i];
+    return f?.ep===ep&&f.dir==='TARGET'&&
+     Array.isArray(f.fv1)&&f.fv1.length===4&&
+     f.fv1.every((n,j)=>n===fv1[j])&&
+     Array.isArray(f.fv2)&&f.fv2.length===4&&
+     f.fv2.every((n,j)=>n===fv2[j]);
+   });
+  if(!sourceValid){output.rejected.push(proof.id);continue}
+  const range=s.funcs.find(f=>f.ep==='EP_ATTACKRANGE_CONST');
+  const paired=s.funcs.find(f=>f.ep==='EP_ATTACKCARRY_CONST');
+  // Carry is a mirror of range, never a second additive value.
+  if(!range||!paired||range.fv1.some((n,i)=>n!==paired.fv1[i])||
+   range.fv2.some((n,i)=>n!==paired.fv2[i])){
+   output.rejected.push(proof.id);continue;
+  }
+  const legal=Number.isSafeInteger(mastery)&&mastery>=0&&
+   Number.isSafeInteger(cap)&&cap>0&&mastery<=cap;
+  const fromMastery=legal?Math.floor(mastery*range.fv1[2]/100):null;
+  const magnitude=fromMastery===null?null:range.fv1[3]+fromMastery;
+  const reasonsRu=[],reasonsEn=[];
+  if(level<proof.level){reasonsRu.push('Нужен уровень '+proof.level);
+   reasonsEn.push('Requires level '+proof.level)}
+  if(!legal){reasonsRu.push('Нужно допустимое мастерство стрельбы');
+   reasonsEn.push('Requires valid Ranged mastery')}
+  if(weapon?.slot!=='weapon'||!proof.weapons.includes(weapon?.kind)){
+   reasonsRu.push(proof.weapons.length===1?'Нужен арбалет':'Нужен лук или арбалет');
+   reasonsEn.push(proof.weapons.length===1?'Requires a crossbow':'Requires a bow or crossbow');
+  }
+  output.rows.push({id:proof.id,name:s.name,
+   sourceBonus:magnitude,sourceConstant:range.fv1[3],
+   sourceMasteryPart:fromMastery,mode:proof.type==='TOGGLE'?'toggle':'use',
+   available:reasonsRu.length===0,
+   reasonRu:reasonsRu.join(' · '),reasonEn:reasonsEn.join(' · '),
+   sourceOnly:true,finalSkillRange:null,
+   appliedToPermanentRange:false});
+ }
+ return output;
+}
 // These two OS effects are explicit additions to attack/bow range, not
 // complete weapon range formulas. Their paired *_CARRY effects are separate
 // server fields and must not silently double the displayed distance bonus.
@@ -3254,6 +3334,11 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  });
  const attackRange=attackRangePreview({records:combinedRecords,itemForth,
   weapon:combatContext.weapon,racialEffects});
+ const skillAttackRange=skillAttackRangePreview({
+  skillCatalog:combatContext.skillCatalog,jobKey:combatContext.jobKey,
+  level,branchMasteries:combatContext.branchMasteries,
+  branchCaps:classData.branchCaps,weapon:combatContext.weapon
+ });
  const elementalMagic=elementalMagicPreview({honorTitle:extra.honor.id});
  const elementalRefinement=elementalRefinementPreview({
   records:combinedRecords,itemForth,gemSelections
@@ -3419,7 +3504,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   hpRaw:rawHp.base+level*rawHp.lv+stats.vit*rawHp.vit,
   mpRaw:rawMp.base+level*rawMp.lv+stats.spi*rawMp.spi,
   stats,basic,effects,honor:extra.honor,potion,resistances,targetResistance,procPreview,experienceBonus,battleMapCloaks,specialEquipment,regeneration,legacyBuffs,priestApplied,priestCast,songSkills,otherEquipment,
-  recoveryAmount,healingSkill,healingSpells,periodicRecovery,consumableRecovery,consumableSkills,statusCures,harmfulConsumables,combat,gemstones,auraDamage,attackRange,racialEffects,elementalMagic,elementalRefinement,mountedRelease,unison,coverage,
+  recoveryAmount,healingSkill,healingSpells,periodicRecovery,consumableRecovery,consumableSkills,statusCures,harmfulConsumables,combat,gemstones,auraDamage,attackRange,skillAttackRange,racialEffects,elementalMagic,elementalRefinement,mountedRelease,unison,coverage,
   attributeBuffs:{flat:extra.flat,trace:extra.trace},supplementalFlat,supplementalSource,
   rounding:'floor-class-cents',source:'current game server / Modern current-vitals class formula',
   verified:false,excluded:['unstructured refinement bonuses','unpublished set effects',
@@ -4104,6 +4189,6 @@ function complexSkillSourcePreview({skillCatalog=null,jobKey=null,level=1,
 }
 root.PandoraOSCalculator=Object.freeze({skillExecutionChains,craftingSkillPreview,trapSkillCostPreview,statusApplicationPreview,complexSkillSourcePreview,priestCastPreviews,movementSkillSourcePreview,utilitySkillSourcePreview,scalingSkillPreview,directStrikeCoefficientPreview,elementalSpellCoefficientPreview,defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
  base,characterSheetPhysicalAttackRange,classBase,classBaseComponents,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,racialWeaponPreview,incredibleStrengthPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
- recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,consumableSkillPreview,statusCurePreview,harmfulConsumablePreview,gemstonePreview,legacyBuffPreview,songSkillPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,racialUtilityPreview,elementalMagicPreview,elementalRefinementPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive
+ recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,consumableSkillPreview,statusCurePreview,harmfulConsumablePreview,gemstonePreview,legacyBuffPreview,songSkillPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,skillAttackRangePreview,racialUtilityPreview,elementalMagicPreview,elementalRefinementPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive
 });
 })(typeof window==='undefined'?globalThis:window);
