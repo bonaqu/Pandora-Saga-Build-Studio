@@ -1437,6 +1437,14 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    'Полный запас '+budget.maxMana+' ОМ: до '+budget.casts+
     ' применений по базовой стоимости (остаток '+budget.remainder+
     ' ОМ).'}));
+  const next=gates?.nextManaUse?.({maxMana:budget.maxMana,
+   baseCost:budget.baseCost});
+  if(next?.missing>0)node.append(make('small',{
+   class:'stage-heal-mana-next',text:en?
+    'One more cast needs +'+healingNumber.format(next.missing)+' MP capacity':
+    'Для ещё одного применения нужно +'+
+     healingNumber.format(next.missing)+' ОМ к запасу'
+  }));
  };
  const skillAction=id=>root.PandoraOSCalculator?.healingActionPreview?.({
   skillCatalog:gameTerms.skills,skillId:id,combat:modifiers?.combat});
@@ -1592,16 +1600,8 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    const more=make('details',{class:'stage-skill-gate-help stage-skill-more'},[
     make('summary',{text:en?'More details':'Подробнее'})
    ]);
-   more.append(make('small',{text:en?
-    'Current hero skill, source-backed recovery':
-    'Восстановление от умения самого героя'}));
    const action=skillAction(entry.id);
    if(action){
-    more.append(make('small',{text:(en?'MP cost: ':'Расход ОМ: ')+
-     action.mana+' · '+(en?'Base cast: ':'Базовое применение: ')+
-     healingNumber.format(action.cast)+(en?' s':' сек.')+' · '+
-     (en?'Base cooldown: ':'Базовая перезарядка: ')+
-     healingNumber.format(action.cooldown)+(en?' s':' сек.')}));
     appendActionEffects(more,action);
     showBaseManaBudget(more,action);
    }
