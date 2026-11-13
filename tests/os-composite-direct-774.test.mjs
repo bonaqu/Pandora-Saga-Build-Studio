@@ -21,7 +21,9 @@ const opt=(overrides={})=>({
  stats:{dex:70,int:80,spi:50},
  equipment:[],tables,itemForth,unison,modifiers:mods(0),...overrides
 });
-const results=override=>D.supportedSkillHits(opt(override));
+// Previous composite source tests are isolated from new linked packets.
+const results=override=>D.supportedSkillHits(opt(override))
+ .filter(x=>!D.linkedSpells.some(p=>p.id===x.skillId));
 const get=(rows,id)=>rows.find(r=>r.skillId===id);
 const value=x=>[x?.min,x?.average,x?.max];
 test('Source-locked Fire Storm and Rot: only the direct hit against Giant Ogre',()=>{
