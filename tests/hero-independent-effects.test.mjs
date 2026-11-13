@@ -49,16 +49,26 @@ test('race/weapon effects move to Attack once, and incompatible weapon does not 
  assert.equal(flatten(book.attackChapterGroups(incorrect))
   .filter(r=>r.key.startsWith('racialWeapon')).length,0);
 });
-test('Elf source RANGE/CARRY is one bonus, never added to 43 base range',()=>{
- const hero=character('ELF',900020002,items[21]);
- assert.equal(hero.attackRange.racialGeneral,500);
- assert.equal(hero.attackRange.racialCarry,500);
- const rows=flatten(book.attackChapterGroups(hero));
- assert.deepEqual(rows.filter(x=>x.key==='racialRange').map(x=>x.value),[500]);
- assert.equal(book.summaryRows(hero)[1].rows.find(x=>x.ru==='Дальн. АТК ближ. боя').value,
-  hero.attackRange.baseMelee);
- const damaged={...hero,attackRange:{...hero.attackRange,racialCarry:250}};
- assert.ok(!flatten(book.attackChapterGroups(damaged)).some(x=>x.key==='racialRange'));
+test('Elf RANGE/CARRY is one bow/crossbow bonus, not a melee bonus',()=>{
+ const melee=character('ELF',900020002,items[21]);
+ assert.equal(melee.attackRange.racialGeneral,500);
+ assert.equal(melee.attackRange.racialCarry,500);
+ assert.equal(melee.attackRange.racialRanged,0);
+ assert.deepEqual(flatten(book.attackChapterGroups(melee))
+  .filter(x=>x.key==='racialRange'),[]);
+ assert.equal(book.summaryRows(melee)[1].rows.find(x=>x.ru==='Дальн. АТК ближ. боя').value,
+  melee.attackRange.totalMelee);
+ const ranged=character('ELF',900020002,items[2402]);
+ assert.equal(ranged.attackRange.baseRanged,1250);
+ assert.equal(ranged.attackRange.totalRanged,1750);
+ assert.deepEqual(flatten(book.attackChapterGroups(ranged))
+  .filter(x=>x.key==='racialRange').map(x=>x.value),[500]);
+ assert.equal(book.summaryRows(ranged)[1].rows.find(x=>x.ru==='Дальн. АТК дальн. боя').value,
+  ranged.attackRange.totalRanged);
+ const noRace=character('ELF',null,items[2402]);
+ assert.equal(noRace.attackRange.totalRanged,1250);
+ assert.equal(flatten(book.attackChapterGroups(noRace))
+  .filter(x=>x.key==='racialRange').length,0);
 });
 test('auras, elemental magic and status chances have one offense owner',()=>{
  const hero=character('ELF',null,items[21]);

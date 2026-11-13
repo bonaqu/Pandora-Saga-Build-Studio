@@ -2261,21 +2261,27 @@ function attackRangePreview({records=[],itemForth=null,weapon=null,racialEffects
    entries.push({source:String(record.name||source),kind:key,amount:effect.a});
   }
  }
- // Official OS items.json weapon.range is a *base* distance in raw game
- // units. Never add EP_RACE_RANGE or EP_BOW_RANGE here: whether the live
- // combat engine combines those fields for a given weapon is not verified.
- // Do not infer a range from a preview bonus or from an unarmed character.
+ // Combine the OS weapon base with direct flat modifiers for a useful
+ // build-planning total. The full live combat-engine stacking is unverified.
+ // Mirrored *_CARRY fields are never an additional distance bonus.
  const kind=weapon?.kind;
  const ranged=kind==='BOW'||kind==='CROSSBOW';
  const validWeapon=weapon?.slot==='weapon'&&
   Number.isFinite(weapon.range)&&weapon.range>0;
- return {...totals,entries,
-  // Keep source-backed race bonus separate from equipment totals and from
-  // weapon.range: the final combat-engine stage is not yet verified.
-  racialGeneral:racialEffects?.range?.general??0,
-  racialCarry:racialEffects?.range?.carry??0,
-  baseMelee:validWeapon&&!ranged?weapon.range:null,
-  baseRanged:validWeapon&&ranged?weapon.range:null,
+ const racialGeneral=racialEffects?.range?.general??0;
+ const racialCarry=racialEffects?.range?.carry??0;
+ // Elf Eagle Eye explicitly applies only to bows and crossbows.
+ const racialRanged=validWeapon&&ranged&&racialEffects?.id===900020002&&
+  Number.isFinite(racialGeneral)&&racialGeneral===racialCarry?
+  racialGeneral:0;
+ const baseMelee=validWeapon&&!ranged?weapon.range:null;
+ const baseRanged=validWeapon&&ranged?weapon.range:null;
+ const totalMelee=baseMelee===null?null:baseMelee+totals.general;
+ const totalRanged=baseRanged===null?null:
+  baseRanged+totals.general+totals.bow+racialRanged;
+ return {...totals,entries,racialGeneral,racialCarry,racialRanged,
+  baseMelee,baseRanged,totalMelee,totalRanged,
+  equipmentMelee:totals.general,equipmentRanged:totals.general+totals.bow,
   baseOnly:validWeapon,verified:false};
 }
 

@@ -448,8 +448,10 @@ function summaryRows(calc){
    row('Точн. спереди','Front accuracy',c.frontAccuracy?.known),
    row('Шанс крита','Critical chance',c.critical?.known,'%'),
    row('Крит. урон','Critical damage',c.criticalDamage,'%'),
-   row('Дальн. АТК ближ. боя','Melee range (base)',calc?.attackRange?.baseMelee),
-   row('Дальн. АТК дальн. боя','Ranged range (base)',calc?.attackRange?.baseRanged),
+   row('Дальн. АТК ближ. боя','Melee attack range',
+    calc?.attackRange?.totalMelee??calc?.attackRange?.baseMelee),
+   row('Дальн. АТК дальн. боя','Ranged attack range',
+    calc?.attackRange?.totalRanged??calc?.attackRange?.baseRanged),
    row('Скор. атаки','Attack speed',c.attackSpeed?.known,'%'),
    row('Скор. каста','Casting speed',c.castingSpeed?.known,'%'),
    row('Сокрщ. времени каста','Cast time',c.castTime?.known,'%'),
@@ -1013,14 +1015,14 @@ function buffsPage(body,options){
     'Для расчёта нужны подходящие класс, оружие и данные навыка.';
   }
   if(id===320006001&&!inspirationKnown)return english?
-   'Casting time not verified in current OS.':
-   'Время применения не подтверждено текущими данными OS.';
+   'Exact casting time is not known yet.':
+   'Точное время применения пока неизвестно.';
   if(id===330005001&&!naturalKnown)return english?
-   'MP recovery magnitude not verified in OS.':
-   'Количество ОМ не подтверждено текущими данными OS.';
+   'Exact MP recovery is not known yet.':
+   'Точное восстановление ОМ пока неизвестно.';
   if(id===100058001&&!despairKnown)return english?
-   'Attack magnitude not verified in OS.':
-   'Прибавка атаки не подтверждена текущими данными OS.';
+   'Exact attack bonus is not known yet.':
+   'Точная прибавка к атаке пока неизвестна.';
   return readableBuffEffects[id]?.[english?1:0]||'';
  };
  // A direct Hero Book render may not receive the higher-level Remaked
@@ -1598,9 +1600,11 @@ function attackChapterGroups(calc){
    racial.en+' · bonus from '+racial.percent+'%',
    numericRate,'',true);
  }
- if(Number.isFinite(range.racialGeneral)&&range.racialGeneral===range.racialCarry)
-  put(0,'racialRange','Зоркость · дальность','Sharpsight · range',
-   range.racialGeneral);
+ // Weapon base and its bonuses must be distinct lines.
+ put(0,'equippedWeaponRange','Дальность атаки надетого оружия',
+  'Equipped weapon attack range',range.baseRanged??range.baseMelee);
+ put(0,'racialRange','Зоркость · дальность стрельбы',
+  'Eagle Eye · shooting range',range.racialRanged);
  if(Array.isArray(range.entries))range.entries.forEach((entry,i)=>{
   if(!entry||!['general','bow'].includes(entry.kind)||
    typeof entry.source!=='string'||!entry.source.trim())return;
@@ -1608,6 +1612,10 @@ function attackChapterGroups(calc){
    (entry.kind==='bow'?'Дальность стрельбы':'Дальность атаки')+' · '+entry.source,
    (entry.kind==='bow'?'Bow range':'Attack range')+' · '+entry.source,entry.amount);
  });
+ put(0,'totalMeleeRange','Дальность атаки ближнего боя · всего',
+  'Melee attack range · total',range.totalMelee);
+ put(0,'totalRangedRange','Дальность атаки дальнего боя · всего',
+  'Ranged attack range · total',range.totalRanged);
  const song=calc.combat?.priestSong;
  if(Number(song?.sageElementDamage)>0)
   put(2,'priestSageElement','Песнь чар · стихийный урон',
@@ -1809,6 +1817,13 @@ function appendChapterGroups(body,groups,english,emptyRu,emptyEn,options={}){
    grid.append(entry);
   }
   section.append(grid);
+  if(group.key==='weapon'&&options.page==='attack'){
+   const ru='Дальность оружия и действующие бонусы складываются. Временные умения без надёжного расчёта пока не включены.';
+   const en='Weapon range and active bonuses are added. Temporary skills without a reliable calculation are not included yet.';
+   const hint=make('p',{class:'stage-attribute-note',text:english?en:ru});
+   guideLabel(hint,'attack.rangeExplanation',ru,en,options);
+   section.append(hint);
+  }
    if(group.key==='status'&&options.page==='defense'){
     const sources=individualStatusSourceRows(options.statusSourceTraces,
      options.gameTerms,english,group.rows);
