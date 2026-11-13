@@ -3471,17 +3471,18 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  // integrations; live Build Studio always supplies actual OS class caps.
  const priestCanCast=id=>{
   if(!priestValid)return false;
-  if(!priest.classCaps)return true;
   const skill=combatContext.skillCatalog?.[String(id)];
+  if(skill?.id!==id||(priest.classCaps&&
+   skill.classes?.[priest.jobKey]!==1))return false;
   const branchValues={blessing:priest.blessing,hymn:priest.hymn,
-   benevolence:priest.benevolence,exorcism:priest.exorcism};
-  return skill?.id===id&&skill.classes?.[priest.jobKey]===1&&
-   (skill.reqs||[]).every(req=>
-    Number.isSafeInteger(priest.classCaps[req.branch])&&
-    priest.classCaps[req.branch]>=req.amount&&
-    Number.isSafeInteger(branchValues[req.branch])&&
-    branchValues[req.branch]>=req.amount&&
-    branchValues[req.branch]<=priest.classCaps[req.branch]);
+   benevolence:priest.benevolence,exorcism:priest.exorcism??26};
+  return (skill.reqs||[]).every(req=>
+   Number.isSafeInteger(branchValues[req.branch])&&
+   branchValues[req.branch]>=req.amount&&
+   (!priest.classCaps||
+    (Number.isSafeInteger(priest.classCaps[req.branch])&&
+     priest.classCaps[req.branch]>=req.amount&&
+     branchValues[req.branch]<=priest.classCaps[req.branch])));
  };
  const priestCast=priestCastPreviews({
   spi:priest?.spi,blessing:priest?.blessing,hymn:priest?.hymn,
