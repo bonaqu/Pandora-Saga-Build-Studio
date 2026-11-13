@@ -7,7 +7,7 @@
 const target=Object.freeze({
  id:22104,name:'Гигантский огр',nameEn:'Ogre Bouncer',level:53,
  life:6126,vit:32,spi:18,ac:15,magicProtection:0,
- resists:{fire:0,magic:17}
+ resists:{fire:0,dark:-25,magic:17}
 });
 const n=v=>Number.isSafeInteger(v)&&v>=0;
 const trunc=Math.trunc;
@@ -123,57 +123,114 @@ function sourceSkill(skillCatalog,classes,jobKey,level,mastery,caps){
   JSON.stringify(fx[0].fv2)!=='[0,0,0,0]')return null;
  return rootSkill;
 }
-// Applies the current OS publicly shipped ELEMENT damage steps, including
-// target magic resistance, elemental absorption and level-gap mob effects.
-// The result is min/average/max skill-hit damage, not a hit-chance forecast.
-function crawlingTrap({skillCatalog,classes,jobKey,level,masteries={},
- branchCaps={},stats={},equipment=[],tables={},itemForth={},unison={},
- modifiers=null}={}){
- const mastery=masteries.trap;
- if(!sourceSkill(skillCatalog,classes,jobKey,level,mastery,branchCaps)||
-  !n(stats.dex)||!n(stats.int)||!n(mastery)||
-  !Array.isArray(tables.lvModify)||!tables.magicPlus)return null;
+// Explicit source snapshots. Extra non-damage effects are checked but NEVER
+// counted as additional damage, poison ticks, healing or repeated casts.
+const directSpells=Object.freeze([
+ {id:410001001,branch:'element',kind:'BOLT',element:'FIRE',
+  stat:'INT',req:0,charLevel:1,slot:0,effects:[
+   ['EP_ELEMENT_DAMAGE','TARGET',[122,0,60,23],[0,0,0,0]]]},
+ {id:430001001,branch:'darkness',kind:'ENEMY',element:'DARK',
+  stat:'INT',req:21,charLevel:0,slot:1,effects:[
+   ['EP_LIFE_ABSORB','CASTER',[0,0,0,50],[0,0,0,0]],
+   ['EP_ELEMENT_DAMAGE','TARGET',[180,0,80,40],[0,0,0,0]]]},
+ {id:430052001,branch:'darkness',kind:'ENEMY',element:'DARK',
+  stat:'SPI',req:8,charLevel:0,slot:0,effects:[
+   ['EP_ELEMENT_DAMAGE','TARGET',[5,0,5,15],[0,0,0,0]],
+   ['EP_CAUSE_POISON','TARGET',[180,0,180,40],[0,0,30,70]]]}
+]);
+function sourceDirectSpell({skillCatalog,classes,jobKey,level,masteries={},
+ branchCaps={}},spec){
+ const skill=skillCatalog?.[String(spec.id)],job=classes?.[jobKey];
+ const cap=branchCaps[spec.branch],trained=masteries[spec.branch]??0;
+ if(!skill||!job||job.id!==jobKey||!n(level)||level<1||level>55||
+  !n(cap)||cap<spec.req||cap>100||job.branchCaps?.[spec.branch]!==cap||
+  !n(trained)||trained>cap||trained<spec.req||
+  skill.id!==spec.id||skill.learnable!==true||
+  skill.classes?.[jobKey]!==1||skill.branch!==spec.branch||
+  skill.skillType!==spec.kind||skill.element!==spec.element||
+  skill.powerStat!==spec.stat||skill.charLevel!==spec.charLevel||
+  level<skill.charLevel||skill.damage?.kernel!=='element'||
+  skill.damage.slotIndex!==spec.slot||
+  !Array.isArray(skill.reqs)||skill.reqs.length!==(spec.req?1:0)||
+  (spec.req&&(skill.reqs[0]?.branch!==spec.branch||
+   skill.reqs[0]?.amount!==spec.req))||
+  !Array.isArray(skill.funcs)||skill.funcs.length!==spec.effects.length)
+  return null;
+ for(let i=0;i<spec.effects.length;i++){
+  const fx=skill.funcs[i],expected=spec.effects[i];
+  if(fx?.ep!==expected[0]||fx.dir!==expected[1]||
+   JSON.stringify(fx.fv1)!==JSON.stringify(expected[2])||
+   JSON.stringify(fx.fv2)!==JSON.stringify(expected[3]))return null;
+ }
+ return skill;
+}
+// Matches the OS public BuildCalculator's Et -> kt -> Ie -> ve -> Tt
+// single elemental damage packet. A repeated or delayed subskill is NOT a
+// complete cast total and is deliberately excluded from these previews.
+function elementalHit(options={},spec=null){
+ const {skillCatalog,classes,jobKey,level,masteries={},
+  branchCaps={},stats={},equipment=[],tables={},itemForth={},unison={},
+  modifiers=null}=options;
+ const isTrap=!spec,skill=isTrap?
+  sourceSkill(skillCatalog,classes,jobKey,level,masteries.trap,branchCaps):
+  sourceDirectSpell(options,spec);
+ if(!skill||!n(stats.int)||!Array.isArray(tables.lvModify)||
+  !tables.magicPlus)return null;
+ const effectSkill=isTrap?skillCatalog['240005003']:skill;
+ const powerKey={DEX:'dex',INT:'int',SPI:'spi'}[effectSkill.powerStat];
+ const element=effectSkill.element?.toLowerCase();
+ const masteryKey=isTrap?'trap':spec.branch;
+ const mastery=masteries[masteryKey]??0;
+ const effect=effectSkill.funcs?.[effectSkill.damage?.slotIndex];
+ const spread={fire:10,dark:25}[element];
+ if(!powerKey||!n(stats[powerKey])||!n(mastery)||!n(spread)||
+  effect?.ep!=='EP_ELEMENT_DAMAGE'||effect.dir!=='TARGET'||
+  !Array.isArray(effect.fv1)||effect.fv1.length!==4||
+  !effect.fv1.every(n)||!Array.isArray(effect.fv2)||
+  JSON.stringify(effect.fv2)!=='[0,0,0,0]'||
+  !Number.isFinite(target.resists[element]))return null;
  const equipmentEffects=equippedElementalEffects({equipment,itemForth,unison});
  if(!equipmentEffects)return null;
- // Cross-check the existing character-sheet calculator's full equipment set
- // (including Souls and unison) before trusting this separate damage path.
+ // The sheet must agree with the equipment damage rate: never silently
+ // use forged or obsolete item bonuses.
  const knownGear=modifiers?.combat?.spellDamageEquipmentRate;
  if(!Number.isFinite(knownGear)||
   Math.abs(equipmentEffects.general-knownGear)>0.001)return null;
- // The Book's source-dependent caster selections are already validated by
- // PandoraOSCalculator.base; use only the values it actively applies.
  const sage=modifiers?.combat?.priestSong?.sageElementDamage||0;
  const enchant=modifiers?.priestApplied?.priestEnchantment?.magicRate||0;
  if(!Number.isFinite(sage)||!Number.isFinite(enchant))return null;
- const bonusRate=equipmentEffects.general+equipmentEffects.fire+sage+enchant;
- const penetration=equipmentEffects.penetration;
+ const bonusRate=equipmentEffects.general+
+  (element==='fire'?equipmentEffects.fire:0)+sage+enchant;
+ // EP_ELEMENT_BONUS pierces FIRE/COLD/LIGHTNING, but not DARK resistance.
+ const penetration=element==='fire'?equipmentEffects.penetration:0;
  const weapon=equipment.find(x=>x?.record?.slot==='weapon'&&!x?.issue?.length);
  let magicGemRate=0,magicGemFlat=0;
- if(weapon?.gem?.type==='magical'&&weapon.gem.element==='fire'){
+ if(weapon?.gem?.type==='magical'&&weapon.gem.element===element){
   const grade=weapon.refinement??0,plus=tables.magicPlus[String(grade)];
   if(grade>0&&(!n(grade)||grade>10||
    !Number.isFinite(plus?.ratio)||!Number.isFinite(plus?.flat)))return null;
   if(grade>0){magicGemRate=plus.ratio;magicGemFlat=plus.flat;}
  }
- const fv=[680,0,350,155],param=floor(fv[0]*stats.dex/1000)+
+ const fv=effect.fv1;
+ const param=floor(fv[0]*stats[powerKey]/1000)+
   floor(fv[1]*level/1000)+floor(fv[2]*mastery/1000)+fv[3];
  const intStep=even(stats.int/10),powerFactor=100+
   intStep*intStep/5+trunc(stats.int/5);
  const basePower=even(powerFactor*param/100);
- const variation=trunc(basePower/10);
+ const variation=trunc(basePower*spread/100);
  const sourcePoints=[basePower-variation,basePower-variation/2,basePower];
  const gap=monsterLevelModifier(level,target,tables.lvModify);
  if(!gap)return null;
  const resistanceMagic=trunc(target.resists.magic/2);
- const resistanceFire=target.resists.fire-penetration;
+ const resistanceElement=target.resists[element]-penetration;
  const absorption=even(target.spi*0.5)+target.magicProtection+
   gap.magicProtection;
  const apply=base=>{
   let amount=trunc(base*(100-gap.magicAc)/100);
   amount+=magicGemFlat+trunc(amount*(bonusRate+magicGemRate)/100);
   amount=Math.max(1,amount);
-  const effective=trunc(amount*(100-resistanceMagic-resistanceFire)/100)-
-   absorption;
+  const effective=trunc(amount*
+   (100-resistanceMagic-resistanceElement)/100)-absorption;
   return effective<0?1:effective;
  };
  const [normalMin,normalAvg,normalMax]=sourcePoints.map(apply);
@@ -184,14 +241,28 @@ function crawlingTrap({skillCatalog,classes,jobKey,level,masteries={},
   average=Math.round(average*(1-fraction)+weakened(average)*fraction);
   min=weakened(min);
  }
- if(![min,average,max].every(n)||min>max||average>max)return null;
- return {skillId:240005001,monsterId:target.id,
+ if(![min,average,max].every(n)||min>max||average>max||
+  average<min)return null;
+ return {skillId:skill.id,monsterId:target.id,
   targetName:target.name,targetNameEn:target.nameEn,
-  min,average,max,element:'fire',heroDex:stats.dex,heroInt:stats.int,
-  trapMastery:mastery,basePower,bonusRate,magicGemRate,magicGemFlat,
+  min,average,max,element,heroDex:stats.dex,heroInt:stats.int,
+  trapMastery:isTrap?mastery:undefined,
+  heroPowerKey:powerKey,heroPower:stats[powerKey],
+  heroMasteryKey:masteryKey,heroMastery:mastery,
+  basePower,bonusRate,magicGemRate,magicGemFlat,
   levelPenalty:gap.magicDamageReduction,
-  model:'Pandora Saga OS public BuildCalculator / element target kernel'};
+  model:'Pandora Saga OS public BuildCalculator / one elemental hit'};
 }
-root.PandoraOSTargetDamage=Object.freeze({crawlingTrap,
- equippedElementalEffects,monsterLevelModifier,roundEven:even,target});
+function crawlingTrap(options={}){return elementalHit(options);}
+function supportedSkillHits(options={}){
+ const hits=[],trap=crawlingTrap(options);
+ if(trap)hits.push(trap);
+ for(const spell of directSpells){
+  const result=elementalHit(options,spell);
+  if(result)hits.push(result);
+ }
+ return hits;
+}
+root.PandoraOSTargetDamage=Object.freeze({crawlingTrap,supportedSkillHits,
+ directSpells,equippedElementalEffects,monsterLevelModifier,roundEven:even,target});
 })(typeof window==='undefined'?globalThis:window);

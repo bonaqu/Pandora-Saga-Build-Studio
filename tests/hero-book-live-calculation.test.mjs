@@ -69,7 +69,7 @@ test('Origin and trained/allocated skill changes must invalidate the OPEN Book',
  assert.match(app,/function renderStageAttributes\(calculated=undefined\)/);
  assert.match(app,/const bookModifiers=calculated===undefined\?previewBaseStats\(\):calculated/);
  assert.match(app,/modifiers:bookModifiers/);
- assert.match(app,/targetSkillDamage=stageAttributesPage==='effects'/);
+ assert.match(app,/targetSkillDamages=stageAttributesPage==='effects'/);
  assert.match(app,/if\(allocationChanged&&!final\)refreshOpenHeroBook\(\)/);
  assert.match(app,/if\(!final\)refreshOpenHeroBook\(\)/);
  assert.match(app,/function setAttributePoints[\s\S]*?renderOriginVitals\(\)/);

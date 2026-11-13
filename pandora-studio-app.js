@@ -1804,20 +1804,20 @@ function renderStageAttributes(calculated=undefined){
    icon:skillIcon(ability.branch,0,ability)
   }:null;
  }
- // Exact current OS skill-vs-monster damage, only for the actually trained
- // Zagonschik. No extra skill description or materials in the Hero Book.
+ // Target hits are selected from source-checked learned skills, using
+ // precisely the current hero and one shared OS elemental damage kernel.
  const bookModifiers=calculated===undefined?previewBaseStats():calculated;
- const targetSkillDamage=stageAttributesPage==='effects'&&cls==='DISTURBANCE'?
-  window.PandoraOSTargetDamage?.crawlingTrap({
+ const targetSkillDamages=stageAttributesPage==='effects'?
+  window.PandoraOSTargetDamage?.supportedSkillHits({
    skillCatalog:skillMap,classes:catalog.classes||{},jobKey:cls,
    level:state.level,masteries:branchMasteries,
    branchCaps:catalog.classes?.[cls]?.branchCaps||{},
    stats:bookModifiers?.stats,equipment:items,tables:gameTables,
    itemForth:gameItemForth,unison:catalogSource?.unison||{},
    modifiers:bookModifiers
-  }):null;
+  })||[]:[];
  window.PandoraStageAttributes.render(root,{
-  page:stageAttributesPage,items,targetSkillDamage,
+  page:stageAttributesPage,items,targetSkillDamages,
   skillIconForId:id=>{
    const record=skillMap[String(id)];
    return record?skillIcon(record.branch,id,record):null;
