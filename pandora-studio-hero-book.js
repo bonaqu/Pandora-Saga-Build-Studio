@@ -1276,8 +1276,14 @@ function buffsPage(body,options){
 
 // Use the same exact OS icon resolution as Path, Wiki and combat Buffs.
 // Never infer artwork from a translated display label.
-function gameSkillBadge(id,ru,en,terms,english,skillIconForId){
- const label=make('span',{class:'stage-effect-skill-label'});
+function gameSkillBadge(id,ru,en,terms,english,skillIconForId,onSkill=null){
+ const interactive=typeof onSkill==='function';
+ const skillName=gameSkillName(id,ru,en,terms,english);
+ const label=make(interactive?'button':'span',{
+  class:'stage-effect-skill-label'+(interactive?' stage-effect-skill-link':''),
+  ...(interactive?{type:'button',
+   'aria-label':(english?'Encyclopedia: ':'Энциклопедия: ')+skillName,
+   onclick:()=>onSkill(id)}:{})});
  const source=skillIconForId?.(id);
  if(source){
   // Hard-limit intrinsic OS sprites even if an optional CSS file fails to load.
@@ -1293,7 +1299,7 @@ function gameSkillBadge(id,ru,en,terms,english,skillIconForId){
   };
   label.append(picture);
  }
- label.append(make('span',{text:gameSkillName(id,ru,en,terms,english)}));
+ label.append(make('span',{text:skillName}));
  root.PandoraSkillPreview?.attach(label,id);
  return label;
 }
@@ -1330,7 +1336,7 @@ function renderSongSkills(body,modifiers,gameTerms={},skillIconForId=()=>null){
  * uses are affordable from full MP and the multiplied material totals.
  * Base recipe, product, cast and cooldown facts stay in the Encyclopedia. */
 function materialSkillResults(body,{modifiers,gameTerms,skillIconForId,
- heroJobKey,heroLevel,heroMasteries,heroBranchCaps,onItem}){
+ heroJobKey,heroLevel,heroMasteries,heroBranchCaps,onItem,onSkill}){
  const calc=root.PandoraOSCalculator,gates=root.PandoraBookSkillThresholds;
  if(!calc||!gates||!gameTerms.skills||!gameTerms.items)return;
  const opts={skillCatalog:gameTerms.skills,jobKey:heroJobKey,
@@ -1375,7 +1381,7 @@ function materialSkillResults(body,{modifiers,gameTerms,skillIconForId,
   const head=make('div',{class:'stage-material-action-head'});
   head.append(gameSkillBadge(action.skillId,skill.name,
    gameTerms.englishSkills?.[String(action.skillId)]?.n||skill.name,
-   gameTerms,en,skillIconForId));
+   gameTerms,en,skillIconForId,onSkill));
   head.append(make('strong',{text:en?
    'Up to '+amount(budget.casts)+' uses':
    'До '+amount(budget.casts)+' применений'}));
@@ -1409,7 +1415,8 @@ function materialSkillResults(body,{modifiers,gameTerms,skillIconForId,
 function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>null,
  remakedBuffRows=[],availability={},combatSkillCards={},
  heroJobKey=null,heroLevel=1,heroMasteries={},heroBranchCaps={},
- heroWeaponKind='BARE_HAND',heroHasShield=false,onItem=()=>{}}={}){
+ heroWeaponKind='BARE_HAND',heroHasShield=false,
+ onItem=()=>{},onSkill=null}={}){
  const en=document.documentElement?.lang==='en';
  const gates=root.PandoraBookSkillThresholds;
  const heroGate=id=>gates?.requirements?.({
@@ -1557,7 +1564,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    const action=skillAction(sourceId);
    const preview=make('div',{class:'stage-heal-row',
     'data-healing-skill-id':String(sourceId)},[
-    gameSkillBadge(sourceId,row.name,row.nameEn,gameTerms,en,skillIconForId),
+    gameSkillBadge(sourceId,row.name,row.nameEn,gameTerms,en,skillIconForId,onSkill),
     make('strong',{text:amount})
    ]);
    const more=make('details',{class:'stage-skill-gate-help stage-skill-more'},[
@@ -1594,7 +1601,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   for(const entry of manaPulses){
    if(!Number.isFinite(entry?.amount))continue;
    const preview=make('div',{class:'stage-periodic-row'},[
-    gameSkillBadge(entry.id,entry.name,null,gameTerms,en,skillIconForId),
+    gameSkillBadge(entry.id,entry.name,null,gameTerms,en,skillIconForId,onSkill),
     make('strong',{text:String(entry.amount)+' '+(en?'MP every 2 sec':'ОМ каждые 2 сек.')})
    ]);
    const more=make('details',{class:'stage-skill-gate-help stage-skill-more'},[
@@ -1678,7 +1685,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    const preview=make('div',{class:'stage-heal-row '+rowClass+
     (!skill.available?' stage-book-unavailable':'')},[
     gameSkillBadge(skill.id,skill.name,source?.n||skill.name,
-     gameTerms,en,skillIconForId),
+     gameTerms,en,skillIconForId,onSkill),
     ...(amount!==null?[make('strong',{class:singlePart?
      'stage-skill-primary-coefficient':'',text:amount})]:[])
    ]);
@@ -1760,7 +1767,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   body.append(section);
  }
  materialSkillResults(body,{modifiers,gameTerms,skillIconForId,
-  heroJobKey,heroLevel,heroMasteries,heroBranchCaps,onItem});
+  heroJobKey,heroLevel,heroMasteries,heroBranchCaps,onItem,onSkill});
  // Effects from party skills are not abilities learned by this profession.
  // Still, their numeric effect ON this hero is derived from this hero's
  // actual attack, accuracy and evasion. Never activate the buff automatically.
@@ -1781,7 +1788,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    }[basis.source];
    if(!label)continue;
    const card=make('div',{class:'stage-heal-row stage-skill-party-row'},[
-    gameSkillBadge(skill.id,skill.name,source?.n||skill.name,gameTerms,en,skillIconForId),
+    gameSkillBadge(skill.id,skill.name,source?.n||skill.name,gameTerms,en,skillIconForId,onSkill),
     make('strong',{text:'+'+skill.amount+(en?skill.unit:
      skill.unit===' ATK'?' АТК':skill.unit)})
    ]);
@@ -1813,7 +1820,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    'Мастерство ближнего боя · следующий порог ')+nextMelee.required}));
   section.append(make('div',{class:'stage-skill-milestone-body'},[
    gameSkillBadge(nextMelee.id,nextMelee.nameRu,nextMelee.nameEn,
-    gameTerms,en,skillIconForId),
+    gameTerms,en,skillIconForId,onSkill),
    make('small',{text:en?
     'Trained: '+nextMelee.current+'/'+nextMelee.required+
      ' · '+nextMelee.remaining+' more mastery points to this skill threshold':
@@ -2451,7 +2458,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
  combatSkillCards={},resistanceSkillChoices=[],remakedBuffRows=[],
  heroJobKey=null,heroLevel=1,heroMasteries={},heroBranchCaps={},
  heroWeaponKind='BARE_HAND',heroHasShield=false,
- itemById=()=>null,onItem=()=>{},gameTerms={},
+ itemById=()=>null,onItem=()=>{},onSkill=null,gameTerms={},
  copy={},onTextEdit=null,canEdit=false,onHonor=()=>{}}={}){
  root.PandoraGuideTooltip?.dismiss();
  // Keep the same scrolling pane mounted on ordinary value changes: re-attaching
@@ -2559,7 +2566,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
   gameTerms,remakedBuffRows,skillIconForId,...copyOptions});
  if(chosen==='effects')skillEffectsPage(body,{modifiers,gameTerms,skillIconForId,
   remakedBuffRows,availability,combatSkillCards,heroJobKey,heroLevel,heroMasteries,
-   heroBranchCaps,heroWeaponKind,heroHasShield,onItem});
+   heroBranchCaps,heroWeaponKind,heroHasShield,onItem,onSkill});
  if(chosen==='recovery'){
   const english=document.documentElement?.lang==='en';
   const percent=modifiers?.potion?.percent;
