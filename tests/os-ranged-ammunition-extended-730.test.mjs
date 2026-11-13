@@ -114,11 +114,11 @@ test('coverage counts three new source-material models once, not final damage',(
  }
  assert.equal(report.rows.filter(r=>r.sourceModules.includes('skill-ammunition')).length,6);
 });
-test('player instructions distinguish ammo cost from hits in both languages',()=>{
- const src=read('pandora-studio-hero-book.js');
- for(const phrase of ['rangedAmmoPreview','Боеприпасы для умений',
-  'Ammunition for skills','Перезарядка: ','Cooldown: ',
-  'не число гарантированных попаданий','not guaranteed hits',
-  'stage-skill-ranged-ammo-row','gameSkillBadge'])
-  assert.ok(src.includes(phrase),phrase);
+test('Source-only os-ranged-ammunition-extended-730 data is displayed in the Encyclopedia',()=>{
+ const wiki=read('pandora-studio-wiki-skill-insights.js');
+ const app=read('pandora-studio-app.js');
+ const book=read('pandora-studio-hero-book.js');
+ assert.ok(wiki.includes('rangedAmmoPreview'),'verified OS inspector retained');
+ assert.ok(app.includes('PandoraWikiSkillInsights?.inspect'),'Wiki uses source data');
+ assert.ok(!book.includes('stage-skill-ranged-ammo'),'Do not print general skill catalog in Book');
 });

@@ -98,9 +98,11 @@ test('five source-backed models improve 569-skill census without fabricating tot
   assert.deepEqual(row.sourceModules,['specialized-skill-source']);
  }
 });
-test('Book reuses existing defensive and special-magic groups',()=>{
+test('Source-only os-specialized-sources-736 data is displayed in the Encyclopedia',()=>{
+ const wiki=read('pandora-studio-wiki-skill-insights.js');
+ const app=read('pandora-studio-app.js');
  const book=read('pandora-studio-hero-book.js');
- assert.match(book,/\['defense','Дополнительные защитные умения','Additional defensive skills'\]/);
- assert.match(book,/\['magic','Особые магические умения','Special magic skills'\]/);
- assert.match(book,/gameTerms\.englishSkills\?\.\[String\(row\.id\)\]/);
+ assert.ok(wiki.includes('specializedSkillPreview'),'verified OS inspector retained');
+ assert.ok(app.includes('PandoraWikiSkillInsights?.inspect'),'Wiki uses source data');
+ assert.ok(!book.includes('stage-skill-specialized-magic'),'Do not print general skill catalog in Book');
 });

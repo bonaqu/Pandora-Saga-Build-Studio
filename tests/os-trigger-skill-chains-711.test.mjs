@@ -69,10 +69,11 @@ test('linked skill audit tracks only verified crafting numeric sources',()=>{
  assert.ok(audit.summary.executionChains.eligibleSkillRoots>0);
  assert.ok(audit.summary.statuses['unmodeled-learnable']<=55);
 });
-test('Hero Book uses player language and explanatory collapsed group',()=>{
+test('Source-only os-trigger-skill-chains-711 knowledge is readable in Wiki without fake results',()=>{
+ const wiki=read('pandora-studio-wiki-skill-insights.js');
+ const app=read('pandora-studio-app.js');
  const book=read('pandora-studio-hero-book.js');
- assert.match(book,/stage-skill-chain-effects/);
- assert.match(book,/skillExecutionChains\?\.\(/);
- assert.match(book,/gameTerms\.englishSkills\?\.\[String\(id\)\]\?\.n\|\|ru/);
- assert.match(book,/Это не гарантированный урон/);
+ assert.ok(wiki.includes('skillExecutionChains'),'verified source projection retained');
+ assert.ok(app.includes('PandoraWikiSkillInsights?.inspect'),'Wiki owns reference skill notes');
+ assert.ok(!book.includes('stage-skill-chain-effects'),'Book cannot show standalone source-only notes');
 });

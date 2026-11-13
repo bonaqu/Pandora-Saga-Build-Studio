@@ -70,11 +70,11 @@ test('source census keeps on-hit metadata separate from numeric models',()=>{
  assert.ok(audit.summary.statuses['unmodeled-learnable']<=55);
  assert.equal(audit.summary.skillRecords,569);
 });
-test('conditional source UI is collapsed and describes uncertainty in plain language',()=>{
+test('Source-only os-onhit-skill-chains-712 knowledge belongs in the Encyclopedia, not build stats',()=>{
+ const wiki=read('pandora-studio-wiki-skill-insights.js');
+ const app=read('pandora-studio-app.js');
  const book=read('pandora-studio-hero-book.js');
- assert.match(book,/stage-skill-onhit-effects/);
- assert.match(book,/onHit:true/);
- assert.match(book,/Эти эффекты могут запускаться при попадании/);
- assert.match(book,/gameTerms\.englishSkills\?\.\[String\(entry\.id\)\]/);
- assert.match(book,/const description=\(en\?source\?\.d:null\)/);
+ assert.ok(wiki.includes('skillExecutionChains'),'source inspector must stay enabled');
+ assert.ok(app.includes('PandoraWikiSkillInsights?.inspect'),'Wiki renders verified insights');
+ assert.ok(!book.includes('stage-skill-onhit-effects'),'Book must not duplicate Wiki metadata');
 });

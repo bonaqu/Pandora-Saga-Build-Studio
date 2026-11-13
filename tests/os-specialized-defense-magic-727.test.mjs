@@ -115,12 +115,11 @@ test('eight distinct IDs improve cross-module coverage without duplicate models'
   assert.deepEqual(row.sourceModules,['specialized-skill-source']);
  }
 });
-test('localized Book has two compact groups and uses standard skill tooltips',()=>{
- const src=read('pandora-studio-hero-book.js');
- for(const phrase of ['Дополнительные защитные умения','Особые магические умения',
-  'Additional defensive skills','Special magic skills',
-  'specializedSkillPreview','stage-skill-specialized-row','gameSkillBadge']){
-  assert.ok(src.includes(phrase),phrase);
- }
- assert.ok(src.includes('&&!specialSkills?.defense?.length&&!specialSkills?.magic?.length'));
+test('Source-only os-specialized-defense-magic-727 data is displayed in the Encyclopedia',()=>{
+ const wiki=read('pandora-studio-wiki-skill-insights.js');
+ const app=read('pandora-studio-app.js');
+ const book=read('pandora-studio-hero-book.js');
+ assert.ok(wiki.includes('specializedSkillPreview'),'verified OS inspector retained');
+ assert.ok(app.includes('PandoraWikiSkillInsights?.inspect'),'Wiki uses source data');
+ assert.ok(!book.includes('stage-skill-specialized-magic'),'Do not print general skill catalog in Book');
 });

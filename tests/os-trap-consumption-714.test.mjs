@@ -88,16 +88,11 @@ test('trap consumption is source-number arithmetic, not made-up combat damage',(
   assert.equal(rec.targetSideOnly,false);
  }
 });
-test('Hero Book explains uncertain mechanics and the actual game material in RU/EN',()=>{
+test('Source-only os-trap-consumption-714 knowledge is readable in Wiki without fake results',()=>{
+ const wiki=read('pandora-studio-wiki-skill-insights.js');
+ const app=read('pandora-studio-app.js');
  const book=read('pandora-studio-hero-book.js');
- const css=read('pandora-studio-hero-book-additions.css');
- assert.match(book,/stage-skill-trap-costs/);
- assert.match(book,/Количество ловушек взято из игровых данных/);
- assert.match(book,/Для применения нужно:/);
- assert.match(book,/sourceItemName\(65007\)/);
- assert.match(book,/!trapCost\?\.rows\?\.length/);
- // The section uses the common Hero Book header; legacy CSS pseudo arrows
- // must NOT be required to consider a source-backed skill rendered.
- assert.match(css,/\.stage-book-disclosure\.stage-attribute-row>summary\.stage-result-section-head/);
- assert.doesNotMatch(css,/>summary:(?::after|after)/);
+ assert.ok(wiki.includes('trapSkillCostPreview'),'verified source projection retained');
+ assert.ok(app.includes('PandoraWikiSkillInsights?.inspect'),'Wiki owns reference skill notes');
+ assert.ok(!book.includes('stage-skill-trap-costs'),'Book cannot show standalone source-only notes');
 });

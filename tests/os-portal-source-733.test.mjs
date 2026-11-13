@@ -72,9 +72,11 @@ test('cross-module census includes portal action only as qualitative source',()=
  assert.ok(census.summary.statuses['unmodeled-learnable']<=49);
 });
 
-test('Hero Book reuses the existing Special Actions group and original RU/EN labels',()=>{
+test('Source-only os-portal-source-733 knowledge belongs in the Encyclopedia, not build stats',()=>{
+ const wiki=read('pandora-studio-wiki-skill-insights.js');
+ const app=read('pandora-studio-app.js');
  const book=read('pandora-studio-hero-book.js');
- assert.match(book,/\['other','Особые действия','Other abilities'\]/);
- assert.match(book,/gameTerms\.englishSkills\?\.\[String\(row\.id\)\]/);
- assert.match(book,/gameSkillBadge\(row\.id,row\.name,official\?\.n\|\|row\.name/);
+ assert.ok(wiki.includes('situationalSkillPreview'),'source inspector must stay enabled');
+ assert.ok(app.includes('PandoraWikiSkillInsights?.inspect'),'Wiki renders verified insights');
+ assert.ok(!book.includes('stage-skill-situational-other'),'Book must not duplicate Wiki metadata');
 });

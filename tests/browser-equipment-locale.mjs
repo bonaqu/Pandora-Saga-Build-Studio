@@ -162,11 +162,19 @@ export async function runEquipmentLocaleSmoke(browser,base){
   await page.waitForFunction(expected=>location.hash===expected,monsterHash);
   await page.locator('.wiki-return-button').click();
   await page.waitForFunction(()=>location.hash==='#wiki/soul/101000');
-  // Skill requirements show current investment without pretending the
-  // entire ability is unlocked by one branch threshold.
+  // Skill requirements are static game thresholds, not values from an open build.
   await page.goto(base+'/#wiki/skill/100054001',{waitUntil:'domcontentloaded'});
   await page.locator('.wiki-requirement-chip').first().waitFor({state:'visible',timeout:20000});
-  assert.match(await page.locator('.wiki-requirement-copy').innerText(),/Вложено/);
+  const requirement=await page.locator('.wiki-requirement-copy').innerText();
+  assert.match(requirement,/Порог ветки: 26/);
+  assert.doesNotMatch(requirement,/Вложено/);
+  // Newly restored MELEE skills carry source-verified explanations in Wiki.
+  await page.goto(base+'/#wiki/skill/100101001',{waitUntil:'domcontentloaded'});
+  await page.locator('.wiki-skill-source-insight').waitFor({state:'visible',timeout:20000});
+  assert.match(await page.locator('.wiki-skill-source-insight').innerText(),
+   /Быстрый удар с параметрами точности/);
+  assert.match(await page.locator('.wiki-requirement-copy').innerText(),
+   /Ближний бой\s+Суммарное освоенное мастерство: 3/);
   // Chest contents are shown as one visible list; original roll boundaries remain in the data.
   await page.goto(base+'/#wiki/chest/51003',{waitUntil:'domcontentloaded'});
   await page.locator('.wiki-chest-listed-100 .wiki-chest-reward').first().waitFor({state:'visible',timeout:20000});

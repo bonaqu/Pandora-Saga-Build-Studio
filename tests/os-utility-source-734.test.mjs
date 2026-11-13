@@ -99,10 +99,11 @@ test('six additional source descriptions improve audit without false numeric cla
   assert.deepEqual(row.sourceModules,['situational-skill-source']);
  }
 });
-test('Hero Book uses the existing two compact sections and canonical RU/EN skill IDs',()=>{
+test('Source-only os-utility-source-734 knowledge is readable in Wiki without fake results',()=>{
+ const wiki=read('pandora-studio-wiki-skill-insights.js');
+ const app=read('pandora-studio-app.js');
  const book=read('pandora-studio-hero-book.js');
- assert.match(book,/Скрытность и обнаружение/);
- assert.match(book,/Особые действия/);
- assert.match(book,/gameTerms\.englishSkills\?\.\[String\(row\.id\)\]/);
- assert.match(book,/gameSkillBadge\(row\.id,row\.name,official\?\.n\|\|row\.name/);
+ assert.ok(wiki.includes('situationalSkillPreview'),'verified source projection retained');
+ assert.ok(app.includes('PandoraWikiSkillInsights?.inspect'),'Wiki owns reference skill notes');
+ assert.ok(!book.includes('stage-skill-situational-other'),'Book cannot show standalone source-only notes');
 });

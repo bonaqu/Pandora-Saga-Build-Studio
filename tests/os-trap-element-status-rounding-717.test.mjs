@@ -98,11 +98,11 @@ test('ice secondary status is a separate frozen-state source, never a server rol
   if(row)assert.equal(row.linkedStatus,null);
  }
 });
-test('Hero Book uses simple RU/EN output without surfacing internal EP or fake target odds',()=>{
- const code=read('pandora-studio-hero-book.js');
- assert.match(code,/Эффект в игровых данных/);
- assert.match(code,/Дополнительное состояние/);
- assert.match(code,/Сопротивление отбрасыванию показано/);
- assert.match(code,/Предполагаемая основа \(каждая часть округляется вниз\)/);
- assert.match(code,/шанс наложения не подтверждён/);
+test('Source-only os-trap-element-status-rounding-717 knowledge is readable in Wiki without fake results',()=>{
+ const wiki=read('pandora-studio-wiki-skill-insights.js');
+ const app=read('pandora-studio-app.js');
+ const book=read('pandora-studio-hero-book.js');
+ assert.ok(wiki.includes('trapSkillCostPreview'),'verified source projection retained');
+ assert.ok(app.includes('PandoraWikiSkillInsights?.inspect'),'Wiki owns reference skill notes');
+ assert.ok(!book.includes('stage-skill-trap-costs'),'Book cannot show standalone source-only notes');
 });

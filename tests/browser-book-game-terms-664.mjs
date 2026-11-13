@@ -87,9 +87,10 @@ export async function runHeroBookGameNames664Smoke(browser,base){
    return host.querySelector('.stage-book-page')?.textContent||'';
   },{lang,chapter});
   const ru=await render({lang:'ru',chapter:'effects'});
-  for(const name of ['Лечение','Массовое исцеление','Природное восстановление',
-   'Песнь поэта','Песнопения','Адепт, уровень 18'])
+  for(const name of ['Первая помощь','Массовое исцеление','Песнь поэта','Песнопения'])
    assert.ok(ru.includes(name),'Book effects need OS/Remaked RU '+name+'; seen '+ru.slice(0,600));
+  assert.equal(ru.includes('Лечение'),false,'Unavailable Heal is encyclopedic, not a current-build result');
+  assert.equal(ru.includes('Природное восстановление'),false,'Unavailable recovery does not enter Book');
   assert.equal(ru.includes('Неверный автоперевод'),false);
   assert.equal(ru.includes('Гимны'),false);
   for(const name of ['Первая помощь','Храм','Восстановление'])
@@ -103,7 +104,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   assert.equal(await offense.getAttribute('open'),null,
    'Skill Effects start with offensive previews collapsed');
   await offense.locator('summary').click();
-  const required=[310001001,310004001,310021001,310022001,310023001,340001001];
+  const required=[310001001,310021001,310022001,310023001,340001001];
   // The new collapsed subchapters use lazy-loaded artwork; force each source
   // icon into the scrollport before checking that the original sprite loaded.
   for(const id of required){
@@ -119,8 +120,8 @@ export async function runHeroBookGameNames664Smoke(browser,base){
    const img=document.querySelector('#book-source-qa .stage-effect-skill-label img[src$="skill_'+id+'.webp"]');
    return img?.complete&&img.naturalWidth>0;
   }),required,{timeout:12000});
-  assert.equal(await page.locator('#book-source-qa .stage-effect-skill-label img').count()>=6,true,
-   'All six OS skill original images must be rendered, not an icon-less name');
+  assert.equal(await page.locator('#book-source-qa .stage-effect-skill-label img').count()>=5,true,
+   'All five available source skills have their original icon, without a locked Heal');
   const imageBounds=await page.locator('#book-source-qa .stage-effect-skill-label img').evaluateAll(
    images=>images.map(img=>({width:img.getBoundingClientRect().width,
     height:img.getBoundingClientRect().height,src:img.getAttribute('src'),
@@ -137,9 +138,10 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   assert.ok(scroll.scrollWidth<=scroll.width+3,
    'Effect icons must not push healing rows beyond the Book: '+JSON.stringify(scroll));
   const en=await render({lang:'en',chapter:'effects'});
-  for(const term of ['Heal','Healing Aura','Mana Restore',"Minstrel's Song",
-   'Hymn mastery','Acolyte class'])
+  for(const term of ['First Aid','Healing Aura',"Minstrel's Song",'Hymn mastery'])
    assert.ok(en.includes(term),'Book effects need original OS EN '+term+'; seen '+en.slice(0,700));
+  assert.equal(en.includes('Mana Restore'),false,'Unavailable MP recovery belongs in Wiki');
+  assert.equal(en.includes('Acolyte class'),false,'Locked class hints do not clutter Book');
   assert.equal(en.includes('A bad EN name'),false);
 
   const buffsRu=await render({lang:'ru',chapter:'buffs'});

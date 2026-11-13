@@ -98,15 +98,11 @@ test('qualitative mechanics improve source coverage without fake numeric spell o
   assert.equal(row.status,'qualitative-preview');
  }
 });
-test('Hero Book shows official descriptions and plain uncertainty, not internal effect codes',()=>{
- const src=read('pandora-studio-hero-book.js');
- const css=read('pandora-studio-hero-book-additions.css');
- assert.match(src,/stage-skill-complex-effects/);
- assert.match(src,/gameTerms\.englishSkills\?\.\[String\(entry\.id\)\]/);
- assert.match(src,/Точный урон по цели пока не подтверждён/);
- assert.match(src,/Результат зависит от состояний цели/);
- // The section uses the common Hero Book header; legacy CSS pseudo arrows
- // must NOT be required to consider a source-backed skill rendered.
- assert.match(css,/\.stage-book-disclosure\.stage-attribute-row>summary\.stage-result-section-head/);
- assert.doesNotMatch(css,/>summary:(?::after|after)/);
+test('Source-only os-complex-skill-source-715 knowledge belongs in the Encyclopedia, not build stats',()=>{
+ const wiki=read('pandora-studio-wiki-skill-insights.js');
+ const app=read('pandora-studio-app.js');
+ const book=read('pandora-studio-hero-book.js');
+ assert.ok(wiki.includes('complexSkillSourcePreview'),'source inspector must stay enabled');
+ assert.ok(app.includes('PandoraWikiSkillInsights?.inspect'),'Wiki renders verified insights');
+ assert.ok(!book.includes('stage-skill-complex-effects'),'Book must not duplicate Wiki metadata');
 });

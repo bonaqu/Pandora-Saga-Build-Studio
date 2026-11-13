@@ -105,10 +105,11 @@ test('seven existing source records become qualitative without any damage guess'
   assert.deepEqual(record.sourceModules,['combat-techniques-source']);
  }
 });
-test('existing combat techniques panel reuses official names, icons and descriptions',()=>{
+test('Source-only os-combat-advanced-738 knowledge belongs in the Encyclopedia, not build stats',()=>{
+ const wiki=read('pandora-studio-wiki-skill-insights.js');
+ const app=read('pandora-studio-app.js');
  const book=read('pandora-studio-hero-book.js');
- assert.match(book,/stage-skill-combat-technique/);
- assert.match(book,/Защитные и боевые приёмы/);
- assert.match(book,/gameTerms\.englishSkills\?\.\[String\(row\.id\)\]/);
- assert.match(book,/row\.noteEn:row\.noteRu/);
+ assert.ok(wiki.includes('combatTechniquePreview'),'source inspector must stay enabled');
+ assert.ok(app.includes('PandoraWikiSkillInsights?.inspect'),'Wiki renders verified insights');
+ assert.ok(!book.includes('stage-skill-combat-technique'),'Book must not duplicate Wiki metadata');
 });

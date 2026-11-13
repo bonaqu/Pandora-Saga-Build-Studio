@@ -4848,18 +4848,19 @@ function renderWiki(root){
     const reqs=h('div',{class:'wiki-requirements',role:'list'});
     for(const [index,req] of (rec.reqs||[]).entries()){
      if(!req||!Number.isFinite(Number(req.amount)))continue;
-     const current=Math.max(0,Number(state.points?.[req.branch])||0);
-     const required=Math.max(0,Number(req.amount)),ready=current>=required;
-     const chip=h('div',{class:'wiki-requirement-chip'+(ready?' fulfilled':''),
-      role:'listitem','aria-label':branchLabel(req.branch)+': '+current+'/'+required});
-     const target=h('small',{text:wt('Вложено ','Invested ')+current+' / '+required});
-     chip.append(h('span',{class:'wiki-requirement-symbol','aria-hidden':'true',text:ready?'✦':'◇'}),
+     // The encyclopedia explains the game's requirement, never the
+     // investments of whatever hero happens to be open in the editor.
+     const parentMelee=req.branch==='martial'&&rec.branchRaw==='MELEE';
+     const label=parentMelee?wt('Ближний бой','Melee'):branchLabel(req.branch);
+     const required=Math.max(0,Number(req.amount));
+     const chip=h('div',{class:'wiki-requirement-chip',role:'listitem',
+      'aria-label':label+': '+required});
+     const target=h('small',{text:parentMelee?
+      wt('Суммарное освоенное мастерство: ','Total trained mastery: ')+required:
+      wt('Порог ветки: ','Branch requirement: ')+required});
+     chip.append(h('span',{class:'wiki-requirement-symbol','aria-hidden':'true',text:'◇'}),
       h('div',{class:'wiki-requirement-copy'},[
-       h('strong',{text:branchLabel(req.branch)}),target,
-       h('span',{class:'wiki-requirement-track','aria-hidden':'true'},[
-        h('span',{class:'wiki-requirement-progress',
-         style:'width:'+Math.min(100,required>0?current/required*100:100)+'%'})
-       ])
+       h('strong',{text:label}),target
       ]));
      if(adminEditing&&adminToken){
       target.classList.add('wiki-edit-value');
@@ -4937,6 +4938,59 @@ function renderWiki(root){
     }
     if(prereqPane.childElementCount>1)detail.append(prereqPane);
     renderClassEligibility(Object.keys(rec.classes||{}).filter(key=>rec.classes[key]),false);
+    // Detailed source mechanics live in the Encyclopedia, not in the Book.
+    // Notes are provided only by the existing verified OS model inspectors.
+    const evidence=window.PandoraWikiSkillInsights?.inspect?.({
+     skillCatalog:wikiData.skills,classes:catalog.classes,
+     id,calculator:window.PandoraOSCalculator
+    });
+    if(evidence){
+     const section=h('section',{class:'wiki-skill-source-insight'});
+     section.append(h('h4',{text:wt('Действие по игровым данным','Game-source mechanics')}));
+     const explanations=evidence.notes.map(n=>lang==='en'?(n.en||n.ru):(n.ru||n.en));
+     for(const description of explanations.filter(Boolean))
+      section.append(h('p',{class:'wiki-description',text:description}));
+     if(evidence.paths.length){
+      section.append(h('h5',{text:wt('Связанные действия','Linked actions')}));
+      for(const path of evidence.paths){
+       const chain=h('div',{class:'wiki-skill-source-chain'});
+       path.forEach((linkId,index)=>{
+        if(index)chain.append(h('span',{text:' → ','aria-hidden':'true'}));
+        chain.append(wikiLink(dataName('skill',String(linkId)),
+         'skill',String(linkId)));
+       });
+       section.append(chain);
+      }
+     }
+     const itemName=itemId=>{
+      const source=wikiData.items?.[String(itemId)];
+      const name=dataName('item',String(itemId));
+      return source?name:null;
+     };
+     for(const extra of evidence.extra){
+      if(extra.type==='recipe'&&extra.uses.every(x=>itemName(x.id))&&
+       itemName(extra.produces.id)){
+       const parts=extra.uses.map(x=>x.quantity+' × '+itemName(x.id)).join(' + ')+
+        ' → '+extra.produces.quantity+' × '+itemName(extra.produces.id);
+       section.append(h('p',{class:'wiki-skill-source-recipe',
+        text:wt('Рецепт: ','Recipe: ')+parts}));
+      }
+      if(extra.type==='trap'&&itemName(extra.itemId))
+       section.append(h('p',{text:wt('Расход: ','Cost: ')+extra.count+
+        ' × '+itemName(extra.itemId)}));
+      if(extra.type==='requiredItem'&&itemName(extra.itemId))
+       section.append(h('p',{text:wt('Для применения нужно: ','Requires: ')+extra.count+
+        ' × '+itemName(extra.itemId)}));
+      if(extra.type==='resource')
+       section.append(h('p',{text:wt('Указанный особый расход: ','Source special cost: ')+
+        extra.value+wt(' (правило расхода не подтверждено)',
+         ' (consumption rule unverified)')}));
+     }
+     section.append(h('small',{class:'muted',text:wt(
+      'Это сведения из игровых файлов, а не рассчитанный урон, шанс попадания или длительность.',
+      'These are game-file mechanics, not calculated damage, hit chance or duration.')}));
+     detail.append(section);
+    }
     const icon=skillIcon(rec.branch,id,rec);
     if(icon){
      const image=wikiImage(icon,'wiki-record-icon',type);

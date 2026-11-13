@@ -70,13 +70,11 @@ test('cross-module audit counts five new qualitative roots only once',()=>{
  }
  assert.equal(result.rows.find(r=>r.id===430052001).status,'coefficient-model');
 });
-test('Hero Book is localized and makes limits understandable without duplicate ice',()=>{
+test('Source-only os-status-application-source-718 knowledge is readable in Wiki without fake results',()=>{
+ const wiki=read('pandora-studio-wiki-skill-insights.js');
+ const app=read('pandora-studio-app.js');
  const book=read('pandora-studio-hero-book.js');
- assert.match(book,/stage-skill-status-effects/);
- assert.match(book,/Состояния от умений/);
- assert.match(book,/Возможное состояние:/);
- assert.match(book,/Отравление и сопротивление стихии яда — разные показатели/);
- assert.match(book,/Применяется только во время блокирования/);
- assert.match(book,/!statusesFromSkills\?\.rows\?\.length/);
- assert.equal(expected.some(([id])=>id===410011001||id===410012001),false);
+ assert.ok(wiki.includes('statusApplicationPreview'),'verified source projection retained');
+ assert.ok(app.includes('PandoraWikiSkillInsights?.inspect'),'Wiki owns reference skill notes');
+ assert.ok(!book.includes('stage-skill-status-effects'),'Book cannot show standalone source-only notes');
 });

@@ -332,122 +332,26 @@ async function main(){
  await page.locator('#stage-guide-tooltip').waitFor({state:'visible',timeout:4000});
  assert.match(await page.locator('#stage-guide-tooltip').innerText(),/индекс скорости восстановления/);
  await page.locator('#stageAttributes [data-book-page="effects"]').click();
- const offense=page.locator('#stageBookPanel .stage-attacking-skills');
- const healing=page.locator('#stageBookPanel .stage-healing-spells:not(.stage-attacking-skills):not(.stage-defensive-skills):not(.stage-movement-skills)');
- const defensive=page.locator('#stageBookPanel .stage-defensive-skills');
- assert.equal(await defensive.count(),1,'Variable defensive-skill chapter must be present');
- assert.equal(await defensive.getAttribute('open'),null,
-  'Defense skill effects start collapsed; Healing is the only open effect group');
- await defensive.locator('summary').click();
- assert.match(await defensive.innerText(),/Помощь ветра/);
- assert.doesNotMatch(await defensive.innerText(),/Быстрый отход|Ускользание/,
-  'Fixed-value skills must stay out of the Skill Effects preview');
- assert.equal(await offense.getAttribute('open'),null,'Offensive skills start collapsed');
- await offense.locator('summary').click();
- assert.match(await offense.innerText(),/Боевой клич|Массовая сосредоточенность/);
+ const encyclopediaOnly=page.locator('#stageBookPanel '+
+  '.stage-skill-chain-effects, #stageBookPanel .stage-skill-onhit-effects, '+
+  '#stageBookPanel .stage-skill-crafting-effects, #stageBookPanel .stage-skill-trap-costs, '+
+  '#stageBookPanel .stage-skill-combat-technique, #stageBookPanel .stage-skill-specialized-magic, '+
+  '#stageBookPanel .stage-skill-support-effects, #stageBookPanel .stage-skill-situational-other');
+ assert.equal(await encyclopediaOnly.count(),0,
+  'The Hero Book must show build calculations, not encyclopedic source lists');
  assert.equal(await page.locator('#stageBookPanel input[type="checkbox"]').count(),0,
-  'Read-only Skill Effects must never activate a defensive skill');
- const calculatedSkill=offense.locator('.stage-effect-skill-label').first();
- const sourceId=await calculatedSkill.getAttribute('data-source-skill-id');
- assert.ok(Number(sourceId)>0,'Calculation row must attach its real OS skill ID');
- // Re-establish a native pointer enter after a Book redraw. Some Chromium
- // layouts can rebuild a row under a stationary cursor and lose that event.
- const richEffect=page.locator('#path-skill-hover-tooltip');
- for(let attempt=0;attempt<2;attempt++){
-  await page.mouse.move(1,1);
-  await calculatedSkill.hover();
-  if(!await calculatedSkill.evaluate(node=>node.matches(':hover')))
-   await calculatedSkill.hover();
-  try{
-   await richEffect.waitFor({state:'visible',timeout:2500});
-   break;
-  }catch(error){
-   if(attempt===1)throw error;
-  }
+  'Read-only skill calculations must not silently activate buffs');
+ const actualEffects=page.locator('#stageBookPanel .stage-attacking-skills .stage-heal-row,'+
+  '#stageBookPanel .stage-defensive-skills .stage-heal-row,'+
+  '#stageBookPanel .stage-healing-spells:not(.stage-movement-skills) .stage-heal-row');
+ const count=await actualEffects.count();
+ if(count){
+  assert.ok(await actualEffects.first().locator('.stage-effect-skill-label').count()>0,
+   'A computed skill row must retain its canonical game identity and tooltip');
+ }else{
+  assert.match(await page.locator('#stageBookPanel').innerText(),
+   /У текущего билда нет рассчитанных эффектов умений/);
  }
- assert.ok((await richEffect.locator('strong').first().innerText()).trim().length>2,
-  'Rich effect tooltip must show the canonical skill title');
- assert.equal(await richEffect.locator('.path-skill-preview-item').count(),1);
- await offense.locator('summary').hover();
- if(await offense.count()&&await healing.count()){
-  const normalize=async selector=>selector.locator('summary').evaluate(node=>{
-   const css=getComputedStyle(node);
-   return {padding:css.padding,font:css.font,background:css.backgroundColor};
-  });
-  assert.deepEqual(await normalize(offense),await normalize(healing),
-   'Offensive and Healing headers must share exact geometry');
-  assert.equal(await offense.locator('.stage-offense-skill-row:not(.stage-heal-row)').count(),0);
- }
-  // Regression: skill panels must use the same header as Healing and keep
-  // exactly one native shared chevron, even when the panel is expanded.
-  // Fixtures cover classes that may not exist on the default character.
-  const skillDisclosureAudit=await page.evaluate(()=>{
-   const parent=document.querySelector('#stageBookPanel');
-   const reference=parent?.querySelector('.stage-attacking-skills > summary.stage-result-section-head');
-   if(!parent||!reference)throw Error('Missing Skill Effects header reference');
-   const kinds=['stage-skill-chain-effects','stage-skill-onhit-effects',
-    'stage-skill-crafting-effects','stage-skill-trap-costs','stage-skill-complex-effects'];
-   const style=element=>{
-    const css=getComputedStyle(element);
-    return {padding:css.padding,font:css.font,background:css.backgroundColor,
-     minHeight:css.minHeight,display:css.display,gap:css.gap};
-   };
-   const expected=style(reference);
-   const inspect=(section,kind)=>{
-    const head=section.querySelector(':scope > summary');
-    return {kind,style:style(head),
-     after:getComputedStyle(head,'::after').content,
-     chevrons:head.querySelectorAll('.stage-result-chevron').length,
-     symbols:head.querySelectorAll('.stage-result-symbol').length,
-     listStyle:getComputedStyle(head).listStyleType};
-   };
-   const actual=[...parent.querySelectorAll('details.stage-book-disclosure')]
-    .filter(detail=>kinds.some(kind=>detail.classList.contains(kind)))
-    .map(detail=>inspect(detail,'actual'));
-   const fixture=kinds.map(kind=>{
-    const detail=document.createElement('details');
-    detail.className='stage-attribute-row stage-book-disclosure '+kind;
-    const summary=document.createElement('summary');
-    summary.className='stage-result-section-head';
-    summary.innerHTML='<span class="stage-result-symbol" aria-hidden="true">✦</span>'+
-     '<strong class="stage-book-detail-title">Проверка блока</strong>'+
-     '<span class="stage-result-chevron" aria-hidden="true">⌄</span>';
-    detail.append(summary,document.createElement('p'));
-    parent.append(detail);
-    const closed=inspect(detail,kind);
-    summary.click();
-    const opens=detail.open;
-    const open=inspect(detail,kind);
-    summary.click();
-    const closes=!detail.open;
-    detail.remove();
-    return {...closed,opens,closes,openAfter:open.after,
-     openChevrons:open.chevrons,openStyle:open.style};
-   });
-   return {expected,actual,fixture};
-  });
-  for(const row of [...skillDisclosureAudit.actual,...skillDisclosureAudit.fixture]){
-   assert.deepEqual(row.style,skillDisclosureAudit.expected,
-    'Skill Effects header geometry differs: '+row.kind);
-   assert.equal(row.after,'none','Duplicate pseudo arrow: '+row.kind);
-   assert.equal(row.chevrons,1,'Duplicate chevron: '+row.kind);
-   assert.equal(row.symbols,1,'Missing shared header emblem: '+row.kind);
-   assert.equal(row.listStyle,'none','Browser marker is visible: '+row.kind);
-  }
-  for(const row of skillDisclosureAudit.fixture){
-   assert.equal(row.opens,true,'Skill section did not expand: '+row.kind);
-   assert.equal(row.closes,true,'Skill section did not collapse: '+row.kind);
-   assert.equal(row.openAfter,'none','Opened section draws another arrow: '+row.kind);
-   assert.equal(row.openChevrons,1,'Opened section duplicates chevron: '+row.kind);
-   assert.deepEqual(row.openStyle,skillDisclosureAudit.expected,
-    'Opening changes header geometry: '+row.kind);
-  }
-  await page.locator('#stageAttributes .stage-periodic-recovery').waitFor({state:'visible',timeout:20000});
-  await page.locator('#stageAttributes .stage-periodic-recovery summary').click();
-  const recovery=await page.locator('#stageAttributes .stage-periodic-recovery').innerText();
-  assert.match(recovery,/Регенерация/);
-  assert.match(recovery,/Восстановление/);
-  assert.match(recovery,/Действие навыка не относится к пассивному восстановлению героя/);
   await page.locator('#stageAttributes [data-book-page="recovery"]').click();
  await page.locator('#stageAttributes .stage-mana-consumables').waitFor({state:'visible',timeout:20000});
  assert.equal(await page.locator('#stageAttributes .stage-mana-consumables').getAttribute('open'),null,

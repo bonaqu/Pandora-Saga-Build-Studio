@@ -111,5 +111,5 @@ test('Hero Book owns cure and skill-activating consumables only on Potion chapte
  assert.match(book,/if\(chosen==='recovery'\)\{\s*const english=document\.documentElement\?\.lang==='en'/);
  assert.doesNotMatch(book,/if\(chosen==='effects'\)\{\s*const english=document\.documentElement\?\.lang==='en';\s*const cures=/);
  assert.match(book,/function skillEffectsPage\(body/);
- assert.match(book,/const spells=modifiers\?\.healingSpells\?\.rows/);
+ assert.match(book,/const spells=\(modifiers\?\.healingSpells\?\.rows\|\|\[\]\)\.filter\(row=>row\.available===true\)/);
 });

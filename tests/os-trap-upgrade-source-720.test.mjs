@@ -98,10 +98,11 @@ test('400 class/level/mastery variants stay non-destructive',()=>{
  }
  assert.equal(JSON.stringify(skills),original);
 });
-test('Hero Book names official class without technical vectors in player text',()=>{
+test('Source-only os-trap-upgrade-source-720 knowledge is readable in Wiki without fake results',()=>{
+ const wiki=read('pandora-studio-wiki-skill-insights.js');
+ const app=read('pandora-studio-app.js');
  const book=read('pandora-studio-hero-book.js');
- assert.ok(book.includes('Загонщик: с 50-го уровня'));
- assert.ok(book.includes('Saboteur: from level 50'));
- assert.ok(book.includes('Когда игра переключает ловушку на этот вариант, пока неизвестно.'));
- assert.ok(!book.includes('Возмутитель'));
+ assert.ok(wiki.includes('trapSkillCostPreview'),'verified source projection retained');
+ assert.ok(app.includes('PandoraWikiSkillInsights?.inspect'),'Wiki owns reference skill notes');
+ assert.ok(!book.includes('stage-skill-trap-costs'),'Book cannot show standalone source-only notes');
 });
