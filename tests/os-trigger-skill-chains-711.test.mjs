@@ -67,7 +67,7 @@ test('linked skill audit tracks only verified crafting numeric sources',()=>{
  assert.equal(audit.summary.executionChains.sourceLinks,100);
  assert.equal(audit.summary.executionChains.zeroTargetSentinels,2);
  assert.ok(audit.summary.executionChains.eligibleSkillRoots>0);
- assert.equal(audit.summary.statuses['unmodeled-learnable'],58);
+ assert.equal(audit.summary.statuses['unmodeled-learnable'],55);
 });
 test('Hero Book uses player language and explanatory collapsed group',()=>{
  const book=read('pandora-studio-hero-book.js');

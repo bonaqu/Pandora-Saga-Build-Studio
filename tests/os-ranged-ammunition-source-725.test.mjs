@@ -87,8 +87,12 @@ test('400 synthetic combinations never alter stored items or character state',()
   const bow=i%2===0;
   for(const row of inspect(job,skills,level,rank,bow?'BOW':'CROSSBOW').rows){
    const s=skills[row.id];
-   assert.equal(row.requirementsMet,bow&&level>=s.charLevel&&s.reqs.every(r=>rank[r.branch]>=r.amount));
-   assert.equal(row.ammoCount,1);assert.equal(row.finalDamage,null);
+   const weaponKind=bow?'BOW':'CROSSBOW';
+   assert.equal(row.requirementsMet,s.weaponUse.includes(weaponKind)&&
+    level>=s.charLevel&&s.reqs.every(r=>rank[r.branch]>=r.amount));
+   assert.equal(row.ammoCount,s.funcs.find(f=>f.ep==='EP_CONSUME_AMMO'&&
+    f.dir==='CASTER').fv2[3]);
+   assert.equal(row.finalDamage,null);
    assert.equal(row.inventoryChecked,false);
   }
  }
@@ -96,8 +100,8 @@ test('400 synthetic combinations never alter stored items or character state',()
 });
 test('cross-module count increases for only three independently sourced quantities',()=>{
  const report=auditOsSkillFormulaCoverage({skills,classes:jobs,calculator:calc});
- assert.equal(report.summary.statuses['numeric-preview'],66);
- assert.equal(report.summary.statuses['unmodeled-learnable'],58);
+ assert.equal(report.summary.statuses['numeric-preview'],69);
+ assert.equal(report.summary.statuses['unmodeled-learnable'],55);
  for(const [id] of cases){
   const row=report.rows.find(x=>x.id===id);
   assert.equal(row.status,'numeric-preview');

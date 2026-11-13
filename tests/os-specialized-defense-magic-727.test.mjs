@@ -106,9 +106,9 @@ test('400 synthetic class/level/mastery combinations leave permanent stats uncha
 });
 test('eight distinct IDs improve cross-module coverage without duplicate models',()=>{
  const report=auditOsSkillFormulaCoverage({skills,classes,calculator:C});
- assert.equal(report.summary.statuses['numeric-preview'],66);
+ assert.equal(report.summary.statuses['numeric-preview'],69);
  assert.equal(report.summary.statuses['qualitative-preview'],50);
- assert.equal(report.summary.statuses['unmodeled-learnable'],58);
+ assert.equal(report.summary.statuses['unmodeled-learnable'],55);
  for(const [id] of cases){
   const row=report.rows.find(x=>x.id===id);
   assert.equal(row.status,'qualitative-preview');
