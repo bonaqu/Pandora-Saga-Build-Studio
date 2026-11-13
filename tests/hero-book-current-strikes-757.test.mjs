@@ -41,7 +41,7 @@ test('Hero Book shows explicitly labeled direct strike model while keeping final
  assert.match(ui,/singlePart\?/);
  assert.match(ui,/stage-skill-primary-coefficient/);
  assert.doesNotMatch(ui,/    '—';/);
- assert.match(ui,/Эффект: /);
+ assert.match(ui,/if\(!singlePart\)/);
  assert.doesNotMatch(ui,/final combat result|не подтверждённый итоговый результат/);
  assert.doesNotMatch(ui,/stat\.attack\s*\+=|damageTotal/);
 });

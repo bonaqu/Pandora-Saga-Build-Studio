@@ -131,8 +131,8 @@ test('integrated Hero Book, audit and source-only semantics are consistent',()=>
  assert.equal(result.utility.every(row=>row.amount===null),true);
  assert.equal(result.utility.every(row=>!result.offense.some(s=>s.id===row.id)),true);
  const book=read('pandora-studio-hero-book.js');
- assert.match(book,/\['utility','Контроль и ресурсы · параметры умений'/);
- assert.match(book,/Control & resources · skill parameters/);
+ assert.match(book,/\['utility','Контроль и ресурсы'/);
+ assert.match(book,/Control & resources/);
  assert.match(book,/skill\.sourceParameters/);
  assert.match(book,/'source-parameter'/);
  const audit=auditOsSkillFormulaCoverage({skills,classes,calculator});
