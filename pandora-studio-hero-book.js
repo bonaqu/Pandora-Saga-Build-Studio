@@ -884,11 +884,9 @@ function buffsPage(body,options){
    Array.isArray(effects[0].fv2)&&effects[0].fv2.length===4&&
    effects[0].fv2.every((n,i)=>n===secondary[i]);
  };
- const inspirationKnown=
-  gameTerms.skills?.['320006001']?.skillType==='ALLY'&&
-  gameTerms.skills?.['320006001']?.funcs?.length===2&&
-  osVector(320006001,'EP_CANCEL_IDENTITY',[0,0,0,0])&&
-  osVector(320006001,'EP_SKILL_DELAY_FIN',[0,0,0,50]);
+ const inspiration=root.PandoraOSCalculator?.alliedInspirationPreview?.({
+  skillCatalog:gameTerms.skills});
+ const inspirationKnown=inspiration?.castTimePercent===50;
  const naturalKnown=osVector(330005001,'EP_HEAL_MANA_REGENERATOR',[0,10,0,0],[0,0,0,2]);
  const restKnown=osVector(320002001,'EP_HEAL_TIME_SCALE',[0,0,0,90]);
  const despairKnown=osVector(100058001,'EP_DAMAGERATE_SCALE',[0,0,35,40])&&
@@ -897,20 +895,53 @@ function buffsPage(body,options){
  if(priest.dataset)priest.dataset.bookSection='priest';
  else priest.setAttribute?.('data-book-section','priest');
  toggle(priest,english?'Use external priest':'Учитывать усиления другого жреца','priestEnabled');
+ // "Жрец" is the current OS ENCHANTER class, NOT the earlier PRIEST
+ // ("Священник"). The latter has different green branch caps.
+ const priestClass=['ENCHANTER','CLERIC'].includes(buffs.priestClass)?
+  buffs.priestClass:'ENCHANTER';
+ const priestClassInfo=gameTerms.classes?.[priestClass];
+ const priestCaps=priestClassInfo?.branchCaps||{};
+ const priestCanLearn=id=>{
+  const skill=gameTerms.skills?.[String(id)];
+  return skill?.id===id&&skill.classes?.[priestClass]===1&&
+   (skill.reqs||[]).every(req=>(priestCaps[req.branch]||0)>=req.amount);
+ };
+ select(priest,'Профессия союзника','Ally class','priestClass',
+  ['ENCHANTER','CLERIC'].map(id=>[id,
+   gameClassName(id,id,id,gameTerms,english)]));
+ const selectedPriestIds=new Set([
+  ...(Array.isArray(buffs.remakedSkillIds)?buffs.remakedSkillIds:[]),
+  ...(buffs.priestGratia?[320007001]:[]),
+  ...(buffs.priestLapisMedio?[320008001]:[]),
+  ...(buffs.priestEncouragement?[320012001]:[])
+ ]);
+ const priestRequired=branch=>{
+  let minimum=0;
+  for(const id of selectedPriestIds){
+   if(!priestCanLearn(id))continue;
+   for(const req of gameTerms.skills?.[String(id)]?.reqs||[])
+    if(req.branch===branch)minimum=Math.max(minimum,req.amount);
+  }
+  return minimum;
+ };
  const priestFields=make('div',{class:'stage-priest-fields'});
- for(const [key,ru,en] of [
-  ['priestSpi','СД жреца','Priest SPR'],
-  ['priestBlessing','Благословение','Blessing mastery'],
-  ['priestHymn','Песнопения','Hymn mastery'],
-  ['priestBenevolence','Исцеление','Healing mastery'],
-  ['priestExorcism','Экзорцизм','Exorcism mastery']
+ for(const [key,ru,en,branch,neededId] of [
+  ['priestSpi','СД жреца','Priest SPR',null,null],
+  ['priestBlessing','Благословение','Blessing mastery','blessing',null],
+  ['priestHymn','Песнопения','Hymn mastery','hymn',null],
+  ['priestBenevolence','Исцеление','Healing mastery','benevolence',340003001],
+  ['priestExorcism','Экзорцизм','Exorcism mastery','exorcism',330051001]
  ]){
+  // Hide optional mastery inputs unless a selected spell needs them.
+  if(neededId&&!selectedPriestIds.has(neededId))continue;
+  const min=branch?priestRequired(branch):0;
+  const max=branch?Number(priestCaps[branch]||0):500;
   const label=make('label',{class:'stage-book-field'},[
    make('span',{text:english?en:ru})]);
-  const input=make('input',{type:'number',min:0,max:500,step:1,
-   value:String(buffs[key]||0),'data-book-setting':key,
-   'aria-label':english?en:ru,
-   disabled:buffs.priestEnabled!==true,
+  const input=make('input',{type:'number',min,max,step:1,
+   value:String(Math.max(Math.min(min,max),Math.min(Number(buffs[key])||0,max))),
+   'data-book-setting':key,'aria-label':english?en:ru,
+   disabled:buffs.priestEnabled!==true||max<min,
    onchange:event=>onBuff(key,event.target.value)});
   label.append(input);priestFields.append(label);
  }
@@ -949,7 +980,7 @@ function buffsPage(body,options){
     (english?'Defense +':'Защита +'))+amount
   ):null;
   toggle(priest,english?officialEnglish:officialName,key,false,
-   buffs.priestEnabled===true&&Number(buffs.priestBlessing)>=required,
+   buffs.priestEnabled===true&&priestCanLearn(id),
    {id,name:officialName,nameEn:officialEnglish,
     icon:skillIconForId(id),desc:row?.description,
     descEn:gameTerms.englishSkills?.[String(id)]?.d||row?.description,
@@ -977,8 +1008,8 @@ function buffsPage(body,options){
     'Evasion −50%; provides protection against critical hits.'],
   320002001:['Скорость восстановления ОМ союзников +90 инд.',
     'Allies’ MP recovery speed +90 idx.'],
-  320006001:['Ускоряет применение умений. В данных навыка указано значение 50; точное итоговое время не подтверждено.',
-    'Speeds up skill casting. The skill data contains a value of 50; the final cast time has not been verified.'],
+  320006001:['Время применения умений — 50% от обычного (вдвое быстрее).',
+    'Skill cast time is 50% of normal (twice as fast).'],
   330005001:['+5 ОМ каждые 2 секунды при применении.',
     '+5 MP every 2 seconds when applied.'],
   340003001:['Защищает союзников от небольших попаданий. Сила защиты зависит от жреца.',
@@ -1020,9 +1051,11 @@ function buffsPage(body,options){
    return english?'Only a matching class, weapon and source model can provide a value.':
     'Для расчёта нужны подходящие класс, оружие и данные навыка.';
   }
-  if(id===320006001&&!inspirationKnown)return english?
-   'Exact casting time is not known yet.':
-   'Точное время применения пока неизвестно.';
+  if(id===320006001)return inspirationKnown?
+   (english?'Cast time: ':'Время применения: ')+inspiration.castTimePercent+
+    (english?'% of normal (twice as fast)':'% обычного (вдвое быстрее)'):
+   (english?'Casting-speed value is unavailable in the current game data.':
+    'Нет подтверждённого значения ускорения в текущих игровых данных.');
   if(id===330005001&&!naturalKnown)return english?
    'Exact MP recovery is not known yet.':
    'Точное восстановление ОМ пока неизвестно.';
@@ -1054,14 +1087,7 @@ function buffsPage(body,options){
   const target=externalPriestSkill?priest:row.scope==='party'?party:skills;
   const description=english?gameTerms.englishSkills?.[String(row.id)]?.d:row.description;
   const priestReady=!externalPriestSkill||(
-   buffs.priestEnabled===true&&
-   (row.id!==320003001||Number(buffs.priestBlessing)>=26)&&
-   (row.id!==330051001||Number(buffs.priestExorcism)>=26)&&
-   (row.id!==340001001||Number(buffs.priestHymn)>=8)&&
-   (row.id!==340003001||(Number(buffs.priestHymn)>=30&&
-    Number(buffs.priestBenevolence)>=61))&&
-   (row.id!==340004001||(Number(buffs.priestHymn)>=30&&
-    Number(buffs.priestBlessing)>=71)));
+   buffs.priestEnabled===true&&priestCanLearn(row.id));
   toggle(target,english?row.nameEn:row.name,'legacySkill:'+row.id,false,
    row.available&&priestReady,{
     name:row.name,
