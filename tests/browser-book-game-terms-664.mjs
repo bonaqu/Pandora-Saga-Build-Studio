@@ -94,6 +94,16 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   assert.equal(ru.includes('Природное восстановление'),false,'Unavailable recovery does not enter Book');
   assert.equal(ru.includes('Неверный автоперевод'),false);
   assert.equal(ru.includes('Гимны'),false);
+  // The source-backed current hero's healing card shows its actual action,
+  // interval model, resource cost, cast and cooldown, not placeholder text.
+  assert.match(ru,/14 ОЗ каждые 2 сек\. \(модель\)/);
+  assert.match(ru,/Расход ОМ: 90/);
+  assert.match(ru,/Базовое применение: 3 сек\./);
+  assert.match(ru,/Базовая перезарядка: 20 сек\./);
+  assert.match(ru,/В описании OS указано «3 с\.»/);
+  assert.match(ru,/Описание OS упоминает ОМ/);
+  assert.doesNotMatch(ru,/11 ОЗ каждые 2 сек\./,
+   'Sanctuary is a direct heal, not a periodic pulse');
   // Real browser proof: the source-only catalog remains outside the Book, but
   // exact recipient-side bonuses are again calculated for THIS build.
   const party=page.locator('#book-source-qa .stage-skill-party-effects');
