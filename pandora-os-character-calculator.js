@@ -2760,18 +2760,18 @@ function healingSpellsPreview({level,int,spi,benevolence=0,healingPercent=100,
   const option=cleric&&spec?.cleric?spec.cleric:spec?.standard;
   return option?.[5]??null;
  };
- const calc=(key,mastery=benevolence,healingInt=int)=>{
+ const calc=(key,mastery=benevolence,healingInt=int,trialLevel=level)=>{
   const v=fv(key);
   if(!Array.isArray(v)||v.length!==4||!v.every(Number.isFinite))return null;
-  const raw=v[3]+healingInt*v[0]/100+level*v[1]/100+
+  const raw=v[3]+healingInt*v[0]/100+trialLevel*v[1]/100+
    mastery*v[2]/100;
   return Math.floor(raw*healingPercent/100);
  };
  // Current OS FV2[3]=2 matches Remaked Calc('LPsec') «every 2 seconds».
  // Its duration/stacking in live OS still needs independent confirmation.
  const recoveryFV=healingSourceSpecs.restoration.standard[5];
- const restoreAt=(mastery,healingSpi=spi)=>recoveryFV[3]+Math.floor(healingSpi*recoveryFV[0]/100)+
-  Math.floor(level*recoveryFV[1]/100)+
+ const restoreAt=(mastery,healingSpi=spi,trialLevel=level)=>recoveryFV[3]+Math.floor(healingSpi*recoveryFV[0]/100)+
+  Math.floor(trialLevel*recoveryFV[1]/100)+
   Math.floor(mastery*recoveryFV[2]/100);
  const restore=restoreAt(benevolence);
  const rows=[
@@ -2794,6 +2794,7 @@ function healingSpellsPreview({level,int,spi,benevolence=0,healingPercent=100,
   row.available=skillId!==null;
   row.nextMastery=null;
   row.nextAttribute=null;
+  row.nextLevel=null;
   row.breakdown=null;
   if(row.available){
    const periodic=row.id==='restoration',v=periodic?recoveryFV:fv(row.id);
@@ -2805,6 +2806,14 @@ function healingSpellsPreview({level,int,spi,benevolence=0,healingPercent=100,
     healingPercent:periodic?null:healingPercent};
    row.nextAttribute=nextHealingIncrease(stat,
     value=>periodic?restoreAt(benevolence,value):calc(row.id,benevolence,value));
+   // Preview only within the SAME confirmed OS skill variant. CLERIC gets
+   // upgraded spell IDs at level 50; don't extrapolate old coefficients
+   // past that boundary as if they were a real skill.
+   const sameVariantLimit=jobKey==='CLERIC'&&level<50&&
+    healingSourceSpecs[row.id].cleric?49:55;
+   row.nextLevel=nextHealingIncrease(level,
+    trialLevel=>periodic?restoreAt(benevolence,spi,trialLevel):
+     calc(row.id,benevolence,int,trialLevel),sameVariantLimit);
   }
   if(row.available&&Number.isSafeInteger(benevolence)&&
    Number.isSafeInteger(benevolenceCap)){
