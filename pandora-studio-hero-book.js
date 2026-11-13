@@ -1514,7 +1514,42 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   }
   body.append(group);
  }
-if(!spells.length&&!periodic.length&&!rows.offense?.length&&!rows.defense?.length&&!rows.movement?.length&&!rows.utility?.length&&!chains?.rows?.length&&!conditional?.rows?.length&&!recipes?.length&&!trapCost?.rows?.length&&!sourceMechanics?.rows?.length)
+ // Current OS effects are TARGET actions, not permanent hero resistances.
+ const statusesFromSkills=root.PandoraOSCalculator?.statusApplicationPreview?.({
+  skillCatalog:gameTerms.skills,jobKey:heroJobKey,level:heroLevel,
+  branchCaps:heroBranchCaps,branchMasteries:heroMasteries,
+  branchLabels:gameTerms.branchLabels,englishBranches:gameTerms.englishBranches
+ });
+ if(statusesFromSkills?.rows?.length){
+  const section=make('details',{class:'stage-attribute-row stage-skill-complex-effects stage-skill-status-effects'});
+  section.append(make('summary',{text:en?'Status effects from skills':'Состояния от умений'}));
+  section.append(make('p',{class:'stage-periodic-hint',text:en?
+   'Game data identifies the state; its chance, duration and resistance rules are not confirmed.':
+   'Игровые данные указывают состояние, но точный шанс, длительность и действие сопротивления не установлены.'}));
+  for(const entry of statusesFromSkills.rows){
+   const official=gameTerms.englishSkills?.[String(entry.id)];
+   const state=en?entry.linkedStatus.en:entry.linkedStatus.ru;
+   const resistance=entry.linkedStatus.key?(en?
+    'Its resistance is in Defense; protection is not a proven guaranteed block.':
+    'Сопротивление этому состоянию указано в «Защите», но его действие не подтверждено.'):(en?
+    'Poison status is not identical to elemental poison resistance.':
+    'Отравление и сопротивление стихии яда — разные показатели.');
+   const access=entry.requirementsMet?(en?'Level and mastery requirements met':
+    'Требования уровня и мастерства выполнены'):(en?entry.reasonEn:entry.reasonRu);
+   section.append(make('div',{class:'stage-heal-row stage-skill-complex-row'+
+    (entry.requirementsMet?'':' stage-book-unavailable')},[
+    gameSkillBadge(entry.id,entry.name,official?.n||entry.name,gameTerms,en,skillIconForId),
+    make('small',{text:(en?official?.d:null)||entry.description||''}),
+    make('small',{text:(en?'Possible state: ':'Возможное состояние: ')+state}),
+    make('small',{text:resistance}),
+    ...(entry.requiresBlocking?[make('small',{text:en?
+     'Only usable while blocking.':'Применяется только во время блокирования.'})]:[]),
+    make('small',{text:access})
+   ]));
+  }
+  body.append(section);
+ }
+if(!spells.length&&!periodic.length&&!rows.offense?.length&&!rows.defense?.length&&!rows.movement?.length&&!rows.utility?.length&&!chains?.rows?.length&&!conditional?.rows?.length&&!recipes?.length&&!trapCost?.rows?.length&&!sourceMechanics?.rows?.length&&!statusesFromSkills?.rows?.length)
   body.append(make('p',{class:'stage-attribute-note',text:en?
    'Only skills with build-dependent effect values appear here. Fixed buffs belong in Buffs.':
    'Здесь показаны только умения, сила которых зависит от билда. Постоянные усиления — во вкладке «Усиления».'}));
