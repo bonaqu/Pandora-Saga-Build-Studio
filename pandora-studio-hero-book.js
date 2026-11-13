@@ -1937,6 +1937,38 @@ function appendWeaponConditions(body,calc,items,english){
  }
  body.append(panel);
 }
+// Distinguish reach from equipment and reach of an activated skill.
+function appendSkillAttackRange(body,calc,english,options={}){
+ const rows=calc?.skillAttackRange?.rows||[];
+ if(!rows.length)return;
+ const section=make('details',{class:'stage-attribute-row stage-skill-attack-range',
+  'data-book-section':'skillRange'});
+ section.append(make('summary',{text:english?
+  'Range while using skills':'Дальность при использовании умений'}));
+ section.append(make('p',{class:'stage-attribute-note',text:english?
+  'These are estimated skill bonuses, not your permanent attack range. Actual range while the skill is active is not confirmed.':
+  'Здесь показаны расчётные прибавки отдельных умений, а не постоянная дальность атаки. Точная дальность при действии умения пока неизвестна.'}));
+ const terms=options.gameTerms||{};
+ for(const row of rows){
+  const skill=terms.skills?.[String(row.id)],official=terms.englishSkills?.[String(row.id)];
+  if(skill?.id!==row.id)continue;
+  const label=gameSkillName(row.id,row.name,official?.n,terms,english);
+  const prefix=english?'Estimated range bonus: ':'Расчётная прибавка к дальности: ';
+  const size=Number.isSafeInteger(row.sourceBonus)?
+   '+'+row.sourceBonus:'—';
+  const timing=english?(row.mode==='toggle'?'Only while toggled on':'Only when using this skill'):
+   (row.mode==='toggle'?'Только при включённом умении':'Только при применении умения');
+  const state=row.available?(english?'Requirements met':'Требования выполнены'):
+   (english?row.reasonEn:row.reasonRu);
+  section.append(make('div',{class:'stage-heal-row stage-skill-attack-range-row'+
+   (row.available?'':' stage-book-unavailable'),'data-range-skill':String(row.id)},[
+   make('strong',{text:label}),
+   make('small',{text:prefix+size}),
+   make('small',{text:timing+' · '+state})
+  ]));
+ }
+ body.append(section);
+}
 function attackPage(body,calc,items,english,options={}){
  // A saved character setting. The help belongs to the actual word
  // “Верхом” instead of a paragraph permanently occupying Attack's height.
@@ -1966,6 +1998,7 @@ function attackPage(body,calc,items,english,options={}){
  appendChapterGroups(body,attackChapterGroups(calc),english,
   'Нет подтверждённых дополнительных атакующих параметров.',
   'No supported additional attack metrics.',{...options,page:'attack'});
+ appendSkillAttackRange(body,calc,english,options);
  appendWeaponConditions(body,calc,items,english);
  appendItemEvents(body,calc,english,'attack',options.gameTerms);
 }
