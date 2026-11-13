@@ -9,7 +9,7 @@ const local=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 
 export function auditOsSkillFormulaCoverage({skills,classes,calculator}={}){
  const modules=['scalingSkillPreview','healingSpellsPreview',
-  'periodicRecoveryPreview','songSkillPreview','resistanceSkillChoices','skillExecutionChains','craftingSkillPreview','trapSkillCostPreview'];
+  'periodicRecoveryPreview','songSkillPreview','resistanceSkillChoices','skillExecutionChains','craftingSkillPreview','trapSkillCostPreview','complexSkillSourcePreview'];
  if(!skills||!classes||!modules.every(name=>typeof calculator?.[name]==='function'))
   throw Error('Expected pinned skill/class catalog and all OS formula inspectors');
  const entries=Object.entries(skills).sort((a,b)=>Number(a[0])-Number(b[0]));
@@ -158,6 +158,14 @@ export function auditOsSkillFormulaCoverage({skills,classes,calculator}={}){
   const source=calculator.trapSkillCostPreview({skillCatalog:skills,jobKey:key,
    level:45,branchCaps:caps,branchMasteries:caps});
   for(const row of source.rows)mark(row.id,'trap-materials',{numeric:true});
+ }
+ // These six source-verified mechanics are qualitative only: do NOT
+ // misclassify their nonzero damage vectors as final numerical formulas.
+ for(const key of classNames){
+  const caps=classes[key].branchCaps;
+  const results=calculator.complexSkillSourcePreview({skillCatalog:skills,jobKey:key,
+   level:55,branchCaps:caps,branchMasteries:caps});
+  for(const row of results.rows)mark(row.id,'complex-source-mechanics');
  }
  const statusKeys=['numeric-preview','coefficient-model','source-parameter','qualitative-preview',
   'passive-source','internal-or-triggered-source','unmodeled-learnable'];
