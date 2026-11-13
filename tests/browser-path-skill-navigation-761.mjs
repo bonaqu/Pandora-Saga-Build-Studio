@@ -35,7 +35,8 @@ export async function runPathSkillNavigation761Smoke(browser,base){
   assert.equal(await gallery.locator('.path-skill-card').first().getAttribute('data-skill-id'),'110101002');
   const back=details.locator('[data-related-skill-id="110101001"]');
   assert.equal(await back.count(),1);
-  assert.match(await back.innerText(),/Предыдущее/);
+  assert.match(await back.getAttribute('aria-label'),/Предыдущее/);
+  assert.match(await back.innerText(),/Двойной удар/);
   await back.click();
   assert.match(await details.locator('h3').innerText(),/Двойной удар/);
   await page.locator('[data-locale="en"]').click();
