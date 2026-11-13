@@ -136,7 +136,7 @@ test('Book shows current level, green mastery and next user-confirmed MELEE thre
  assert.deepEqual(current.linesRu,['Освоенное мастерство «Ближний бой»: 100 / 100']);
  assert.deepEqual(current.linesEn,['Trained Melee mastery: 100 / 100']);
  const first=T.requirements({id:310001001,skillCatalog:skills,
-  jobKey:'JUGGERNAUT',level:30,branchCaps:caps,
+  jobKey:'CLERIC',level:30,branchCaps:classes.CLERIC.branchCaps,
   branchMasteries:{benevolence:8},branchLabels:meta.branchLabels,
   englishBranches:english.branches});
  assert.match(first?.linesRu[0]||'',/Исцеление.*8 \/ 8/);
