@@ -49,6 +49,14 @@ export async function runHeroBookGameNames664Smoke(browser,base){
     {id:'restoration',skillId:310022001,name:'Wrong restoration',nameEn:'Wrong',
      amount:14,scaledBySkill:false,available:true}
    ];
+   // Use a real source-derived level milestone in this RU/EN rendering fixture.
+   const firstAidLevel=window.PandoraOSCalculator.healingSpellsPreview({
+    jobKey:'CLERIC',level:45,int:70,spi:95,benevolence:41,
+    benevolenceCap:terms.classes.CLERIC.branchCaps.benevolence,
+    healingPercent:100,skillCatalog:terms.skills
+   }).rows.find(row=>row.id==='firstAid');
+   skillRows[0].amount=firstAidLevel.amount;
+   skillRows[0].nextLevel=firstAidLevel.nextLevel;
    const calc={
     mp:450,
     healingSpells:{rows:skillRows},
@@ -103,6 +111,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   assert.match(ru,/14 ОЗ каждые 2 сек\. \(модель\)/);
   assert.match(ru,/Расход ОМ: 90/);
   assert.match(ru,/Полный запас 450 ОМ: до 5 применений по базовой стоимости/);
+  assert.match(ru,/Следующий прирост за применение: \\+3 ОЗ на уровне 46/);
   assert.match(ru,/Базовое применение: 3 сек\./);
   assert.match(ru,/Базовая перезарядка: 20 сек\./);
   assert.match(ru,/С «Воодушевлением» от союзника: 1,5 сек\. применения/);
@@ -184,6 +193,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
    assert.ok(en.includes(term),'Book effects need original OS EN '+term+'; seen '+en.slice(0,700));
   assert.match(en,/With Inspiration from an ally: 1.5 s of casting/);
   assert.match(en,/Full 450 MP: up to 5 casts at the base cost/);
+  assert.match(en,/Next \\+3 HP per cast at level 46/);
   assert.equal(en.includes('Mana Restore'),false,'Unavailable MP recovery belongs in Wiki');
   assert.equal(en.includes('Acolyte class'),false,'Locked class hints do not clutter Book');
   assert.equal(en.includes('A bad EN name'),false);
