@@ -50,7 +50,7 @@ test('mutated triggered vectors and nested chains fail closed, without hiding un
   assert.ok(result.rows.some(x=>x.id!==root));
  }
 });
-test('400 allocations preserve eligibility, don't add damage or alter character resistance',()=>{
+test('400 allocations preserve eligibility without adding damage or changing resistance',()=>{
  const before=JSON.stringify(skills);
  for(let i=0;i<400;i++){
   const job=Object.keys(jobs)[i%Object.keys(jobs).length];
