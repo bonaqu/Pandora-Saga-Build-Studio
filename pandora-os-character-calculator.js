@@ -1389,6 +1389,10 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
   result[group].push({id,name:record.name,description:record.desc||'',
    amount,unit:options.unit||'',available:issues.length===0,
    reason:issues.join(' · '),reasonEn:issuesEn.join(' · '),recipient,
+   // A skill cast by a party member may still have an exactly calculable
+   // recipient effect for this hero. Never apply it to base stats implicitly.
+   recipientBasis:recipient&&options.recipientBasis?
+    options.recipientBasis:null,
    detailRu:options.detailRu||'',detailEn:options.detailEn||'',
    uncertain:amount===null||options.modelOnly===true,
    modelOnly:options.modelOnly===true,
@@ -1405,24 +1409,36 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  const pct=(base,percent,round=Math.floor)=>
   Number.isFinite(base)?round(base*percent/100):null;
  const manual=()=>null;
+ const partyBasis=(source,base,flat,percent)=>{
+  if(!Number.isSafeInteger(base)||base<0)return null;
+  const component=Math.floor(base*percent/100);
+  const next=Math.ceil((component+1)*100/percent);
+  return {source,base,flat,percent,component,
+   nextBase:Number.isSafeInteger(next)&&next>base?next:null,
+   model:'flat-plus-floor-percent',applied:false};
+ };
  // Party effects whose size uses the receiving hero's current stats.
  add(320001001,'offense',[
   ['EP_DAMAGERATE_CONST',[0,0,0,10]],
   ['EP_DAMAGERATE_SCALE',[0,0,0,20]]
  ],()=>Number.isFinite(unmountedAtk)?10+Math.floor(unmountedAtk*.20):null,
- {recipient:true,unit:' ATK',detailRu:'Прибавка при применении к этому герою',
+ {recipient:true,unit:' ATK',recipientBasis:partyBasis('physicalAttack',
+   unmountedAtk,10,20),
+  detailRu:'Прибавка при применении к этому герою',
   detailEn:'Calculated for this recipient when cast'});
  add(100055001,'offense',[
   ['EP_TOHIT_CONST',[0,0,0,20]],
   ['EP_TOHIT_SCALE',[0,0,0,15]]
  ],()=>Number.isFinite(accuracyBase)?Math.floor(20+accuracyBase*.15):null,
- {recipient:true,unit:'',detailRu:'Точность получателя',
+ {recipient:true,unit:'',recipientBasis:partyBasis('accuracy',
+   accuracyBase,20,15),detailRu:'Точность получателя',
   detailEn:'Recipient accuracy bonus'});
  add(260006001,'defense',[
   ['EP_AVOIDANCE_CONST',[0,0,0,15]],
   ['EP_AVOIDANCE_SCALE',[0,0,0,15]]
  ],()=>Number.isFinite(dodgeBase)?Math.floor(15+dodgeBase*.15):null,
- {recipient:true,detailRu:'Уклонение получателя',
+ {recipient:true,recipientBasis:partyBasis('evasion',dodgeBase,15,15),
+  detailRu:'Уклонение получателя',
   detailEn:'Recipient evasion bonus'});
  // Purify is a two-step current OS cast. The root triggers a distinct
  // internal TARGET resistance effect; +100 is NOT permanent character status
