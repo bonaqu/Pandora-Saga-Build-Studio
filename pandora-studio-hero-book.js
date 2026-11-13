@@ -1344,13 +1344,9 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
  const appendGate=(node,id)=>{
   const info=heroGate(id);
   if(!info?.steps?.length)return;
-  const detail=make('details',{class:'stage-skill-gate-help'},[
-   make('summary',{text:en?'Mastery and level requirements':
-    'Уровень и пороги мастерства'})
-  ]);
+  // Requirements live in the same compact disclosure as the skill result.
   for(const line of en?info.linesEn:info.linesRu)
-   detail.append(make('small',{text:line}));
-  node.append(detail);
+   node.append(make('small',{class:'stage-skill-gate-line',text:line}));
  };
  const healingNumber=new Intl.NumberFormat(en?'en-US':'ru-RU',
   {maximumFractionDigits:2});
@@ -1395,29 +1391,20 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   const parts=row?.breakdown;
   if(!parts||![parts.flat,parts.statPart,parts.levelPart,
    parts.masteryPart].every(Number.isFinite))return;
-  // Natural Recovery 330005001 restores MP solely from hero level.
-  // Don't misleadingly display zero SPR / Healing coefficients as a
-  // prerequisite, and never label MP as HP.
+  // Do not nest a second accordion inside the skill's single "More details".
   if(row.kind==='mp'&&row.id===330005001){
-   const detail=make('details',{class:'stage-skill-gate-help stage-heal-breakdown'},[
-    make('summary',{text:en?'How MP recovery was calculated':
-     'Как рассчитано восстановление ОМ'})
-   ]);
-   detail.append(make('small',{text:en?
-    'Hero level '+heroLevel+' × 10%, rounded down = '+row.amount+
-     ' MP per pulse (every 2 seconds in the source model).':
-    'Уровень героя '+heroLevel+' × 10%, округление вниз = '+row.amount+
-     ' ОМ за срабатывание (каждые 2 секунды по модели исходников).'}));
-   node.append(detail);
+   node.append(make('small',{class:'stage-heal-breakdown',text:en?
+    'How MP recovery was calculated: hero level '+heroLevel+
+     ' × 10%, rounded down = '+row.amount+
+     ' MP every 2 seconds (source model).':
+    'Как рассчитано восстановление ОМ: уровень героя '+heroLevel+
+     ' × 10%, округление вниз = '+row.amount+
+     ' ОМ каждые 2 секунды (модель исходников).'}));
    return;
   }
-  const details=make('details',{class:'stage-skill-gate-help stage-heal-breakdown'},[
-   make('summary',{text:en?'How the healing was calculated':
-    'Как рассчитано лечение'})
-  ]);
   const stat=en?(parts.stat==='spi'?'SPR':'INT'):
    (parts.stat==='spi'?'СД':'ИНТ');
-  details.append(make('small',{text:en?
+  const contributions=en?
    'Base '+healingNumber.format(parts.flat)+' + from '+stat+' '+
     healingNumber.format(parts.statPart)+' + from level '+
     healingNumber.format(parts.levelPart)+' + from Healing mastery '+
@@ -1425,16 +1412,19 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    'Основа '+healingNumber.format(parts.flat)+' + от '+stat+' '+
     healingNumber.format(parts.statPart)+' + от уровня '+
     healingNumber.format(parts.levelPart)+' + от Исцеления '+
-    healingNumber.format(parts.masteryPart)}));
-  details.append(make('small',{text:pulse?(en?
-   'Each part is rounded down separately. Result: '+row.amount+' every 2 seconds (model).':
+    healingNumber.format(parts.masteryPart);
+  const rounding=pulse?(en?
+   'Each part is rounded down separately. Result: '+row.amount+
+    ' every 2 seconds (model).':
    'Каждая прибавка округляется вниз отдельно. Результат: '+row.amount+
     ' каждые 2 секунды (модель).'):(en?
    'Apply '+healingNumber.format(parts.healingPercent)+
-    '% healing effectiveness to their sum, then round down once.':
+    '% healing effectiveness to the sum, then round down once.':
    'К сумме применяется '+healingNumber.format(parts.healingPercent)+
-    '% эффективности лечения, затем результат один раз округляется вниз.')}));
-  node.append(details);
+    '% эффективности лечения, затем результат один раз округляется вниз.');
+  node.append(make('small',{class:'stage-heal-breakdown',text:
+   (en?'How the healing was calculated: ':'Как рассчитано лечение: ')+
+    contributions+' · '+rounding}));
  };
  const appendHealingMilestones=(node,row,periodic)=>{
   if(row.nextMastery&&Number.isSafeInteger(row.nextMastery.rank))
@@ -1506,27 +1496,31 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     make('strong',{text:amount}),
     make('small',{text:facts.join(' · ')})
    ]);
-   appendActionEffects(preview,action);
-   showBaseManaBudget(preview,action);
-   appendHealingMilestones(preview,row,pulse);
-   appendHealingBreakdown(preview,row,pulse);
+   const more=make('details',{class:'stage-skill-gate-help stage-skill-more'},[
+    make('summary',{text:en?'More details':'Подробнее'})
+   ]);
+   appendActionEffects(more,action);
+   showBaseManaBudget(more,action);
+   appendHealingMilestones(more,row,pulse);
+   appendHealingBreakdown(more,row,pulse);
    // Canonical Russian skill descriptions stay untouched; report actual
    // contradictions against OS skill-effect vectors without inventing a fix.
    if(sourceId===310022001&&gameSkill?.desc?.includes('3 с.'))
-    preview.append(make('small',{class:'stage-attribute-note',text:en?
+    more.append(make('small',{class:'stage-attribute-note',text:en?
      'The OS description says 3 s, but its numeric effect and Remaked model use 2 s. Live timing has not been measured.':
      'В описании OS указано «3 с.», но числовой эффект OS и Remaked используют 2 сек. Интервал на самом сервере отдельно не измерен.'}));
    if(sourceId===310023001&&gameSkill?.desc?.includes('ОМ')&&
     gameTerms.skills?.['310023002']?.funcs?.some(f=>f.ep==='EP_HEAL_LIFE'))
-    preview.append(make('small',{class:'stage-attribute-note',text:en?
+    more.append(make('small',{class:'stage-attribute-note',text:en?
      'The OS description mentions MP, while the linked OS skill effect heals HP; the preview follows the effect.':
      'Описание OS упоминает ОМ, а связанное игровое действие лечит ОЗ. Расчёт сделан по этому действию.'}));
-   appendGate(preview,sourceId);
+   appendGate(more,sourceId);
+   if(more.childElementCount>1)preview.append(more);
    group.append(preview);
   }
   group.append(make('small',{class:'stage-attribute-note',text:en?
-   'Healing uses this hero’s INT, SPR and trained Healing mastery. Inspiration shows a 50% casting-time model from Remaked; casting-speed and cooldown indices are NOT direct seconds. Two-second recovery follows Remaked/OS, while exact live tick timing and stacking remain unmeasured.':
-   'Лечение зависит от ИНТ, СД и освоенного Исцеления героя. «Воодушевление» сокращает расчётное время применения до 50% по Remaked. Скорость заклинаний и показатель отката не равны секундам. Период 2 секунды — модель Remaked/OS, а не отдельный замер живого сервера.'}));
+   'Current-build estimates. Expand a skill for details and limits.':
+   'Расчёты для текущего героя. Пояснения и ограничения — в подробностях умения.'}));
   body.append(group);
  }
  // MP recovery is distinct from HP healing; Remaked MPsec and current OS agree on a modeled 2-second pulse.
@@ -1538,27 +1532,30 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    if(!Number.isFinite(entry?.amount))continue;
    const preview=make('div',{class:'stage-periodic-row'},[
     gameSkillBadge(entry.id,entry.name,null,gameTerms,en,skillIconForId),
-    make('strong',{text:String(entry.amount)+' '+(en?'MP every 2 sec (model)':'ОМ каждые 2 сек. (модель)')}),
-    make('small',{text:en?'Current hero skill, source-backed recovery':'Восстановление от умения самого героя'})
+    make('strong',{text:String(entry.amount)+' '+(en?'MP every 2 sec (model)':'ОМ каждые 2 сек. (модель)')})
    ]);
+   const more=make('details',{class:'stage-skill-gate-help stage-skill-more'},[
+    make('summary',{text:en?'More details':'Подробнее'})
+   ]);
+   more.append(make('small',{text:en?
+    'Current hero skill, source-backed recovery':
+    'Восстановление от умения самого героя'}));
    const action=skillAction(entry.id);
    if(action){
-    preview.append(make('small',{text:(en?'MP cost: ':'Расход ОМ: ')+
+    more.append(make('small',{text:(en?'MP cost: ':'Расход ОМ: ')+
      action.mana+' · '+(en?'Base cast: ':'Базовое применение: ')+
      healingNumber.format(action.cast)+(en?' s':' сек.')+' · '+
      (en?'Base cooldown: ':'Базовая перезарядка: ')+
      healingNumber.format(action.cooldown)+(en?' s':' сек.')}));
-    appendActionEffects(preview,action);
-    showBaseManaBudget(preview,action);
+    appendActionEffects(more,action);
+    showBaseManaBudget(more,action);
    }
-   appendHealingMilestones(preview,entry,true);
-   appendHealingBreakdown(preview,entry,true);
-   appendGate(preview,entry.id);
+   appendHealingMilestones(more,entry,true);
+   appendHealingBreakdown(more,entry,true);
+   appendGate(more,entry.id);
+   if(more.childElementCount>1)preview.append(more);
    details.append(preview);
   }
-  details.append(make('p',{class:'stage-periodic-hint',text:en?
-   'Unlike passive recovery, this is a skill pulse modeled every 2 seconds using Remaked and OS parameters.':
-   'Это восстановление от умения, а не пассивное. В модели Remaked и OS оно происходит каждые 2 секунды.'}));
   body.append(details);
  }
  // Skill Effects shows the theoretical effect of a CAST, independently
@@ -1632,9 +1629,12 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     (!skill.available?' stage-book-unavailable':'')},[
     gameSkillBadge(skill.id,skill.name,source?.n||skill.name,
      gameTerms,en,skillIconForId),
-    make('strong',{text:amount}),
-    make('small',{text:detail})
+    make('strong',{text:amount})
    ]);
+   const more=make('details',{class:'stage-skill-gate-help stage-skill-more'},[
+    make('summary',{text:en?'More details':'Подробнее'})
+   ]);
+   if(detail)more.append(make('small',{text:detail}));
    if(modelParts.length&&!Number.isFinite(skill.amount)){
     const parts=modelParts.map(part=>
      (en?part.labelEn:part.labelRu)+' '+
@@ -1645,7 +1645,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     for(const part of modelParts){
      const p=part.roundingParts;
      if(p?.method!=='floor-components')continue;
-     preview.append(make('small',{class:'stage-skill-os-coefficient-model',text:en?
+     more.append(make('small',{class:'stage-skill-os-coefficient-model',text:en?
       'Hypothetical basis (round down each part): '+p.base+' + INT '+p.int+
        ' + mastery '+p.mastery+' = '+part.amount:
       'Предполагаемая основа (каждая часть округляется вниз): '+
@@ -1658,25 +1658,23 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     branchCaps:heroBranchCaps,branchMasteries:heroMasteries
    });
    if(action){
-    const apply=make('details',{class:'stage-skill-gate-help stage-skill-action-meta',
-     'data-skill-action-id':String(skill.id)},[
-     make('summary',{text:en?'Use and base costs':'Применение и базовые затраты'})
-    ]);
+    more.classList.add('stage-skill-action-meta');
+    more.setAttribute('data-skill-action-id',String(skill.id));
     const seconds=value=>value===0?(en?'instant':'мгновенно'):
      healingNumber.format(value)+(en?' s':' сек.');
-    apply.append(make('small',{text:en?
-     'OS MP cost: '+action.mana+
+    more.append(make('small',{text:en?
+     'Use and base costs: OS MP cost '+action.mana+
       ' · Base casting: '+seconds(action.cast)+
       ' · Base cooldown: '+healingNumber.format(action.cooldown)+' s':
-     'Расход ОМ по игровым данным: '+action.mana+
-      ' · Базовое применение: '+seconds(action.cast)+
+     'Применение и базовые затраты: Расход ОМ по игровым данным: '+
+      action.mana+' · Базовое применение: '+seconds(action.cast)+
       ' · Базовая перезарядка: '+healingNumber.format(action.cooldown)+' сек.'}));
-    apply.append(make('small',{text:en?
-     'These are base skill-record values, not final resource costs or seconds after buffs. Repeat activation and uptime are not calculated.':
+    more.append(make('small',{text:en?
+     'Base values, not final MP costs or seconds with buffs. Repeat activation and uptime are unknown.':
      'Это базовые значения умения. Окончательные затраты и время с усилениями, повторные активации и длительность не рассчитываются.'}));
-    preview.append(apply);
    }
-   appendGate(preview,skill.id);
+   appendGate(more,skill.id);
+   if(more.childElementCount>1)preview.append(more);
    section.append(preview);
   }
   body.append(section);
