@@ -1328,6 +1328,15 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     preview.append(make('small',{class:'stage-skill-os-coefficient-model',
      text:(en?'Skill parameters: ':'Параметры умения: ')+
       parts}));
+    for(const part of modelParts){
+     const p=part.roundingParts;
+     if(p?.method!=='floor-components')continue;
+     preview.append(make('small',{class:'stage-skill-os-coefficient-model',text:en?
+      'Hypothetical basis (round down each part): '+p.base+' + INT '+p.int+
+       ' + mastery '+p.mastery+' = '+part.amount:
+      'Предполагаемая основа (каждая часть округляется вниз): '+
+       p.base+' + ИНТ '+p.int+' + мастерство '+p.mastery+' = '+part.amount}));
+    }
    }
    section.append(preview);
   }
@@ -1453,6 +1462,11 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     (row.requirementsMet?'':' stage-book-unavailable')},[
     gameSkillBadge(row.id,row.name,official?.n||row.name,gameTerms,en,skillIconForId),
     make('small',{text:(en?'Required: ':'Для применения нужно: ')+row.count+' × '+trapItem}),
+    make('small',{text:(en?'Effect in game data: ':'Эффект в игровых данных: ')+
+     (en?row.sourceEffectEn:row.sourceEffectRu)}),
+    ...(row.statusResistanceKey?[make('small',{text:en?
+     'Knockback resistance is shown in Defense; its server check is not confirmed.':
+     'Сопротивление отбрасыванию показано в «Защите»; правило проверки на сервере не подтверждено.'})]:[]),
     make('small',{text:status})
    ]));
   }
@@ -1490,6 +1504,11 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     gameSkillBadge(entry.id,entry.name,official?.n||entry.name,gameTerms,en,skillIconForId),
     make('small',{text:description}),
     make('small',{text:caution}),
+    ...(entry.linkedStatus?[make('small',{text:(en?
+     'Additional state: ':'Дополнительное состояние: ')+
+     (en?entry.linkedStatus.en:entry.linkedStatus.ru)+
+     (en?'. Resistance appears separately in Defense; actual application chance is unverified.':
+      '. Сопротивление указано отдельно в «Защите»; шанс наложения не подтверждён.')})]:[]),
     make('small',{text:availability})
    ]));
   }
