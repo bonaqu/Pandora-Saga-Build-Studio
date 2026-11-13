@@ -39,6 +39,7 @@ import {runAdminEntrySmoke,runInlineMilestonesSmoke} from './browser-admin-entry
 import {runInnateSkillMasterySmoke} from './browser-innate-skill-mastery.mjs';
 import {runHeroBookLiveRecalcSmoke} from './browser-hero-book-live-recalc.mjs';
 import {runHeroBookGameNames664Smoke} from './browser-book-game-terms-664.mjs';
+import {runPathSkillNavigation761Smoke} from './browser-path-skill-navigation-761.mjs';
 import {runRemakedBuffParity669Smoke} from './browser-remaked-buff-parity-669.mjs';
 import {runOriginSharedSnapshotSmoke} from './browser-origin-shared-snapshot.mjs';
 import {runBuildComparisonSmoke,runSavedBuildEnglishSmoke} from './browser-build-comparison.mjs';
@@ -95,6 +96,7 @@ const scenarios=[
   ['innate-l1-mastery',runInnateSkillMasterySmoke],
   ['hero-book-live-recalc',runHeroBookLiveRecalcSmoke],
   ['hero-book-game-terms-664',runHeroBookGameNames664Smoke],
+  ['path-skill-navigation-761',runPathSkillNavigation761Smoke],
   ['wiki-material-recipe-links-752',runWikiMaterialLinks752Smoke],
   ['remaked-buff-parity-669',runRemakedBuffParity669Smoke],
   ['origin-shared-snapshot',runOriginSharedSnapshotSmoke],
