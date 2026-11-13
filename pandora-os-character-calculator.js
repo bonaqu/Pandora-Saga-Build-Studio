@@ -3619,7 +3619,70 @@ function trapSkillCostPreview({skillCatalog=null,jobKey=null,level=1,
  }
  return result;
 }
-root.PandoraOSCalculator=Object.freeze({skillExecutionChains,craftingSkillPreview,trapSkillCostPreview,priestCastPreviews,movementSkillSourcePreview,utilitySkillSourcePreview,scalingSkillPreview,directStrikeCoefficientPreview,elementalSpellCoefficientPreview,defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
+// Complex element attacks and status cures without invented damage or odds.
+// Full source signature is intentionally pinned to current OS records:
+// different FV1[1] and state effects cannot use the simple spell kernel.
+const complexSkillSources=Object.freeze([
+ {id:330001001,kind:'elemental',type:'BOLT',branch:'exorcism',level:0,
+  reqs:[['exorcism',8]],effects:[['EP_ELEMENT_DAMAGE','TARGET',[120,50,30,15],[0,0,0,0]]]},
+ {id:410011001,kind:'elemental',type:'BOLT',branch:'element',level:0,
+  reqs:[['element',8]],effects:[
+   ['EP_ELEMENT_DAMAGE','TARGET',[60,30,30,14],[0,0,0,0]],
+   ['EP_CAUSE_NUMB','TARGET',[0,0,0,4],[0,0,0,100]]]},
+ {id:410012001,kind:'elemental',type:'BOLT',branch:'element',level:0,
+  reqs:[['element',21]],effects:[
+   ['EP_ELEMENT_DAMAGE','TARGET',[250,30,30,55],[0,0,0,0]],
+   ['EP_CAUSE_NUMB','TARGET',[0,0,0,7],[0,0,0,200]]]},
+ {id:410023001,kind:'elemental',type:'ENEMY',branch:'element',level:20,
+  reqs:[],effects:[['EP_ELEMENT_DAMAGE','TARGET',[250,10,250,20],[0,0,0,0]]]},
+ {id:300004001,kind:'dispel',type:'ALLY',branch:'benevolence',level:0,
+  reqs:[['benevolence',35]],effects:[['EP_REMOVE_BAD_EFFECT','TARGET',[0,0,0,0],[0,0,0,0]]]},
+ {id:330003001,kind:'dispel',type:'ALLY',branch:'exorcism',level:0,
+  reqs:[['exorcism',41]],effects:[['EP_REMOVE_BAD_EFFECT','TARGET',[0,0,100,0],[0,0,0,15]]]}
+]);
+function complexSkillSourcePreview({skillCatalog=null,jobKey=null,level=1,
+ branchMasteries={},branchCaps={},branchLabels={},englishBranches={}}={}){
+ const out={rows:[],rejected:[],verified:false,
+  source:'current OS skill effects; not proven final server spell damage'};
+ if(!skillCatalog||typeof jobKey!=='string'||!Number.isSafeInteger(level)||
+  level<1||level>55)return out;
+ const fits=(actual,ref)=>actual?.ep===ref[0]&&actual.dir===ref[1]&&
+  Array.isArray(actual.fv1)&&actual.fv1.length===4&&
+  actual.fv1.every((v,i)=>v===ref[2][i])&&
+  Array.isArray(actual.fv2)&&actual.fv2.length===4&&
+  actual.fv2.every((v,i)=>v===ref[3][i]);
+ for(const ref of complexSkillSources){
+  const r=skillCatalog[String(ref.id)];
+  if(r?.id!==ref.id||r.learnable!==true||r.skillType!==ref.type||
+   r.branch!==ref.branch||r.prereq!==null||r.charLevel!==ref.level||
+   !r.classes?.[jobKey]||!Array.isArray(r.reqs)||
+   r.reqs.length!==ref.reqs.length||
+   !ref.reqs.every(([branch,amount],i)=>r.reqs[i]?.branch===branch&&
+    r.reqs[i]?.amount===amount))continue;
+  if(ref.reqs.some(([branch,amount])=>
+   !Number.isSafeInteger(branchCaps?.[branch])||
+   branchCaps[branch]<amount))continue;
+  if(!Array.isArray(r.funcs)||r.funcs.length!==ref.effects.length||
+   !ref.effects.every((effect,i)=>fits(r.funcs[i],effect))){
+   out.rejected.push(ref.id);continue;
+  }
+  const ru=[],en=[];
+  if(level<ref.level){ru.push('Нужен уровень '+ref.level);en.push('Requires level '+ref.level);}
+  for(const [branch,amount] of ref.reqs){
+   const rank=branchMasteries?.[branch],cap=branchCaps?.[branch];
+   if(Number.isSafeInteger(rank)&&rank>=amount&&rank<=cap)continue;
+   ru.push('Нужно мастерство «'+(branchLabels?.[branch]||branch)+'»: '+amount);
+   en.push('Requires '+(englishBranches?.[branch]||branch)+' mastery: '+amount);
+  }
+  out.rows.push({id:ref.id,name:r.name,description:r.desc||'',
+   kind:ref.kind,hasSecondaryEffect:ref.effects.length>1,
+   sourceEffects:ref.effects.map(x=>x[0]),sourceOnly:true,
+   requirementsMet:ru.length===0,
+   reasonRu:ru.join(' · '),reasonEn:en.join(' · ')});
+ }
+ return out;
+}
+root.PandoraOSCalculator=Object.freeze({skillExecutionChains,craftingSkillPreview,trapSkillCostPreview,complexSkillSourcePreview,priestCastPreviews,movementSkillSourcePreview,utilitySkillSourcePreview,scalingSkillPreview,directStrikeCoefficientPreview,elementalSpellCoefficientPreview,defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
  base,characterSheetPhysicalAttackRange,classBase,classBaseComponents,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,racialWeaponPreview,incredibleStrengthPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
  recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,consumableSkillPreview,statusCurePreview,harmfulConsumablePreview,gemstonePreview,legacyBuffPreview,songSkillPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,racialUtilityPreview,elementalMagicPreview,elementalRefinementPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive
 });
