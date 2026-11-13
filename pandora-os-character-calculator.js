@@ -730,12 +730,20 @@ const supportRequirements=Object.freeze({
 });
 function supportSkillSource(skillCatalog,kind){
  const record=skillCatalog?.[String(supportSkillIds[kind])];
- if(!record||!Array.isArray(record.funcs)||!supportRequirements[kind])return null;
+ const required=supportRequirements[kind];
+ if(!record||!Array.isArray(record.funcs)||!required||
+  record.id!==supportSkillIds[kind]||
+  record.skillType!==(kind==='windAssist'?'PARTY_ALL':'ALLY')||
+  record.funcs.length!==required.length)return null;
  const values={};
- for(const ep of supportRequirements[kind]){
+ for(const ep of required){
   const found=record.funcs.filter(x=>x.ep===ep&&x.dir==='TARGET');
-  if(found.length!==1||!Number.isFinite(found[0].fv1?.[3])||
-   Math.abs(found[0].fv1[3])>100)return null;
+  if(found.length!==1||!Array.isArray(found[0].fv1)||
+   found[0].fv1.length!==4||
+   !found[0].fv1.slice(0,3).every(x=>x===0)||
+   !Number.isFinite(found[0].fv1[3])||
+   Math.abs(found[0].fv1[3])>100||
+   JSON.stringify(found[0].fv2)!=='[0,0,0,0]')return null;
   values[ep]=found[0].fv1[3];
  }
  return {record,values};
