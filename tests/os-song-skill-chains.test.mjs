@@ -15,9 +15,9 @@ const allMasteries=jobKey=>Object.fromEntries(['benevolence','blessing','hymn'].
 
 test('real current OS hymn trees show the correct class-specific choices',()=>{
  const expected=[
-  ['CLERIC',['minstrel','peaceful']],
-  ['ENCHANTER',['minstrel','sage']],
-  ['EXORCIST',['minstrel']],
+  ['CLERIC',['minstrel','peaceful','minstrel-os-variant']],
+  ['ENCHANTER',['minstrel','sage','minstrel-os-variant']],
+  ['EXORCIST',['minstrel','minstrel-os-variant']],
   ['WARRIOR',[]],
   ['PRIEST',[]]
  ];
@@ -28,7 +28,7 @@ test('real current OS hymn trees show the correct class-specific choices',()=>{
   assert.equal(preview.verified,false);
  }
  const cleric=full('CLERIC',allMasteries('CLERIC'));
- assert.deepEqual(cleric.rows.map(row=>row.id),[340001001,340003001]);
+ assert.deepEqual(cleric.rows.map(row=>row.id),[340001001,340003001,340001004]);
  for(const row of cleric.rows){
   assert.equal(row.name,skills[row.id].name);
   assert.equal(row.nameEn,en.skills[row.id].n);
@@ -38,22 +38,22 @@ test('real current OS hymn trees show the correct class-specific choices',()=>{
 });
 test('mastery threshold and caps are independent of viewing and of actual song activation',()=>{
  const zero=full('CLERIC',{benevolence:0,blessing:0,hymn:0});
- assert.deepEqual(zero.rows.map(row=>row.available),[false,false]);
- assert.deepEqual(zero.rows.map(row=>row.active),[false,false]);
+ assert.deepEqual(zero.rows.map(row=>row.available),[false,false,false]);
+ assert.deepEqual(zero.rows.map(row=>row.active),[false,false,false]);
  const almost=full('CLERIC',{benevolence:60,blessing:0,hymn:30});
- assert.deepEqual(almost.rows.map(row=>row.available),[true,false]);
+ assert.deepEqual(almost.rows.map(row=>row.available),[true,false,true]);
  const ready=full('CLERIC',{benevolence:61,blessing:0,hymn:30});
- assert.deepEqual(ready.rows.map(row=>row.available),[true,true]);
+ assert.deepEqual(ready.rows.map(row=>row.available),[true,true,true]);
  const invalid=full('CLERIC',{benevolence:200,blessing:0,hymn:30});
- assert.deepEqual(invalid.rows.map(row=>row.available),[true,false],
+ assert.deepEqual(invalid.rows.map(row=>row.available),[true,false,true],
   'invalid healing allocation blocks Peaceful but not unrelated Minstrel');
  const wrongCaps={...classes.CLERIC.branchCaps,hymn:29};
  assert.deepEqual(full('CLERIC',allMasteries('CLERIC'),skills,55,wrongCaps).rows
-  .map(row=>[row.key,row.available]),[['minstrel',false]],
+  .map(row=>[row.key,row.available]),[['minstrel',false],['minstrel-os-variant',false]],
   'lower cap hides Peaceful; impossible 45-point hymn allocation cannot enable Minstrel');
  const enchanter=full('ENCHANTER',{hymn:30,blessing:71,benevolence:0});
- assert.deepEqual(enchanter.rows.map(row=>row.available),[true,true]);
- assert.deepEqual(full('CLERIC',null).rows.map(row=>row.available),[false,false]);
+ assert.deepEqual(enchanter.rows.map(row=>row.available),[true,true,true]);
+ assert.deepEqual(full('CLERIC',null).rows.map(row=>row.available),[false,false,false]);
 });
 test('tampered song parent/middle/recipient skill cannot impersonate source-verified OS effect',()=>{
  const probes=[
@@ -86,8 +86,8 @@ test('song preview never adds a toggle-only effect to ordinary HP/MP/combat stat
  const ready=C.base(input);
  const none=C.base({...input,combatContext:{...input.combatContext,branchMasteries:{benevolence:0,blessing:0,hymn:0}}});
  assert.ok(ready&&none);
- assert.deepEqual(ready.songSkills.rows.map(x=>x.available),[true,true]);
- assert.deepEqual(none.songSkills.rows.map(x=>x.available),[false,false]);
+ assert.deepEqual(ready.songSkills.rows.map(x=>x.available),[true,true,true]);
+ assert.deepEqual(none.songSkills.rows.map(x=>x.available),[false,false,false]);
  assert.equal(ready.hp,none.hp);
  assert.equal(ready.mp,none.mp);
  assert.deepEqual(ready.stats,none.stats);
