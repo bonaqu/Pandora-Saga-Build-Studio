@@ -7,7 +7,7 @@
 const target=Object.freeze({
  id:22104,name:'Гигантский огр',nameEn:'Ogre Bouncer',level:53,
  life:6126,vit:32,spi:18,ac:15,magicProtection:0,
- resists:{fire:0,dark:-25,magic:17}
+ resists:{fire:0,cold:0,lightning:0,holy:0,dark:-25,magic:17}
 });
 const n=v=>Number.isSafeInteger(v)&&v>=0;
 const trunc=Math.trunc;
