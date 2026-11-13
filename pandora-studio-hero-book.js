@@ -1454,11 +1454,14 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   }
   if(row.nextLevel&&Number.isSafeInteger(row.nextLevel.value)){
    const next=row.nextLevel;
+   const pulse=periodic||row.kind==='hp'||row.kind==='mp';
+   const unit=en?(row.kind==='mp'?'MP':'HP'):(row.kind==='mp'?'ОМ':'ОЗ');
    node.append(make('small',{class:'stage-heal-mastery-next',text:en?
-    'Next +'+next.gain+' '+(row.kind==='mp'?'MP':'HP')+
-     ' per pulse at level '+next.value:
-    'Следующий прирост за срабатывание: +'+next.gain+
-     (row.kind==='mp'?' ОМ':' ОЗ')+' на уровне '+next.value}));
+    'Next +'+next.gain+' '+unit+(pulse?' per pulse':' per cast')+
+     ' at level '+next.value+' (+'+next.remaining+' levels)':
+    'Следующий прирост '+(pulse?'за срабатывание':'за применение')+
+     ': +'+next.gain+' '+unit+' на уровне '+next.value+
+     ' (ещё '+next.remaining+' ур.)'}));
   }
  };
  const spells=(modifiers?.healingSpells?.rows||[]).filter(row=>row?.available===true);
