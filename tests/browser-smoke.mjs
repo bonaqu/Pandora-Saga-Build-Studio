@@ -533,9 +533,9 @@ async function main(){
  assert.equal(await page.locator('#stageBookPanel .stage-ally-peace-fields').count(),0);
  assert.equal(await page.locator('#stageBookPanel [data-book-setting^="caster-priest"]').count(),0);
  assert.equal(await page.locator('#stageBookPanel .stage-ally-skill-row').count(),0);
- await page.locator('#stageBookPanel [data-book-setting="priestBlessing"]').fill('100');
+ await page.locator('#stageBookPanel [data-book-setting="priestBlessing"]').fill('79');
  await page.locator('#stageBookPanel [data-book-setting="priestBlessing"]').press('Tab');
- assert.match(await priestSkillLine('priestGratia'),/Attack speed \+23|Скорость атаки \+23/);
+ assert.match(await priestSkillLine('priestGratia'),/Attack speed \+21|Скорость атаки \+21/);
  await page.locator('#stageBookPanel [data-book-setting="priestBlessing"]').fill('90');
  await page.locator('#stageBookPanel [data-book-setting="priestBlessing"]').press('Tab');
  await page.locator('#stageBookPanel [data-book-setting="priestSpi"]').fill('140');
@@ -549,6 +549,8 @@ async function main(){
  assert.equal(await page.locator('#stageBookPanel [data-book-setting="priestExorcism"]').count(),0);
  await page.locator('#stageBookPanel [data-book-setting="priestEnabled"]').uncheck();
  const allySection=page.locator('#stageBookPanel [data-guide-key="buffs.section.party"]').locator('xpath=ancestor::*[contains(@class,"stage-book-buff-group")][1]');
+ if(await allySection.getAttribute('open')===null)
+  await allySection.locator('summary').click();
  const peaceSwitch=allySection.locator('[data-book-setting="legacySkill:340003001"]');
  assert.equal(await peaceSwitch.count(),1);
  await peaceSwitch.check();
