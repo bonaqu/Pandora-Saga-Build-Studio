@@ -246,7 +246,8 @@ test('all-class gear stays compact while restricted classes are readable on dema
 test('skill requirements and chest reward groups use interactive game-style UI',()=>{
  const app=read('pandora-studio-app.js'),css=read('pandora-studio-theme.css');
  assert.match(app,/class:'wiki-requirement-chip'/);
- assert.match(app,/class:'wiki-requirement-track'/);
+ assert.doesNotMatch(app,/class:'wiki-requirement-track'/);
+ assert.match(app,/Суммарное освоенное мастерство/);
  assert.match(app,/class:'wiki-prerequisite'/);
  assert.match(app,/class:'wiki-chest-group'/);
  assert.match(app,/class:'wiki-chest-options'/);
