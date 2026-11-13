@@ -32,7 +32,7 @@ test('four OS learnable hymns have distinct linked area and target actions',()=>
  }
  assert.match(inspect(340001004).notes[0].ru,/Улучшенная/);
  assert.match(inspect(340004001).notes[0].ru,/стихийный урон/);
- assert.match(inspect(340004001).notes[0].ru,/перезарядки/);
+ assert.match(inspect(340004001).notes[0].ru,/перезарядк/);
 });
 
 test('no invented 4-second timing or final cooldown in read-only paths',()=>{

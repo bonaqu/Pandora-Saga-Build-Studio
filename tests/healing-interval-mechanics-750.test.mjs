@@ -64,8 +64,8 @@ test('Conflicting Russian OS descriptions are visible without rewriting canonica
  assert.match(skills['310023001'].desc,/ОМ/);
  assert.equal(skills['310023002'].funcs[0].ep,'EP_HEAL_LIFE');
  const book=read('pandora-studio-hero-book.js');
- assert.match(book,/В описании OS указано «3 с\.»/);
- assert.match(book,/Описание OS упоминает ОМ/);
+ assert.doesNotMatch(book,/В описании OS указано «3 с\.»/);
+ assert.doesNotMatch(book,/Описание OS упоминает ОМ/);
  assert.match(book,/sourceId===310002001\|\|sourceId===310022001/);
  assert.match(book,/data-healing-skill-id/);
  assert.match(book,/Следующий прирост от Исцеления/);

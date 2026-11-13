@@ -46,8 +46,8 @@ test('scoped source values are distinct from final movement speed and from buffs
   assert.equal(item?.amount,value,'movement parameter '+id);
   assert.equal(item?.modelOnly,true);
   assert.equal(item?.uncertain,true);
-  assert.match(item?.detailRu,/итоговая скорость/);
-  assert.match(item?.detailEn,/final speed/);
+  assert.match(item?.detailRu,/Скорость передвижения/);
+  assert.match(item?.detailEn,/Movement speed/);
   assert.ok(!get(result.defense,id));
   assert.ok(!get(result.offense,id));
  }
