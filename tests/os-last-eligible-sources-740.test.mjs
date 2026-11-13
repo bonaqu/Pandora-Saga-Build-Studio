@@ -107,7 +107,7 @@ test('full FV1/FV2 proof rejects modified magic and both Minstrel child stages',
 test('0.740 source models remain covered and only residual OS skill gaps remain',()=>{
  const report=auditOsSkillFormulaCoverage({skills,classes,calculator:C});
  assert.equal(report.summary.skillRecords,569);
- assert.equal(report.summary.statuses['numeric-preview'],73);
+ assert.equal(report.summary.statuses['numeric-preview'],74);
  assert.equal(report.summary.statuses['coefficient-model'],27);
  assert.equal(report.summary.statuses['source-parameter'],3);
  assert.ok(report.summary.statuses['qualitative-preview']>=94);

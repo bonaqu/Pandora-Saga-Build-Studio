@@ -1285,6 +1285,14 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  };
  const mastery=branch=>Number(branchMasteries?.[branch]??0);
  const cap=branch=>Number(branchCaps?.[branch]??0);
+ // The user's verified MELEE parent uses combined TRAINED green mastery,
+ // not the zero-sized internal `martial` branch (0.741.0 class source).
+ const sourceRank=(skill,branch)=>skill?.branchRaw==='MELEE'&&
+  skill?.branch==='martial'&&branch==='martial'?
+  meleeSourceGroupValue(branchMasteries,branchCaps):mastery(branch);
+ const sourceCap=(skill,branch)=>skill?.branchRaw==='MELEE'&&
+  skill?.branch==='martial'&&branch==='martial'?
+  meleeSourceGroupValue(branchCaps,branchCaps):cap(branch);
  // Never auto-translate or approximate official OS mastery names.
  // The app passes Russian meta.branchLabels and English strings.en.branches.
  const branchName=(key,english=false)=>{
@@ -1332,8 +1340,15 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
    seen.has(id))return;
   const recipient=options.recipient===true;
   if(!recipient&&!record.classes?.[jobKey])return;
+  // Require the FULL signed OS root for the shared-mastery Ossify skill,
+  // including all linked protection actions, before calculating its ATK cost.
+  if(id===100057001&&!combatTechniquePreview({
+   skillCatalog,jobKey,level,branchMasteries,branchCaps,weaponKind
+  }).rows.some(row=>row.id===id))return;
   if(!recipient&&record.reqs.some(req=>typeof req?.branch!=='string'||
-   !Number.isInteger(req.amount)||req.amount<0||cap(req.branch)<req.amount))return;
+   !Number.isInteger(req.amount)||req.amount<0||
+   !Number.isSafeInteger(sourceCap(record,req.branch))||
+   sourceCap(record,req.branch)<req.amount))return;
   if(!recipient&&options.branch&&!cap(options.branch))return;
   if(!recipient&&options.song===true&&!songSkillPreview({
    skillCatalog,jobKey,level,branchMasteries,branchCaps}).rows.some(x=>x.id===id))return;
@@ -1350,9 +1365,14 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
    issuesEn.push('Requires level '+record.charLevel);
   }
   if(!recipient)for(const req of record.reqs){
-   if(mastery(req.branch)<req.amount){
-    issues.push('Требуется мастерство «'+branchName(req.branch)+'»: '+req.amount);
-    issuesEn.push('Requires '+branchName(req.branch,true)+' mastery: '+req.amount);
+   const trained=sourceRank(record,req.branch),limit=sourceCap(record,req.branch);
+   if(!Number.isSafeInteger(trained)||trained<req.amount||trained>limit){
+    const label=record.branchRaw==='MELEE'&&req.branch==='martial'?
+     (branchLabels.melee||'Ближний бой'):branchName(req.branch);
+    const englishLabel=record.branchRaw==='MELEE'&&req.branch==='martial'?
+     (englishBranches.melee||'Melee'):branchName(req.branch,true);
+    issues.push('Требуется мастерство «'+label+'»: '+req.amount);
+    issuesEn.push('Requires '+englishLabel+' mastery: '+req.amount);
    }
   }
   if(!recipient&&Array.isArray(record.weaponUse)&&record.weaponUse.length&&
@@ -1369,6 +1389,10 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
   result[group].push({id,name:record.name,description:record.desc||'',
    amount,unit:options.unit||'',available:issues.length===0,
    reason:issues.join(' · '),reasonEn:issuesEn.join(' · '),recipient,
+   // A skill cast by a party member may still have an exactly calculable
+   // recipient effect for this hero. Never apply it to base stats implicitly.
+   recipientBasis:recipient&&options.recipientBasis?
+    options.recipientBasis:null,
    detailRu:options.detailRu||'',detailEn:options.detailEn||'',
    uncertain:amount===null||options.modelOnly===true,
    modelOnly:options.modelOnly===true,
@@ -1385,24 +1409,36 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  const pct=(base,percent,round=Math.floor)=>
   Number.isFinite(base)?round(base*percent/100):null;
  const manual=()=>null;
+ const partyBasis=(source,base,flat,percent)=>{
+  if(!Number.isSafeInteger(base)||base<0)return null;
+  const component=Math.floor(base*percent/100);
+  const next=Math.ceil((component+1)*100/percent);
+  return {source,base,flat,percent,component,
+   nextBase:Number.isSafeInteger(next)&&next>base?next:null,
+   model:'flat-plus-floor-percent',applied:false};
+ };
  // Party effects whose size uses the receiving hero's current stats.
  add(320001001,'offense',[
   ['EP_DAMAGERATE_CONST',[0,0,0,10]],
   ['EP_DAMAGERATE_SCALE',[0,0,0,20]]
  ],()=>Number.isFinite(unmountedAtk)?10+Math.floor(unmountedAtk*.20):null,
- {recipient:true,unit:' ATK',detailRu:'Прибавка при применении к этому герою',
+ {recipient:true,unit:' ATK',recipientBasis:partyBasis('physicalAttack',
+   unmountedAtk,10,20),
+  detailRu:'Прибавка при применении к этому герою',
   detailEn:'Calculated for this recipient when cast'});
  add(100055001,'offense',[
   ['EP_TOHIT_CONST',[0,0,0,20]],
   ['EP_TOHIT_SCALE',[0,0,0,15]]
  ],()=>Number.isFinite(accuracyBase)?Math.floor(20+accuracyBase*.15):null,
- {recipient:true,unit:'',detailRu:'Точность получателя',
+ {recipient:true,unit:'',recipientBasis:partyBasis('accuracy',
+   accuracyBase,20,15),detailRu:'Точность получателя',
   detailEn:'Recipient accuracy bonus'});
  add(260006001,'defense',[
   ['EP_AVOIDANCE_CONST',[0,0,0,15]],
   ['EP_AVOIDANCE_SCALE',[0,0,0,15]]
  ],()=>Number.isFinite(dodgeBase)?Math.floor(15+dodgeBase*.15):null,
- {recipient:true,detailRu:'Уклонение получателя',
+ {recipient:true,recipientBasis:partyBasis('evasion',dodgeBase,15,15),
+  detailRu:'Уклонение получателя',
   detailEn:'Recipient evasion bonus'});
  // Purify is a two-step current OS cast. The root triggers a distinct
  // internal TARGET resistance effect; +100 is NOT permanent character status

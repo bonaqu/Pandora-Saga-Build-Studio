@@ -417,3 +417,37 @@
  color:#e0c7a6;font:500 11px/1.45 Manrope,Arial,sans-serif;
  padding:3px 0;min-width:0;overflow-wrap:anywhere
 }
+
+
+/* 0.743.0: compact, opt-in details for CURRENT build requirements.
+   Inherit existing Skill Effects rows and summary styles; no duplicate cards. */
+#stageAttributes .stage-skill-gate-help,
+#book-source-qa .stage-skill-gate-help{
+ grid-column:1/-1;display:block;min-width:0;max-width:100%;
+ padding:1px 0;color:#d4b68c;font:500 10px/1.45 Manrope,Arial,sans-serif
+}
+#stageAttributes .stage-skill-gate-help>summary,
+#book-source-qa .stage-skill-gate-help>summary{
+ cursor:pointer;list-style:disclosure-closed;color:#dfbc82;
+ font:600 10px/1.45 Manrope,Arial,sans-serif;
+}
+#stageAttributes .stage-skill-gate-help[open]>summary,
+#book-source-qa .stage-skill-gate-help[open]>summary{list-style:disclosure-open}
+#stageAttributes .stage-skill-gate-help>summary:focus-visible,
+#book-source-qa .stage-skill-gate-help>summary:focus-visible{
+ outline:2px solid #e4bb82;outline-offset:2px
+}
+#stageAttributes .stage-skill-gate-help>small,
+#book-source-qa .stage-skill-gate-help>small{
+ display:block;min-width:0;overflow-wrap:anywhere;
+ font:500 10px/1.5 Manrope,Arial,sans-serif;color:#baa78c;padding:3px 0 0 8px
+}
+#stageAttributes .stage-skill-milestone-body{
+ display:grid;gap:5px;min-width:0;padding:4px 2px
+}
+#stageAttributes .stage-skill-milestone-body>small{
+ font:500 11px/1.45 Manrope,Arial,sans-serif;color:#cdb796;overflow-wrap:anywhere
+}
+#stageAttributes .stage-skill-party-effects .stage-skill-party-row{
+ grid-template-columns:minmax(0,1fr) auto
+}

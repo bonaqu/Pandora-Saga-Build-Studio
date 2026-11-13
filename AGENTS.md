@@ -2,6 +2,11 @@
 
 These repository-level rules are durable instructions for future coding sessions.
 
+## Build-dependent threshold information (0.743.0; approved by owner)
+- The Hero Book may show compact **current-character** gates, currently trained green proficiency and the nearest genuine upcoming skill threshold, optionally expanded; this is an explanation of the CURRENT build, not an Encyclopedia dump. For the four parent MELEE skills, show only the nearest future threshold and obtain OS RU/EN names by exact IDs; a mastery threshold is not proof that other conditions (equipment, use, resources) are satisfied.
+- Party buffs that explicitly TARGET the current hero can show a numeric recipient-side preview derived from the recipient's live attack/accuracy/evasion. Visually separate these from skills the hero can cast, never apply the effect automatically to hero totals, and explain the input base and next +1 breakpoint with no guaranteed game-server parity.
+- Preserve the entire signed OS root before using an unusual parent branch for a numerical model. Model-only quantities must say they are *model estimates*, not confirmed final combat damage/mitigation. Use both RU and EN, no invented localized skill names.
+
 ## UI responsibility: Hero Book versus Encyclopedia (0.742.0; user instruction)
 - **Hero Book is a live calculator for the current character build**, not a catalog or documentation dump. Show only meaningful build-dependent results available to that hero (e.g. numerical skill output, heals and recovery, active buffs with demonstrable stat changes). Do not show source-only descriptions, recipes, cast chains, generic class/weapon catalogs, unactionable locked previews or enemy-only effects in the Book.
 - **Encyclopedia → Skills** is the durable home for source-verified non-calculable mechanics, requirement thresholds, recipes, resource costs and related game actions. Use the same checked-in OS RU/EN IDs and read-only calculator inspectors, rather than copying inferred output into hero stats. Keep paths to specific variant skill IDs.
