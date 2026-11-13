@@ -446,22 +446,23 @@ export async function runHeroBookGameNames664Smoke(browser,base){
    const stats={dex:70,int:80,spi:50};
    const modifiers={combat:{spellDamageEquipmentRate:0,priestSong:{}},
     priestApplied:{}};
-   const effects=window.PandoraOSTargetDamage.supportedSkillHits({
+   const chosen={element:50,darkness:25};
+   const expanded={...chosen,exorcism:20,charm:20};
+   const calculated=masteries=>window.PandoraOSTargetDamage.supportedSkillHits({
     skillCatalog:terms.skills,classes:terms.classes,jobKey:'WARLOCK',
-    level:45,masteries:{element:50,darkness:25},
-    branchCaps:terms.classes.WARLOCK.branchCaps,
+    level:45,masteries,branchCaps:terms.classes.WARLOCK.branchCaps,
     stats,equipment:[],tables,modifiers
    });
    const host=document.createElement('div');
    host.id='book-ogre-spells-qa';host.style.width='780px';
    document.body.append(host);
-   const render=language=>{
+   const render=(language,masteries,effects)=>{
     document.documentElement.lang=language;
     window.PandoraStageAttributes.render(host,{
      page:'effects',modifiers:{mp:450,stats,...modifiers,
       healingSpells:{rows:[]},periodicRecovery:{rows:[]}},
      gameTerms:terms,heroJobKey:'WARLOCK',heroLevel:45,
-     heroMasteries:{element:50,darkness:25},
+     heroMasteries:masteries,
      heroBranchCaps:terms.classes.WARLOCK.branchCaps,
      targetSkillDamages:effects
     });
@@ -470,26 +471,43 @@ export async function runHeroBookGameNames664Smoke(browser,base){
       main:row.querySelector('strong')?.textContent||'',
       details:row.querySelector('.stage-skill-more')?.textContent||''}));
    };
-   return {effects:effects.map(({skillId,min,average,max})=>
-    [skillId,min,average,max]),ru:render('ru'),en:render('en')};
+   const basic=calculated(chosen),extended=calculated(expanded);
+   return {basic:basic.map(({skillId,min,average,max})=>
+    [skillId,min,average,max]),
+    expanded:extended.map(({skillId,min,average,max})=>
+     [skillId,min,average,max]),
+    ru:render('ru',chosen,basic),en:render('en',chosen,basic),
+    expandedRu:render('ru',expanded,extended),
+    expandedEn:render('en',expanded,extended)};
   });
-  assert.deepEqual(spellBook.effects,[
-   [410001001,4,21,28],[430001001,10,48,71],
-   [430052001,1,5,9]
+  assert.deepEqual(spellBook.basic,[
+   [410001001,4,21,28],[410011001,1,6,10],[410012001,12,55,78],
+   [410021001,1,10,21],[410023001,3,27,48],
+   [430001001,10,48,71],[430052001,1,5,9]
   ]);
-  assert.equal(spellBook.ru.length,3,'one row for each learned hit');
-  assert.equal(spellBook.en.length,3);
-  assert.match(spellBook.ru[0].text,/Огненная стрела/);
-  assert.match(spellBook.ru[1].text,/Кража жизни/);
-  assert.match(spellBook.ru[2].text,/Ядовитый удар/);
+  assert.equal(spellBook.ru.length,7,'one compact row for each learned direct hit');
+  assert.equal(spellBook.en.length,7);
+  for(const [name,english] of [
+   ['Огненная стрела','Fire Bolt'],['Ледяные осколки','Hailstone'],
+   ['Ледяное копье','Ice Spear'],['Удар молнии','Shock'],
+   ['Громовой разряд','Thunder Crash'],['Кража жизни','Blood Drain'],
+   ['Ядовитый удар','Infect']
+  ]){
+   assert.equal(spellBook.ru.filter(x=>x.text.includes(name)).length,1,name);
+   assert.equal(spellBook.en.filter(x=>x.text.includes(english)).length,1,english);
+  }
   assert.match(spellBook.ru[0].main,/Гигантский огр · 4–28 ОЗ/);
-  assert.match(spellBook.en[0].text,/Fire Bolt/);
-  assert.match(spellBook.en[1].text,/Blood Drain/);
-  assert.match(spellBook.en[2].text,/Infect/);
   assert.match(spellBook.ru[0].details,/ИНТ 80.*Стихия 50/);
-  assert.match(spellBook.ru[2].details,/СД 50.*Тьма 25/);
-  assert.match(spellBook.en[1].details,/Average hit against.*48 HP/);
-  assert.doesNotMatch(spellBook.ru.map(row=>row.text).join(' '),
+  assert.match(spellBook.ru.at(-1).details,/СД 50.*Тьма 25/);
+  assert.match(spellBook.en.at(-2).details,/Average hit against.*48 HP/);
+  assert.equal(spellBook.expanded.length,9);
+  assert.equal(spellBook.expandedRu.length,9);
+  assert.equal(spellBook.expandedEn.length,9);
+  assert.equal(spellBook.expandedRu.filter(x=>x.text.includes('Святая стрела')).length,1);
+  assert.equal(spellBook.expandedEn.filter(x=>x.text.includes('Pure Arrow')).length,1);
+  assert.equal(spellBook.expandedRu.filter(x=>x.text.includes('Песчаный вихрь')).length,1);
+  assert.equal(spellBook.expandedEn.filter(x=>x.text.includes('Sandstorm')).length,1);
+  assert.doesNotMatch(spellBook.expandedRu.map(row=>row.text).join(' '),
    /материал|рецепт|изготовлени/i);
 
   assert.deepEqual(errors,[]);
