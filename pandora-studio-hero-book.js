@@ -1629,8 +1629,8 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   const group=make('details',{class:'stage-attribute-row stage-skill-ranged-ammo'});
   group.append(make('summary',{text:en?'Ammunition for skills':'Боеприпасы для умений'}));
   group.append(make('p',{class:'stage-periodic-hint',text:en?
-   'Ammunition and MP are from the skill record. Actual inventory use and final damage are not calculated.':
-   'Расход боеприпасов и ОМ взят из игровых данных. Списание из инвентаря и итоговый урон не рассчитываются.'}));
+   'Ammunition and MP come from game records, not guaranteed hits. Actual inventory use, final damage and effect chances are unknown.':
+   'Расход боеприпасов и ОМ взят из игровых данных, но это не число гарантированных попаданий. Списание, урон и шансы эффектов не рассчитываются.'}));
   for(const row of rangedAmmo.rows){
    const official=gameTerms.englishSkills?.[String(row.id)];
    const previous=row.prerequisiteId?gameSkillName(row.prerequisiteId,
@@ -1645,8 +1645,8 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     (row.requirementsMet?'':' stage-book-unavailable')},[
     gameSkillBadge(row.id,row.name,official?.n||row.name,gameTerms,en,skillIconForId),
     make('strong',{text:en?
-     'Ammo: '+row.ammoCount+' · MP: '+row.mana:
-     'Боеприпасы: '+row.ammoCount+' · ОМ: '+row.mana}),
+     'Ammo: '+row.ammoCount+' · MP: '+row.mana+' · Cooldown: '+row.cooldown+' s':
+     'Боеприпасы: '+row.ammoCount+' · ОМ: '+row.mana+' · Перезарядка: '+row.cooldown+' с'}),
     make('small',{text:en?row.noteEn:row.noteRu}),
     make('small',{text:access})
    ]));
