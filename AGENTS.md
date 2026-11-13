@@ -10,6 +10,11 @@ These repository-level rules are durable instructions for future coding sessions
 - **Fast without cutting corners:** batch related reads, inspect dependent call paths/test fixtures before changes, ship coherent patches, run focused Node and isolated browser diagnostics first, preflight release metadata before the full Node suite, then let the final mandatory CI run exactly once per revision. On failure read the first failing test/log before rerunning. Avoid needless release bumps for documentation/CI-only patches; when code/site assets change bump release files together. After a release verify Pages **and** live Worker/D1 read-only readiness; never infer a real production write from mock tests. Never run background/daily CI without an owner request.
 
 
+## Advanced melee and stealth source proofs (0.738.0)
+- Reuse the existing `combatTechniquePreview` and Hero Book `stage-skill-combat-technique` for seven additional OS root abilities. Require exact current full record including FV1/FV2, job, weapon and mastery; `350001001` must also verify the entire linked `350001002` immobilization effect for caster and target.
+- A label such as Double Strike or a 100/200 source parameter is NOT a verified hit, chance, damage or motion distance. On Blindside, describe the game-source invisibility prerequisite rather than pretending the calculator checked current stealth status. Do not add permanent stat effects or D1 writes.
+- Test all roots and linked helper changes. Keep older release assertions as historical minimum coverage, current version assertions exact.
+
 ## Combat combo source proofs (0.737.0)
 - Render new combat source models within the existing Book `stage-skill-combat-technique` accordion; verify full source signature and every linked `EP_ONHIT_SKILL_EXEC`, `EP_SKILL_EXEC_COMBO`, `EP_SKILL_EXEC_GETON`, `EP_SKILL_EXEC_CASTPOS` stage. Specifically validate `121703501` against `121703001`, `121703511`, `121703512`; `121707001` against `121707002` and `121707003`; `121704001` against `121704002`; `100103001` against `100103050`.
 - An OS strike count (3, 4), combo condition or source resource cost (2) is NOT evidence of actual hits, trigger probability, resulting HP damage or travel distance. Show source-only RU/EN descriptions and prerequisites without altering persistent character stats or D1.
