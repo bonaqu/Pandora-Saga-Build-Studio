@@ -131,6 +131,31 @@ function itemSkillRelations(id,skills=null){
  }
  return (byItem.get(key)||[]).slice();
 }
+// Source prereq lineage for Wiki navigation, cached by the live skill snapshot.
+const skillNextIndexes=new WeakMap();
+function skillSuccessors(id,skills=null){
+ const key=Number(id);
+ if(!Number.isSafeInteger(key)||key<1||!skills||
+  typeof skills!=='object'||Array.isArray(skills))return [];
+ let index=skillNextIndexes.get(skills);
+ if(!index){
+  index=new Map();
+  for(const entry of Object.values(skills)){
+   if(entry?.learnable!==true||!Number.isSafeInteger(entry.id)||
+    !Number.isSafeInteger(entry.prereq)||entry.prereq<1)continue;
+   const parent=skills[String(entry.prereq)];
+   if(parent?.id!==entry.prereq||parent.learnable!==true)continue;
+   const shared=Object.keys(entry.classes||{}).some(job=>
+    entry.classes[job]===1&&parent.classes?.[job]===1);
+   if(!shared)continue;
+   const rows=index.get(entry.prereq)||[];
+   rows.push(entry.id);index.set(entry.prereq,rows);
+  }
+  for(const rows of index.values())rows.sort((a,b)=>a-b);
+  skillNextIndexes.set(skills,index);
+ }
+ return (index.get(key)||[]).slice();
+}
 function build(data){
  const sources=new Map(),drops=new Map(),npcTrades=new Map();
  const materialTrades=new Map(),npcLocations=new Map(),zoneLocations=new Map();
@@ -473,5 +498,5 @@ function build(data){
   search,normalize:normalizeSearch,sourceCount:sources.size
  });
 }
-root.PandoraWikiData=Object.freeze({build,utilityCategories,itemSkillRelations});
+root.PandoraWikiData=Object.freeze({build,utilityCategories,itemSkillRelations,skillSuccessors});
 })(typeof window==='undefined'?globalThis:window);

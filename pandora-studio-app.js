@@ -4350,9 +4350,17 @@ function renderWiki(root){
       'The effect of this item is not yet described.')}));
    }
    const relations=window.PandoraWikiData.itemSkillRelations(id,wikiData.skills);
-   if(relations.length){
-    const usage=h('div',{class:'wiki-effect-usage'});
-    for(const relation of relations){
+   const regular=relations.filter(row=>wikiData.skills?.[row.id]?.learnable===true);
+   const special=relations.filter(row=>wikiData.skills?.[row.id]?.learnable!==true);
+   for(const [group,folded] of [[regular,false],[special,true]]){
+    if(!group.length)continue;
+    const usage=h(folded?'details':'div',{
+     class:'wiki-effect-usage'+(folded?' wiki-special-skill-uses':'')
+    });
+    if(folded)usage.append(h('summary',{
+     text:wt('Дополнительные действия','Additional actions')+' ('+group.length+')'
+    }));
+    for(const relation of group){
      const created=relation.produces.includes(Number(id));
      const line=h('div',{class:'wiki-effect-usage-row'});
      line.append(h('small',{text:created?wt('Создаётся умением:','Crafted with:'):
@@ -5022,6 +5030,14 @@ function renderWiki(root){
       text:'×','aria-label':'Убрать предыдущее умение',
       onclick:()=>void saveWikiRecordField('skill',id,'prereq',null)
        .catch(error=>showStudioToast(error.message,'warning'))}));
+    }
+    const nextSkills=window.PandoraWikiData.skillSuccessors(id,wikiData.skills);
+    if(nextSkills.length){
+     prereqPane.append(h('small',{text:wt('Следующее умение','Next skill')}));
+     for(const nextId of nextSkills.slice(0,8))
+      prereqPane.append(withIcon(
+       wikiLink(dataName('skill',String(nextId)),'skill',String(nextId)),
+       wikiIcon('skill',String(nextId),wikiData.skills[String(nextId)]),'skill'));
     }
     if(prereqPane.childElementCount>1)detail.append(prereqPane);
     renderClassEligibility(Object.keys(rec.classes||{}).filter(key=>rec.classes[key]),false);

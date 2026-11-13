@@ -1669,6 +1669,17 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
      'Применение и затраты: Расход ОМ: '+
       action.mana+' · Базовое применение: '+seconds(action.cast)+
       ' · Базовая перезарядка: '+healingNumber.format(action.cooldown)+' сек.'}));
+    const inspired=gates?.inspiredCastTime?.({
+     action,castTime:modifiers?.combat?.castTime
+    });
+    if(inspired)more.append(make('small',{
+     class:'stage-heal-cast-preview',text:en?
+      'With allied Inspiration: '+healingNumber.format(inspired.seconds)+
+       ' s casting (instead of '+healingNumber.format(inspired.baseSeconds)+' s)':
+      'С «Воодушевлением» от союзника: '+
+       healingNumber.format(inspired.seconds)+' сек. применения (вместо '+
+       healingNumber.format(inspired.baseSeconds)+' сек.)'
+    }));
    }
    // The same full-MP/base-cost calculation already used by healing:
    // show how many casts the CURRENT hero can afford, in this disclosure.

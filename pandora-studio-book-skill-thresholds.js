@@ -109,7 +109,19 @@ function sourceAction({skillCatalog,skillId,jobKey,level,available,
   cast:record.cast,cooldown:record.cooldown,
   baseOnly:true,serverFinalUnverified:true};
 }
+
+/* Current hero active skill: the same OS + Remaked Status_78 Inspiration
+ * 50% cast model used by healing. No invented speed or rounding rules. */
+function inspiredCastTime({action,castTime}={}){
+ if(action?.baseOnly!==true||!Number.isFinite(action.cast)||
+  action.cast<=0||!Number.isFinite(action.cooldown)||action.cooldown<0||
+  !Number.isSafeInteger(action.mana)||action.mana<0)return null;
+ if(castTime?.known!==50||castTime.allyReduction!==50||
+  typeof castTime.source!=='string'||
+  !castTime.source.includes("Remaked Calc('CastSPD')"))return null;
+ return {baseSeconds:action.cast,seconds:action.cast/2,percent:50};
+}
 root.PandoraBookSkillThresholds=Object.freeze({
- requirements,nextMelee,baseManaBudget,sourceAction,MELEE
+ requirements,nextMelee,baseManaBudget,sourceAction,inspiredCastTime,MELEE
 });
 })(typeof window==='undefined'?globalThis:window);
