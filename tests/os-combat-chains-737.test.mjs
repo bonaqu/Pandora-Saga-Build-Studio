@@ -104,7 +104,7 @@ test('five source descriptions expand audit to 70 qualitative with no synthetic 
   const found=audit.rows.find(x=>x.id===id);
   assert.equal(found.status,'qualitative-preview');
   assert.equal(found.numericPreview,false);
-  assert.deepEqual(found.sourceModules,['combat-technique-source']);
+  assert.deepEqual(found.sourceModules,['combat-techniques-source']);
  }
 });
 test('Book keeps combat previews in one existing skill section with native name localization',()=>{
