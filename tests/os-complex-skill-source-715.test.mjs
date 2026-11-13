@@ -105,5 +105,8 @@ test('Hero Book shows official descriptions and plain uncertainty, not internal 
  assert.match(src,/gameTerms\.englishSkills\?\.\[String\(entry\.id\)\]/);
  assert.match(src,/Точный урон по цели пока не подтверждён/);
  assert.match(src,/Результат зависит от состояний цели/);
- assert.match(css,/stage-skill-complex-effects/);
+ // The section uses the common Hero Book header; legacy CSS pseudo arrows
+ // must NOT be required to consider a source-backed skill rendered.
+ assert.match(css,/\\.stage-book-disclosure\\.stage-attribute-row>summary\\.stage-result-section-head/);
+ assert.doesNotMatch(css,/>summary:(?::after|after)/);
 });
