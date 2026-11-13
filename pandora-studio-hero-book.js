@@ -1369,22 +1369,56 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    if(!Number.isSafeInteger(sourceId))continue;
    const pulse=row.kind==='hp'||row.scaledBySkill===false;
    const amount=String(row.amount)+(pulse?
-    (en?' HP per pulse (model)':' ОЗ за срабатывание (расчёт)'):
+    (en?' HP every 2 sec (model)':' ОЗ каждые 2 сек. (модель)'):
     (en?' HP (model)':' ОЗ (расчёт)'));
-   const preview=make('div',{class:'stage-heal-row'},[
+   const gameSkill=gameTerms.skills?.[String(sourceId)];
+   const kind=gameSkill?.skillType;
+   const target=kind==='ALLY'?(en?'one target':'одна цель'):
+    kind==='PARTY_ALL'?(en?'party':'группа'):
+    kind==='POINT'?(en?'chosen area':'выбранная область'):null;
+   const facts=[];
+   if(target)facts.push(en?'Target: '+target:'Цель: '+target);
+   if(Number.isFinite(gameSkill?.mana)&&gameSkill.mana>=0)
+    facts.push((en?'MP cost: ':'Расход ОМ: ')+gameSkill.mana);
+   if(Number.isFinite(gameSkill?.cast)&&gameSkill.cast>=0)
+    facts.push((en?'Base cast: ':'Базовое применение: ')+
+     (gameSkill.cast===0?(en?'instant':'мгновенно'):
+      gameSkill.cast+(en?' s':' сек.')));
+   if(Number.isFinite(gameSkill?.cooldown)&&gameSkill.cooldown>=0)
+    facts.push((en?'Base cooldown: ':'Базовая перезарядка: ')+
+     gameSkill.cooldown+(en?' s':' сек.'));
+   const preview=make('div',{class:'stage-heal-row',
+    'data-healing-skill-id':String(sourceId)},[
     gameSkillBadge(sourceId,row.name,row.nameEn,gameTerms,en,skillIconForId),
     make('strong',{text:amount}),
-    make('small',{text:en?'Available to this build':'Доступно этому персонажу'})
+    make('small',{text:facts.join(' · ')})
    ]);
+   if(row.nextMastery&&Number.isSafeInteger(row.nextMastery.rank))
+    preview.append(make('small',{class:'stage-heal-mastery-next',text:en?
+     'Next healing increase: Healing mastery '+row.nextMastery.rank+
+      ' (+'+row.nextMastery.remaining+' mastery) gives +'+row.nextMastery.gain+' HP':
+     'Следующее усиление: Исцеление '+row.nextMastery.rank+
+      ' (+'+row.nextMastery.remaining+' мастерства) даст +'+row.nextMastery.gain+' ОЗ'}));
+   // Canonical Russian skill descriptions stay untouched; report actual
+   // contradictions against OS skill-effect vectors without inventing a fix.
+   if(sourceId===310022001&&gameSkill?.desc?.includes('3 с.'))
+    preview.append(make('small',{class:'stage-attribute-note',text:en?
+     'The OS description says 3 s, but its numeric effect and Remaked model use 2 s. Live timing has not been measured.':
+     'В описании OS указано «3 с.», но числовой эффект OS и Remaked используют 2 сек. Интервал на самом сервере отдельно не измерен.'}));
+   if(sourceId===310023001&&gameSkill?.desc?.includes('ОМ')&&
+    gameTerms.skills?.['310023002']?.funcs?.some(f=>f.ep==='EP_HEAL_LIFE'))
+    preview.append(make('small',{class:'stage-attribute-note',text:en?
+     'The OS description mentions MP, while the linked OS skill effect heals HP; the preview follows the effect.':
+     'Описание OS упоминает ОМ, а связанное игровое действие лечит ОЗ. Расчёт сделан по этому действию.'}));
    appendGate(preview,sourceId);
    group.append(preview);
   }
   group.append(make('small',{class:'stage-attribute-note',text:en?
-   'Heals depend on this hero’s learned skills and attributes. Periodic values are per pulse; actual server tick seconds are unconfirmed.':
-   'Лечение зависит от умений и характеристик этого героя. Периодические значения — за срабатывание, реальные секунды не подтверждены.'}));
+   'Healing uses your hero’s INT, SPR and trained Healing mastery. Periodic 2-second recovery follows Remaked and current OS source parameters; exact live timing and stacking have not been measured. Cast and cooldown above are base OS values before bonuses.':
+   'Лечение зависит от ИНТ, СД и освоенного Исцеления героя. Восстановление каждые 2 секунды рассчитано по модели Remaked и параметрам OS; реальный интервал и сложение эффектов отдельно не измерены. Время применения и перезарядка выше — базовые, без ускорений.'}));
   body.append(group);
  }
- // MP regen is distinct from HP healing; do not claim FV2[3]=2 are seconds.
+ // MP recovery is distinct from HP healing; Remaked MPsec and current OS agree on a modeled 2-second pulse.
  const manaPulses=periodic.filter(row=>row.kind==='mp');
  if(manaPulses.length){
   const details=make('details',{class:'stage-attribute-row stage-periodic-recovery'});
@@ -1393,15 +1427,15 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    if(!Number.isFinite(entry?.amount))continue;
    const preview=make('div',{class:'stage-periodic-row'},[
     gameSkillBadge(entry.id,entry.name,null,gameTerms,en,skillIconForId),
-    make('strong',{text:String(entry.amount)+' '+(en?'MP':'ОМ')}),
-    make('small',{text:en?'Per pulse (model)':'За срабатывание (расчёт)'})
+    make('strong',{text:String(entry.amount)+' '+(en?'MP every 2 sec (model)':'ОМ каждые 2 сек. (модель)')}),
+    make('small',{text:en?'Current hero skill, source-backed recovery':'Восстановление от умения самого героя'})
    ]);
    appendGate(preview,entry.id);
    details.append(preview);
   }
   details.append(make('p',{class:'stage-periodic-hint',text:en?
-   'Skill recovery is not passive recovery. Actual server tick seconds are unconfirmed.':
-   'Восстановление от умения — не пассивное восстановление. Реальные секунды не подтверждены.'}));
+   'Unlike passive recovery, this is a skill pulse modeled every 2 seconds using Remaked and OS parameters.':
+   'Это восстановление от умения, а не пассивное. В модели Remaked и OS оно происходит каждые 2 секунды.'}));
   body.append(details);
  }
  // Skill Effects shows the theoretical effect of a CAST, independently
@@ -1707,8 +1741,8 @@ function defenseChapterGroups(calc){
   'Blessed Repose · MP speed bonus',r?.mp?.allyBuff,' инд.');
  // Instant MP pulse from another player. This is NOT passive MP regeneration.
  if(calc.allyNaturalRecovery)
-  put(0,'mpNaturalAlly','Природное восстановление союзника · ОМ за срабатывание',
-   'Allied Natural Recovery · MP per pulse',
+  put(0,'mpNaturalAlly','Природное восстановление союзника · ОМ каждые 2 сек. (модель)',
+   'Allied Natural Recovery · MP every 2 sec (model)',
    calc.allyNaturalRecovery.mpPerPulse,'',true);
  const statuses={
   burn:['Ожоги','Burn'],stun:['Оглушение','Stun'],
@@ -2155,7 +2189,7 @@ const chapterCaptionSpecs=Object.freeze([
  ['effects','healing','.stage-healing-spells > strong','Лечащие умения','Healing skills'],
  ['effects','offense','.stage-attacking-skills > strong','Атакующие умения','Offensive skills'],
  ['effects','defense','.stage-defensive-skills > strong','Защитные умения','Defensive skills'],
- ['effects','periodic','.stage-periodic-recovery > summary','Восстановление каждые 2 секунды','Recovery every 2 seconds'],
+ ['effects','periodic','.stage-periodic-recovery > summary','Восстановление ОМ умениями','Skill MP recovery'],
  ['effects','songs','.stage-song-skills > summary','Песни для выбранного класса','Songs available to this class'],
  ['recovery','potions','.stage-potion-book > strong','Эффекты зелий','Potion effects'],
  ['recovery','enabled','.stage-potion-book .stage-book-check > span','Показывать восстановление от зелий','Show potion recovery'],
