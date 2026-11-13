@@ -134,18 +134,25 @@ test('full OS signatures and raw MELEE identity fail closed when modified',()=>{
   }
  }
 });
-test('all four roots become qualitative models, leaving only three unresolved learnable OS IDs',()=>{
+test('all four roots remain source checked and Ossify now has a numeric build preview',()=>{
  const r=auditOsSkillFormulaCoverage({skills,classes,calculator:C});
  assert.deepEqual(r.summary.statuses,{
-  'numeric-preview':73,'coefficient-model':27,'source-parameter':3,
-  'qualitative-preview':98,'passive-source':29,
+  'numeric-preview':74,'coefficient-model':27,'source-parameter':3,
+  'qualitative-preview':97,'passive-source':29,
   'internal-or-triggered-source':336,'unmodeled-learnable':3
  });
  for(const [id] of cases){
   const row=r.rows.find(x=>x.id===id);
-  assert.equal(row.status,'qualitative-preview');
-  assert.equal(row.numericPreview,false);
-  assert.deepEqual(row.sourceModules,['combat-techniques-source']);
+  if(id===100057001){
+   assert.equal(row.status,'numeric-preview',
+    'Ossify has a signed, eligible ATK penalty calculation');
+   assert.equal(row.numericPreview,true);
+   assert.deepEqual(row.sourceModules,['skill-effects','combat-techniques-source']);
+  }else{
+   assert.equal(row.status,'qualitative-preview');
+   assert.equal(row.numericPreview,false);
+   assert.deepEqual(row.sourceModules,['combat-techniques-source']);
+  }
  }
  assert.deepEqual(r.rows.filter(x=>x.status==='unmodeled-learnable').map(x=>x.id),
   [260006002,300001001,300002001]);
