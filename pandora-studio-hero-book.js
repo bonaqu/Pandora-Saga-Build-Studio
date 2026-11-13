@@ -1064,7 +1064,7 @@ function buffsPage(body,options){
     Number(buffs.priestBlessing)>=71)));
   toggle(target,english?row.nameEn:row.name,'legacySkill:'+row.id,false,
    row.available&&priestReady,{
-    name:row.id===330004001?'Божественное благословение':row.name,
+    name:row.name,
     id:row.id,nameEn:row.nameEn,icon:skillIconForId(row.id),
     desc:row.description,descEn:description||row.description,
     reason:row.reason,reasonEn:row.reasonEn,
