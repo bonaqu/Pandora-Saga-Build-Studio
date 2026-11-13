@@ -924,8 +924,8 @@ function setAttributeBuff(key,value){
   const minimum=branch?minimumFor(branch):0;
   current[key]=Math.max(Math.min(minimum,maximum),Math.min(n,maximum));
  }else if(key==='allyNaturalLevel'){
-  const n=Number(value);if(!Number.isSafeInteger(n)||n<20||n>55)return;
-  current.allyNaturalLevel=n;
+  const n=Number(value);if(!Number.isSafeInteger(n))return;
+  current.allyNaturalLevel=Math.min(55,Math.max(20,n));
  }else if(['allyPeaceSpi','allyPeaceHymn'].includes(key)){
   const n=Number(value);if(!Number.isInteger(n)||n<0||n>500)return;
   const active=window.PandoraRemakedBuffs.selectedIds(
@@ -7297,7 +7297,8 @@ function sanitizeSharedState(original){
    ['guildLifeRecovery',2],['guildManaRecovery',2],['guildHealing',3],['guildArouse',3],
    ['guildPhysicalReduction',3],['guildMagicReduction',3],['guildExperience',8]]){
    const level=rawAttributes[key];
-   if(Number.isInteger(level)&&level>=0&&level<=limit)safe.attributeBuffs[key]=level;
+   if(Number.isInteger(level)&&level>=0&&level<=limit&&
+    (key!=='allyNaturalLevel'||level>=20))safe.attributeBuffs[key]=level;
   }
   if(Number.isInteger(rawAttributes.honorTitle)&&rawAttributes.honorTitle>=0&&
     rawAttributes.honorTitle<window.PandoraOSCalculator.honorTitles.length){
