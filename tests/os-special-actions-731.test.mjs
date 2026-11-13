@@ -119,12 +119,11 @@ test('coverage keeps the 0.731.0 source gains when later modules add more models
   assert.deepEqual(row.sourceModules,['situational-skill-source']);
  }
 });
-test('Hero Book reuses existing compact section and canonical item names',()=>{
- const code=read('pandora-studio-hero-book.js');
- for(const phrase of ['situationalSkillPreview','Особые действия',
-  'Other abilities','sourceItemName(row.requiredItemId)',
-  'По игровым данным нужен предмет: ',
-  'Особый расход по данным умения: ',
-  'Special resource entry: ','weaponKind:heroWeaponKind'])
-  assert.ok(code.includes(phrase),phrase);
+test('Source-only os-special-actions-731 data is displayed in the Encyclopedia',()=>{
+ const wiki=read('pandora-studio-wiki-skill-insights.js');
+ const app=read('pandora-studio-app.js');
+ const book=read('pandora-studio-hero-book.js');
+ assert.ok(wiki.includes('situationalSkillPreview'),'verified OS inspector retained');
+ assert.ok(app.includes('PandoraWikiSkillInsights?.inspect'),'Wiki uses source data');
+ assert.ok(!book.includes('stage-skill-situational-other'),'Do not print general skill catalog in Book');
 });
