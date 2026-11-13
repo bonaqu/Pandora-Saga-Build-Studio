@@ -904,7 +904,7 @@ function setAttributeBuff(key,value){
   current.honorTitle=current.honorCuriosity?1:0;
  }else if(['proelium','potionEffectsEnabled','combatLunge','combatWarCry',
   'combatRage','combatDefender','combatWindAssist','combatWindBlessing',
-  'combatFreeWind','allyRegeneration','allyRestoration',
+  'combatFreeWind',
   'combatConcentration','priestEnabled','priestGratia','priestLapisMedio','priestEncouragement',
   'mounted'].includes(key)){
   if(value===true&&key.startsWith('priest')){
@@ -915,23 +915,7 @@ function setAttributeBuff(key,value){
   if(key==='combatFreeWind'&&value===true&&
    !window.PandoraOSCalculator?.alliedFreeWindPreview?.({
     skillCatalog:catalog.skills,classCatalog:catalog.classes}))return;
-  if(['allyRegeneration','allyRestoration'].includes(key)&&value===true){
-   const profile=window.PandoraOSCalculator?.alliedHpPulsePreview?.({
-    skillCatalog:catalog.skills,classCatalog:catalog.classes,
-    casterLevel:45,casterSpi:134,casterHealing:key==='allyRestoration'?41:21});
-   if(!profile?.[key==='allyRestoration'?'restoration':'regeneration'])return;
-   const min=key==='allyRestoration'?41:21;
-   const cap=Number(catalog.classes?.CLERIC?.branchCaps?.benevolence||0);
-   current.allyHealingMastery=Math.min(cap,
-    Math.max(min,Number(current.allyHealingMastery)||0));
-  }
   current[key]=value===true;
-  if(['allyRegeneration','allyRestoration'].includes(key)&&value!==true){
-   const min=(current.allyRestoration?41:current.allyRegeneration?21:0);
-   current.allyHealingMastery=Math.max(min,
-    Math.min(Number(catalog.classes?.CLERIC?.branchCaps?.benevolence||0),
-     Number(current.allyHealingMastery)||0));
-  }
   if(['priestGratia','priestLapisMedio','priestEncouragement'].includes(key))
    clampMastery();
   if(current.combatRage&&key==='combatRage')current.combatDefender=false;

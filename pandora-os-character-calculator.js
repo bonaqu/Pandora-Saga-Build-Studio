@@ -3704,19 +3704,9 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
    skillCatalog:combatContext.skillCatalog,
    casterLevel:Number(attributeBuffs.allyNaturalLevel??45)
   }):null;
- const allyHealingModels=alliedHpPulsePreview({
-  skillCatalog:combatContext.skillCatalog,
-  classCatalog:combatContext.allyClasses,
-  casterLevel:Number(attributeBuffs?.allyHealingLevel??45),
-  casterSpi:Number(attributeBuffs?.allyHealingSpi??134),
-  casterHealing:Number(attributeBuffs?.allyHealingMastery??41)
- });
- const allyHealing={
-  regeneration:attributeBuffs?.allyRegeneration===true?
-   allyHealingModels?.regeneration||null:null,
-  restoration:attributeBuffs?.allyRestoration===true?
-   allyHealingModels?.restoration||null:null
- };
+ // Historic allied-healing fields no longer apply to the built character.
+ // Own Regeneration and Restoration are shown in Skill Effects only.
+ const allyHealing={regeneration:null,restoration:null};
  // OS skill 320007001 requires Blessing 8; 320008001 requires Blessing 12.
  // A previously selected checkbox must not bypass these requirements.
  // Current OS spell-effect records carry a new constant term relative to

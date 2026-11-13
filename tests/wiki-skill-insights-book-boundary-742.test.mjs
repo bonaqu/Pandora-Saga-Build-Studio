@@ -40,7 +40,7 @@ test('Book displays current hero calculations, not the general OS catalog',()=>{
  const book=read('pandora-studio-hero-book.js');
  const block=book.slice(book.indexOf('function skillEffectsPage('),
   book.indexOf('\nfunction chapterNumber('));
- assert.match(block,/row\.available===true/);
+ assert.match(block,/row\?\.available===true/);
  assert.match(block,/skill\.available===true&&!skill\.hostile&&!skill\.recipient/);
  assert.match(block,/No calculated skill effects for this build/);
  for(const obsolete of ['stage-skill-crafting-effects','stage-skill-chain-effects',

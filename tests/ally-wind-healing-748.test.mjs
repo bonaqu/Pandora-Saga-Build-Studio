@@ -82,19 +82,15 @@ test('Allied CLERIC Regeneration and Restoration use only source values and cast
  assert.equal(over,null);
 });
 
-test('Allied healing toggles do not change permanent HP, own class or natural HP recovery',()=>{
+test('Legacy allied-healing settings no longer affect the current hero',()=>{
  const baseline=hero();
- const active=hero({allyRegeneration:true,allyRestoration:true,
+ const historic=hero({allyRegeneration:true,allyRestoration:true,
   allyHealingLevel:45,allyHealingSpi:134,allyHealingMastery:41});
- assert.equal(active.allyHealing.regeneration?.hpPerPulse,31);
- assert.equal(active.allyHealing.restoration?.hpPerPulse,35);
- assert.equal(active.hp,baseline.hp);
- assert.equal(active.regeneration.hp.total,baseline.regeneration.hp.total);
- assert.deepEqual(active.stats,baseline.stats);
- assert.equal(hero({allyRegeneration:true}).allyHealing.restoration,null);
- assert.equal(hero({allyRestoration:true}).allyHealing.regeneration,null);
- const rank=hero({allyRestoration:true,allyHealingMastery:21});
- assert.equal(rank.allyHealing.restoration,null);
+ assert.deepEqual(historic.allyHealing,{regeneration:null,restoration:null});
+ assert.equal(historic.hp,baseline.hp);
+ assert.equal(historic.regeneration.hp.total,baseline.regeneration.hp.total);
+ assert.deepEqual(historic.stats,baseline.stats);
+ assert.deepEqual(historic.periodicRecovery,baseline.periodicRecovery);
 });
 
 test('HP source perturbations fail closed, including interval and all 4 FV1 slots',()=>{
@@ -114,28 +110,20 @@ test('HP source perturbations fail closed, including interval and all 4 FV1 slot
  assert.equal(missing.regeneration.hpPerPulse,31);
 });
 
-test('Book displays profile only for chosen allied spells; build import supports fields',()=>{
+test('Hero Book renders self-healing but not ally healing controls',()=>{
  const book=read('pandora-studio-hero-book.js');
  const app=read('pandora-studio-app.js');
- assert.match(book,/stage-ally-hp-fields/);
- assert.match(book,/allyRegeneration===true\|\|buffs\.allyRestoration===true/);
- assert.match(book,/allyHealingSpi/);
- assert.match(book,/allyHealingMastery/);
+ assert.doesNotMatch(book,/stage-ally-hp-fields/);
+ assert.doesNotMatch(book,/Регенерация от союзника/);
+ assert.match(book,/const healingRows=\[...spells,...periodicHeals\]/);
+ assert.match(book,/!directIds.has\(row.id\)/);
  assert.match(book,/combatFreeWind/);
- assert.match(book,/правило сложения не подтверждено/);
- assert.match(book,/Восстановление от союзника/);
- assert.match(app,/allyClasses:catalog\.classes\|\|\{\}/);
  assert.match(app,/allyHealingLevel/);
- assert.match(app,/allyHealingMastery/);
- assert.match(app,/allyRegeneration','allyRestoration','combatFreeWind/);
- // These fields represent another character, and must not count as buffs.
  const start=book.indexOf(' const guildSelected=Number(buffs.guildLevel)>0;');
  const stop=book.indexOf(' const status=make(',start);
  assert.ok(start>=0&&stop>start);
  const count=Function('buffs','vitalsBuffs','remakedBuffRows',
   book.slice(start,stop)+'\nreturn configured;');
- assert.equal(count({allyHealingLevel:45,allyHealingSpi:134,
-  allyHealingMastery:41}, {},[]),0);
- assert.equal(count({allyRegeneration:true,allyHealingLevel:45,
-  allyHealingSpi:134,allyHealingMastery:41},{},[]),1);
+ assert.equal(count({allyRegeneration:true,allyRestoration:true,
+  allyHealingLevel:45,allyHealingSpi:134,allyHealingMastery:41}, {},[]),0);
 });
