@@ -48,6 +48,7 @@ import {runOwnerBuildSearch662Smoke} from './browser-build-search-editor-662.mjs
 import {runCrossSurfaceEditorial663Smoke} from './browser-cross-surface-editorial-663.mjs';
 import {runEffectItemsSmoke} from './browser-effect-items.mjs';
 import {runWikiSkillFiltersSmoke,runWikiIconManifestFallbackSmoke} from './browser-wiki-skill-filters.mjs';
+import {runWikiMaterialLinks752Smoke} from './browser-wiki-material-links-752.mjs';
 import {runWikiSkillLabelEditorSmoke} from './browser-wiki-skill-label-editor.mjs';
 import {runUIContentInlineSmoke} from './browser-ui-content-inline.mjs';
 import {runOwnerEquipmentInlineSmoke} from './browser-owner-equipment-inline-632.mjs';
@@ -94,6 +95,7 @@ const scenarios=[
   ['innate-l1-mastery',runInnateSkillMasterySmoke],
   ['hero-book-live-recalc',runHeroBookLiveRecalcSmoke],
   ['hero-book-game-terms-664',runHeroBookGameNames664Smoke],
+  ['wiki-material-recipe-links-752',runWikiMaterialLinks752Smoke],
   ['remaked-buff-parity-669',runRemakedBuffParity669Smoke],
   ['origin-shared-snapshot',runOriginSharedSnapshotSmoke],
   ['two-handed-gear',runTwoHandedSmoke],
