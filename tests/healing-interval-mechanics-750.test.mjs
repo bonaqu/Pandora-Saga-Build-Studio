@@ -68,7 +68,7 @@ test('Conflicting Russian OS descriptions are visible without rewriting canonica
  assert.match(book,/Описание OS упоминает ОМ/);
  assert.match(book,/sourceId===310002001\|\|sourceId===310022001/);
  assert.match(book,/data-healing-skill-id/);
- assert.match(book,/Следующее усиление: Исцеление/);
+ assert.match(book,/Следующий прирост от Исцеления/);
  assert.match(book,/Базовое применение:/);
  assert.match(book,/Базовая перезарядка:/);
  assert.doesNotMatch(book,/реальные секунды не подтверждены\./);
