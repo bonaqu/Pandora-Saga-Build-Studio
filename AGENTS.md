@@ -140,3 +140,8 @@ These repository-level rules are durable instructions for future coding sessions
 - `310003001` Revive requires one CASTER `EP_CONSUME_ITEM` for OS item ID `50059` Holy Water, `fv2[3]=3`. Display its RU/EN name from actual current item/English catalog by that ID. This is a numerical **source material count**, not live inventory deduction, restoration HP, success chance or duration. It alone enters `numeric-preview` under `sourceModules:['support-effects-source']`; the other seven source-only qualitative effects do not become permanent character stats.
 - Keep separate target semantics: Cleanse/Vivify cure ally statuses, Devotion shares caster MP, Mana/Soul Swap and Dispel target another character. Do not treat spell source coefficients as verified server results or as unconditional own buffs.
 - Audit after 0.728.0: 66 numeric, 45 qualitative, 63 remaining unmodeled learnable roots. D1, accounts and saved builds remain untouched.
+
+## Situational skill previews (2026-11-13, 0.729.0)
+- `situationalSkillPreview` protects complete current OS source signatures for 220007001, 213606001, 230001001, 230002004 (including parent 230002001) and 520000001. Official RU/EN game labels must always come from matching source IDs.
+- Detection, hiding and mount skills are contextual actions. Display exact source MP, cooldown and class/level/mastery restrictions, but not invented duration, invisibility success, final damage, or universal mount availability; never add toggles to permanent hero stats.
+- The skill formula audit inspects crafting exactly once per each of 28 classes, not 784 redundant times. Coverage at 0.729.0: 66 numeric, 50 qualitative, 58 learnable without a separate model. Census is NOT a verified server outcome.
