@@ -11,11 +11,11 @@ const review=ctx.window.PandoraOSCatalogReview;
 const workbench=read('pandora-os-catalog-workbench.js');
 const css=read('pandora-os-catalog-workbench.css');
 
-test('owner can select all game changes without automatically accepting settings',()=>{
- assert.match(workbench,/Выбрать все игровые изменения/);
- assert.match(workbench,/const game=changes\.filter\(item=>!describe\(item\)\.service\)/);
- assert.match(workbench,/uncertain\.length&&!confirm/);
- assert.match(workbench,/for\(const item of game\)chosen\.add\(item\.id\)/);
+test('owner can explicitly select all changes including gameplay settings',()=>{
+ assert.match(workbench,/Выбрать все найденные изменения/);
+ assert.match(workbench,/const pending=changes\.filter\(item=>!chosen\.has\(item\.id\)\)/);
+ assert.match(workbench,/\(uncertain\.length\|\|settings\.length\|\|removals\.length\)&&!confirm/);
+ assert.match(workbench,/for\(const item of changes\)chosen\.add\(item\.id\)/);
  assert.match(workbench,/mode==='server'&&formattingCount\)formattingToggle\.checked=true/);
  assert.match(workbench,/chosen\.clear\(\);formattingToggle\.checked=false;russianToggle\.checked=false/);
  assert.match(workbench,/for\(const item of changes\.filter\(safe\)\)chosen\.add/);
@@ -49,24 +49,35 @@ test('staging audit rejects missed approvals and unauthorized record changes',()
   /Подготовленные данные отличаются от выбора/);
 });
 
-test('full selection composes all source game changes while keeping metadata manual',()=>{
+test('full selection composes game values and game settings, with source fingerprint protection',()=>{
  const prev={meta:{counts:{items:2},sha:{x:'old'}},items:{1:{name:'A'},2:{name:'B'}},
   tables:{rates:{a:1}},'strings.en':{locale:'en',items:{'1':{n:'A'}}}};
  const next=structuredClone(prev);
+ prev.meta.levelCap=45;next.meta.levelCap=50;
  next.meta.sha.x='new';
  next.items[1].name='New';delete next.items[2];next.items[3]={name:'Added'};
  next.tables.rates.a=3;next['strings.en'].items['1'].n='New';
  const files=['meta','items','tables','strings.en'];
- const game=files.filter(x=>x!=='meta').flatMap(dataset=>
+ const found=files.flatMap(dataset=>
   review.changes(dataset,prev[dataset],next[dataset]));
- const chosen=new Set(game.map(change=>change.id));
+ const chosen=new Set(found.map(change=>change.id));
  const merged=review.compose(prev,next,chosen,files);
  const audit=review.auditSelection(prev,next,merged,chosen,files);
- assert.equal(audit.approved,game.length);
+ assert.equal(audit.approved,found.length);
  assert.equal(audit.retained,0);
  assert.deepEqual(JSON.parse(JSON.stringify(merged.items)),JSON.parse(JSON.stringify(next.items)));
- assert.equal(merged.meta.curated,true);
- assert.equal(merged.meta.sha,undefined);
+ assert.equal(merged.meta.levelCap,50);
+ assert.equal(merged.meta.curated,undefined);
+ assert.equal(merged.meta.sha.x,'new');
+ const withoutMeta=new Set(found.filter(change=>change.dataset!=='meta').map(change=>change.id));
+ const preserved=review.compose(prev,next,withoutMeta,files);
+ const untouched=review.auditSelection(prev,next,preserved,withoutMeta,files);
+ assert.equal(untouched.retained,1);
+ assert.equal(preserved.meta.levelCap,45);
+ assert.equal(preserved.meta.sha,undefined);
+ const corruptMeta=structuredClone(merged);corruptMeta.meta.levelCap=999;
+ assert.throws(()=>review.auditSelection(prev,next,corruptMeta,chosen,files),
+  /Подготовленные настройки каталога отличаются от выбора/);
 });
 
 test('publish keeps CAS and rereads active version on success or lost response',()=>{
