@@ -254,6 +254,15 @@
   function auditSelection(previous,current,staged,accepted,sourceFiles,
     {syncRussianInstances=false}={}) {
     let approved=0,retained=0;
+    // Catalog settings, including game-level caps, must also be present if
+    // selected. Recomputed counts and source checksum metadata are excluded.
+    const metaSelected=accepted.has(id('meta','@dataset'));
+    const expectedMeta=metaSelected?current.meta:previous.meta;
+    if(!metadataOnlyTechnical(staged.meta,expectedMeta))
+      throw Error('Подготовленные настройки каталога отличаются от выбора');
+    if(changes('meta',previous.meta,current.meta).length){
+      if(metaSelected)approved++;else retained++;
+    }
     for(const dataset of sourceFiles){
       if(dataset==='meta')continue; // Recomputed counters may differ from source.
       const before=entries(dataset,previous[dataset]);
