@@ -564,6 +564,7 @@ function gameClassName(id,ru,en,terms={},english=false){
 function buffsPage(body,options){
  const {buffs={},vitalsBuffs={},onBuff=()=>{},onVital=()=>{},honorTitles=[],
   availability={},combatSkillCards={},resistanceSkillChoices=[],modifiers,gameTerms={},
+  nextMagicConcentrationPreview=null,
   remakedBuffRows=[],skillIconForId=()=>null}=options;
  const english=document.documentElement?.lang==='en';
  // Count selected effects, never mastery input numbers or a disabled priest.
@@ -954,6 +955,19 @@ function buffsPage(body,options){
   ['combatRage','Яростная атака'],['combatDefender','Бастион (нужен щит)'],
   ['combatConcentration','Сосредоточенность']])
   toggle(skills,label,key,false,availability[key]===true,combatSkillCards[key]);
+ if(nextMagicConcentrationPreview){
+  const spell=gameTerms.skills?.['410000101'];
+  toggle(skills,'Сосредоточенность','nextMagicConcentration',false,true,{
+   id:410000101,name:spell.name,
+   nameEn:gameTerms.englishSkills?.['410000101']?.n||spell.name,
+   desc:spell.desc,descEn:gameTerms.englishSkills?.['410000101']?.d||spell.desc,
+   icon:skillIconForId(410000101),
+   summary:english?'Next spell: +'+nextMagicConcentrationPreview.damageRate+
+    '% damage · penetration +30 (fire, cold, lightning)':
+    'Следующая атака: +'+nextMagicConcentrationPreview.damageRate+
+    '% урона · пробитие +30 (огонь, холод, молния)'
+  });
+ }
  const party=section('Усиления от союзников','Ally buffs','party');
  const lifeSign=remakedBuffRows.find(row=>row.id===320005001);
  toggle(party,'Знак жизни','lifeSign',true,true,lifeSign?{
@@ -1338,7 +1352,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
  remakedBuffRows=[],availability={},combatSkillCards={},
  heroJobKey=null,heroLevel=1,heroMasteries={},heroBranchCaps={},
  heroWeaponKind='BARE_HAND',heroHasShield=false,
- targetSkillDamage=null,targetSkillDamages=[],onItem=()=>{},onSkill=null}={}){
+ targetSkillDamage=null,targetSkillDamages=[],nextMagicConcentrationPreview=null,onItem=()=>{},onSkill=null}={}){
  const en=document.documentElement?.lang==='en';
  const gates=root.PandoraBookSkillThresholds;
  const healingNumber=new Intl.NumberFormat(en?'en-US':'ru-RU',
@@ -1695,6 +1709,11 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
      const value=(hitResult.bonusRate>0?'+':'')+hitResult.bonusRate+'%';
      boostParts.push((en?'Damage boosts ':'Усиление урона ')+value);
     }
+    if(hitResult.nextMagicRate){
+     boostParts.push((en?'Concentration +':'Сосредоточенность +')+
+      hitResult.nextMagicRate+'%'+(hitResult.nextMagicPenetration?
+       (en?' · penetration +':' · пробитие +')+hitResult.nextMagicPenetration:''));
+    }
     if(hitResult.magicGemRate||hitResult.magicGemFlat){
      const rate=(hitResult.magicGemRate>0?'+':'')+hitResult.magicGemRate+'%';
      const flat=(hitResult.magicGemFlat>0?'+':'')+hitResult.magicGemFlat;
@@ -1714,6 +1733,8 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     };
     addAverageGain(hitResult.magicKnowledgeAverageGain,
      'Магические знания','Magic Knowledge');
+    addAverageGain(hitResult.nextMagicAverageGain,
+     'Сосредоточенность','Concentration');
     addAverageGain(hitResult.itemDamageAverageGain,
      'Бонусы урона вещей','Item damage bonuses');
     addAverageGain(hitResult.allyAverageGain,
@@ -2568,7 +2589,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
   {...copyOptions,buffs,gameTerms});
  if(chosen==='buffs')buffsPage(body,{buffs,vitalsBuffs,onBuff,onVital,
   honorTitles,availability,combatSkillCards,resistanceSkillChoices,modifiers,
-  gameTerms,remakedBuffRows,skillIconForId,...copyOptions});
+  gameTerms,remakedBuffRows,skillIconForId,nextMagicConcentrationPreview,...copyOptions});
  if(chosen==='effects')skillEffectsPage(body,{modifiers,gameTerms,skillIconForId,
   remakedBuffRows,availability,combatSkillCards,heroJobKey,heroLevel,heroMasteries,
    heroBranchCaps,heroWeaponKind,heroHasShield,targetSkillDamage,targetSkillDamages,onItem,onSkill});
