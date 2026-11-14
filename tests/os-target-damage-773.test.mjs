@@ -27,15 +27,15 @@ test('OS web calculator Et→kt→Ie→ve→Tt, all six newly verified skill hit
  const result=hitList();
  assert.deepEqual(compact(result).filter(row=>
   ![410002001,430053001].includes(row[0])),[
-  [410001001,5,22,29],
-  [330001001,2,10,17],
-  [410011001,1,7,11],
-  [410012001,12,56,79],
-  [410021001,1,10,22],
-  [410023001,4,30,54],
-  [420003001,4,18,23],
-  [430001001,10,48,71],
-  [430052001,1,5,9]
+  [410001001,6,27,37],
+  [330001001,2,14,22],
+  [410011001,2,10,16],
+  [410012001,15,69,97],
+  [410021001,1,14,29],
+  [410023001,5,38,67],
+  [420003001,6,25,31],
+  [430001001,12,60,87],
+  [430052001,1,8,12]
  ]);
  for(const id of newIds){
   const row=packet(result,id);
@@ -97,9 +97,9 @@ test('True source elemental variance: cold 20%, lightning 50%, holy 25%, charm 0
   assert.ok(item.average>=item.min);
   assert.ok(item.max>=item.average);
  }
- assert.equal(packet(hits,420003001).min,4);
- assert.equal(packet(hits,420003001).average,18);
- assert.equal(packet(hits,420003001).max,23);
+ assert.equal(packet(hits,420003001).min,6);
+ assert.equal(packet(hits,420003001).average,25);
+ assert.equal(packet(hits,420003001).max,31);
 });
 test('School-specific equipment bonuses and magical refinement cannot leak',()=>{
  const baseline=hitList();

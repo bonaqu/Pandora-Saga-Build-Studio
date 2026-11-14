@@ -28,8 +28,8 @@ const get=(rows,id)=>rows.find(r=>r.skillId===id);
 const value=x=>[x?.min,x?.average,x?.max];
 test('Source-locked Fire Storm and Rot: only the direct hit against Giant Ogre',()=>{
  const hits=results();
- assert.deepEqual(value(get(hits,410002001)),[10,46,61]);
- assert.deepEqual(value(get(hits,430053001)),[3,19,30]);
+ assert.deepEqual(value(get(hits,410002001)),[13,57,76]);
+ assert.deepEqual(value(get(hits,430053001)),[5,25,38]);
  for(const id of [410002001,430053001]){
   const hit=get(hits,id);
   assert.equal(hit.hitKind,'direct-part');

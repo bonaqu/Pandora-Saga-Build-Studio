@@ -1626,7 +1626,9 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    const hitResult=skill.damageAgainstEnemy;
    const amount=hitResult?
     (en?hitResult.targetNameEn:hitResult.targetName)+' · '+
-     (hitResult.hitKind==='direct-part'?
+     (hitResult.hitKind==='trap-hit'?
+      (en?'one explosion ':'один взрыв '):
+      hitResult.hitKind==='direct-part'?
       (en?'direct hit ':'прямой удар '):'')+
      hitResult.min+'–'+hitResult.max+' '+(en?'HP':'ОЗ'):
     Number.isFinite(skill.amount)?
@@ -1710,6 +1712,8 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
      realGains.push((en?labelEn:labelRu)+': '+
       (amount>0?'+':'')+amount+(en?' HP to average hit':' ОЗ к среднему удару'));
     };
+    addAverageGain(hitResult.magicKnowledgeAverageGain,
+     'Магические знания','Magic Knowledge');
     addAverageGain(hitResult.itemDamageAverageGain,
      'Бонусы урона вещей','Item damage bonuses');
     addAverageGain(hitResult.allyAverageGain,

@@ -28,7 +28,7 @@ test('Published OS Et, kt, Ie, ve and Tt: three single-hit packets versus Giant 
  const values=hits();
  assert.deepEqual(values.map(x=>x.skillId),[410001001,430001001,430052001]);
  assert.deepEqual(values.map(({min,average,max})=>[min,average,max]),
-  [[4,21,28],[10,48,71],[1,5,9]]);
+  [[6,27,36],[12,60,87],[1,8,12]]);
  for(const v of values){
   assert.equal(v.monsterId,22104);
   assert.equal(v.targetName,monsters['22104'].name);

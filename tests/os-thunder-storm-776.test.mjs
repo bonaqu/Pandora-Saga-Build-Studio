@@ -27,13 +27,13 @@ test('Storm uses the current hero, both OS mastery requirements and one direct l
   [{branch:'element',amount:61},{branch:'exorcism',amount:40}]);
  const result=storm();
  assert.ok(result);
- assert.deepEqual([result.min,result.average,result.max],[1,6,15]);
+ assert.deepEqual([result.min,result.average,result.max],[1,9,21]);
  assert.equal(result.monsterId,22104);
  assert.equal(result.element,'lightning');
  assert.equal(result.heroMasteryKey,'element');
  assert.equal(result.heroMastery,70);
  assert.equal(result.hitKind,'direct-part');
- assert.equal(storm({masteries:{element:80,exorcism:40}}).average,7);
+ assert.equal(storm({masteries:{element:80,exorcism:40}}).average,10);
  for(const mastery of [{element:60,exorcism:40},{element:70,exorcism:39},
   {element:70,exorcism:0}])
   assert.equal(storm({masteries:mastery}),undefined);
