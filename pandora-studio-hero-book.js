@@ -1710,6 +1710,8 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
      realGains.push((en?labelEn:labelRu)+': '+
       (amount>0?'+':'')+amount+(en?' HP to average hit':' ОЗ к среднему удару'));
     };
+    addAverageGain(hitResult.magicKnowledgeAverageGain,
+     'Магические знания','Magic Knowledge');
     addAverageGain(hitResult.itemDamageAverageGain,
      'Бонусы урона вещей','Item damage bonuses');
     addAverageGain(hitResult.allyAverageGain,

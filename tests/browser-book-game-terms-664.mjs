@@ -536,12 +536,13 @@ export async function runHeroBookGameNames664Smoke(browser,base){
     boostedSniperRu:renderSniper('ru',boostedSniper,allyModifiers),
     boostedSniperEn:renderSniper('en',boostedSniper,allyModifiers)};
   });
-  assert.deepEqual(spellBook.basic,[
-   [410001001,4,21,28],[410011001,1,6,10],[410012001,12,55,78],
-   [410021001,1,10,21],[410023001,3,27,48],
-   [430001001,10,48,71],[430052001,1,5,9],
-   [410002001,10,46,61],[410022001,2,18,34]
+  // All eligible Lv45 WARLOCK magic hits now receive the source-locked
+  // Lv20 passive "Магические знания". Keep the source IDs fixed.
+  assert.deepEqual(spellBook.basic.map(row=>row[0]),[
+   410001001,410011001,410012001,410021001,410023001,
+   430001001,430052001,410002001,410022001
   ]);
+  assert.deepEqual(spellBook.basic[0],[410001001,6,27,36]);
   assert.deepEqual(spellBook.sniper,[[213608001,61,65,69]]);
   assert.equal(spellBook.boostedSniper.length,1);
   assert.ok(spellBook.boostedSniper[0][2]>spellBook.sniper[0][2]);
@@ -576,7 +577,9 @@ export async function runHeroBookGameNames664Smoke(browser,base){
    assert.equal(spellBook.ru.filter(x=>x.text.includes(name)).length,1,name);
    assert.equal(spellBook.en.filter(x=>x.text.includes(english)).length,1,english);
   }
-  assert.match(spellBook.ru[0].main,/Гигантский огр · 4–28 ОЗ/);
+  assert.match(spellBook.ru[0].main,/Гигантский огр · 6–36 ОЗ/);
+  assert.match(spellBook.ru[0].details,/Магические знания: \+6 ОЗ к среднему удару/);
+  assert.match(spellBook.en[0].details,/Magic Knowledge: \+6 HP to average hit/);
   assert.match(spellBook.ru[0].details,/ИНТ 80.*Магия стихий 50/);
   assert.match(spellBook.ru.find(row=>row.text.includes('Ядовитый удар'))?.details||'',/СД 50.*Магия тьмы 25/);
   assert.match(spellBook.en.find(row=>row.text.includes('Blood Drain'))?.details||'',/Average hit against.*48 HP/);

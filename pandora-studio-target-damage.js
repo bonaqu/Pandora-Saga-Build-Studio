@@ -1504,6 +1504,34 @@ function sourceDirectSpell({skillCatalog,classes,jobKey,level,masteries={},
  }
  return skill;
 }
+// Current OS 940110001 is a Lv20 PASSIVE of the three advanced mage
+// classes. The OS effect collector adds EP_ELEMENT_DAMAGE_SCALE to the
+// same elemental-damage stage as item and party effects. In this snapshot
+// its 'sorcery' parent is not a trainable branch: only fv1[3]=20 applies.
+// Lock the entire source signature, never silently reuse a different skill.
+function sourceMagicKnowledge({skillCatalog,classes,jobKey,level,
+ masteries={},branchCaps={}}={}){
+ if(!['WIZARD','WARLOCK','CONJURER'].includes(jobKey))return 0;
+ const skill=skillCatalog?.['940110001'],job=classes?.[jobKey];
+ if(!job||job.id!==jobKey||!n(level)||level<1||level>55||
+  skill?.id!==940110001||skill.learnable!==true||
+  skill.skillType!=='PASSIVE'||skill.branch!=='sorcery'||
+  skill.branchRaw!=='SORCERY'||skill.charLevel!==20||
+  skill.element!=='NONE'||skill.powerStat!=='INT'||
+  skill.damage!==null||skill.weaponUse!==null||
+  skill.prereq!==null||skill.reqs?.length!==0||
+  JSON.stringify(skill.classes)!==
+   '{"WIZARD":1,"WARLOCK":1,"CONJURER":1}'||
+  skill.classes?.[jobKey]!==1||
+  skill.funcs?.length!==1||skill.funcs[0]?.ep!=='EP_ELEMENT_DAMAGE_SCALE'||
+  skill.funcs[0]?.dir!=='TARGET'||
+  JSON.stringify(skill.funcs[0]?.fv1)!=='[0,0,6,20]'||
+  JSON.stringify(skill.funcs[0]?.fv2)!=='[0,0,0,0]'||
+  Object.hasOwn(job.branchCaps||{},'sorcery')||
+  Object.hasOwn(branchCaps||{},'sorcery')||
+  (masteries?.sorcery??0)!==0)return null;
+ return level>=20?20:0;
+}
 // Matches the OS public BuildCalculator's Et -> kt -> Ie -> ve -> Tt
 // single elemental damage packet. A repeated or delayed subskill is NOT a
 // complete cast total and is deliberately excluded from these previews.
@@ -1547,9 +1575,11 @@ function elementalHit(options={},spec=null){
   Math.abs(equipmentEffects.general-knownGear)>0.001)return null;
  const sage=modifiers?.combat?.priestSong?.sageElementDamage||0;
  const enchant=modifiers?.priestApplied?.priestEnchantment?.magicRate||0;
- if(!Number.isFinite(sage)||!Number.isFinite(enchant))return null;
+ const magicKnowledge=sourceMagicKnowledge(options);
+ if(!Number.isFinite(sage)||!Number.isFinite(enchant)||
+  magicKnowledge===null)return null;
  const bonusRate=equipmentEffects.general+
-  (equipmentEffects[element]||0)+sage+enchant;
+  (equipmentEffects[element]||0)+sage+enchant+magicKnowledge;
  // EP_ELEMENT_BONUS pierces FIRE/COLD/LIGHTNING, but not DARK resistance.
  const penetration=['fire','cold','lightning'].includes(element)?
   equipmentEffects.penetration:0;
@@ -1610,11 +1640,14 @@ function elementalHit(options={},spec=null){
  const allyRate=sage+enchant;
  const withoutAllies=allyRate?
   hitRange(bonusRate-allyRate,magicGemRate,magicGemFlat):null;
+ const withoutMagicKnowledge=magicKnowledge?
+  hitRange(bonusRate-magicKnowledge,magicGemRate,magicGemFlat):null;
  const withoutItemDamageRate=equipmentRate?
   hitRange(bonusRate-equipmentRate,magicGemRate,magicGemFlat):null;
  const withoutMagicRefinement=(magicGemRate||magicGemFlat)?
   hitRange(bonusRate,0,0):null;
  if((allyRate&&!withoutAllies)||
+  (magicKnowledge&&!withoutMagicKnowledge)||
   (equipmentRate&&!withoutItemDamageRate)||
   ((magicGemRate||magicGemFlat)&&!withoutMagicRefinement))return null;
  return {skillId:skill.id,monsterId:target.id,
@@ -1625,6 +1658,9 @@ function elementalHit(options={},spec=null){
   heroPowerCoefficient:fv[0],
   heroMasteryKey:masteryKey,heroMastery:mastery,
   basePower,bonusRate,magicGemRate,magicGemFlat,
+  magicKnowledgeRate:magicKnowledge,
+  magicKnowledgeAverageGain:withoutMagicKnowledge?
+   average-withoutMagicKnowledge.average:undefined,
   // Marginal impact at the hero's CURRENT equipment/ally/target state.
   // Deltas are separate counterfactuals; they must not be added together.
   allyAverageGain:withoutAllies?
