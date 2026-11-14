@@ -48,7 +48,7 @@ test('catalog filters and linked item review keep English defaults while game va
  assert.match(source,/tr\('Связь с предметом изменилась · проверить вручную'/);
  assert.match(source,/tr\('Предмет пока не опубликован в энциклопедии\.'/);
  assert.match(source,/const record=upstream\?\.items\?\.\[segment\.id\]\|\|baseline\?\.items\?\.\[segment\.id\]/);
- assert.match(source,/input\\.addEventListener\\('change',\\(\\)=>\\{/);
- assert.match(source,/setChoice\\(change,input\\.checked\\)/);
- assert.match(source,/row\\.classList\\.toggle\\('os-sync-record-selected',input\\.checked\\)/);
+ assert.match(source,/input\.addEventListener\('change',\(\)=>\{/);
+ assert.match(source,/setChoice\(change,input\.checked\)/);
+ assert.match(source,/row\.classList\.toggle\('os-sync-record-selected',input\.checked\)/);
 });
