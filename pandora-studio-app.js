@@ -1821,8 +1821,10 @@ function renderStageAttributes(calculated=undefined){
   void ensureOgreSource();
  const targetMonsterChoices=stageAttributesPage==='effects'&&ogreMonsters?
   currentDamageTargetChoices(ogreMonsters):[];
- const activeDamageTargetId=targetMonsterChoices.some(row=>
-  row.id===selectedDamageTargetId)?selectedDamageTargetId:22104;
+ // If the selected monster was removed from a new D1 snapshot, do not
+ // silently replace it with Ogre data: keep its ID and show no hit until
+ // the player explicitly chooses another current target.
+ const activeDamageTargetId=selectedDamageTargetId;
  const targetSkillDamages=stageAttributesPage==='effects'&&ogreMonsters?
   window.PandoraOSTargetDamage?.supportedSkillHits({
    skillCatalog:skillMap,classes:catalog.classes||{},jobKey:cls,
