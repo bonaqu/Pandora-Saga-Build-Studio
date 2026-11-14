@@ -417,8 +417,9 @@
       // Preserve editing controls and the D1-authored explanatory copy.
       // Dynamic counts live in the labels and never become editable text.
       acceptAll.disabled = busy || !changes.some(row=>safe(row)&&!chosen.has(row.id));
-      acceptEvery.disabled = busy || !changes.some(row=>!chosen.has(row.id));
-      declineAll.disabled = busy || !changes.length;
+      acceptEvery.disabled = busy || (!changes.some(row=>!chosen.has(row.id))&&
+        !(mode==='server'&&formattingCount>0&&!formattingToggle.checked));
+      declineAll.disabled = busy || (!changes.length&&!formattingToggle.checked&&!russianToggle.checked);
       publish.disabled = !ready;
       exportButton.disabled = !ready;
       github.disabled = busy || !githubReady || !publishedSnapshot;
