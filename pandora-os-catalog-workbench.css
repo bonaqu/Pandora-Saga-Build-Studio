@@ -409,3 +409,26 @@
  width:100%;height:auto;white-space:pre-wrap;overflow-wrap:anywhere}
 @media(max-width:450px){.os-sync-choice-editor{gap:3px}
  .os-sync-choice-editor>.os-sync-formatting-option{padding:8px 6px}}
+
+/* 0.789 · bulk review remains one compact step, not a grid of new cards. */
+.os-sync-review-actions{align-items:stretch;gap:7px}
+.os-sync-review-actions .os-sync-bulk-all{
+ border-color:#b89763;color:#ffe0ab;background:#49321d;font-weight:650
+}
+.os-sync-review-actions .os-sync-bulk-all:hover:not(:disabled){
+ background:#634323;border-color:#ebc38b
+}
+.os-sync-review-actions .os-sync-bulk-all:focus-visible{
+ outline:2px solid #f0c583;outline-offset:2px
+}
+.os-sync-selection-guidance{
+ margin:9px 0 0!important;padding:7px 0 0!important;
+ border-top:1px solid #675039;color:#e5c69a!important;
+ font-size:12px!important;line-height:1.5!important
+}
+.os-sync-record-selected{background:#322517;border-color:#b28b54}
+.os-sync-record-selected .os-sync-record-title strong{color:#ffe1ae}
+@media(max-width:670px){
+ .os-sync-review-actions>.os-sync-action-editor{flex:1 1 180px}
+ .os-sync-review-actions .primary{margin-left:0}
+}

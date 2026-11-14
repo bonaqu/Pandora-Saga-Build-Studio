@@ -248,6 +248,37 @@
     return output;
   }
 
+  // Verify the exact game records chosen by the administrator before any D1 batch.
+  // Source-only line breaks have semantic equality; separately approved RU
+  // dungeon descriptions are checked by compose() and its whitelist.
+  function auditSelection(previous,current,staged,accepted,sourceFiles,
+    {syncRussianInstances=false}={}) {
+    let approved=0,retained=0;
+    // Catalog settings, including game-level caps, must also be present if
+    // selected. Recomputed counts and source checksum metadata are excluded.
+    const metaSelected=accepted.has(id('meta','@dataset'));
+    const expectedMeta=metaSelected?current.meta:previous.meta;
+    if(!metadataOnlyTechnical(staged.meta,expectedMeta))
+      throw Error('Подготовленные настройки каталога отличаются от выбора');
+    if(changes('meta',previous.meta,current.meta).length){
+      if(metaSelected)approved++;else retained++;
+    }
+    for(const dataset of sourceFiles){
+      if(dataset==='meta')continue; // Recomputed counters may differ from source.
+      const before=entries(dataset,previous[dataset]);
+      const actual=entries(dataset,staged[dataset]);
+      for(const change of changes(dataset,previous[dataset],current[dataset])){
+        const selected=accepted.has(change.id);
+        const expected=selected?change.after:before[change.key];
+        if(dataset==='instances'&&syncRussianInstances&&!selected)continue;
+        if(!equal(actual[change.key],expected))
+          throw Error('Подготовленные данные отличаются от выбора: '+dataset+'/'+change.key);
+        if(selected)approved++;else retained++;
+      }
+    }
+    return {approved,retained};
+  }
+
   function retainLegacyRows(rows) {
     if (!plain(rows)) throw Error('Published D1 legacy locale is missing');
     const locales={game:{},ui:{}};
@@ -273,6 +304,6 @@
   root.PandoraOSCatalogReview = Object.freeze({
     atomicDatasets, labels, id, changes, formattingChanges, compose,
     sourceMatchedRussianInstances, preserveRussianInstances,
-    retainLegacyRows, equal, strictEqual, metadataOnlyTechnical
+    retainLegacyRows, auditSelection, equal, strictEqual, metadataOnlyTechnical
   });
 })(typeof window === 'undefined' ? globalThis : window);
