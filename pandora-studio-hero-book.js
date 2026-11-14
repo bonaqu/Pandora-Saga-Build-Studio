@@ -1376,12 +1376,15 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   const sorted=[...targetMonsterChoices].sort((a,b)=>
    (en?a.nameEn:a.name).localeCompare(en?b.nameEn:b.name,en?'en':'ru')||
    a.level-b.level||a.id-b.id);
+  const targetAvailable=sorted.some(monster=>monster.id===targetMonsterId);
+  if(!targetAvailable)choice.append(make('option',{value:'',disabled:true,
+   selected:true,text:en?'Choose a monster':'Выберите монстра'}));
   for(const monster of sorted){
    choice.append(make('option',{value:String(monster.id),
     text:(en?monster.nameEn:monster.name)+' · '+
      (en?'Lv ':'ур. ')+monster.level}));
   }
-  choice.value=String(targetMonsterId);
+  choice.value=targetAvailable?String(targetMonsterId):'';
   row.append(choice);
   body.append(row);
  }
