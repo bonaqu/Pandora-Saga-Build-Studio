@@ -1706,6 +1706,18 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
      ].join(' · ');
     more.append(make('small',{class:'stage-target-damage-stats',
      text:statsLine}));
+    // One compact source-backed target line for Worm Bomb only.
+    // This is the actual Ogre resistance currently used for this build.
+    if(hitResult.hitKind==='trap-hit')
+     more.append(make('small',{class:'stage-target-damage-stats',
+      text:en?
+       'Ogre · Fire resistance '+hitResult.targetElementResistance+
+       ' · Magic resistance '+hitResult.targetMagicResistance+
+       (hitResult.itemPenetration?' · Gear penetration +'+hitResult.itemPenetration:''):
+       'Огр · Сопр. огню '+hitResult.targetElementResistance+
+       ' · Сопр. магии '+hitResult.targetMagicResistance+
+       (hitResult.itemPenetration?' · Пробитие от вещей +'+hitResult.itemPenetration:'')
+     }));
     // These are numeric contributions to THIS hit from the selected build,
     // not a general skill description or an additional skill card.
     const boostParts=[];
@@ -1741,6 +1753,8 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
      'Сосредоточенность','Concentration');
     addAverageGain(hitResult.itemDamageAverageGain,
      'Бонусы урона вещей','Item damage bonuses');
+    addAverageGain(hitResult.itemPenetrationAverageGain,
+     'Пробитие от вещей','Gear resistance penetration');
     addAverageGain(hitResult.allyAverageGain,
      'Усиления союзников','Ally buffs');
     addAverageGain(hitResult.refinementAverageGain,
