@@ -227,3 +227,230 @@ body>#ownerDock.owner-dock-collapsed .owner-dock-handle:hover{
  animation:none!important;transition:none!important;
  transform:none!important;
 }
+
+/* 0.790 · One deliberate owner command center: hierarchy instead of a
+   continuous matrix of buttons. Existing controls and CAS editors stay native. */
+body>#ownerDock{
+ width:min(492px,calc(100vw - 12px));
+ color:#e9d7b6
+}
+#ownerDock .owner-dock-panel{
+ border-color:#94734d;
+ border-radius:0 14px 14px 0;
+ background:linear-gradient(160deg,#30241a 0%,#1d1813 52%,#201a14 100%);
+ box-shadow:14px 14px 42px #000b,inset 0 1px 0 #e4bf7a16
+}
+#ownerDock .owner-dock-head{
+ flex-direction:column;align-items:flex-start;justify-content:center;
+ gap:5px;min-height:73px;box-sizing:border-box;
+ padding:16px 110px 15px 19px;
+ background:linear-gradient(135deg,#37291c,#251c15 85%);
+ border-bottom-color:#654b32
+}
+#ownerDock .owner-dock-title{
+ flex:none;line-height:1.2;font-size:16px;font-weight:750;
+ letter-spacing:.005em;color:#f5ddb5
+}
+#ownerDock .owner-dock-online{
+ font-size:11px;line-height:1.45;color:#cfbc9a
+}
+#ownerDock .owner-dock-online:before{
+ width:7px;height:7px;background:#92c08e;box-shadow:0 0 0 3px #92c08e1a
+}
+#ownerDock .owner-dock-handle{
+ top:19px;right:14px;min-width:82px;height:33px;
+ border-radius:8px;background:#46311f;border-color:#a78558;
+ box-shadow:none;font-size:11px
+}
+#ownerDock.owner-dock-collapsed .owner-dock-handle{
+ background:linear-gradient(140deg,#63472b,#352719);
+ box-shadow:6px 8px 22px #0009,inset -2px 0 0 #dfb374
+}
+#ownerDock .owner-dock-body{
+ gap:16px;padding:15px 18px 18px;
+ scrollbar-width:thin;scrollbar-color:#8e714e transparent
+}
+#ownerDock .owner-dock-health{display:grid;gap:8px;min-width:0}
+#ownerDock .owner-dock-save-state{
+ margin:0;display:block;min-width:0;padding:10px 12px;
+ border:1px solid #4f634c;border-left:3px solid #8cb287;
+ border-radius:8px;background:#23291f;
+ color:#e0eacb;font-size:12px;font-weight:550;line-height:1.45
+}
+#ownerDock .owner-dock-save-state[data-state="saving"]{
+ border-color:#92754d;border-left-color:#e8ba69;background:#302617;color:#f4dcaf
+}
+#ownerDock .owner-dock-save-state[data-state="error"]{
+ border-color:#ab654f;border-left-color:#e68e6f;background:#321f19;color:#ffcebd
+}
+#ownerDock .owner-dock-counters{
+ justify-content:flex-start;align-items:center;gap:6px 8px
+}
+#ownerDock .owner-dock-count{
+ display:inline-flex;align-items:center;min-height:24px;
+ box-sizing:border-box;padding:4px 9px;border:1px solid #574531;
+ border-radius:99px;background:#2b2219;
+ color:#d6c3a2;font-size:11px;font-variant-numeric:tabular-nums
+}
+#ownerDock .owner-dock-actions{
+ display:grid;grid-template-columns:minmax(0,1fr);
+ gap:16px;min-width:0
+}
+#ownerDock .owner-dock-action-group{
+ display:grid;gap:9px;min-width:0
+}
+#ownerDock .owner-dock-action-group+.owner-dock-action-group{
+ border-top:1px solid #51402f;padding-top:13px
+}
+#ownerDock .owner-dock-group-heading{
+ display:flex;align-items:baseline;justify-content:space-between;
+ flex-wrap:wrap;gap:2px 10px;min-width:0
+}
+#ownerDock .owner-dock-group-title,
+#ownerDock .owner-dock-secondary-label{
+ display:inline-block;grid-column:auto;min-width:0;
+ margin:0;padding:0;border:0;background:none;
+ color:#ebc995;font:700 12px/1.45 Manrope,Arial,sans-serif;
+ letter-spacing:.015em
+}
+#ownerDock .owner-dock-group-description{
+ color:#b9a78d;font-size:10px;line-height:1.4
+}
+#ownerDock .owner-dock-action-grid{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:8px;min-width:0
+}
+#ownerDock .owner-dock-action-slot{
+ grid-template-columns:minmax(0,1fr) 29px;gap:5px;min-width:0;
+ align-items:stretch
+}
+#ownerDock .owner-dock-action-slot:has(>.owner-dock-primary),
+#ownerDock .owner-dock-action-slot.owner-dock-action-wide{
+ grid-column:1/-1
+}
+#ownerDock .owner-dock-action-slot>button:not(.owner-dock-action-pencil){
+ display:flex;justify-content:flex-start;align-items:center;gap:9px;
+ text-align:left;min-height:43px;box-sizing:border-box;padding:9px 11px;
+ border-radius:8px;font:600 12px/1.35 Manrope,Arial,sans-serif;
+ overflow-wrap:anywhere;transition:background .12s,border-color .12s
+}
+#ownerDock .owner-dock-action-slot>button:not(.owner-dock-action-pencil):hover:not(:disabled){
+ border-color:#d2a66e;background:#46301d;color:#ffe3ba
+}
+#ownerDock .owner-dock-action-slot>.owner-dock-action-pencil{
+ box-sizing:border-box;min-width:29px;width:29px;min-height:43px;
+ padding:0;border-radius:8px;background:#29221a;
+ border-color:#624e37;color:#c9ad86;
+ opacity:.78;transition:opacity .12s,border-color .12s
+}
+#ownerDock .owner-dock-action-slot:hover>.owner-dock-action-pencil,
+#ownerDock .owner-dock-action-slot:focus-within>.owner-dock-action-pencil{
+ opacity:1;border-color:#b99362
+}
+#ownerDock .owner-dock-action-slot>.owner-dock-action-pencil:focus-visible,
+#ownerDock .owner-workflow-copy-pencil:focus-visible{
+ outline:2px solid #ffd595;outline-offset:2px
+}
+#ownerDock .owner-dock-actions .owner-dock-primary{
+ background:linear-gradient(125deg,#664423,#4c321e);border-color:#ae8754;
+ color:#ffdfab;font-weight:750
+}
+#ownerDock .owner-dock-actions .owner-dock-catalog{
+ background:#3a291b;border-color:#a47b4a;color:#f1d09c
+}
+#ownerDock .owner-dock-actions .owner-dock-history,
+#ownerDock .owner-dock-actions [data-owner-undo],
+#ownerDock .owner-dock-actions .owner-en-sync{
+ background:#2b241c;border-color:#766047;color:#ead0aa
+}
+#ownerDock .owner-dock-actions .owner-dock-d1-check,
+#ownerDock .owner-dock-actions .owner-dock-export{
+ background:#28221c;border-color:#63533f;color:#d8c7af
+}
+#ownerDock .owner-dock-primary:before{content:"▣"}
+#ownerDock .owner-dock-history:before{content:"▤"}
+#ownerDock .owner-dock-catalog:before{content:"◈"}
+#ownerDock .owner-en-sync:before{content:"EN"}
+#ownerDock .owner-dock-d1-check:before{content:"✓"}
+#ownerDock .owner-dock-export:before{content:"↗"}
+#ownerDock .owner-dock-finish:before{content:"✓"}
+#ownerDock .owner-dock-action-slot>button:not(.owner-dock-action-pencil):before{
+ display:inline-flex;align-items:center;justify-content:center;flex:none;
+ min-width:16px;color:#dcb87c;font-size:14px;font-weight:700
+}
+#ownerDock .owner-en-sync:before{font-size:10px}
+#ownerDock .owner-dock-footer{
+ flex:0 0 auto;display:grid;
+ grid-template-columns:minmax(0,1fr) minmax(155px,188px);
+ gap:10px;align-items:center;min-width:0;
+ padding:12px 18px max(13px,env(safe-area-inset-bottom));
+ border-top:1px solid #5d4833;
+ background:linear-gradient(180deg,#292017,#241b15)
+}
+#ownerDock .owner-dock-footer-note{
+ font-size:11px;line-height:1.4;color:#c2b397
+}
+#ownerDock .owner-dock-footer .owner-dock-action-slot{
+ grid-column:auto
+}
+#ownerDock .owner-dock-footer .owner-dock-finish{
+ background:#343e2d;border:1px solid #81916c;color:#e5eccb;
+ font-weight:700
+}
+#ownerDock .owner-dock-footer .owner-dock-finish:before{color:#b8d1a0}
+#ownerDock .owner-dock-footer .owner-dock-finish:hover:not(:disabled){
+ border-color:#bdc79f;background:#425038
+}
+#ownerDock .owner-workflow-guide{
+ margin:0;min-width:0;padding:0;
+ border:1px solid #544432;border-radius:8px;background:#241d17;
+ font-size:11px
+}
+#ownerDock .owner-workflow-guide>summary{
+ display:flex;align-items:center;justify-content:space-between;
+ gap:10px;list-style:none;padding:11px 13px;
+ cursor:pointer;font-weight:650;color:#e3c69b;
+}
+#ownerDock .owner-workflow-guide>summary::-webkit-details-marker{display:none}
+#ownerDock .owner-workflow-guide>summary:after{
+ content:"⌄";font-size:17px;line-height:1;flex:none;color:#c9ac7a
+}
+#ownerDock .owner-workflow-guide[open]>summary:after{transform:rotate(180deg)}
+#ownerDock .owner-workflow-guide[open]>summary{border-bottom:1px solid #4d3f31}
+#ownerDock .owner-workflow-steps{
+ display:grid;gap:10px;list-style:none;margin:12px;padding:0;counter-reset:owner-step
+}
+#ownerDock .owner-workflow-steps li{
+ min-width:0;display:block;line-height:1.5;color:#ddcaaa;counter-increment:owner-step
+}
+#ownerDock .owner-workflow-steps li:before{
+ content:counter(owner-step);display:inline-grid;place-items:center;
+ min-width:19px;height:19px;margin-right:8px;
+ border-radius:50%;border:1px solid #766047;
+ background:#392a1d;color:#f2d29e;font-size:10px;font-weight:700
+}
+#ownerDock .owner-workflow-glossary{
+ padding:2px 12px 12px;display:grid;gap:4px
+}
+#ownerDock .owner-workflow-glossary p{
+ margin:0;padding:9px 0;border-top:1px solid #42382b;
+ font-size:11px;line-height:1.6;color:#c6b69e
+}
+#ownerDock .owner-workflow-glossary strong{color:#f2d29f}
+#ownerDock .owner-workflow-copy-pencil{
+ min-height:23px;min-width:23px;width:23px;height:23px;
+ margin-left:6px;border-radius:6px
+}
+@media(max-width:480px){
+ #ownerDock .owner-dock-head{padding:15px 105px 14px 15px}
+ #ownerDock .owner-dock-body{padding:13px 13px 16px;gap:13px}
+ #ownerDock .owner-dock-footer{padding:11px 13px max(12px,env(safe-area-inset-bottom))}
+ #ownerDock .owner-dock-group-heading{display:grid;gap:2px}
+ #ownerDock .owner-dock-action-grid{grid-template-columns:minmax(0,1fr)}
+ #ownerDock .owner-dock-footer{grid-template-columns:minmax(0,1fr);gap:6px}
+ #ownerDock .owner-dock-footer .owner-dock-action-slot{grid-column:1}
+}
+@media(prefers-reduced-motion:reduce){
+ #ownerDock .owner-dock-action-slot>button:not(.owner-dock-action-pencil),
+ #ownerDock .owner-dock-action-slot>.owner-dock-action-pencil{transition:none}
+}
