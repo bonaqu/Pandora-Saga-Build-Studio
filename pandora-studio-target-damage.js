@@ -1632,7 +1632,17 @@ function sourceHonorElementalRate({skillCatalog,modifiers},element){
  const skill=skillCatalog?.[String(profile.skillId)];
  if(skill?.id!==profile.skillId||skill.learnable!==false||
   skill.skillType!=='PASSIVE'||skill.branch!=='special'||
-  skill.charLevel!==0||skill.damage!==null||
+  skill.branchRaw!=='SPECIAL'||skill.element!=='NONE'||
+  skill.powerStat!=='STR'||skill.charLevel!==0||
+  skill.reqLevel!==0||skill.isLevelBased!==true||
+  skill.prereq!==null||skill.weaponUse!==null||
+  skill.rangeFromWeapon!==false||
+  JSON.stringify(skill.reqs)!=='[]'||
+  JSON.stringify(skill.classes)!=='{}'||
+  JSON.stringify(skill.aoe)!=='[0,0]'||
+  [skill.mana,skill.cast,skill.cooldown,skill.motion,skill.range]
+   .some(value=>value!==0)||
+  skill.damage!==null||
   skill.funcs?.length!==profile.effects.length)return null;
  const exact=profile.effects.every(([code,vector],i)=>{
   const e=skill.funcs[i];
@@ -1654,11 +1664,11 @@ function sourceHonorElementalRate({skillCatalog,modifiers},element){
 // Matches the OS public BuildCalculator's Et -> kt -> Ie -> ve -> Tt
 // single elemental damage packet. A repeated or delayed subskill is NOT a
 // complete cast total and is deliberately excluded from these previews.
-function elementalHit(options={},spec=null){
+function elementalHit(options={},spec=null,shared=null){
  const {skillCatalog,classes,jobKey,level,masteries={},
   branchCaps={},stats={},equipment=[],tables={},itemForth={},unison={},
   modifiers=null}=options;
- const ogre=ogreFromSource(options.monsters,options.englishMonsters);
+ const ogre=shared?shared.ogre:ogreFromSource(options.monsters,options.englishMonsters);
  if(!ogre)return null;
  const isTrap=!spec,isLinked=!!spec?.path,skill=isTrap?
   sourceSkill(skillCatalog,classes,jobKey,level,masteries.trap,branchCaps):
@@ -1687,7 +1697,7 @@ function elementalHit(options={},spec=null){
   !effect.fv1.every(n)||!Array.isArray(effect.fv2)||
   JSON.stringify(effect.fv2)!=='[0,0,0,0]'||
   !Number.isFinite(ogre.resists[element]))return null;
- const equipmentEffects=equippedElementalEffects({equipment,itemForth,unison});
+ const equipmentEffects=shared?shared.equipmentEffects:equippedElementalEffects({equipment,itemForth,unison});
  if(!equipmentEffects)return null;
  // The sheet must agree with the equipment damage rate: never silently
  // use forged or obsolete item bonuses.
@@ -1827,10 +1837,15 @@ function elementalHit(options={},spec=null){
 }
 function crawlingTrap(options={}){return elementalHit(options);}
 function supportedSkillHits(options={}){
- const hits=[],trap=crawlingTrap(options);
+ // Reuse a single D1 target and equipment/Soul/Forth/Unison snapshot
+ // for one current-build refresh, never across changes to a build.
+ const shared={ogre:ogreFromSource(options.monsters,options.englishMonsters),
+  equipmentEffects:equippedElementalEffects(options)};
+ if(!shared.ogre||!shared.equipmentEffects)return [];
+ const hits=[],trap=elementalHit(options,null,shared);
  if(trap)hits.push(trap);
  for(const spell of [...directSpells,...linkedSpells]){
-  const result=elementalHit(options,spell);
+  const result=elementalHit(options,spell,shared);
   if(result)hits.push(result);
  }
  return hits;
