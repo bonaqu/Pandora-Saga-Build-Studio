@@ -432,7 +432,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   assert.match(ogreBook.en.details,/Average hit against.*148 HP/);
   assert.equal(ogreBook.locked.count,0);
   assert.equal(ogreBook.missing.count,0);
-  assert.match(ogreBook.coat.strong,/Гигантский огр · 35–196 ОЗ/);
+  assert.match(ogreBook.coat.strong,/Гигантский огр · одна ловушка 35–196 ОЗ/);
   assert.match(ogreBook.coat.details,/Усиление урона \+1%/);
   assert.match(ogreBook.gem.details,/Магическая заточка \+5% · \+3 к силе удара/);
   assert.equal(ogreBook.coat.count,1);
