@@ -245,6 +245,36 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(ownerGeometry.writingMode,'horizontal-tb');
   assert.ok(ownerGeometry.handleTop>=ownerGeometry.boxTop,
    'Expanded editor handle must be inside the panel, not sticking out');
+  // 0.790: all eight action/editor pairs retain their actual handlers.
+  // The Finish action lives outside the sole scroll region and remains visible.
+  const dockStructure=await ownerPanel.evaluate(root=>{
+   const panel=root.querySelector('.owner-dock-panel').getBoundingClientRect();
+   const body=root.querySelector('.owner-dock-body').getBoundingClientRect();
+   const footer=root.querySelector('.owner-dock-footer').getBoundingClientRect();
+   const groups=[...root.querySelectorAll('.owner-dock-action-group')]
+    .map(node=>node.dataset.ownerGroup);
+   const keys=[...root.querySelectorAll('.owner-dock-action-slot')]
+    .map(node=>node.dataset.ownerDockKey);
+   const collides=[...root.querySelectorAll('.owner-dock-action-slot')]
+    .some(slot=>{
+     const button=slot.querySelector('button:not(.owner-dock-action-pencil)');
+     const pencil=slot.querySelector('.owner-dock-action-pencil');
+     if(!button||!pencil||button.hidden)return false;
+     const a=button.getBoundingClientRect(),b=pencil.getBoundingClientRect();
+     return a.right>b.left+1;
+    });
+   return {groups,keys,footerBelowBody:footer.top>=body.bottom-2,
+    footerInside:footer.bottom<=panel.bottom+2,
+    finishOutsideScroll:root.querySelector('.owner-dock-footer .owner-dock-finish')!==null,
+    collides};
+  });
+  assert.deepEqual(dockStructure.groups,['editing','game','tools']);
+  assert.equal(dockStructure.keys.length,8);
+  assert.equal(new Set(dockStructure.keys).size,8);
+  assert.equal(dockStructure.finishOutsideScroll,true);
+  assert.equal(dockStructure.footerBelowBody,true,'Finish footer must be outside scrolling content');
+  assert.equal(dockStructure.footerInside,true,'Finish footer must fit inside the editor panel');
+  assert.equal(dockStructure.collides,false,'Button and caption-edit pencil must not overlap');
   const originAfter=await page.locator('.workspace>.left').evaluate(node=>node.getBoundingClientRect().height);
   assert.ok(Math.abs(originBefore-originAfter)<2,'The drawer must not stretch the stat column');
   await edge.click();

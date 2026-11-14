@@ -656,3 +656,124 @@
   grid-column:1/-1;grid-row:3;justify-self:center;margin-inline:auto
  }
 }
+
+/* 0.790 · Shared visual language for every dialog launched from the editor.
+   Specific selectors avoid modifying the player-facing encyclopedia. */
+.modal:has(.owner-manager),
+.modal:has(.owner-github-review){
+ width:min(94vw,820px);max-height:94dvh;overflow-y:auto;
+ border:1px solid #80613f;border-radius:12px;
+ background:linear-gradient(160deg,#292017,#1c1712 78%);
+ box-shadow:0 22px 60px #000b
+}
+.modal:has(.owner-manager)>h2,
+.modal:has(.owner-github-review)>h2,
+.modal:has(.os-sync)>h2{
+ margin:0 86px 15px 0;color:#f2d5a8;
+ font:700 clamp(17px,2.1vw,22px)/1.3 Manrope,Arial,sans-serif;
+ overflow-wrap:anywhere
+}
+.owner-manager,.owner-github-review{
+ display:grid;align-items:start;gap:12px;min-width:0
+}
+.owner-manager-search-row{
+ display:grid;grid-template-columns:minmax(0,1fr) auto;
+ align-items:stretch;gap:9px;min-width:0
+}
+.owner-manager-search-row .owner-manager-search{
+ box-sizing:border-box;min-width:0;width:100%;margin:0!important;
+ min-height:42px;border-radius:8px;border:1px solid #826544;
+ background:#241b15;color:#f3dbb2;font-size:13px
+}
+.owner-manager-search-row .owner-manager-search:focus-visible{
+ outline:2px solid #e9be7c;outline-offset:2px
+}
+.owner-manager-search-clear{
+ box-sizing:border-box;min-height:42px;padding:8px 13px!important;
+ border-radius:8px!important;border:1px solid #806746!important;
+ background:#332618!important;color:#ebc998!important;
+ font-size:12px!important;cursor:pointer
+}
+.owner-manager-search-clear:disabled{opacity:.43;cursor:not-allowed}
+.owner-manager-summary{
+ display:block;justify-self:start;margin:0;padding:6px 11px;
+ border-radius:99px;border:1px solid #605036;
+ background:#30271c;color:#e9cf9e;font-size:12px;
+ font-variant-numeric:tabular-nums
+}
+.owner-manager-list{display:grid;gap:9px;min-width:0}
+.owner-manager .owner-manager-row{
+ display:grid;gap:10px;padding:14px;
+ border:1px solid #645039;border-radius:9px;
+ background:#292018;min-width:0
+}
+.owner-manager .owner-review-row{
+ border-color:#695039;background:#292018;
+ box-shadow:inset 0 1px 0 #d5ad7130
+}
+.owner-manager .owner-review-heading strong{
+ font:700 15px/1.35 Manrope,Arial,sans-serif;color:#f2d4a4
+}
+.owner-manager .owner-review-heading small{
+ color:#c7b296;font-variant-numeric:tabular-nums
+}
+.owner-manager .owner-review-comparison>div{
+ border-color:#52402d;background:#211a14
+}
+.owner-manager .owner-review-comparison .owner-review-after{
+ border-color:#977347;background:#342619
+}
+.owner-manager .owner-review-actions button{
+ min-height:37px;border-radius:7px;font-size:12px
+}
+.owner-manager .owner-review-actions .owner-review-reset{
+ background:#3c2a22;border-color:#966c53;color:#f2cbad
+}
+.owner-manager .owner-review-actions .owner-review-reset:hover{
+ background:#563528;border-color:#cb9573
+}
+.owner-manager .owner-history-edit-row,
+.owner-github-review .owner-dialog-copy-field{
+ min-width:0;max-width:100%
+}
+.owner-manager .owner-history-caption{font-size:12px;line-height:1.55}
+.owner-github-review .owner-dialog-live-count,
+.owner-manager .owner-dialog-live-count{
+ display:inline-flex;justify-self:start;margin:0;
+ padding:5px 10px;border:1px solid #665038;border-radius:8px;
+ background:#302417;color:#e9cda1;
+ font-variant-numeric:tabular-nums
+}
+.owner-github-review .button-action.primary{
+ justify-self:start;min-height:41px;border-radius:8px
+}
+.owner-github-review .inline-owner-error{
+ margin:0;line-height:1.55;overflow-wrap:anywhere
+}
+.owner-github-review a{color:#f6cf8b;text-underline-offset:3px}
+.modal:has(.os-sync){
+ border-color:#826445;border-radius:12px;
+ background:linear-gradient(155deg,#2b2119,#1b1712 80%)
+}
+.os-sync-intro{border-radius:9px;border-color:#725a40;background:#30251b}
+.os-sync-review-steps{border-radius:9px;background:#302419}
+.os-sync-group{border-radius:9px;border-color:#65503a}
+.os-sync-record{border-radius:7px}
+.os-sync-record-selected{box-shadow:inset 3px 0 0 #b9925c}
+.os-sync-status{line-height:1.55}
+.os-sync-review-actions .button-action{
+ min-height:39px;border-radius:7px
+}
+.os-sync-filters{gap:7px}
+.os-sync-filter{min-height:33px;border-radius:99px}
+@media(max-width:520px){
+ .modal:has(.owner-manager),.modal:has(.owner-github-review){
+  width:calc(100vw - 16px);padding:13px
+ }
+ .owner-manager-search-row{grid-template-columns:minmax(0,1fr) auto;gap:5px}
+ .owner-manager-search-clear{padding:7px 9px!important}
+ .owner-manager .owner-manager-row{padding:11px}
+ .modal:has(.owner-manager)>h2,
+ .modal:has(.owner-github-review)>h2,
+ .modal:has(.os-sync)>h2{margin-right:72px}
+}
