@@ -822,7 +822,11 @@ function buffsPage(body,options){
  guideLabel(honorTerm,'buffs.honor',english?'passive skill':'пассивное умение',
   'passive skill',options);
  select(honor,'Пассивное умение за честь','Honor passive skill',
-  'honorTitle',honorTitles.map(x=>[x.id,english?x.en:x.ru]),false,true);
+  'honorTitle',honorTitles.map(x=>[x.id,english?x.en:x.ru])
+  .map(([id,fallback])=>[id,(id?
+   (english?gameTerms.englishSkills?.[String(950000000+id)]?.n:
+    gameTerms.skills?.[String(950000000+id)]?.name):null)||fallback]),
+  false,true);
  const honorEffectLabels={
   allAttributes:['Все характеристики','All attributes'],
   healingSkills:['Эффективность лечащих умений','Healing skill potency'],
@@ -1725,6 +1729,10 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
      const value=(hitResult.bonusRate>0?'+':'')+hitResult.bonusRate+'%';
      boostParts.push((en?'Damage boosts ':'Усиление урона ')+value);
     }
+    if(hitResult.honorRate){
+     boostParts.push((en?'Honor title +':'Титул чести +')+
+      hitResult.honorRate+'%');
+    }
     if(hitResult.nextMagicRate){
      boostParts.push((en?'Concentration +':'Сосредоточенность +')+
       hitResult.nextMagicRate+'%'+(hitResult.nextMagicPenetration?
@@ -1749,6 +1757,8 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     };
     addAverageGain(hitResult.magicKnowledgeAverageGain,
      'Магические знания','Magic Knowledge');
+    addAverageGain(hitResult.honorAverageGain,
+     'Титул чести','Honor title');
     addAverageGain(hitResult.nextMagicAverageGain,
      'Сосредоточенность','Concentration');
     addAverageGain(hitResult.itemDamageAverageGain,
