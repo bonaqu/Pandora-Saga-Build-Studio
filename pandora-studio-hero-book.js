@@ -1553,7 +1553,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     410021001,410023001,420003001,430001001,430052001,
     410002001,430053001,240002001,410014001,410014003,
     410022001,420007001,430001003,430052002,430053003,
-    430056001].includes(id)||
+    430056001,213608001].includes(id)||
    seenHits.has(id)||result.monsterId!==22104||
    source?.id!==id||source.classes?.[heroJobKey]!==1||
    !Number.isSafeInteger(mastery)||mastery<required||
