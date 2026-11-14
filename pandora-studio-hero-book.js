@@ -1736,18 +1736,29 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
      ].join(' · ');
     more.append(make('small',{class:'stage-target-damage-stats',
      text:statsLine}));
-    // One compact source-backed target line for Worm Bomb only.
-    // This is the actual Ogre resistance currently used for this build.
-    if(hitResult.hitKind==='trap-hit')
-     more.append(make('small',{class:'stage-target-damage-stats',
-      text:en?
-       'Ogre · Fire resistance '+hitResult.targetElementResistance+
+    // Every source-verified hit displays the ACTUAL selected D1 target's
+    // elemental and magic resistance, never an unrelated Ogre value.
+    const schoolRu={fire:'огню',cold:'льду',lightning:'молнии',
+     poison:'яду',charm:'чарам',holy:'свету',dark:'тьме'};
+    const schoolEn={fire:'Fire',cold:'Cold',lightning:'Lightning',
+     poison:'Poison',charm:'Charm',holy:'Holy',dark:'Dark'};
+    const sourceOgre=hitResult.monsterId===22104&&
+     hitResult.targetName==='Гигантский огр'&&
+     hitResult.targetNameEn==='Ogre Bouncer';
+    const targetTitle=en?
+     (sourceOgre?'Ogre':hitResult.targetNameEn):
+     (sourceOgre?'Огр':hitResult.targetName);
+    more.append(make('small',{class:'stage-target-damage-stats',
+     text:en?
+      targetTitle+' · '+(schoolEn[hitResult.element]||hitResult.element)+
+       ' resistance '+hitResult.targetElementResistance+
        ' · Magic resistance '+hitResult.targetMagicResistance+
        (hitResult.itemPenetration?' · Gear penetration +'+hitResult.itemPenetration:''):
-       'Огр · Сопр. огню '+hitResult.targetElementResistance+
+      targetTitle+' · Сопр. '+(schoolRu[hitResult.element]||hitResult.element)+
+       ' '+hitResult.targetElementResistance+
        ' · Сопр. магии '+hitResult.targetMagicResistance+
        (hitResult.itemPenetration?' · Пробитие от вещей +'+hitResult.itemPenetration:'')
-     }));
+    }));
     // These are numeric contributions to THIS hit from the selected build,
     // not a general skill description or an additional skill card.
     const boostParts=[];
@@ -1797,6 +1808,26 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
      'Магическая заточка','Magical refinement');
     if(realGains.length)more.append(make('small',{
      class:'stage-target-damage-stats',text:realGains.join(' · ')
+    }));
+    // A separate, compact breakdown of the selected monster's defenses:
+    // each difference is a standalone "same hit without this factor" result,
+    // not three amounts a player should add together.
+    const targetImpacts=[];
+    const addTargetImpact=(value,ru,enLabel)=>{
+     if(!Number.isSafeInteger(value)||value===0)return;
+     targetImpacts.push((en?enLabel:ru)+': '+
+      (value>0?'+':'')+value+(en?' HP':' ОЗ'));
+    };
+    addTargetImpact(hitResult.targetResistanceAverageImpact,
+     'Сопротивления цели','Target resistances');
+    addTargetImpact(hitResult.targetAbsorptionAverageImpact,
+     'СД и маг. защита цели','Target SPI and magic defense');
+    addTargetImpact(hitResult.targetLevelAverageImpact,
+     'Разница уровней','Level difference');
+    if(targetImpacts.length)more.append(make('small',{
+     class:'stage-target-damage-stats',
+     text:(en?'Average-hit impact · ':'Влияние на средний удар · ')+
+      targetImpacts.join(' · ')
     }));
    }
    // General skill descriptions are available via its tooltip and Wiki.
