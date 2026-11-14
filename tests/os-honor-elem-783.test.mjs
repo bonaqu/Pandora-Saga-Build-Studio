@@ -50,6 +50,8 @@ test('Worm Bomb receives exactly its chosen Fire Honor title, not a second hit o
  assert.deepEqual([plain.min,plain.average,plain.max],[34,148,194]);
  assert.equal(fire.skillId,240005001);
  assert.equal(fire.hitKind,'trap-hit');
+ assert.deepEqual([fire.min,fire.average,fire.max],[36,157,205],
+  'Current OS Et/kt/Ie/ve/Tt single explosion, Fire Honor +5%');
  assert.equal(fire.honorRate,5);
  assert.equal(fire.bonusRate,5);
  assert.equal(fire.honorAverageGain,fire.average-plain.average);
