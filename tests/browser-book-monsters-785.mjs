@@ -77,8 +77,8 @@ export async function runHeroBookMonsterPicker785Smoke(browser,base){
   assert.equal(await page.locator('#monster-785-qa .stage-target-damage-row').count(),2,
    'The current Traps mastery learns two distinct attacks, not duplicate results');
   const allHits=await page.locator('#monster-785-qa .stage-target-damage-row strong').allInnerTexts();
-  assert.ok(allHits.every(row=>row.includes('Динго')||row.includes('Dingo')||
-   !row.includes('Ogre Bouncer')),
+  const selectedName=(await select.locator('option:checked').innerText()).split(' · ')[0];
+  assert.ok(allHits.every(row=>row.includes(selectedName)),
    'Switching target must refresh every available strike');
   await select.selectOption('22104');
   assert.equal(await select.inputValue(),'22104');
