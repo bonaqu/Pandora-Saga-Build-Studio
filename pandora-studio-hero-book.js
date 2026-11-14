@@ -953,8 +953,12 @@ function buffsPage(body,options){
  const skills=section('Личные умения','Self buffs','self');
  for(const [key,label] of [['combatLunge','Рывок'],
   ['combatRage','Яростная атака'],['combatDefender','Бастион (нужен щит)'],
-  ['combatConcentration','Сосредоточенность']])
+  ['combatConcentration','Сосредоточенность']]){
+  // Both game skills share the Russian name; never show two indistinguishable
+  // toggles (one disabled) to a Warlock who has the next-spell enhancement.
+  if(key==='combatConcentration'&&nextMagicConcentrationPreview)continue;
   toggle(skills,label,key,false,availability[key]===true,combatSkillCards[key]);
+ }
  if(nextMagicConcentrationPreview){
   const spell=gameTerms.skills?.['410000101'];
   toggle(skills,'Сосредоточенность','nextMagicConcentration',false,true,{
