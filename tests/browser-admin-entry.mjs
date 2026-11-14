@@ -228,6 +228,8 @@ export async function runAdminEntrySmoke(browser,base){
   await edge.click();
   assert.equal(await edge.getAttribute('aria-expanded'),'true');
   assert.equal(await ownerPanel.locator('.owner-dock-panel').evaluate(node=>node.inert),false);
+  assert.equal(await ownerPanel.locator('.owner-dock-primary').evaluate(node=>document.activeElement===node),true,
+   'Opening the drawer should focus its first action for keyboard navigation');
   const ownerGeometry=await ownerPanel.evaluate(node=>{
    const box=node.querySelector('.owner-dock-panel');
    const content=node.querySelector('.owner-dock-body');
@@ -280,6 +282,13 @@ export async function runAdminEntrySmoke(browser,base){
   await edge.click();
   assert.equal(await edge.getAttribute('aria-expanded'),'false');
   await edge.click();
+  await ownerPanel.locator('.owner-workflow-guide>summary').focus();
+  await page.keyboard.press('Escape');
+  assert.equal(await edge.getAttribute('aria-expanded'),'false',
+   'Escape from the drawer should collapse it');
+  assert.equal(await edge.evaluate(node=>document.activeElement===node),true,
+   'Closing with Escape should restore launcher focus');
+  await edge.click();
   assert.match(await ownerPanel.innerText(),/Cloudflare D1/);
   assert.match(await ownerPanel.innerText(),/сохранение автоматически|сохранение автоматическое/);
   assert.equal(await ownerPanel.locator('.owner-workflow-guide[open]').count(),0,
@@ -312,6 +321,8 @@ export async function runAdminEntrySmoke(browser,base){
    'Editing the diagnostic label must not execute the diagnostic');
   await page.locator('#locale [data-locale="en"]').click();
   await page.waitForFunction(()=>document.querySelector('.owner-dock-d1-check')?.textContent==='Test saving');
+  assert.match(await ownerPanel.locator('.owner-workflow-copy-pencil').first().getAttribute('aria-label'),
+   /^Edit help:/,'Help-pencil accessibility label should follow English locale');
   await d1Action.locator('.owner-dock-action-pencil').click();
   const englishCaptionEditor=d1Action.locator('[contenteditable="plaintext-only"]');
   await englishCaptionEditor.waitFor({state:'visible'});
@@ -324,6 +335,8 @@ export async function runAdminEntrySmoke(browser,base){
   await page.locator('#locale [data-locale="ru"]').click();
   await page.waitForFunction(label=>
    document.querySelector('.owner-dock-d1-check')?.textContent===label,d1Label);
+  assert.match(await ownerPanel.locator('.owner-workflow-copy-pencil').first().getAttribute('aria-label'),
+   /^Изменить пояснение:/,'Help-pencil accessibility label should return to Russian');
   assert.match(await ownerPanel.locator('[data-owner-recent]').innerText(),/За этот сеанс: 2/);
   // Origin captions share the same authenticated inline D1 path as approved
   // encyclopedia editing: pencil -> focus/blur -> independent RU/EN fields.
