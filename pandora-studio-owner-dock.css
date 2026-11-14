@@ -329,7 +329,7 @@ body>#ownerDock{
  grid-column:1/-1
 }
 #ownerDock .owner-dock-action-slot>button:not(.owner-dock-action-pencil){
- display:flex;justify-content:flex-start;align-items:center;gap:9px;
+ grid-column:1;display:flex;justify-content:flex-start;align-items:center;gap:9px;
  text-align:left;min-height:43px;box-sizing:border-box;padding:9px 11px;
  border-radius:8px;font:600 12px/1.35 Manrope,Arial,sans-serif;
  overflow-wrap:anywhere;transition:background .12s,border-color .12s
@@ -338,7 +338,7 @@ body>#ownerDock{
  border-color:#d2a66e;background:#46301d;color:#ffe3ba
 }
 #ownerDock .owner-dock-action-slot>.owner-dock-action-pencil{
- box-sizing:border-box;min-width:29px;width:29px;min-height:43px;
+ grid-column:2;box-sizing:border-box;min-width:29px;width:29px;min-height:43px;
  padding:0;border-radius:8px;background:#29221a;
  border-color:#624e37;color:#c9ad86;
  opacity:.78;transition:opacity .12s,border-color .12s
