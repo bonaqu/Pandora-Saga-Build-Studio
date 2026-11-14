@@ -1592,6 +1592,65 @@ function sourceMagicKnowledge({skillCatalog,classes,jobKey,level,
   (masteries?.sorcery??0)!==0)return null;
  return level>=20?20:0;
 }
+// Honor titles 3/4/5 are mutually exclusive and have one dedicated
+// elemental effect each in current OS. Keep their historical saved indices,
+// but validate the current GAME skill and all five published effect vectors:
+// "Том огня" / "Том бури" / "Том грозы" (950000003/4/5).
+// The public OS effect collector maps these EPs to elemDamageScaleByAttr.
+const honorElementSchools=Object.freeze({
+ 3:{element:'fire',code:'EP_ELEMENT_DAMAGE_SCALE_FIRE',skillId:950000003,
+  effects:[
+   ['EP_FIRE_RESISTANCE_CONST',[0,0,0,10]],
+   ['EP_COLD_RESISTANCE_CONST',[0,0,0,-15]],
+   ['EP_IMMUNE_BURN',[0,0,0,5]],
+   ['EP_DAMAGERATE_SCALE',[0,0,0,2]],
+   ['EP_ELEMENT_DAMAGE_SCALE_FIRE',[0,0,0,5]]
+  ]},
+ 4:{element:'cold',code:'EP_ELEMENT_DAMAGE_SCALE_COLD',skillId:950000004,
+  effects:[
+   ['EP_COLD_RESISTANCE_CONST',[0,0,0,10]],
+   ['EP_LIGHTNING_RESISTANCE_CONST',[0,0,0,-15]],
+   ['EP_IMMUNE_NUMB',[0,0,0,5]],
+   ['EP_CASTINGCANCEL_RESISTANCE_CONST',[0,0,0,2]],
+   ['EP_ELEMENT_DAMAGE_SCALE_COLD',[0,0,0,5]]
+  ]},
+ 5:{element:'lightning',code:'EP_ELEMENT_DAMAGE_SCALE_LIGHTNING',skillId:950000005,
+  effects:[
+   ['EP_LIGHTNING_RESISTANCE_CONST',[0,0,0,10]],
+   ['EP_FIRE_RESISTANCE_CONST',[0,0,0,-15]],
+   ['EP_IMMUNE_TUMBLE',[0,0,0,5]],
+   ['EP_TOHIT_CONST',[0,0,0,5]],
+   ['EP_ELEMENT_DAMAGE_SCALE_LIGHTNING',[0,0,0,5]]
+  ]}
+});
+function sourceHonorElementalRate({skillCatalog,modifiers},element){
+ const chosen=modifiers?.honor?.id;
+ if(chosen==null||chosen===0)return 0;
+ if(!n(chosen)||chosen>13)return null;
+ const profile=honorElementSchools[chosen];
+ if(!profile)return 0;
+ const skill=skillCatalog?.[String(profile.skillId)];
+ if(skill?.id!==profile.skillId||skill.learnable!==false||
+  skill.skillType!=='PASSIVE'||skill.branch!=='special'||
+  skill.charLevel!==0||skill.damage!==null||
+  skill.funcs?.length!==profile.effects.length)return null;
+ const exact=profile.effects.every(([code,vector],i)=>{
+  const e=skill.funcs[i];
+  return e?.ep===code&&e?.dir==='TARGET'&&
+   JSON.stringify(e?.fv1)===JSON.stringify(vector)&&
+   JSON.stringify(e?.fv2)==='[0,0,0,0]';
+ });
+ if(!exact)return null;
+ // Title from the same current character calculator: both selected title
+ // identity and numerical elemental magic preview must agree.
+ const sheet=modifiers.elementalMagic;
+ // The character sheet uses "ice", while the OS combat kernel uses COLD.
+ // This is an existing naming difference, NOT two different damage schools.
+ const sheetKey=profile.element==='cold'?'ice':profile.element;
+ if(!sheet||!Number.isFinite(sheet[sheetKey])||
+  sheet[sheetKey]!==5)return null;
+ return element===profile.element?5:0;
+}
 // Matches the OS public BuildCalculator's Et -> kt -> Ie -> ve -> Tt
 // single elemental damage packet. A repeated or delayed subskill is NOT a
 // complete cast total and is deliberately excluded from these previews.
@@ -1638,13 +1697,15 @@ function elementalHit(options={},spec=null){
  const sage=modifiers?.combat?.priestSong?.sageElementDamage||0;
  const enchant=modifiers?.priestApplied?.priestEnchantment?.magicRate||0;
  const magicKnowledge=sourceMagicKnowledge(options);
+ const honorRate=sourceHonorElementalRate(options,element);
  const nextMagic=options.nextMagicConcentration===true?
   nextMagicConcentrationPreview(options):null;
  const nextMagicRate=nextMagic?.damageRate||0;
  if(!Number.isFinite(sage)||!Number.isFinite(enchant)||
-  magicKnowledge===null)return null;
+  magicKnowledge===null||honorRate===null)return null;
  const bonusRate=equipmentEffects.general+
-  (equipmentEffects[element]||0)+sage+enchant+magicKnowledge+nextMagicRate;
+  (equipmentEffects[element]||0)+sage+enchant+magicKnowledge+
+  honorRate+nextMagicRate;
  // EP_ELEMENT_BONUS pierces FIRE/COLD/LIGHTNING, but not DARK resistance.
  const pierces=['fire','cold','lightning'].includes(element);
  const nextMagicPenetration=pierces?(nextMagic?.penetration||0):0;
@@ -1705,6 +1766,8 @@ function elementalHit(options={},spec=null){
  const allyRate=sage+enchant;
  const withoutAllies=allyRate?
   hitRange(bonusRate-allyRate,magicGemRate,magicGemFlat):null;
+ const withoutHonor=honorRate?
+  hitRange(bonusRate-honorRate,magicGemRate,magicGemFlat):null;
  const withoutMagicKnowledge=magicKnowledge?
   hitRange(bonusRate-magicKnowledge,magicGemRate,magicGemFlat):null;
  // Removing BOTH effects gives the true marginal contribution for this hit.
@@ -1722,6 +1785,7 @@ function elementalHit(options={},spec=null){
  if((nextMagic&&!withoutNextMagic)||
   (allyRate&&!withoutAllies)||
   (magicKnowledge&&!withoutMagicKnowledge)||
+  (honorRate&&!withoutHonor)||
   (equipmentRate&&!withoutItemDamageRate)||
   (effectiveItemPenetration&&!withoutItemPenetration)||
   ((magicGemRate||magicGemFlat)&&!withoutMagicRefinement))return null;
@@ -1737,6 +1801,8 @@ function elementalHit(options={},spec=null){
   nextMagicAverageGain:withoutNextMagic?
    average-withoutNextMagic.average:undefined,
   magicKnowledgeRate:magicKnowledge,
+  honorRate,honorAverageGain:withoutHonor?
+   average-withoutHonor.average:undefined,
   magicKnowledgeAverageGain:withoutMagicKnowledge?
    average-withoutMagicKnowledge.average:undefined,
   // Marginal impact at the hero's CURRENT equipment/ally/target state.

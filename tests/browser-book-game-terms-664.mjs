@@ -86,6 +86,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
    };
    window.PandoraStageAttributes.render(host,{
     page:chapter,modifiers:calc,gameTerms:terms,
+    honorTitles:window.PandoraOSCalculator.honorTitles,
     heroJobKey:'ENCHANTER',heroLevel:45,
     heroMasteries:{hymn:8,blessing:78,exorcism:26},
     heroBranchCaps:terms.classes.ENCHANTER.branchCaps,
@@ -277,9 +278,13 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   assert.match(buffsRu,/СИЛ \+9 · ПРВ \+9 · ИНТ \+9/,
    'Book support spell preview must use OS-approved priest magnitudes');
   assert.equal(buffsRu.includes('Гимны'),false);
+  assert.equal(await page.locator('#book-source-qa [data-book-setting="honorTitle"] option').nth(4).textContent(),
+   'Том бури','Russian Honor title must match the current OS catalog');
   const buffsEn=await render({lang:'en',chapter:'buffs'});
   for(const name of ['Velox','Lapis Medio','Enchantment','Lunge'])
    assert.ok(buffsEn.includes(name),'Buff English source name: '+name);
+  assert.equal(await page.locator('#book-source-qa [data-book-setting="honorTitle"] option').nth(4).textContent(),
+   'Tome of the Blizzard','English Honor title must match the current OS catalog');
   const defenseRu=await render({lang:'ru',chapter:'defense'});
   assert.ok(defenseRu.includes('Оглушение'),'Defense status name retained in Russian');
   assert.ok(defenseRu.includes('15'),'Defense numeric effect is unchanged');
@@ -395,6 +400,13 @@ export async function runHeroBookGameNames664Smoke(browser,base){
     ...trapArgs,equipment:[],
     modifiers:{combat:{spellDamageEquipmentRate:0,priestSong:{}},priestApplied:{}}
    });
+   const honor=window.PandoraOSTargetDamage.crawlingTrap({
+    ...trapArgs,equipment:[],modifiers:{
+     combat:{spellDamageEquipmentRate:0,priestSong:{}},
+     priestApplied:{},honor:{id:3},
+     elementalMagic:{fire:5,ice:0,lightning:0}
+    }
+   });
    const pierced=window.PandoraOSTargetDamage.crawlingTrap({
     ...trapArgs,equipment:[{record:{...allItems['1'],effects:[
      {func:'EP_ELEMENT_BONUS',a:18}]},
@@ -422,7 +434,8 @@ export async function runHeroBookGameNames664Smoke(browser,base){
    return {source:result,ru:render('ru',41,result),en:render('en',41,result),
     locked:render('ru',40,result),missing:render('ru',41,null),
     coat:render('ru',41,coat),gem:render('ru',41,gem),
-    pierced:render('ru',41,pierced)};
+    pierced:render('ru',41,pierced),
+    honorRu:render('ru',41,honor),honorEn:render('en',41,honor)};
   });
   assert.deepEqual([ogreBook.source.min,ogreBook.source.average,ogreBook.source.max],
    [34,148,194]);
@@ -444,6 +457,12 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   assert.equal(ogreBook.pierced.count,1);
   assert.match(ogreBook.pierced.details,/Пробитие от вещей \+18/);
   assert.match(ogreBook.pierced.details,/Пробитие от вещей: \+[0-9]+ ОЗ к среднему удару/);
+  assert.equal(ogreBook.honorRu.count,1);
+  assert.match(ogreBook.honorRu.details,/Титул чести \+5%/);
+  assert.match(ogreBook.honorRu.details,/Титул чести: \+[0-9]+ ОЗ к среднему удару/);
+  assert.equal(ogreBook.honorEn.count,1);
+  assert.match(ogreBook.honorEn.details,/Honor title \+5%/);
+  assert.match(ogreBook.honorEn.details,/Honor title: \+[0-9]+ HP to average hit/);
   assert.equal(ogreBook.coat.count,1);
   assert.equal(ogreBook.gem.count,1);
   assert.doesNotMatch(ogreBook.ru.main,/материал|рецепт|создани|Ловушка × 2/i);
