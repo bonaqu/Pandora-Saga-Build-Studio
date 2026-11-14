@@ -223,6 +223,302 @@ function compositeActionEvidence(skill,skillCatalog){
   paths:child?[[skill.id,child.id]]:[],extra:[],
   sourceOnly:true,finalAmount:null};
 }
+
+// Gameplay chains for the Encyclopedia: reuse the already pinned OS damage
+// signatures wherever possible. These describe actions, NOT a cast-total
+// or a new numerical Hero Book formula.
+const specialLinkedProofs=Object.freeze([
+  {
+    "id": 213608001,
+    "path": [
+      {
+        "id": 213608001,
+        "learnable": true,
+        "kind": "POINT",
+        "element": "FIRE",
+        "stat": "STR",
+        "branch": "archery",
+        "charLevel": 50,
+        "prereq": null,
+        "reqs": [],
+        "damage": null,
+        "effects": [
+          [
+            "EP_SKILL_EXEC",
+            "TARGET",
+            [
+              0,
+              0,
+              0,
+              213608002
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          [
+            "EP_CONSUME_AMMO",
+            "CASTER",
+            [
+              0,
+              0,
+              0,
+              0
+            ],
+            [
+              0,
+              0,
+              0,
+              1
+            ]
+          ]
+        ]
+      },
+      {
+        "id": 213608002,
+        "learnable": false,
+        "kind": "SPHERE",
+        "element": "FIRE",
+        "stat": "STR",
+        "branch": "archery",
+        "charLevel": 0,
+        "prereq": null,
+        "reqs": [],
+        "damage": {
+          "kernel": "element",
+          "slotIndex": 1
+        },
+        "effects": [
+          [
+            "EP_CAUSE_BURN",
+            "TARGET",
+            [
+              0,
+              0,
+              0,
+              5
+            ],
+            [
+              0,
+              0,
+              0,
+              100
+            ]
+          ],
+          [
+            "EP_ELEMENT_DAMAGE",
+            "TARGET",
+            [
+              0,
+              0,
+              80,
+              60
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ]
+        ]
+      }
+    ],
+    "damageIndex": 1
+  },
+  {
+    "id": 330061001,
+    "path": [
+      {
+        "id": 330061001,
+        "learnable": true,
+        "kind": "POINT",
+        "element": "HOLY",
+        "stat": "INT",
+        "branch": "exorcism",
+        "charLevel": 0,
+        "prereq": null,
+        "reqs": [
+          {
+            "branch": "exorcism",
+            "amount": 54
+          }
+        ],
+        "damage": null,
+        "effects": [
+          [
+            "EP_SKILL_EXEC",
+            "TARGET",
+            [
+              0,
+              0,
+              0,
+              330061002
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ]
+        ]
+      },
+      {
+        "id": 330061002,
+        "learnable": false,
+        "kind": "SPHERE",
+        "element": "HOLY",
+        "stat": "INT",
+        "branch": "exorcism",
+        "charLevel": 0,
+        "prereq": null,
+        "reqs": [],
+        "damage": {
+          "kernel": "element",
+          "slotIndex": 1
+        },
+        "effects": [
+          [
+            "EP_MAGIC_RESISTANCE_SCALE",
+            "TARGET",
+            [
+              0,
+              0,
+              0,
+              -50
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          [
+            "EP_ELEMENT_DAMAGE",
+            "TARGET",
+            [
+              50,
+              0,
+              50,
+              5
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          [
+            "EP_ELEMENT_DAMAGE",
+            "TARGET",
+            [
+              50,
+              0,
+              50,
+              5
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ],
+          [
+            "EP_ELEMENT_DAMAGE",
+            "TARGET",
+            [
+              50,
+              0,
+              50,
+              5
+            ],
+            [
+              0,
+              0,
+              0,
+              0
+            ]
+          ]
+        ]
+      }
+    ],
+    "damageIndex": 1
+  }
+]);
+const linkedSkillCopy=Object.freeze({
+ 213608001:{
+  ru:'Выстрел расходует один боеприпас; отдельное действие наносит огненный удар и накладывает ожог.',
+  en:'The shot consumes one piece of ammunition. Its linked action deals fire damage and applies a burn.'},
+ 330061001:{
+  ru:'Действие снижает магическое сопротивление цели и содержит три отдельных световых удара.',
+  en:'The action reduces the target’s magic resistance and has three separate light-damage entries.'},
+ 410026001:{
+  ru:'Молния поражает цель; связанные эффекты отдельно ограничивают её передвижение.',
+  en:'Lightning hits the target; separate linked effects restrict its movement.'}
+});
+function sourceLinkedEvidence(skill,catalog,classes){
+ const spec=(root.PandoraOSTargetDamage?.linkedSpells||[])
+  .find(row=>row.id===skill.id)||
+  specialLinkedProofs.find(row=>row.id===skill.id);
+ if(!spec||!Array.isArray(spec.path)||spec.path.length<2||
+  !Number.isSafeInteger(spec.damageIndex)||spec.damageIndex<1||
+  spec.damageIndex>=spec.path.length)return null;
+ const first=spec.path[0];
+ const sameNode=(actual,node)=>actual?.id===node.id&&
+  actual.learnable===node.learnable&&actual.skillType===node.kind&&
+  actual.element===node.element&&actual.powerStat===node.stat&&
+  actual.branch===node.branch&&actual.charLevel===node.charLevel&&
+  actual.prereq===node.prereq&&
+  JSON.stringify(actual.reqs)===JSON.stringify(node.reqs)&&
+  JSON.stringify(actual.damage)===JSON.stringify(node.damage)&&
+  actual.funcs?.length===node.effects.length&&
+  node.effects.every((expected,i)=>sameGameEffect(actual.funcs[i],expected));
+ if(skill.id!==first.id||skill.learnable!==true||
+  !spec.path.every(node=>sameNode(catalog[String(node.id)],node)))
+  return null;
+ const playable=Object.entries(classes||{}).some(([job,record])=>
+  skill.classes?.[job]===1&&
+  first.charLevel<=55&&
+  first.reqs.every(req=>Number.isSafeInteger(record?.branchCaps?.[req.branch])&&
+   record.branchCaps[req.branch]>=req.amount));
+ if(!playable)return null;
+ if(first.prereq!=null){
+  const before=catalog[String(first.prereq)];
+  if(before?.id!==first.prereq||before.learnable!==true)return null;
+ }
+ for(let i=1;i<spec.path.length;i++){
+  const parent=catalog[String(spec.path[i-1].id)];
+  if(!parent?.funcs?.some(fx=>fx.ep==='EP_SKILL_EXEC'&&
+   fx.dir==='TARGET'&&fx.fv1?.[3]===spec.path[i].id))return null;
+ }
+ const sidePaths=[];
+ for(const side of spec.sidecars||[]){
+  const parent=catalog[String(side.parent)];
+  const target=catalog[String(side.node?.id)];
+  if(!sameNode(target,side.node)||
+   !parent?.funcs?.some(fx=>fx.ep===side.via&&fx.dir==='TARGET'&&
+    fx.fv1?.[3]===side.node.id))return null;
+  sidePaths.push([skill.id,side.parent,side.node.id]);
+ }
+ const hit=catalog[String(spec.path[spec.damageIndex].id)];
+ if(hit?.damage?.kernel!=='element'||
+  hit.funcs?.[hit.damage.slotIndex]?.ep!=='EP_ELEMENT_DAMAGE')
+  return null;
+ const official=linkedSkillCopy[skill.id]||{
+  ru:'Умение запускает связанное действие с прямым попаданием. Другие эффекты действуют отдельно.',
+  en:'The skill triggers a linked direct hit. Other effects are separate.'
+ };
+ return {notes:[official],
+  paths:[spec.path.map(row=>row.id),...sidePaths],
+  extra:[],pathKind:'damage',sourceOnly:true,finalAmount:null};
+}
 function inspect({skillCatalog,classes,id,calculator}={}){
  const skill=skillCatalog?.[String(id)];
  if(!skill||skill.id!==Number(id)||!skill.learnable||
@@ -296,6 +592,17 @@ function inspect({skillCatalog,classes,id,calculator}={}){
   // complete set of notes avoids repeated scans of all 28 class snapshots.
   if(notes.length||paths.length||extra.length)break;
  }
+ // Add source-pinned action chains without losing existing verified
+ // item costs, song details or full trap paths already found above.
+ const linked=sourceLinkedEvidence(skill,skillCatalog,classes);
+ if(linked){
+  for(const note of linked.notes){
+   if(!notes.some(row=>row.ru===note.ru&&row.en===note.en))notes.push(note);
+  }
+  for(const path of linked.paths){
+   if(!paths.some(row=>row.join(':')===path.join(':')))paths.push(path);
+  }
+ }
  // A trap needs BOTH a valid execution chain and the strict, complete
  // source proof used by trapSkillCostPreview. Generic execution graphs alone
  // do not prove a trap's resulting effect.
@@ -305,7 +612,7 @@ function inspect({skillCatalog,classes,id,calculator}={}){
     skillCatalog[String(nodeId)]?.learnable===false));
  const result=notes.length||paths.length||extra.length?
   {notes,paths,extra,
-   ...(trapVerified?{pathKind:'trap'}:{}),
+   ...(trapVerified?{pathKind:'trap'}:linked?{pathKind:'damage'}:{}),
    sourceOnly:true,finalAmount:null}:null;
  store.values.set(skill.id,result);
  return result;

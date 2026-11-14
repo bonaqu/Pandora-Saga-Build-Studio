@@ -39,7 +39,9 @@ export async function runPathSkillNavigation761Smoke(browser,base){
   assert.equal(await back.count(),1);
   assert.match(await back.getAttribute('aria-label'),/Предыдущее/);
   assert.match(await back.innerText(),/Двойной удар/);
-  await back.click();
+  assert.equal(await back.evaluate(el=>el.tagName),'BUTTON');
+  await back.focus();
+  await page.keyboard.press('Enter');
   assert.match(await details.locator('h3').innerText(),/Двойной удар/);
   await page.locator('[data-locale="en"]').click();
   await query.click();await query.fill('Slice');

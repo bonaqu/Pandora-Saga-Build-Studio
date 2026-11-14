@@ -5107,9 +5107,12 @@ function renderWiki(root){
          linked?.funcs?.some(f=>f.ep==='EP_ELEMENT_DAMAGE')?
           wt('Огненный взрыв: ','Fire blast: '):
          wt('Эффект: ','Effect: '):'';
+        const damageRole=evidence.pathKind==='damage'&&index>0?
+         linked?.funcs?.some(f=>f.ep==='EP_ELEMENT_DAMAGE')?
+          wt('Попадание: ','Hit: '):wt('Эффект: ','Effect: '):'';
         const role=evidence.pathKind==='hymn'&&index>0?
          (index===1?wt('Область: ','Area: '):wt('Эффект: ','Effect: ')):
-         trapRole;
+         (damageRole||trapRole);
         chain.append(wikiLink(role+dataName('skill',String(linkId)),
          'skill',String(linkId)));
        });

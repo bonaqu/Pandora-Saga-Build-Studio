@@ -95,6 +95,24 @@ export async function runWikiMaterialLinks752Smoke(browser,base){
   assert.match(await explosive.innerText(),/Область:/);
   assert.equal(await explosive.locator('a.wiki-link').count(),2);
 
+  // Two previously unmodeled composite actions and the new Storm chain.
+  for(const [rootId,expected] of [
+   [213608001,[213608001,213608002]],
+   [330061001,[330061001,330061002]],
+   [410026001,[410026001,410026002,410026004]]
+  ]){
+   await skill(rootId);
+   const chain=page.locator('.wiki-page .wiki-skill-source-chain').first();
+   assert.deepEqual(await chain.locator('a.wiki-link').evaluateAll(anchors=>
+    anchors.map(a=>a.getAttribute('href'))),
+    expected.map(id=>'#wiki/skill/'+id));
+   assert.match(await chain.innerText(),/Попадание:/);
+   assert.equal(await page.locator('.wiki-page .wiki-skill-source-insight').count(),1);
+  }
+  await skill(410026001);
+  assert.deepEqual(await page.locator('.wiki-page .wiki-skill-source-chain').nth(1)
+   .locator('a.wiki-link').evaluateAll(anchors=>anchors.map(a=>a.getAttribute('href'))),
+   ['#wiki/skill/410026001','#wiki/skill/410026002','#wiki/skill/410026003']);
   await skill(340003001);
   const peace=page.locator('.wiki-page .wiki-skill-source-chain').first();
   assert.deepEqual(await peace.locator('a.wiki-link').evaluateAll(anchors=>
@@ -152,6 +170,18 @@ export async function runWikiMaterialLinks752Smoke(browser,base){
   assert.match(await poisonEn.innerText(),/Requires: 1 × Venom/);
   assert.equal(await poisonEn.locator('a.wiki-link').getAttribute('href'),
    '#wiki/item/50056');
+  for(const [rootId,expected] of [
+   [213608001,[213608001,213608002]],
+   [330061001,[330061001,330061002]],
+   [410026001,[410026001,410026002,410026004]]
+  ]){
+   await skill(rootId);
+   const links=page.locator('.wiki-page .wiki-skill-source-chain').first();
+   assert.deepEqual(await links.locator('a.wiki-link').evaluateAll(a=>
+    a.map(x=>x.getAttribute('href'))),
+    expected.map(id=>'#wiki/skill/'+id));
+   assert.match(await links.innerText(),/Hit:/);
+  }
   for(const [rootId,areaId,finalId] of [
    [340001001,340001002,340001003],
    [340001004,340001005,340001006],

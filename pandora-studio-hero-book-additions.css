@@ -491,8 +491,11 @@
  max-width:100%;overflow-wrap:anywhere}
 .path-skill-lineage-link:hover{text-decoration:underline;color:#ffe1ad}
 .path-skill-lineage-link:focus-visible{outline:2px solid #ffe1ad;outline-offset:2px;border-radius:2px}
-.path-skill-previous-value[role="link"]{cursor:pointer;text-decoration:underline;text-underline-offset:2px}
-.path-skill-previous-value[role="link"]:focus-visible{outline:2px solid #ffe1ad;outline-offset:2px}
+button.path-skill-previous-value{appearance:none;background:none;border:0;
+ box-shadow:none;padding:0;color:inherit;font:inherit;text-align:left;
+ cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+button.path-skill-previous-value:hover{color:#ffe1ad}
+button.path-skill-previous-value:focus-visible{outline:2px solid #ffe1ad;outline-offset:2px}
 
 /* Book 0.764: the calculated skill name opens its full Encyclopedia article.
    One inline control replaces the ordinary label, no extra button or card. */
