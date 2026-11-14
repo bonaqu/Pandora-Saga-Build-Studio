@@ -67,7 +67,7 @@ test('The Hero Book never adds item crafting or undecided multi-hit totals',()=>
  const book=read('pandora-studio-hero-book.js');
  const app=read('pandora-studio-app.js');
  const path=read('pandora-studio-hero-path.js');
- assert.match(book,/supportedSkillHits/);
+ assert.match(app,/PandoraOSTargetDamage\?\.supportedSkillHits/);
  assert.doesNotMatch(book,/stage-material-actions|function materialSkillResults\(/);
  assert.match(app,/evidence\.pathKind==='damage'/);
  assert.match(path,/make\(canNavigate\?'button':'span'/);
