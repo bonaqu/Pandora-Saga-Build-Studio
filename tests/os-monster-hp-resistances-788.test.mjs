@@ -98,8 +98,9 @@ test('Penetrating equipment is retained when neutralizing ONLY one target resist
  assert.equal(hit.itemPenetration,28);
  const baseline=trap({targetMonsterId:11104});
  assert.ok(hit.average>baseline.average);
- assert.ok(hit.targetElementResistanceAverageImpact!==baseline.targetElementResistanceAverageImpact,
-  'Source penetration can change the marginal effect with OS rounding');
+ assert.equal(hit.targetElementResistanceAverageImpact,
+  hit.average-trap(withEditedTarget(options,m=>{m.resists.fire=0;})).average,
+  'The element delta is a real replay with the same active penetration');
 });
 test('Current D1 maximum life changes only the HP ratio; current hit damage is not a monster-HP formula',()=>{
  const before=trap({targetMonsterId:11104});
