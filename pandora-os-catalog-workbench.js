@@ -155,6 +155,8 @@
       action(archive,'archiveButton','Сверить с сохранённой копией','Compare saved snapshot')
     ]);
     const acceptAll = h('button', {type:'button',class:'button-action',text:'Выбрать понятные изменения',disabled:true});
+    const acceptEvery = h('button', {type:'button',class:'button-action os-sync-bulk-all',
+      text:'Выбрать все игровые изменения',disabled:true});
     const declineAll = h('button', {type:'button',class:'button-action',text:'Снять весь выбор',disabled:true});
     const exportButton = h('button', {type:'button',class:'button-action',
       text:'Скачать выбранное для GitHub',disabled:true});
@@ -209,6 +211,7 @@
     const diagnosticText=h('p',{class:'muted'});
     diagnostic.append(diagnosticText);
     const results = h('div', {class:'os-sync-results'});
+    const selectionGuidance=h('p',{class:'os-sync-selection-guidance',role:'status'});
     const reviewSteps=h('section',{class:'os-sync-review-steps'});
     reviewSteps.hidden=true;
     reviewSteps.append(
@@ -217,9 +220,10 @@
        'Compare old and new game values, then select only verified changes. Unknown parameters and technical metadata are never selected automatically.'),
       h('div',{class:'os-sync-review-actions'},[
        action(acceptAll,'acceptAllButton','Выбрать понятные изменения','Select understood changes'),
+       action(acceptEvery,'acceptEveryButton','Выбрать все игровые изменения','Select all game changes'),
        action(declineAll,'declineAllButton','Снять весь выбор','Clear selection'),
        action(publish,'publishButton','Применить выбранные изменения','Publish selected changes')
-      ])
+      ]),selectionGuidance
     );
     const formattingToggle=h('input',{type:'checkbox',disabled:true,
       'aria-label':copy('formattingAria','Синхронизировать переносы игровых описаний','Synchronize game description line breaks')});
@@ -302,6 +306,9 @@
       [acceptAll,'hintAcceptAll',
        'Выбрать только изменения, которые удалось расшифровать, исключив непонятные параметры и служебные сведения. Это не публикация.',
        'Select only explained changes, excluding unknown parameters and technical metadata. This does not publish anything.'],
+      [acceptEvery,'hintAcceptEvery',
+       'Выбрать все игровые изменения, включая удаления, ссылки и сложные параметры. Для спорных записей потребуется отдельное подтверждение. Служебные настройки остаются для ручного выбора. Переносы из текущей игры тоже включаются.',
+       'Select every game change, including removals, links, and complex fields. Ambiguous entries require an additional confirmation. Technical settings remain manual; live source line breaks are included.'],
       [declineAll,'hintDeclineAll',
        'Снять галочки со всех изменений. Уже опубликованный каталог D1 останется прежним.',
        'Clear every selection. The published D1 catalog remains unchanged.'],
@@ -409,7 +416,8 @@
       formattingCountLabel.textContent=formattingCount?' · '+formattingCount:'';
       // Preserve editing controls and the D1-authored explanatory copy.
       // Dynamic counts live in the labels and never become editable text.
-      acceptAll.disabled = busy || !changes.some(safe);
+      acceptAll.disabled = busy || !changes.some(row=>safe(row)&&!chosen.has(row.id));
+      acceptEvery.disabled = busy || !changes.some(row=>!describe(row).service&&!chosen.has(row.id));
       declineAll.disabled = busy || !changes.length;
       publish.disabled = !ready;
       exportButton.disabled = !ready;
@@ -452,6 +460,16 @@
         if(label)label.textContent=count+' / '+total+tr(' выбрано',' selected');
       }
       const service=changes.filter(row=>describe(row).service).length;
+      const gameChanges=changes.filter(row=>!describe(row).service);
+      const acceptedGame=gameChanges.filter(row=>chosen.has(row.id)).length;
+      const remainingGame=gameChanges.length-acceptedGame;
+      const cautionSelected=gameChanges.filter(row=>chosen.has(row.id)&&describe(row).uncertain).length;
+      selectionGuidance.textContent=tr('Игровых изменений выбрано: ','Selected game changes: ')+
+        acceptedGame+' / '+gameChanges.length+
+        (remainingGame?tr(' · Осталось: ',' · Remaining: ')+remainingGame:'')+
+        (cautionSelected?tr(' · Требуют проверки: ',' · Need review: ')+cautionSelected:'')+
+        (service?tr(' · Настройки отдельно: ',' · Settings separate: ')+service:'')+
+        (mode==='server'&&formattingToggle.checked?tr(' · Переносы строк включены',' · Source line breaks included'):'');
       summary.textContent = changes.length
         ? tr('Найдено изменений: ','Changes found: ')+changes.length+
           (service?tr(' · Служебных: ',' · Technical: ')+service:'')+
@@ -482,8 +500,9 @@
           field.beforeFull??field.before,field.afterFull??field.after
         ])
       ].map(readable).join(' ').toLocaleLowerCase();
-      searchCache.set(change.id,text);
-      return text;
+      const normalized=text.replaceAll('ё','е');
+      searchCache.set(change.id,normalized);
+      return normalized;
     }
     function setChoice(change, value) {
       if (busy) return;
@@ -695,7 +714,7 @@
 
     function render() {
       results.replaceChildren();
-      const query = search.value.trim().toLocaleLowerCase();
+      const query = search.value.trim().toLocaleLowerCase().replaceAll('ё','е');
       // The review uses the main modal's scrollbar, not a nested list.
       const scrollHost=view.closest('.modal')||results;
       const scrollBefore=scrollHost.scrollTop;
@@ -761,7 +780,8 @@
           const description=describe(change);
           const hasLinks=description.rows.some(field=>field.linkChanged);
           const visuallySame=description.rows.some(field=>field.sameVisible);
-          const row = h('article',{class:'os-sync-record'+(description.uncertain?' os-sync-review-caution':'')});
+          const row = h('article',{class:'os-sync-record'+(checked(change)?' os-sync-record-selected':'')+
+            (description.uncertain?' os-sync-review-caution':'')});
           const helper=h('small',{class:'os-sync-review-level',
             text:description.service?tr('Служебные данные · ручная проверка','Technical data · manual review'):
               hasLinks?tr('Игровая ссылка · требуется ручная проверка','Game link · manual review'):
@@ -776,7 +796,10 @@
           const input = h('input',{type:'checkbox',checked:checked(change),disabled:busy,
             'aria-label':tr('Выбрать изменение ','Select change ')+description.title+
               (hasLinks||visuallySame?tr(' — требуется отдельная проверка',' — requires separate review'):'')});
-          input.addEventListener('change',()=>setChoice(change,input.checked));
+          input.addEventListener('change',()=>{
+            setChoice(change,input.checked);
+            row.classList.toggle('os-sync-record-selected',input.checked);
+          });
           const indicator = change.kind==='added'?tr('Добавлено','Added'):
             change.kind==='removed'?tr('Удалено','Removed'):tr('Изменено','Changed');
           row.append(h('label',{class:'os-sync-record-label'},[
@@ -1033,6 +1056,8 @@
       if(!Array.isArray(legacyRows)||legacyRows.length!==normalized.counts.legacyLocale)
         throw Error('Published D1 translation count changed during review');
       normalized.entries.legacyLocale=legacyRows; // Preserve exact IDs, payloads and source attribution.
+      review.auditSelection(baseline,upstream,combined,chosen,importer.files,
+        {syncRussianInstances});
       return {combined,normalized};
     }
 
@@ -1052,12 +1077,16 @@
     };
 
     publish.onclick=async()=>{
+      if(busy)return;
+      let publishingSnapshot=null;
       let staged;
       try{staged=prepare()}catch(error){status.textContent='Нельзя публиковать: '+error.message;return}
       const added=changes.filter(x=>checked(x)&&x.kind==='added').length;
       const changed=changes.filter(x=>checked(x)&&x.kind==='changed').length;
       const removed=changes.filter(x=>checked(x)&&x.kind==='removed').length;
       const uncertain=changes.filter(x=>checked(x)&&describe(x).uncertain).length;
+      const notSelectedGame=changes.filter(x=>!checked(x)&&!describe(x).service).length;
+      const unselectedSettings=changes.filter(x=>!checked(x)&&describe(x).service).length;
       const formatted=mode==='server'&&formattingToggle.checked?formattingCount:0;
       const ruCount=mode==='server'&&russianToggle.checked?verifiedRussian.length:0;
       const sourceWarning=mode==='archive'
@@ -1082,6 +1111,8 @@
       if (!confirm('Применить выбранные изменения игрового каталога?\n'+
         'Новых: '+added+'; изменённых: '+changed+'; удалённых: '+removed+
         '; переносов описаний: '+formatted+'; русских описаний: '+ruCount+'.'+
+        (notSelectedGame?'\nНЕ будут применены игровые изменения: '+notSelectedGame+'.':'')+
+        (unselectedSettings?'\nОтдельно не выбраны настройки каталога: '+unselectedSettings+'.':'')+
         sourceWarning+(ruCount?'\nРусские описания — проверенная копия проекта, не текст игрового JSON.':'')+
         uncertainWarning+atomicWarning+impactPreview+otherPreview+
         '\n\nОбновляется ТОЛЬКО сайт Build Studio (D1), не сервер игры. '+
@@ -1092,6 +1123,7 @@
         if (current.active!==activeSnapshot) throw Error('D1 обновлена после проверки. Сверь данные заново.');
         await request('/api/admin/catalog/initialize',{});
         const snapshot='ps-'+crypto.randomUUID().replaceAll('-','');
+        publishingSnapshot=snapshot;
         if(!/^[a-z0-9-]{8,64}$/.test(snapshot))
           throw Error('Не удалось подготовить новую версию каталога');
         const prepared=staged.normalized;
@@ -1115,11 +1147,17 @@
         }
         const result=await request('/api/admin/catalog/publish',{
           snapshot,extraCounts:prepared.extraCounts,expectedActive:activeSnapshot});
-        // The server has already committed this snapshot: never report a rollback
-        // if a subsequent local UI refresh fails.
-        status.textContent='Изменения опубликованы в каталоге Build Studio (D1: '+result.active+'). Игровой сервер не изменён. '+
+        // A read-back confirms the active version; a failed read-back is not rollback.
+        let confirmed=false;
+        try{
+          const observed=await request('/api/admin/catalog/status',{});
+          confirmed=observed.active===result.active;
+        }catch{}
+        status.textContent='Изменения опубликованы в каталоге Build Studio (D1: '+result.active+'). '+
+          (confirmed?'Активная версия повторно проверена. ':
+            'Ответ публикации получен, повторная проверка версии недоступна. ')+
           (ruCount?'Проверенные русские описания добавлены. ':'')+
-          'GitHub не изменён.';
+          'Игровой сервер и GitHub не изменены.';
         publishedSnapshot=result.active;
         chosen.clear();changes=[];baseline=null;upstream=null;
         refreshActions();
@@ -1130,10 +1168,27 @@
             error.message+'. Обнови страницу вручную.';
         }
       }catch(error){
+        // A lost publish response is ambiguous: inspect D1 before any retry.
+        if(publishingSnapshot){
+          try{
+            const observed=await request('/api/admin/catalog/status',{});
+            if(observed.active===publishingSnapshot){
+              publishedSnapshot=observed.active;
+              chosen.clear();changes=[];baseline=null;upstream=null;
+              refreshActions();
+              status.textContent='Каталог опубликован (D1: '+observed.active+
+                '). Ответ потерялся, но активная версия подтверждена. GitHub не изменён.';
+              try{await afterPublish()}catch(refreshError){
+                status.textContent+=' Обнови страницу вручную: '+refreshError.message;
+              }
+              return;
+            }
+          }catch{}
+        }
         status.textContent=error.httpStatus===401
-          ? 'Сеанс администратора истёк. Выполни вход заново; D1 не переключена.'
-          : 'Не удалось подтвердить публикацию: '+error.message+
-              '. Проверь состояние D1 перед повторной попыткой.';
+          ? 'Сеанс администратора истёк. Проверь активную версию D1 после повторного входа.'
+          : 'Не удалось завершить обновление: '+error.message+
+             '. Данные могли остаться прежними или уже обновиться. Сначала проверь каталог заново; не применяй тот же набор вслепую.';
       }finally{setBusy(false)}
     };
 
@@ -1214,8 +1269,34 @@
     archive.onclick=()=>{root.PandoraGuideTooltip?.dismiss();compare('archive')};
     formattingToggle.addEventListener('change',refreshActions);
     russianToggle.addEventListener('change',refreshActions);
-    acceptAll.onclick=()=>{chosen=new Set(changes.filter(safe).map(item=>item.id));render()};
-    declineAll.onclick=()=>{chosen.clear();render()};
+    acceptAll.onclick=()=>{
+      if(busy)return;
+      for(const item of changes.filter(safe))chosen.add(item.id);
+      render();
+    };
+    acceptEvery.onclick=()=>{
+      if(busy||!baseline)return;
+      const game=changes.filter(item=>!describe(item).service);
+      const pending=game.filter(item=>!chosen.has(item.id));
+      const uncertain=pending.filter(item=>describe(item).uncertain);
+      const removals=pending.filter(item=>item.kind==='removed');
+      if(!pending.length&&!(mode==='server'&&formattingCount&&!formattingToggle.checked))return;
+      if(uncertain.length&&!confirm(
+        'Выбрать все '+game.length+' игровых изменений?\n'+
+        'Среди ещё не выбранных: '+uncertain.length+' требуют ручной проверки, '+
+        removals.length+' удалений.\n'+
+        'Проверь изменённые связи, игровые формулы и непонятные параметры до публикации.\n'+
+        'Служебные настройки выбираются отдельно. Это только выбор, D1 пока не меняется.'))return;
+      for(const item of game)chosen.add(item.id);
+      if(mode==='server'&&formattingCount)formattingToggle.checked=true;
+      render();
+      status.textContent=tr('Игровые изменения выбраны. Проверь предупреждения, затем нажми «Применить выбранные изменения».',
+        'Game changes selected. Review warnings, then publish selected changes.');
+    };
+    declineAll.onclick=()=>{
+      if(busy)return;
+      chosen.clear();formattingToggle.checked=false;russianToggle.checked=false;render();
+    };
     search.addEventListener('input',render);
     refreshActions();
     modal(copy('title','Обновление игрового каталога','Game catalog updates'),view);
