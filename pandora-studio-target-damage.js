@@ -14,11 +14,14 @@ const n=v=>Number.isSafeInteger(v)&&v>=0;
 // The encyclopedia and current hero must use the SAME D1 Ogre snapshot.
 // Standalone historical test fixtures may omit it; the live Hero Book always
 // supplies a snapshot and fails closed if its monster data is unavailable.
-function ogreFromSource(monsters,englishMonsters){
- if(monsters===undefined)return target;
+function monsterFromSource(monsters,englishMonsters,requestedId=target.id){
+ if(!Number.isSafeInteger(requestedId)||requestedId<1)return null;
+ // Historical standalone fixtures keep their verified Ogre baseline;
+ // a user-selected monster never silently falls back to another target.
+ if(monsters===undefined)return requestedId===target.id?target:null;
  if(!monsters||typeof monsters!=='object'||Array.isArray(monsters))return null;
- const row=monsters[String(target.id)],resists=row?.resists;
- if(row?.id!==target.id||typeof row.name!=='string'||!row.name.trim()||
+ const row=monsters[String(requestedId)],resists=row?.resists;
+ if(row?.id!==requestedId||typeof row.name!=='string'||!row.name.trim()||
   !n(row.level)||row.level<1||row.level>999||
   !n(row.life)||row.life<1||!n(row.vit)||!n(row.spi)||
   !n(row.ac)||!n(row.magicProtection)||
@@ -30,15 +33,29 @@ function ogreFromSource(monsters,englishMonsters){
   if(!Number.isSafeInteger(value)||Math.abs(value)>1000)return null;
   checked[key]=value;
  }
- const english=englishMonsters?.[String(target.id)]?.n;
+ const english=englishMonsters?.[String(requestedId)]?.n;
  return {
   id:row.id,name:row.name,nameEn:typeof english==='string'&&english.trim()?
-   english.trim():target.nameEn,
+   english.trim():requestedId===target.id?target.nameEn:row.name,
   level:row.level,life:row.life,vit:row.vit,spi:row.spi,
   ac:row.ac,magicProtection:row.magicProtection,
   ...(row.lvMod!=null?{lvMod:row.lvMod}:{}),
   resists:checked
  };
+}
+// Only validated monsters from the same published D1/archive snapshot may
+// become selectable targets. An edited or incomplete row must not result in
+// a misleading combat preview or an unusable picker entry.
+function availableMonsterTargets({monsters,englishMonsters}={}){
+ if(!monsters||typeof monsters!=='object'||Array.isArray(monsters))return [];
+ const out=[];
+ for(const key of Object.keys(monsters)){
+  const id=Number(key);
+  if(!Number.isSafeInteger(id)||id<1||String(id)!==key)continue;
+  const row=monsterFromSource(monsters,englishMonsters,id);
+  if(row)out.push({id:row.id,name:row.name,nameEn:row.nameEn,level:row.level});
+ }
+ return out;
 }
 const trunc=Math.trunc;
 const floor=Math.floor;
@@ -1668,7 +1685,8 @@ function elementalHit(options={},spec=null,shared=null){
  const {skillCatalog,classes,jobKey,level,masteries={},
   branchCaps={},stats={},equipment=[],tables={},itemForth={},unison={},
   modifiers=null}=options;
- const ogre=shared?shared.ogre:ogreFromSource(options.monsters,options.englishMonsters);
+ const ogre=shared?shared.ogre:monsterFromSource(options.monsters,
+   options.englishMonsters,options.targetMonsterId);
  if(!ogre)return null;
  const isTrap=!spec,isLinked=!!spec?.path,skill=isTrap?
   sourceSkill(skillCatalog,classes,jobKey,level,masteries.trap,branchCaps):
@@ -1839,7 +1857,8 @@ function crawlingTrap(options={}){return elementalHit(options);}
 function supportedSkillHits(options={}){
  // Reuse a single D1 target and equipment/Soul/Forth/Unison snapshot
  // for one current-build refresh, never across changes to a build.
- const shared={ogre:ogreFromSource(options.monsters,options.englishMonsters),
+ const shared={ogre:monsterFromSource(options.monsters,options.englishMonsters,
+    options.targetMonsterId),
   equipmentEffects:equippedElementalEffects(options)};
  if(!shared.ogre||!shared.equipmentEffects)return [];
  const hits=[],trap=elementalHit(options,null,shared);
@@ -1851,7 +1870,7 @@ function supportedSkillHits(options={}){
  return hits;
 }
 root.PandoraOSTargetDamage=Object.freeze({crawlingTrap,supportedSkillHits,
- nextMagicConcentrationPreview,
+ availableMonsterTargets,nextMagicConcentrationPreview,
  directSpells,linkedSpells,equippedElementalEffects,
  monsterLevelModifier,roundEven:even,target});
 })(typeof window==='undefined'?globalThis:window);

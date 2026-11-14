@@ -1819,6 +1819,12 @@ function renderStageAttributes(calculated=undefined){
  const ogreMonsters=activeOgreSource();
  if(stageAttributesPage==='effects'&&!ogreMonsters)
   void ensureOgreSource();
+ const targetMonsterChoices=stageAttributesPage==='effects'&&ogreMonsters?
+  currentDamageTargetChoices(ogreMonsters):[];
+ // If the selected monster was removed from a new D1 snapshot, do not
+ // silently replace it with Ogre data: keep its ID and show no hit until
+ // the player explicitly chooses another current target.
+ const activeDamageTargetId=selectedDamageTargetId;
  const targetSkillDamages=stageAttributesPage==='effects'&&ogreMonsters?
   window.PandoraOSTargetDamage?.supportedSkillHits({
    skillCatalog:skillMap,classes:catalog.classes||{},jobKey:cls,
@@ -1827,11 +1833,17 @@ function renderStageAttributes(calculated=undefined){
    stats:bookModifiers?.stats,equipment:items,tables:gameTables,
    itemForth:gameItemForth,unison:catalogSource?.unison||{},
    monsters:ogreMonsters,englishMonsters:officialEnglish?.monsters||null,
-   modifiers:bookModifiers,
+   targetMonsterId:activeDamageTargetId,modifiers:bookModifiers,
    nextMagicConcentration:state.attributeBuffs?.nextMagicConcentration===true
   })||[]:[];
  window.PandoraStageAttributes.render(root,{
   page:stageAttributesPage,items,targetSkillDamages,nextMagicConcentrationPreview,
+  targetMonsterId:activeDamageTargetId,targetMonsterChoices,
+  onTargetMonster:id=>{
+   if(!targetMonsterChoices.some(row=>row.id===id))return;
+   selectedDamageTargetId=id;
+   refreshOpenHeroBook();
+  },
   skillIconForId:id=>{
    const record=skillMap[String(id)];
    return record?skillIcon(record.branch,id,record):null;
@@ -9491,6 +9503,22 @@ let activeCatalogSnapshot=null,catalogLoadVersion=0;
 // is only needed when the player opens damage results in the Hero Book.
 let ogreSourceData=null,ogreSourceDataKey=null,ogreSourceRequest=null,
  ogreSourceTriedKey=null;
+// The selected damage target is a Book-only view preference, not a build
+// attribute and never written to saved character or account records.
+let selectedDamageTargetId=22104,damageTargetChoiceSource=null,
+ damageTargetChoiceEnglish=null,damageTargetChoices=[];
+function currentDamageTargetChoices(monsters){
+ const englishMonsters=officialEnglish?.monsters||null;
+ if(monsters!==damageTargetChoiceSource||
+  englishMonsters!==damageTargetChoiceEnglish){
+  damageTargetChoiceSource=monsters;
+  damageTargetChoiceEnglish=englishMonsters;
+  damageTargetChoices=window.PandoraOSTargetDamage?.availableMonsterTargets({
+   monsters,englishMonsters
+  })||[];
+ }
+ return damageTargetChoices;
+}
 function ogreSourceKey(){return catalogArchived?'archive':activeCatalogSnapshot}
 function activeOgreSource(){
  const key=ogreSourceKey();

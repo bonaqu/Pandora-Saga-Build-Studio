@@ -1360,8 +1360,34 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
  remakedBuffRows=[],availability={},combatSkillCards={},
  heroJobKey=null,heroLevel=1,heroMasteries={},heroBranchCaps={},
  heroWeaponKind='BARE_HAND',heroHasShield=false,
- targetSkillDamage=null,targetSkillDamages=[],onItem=()=>{},onSkill=null}={}){
+ targetSkillDamage=null,targetSkillDamages=[],
+ targetMonsterId=22104,targetMonsterChoices=[],onTargetMonster=()=>{},
+ onItem=()=>{},onSkill=null}={}){
  const en=document.documentElement?.lang==='en';
+ // One native, keyboard-accessible selector; no new card and no change to
+ // the hero's build. The target list comes from the current D1 snapshot.
+ if(Array.isArray(targetMonsterChoices)&&targetMonsterChoices.length){
+  const row=make('label',{class:'stage-book-field stage-book-damage-target'},[
+   make('span',{text:en?'Damage target':'Цель удара'})
+  ]);
+  const choice=make('select',{'data-book-setting':'damageTarget',
+   'aria-label':en?'Choose a monster for skill damage':'Выбрать монстра для расчёта урона',
+   onchange:event=>onTargetMonster(Number(event.target.value))});
+  const sorted=[...targetMonsterChoices].sort((a,b)=>
+   (en?a.nameEn:a.name).localeCompare(en?b.nameEn:b.name,en?'en':'ru')||
+   a.level-b.level||a.id-b.id);
+  const targetAvailable=sorted.some(monster=>monster.id===targetMonsterId);
+  if(!targetAvailable)choice.append(make('option',{value:'',disabled:true,
+   selected:true,text:en?'Choose a monster':'Выберите монстра'}));
+  for(const monster of sorted){
+   choice.append(make('option',{value:String(monster.id),
+    text:(en?monster.nameEn:monster.name)+' · '+
+     (en?'Lv ':'ур. ')+monster.level}));
+  }
+  choice.value=targetAvailable?String(targetMonsterId):'';
+  row.append(choice);
+  body.append(row);
+ }
  const gates=root.PandoraBookSkillThresholds;
  const healingNumber=new Intl.NumberFormat(en?'en-US':'ru-RU',
   {maximumFractionDigits:2});
@@ -1576,7 +1602,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     410002001,430053001,240002001,410014001,410014003,
     410022001,420007001,430001003,430052002,430053003,
     430056001,213608001].includes(id)||
-   seenHits.has(id)||result.monsterId!==22104||
+   seenHits.has(id)||result.monsterId!==targetMonsterId||
    source?.id!==id||source.classes?.[heroJobKey]!==1||
    !Number.isSafeInteger(mastery)||mastery<required||
    !Number.isSafeInteger(heroBranchCaps?.[branch])||
@@ -2512,7 +2538,9 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
  combatSkillCards={},resistanceSkillChoices=[],remakedBuffRows=[],
  heroJobKey=null,heroLevel=1,heroMasteries={},heroBranchCaps={},
  heroWeaponKind='BARE_HAND',heroHasShield=false,
- targetSkillDamage=null,targetSkillDamages=[],nextMagicConcentrationPreview=null,itemById=()=>null,onItem=()=>{},onSkill=null,gameTerms={},
+ targetSkillDamage=null,targetSkillDamages=[],nextMagicConcentrationPreview=null,
+ targetMonsterId=22104,targetMonsterChoices=[],onTargetMonster=()=>{},
+ itemById=()=>null,onItem=()=>{},onSkill=null,gameTerms={},
  copy={},onTextEdit=null,canEdit=false,onHonor=()=>{}}={}){
  root.PandoraGuideTooltip?.dismiss();
  // Keep the same scrolling pane mounted on ordinary value changes: re-attaching
@@ -2620,7 +2648,8 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
   gameTerms,remakedBuffRows,skillIconForId,nextMagicConcentrationPreview,...copyOptions});
  if(chosen==='effects')skillEffectsPage(body,{modifiers,gameTerms,skillIconForId,
   remakedBuffRows,availability,combatSkillCards,heroJobKey,heroLevel,heroMasteries,
-   heroBranchCaps,heroWeaponKind,heroHasShield,targetSkillDamage,targetSkillDamages,onItem,onSkill});
+   heroBranchCaps,heroWeaponKind,heroHasShield,targetSkillDamage,targetSkillDamages,
+   targetMonsterId,targetMonsterChoices,onTargetMonster,onItem,onSkill});
  if(chosen==='recovery'){
   const english=document.documentElement?.lang==='en';
   const percent=modifiers?.potion?.percent;
