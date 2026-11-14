@@ -62,7 +62,19 @@ export async function runHeroBookMonsterPicker785Smoke(browser,base){
   assert.equal(await select.inputValue(),'22104');
   assert.match(await page.locator('#monster-785-qa .stage-target-damage-row strong').first().textContent(),
    /Гигантский огр.*34–194 ОЗ/);
+  const search=page.locator('#monster-785-qa .stage-book-target-search');
+  assert.equal(await search.count(),1);
+  await search.fill('дИНгО');
+  assert.ok(await select.locator('option').count()<35,
+   'The 702-monster native list must narrow immediately without re-render');
+  assert.equal(await select.inputValue(),'22104',
+   'Typing must not change the current target or its damage');
+  assert.equal(await page.locator('#monster-785-qa .stage-target-damage-row').count(),2);
   await select.selectOption('11104');
+  assert.equal(await search.inputValue(),'дИНгО',
+   'Search remains after the hit is recalculated');
+  await search.fill('');
+  assert.equal(await select.locator('option').count(),702);
   assert.equal(await page.evaluate(()=>window.__monster785.selected()),11104);
   assert.equal(await select.inputValue(),'11104');
   const russian=await page.locator('#monster-785-qa .stage-target-damage-row strong').first().textContent();
