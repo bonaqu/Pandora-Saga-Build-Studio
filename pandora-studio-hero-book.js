@@ -1743,6 +1743,26 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
       hitResult.targetNameEn+': '+hitResult.average+' HP':
      (partial?'Средний прямой урон по цели «':'Средний урон по цели «')+
       hitResult.targetName+'»: '+hitResult.average+' ОЗ'}));
+    // One current-hit packet relative to the selected D1 monster's FULL
+    // health, not a time-to-kill or a claim about guaranteed hit chances.
+    if(Number.isSafeInteger(hitResult.targetMaxLife)&&
+     hitResult.targetMaxLife>0&&
+     Number.isFinite(hitResult.targetAverageLifePercent)&&
+     hitResult.targetAverageLifePercent>=0){
+     const pct=hitResult.targetAverageLifePercent;
+     const ratio=pct>0&&pct<0.005?
+      (en?'<0.01%':'<0,01%'):
+      new Intl.NumberFormat(en?'en-US':'ru-RU',{
+       maximumFractionDigits:2
+      }).format(pct)+'%';
+     const fullLife=new Intl.NumberFormat(en?'en-US':'ru-RU')
+      .format(hitResult.targetMaxLife);
+     more.append(make('small',{class:'stage-target-damage-stats',
+      text:en?
+       'Average hit: '+ratio+' of target full HP ('+fullLife+')':
+       'Средний удар: '+ratio+' от полного запаса ОЗ цели ('+fullLife+')'
+     }));
+    }
     const statLabel=en?
      {str:'STR',dex:'DEX',int:'INT',spi:'SPI'}:
      {str:'СИЛ',dex:'ЛВК',int:'ИНТ',spi:'СД'};
@@ -1851,8 +1871,13 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
      targetImpacts.push((en?enLabel:ru)+': '+
       (value>0?'+':'')+value+(en?' HP':' ОЗ'));
     };
-    addTargetImpact(hitResult.targetResistanceAverageImpact,
-     'Сопротивления цели','Target resistances');
+    // Separate elemental/magic comparisons. They share OS rounding but
+    // never get summed into the old combined resistance delta.
+    addTargetImpact(hitResult.targetElementResistanceAverageImpact,
+     'Сопр. '+(schoolRu[hitResult.element]||hitResult.element),
+     (schoolEn[hitResult.element]||hitResult.element)+' resistance');
+    addTargetImpact(hitResult.targetMagicResistanceAverageImpact,
+     'Сопр. магии','Magic resistance');
     addTargetImpact(hitResult.targetAbsorptionAverageImpact,
      'СД и маг. защита цели','Target SPI and magic defense');
     addTargetImpact(hitResult.targetLevelAverageImpact,
