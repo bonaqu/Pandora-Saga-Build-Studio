@@ -582,7 +582,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   assert.match(spellBook.en[0].details,/Magic Knowledge: \+6 HP to average hit/);
   assert.match(spellBook.ru[0].details,/ИНТ 80.*Магия стихий 50/);
   assert.match(spellBook.ru.find(row=>row.text.includes('Ядовитый удар'))?.details||'',/СД 50.*Магия тьмы 25/);
-  assert.match(spellBook.en.find(row=>row.text.includes('Blood Drain'))?.details||'',/Average hit against.*48 HP/);
+  assert.match(spellBook.en.find(row=>row.text.includes('Blood Drain'))?.details||'',/Average hit against.*60 HP/);
   assert.equal(spellBook.expanded.length,12);
   assert.equal(spellBook.expandedRu.length,12);
   assert.equal(spellBook.expandedEn.length,12);
@@ -591,14 +591,14 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   assert.equal(spellBook.expandedRu.filter(x=>x.text.includes('Песчаный вихрь')).length,1);
   assert.equal(spellBook.expandedEn.filter(x=>x.text.includes('Sandstorm')).length,1);
   const fireRow=spellBook.ru.find(row=>row.text.includes('Огненная буря'));
-  assert.match(fireRow?.main||'',/прямой удар 10–61 ОЗ/);
-  assert.match(fireRow?.details||'',/Средний прямой урон по цели.*46 ОЗ/);
+  assert.match(fireRow?.main||'',/прямой удар 13–76 ОЗ/);
+  assert.match(fireRow?.details||'',/Средний прямой урон по цели.*57 ОЗ/);
   const rotRow=spellBook.expandedRu.find(row=>row.text.includes('Гниение'));
-  assert.match(rotRow?.main||'',/прямой удар 3–30 ОЗ/);
-  assert.match(rotRow?.details||'',/Средний прямой урон по цели.*19 ОЗ/);
+  assert.match(rotRow?.main||'',/прямой удар 5–38 ОЗ/);
+  assert.match(rotRow?.details||'',/Средний прямой урон по цели.*25 ОЗ/);
   const rotEn=spellBook.expandedEn.find(row=>row.text.includes('Mind Venom'));
-  assert.match(rotEn?.main||'',/direct hit 3–30 HP/);
-  assert.match(rotEn?.details||'',/Average direct hit against.*19 HP/);
+  assert.match(rotEn?.main||'',/direct hit 5–38 HP/);
+  assert.match(rotEn?.details||'',/Average direct hit against.*25 HP/);
   assert.equal(spellBook.expandedRu.some(x=>x.text.includes('Неотвратимый взрыв')),false);
   // Level-45 Calamity gets an upgraded area attack of the same name.
   // The real Book must show its upgraded version only once per skill.
@@ -626,7 +626,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   assert.equal(spellBook.conjurerRu.filter(x=>x.text.includes('Песчаная буря')).length,1);
   assert.equal(spellBook.conjurerEn.filter(x=>x.text.includes('Summon Sandman')).length,1);
   assert.match(spellBook.conjurerRu.find(x=>x.text.includes('Песчаная буря'))?.main||'',
-   /прямой удар 5–27 ОЗ/);
+   /прямой удар 6–34 ОЗ/);
   assert.doesNotMatch(spellBook.expandedRu.map(row=>row.text).join(' '),
    /материал|рецепт|изготовлени/i);
 

@@ -1626,7 +1626,9 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    const hitResult=skill.damageAgainstEnemy;
    const amount=hitResult?
     (en?hitResult.targetNameEn:hitResult.targetName)+' · '+
-     (hitResult.hitKind==='direct-part'?
+     (hitResult.hitKind==='trap-one'?
+      (en?'one trap ':'одна ловушка '):
+      hitResult.hitKind==='direct-part'?
       (en?'direct hit ':'прямой удар '):'')+
      hitResult.min+'–'+hitResult.max+' '+(en?'HP':'ОЗ'):
     Number.isFinite(skill.amount)?
@@ -1686,6 +1688,20 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
      ].join(' · ');
     more.append(make('small',{class:'stage-target-damage-stats',
      text:statsLine}));
+    // The source explicitly places two Worm Bomb traps. This additional
+    // current-build result is ONLY for two separate same-target triggers.
+    if(hitResult.hitKind==='trap-one'&&hitResult.triggerCount===2&&
+     Number.isSafeInteger(hitResult.min*2)&&
+     Number.isSafeInteger(hitResult.average*2)&&
+     Number.isSafeInteger(hitResult.max*2)){
+     const bothMin=hitResult.min*2,bothAverage=hitResult.average*2;
+     const bothMax=hitResult.max*2;
+     more.append(make('small',{class:'stage-target-damage-stats',text:en?
+      'If both traps hit the same target: '+bothMin+'–'+bothMax+
+       ' HP · average '+bothAverage+' HP':
+      'Если обе ловушки попали в одну цель: '+bothMin+'–'+bothMax+
+       ' ОЗ · среднее '+bothAverage+' ОЗ'}));
+    }
     // These are numeric contributions to THIS hit from the selected build,
     // not a general skill description or an additional skill card.
     const boostParts=[];
