@@ -20,6 +20,8 @@ test('owner can explicitly select all changes including gameplay settings',()=>{
  assert.match(workbench,/chosen\.clear\(\);formattingToggle\.checked=false;russianToggle\.checked=false/);
  assert.match(workbench,/for\(const item of changes\.filter\(safe\)\)chosen\.add/);
  assert.match(css,/\.os-sync-record-selected/);
+ assert.match(workbench,/const selectionGuidance=h\('p',\{class:'os-sync-selection-guidance'\}\)/);
+ assert.doesNotMatch(workbench,/selectionGuidance=h\('p',\{[^}]*role:'status'/);
 });
 
 test('staging audit rejects missed approvals and unauthorized record changes',()=>{
