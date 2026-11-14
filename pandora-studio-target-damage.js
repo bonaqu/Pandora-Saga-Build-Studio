@@ -1644,8 +1644,11 @@ function sourceHonorElementalRate({skillCatalog,modifiers},element){
  // Title from the same current character calculator: both selected title
  // identity and numerical elemental magic preview must agree.
  const sheet=modifiers.elementalMagic;
- if(!sheet||!Number.isFinite(sheet[profile.element])||
-  sheet[profile.element]!==5)return null;
+ // The character sheet uses "ice", while the OS combat kernel uses COLD.
+ // This is an existing naming difference, NOT two different damage schools.
+ const sheetKey=profile.element==='cold'?'ice':profile.element;
+ if(!sheet||!Number.isFinite(sheet[sheetKey])||
+  sheet[sheetKey]!==5)return null;
  return element===profile.element?5:0;
 }
 // Matches the OS public BuildCalculator's Et -> kt -> Ie -> ve -> Tt
