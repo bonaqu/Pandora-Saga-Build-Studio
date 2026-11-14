@@ -23,7 +23,8 @@ const patchMonster=(id,edit)=>{
 };
 const compare=(options,row,edit)=>{
  const selected=options.targetMonsterId||22104;
- const changed=patchMonster(selected,edit);
+ const changed=structuredClone(options.monsters||monsters);
+ edit(changed[String(selected)]);
  const other=row.skillId===240005001?
   current({...options,monsters:changed}):
   hit({...options,monsters:changed},row.skillId);
@@ -89,7 +90,7 @@ test('direct spell, trap and linked hit all get independent target-defense delta
   masteries:{element:70,darkness:25,exorcism:20,charm:20},
   stats:{dex:65,int:80,spi:50},targetMonsterId:11104};
  const all=batch(mage);
- for(const id of [410001001,410012001,430001001]){
+ for(const id of [410001001,410012001,410022001,430001001]){
   const row=all.find(x=>x.skillId===id);
   assert.ok(row,'Expected source-verified hit '+id);
   assert.equal(row.targetResistanceAverageImpact,
