@@ -51,7 +51,8 @@ export async function runHeroBookMonsterPicker785Smoke(browser,base){
      onTargetMonster:id=>{selected=id;draw();}
     });
    };
-   window.__monster785={draw,selected:()=>selected};
+   window.__monster785={draw,selected:()=>selected,
+    force:id=>{selected=id;draw();}};
    document.documentElement.lang='ru';
    draw();
   });
@@ -86,6 +87,14 @@ export async function runHeroBookMonsterPicker785Smoke(browser,base){
    /Ogre Bouncer.*34–194 HP/);
   assert.equal(await page.locator('#monster-785-qa .stage-book-damage-target').count(),1);
   assert.equal(await page.locator('#monster-785-qa .stage-book-damage-target select[aria-label]').count(),1);
+  await page.evaluate(()=>window.__monster785.force(99999999));
+  assert.equal(await select.inputValue(),'',
+   'A disappeared monster must not silently switch to Ogre');
+  assert.match(await select.locator('option:checked').innerText(),/Choose a monster/);
+  assert.equal(await page.locator('#monster-785-qa .stage-target-damage-row').count(),0);
+  await select.selectOption('22104');
+  assert.equal(await select.inputValue(),'22104');
+  assert.equal(await page.locator('#monster-785-qa .stage-target-damage-row').count(),2);
   assert.deepEqual(errors,[]);
   console.log('Chromium Hero Book 785: 702 verified monsters, RU/EN, target change, no stale Ogre');
  }finally{await context.close()}
