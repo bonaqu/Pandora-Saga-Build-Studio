@@ -1399,6 +1399,9 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    const fragment=document.createDocumentFragment();
    if(!targetAvailable)fragment.append(make('option',{value:'',disabled:true,
     selected:true,text:en?'Choose a monster':'Выберите монстра'}));
+   if(terms.length&&!matches.length)fragment.append(make('option',{
+    value:'',disabled:true,text:en?'No matches':'Ничего не найдено'
+   }));
    for(const monster of visible)fragment.append(make('option',{
     value:String(monster.id),text:(en?monster.nameEn:monster.name)+' · '+
      (en?'Lv ':'ур. ')+monster.level
