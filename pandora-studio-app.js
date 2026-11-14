@@ -105,7 +105,7 @@ function gearIssueLabel(message){
 }
 function fresh(){return{race:null,gender:0,job:null,level:1,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),mastery:{},masteryFormat:2,masteryAuto:true,stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},soulOwners:{},socketCapacities:{},refinements:{},gems:{},vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},attributeBuffs:{guildAll:0,honorCuriosity:false,mounted:false,proelium:false,proeliumPotency:0,potionEffectsEnabled:false,guildLifeRecovery:0,guildManaRecovery:0,guildHealing:0,guildLevel:0,priestClass:'ENCHANTER',priestEnabled:true,priestSpi:134,priestBlessing:90,priestHymn:30,priestBenevolence:0,priestExorcism:26,allyPeaceSpi:134,allyPeaceHymn:30,allyNaturalLevel:45,allyHealingLevel:45,
  allyHealingSpi:134,allyHealingMastery:41,allyRegeneration:false,
- allyRestoration:false,combatFreeWind:false,priestGratia:false,priestLapisMedio:false,priestEncouragement:false,resistanceSkillIds:[],remakedSkillIds:[]},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
+ allyRestoration:false,combatFreeWind:false,nextMagicConcentration:false,priestGratia:false,priestLapisMedio:false,priestEncouragement:false,resistanceSkillIds:[],remakedSkillIds:[]},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
 let state=fresh(),activeTab=bootView.tab==='equipment'?'wiki':(['character','builds','wiki'].includes(bootView.tab)?bootView.tab:'character'),catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,approvedSkillIdNames=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,wikiShown=100,selectedSocket=0,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='',wikiItemType='equipment',wikiElementFilter='all',wikiEffectFilter='all',wikiSkillFilter=['player','racial','guild','special','variants','other','unknown','all'].includes(bootView.wikiSkillFilter)?bootView.wikiSkillFilter:'player',wikiItemLayout=bootView.wikiLayout==='grid'?'grid':'list',wikiItemEligibility='all';
 // A damaged browser draft must not prevent the independent saved-build library
 // from loading. Keep the original storage untouched for manual recovery.
@@ -905,7 +905,7 @@ function setAttributeBuff(key,value){
  }else if(['proelium','potionEffectsEnabled','combatLunge','combatWarCry',
   'combatRage','combatDefender','combatWindAssist','combatWindBlessing',
   'combatFreeWind',
-  'combatConcentration','priestEnabled','priestGratia','priestLapisMedio','priestEncouragement',
+  'combatConcentration','nextMagicConcentration','priestEnabled','priestGratia','priestLapisMedio','priestEncouragement',
   'mounted'].includes(key)){
   if(value===true&&key.startsWith('priest')){
    const id={priestGratia:320007001,priestLapisMedio:320008001,
@@ -1805,6 +1805,12 @@ function renderStageAttributes(calculated=undefined){
    icon:skillIcon(ability.branch,0,ability)
   }:null;
  }
+ const nextMagicConcentrationPreview=
+  window.PandoraOSTargetDamage?.nextMagicConcentrationPreview({
+   skillCatalog:skillMap,classes:catalog.classes||{},jobKey:cls,
+   level:state.level,masteries:branchMasteries,
+   branchCaps:catalog.classes?.[cls]?.branchCaps||{}
+  })||null;
  // Target hits are selected from source-checked learned skills, using
  // precisely the current hero and one shared OS elemental damage kernel.
  const bookModifiers=calculated===undefined?previewBaseStats():calculated;
@@ -1815,10 +1821,11 @@ function renderStageAttributes(calculated=undefined){
    branchCaps:catalog.classes?.[cls]?.branchCaps||{},
    stats:bookModifiers?.stats,equipment:items,tables:gameTables,
    itemForth:gameItemForth,unison:catalogSource?.unison||{},
-   modifiers:bookModifiers
+   modifiers:bookModifiers,
+   nextMagicConcentration:state.attributeBuffs?.nextMagicConcentration===true
   })||[]:[];
  window.PandoraStageAttributes.render(root,{
-  page:stageAttributesPage,items,targetSkillDamages,
+  page:stageAttributesPage,items,targetSkillDamages,nextMagicConcentrationPreview,
   skillIconForId:id=>{
    const record=skillMap[String(id)];
    return record?skillIcon(record.branch,id,record):null;
@@ -7440,7 +7447,7 @@ function sanitizeSharedState(original){
   safe.attributeBuffs.remakedSkillIds=window.PandoraRemakedBuffs?.selectedIds(
    rawAttributes.remakedSkillIds)||[];
   for(const key of ['combatWarCry','combatRage','combatDefender','combatLunge',
-   'combatWindAssist','combatWindBlessing','combatConcentration'])
+   'combatWindAssist','combatWindBlessing','combatConcentration','nextMagicConcentration'])
    if(rawAttributes[key]===true)safe.attributeBuffs[key]=true;
   if(safe.attributeBuffs.combatRage===true)safe.attributeBuffs.combatDefender=false;
  }
