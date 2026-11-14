@@ -8202,6 +8202,8 @@ function refreshOwnerUI(){
   for(const slot of root.querySelectorAll('.owner-dock-action-slot[data-owner-dock-key]')){
    const key=slot.dataset.ownerDockKey,button=slot.querySelector('button:not(.owner-dock-action-pencil)');
    if(button&&key!=='translations')button.textContent=ownerDockCopy(key);
+   // Purely visual CSS glyphs must not become part of the spoken button name.
+   if(button)button.setAttribute('aria-label',button.textContent);
    const pencil=slot.querySelector('.owner-dock-action-pencil');
    if(pencil)pencil.setAttribute('aria-label',
     (lang==='en'?'Edit label: ':'Изменить надпись: ')+ownerDockCopy(key));
