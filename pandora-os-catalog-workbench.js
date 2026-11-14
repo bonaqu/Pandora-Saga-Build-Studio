@@ -156,7 +156,7 @@
     ]);
     const acceptAll = h('button', {type:'button',class:'button-action',text:'Выбрать понятные изменения',disabled:true});
     const acceptEvery = h('button', {type:'button',class:'button-action os-sync-bulk-all',
-      text:'Выбрать все игровые изменения',disabled:true});
+      text:'Выбрать все найденные изменения',disabled:true});
     const declineAll = h('button', {type:'button',class:'button-action',text:'Снять весь выбор',disabled:true});
     const exportButton = h('button', {type:'button',class:'button-action',
       text:'Скачать выбранное для GitHub',disabled:true});
@@ -220,7 +220,7 @@
        'Compare old and new game values, then select only verified changes. Unknown parameters and technical metadata are never selected automatically.'),
       h('div',{class:'os-sync-review-actions'},[
        action(acceptAll,'acceptAllButton','Выбрать понятные изменения','Select understood changes'),
-       action(acceptEvery,'acceptEveryButton','Выбрать все игровые изменения','Select all game changes'),
+       action(acceptEvery,'acceptEveryButton','Выбрать все найденные изменения','Select all found changes'),
        action(declineAll,'declineAllButton','Снять весь выбор','Clear selection'),
        action(publish,'publishButton','Применить выбранные изменения','Publish selected changes')
       ]),selectionGuidance
@@ -307,8 +307,8 @@
        'Выбрать только изменения, которые удалось расшифровать, исключив непонятные параметры и служебные сведения. Это не публикация.',
        'Select only explained changes, excluding unknown parameters and technical metadata. This does not publish anything.'],
       [acceptEvery,'hintAcceptEvery',
-       'Выбрать все игровые изменения, включая удаления, ссылки и сложные параметры. Для спорных записей потребуется отдельное подтверждение. Служебные настройки остаются для ручного выбора. Переносы из текущей игры тоже включаются.',
-       'Select every game change, including removals, links, and complex fields. Ambiguous entries require an additional confirmation. Technical settings remain manual; live source line breaks are included.'],
+       'Выбрать все найденные изменения, включая удаления, игровые настройки, ссылки и сложные параметры. Если есть спорные записи, потребуется отдельное подтверждение. Контрольные суммы без игровых изменений не предлагаются. Переносы строк из текущей игры включаются.',
+       'Select all found changes including removals, game settings, links, and complex fields. Ambiguous entries require an additional confirmation. Technical-only checksums are excluded. Source line breaks are included.'],
       [declineAll,'hintDeclineAll',
        'Снять галочки со всех изменений. Уже опубликованный каталог D1 останется прежним.',
        'Clear every selection. The published D1 catalog remains unchanged.'],
@@ -417,7 +417,7 @@
       // Preserve editing controls and the D1-authored explanatory copy.
       // Dynamic counts live in the labels and never become editable text.
       acceptAll.disabled = busy || !changes.some(row=>safe(row)&&!chosen.has(row.id));
-      acceptEvery.disabled = busy || !changes.some(row=>!describe(row).service&&!chosen.has(row.id));
+      acceptEvery.disabled = busy || !changes.some(row=>!chosen.has(row.id));
       declineAll.disabled = busy || !changes.length;
       publish.disabled = !ready;
       exportButton.disabled = !ready;
@@ -460,15 +460,14 @@
         if(label)label.textContent=count+' / '+total+tr(' выбрано',' selected');
       }
       const service=changes.filter(row=>describe(row).service).length;
-      const gameChanges=changes.filter(row=>!describe(row).service);
-      const acceptedGame=gameChanges.filter(row=>chosen.has(row.id)).length;
-      const remainingGame=gameChanges.length-acceptedGame;
-      const cautionSelected=gameChanges.filter(row=>chosen.has(row.id)&&describe(row).uncertain).length;
-      selectionGuidance.textContent=tr('Игровых изменений выбрано: ','Selected game changes: ')+
-        acceptedGame+' / '+gameChanges.length+
-        (remainingGame?tr(' · Осталось: ',' · Remaining: ')+remainingGame:'')+
+      const acceptedChanges=changes.filter(row=>chosen.has(row.id)).length;
+      const remainingChanges=changes.length-acceptedChanges;
+      const cautionSelected=changes.filter(row=>chosen.has(row.id)&&describe(row).uncertain).length;
+      selectionGuidance.textContent=tr('Всего выбрано: ','Selected: ')+
+        acceptedChanges+' / '+changes.length+
+        (remainingChanges?tr(' · Осталось: ',' · Remaining: ')+remainingChanges:'')+
         (cautionSelected?tr(' · Требуют проверки: ',' · Need review: ')+cautionSelected:'')+
-        (service?tr(' · Настройки отдельно: ',' · Settings separate: ')+service:'')+
+        (service?tr(' · Настроек игры найдено: ',' · Game settings found: ')+service:'')+
         (mode==='server'&&formattingToggle.checked?tr(' · Переносы строк включены',' · Source line breaks included'):'');
       summary.textContent = changes.length
         ? tr('Найдено изменений: ','Changes found: ')+changes.length+
@@ -1112,7 +1111,7 @@
         'Новых: '+added+'; изменённых: '+changed+'; удалённых: '+removed+
         '; переносов описаний: '+formatted+'; русских описаний: '+ruCount+'.'+
         (notSelectedGame?'\nНЕ будут применены игровые изменения: '+notSelectedGame+'.':'')+
-        (unselectedSettings?'\nОтдельно не выбраны настройки каталога: '+unselectedSettings+'.':'')+
+        (unselectedSettings?'\nНе выбраны настройки каталога: '+unselectedSettings+'.':'')+
         sourceWarning+(ruCount?'\nРусские описания — проверенная копия проекта, не текст игрового JSON.':'')+
         uncertainWarning+atomicWarning+impactPreview+otherPreview+
         '\n\nОбновляется ТОЛЬКО сайт Build Studio (D1), не сервер игры. '+
@@ -1276,22 +1275,22 @@
     };
     acceptEvery.onclick=()=>{
       if(busy||!baseline)return;
-      const game=changes.filter(item=>!describe(item).service);
-      const pending=game.filter(item=>!chosen.has(item.id));
+      const pending=changes.filter(item=>!chosen.has(item.id));
       const uncertain=pending.filter(item=>describe(item).uncertain);
       const removals=pending.filter(item=>item.kind==='removed');
+      const settings=pending.filter(item=>describe(item).service);
       if(!pending.length&&!(mode==='server'&&formattingCount&&!formattingToggle.checked))return;
-      if(uncertain.length&&!confirm(
-        'Выбрать все '+game.length+' игровых изменений?\n'+
+      if((uncertain.length||settings.length||removals.length)&&!confirm(
+        'Выбрать все '+changes.length+' найденных изменений?\n'+
         'Среди ещё не выбранных: '+uncertain.length+' требуют ручной проверки, '+
-        removals.length+' удалений.\n'+
-        'Проверь изменённые связи, игровые формулы и непонятные параметры до публикации.\n'+
-        'Служебные настройки выбираются отдельно. Это только выбор, D1 пока не меняется.'))return;
-      for(const item of game)chosen.add(item.id);
+        removals.length+' удалений, '+settings.length+' изменений настроек игры.\n'+
+        'Проверь ссылки, игровые формулы, лимиты и непонятные параметры до публикации.\n'+
+        'Это только выбор; D1 пока не меняется.'))return;
+      for(const item of changes)chosen.add(item.id);
       if(mode==='server'&&formattingCount)formattingToggle.checked=true;
       render();
-      status.textContent=tr('Игровые изменения выбраны. Проверь предупреждения, затем нажми «Применить выбранные изменения».',
-        'Game changes selected. Review warnings, then publish selected changes.');
+      status.textContent=tr('Все найденные изменения выбраны. Проверь предупреждения, затем нажми «Применить выбранные изменения».',
+        'All detected changes selected. Review warnings, then publish selected changes.');
     };
     declineAll.onclick=()=>{
       if(busy)return;
