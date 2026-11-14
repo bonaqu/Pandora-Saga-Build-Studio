@@ -510,3 +510,7 @@ button.path-skill-previous-value:focus-visible{outline:2px solid #ffe1ad;outline
 #stageAttributes button.stage-effect-skill-link:focus-visible{
  outline:2px solid #f6d49c;outline-offset:3px;border-radius:3px
 }
+
+/* Native target choice inside Skill Effects, not an additional combat card. */
+.stage-book-damage-target{max-width:min(100%,360px);margin:0 0 2px}
+.stage-book-damage-target select{font-size:12px;min-height:34px;padding:6px 8px}
