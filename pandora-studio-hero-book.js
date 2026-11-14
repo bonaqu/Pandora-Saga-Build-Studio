@@ -2,6 +2,8 @@
 'use strict';
 // Partial source-backed combat preview. Do not claim current OS parity for missing buffs or procs.
 // Exact, player-interface labels only; source names and item descriptions stay untouched.
+// A view-only filter for the 702 current monster names. Never saved in builds.
+let damageTargetSearchQuery='';
 const bookEnglish=Object.freeze({
  'Итоги': "Summary",
  'Атака': "Attack",
@@ -1367,25 +1369,53 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
  // One native, keyboard-accessible selector; no new card and no change to
  // the hero's build. The target list comes from the current D1 snapshot.
  if(Array.isArray(targetMonsterChoices)&&targetMonsterChoices.length){
-  const row=make('label',{class:'stage-book-field stage-book-damage-target'},[
-   make('span',{text:en?'Damage target':'Цель удара'})
+  const row=make('div',{class:'stage-book-field stage-book-damage-target'},[
+   make('label',{text:en?'Damage target':'Цель удара',
+    for:'stageBookDamageTarget'})
   ]);
-  const choice=make('select',{'data-book-setting':'damageTarget',
+  const choice=make('select',{id:'stageBookDamageTarget',
+   'data-book-setting':'damageTarget',
    'aria-label':en?'Choose a monster for skill damage':'Выбрать монстра для расчёта урона',
    onchange:event=>onTargetMonster(Number(event.target.value))});
   const sorted=[...targetMonsterChoices].sort((a,b)=>
    (en?a.nameEn:a.name).localeCompare(en?b.nameEn:b.name,en?'en':'ru')||
    a.level-b.level||a.id-b.id);
   const targetAvailable=sorted.some(monster=>monster.id===targetMonsterId);
-  if(!targetAvailable)choice.append(make('option',{value:'',disabled:true,
-   selected:true,text:en?'Choose a monster':'Выберите монстра'}));
-  for(const monster of sorted){
-   choice.append(make('option',{value:String(monster.id),
-    text:(en?monster.nameEn:monster.name)+' · '+
-     (en?'Lv ':'ур. ')+monster.level}));
-  }
-  choice.value=targetAvailable?String(targetMonsterId):'';
-  row.append(choice);
+  // The full list is available by default. Typing only filters its native
+  // options; it NEVER recomputes damage or changes the chosen target.
+  const normalize=value=>String(value??'').normalize('NFKC')
+   .toLocaleLowerCase('ru').replace(/ё/g,'е').trim();
+  const updateOptions=()=>{
+   const terms=normalize(damageTargetSearchQuery).split(/\s+/).filter(Boolean);
+   const chosen=sorted.find(monster=>monster.id===targetMonsterId);
+   const matches=terms.length?sorted.filter(monster=>{
+    const text=normalize(monster.name+' '+monster.nameEn+' '+monster.level);
+    return terms.every(term=>text.includes(term));
+   }):sorted;
+   // Keep the currently displayed monster visible even when it doesn't
+   // match the typed filter. Never show damage for a different selection.
+   const visible=chosen&&!matches.some(monster=>monster.id===chosen.id)?
+    [chosen,...matches]:matches;
+   const fragment=document.createDocumentFragment();
+   if(!targetAvailable)fragment.append(make('option',{value:'',disabled:true,
+    selected:true,text:en?'Choose a monster':'Выберите монстра'}));
+   for(const monster of visible)fragment.append(make('option',{
+    value:String(monster.id),text:(en?monster.nameEn:monster.name)+' · '+
+     (en?'Lv ':'ур. ')+monster.level
+   }));
+   choice.replaceChildren(fragment);
+   choice.value=targetAvailable?String(targetMonsterId):'';
+  };
+  const search=make('input',{type:'search',class:'stage-book-target-search',
+   'aria-label':en?'Find monster by name':'Поиск монстра по названию',
+   placeholder:en?'Find monster…':'Найти монстра…',
+   value:damageTargetSearchQuery,
+   oninput:event=>{
+    damageTargetSearchQuery=event.target.value;
+    updateOptions();
+   }});
+  updateOptions();
+  row.append(search,choice);
   body.append(row);
  }
  const gates=root.PandoraBookSkillThresholds;
