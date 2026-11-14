@@ -68,6 +68,12 @@ export async function runHeroBookMonsterPicker785Smoke(browser,base){
   const russian=await page.locator('#monster-785-qa .stage-target-damage-row strong').first().textContent();
   assert.match(russian,/Рыжий динго/);
   assert.doesNotMatch(russian,/Гигантский огр/);
+  const ruDetails=await page.locator('#monster-785-qa .stage-target-damage-row .stage-skill-more').first().textContent();
+  assert.match(ruDetails,/Рыжий динго · Сопр\. огню -25 · Сопр\. магии 7/);
+  assert.match(ruDetails,/Влияние на средний удар/);
+  assert.match(ruDetails,/Сопротивления цели: [+−-]?\d+ ОЗ/);
+  assert.match(ruDetails,/СД и маг\. защита цели: [+−-]?\d+ ОЗ/);
+  assert.match(ruDetails,/Разница уровней: [+−-]?\d+ ОЗ/);
   await page.evaluate(()=>{document.documentElement.lang='en';window.__monster785.draw();});
   assert.equal(await select.inputValue(),'11104');
   assert.match(await page.locator('#monster-785-qa .stage-book-damage-target').textContent(),
@@ -75,6 +81,12 @@ export async function runHeroBookMonsterPicker785Smoke(browser,base){
   const english=await page.locator('#monster-785-qa .stage-target-damage-row strong').first().textContent();
   assert.match(english,/HP/);
   assert.doesNotMatch(english,/Ogre Bouncer/);
+  const enDetails=await page.locator('#monster-785-qa .stage-target-damage-row .stage-skill-more').first().textContent();
+  assert.match(enDetails,/Fire resistance -25 · Magic resistance 7/);
+  assert.match(enDetails,/Average-hit impact/);
+  assert.match(enDetails,/Target resistances: [+−-]?\d+ HP/);
+  assert.match(enDetails,/Target SPI and magic defense: [+−-]?\d+ HP/);
+  assert.match(enDetails,/Level difference: [+−-]?\d+ HP/);
   assert.equal(await page.locator('#monster-785-qa .stage-target-damage-row').count(),2,
    'The current Traps mastery learns two distinct attacks, not duplicate results');
   const allHits=await page.locator('#monster-785-qa .stage-target-damage-row strong').allTextContents();
