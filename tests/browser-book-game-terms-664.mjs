@@ -489,21 +489,34 @@ export async function runHeroBookGameNames664Smoke(browser,base){
     branchCaps:terms.classes.SNIPER.branchCaps,
     stats:sniperStats,equipment:[sniperBow],tables,modifiers
    });
-   const renderSniper=language=>{
+   const renderSniper=(language,spellRows=sniper,activeModifiers=modifiers)=>{
     document.documentElement.lang=language;
     window.PandoraStageAttributes.render(host,{
-     page:'effects',modifiers:{mp:450,stats:sniperStats,...modifiers,
+     page:'effects',modifiers:{mp:450,stats:sniperStats,...activeModifiers,
       healingSpells:{rows:[]},periodicRecovery:{rows:[]}},
      gameTerms:terms,heroJobKey:'SNIPER',heroLevel:50,
      heroMasteries:sniperMasteries,
      heroBranchCaps:terms.classes.SNIPER.branchCaps,
-     heroWeaponKind:'BOW',targetSkillDamages:sniper
+     heroWeaponKind:'BOW',targetSkillDamages:spellRows
     });
     return [...host.querySelectorAll('.stage-target-damage-row')]
      .map(row=>({text:row.textContent||'',
       main:row.querySelector('strong')?.textContent||'',
       details:row.querySelector('.stage-skill-more')?.textContent||''}));
    };
+   // Independent, current-build numerical contributions are visible only
+   // inside the EXISTING skill disclosure, on both locales.
+   const allyModifiers={combat:{
+    spellDamageEquipmentRate:0,priestSong:{sageElementDamage:21}},
+    priestApplied:{priestEnchantment:{magicRate:15}}};
+   const boostedBow={...sniperBow,refinement:10,
+    gem:{type:'magical',element:'fire'}};
+   const boostedSniper=window.PandoraOSTargetDamage.supportedSkillHits({
+    skillCatalog:terms.skills,classes:terms.classes,jobKey:'SNIPER',
+    level:50,masteries:sniperMasteries,
+    branchCaps:terms.classes.SNIPER.branchCaps,stats:sniperStats,
+    equipment:[boostedBow],tables,modifiers:allyModifiers
+   });
    const extract=effects=>effects.map(({skillId,min,average,max})=>
     [skillId,min,average,max]);
    return {basic:extract(basic),expanded:extract(extended),
@@ -518,7 +531,10 @@ export async function runHeroBookGameNames664Smoke(browser,base){
     conjurerRu:render('ru',conjurerMasteries,conjurer,'CONJURER'),
     conjurerEn:render('en',conjurerMasteries,conjurer,'CONJURER'),
     sniper:extract(sniper),sniperRu:renderSniper('ru'),
-    sniperEn:renderSniper('en')};
+    sniperEn:renderSniper('en'),
+    boostedSniper:extract(boostedSniper),
+    boostedSniperRu:renderSniper('ru',boostedSniper,allyModifiers),
+    boostedSniperEn:renderSniper('en',boostedSniper,allyModifiers)};
   });
   assert.deepEqual(spellBook.basic,[
    [410001001,4,21,28],[410011001,1,6,10],[410012001,12,55,78],
@@ -527,6 +543,18 @@ export async function runHeroBookGameNames664Smoke(browser,base){
    [410002001,10,46,61],[410022001,2,18,34]
   ]);
   assert.deepEqual(spellBook.sniper,[[213608001,61,65,69]]);
+  assert.equal(spellBook.boostedSniper.length,1);
+  assert.ok(spellBook.boostedSniper[0][2]>spellBook.sniper[0][2]);
+  assert.equal(spellBook.boostedSniperRu.length,1);
+  assert.equal(spellBook.boostedSniperEn.length,1);
+  assert.match(spellBook.boostedSniperRu[0].details,
+   /Усиления союзников: \+\d+ ОЗ к среднему удару/);
+  assert.match(spellBook.boostedSniperRu[0].details,
+   /Магическая заточка: \+\d+ ОЗ к среднему удару/);
+  assert.match(spellBook.boostedSniperEn[0].details,
+   /Ally buffs: \+\d+ HP to average hit/);
+  assert.match(spellBook.boostedSniperEn[0].details,
+   /Magical refinement: \+\d+ HP to average hit/);
   assert.equal(spellBook.sniperRu.length,1);
   assert.equal(spellBook.sniperEn.length,1);
   assert.match(spellBook.sniperRu[0].text,/Пламенная стрела/);

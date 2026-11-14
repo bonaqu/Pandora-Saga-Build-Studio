@@ -1575,24 +1575,48 @@ function elementalHit(options={},spec=null){
  const resistanceElement=target.resists[element]-penetration;
  const absorption=even(target.spi*0.5)+target.magicProtection+
   gap.magicProtection;
- const apply=base=>{
+ // Reuse the EXACT OS resistance and rounding path for each marginal
+ // comparison. Removing a buff at the END of the formula would misstate
+ // its effect near minimum damage and level-mitigation thresholds.
+ const apply=(base,damageRate,gemRate,gemFlat)=>{
   let amount=trunc(base*(100-gap.magicAc)/100);
-  amount+=magicGemFlat+trunc(amount*(bonusRate+magicGemRate)/100);
+  amount+=gemFlat+trunc(amount*(damageRate+gemRate)/100);
   amount=Math.max(1,amount);
   const effective=trunc(amount*
    (100-resistanceMagic-resistanceElement)/100)-absorption;
   return effective<0?1:effective;
  };
- const [normalMin,normalAvg,normalMax]=sourcePoints.map(apply);
- let min=normalMin,average=normalAvg,max=normalMax;
- if(gap.magicDamageReduction>0){
-  const fraction=gap.magicDamageReduction/100;
-  const weakened=x=>Math.max(1,trunc(x/5));
-  average=Math.round(average*(1-fraction)+weakened(average)*fraction);
-  min=weakened(min);
- }
- if(![min,average,max].every(n)||min>max||average>max||
-  average<min)return null;
+ const hitRange=(rate,gemRate,gemFlat)=>{
+  const [normalMin,normalAvg,normalMax]=sourcePoints.map(value=>
+   apply(value,rate,gemRate,gemFlat));
+  let min=normalMin,average=normalAvg,max=normalMax;
+  if(gap.magicDamageReduction>0){
+   const fraction=gap.magicDamageReduction/100;
+   const weakened=x=>Math.max(1,trunc(x/5));
+   average=Math.round(average*(1-fraction)+weakened(average)*fraction);
+   min=weakened(min);
+  }
+  if(![min,average,max].every(n)||min>max||average>max||
+   average<min)return null;
+  return {min,average,max};
+ };
+ const current=hitRange(bonusRate,magicGemRate,magicGemFlat);
+ if(!current)return null;
+ const {min,average,max}=current;
+ // "Without" here means only that ONE rate category is disabled;
+ // current skill, stats, target, gear and the other effects stay unchanged.
+ const equipmentRate=equipmentEffects.general+
+  (equipmentEffects[element]||0);
+ const allyRate=sage+enchant;
+ const withoutAllies=allyRate?
+  hitRange(bonusRate-allyRate,magicGemRate,magicGemFlat):null;
+ const withoutItemDamageRate=equipmentRate?
+  hitRange(bonusRate-equipmentRate,magicGemRate,magicGemFlat):null;
+ const withoutMagicRefinement=(magicGemRate||magicGemFlat)?
+  hitRange(bonusRate,0,0):null;
+ if((allyRate&&!withoutAllies)||
+  (equipmentRate&&!withoutItemDamageRate)||
+  ((magicGemRate||magicGemFlat)&&!withoutMagicRefinement))return null;
  return {skillId:skill.id,monsterId:target.id,
   targetName:target.name,targetNameEn:target.nameEn,
   min,average,max,element,heroDex:stats.dex,heroInt:stats.int,
@@ -1601,6 +1625,14 @@ function elementalHit(options={},spec=null){
   heroPowerCoefficient:fv[0],
   heroMasteryKey:masteryKey,heroMastery:mastery,
   basePower,bonusRate,magicGemRate,magicGemFlat,
+  // Marginal impact at the hero's CURRENT equipment/ally/target state.
+  // Deltas are separate counterfactuals; they must not be added together.
+  allyAverageGain:withoutAllies?
+   average-withoutAllies.average:undefined,
+  itemDamageAverageGain:withoutItemDamageRate?
+   average-withoutItemDamageRate.average:undefined,
+  refinementAverageGain:withoutMagicRefinement?
+   average-withoutMagicRefinement.average:undefined,
   gearDamageRate:equipmentEffects.general,
   levelPenalty:gap.magicDamageReduction,
   hitKind:(spec?.directPart||isLinked)?'direct-part':'single-hit',
