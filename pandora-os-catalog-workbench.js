@@ -211,7 +211,9 @@
     const diagnosticText=h('p',{class:'muted'});
     diagnostic.append(diagnosticText);
     const results = h('div', {class:'os-sync-results'});
-    const selectionGuidance=h('p',{class:'os-sync-selection-guidance',role:'status'});
+    // The main comparison summary is the sole live status region; avoid
+    // shadowing it in the accessibility tree and established review flows.
+    const selectionGuidance=h('p',{class:'os-sync-selection-guidance'});
     const reviewSteps=h('section',{class:'os-sync-review-steps'});
     reviewSteps.hidden=true;
     reviewSteps.append(
