@@ -62,12 +62,31 @@ export async function runHeroBookMonsterPicker785Smoke(browser,base){
   assert.equal(await select.inputValue(),'22104');
   assert.match(await page.locator('#monster-785-qa .stage-target-damage-row strong').first().textContent(),
    /Гигантский огр.*34–194 ОЗ/);
+  const search=page.locator('#monster-785-qa .stage-book-target-search');
+  assert.equal(await search.count(),1);
+  await search.fill('дИНгО');
+  assert.ok(await select.locator('option').count()<35,
+   'The 702-monster native list must narrow immediately without re-render');
+  assert.equal(await select.inputValue(),'22104',
+   'Typing must not change the current target or its damage');
+  assert.equal(await page.locator('#monster-785-qa .stage-target-damage-row').count(),2);
   await select.selectOption('11104');
+  assert.equal(await search.inputValue(),'дИНгО',
+   'Search remains after the hit is recalculated');
+  await search.fill('');
+  assert.equal(await select.locator('option').count(),702);
   assert.equal(await page.evaluate(()=>window.__monster785.selected()),11104);
   assert.equal(await select.inputValue(),'11104');
   const russian=await page.locator('#monster-785-qa .stage-target-damage-row strong').first().textContent();
   assert.match(russian,/Рыжий динго/);
   assert.doesNotMatch(russian,/Гигантский огр/);
+  const ruDetails=await page.locator('#monster-785-qa .stage-target-damage-row .stage-skill-more').first().textContent();
+  assert.match(ruDetails,/Рыжий динго · Сопр\. огню -25 · Сопр\. магии 7/);
+  assert.match(ruDetails,/Влияние на средний удар/);
+  assert.match(ruDetails,/Сопротивления цели: [+−-]?\d+ ОЗ/);
+  assert.match(ruDetails,/СД и маг\. защита цели: [+−-]?\d+ ОЗ/);
+  assert.doesNotMatch(ruDetails,/Разница уровней:/,
+   'A 6-level gap is below the OS level correction threshold');
   await page.evaluate(()=>{document.documentElement.lang='en';window.__monster785.draw();});
   assert.equal(await select.inputValue(),'11104');
   assert.match(await page.locator('#monster-785-qa .stage-book-damage-target').textContent(),
@@ -75,6 +94,13 @@ export async function runHeroBookMonsterPicker785Smoke(browser,base){
   const english=await page.locator('#monster-785-qa .stage-target-damage-row strong').first().textContent();
   assert.match(english,/HP/);
   assert.doesNotMatch(english,/Ogre Bouncer/);
+  const enDetails=await page.locator('#monster-785-qa .stage-target-damage-row .stage-skill-more').first().textContent();
+  assert.match(enDetails,/Fire resistance -25 · Magic resistance 7/);
+  assert.match(enDetails,/Average-hit impact/);
+  assert.match(enDetails,/Target resistances: [+−-]?\d+ HP/);
+  assert.match(enDetails,/Target SPI and magic defense: [+−-]?\d+ HP/);
+  assert.doesNotMatch(enDetails,/Level difference:/,
+   'No invented level penalty below the real OS threshold');
   assert.equal(await page.locator('#monster-785-qa .stage-target-damage-row').count(),2,
    'The current Traps mastery learns two distinct attacks, not duplicate results');
   const allHits=await page.locator('#monster-785-qa .stage-target-damage-row strong').allTextContents();
@@ -85,6 +111,10 @@ export async function runHeroBookMonsterPicker785Smoke(browser,base){
   assert.equal(await select.inputValue(),'22104');
   assert.match(await page.locator('#monster-785-qa .stage-target-damage-row strong').first().textContent(),
    /Ogre Bouncer.*34–194 HP/);
+  const ogreDetails=await page.locator('#monster-785-qa .stage-target-damage-row .stage-skill-more').first().textContent();
+  assert.match(ogreDetails,/Ogre · Fire resistance 0 · Magic resistance 17/);
+  assert.match(ogreDetails,/Level difference: [-−]\d+ HP/,
+   'The 8-level Ogre gap must use the exact OS penalty');
   assert.equal(await page.locator('#monster-785-qa .stage-book-damage-target').count(),1);
   assert.equal(await page.locator('#monster-785-qa .stage-book-damage-target select[aria-label]').count(),1);
   await page.evaluate(()=>window.__monster785.force(99999999));

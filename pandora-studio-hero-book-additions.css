@@ -514,3 +514,10 @@ button.path-skill-previous-value:focus-visible{outline:2px solid #ffe1ad;outline
 /* Native target choice inside Skill Effects, not an additional combat card. */
 .stage-book-damage-target{max-width:min(100%,360px);margin:0 0 2px}
 .stage-book-damage-target select{font-size:12px;min-height:34px;padding:6px 8px}
+
+/* Fast native filter for 702 current D1 monster names; no extra card. */
+.stage-book-damage-target .stage-book-target-search{display:block;width:100%;min-width:0;
+ min-height:32px;box-sizing:border-box;padding:6px 8px;border:1px solid #86633f;
+ border-radius:3px;background:#1c140e;color:#f3d7aa;font-size:12px}
+.stage-book-damage-target .stage-book-target-search:focus-visible,
+.stage-book-damage-target select:focus-visible{outline:2px solid #f6d49c;outline-offset:1px}

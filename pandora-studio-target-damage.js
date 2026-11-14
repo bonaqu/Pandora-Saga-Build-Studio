@@ -1762,20 +1762,26 @@ function elementalHit(options={},spec=null,shared=null){
  // Reuse the EXACT OS resistance and rounding path for each marginal
  // comparison. Removing a buff at the END of the formula would misstate
  // its effect near minimum damage and level-mitigation thresholds.
- const apply=(base,damageRate,gemRate,gemFlat,pen=penetration)=>{
-  let amount=trunc(base*(100-gap.magicAc)/100);
+ const apply=(base,damageRate,gemRate,gemFlat,pen=penetration,
+  comparison=null)=>{
+  const contextGap=comparison?.gap||gap;
+  const magicResistance=comparison?.magicResistance??resistanceMagic;
+  const elementResistance=comparison?.elementResistance??ogre.resists[element];
+  const consumed=comparison?.absorption??absorption;
+  let amount=trunc(base*(100-contextGap.magicAc)/100);
   amount+=gemFlat+trunc(amount*(damageRate+gemRate)/100);
   amount=Math.max(1,amount);
   const effective=trunc(amount*
-   (100-resistanceMagic-ogre.resists[element]+pen)/100)-absorption;
+   (100-magicResistance-elementResistance+pen)/100)-consumed;
   return effective<0?1:effective;
  };
- const hitRange=(rate,gemRate,gemFlat,pen=penetration)=>{
+ const hitRange=(rate,gemRate,gemFlat,pen=penetration,comparison=null)=>{
+  const contextGap=comparison?.gap||gap;
   const [normalMin,normalAvg,normalMax]=sourcePoints.map(value=>
-   apply(value,rate,gemRate,gemFlat,pen));
+   apply(value,rate,gemRate,gemFlat,pen,comparison));
   let min=normalMin,average=normalAvg,max=normalMax;
-  if(gap.magicDamageReduction>0){
-   const fraction=gap.magicDamageReduction/100;
+  if(contextGap.magicDamageReduction>0){
+   const fraction=contextGap.magicDamageReduction/100;
    const weakened=x=>Math.max(1,trunc(x/5));
    average=Math.round(average*(1-fraction)+weakened(average)*fraction);
    min=weakened(min);
@@ -1810,7 +1816,26 @@ function elementalHit(options={},spec=null,shared=null){
   hitRange(bonusRate-equipmentRate,magicGemRate,magicGemFlat):null;
  const withoutMagicRefinement=(magicGemRate||magicGemFlat)?
   hitRange(bonusRate,0,0):null;
- if((nextMagic&&!withoutNextMagic)||
+ // Independent "same hit without this ONE defense" comparisons.
+ // This is an OS-kernel counterfactual, NOT a claim that monster defenses
+ // actually deactivate or that these marginal changes can be added together.
+ const noResist=(resistanceMagic||ogre.resists[element])?
+  hitRange(bonusRate,magicGemRate,magicGemFlat,penetration,
+   {magicResistance:0,elementResistance:0}):null;
+ const intrinsicAbsorption=even(ogre.spi*0.5)+ogre.magicProtection;
+ const noIntrinsicAbsorption=intrinsicAbsorption?
+  hitRange(bonusRate,magicGemRate,magicGemFlat,penetration,
+   {absorption:gap.magicProtection}):null;
+ const sameLevelGap=ogre.level!==level?
+  monsterLevelModifier(level,{...ogre,level},tables.lvModify):null;
+ const sameLevel=ogre.level!==level&&sameLevelGap?
+  hitRange(bonusRate,magicGemRate,magicGemFlat,penetration,
+   {gap:sameLevelGap,
+    absorption:intrinsicAbsorption+sameLevelGap.magicProtection}):null;
+ if((ogre.level!==level&&(!sameLevelGap||!sameLevel))||
+  ((resistanceMagic||ogre.resists[element])&&!noResist)||
+  (intrinsicAbsorption&&!noIntrinsicAbsorption)||
+  (nextMagic&&!withoutNextMagic)||
   (allyRate&&!withoutAllies)||
   (magicKnowledge&&!withoutMagicKnowledge)||
   (honorRate&&!withoutHonor)||
@@ -1848,6 +1873,12 @@ function elementalHit(options={},spec=null,shared=null){
   targetElementResistance:ogre.resists[element],
   targetMagicResistance:ogre.resists.magic,
   levelPenalty:gap.magicDamageReduction,
+  // These show exact current-build AVERAGE differences against neutralized
+  // target defenses; each is independent and must never be summed.
+  targetResistanceAverageImpact:noResist?average-noResist.average:0,
+  targetAbsorptionAverageImpact:noIntrinsicAbsorption?
+   average-noIntrinsicAbsorption.average:0,
+  targetLevelAverageImpact:sameLevel?average-sameLevel.average:0,
   // EP_CONSUME_ITEM x2 is an ingredient cost, NOT two damage packets.
   // Its action chain contains one EP_ELEMENT_DAMAGE from its burst stage.
   hitKind:isTrap?'trap-hit':(spec?.directPart||isLinked)?'direct-part':'single-hit',
