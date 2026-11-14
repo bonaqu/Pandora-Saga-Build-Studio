@@ -85,7 +85,18 @@ export async function runHeroBookMonsterPicker785Smoke(browser,base){
   const ruDetails=await page.locator('#monster-785-qa .stage-target-damage-row .stage-skill-more').first().textContent();
   assert.match(ruDetails,/Рыжий динго · Сопр\. огню -25 · Сопр\. магии 7/);
   assert.match(ruDetails,/Влияние на средний удар/);
-  assert.match(ruDetails,/Сопротивления цели: [+−-]?\d+ ОЗ/);
+  assert.match(ruDetails,/Сопр\. огню: [+−-]?\d+ ОЗ/);
+  assert.match(ruDetails,/Сопр\. магии: [+−-]?\d+ ОЗ/);
+  const ruLife=await page.evaluate(()=>
+   window.__monster785.currentHit(240005001));
+  assert.ok(ruLife?.targetMaxLife>0);
+  assert.ok(ruLife.targetAverageLifePercent>0);
+  assert.ok(ruDetails.includes('Средний удар: '+
+   new Intl.NumberFormat('ru-RU',{maximumFractionDigits:2})
+    .format(ruLife.targetAverageLifePercent)+
+   '% от полного запаса ОЗ цели ('+
+   new Intl.NumberFormat('ru-RU').format(ruLife.targetMaxLife)+')'),
+   'RU health share must use the currently selected D1 monster');
   assert.match(ruDetails,/СД и маг\. защита цели: [+−-]?\d+ ОЗ/);
   assert.doesNotMatch(ruDetails,/Разница уровней:/,
    'A 6-level gap is below the OS level correction threshold');
@@ -109,7 +120,14 @@ export async function runHeroBookMonsterPicker785Smoke(browser,base){
   const enDetails=await page.locator('#monster-785-qa .stage-target-damage-row .stage-skill-more').first().textContent();
   assert.match(enDetails,/Fire resistance -25 · Magic resistance 7/);
   assert.match(enDetails,/Average-hit impact/);
-  assert.match(enDetails,/Target resistances: [+−-]?\d+ HP/);
+  assert.match(enDetails,/Fire resistance: [+−-]?\d+ HP/);
+  assert.match(enDetails,/Magic resistance: [+−-]?\d+ HP/);
+  assert.ok(enDetails.includes('Average hit: '+
+   new Intl.NumberFormat('en-US',{maximumFractionDigits:2})
+    .format(ruLife.targetAverageLifePercent)+
+   '% of target full HP ('+
+   new Intl.NumberFormat('en-US').format(ruLife.targetMaxLife)+')'),
+   'EN monster health-share line must match unchanged RU data');
   assert.match(enDetails,/Target SPI and magic defense: [+−-]?\d+ HP/);
   assert.doesNotMatch(enDetails,/Level difference:/,
    'No invented level penalty below the real OS threshold');
@@ -131,6 +149,10 @@ export async function runHeroBookMonsterPicker785Smoke(browser,base){
    /Ogre Bouncer.*34–194 HP/);
   const ogreDetails=await page.locator('#monster-785-qa .stage-target-damage-row .stage-skill-more').first().textContent();
   assert.match(ogreDetails,/Ogre · Fire resistance 0 · Magic resistance 17/);
+  assert.match(ogreDetails,/Average hit: 2\.42% of target full HP \(6,126\)/);
+  assert.doesNotMatch(ogreDetails,/Fire resistance: /,
+   'Zero elemental resistance must not create an invented hit delta');
+  assert.match(ogreDetails,/Magic resistance: [-−]\d+ HP/);
   assert.match(ogreDetails,/Level difference: [-−]\d+ HP/,
    'The 8-level Ogre gap must use the exact OS penalty');
   const ogreSteps=await page.evaluate(()=>
