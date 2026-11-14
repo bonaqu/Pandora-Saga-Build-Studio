@@ -85,7 +85,8 @@ export async function runHeroBookMonsterPicker785Smoke(browser,base){
   assert.match(ruDetails,/Влияние на средний удар/);
   assert.match(ruDetails,/Сопротивления цели: [+−-]?\d+ ОЗ/);
   assert.match(ruDetails,/СД и маг\. защита цели: [+−-]?\d+ ОЗ/);
-  assert.match(ruDetails,/Разница уровней: [+−-]?\d+ ОЗ/);
+  assert.doesNotMatch(ruDetails,/Разница уровней:/,
+   'A 6-level gap is below the OS level correction threshold');
   await page.evaluate(()=>{document.documentElement.lang='en';window.__monster785.draw();});
   assert.equal(await select.inputValue(),'11104');
   assert.match(await page.locator('#monster-785-qa .stage-book-damage-target').textContent(),
@@ -98,7 +99,8 @@ export async function runHeroBookMonsterPicker785Smoke(browser,base){
   assert.match(enDetails,/Average-hit impact/);
   assert.match(enDetails,/Target resistances: [+−-]?\d+ HP/);
   assert.match(enDetails,/Target SPI and magic defense: [+−-]?\d+ HP/);
-  assert.match(enDetails,/Level difference: [+−-]?\d+ HP/);
+  assert.doesNotMatch(enDetails,/Level difference:/,
+   'No invented level penalty below the real OS threshold');
   assert.equal(await page.locator('#monster-785-qa .stage-target-damage-row').count(),2,
    'The current Traps mastery learns two distinct attacks, not duplicate results');
   const allHits=await page.locator('#monster-785-qa .stage-target-damage-row strong').allTextContents();
@@ -109,6 +111,10 @@ export async function runHeroBookMonsterPicker785Smoke(browser,base){
   assert.equal(await select.inputValue(),'22104');
   assert.match(await page.locator('#monster-785-qa .stage-target-damage-row strong').first().textContent(),
    /Ogre Bouncer.*34–194 HP/);
+  const ogreDetails=await page.locator('#monster-785-qa .stage-target-damage-row .stage-skill-more').first().textContent();
+  assert.match(ogreDetails,/Ogre · Fire resistance 0 · Magic resistance 17/);
+  assert.match(ogreDetails,/Level difference: [-−]\d+ HP/,
+   'The 8-level Ogre gap must use the exact OS penalty');
   assert.equal(await page.locator('#monster-785-qa .stage-book-damage-target').count(),1);
   assert.equal(await page.locator('#monster-785-qa .stage-book-damage-target select[aria-label]').count(),1);
   await page.evaluate(()=>window.__monster785.force(99999999));
