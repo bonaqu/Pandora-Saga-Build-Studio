@@ -1671,10 +1671,9 @@ function elementalHit(options={},spec=null){
    average-withoutMagicRefinement.average:undefined,
   gearDamageRate:equipmentEffects.general,
   levelPenalty:gap.magicDamageReduction,
-  // The exact OS Worm Bomb root consumes TWO traps. This result is the
-  // per-explosion packet; a two-trigger same-target outcome is conditional.
-  triggerCount:isTrap?2:undefined,
-  hitKind:isTrap?'trap-one':(spec?.directPart||isLinked)?'direct-part':'single-hit',
+  // EP_CONSUME_ITEM x2 is an ingredient cost, NOT two damage packets.
+  // Its action chain contains one EP_ELEMENT_DAMAGE from its burst stage.
+  hitKind:isTrap?'trap-hit':(spec?.directPart||isLinked)?'direct-part':'single-hit',
   model:'Pandora Saga OS public BuildCalculator / one elemental hit'};
 }
 function crawlingTrap(options={}){return elementalHit(options);}

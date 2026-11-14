@@ -78,20 +78,22 @@ test('Source drift or impossible Sorcery-green values cannot generate fake magic
  assert.equal(get('WARLOCK',{masteries:{sorcery:99,element:50,darkness:25}}),undefined);
  assert.equal(get('WARLOCK',{branchCaps:{...classes.WARLOCK.branchCaps,sorcery:99}}),undefined);
 });
-test('Worm Bomb has a verified per-explosion result and a conditional two-trigger case',()=>{
+test('Worm Bomb consumes two items but fires one source-defined damage packet',()=>{
  const result=D.crawlingTrap(opt('DISTURBANCE',{
   level:45,masteries:{trap:41},
   stats:{dex:70,int:20,spi:40}
  }));
  assert.ok(result);
  assert.deepEqual([result.min,result.average,result.max],[34,148,194]);
- assert.equal(result.triggerCount,2);
- assert.equal(result.hitKind,'trap-one');
- // Two successful independent hits are a scenario, NOT an automatic
- // doubling of the skill's single explosion or all-cast DPS.
- assert.deepEqual([result.min*2,result.average*2,result.max*2],
-  [68,296,388]);
- assert.equal(get('WARLOCK',{}).triggerCount,undefined);
+ assert.equal(result.hitKind,'trap-hit');
+ assert.equal(Object.hasOwn(result,'triggerCount'),false);
+ const root=skills['240005001'];
+ assert.equal(root.funcs.filter(f=>f.ep==='EP_SKILL_EXEC').length,1);
+ assert.equal(root.funcs.find(f=>f.ep==='EP_CONSUME_ITEM').fv2[3],2);
+ assert.equal(skills['240005003'].funcs.filter(f=>f.ep==='EP_ELEMENT_DAMAGE').length,1);
+ const book=read('pandora-studio-hero-book.js');
+ assert.match(book,/один взрыв/);
+ assert.doesNotMatch(book,/Если обе ловушки попали|If both traps hit/);
 });
 test('Same compact Book details; no invented direct ATK/MATK addition',()=>{
  const book=read('pandora-studio-hero-book.js');
