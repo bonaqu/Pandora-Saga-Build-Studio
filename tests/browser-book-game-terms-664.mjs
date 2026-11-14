@@ -368,9 +368,10 @@ export async function runHeroBookGameNames664Smoke(browser,base){
    const terms=window.__bookGameTermsQA;
    const tables=await (await fetch('data/os/tables.json')).json();
    const stats={dex:70,int:20};
-   const [allItems,itemForth]=await Promise.all([
+   const [allItems,itemForth,monsters]=await Promise.all([
     fetch('data/os/items.json').then(r=>r.json()),
-    fetch('data/os/itemForth.json').then(r=>r.json())
+    fetch('data/os/itemForth.json').then(r=>r.json()),
+    fetch('data/os/monsters.json').then(r=>r.json())
    ]);
    const equipment=(id,grade,gem=null)=>[{
     record:allItems[String(id)],refinement:grade,gem,issue:[],souls:[]
@@ -378,7 +379,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
    const trapArgs={
     skillCatalog:terms.skills,classes:terms.classes,jobKey:'DISTURBANCE',
     level:45,masteries:{trap:41},
-    branchCaps:terms.classes.DISTURBANCE.branchCaps,stats,tables,itemForth
+    branchCaps:terms.classes.DISTURBANCE.branchCaps,stats,tables,itemForth,monsters
    };
    const coat=window.PandoraOSTargetDamage.crawlingTrap({
     ...trapArgs,equipment:equipment(12605,3),
@@ -391,10 +392,13 @@ export async function runHeroBookGameNames664Smoke(browser,base){
      priestApplied:{}}
    });
    const result=window.PandoraOSTargetDamage.crawlingTrap({
-    skillCatalog:terms.skills,classes:terms.classes,jobKey:'DISTURBANCE',
-    level:45,masteries:{trap:41},
-    branchCaps:terms.classes.DISTURBANCE.branchCaps,
-    stats,equipment:[],tables,
+    ...trapArgs,equipment:[],
+    modifiers:{combat:{spellDamageEquipmentRate:0,priestSong:{}},priestApplied:{}}
+   });
+   const pierced=window.PandoraOSTargetDamage.crawlingTrap({
+    ...trapArgs,equipment:[{record:{...allItems['1'],effects:[
+     {func:'EP_ELEMENT_BONUS',a:18}]},
+     refinement:0,gem:null,issue:[],souls:[]}],
     modifiers:{combat:{spellDamageEquipmentRate:0,priestSong:{}},priestApplied:{}}
    });
    const host=document.createElement('div');host.id='book-ogre-qa';
@@ -417,7 +421,8 @@ export async function runHeroBookGameNames664Smoke(browser,base){
    };
    return {source:result,ru:render('ru',41,result),en:render('en',41,result),
     locked:render('ru',40,result),missing:render('ru',41,null),
-    coat:render('ru',41,coat),gem:render('ru',41,gem)};
+    coat:render('ru',41,coat),gem:render('ru',41,gem),
+    pierced:render('ru',41,pierced)};
   });
   assert.deepEqual([ogreBook.source.min,ogreBook.source.average,ogreBook.source.max],
    [34,148,194]);
@@ -426,6 +431,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   assert.match(ogreBook.ru.strong,/Гигантский огр · один взрыв 34–194 ОЗ/);
   assert.match(ogreBook.ru.details,/Средний урон по цели.*148 ОЗ/);
   assert.match(ogreBook.ru.details,/ЛВК 70 · ИНТ 20 · Ловушки 41/);
+  assert.match(ogreBook.ru.details,/Огр · Сопр\. огню 0 · Сопр\. магии 17/);
   assert.equal(ogreBook.en.count,1);
   assert.match(ogreBook.en.main,/Worm Bomb/);
   assert.match(ogreBook.en.strong,/Ogre Bouncer · one explosion 34–194 HP/);
@@ -435,6 +441,9 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   assert.match(ogreBook.coat.strong,/Гигантский огр · один взрыв 35–196 ОЗ/);
   assert.match(ogreBook.coat.details,/Усиление урона \+1%/);
   assert.match(ogreBook.gem.details,/Магическая заточка \+5% · \+3 к силе удара/);
+  assert.equal(ogreBook.pierced.count,1);
+  assert.match(ogreBook.pierced.details,/Пробитие от вещей \+18/);
+  assert.match(ogreBook.pierced.details,/Пробитие от вещей: \+[0-9]+ ОЗ к среднему удару/);
   assert.equal(ogreBook.coat.count,1);
   assert.equal(ogreBook.gem.count,1);
   assert.doesNotMatch(ogreBook.ru.main,/материал|рецепт|создани|Ловушка × 2/i);
