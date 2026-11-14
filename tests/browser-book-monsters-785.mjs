@@ -21,7 +21,7 @@ export async function runHeroBookMonsterPicker785Smoke(browser,base){
    const [skills,classes,tables,monsters,english]=files;
    const host=document.createElement('div');
    host.id='monster-785-qa';
-   host.style.cssText='width:350px;height:640px;overflow:auto';
+   host.setAttribute('style','width:350px;height:640px;overflow:auto');
    document.body.append(host);
    const C=window.PandoraOSTargetDamage,B=window.PandoraStageAttributes;
    const available=C.availableMonsterTargets({
