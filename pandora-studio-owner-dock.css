@@ -334,6 +334,9 @@ body>#ownerDock{
  border-radius:8px;font:600 12px/1.35 Manrope,Arial,sans-serif;
  overflow-wrap:anywhere;transition:background .12s,border-color .12s
 }
+/* Native hidden must win over display:flex while a D1 caption is edited.
+   This also protects conditional English-translation actions. */
+#ownerDock .owner-dock-action-slot>button[hidden]{display:none!important}
 #ownerDock .owner-dock-action-slot>button:not(.owner-dock-action-pencil):hover:not(:disabled){
  border-color:#d2a66e;background:#46301d;color:#ffe3ba
 }
