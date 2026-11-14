@@ -8241,6 +8241,8 @@ function refreshOwnerUI(){
   if(state){state.textContent=saveText;state.dataset.state=visibleSaveState}
   root.querySelector('[data-owner-undo]').disabled=!ownerEdits.length||editIsSaving||
    wikiLabelPendingWrites>0||ownerSaveState==='saving';
+  root.setAttribute('aria-label',lang==='en'?
+   'Site editor · automatically saved changes':'Редактор сайта · автоматическое сохранение');
   root.classList.toggle('owner-dock-collapsed',ownerDockCollapsed);
   root.dataset.saveState=visibleSaveState;
   const panel=root.querySelector('.owner-dock-panel');
