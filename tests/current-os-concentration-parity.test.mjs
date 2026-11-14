@@ -44,7 +44,8 @@ test('book gates Concentration by the same trained slash skill and saves it in l
  assert.match(app,/const branchMasteries=trainedBranchMasteries\(innate\)/);
  assert.match(app,/combatConcentration:'concentration'/);
  assert.match(app,/rawAttributes\[key\]===true/);
- assert.match(app,/combatConcentration'\]/);
+ assert.match(app,/combatConcentration','nextMagicConcentration'\]/);
+ assert.match(app,/nextMagicConcentration:false/);
  assert.match(book,/\['combatConcentration','Сосредоточенность'\]/);
  assert.match(book,/row\('Точность','Accuracy',c.accuracy\?\.known\)/);
 });
