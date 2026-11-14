@@ -8214,6 +8214,21 @@ function refreshOwnerUI(){
   if(online)online.textContent=ownerDockCopy('online');
   const extra=root.querySelector('.owner-dock-secondary-label');
   if(extra)extra.textContent=ownerDockCopy('extra');
+  const labels={
+   editing:[['Редактирование','Editing'],['Основные действия и история правок','Editing and change history']],
+   game:[['Игровые данные','Game data'],['Каталог и переводы','Catalog and translations']],
+   tools:[['Дополнительно','More tools'],['Проверка D1 и резервная копия','D1 testing and optional backup']]
+  };
+  for(const node of root.querySelectorAll('[data-owner-group-heading],[data-owner-group-hint]')){
+   const pair=labels[node.dataset.ownerGroupHeading||node.dataset.ownerGroupHint];
+   if(pair)node.textContent=pair[node.hasAttribute('data-owner-group-heading')?0:1][lang==='en'?1:0];
+  }
+  const note=root.querySelector('[data-owner-footer-note]');
+  if(note)note.textContent=ownerSaveState==='error'?
+   (lang==='en'?'Resolve the save error first':'Сначала исправь ошибку сохранения'):
+   (ownerSaveState==='saving'||editIsSaving||wikiLabelPendingWrites>0)?
+   (lang==='en'?'Wait until saving finishes':'Дождись сохранения изменений'):
+   (lang==='en'?'Saved edits stay on the site':'Сохранённые правки останутся на сайте');
   for(const node of root.querySelectorAll('[data-owner-dock-static]')){
    if(!node.querySelector('.wiki-inline-input'))
     node.textContent=ownerDockCopy(node.dataset.ownerDockStatic);
@@ -8221,11 +8236,13 @@ function refreshOwnerUI(){
   const guide=root.querySelector('.owner-workflow-guide>summary');
   if(guide)guide.textContent=ownerDockCopy('guide');
   const state=root.querySelector('[data-owner-save-state]');
-  if(state){state.textContent=saveText;state.dataset.state=ownerSaveState}
+  const visibleSaveState=(ownerSaveState==='saving'||wikiLabelPendingWrites>0||
+   wikiRecordWriteQueue.size>0)?'saving':ownerSaveState;
+  if(state){state.textContent=saveText;state.dataset.state=visibleSaveState}
   root.querySelector('[data-owner-undo]').disabled=!ownerEdits.length||editIsSaving||
    wikiLabelPendingWrites>0||ownerSaveState==='saving';
   root.classList.toggle('owner-dock-collapsed',ownerDockCollapsed);
-  root.dataset.saveState=ownerSaveState;
+  root.dataset.saveState=visibleSaveState;
   const panel=root.querySelector('.owner-dock-panel');
   if(panel){
    panel.inert=ownerDockCollapsed;
@@ -8310,6 +8327,35 @@ function refreshOwnerUI(){
    }})
  ]);
  decorateOwnerDockActions(actions);
+ // Move existing button+editor pairs without recreating them or changing D1 semantics.
+ const actionSlots=new Map([...actions.querySelectorAll('.owner-dock-action-slot')]
+  .map(node=>[node.dataset.ownerDockKey,node]));
+ const group=(id,ru,en,hintRu,hintEn,keys)=>{
+  const heading=h('strong',{class:'owner-dock-group-title','data-owner-group-heading':id,
+   text:lang==='en'?en:ru});
+  const help=h('small',{class:'owner-dock-group-description','data-owner-group-hint':id,
+   text:lang==='en'?hintEn:hintRu});
+  const grid=h('div',{class:'owner-dock-action-grid'});
+  for(const key of keys){const slot=actionSlots.get(key);if(slot)grid.append(slot)}
+  return h('section',{class:'owner-dock-action-group','data-owner-group':id},[
+   h('div',{class:'owner-dock-group-heading'},[heading,help]),grid]);
+ };
+ const editGroup=group('editing','Редактирование','Editing',
+  'Основные действия и история правок','Editing and change history',
+  ['openWiki','undo','history']);
+ const gameGroup=group('game','Игровые данные','Game data',
+  'Каталог и переводы','Catalog and translations',['catalog','translations']);
+ const toolsGroup=group('tools','Дополнительно','More tools',
+  'Проверка D1 и резервная копия','D1 testing and optional backup',
+  ['testD1','githubExport']);
+ const extra=actions.querySelector('.owner-dock-secondary-label');
+ if(extra)toolsGroup.querySelector('.owner-dock-group-title').replaceWith(extra);
+ actions.replaceChildren(editGroup,gameGroup,toolsGroup);
+ const footer=h('div',{class:'owner-dock-footer'},[
+  h('small',{class:'owner-dock-footer-note','data-owner-footer-note':'',
+   text:lang==='en'?'Saved edits stay on the site':'Сохранённые правки останутся на сайте'}),
+  actionSlots.get('finish')
+ ]);
  // Help copy can also be edited where it appears. The pencil is a
  // separate control, so clicking help never changes any D1 data implicitly.
  for(const node of guide.querySelectorAll('[data-owner-dock-static]')){
@@ -8325,8 +8371,9 @@ function refreshOwnerUI(){
     node.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
    }}));
  }
- const body=h('div',{class:'owner-dock-body'},[status,counters,guide,actions]);
- const panel=h('div',{id:'ownerDockPanel',class:'owner-dock-panel'},[head,body]);
+ const health=h('div',{class:'owner-dock-health'},[status,counters]);
+ const body=h('div',{class:'owner-dock-body'},[health,actions,guide]);
+ const panel=h('div',{id:'ownerDockPanel',class:'owner-dock-panel'},[head,body,footer]);
  const toggle=h('button',{type:'button',class:'owner-dock-handle','data-owner-collapse':'',
   'aria-controls':'ownerDockPanel','aria-expanded':'false',
   'aria-label':'Открыть боковую панель редактора сайта',
