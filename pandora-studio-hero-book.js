@@ -1352,7 +1352,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
  remakedBuffRows=[],availability={},combatSkillCards={},
  heroJobKey=null,heroLevel=1,heroMasteries={},heroBranchCaps={},
  heroWeaponKind='BARE_HAND',heroHasShield=false,
- targetSkillDamage=null,targetSkillDamages=[],nextMagicConcentrationPreview=null,onItem=()=>{},onSkill=null}={}){
+ targetSkillDamage=null,targetSkillDamages=[],onItem=()=>{},onSkill=null}={}){
  const en=document.documentElement?.lang==='en';
  const gates=root.PandoraBookSkillThresholds;
  const healingNumber=new Intl.NumberFormat(en?'en-US':'ru-RU',
@@ -2484,7 +2484,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
  combatSkillCards={},resistanceSkillChoices=[],remakedBuffRows=[],
  heroJobKey=null,heroLevel=1,heroMasteries={},heroBranchCaps={},
  heroWeaponKind='BARE_HAND',heroHasShield=false,
- targetSkillDamage=null,targetSkillDamages=[],itemById=()=>null,onItem=()=>{},onSkill=null,gameTerms={},
+ targetSkillDamage=null,targetSkillDamages=[],nextMagicConcentrationPreview=null,itemById=()=>null,onItem=()=>{},onSkill=null,gameTerms={},
  copy={},onTextEdit=null,canEdit=false,onHonor=()=>{}}={}){
  root.PandoraGuideTooltip?.dismiss();
  // Keep the same scrolling pane mounted on ordinary value changes: re-attaching
