@@ -59,25 +59,30 @@ export async function runHeroBookMonsterPicker785Smoke(browser,base){
   assert.equal(await select.count(),1);
   assert.equal(await select.locator('option').count(),702);
   assert.equal(await select.inputValue(),'22104');
-  assert.match(await page.locator('#monster-785-qa .stage-target-damage-row strong').innerText(),
+  assert.match(await page.locator('#monster-785-qa .stage-target-damage-row strong').first().innerText(),
    /Гигантский огр.*34–194 ОЗ/);
   await select.selectOption('11104');
   assert.equal(await page.evaluate(()=>window.__monster785.selected()),11104);
   assert.equal(await select.inputValue(),'11104');
-  const russian=await page.locator('#monster-785-qa .stage-target-damage-row strong').innerText();
+  const russian=await page.locator('#monster-785-qa .stage-target-damage-row strong').first().innerText();
   assert.match(russian,/Рыжий динго/);
   assert.doesNotMatch(russian,/Гигантский огр/);
   await page.evaluate(()=>{document.documentElement.lang='en';window.__monster785.draw();});
   assert.equal(await select.inputValue(),'11104');
   assert.match(await page.locator('#monster-785-qa .stage-book-damage-target').innerText(),
    /Damage target/);
-  const english=await page.locator('#monster-785-qa .stage-target-damage-row strong').innerText();
+  const english=await page.locator('#monster-785-qa .stage-target-damage-row strong').first().innerText();
   assert.match(english,/HP/);
   assert.doesNotMatch(english,/Ogre Bouncer/);
-  assert.equal(await page.locator('#monster-785-qa .stage-target-damage-row').count(),1);
+  assert.equal(await page.locator('#monster-785-qa .stage-target-damage-row').count(),2,
+   'The current Traps mastery learns two distinct attacks, not duplicate results');
+  const allHits=await page.locator('#monster-785-qa .stage-target-damage-row strong').allInnerTexts();
+  assert.ok(allHits.every(row=>row.includes('Динго')||row.includes('Dingo')||
+   !row.includes('Ogre Bouncer')),
+   'Switching target must refresh every available strike');
   await select.selectOption('22104');
   assert.equal(await select.inputValue(),'22104');
-  assert.match(await page.locator('#monster-785-qa .stage-target-damage-row strong').innerText(),
+  assert.match(await page.locator('#monster-785-qa .stage-target-damage-row strong').first().innerText(),
    /Ogre Bouncer.*34–194 HP/);
   assert.equal(await page.locator('#monster-785-qa .stage-book-damage-target').count(),1);
   assert.equal(await page.locator('#monster-785-qa .stage-book-damage-target select[aria-label]').count(),1);
