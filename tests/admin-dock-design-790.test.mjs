@@ -31,6 +31,7 @@ test('save status, pinned finish, and editable labels retain their safety behavi
  assert.match(dock,/#ownerDock \.owner-dock-footer \.owner-dock-finish\{/);
  assert.match(dock,/#ownerDock \.owner-dock-action-slot>button:not\(\.owner-dock-action-pencil\)\{\s*grid-column:1/);
  assert.match(dock,/#ownerDock \.owner-dock-action-slot>\.owner-dock-action-pencil\{\s*grid-column:2/);
+ assert.match(dock,/#ownerDock \.owner-dock-action-slot>button\[hidden\]\{display:none!important\}/);
 });
 test('new visual design keeps meaningful responsive actions, visible editor pens and one scroll area',()=>{
  assert.match(dock,/#ownerDock \.owner-dock-body\{[\s\S]*?overflow-y:auto/);
