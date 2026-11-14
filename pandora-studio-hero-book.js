@@ -1702,6 +1702,23 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     if(boostParts.length)more.append(make('small',{
      class:'stage-target-damage-stats',text:boostParts.join(' · ')
     }));
+    // Actual average-hit differences from the SAME current hero and ogre.
+    // Show only nonzero changes, in one existing details line.
+    const realGains=[];
+    const addAverageGain=(amount,labelRu,labelEn)=>{
+     if(!Number.isSafeInteger(amount)||amount===0)return;
+     realGains.push((en?labelEn:labelRu)+': '+
+      (amount>0?'+':'')+amount+(en?' HP to average hit':' ОЗ к среднему удару'));
+    };
+    addAverageGain(hitResult.itemDamageAverageGain,
+     'Бонусы урона вещей','Item damage bonuses');
+    addAverageGain(hitResult.allyAverageGain,
+     'Усиления союзников','Ally buffs');
+    addAverageGain(hitResult.refinementAverageGain,
+     'Магическая заточка','Magical refinement');
+    if(realGains.length)more.append(make('small',{
+     class:'stage-target-damage-stats',text:realGains.join(' · ')
+    }));
    }
    // General skill descriptions are available via its tooltip and Wiki.
    if(modelParts.length&&!Number.isFinite(skill.amount)){
