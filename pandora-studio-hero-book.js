@@ -1862,6 +1862,26 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
      text:(en?'Average-hit impact · ':'Влияние на средний удар · ')+
       targetImpacts.join(' · ')
     }));
+    // These are actual changes in average HP for THIS hero/monster,
+    // unlike a provisional strike-strength coefficient milestone.
+    const nextHitParts=[],improvements=hitResult.nextHitImprovements||{};
+    const statLabels=en?
+     {int:'INT',str:'STR',dex:'DEX',spi:'SPI',agi:'AGI'}:
+     {int:'ИНТ',str:'СИЛ',dex:'ЛВК',spi:'СД',agi:'ПРВ'};
+    for(const future of [improvements.mastery,improvements.primary,
+     improvements.int]){
+     if(!future||!Number.isSafeInteger(future.value)||
+      !Number.isSafeInteger(future.needed)||future.needed<1||
+      !Number.isSafeInteger(future.averageGain)||future.averageGain<1)continue;
+     const label=statLabels[future.key]||branchLabel[future.key]||future.key;
+     nextHitParts.push(label+' '+future.value+' (+'+future.needed+
+      '): +'+future.averageGain+(en?' HP':' ОЗ'));
+    }
+    if(nextHitParts.length)more.append(make('small',{
+     class:'stage-skill-coefficient-next',
+     text:(en?'Next higher average hit · ':
+      'Следующий прирост среднего удара · ')+nextHitParts.join(' · ')
+    }));
    }
    // General skill descriptions are available via its tooltip and Wiki.
    if(modelParts.length&&!Number.isFinite(skill.amount)){
