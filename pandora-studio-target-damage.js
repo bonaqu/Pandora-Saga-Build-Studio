@@ -43,6 +43,20 @@ function monsterFromSource(monsters,englishMonsters,requestedId=target.id){
   resists:checked
  };
 }
+// Only validated monsters from the same published D1/archive snapshot may
+// become selectable targets. An edited or incomplete row must not result in
+// a misleading combat preview or an unusable picker entry.
+function availableMonsterTargets({monsters,englishMonsters}={}){
+ if(!monsters||typeof monsters!=='object'||Array.isArray(monsters))return [];
+ const out=[];
+ for(const key of Object.keys(monsters)){
+  const id=Number(key);
+  if(!Number.isSafeInteger(id)||id<1||String(id)!==key)continue;
+  const row=monsterFromSource(monsters,englishMonsters,id);
+  if(row)out.push({id:row.id,name:row.name,nameEn:row.nameEn,level:row.level});
+ }
+ return out;
+}
 const trunc=Math.trunc;
 const floor=Math.floor;
 const even=x=>{
@@ -1856,7 +1870,7 @@ function supportedSkillHits(options={}){
  return hits;
 }
 root.PandoraOSTargetDamage=Object.freeze({crawlingTrap,supportedSkillHits,
- nextMagicConcentrationPreview,
+ availableMonsterTargets,nextMagicConcentrationPreview,
  directSpells,linkedSpells,equippedElementalEffects,
  monsterLevelModifier,roundEven:even,target});
 })(typeof window==='undefined'?globalThis:window);
