@@ -779,16 +779,11 @@ function viewSkills(target,details,api){
     'Previous skill','span','path-skill-previous-label');
    const canNavigate=before?.name&&classCanOpen(before,api.job);
    const current=before?.name?
-    make('span',{class:'path-skill-previous-value',text:before.name,
-     ...(canNavigate?{'role':'link',tabindex:'0',
+    make(canNavigate?'button':'span',{class:'path-skill-previous-value',text:before.name,
+     ...(canNavigate?{'type':'button',
       'data-related-skill-id':String(before.id),
       'aria-label':tr(api,'Предыдущее умение: ','Previous skill: ')+before.name,
-      onclick:()=>navigate(before),
-      onkeydown:event=>{
-       if(event.key==='Enter'||event.key===' '){
-        event.preventDefault();navigate(before)
-       }
-      }}:{})}):
+      onclick:()=>navigate(before)}:{})}):
     authored(api,'skillPrerequisiteMissing','Умение отсутствует в каталоге',
      'Skill not in catalog','span','path-skill-previous-value');
    const row=make('p',{class:'path-skill-prereqs path-skill-previous-row'});

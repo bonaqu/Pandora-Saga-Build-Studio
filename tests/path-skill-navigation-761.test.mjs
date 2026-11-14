@@ -29,6 +29,7 @@ test('Hero Path keeps class-gated OS lineage and bounded selected gallery',()=>{
  assert.match(path,/classCanOpen\(row,api\.job\)/);
  assert.match(path,/classCanOpen\(before,api\.job\)/);
  assert.match(path,/api\.onNavigateSkill\(related\)/);
+ assert.match(path,/make\(canNavigate\?'button':'span'/);
  assert.match(path,/aria-current/);
  assert.match(app,/onNavigateSkill:skill=>/);
  assert.match(app,/pathSkillFilter='all';pathSkillQuery=''/);
