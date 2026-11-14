@@ -457,3 +457,15 @@ body>#ownerDock{
  #ownerDock .owner-dock-action-slot>button:not(.owner-dock-action-pencil),
  #ownerDock .owner-dock-action-slot>.owner-dock-action-pencil{transition:none}
 }
+
+/* 0.791: accessible help-edit targets and OS high-contrast fallback. */
+#ownerDock .owner-workflow-copy-pencil{
+ min-width:28px;min-height:28px;width:28px;height:28px
+}
+@media(forced-colors:active){
+ #ownerDock .owner-dock-panel,#ownerDock .owner-dock-save-state,
+ #ownerDock .owner-dock-handle,#ownerDock .owner-dock-action-slot>button,
+ #ownerDock .owner-workflow-copy-pencil{border:1px solid CanvasText}
+ #ownerDock .owner-dock-action-slot>button:focus-visible,
+ #ownerDock .owner-workflow-copy-pencil:focus-visible{outline:2px solid Highlight;outline-offset:2px}
+}

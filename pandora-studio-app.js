@@ -8178,7 +8178,7 @@ function refreshOwnerUI(){
  const dock=document.getElementById('ownerDock');
  if(!adminEditing||!adminToken){closeInlineEditor();dock?.remove();return}
  const count=Object.keys(override).length;
- const saveText=(ownerSaveState==='saving'||wikiLabelPendingWrites>0||wikiRecordWriteQueue.size>0)?
+ const saveText=(ownerSaveState==='saving'||editIsSaving||wikiLabelPendingWrites>0||wikiRecordWriteQueue.size>0)?
   (lang==='en'?'Saving to Cloudflare D1…':'Сохраняю в Cloudflare D1…'):
   ownerSaveState==='error'?(lang==='en'?'Not saved: ':'Не сохранено: ')+
    (ownerSaveError||(lang==='en'?'server error':'ошибка сервера')):
@@ -8196,7 +8196,8 @@ function refreshOwnerUI(){
    const changes=window.PandoraOwnerBilingual?.pending(override)||[];
    const count=changes.reduce((sum,item)=>sum+item.fields.length,0);
    translations.hidden=count===0;
-   translations.disabled=!count||editIsSaving||wikiLabelPendingWrites>0||ownerSaveState==='saving';
+   translations.disabled=!count||editIsSaving||wikiLabelPendingWrites>0||
+    wikiRecordWriteQueue.size>0||ownerSaveState==='saving';
    translations.textContent=ownerDockCopy('translations')+' · '+count;
   }
   for(const slot of root.querySelectorAll('.owner-dock-action-slot[data-owner-dock-key]')){
@@ -8228,21 +8229,31 @@ function refreshOwnerUI(){
   const note=root.querySelector('[data-owner-footer-note]');
   if(note)note.textContent=ownerSaveState==='error'?
    (lang==='en'?'Resolve the save error first':'Сначала исправь ошибку сохранения'):
-   (ownerSaveState==='saving'||editIsSaving||wikiLabelPendingWrites>0)?
+   (ownerSaveState==='saving'||editIsSaving||wikiLabelPendingWrites>0||wikiRecordWriteQueue.size>0)?
    (lang==='en'?'Wait until saving finishes':'Дождись сохранения изменений'):
    (lang==='en'?'Saved edits stay on the site':'Сохранённые правки останутся на сайте');
   for(const node of root.querySelectorAll('[data-owner-dock-static]')){
    if(!node.querySelector('.wiki-inline-input'))
     node.textContent=ownerDockCopy(node.dataset.ownerDockStatic);
   }
+  // Refresh the accessible name of help edit buttons on RU/EN switch.
+  for(const pencil of root.querySelectorAll('.owner-workflow-copy-pencil')){
+   const key=pencil.previousElementSibling?.dataset.ownerDockStatic;
+   if(key)pencil.setAttribute('aria-label',
+    (lang==='en'?'Edit help: ':'Изменить пояснение: ')+ownerDockCopy(key));
+  }
   const guide=root.querySelector('.owner-workflow-guide>summary');
   if(guide)guide.textContent=ownerDockCopy('guide');
   const state=root.querySelector('[data-owner-save-state]');
-  const visibleSaveState=(ownerSaveState==='saving'||wikiLabelPendingWrites>0||
+  const visibleSaveState=(ownerSaveState==='saving'||editIsSaving||wikiLabelPendingWrites>0||
    wikiRecordWriteQueue.size>0)?'saving':ownerSaveState;
-  if(state){state.textContent=saveText;state.dataset.state=visibleSaveState}
+  // Do not re-announce unchanged saving status on every UI refresh.
+  if(state){
+   if(state.textContent!==saveText)state.textContent=saveText;
+   state.dataset.state=visibleSaveState;
+  }
   root.querySelector('[data-owner-undo]').disabled=!ownerEdits.length||editIsSaving||
-   wikiLabelPendingWrites>0||ownerSaveState==='saving';
+   wikiLabelPendingWrites>0||wikiRecordWriteQueue.size>0||ownerSaveState==='saving';
   root.setAttribute('aria-label',lang==='en'?
    'Site editor · automatically saved changes':'Редактор сайта · автоматическое сохранение');
   root.classList.toggle('owner-dock-collapsed',ownerDockCollapsed);
@@ -8254,9 +8265,18 @@ function refreshOwnerUI(){
   }
   const toggle=root.querySelector('[data-owner-collapse]');
   if(toggle){
-   toggle.textContent=ownerDockCopy(ownerDockCollapsed?'expand':'collapse');
+   // A collapsed editor still needs a visible save-status indicator.
+   toggle.textContent=ownerDockCollapsed&&visibleSaveState==='error'?
+    (lang==='en'?'✎ Save error':'✎ Ошибка'):
+    ownerDockCollapsed&&visibleSaveState==='saving'?
+    (lang==='en'?'✎ Saving…':'✎ Сохраняю…'):
+    ownerDockCopy(ownerDockCollapsed?'expand':'collapse');
    toggle.setAttribute('aria-label',ownerDockCollapsed?
-    (lang==='en'?'Open site editor drawer':'Открыть боковую панель редактора сайта'):
+    visibleSaveState==='error'?
+     (lang==='en'?'Save failed. Open site editor to review':'Ошибка сохранения. Открой редактор и проверь правку'):
+    visibleSaveState==='saving'?
+     (lang==='en'?'Saving changes. Open site editor':'Изменения сохраняются. Открыть редактор'):
+     (lang==='en'?'Open site editor drawer':'Открыть боковую панель редактора сайта'):
     (lang==='en'?'Hide site editor drawer':'Скрыть боковую панель редактора сайта'));
    toggle.setAttribute('aria-expanded',String(!ownerDockCollapsed));
   }
@@ -8306,27 +8326,35 @@ function refreshOwnerUI(){
    text:'Проверить сохранение',
    title:'Безопасно записать, прочитать и удалить временные тестовые записи в D1',
    onclick:async function(){
-    if(editIsSaving||wikiLabelPendingWrites>0||ownerSaveState==='saving')return;
+    if(editIsSaving||wikiLabelPendingWrites>0||wikiRecordWriteQueue.size>0||
+     ownerSaveState==='saving')return;
     this.disabled=true;
     try{
      const result=await apiRequest('/api/admin/catalog/test-write',{});
      if(!result?.ok||!result.readback||!result.cleaned||
       !result.overrideReadback||!result.overrideCleaned||
       !result.activeCatalogUnchanged)
-      throw Error('Проверка не подтвердила чтение, удаление или сохранность каталога');
-     showStudioToast('D1: временная запись и чтение проверены, тестовые данные удалены.','success');
+      throw Error(lang==='en'?'Could not verify D1 readback, cleanup or catalog integrity':
+       'Проверка не подтвердила чтение, удаление или сохранность каталога');
+     showStudioToast(lang==='en'?
+      'D1: test write and read verified; temporary records removed.':
+      'D1: временная запись и чтение проверены, тестовые данные удалены.','success');
     }catch(error){
-     showStudioToast('Не удалось проверить запись в D1: '+error.message,'warning');
+     showStudioToast((lang==='en'?'D1 saving test failed: ':
+      'Не удалось проверить запись в D1: ')+error.message,'warning');
     }finally{if(this.isConnected)this.disabled=false}
    }}),
   h('button',{type:'button',class:'owner-dock-export',text:'Экспорт в GitHub',onclick:showOwnerGitHubExport,
    title:'Необязательный экспорт уже сохранённых изменений в GitHub'}),
   h('button',{type:'button',class:'owner-dock-finish',text:'Завершить',
    onclick:()=>{
-    if(ownerSaveState==='saving'||editIsSaving||wikiLabelPendingWrites>0){
-     showStudioToast('Дождись окончания сохранения в Cloudflare D1','warning');return}
+    if(ownerSaveState==='saving'||editIsSaving||wikiLabelPendingWrites>0||
+     wikiRecordWriteQueue.size>0){
+     showStudioToast(lang==='en'?'Wait for Cloudflare D1 to finish saving':
+      'Дождись окончания сохранения в Cloudflare D1','warning');return}
     if(ownerSaveState==='error'){
-     showStudioToast('Есть ошибка сохранения. Проверь поле и повтори изменение.','warning');return}
+     showStudioToast(lang==='en'?'A save failed. Review the field and retry.':
+      'Есть ошибка сохранения. Проверь поле и повтори изменение.','warning');return}
     adminEditing=false;closeInlineEditor();render();updateAdminHint()
    }})
  ]);
@@ -8382,9 +8410,13 @@ function refreshOwnerUI(){
   'aria-controls':'ownerDockPanel','aria-expanded':'false',
   'aria-label':'Открыть боковую панель редактора сайта',
   onclick:()=>{
+   const opening=ownerDockCollapsed;
    ownerDockCollapsed=!ownerDockCollapsed;
    window.PandoraGuideTooltip?.dismiss();
    refreshOwnerUI();
+   // The handle follows the drawer in DOM order; move keyboard focus in.
+   if(opening)panel.querySelector('.owner-dock-primary')?.focus({preventScroll:true});
+   else toggle.focus({preventScroll:true});
   }});
  root.append(panel,toggle);
  // An edge drawer must not alter the left character column or page height.
@@ -8406,7 +8438,10 @@ function refreshOwnerUI(){
   window.PandoraGuideTooltip?.attach(button,message,{hoverDelay:1000});
  }
  root.addEventListener('keydown',event=>{
-  if(event.key!=='Escape'||ownerDockCollapsed)return;
+  if(event.key!=='Escape'||ownerDockCollapsed||event.defaultPrevented)return;
+  // Escape from an active text editor cancels the edit, not the drawer.
+  if(event.target.closest?.('input,textarea,select,[contenteditable]'))return;
+  event.preventDefault();
   ownerDockCollapsed=true;
   window.PandoraGuideTooltip?.dismiss();
   refreshOwnerUI();
