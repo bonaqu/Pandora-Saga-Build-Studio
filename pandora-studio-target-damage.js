@@ -11,6 +11,35 @@ const target=Object.freeze({
   poison:-25,charm:0,holy:0,dark:-25,magic:17}
 });
 const n=v=>Number.isSafeInteger(v)&&v>=0;
+// The encyclopedia and current hero must use the SAME D1 Ogre snapshot.
+// Standalone historical test fixtures may omit it; the live Hero Book always
+// supplies a snapshot and fails closed if its monster data is unavailable.
+function ogreFromSource(monsters,englishMonsters){
+ if(monsters===undefined)return target;
+ if(!monsters||typeof monsters!=='object'||Array.isArray(monsters))return null;
+ const row=monsters[String(target.id)],resists=row?.resists;
+ if(row?.id!==target.id||typeof row.name!=='string'||!row.name.trim()||
+  !n(row.level)||row.level<1||row.level>999||
+  !n(row.life)||row.life<1||!n(row.vit)||!n(row.spi)||
+  !n(row.ac)||!n(row.magicProtection)||
+  (row.lvMod!=null&&(!n(row.lvMod)||row.lvMod>1000))||
+  !resists||typeof resists!=='object'||Array.isArray(resists))return null;
+ const checked={};
+ for(const key of Object.keys(target.resists)){
+  const value=resists[key];
+  if(!Number.isSafeInteger(value)||Math.abs(value)>1000)return null;
+  checked[key]=value;
+ }
+ const english=englishMonsters?.[String(target.id)]?.n;
+ return {
+  id:row.id,name:row.name,nameEn:typeof english==='string'&&english.trim()?
+   english.trim():target.nameEn,
+  level:row.level,life:row.life,vit:row.vit,spi:row.spi,
+  ac:row.ac,magicProtection:row.magicProtection,
+  ...(row.lvMod!=null?{lvMod:row.lvMod}:{}),
+  resists:checked
+ };
+}
 const trunc=Math.trunc;
 const floor=Math.floor;
 const even=x=>{
@@ -1570,6 +1599,8 @@ function elementalHit(options={},spec=null){
  const {skillCatalog,classes,jobKey,level,masteries={},
   branchCaps={},stats={},equipment=[],tables={},itemForth={},unison={},
   modifiers=null}=options;
+ const ogre=ogreFromSource(options.monsters,options.englishMonsters);
+ if(!ogre)return null;
  const isTrap=!spec,isLinked=!!spec?.path,skill=isTrap?
   sourceSkill(skillCatalog,classes,jobKey,level,masteries.trap,branchCaps):
   isLinked?sourceLinkedSpell(options,spec):sourceDirectSpell(options,spec);
@@ -1596,7 +1627,7 @@ function elementalHit(options={},spec=null){
   !Array.isArray(effect.fv1)||effect.fv1.length!==4||
   !effect.fv1.every(n)||!Array.isArray(effect.fv2)||
   JSON.stringify(effect.fv2)!=='[0,0,0,0]'||
-  !Number.isFinite(target.resists[element]))return null;
+  !Number.isFinite(ogre.resists[element]))return null;
  const equipmentEffects=equippedElementalEffects({equipment,itemForth,unison});
  if(!equipmentEffects)return null;
  // The sheet must agree with the equipment damage rate: never silently
@@ -1634,10 +1665,10 @@ function elementalHit(options={},spec=null){
  const basePower=even(powerFactor*param/100);
  const variation=trunc(basePower*spread/100);
  const sourcePoints=[basePower-variation,basePower-variation/2,basePower];
- const gap=monsterLevelModifier(level,target,tables.lvModify);
+ const gap=monsterLevelModifier(level,ogre,tables.lvModify);
  if(!gap)return null;
- const resistanceMagic=trunc(target.resists.magic/2);
- const absorption=even(target.spi*0.5)+target.magicProtection+
+ const resistanceMagic=trunc(ogre.resists.magic/2);
+ const absorption=even(ogre.spi*0.5)+ogre.magicProtection+
   gap.magicProtection;
  // Reuse the EXACT OS resistance and rounding path for each marginal
  // comparison. Removing a buff at the END of the formula would misstate
@@ -1647,7 +1678,7 @@ function elementalHit(options={},spec=null){
   amount+=gemFlat+trunc(amount*(damageRate+gemRate)/100);
   amount=Math.max(1,amount);
   const effective=trunc(amount*
-   (100-resistanceMagic-target.resists[element]+pen)/100)-absorption;
+   (100-resistanceMagic-ogre.resists[element]+pen)/100)-absorption;
   return effective<0?1:effective;
  };
  const hitRange=(rate,gemRate,gemFlat,pen=penetration)=>{
@@ -1680,6 +1711,10 @@ function elementalHit(options={},spec=null){
  const withoutNextMagic=nextMagic?
   hitRange(bonusRate-nextMagicRate,magicGemRate,magicGemFlat,
    penetration-nextMagicPenetration):null;
+ const effectiveItemPenetration=pierces?equipmentEffects.penetration:0;
+ const withoutItemPenetration=effectiveItemPenetration?
+  hitRange(bonusRate,magicGemRate,magicGemFlat,
+   penetration-effectiveItemPenetration):null;
  const withoutItemDamageRate=equipmentRate?
   hitRange(bonusRate-equipmentRate,magicGemRate,magicGemFlat):null;
  const withoutMagicRefinement=(magicGemRate||magicGemFlat)?
@@ -1688,9 +1723,10 @@ function elementalHit(options={},spec=null){
   (allyRate&&!withoutAllies)||
   (magicKnowledge&&!withoutMagicKnowledge)||
   (equipmentRate&&!withoutItemDamageRate)||
+  (effectiveItemPenetration&&!withoutItemPenetration)||
   ((magicGemRate||magicGemFlat)&&!withoutMagicRefinement))return null;
- return {skillId:skill.id,monsterId:target.id,
-  targetName:target.name,targetNameEn:target.nameEn,
+ return {skillId:skill.id,monsterId:ogre.id,
+  targetName:ogre.name,targetNameEn:ogre.nameEn,
   min,average,max,element,heroDex:stats.dex,heroInt:stats.int,
   trapMastery:isTrap?mastery:undefined,
   heroPowerKey:powerKey,heroPower:stats[powerKey],
@@ -1712,6 +1748,11 @@ function elementalHit(options={},spec=null){
   refinementAverageGain:withoutMagicRefinement?
    average-withoutMagicRefinement.average:undefined,
   gearDamageRate:equipmentEffects.general,
+  itemPenetration:effectiveItemPenetration,
+  itemPenetrationAverageGain:withoutItemPenetration?
+   average-withoutItemPenetration.average:undefined,
+  targetElementResistance:ogre.resists[element],
+  targetMagicResistance:ogre.resists.magic,
   levelPenalty:gap.magicDamageReduction,
   // EP_CONSUME_ITEM x2 is an ingredient cost, NOT two damage packets.
   // Its action chain contains one EP_ELEMENT_DAMAGE from its burst stage.
