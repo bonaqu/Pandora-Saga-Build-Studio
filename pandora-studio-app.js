@@ -8639,9 +8639,14 @@ function showOverrideManager(){
   class:'owner-manager-search wiki-owner-search','aria-label':tr('Поиск среди ручных изменений','Search manual edits')});
  const count=h('p',{class:'owner-manager-summary',role:'status'});
  const list=h('div',{class:'owner-manager-list'});
+ const clearSearch=h('button',{type:'button',class:'button-action owner-manager-search-clear',
+  text:tr('Очистить','Clear'),disabled:true,
+  'aria-label':tr('Очистить поиск по правкам','Clear edits search'),
+  onclick:()=>{search.value='';draw();search.focus({preventScroll:true})}});
  const draw=()=>{
   list.replaceChildren();
   const q=String(search.value||'').trim().toLocaleLowerCase('ru');
+  clearSearch.disabled=!q;
   const entries=Object.entries(override).map(([key,value])=>
    window.PandoraOwnerChangeReview.inspect(key,value,{
     base:wikiBaseData,items:wikiBaseData?.items||catalogSource?.items,
@@ -8728,7 +8733,7 @@ function showOverrideManager(){
   return false;
  }
  search.addEventListener('input',draw);
- body.append(search,count,list);
+ body.append(h('div',{class:'owner-manager-search-row'},[search,clearSearch]),count,list);
  draw();
  modal(tr('Все ручные правки','All manual edits'),body);
  if(!wikiBaseData)void loadWiki().then(()=>{if(body.isConnected)draw()})
