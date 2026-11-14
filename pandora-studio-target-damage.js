@@ -1747,13 +1747,19 @@ function elementalHit(options={},spec=null,shared=null){
   if(grade>0){magicGemRate=plus.ratio;magicGemFlat=plus.flat;}
  }
  const fv=effect.fv1;
- const param=floor(fv[0]*stats[powerKey]/1000)+
-  floor(fv[1]*level/1000)+floor(fv[2]*mastery/1000)+fv[3];
- const intStep=even(stats.int/10),powerFactor=100+
-  intStep*intStep/5+trunc(stats.int/5);
- const basePower=even(powerFactor*param/100);
- const variation=trunc(basePower*spread/100);
- const sourcePoints=[basePower-variation,basePower-variation/2,basePower];
+ // Every progression preview uses these exact same public OS integer
+ // stages and rounding, never a linear % damage estimate.
+ const powerPoints=(trained,primary,intelligence)=>{
+  const param=floor(fv[0]*primary/1000)+
+   floor(fv[1]*level/1000)+floor(fv[2]*trained/1000)+fv[3];
+  const intStep=even(intelligence/10);
+  const powerFactor=100+intStep*intStep/5+trunc(intelligence/5);
+  const base=even(powerFactor*param/100);
+  const variation=trunc(base*spread/100);
+  return {base,points:[base-variation,base-variation/2,base]};
+ };
+ const initial=powerPoints(mastery,stats[powerKey],stats.int);
+ const basePower=initial.base,sourcePoints=initial.points;
  const gap=monsterLevelModifier(level,ogre,tables.lvModify);
  if(!gap)return null;
  const resistanceMagic=trunc(ogre.resists.magic/2);
@@ -1775,9 +1781,10 @@ function elementalHit(options={},spec=null,shared=null){
    (100-magicResistance-elementResistance+pen)/100)-consumed;
   return effective<0?1:effective;
  };
- const hitRange=(rate,gemRate,gemFlat,pen=penetration,comparison=null)=>{
+ const hitRange=(rate,gemRate,gemFlat,pen=penetration,comparison=null,
+  points=sourcePoints)=>{
   const contextGap=comparison?.gap||gap;
-  const [normalMin,normalAvg,normalMax]=sourcePoints.map(value=>
+  const [normalMin,normalAvg,normalMax]=points.map(value=>
    apply(value,rate,gemRate,gemFlat,pen,comparison));
   let min=normalMin,average=normalAvg,max=normalMax;
   if(contextGap.magicDamageReduction>0){
@@ -1832,6 +1839,47 @@ function elementalHit(options={},spec=null,shared=null){
   hitRange(bonusRate,magicGemRate,magicGemFlat,penetration,
    {gap:sameLevelGap,
     absorption:intrinsicAbsorption+sameLevelGap.magicProtection}):null;
+ // Find the FIRST higher average hit, not merely a larger coefficient.
+ // These are independently changed hypothetical stats/masteries on the
+ // same current hero, selected monster, equipment and ally buffs.
+ // Stat probes are bounded to +30: do not label a farther unproven
+ // threshold as the next step. Mastery never exceeds the current class cap.
+ const seekIncrease=(key,initialValue,maxDelta,calculate)=>{
+  if(!n(initialValue)||!n(maxDelta)||maxDelta<1)return null;
+  for(let step=1;step<=maxDelta;step++){
+   const value=initialValue+step;
+   if(!n(value))return null;
+   const trial=calculate(value);
+   if(!trial)return null;
+   if(trial.average>average)return {
+    key,value,needed:step,averageGain:trial.average-average
+   };
+  }
+  return null;
+ };
+ const withPoints=(trained,primary,intelligence,rate=bonusRate)=>{
+  const future=powerPoints(trained,primary,intelligence);
+  return hitRange(rate,magicGemRate,magicGemFlat,penetration,
+   null,future.points);
+ };
+ const masteryCap=branchCaps[masteryKey];
+ const nextMastery=n(masteryCap)&&masteryCap<=100&&mastery<masteryCap?
+  seekIncrease(masteryKey,mastery,masteryCap-mastery,value=>{
+   let candidateRate=bonusRate;
+   if(nextMagic&&masteryKey==='element'){
+    const advanced=nextMagicConcentrationPreview({
+     ...options,masteries:{...masteries,[masteryKey]:value}
+    });
+    if(!advanced)return null;
+    candidateRate+=advanced.damageRate-nextMagicRate;
+   }
+   return withPoints(value,stats[powerKey],stats.int,candidateRate);
+  }):null;
+ const nextInt=seekIncrease('int',stats.int,30,value=>
+  withPoints(mastery,powerKey==='int'?value:stats[powerKey],value));
+ const nextPrimary=powerKey!=='int'&&fv[0]>0?
+  seekIncrease(powerKey,stats[powerKey],30,value=>
+   withPoints(mastery,value,stats.int)):null;
  if((ogre.level!==level&&(!sameLevelGap||!sameLevel))||
   ((resistanceMagic||ogre.resists[element])&&!noResist)||
   (intrinsicAbsorption&&!noIntrinsicAbsorption)||
@@ -1879,6 +1927,9 @@ function elementalHit(options={},spec=null,shared=null){
   targetAbsorptionAverageImpact:noIntrinsicAbsorption?
    average-noIntrinsicAbsorption.average:0,
   targetLevelAverageImpact:sameLevel?average-sameLevel.average:0,
+  // Each is the first higher *average hit* in the verified finite search.
+  // No estimated stat availability or resource costs are asserted.
+  nextHitImprovements:{mastery:nextMastery,int:nextInt,primary:nextPrimary},
   // EP_CONSUME_ITEM x2 is an ingredient cost, NOT two damage packets.
   // Its action chain contains one EP_ELEMENT_DAMAGE from its burst stage.
   hitKind:isTrap?'trap-hit':(spec?.directPart||isLinked)?'direct-part':'single-hit',

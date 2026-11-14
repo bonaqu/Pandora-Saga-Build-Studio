@@ -84,7 +84,7 @@ test('Item-specific damage rates are separate from ally buffs, and never spill a
 });
 test('No new Book cards, no status-tick sum, same UI text bilingual',()=>{
  const book=read('pandora-studio-hero-book.js'),dmg=read('pandora-studio-target-damage.js');
- assert.match(dmg,/const hitRange=\(rate,gemRate,gemFlat,pen=penetration,comparison=null\)=>/);
+ assert.match(dmg,/const hitRange=\(rate,gemRate,gemFlat,pen=penetration,comparison=null,/);
  assert.match(book,/Бонусы урона вещей/);
  assert.match(book,/Усиления союзников/);
  assert.match(book,/Магическая заточка/);

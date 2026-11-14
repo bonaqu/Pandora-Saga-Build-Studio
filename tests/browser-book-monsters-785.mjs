@@ -30,7 +30,7 @@ export async function runHeroBookMonsterPicker785Smoke(browser,base){
    const modifiers={mp:220,stats,combat:{spellDamageEquipmentRate:0,
     priestSong:{}},priestApplied:{},healingSpells:{rows:[]},
     periodicRecovery:{rows:[]}};
-   let selected=22104;
+   let selected=22104,latestHits=[];
    const draw=()=>{
     const results=C.supportedSkillHits({
      skillCatalog:skills,classes,jobKey:'DISTURBANCE',level:45,
@@ -39,6 +39,7 @@ export async function runHeroBookMonsterPicker785Smoke(browser,base){
      monsters,englishMonsters:english.monsters,
      targetMonsterId:selected,modifiers
     });
+    latestHits=results;
     B.render(host,{page:'effects',modifiers,
      gameTerms:{skills,englishSkills:english.skills,
       branchLabels:{trap:'Ловушки'},englishBranches:{trap:'Trapping'},
@@ -52,6 +53,7 @@ export async function runHeroBookMonsterPicker785Smoke(browser,base){
     });
    };
    window.__monster785={draw,selected:()=>selected,
+    currentHit:id=>latestHits.find(row=>row.skillId===id),
     force:id=>{selected=id;draw();}};
    document.documentElement.lang='ru';
    draw();
@@ -87,6 +89,16 @@ export async function runHeroBookMonsterPicker785Smoke(browser,base){
   assert.match(ruDetails,/СД и маг\. защита цели: [+−-]?\d+ ОЗ/);
   assert.doesNotMatch(ruDetails,/Разница уровней:/,
    'A 6-level gap is below the OS level correction threshold');
+  const russianSteps=await page.evaluate(()=>
+   window.__monster785.currentHit(240005001)?.nextHitImprovements);
+  assert.ok(russianSteps?.mastery&&russianSteps?.primary&&russianSteps?.int,
+   'OS target must provide a first real hit increase for mastery, DEX and INT');
+  assert.match(ruDetails,/Следующий прирост среднего удара/);
+  for(const [key,label] of [['mastery','Ловушки'],['primary','ЛВК'],['int','ИНТ']]){
+   const next=russianSteps[key];
+   assert.ok(ruDetails.includes(label+' '+next.value+' (+'+next.needed+
+    '): +'+next.averageGain+' ОЗ'),key+' must match the source calculation');
+  }
   await page.evaluate(()=>{document.documentElement.lang='en';window.__monster785.draw();});
   assert.equal(await select.inputValue(),'11104');
   assert.match(await page.locator('#monster-785-qa .stage-book-damage-target').textContent(),
@@ -101,6 +113,12 @@ export async function runHeroBookMonsterPicker785Smoke(browser,base){
   assert.match(enDetails,/Target SPI and magic defense: [+−-]?\d+ HP/);
   assert.doesNotMatch(enDetails,/Level difference:/,
    'No invented level penalty below the real OS threshold');
+  assert.match(enDetails,/Next higher average hit/);
+  for(const [key,label] of [['mastery','Trapping'],['primary','DEX'],['int','INT']]){
+   const next=russianSteps[key];
+   assert.ok(enDetails.includes(label+' '+next.value+' (+'+next.needed+
+    '): +'+next.averageGain+' HP'),key+' must retain exact values in English');
+  }
   assert.equal(await page.locator('#monster-785-qa .stage-target-damage-row').count(),2,
    'The current Traps mastery learns two distinct attacks, not duplicate results');
   const allHits=await page.locator('#monster-785-qa .stage-target-damage-row strong').allTextContents();
@@ -115,6 +133,12 @@ export async function runHeroBookMonsterPicker785Smoke(browser,base){
   assert.match(ogreDetails,/Ogre · Fire resistance 0 · Magic resistance 17/);
   assert.match(ogreDetails,/Level difference: [-−]\d+ HP/,
    'The 8-level Ogre gap must use the exact OS penalty');
+  const ogreSteps=await page.evaluate(()=>
+   window.__monster785.currentHit(240005001)?.nextHitImprovements);
+  assert.ok(ogreSteps?.mastery&&ogreSteps?.int);
+  assert.ok(ogreDetails.includes('Trapping '+ogreSteps.mastery.value+
+   ' (+'+ogreSteps.mastery.needed+'): +'+
+   ogreSteps.mastery.averageGain+' HP'));
   assert.equal(await page.locator('#monster-785-qa .stage-book-damage-target').count(),1);
   assert.equal(await page.locator('#monster-785-qa .stage-book-damage-target select[aria-label]').count(),1);
   await page.evaluate(()=>window.__monster785.force(99999999));
