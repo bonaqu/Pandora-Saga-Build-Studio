@@ -76,6 +76,8 @@ test('book choice is a focused native select; monster ID comes from current D1, 
  assert.match(book,/onTargetMonster\(Number\(event\.target\.value\)\)/);
  assert.match(book,/result\.monsterId!==targetMonsterId/);
  assert.match(app,/targetMonsterId:activeDamageTargetId/);
+ assert.match(app,/const activeDamageTargetId=selectedDamageTargetId/);
+ assert.match(book,/if\(!targetAvailable\)choice\.append/);
  assert.match(app,/currentDamageTargetChoices\(ogreMonsters\)/);
  assert.match(app,/selectedDamageTargetId=id/);
  assert.doesNotMatch(book,/stage-material-actions|function materialSkillResults\(/);
