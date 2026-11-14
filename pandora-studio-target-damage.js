@@ -1829,6 +1829,15 @@ function elementalHit(options={},spec=null,shared=null){
  const noResist=(resistanceMagic||ogre.resists[element])?
   hitRange(bonusRate,magicGemRate,magicGemFlat,penetration,
    {magicResistance:0,elementResistance:0}):null;
+ // The two D1 resistances have distinct OS stages. Independently zero
+ // each one in the COMPLETE same-hit kernel: their counterfactual changes
+ // need not add up to the joint resistance counterfactual.
+ const noElementResist=ogre.resists[element]?
+  hitRange(bonusRate,magicGemRate,magicGemFlat,penetration,
+   {elementResistance:0}):null;
+ const noMagicResist=resistanceMagic?
+  hitRange(bonusRate,magicGemRate,magicGemFlat,penetration,
+   {magicResistance:0}):null;
  const intrinsicAbsorption=even(ogre.spi*0.5)+ogre.magicProtection;
  const noIntrinsicAbsorption=intrinsicAbsorption?
   hitRange(bonusRate,magicGemRate,magicGemFlat,penetration,
@@ -1882,6 +1891,8 @@ function elementalHit(options={},spec=null,shared=null){
    withPoints(mastery,value,stats.int)):null;
  if((ogre.level!==level&&(!sameLevelGap||!sameLevel))||
   ((resistanceMagic||ogre.resists[element])&&!noResist)||
+  (ogre.resists[element]&&!noElementResist)||
+  (resistanceMagic&&!noMagicResist)||
   (intrinsicAbsorption&&!noIntrinsicAbsorption)||
   (nextMagic&&!withoutNextMagic)||
   (allyRate&&!withoutAllies)||
@@ -1892,6 +1903,11 @@ function elementalHit(options={},spec=null,shared=null){
   ((magicGemRate||magicGemFlat)&&!withoutMagicRefinement))return null;
  return {skillId:skill.id,monsterId:ogre.id,
   targetName:ogre.name,targetNameEn:ogre.nameEn,
+  // Verified maximum life from the SAME D1 target snapshot. The ratio is
+  // only ONE predicted on-hit damage packet / a full health bar; no
+  // accuracy, repeated attacks, regeneration or total cast are inferred.
+  targetMaxLife:ogre.life,
+  targetAverageLifePercent:100*average/ogre.life,
   min,average,max,element,heroDex:stats.dex,heroInt:stats.int,
   trapMastery:isTrap?mastery:undefined,
   heroPowerKey:powerKey,heroPower:stats[powerKey],
@@ -1924,6 +1940,10 @@ function elementalHit(options={},spec=null,shared=null){
   // These show exact current-build AVERAGE differences against neutralized
   // target defenses; each is independent and must never be summed.
   targetResistanceAverageImpact:noResist?average-noResist.average:0,
+  targetElementResistanceAverageImpact:noElementResist?
+   average-noElementResist.average:0,
+  targetMagicResistanceAverageImpact:noMagicResist?
+   average-noMagicResist.average:0,
   targetAbsorptionAverageImpact:noIntrinsicAbsorption?
    average-noIntrinsicAbsorption.average:0,
   targetLevelAverageImpact:sameLevel?average-sameLevel.average:0,
