@@ -121,7 +121,8 @@ test('malformed D1 monsters never invent numbers, UI uses actual selected game n
  assert.equal(current({targetMonsterId:11104,monsters:wrong}),null);
  assert.equal(batch({targetMonsterId:11104,monsters:wrong}).length,0);
  const book=read('pandora-studio-hero-book.js');
- assert.match(book,/hitResult\.targetResistanceAverageImpact/);
+ assert.match(book,/hitResult\.targetElementResistanceAverageImpact/);
+ assert.match(book,/hitResult\.targetMagicResistanceAverageImpact/);
  assert.match(book,/hitResult\.targetAbsorptionAverageImpact/);
  assert.match(book,/hitResult\.targetLevelAverageImpact/);
  assert.match(book,/hitResult\.targetNameEn/);
