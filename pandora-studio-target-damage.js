@@ -1504,6 +1504,37 @@ function sourceDirectSpell({skillCatalog,classes,jobKey,level,masteries={},
  }
  return skill;
 }
+// One-use OS Warlock buff: its last effect consumes the buff after an attack.
+// Validate the complete server signature; never treat it as a passive.
+function nextMagicConcentrationPreview({skillCatalog,classes,jobKey,level,
+ masteries={},branchCaps={}}={}){
+ if(jobKey!=='WARLOCK'||!n(level)||level<45||level>55)return null;
+ const job=classes?.WARLOCK,skill=skillCatalog?.['410000101'];
+ const cap=branchCaps?.element,mastery=masteries.element??0;
+ if(job?.id!=='WARLOCK'||job.branchCaps?.element!==cap||
+  !n(cap)||cap>100||!n(mastery)||mastery>cap||
+  skill?.id!==410000101||skill.learnable!==true||
+  skill.skillType!=='MYSELF'||skill.branch!=='element'||
+  skill.branchRaw!=='SORCERY_ELEMENTAL'||skill.element!==null||
+  skill.charLevel!==45||skill.powerStat!=='INT'||
+  skill.prereq!==null||skill.damage!==null||skill.weaponUse!==null||
+  JSON.stringify(skill.reqs)!=='[]'||
+  JSON.stringify(skill.classes)!=='{"WARLOCK":1}'||
+  skill.funcs?.length!==3)return null;
+ const effects=[
+  ['EP_ELEMENT_DAMAGE_SCALE',[0,0,30,20]],
+  ['EP_ELEMENT_BONUS',[0,0,0,30]],
+  ['EP_LOST_ELEM_ATK_END',[0,0,0,0]]
+ ];
+ if(!effects.every(([name,values],i)=>{
+  const fx=skill.funcs[i];
+  return fx?.ep===name&&fx.dir==='TARGET'&&
+   JSON.stringify(fx.fv1)===JSON.stringify(values)&&
+   JSON.stringify(fx.fv2)==='[0,0,0,0]';
+ }))return null;
+ return {skillId:410000101,damageRate:20+floor(30*mastery/100),
+  penetration:30,mastery};
+}
 // Current OS 940110001 is a Lv20 PASSIVE of the three advanced mage
 // classes. The OS effect collector adds EP_ELEMENT_DAMAGE_SCALE to the
 // same elemental-damage stage as item and party effects. In this snapshot
@@ -1576,13 +1607,17 @@ function elementalHit(options={},spec=null){
  const sage=modifiers?.combat?.priestSong?.sageElementDamage||0;
  const enchant=modifiers?.priestApplied?.priestEnchantment?.magicRate||0;
  const magicKnowledge=sourceMagicKnowledge(options);
+ const nextMagic=options.nextMagicConcentration===true?
+  nextMagicConcentrationPreview(options):null;
+ const nextMagicRate=nextMagic?.damageRate||0;
  if(!Number.isFinite(sage)||!Number.isFinite(enchant)||
   magicKnowledge===null)return null;
  const bonusRate=equipmentEffects.general+
-  (equipmentEffects[element]||0)+sage+enchant+magicKnowledge;
+  (equipmentEffects[element]||0)+sage+enchant+magicKnowledge+nextMagicRate;
  // EP_ELEMENT_BONUS pierces FIRE/COLD/LIGHTNING, but not DARK resistance.
- const penetration=['fire','cold','lightning'].includes(element)?
-  equipmentEffects.penetration:0;
+ const pierces=['fire','cold','lightning'].includes(element);
+ const nextMagicPenetration=pierces?(nextMagic?.penetration||0):0;
+ const penetration=pierces?equipmentEffects.penetration+nextMagicPenetration:0;
  const weapon=equipment.find(x=>x?.record?.slot==='weapon'&&!x?.issue?.length);
  let magicGemRate=0,magicGemFlat=0;
  if(weapon?.gem?.type==='magical'&&weapon.gem.element===element){
@@ -1602,23 +1637,22 @@ function elementalHit(options={},spec=null){
  const gap=monsterLevelModifier(level,target,tables.lvModify);
  if(!gap)return null;
  const resistanceMagic=trunc(target.resists.magic/2);
- const resistanceElement=target.resists[element]-penetration;
  const absorption=even(target.spi*0.5)+target.magicProtection+
   gap.magicProtection;
  // Reuse the EXACT OS resistance and rounding path for each marginal
  // comparison. Removing a buff at the END of the formula would misstate
  // its effect near minimum damage and level-mitigation thresholds.
- const apply=(base,damageRate,gemRate,gemFlat)=>{
+ const apply=(base,damageRate,gemRate,gemFlat,pen=penetration)=>{
   let amount=trunc(base*(100-gap.magicAc)/100);
   amount+=gemFlat+trunc(amount*(damageRate+gemRate)/100);
   amount=Math.max(1,amount);
   const effective=trunc(amount*
-   (100-resistanceMagic-resistanceElement)/100)-absorption;
+   (100-resistanceMagic-target.resists[element]+pen)/100)-absorption;
   return effective<0?1:effective;
  };
- const hitRange=(rate,gemRate,gemFlat)=>{
+ const hitRange=(rate,gemRate,gemFlat,pen=penetration)=>{
   const [normalMin,normalAvg,normalMax]=sourcePoints.map(value=>
-   apply(value,rate,gemRate,gemFlat));
+   apply(value,rate,gemRate,gemFlat,pen));
   let min=normalMin,average=normalAvg,max=normalMax;
   if(gap.magicDamageReduction>0){
    const fraction=gap.magicDamageReduction/100;
@@ -1642,11 +1676,16 @@ function elementalHit(options={},spec=null){
   hitRange(bonusRate-allyRate,magicGemRate,magicGemFlat):null;
  const withoutMagicKnowledge=magicKnowledge?
   hitRange(bonusRate-magicKnowledge,magicGemRate,magicGemFlat):null;
+ // Removing BOTH effects gives the true marginal contribution for this hit.
+ const withoutNextMagic=nextMagic?
+  hitRange(bonusRate-nextMagicRate,magicGemRate,magicGemFlat,
+   penetration-nextMagicPenetration):null;
  const withoutItemDamageRate=equipmentRate?
   hitRange(bonusRate-equipmentRate,magicGemRate,magicGemFlat):null;
  const withoutMagicRefinement=(magicGemRate||magicGemFlat)?
   hitRange(bonusRate,0,0):null;
- if((allyRate&&!withoutAllies)||
+ if((nextMagic&&!withoutNextMagic)||
+  (allyRate&&!withoutAllies)||
   (magicKnowledge&&!withoutMagicKnowledge)||
   (equipmentRate&&!withoutItemDamageRate)||
   ((magicGemRate||magicGemFlat)&&!withoutMagicRefinement))return null;
@@ -1658,6 +1697,9 @@ function elementalHit(options={},spec=null){
   heroPowerCoefficient:fv[0],
   heroMasteryKey:masteryKey,heroMastery:mastery,
   basePower,bonusRate,magicGemRate,magicGemFlat,
+  nextMagicRate,nextMagicPenetration,
+  nextMagicAverageGain:withoutNextMagic?
+   average-withoutNextMagic.average:undefined,
   magicKnowledgeRate:magicKnowledge,
   magicKnowledgeAverageGain:withoutMagicKnowledge?
    average-withoutMagicKnowledge.average:undefined,
@@ -1687,6 +1729,7 @@ function supportedSkillHits(options={}){
  return hits;
 }
 root.PandoraOSTargetDamage=Object.freeze({crawlingTrap,supportedSkillHits,
+ nextMagicConcentrationPreview,
  directSpells,linkedSpells,equippedElementalEffects,
  monsterLevelModifier,roundEven:even,target});
 })(typeof window==='undefined'?globalThis:window);
