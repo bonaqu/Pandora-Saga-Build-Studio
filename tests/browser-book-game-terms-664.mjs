@@ -534,7 +534,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   assert.match(spellBook.sniperRu[0].main,/Гигантский огр · прямой удар 61–69 ОЗ/);
   assert.match(spellBook.sniperRu[0].details,/ИНТ 80 · Стрельба 80/);
   assert.doesNotMatch(spellBook.sniperRu[0].details,/СИЛ 70/);
-  assert.match(spellBook.sniperEn[0].details,/INT 80 · Archery 80/);
+  assert.match(spellBook.sniperEn[0].details,/INT 80 · Ranged 80/);
   assert.doesNotMatch(spellBook.sniperRu[0].text,/боеприпас|ожог|рецепт|материал/i);
   assert.equal(spellBook.ru.length,9,'one compact row for each learned direct hit');
   assert.equal(spellBook.en.length,9);
