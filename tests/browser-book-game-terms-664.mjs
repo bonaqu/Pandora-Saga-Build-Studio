@@ -423,12 +423,12 @@ export async function runHeroBookGameNames664Smoke(browser,base){
    [34,148,194]);
   assert.equal(ogreBook.ru.count,1);
   assert.match(ogreBook.ru.main,/Ползучая ловушка/);
-  assert.match(ogreBook.ru.strong,/Гигантский огр · 34–194 ОЗ/);
+  assert.match(ogreBook.ru.strong,/Гигантский огр · одна ловушка 34–194 ОЗ/);
   assert.match(ogreBook.ru.details,/Средний урон по цели.*148 ОЗ/);
   assert.match(ogreBook.ru.details,/ЛВК 70 · ИНТ 20 · Ловушки 41/);
   assert.equal(ogreBook.en.count,1);
   assert.match(ogreBook.en.main,/Worm Bomb/);
-  assert.match(ogreBook.en.strong,/Ogre Bouncer · 34–194 HP/);
+  assert.match(ogreBook.en.strong,/Ogre Bouncer · one trap 34–194 HP/);
   assert.match(ogreBook.en.details,/Average hit against.*148 HP/);
   assert.equal(ogreBook.locked.count,0);
   assert.equal(ogreBook.missing.count,0);
