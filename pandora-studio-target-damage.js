@@ -1286,16 +1286,133 @@ const linkedSpells=Object.freeze([
        }
      }
    ]
+ },
+ {
+   "id": 213608001,
+   "path": [
+     {
+       "id": 213608001,
+       "learnable": true,
+       "kind": "POINT",
+       "element": "FIRE",
+       "stat": "STR",
+       "branch": "archery",
+       "charLevel": 50,
+       "prereq": null,
+       "reqs": [],
+       "damage": null,
+       "effects": [
+         [
+           "EP_SKILL_EXEC",
+           "TARGET",
+           [
+             0,
+             0,
+             0,
+             213608002
+           ],
+           [
+             0,
+             0,
+             0,
+             0
+           ]
+         ],
+         [
+           "EP_CONSUME_AMMO",
+           "CASTER",
+           [
+             0,
+             0,
+             0,
+             0
+           ],
+           [
+             0,
+             0,
+             0,
+             1
+           ]
+         ]
+       ]
+     },
+     {
+       "id": 213608002,
+       "learnable": false,
+       "kind": "SPHERE",
+       "element": "FIRE",
+       "stat": "STR",
+       "branch": "archery",
+       "charLevel": 0,
+       "prereq": null,
+       "reqs": [],
+       "damage": {
+         "kernel": "element",
+         "slotIndex": 1
+       },
+       "effects": [
+         [
+           "EP_CAUSE_BURN",
+           "TARGET",
+           [
+             0,
+             0,
+             0,
+             5
+           ],
+           [
+             0,
+             0,
+             0,
+             100
+           ]
+         ],
+         [
+           "EP_ELEMENT_DAMAGE",
+           "TARGET",
+           [
+             0,
+             0,
+             80,
+             60
+           ],
+           [
+             0,
+             0,
+             0,
+             0
+           ]
+         ]
+       ]
+     }
+   ],
+   "damageIndex": 1,
+   "requiredWeapon": "BOW"
  }
 ]);
 // Only one OS EP_ELEMENT_DAMAGE packet is calculated for each linked
 // action. Root -> attack -> optional status chain is strictly pinned.
 function sourceLinkedSpell({skillCatalog,classes,jobKey,level,masteries={},
- branchCaps={}},spec){
+ branchCaps={},equipment=[]},spec){
  const job=classes?.[jobKey],first=spec.path[0];
  const root=skillCatalog?.[String(first.id)];
  if(!job||job.id!==jobKey||!root||!n(level)||level<1||level>55||
   level<first.charLevel||root.classes?.[jobKey]!==1)return null;
+ // No-mastery-gate level skills must STILL use a legal trained mastery.
+ const primaryCap=branchCaps[first.branch];
+ const primaryMastery=masteries[first.branch]??0;
+ if(!n(primaryCap)||primaryCap>100||
+  primaryCap!==job.branchCaps?.[first.branch]||
+  !n(primaryMastery)||primaryMastery>primaryCap)return null;
+ // The Sniper's source explicitly requires an equipped BOW. A crossbow,
+ // bare hands or unusable/stale weapon may not produce a playable hit.
+ if(spec.requiredWeapon){
+  if(spec.requiredWeapon!=='BOW'||!spec.path.every(node=>
+   JSON.stringify(skillCatalog?.[String(node.id)]?.weaponUse)==='["BOW"]')||
+   !equipment.some(slot=>slot?.record?.slot==='weapon'&&
+    slot.record.kind==='BOW'&&Array.isArray(slot.issue)&&
+    slot.issue.length===0))return null;
+ }
  for(const req of first.reqs){
   const cap=branchCaps[req.branch],mastery=masteries[req.branch]??0;
   if(!n(req.amount)||!n(cap)||cap>100||
@@ -1401,7 +1518,10 @@ function elementalHit(options={},spec=null){
   !tables.magicPlus)return null;
  const effectSkill=isTrap?skillCatalog['240005003']:
   isLinked?skillCatalog[String(spec.path[spec.damageIndex].id)]:skill;
- const powerKey={DEX:'dex',INT:'int',SPI:'spi'}[effectSkill.powerStat];
+ // Public OS Et() maps STR, INT, DEX, AGI, VIT and SPI. Kindling Arrow
+ // uses STR as its declared power stat, with a ZERO STR coefficient in
+ // the current game vector: only its trained Archery and INT affect the hit.
+ const powerKey={STR:'str',DEX:'dex',INT:'int',SPI:'spi'}[effectSkill.powerStat];
  // NONE/null in the OS calculator maps to attribute PHYSICAL (index 0).
  const element=effectSkill.element?.toLowerCase()||'physical';
  const masteryKey=isTrap?'trap':isLinked?spec.path[0].branch:spec.branch;
@@ -1478,6 +1598,7 @@ function elementalHit(options={},spec=null){
   min,average,max,element,heroDex:stats.dex,heroInt:stats.int,
   trapMastery:isTrap?mastery:undefined,
   heroPowerKey:powerKey,heroPower:stats[powerKey],
+  heroPowerCoefficient:fv[0],
   heroMasteryKey:masteryKey,heroMastery:mastery,
   basePower,bonusRate,magicGemRate,magicGemFlat,
   gearDamageRate:equipmentEffects.general,

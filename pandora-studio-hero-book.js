@@ -1553,7 +1553,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     410021001,410023001,420003001,430001001,430052001,
     410002001,430053001,240002001,410014001,410014003,
     410022001,420007001,430001003,430052002,430053003,
-    430056001].includes(id)||
+    430056001,213608001].includes(id)||
    seenHits.has(id)||result.monsterId!==22104||
    source?.id!==id||source.classes?.[heroJobKey]!==1||
    !Number.isSafeInteger(mastery)||mastery<required||
@@ -1661,22 +1661,29 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
      (partial?'Средний прямой урон по цели «':'Средний урон по цели «')+
       hitResult.targetName+'»: '+hitResult.average+' ОЗ'}));
     const statLabel=en?
-     {dex:'DEX',int:'INT',spi:'SPI'}:
-     {dex:'ЛВК',int:'ИНТ',spi:'СД'};
+     {str:'STR',dex:'DEX',int:'INT',spi:'SPI'}:
+     {str:'СИЛ',dex:'ЛВК',int:'ИНТ',spi:'СД'};
     const branchLabel=en?
      {...{trap:'Trapping',element:'Elemental',darkness:'Darkness',
-      exorcism:'Exorcism',charm:'Confusion'},
+      exorcism:'Exorcism',charm:'Confusion',archery:'Archery'},
       ...(gameTerms.englishBranches||{})}:
      {...{trap:'Ловушки',element:'Магия стихий',darkness:'Магия тьмы',
-      exorcism:'Экзорцизм',charm:'Чары'},
+      exorcism:'Экзорцизм',charm:'Чары',archery:'Стрельба'},
       ...(gameTerms.branchLabels||{})};
+    // Show only stats which actually contribute to this skill packet.
+    // Kindling Arrow declares STR, but its current STR coefficient is zero.
+    const powerRelevant=hitResult.heroPowerCoefficient!==0;
     const statsLine=hitResult.heroMasteryKey==='trap'?
      (en?'DEX ':'ЛВК ')+hitResult.heroDex+
       (en?' · INT ':' · ИНТ ')+hitResult.heroInt+
       (en?' · Traps ':' · Ловушки ')+hitResult.trapMastery:
-     statLabel[hitResult.heroPowerKey]+' '+hitResult.heroPower+
-      (hitResult.heroPowerKey==='int'?'':(en?' · INT ':' · ИНТ ')+hitResult.heroInt)+
-      ' · '+branchLabel[hitResult.heroMasteryKey]+' '+hitResult.heroMastery;
+     [
+      ...(powerRelevant?
+       [statLabel[hitResult.heroPowerKey]+' '+hitResult.heroPower]:[]),
+      ...(hitResult.heroPowerKey==='int'&&powerRelevant?
+       []:[(en?'INT ':'ИНТ ')+hitResult.heroInt]),
+      branchLabel[hitResult.heroMasteryKey]+' '+hitResult.heroMastery
+     ].join(' · ');
     more.append(make('small',{class:'stage-target-damage-stats',
      text:statsLine}));
     // These are numeric contributions to THIS hit from the selected build,

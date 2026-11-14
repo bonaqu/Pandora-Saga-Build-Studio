@@ -479,6 +479,31 @@ export async function runHeroBookGameNames664Smoke(browser,base){
    const trap=calculated(trapMasteries,'DISTURBANCE');
    const conjurerMasteries={embody:61};
    const conjurer=calculated(conjurerMasteries,'CONJURER');
+   // Sniper 50 + real equipped bow: one fire packet, burn is NOT added.
+   const sniperMasteries={archery:80},sniperStats={...stats,str:70};
+   const sniperBow={record:terms.items['2201'],issue:[],
+    refinement:0,gem:null,souls:[]};
+   const sniper=window.PandoraOSTargetDamage.supportedSkillHits({
+    skillCatalog:terms.skills,classes:terms.classes,jobKey:'SNIPER',
+    level:50,masteries:sniperMasteries,
+    branchCaps:terms.classes.SNIPER.branchCaps,
+    stats:sniperStats,equipment:[sniperBow],tables,modifiers
+   });
+   const renderSniper=language=>{
+    document.documentElement.lang=language;
+    window.PandoraStageAttributes.render(host,{
+     page:'effects',modifiers:{mp:450,stats:sniperStats,...modifiers,
+      healingSpells:{rows:[]},periodicRecovery:{rows:[]}},
+     gameTerms:terms,heroJobKey:'SNIPER',heroLevel:50,
+     heroMasteries:sniperMasteries,
+     heroBranchCaps:terms.classes.SNIPER.branchCaps,
+     heroWeaponKind:'BOW',targetSkillDamages:sniper
+    });
+    return [...host.querySelectorAll('.stage-target-damage-row')]
+     .map(row=>({text:row.textContent||'',
+      main:row.querySelector('strong')?.textContent||'',
+      details:row.querySelector('.stage-skill-more')?.textContent||''}));
+   };
    const extract=effects=>effects.map(({skillId,min,average,max})=>
     [skillId,min,average,max]);
    return {basic:extract(basic),expanded:extract(extended),
@@ -491,7 +516,9 @@ export async function runHeroBookGameNames664Smoke(browser,base){
     trapRu:render('ru',trapMasteries,trap,'DISTURBANCE'),
     trapEn:render('en',trapMasteries,trap,'DISTURBANCE'),
     conjurerRu:render('ru',conjurerMasteries,conjurer,'CONJURER'),
-    conjurerEn:render('en',conjurerMasteries,conjurer,'CONJURER')};
+    conjurerEn:render('en',conjurerMasteries,conjurer,'CONJURER'),
+    sniper:extract(sniper),sniperRu:renderSniper('ru'),
+    sniperEn:renderSniper('en')};
   });
   assert.deepEqual(spellBook.basic,[
    [410001001,4,21,28],[410011001,1,6,10],[410012001,12,55,78],
@@ -499,6 +526,16 @@ export async function runHeroBookGameNames664Smoke(browser,base){
    [430001001,10,48,71],[430052001,1,5,9],
    [410002001,10,46,61],[410022001,2,18,34]
   ]);
+  assert.deepEqual(spellBook.sniper,[[213608001,61,65,69]]);
+  assert.equal(spellBook.sniperRu.length,1);
+  assert.equal(spellBook.sniperEn.length,1);
+  assert.match(spellBook.sniperRu[0].text,/Пламенная стрела/);
+  assert.match(spellBook.sniperEn[0].text,/Kindling Arrow/);
+  assert.match(spellBook.sniperRu[0].main,/Гигантский огр · прямой удар 61–69 ОЗ/);
+  assert.match(spellBook.sniperRu[0].details,/ИНТ 80 · Стрельба 80/);
+  assert.doesNotMatch(spellBook.sniperRu[0].details,/СИЛ 70/);
+  assert.match(spellBook.sniperEn[0].details,/INT 80 · Ranged 80/);
+  assert.doesNotMatch(spellBook.sniperRu[0].text,/боеприпас|ожог|рецепт|материал/i);
   assert.equal(spellBook.ru.length,9,'one compact row for each learned direct hit');
   assert.equal(spellBook.en.length,9);
   for(const [name,english] of [
