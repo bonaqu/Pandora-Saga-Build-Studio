@@ -28,8 +28,13 @@ test('Ободрение / Battle Prayer applies Remaked Blessing mastery to STR
   const r=base(enabled,blessing,selected);
   assert.equal(r.stats.str,initial.stats.str,String([enabled,blessing,selected]));
  }
- const corrupt={...skills,320012001:{...skills[320012001],name:'Неизвестный навык'}};
- assert.equal(base(true,90,true,corrupt).stats.str,initial.stats.str);
+ const renamed={...skills,320012001:{...skills[320012001],name:'Обновлённый перевод'}};
+ assert.equal(base(true,90,true,renamed).stats.str,active.stats.str,
+  'text-only rename preserves an already confirmed buff');
+ const corrupt=structuredClone(skills);
+ corrupt[320012001].funcs[0].fv2[3]=9;
+ assert.equal(base(true,90,true,corrupt).stats.str,initial.stats.str,
+  'unknown secondary effect cannot reuse a previously verified formula');
  assert.equal(skills[320012001].name,'Ободрение');
  assert.deepEqual(skills[320012001].reqs,[{branch:'blessing',amount:61}]);
 });

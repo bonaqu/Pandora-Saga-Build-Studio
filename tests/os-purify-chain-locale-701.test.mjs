@@ -35,7 +35,7 @@ test('corrupted root, internal effect, requirement, FV2 or ID safely omits Purif
   s=>s['310014002'].funcs.find(x=>x.ep==='EP_IMMUNE_VIT_TYPE').fv2[3]=1,
   s=>s['310014002'].learnable=true,
   s=>s['310014001'].reqs[0].amount=70,
-  s=>s['310014001'].name='Invented title'
+  s=>s['310014002'].branchRaw='UNKNOWN_SOURCE_FAMILY'
  ];
  for(const mutate of cases){
   const altered=structuredClone(skills);mutate(altered);
