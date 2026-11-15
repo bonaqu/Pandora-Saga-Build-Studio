@@ -673,7 +673,15 @@ function inspect({skillCatalog,classes,id,calculator}={}){
  // without claiming proc chance, final damage or actual inventory.
  // Do not duplicate strictly modeled recipes, traps and resurrection costs.
  const materialModeled=extra.some(row=>['recipe','trap','requiredItem'].includes(row.type));
- for(const effect of skill.funcs||[]){
+ // A linked action requires its complete pre-existing child signature proof.
+ // Showing a generic standalone resource cost must never resurrect a
+ // previously rejected multi-stage ability as seemingly source-verified.
+ const linkedActionEP=new Set(['EP_SKILL_EXEC','EP_ONHIT_SKILL_EXEC',
+  'EP_ONHIT_SKILL_EXEC_CHANGE_BA','EP_SKILL_EXEC_COUNT',
+  'EP_SKILL_EXEC_DIFFUSION','EP_SKILL_PARRY_COUNTER',
+  'EP_ATTACK_BLOCK_BREAK','EP_ONHIT_CASTING_TARGET']);
+ const linkedAction=(skill.funcs||[]).some(f=>linkedActionEP.has(f?.ep));
+ for(const effect of linkedAction?[]:skill.funcs||[]){
   if(!effect||!['EP_CONSUME_ITEM','EP_CONSUME_AMMO'].includes(effect.ep)||
    Object.keys(effect).sort().join(',')!=='dir,ep,fv1,fv2'||
    !Array.isArray(effect.fv1)||effect.fv1.length!==4||
