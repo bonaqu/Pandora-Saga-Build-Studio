@@ -52,6 +52,7 @@ import {runCrossSurfaceEditorial663Smoke} from './browser-cross-surface-editoria
 import {runEffectItemsSmoke} from './browser-effect-items.mjs';
 import {runWikiSkillFiltersSmoke,runWikiIconManifestFallbackSmoke} from './browser-wiki-skill-filters.mjs';
 import {runWikiMaterialLinks752Smoke} from './browser-wiki-material-links-752.mjs';
+import {runWikiReturn799Smoke} from './browser-wiki-return-799.mjs';
 import {runWikiSkillLabelEditorSmoke} from './browser-wiki-skill-label-editor.mjs';
 import {runUIContentInlineSmoke} from './browser-ui-content-inline.mjs';
 import {runOwnerEquipmentInlineSmoke} from './browser-owner-equipment-inline-632.mjs';
@@ -102,6 +103,7 @@ const scenarios=[
   ['global-search-autofill-797',runGlobalSearchAutofill797Smoke],
   ['path-skill-navigation-761',runPathSkillNavigation761Smoke],
   ['wiki-material-recipe-links-752',runWikiMaterialLinks752Smoke],
+  ['wiki-back-scroll-799',runWikiReturn799Smoke],
   ['remaked-buff-parity-669',runRemakedBuffParity669Smoke],
   ['origin-shared-snapshot',runOriginSharedSnapshotSmoke],
   ['two-handed-gear',runTwoHandedSmoke],

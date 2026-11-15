@@ -99,3 +99,22 @@
  display:block;width:100%;min-width:0;white-space:pre-wrap;
  overflow-wrap:anywhere;word-break:break-word
 }
+
+/* Compact 0.799 gear workflow: browse adjacent slots without reopening the picker. */
+.stage-picker-head{flex-wrap:wrap}
+.stage-picker-head>strong{min-width:0;flex:1 1 132px}
+.stage-picker-slot-navigation{display:inline-flex;align-items:center;gap:3px;margin-left:auto}
+.stage-picker-head .stage-picker-slot-nav{min-width:30px;min-height:30px;
+ padding:3px 7px;border-radius:5px;font-size:22px;line-height:1}
+.stage-picker-head .stage-picker-slot-nav:focus-visible{
+ outline:2px solid #f1ca85;outline-offset:2px}
+.stage-picker-only-available{display:inline-flex;align-items:center;gap:7px;
+ min-height:25px;width:fit-content;max-width:100%;color:#d9c3a0;
+ font:600 11px/1.4 Manrope,Arial,sans-serif;cursor:pointer}
+.stage-picker-only-available[hidden]{display:none!important}
+.stage-picker-only-available input{margin:0;accent-color:#d9a760;flex:none}
+.stage-picker-only-available input:focus-visible{outline:2px solid #eaca8b;outline-offset:2px}
+@media(max-width:460px){
+ .stage-picker-slot-navigation{gap:4px}
+ .stage-picker-head .stage-picker-slot-nav{min-width:31px}
+}
