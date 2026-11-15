@@ -199,6 +199,152 @@ function sourceEquipmentEffectsChanged(id,old,now,before,after){
  return false;
 }
 
+
+// Prove that a concrete source EP amount is consumed by an EXISTING numeric
+// calculator path. Unknown EP codes, boolean flags and procs do not qualify.
+// A secondary-effect inspector returns a source parameter, not final damage.
+function modeledEquipmentEffect(source,record,grade,effect){
+ const C=root.PandoraOSCalculator;
+ if(!Number.isFinite(effect?.a)||typeof effect?.func!=='string'||
+  !C||!['gatherEffects','equippedCombatModifiers','secondaryEffectsPreview',
+    'defensePreview'].every(name=>typeof C[name]==='function'))return false;
+ if(Number.isFinite(effect.min)&&grade<effect.min ||
+    Number.isFinite(effect.max)&&grade>effect.max)return false;
+ const isolated={id:record?.id,slot:record?.slot,AC:record?.AC,
+  effects:[effect]};
+ const rows=[[source,isolated,grade]],matches=entry=>
+  entry?.source===source&&entry?.func===effect.func&&entry?.value===effect.a;
+ if(C.gatherEffects(rows).trace.some(matches))return true;
+ if(C.equippedCombatModifiers(rows).traces.some(entry=>
+  entry?.source===source&&entry?.ep===effect.func&&entry?.value===effect.a))
+  return true;
+ if(C.secondaryEffectsPreview({records:rows}).traces.some(entry=>
+  entry?.source===source&&entry?.ep===effect.func&&
+  Number.isFinite(entry?.value)))return true;
+ if(!['EP_ARMORCLASS_CONST','EP_ARMORCLASS_SCALE'].includes(effect.func))
+  return false;
+ // A Soul can boost armor while its own AC is intentionally ignored.
+ // Supply a separate baseline armor piece to exercise the *real* model.
+ const context=[['item:999999',{id:999999,slot:'body',name:'Контрольная броня',
+  AC:100,effects:[]},0],...rows];
+ const defense=C.defensePreview({records:context});
+ if(!Number.isFinite(defense?.known))return false;
+ return effect.func==='EP_ARMORCLASS_CONST'?
+  Number.isFinite(defense.equipment):
+  defense.percentParts.some(row=>row.source===source&&row.rate===effect.a);
+}
+
+// An effect amount-only update is data-driven when its exact EP channel is
+// already modeled and its direction, grade bounds and other semantics stay
+// unchanged. Validate each changed row at every grade where it is active.
+function replayNumericEquipmentAmounts(dataset,id,old,now){
+ const C=root.PandoraOSCalculator;
+ if(!old||!now||String(old.id)!==String(id)||String(now.id)!==String(id)||
+  !C||!Array.isArray(old.effects)||!Array.isArray(now.effects)||
+  old.effects.length===0||old.effects.length!==now.effects.length)return false;
+ const same=(x,y)=>JSON.stringify(x)===JSON.stringify(y);
+ const editorial=dataset==='souls'?['name','nameEn','desc','descEn']:
+  ['name','nameEn'];
+ const fields=new Set([...Object.keys(old),...Object.keys(now)]);
+ if([...fields].some(field=>field!=='effects'&&!editorial.includes(field)&&
+  !same(old[field],now[field])))return false;
+ const source=(dataset==='souls'?'soul:':'item:')+id;
+ let changed=0;
+ for(let i=0;i<old.effects.length;i++){
+  const a=old.effects[i],b=now.effects[i];
+  if(same(a,b))continue;
+  if(!validObject(a)||!validObject(b)||
+    !Number.isFinite(a.a)||!Number.isFinite(b.a)||a.a===b.a||
+    [...new Set([...Object.keys(a),...Object.keys(b)])]
+     .some(key=>key!=='a'&&!same(a[key],b[key])))return false;
+  let exercised=false;
+  for(let grade=0;grade<=10;grade++){
+   if(Number.isFinite(a.min)&&grade<a.min ||
+      Number.isFinite(a.max)&&grade>a.max)continue;
+   if(!modeledEquipmentEffect(source,old,grade,a)||
+      !modeledEquipmentEffect(source,now,grade,b))return false;
+   exercised=true;
+  }
+  if(!exercised)return false;
+  changed++;
+ }
+ return changed>0;
+}
+
+// Read-only effect-contract replay on every changed item/Soul/Forth source.
+// Explicit removal of a gameplay effect remains a reviewable source change.
+// However, replacing an already numeric EP with an unknown new EP must stop
+// publication; merely clicking the risk checkbox cannot recover its bonus.
+function replayEquipmentEffects(before,after){
+ const C=root.PandoraOSCalculator;
+ const same=(x,y)=>JSON.stringify(x)===JSON.stringify(y);
+ const affected=new Map();
+ for(const dataset of ['items','souls']){
+  for(const id of new Set([...Object.keys(before?.[dataset]||{}),
+    ...Object.keys(after?.[dataset]||{})])){
+   if(!same(before?.[dataset]?.[id],after?.[dataset]?.[id]))
+    affected.set(dataset+':'+id,{dataset,id});
+  }
+ }
+ for(const id of new Set([...Object.keys(before?.itemForth||{}),
+  ...Object.keys(after?.itemForth||{})]))
+  if(!same(before?.itemForth?.[id],after?.itemForth?.[id]))
+   affected.set('items:'+id,{dataset:'items',id});
+ if(!affected.size)return {ok:true,changedSources:0,scenarios:0,
+  oldModeled:0,retained:0,lost:0,unknown:0,samples:[],errors:[]};
+ if(!C||!['sourceEffects','gatherEffects','equippedCombatModifiers',
+  'secondaryEffectsPreview','defensePreview'].every(name=>
+   typeof C[name]==='function'))
+  return {ok:false,changedSources:affected.size,scenarios:0,oldModeled:0,
+   retained:0,lost:0,unknown:0,samples:[],errors:[
+    'Не подключены расчётные модули предметов и душ.']};
+ const lost=[],seen=new Set(),errors=[];
+ let scenarios=0,oldModeled=0,retained=0,unknown=0;
+ try{
+  for(const {dataset,id} of affected.values()){
+   const old=before?.[dataset]?.[id],now=after?.[dataset]?.[id];
+   if(!old||!now)continue; // Explicit deletion/addition, not a hidden model failure.
+   const source=(dataset==='souls'?'soul:':'item:')+id;
+   for(let grade=0;grade<=10;grade++){
+    const prior=C.sourceEffects(source,old,grade,before?.itemForth);
+    const next=C.sourceEffects(source,now,grade,after?.itemForth);
+    if(same(prior,next))continue;
+    scenarios++;
+    for(const effect of prior){
+     if(!modeledEquipmentEffect(source,old,grade,effect))continue;
+     oldModeled++;
+     const sameCode=next.filter(row=>row?.func===effect.func);
+     if(sameCode.some(row=>modeledEquipmentEffect(source,now,grade,row))){
+      retained++;continue;
+     }
+     // A deliberately removed effect is not silently interpreted as another
+     // numeric bonus. The existing compatibility guard marks this as risky.
+     // Block only unsupported substitutions (or an invalid amount on the
+     // still-present EP); a normal decrease to zero is valid numeric data.
+     const replacement=next.find(row=>!prior.some(prev=>prev?.func===row?.func));
+     if(sameCode.length===0&&!replacement)continue;
+     if(sameCode.length===0&&
+      modeledEquipmentEffect(source,now,grade,replacement))continue;
+     const key=source+':'+effect.func+':'+grade;
+     if(seen.has(key))continue;
+     seen.add(key);
+     lost.push({key:source,name:String(now.name||old.name||id).slice(0,90),
+      grade,previous:effect.func,next:replacement?.func||effect.func});
+    }
+    for(const effect of next)
+     if(!prior.some(row=>same(row,effect))&&
+      !modeledEquipmentEffect(source,now,grade,effect))unknown++;
+   }
+  }
+ }catch(error){
+  errors.push('Контроль эффектов экипировки: '+
+   String(error?.message||error).slice(0,140));
+ }
+ return {ok:lost.length===0&&errors.length===0,changedSources:affected.size,
+  scenarios,oldModeled,retained,lost:lost.length,unknown,
+  samples:lost.slice(0,5),errors};
+}
+
 // Before publication classify *changes*, not just JSON schema validity.
 // A matching source shape does not prove that the calculator interprets a
 // newly introduced gameplay effect. Lists are intentionally bounded for UI.
@@ -290,14 +436,16 @@ function compatibility(before,after){
       !['name','nameEn','desc','descEn'].includes(k))),
      Object.fromEntries(Object.entries(now).filter(([k])=>
       !['name','nameEn','desc','descEn'].includes(k))));
-    const numerical=dataset==='items'&&
-     replaySimpleEquipmentChange(id,old,now,before,after);
+    const numerical=(dataset==='items'&&
+     replaySimpleEquipmentChange(id,old,now,before,after))||
+     ((dataset==='items'||dataset==='souls')&&
+     replayNumericEquipmentAmounts(dataset,id,old,now));
     const narrativeChanged=dataset==='items'&&looksTextual&&
      sourceEquipmentEffectsChanged(id,old,now,before,after);
     const category=numerical?'verified':
      looksTextual&&!narrativeChanged?'sourceOnly':'needsReview';
     add(category,dataset+':'+id,
-     name+(numerical?' · W/AC рассчитаны действующей моделью':
+     name+(numerical?' · известные числовые бонусы рассчитаны моделью':
       category==='sourceOnly'?' · тексты':
       narrativeChanged?' · текст меняет бонусы заточки':
       ' · свойства/эффекты'));
@@ -441,5 +589,5 @@ function replaySkills(before,after){
   errors:problems.slice(0,5)};
 }
 
-root.PandoraCatalogSafety=Object.freeze({MAX_LEVEL,EXPECTED,check,project,compare,compatibility,replaySkills});
+root.PandoraCatalogSafety=Object.freeze({MAX_LEVEL,EXPECTED,check,project,compare,compatibility,replaySkills,replayEquipmentEffects});
 })(typeof window==='undefined'?globalThis:window);
