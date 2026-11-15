@@ -106,6 +106,9 @@ async function activeCatalog(env){
  try{return await env.DB.prepare('SELECT snapshot,published_at,expected_counts FROM catalog_current WHERE id=1').first()}
  catch{return null}
 }
+async function catalogBackupTableReady(env){
+ return Boolean(await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='catalog_backup_jobs'").first());
+}
 async function serveCatalog(env,dataset){
  const active=await activeCatalog(env);
  if(!active)return no('Catalog not published in D1 yet',503);
@@ -633,7 +636,8 @@ if(path==='/api/admin/catalog/github-status'&&method==='GET'){
 if(path==='/api/admin/catalog/backup-status'&&method==='GET'){
  if(!await auth(request,env))return no('Unauthorized',401);
  const active=await activeCatalog(env);
- return json({snapshot:active?.snapshot||null,job:active?await getBackupJob(env,active.snapshot):null},200,{'cache-control':'no-store'});
+ const ready=await catalogBackupTableReady(env);
+ return json({snapshot:active?.snapshot||null,job:active&&ready?await getBackupJob(env,active.snapshot):null},200,{'cache-control':'no-store'});
 }
 if(path==='/api/admin/catalog/github-pr'&&method==='POST'){
  if(!await auth(request,env))return no('Unauthorized',401);
@@ -1110,7 +1114,11 @@ return no('Not found',404)
 }
 export default{async fetch(request,env){const cors=originHeaders(request);if(request.method==='OPTIONS')return new Response(null,{status:204,headers:cors});try{const result=await handle(request,env);for(const[k,v]of Object.entries(cors))result.headers.set(k,v);return result}catch(e){console.error('Request failed',e);const result=no('Server error',500);for(const[k,v]of Object.entries(cors))result.headers.set(k,v);return result}},async scheduled(_event,env,ctx){
   if(!env?.DB)return;
-  const job=deliverCatalogBackupJob(env,activeCatalog,createCatalogPullRequest)
-   .catch(()=>console.error('Catalog backup scheduled attempt failed'));
+  const job=(async()=>{
+   // Before the first 0.809 owner import, production D1 has no outbox table.
+   // A scheduled event must not initialize schema or log a false failure.
+   if(!await catalogBackupTableReady(env))return;
+   return deliverCatalogBackupJob(env,activeCatalog,createCatalogPullRequest);
+  })().catch(()=>console.error('Catalog backup scheduled attempt failed'));
   if(ctx?.waitUntil)ctx.waitUntil(job);else await job;
 }};
