@@ -38,7 +38,11 @@ export async function runHonorGuideSmoke(browser,base){
   await rankFilters.nth(1).click();
   assert.equal(await panel.locator('.wiki-honor-rank:not([hidden])').count(),9);
   await rankFilters.nth(0).click();
-  assert.equal(await panel.locator('.wiki-honor-rank:not([hidden])').count(),12);
+  assert.equal(await panel.locator('#honor-victories').count(),1);
+ assert.equal(await panel.locator('#honor-victories .wiki-honor-pvp-table').count(),3);
+ assert.match(await panel.locator('#honor-victories').innerText(),/50 000|50,000/);
+ assert.equal(await panel.locator('#honor-victories img.wiki-honor-pvp-illustration').count(),1);
+ assert.equal(await panel.locator('.wiki-honor-rank:not([hidden])').count(),12);
   // Regression: Honor used to return from renderWiki before attaching the
   // universal search listener. Search the article, not the OS record index.
   const honorSearch=page.locator('input[name="pandora-studio-encyclopedia-filter"]');
@@ -86,9 +90,9 @@ export async function runHonorGuideSmoke(browser,base){
    document.querySelector('.wiki-page')?.dataset.honorSearchQuery==='',
    null,{timeout:5000});
   await page.waitForFunction(()=>
-   document.querySelectorAll('.wiki-honor-section:not([hidden])').length===4);
+   document.querySelectorAll('.wiki-honor-section:not([hidden])').length===5);
   assert.equal(await panel.locator('.wiki-honor-rank:not([hidden])').count(),12);
-  assert.equal(await page.locator('.wiki-honor-nav-link:not([hidden])').count(),4);
+  assert.equal(await page.locator('.wiki-honor-nav-link:not([hidden])').count(),5);
   await rankFilters.nth(1).click();
   assert.equal(await panel.locator('.wiki-honor-rank:not([hidden])').count(),9,
    'Rank type filters work after a search round trip');
@@ -199,7 +203,7 @@ export async function runHonorGuideSmoke(browser,base){
     section,{timeout:4000});
    assert.equal(await menu.locator('.wiki-honor-nav-link[aria-current="location"]').count(),1);
   };
-  for(const chapter of ['overview','gain','ranks','monthly'])
+  for(const chapter of ['overview','gain','victories','ranks','monthly'])
    await autoHighlight(chapter);
   await autoHighlight('ranks');
   // Reproduce a reader dragging the scrollbar to the very end: the final
