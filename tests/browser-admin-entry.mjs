@@ -15,6 +15,8 @@ export async function runAdminEntrySmoke(browser,base){
    'access-control-allow-headers':'Content-Type,Authorization',
    'access-control-allow-methods':'GET,POST,OPTIONS'};
   if(method==='OPTIONS')return route.fulfill({status:204,headers});
+  if(path==='/api/runtime-capabilities'&&method==='GET')
+   return route.fulfill({status:200,headers,contentType:'application/json',body:JSON.stringify({ownerProgressionD1:true})});
   const json=(value,status=200)=>route.fulfill({
    status,headers,contentType:'application/json',body:JSON.stringify(value)});
   if(path==='/api/admin/catalog/test-write'&&method==='POST'){
@@ -271,12 +273,34 @@ export async function runAdminEntrySmoke(browser,base){
     collides};
   });
   assert.deepEqual(dockStructure.groups,['editing','game','tools']);
-  assert.equal(dockStructure.keys.length,8);
-  assert.equal(new Set(dockStructure.keys).size,8);
+  assert.equal(dockStructure.keys.length,9);
+  assert.equal(new Set(dockStructure.keys).size,9);
   assert.equal(dockStructure.finishOutsideScroll,true);
   assert.equal(dockStructure.footerBelowBody,true,'Finish footer must be outside scrolling content');
   assert.equal(dockStructure.footerInside,true,'Finish footer must fit inside the editor panel');
   assert.equal(dockStructure.collides,false,'Button and caption-edit pencil must not overlap');
+  // 0.795 owner progression editor: make an unsaved 60-level plan, verify
+  // the derived table and discard without writing any D1 override.
+  assert.ok(dockStructure.keys.includes('levels'));
+  await ownerPanel.locator('.owner-dock-levels').click();
+  const levelDialog=page.getByRole('dialog',{name:/Очки за уровни/});
+  await levelDialog.waitFor({state:'visible'});
+  assert.equal(await levelDialog.locator('.ps-level-editor-table tbody tr').count(),55);
+  const capInput=levelDialog.getByRole('spinbutton',{name:'Максимальный уровень героя'});
+  await capInput.fill('60');
+  await capInput.press('Tab');
+  assert.equal(await levelDialog.locator('.ps-level-editor-table tbody tr').count(),60);
+  const row56=levelDialog.locator('.ps-level-editor-table tbody tr[data-level="56"]');
+  await row56.getByRole('spinbutton',{name:'Очки характеристик за уровень 56'}).fill('8');
+  await row56.getByRole('spinbutton',{name:'Очки умений за уровень 56'}).fill('3');
+  assert.match(await levelDialog.locator('.ps-level-editor-summary').innerText(),/552 характеристик · 137 умений/);
+  assert.equal(townOverrides.has('planner.progression.v1'),false,
+   'Draft edits must not write to D1');
+  await levelDialog.getByRole('button',{name:'Отменить несохранённое'}).click();
+  assert.equal(await levelDialog.locator('.ps-level-editor-table tbody tr').count(),55);
+  assert.equal(await levelDialog.getByRole('button',{name:'Сохранить в D1'}).isDisabled(),true);
+  await levelDialog.getByRole('button',{name:/Закрыть/}).click();
+  assert.equal(townOverrides.has('planner.progression.v1'),false);
   const originAfter=await page.locator('.workspace>.left').evaluate(node=>node.getBoundingClientRect().height);
   assert.ok(Math.abs(originBefore-originAfter)<2,'The drawer must not stretch the stat column');
   await edge.click();
@@ -331,7 +355,7 @@ export async function runAdminEntrySmoke(browser,base){
   await page.waitForFunction(()=>document.querySelector('.owner-dock-d1-check')?.textContent==='Verify saving');
   assert.deepEqual(JSON.parse(townOverrides.get(d1Key)),{ru:d1Label,en:'Verify saving'});
   assert.match(await ownerPanel.innerText(),/Site editor|Editing enabled/);
-  assert.equal(await ownerPanel.locator('.owner-dock-action-slot').count(),8);
+  assert.equal(await ownerPanel.locator('.owner-dock-action-slot').count(),9);
   await page.locator('#locale [data-locale="ru"]').click();
   await page.waitForFunction(label=>
    document.querySelector('.owner-dock-d1-check')?.textContent===label,d1Label);

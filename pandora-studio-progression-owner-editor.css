@@ -1,0 +1,33 @@
+/* Compact owner-only table: editable per-level gains and derived totals. */
+.modal:has(.ps-level-editor){width:min(96vw,850px);max-height:94vh;overflow:auto}
+.ps-level-editor{display:grid;gap:11px;min-width:0;color:#dec7a5}
+.ps-level-editor-intro,.ps-level-editor-help{font-size:12px;line-height:1.55;margin:0}
+.ps-level-editor-top{display:flex;align-items:end;gap:12px;justify-content:space-between;flex-wrap:wrap}
+.ps-level-editor-cap{display:grid;gap:4px;font-size:12px}
+.ps-level-editor-cap input{width:95px;padding:8px;background:#211810;color:#ffdda6;
+ border:1px solid #896d45;border-radius:5px;font:inherit}
+.ps-level-editor-scroll{max-height:min(52vh,540px);overflow:auto;border:1px solid #6c5236;
+ border-radius:7px;overscroll-behavior:contain}
+.ps-level-editor-table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
+.ps-level-editor-table th,.ps-level-editor-table td{padding:7px 9px;text-align:center;
+ border-bottom:1px solid #493a28;vertical-align:middle}
+.ps-level-editor-table thead th{position:sticky;top:0;z-index:1;background:#30251b;color:#f4d09a}
+.ps-level-editor-table tbody th{color:#d0b38a;font-weight:600}
+.ps-level-editor-table tbody tr:nth-child(2n){background:rgba(255,255,255,.025)}
+.ps-level-editor-table input{width:76px;max-width:100%;background:#241a12;color:#f3d2a2;
+ border:1px solid #765a39;border-radius:4px;padding:7px 5px;text-align:center;font:inherit}
+.ps-level-editor-table input:disabled{color:#a39483;opacity:.75}
+.ps-level-editor-table input:focus-visible,.ps-level-editor-cap input:focus-visible{
+ outline:2px solid #f2c986;outline-offset:1px}
+.ps-level-editor-table input.ps-level-changed{border-color:#d0a061;background:#392a1b}
+.ps-level-editor-was{display:block;min-height:1em;color:#a99982;font-size:10px}
+.ps-level-editor-total{font-weight:600;color:#e4cb9d}
+.ps-level-editor-summary{font-weight:700;color:#f4d2a1;font-size:13px;margin:0}
+.ps-level-editor-changes,.ps-level-editor-state{font-size:12px;line-height:1.5;margin:0}
+.ps-level-editor-error{color:#edaa9b}
+.ps-level-editor-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+@media(max-width:550px){
+ .ps-level-editor-table th,.ps-level-editor-table td{padding:5px 3px;font-size:11px}
+ .ps-level-editor-table input{width:58px;padding:7px 2px}
+ .ps-level-editor-actions button{flex:1}
+}

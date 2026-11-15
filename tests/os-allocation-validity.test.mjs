@@ -23,7 +23,7 @@ test('future armor remains in OS catalog with original requirements',()=>{
  assert.ok(items.filter(item=>item.level>50).length>=23);
 });
 test('level 55 builds keep their allocation and calculated outputs, not server-45 clamp',()=>{
- assert.match(app,/!Number.isInteger\(original\.level\)\|\|original\.level<1\|\|original\.level>55/);
+ assert.match(app,/!Number.isInteger\(original\.level\)\|\|original\.level<1\|\|original\.level>\(window\.PandoraLevelProgression\?\.maxLevel\(\)\?\?55\)/);
  assert.match(app,/function previewBaseStats\(snap=state\)\{/);
  assert.doesNotMatch(app,/if\(allocationIssue\(\)\?\.invalid\)return null/);
  assert.doesNotMatch(app,/function renderAllocationWarning\(/);

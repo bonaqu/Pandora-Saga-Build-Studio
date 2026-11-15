@@ -17,8 +17,8 @@ test('level 55 remains available for future planning regardless of live OS level
  assert.match(html,/id="level"[^>]*max="55"[^>]*value="1"/);
  assert.match(html,/Уровень героя<\/span> <strong id="levelOut">1/);
  assert.match(app,/function fresh\(\)\{return\{race:null,gender:0,job:null,level:1,/);
- assert.match(app,/state\.level=Math\.max\(1,Math\.min\(55,/);
- assert.match(app,/original\.level>55/);
+ assert.match(app,/state\.level=Math\.max\(1,Math\.min\(window\.PandoraLevelProgression\.maxLevel\(\),/);
+ assert.match(app,/original\.level>\(window\.PandoraLevelProgression\?\.maxLevel\(\)\?\?55\)/);
  assert.doesNotMatch(app,/function currentLevelCap\(/);
  assert.doesNotMatch(app,/syncLevelLimit\(/);
  assert.doesNotMatch(app,/allocationIssue\(/);

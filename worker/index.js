@@ -56,6 +56,26 @@ async function boundedJsonBody(request,maxBytes,maxChars=maxBytes){
 }
 async function body(request,limit=8192){return boundedJsonBody(request,limit)}
 const OWNER_EDIT_BODY_LIMIT=384*1024;
+const PLANNER_PROGRESSION_KEY='planner.progression.v1';
+const PLANNER_MAX_LEVEL=120;
+// A distinct, single owner row. This cannot be overwritten by the published
+// game's tables or source synchronization. Schema and bounds checked server-side.
+function validPlannerProgression(raw){
+ if(typeof raw!=='string'||raw.length>3000)return false;
+ let data;try{data=JSON.parse(raw)}catch{return false}
+ if(!data||typeof data!=='object'||Array.isArray(data)||
+  Object.keys(data).sort().join(',')!=='attributes,maxLevel,skills,version'||
+  data.version!==1||!Number.isInteger(data.maxLevel)||
+  data.maxLevel<55||data.maxLevel>PLANNER_MAX_LEVEL)return false;
+ for(const field of ['attributes','skills']){
+  const list=data[field];
+  if(!Array.isArray(list)||list.length!==data.maxLevel+1||
+   list[0]!==0||
+   !list.every(v=>Number.isSafeInteger(v)&&v>=0&&v<=500)||
+   list.reduce((sum,v)=>sum+v,0)>30000)return false;
+ }
+ return true;
+}
 async function ownerEditBody(request){
  return boundedJsonBody(request,OWNER_EDIT_BODY_LIMIT);
 }
@@ -321,7 +341,7 @@ async function shareApi(request,env,path,ip){
    typeof data!=='object'||Array.isArray(data)||
    !Number.isInteger(data.race)||data.race<0||data.race>5||
    !Number.isInteger(data.job)||data.job<0||data.job>=28||
-   !Number.isInteger(data.level)||data.level<1||data.level>55)
+   !Number.isInteger(data.level)||data.level<1||data.level>PLANNER_MAX_LEVEL)
    return json({error:'Ссылка на билд повреждена.',reason:'invalid'},410);
   return json({schema:1,share});
  }
@@ -337,7 +357,7 @@ async function shareApi(request,env,path,ip){
  const validate=entry=>entry&&typeof entry==='object'&&!Array.isArray(entry)&&
   Number.isInteger(entry.race)&&entry.race>=0&&entry.race<=5&&
   Number.isInteger(entry.job)&&entry.job>=0&&entry.job<28&&
-  Number.isInteger(entry.level)&&entry.level>=1&&entry.level<=55;
+  Number.isInteger(entry.level)&&entry.level>=1&&entry.level<=PLANNER_MAX_LEVEL;
  const owner=principal.owner_hash;
  const saved=await env.DB.prepare('SELECT payload,deleted_at FROM private_builds WHERE owner_hash=? AND build_id=?').bind(owner,payload.buildId).first();
  if(!saved||saved.deleted_at!==null)return no('Сохранённый билд не найден или уже удалён',409);
@@ -377,7 +397,7 @@ function validPrivateBuildEntry(entry,id){
   entry.data&&typeof entry.data==='object'&&!Array.isArray(entry.data)&&
   Number.isInteger(entry.data.race)&&entry.data.race>=0&&entry.data.race<=5&&
   Number.isInteger(entry.data.job)&&entry.data.job>=0&&entry.data.job<28&&
-  Number.isInteger(entry.data.level)&&entry.data.level>=1&&entry.data.level<=55;
+  Number.isInteger(entry.data.level)&&entry.data.level>=1&&entry.data.level<=PLANNER_MAX_LEVEL;
 }
 function mapPrivateBuildRow(row){
  if(row.deleted_at!==null)return {id:row.build_id,deleted:true,entry:null};
@@ -453,7 +473,7 @@ async function libraryApi(request,env){
   !item.data||typeof item.data!=='object'||Array.isArray(item.data)||
   !Number.isInteger(item.data.race)||item.data.race<0||item.data.race>5||
   !Number.isInteger(item.data.job)||item.data.job<0||item.data.job>=28||
-  !Number.isInteger(item.data.level)||item.data.level<1||item.data.level>55)
+  !Number.isInteger(item.data.level)||item.data.level<1||item.data.level>PLANNER_MAX_LEVEL)
   return no('Invalid character',400);
  const payload=JSON.stringify({id,name:item.name,at:item.at,data:item.data});
  if(payload.length>42000)return no('Build too large',413);
@@ -485,7 +505,7 @@ async function libraryApi(request,env){
    AND json_type(private_builds.payload,'$.data.job')='integer'
    AND json_extract(private_builds.payload,'$.data.job') BETWEEN 0 AND 27
    AND json_type(private_builds.payload,'$.data.level')='integer'
-   AND json_extract(private_builds.payload,'$.data.level') BETWEEN 1 AND 55
+   AND json_extract(private_builds.payload,'$.data.level') BETWEEN 1 AND 120
    AND (CAST(json_extract(private_builds.payload,'$.at') AS INTEGER)<excluded.updated_at
     OR (CAST(json_extract(private_builds.payload,'$.at') AS INTEGER)=excluded.updated_at
       AND private_builds.payload=excluded.payload))
@@ -682,7 +702,7 @@ if(path==='/api/runtime-capabilities'&&method==='GET')
  return json({codeRelease:'0.361.0',ownerEditors:[
   'itemedit','tradeedit','acquireedit','wikiedit','dropedit','chestedit','spawnedit',
    'virtual-town-wiki','bilingual-item-text','historical-map-wiki','owner-map-create','owner-map-sections','owner-monster-create','future-map-roster','owner-npc-create','admin-save-feedback','owner-record-delete','bilingual-wiki','guideedit','honor-lists','honor-extended-edit','wiki-label-edit'],
-  githubOwnerExport:true,honorExtendedEditing:true,wikiLabelEditing:true,ownerOverrideCAS:true,ownerOverrideCASRequired:true,catalogPublishCASRequired:true,catalogProvenanceCors:true,adminD1WriteCheck:'catalog-and-overrides',catalogSourceFailover:true,sourceEgressProbe:true,sourceProbeDetail:true,sourceInstancesArray:true,sourceFullProbe:true,
+  githubOwnerExport:true,honorExtendedEditing:true,wikiLabelEditing:true,ownerProgressionD1:true,ownerOverrideCAS:true,ownerOverrideCASRequired:true,catalogPublishCASRequired:true,catalogProvenanceCors:true,adminD1WriteCheck:'catalog-and-overrides',catalogSourceFailover:true,sourceEgressProbe:true,sourceProbeDetail:true,sourceInstancesArray:true,sourceFullProbe:true,
   buildLibraryRequiresAccount:true,sharedPreviewRequiresAccount:true,
   legacyAccountImportPreview:true});
 if(path==='/api/health'&&method==='GET'){
@@ -1016,7 +1036,9 @@ function validAcquisitionOverride(text){
 if(path==='/api/admin/override'&&method==='POST'){
  if(!await auth(request,env))return no('Unauthorized',401);
  const data=await ownerEditBody(request);const key=data?.key,value=data?.value;
- if(typeof key!=='string'||!OWNER_EDITABLE_KEY_PATTERN.test(key)||typeof value!=='string'||!value.trim()||value.length>(key.startsWith('itemedit.')?12000:key.startsWith('acquireedit.')?1800:key.startsWith('tradeedit.')?6000:(key.startsWith('wikiedit.')||key.startsWith('guideedit.'))?8000:key.startsWith('spawnedit.')?6000:(key.startsWith('dropedit.')||key.startsWith('chestedit.'))?24000:(key.startsWith('skilldesc.')||key.startsWith('itemdesc.'))?2000:240))return no('Unsupported editable field');
+ if(typeof key!=='string'||(!OWNER_EDITABLE_KEY_PATTERN.test(key)&&key!==PLANNER_PROGRESSION_KEY)||typeof value!=='string'||!value.trim()||value.length>(key===PLANNER_PROGRESSION_KEY?3000:key.startsWith('itemedit.')?12000:key.startsWith('acquireedit.')?1800:key.startsWith('tradeedit.')?6000:(key.startsWith('wikiedit.')||key.startsWith('guideedit.'))?8000:key.startsWith('spawnedit.')?6000:(key.startsWith('dropedit.')||key.startsWith('chestedit.'))?24000:(key.startsWith('skilldesc.')||key.startsWith('itemdesc.'))?2000:240))return no('Unsupported editable field');
+ if(key===PLANNER_PROGRESSION_KEY&&!validPlannerProgression(value))
+  return no('Некорректная таблица прокачки: уровни 55–120, прибавки 0–500.',400);
  if(key.startsWith('itemedit.')&&!validItemOwnerPatch(value))return no('Invalid structured item edit',400);
  if(key.startsWith('acquireedit.')&&!validAcquisitionOverride(value))return no('Invalid acquisition relations',400);
  if(key.startsWith('tradeedit.')&&!validTradeOwnerPatch(value,key.slice(10)))return no('Invalid NPC trade relations',400);
@@ -1058,7 +1080,7 @@ if(path==='/api/admin/override'&&method==='POST'){
 if(path==='/api/admin/reset'&&method==='POST'){
  if(!await auth(request,env))return no('Unauthorized',401);
  const data=await ownerEditBody(request),key=data?.key;
- if(typeof key!=='string'||!OWNER_EDITABLE_KEY_PATTERN.test(key))return no('Unsupported editable field');
+ if(typeof key!=='string'||(!OWNER_EDITABLE_KEY_PATTERN.test(key)&&key!==PLANNER_PROGRESSION_KEY))return no('Unsupported editable field');
  if(!Object.hasOwn(data,'expectedValue'))
   return json({error:'Редактор устарел. Обновите страницу перед сохранением.',
    code:'OWNER_CLIENT_UPDATE_REQUIRED'},428);

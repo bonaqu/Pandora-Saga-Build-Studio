@@ -1,5 +1,6 @@
 (function(root){
 'use strict';
+const plannerMaxLevel=()=>root.PandoraLevelProgression?.maxLevel()??55;
 // Formula source: current game server class coefficients, cross-checked with
 // Pandora-Saga-Simulator-remaked/modern/current-vitals.js (Modern 4.25+).
 // Game-client formula coverage is NOT complete without all enhancement/set/skill sources.
@@ -758,7 +759,7 @@ function supportSkillSource(skillCatalog,kind){
 function supportSkillAvailability({selected={},skillCatalog=null,jobKey=null,level=1,
  branchMasteries={}}={}){
  const result={windAssist:false,windBlessing:false};
- if(!Number.isInteger(level)||level<1||level>55)return result;
+ if(!Number.isInteger(level)||level<1||level>plannerMaxLevel())return result;
  for(const [kind,setting] of [['windAssist','combatWindAssist'],
   ['windBlessing','combatWindBlessing']]){
   const source=supportSkillSource(skillCatalog,kind);
@@ -768,7 +769,7 @@ function supportSkillAvailability({selected={},skillCatalog=null,jobKey=null,lev
   result[kind]=Boolean(selected?.[setting]===true&&source&&
    skill?.id===supportSkillIds[kind]&&skill.learnable!==false&&
    skill.prereq==null&&Number.isInteger(skill.charLevel)&&
-   skill.charLevel>=0&&skill.charLevel<=55&&
+   skill.charLevel>=0&&skill.charLevel<=plannerMaxLevel()&&
    Array.isArray(skill.reqs)&&skill.reqs.every(req=>
     typeof req?.branch==='string'&&Number.isInteger(req.amount)&&req.amount>=0));
  }
@@ -802,7 +803,7 @@ function magicAttackPreview({int,jobKey=null,magicMastery=0,weapon=null,guildAro
 // character level, not by the presence of an unchecked saved toggle.
 function activeCombatSkills({selected={},jobKey=null,level=1,hasShield=false,
  weapon=null,skillCatalog=null,branchMasteries={}}={}){
- const validLevel=Number.isInteger(level)&&level>=1&&level<=55;
+ const validLevel=Number.isInteger(level)&&level>=1&&level<=plannerMaxLevel();
  const permitted=(key,selectedKey,legacyClasses,minLevel)=>{
   if(!validLevel||selected?.[selectedKey]!==true)return false;
   if(skillCatalog){
@@ -832,7 +833,7 @@ function activeCombatSkills({selected={},jobKey=null,level=1,hasShield=false,
    const rec=combatSkillSource(skillCatalog,'warCry')?.record;
    return Boolean(rec?.id===combatSkillIds.warCry&&rec.learnable!==false&&
     rec.prereq==null&&Number.isInteger(rec.charLevel)&&
-    rec.charLevel>=0&&rec.charLevel<=55&&Array.isArray(rec.reqs)&&
+    rec.charLevel>=0&&rec.charLevel<=plannerMaxLevel()&&Array.isArray(rec.reqs)&&
     rec.reqs.every(req=>typeof req?.branch==='string'&&
      Number.isInteger(req.amount)&&req.amount>=0));
   })():meleeLineage.has(jobKey)&&level>=28);
@@ -963,7 +964,7 @@ const modeledElementalSpellBranches=Object.freeze({
 function elementalSpellCoefficientPreview({skillCatalog,jobKey,level,
  branchMasteries={},branchCaps={},branchLabels={},englishBranches={},stats={}}={}){
  if(!skillCatalog||typeof skillCatalog!=='object'||Array.isArray(skillCatalog)||
-  typeof jobKey!=='string'||!Number.isSafeInteger(level)||level<1||level>55)
+  typeof jobKey!=='string'||!Number.isSafeInteger(level)||level<1||level>plannerMaxLevel())
   return [];
  const intelligence=stats?.int;
  if(!Number.isSafeInteger(intelligence)||intelligence<0||intelligence>1000)
@@ -1040,7 +1041,7 @@ function directStrikeCoefficientPreview({skillCatalog,jobKey,level,
  branchMasteries={},branchCaps={},branchLabels={},englishBranches={},
  weaponKind='BARE_HAND'}={}){
  if(!skillCatalog||typeof skillCatalog!=='object'||Array.isArray(skillCatalog)||
-  typeof jobKey!=='string'||!Number.isSafeInteger(level)||level<1||level>55)
+  typeof jobKey!=='string'||!Number.isSafeInteger(level)||level<1||level>plannerMaxLevel())
   return [];
  const entries=Object.values(skillCatalog),output=[];
  const branchRank=b=>Number(branchMasteries?.[b]??0);
@@ -1163,7 +1164,7 @@ const utilitySkillRules=[
 function utilitySkillSourcePreview({skillCatalog=null,jobKey=null,level=1,
  branchMasteries={},branchCaps={},branchLabels={},englishBranches={}}={}){
  if(!skillCatalog||typeof jobKey!=='string'||!Number.isSafeInteger(level)||
-  level<1||level>55)return [];
+  level<1||level>plannerMaxLevel())return [];
  const out=[];
  for(const rule of utilitySkillRules){
   const s=skillCatalog[String(rule.id)];
@@ -1239,7 +1240,7 @@ const movementSkillRules=Object.freeze([
 function movementSkillSourcePreview({skillCatalog=null,jobKey=null,level=1,
  branchMasteries={},branchCaps={},branchLabels={},englishBranches={}}={}){
  if(!skillCatalog||typeof jobKey!=='string'||!Number.isSafeInteger(level)||
-  level<1||level>55)return [];
+  level<1||level>plannerMaxLevel())return [];
  const result=[];
  for(const [id,type,branch,direction,prereq,sign] of movementSkillRules){
   const record=skillCatalog[String(id)];
@@ -1247,7 +1248,7 @@ function movementSkillSourcePreview({skillCatalog=null,jobKey=null,level=1,
    record.branch!==branch||record.prereq!==prereq||
    !Array.isArray(record.reqs)||!Array.isArray(record.funcs)||
    !Number.isSafeInteger(record.charLevel)||record.charLevel<0||
-   record.charLevel>55)continue;
+   record.charLevel>plannerMaxLevel())continue;
   if(prereq!==null&&prereq!==0){
    const parent=skillCatalog[String(prereq)];
    if(parent?.id!==prereq||parent.learnable!==true||
@@ -1306,7 +1307,7 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  const result={offense:[],defense:[],movement:[],utility:[],verified:false,
   source:'Remaked SkillView floors and current OS skill effect vectors'};
  if(!skillCatalog||!combat||typeof jobKey!=='string'||
-  !Number.isInteger(level)||level<1||level>55)return result;
+  !Number.isInteger(level)||level<1||level>plannerMaxLevel())return result;
  const validStat=key=>Number.isFinite(stats[key])&&stats[key]>=0;
  const skill=id=>skillCatalog[String(id)];
  const exact=(record,ep,values)=>{
@@ -1814,7 +1815,7 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  techniqueTrained=0,guildArouse=0,combatBuffs={},skillCatalog=null,
  priestEffects={},branchMasteries={},branchCaps=null,ridingMastery=0,
  allyClasses=null}={}){
- if(!Number.isInteger(level)||level<1||level>55||
+ if(!Number.isInteger(level)||level<1||level>plannerMaxLevel()||
   !['dex','agi','str'].every(key=>Number.isFinite(stats[key])&&stats[key]>=0)||
   !Number.isInteger(honorTitle)||honorTitle<0||honorTitle>=honorTitles.length)return null;
  // Remaked Calc(ATK/ACC/Dodge/MoveSPD/CastSPD/Cooldown) uses a
@@ -2359,7 +2360,7 @@ function skillAttackRangePreview({skillCatalog=null,jobKey=null,level=1,
  const output={rows:[],rejected:[],verified:false,
   appliedToPermanentRange:false};
  if(!skillCatalog||typeof jobKey!=='string'||
-  !Number.isSafeInteger(level)||level<1||level>55)return output;
+  !Number.isSafeInteger(level)||level<1||level>plannerMaxLevel())return output;
  const mastery=branchMasteries?.archery;
  const cap=branchCaps?.archery;
  for(const proof of skillRangeProofs){
@@ -2768,7 +2769,7 @@ function healingSourceGate({id,cleric,jobKey,level,benevolence,benevolenceCap,
 }
 function healingSpellsPreview({level,int,spi,benevolence=0,healingPercent=100,
  jobKey=null,skillCatalog=null,benevolenceCap=null}={}){
- if(!Number.isInteger(level)||level<1||level>55||
+ if(!Number.isInteger(level)||level<1||level>plannerMaxLevel()||
   ![int,spi,benevolence,healingPercent].every(n=>Number.isFinite(n)&&n>=0))
   return null;
  const cleric=jobKey==='CLERIC'&&level>=50;
@@ -3025,7 +3026,7 @@ function periodicSourceMatches(skill,proof){
 }
 function periodicRecoveryPreview({level,spi,benevolence=0,jobKey=null,
  skillCatalog=null,benevolenceCap=null}={}){
- if(!Number.isInteger(level)||level<1||level>55||
+ if(!Number.isInteger(level)||level<1||level>plannerMaxLevel()||
   !Number.isFinite(spi)||spi<0||
   !Number.isInteger(benevolence)||benevolence<0||typeof jobKey!=='string')
   return null;
@@ -3164,7 +3165,7 @@ function songSourceMatches(catalog,spec){
 function songSkillPreview({skillCatalog=null,jobKey=null,level=1,
  branchMasteries={},branchCaps={}}={}){
  const rows=[];
- if(!Number.isInteger(level)||level<1||level>55||!skillCatalog||
+ if(!Number.isInteger(level)||level<1||level>plannerMaxLevel()||!skillCatalog||
   typeof skillCatalog!=='object'||typeof jobKey!=='string')return {rows,verified:false};
  for(const spec of songChains){
   const requirements=Object.entries(spec.requirements).map(([branch,amount])=>({branch,amount}));
@@ -3251,7 +3252,7 @@ function alliedNaturalRecoveryPreview({skillCatalog=null,casterLevel=45}={}){
   skill.learnable!==true||skill.charLevel!==20||skill.prereq!==null||
   !Array.isArray(skill.reqs)||skill.reqs.length!==0||
   !Array.isArray(skill.funcs)||skill.funcs.length!==1||
-  !Number.isSafeInteger(casterLevel)||casterLevel<20||casterLevel>55)
+  !Number.isSafeInteger(casterLevel)||casterLevel<20||casterLevel>plannerMaxLevel())
   return null;
  const effect=skill.funcs[0];
  if(effect?.ep!=='EP_HEAL_MANA_REGENERATOR'||effect.dir!=='TARGET'||
@@ -3346,7 +3347,7 @@ function alliedFreeWindPreview({skillCatalog=null,classCatalog=null}={}){
 function alliedHpPulsePreview({skillCatalog=null,classCatalog=null,
  casterLevel=45,casterSpi=134,casterHealing=41}={}){
  const cleric=classCatalog?.CLERIC;
- if(!Number.isSafeInteger(casterLevel)||casterLevel<1||casterLevel>55||
+ if(!Number.isSafeInteger(casterLevel)||casterLevel<1||casterLevel>plannerMaxLevel()||
   !Number.isSafeInteger(casterSpi)||casterSpi<0||casterSpi>500||
   !Number.isSafeInteger(casterHealing)||casterHealing<0||
   !Number.isSafeInteger(cleric?.branchCaps?.benevolence)||
@@ -3622,7 +3623,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  consumableItems=null,
  unisonCatalog=null,supplementalFlat={},supplementalSource=null,
  enhancements={},attributeBuffs={},potionContext={},combatContext={},gemSelections=[]}={}){
- if(!classData||!raceData||!jobData||!Number.isInteger(level)||level<1||level>55)return null;
+ if(!classData||!raceData||!jobData||!Number.isInteger(level)||level<1||level>plannerMaxLevel())return null;
  const unison=unisonPreview({records,catalog:unisonCatalog});
  const combinedRecords=[...records,...unison.supplemental];
  const effects=gatherEffects(combinedRecords,itemForth),basic={},stats={},extra=attributeBuffBonus(attributeBuffs,{externalPriest:combatContext.externalPriest,skillCatalog:combatContext.skillCatalog});
@@ -3960,7 +3961,7 @@ function skillExecutionChains({skillCatalog=null,jobKey=null,level=1,onHit=false
  const out={rows:[],rejected:[],verified:false,
   source:onHit?'OS on-hit links; chance not proven':'OS execution links; timing and damage not verified'};
  if(!skillCatalog||typeof jobKey!=='string'||!Number.isSafeInteger(level)||
-  level<1||level>55)return out;
+  level<1||level>plannerMaxLevel())return out;
  const rootEP=onHit?'EP_ONHIT_SKILL_EXEC':'EP_SKILL_EXEC';
  // The four current OS on-hit sources are distinct identity bindings.
  // Merely pointing to another existing ID is NOT evidence for that skill.
@@ -4060,7 +4061,7 @@ function craftingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  const out={rows:[],rejected:[],verified:false,
   source:'current OS skill recipe IDs; quantities exact, inventory unverified'};
  if(!skillCatalog||typeof jobKey!=='string'||!Number.isSafeInteger(level)||
-  level<1||level>55)return out;
+  level<1||level>plannerMaxLevel())return out;
  for(const recipe of craftRecipes){
   const skill=skillCatalog[String(recipe.id)];
   if(skill?.id!==recipe.id||skill.learnable!==true||
@@ -4476,7 +4477,7 @@ function trapSkillCostPreview({skillCatalog=null,jobKey=null,level=1,
  const result={rows:[],rejected:[],verified:false,
   source:'Current OS trap material costs; damage, inventory and activation unverified'};
  if(!skillCatalog||typeof jobKey!=='string'||!Number.isSafeInteger(level)||
-  level<1||level>55)return result;
+  level<1||level>plannerMaxLevel())return result;
  const make=(ep,dir,id,n)=>({ep,dir,fv1:[0,0,0,id],fv2:[0,0,0,n]});
  const same=(f,x)=>f?.ep===x.ep&&f.dir===x.dir&&
   Array.isArray(f.fv1)&&f.fv1.length===4&&f.fv1.every((v,i)=>v===x.fv1[i])&&
@@ -4535,7 +4536,7 @@ function enemyDebuffPreview({skillCatalog=null,jobKey=null,level=1,
  branchMasteries={},branchCaps={},branchLabels={},englishBranches={}}={}){
  const out={rows:[],rejected:[],verified:false,targetSideOnly:true};
  if(!skillCatalog||!enemyDebuffJobs.includes(jobKey)||
-  !Number.isSafeInteger(level)||level<1||level>55)return out;
+  !Number.isSafeInteger(level)||level<1||level>plannerMaxLevel())return out;
  for(const proof of enemyDebuffProofs){
   const cap=branchCaps?.[proof.branch];
   if(!Number.isSafeInteger(cap)||cap<proof.rank)continue;
@@ -4586,7 +4587,7 @@ const statusApplicationProofs=Object.freeze([{"id":142501101,"type":"RADIATION",
 function statusApplicationPreview({skillCatalog=null,jobKey=null,level=1,
  branchMasteries={},branchCaps={},branchLabels={},englishBranches={}}={}){
  const out={rows:[],rejected:[],verified:false};
- if(!skillCatalog||typeof jobKey!=='string'||!Number.isSafeInteger(level)||level<1||level>55)return out;
+ if(!skillCatalog||typeof jobKey!=='string'||!Number.isSafeInteger(level)||level<1||level>plannerMaxLevel())return out;
  for(const proof of statusApplicationProofs){
   const s=skillCatalog[String(proof.id)];
   if(s?.id!==proof.id||s.learnable!==true||s.prereq!==null||
@@ -4644,7 +4645,7 @@ function complexSkillSourcePreview({skillCatalog=null,jobKey=null,level=1,
  const out={rows:[],rejected:[],verified:false,
   source:'current OS skill effects; not proven final server spell damage'};
  if(!skillCatalog||typeof jobKey!=='string'||!Number.isSafeInteger(level)||
-  level<1||level>55)return out;
+  level<1||level>plannerMaxLevel())return out;
  const fits=(actual,ref)=>actual?.ep===ref[0]&&actual.dir===ref[1]&&
   Array.isArray(actual.fv1)&&actual.fv1.length===4&&
   actual.fv1.every((v,i)=>v===ref[2][i])&&
@@ -4703,7 +4704,7 @@ function complexSkillSourcePreview({skillCatalog=null,jobKey=null,level=1,
   branchMasteries={},branchCaps={},branchLabels={},englishBranches={}}={}){
   const out={rows:[],rejected:[],verified:false,sourceOnly:true};
   if(!skillCatalog||typeof jobKey!=='string'||!Number.isSafeInteger(level)||
-   level<1||level>55)return out;
+   level<1||level>plannerMaxLevel())return out;
   for(const proof of tacticalSkillProofs){
    if(!proof.signature.classes.includes(jobKey))continue;
    const skill=skillCatalog[String(proof.id)];
@@ -4748,7 +4749,7 @@ function rangedAmmoPreview({skillCatalog=null,jobKey=null,level=1,
   branchLabels={},englishBranches={}}={}){
   const out={rows:[],rejected:[],verified:false,sourceOnly:true};
   if(!skillCatalog||typeof jobKey!=='string'||!Number.isSafeInteger(level)||
-   level<1||level>55)return out;
+   level<1||level>plannerMaxLevel())return out;
   for(const proof of [...rangedAmmoProofs,...expandedRangedAmmoProofs]){
    if(!proof.root.classes.includes(jobKey))continue;
    const source=skillCatalog[String(proof.id)];
@@ -4821,7 +4822,7 @@ function combatTechniquePreview({skillCatalog=null,jobKey=null,level=1,
  branchLabels={},englishBranches={}}={}){
  const out={rows:[],rejected:[],verified:false,sourceOnly:true};
  if(!skillCatalog||typeof jobKey!=='string'||!Number.isSafeInteger(level)||
-  level<1||level>55)return out;
+  level<1||level>plannerMaxLevel())return out;
  for(const proof of combatTechniqueProofs){
   if(!proof.root.classes.includes(jobKey))continue;
   const skill=skillCatalog[String(proof.id)];
@@ -4884,7 +4885,7 @@ function specializedSkillPreview({skillCatalog=null,jobKey=null,level=1,
  branchCaps={},branchMasteries={},branchLabels={},englishBranches={}}={}){
  const out={defense:[],magic:[],rejected:[],verified:false,sourceOnly:true};
  if(!skillCatalog||typeof jobKey!=='string'||!Number.isSafeInteger(level)||
-  level<1||level>55)return out;
+  level<1||level>plannerMaxLevel())return out;
  for(const proof of specializedSkillProofs){
   if(!proof.root.classes.includes(jobKey))continue;
   const source=skillCatalog[String(proof.id)];
@@ -4931,7 +4932,7 @@ function supportEffectPreview({skillCatalog=null,jobKey=null,level=1,
  branchCaps={},branchMasteries={},branchLabels={},englishBranches={}}={}){
  const out={help:[],magic:[],rejected:[],verified:false,sourceOnly:true};
  if(!skillCatalog||typeof jobKey!=='string'||!Number.isSafeInteger(level)||
-  level<1||level>55)return out;
+  level<1||level>plannerMaxLevel())return out;
  for(const proof of supportSkillProofs){
   if(!proof.root.classes.includes(jobKey))continue;
   const source=skillCatalog[String(proof.id)],
@@ -4983,7 +4984,7 @@ function supportEffectPreview({skillCatalog=null,jobKey=null,level=1,
   weaponKind='BARE_HAND'}={}){
   const out={stealth:[],other:[],rejected:[],verified:false,sourceOnly:true};
   if(!skillCatalog||typeof jobKey!=='string'||!Number.isSafeInteger(level)||
-   level<1||level>55)return out;
+   level<1||level>plannerMaxLevel())return out;
   for(const proof of situationalSkillProofs){
    if(!proof.root.classes.includes(jobKey))continue;
    const source=skillCatalog[String(proof.id)],

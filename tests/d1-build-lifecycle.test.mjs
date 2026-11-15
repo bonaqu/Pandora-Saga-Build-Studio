@@ -81,7 +81,7 @@ test('private D1 library save/list/delete/reload keeps records isolated by accou
 });
 test('D1 library rejects invalid levels, IDs and tokens',async()=>{
  const DB=database(),entry={id:'a'.repeat(32),name:'No',at:100,
-  data:{race:0,job:1,level:56}};
+  data:{race:0,job:1,level:121}};
  assert.equal((await worker.fetch(request('POST',{action:'put',entry}),{DB})).status,400);
  assert.equal((await worker.fetch(request('GET',null,'bad'),{DB})).status,401);
  assert.equal((await worker.fetch(request('GET',null,guestKey),{DB})).status,401,
