@@ -410,14 +410,26 @@
             tr('Усиление союзника','Ally buff'):
             row.module==='priest-cast'?
              tr('Усиление жреца','Priest buff'):
+             row.module.startsWith('source-recipe-')?
+              tr('Материалы изготовления','Crafting materials'):
+             row.module==='source-ammunition'?
+              tr('Расход стрел','Ammunition consumption'):
+             row.module==='source-support-material'?
+              tr('Материалы умения','Skill materials'):
+             row.module==='source-situational-material'||
+             row.module==='source-special-resource'?
+              tr('Особый ресурс','Special resource'):
+             row.module==='source-item-skill'||
+             row.module==='source-item-cure'?
+              tr('Связь расходника с умением','Consumable skill link'):
              row.job==='target'?tr('Эффект цели','Target effect'):row.job;
            return row.name+' ('+role+(row.level?' · '+row.level:'')+')';
           });
           validation.ok=false;
           validation.issues.push(...replay.errors);
           if(replay.lost)validation.issues.push(tr(
-           'Пропали ранее доступные расчёты умений: ',
-           'Previously supported skill calculations disappeared: ')+
+           'Пропали ранее проверенные расчёты или сведения об игровых источниках: ',
+           'Previously verified calculations or game-source details disappeared: ')+
            missing.slice(0,3).join(', ')+
            (replay.lost>3?' (+'+(replay.lost-3)+')':''));
         }
@@ -1376,11 +1388,18 @@
       const replay=typeof safety.replaySkills==='function'?
        safety.replaySkills(baseline,combined):null;
       if(replay&&!replay.ok)throw Error(
-       'Проверка известных расчётов навыков: '+replay.lost+
-       ' прежних сценариев перестали рассчитываться. '+
+       'Проверка расчётов и источниковых связей: '+replay.lost+
+       ' ранее проверенных сценариев перестали подтверждаться. '+
        [...replay.errors,...replay.samples.map(x=>x.name+' / '+
         (x.module==='ally-recipient'?'усиление союзника':
          x.module==='priest-cast'?'усиление жреца':
+         x.module.startsWith('source-recipe-')?'рецепт':
+         x.module==='source-ammunition'?'расход стрел':
+         x.module==='source-support-material'?'материалы умения':
+         x.module==='source-special-resource'||
+         x.module==='source-situational-material'?'особый ресурс':
+         x.module==='source-item-skill'||
+         x.module==='source-item-cure'?'связь расходника':
          x.job==='target'?'эффект цели':x.job)+
         (x.level?' / '+x.level:''))].slice(0,4).join(' · '));
       const equipment=typeof safety.replayEquipmentEffects==='function'?

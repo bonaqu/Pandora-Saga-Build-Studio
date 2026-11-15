@@ -651,12 +651,39 @@ function replaySkills(before,after){
     changed.add(relative);
     pending.push(relative);
    }
- if(!changed.size)return {ok:true,changedSkills:0,scenarios:0,
+ // Consumables may invoke unlearnable skills without a class/prereq.
+ // Inspect both old and selected item->skill source links, and explicitly
+ // changed item effects. These are source-only descriptions, NOT proof
+ // that the server actually applies a skill or cures a status.
+ const changedItems=new Set();
+ const oldItems=before?.items||{},newItems=after?.items||{};
+ if(before?.items&&after?.items){
+  const links=item=>(item?.effects||[]).filter(e=>
+   ['EP_SKILL_EXEC','EP_SKILL_EXEC_BALM'].includes(e?.func)&&
+   e.dir==='TARGET'&&Number.isSafeInteger(e.a)&&e.a>0)
+   .map(e=>String(e.a));
+  for(const id of new Set([...Object.keys(oldItems),...Object.keys(newItems)])){
+   const old=oldItems[id],now=newItems[id];
+   if(!old||!now)continue;
+   const sourceLinks=[...links(old),...links(now)];
+   const itemEffectsChanged=!same(old.effects,now.effects);
+   const relevant=itemEffectsChanged&&(
+    sourceLinks.length>0||(old.effects||[]).some(e=>
+     typeof e?.func==='string'&&e.func.startsWith('EP_RECOVERY_'))||
+    (now.effects||[]).some(e=>
+     typeof e?.func==='string'&&e.func.startsWith('EP_RECOVERY_')));
+   if(relevant||sourceLinks.some(key=>changed.has(key)))
+    changedItems.add(String(id));
+  }
+ }
+ if(!changed.size&&!changedItems.size)return {ok:true,changedSkills:0,scenarios:0,
   previouslyModeled:0,retained:0,lost:0,unmodeled:0,samples:[],errors:[]};
  const calc=root.PandoraOSCalculator;
  if(!calc||!['base','scalingSkillPreview','healingSpellsPreview','periodicRecoveryPreview',
   'resistanceSkillChoices','alliedRecipientPreviews','priestCastPreviews',
-  'trapSkillCostPreview']
+  'trapSkillCostPreview','craftingSkillPreview','rangedAmmoPreview',
+  'supportEffectPreview','situationalSkillPreview',
+  'consumableSkillPreview','statusCurePreview']
   .every(name=>typeof calc[name]==='function'))
   return {ok:false,changedSkills:changed.size,scenarios:0,
    previouslyModeled:0,retained:0,lost:0,unmodeled:changed.size,samples:[],
@@ -749,6 +776,49 @@ function replaySkills(before,after){
       write(row.id,'trap-level-50','linked:'+
        row.level50Variant.linkedEffectId,row.level50Variant.itemCount);
     }
+    // These source-only/ingredient inspectors already exist in the
+    // Encyclopedia. Record their signed quantitative PARAMETERS (not final
+    // damage, proc chance, inventory ownership, or crafting success).
+    const recipes=calc.craftingSkillPreview({skillCatalog:skills,jobKey:job,
+     level,branchCaps:caps,branchMasteries:mastery});
+    if(!Array.isArray(recipes?.rows))
+     errors.push('Нет исходных рецептов '+job+' / '+level);
+    else for(const row of recipes.rows){
+     for(const ingredient of row.uses||[])
+      write(row.id,'source-recipe-ingredient','item:'+ingredient.id,
+       ingredient.quantity);
+     if(row.produces)
+      write(row.id,'source-recipe-output','item:'+row.produces.id,
+       row.produces.quantity);
+    }
+    for(const weaponKind of ['BOW','CROSSBOW']){
+     const ammo=calc.rangedAmmoPreview({skillCatalog:skills,jobKey:job,
+      level,branchCaps:caps,branchMasteries:mastery,weaponKind});
+     if(!Array.isArray(ammo?.rows))
+      errors.push('Нет исходных данных расхода стрел '+job+' / '+level);
+     else for(const row of ammo.rows)
+      write(row.id,'source-ammunition',weaponKind,row.ammoCount);
+    }
+    const support=calc.supportEffectPreview({skillCatalog:skills,jobKey:job,
+     level,branchCaps:caps,branchMasteries:mastery});
+    if(!support||!Array.isArray(support.help)||!Array.isArray(support.magic))
+     errors.push('Нет источниковых данных усилений '+job+' / '+level);
+    else for(const row of [...support.help,...support.magic])
+     if(Number.isSafeInteger(row.requiredItemId)&&row.requiredItemId>0)
+      write(row.id,'source-support-material','item:'+row.requiredItemId,
+       row.requiredItemCount);
+    const situation=calc.situationalSkillPreview({skillCatalog:skills,jobKey:job,
+     level,branchCaps:caps,branchMasteries:mastery});
+    if(!situation||!Array.isArray(situation.stealth)||
+     !Array.isArray(situation.other))
+     errors.push('Нет источниковых данных особых действий '+job+' / '+level);
+    else for(const row of [...situation.stealth,...situation.other]){
+     if(Number.isSafeInteger(row.requiredItemId)&&row.requiredItemId>0)
+      write(row.id,'source-situational-material','item:'+row.requiredItemId,
+       row.requiredItemCount);
+     write(row.id,'source-special-resource','source-value',
+      row.specialResourceValue);
+    }
     const healing=calc.healingSpellsPreview({skillCatalog:skills,jobKey:job,level,
      benevolenceCap:mastery.benevolence||0,
      benevolence:mastery.benevolence||0,int:base.stats.int,spi:base.stats.spi,
@@ -797,6 +867,28 @@ function replaySkills(before,after){
     count++;
    }
   }
+  // A label-only item change never becomes a new game mechanic.
+  // A missing/altered linked potion or proven cure must be reported before D1.
+  if(changedItems.size){
+   const skillsLinks=calc.consumableSkillPreview({items:data?.items,skills});
+   const cure=calc.statusCurePreview({items:data?.items,skills});
+   if(!Array.isArray(skillsLinks?.rows)||!Array.isArray(cure?.rows))
+    errors.push('Нет проверки связанных расходников и снятия состояний.');
+   else{
+    const record=(id,module,detail)=>{
+     if(!changedItems.has(String(id)))return;
+     const key=['item:'+id,module,detail].join('|');
+     found.set(key,{id:'item:'+id,job:'item',level:null,module,detail,value:1});
+    };
+    for(const row of skillsLinks.rows)
+     for(const linked of row.skills||[])
+      record(row.id,'source-item-skill','skill:'+linked.id);
+    for(const row of cure.rows)
+     for(const condition of row.conditionsEn||[])
+      record(row.id,'source-item-cure',String(condition));
+    count++;
+   }
+  }
   // Target-side signed resistances have a separate, source-gated inspector.
   // They are not automatically equipped as self-buffs or final hit chances.
   for(const row of calc.resistanceSkillChoices(skills)||[]){
@@ -818,10 +910,11 @@ function replaySkills(before,after){
  }
  const lost=[],retained=[];
  for(const [key,old] of prior.found){
-  const latest=newSkills[old.id];
-  // Removed skills, classes and newly restricted skill levels are source
-  // changes, not a silent regression in an unchanged numeric formula.
-  if(!latest||old.job!=='target'&&
+  const itemProof=old.job==='item';
+  const latest=itemProof?newItems[old.id.slice(5)]:newSkills[old.id];
+  // Explicit removals and changed class/level permissions remain separate
+  // owner-review changes; they are not silently counted as formula regressions.
+  if(!latest||!itemProof&&old.job!=='target'&&
    (!latest.classes?.[old.job]||Number(latest.charLevel||0)>old.level))
    continue;
   if(next.found.has(key))retained.push(old);
@@ -851,7 +944,9 @@ function replaySkills(before,after){
   previouslyModeled:prior.found.size,retained:retained.length,
   lost:lost.length,unmodeled:[...changed].filter(id=>!recognized.has(id)).length,
   samples:representatives.map(row=>({...row,name:String(
-   newSkills[row.id]?.name||oldSkills[row.id]?.name||row.id).slice(0,75)})),
+   row.job==='item'?
+    newItems[row.id.slice(5)]?.name||oldItems[row.id.slice(5)]?.name||row.id:
+    newSkills[row.id]?.name||oldSkills[row.id]?.name||row.id).slice(0,75)})),
   errors:problems.slice(0,5)};
 }
 
