@@ -9562,6 +9562,18 @@ async function showOwnerGitHubExport(){
 }
 async function showOwnerLevelProgression(){
  if(!adminToken||!adminEditing||!ownerCanStartAdminOperation())return;
+ try{
+  const capability=await apiRequest('/api/runtime-capabilities',null,'');
+  if(capability.ownerProgressionD1!==true){
+   showStudioToast(lang==='en'?
+    'Cloudflare Worker needs the progression editor update before D1 saving is available.':
+    'Для сохранения таблицы в D1 сначала обнови Cloudflare Worker.','warning');
+   return;
+  }
+ }catch(error){
+  showStudioToast('Не удалось проверить готовность Worker: '+error.message,'warning');
+  return;
+ }
  const key=window.PandoraLevelProgression.KEY;
  const editor=window.PandoraProgressionOwnerEditor;
  if(!editor)throw Error('Редактор очков уровней не подключён');
