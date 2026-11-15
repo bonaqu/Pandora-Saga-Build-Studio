@@ -614,6 +614,24 @@ function replaySkills(before,after){
  if(alteredJobs.size)
   for(const [id,skill] of Object.entries(oldSkills))
    if([...alteredJobs].some(job=>skill?.classes?.[job]))changed.add(id);
+ // A parent source can invalidate an unchanged advanced skill. Expand the
+ // replay set transitively through BOTH old and selected prerequisite graphs.
+ // Checking only the directly edited ID silently missed lost child previews.
+ const children=new Map();
+ for(const skills of [oldSkills,newSkills])
+  for(const [id,record] of Object.entries(skills)){
+   if(!Number.isSafeInteger(record?.prereq)||record.prereq<=0)continue;
+   const parent=String(record.prereq);
+   if(!children.has(parent))children.set(parent,new Set());
+   children.get(parent).add(id);
+  }
+ const pending=[...changed];
+ for(let i=0;i<pending.length;i++)
+  for(const child of children.get(pending[i])||[])
+   if(!changed.has(child)){
+    changed.add(child);
+    pending.push(child);
+   }
  if(!changed.size)return {ok:true,changedSkills:0,scenarios:0,
   previouslyModeled:0,retained:0,lost:0,unmodeled:0,samples:[],errors:[]};
  const calc=root.PandoraOSCalculator;
