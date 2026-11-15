@@ -240,7 +240,8 @@ function validateCharacterTables(tables){
  }
  // An incomplete but otherwise well-typed table must not be silently
  // interpreted as a legitimate zero bonus or missing level-up. Keep the
- // approved planner range 1–55 regardless of today's server level cap.
+ // Verified source rows 1–55 remain required even if the separately
+ // configured planner supports later levels not yet present in the game.
  for(const key of ['HUMAN','ELF','DWARF','MYLIN','ENKIDU','RAPIN'])
   if(!Object.hasOwn(tables.raceInit,key))
    throw Error('Неполная таблица начальных характеристик рас');
