@@ -4,6 +4,7 @@
  * Nothing in a PR branch is executed by this privileged workflow.
  */
 import {readFileSync} from 'node:fs';
+import {isDeepStrictEqual} from 'node:util';
 
 export const REPO='bonaqu/Pandora-Saga-Build-Studio';
 export const BASE='bonaqu_projects';
@@ -46,8 +47,49 @@ export function assessCatalogPullRequest({event,pr,files,runs}){
  return {ok:true,snapshot,prNumber:pr.number,headSha:pr.head.sha};
 }
 
+// The exact published D1 snapshot, not merely 17 well-formed JSON files,
+// must be the content that GitHub merges. Prevent stale or manually altered
+// catalog-only PRs from silently replacing the server's active backup.
+export async function verifyPublishedCatalogBeforeMerge({pr,snapshot,fetcher=fetch}={}){
+ if(!/^ps-[a-z0-9-]{8,64}$/.test(String(snapshot||''))||
+  !/^[a-f0-9]{40}$/.test(String(pr?.head?.sha||'')))
+  return {ok:false,reason:'Invalid snapshot or GitHub PR revision'};
+ let checked=0;
+ for(let i=0;i<SOURCE_NAMES.length;i+=4){
+  const group=SOURCE_NAMES.slice(i,i+4);
+  const reports=await Promise.all(group.map(async name=>{
+   try{
+    const d1Name=name==='strings.en'?'stringsEn':name;
+    const published='https://ps-build-studio-cloud.bonaqu.workers.dev/api/catalog/'+d1Name+'.json';
+    const archive='https://raw.githubusercontent.com/'+REPO+'/'+pr.head.sha+
+     '/data/os/'+name+'.json';
+    const [live,github]=await Promise.all([
+     fetcher(published,{cache:'no-store',signal:AbortSignal.timeout(20000)}),
+     fetcher(archive,{cache:'no-store',signal:AbortSignal.timeout(20000)})
+    ]);
+    if(!live?.ok||!github?.ok)return {ok:false,reason:'Game catalog source is unavailable: '+name};
+    if(live.headers?.get('x-ps-catalog')!=='d1'||
+       live.headers?.get('x-ps-catalog-snapshot')!==snapshot)
+     return {ok:false,reason:'Active D1 revision has changed: '+name};
+    const [active,file]=await Promise.all([live.json(),github.json()]);
+    if(!isDeepStrictEqual(active,file))
+     return {ok:false,reason:'GitHub fallback differs from active D1: '+name};
+    return {ok:true,name};
+   }catch(error){
+    return {ok:false,reason:'Could not verify active D1 against GitHub: '+name+
+     ' ('+String(error?.message||error).slice(0,100)+')'};
+   }
+  }));
+  const failed=reports.find(report=>!report.ok);
+  if(failed)return failed;
+  checked+=reports.length;
+ }
+ return {ok:true,verifiedDatasets:checked};
+}
+
 const qs=params=>new URLSearchParams(params).toString();
-export async function autoMergeFromEvent({event,fetcher=fetch,token,apiBase='https://api.github.com'}){
+export async function autoMergeFromEvent({event,fetcher=fetch,token,
+ catalogVerifier=verifyPublishedCatalogBeforeMerge,apiBase='https://api.github.com'}){
  const run=event?.workflow_run;
  if(!branchPattern.test(String(run?.head_branch||''))||
     event?.repository?.full_name!==REPO||
@@ -82,6 +124,9 @@ export async function autoMergeFromEvent({event,fetcher=fetch,token,apiBase='htt
  const assessed=assessCatalogPullRequest({event,pr,files,
   runs:workflowRuns?.workflow_runs});
  if(!assessed.ok)return assessed;
+ const liveParity=await catalogVerifier({pr,snapshot:assessed.snapshot,fetcher});
+ if(!liveParity?.ok)return {ok:false,
+  reason:liveParity?.reason||'Active D1 and GitHub catalog parity not confirmed'};
  // Conditional GitHub merge uses the expected exact head SHA. Concurrent PR
  // edits cannot silently publish a different catalog.
  const result=await call('/repos/'+REPO+'/pulls/'+pr.number+'/merge','PUT',{
