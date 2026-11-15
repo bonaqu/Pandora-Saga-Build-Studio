@@ -8271,8 +8271,12 @@ function refreshOwnerUI(){
      'Изменяет только название кнопки. Само действие не запускается.';
    }
   }
+  // Two everyday game-data tools share a row; conditional English fills
+  // a whole row rather than leaving an awkward half-empty space.
   const catalogSlot=root.querySelector('.owner-dock-catalog')?.closest('.owner-dock-action-slot');
-  if(catalogSlot)catalogSlot.classList.toggle('owner-dock-action-wide',Boolean(translations?.hidden));
+  if(catalogSlot)catalogSlot.classList.remove('owner-dock-action-wide');
+  const englishSlot=translations?.closest('.owner-dock-action-slot');
+  if(englishSlot)englishSlot.classList.toggle('owner-dock-action-wide',!translations.hidden);
   const title=root.querySelector('.owner-dock-title');
   if(title&&!title.querySelector('.wiki-inline-input'))title.textContent=ownerDockCopy('title');
   const online=root.querySelector('.owner-dock-online');
