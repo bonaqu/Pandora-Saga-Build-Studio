@@ -299,6 +299,17 @@ export async function runAdminEntrySmoke(browser,base){
   const levelDialog=page.getByRole('dialog',{name:/Очки за уровни/});
   await levelDialog.waitFor({state:'visible'});
   assert.equal(await levelDialog.locator('.ps-level-editor-table tbody tr').count(),55);
+  const jump=levelDialog.getByRole('spinbutton',{name:'Номер уровня для перехода'});
+  const go=levelDialog.getByRole('button',{name:'Перейти',exact:true});
+  const filter=levelDialog.getByRole('checkbox',{name:'Только изменённые уровни'});
+  await jump.fill('45');await go.click();
+  assert.equal(await levelDialog.locator('tr[data-level="45"] input').first()
+   .evaluate(el=>document.activeElement===el),true,
+   'Jump should focus the requested row without editing D1');
+  await filter.check();
+  assert.equal(await levelDialog.locator('.ps-level-editor-table tbody tr:visible').count(),0,
+   'No edits means no changed rows');
+  await filter.uncheck();
   const capInput=levelDialog.getByRole('spinbutton',{name:'Максимальный уровень героя'});
   await capInput.fill('60');
   await capInput.press('Tab');
@@ -326,6 +337,12 @@ export async function runAdminEntrySmoke(browser,base){
    assert.equal(await row.locator('input').nth(1).inputValue(),'3');
   }
   assert.match(await levelDialog.locator('.ps-level-editor-summary').innerText(),/586 характеристик · 150 умений/);
+  await filter.check();
+  assert.equal(await levelDialog.locator('.ps-level-editor-table tbody tr:visible').count(),5,
+   'Only five new 56–60 rows differ from the saved table');
+  await jump.fill('56');await go.click();
+  assert.equal(await filter.isChecked(),false,'Jump makes the target row visible');
+  assert.equal(await row56.locator('input').first().evaluate(el=>el===document.activeElement),true);
   assert.equal(await fillNew.isDisabled(),true);
   assert.equal(townOverrides.has('planner.progression.v1'),false,
    'Draft edits must not write to D1');

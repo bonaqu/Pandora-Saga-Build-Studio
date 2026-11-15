@@ -63,3 +63,21 @@
  .ps-level-editor-table input.ps-level-changed{outline:2px solid Highlight}
  .ps-level-editor-actions button:focus-visible{outline-color:Highlight}
 }
+
+/* 0.798: navigate long level tables without losing the editable draft. */
+.ps-level-editor-navigation{display:flex;align-items:center;flex-wrap:wrap;gap:7px 12px;
+ padding:7px 0;border-top:1px solid #53402b}
+.ps-level-editor-jump{display:flex;align-items:center;gap:6px}
+.ps-level-editor-jump input{width:78px;min-height:35px;box-sizing:border-box;
+ padding:6px 7px;background:#241a12;color:#f5d5a5;
+ border:1px solid #806341;border-radius:5px;font:12px Manrope,Arial,sans-serif}
+.ps-level-editor-jump button{min-height:35px;padding:6px 10px}
+.ps-level-editor-filter{display:inline-flex;align-items:center;gap:6px;cursor:pointer;
+ color:#ebd0a4;font-size:12px;white-space:nowrap}
+.ps-level-editor-filter input{margin:0;accent-color:#d4a35f}
+.ps-level-editor-nav-status{font-size:11px;color:#bcaa8d;line-height:1.4}
+.ps-level-editor-table tbody tr[hidden]{display:none}
+.ps-level-editor-jump input:focus-visible,.ps-level-editor-navigation button:focus-visible,
+.ps-level-editor-filter input:focus-visible{outline:2px solid #f5ce88;outline-offset:2px}
+@media(max-width:550px){.ps-level-editor-navigation{gap:8px 12px}
+ .ps-level-editor-nav-status{flex-basis:100%}}

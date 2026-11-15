@@ -32,6 +32,15 @@ export async function runSavedBuildGridSmoke(browser,base){
    const cards=page.locator('.build-card');
    assert.deepEqual(await cards.locator('h3').allInnerTexts(),names,
     'Creation order wins over reverse storage order and newer at revisions');
+   // Sorting is a display preference only; card selection and storage survive.
+   const sort=page.getByRole('combobox',{name:'Сортировка билдов'});
+   await sort.selectOption('name');
+   assert.deepEqual(await cards.locator('h3').allInnerTexts(),[
+    'QA five','QA four five','QA one two three four five','QA solo',
+    'QA three four five','QA two three four five'
+   ]);
+   await sort.selectOption('saved');
+   assert.deepEqual(await cards.locator('h3').allInnerTexts(),names);
    const buttons=cards.first().locator('.build-card-actions > button');
    assert.equal(await buttons.count(),4,'Every card has four actions');
    assert.deepEqual(await cards.first().locator('.build-card-action-icon').allInnerTexts(),
@@ -129,6 +138,12 @@ export async function runSavedBuildGridSmoke(browser,base){
    const englishSearch=page.locator('.build-library-search');
    assert.equal(await englishSearch.getAttribute('placeholder'),'Search by name, class or level…');
    assert.equal(await englishSearch.getAttribute('aria-label'),'Find a saved build');
+   const englishSort=page.getByRole('combobox',{name:'Sort builds'});
+   assert.equal(await englishSort.inputValue(),'saved');
+   await englishSort.selectOption('class');
+   assert.deepEqual(await cards.locator('h3').allInnerTexts(),names,
+    'Equal classes must keep the original insertion order');
+   await englishSort.selectOption('saved');
    await englishSearch.fill('no such build');
    assert.match(await page.locator('.build-grid + .muted').innerText(),/No builds match this search/);
    await englishSearch.fill('');

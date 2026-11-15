@@ -37,6 +37,23 @@ function open({modal,h,lang='ru',readRaw,write,reset,canCommit=()=>true,onApplie
   '«+» — новые очки за конкретный уровень, «Всего» — накопленные очки к нему. Первый уровень по умолчанию даёт 0/0, но его тоже можно изменить.',
   '“+” is the gain at one level, while “Total” is the accumulated points through it. Level 1 defaults to 0/0 but is editable.')});
  top.append(maxLabel,h('div',{class:'ps-level-editor-fill-tools'},[quick,quickHint]));
+ // Quick navigation stays read-only until the administrator changes a grant.
+ const navigator=h('div',{class:'ps-level-editor-navigation'});
+ const jumpInput=h('input',{type:'number',min:'1',max:String(draft.maxLevel),step:'1',
+  placeholder:tr('Ур.','Lv.'),'aria-label':tr('Номер уровня для перехода','Level number to jump to')});
+ const jumpButton=tip(h('button',{type:'button',class:'button-action',
+  text:tr('Перейти','Go to level')}),
+  'Прокручивает таблицу к указанному уровню, не изменяя его очки.',
+  'Scrolls to the selected level without changing its grants.');
+ const filterInput=h('input',{type:'checkbox',
+  'aria-label':tr('Только изменённые уровни','Changed levels only')});
+ const filterLabel=tip(h('label',{class:'ps-level-editor-filter'},[
+  filterInput,h('span',{text:tr('Только изменённые','Changed only')})]),
+  'Показывает строки с отличиями от сохранённой таблицы, включая новые уровни. Не сохраняет правки.',
+  'Show rows different from the saved table, including newly added levels. No save.');
+ const navStatus=h('small',{class:'ps-level-editor-nav-status',role:'status'});
+ navigator.append(h('div',{class:'ps-level-editor-jump'},[jumpInput,jumpButton]),
+  filterLabel,navStatus);
  const scroller=h('div',{class:'ps-level-editor-scroll'});
  const table=h('table',{class:'ps-level-editor-table'});
  const headings=[
@@ -67,7 +84,7 @@ function open({modal,h,lang='ru',readRaw,write,reset,canCommit=()=>true,onApplie
   'Публикует таблицу целиком после подтверждения. Все билды будут использовать новые значения начислений.',
   'Publish this entire table after confirmation. All builds will use the updated gains.');
  controls.append(undo,restore,save);
- wrap.append(intro,top,head,scroller,total,changes,status,controls);
+ wrap.append(intro,top,head,navigator,scroller,total,changes,status,controls);
  const dialog=modal(tr('Очки за уровни · 1–120','Level-up points · 1–120'),wrap,{
   canClose:()=>!saving&&(!changed()||confirm(tr(
    'Есть несохранённые изменения. Закрыть без сохранения?',
@@ -108,7 +125,8 @@ function open({modal,h,lang='ru',readRaw,write,reset,canCommit=()=>true,onApplie
  };
  const update=()=>{
   const result=model.validate(draft);
-  let a=0,b=0,count=0;
+  let a=0,b=0,count=0,changedRows=0;
+  jumpInput.max=String(draft.maxLevel);
   for(const [level,node] of entries){
    const addA=draft.attributes[level],addB=draft.skills[level];
    if(Number.isFinite(addA))a+=addA;else a=NaN;
@@ -124,8 +142,16 @@ function open({modal,h,lang='ru',readRaw,write,reset,canCommit=()=>true,onApplie
     changedA?tr('Было: ','Was: ')+oldA:'';
    node.prevSkill.textContent=oldB===undefined?tr('Новый уровень','New level'):
     changedB?tr('Было: ','Was: ')+oldB:'';
-   node.row.classList.toggle('ps-level-edited',changedA||changedB);
+   const rowChanged=changedA||changedB;
+   node.row.classList.toggle('ps-level-edited',rowChanged);
+   if(rowChanged)changedRows++;
+   // Do not hide an input while the owner is still editing it.
+   node.row.hidden=filterInput.checked&&!rowChanged&&
+    !(typeof document!=='undefined'&&node.row.contains(document.activeElement));
   }
+  navStatus.textContent=filterInput.checked?
+   (changedRows?tr('Показано уровней: ','Levels shown: ')+changedRows:
+    tr('Изменённых уровней нет.','No changed levels.')):'';
   total.textContent=tr('На ','At ')+draft.maxLevel+tr('-м уровне: ',': ')+
    (Number.isFinite(a)?a:'—')+tr(' характеристик · ',' attributes · ')+
    (Number.isFinite(b)?b:'—')+tr(' умений',' skills');
@@ -166,9 +192,30 @@ function open({modal,h,lang='ru',readRaw,write,reset,canCommit=()=>true,onApplie
    tr(' Нажми «Сохранить в D1» для применения.',
     ' Choose “Save to D1” to publish.');
   capInput.disabled=saving;
+  jumpInput.disabled=saving; jumpButton.disabled=saving; filterInput.disabled=saving;
   for(const node of entries.values()){node.at.disabled=saving;
    node.sk.disabled=saving;}
  };
+ const goToLevel=()=>{
+  const raw=jumpInput.value.trim(),level=Number(raw);
+  if(!/^\d{1,3}$/.test(raw)||!Number.isInteger(level)||level<1||level>draft.maxLevel){
+   navStatus.textContent=tr('Укажи уровень от 1 до ','Choose a level from 1 to ')+draft.maxLevel+'.';
+   jumpInput.focus();return;
+  }
+  // A requested level must always be reachable, even with the filter on.
+  if(filterInput.checked){filterInput.checked=false;update()}
+  const node=entries.get(level);if(!node)return;
+  const header=table.tHead?.getBoundingClientRect().height||0;
+  scroller.scrollTop+=node.row.getBoundingClientRect().top-
+   scroller.getBoundingClientRect().top-header;
+  node.at.focus({preventScroll:true});
+  navStatus.textContent=tr('Уровень ','Level ')+level+tr(' открыт.',' selected.');
+ };
+ jumpButton.addEventListener('click',goToLevel);
+ jumpInput.addEventListener('keydown',event=>{
+  if(event.key==='Enter'){event.preventDefault();goToLevel()}
+ });
+ filterInput.addEventListener('change',update);
  capInput.addEventListener('change',()=>{
   const n=Number(capInput.value);
   const changedMax=model.resize(draft,n);
