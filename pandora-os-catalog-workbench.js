@@ -6,6 +6,27 @@
   async function open({request, apiBase, modal, h, afterPublish, getHero=()=>null,
     lang='ru',canEdit=false,copyLabel,editLabel,canCommit=()=>true}) {
     const tr=(ru,en)=>lang==='en'?en:ru;
+    // Reports only confirmed source identity and availability. A source
+    // preview is NOT a verified combat result on the live game server.
+    const replaySourceLabel=module=>{
+      const names={
+       'source-complex-spell':['Сложное заклинание','Complex spell'],
+       'source-target-status':['Состояние цели','Target status'],
+       'source-enemy-debuff':['Ослабление противника','Enemy debuff'],
+       'source-tactical-action':['Тактическое действие','Tactical action'],
+       'source-combat-technique':['Боевой приём','Combat technique'],
+       'source-specialized-defense-magic':['Защитное или магическое умение','Defense or magic skill'],
+       'source-support-action':['Умение поддержки','Support action'],
+       'source-situational-action':['Ситуационное действие','Situational action'],
+       'source-song-chain':['Песнь и её эффекты','Song effect chain'],
+       'source-execution-chain':['Связанные действия навыка','Skill action chain'],
+       'source-onhit-execution':['Действие при попадании','On-hit action'],
+       'source-ammunition-action':['Умение со стрелами','Ammunition skill']
+      };
+      const entry=names[module];
+      return entry?tr(entry[0],entry[1]):
+       tr('Игровая связь по каталогу','Catalog source relationship');
+    };
     const copy=(key,ru,en)=>copyLabel?.(key,ru,en)||tr(ru,en);
     const permitMutation=()=>typeof canCommit!=='function'||canCommit();
     // Only fixed author text, never a game ID, API status or comparison value.
@@ -422,6 +443,8 @@
              row.module==='source-item-skill'||
              row.module==='source-item-cure'?
               tr('Связь расходника с умением','Consumable skill link'):
+             row.module.startsWith('source-')?
+              replaySourceLabel(row.module):
              row.job==='target'?tr('Эффект цели','Target effect'):row.job;
            return row.name+' ('+role+(row.level?' · '+row.level:'')+')';
           });
@@ -1400,6 +1423,7 @@
          x.module==='source-situational-material'?'особый ресурс':
          x.module==='source-item-skill'||
          x.module==='source-item-cure'?'связь расходника':
+         x.module.startsWith('source-')?replaySourceLabel(x.module):
          x.job==='target'?'эффект цели':x.job)+
         (x.level?' / '+x.level:''))].slice(0,4).join(' · '));
       const equipment=typeof safety.replayEquipmentEffects==='function'?
