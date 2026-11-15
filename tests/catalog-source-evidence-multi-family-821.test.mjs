@@ -83,7 +83,7 @@ test('source-only bow ammunition quantity is preserved until its signed contract
  const id=213603002;
  assert.ok(jobFor(id,'rangedAmmoPreview',{weaponKind:'BOW'}));
  const after=updatedSkill(id,row=>{
-  row.funcs.find(effect=>effect.ep==='EP_CONSUME_AMMO').fv2[3]+=1;
+  row.funcs.find(effect=>effect.ep==='EP_CONSUME_AMMO').fv2[3]=0;
  });
  const report=requireLost(after,String(id),'source-ammunition');
  assert.equal(report.changedSkills>=1,true);
