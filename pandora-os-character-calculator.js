@@ -4541,7 +4541,11 @@ function trapOutcomeMatches(catalog,root,proof){
  if(!proof||!Array.isArray(proof.nodes))return false;
  return proof.nodes.every(p=>{
   const s=catalog[String(p.id)];
-  return s?.id===p.id&&s.branchRaw===root.branchRaw&&s.learnable===false&&
+  const signedBranchRaw=p.branch==='trap'?'TECHNIQUE_TRAP':
+   p.branch==='embody'?'SORCERY_ENBODY':null;
+  return s?.id===p.id&&root.branchRaw==='TECHNIQUE_TRAP'&&
+   signedBranchRaw!==null&&s.branchRaw===signedBranchRaw&&
+   s.learnable===false&&
    s.prereq===null&&s.charLevel===0&&s.branch===p.branch&&
    s.skillType===p.skillType&&Array.isArray(s.reqs)&&s.reqs.length===0&&
    Array.isArray(s.funcs)&&s.funcs.length===p.funcs.length&&
