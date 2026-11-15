@@ -404,6 +404,61 @@ function verifiedForthAmountChanges(id,oldForth,newForth,before,after){
 }
 
 
+// Data-only recipe counts are safe only when EVERY source effect retains
+// the exact established EP, ID, direction, order and other FV slots. This
+// invokes the same current calculator used by the Encyclopedia; neither the
+// inventory nor the chance of crafting success is inferred from a quantity.
+function verifiedCraftingQuantityChange(id,old,now,before,after){
+ const C=root.PandoraOSCalculator;
+ if(!C?.craftingSkillPreview||!old||!now||
+  old.id!==now.id||String(old.id)!==String(id)||
+  !Array.isArray(old.funcs)||!Array.isArray(now.funcs)||
+  old.funcs.length!==now.funcs.length)return false;
+ const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+ if([...new Set([...Object.keys(old),...Object.keys(now)])].some(key=>
+  !['funcs','name','nameEn','desc','descEn','iconId'].includes(key)&&
+  !same(old[key],now[key])))return false;
+ let changed=0;
+ for(let i=0;i<old.funcs.length;i++){
+  const a=old.funcs[i],b=now.funcs[i];
+  if(same(a,b))continue;
+  if(!['EP_CONSUME_ITEM','EP_ADDITION_ITEM'].includes(a?.ep)||
+   a.ep!==b?.ep||
+   !Number.isSafeInteger(a?.fv2?.[3])||a.fv2[3]<1||
+   !Number.isSafeInteger(b?.fv2?.[3])||b.fv2[3]<1||
+   a.fv2[3]===b.fv2[3]||
+   !Array.isArray(a.fv2)||a.fv2.length!==4||
+   !Array.isArray(b.fv2)||b.fv2.length!==4||
+   !same({...a,fv2:[...a.fv2.slice(0,3),b.fv2[3]]},b))
+   return false;
+  changed++;
+ }
+ if(!changed)return false;
+ const rows=(skill,caps,job)=>{
+  const result=C.craftingSkillPreview({
+   skillCatalog:{[String(id)]:skill},jobKey:job,level:55,
+   branchCaps:caps,branchMasteries:caps});
+  return result?.rows?.find(row=>String(row.id)===String(id));
+ };
+ const equalsProof=(row,skill)=>{
+  if(!row||!Array.isArray(row.uses)||!row.produces||
+   row.uses.length!==skill.funcs.length-1)return false;
+  return row.uses.every((r,i)=>
+   r.id===skill.funcs[i].fv1[3]&&
+   r.quantity===skill.funcs[i].fv2[3])&&
+   row.produces.id===skill.funcs[skill.funcs.length-1].fv1[3]&&
+   row.produces.quantity===skill.funcs[skill.funcs.length-1].fv2[3];
+ };
+ for(const [job,klass] of Object.entries(before?.classes||{})){
+  if(!old.classes?.[job]||!now.classes?.[job]||
+   !after?.classes?.[job])continue;
+  const a=rows(old,klass.branchCaps,job);
+  const b=rows(now,after.classes[job].branchCaps,job);
+  if(equalsProof(a,old)&&equalsProof(b,now))return true;
+ }
+ return false;
+}
+
 // An explicitly registered coefficient preview can read a revised FV1 number
 // with no code change. Before saying "model supported", prove that BOTH
 // source shapes match the calculator's exact declared contract and that its
@@ -528,8 +583,11 @@ function compatibility(before,after){
      add('needsReview','skill:'+id,name+' · добавлен или удалён навык');
     }else if(!same(old.funcs,now.funcs)){
      const dynamic=verifiedDynamicSkillFV(id,old,now,before,after);
-     add(dynamic?'verified':'needsReview','skill:'+id,
+     const recipe=!dynamic&&verifiedCraftingQuantityChange(
+      id,old,now,before,after);
+     add(dynamic||recipe?'verified':'needsReview','skill:'+id,
       name+(dynamic?' · проверено изменение FV действующей формулой':
+       recipe?' · количество в рецепте подтверждено игровым источником':
        ' · изменены игровые эффекты'));
     }else if([...new Set([...Object.keys(old),...Object.keys(now)])]
      .some(field=>!['name','nameEn','desc','descEn','iconId'].includes(field)&&
