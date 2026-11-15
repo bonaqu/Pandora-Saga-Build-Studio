@@ -13,9 +13,11 @@ export async function runInnateSkillMasterySmoke(browser,base){
   await page.waitForFunction(()=>document.querySelector('#catalogStatus')?.textContent?.includes('навыков')&&document.querySelector('#catalogStatus')?.textContent?.includes('предметов'),null,{timeout:25000});
 
   const skillSearch=page.locator('#pathSkillSearch');
-  assert.equal(await skillSearch.getAttribute('autocomplete'),'off');
+  assert.equal(await skillSearch.getAttribute('autocomplete'),'none');
+  assert.equal(await skillSearch.getAttribute('data-ps-noncredential-search'),'true');
   assert.equal(await skillSearch.getAttribute('name'),'ps-hero-skill-filter');
-  assert.equal(await skillSearch.evaluate(el=>el.readOnly),true);
+  assert.equal(await skillSearch.evaluate(el=>el.readOnly),false,
+   'Standard Chromium search is editable; idle readOnly applies only in Yandex Browser');
 
   for(let i=0;i<6;i++)await page.locator('#raceGrid .race-slide-arrow.next').click();
   assert.match(await page.locator('#raceGrid .race-slide-frame img').getAttribute('alt'),/Энкиду/);
@@ -131,8 +133,8 @@ export async function runInnateSkillMasterySmoke(browser,base){
   assert.match(await details.innerText(),/Характеристика\s+Сила/);
   assert.doesNotMatch(await details.innerText(),/Характеристика\s+STR/);
   await skillSearch.press('Tab');
-  assert.equal(await skillSearch.evaluate(el=>el.readOnly),true,
-   'Search returns to non-credential readOnly state after editing');
+  assert.equal(await skillSearch.evaluate(el=>el.readOnly),false,
+   'Ordinary Chromium remains editable; Yandex idle readOnly is tested separately');
   // Explicit UI acceptance for the exact-field steppers. A quick click
   // advances one point, while holding repeats until the mastery/budget cap.
   await page.locator('#pathGrowthTab').click();
