@@ -861,6 +861,10 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(await decision.isChecked(),false,'Changes must be declined by default');
   assert.equal(await dialog.locator('.os-sync-review-steps button').filter({hasText:'Применить выбранные изменения'}).isDisabled(),true);
   await decision.check();
+  assert.equal(await dialog.locator('.os-sync-review-steps button')
+   .filter({hasText:'Применить выбранные изменения'}).isDisabled(),true,
+   'Archived sources must require an explicit caution acknowledgement');
+  await dialog.locator('.os-sync-risk-approval input').check();
   assert.equal(await dialog.locator('.os-sync-review-steps button').filter({hasText:'Применить выбранные изменения'}).isEnabled(),true);
   let publishPrompt='';
   page.once('dialog',confirmation=>{
@@ -869,7 +873,7 @@ export async function runAdminEntrySmoke(browser,base){
   });
   await dialog.locator('.os-sync-review-steps button')
     .filter({hasText:'Применить выбранные изменения'}).click();
-  assert.match(publishPrompt,/сохранённая копия проекта/);
+  assert.match(publishPrompt,/архивная копия/);
   assert.equal(calls.filter(x=>x==='d1-import').length,0,'dismissal prevents catalog publication');
   await dialog.getByRole('button',{name:'Снять весь выбор'}).click();
   assert.equal(await dialog.locator('.os-sync-review-steps button').filter({hasText:'Применить выбранные изменения'}).isDisabled(),true);
