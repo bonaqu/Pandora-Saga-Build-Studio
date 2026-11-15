@@ -791,12 +791,15 @@ function compatibility(before,after){
       verifiedSupportMaterialQuantityChange(id,old,now,before,after);
      const trapMaterial=!dynamic&&!recipe&&!ammunition&&!supportMaterial&&
       verifiedTrapMaterialQuantityChange(id,old,now,before,after);
-     add(dynamic||recipe||ammunition||supportMaterial||trapMaterial?'verified':'needsReview','skill:'+id,
+     const known=dynamic||recipe||ammunition||supportMaterial||trapMaterial;
+     const sourceCount=!known&&sourceOnlyResourceQuantityChange(id,old,now,before,after);
+     add(known?'verified':sourceCount?'sourceOnly':'needsReview','skill:'+id,
       name+(dynamic?' · проверено изменение FV действующей формулой':
        recipe?' · количество в рецепте подтверждено игровым источником':
        ammunition?' · расход боеприпасов проверен по игровому источнику':
        supportMaterial?' · количество материала воскрешения проверено по игровому источнику':
        trapMaterial?' · расход материала ловушки проверен по игровому источнику':
+       sourceCount?' · только количество расходников из игрового источника; эффект навыка не рассчитан':
        ' · изменены игровые эффекты'));
     }else if([...new Set([...Object.keys(old),...Object.keys(now)])]
      .some(field=>!['name','nameEn','desc','descEn','iconId'].includes(field)&&
