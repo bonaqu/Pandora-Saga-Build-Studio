@@ -35,6 +35,24 @@ async function gh(env,path,{method='GET',body=null,optional=false}={}){
  }
  return response.json();
 }
+// Authenticated read-only GitHub token diagnostics. A configured secret by
+// itself is not proof the credential works or grants repository write access.
+export async function githubCatalogReadiness(env){
+ if(!githubCatalogEnabled(env))return {configured:false};
+ try{
+  const [repository,reference]=await Promise.all([
+   gh(env,''),gh(env,'/git/ref/heads/'+BASE)
+  ]);
+  if(!repository||repository.full_name!==REPO||
+    !/^[a-f0-9]{40}$/.test(reference?.object?.sha||''))
+   return {configured:true,connected:false,writeAccess:null};
+  const permission=repository.permissions?.push;
+  return {configured:true,connected:true,
+   writeAccess:typeof permission==='boolean'?permission:null};
+ }catch{
+  return {configured:true,connected:false,writeAccess:null};
+ }
+}
 const unpack=row=>JSON.parse(row.payload);
 export async function readPublishedGameCatalog(db,active){
  if(!validSnapshot(active?.snapshot))throw fault('Invalid published catalog',409);

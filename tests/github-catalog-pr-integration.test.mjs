@@ -119,3 +119,33 @@ test('stale snapshot lease refuses any GitHub writes',async()=>{
  assert.equal(response.status,409);
  assert.deepEqual(environment.DB.queries,[]);
 });
+
+test('admin GitHub status reads actual repository credential access, without any write',async()=>{
+ const environment=env(),original=globalThis.fetch,requested=[];
+ globalThis.fetch=async(url,options)=>{
+  requested.push(url);assert.equal(options.method,'GET');
+  assert.equal(options.headers.Authorization,'Bearer '+environment.GITHUB_CATALOG_TOKEN);
+  if(url.endsWith('/git/ref/heads/bonaqu_projects'))
+   return new Response(JSON.stringify({object:{sha}}),{status:200});
+  if(url.endsWith('/Pandora-Saga-Build-Studio'))
+   return new Response(JSON.stringify({full_name:'bonaqu/Pandora-Saga-Build-Studio',
+    permissions:{pull:true,push:true}}),{status:200});
+  throw Error('Unexpected read-only GitHub status call');
+ };
+ try{
+  const response=await worker.fetch(req('/api/admin/catalog/github-status'),environment);
+  assert.equal(response.status,200);
+  assert.deepEqual(await response.json(),
+   {configured:true,connected:true,writeAccess:true});
+  assert.equal(requested.length,2);
+ }finally{globalThis.fetch=original}
+});
+test('invalid GitHub Secret does not pass token readiness',async()=>{
+ const environment=env(),original=globalThis.fetch;
+ globalThis.fetch=async()=>new Response(JSON.stringify({message:'Bad credentials'}),{status:401});
+ try{
+  const response=await worker.fetch(req('/api/admin/catalog/github-status'),environment);
+  assert.deepEqual(await response.json(),
+   {configured:true,connected:false,writeAccess:null});
+ }finally{globalThis.fetch=original}
+});

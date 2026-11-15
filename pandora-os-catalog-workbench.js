@@ -1239,6 +1239,12 @@
             ' GitHub backup is not configured: the fallback has not been verified.');
           return;
         }
+        if(integration.connected===false||integration.writeAccess===false){
+          status.textContent+=tr(
+            ' GitHub не подтвердил подключение и право записи. Резервный PR не создан.',
+            ' GitHub connection or write access was not verified. No fallback PR was created.');
+          return;
+        }
         const current=await request('/api/admin/catalog/status',{});
         if(current.active!==snapshot){
           status.textContent+=tr(
@@ -1510,7 +1516,7 @@
       request('/api/admin/catalog/github-status',null),
       request('/api/admin/catalog/status',{})
     ]).then(([settings,current])=>{
-      githubReady=settings.configured===true;
+      githubReady=settings.configured===true&&settings.connected!==false&&settings.writeAccess!==false;
       publishedSnapshot=current.active||null;
       github.setAttribute('aria-label',githubReady
         ? 'Создать PR в GitHub из опубликованного каталога'
