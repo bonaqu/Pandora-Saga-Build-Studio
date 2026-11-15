@@ -11,7 +11,7 @@ export async function runHonorGuideSmoke(browser,base){
  // to test the card without contacting the game's host.
  await context.route('https://pandorasaga-os.com/uploads/images/f4be126de5ed488981aeeb2298255095.jpg',
   route=>route.fulfill({status:200,contentType:'image/png',
-   body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9WM8WAAAAABJRU5ErkJggg==','base64')}));
+   body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4//8/AAX+Av4N70a4AAAAAElFTkSuQmCC','base64')}));
 
  const page=await context.newPage(),errors=[];
  page.on('pageerror',error=>errors.push(error.message));
