@@ -104,6 +104,22 @@ test('Forth replacement of a known accuracy EP by an unknown EP blocks D1',()=>{
  assert.ok(report.samples.some(row=>row.key==='item:242'));
  assert.equal(S.compatibility(original,next).requiresMechanicReview,true);
 });
+test('duplicate numeric EP cannot mask replacement of its second instance',()=>{
+ const item={id:99776,name:'Two same numeric sources',slot:'weapon',
+  kind:'1H_SWORD',W:30,effects:[
+   {func:'EP_TOHIT_CONST',dir:'TARGET',a:2},
+   {func:'EP_TOHIT_CONST',dir:'TARGET',a:5}
+  ]};
+ const before={items:{'99776':item},itemForth:{}};
+ const after=structuredClone(before);
+ after.items['99776'].effects[1]={func:'EP_UNKNOWN_REPLACEMENT',
+  dir:'TARGET',a:8};
+ const report=S.replayEquipmentEffects(before,after);
+ assert.equal(report.ok,false);
+ assert.ok(report.lost>0,'one still-supported EP must not mask lost second EP');
+ assert.ok(report.samples.some(x=>x.previous==='EP_TOHIT_CONST'));
+});
+
 test('unmodified source and all known effects skip unnecessary compute',()=>{
  const report=S.replayEquipmentEffects(original,original);
  assert.equal(report.ok,true);
