@@ -1323,7 +1323,15 @@ const dynamicSkillContracts=Object.freeze({
    ])}),
   420004001:Object.freeze({ep:'EP_CASTINGCANCEL_RESISTANCE_CONST',
    fv1:Object.freeze([10,0,10,1]),fv2:Object.freeze([0,0,0,15]),
-   branch:'embody',additional:Object.freeze([])})
+   branch:'embody',additional:Object.freeze([])}),
+  // The level-50 upgrade has TWO modeled coefficients. Keep its secondary
+  // resistance vector exactly signed while the main FV1 numeric lanes move.
+  420004002:Object.freeze({ep:'EP_CASTINGCANCEL_RESISTANCE_CONST',
+   fv1:Object.freeze([15,0,15,1]),fv2:Object.freeze([0,0,0,15]),
+   branch:'embody',additional:Object.freeze([
+    Object.freeze({ep:'EP_ALL_RESISTANCE_CONST',dir:'TARGET',modeled:true,
+     fv1:Object.freeze([11,0,0,1]),fv2:Object.freeze([0,0,0,0])})
+   ])})
 });
 function dynamicSkillSourceMatches(record,ep,baseline){
  const contract=dynamicSkillContracts[String(record?.id)];
@@ -1675,7 +1683,8 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  const windAdditional=conjurerUpgrade&&windSource?.id===420004002&&
   windSource.skillType==='MYSELF'&&windSource.cast===1&&
   windSource.cooldown===1.5&&windSource.funcs?.length===2&&
-  exact(windSource,'EP_CASTINGCANCEL_RESISTANCE_CONST',[15,0,15,1])&&
+  dynamicSkillSourceMatches(windSource,
+   'EP_CASTINGCANCEL_RESISTANCE_CONST',[15,0,15,1])&&
   exact(windSource,'EP_ALL_RESISTANCE_CONST',[11,0,0,1])?
   coefficientModel(windTrailId,'EP_ALL_RESISTANCE_CONST','spi',null,
    'Сопротивление всем стихиям','All-element resistance'):null;
