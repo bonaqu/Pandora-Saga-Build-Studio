@@ -22,6 +22,14 @@ const plain=decode(html
  .replace(/<[^>]*>/g,'')
  .replace(/[ \t]+/g,' ')
  .replace(/\n[ \t]*/g,'\n'));
+for(const m of html.matchAll(/<img\b[^>]*src=["']([^"']+)["'][^>]*>/gi)){
+ if(!m[1].startsWith('/uploads/images/'))continue;
+ const prior=html.slice(Math.max(0,m.index-1100),m.index)
+  .replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/\s+/g,' ').slice(-480);
+ const post=html.slice(m.index+m[0].length,m.index+m[0].length+300)
+  .replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/\s+/g,' ').slice(0,220);
+ console.log('PATCH_IMAGE_CONTEXT '+JSON.stringify({src:m[1],prior,post}));
+}
 console.log('PATCH_NEWS_META '+JSON.stringify({id:article.id,title:article.title,
  date:article.publishedAt||article.createdAt||article.date||null,
  images,contentLength:html.length}));
