@@ -14,8 +14,8 @@ const row=(report,id)=>report.rows.find(x=>x.id===id);
 
 test('cross-module census counts modeled OS abilities once regardless of UI tab',()=>{
  const audit=report();
- assert.equal(audit.summary.skillRecords,569);
- assert.equal(audit.summary.effectRecords,1070);
+ assert.equal(audit.summary.skillRecords,571);
+ assert.equal(audit.summary.effectRecords,1076);
  assert.equal(audit.summary.uniqueEffectTypes,283);
  assert.equal(audit.summary.inspectedClasses,28);
  assert.ok(audit.summary.statuses['unmodeled-learnable']<=55,

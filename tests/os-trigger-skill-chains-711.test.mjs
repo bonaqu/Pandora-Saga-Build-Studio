@@ -63,7 +63,7 @@ test('source corruption, cycle and missing child reject the whole tree',()=>{
 });
 test('linked skill audit tracks only verified crafting numeric sources',()=>{
  const audit=auditOsSkillFormulaCoverage({skills,classes,calculator:C});
- assert.equal(audit.summary.skillRecords,569);
+ assert.equal(audit.summary.skillRecords,571);
  assert.equal(audit.summary.executionChains.sourceLinks,100);
  assert.equal(audit.summary.executionChains.zeroTargetSentinels,2);
  assert.ok(audit.summary.executionChains.eligibleSkillRoots>0);

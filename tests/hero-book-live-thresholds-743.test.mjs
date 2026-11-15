@@ -138,7 +138,7 @@ test('Book is build-scoped, bilingual, and external-buff block is not a toggle',
 test('formula audit keeps every skill and reclassifies source-proved Ossify value',()=>{
  const report=auditOsSkillFormulaCoverage({skills,classes,calculator:C});
  const byId=id=>report.rows.find(x=>x.id===id);
- assert.equal(report.summary.skillRecords,569);
+ assert.equal(report.summary.skillRecords,571);
  assert.equal(report.summary.statuses['unmodeled-learnable'],3);
  assert.equal(byId(100057001).status,'numeric-preview');
  assert.ok(byId(100057001).sourceModules.includes('skill-effects'));

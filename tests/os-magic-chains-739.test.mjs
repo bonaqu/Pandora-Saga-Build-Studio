@@ -83,7 +83,7 @@ test('every root and child FV1/FV2 mutation rejects a stale source claim',()=>{
 });
 test('magic chain census increases only qualitative sources',()=>{
  const result=auditOsSkillFormulaCoverage({skills,classes,calculator:C});
- assert.equal(result.summary.skillRecords,569);
+ assert.equal(result.summary.skillRecords,571);
  assert.ok(result.summary.statuses['numeric-preview']>=73);
  assert.ok(result.summary.statuses['qualitative-preview']>=83);
  assert.ok(result.summary.statuses['unmodeled-learnable']<=18);

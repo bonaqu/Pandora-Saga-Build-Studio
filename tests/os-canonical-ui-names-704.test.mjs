@@ -14,7 +14,7 @@ const terms={skills,englishSkills:english.skills};
 
 test('all OS skill identities always display canonical RU and matching EN by ID',()=>{
  const ids=Object.keys(skills);
- assert.equal(ids.length,569,'review the checked-in catalog on updates');
+ assert.equal(ids.length,571,'review the checked-in catalog on updates');
  let withEn=0,withoutEn=0;
  for(const id of ids){
   const source=skills[id],translated=english.skills[id]?.n;

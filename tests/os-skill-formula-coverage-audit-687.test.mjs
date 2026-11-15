@@ -10,13 +10,13 @@ const report=()=>auditOsSkillFormulaCoverage({
  skills,classes,calculator:host.PandoraOSCalculator});
 test('deterministic coverage census processes all skill records and effect families',()=>{
  const output=report();
- assert.equal(output.summary.skillRecords,569);
- assert.equal(output.summary.effectRecords,1070);
+ assert.equal(output.summary.skillRecords,571);
+ assert.equal(output.summary.effectRecords,1076);
  assert.equal(output.summary.uniqueEffectTypes,283);
  assert.equal(output.summary.inspectedClasses,28);
- assert.equal(output.rows.length,569);
- assert.equal(new Set(output.rows.map(row=>row.id)).size,569);
- assert.equal(Object.values(output.summary.statuses).reduce((a,b)=>a+b,0),569);
+ assert.equal(output.rows.length,571);
+ assert.equal(new Set(output.rows.map(row=>row.id)).size,571);
+ assert.equal(Object.values(output.summary.statuses).reduce((a,b)=>a+b,0),571);
  assert.ok(output.summary.statuses['coefficient-model']>0);
  assert.ok(output.summary.statuses['unmodeled-learnable']>0);
 });

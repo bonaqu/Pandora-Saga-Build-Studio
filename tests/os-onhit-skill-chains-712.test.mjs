@@ -68,7 +68,7 @@ test('source census keeps on-hit metadata separate from numeric models',()=>{
  assert.equal(audit.summary.executionChains.onHitSourceLinks,4);
  assert.ok(audit.summary.executionChains.onHitEligibleSkillRoots>0);
  assert.ok(audit.summary.statuses['unmodeled-learnable']<=55);
- assert.equal(audit.summary.skillRecords,569);
+ assert.equal(audit.summary.skillRecords,571);
 });
 test('Source-only os-onhit-skill-chains-712 knowledge belongs in the Encyclopedia, not build stats',()=>{
  const wiki=read('pandora-studio-wiki-skill-insights.js');
