@@ -114,16 +114,9 @@ export function auditReview({candidateDir=candidate,archiveDir=archive}={}){
    throw Error('Checksum or file-size mismatch: '+file);
   source[name]=JSON.parse(buffer.toString('utf8'));
  }
- // A release is acceptable only when every byte of every published local
- // fallback JSON matches the reviewed, SHA-256 pinned D1 candidate.
- const fallbackDir=join(root,'data/os');
- for(const name of names){
-  const file=filename(name),candidateBytes=readFileSync(join(candidateDir,file));
-  const published=readFileSync(join(fallbackDir,file));
-  if(!published.equals(candidateBytes)||
-   createHash('sha256').update(published).digest('hex')!==m.files[file].sha256)
-   throw Error('Published archive does not match reviewed snapshot: '+file);
- }
+ // The pinned November 15 candidate is a permanent historical reference.
+ // Future fully reviewed D1 publications are checked separately as the
+ // active fallback; they must NOT rewrite this immutable historical SHA.
  const meta=source.meta;
  if(meta.schemaVersion!==1||meta.curated!==true||meta.baseLocale!=='ru')
   throw Error('Missing curated D1 meta');
@@ -171,7 +164,69 @@ export function auditReview({candidateDir=candidate,archiveDir=archive}={}){
   brokenItemReferences:refs.unresolved,gameRelations:relations.checked,
   promoted:m.promoted};
 }
+
+// Active GitHub Pages fallback validator: validates the *current* 17-file
+// snapshot structurally without binding it to the historic Nov 15 hashes.
+// The publication workflow has already verified all 17 reads from D1, and
+// CI must additionally check this candidate before allowing auto-merge.
+export function auditCurrentFallback({fallbackDir=join(root,'data/os')}={}){
+ const data={};
+ const unsafe=new Set(['__proto__','constructor','prototype']);
+ const keys=(value,label,depth=0)=>{
+  if(!value||typeof value!=='object')return;
+  if(depth>24)throw Error('Excessive catalog nesting: '+label);
+  for(const [key,entry] of Object.entries(value)){
+   if(unsafe.has(key))throw Error('Unsafe catalog key: '+label+'.'+key);
+   keys(entry,label+'.'+key,depth+1);
+  }
+ };
+ for(const name of names){
+  const label=filename(name),file=join(fallbackDir,label);
+  let parsed;
+  try{parsed=JSON.parse(readFileSync(file,'utf8'))}
+  catch{throw Error('Unreadable active fallback JSON: '+label)}
+  if(!parsed||typeof parsed!=='object')throw Error('Invalid fallback source: '+label);
+  keys(parsed,name);
+  data[name]=parsed;
+ }
+ const meta=data.meta;
+ if(meta.schemaVersion!==1||meta.curated!==true||meta.baseLocale!=='ru')
+  throw Error('Invalid active fallback metadata');
+ for(const name of ['items','skills','souls','monsters','drops','maps','instances',
+  'trades','classes','racialPassives','itemForth','unison']){
+  const expected=meta.counts?.[name],actual=rows(name,data[name]);
+  if(!Number.isSafeInteger(expected)||expected<1||actual!==expected)
+   throw Error('Active fallback count mismatch: '+name);
+ }
+ if(data.stringsEn?.locale!=='en')throw Error('Active fallback English locale unavailable');
+ for(const name of ['items','skills','monsters','souls','classes'])
+  if(Object.keys(data.stringsEn?.[name]||{}).length!==meta.localeCounts?.en?.[name])
+   throw Error('Incomplete active fallback translations: '+name);
+ for(const name of ['items','skills','souls','monsters'])
+  for(const [key,row] of Object.entries(data[name])){
+   if(!row||String(row.id)!==key)
+    throw Error('Active fallback record ID mismatch: '+name+'/'+key);
+  }
+ if(!Number.isSafeInteger(data.tables?.levelCap)||data.tables.levelCap<1)
+  throw Error('Invalid active fallback level cap');
+ for(let level=2;level<=55;level++)
+  if(!Number.isSafeInteger(data.tables?.abilityPoint?.[String(level)]))
+   throw Error('Missing active fallback ability points: '+level);
+ const refs=validateDescriptionReferences({
+  items:data.items,souls:data.souls,stringsEn:data.stringsEn
+ });
+ if(refs.unresolved)throw Error('Unresolved active fallback item references: '+refs.unresolved);
+ const relations=auditGameRelationships(data);
+ if(!relations.ok)throw Error('Invalid active fallback relationships: '+
+  JSON.stringify(relations.errors.slice(0,8)));
+ return {datasets:names.length,counts:meta.counts,unresolved:refs.unresolved,
+  relations:relations.checked};
+}
+
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
- try{console.log('PROMOTED ARCHIVE VERIFIED: '+JSON.stringify(auditReview()))}
+ try{
+  console.log('HISTORICAL REVIEW VERIFIED: '+JSON.stringify(auditReview()));
+  console.log('ACTIVE FALLBACK VERIFIED: '+JSON.stringify(auditCurrentFallback()));
+}
  catch(error){console.error(error.message);process.exitCode=1}
 }

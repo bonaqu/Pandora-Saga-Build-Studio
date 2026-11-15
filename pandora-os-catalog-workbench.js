@@ -318,8 +318,8 @@
        'Open a comparison with the GitHub Pages archive. An archived copy cannot verify current game-server values.'),
      reviewSteps,
      secondaryHint(advanced,'hintAdvancedDisclosure',
-       'Необязательные операции: тест записи D1, экспорт и предложение изменений GitHub.',
-       'Optional operations: D1 write test, export and GitHub pull request.'));
+       'Дополнительные инструменты: диагностика D1, ручной экспорт и повторное создание резервного PR при ошибке автоматической отправки.',
+       'Advanced tools: D1 diagnostics, manual export, and retrying the fallback PR if automatic delivery failed.'));
     // Each action tooltip has independent RU/EN D1 copy. Its ? editor is
     // a sibling of the real action button, never part of its click target.
     for(const [node,key,ru,en] of [
@@ -348,8 +348,8 @@
        'Проверить конфликты на двух случайных временных записях. Запись только после подтверждения, без изменения игрового каталога и билдов.',
        'Check conflicts using two randomized temporary records, after confirmation, without changing the game catalog or builds.'],
       [github,'hintGithub',
-       'Создать предложение изменений в репозитории GitHub из уже опубликованной версии D1. Автоматического принятия изменений не будет.',
-       'Create a GitHub pull request from the already published D1 version. The proposal is never merged automatically.'],
+       'Повторить создание резервного PR из D1. Обычно он создаётся автоматически после обновления каталога и принимается после успешных Node и Chromium проверок, если изменены только игровые JSON.',
+       'Retry creating a fallback PR from published D1. Normally it is created automatically and merged after green Node and Chromium checks if only approved game JSON files changed.'],
       [exportButton,'hintExport',
        'Скачать файл с выбранными изменениями для ручного обновления GitHub. Ничего не публикует.',
        'Download selected changes for a manual GitHub update. Nothing is published.']
@@ -1239,6 +1239,12 @@
             ' GitHub backup is not configured: the fallback has not been verified.');
           return;
         }
+        if(integration.connected===false||integration.writeAccess===false){
+          status.textContent+=tr(
+            ' GitHub не подтвердил подключение и право записи. Резервный PR не создан.',
+            ' GitHub connection or write access was not verified. No fallback PR was created.');
+          return;
+        }
         const current=await request('/api/admin/catalog/status',{});
         if(current.active!==snapshot){
           status.textContent+=tr(
@@ -1281,13 +1287,14 @@
       const modelCheck=safety.check(combined);
       if(!modelCheck.ok)
         throw Error('Проверка расчётов перед публикацией: '+modelCheck.issues.join(' · '));
+      const compatibility=safety.compatibility(baseline,combined);
       const normalized=importer.normalize(combined,legacy);
       if(!Array.isArray(legacyRows)||legacyRows.length!==normalized.counts.legacyLocale)
         throw Error('Published D1 translation count changed during review');
       normalized.entries.legacyLocale=legacyRows; // Preserve exact IDs, payloads and source attribution.
       review.auditSelection(baseline,upstream,combined,chosen,importer.files,
         {syncRussianInstances});
-      return {combined,normalized};
+      return {combined,normalized,compatibility};
     }
 
     exportButton.onclick=()=>{
@@ -1340,12 +1347,22 @@
         'Применить только одну строку внутри невозможно.':'';
       const uncertainWarning=uncertain
         ?'\nВНИМАНИЕ: '+uncertain+' выбранных изменений требуют ручной проверки.':'';
+      const compatibility=staged.compatibility;
+      const mechanicWarning=compatibility?.requiresMechanicReview?
+       '\n\nПРОВЕРКА МЕХАНИК: '+compatibility.totals.needsReview+
+       ' изменений игровых свойств и эффектов требуют проверки совместимости. '+
+       'Новая формула не подтверждается одним обновлением D1. Примеры: '+
+       compatibility.samples.needsReview.slice(0,3).map(x=>x.title).join('; ')+
+       '. Публикация не гарантирует численные результаты неизвестных эффектов.':'';
+      const verifiedNotice=compatibility?.totals.verified?
+       '\nБазовые расчёты и таблицы: проверено '+compatibility.totals.verified+
+       ' разделов (не полная проверка всех боевых механик).':'';
       const confirmationRu='Применить выбранные изменения в каталог Build Studio?\n'+
        'Новых: '+added+' · Изменённых: '+changed+' · Удалённых: '+removed+
        ' · Переносов: '+formatted+' · Русских описаний: '+ruCount+'.'+
        (notSelectedGame?'\nНе выбрано игровых изменений: '+notSelectedGame+'.':'')+
        (unselectedSettings?'\nНе выбрано настроек: '+unselectedSettings+'.':'')+
-       sourceWarning+uncertainWarning+atomicWarning+impactPreview+otherPreview+
+       sourceWarning+uncertainWarning+mechanicWarning+verifiedNotice+atomicWarning+impactPreview+otherPreview+
        '\n\nМеняется каталог Build Studio, а НЕ сама игра. Проверь выбранное перед подтверждением. '+
        'Ничего не опубликовано до этого подтверждения.';
       const confirmationEn='Publish these changes to the Build Studio catalog?\n'+
@@ -1354,6 +1371,10 @@
        (notSelectedGame?'\nUnselected game changes: '+notSelectedGame+'.':'')+
        (unselectedSettings?'\nUnselected settings: '+unselectedSettings+'.':'')+
        sourceWarning+
+       (compatibility?.requiresMechanicReview?
+        '\nMECHANICS: '+compatibility.totals.needsReview+
+        ' effect/property changes require an independent model review. '+
+        'Publishing D1 does not prove unknown formulas.':'')+
        (uncertain?'\nFlagged for manual review: '+uncertain+'.':'')+
        (selectedChanges.some(x=>x.dataset==='tables')?
          '\nGame formula tables, including level caps, are replaced together.':'')+
@@ -1495,7 +1516,7 @@
       request('/api/admin/catalog/github-status',null),
       request('/api/admin/catalog/status',{})
     ]).then(([settings,current])=>{
-      githubReady=settings.configured===true;
+      githubReady=settings.configured===true&&settings.connected!==false&&settings.writeAccess!==false;
       publishedSnapshot=current.active||null;
       github.setAttribute('aria-label',githubReady
         ? 'Создать PR в GitHub из опубликованного каталога'

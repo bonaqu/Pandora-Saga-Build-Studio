@@ -6,6 +6,13 @@ export async function runHonorGuideSmoke(browser,base){
  const context=await browser.newContext({viewport:{width:1280,height:850}});
  await context.route('**/*',route=>route.request().url().startsWith(base+'/')?
   route.continue():route.abort());
+ // The game news screenshot is intentionally external in production. In
+ // hermetic Chromium, serve a tiny verified-image fixture at the exact URL
+ // to test the card without contacting the game's host.
+ await context.route('https://pandorasaga-os.com/uploads/images/f4be126de5ed488981aeeb2298255095.jpg',
+  route=>route.fulfill({status:200,contentType:'image/png',
+   body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAIAAACQd1PeAAAADElEQVR4nGP4//8/AAX+Av4N70a4AAAAAElFTkSuQmCC','base64')}));
+
  const page=await context.newPage(),errors=[];
  page.on('pageerror',error=>errors.push(error.message));
  try{
@@ -38,7 +45,16 @@ export async function runHonorGuideSmoke(browser,base){
   await rankFilters.nth(1).click();
   assert.equal(await panel.locator('.wiki-honor-rank:not([hidden])').count(),9);
   await rankFilters.nth(0).click();
-  assert.equal(await panel.locator('.wiki-honor-rank:not([hidden])').count(),12);
+  assert.equal(await panel.locator('#honor-victories').count(),1);
+ assert.equal(await panel.locator('#honor-victories .wiki-honor-pvp-table').count(),3);
+ assert.match(await panel.locator('#honor-victories').innerText(),/50 000|50,000/);
+ const eventScreenshot=panel.locator('#honor-victories a.wiki-honor-pvp-screenshot-link');
+ assert.equal(await eventScreenshot.count(),1,
+  'An official screenshot link remains available when the image host rejects hotlinking');
+ assert.ok((await eventScreenshot.getAttribute('href')).endsWith(
+  '/f4be126de5ed488981aeeb2298255095.jpg'),
+  'Screenshot link must retain the exact source image filename');
+ assert.equal(await panel.locator('.wiki-honor-rank:not([hidden])').count(),12);
   // Regression: Honor used to return from renderWiki before attaching the
   // universal search listener. Search the article, not the OS record index.
   const honorSearch=page.locator('input[name="pandora-studio-encyclopedia-filter"]');
@@ -86,9 +102,9 @@ export async function runHonorGuideSmoke(browser,base){
    document.querySelector('.wiki-page')?.dataset.honorSearchQuery==='',
    null,{timeout:5000});
   await page.waitForFunction(()=>
-   document.querySelectorAll('.wiki-honor-section:not([hidden])').length===4);
+   document.querySelectorAll('.wiki-honor-section:not([hidden])').length===5);
   assert.equal(await panel.locator('.wiki-honor-rank:not([hidden])').count(),12);
-  assert.equal(await page.locator('.wiki-honor-nav-link:not([hidden])').count(),4);
+  assert.equal(await page.locator('.wiki-honor-nav-link:not([hidden])').count(),5);
   await rankFilters.nth(1).click();
   assert.equal(await panel.locator('.wiki-honor-rank:not([hidden])').count(),9,
    'Rank type filters work after a search round trip');
@@ -178,7 +194,7 @@ export async function runHonorGuideSmoke(browser,base){
    });
    assert.ok(geometry.menuTop>=geometry.paneTop-2&&
     geometry.menuBottom<=geometry.paneBottom+2,
-    'Four Honor navigation links must stay visible: '+JSON.stringify(geometry));
+    'Five Honor navigation links must stay visible: '+JSON.stringify(geometry));
    return geometry.menuTop;
   };
   await pane.evaluate(el=>el.scrollTo({top:Math.min(850,el.scrollHeight-el.clientHeight),behavior:'instant'}));
@@ -186,7 +202,7 @@ export async function runHonorGuideSmoke(browser,base){
   await pane.evaluate(el=>el.scrollTo({top:Math.min(1400,el.scrollHeight-el.clientHeight),behavior:'instant'}));
   const secondTop=await stickyPosition();
   assert.ok(Math.abs(secondTop-firstTop)<3,'Honor sidebar must follow article scroll');
-  assert.equal(await menu.locator('.wiki-honor-nav-link').count(),4);
+  assert.equal(await menu.locator('.wiki-honor-nav-link').count(),5);
   // Direct scroll/keyboard/wheel and clicking menu use the same active state.
   const autoHighlight=async section=>{
    await pane.evaluate((container,id)=>{
@@ -199,7 +215,7 @@ export async function runHonorGuideSmoke(browser,base){
     section,{timeout:4000});
    assert.equal(await menu.locator('.wiki-honor-nav-link[aria-current="location"]').count(),1);
   };
-  for(const chapter of ['overview','gain','ranks','monthly'])
+  for(const chapter of ['overview','gain','victories','ranks','monthly'])
    await autoHighlight(chapter);
   await autoHighlight('ranks');
   // Reproduce a reader dragging the scrollbar to the very end: the final
@@ -325,7 +341,7 @@ export async function runHonorGuideSmoke(browser,base){
    document.querySelector('.wiki-page')?.dataset.honorSearchQuery==='',
    null,{timeout:5000});
   await page.waitForFunction(()=>document.querySelectorAll(
-   '.wiki-honor-section:not([hidden])').length===4);
+   '.wiki-honor-section:not([hidden])').length===5);
   assert.match(await panel.locator('#honor-rank-7').innerText(),/Count/);
   assert.doesNotMatch(await panel.locator('.wiki-honor-list-section').first()
    .innerText(),/Покинутые земли Мальдии|Подземные руины Астира/);

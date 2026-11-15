@@ -372,3 +372,17 @@
  padding:12px;border:1px solid #634d37;border-radius:5px;
  background:#261b13;
 }
+
+
+/* Compact structured PvP event: content stays in normal Honor reading flow. */
+.wiki-honor-pvp-group{display:grid;gap:5px;min-width:0;overflow-x:auto}
+.wiki-honor-pvp-label{font-weight:700;font-size:13px;line-height:1.45;margin:4px 0 0}
+.wiki-honor-pvp-table{width:100%;border-collapse:collapse;min-width:310px;font-size:12px;line-height:1.4}
+.wiki-honor-pvp-table th,.wiki-honor-pvp-table td{
+ padding:7px 9px;text-align:left;vertical-align:top;
+ border-bottom:1px solid rgba(181,155,106,.17);white-space:normal}
+.wiki-honor-pvp-table th{font-weight:650;color:var(--gold,#d9bb83)}
+.wiki-honor-pvp-table tr:last-child td{border-bottom:0}
+.wiki-honor-pvp-source{opacity:.72;font-size:11px}
+
+.wiki-honor-pvp-illustration{display:block;width:100%;height:auto;max-height:400px;object-fit:contain;object-position:center;border-radius:7px;}

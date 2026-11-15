@@ -116,7 +116,40 @@ const wars=Object.freeze([
  {id:'lidia',nameRu:'Лидия',nameEn:'Lydia'},
  {id:'siegheim',nameRu:'Гихайм',nameEn:'Siegheim'}
 ].map(Object.freeze));
+const pvpVictories=Object.freeze({
+ sourceDate:'2026-11-13',sourceNewsId:9,
+ daily:Object.freeze([
+  Object.freeze({wins:50,rewardRu:'Простое зелье скорости ×2',rewardEn:'Simple Speed Potion ×2'}),
+  Object.freeze({wins:100,rewardRu:'25 000 золота',rewardEn:'25,000 gold'}),
+  Object.freeze({wins:200,rewardRu:'Простое зелье скорости ×5',rewardEn:'Simple Speed Potion ×5'}),
+  Object.freeze({wins:300,rewardRu:'Ключ из Мальдии ×1',rewardEn:'Muldian Key ×1'})
+ ]),
+ weekly:Object.freeze([
+  Object.freeze({rewardRu:'50 000 золота',rewardEn:'50,000 gold',
+   costRu:'50 боевых жетонов',costEn:'50 combat tokens',limit:35}),
+  Object.freeze({rewardRu:'Шкатулка древнего короля ×1',rewardEn:"Lost Kingdom Chest ×1",
+   costRu:'100 жетонов и 1 000 чести',costEn:'100 tokens and 1,000 Honor',limit:7}),
+  Object.freeze({rewardRu:'Золотой молот ×1',rewardEn:"Artisan's Hammer ×1",
+   costRu:'100 боевых жетонов',costEn:'100 combat tokens',limit:3})
+ ]),
+ hunts:Object.freeze([
+  Object.freeze({daysRu:'Вторник и четверг',daysEn:'Tuesday and Thursday',
+   hours:'05:00–07:00',mapRu:'Мальдия (Германия)',mapEn:'Muldia (Germany)'}),
+  Object.freeze({daysRu:'Вторник и четверг',daysEn:'Tuesday and Thursday',
+   hours:'16:00–18:00',mapRu:'Мальдия (Германия)',mapEn:'Muldia (Germany)'}),
+  Object.freeze({daysRu:'Вторник и четверг',daysEn:'Tuesday and Thursday',
+   hours:'20:00–22:00',mapRu:'Мальдия (Москва)',mapEn:'Muldia (Moscow)'})
+ ])
+});
 const intro=Object.freeze({
+ pvpIntroRu:'Постоянное событие «Победы в PvP»: за каждое засчитанное убийство противника в Мальдии начисляются 1 победа и 1 боевой жетон. При групповом убийстве победа засчитывается также активным участникам группы на той же карте. Прогресс и жетоны общие для персонажей аккаунта.',
+ pvpIntroEn:'Permanent PvP Victories event: each counted enemy kill in Muldia gives 1 victory and 1 combat token. Active party members on the same map also receive credit for a group kill. Victory progress and tokens are shared across characters on the account.',
+ pvpDailyRu:'Забирайте доступные награды на полосе прогресса во внутриигровом окне «Победы в PvP». Каждую награду можно получить один раз в день. Победы и дневные награды обновляются каждый день в 00:00 по московскому времени.',
+ pvpDailyEn:'Claim unlocked rewards on the progress bar in the in-game PvP Victories window. Each reward can be claimed once daily. Victories and daily rewards reset at 00:00 Moscow time.',
+ pvpWeeklyRu:'Боевые жетоны сгорают каждый понедельник в 00:00 МСК. В это же время обновляются недельные лимиты обмена и рейтинг 15 лучших игроков каждой нации по победам за неделю.',
+ pvpWeeklyEn:'Unused combat tokens expire every Monday at 00:00 Moscow time. Weekly exchange limits and the top 15 players of each nation by weekly victories reset then.',
+ pvpHuntRu:'Во время охоты во вторник и четверг за засчитанное убийство начисляются 2 победы и 2 жетона вместо одного. Бонус учитывается в дневном прогрессе и недельном рейтинге. Указанное время — московское; расписание зависит от карты Мальдии.',
+ pvpHuntEn:'During Tuesday and Thursday hunts, a counted kill gives 2 victories and 2 tokens instead of one. This counts toward daily progress and weekly rankings. All schedule times are Moscow time and depend on the Muldia map.',
  overviewRu:'За победы над игроками вражеских наций и участие в войнах персонаж зарабатывает честь. Она используется для обмена предметов, повышения ранга и участия в рейтингах.',
  overviewEn:'Defeat players of enemy nations or take part in wars to earn Honor. Honor is used for item exchanges, rank progression, and leaderboards.',
  honorRu:'Расходуемый PvP-ресурс. Можно тратить в обмене; теряется при смерти.',
@@ -127,8 +160,8 @@ const intro=Object.freeze({
  gainEn:'Earn Honor by defeating players of enemy nations in PvP zones and participating in wars.',
  lossRu:'При гибели персонажа честь может уменьшаться.',
  lossEn:'Honor may decrease when your character dies.',
- currentRu:'С 23 октября 2026 года на OS: «Честь» — расходуемый ресурс; «Вся честь» — общий заработанный запас для рангов и рейтинга. Оба показателя могут уменьшаться после смерти.',
- currentEn:'Since October 23, 2026 on OS: “Honor” is spendable; “Total Honor” tracks lifetime earned Honor for ranks and leaderboards. Both can decrease on death.',
+ currentRu:'С 23 октября 2026 года: «Честь» — расходуемый ресурс; «Вся честь» — общий заработанный запас для рангов и рейтинга. Оба показателя могут уменьшаться после смерти.',
+ currentEn:'Since October 23, 2026: “Honor” is spendable; “Total Honor” tracks lifetime earned Honor for ranks and leaderboards. Both can decrease on death.',
  ranksRu:'12 рангов. Обычные ранги требуют «Вся честь» и игровое золото. Высшие места определяются результатами прошлого месяца и действуют один месяц.',
  ranksEn:'12 ranks. Standard ranks require Total Honor and gold. Monthly titles are awarded from the previous month’s results and last one month.',
  joiningRu:'При вступлении в любую из существующих наций в игре',
@@ -175,7 +208,7 @@ const validOverride=(key,value)=>{
  const data=parse(value);
  if(key==='wiki.labels')return plain(data)&&Object.keys(data).length>0&&
   Object.keys(data).length<=50&&Object.entries(data).every(([k,v])=>
-   /^(?:chapter_(?:item|utility|monster|map|honor|npc|chest|instance|skill|soul)|honor_(?:overview|gain|ranks|monthly)|skill_filter_(?:player|racial|guild|special|variants|other|unknown|all))_(?:ru|en)$/.test(k)&&
+   /^(?:chapter_(?:item|utility|monster|map|honor|npc|chest|instance|skill|soul)|honor_(?:overview|gain|victories|ranks|monthly)|skill_filter_(?:player|racial|guild|special|variants|other|unknown|all))_(?:ru|en)$/.test(k)&&
    typeof v==='string'&&v.trim()&&v.length<=90&&
    Array.from(v).every(ch=>ch.charCodeAt(0)>=32));
  if(validBookKey(key))return cleanPatch(data,fields,360)!==null;
@@ -206,9 +239,9 @@ function article(overrides){
  const ranks=defaultRanks.map(x=>({...x,...patchFor(overrides,'honor.rank.'+x.id)}));
  const zones=patchFor(overrides,'honor.zones')||maps;
  const battles=patchFor(overrides,'honor.wars')||wars;
- return {overview,ranks,zones,battles};
+ return {overview,ranks,zones,battles,pvpVictories};
 }
 root.PandoraHonorGuide=Object.freeze({
- summary,field,article,validOverride,patchFor,hints,help,defaultRanks,maps,wars,intro
+ summary,field,article,validOverride,patchFor,hints,help,defaultRanks,maps,wars,intro,pvpVictories
 });
 })(typeof window==='undefined'?globalThis:window);

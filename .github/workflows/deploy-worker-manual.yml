@@ -74,6 +74,20 @@ jobs:
         run: npx --yes wrangler@4 deploy --dry-run --outdir /tmp/pandora-worker-preview --keep-vars
       - name: Deploy Worker code while preserving dashboard variables and existing secrets
         run: npx --yes wrangler@4 deploy --keep-vars
+      - name: Verify GitHub catalog secret exists in the deployed Worker (read-only)
+        run: |
+          npx --yes wrangler@4 secret list --format json |
+            node --input-type=module -e '
+              let data="";
+              for await(const part of process.stdin)data+=part;
+              const records=JSON.parse(data);
+              if(!Array.isArray(records)||!records.some(row=>row?.name==="GITHUB_CATALOG_TOKEN")){
+                console.error("GITHUB_CATALOG_TOKEN not found in production Worker. Catalog fallback PR automation is NOT ready.");
+                process.exit(1);
+              }
+              console.log("GITHUB_CATALOG_TOKEN secret name confirmed in production Worker; the secret value was not accessed.");
+            '
+
       - name: Verify exact Worker release, D1 admin diagnostics and health (read-only)
         run: |
           node --input-type=module -e '

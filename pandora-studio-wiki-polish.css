@@ -493,3 +493,11 @@
 .wiki-page .wiki-skill-source-material .wiki-link:focus-visible{
  outline:2px solid #f0c58b;outline-offset:2px
 }
+
+/* Each NPC offer has its own source-defined exchange limit. */
+.wiki-page .wiki-trade-limit{display:flex;align-items:center;gap:7px;flex-wrap:wrap;
+ margin-top:7px;font-size:11px;line-height:1.4;color:#cdbca4}
+.wiki-page .wiki-trade-limit>small{font-size:10px;opacity:.8}
+.wiki-page .wiki-trade-limit.is-limited .wiki-trade-limit-value{font-weight:650;color:#efd29c}
+.wiki-page .wiki-trade-limit-select{max-width:145px;padding:5px 7px}
+.wiki-page .wiki-trade-limit-count{width:64px;max-width:64px;padding:5px 7px}

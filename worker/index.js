@@ -1,5 +1,5 @@
 import {accountApi,principal as accountPrincipal} from './pandora-studio-account-api.js';
-import {createCatalogPullRequest,githubCatalogEnabled,previewOwnerOverrides,createOwnerOverridesPullRequest} from './pandora-studio-github-catalog-pr.js';
+import {createCatalogPullRequest,githubCatalogEnabled,githubCatalogReadiness,previewOwnerOverrides,createOwnerOverridesPullRequest} from './pandora-studio-github-catalog-pr.js';
 // Cloudflare Worker backend for Pandora Saga Build Studio.
 // Passwords and session hashes are NEVER stored in the Pages repository.
 // Native PBKDF2 in Cloudflare Workers supports at most 100,000 iterations.
@@ -624,7 +624,7 @@ if(method==='GET'&&/^\/api\/catalog\/(meta|classes|skills|items|souls|monsters|d
 // A preview does NOT change D1. The owner must explicitly confirm version publication.
 if(path==='/api/admin/catalog/github-status'&&method==='GET'){
  if(!await auth(request,env))return no('Unauthorized',401);
- return json({configured:githubCatalogEnabled(env)});
+ return json(await githubCatalogReadiness(env));
 }
 if(path==='/api/admin/catalog/github-pr'&&method==='POST'){
  if(!await auth(request,env))return no('Unauthorized',401);

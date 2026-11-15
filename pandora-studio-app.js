@@ -5590,6 +5590,50 @@ function renderWiki(root){
        onclick:()=>wikiItemChoice(output,i=>amend({i}))}));
       output.append(product);
      entry.append(output);
+     // Limit belongs to the individual recipe, never to every offer of
+     // the merchant. Preserve D1's explicit daily/weekly/lifetime rules.
+     const limitData=trade.limit;
+     const limitRow=h('div',{class:'wiki-trade-limit'+(limitData?' is-limited':'')});
+     limitRow.append(h('small',{text:wt('Лимит обмена','Trade limit')}),
+      h('span',{class:'wiki-trade-limit-value',text:
+       window.PandoraStudioTradeOwnerData.limitLabel(limitData,lang)}));
+     if(editing){
+      const period=h('select',{class:'wiki-inline-select wiki-trade-limit-select',
+       'aria-label':wt('Изменить период ограничения обмена',
+        'Change trade limit period')});
+      for(const [value,ru,en] of [
+       ['none','Без ограничений','No limit'],
+       ['daily','В день','Daily'],
+       ['weekly','В неделю','Weekly'],
+       ['lifetime','За всё время','Lifetime']
+      ])period.append(h('option',{value,text:wt(ru,en)}));
+      period.value=['daily','weekly','lifetime'].includes(limitData?.period)?
+       limitData.period:'none';
+      period.onchange=()=>{
+       const nextLimit=period.value==='none'?undefined:
+        {n:limitData?.n||1,period:period.value};
+       void amend({limit:nextLimit}).catch(e=>showStudioToast(e.message,'warning'));
+      };
+      limitRow.append(period);
+      if(limitData?.period){
+       const count=h('input',{type:'number',min:1,max:9999,step:1,
+        class:'wiki-inline-input wiki-trade-limit-count',
+        value:String(limitData.n),
+        'aria-label':wt('Максимум обменов за период','Maximum trades per period')});
+       count.onchange=()=>{
+        const n=Number(count.value);
+        if(!Number.isSafeInteger(n)||n<1||n>9999){
+         count.value=String(limitData.n);
+         showStudioToast(wt('Введите число от 1 до 9999',
+          'Enter a number from 1 to 9999'),'warning');return;
+        }
+        void amend({limit:{n,period:limitData.period}})
+         .catch(e=>showStudioToast(e.message,'warning'));
+       };
+       limitRow.append(count);
+      }
+     }
+     entry.append(limitRow);
      if(trade.mats?.length||editing){
       const mats=h('div',{class:'wiki-recipe-mats'});
       mats.append(h('small',{text:wt('Необходимые материалы','Required materials')}));
@@ -9465,7 +9509,8 @@ async function saveWikiTradeRecipe(recipe,changes=null){
  const normalized={id:Number(recipe.id),i:Number(recipe.i),
   npc:(recipe.npc||[]).map(Number),
   mats:(recipe.mats||[]).map(row=>({i:Number(row.i),n:Number(row.n)})),
-  gold:Number(recipe.gold||0),honor:Number(recipe.honor||0),exp:Number(recipe.exp||0)};
+  gold:Number(recipe.gold||0),honor:Number(recipe.honor||0),exp:Number(recipe.exp||0),
+  ...(recipe.limit!=null?{limit:{n:Number(recipe.limit.n),period:recipe.limit.period}}:{})};
  const key='tradeedit.'+normalized.id,expectedBefore=activeOverride(key);
  const value=JSON.stringify(changes||{recipe:normalized});
  return enqueueWikiOwnerListWrite(key,expectedBefore,async()=>{
