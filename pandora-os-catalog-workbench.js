@@ -1195,39 +1195,79 @@
       }finally{setBusy(false)}
     }
 
+
     async function verifyPublishedForPlayers(snapshot,expected){
-      // Do not say that players see the new catalog until the public endpoint
-      // returns the same immutable active version after the UI reload.
       await afterPublish();
-      const response=await fetch(apiBase+'/api/catalog/meta.json',{
-       cache:'no-store',signal:AbortSignal.timeout(15000)
-      });
-      const active=response.headers.get('x-ps-catalog-snapshot');
-      if(!response.ok||response.headers.get('x-ps-catalog')!=='d1'||active!==snapshot)
-       throw Error(tr(
-        'Публичный каталог пока не подтвердил новую версию. Проверь снова или обнови страницу.',
-        'The public catalog has not confirmed the new version yet. Check again or reload.'));
-      // A version header alone is not enough. Verify both exact public source
-      // tables and classes, then execute the real level-55 calculation models.
-      const publicData={};
-      for(const name of ['tables','classes']){
-        const dataResponse=await fetch(apiBase+'/api/catalog/'+name+'.json',{
-          cache:'no-store',signal:AbortSignal.timeout(15000)
-        });
-        if(!dataResponse.ok||
-           dataResponse.headers.get('x-ps-catalog')!=='d1'||
-           dataResponse.headers.get('x-ps-catalog-snapshot')!==snapshot)
-          throw Error(tr('Не подтверждена версия игровых расчётов: ',
-           'Character calculation revision not verified: ')+name);
-        publicData[name]=await dataResponse.json();
-        if(!review.strictEqual(publicData[name],expected[name]))
-          throw Error(tr('Опубликованные данные отличаются от подготовленных: ',
-           'Published data differs from the reviewed version: ')+name);
+      return verifyPublishedSnapshot(apiBase,snapshot,expected);
+    }
+
+    // The public release and GitHub fallback are distinct: a failed backup
+    // never implies that an already-published D1 snapshot was rolled back.
+    async function finalizePublication(snapshot,expected,{superseded=false,recovered=false}={}){
+      let check;
+      try {
+        check=await verifyPublishedForPlayers(snapshot,expected);
+      }catch(error){
+        status.textContent=tr(
+          'D1 приняла публикацию, но полная проверка каталога на сайте не пройдена: ',
+          'D1 accepted publication, but the full public catalog check failed: ')+
+          String(error.message||error)+tr(
+          ' Проверь текущую версию перед повтором. Это не означает откат D1.',
+          ' Check the active version before retrying. This does not mean D1 rolled back.');
+        return;
       }
-      const check=safety.check(publicData);
-      if(!check.ok)throw Error(tr('Проверка расчётов после публикации: ',
-       'Post-publication character checks failed: ')+check.issues.join(' · '));
-      return check;
+      status.textContent=tr(
+        'Каталог обновлён. Проверены все опубликованные разделы (',
+        'Catalog published. All public datasets verified (')+
+        check.verifiedDatasets+'/'+importer.files.length+
+        tr('), базовые очки и ОЗ/ОМ. Неизвестные новые эффекты навыков автоматически не подтверждаются.',
+           '), base points and HP/MP. Unknown new skill-effect semantics are not verified automatically.');
+      if(recovered)status.textContent+=tr(
+        ' Ответ публикации потерялся, но действующая версия подтверждена.',
+        ' The publish response was lost, but the active revision was confirmed.');
+      if(superseded){
+        status.textContent+=tr(
+          ' Уже доступна другая версия: копию этой версии не создаём.',
+          ' Another version is already active; its predecessor is not backed up.');
+        return;
+      }
+      try {
+        const integration=await request('/api/admin/catalog/github-status',null);
+        if(integration.configured!==true){
+          status.textContent+=tr(
+            ' GitHub-копия не настроена: резервная версия ещё не подтверждена.',
+            ' GitHub backup is not configured: the fallback has not been verified.');
+          return;
+        }
+        const current=await request('/api/admin/catalog/status',{});
+        if(current.active!==snapshot){
+          status.textContent+=tr(
+            ' D1 изменилась в другой вкладке; резерв не создавался.',
+            ' D1 changed in another session; backup was skipped.');
+          return;
+        }
+        status.textContent+=tr(
+          ' Подготавливаю PR для обновления резерва GitHub…',
+          ' Preparing a GitHub fallback PR…');
+        const result=await request('/api/admin/catalog/github-pr',{
+          expectedActive:snapshot});
+        if(result.unchanged){
+          status.textContent+=tr(
+            ' Резерв GitHub уже совпадает с D1.',
+            ' GitHub fallback already matches D1.');
+        }else if(/^https:\/\/github\.com\/bonaqu\/Pandora-Saga-Build-Studio\/pull\/\d+$/.test(result.url||'')){
+          status.append(document.createTextNode(tr(
+            ' Подготовлен резервный PR (нужны CI и принятие): ',
+            ' Fallback PR prepared (CI and merge required): ')),
+            h('a',{href:result.url,target:'_blank',rel:'noopener noreferrer',
+              text:'PR #'+result.number}));
+        }else throw Error('Некорректный ответ GitHub');
+      }catch(error){
+        status.textContent+=tr(
+          ' GitHub-резерв не обновлён. D1 опубликована; повтори копирование из дополнительных инструментов: ',
+          ' GitHub fallback was not updated. D1 remains published; retry from advanced tools: ')+
+          String(error.message||error);
+      }
     }
 
     function prepare() {
@@ -1364,17 +1404,7 @@
         publishedSnapshot=result.active;
         chosen.clear();changes=[];baseline=null;upstream=null;
         refreshActions();
-        try{
-          await verifyPublishedForPlayers(result.active,staged.combined);
-          status.textContent=superseded?
-           tr('Изменения опубликованы, но уже доступна другая версия каталога. Проверь её заново.',
-            'Changes were published, but another catalog revision is already live. Review it again.'):
-           tr('Каталог обновлён. Опубликованные игровые таблицы и расчёты на настроенном максимальном уровне проверены. Игровой сервер и GitHub не изменились.',
-            'Catalog updated. Published tables and calculations at the configured maximum level were verified. The game server and GitHub were not changed.');
-        }catch(error){
-          status.textContent=tr('Публикация принята, но обновление данных у игроков пока не подтверждено: ',
-           'Publication was accepted, but the player-visible update is not yet verified: ')+error.message;
-        }
+        await finalizePublication(result.active,staged.combined,{superseded});
       }catch(error){
         // A lost publish response is ambiguous: inspect D1 before any retry.
         if(publishingSnapshot){
@@ -1384,16 +1414,7 @@
               publishedSnapshot=observed.active;
               chosen.clear();changes=[];baseline=null;upstream=null;
               refreshActions();
-              status.textContent='Каталог опубликован (D1: '+observed.active+
-                '). Ответ потерялся, но активная версия подтверждена. GitHub не изменён.';
-              try{
-                await verifyPublishedForPlayers(observed.active,staged.combined);
-                status.textContent=tr('Каталог опубликован, и новая версия проверена для игроков. Ответ публикации сначала потерялся.',
-                 'Catalog published; the player-visible version was verified after the original response was lost.');
-              }catch(refreshError){
-                status.textContent+=tr(' Обновление у игроков не подтверждено: ',
-                 ' The player-visible update remains unverified: ')+refreshError.message;
-              }
+              await finalizePublication(observed.active,staged.combined,{recovered:true});
               return;
             }
           }catch{}
@@ -1524,5 +1545,45 @@
     });
   }
 
-  root.PandoraOSCatalogWorkbench=Object.freeze({open});
+
+  // Read-only. Each JSON value must match the reviewed selection, not merely
+  // a version header, count, or two of the game's seventeen datasets.
+  async function verifyPublishedSnapshot(apiBase,snapshot,expected,fetcher=fetch){
+    const files=root.PandoraCatalogImport?.files;
+    const review=root.PandoraOSCatalogReview;
+    const safety=root.PandoraCatalogSafety;
+    if(!Array.isArray(files)||!files.length||
+       !review?.strictEqual||!safety?.check)
+      throw Error('Не подключены модули проверки каталога');
+    const received={},queue=[...files];
+    async function read(name){
+      const alias=name==='strings.en'?'stringsEn':name;
+      const response=await fetcher(apiBase+'/api/catalog/'+alias+'.json',{
+        cache:'no-store',signal:AbortSignal.timeout(15000)
+      });
+      if(!response.ok||response.headers.get('x-ps-catalog')!=='d1'||
+         response.headers.get('x-ps-catalog-snapshot')!==snapshot)
+        throw Error('Не подтверждена версия D1: '+name);
+      const data=await response.json();
+      if(!review.strictEqual(data,expected?.[name]))
+        throw Error('Опубликованный раздел отличается от выбранного: '+name);
+      return data;
+    }
+    let failure=null;
+    await Promise.all(Array.from({length:Math.min(3,queue.length)},async()=>{
+      while(queue.length&&!failure){
+        const name=queue.shift();
+        try{received[name]=await read(name)}
+        catch(error){failure??=error;return}
+      }
+    }));
+    if(failure)throw failure;
+    // Reject a concurrent publication even when all previous reads succeeded.
+    await read('meta');
+    const check=safety.check(received);
+    if(!check.ok)throw Error('Базовые расчёты после обновления: '+check.issues.join(' · '));
+    return {...check,verifiedDatasets:files.length};
+  }
+
+  root.PandoraOSCatalogWorkbench=Object.freeze({open,verifyPublishedSnapshot});
 })(typeof window === 'undefined' ? globalThis : window);
