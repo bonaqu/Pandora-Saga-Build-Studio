@@ -627,8 +627,13 @@ function replaySkills(before,after){
   relatives.get(a).add(b);
   relatives.get(b).add(a);
  };
+ // The three additional IDs are pinned by existing source-signature
+ // inspectors: diffusion, parry counter, and shield/block break. Do not
+ // treat arbitrary non-skill FV values as a graph edge.
  const linkedEP=new Set(['EP_SKILL_EXEC','EP_ONHIT_SKILL_EXEC',
-  'EP_ONHIT_SKILL_EXEC_CHANGE_BA','EP_SKILL_EXEC_COUNT']);
+  'EP_ONHIT_SKILL_EXEC_CHANGE_BA','EP_SKILL_EXEC_COUNT',
+  'EP_SKILL_EXEC_DIFFUSION','EP_SKILL_PARRY_COUNTER',
+  'EP_ATTACK_BLOCK_BREAK']);
  for(const skills of [oldSkills,newSkills])
   for(const [id,record] of Object.entries(skills)){
    if(Number.isSafeInteger(record?.prereq)&&record.prereq>0&&
@@ -683,7 +688,10 @@ function replaySkills(before,after){
   'resistanceSkillChoices','alliedRecipientPreviews','priestCastPreviews',
   'trapSkillCostPreview','craftingSkillPreview','rangedAmmoPreview',
   'supportEffectPreview','situationalSkillPreview',
-  'consumableSkillPreview','statusCurePreview']
+  'consumableSkillPreview','statusCurePreview',
+  'complexSkillSourcePreview','statusApplicationPreview','enemyDebuffPreview',
+  'tacticalSkillPreview','combatTechniquePreview','specializedSkillPreview',
+  'songSkillPreview','skillExecutionChains']
   .every(name=>typeof calc[name]==='function'))
   return {ok:false,changedSkills:changed.size,scenarios:0,
    previouslyModeled:0,retained:0,lost:0,unmodeled:changed.size,samples:[],
@@ -729,6 +737,49 @@ function replaySkills(before,after){
    if(!origin||!caps){errors.push('Нет исходных характеристик или мастерства '+job);continue}
    const mastery=Object.fromEntries(Object.entries(caps).map(([key,value])=>
     [key,Number.isSafeInteger(value)&&value>=0?value:0]));
+   // Compare the *existence* of source-proven Encyclopedia rows as
+   // evidence, never as numeric damage, chance, duration, or buffs.
+   // Use the calculator's existing exact source-signature guards instead
+   // of duplicating their EP/FV contracts in the publication layer.
+   // Level 55 is an inspection boundary, NOT a server level-cap claim.
+   const evidence=(module,result,groups,variant='standard')=>{
+    if(!result||groups.some(group=>!Array.isArray(result[group]))){
+     errors.push('Нет проверки исходных эффектов '+module+' / '+job);
+     return;
+    }
+    for(const group of groups)
+     for(const row of result[group]){
+      if(!Number.isSafeInteger(row?.id)||!changed.has(String(row.id)))continue;
+      const detail=group+':'+variant;
+      found.set([row.id,module,job,detail].join('|'),{
+       id:String(row.id),job,level:55,module,detail,
+       value:1,evidence:'source-only'});
+    }
+    count++;
+   };
+   const inspectArgs={skillCatalog:skills,jobKey:job,level:55,
+    branchCaps:caps,branchMasteries:mastery};
+   for(const [module,method,groups,extra] of [
+    ['source-complex-spell','complexSkillSourcePreview',['rows'],{}],
+    ['source-target-status','statusApplicationPreview',['rows'],{}],
+    ['source-enemy-debuff','enemyDebuffPreview',['rows'],{}],
+    ['source-tactical-action','tacticalSkillPreview',['rows'],{}],
+    ['source-combat-technique','combatTechniquePreview',['rows'],
+     {weaponKind:'2H_SWORD'}],
+    ['source-specialized-defense-magic','specializedSkillPreview',
+     ['defense','magic'],{}],
+    ['source-support-action','supportEffectPreview',['help','magic'],{}],
+    ['source-situational-action','situationalSkillPreview',
+     ['stealth','other'],{}],
+    ['source-song-chain','songSkillPreview',['rows'],{}],
+    ['source-execution-chain','skillExecutionChains',['rows'],{}],
+    ['source-onhit-execution','skillExecutionChains',['rows'],{onHit:true}],
+    ['source-ammunition-action','rangedAmmoPreview',['rows'],
+     {weaponKind:'BOW'}]
+   ]){
+    evidence(module,calc[method]({...inspectArgs,...extra}),groups,
+     extra.onHit?'on-hit':extra.weaponKind||'standard');
+   }
    for(const scenario of scenarios){
     const {level,allocation}=scenario;
     const base=calc.base({classData:definition,raceData:human,jobData:origin,
@@ -942,7 +993,10 @@ function replaySkills(before,after){
  return {ok:lost.length===0&&problems.length===0,
   changedSkills:changed.size,scenarios:prior.count+next.count,
   previouslyModeled:prior.found.size,retained:retained.length,
-  lost:lost.length,unmodeled:[...changed].filter(id=>!recognized.has(id)).length,
+  lost:lost.length,
+  lostSourceOnly:lost.filter(row=>row.evidence==='source-only').length,
+  lostCalculated:lost.filter(row=>row.evidence!=='source-only').length,
+  unmodeled:[...changed].filter(id=>!recognized.has(id)).length,
   samples:representatives.map(row=>({...row,name:String(
    row.job==='item'?
     newItems[row.id.slice(5)]?.name||oldItems[row.id.slice(5)]?.name||row.id:
