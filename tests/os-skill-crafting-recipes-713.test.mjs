@@ -46,12 +46,11 @@ test('insufficient actual mastery shows requirement without assuming owned ingre
  assert.match(locked.reasonEn,/41/);
  assert.equal(locked.ingredientsChecked,false);
 });
-test('tampered quantities, identities, directions, extra effects and order reject source',()=>{
+test('tampered identities, directions, extra effects and order reject source',()=>{
  const job=Object.keys(classes).find(j=>get(preview(j).rows,220002001));
  assert.ok(job);
  for(const mutate of [
   s=>{s[220002001].funcs[0].fv1[3]=50021;},
-  s=>{s[220002001].funcs[0].fv2[3]=2;},
   s=>{s[220002001].funcs[0].dir='TARGET';},
   s=>{s[220002001].funcs.push(structuredClone(s[220002001].funcs[0]));},
   s=>{s[220002001].funcs.reverse();}
@@ -60,6 +59,29 @@ test('tampered quantities, identities, directions, extra effects and order rejec
   const r=preview(job,changed);
   assert.equal(get(r.rows,220002001),undefined);
   assert.ok(r.rejected.includes(220002001));
+ }
+});
+test('quantities come from the current signed FV2[3] and stay source-only',()=>{
+ for(const [id] of cases){
+  const job=Object.keys(classes).find(j=>get(preview(j).rows,id));
+  for(const index of [0,skills[id].funcs.length-1]){
+   const changed={...skills,[id]:structuredClone(skills[id])};
+   changed[id].funcs[index].fv2[3]=3+index;
+   const row=get(preview(job,changed).rows,id);
+   assert.ok(row,'valid source-only amount must be accepted');
+   if(index===changed[id].funcs.length-1)
+    assert.equal(row.produces.quantity,3+index);
+   else assert.equal(row.uses[index].quantity,3+index);
+   assert.equal(row.sourceOnly,true);
+   assert.equal(row.ingredientsChecked,false);
+  }
+ }
+ const job=Object.keys(classes).find(j=>get(preview(j).rows,220002001));
+ for(const value of [0,-1,1.5,Number.MAX_SAFE_INTEGER+1,NaN,Infinity]){
+  const changed={...skills,220002001:structuredClone(skills[220002001])};
+  changed[220002001].funcs[0].fv2[3]=value;
+  assert.equal(get(preview(job,changed).rows,220002001),undefined,
+   'unsafe amount must reject source: '+value);
  }
 });
 test('numeric crafting source counts as four models without a server-success claim',()=>{

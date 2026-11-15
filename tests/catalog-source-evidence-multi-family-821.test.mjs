@@ -43,14 +43,39 @@ const requireLost=(after,id,kind)=>{
   'show the exact missing proof for '+id+' ('+kind+')');
  return report;
 };
-test('all four source-exact crafting recipes protect their material quantities and outputs',()=>{
+test('all four signed crafting recipes adopt data-only quantities without a code release',()=>{
  const specs=[220002001,220003001,220004001,320010001];
  for(const id of specs){
-  assert.ok(jobFor(id,'craftingSkillPreview'),id+' available in real source');
-  const old=S.replaySkills(before,updatedSkill(id,row=>{row.funcs[0].fv2[3]+=1}));
-  assert.ok(old.changedSkills>=1);
-  assert.equal(old.ok,false);
-  assert.ok(old.samples.some(row=>row.id===String(id)&&
+  const job=jobFor(id,'craftingSkillPreview');
+  assert.ok(job,id+' available in real source');
+  const candidate=updatedSkill(id,row=>{row.funcs[0].fv2[3]+=1});
+  const old=C.craftingSkillPreview({skillCatalog:before.skills,jobKey:job,
+   level:55,branchCaps:before.classes[job].branchCaps,
+   branchMasteries:before.classes[job].branchCaps}).rows.find(x=>x.id===id);
+  const next=C.craftingSkillPreview({skillCatalog:candidate.skills,jobKey:job,
+   level:55,branchCaps:before.classes[job].branchCaps,
+   branchMasteries:before.classes[job].branchCaps}).rows.find(x=>x.id===id);
+  assert.equal(next.uses[0].quantity,old.uses[0].quantity+1);
+  assert.equal(S.compatibility(before,candidate).totals.verified,1);
+  const replay=S.replaySkills(before,candidate);
+  assert.ok(replay.changedSkills>=1);
+  assert.equal(replay.ok,true,'known source amount retains the supported recipe');
+  assert.equal(replay.lost,0);
+ }
+});
+test('unknown recipe identifiers and invalid quantities still block pre-D1 source loss',()=>{
+ const id=220002001;
+ for(const mutate of [
+  row=>{row.funcs[0].fv2[3]=0;},
+  row=>{row.funcs[0].fv1[3]=50021;},
+  row=>{row.funcs[0].dir='TARGET';},
+  row=>{row.funcs[0].fv2[2]=17;}
+ ]){
+  const bad=updatedSkill(id,mutate);
+  assert.equal(S.compatibility(before,bad).totals.needsReview,1);
+  const result=S.replaySkills(before,bad);
+  assert.equal(result.ok,false);
+  assert.ok(result.samples.some(row=>row.id===String(id)&&
    (row.module==='source-recipe-ingredient'||row.module==='source-recipe-output')));
  }
 });
