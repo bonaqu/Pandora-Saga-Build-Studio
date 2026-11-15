@@ -89,7 +89,8 @@ test('Book validates both casting-source actions, never inventing a tick or dama
  const src=read('pandora-studio-hero-book.js');
  assert.match(src,/alliedInspirationPreview\?\.\(/);
  const calc=read('pandora-os-character-calculator.js');
- assert.match(calc,/skill\.funcs\?\.length!==2/);
+ assert.match(calc,/const oldShape=skill\?\.funcs\?\.length===2/);
+ assert.match(calc,/const currentShape=skill\?\.funcs\?\.length===1/);
  assert.match(calc,/exact\('EP_CANCEL_IDENTITY',\[0,0,0,0\]\)/);
  assert.match(calc,/exact\('EP_SKILL_DELAY_FIN',\[0,0,0,50\]\)/);
  assert.match(src,/Время применения: /);
