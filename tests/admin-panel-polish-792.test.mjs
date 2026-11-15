@@ -31,7 +31,7 @@ test('manual history has section/session filters and compact expandable comparis
 });
 test('catalog review search and mutating actions never bypass pending edits',()=>{
  assert.match(catalog,/const permitMutation=\(\)=>typeof canCommit/);
- assert.match(catalog,/publish\.onclick=async\(\)=>\{\s*if\(busy\|\|!permitMutation\(\)\)return/);
+ assert.match(catalog,/publish\.onclick=async\(\)=>\{\s*if\(busy\|\|publish\.disabled\|\|!permitMutation\(\)\)return/);
  assert.match(catalog,/testWrite\.onclick=async\(\)=>\{\s*if\(busy\|\|!permitMutation\(\)\)return/);
  assert.match(catalog,/testCAS\.onclick=async\(\)=>\{\s*if\(busy\|\|!permitMutation\(\)\)return/);
  assert.match(catalog,/testCAS\.disabled = busy/);

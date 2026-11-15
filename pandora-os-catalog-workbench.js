@@ -140,8 +140,8 @@
     const intro = h('div',{class:'os-sync-intro'},[
       authored('strong',{},'title','Обновление игрового каталога','Game catalog updates'),
       authored('p',{},'introExplanation',
-       'Проверка получает открытые JSON с сайта pandorasaga-os.com через Cloudflare Worker и сравнивает их с опубликованным каталогом Build Studio в D1. Она не ищет файлы на твоём компьютере и не подключается напрямую к игровому серверу.',
-       'The Cloudflare Worker retrieves public JSON from pandorasaga-os.com and compares it with the Build Studio catalog published in D1. It never accesses files on your computer or connects directly to the game client.')
+       'Проверка сравнивает открытые данные текущей игры с каталогом Build Studio. Она ничего не меняет до отдельного подтверждения и не ищет файлы на твоём компьютере. Доступные JSON не являются прямой проверкой игрового клиента.',
+       'Compare the currently available public game data with the Build Studio catalog. Nothing changes until you explicitly confirm; no local files are read. Public JSON is not a direct game-client verification.')
     ]);
     const actions = h('div', {class:'os-sync-actions'});
     const live = h('button', {type:'button',class:'button-action primary os-sync-main-check',
@@ -151,8 +151,8 @@
     const archiveChoice=h('details',{class:'os-sync-archive-choice'},[
       h('summary',{text:copy('archiveSummary','Если сайт игры не отдаёт данные','When the game site is unavailable')}),
       authored('p',{},'archiveExplanation',
-       'Архивная сверка берёт файлы из репозитория Build Studio, а не с pandorasaga-os.com. Она не проверяет свежесть игрового сервера. Не применяй её результаты как заведомо актуальные.',
-       'Archive comparison reads the Build Studio repository rather than pandorasaga-os.com. It cannot confirm that game server data is current. Do not treat archive differences as verified live updates.'),
+       'Архивная сверка берёт файлы из репозитория Build Studio, а не текущие данные игры. Она не проверяет свежесть игрового сервера: архив может быть старее. Не применяй изменения без отдельной проверки.',
+       'Archive comparison uses a saved project snapshot, not current game data. It may be older: do not publish archived changes without verifying them.'),
       action(archive,'archiveButton','Сверить с сохранённой копией','Compare saved snapshot')
     ]);
     const acceptAll = h('button', {type:'button',class:'button-action',text:'Выбрать понятные изменения',disabled:true});
@@ -215,6 +215,18 @@
     // The main comparison summary is the sole live status region; avoid
     // shadowing it in the accessibility tree and established review flows.
     const selectionGuidance=h('p',{class:'os-sync-selection-guidance'});
+    // One concise review of what the selected changes will actually affect.
+    const decisionPreview=h('div',{class:'os-sync-decision-preview',hidden:true});
+    const decisionHeading=h('strong',{text:tr('Перед применением','Before publishing')});
+    const decisionSummary=h('p',{class:'os-sync-decision-summary'});
+    const decisionWarnings=h('p',{class:'os-sync-decision-warnings'});
+    const riskApproval=h('input',{type:'checkbox',disabled:true});
+    const riskApprovalLabel=h('label',{class:'os-sync-risk-approval',hidden:true},[
+     riskApproval,h('span',{text:tr(
+      'Я проверил спорные изменения и понимаю, что обновится каталог Build Studio.',
+      'I reviewed the flagged changes and understand that the Build Studio catalog will change.')})
+    ]);
+    decisionPreview.append(decisionHeading,decisionSummary,decisionWarnings,riskApprovalLabel);
     const reviewSteps=h('section',{class:'os-sync-review-steps'});
     reviewSteps.hidden=true;
     reviewSteps.append(
@@ -226,7 +238,7 @@
        action(acceptEvery,'acceptEveryButton','Выбрать все найденные изменения','Select all found changes'),
        action(declineAll,'declineAllButton','Снять весь выбор','Clear selection'),
        action(publish,'publishButton','Применить выбранные изменения','Publish selected changes')
-      ]),selectionGuidance
+      ]),selectionGuidance,decisionPreview
     );
     const formattingToggle=h('input',{type:'checkbox',disabled:true,
       'aria-label':copy('formattingAria','Синхронизировать переносы игровых описаний','Synchronize game description line breaks')});
@@ -301,8 +313,8 @@
     // a sibling of the real action button, never part of its click target.
     for(const [node,key,ru,en] of [
       [live,'hintLive',
-       'Получить 17 общедоступных файлов JSON с pandorasaga-os.com через Cloudflare Worker, сравнить с опубликованным каталогом Build Studio в D1. Не читает файлы на ПК, не обращается к клиенту игры и не сохраняет изменения автоматически.',
-       'Retrieve 17 public JSON files from pandorasaga-os.com through Cloudflare Worker and compare with the published D1 catalog. Never reads local files, connects to the game client or saves changes automatically.'],
+       'Проверить 17 разделов доступных игровых данных и показать отличия от каталога сайта. Проверка не применяет изменения и не обращается к файлам на ПК.',
+       'Check 17 sections of available game data and show differences from the site catalog. This does not publish changes or access local files.'],
       [archive,'hintArchive',
        'Сравнить D1 с JSON-файлами, которые уже сохранены в GitHub Pages Build Studio. Это архив проекта, а НЕ новые данные с сайта игры. Может содержать более старые характеристики.',
        'Compare D1 with JSON already saved in GitHub Pages Build Studio. This is a project archive, NOT live game data, and may have older statistics.'],
@@ -347,6 +359,7 @@
 
     let baseline = null, upstream = null, legacy = null, legacyRows = null, mode = null;
     let activeSnapshot = null, changes = [], chosen = new Set(), busy = false;
+    let publishing=false,riskApprovalFingerprint='';
     let formattingCount=0,verifiedRussian=[],localInstances=null;
     let expanded = new Set(), full = new Set(), expandedDetails=new Set(),
         expandedReferences=new Set(), filterKind='all';
@@ -359,6 +372,13 @@
       return descriptions.get(change.id);
     };
     const safe=change=>!describe(change).uncertain && !describe(change).service;
+    const selectedFingerprint=()=>JSON.stringify([
+     mode,activeSnapshot,[...chosen].sort(),formattingToggle.checked,russianToggle.checked
+    ]);
+    riskApproval.addEventListener('change',()=>{
+     riskApprovalFingerprint=riskApproval.checked?selectedFingerprint():'';
+     refreshActions();
+    });
 
     const filterChoices=[
       ['all','Все','All'],['added','Новые','New'],['changed','Изменённые','Changed'],
@@ -413,6 +433,7 @@
       for(const button of filterButtons.values())button.disabled=value;
       for(const control of results.querySelectorAll('button,input[type="checkbox"]'))
         control.disabled = value;
+      riskApproval.disabled=value;
       refreshActions();
     }
     function refreshActions() {
@@ -430,7 +451,47 @@
       acceptEvery.disabled = busy || (!changes.some(row=>!chosen.has(row.id))&&
         !(mode==='server'&&formattingCount>0&&!formattingToggle.checked));
       declineAll.disabled = busy || (!changes.length&&!formattingToggle.checked&&!russianToggle.checked);
-      publish.disabled = !ready;
+      const selectedRows=changes.filter(row=>chosen.has(row.id));
+      const deleted=selectedRows.filter(row=>row.kind==='removed').length;
+      const settings=selectedRows.filter(row=>describe(row).service).length;
+      const unsure=selectedRows.filter(row=>describe(row).uncertain).length;
+      const links=selectedRows.filter(row=>describe(row).rows.some(field=>
+       field.linkChanged||field.sameVisible)).length;
+      const formulas=selectedRows.some(row=>row.dataset==='tables');
+      const risky=Boolean(deleted||settings||unsure||links||formulas||mode==='archive');
+      const fingerprint=selectedFingerprint();
+      if(riskApprovalFingerprint!==fingerprint)riskApproval.checked=false;
+      const acknowledged=!risky||(riskApproval.checked&&riskApprovalFingerprint===fingerprint);
+      decisionPreview.hidden=!ready;
+      decisionSummary.textContent=tr('Будет обновлено: ','Will update: ')+selected+
+       tr(' изменений из ',' changes of ')+changes.length+
+       (syncFormatting?tr(' · переносы описаний',' · description line breaks'):'')+
+       (syncRussian?tr(' · русские описания',' · Russian descriptions'):'')+
+       tr('. Это изменит только каталог Build Studio, не саму игру.',
+        '. This changes the Build Studio catalog, not the game.');
+      const cautions=[];
+      if(deleted)cautions.push(tr('Удаление записей: ','Record removals: ')+deleted);
+      if(settings)cautions.push(tr('Настройки игры: ','Game settings: ')+settings);
+      if(formulas){
+       cautions.push(tr('Игровые формулы обновятся целым разделом',
+        'Game formula tables will be replaced as a whole'));
+       const oldCap=baseline?.tables?.levelCap,newCap=upstream?.tables?.levelCap;
+       if(Number.isSafeInteger(oldCap)&&Number.isSafeInteger(newCap)&&oldCap!==newCap)
+        cautions.push(tr('Предел уровня: ','Level cap: ')+oldCap+' → '+newCap);
+      }
+      if(unsure)cautions.push(tr('Нужна ручная проверка: ','Manual review needed: ')+unsure);
+      if(links)cautions.push(tr('Связи и скрытые отличия: ','Links and hidden differences: ')+links);
+      if(syncRussian)cautions.push(tr('Русские описания — проверенная копия проекта, не данные игры',
+       'Russian descriptions are verified project text, not live game data'));
+      if(mode==='archive')cautions.push(tr('Архив может быть старее текущей игры',
+       'The archive may be older than the current game'));
+      decisionWarnings.hidden=!cautions.length;
+      decisionWarnings.textContent=cautions.join(' · ')||
+       tr('Спорных изменений в выбранном наборе не обнаружено.',
+        'No flagged changes in the selection.');
+      riskApprovalLabel.hidden=!risky;
+      riskApproval.disabled=busy||!ready;
+      publish.disabled=!ready||!acknowledged;
       exportButton.disabled = !ready;
       github.disabled = busy || !githubReady || !publishedSnapshot;
       testWrite.disabled = busy;
@@ -626,8 +687,8 @@
       if(impacts.length){
         const panel=h('div',{class:'os-sync-impact-preview'});
         panel.append(h('strong',{text:tr(
-          'Как изменится расчётный шанс выпадения (модель сайта OS)',
-          'How estimated drop chances change (OS website model)')}));
+          'Как изменится расчётный шанс выпадения',
+          'How estimated drop chances change')}));
         for(const effect of notable)
           panel.append(h('p',{class:'os-sync-impact-line',text:effect.preview}));
         if(impacts.length>4)panel.append(h('small',{class:'muted',
@@ -891,14 +952,15 @@
       sourceBanner.hidden=false;
       sourceBanner.dataset.source=from;
       if(from==='server')editorialState(sourceBanner,'sourceLiveNotice',
-         'Проверяем открытые данные pandorasaga-os.com и опубликованный каталог Build Studio (D1). Это не прямое подключение к игровому серверу.',
-         'Comparing public pandorasaga-os.com data with the Build Studio catalog published in D1. This is not a direct connection to the game server.');
+         'Сверяем доступные данные текущей игры с каталогом сайта. Изменения не применяются автоматически.',
+         'Comparing available current game data with the site catalog. No changes are applied automatically.');
       else editorialState(sourceBanner,'sourceArchiveNotice',
          'Архивная сверка по данным сохранённой копии: это НЕ проверка текущего игрового сервера. Применение может вернуть старые значения.',
          'Comparing an archived snapshot, NOT the current game server. Publishing may restore older values.');
       diagnostic.hidden=true;diagnosticText.textContent='';
       baseline=null;upstream=null;legacy=null;legacyRows=null;activeSnapshot=null;
-      changes=[];chosen=new Set();expanded=new Set();full=new Set();
+      changes=[];chosen=new Set();riskApprovalFingerprint='';riskApproval.checked=false;
+      expanded=new Set();full=new Set();
       expandedDetails.clear();expandedReferences.clear();searchCache.clear();
       filterKind='all';renderedQuery='';renderedFilter='all';search.value='';
       formattingCount=0;formattingToggle.checked=false;
@@ -1057,6 +1119,21 @@
       }finally{setBusy(false)}
     }
 
+    async function verifyPublishedForPlayers(snapshot){
+      // Do not say that players see the new catalog until the public endpoint
+      // returns the same immutable active version after the UI reload.
+      await afterPublish();
+      const response=await fetch(apiBase+'/api/catalog/meta.json',{
+       cache:'no-store',signal:AbortSignal.timeout(15000)
+      });
+      const active=response.headers.get('x-ps-catalog-snapshot');
+      if(!response.ok||response.headers.get('x-ps-catalog')!=='d1'||active!==snapshot)
+       throw Error(tr(
+        'Публичный каталог пока не подтвердил новую версию. Проверь снова или обнови страницу.',
+        'The public catalog has not confirmed the new version yet. Check again or reload.'));
+      return true;
+    }
+
     function prepare() {
       const syncFormatting=mode==='server'&&formattingToggle.checked&&formattingCount>0;
       const syncRussianInstances=mode==='server'&&russianToggle.checked&&verifiedRussian.length>0;
@@ -1090,7 +1167,7 @@
     };
 
     publish.onclick=async()=>{
-      if(busy||!permitMutation())return;
+      if(busy||publish.disabled||!permitMutation())return;
       let publishingSnapshot=null;
       let staged;
       try{staged=prepare()}catch(error){status.textContent='Нельзя публиковать: '+error.message;return}
@@ -1103,7 +1180,10 @@
       const formatted=mode==='server'&&formattingToggle.checked?formattingCount:0;
       const ruCount=mode==='server'&&russianToggle.checked?verifiedRussian.length:0;
       const sourceWarning=mode==='archive'
-        ?'\nИСТОЧНИК: сохранённая копия проекта. Данные могут быть СТАРЕЕ текущей игры.':'\nИСТОЧНИК: текущая игра.';
+        ?tr('\nИСТОЧНИК: архивная копия может быть устаревшей.',
+         '\nSOURCE: the archive may be outdated.'):
+         tr('\nИСТОЧНИК: доступные данные текущей игры.',
+          '\nSOURCE: currently available game data.');
       const selectedChanges=changes.filter(checked);
       const selectedDescriptions=selectedChanges.map(describe);
       const selectedImpacts=selectedDescriptions.flatMap(d=>d.impacts||[]);
@@ -1112,7 +1192,7 @@
         impactSamples(selectedImpacts).map(e=>'• '+e.preview).join('\n')+
         (selectedImpacts.length>4?'\n• И ещё '+(selectedImpacts.length-4)+
           ' изменений (смотри подробную сверку).':'')+
-        '\nМодель расчёта взята с сайта OS; сам сервер не проверен.':'';
+        '\nЭто расчётная оценка; фактический результат на игровом сервере не проверен.':'';
       const otherPreview=selectedDescriptions.filter(d=>!(d.impacts||[]).length)
         .slice(0,2).map(d=>'\n• '+d.title+': '+d.summary.slice(0,200)).join('');
       const atomicWarning=selectedChanges.some(e=>e.dataset==='tables')?
@@ -1121,16 +1201,29 @@
         'Применить только одну строку внутри невозможно.':'';
       const uncertainWarning=uncertain
         ?'\nВНИМАНИЕ: '+uncertain+' выбранных изменений требуют ручной проверки.':'';
-      if (!confirm('Применить выбранные изменения игрового каталога?\n'+
-        'Новых: '+added+'; изменённых: '+changed+'; удалённых: '+removed+
-        '; переносов описаний: '+formatted+'; русских описаний: '+ruCount+'.'+
-        (notSelectedGame?'\nНЕ будут применены игровые изменения: '+notSelectedGame+'.':'')+
-        (unselectedSettings?'\nНе выбраны настройки каталога: '+unselectedSettings+'.':'')+
-        sourceWarning+(ruCount?'\nРусские описания — проверенная копия проекта, не текст игрового JSON.':'')+
-        uncertainWarning+atomicWarning+impactPreview+otherPreview+
-        '\n\nОбновляется ТОЛЬКО сайт Build Studio (D1), не сервер игры. '+
-        'Ничего не опубликовано до этого подтверждения.'))return;
+      const confirmationRu='Применить выбранные изменения в каталог Build Studio?\n'+
+       'Новых: '+added+' · Изменённых: '+changed+' · Удалённых: '+removed+
+       ' · Переносов: '+formatted+' · Русских описаний: '+ruCount+'.'+
+       (notSelectedGame?'\nНе выбрано игровых изменений: '+notSelectedGame+'.':'')+
+       (unselectedSettings?'\nНе выбрано настроек: '+unselectedSettings+'.':'')+
+       sourceWarning+uncertainWarning+atomicWarning+impactPreview+otherPreview+
+       '\n\nМеняется каталог Build Studio, а НЕ сама игра. Проверь выбранное перед подтверждением. '+
+       'Ничего не опубликовано до этого подтверждения.';
+      const confirmationEn='Publish these changes to the Build Studio catalog?\n'+
+       'New: '+added+' · Changed: '+changed+' · Removed: '+removed+
+       ' · Line breaks: '+formatted+' · Russian descriptions: '+ruCount+'.'+
+       (notSelectedGame?'\nUnselected game changes: '+notSelectedGame+'.':'')+
+       (unselectedSettings?'\nUnselected settings: '+unselectedSettings+'.':'')+
+       sourceWarning+
+       (uncertain?'\nFlagged for manual review: '+uncertain+'.':'')+
+       (selectedChanges.some(x=>x.dataset==='tables')?
+         '\nGame formula tables, including level caps, are replaced together.':'')+
+       '\n\nOnly the Build Studio catalog changes, not the game. Review before confirming.';
+      if(!confirm(tr(confirmationRu,confirmationEn)))return;
       if(!permitMutation())return;
+      publishing=true;
+      const closeButton=view.closest('.modal')?.querySelector('button.close');
+      if(closeButton)closeButton.disabled=true;
       setBusy(true);
       try {
         const current=await request('/api/admin/catalog/status',{});
@@ -1161,25 +1254,27 @@
         }
         const result=await request('/api/admin/catalog/publish',{
           snapshot,extraCounts:prepared.extraCounts,expectedActive:activeSnapshot});
-        // A read-back confirms the active version; a failed read-back is not rollback.
-        let confirmed=false;
+        // A read-back confirms the active version; an ambiguous response is
+        // never treated as rollback or as proof of up-to-date player data.
+        let confirmed=false,superseded=false;
         try{
           const observed=await request('/api/admin/catalog/status',{});
           confirmed=observed.active===result.active;
+          superseded=Boolean(observed.active&&!confirmed);
         }catch{}
-        status.textContent='Изменения опубликованы в каталоге Build Studio (D1: '+result.active+'). '+
-          (confirmed?'Активная версия повторно проверена. ':
-            'Ответ публикации получен, повторная проверка версии недоступна. ')+
-          (ruCount?'Проверенные русские описания добавлены. ':'')+
-          'Игровой сервер и GitHub не изменены.';
         publishedSnapshot=result.active;
         chosen.clear();changes=[];baseline=null;upstream=null;
         refreshActions();
         try{
-          await afterPublish();
+          await verifyPublishedForPlayers(result.active);
+          status.textContent=superseded?
+           tr('Изменения опубликованы, но уже доступна другая версия каталога. Проверь её заново.',
+            'Changes were published, but another catalog revision is already live. Review it again.'):
+           tr('Каталог обновлён и доступная игрокам версия проверена. Игровой сервер и GitHub не изменились.',
+            'The catalog was updated and the player-visible version was verified. The game server and GitHub were not changed.');
         }catch(error){
-          status.textContent='Данные опубликованы, но не удалось обновить страницу: '+
-            error.message+'. Обнови страницу вручную.';
+          status.textContent=tr('Публикация принята, но обновление данных у игроков пока не подтверждено: ',
+           'Publication was accepted, but the player-visible update is not yet verified: ')+error.message;
         }
       }catch(error){
         // A lost publish response is ambiguous: inspect D1 before any retry.
@@ -1192,8 +1287,13 @@
               refreshActions();
               status.textContent='Каталог опубликован (D1: '+observed.active+
                 '). Ответ потерялся, но активная версия подтверждена. GitHub не изменён.';
-              try{await afterPublish()}catch(refreshError){
-                status.textContent+=' Обнови страницу вручную: '+refreshError.message;
+              try{
+                await verifyPublishedForPlayers(observed.active);
+                status.textContent=tr('Каталог опубликован, и новая версия проверена для игроков. Ответ публикации сначала потерялся.',
+                 'Catalog published; the player-visible version was verified after the original response was lost.');
+              }catch(refreshError){
+                status.textContent+=tr(' Обновление у игроков не подтверждено: ',
+                 ' The player-visible update remains unverified: ')+refreshError.message;
               }
               return;
             }
@@ -1203,7 +1303,11 @@
           ? 'Сеанс администратора истёк. Проверь активную версию D1 после повторного входа.'
           : 'Не удалось завершить обновление: '+error.message+
              '. Данные могли остаться прежними или уже обновиться. Сначала проверь каталог заново; не применяй тот же набор вслепую.';
-      }finally{setBusy(false)}
+      }finally{
+        publishing=false;
+        if(closeButton?.isConnected)closeButton.disabled=false;
+        setBusy(false);
+      }
     };
 
     // A separate, authenticated server operation. No GitHub token or file
@@ -1295,12 +1399,15 @@
       const removals=pending.filter(item=>item.kind==='removed');
       const settings=pending.filter(item=>describe(item).service);
       if(!pending.length&&!(mode==='server'&&formattingCount&&!formattingToggle.checked))return;
-      if((uncertain.length||settings.length||removals.length)&&!confirm(
+      if((uncertain.length||settings.length||removals.length)&&!confirm(tr(
         'Выбрать все '+changes.length+' найденных изменений?\n'+
         'Среди ещё не выбранных: '+uncertain.length+' требуют ручной проверки, '+
         removals.length+' удалений, '+settings.length+' изменений настроек игры.\n'+
-        'Проверь ссылки, игровые формулы, лимиты и непонятные параметры до публикации.\n'+
-        'Это только выбор; D1 пока не меняется.'))return;
+        'После выбора появится сводка последствий. Каталог пока не изменится.',
+        'Select all '+changes.length+' detected changes?\n'+
+        'Still unselected: '+uncertain.length+' need manual review, '+
+        removals.length+' removals, '+settings.length+' game settings.\n'+
+        'A consequence summary will appear. This does not publish anything.')))return;
       for(const item of changes)chosen.add(item.id);
       if(mode==='server'&&formattingCount)formattingToggle.checked=true;
       render();
@@ -1313,7 +1420,9 @@
     };
     search.addEventListener('input',render);
     refreshActions();
-    modal(copy('title','Обновление игрового каталога','Game catalog updates'),view);
+    modal(copy('title','Обновление игрового каталога','Game catalog updates'),view,{
+     canClose:()=>!publishing
+    });
   }
 
   root.PandoraOSCatalogWorkbench=Object.freeze({open});

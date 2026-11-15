@@ -462,3 +462,31 @@
  .os-sync-review-steps{padding:10px}
  .os-sync-intro{padding:12px}
 }
+
+/* 0.793 · Compact consequence review, not a second metrics dashboard. */
+.os-sync-decision-preview{margin-top:9px;padding:10px 12px 11px;
+ background:#302419;border:1px solid #8c6e4a;border-radius:8px;
+ display:grid;gap:6px;min-width:0}
+.os-sync-decision-preview>strong{font:700 13px/1.4 Manrope,Arial,sans-serif;
+ color:#f3d3a0}
+.os-sync-decision-preview p{margin:0!important;font-size:12px!important;
+ line-height:1.55!important;overflow-wrap:anywhere}
+.os-sync-decision-summary{color:#e8cda5!important}
+.os-sync-decision-warnings{color:#eebc94!important}
+.os-sync-risk-approval{display:flex;align-items:flex-start;gap:9px;margin:5px 0 0;
+ padding:8px 0 0;border-top:1px solid #6e543a;
+ color:#f4d9aa;font-size:12px;line-height:1.5;cursor:pointer}
+.os-sync-risk-approval input{width:18px;height:18px;flex:none;margin:0;
+ accent-color:#d7af77;cursor:pointer}
+.os-sync-risk-approval:focus-within{outline:2px solid #edc180;outline-offset:3px;
+ border-radius:4px}
+.os-sync-review-actions .primary:disabled{opacity:.55;cursor:not-allowed}
+.modal:has(.os-sync)>button.close:disabled{opacity:.55;cursor:wait}
+@media(max-width:520px){
+ .os-sync-decision-preview{padding:9px 10px}
+ .os-sync-risk-approval{gap:7px}
+}
+@media(forced-colors:active){
+ .os-sync-decision-preview,.os-sync-risk-approval{border-color:CanvasText}
+ .os-sync-risk-approval input:focus-visible{outline:2px solid Highlight}
+}

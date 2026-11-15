@@ -35,7 +35,7 @@ test('real current OS disappearance: 85 exact rows in Malydia, all counted and n
  assert.equal(output.impacts.length,182,'real Malydia model affects 182 map/monster/item combinations');
  assert.ok(output.impacts.some(e=>e.preview.includes('Призрачный рекрут')&&
   e.preview.includes('Имперская медаль Мальдии')&&e.preview.includes('32,11% → 22,75%')));
- const counts=output.rows.filter(row=>row.label.includes('Число независимых попыток по модели OS'));
+ const counts=output.rows.filter(row=>row.label.includes('Число независимых попыток по расчётной модели'));
  assert.equal(counts.length,48,'show every distinct removed row content');
  assert.ok(counts.some(row=>row.label.includes('Призрачный рекрут')&&
   row.label.includes('Имперская медаль Мальдии')&&row.before==='6'&&row.after==='4'));
@@ -57,7 +57,7 @@ test('duplicate rule multiplicity remains exact, even if one copy survives',()=>
   items:[{i:80098,lo:0,hi:0}]};
  const make=n=>({zoneDrops:[{map:2005102,rows:Array.from({length:n},()=>clone(rule))}]});
  const result=compare(make(3),make(1));
- const change=result.rows.find(row=>row.label.includes('Число независимых попыток по модели OS'));
+ const change=result.rows.find(row=>row.label.includes('Число независимых попыток по расчётной модели'));
  assert.equal(change.before,'3');
  assert.equal(change.after,'1');
  assert.match(result.summary,/Итого удалено 2, добавлено 0/);
