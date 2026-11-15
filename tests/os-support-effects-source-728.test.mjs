@@ -83,7 +83,7 @@ test('changed root, parent or triggered child invalidates the exact claim',()=>{
   assert.ok(result.rejected.includes(440002002));
  }
  const changed={...skills,[310003001]:structuredClone(skills[310003001])};
- changed[310003001].funcs.find(f=>f.ep==='EP_CONSUME_ITEM').fv2[3]++;
+ changed[310003001].funcs.find(f=>f.ep==='EP_CONSUME_ITEM').fv2[3]=0;
  assert.ok(inspect('CLERIC',changed).rejected.includes(310003001));
 });
 test('levels and mastery depend on class capability, not unrelated allies',()=>{
