@@ -1,5 +1,6 @@
 import {accountApi,principal as accountPrincipal} from './pandora-studio-account-api.js';
 import {createCatalogPullRequest,githubCatalogEnabled,githubCatalogReadiness,previewOwnerOverrides,createOwnerOverridesPullRequest} from './pandora-studio-github-catalog-pr.js';
+import {BACKUP_OUTBOX_SCHEMA,queueBackupStatement,getBackupJob,completeBackupJob,deliverCatalogBackupJob} from './pandora-studio-catalog-backup-outbox.js';
 // Cloudflare Worker backend for Pandora Saga Build Studio.
 // Passwords and session hashes are NEVER stored in the Pages repository.
 // Native PBKDF2 in Cloudflare Workers supports at most 100,000 iterations.
@@ -92,7 +93,8 @@ const SEED_SCHEMA=[
  'CREATE TABLE IF NOT EXISTS catalog_entries(snapshot TEXT NOT NULL,dataset TEXT NOT NULL,record_key TEXT NOT NULL,name TEXT,kind TEXT,slot TEXT,is_costume_overlay INTEGER NOT NULL DEFAULT 0,payload TEXT NOT NULL,PRIMARY KEY(snapshot,dataset,record_key))',
  'CREATE INDEX IF NOT EXISTS idx_catalog_slot ON catalog_entries(snapshot,dataset,slot,is_costume_overlay)',
  'CREATE INDEX IF NOT EXISTS idx_catalog_kind ON catalog_entries(snapshot,dataset,kind)',
- 'CREATE TABLE IF NOT EXISTS catalog_current(id INTEGER PRIMARY KEY CHECK(id=1),snapshot TEXT NOT NULL,published_at INTEGER NOT NULL,expected_counts TEXT NOT NULL)'
+ 'CREATE TABLE IF NOT EXISTS catalog_current(id INTEGER PRIMARY KEY CHECK(id=1),snapshot TEXT NOT NULL,published_at INTEGER NOT NULL,expected_counts TEXT NOT NULL)',
+ BACKUP_OUTBOX_SCHEMA
 ];
 async function catalogBody(request){
  // Keep the historical 65,000-character import limit, plus a hard 256 KiB
@@ -103,6 +105,9 @@ function isCostumeKind(kind){return typeof kind==='string'&&kind.startsWith('DEC
 async function activeCatalog(env){
  try{return await env.DB.prepare('SELECT snapshot,published_at,expected_counts FROM catalog_current WHERE id=1').first()}
  catch{return null}
+}
+async function catalogBackupTableReady(env){
+ return Boolean(await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='catalog_backup_jobs'").first());
 }
 async function serveCatalog(env,dataset){
  const active=await activeCatalog(env);
@@ -299,7 +304,9 @@ async function adminCatalog(request,env,path){
   const statement=previous===null?
    env.DB.prepare('INSERT OR IGNORE INTO catalog_current(id,snapshot,published_at,expected_counts) VALUES(1,?,?,?)').bind(data.snapshot,Date.now(),JSON.stringify(counts)):
    env.DB.prepare('UPDATE catalog_current SET snapshot=?,published_at=?,expected_counts=? WHERE id=1 AND snapshot=?').bind(data.snapshot,Date.now(),JSON.stringify(counts),previous);
-  const published=await statement.run();
+  // One atomic transaction: never publish without a durable backup job.
+  const backup=queueBackupStatement(env,data.snapshot);
+  const [published]=await env.DB.batch([statement,backup]);
   if(Number(published.meta?.changes)!==1)return no('Published catalog changed during review',409);
   return json({ok:true,active:data.snapshot,counts,costumeItems:costumes.c});
  }
@@ -626,6 +633,12 @@ if(path==='/api/admin/catalog/github-status'&&method==='GET'){
  if(!await auth(request,env))return no('Unauthorized',401);
  return json(await githubCatalogReadiness(env));
 }
+if(path==='/api/admin/catalog/backup-status'&&method==='GET'){
+ if(!await auth(request,env))return no('Unauthorized',401);
+ const active=await activeCatalog(env);
+ const ready=await catalogBackupTableReady(env);
+ return json({snapshot:active?.snapshot||null,job:active&&ready?await getBackupJob(env,active.snapshot):null},200,{'cache-control':'no-store'});
+}
 if(path==='/api/admin/catalog/github-pr'&&method==='POST'){
  if(!await auth(request,env))return no('Unauthorized',401);
  if(!githubCatalogEnabled(env))return no('GitHub integration not configured',503);
@@ -639,6 +652,7 @@ if(path==='/api/admin/catalog/github-pr'&&method==='POST'){
  try{
   const result=await createCatalogPullRequest(env,active,
    async()=> (await activeCatalog(env))?.snapshot||null);
+  try{await completeBackupJob(env,active.snapshot,result)}catch{}
   return json(result);
  }catch(error){
   // Never log GitHub secrets or expose arbitrary remote response payloads.
@@ -1098,4 +1112,13 @@ if(path==='/api/admin/reset'&&method==='POST'){
 }
 return no('Not found',404)
 }
-export default{async fetch(request,env){const cors=originHeaders(request);if(request.method==='OPTIONS')return new Response(null,{status:204,headers:cors});try{const result=await handle(request,env);for(const[k,v]of Object.entries(cors))result.headers.set(k,v);return result}catch(e){console.error('Request failed',e);const result=no('Server error',500);for(const[k,v]of Object.entries(cors))result.headers.set(k,v);return result}}};
+export default{async fetch(request,env){const cors=originHeaders(request);if(request.method==='OPTIONS')return new Response(null,{status:204,headers:cors});try{const result=await handle(request,env);for(const[k,v]of Object.entries(cors))result.headers.set(k,v);return result}catch(e){console.error('Request failed',e);const result=no('Server error',500);for(const[k,v]of Object.entries(cors))result.headers.set(k,v);return result}},async scheduled(_event,env,ctx){
+  if(!env?.DB)return;
+  const job=(async()=>{
+   // Before the first 0.809 owner import, production D1 has no outbox table.
+   // A scheduled event must not initialize schema or log a false failure.
+   if(!await catalogBackupTableReady(env))return;
+   return deliverCatalogBackupJob(env,activeCatalog,createCatalogPullRequest);
+  })().catch(()=>console.error('Catalog backup scheduled attempt failed'));
+  if(ctx?.waitUntil)ctx.waitUntil(job);else await job;
+}};
