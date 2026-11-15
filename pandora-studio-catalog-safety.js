@@ -198,8 +198,13 @@ function compatibility(before,after){
     const name=String(now?.name||old?.name||id).slice(0,90);
     if(!old||!now||!same(old.funcs,now.funcs)){
      add('needsReview','skill:'+id,name+' · изменены игровые эффекты');
-    }else if(!same(old.damage,now.damage)||!same(old.weaponUse,now.weaponUse)){
-     add('needsReview','skill:'+id,name+' · изменена механика урона или оружия');
+    }else if(!same(old.damage,now.damage)||!same(old.weaponUse,now.weaponUse)||
+      // A prerequisite chain or the stat driving the effect can change
+      // the actual result without changing funcs/FV vectors.
+      !same(old.prereq,now.prereq)||!same(old.powerStat,now.powerStat)||
+      !same(old.skillType,now.skillType)||!same(old.element,now.element)||
+      !same(old.aoe,now.aoe)||!same(old.rangeFromWeapon,now.rangeFromWeapon)){
+     add('needsReview','skill:'+id,name+' · изменены условия действия или источник урона');
     }else{
      add('sourceOnly','skill:'+id,name+' · обновлены условия/описание навыка');
     }
