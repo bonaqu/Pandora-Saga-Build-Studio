@@ -165,7 +165,7 @@ function open({modal,h,lang='ru',readRaw,write,reset,canCommit=()=>true,onApplie
   }catch(error){status.textContent=tr('Не удалось сбросить таблицу: ',
    'Could not restore defaults: ')+error.message;
    status.classList.add('ps-level-editor-error');}
-  finally{saving=false;update()}
+  finally{const message=status.textContent,failed=status.classList.contains('ps-level-editor-error');saving=false;update();status.textContent=message;status.classList.toggle('ps-level-editor-error',failed)}
  };
  save.onclick=async()=>{
   if(!canCommit()||saving)return;
@@ -185,7 +185,7 @@ function open({modal,h,lang='ru',readRaw,write,reset,canCommit=()=>true,onApplie
   }catch(error){status.textContent=tr('Сохранение не выполнено: ',
    'Save failed: ')+error.message;
    status.classList.add('ps-level-editor-error');}
-  finally{saving=false;update()}
+  finally{const message=status.textContent,failed=status.classList.contains('ps-level-editor-error');saving=false;update();status.textContent=message;status.classList.toggle('ps-level-editor-error',failed)}
  };
  drawRows();return dialog;
 }
