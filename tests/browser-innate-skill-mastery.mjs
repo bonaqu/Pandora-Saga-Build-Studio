@@ -133,8 +133,8 @@ export async function runInnateSkillMasterySmoke(browser,base){
   assert.match(await details.innerText(),/Характеристика\s+Сила/);
   assert.doesNotMatch(await details.innerText(),/Характеристика\s+STR/);
   await skillSearch.press('Tab');
-  assert.equal(await skillSearch.evaluate(el=>el.readOnly),true,
-   'Search returns to non-credential readOnly state after editing');
+  assert.equal(await skillSearch.evaluate(el=>el.readOnly),false,
+   'Ordinary Chromium remains editable; Yandex idle readOnly is tested separately');
   // Explicit UI acceptance for the exact-field steppers. A quick click
   // advances one point, while holding repeats until the mastery/budget cap.
   await page.locator('#pathGrowthTab').click();
