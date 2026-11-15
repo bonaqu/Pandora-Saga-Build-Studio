@@ -1543,13 +1543,15 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  // resistance, nor proof of duration, proc probability or a server hit roll.
  const purify=skill(310014001),inner=skill(310014002);
  const purifyChain=purify?.id===310014001&&purify.learnable===true&&
-  purify.name==='Полное исцеление'&&purify.skillType==='ALLY'&&
+  purify.skillType==='ALLY'&&purify.branchRaw==='PRAYER_HEALING'&&
   purify.branch==='benevolence'&&purify.prereq==null&&
   Array.isArray(purify.reqs)&&purify.reqs.length===1&&
   purify.reqs[0]?.branch==='benevolence'&&purify.reqs[0]?.amount===71&&
   Array.isArray(purify.funcs)&&purify.funcs.length===2&&
   inner?.id===310014002&&inner.learnable===false&&
-  inner.name===purify.name&&inner.skillType==='ALLY'&&
+  inner.skillType==='ALLY'&&inner.branch===purify.branch&&
+  inner.branchRaw===purify.branchRaw&&inner.prereq===null&&
+  inner.charLevel===0&&Array.isArray(inner.reqs)&&inner.reqs.length===0&&
   Array.isArray(inner.funcs)&&inner.funcs.length===2&&
   exact(inner,'EP_IMMUNE_VIT_TYPE',[0,0,0,100])&&
   exact(inner,'EP_IMMUNE_SPI_TYPE',[0,0,0,100]);
@@ -2141,14 +2143,17 @@ function encouragementBonus(options={},context={}){
  if(options.priestEnabled!==true||options.priestEncouragement!==true||
   priest?.enabled!==true||![priest.spi,priest.blessing,priest.hymn].every(n=>
    Number.isSafeInteger(n)&&n>=0&&n<=500)||priest.blessing<61||
-  skill?.id!==320012001||skill.name!=='Ободрение'||
+  skill?.id!==320012001||
   skill.skillType!=='ALLY'||skill.learnable!==true||
   !Array.isArray(skill.reqs)||skill.reqs.length!==1||
   skill.reqs[0].branch!=='blessing'||skill.reqs[0].amount!==61||
   !Array.isArray(skill.funcs)||skill.funcs.length!==3)return 0;
  const expected=['EP_STRENGTH_CONST','EP_AGILITY_CONST','EP_INTELIGENCE_CONST'];
- if(!expected.every(ep=>skill.funcs.some(f=>f.ep===ep&&f.dir==='TARGET'&&
-  JSON.stringify(f.fv1)==='[0,0,10,0]')))return 0;
+ if(!expected.every(ep=>skill.funcs.filter(f=>f?.ep===ep).length===1&&
+  skill.funcs.some(f=>f.ep===ep&&f.dir==='TARGET'&&
+   Object.keys(f).sort().join(',')==='dir,ep,fv1,fv2'&&
+   JSON.stringify(f.fv1)==='[0,0,10,0]'&&
+   JSON.stringify(f.fv2)==='[0,0,0,0]')))return 0;
  // The historical Remaked formula uses priest Blessing, not the hero's stat.
  return Math.floor(priest.blessing/10);
 }
@@ -4097,7 +4102,9 @@ function skillExecutionChains({skillCatalog=null,jobKey=null,level=1,onHit=false
     JSON.stringify(calls[0].fv1)!=='[0,0,0,420007102]'||
     JSON.stringify(calls[0].fv2)!=='[0,0,0,0]'||
     child?.skillType!=='SPHBOLT'||child.learnable!==false||
-    child.name!==s.name||child.branch!==s.branch||
+    child.branch!==s.branch||child.branchRaw!==s.branchRaw||
+    child.charLevel!==0||child.prereq!==null||
+    !Array.isArray(child.reqs)||child.reqs.length!==0||
     JSON.stringify(child.aoe)!=='[500,0]'||
     JSON.stringify(child.funcs?.map(f=>[f.ep,f.dir,f.fv1,f.fv2]))!==
      JSON.stringify(expectedChild))return null;
@@ -4113,7 +4120,10 @@ function skillExecutionChains({skillCatalog=null,jobKey=null,level=1,onHit=false
    const child=hit?get(a?.[3]):null;
    // An existing but unrelated internal skill is not the expected trigger.
    const onHitIdentity=!hit||(expected&&a?.[3]===expected.child&&
-    child?.learnable===false&&child.name===s.name&&child.branch===s.branch);
+    child?.learnable===false&&child.branch===s.branch&&
+    child.branchRaw===s.branchRaw&&child.skillType==='ENEMY'&&
+    child.charLevel===0&&child.prereq===null&&
+    Array.isArray(child.reqs)&&child.reqs.length===0);
    const directionOK=hit?f.dir===expected?.dir:f.dir==='TARGET';
    const fv2OK=hit?
     Array.isArray(b)&&b.length===4&&expected?.fv2.every((n,i)=>n===b[i]):
@@ -4531,7 +4541,7 @@ function trapOutcomeMatches(catalog,root,proof){
  if(!proof||!Array.isArray(proof.nodes))return false;
  return proof.nodes.every(p=>{
   const s=catalog[String(p.id)];
-  return s?.id===p.id&&s.name===root.name&&s.learnable===false&&
+  return s?.id===p.id&&s.branchRaw===root.branchRaw&&s.learnable===false&&
    s.prereq===null&&s.charLevel===0&&s.branch===p.branch&&
    s.skillType===p.skillType&&Array.isArray(s.reqs)&&s.reqs.length===0&&
    Array.isArray(s.funcs)&&s.funcs.length===p.funcs.length&&
@@ -4560,7 +4570,7 @@ function trapLevel50Source({catalog,root,jobKey,level,rank,cap,same,make}){
   {ep:'EP_ELEMENT_DAMAGE',dir:'TARGET',fv1:[450,100,300,50],fv2:[0,0,0,0]},
   {ep:'EP_CAUSE_KNOCKBACK',dir:'TARGET',fv1:[0,0,0,200],fv2:[0,0,0,1]}
  ];
- if(variant?.id!==240002002||variant.name!==root.name||
+ if(variant?.id!==240002002||variant.branchRaw!==root.branchRaw||
   variant.skillType!=='POINT'||variant.learnable!==false||
   variant.prereq!==root.id||variant.charLevel!==50||
   variant.branch!=='trap'||variant.reqLevel!==26||
@@ -4576,7 +4586,7 @@ function trapLevel50Source({catalog,root,jobKey,level,rank,cap,same,make}){
   variant.aoe.some((v,i)=>v!==root.aoe[i])||
   !Array.isArray(variant.funcs)||variant.funcs.length!==expected.length||
   !expected.every((row,i)=>same(variant.funcs[i],row))||
-  child?.id!==240002051||child.name!==root.name||
+  child?.id!==240002051||child.branchRaw!==root.branchRaw||
   child.skillType!=='CIRCLE'||child.learnable!==false||
   child.branch!=='trap'||child.charLevel!==0||child.prereq!==null||
   !Array.isArray(child.reqs)||child.reqs.length!==0||
@@ -4622,7 +4632,7 @@ function trapSkillCostPreview({skillCatalog=null,jobKey=null,level=1,
   const path=chains.rows.find(x=>x.id===id);
   if(!Array.isArray(record.funcs)||record.funcs.length!==expected.length||
    !expected.every((x,i)=>same(record.funcs[i],x))||
-   child?.id!==childId||child.name!==record.name||
+   child?.id!==childId||child.branchRaw!==record.branchRaw||
    !path||!path.paths.some(p=>p[1]===childId)||
    !trapOutcomeMatches(skillCatalog,record,trapOutcomeProofs[id])){
    result.rejected.push(id);continue;
