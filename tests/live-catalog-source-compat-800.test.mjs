@@ -6,10 +6,10 @@ import {auditOsSkillFormulaCoverage} from '../scripts/audit-os-skill-formulas.mj
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const host={};Function('window',read('pandora-os-character-calculator.js'))(host);
 const C=host.PandoraOSCalculator;
-const older=JSON.parse(read('data/os/skills.json'));
+const older=JSON.parse(read('data/catalog-history/pre-2026-11-15/skills.json'));
 const live=JSON.parse(read('data/catalog-review/ps-ca9a604163b54a2da5c83ea55077ef96/skills.json'));
 const classes=JSON.parse(read('data/catalog-review/ps-ca9a604163b54a2da5c83ea55077ef96/classes.json'));
-const oldClasses=JSON.parse(read('data/os/classes.json'));
+const oldClasses=JSON.parse(read('data/catalog-history/pre-2026-11-15/classes.json'));
 const candidates=[['bundled historical',older,oldClasses],['published D1',live,classes]];
 const hymn=(catalog,job)=>C.songSkillPreview({
  skillCatalog:catalog,jobKey:job,level:55,

@@ -7,8 +7,8 @@ const host={};
 Function('window',read('pandora-studio-remaked-buffs.js'))(host);
 Function('window',read('pandora-os-character-calculator.js'))(host);
 const B=host.PandoraRemakedBuffs,C=host.PandoraOSCalculator;
-const skills=JSON.parse(read('data/os/skills.json'));
-const classes=JSON.parse(read('data/os/classes.json'));
+const skills=JSON.parse(read('data/catalog-history/pre-2026-11-15/skills.json'));
+const classes=JSON.parse(read('data/catalog-history/pre-2026-11-15/classes.json'));
 const audit=source=>auditOsSkillFormulaCoverage({
  skills:source,classes,calculator:C});
 const find=(result,id)=>result.rows.find(x=>x.id===id);

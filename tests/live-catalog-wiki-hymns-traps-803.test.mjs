@@ -6,9 +6,9 @@ const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const host={};
 Function('window',read('pandora-os-character-calculator.js'))(host);
 Function('window',read('pandora-studio-wiki-skill-insights.js'))(host);
-const old=JSON.parse(read('data/os/skills.json'));
+const old=JSON.parse(read('data/catalog-history/pre-2026-11-15/skills.json'));
 const live=JSON.parse(read('data/catalog-review/ps-ca9a604163b54a2da5c83ea55077ef96/skills.json'));
-const oldClasses=JSON.parse(read('data/os/classes.json'));
+const oldClasses=JSON.parse(read('data/catalog-history/pre-2026-11-15/classes.json'));
 const liveClasses=JSON.parse(read('data/catalog-review/ps-ca9a604163b54a2da5c83ea55077ef96/classes.json'));
 const inspect=(skills,classes,id)=>host.PandoraWikiSkillInsights.inspect({
  skillCatalog:skills,classes,id,calculator:host.PandoraOSCalculator
