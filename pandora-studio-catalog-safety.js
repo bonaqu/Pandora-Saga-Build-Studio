@@ -644,6 +644,13 @@ function replaySkills(before,after){
  // Preserve the explicitly edited IDs for actionable regression reports.
  // A single internal effect can otherwise drown in the five sampled parents.
  const directlyChanged=new Set(changed);
+ const pending=[...changed];
+ for(let i=0;i<pending.length;i++)
+  for(const relative of relatives.get(pending[i])||[])
+   if(!changed.has(relative)){
+    changed.add(relative);
+    pending.push(relative);
+   }
  // Consumables may invoke unlearnable skills without a class/prereq.
  // Inspect both old and selected item->skill source links, and explicitly
  // changed item effects. These are source-only descriptions, NOT proof
@@ -669,13 +676,6 @@ function replaySkills(before,after){
     changedItems.add(String(id));
   }
  }
- const pending=[...changed];
- for(let i=0;i<pending.length;i++)
-  for(const relative of relatives.get(pending[i])||[])
-   if(!changed.has(relative)){
-    changed.add(relative);
-    pending.push(relative);
-   }
  if(!changed.size&&!changedItems.size)return {ok:true,changedSkills:0,scenarios:0,
   previouslyModeled:0,retained:0,lost:0,unmodeled:0,samples:[],errors:[]};
  const calc=root.PandoraOSCalculator;
