@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {ALLOWED_FILES,REPO,BASE,REQUIRED_WORKFLOWS,
- assessCatalogPullRequest,autoMergeFromEvent} from '../scripts/catalog-fallback-auto-merge.mjs';
+ assessCatalogPullRequest,autoMergeFromEvent,verifyPublishedCatalogBeforeMerge} from '../scripts/catalog-fallback-auto-merge.mjs';
 const snapshot='ps-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const sha='f'.repeat(40);
 function fixtures(){
@@ -71,7 +71,8 @@ test('integration route issues one conditional PUT only after both exact CI runs
   else throw Error('Unknown request '+path);
   return {ok:true,json:async()=>data};
  };
- const result=await autoMergeFromEvent({event:a.event,fetcher,token:'test-token-long-enough'});
+ const result=await autoMergeFromEvent({event:a.event,fetcher,token:'test-token-long-enough',
+  catalogVerifier:async()=>({ok:true})});
  assert.equal(result.ok,true);
  assert.equal(paths.filter(x=>x.method==='PUT').length,1);
  const body=JSON.parse(paths.find(x=>x.method==='PUT').body);
@@ -89,6 +90,66 @@ test('a red browser suite must never issue a merge request',async()=>{
    {workflow_runs:a.runs.map((r,i)=>i===1?{...r,conclusion:'failure'}:r)};
   return {ok:true,json:async()=>data};
  };
- const result=await autoMergeFromEvent({event:a.event,fetcher,token:'test-token-long-enough'});
+ const result=await autoMergeFromEvent({event:a.event,fetcher,token:'test-token-long-enough',
+  catalogVerifier:async()=>({ok:true})});
  assert.equal(result.ok,false);assert.ok(!paths.includes('PUT'));
+});
+
+test('exact 17-source parity checks both D1 snapshot and the final PR SHA before merge',async()=>{
+ const a=fixtures(),urls=[];
+ const fetcher=async url=>{
+  urls.push(url);
+  const isD1=url.includes('.workers.dev/api/catalog/');
+  const name=url.split('/').pop().replace(/\.json$/,'');
+  const expected=name==='stringsEn'?'strings.en':name;
+  return {ok:true,
+   headers:{get:key=>isD1?
+    key==='x-ps-catalog'?'d1':key==='x-ps-catalog-snapshot'?snapshot:null:null},
+   json:async()=>({name:expected,rows:[1,2,3]})};
+ };
+ const result=await verifyPublishedCatalogBeforeMerge({
+  pr:a.pr,snapshot,fetcher});
+ assert.deepEqual(result,{ok:true,verifiedDatasets:17});
+ assert.equal(urls.length,34);
+ assert.ok(urls.every(url=>url.includes(sha)||url.includes('/api/catalog/')));
+});
+test('D1 must remain the same snapshot and game data throughout PR parity',async()=>{
+ const a=fixtures();
+ const fetcher=async url=>{
+  const live=url.includes('.workers.dev/api/catalog/');
+  const name=url.split('/').pop().replace(/\.json$/,'');
+  const changed=name==='skills'&&!live;
+  return {ok:true,headers:{get:key=>live?
+   key==='x-ps-catalog'?'d1':key==='x-ps-catalog-snapshot'?snapshot:null:null},
+   json:async()=>({name,content:changed?'tampered':'trusted'})};
+ };
+ const result=await verifyPublishedCatalogBeforeMerge({pr:a.pr,snapshot,fetcher});
+ assert.equal(result.ok,false);
+ assert.match(result.reason,/differs from active D1/);
+ const stale=await verifyPublishedCatalogBeforeMerge({
+  pr:a.pr,snapshot,fetcher:async url=>({
+   ok:true,headers:{get:key=>
+    key==='x-ps-catalog'?'d1':
+    key==='x-ps-catalog-snapshot'?'ps-newer-snapshot':null},
+   json:async()=>({same:true})
+  })});
+ assert.equal(stale.ok,false);
+ assert.match(stale.reason,/Active D1 revision has changed/);
+});
+test('even two green CI suites may never merge a PR whose D1 parity failed',async()=>{
+ const a=fixtures(),methods=[];
+ const fetcher=async(url,options)=>{
+  methods.push(options.method);
+  const path=url.split('github.com')[1];
+  const result=path.includes('/pulls?')?[{number:52}]:
+   path.endsWith('/pulls/52')?a.pr:
+   path.includes('/pulls/52/files?')?a.files:
+   {workflow_runs:a.runs};
+  return {ok:true,json:async()=>result};
+ };
+ const result=await autoMergeFromEvent({
+  event:a.event,fetcher,token:'test-token-long-enough',
+  catalogVerifier:async()=>({ok:false,reason:'GitHub fallback differs from active D1'})});
+ assert.equal(result.ok,false);
+ assert.ok(!methods.includes('PUT'));
 });
