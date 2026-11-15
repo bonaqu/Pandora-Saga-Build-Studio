@@ -3140,10 +3140,20 @@ const songChains=Object.freeze([
 const additionalSongSource=Object.freeze({"id":340001004,"root":{"skillType":"TOGGLE","element":null,"learnable":true,"mana":30,"cast":0,"cooldown":5,"motion":0,"range":0,"rangeFromWeapon":false,"aoe":[1,1],"branch":"hymn","reqLevel":8,"charLevel":0,"isLevelBased":false,"prereq":340001001,"powerStat":"SPI","classes":["ACOLYTE","AGENT","ARCHER","ASCETIC","ASSASSIN","CALAMITY","CLERIC","CONJURER","DARKROAR","DISTURBANCE","DRAGOON","ENCHANTER","EXORCIST","GENERAL","GLADIATOR","JESTER","JUGGERNAUT","KNIGHT","MAGE","MONK","PALADIN","PREDATOR","PRIEST","SCOUT","SNIPER","WARLOCK","WARRIOR","WIZARD"],"reqs":[["hymn",8]],"funcs":[["EP_SKILL_EXEC_COUNT","TARGET",[0,0,0,340001005],[0,0,0,4]],["EP_MOVESPEED_CONST","CASTER",[0,0,225,0],[0,0,0,0]],["EP_TOGGLE","CASTER",[0,0,-20,50],[0,0,0,5]],["EP_STATE_CHANT","CASTER",[0,0,0,0],[0,0,0,0]]],"damage":null,"weaponUse":null},"middleId":340001005,"middle":{"skillType":"SPHERE","element":null,"learnable":false,"mana":0,"cast":0,"cooldown":0,"motion":0,"range":0,"rangeFromWeapon":false,"aoe":[400,0],"branch":"hymn","reqLevel":0,"charLevel":0,"isLevelBased":true,"prereq":null,"powerStat":"SPI","classes":[],"reqs":[],"funcs":[["EP_SKILL_EXEC","TARGET",[0,0,0,340001006],[0,0,0,0]]],"damage":null,"weaponUse":null},"lastId":340001006,"last":{"skillType":"ALLY","element":null,"learnable":false,"mana":0,"cast":0,"cooldown":0,"motion":0,"range":0,"rangeFromWeapon":false,"aoe":[0,0],"branch":"hymn","reqLevel":0,"charLevel":0,"isLevelBased":true,"prereq":null,"powerStat":"SPI","classes":[],"reqs":[],"funcs":[["EP_TOHIT_CONST","TARGET",[13,0,13,4],[0,0,0,0]],["EP_AVOIDANCE_CONST","TARGET",[13,0,13,4],[0,0,0,0]]],"damage":null,"weaponUse":null}});
 function songFunctionsMatch(funcs,expected){
  return Array.isArray(funcs)&&funcs.length===expected.length&&
-  expected.every(([ep,dir,values])=>funcs.some(row=>
-   row?.ep===ep&&row?.dir===dir&&
-   Array.isArray(row.fv1)&&row.fv1.length===values.length&&
-   row.fv1.every((value,index)=>value===values[index])));
+  expected.every(([ep,dir,values])=>funcs.some(row=>{
+   // The current D1 changes this CASTER control from STATE_CHANT to
+   // UNABLE_CAST. Neither is used as an ally's numeric magnitude. Accept
+   // only these two individually source-confirmed variants while checking
+   // the complete three-stage song chain and every FV2 value.
+   const epMatches=row?.ep===ep||
+    ep==='EP_STATE_CHANT'&&dir==='CASTER'&&row?.ep==='EP_UNABLE_CAST';
+   const expectedFv2=ep==='EP_SKILL_EXEC_COUNT'?[0,0,0,4]:
+    ep==='EP_TOGGLE'?[0,0,0,5]:[0,0,0,0];
+   return epMatches&&row?.dir===dir&&
+    Array.isArray(row.fv1)&&row.fv1.length===values.length&&
+    row.fv1.every((value,index)=>value===values[index])&&
+    JSON.stringify(row.fv2)===JSON.stringify(expectedFv2);
+  }));
 }
 function songSourceMatches(catalog,spec){
  const root=catalog?.[String(spec.id)],
@@ -3189,9 +3199,19 @@ function songSkillPreview({skillCatalog=null,jobKey=null,level=1,
  const extra=additionalSongSource,source=skillCatalog[String(extra.id)],
   middle=skillCatalog[String(extra.middleId)],
   last=skillCatalog[String(extra.lastId)];
+ // Keep the full historical skill signature as the proof. Only the
+ // exactly documented CASTER-control rename is allowed in the newer D1
+ // root. Do not generalize this to any arbitrary changed effect.
+ const rootSignature=sourceVerifiedSkillSignature(source);
+ if(rootSignature?.funcs?.length===4&&
+    rootSignature.funcs[3]?.[0]==='EP_UNABLE_CAST'&&
+    rootSignature.funcs[3]?.[1]==='CASTER'&&
+    JSON.stringify(rootSignature.funcs[3].slice(2))===
+     JSON.stringify(extra.root.funcs[3].slice(2)))
+  rootSignature.funcs[3]=[extra.root.funcs[3][0],...rootSignature.funcs[3].slice(1)];
  const exact=source?.id===extra.id&&middle?.id===extra.middleId&&
   last?.id===extra.lastId&&
-  JSON.stringify(sourceVerifiedSkillSignature(source))===JSON.stringify(extra.root)&&
+  JSON.stringify(rootSignature)===JSON.stringify(extra.root)&&
   JSON.stringify(sourceVerifiedSkillSignature(middle))===JSON.stringify(extra.middle)&&
   JSON.stringify(sourceVerifiedSkillSignature(last))===JSON.stringify(extra.last);
  const cap=branchCaps?.hymn;
@@ -3221,10 +3241,11 @@ function guildPassiveAtLevel(level=0){
  return Object.freeze({level,guildHp:hp,guildMp:hp,guildLifeRecovery:regen,
   guildManaRecovery:regen,physicalReduction:reduction,magicReduction:reduction,experience:exp});
 }
-// Canonical current OS target effect: EP_SKILL_DELAY_FIN 50 gives the
-// acknowledged 100% -> 50% skill-use/casting-time model. The exact 50
-// is game data, not an unknown generic coefficient. Check BOTH effects
-// and all FV1/FV2 values; do not fabricate unrelated spell durations.
+// The old archived OS Inspiration had CANCEL_IDENTITY + SKILL_DELAY_FIN.
+// The newer D1 source removed CANCEL_IDENTITY but preserves the verified
+// TARGET 50 vector. Both exact source shapes give the same recipient-side
+// 100% -> 50% skill-use/casting-time model. Never assume unrelated
+// server-side duration, stacking or actual cast-speed calculations.
 function alliedInspirationPreview({skillCatalog=null}={}){
  const skill=skillCatalog?.['320006001'];
  const exact=(ep,values)=>{
@@ -3234,9 +3255,13 @@ function alliedInspirationPreview({skillCatalog=null}={}){
    Array.isArray(f[0].fv2)&&f[0].fv2.length===4&&
    f[0].fv2.every(n=>n===0);
  };
+ const oldShape=skill?.funcs?.length===2&&
+  exact('EP_CANCEL_IDENTITY',[0,0,0,0]);
+ const currentShape=skill?.funcs?.length===1;
  if(skill?.id!==320006001||skill.skillType!=='ALLY'||
-  skill.funcs?.length!==2||
-  !exact('EP_CANCEL_IDENTITY',[0,0,0,0])||
+  skill.learnable!==true||skill.prereq!==null||
+  JSON.stringify(skill.reqs)!=='[{"branch":"blessing","amount":54}]'||
+  !(oldShape||currentShape)||
   !exact('EP_SKILL_DELAY_FIN',[0,0,0,50]))return null;
  return {id:320006001,castTimePercent:50,castTimeReductionPercent:50,
   speedMultiplier:2,sourceConfirmed:true};
@@ -4896,8 +4921,16 @@ function specializedSkillPreview({skillCatalog=null,jobKey=null,level=1,
    return linked?.id===entry.id&&
     JSON.stringify(sourceVerifiedSkillSignature(linked))===JSON.stringify(entry.signature);
   });
-  const valid=source?.id===proof.id&&linkedExact&&
-   JSON.stringify(sourceVerifiedSkillSignature(source))===JSON.stringify(proof.root)&&
+  const signature=sourceVerifiedSkillSignature(source);
+  const oldProof=JSON.stringify(signature)===JSON.stringify(proof.root);
+  // Only Psychic Blade's verified 50-level variant changes its action
+  // timer in D1: cast 3.5 -> 2, cooldown 10 -> 12. Preserve all
+  // other fields and linked child/parent signatures as exact gates.
+  const newBlade=proof.id===420005002&&
+   signature?.cast===2&&signature.cooldown===12&&
+   JSON.stringify({...signature,cast:proof.root.cast,cooldown:proof.root.cooldown})===
+    JSON.stringify(proof.root);
+  const valid=source?.id===proof.id&&linkedExact&&(oldProof||newBlade)&&
    (!proof.parentId||(parent?.id===proof.parentId&&
     JSON.stringify(sourceVerifiedSkillSignature(parent))===JSON.stringify(proof.parent)))&&
    (!proof.childId||(child?.id===proof.childId&&
