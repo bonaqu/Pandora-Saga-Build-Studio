@@ -194,7 +194,7 @@ export async function runHonorGuideSmoke(browser,base){
    });
    assert.ok(geometry.menuTop>=geometry.paneTop-2&&
     geometry.menuBottom<=geometry.paneBottom+2,
-    'Four Honor navigation links must stay visible: '+JSON.stringify(geometry));
+    'Five Honor navigation links must stay visible: '+JSON.stringify(geometry));
    return geometry.menuTop;
   };
   await pane.evaluate(el=>el.scrollTo({top:Math.min(850,el.scrollHeight-el.clientHeight),behavior:'instant'}));
@@ -202,7 +202,7 @@ export async function runHonorGuideSmoke(browser,base){
   await pane.evaluate(el=>el.scrollTo({top:Math.min(1400,el.scrollHeight-el.clientHeight),behavior:'instant'}));
   const secondTop=await stickyPosition();
   assert.ok(Math.abs(secondTop-firstTop)<3,'Honor sidebar must follow article scroll');
-  assert.equal(await menu.locator('.wiki-honor-nav-link').count(),4);
+  assert.equal(await menu.locator('.wiki-honor-nav-link').count(),5);
   // Direct scroll/keyboard/wheel and clicking menu use the same active state.
   const autoHighlight=async section=>{
    await pane.evaluate((container,id)=>{
@@ -341,7 +341,7 @@ export async function runHonorGuideSmoke(browser,base){
    document.querySelector('.wiki-page')?.dataset.honorSearchQuery==='',
    null,{timeout:5000});
   await page.waitForFunction(()=>document.querySelectorAll(
-   '.wiki-honor-section:not([hidden])').length===4);
+   '.wiki-honor-section:not([hidden])').length===5);
   assert.match(await panel.locator('#honor-rank-7').innerText(),/Count/);
   assert.doesNotMatch(await panel.locator('.wiki-honor-list-section').first()
    .innerText(),/Покинутые земли Мальдии|Подземные руины Астира/);
