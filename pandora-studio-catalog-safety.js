@@ -234,7 +234,7 @@ function compatibility(before,after){
 }
 
 // Re-run EXISTING calculator models against both source snapshots, before D1.
-// These are legal, unaugmented representative builds (no equipment, no buffs),
+// These are deterministic representative projections (no equipment, no buffs),
 // not game-server damage measurements. A previously displayed numeric result
 // must not silently disappear after updating a skill's source contract.
 function replaySkills(before,after){
@@ -306,7 +306,7 @@ function replaySkills(before,after){
      for(const group of ['offense','defense','movement','utility'])
       for(const row of result[group]){
        if(row?.available===false)continue;
-       write(row.id,'skill-effects',weaponKind,Number(row.amount));
+       write(row.id,'skill-effects',weaponKind,row.amount);
       }
     }
     const healing=calc.healingSpellsPreview({skillCatalog:skills,jobKey:job,level,
@@ -314,12 +314,12 @@ function replaySkills(before,after){
      benevolence:mastery.benevolence||0,int:base.stats.int,spi:base.stats.spi,
      healingPercent:100});
     for(const row of healing?.rows||[])
-     if(row.available)write(row.skillId,'healing','no-equipment',Number(row.amount));
+     if(row.available)write(row.skillId,'healing','no-equipment',row.amount);
     const periodic=calc.periodicRecoveryPreview({skillCatalog:skills,jobKey:job,level,
      benevolenceCap:mastery.benevolence||0,benevolence:mastery.benevolence||0,
      spi:base.stats.spi});
     for(const row of periodic?.rows||[])
-     if(row.available)write(row.id,'periodic-recovery','no-equipment',Number(row.amount));
+     if(row.available)write(row.id,'periodic-recovery','no-equipment',row.amount);
    }
   }
   // Target-side signed resistances have a separate, source-gated inspector.
