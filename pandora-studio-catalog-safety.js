@@ -310,26 +310,31 @@ function replayEquipmentEffects(before,after){
     const next=C.sourceEffects(source,now,grade,after?.itemForth);
     if(same(prior,next))continue;
     scenarios++;
+    // Count effects per EP, not just existence. A second copy of a
+    // supported EP must not disappear merely because the first survived.
+    const modeledCounts=new Map();
     for(const effect of prior){
      if(!modeledEquipmentEffect(source,old,grade,effect))continue;
-     oldModeled++;
-     const sameCode=next.filter(row=>row?.func===effect.func);
-     if(sameCode.some(row=>modeledEquipmentEffect(source,now,grade,row))){
-      retained++;continue;
-     }
-     // A deliberately removed effect is not silently interpreted as another
-     // numeric bonus. The existing compatibility guard marks this as risky.
-     // Block only unsupported substitutions (or an invalid amount on the
-     // still-present EP); a normal decrease to zero is valid numeric data.
+     modeledCounts.set(effect.func,(modeledCounts.get(effect.func)||0)+1);
+    }
+    for(const [ep,count] of modeledCounts){
+     oldModeled+=count;
+     const sameCode=next.filter(row=>row?.func===ep);
+     const kept=sameCode.filter(row=>
+      modeledEquipmentEffect(source,now,grade,row)).length;
+     retained+=Math.min(count,kept);
+     if(kept>=count)continue;
+     // Explicit removal is a reviewable change in the game source, not
+     // a claim that a new unknown code is supported by the calculator.
      const replacement=next.find(row=>!prior.some(prev=>prev?.func===row?.func));
-     if(sameCode.length===0&&!replacement)continue;
-     if(sameCode.length===0&&
-      modeledEquipmentEffect(source,now,grade,replacement))continue;
-     const key=source+':'+effect.func+':'+grade;
+     const unknownReplacement=replacement&&
+      !modeledEquipmentEffect(source,now,grade,replacement);
+     if(kept===sameCode.length&&!unknownReplacement)continue;
+     const key=source+':'+ep+':'+grade;
      if(seen.has(key))continue;
      seen.add(key);
      lost.push({key:source,name:String(now.name||old.name||id).slice(0,90),
-      grade,previous:effect.func,next:replacement?.func||effect.func});
+      grade,previous:ep,next:replacement?.func||ep});
     }
     for(const effect of next)
      if(!prior.some(row=>same(row,effect))&&
