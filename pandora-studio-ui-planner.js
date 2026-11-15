@@ -14,10 +14,11 @@ function equippable(records,slot,job,level,check){
   Boolean(check(item,{slot,job,level})?.allowed));
 }
 // Permit selecting future equipment as a plan, without allowing its bonuses
-// below the real source-level requirement. No items above planning level 55.
+// below its real required level. The owner can extend planning beyond 55.
 function planningEquippable(records,slot,job,currentLevel,check){
- if(!Number.isInteger(currentLevel)||currentLevel<1||currentLevel>55)return [];
- return equippable(records,slot,job,55,check);
+ const max=root.PandoraLevelProgression?.maxLevel()??55;
+ if(!Number.isInteger(currentLevel)||currentLevel<1||currentLevel>max)return [];
+ return equippable(records,slot,job,max,check);
 }
 // Only explicit, source-backed outfit families have race/gender restrictions.
 // Astir outfits use the game's established single-portrait race exceptions.
