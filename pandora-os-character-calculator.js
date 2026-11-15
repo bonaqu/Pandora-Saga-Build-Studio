@@ -4957,7 +4957,11 @@ function rangedAmmoPreview({skillCatalog=null,jobKey=null,level=1,
     ammoCount:ammo[0].fv2[3],mana:source.mana,cooldown:source.cooldown,
     prerequisiteId:proof.parentId??null,linkedEffectId:proof.childId??null,
     linkedEffectIds:proof.linked?proof.linked.map(entry=>entry.id):[proof.childId],
-    noteRu:proof.noteRu,noteEn:proof.noteEn,requirementsMet:ru.length===0,
+    noteRu:proof.id===213701001?
+      'Расход боеприпасов указан отдельно; он не гарантирует столько же попаданий.':proof.noteRu,
+     noteEn:proof.id===213701001?
+      'Ammunition consumption is listed separately; it does not guarantee as many hits.':proof.noteEn,
+     requirementsMet:ru.length===0,
     reasonRu:ru.join(' · '),reasonEn:en.join(' · '),
     sourceOnly:true,finalDamage:null,inventoryChecked:false,appliedToHero:false});
   }
