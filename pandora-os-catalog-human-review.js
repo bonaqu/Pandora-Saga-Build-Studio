@@ -185,7 +185,7 @@ function describeZoneDrops(previous,current,ctx,add,unknown){
     'Базовый шанс попытки: '+numeral(row.base)+'%; '+
     'за каждого следующего активного участника на карте: +'+
     numeral(row.perMember)+' процентного пункта. '+
-    'Учитывается не более 8 участников (расчёт сайта OS).':
+    'Учитывается не более 8 участников (расчётная модель).':
    'Параметры не подтверждены: base='+String(row?.base??'—')+
     ', perMember='+String(row?.perMember??'—')+'.';
   return kind(row)+' · '+monster(row)+' · предметы: '+itemNames(row)+'; '+text;
@@ -309,7 +309,7 @@ function describeZoneDrops(previous,current,ctx,add,unknown){
    removedTotal+=positions.length;
    const title=prefix+' · Уменьшено число попыток добычи · '+kind(row)+' · '+monster(row)+
     ' · '+itemNames(row);
-   add(title+' · Число независимых попыток по модели OS',oldCount,newCount);
+   add(title+' · Число независимых попыток по расчётной модели',oldCount,newCount);
    const source=add(title+' · Содержание удалённых копий',detailed(row),
     'удалено '+positions.length+' из '+oldCount+'; осталось '+newCount+' '+
      plural(newCount,'одинаковое правило','одинаковых правила','одинаковых правил'));
@@ -325,7 +325,7 @@ function describeZoneDrops(previous,current,ctx,add,unknown){
    addedTotal+=positions.length;
    const title=prefix+' · Добавлены попытки добычи · '+kind(row)+' · '+monster(row)+
     ' · '+itemNames(row);
-   add(title+' · Число независимых попыток по модели OS',oldCount,newCount);
+   add(title+' · Число независимых попыток по расчётной модели',oldCount,newCount);
    add(title+' · Содержание добавленных копий','было '+oldCount+' '+plural(oldCount,'одинаковое правило','одинаковых правила','одинаковых правил'),
     'стало '+newCount+': '+detailed(row));
   }
@@ -729,7 +729,7 @@ function describe(change,ctx={}){
     const row=add(label,effect.oldText,effect.newText);
     if(row){
      row.linkedItemId=effect.itemId;row.linkedItemName=effect.itemName;
-     row.note='Модель открытого калькулятора сайта OS: '+effect.oldRolls+' → '+
+     row.note='Расчётная модель: '+effect.oldRolls+' → '+
       effect.newRolls+' независимых попыток. Для общего списка один бросок выбирает один предмет. '+
       'Учитываются активные участники группы на карте (до восьми). '+
       'Это шанс только этого источника, не всех способов добычи; '+
@@ -743,11 +743,11 @@ function describe(change,ctx={}){
    if(impacts.length){
     const down=impacts.filter(effect=>effect.direction==='снизился').length;
     const up=impacts.filter(effect=>effect.direction==='вырос').length;
-    summary+=' По калькулятору сайта OS изменились шансы в '+impacts.length+
+    summary+=' По расчётной модели изменились шансы в '+impacts.length+
      ' '+plural(impacts.length,'случае','случаях','случаях')+
      ' (ниже: '+down+', выше: '+up+'). Точные цифры для соло и группы — ниже.';
     caution='Публикация заменит целиком раздел «Игровые формулы» в D1 Build Studio, '+
-     'а не изменит саму игру. Шансы рассчитаны по открытой модели сайта OS; '+
+     'а не изменит саму игру. Шансы рассчитаны по доступной расчётной модели; '+
      'фактическое поведение игрового сервера отдельно не подтверждено.';
    }
   }

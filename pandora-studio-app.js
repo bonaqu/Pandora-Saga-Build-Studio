@@ -7740,11 +7740,12 @@ async function restoreSharedHash(){
    history.replaceState(history.state,'',location.pathname+location.search);
  }
 }
-function modal(title,content){
+function modal(title,content,{canClose=()=>true}={}){
  const root=$('modalRoot'),origin=document.activeElement;
  root.replaceChildren();root.hidden=false;
  const box=h('div',{class:'modal',role:'dialog','aria-modal':'true','aria-label':title});
  const close=()=>{
+  if(!canClose())return;
   root.hidden=true;root.replaceChildren();
   if(origin?.isConnected&&typeof origin.focus==='function')
    origin.focus({preventScroll:true});

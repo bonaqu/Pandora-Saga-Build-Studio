@@ -660,7 +660,7 @@ export async function runAdminEntrySmoke(browser,base){
   await page.waitForTimeout(330);
   assert.equal(await page.getByRole('tooltip').isVisible(),false,
    'Admin hints must not appear immediately after pointer entry');
-  await page.getByRole('tooltip').filter({hasText:/pandorasaga-os[.]com/}).waitFor({state:'visible',timeout:3500});
+  await page.getByRole('tooltip').filter({hasText:/17 разделов доступных игровых данных/}).waitFor({state:'visible',timeout:3500});
   await page.mouse.move(2,2);
   await page.getByRole('tooltip').waitFor({state:'hidden'});
   await liveSource.hover();
@@ -914,6 +914,43 @@ export async function runAdminEntrySmoke(browser,base){
    'A source reference is searchable by its resolved item name');
   await dialog.locator('.os-sync-search').fill('');
   await dialog.getByRole('button',{name:/Все · 2/}).click();
+  // 0.793: reproduce the actual owner sequence with an isolated source:
+  // Check the current game, Select all, review risks, and cancel publish.
+  assert.equal(await dialog.locator('.os-sync-source-banner').getAttribute('data-source'),'server');
+  const publishButton=dialog.getByRole('button',{name:'Применить выбранные изменения'});
+  const decision=dialog.locator('.os-sync-decision-preview');
+  const bulkConfirm=page.waitForEvent('dialog').then(async selectionDialog=>{
+   assert.match(selectionDialog.message(),/Выбрать все/);
+   await selectionDialog.accept();
+  });
+  await dialog.getByRole('button',{name:'Выбрать все найденные изменения'}).click();
+  await bulkConfirm;
+  await page.waitForFunction(()=>
+    document.querySelector('.os-sync-decision-preview')?.textContent?.includes('Будет обновлено: 2'));
+  assert.match(await decision.innerText(),/Будет обновлено: 2 изменений из 2/);
+  assert.match(await decision.innerText(),/проверки|Связи и скрытые отличия/);
+  assert.equal(await publishButton.isDisabled(),true,
+   'High-risk Select all must require explicit review acknowledgment');
+  const approval=decision.locator('.os-sync-risk-approval input');
+  await approval.check();
+  assert.equal(await publishButton.isEnabled(),true);
+  const publishRequests=[];
+  page.on('request',request=>{
+   if(/\/api\/admin\/catalog\/(?:batch|publish|initialize)/.test(request.url()))
+    publishRequests.push(request.url());
+  });
+  const finalConfirm=page.waitForEvent('dialog').then(async finalDialog=>{
+   assert.match(finalDialog.message(),/Применить выбранные изменения/);
+   await finalDialog.dismiss();
+  });
+  await publishButton.click();
+  await finalConfirm;
+  assert.deepEqual(publishRequests,[],
+   'Rejecting final confirmation cannot write a catalog snapshot');
+  // Changing the selection must invalidate the previous risky approval.
+  await dialog.getByRole('button',{name:'Снять весь выбор'}).click();
+  assert.equal(await approval.isChecked(),false);
+  assert.equal(await publishButton.isDisabled(),true);
   // The exact failure reported by an administrator must NOT suggest a live
   // comparison succeeded. The archived comparison stays explicitly separate.
   // A catalog with a forged source header may not become the admin baseline.
