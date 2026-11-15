@@ -11,8 +11,14 @@
     const atomic=key==='@dataset'&&
       root.PandoraOSCatalogReview?.atomicDatasets?.has(dataset)===true;
     const prefix=dataset+':';
+    // Historical source status keys for classes/skills are singular, while
+    // selectable dataset IDs stay plural. Compare exact record IDs only.
+    const modelPrefix=dataset==='skills'?'skill:':
+      dataset==='classes'?'class:':null;
     const hits=entries.filter(row=>
-      row.key===prefix+key||row.key===dataset||
+      row.key===prefix+key||
+      (modelPrefix&&row.key===modelPrefix+key)||
+      row.key===dataset||
       (dataset==='tables'&&row.key.startsWith('table:'))||
       (atomic&&row.key.startsWith(prefix)));
     if(!hits.length)return null;
