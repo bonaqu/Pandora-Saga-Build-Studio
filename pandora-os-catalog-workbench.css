@@ -432,3 +432,33 @@
  .os-sync-review-actions>.os-sync-action-editor{flex:1 1 180px}
  .os-sync-review-actions .primary{margin-left:0}
 }
+
+/* 0.792 · Catalog review controls: quick search clear, source safety and focus. */
+.os-sync-search-field{grid-template-columns:minmax(0,1fr) auto 26px;align-items:center}
+.os-sync-search-field>.os-sync-secondary-pencil{grid-column:3;margin-top:0}
+.os-sync-search-field:not(:has(>.os-sync-secondary-pencil)){
+ grid-template-columns:minmax(0,1fr) auto}
+.os-sync-search-clear{display:inline-flex;align-items:center;justify-content:center;
+ min-height:38px;padding:6px 10px;background:#302319;color:#e9c99b;
+ border:1px solid #816442;border-radius:7px;cursor:pointer;
+ font:600 12px/1.4 Manrope,Arial,sans-serif}
+.os-sync-search-clear:hover:not(:disabled){background:#49321f;border-color:#d9af71}
+.os-sync-search-clear:disabled{opacity:.43;cursor:default}
+.os-sync-search-clear:focus-visible{outline:2px solid #efc784;outline-offset:2px}
+.os-sync-source-banner[data-source="archive"]{border-left:3px solid #d09962;
+ background:#39281c;color:#f5d3a4}
+.os-sync-source-banner[data-source="server"]{border-left:3px solid #849e78;
+ background:#29291d;color:#dfebc8}
+.os-sync-review-steps{box-shadow:inset 0 1px 0 #e5b66d22}
+.os-sync-review-actions .button-action:focus-visible,
+.os-sync-group-heading:focus-visible,
+.os-sync-advanced>summary:focus-visible,
+.os-sync-archive-choice>summary:focus-visible{
+ outline:2px solid #efc784;outline-offset:2px}
+.modal:has(.os-sync){max-height:94dvh}
+@media(max-width:520px){
+ .os-sync-search-field{grid-template-columns:minmax(0,1fr) auto 26px;gap:4px}
+ .os-sync-search-clear{padding:5px 7px;font-size:11px}
+ .os-sync-review-steps{padding:10px}
+ .os-sync-intro{padding:12px}
+}

@@ -4,9 +4,10 @@
   // Administrator-only review. UI selection is never a D1 write.
   // The Worker validates the auth token and the expected active snapshot.
   async function open({request, apiBase, modal, h, afterPublish,
-    lang='ru',canEdit=false,copyLabel,editLabel}) {
+    lang='ru',canEdit=false,copyLabel,editLabel,canCommit=()=>true}) {
     const tr=(ru,en)=>lang==='en'?en:ru;
     const copy=(key,ru,en)=>copyLabel?.(key,ru,en)||tr(ru,en);
+    const permitMutation=()=>typeof canCommit!=='function'||canCommit();
     // Only fixed author text, never a game ID, API status or comparison value.
     const authored=(tag,attrs,key,ru,en)=>{
       const node=h(tag,{...attrs,text:copy(key,ru,en)});
@@ -334,6 +335,12 @@
        'Найти изменения по названиям игровых объектов. Поиск не меняет выбор и не публикует данные.',
        'Search changes by game-object names. Searching never changes selection or publishes data.');
     searchField.classList.add('os-sync-search-field');
+    const clearSearch=h('button',{type:'button',class:'os-sync-search-clear',
+     text:tr('Очистить','Clear'),disabled:true,
+     'aria-label':tr('Очистить поиск по игровым изменениям','Clear game changes search'),
+     onclick:()=>{search.value='';render();search.focus({preventScroll:true})}});
+    searchField.insertBefore(clearSearch,
+     searchField.querySelector('.os-sync-secondary-pencil'));
     view.append(intro,actions,sourceBanner,summary,status,diagnostic,progress,
       filters,overview,searchField,results);
     for(const element of [filters,overview,searchField,results])element.hidden=true;
@@ -400,6 +407,7 @@
       archive.disabled = value;
       progress.hidden=!value;
       search.disabled = value;
+      clearSearch.disabled=value||!search.value.trim();
       formattingToggle.disabled=value||!formattingCount||mode!=='server';
       russianToggle.disabled=value||!verifiedRussian.length||mode!=='server';
       for(const button of filterButtons.values())button.disabled=value;
@@ -426,6 +434,7 @@
       exportButton.disabled = !ready;
       github.disabled = busy || !githubReady || !publishedSnapshot;
       testWrite.disabled = busy;
+      testCAS.disabled = busy;
       const reviewing=Boolean(baseline);
       reviewSteps.hidden=!reviewing||(!changes.length&&!formattingCount&&!verifiedRussian.length);
       formattingReview.hidden=!reviewing||mode!=='server'||!formattingCount;
@@ -715,6 +724,7 @@
     }
 
     function render() {
+      clearSearch.disabled=busy||!search.value.trim();
       results.replaceChildren();
       const query = search.value.trim().toLocaleLowerCase().replaceAll('ё','е');
       // The review uses the main modal's scrollbar, not a nested list.
@@ -879,6 +889,7 @@
       setBusy(true);
       descriptions.clear();
       sourceBanner.hidden=false;
+      sourceBanner.dataset.source=from;
       if(from==='server')editorialState(sourceBanner,'sourceLiveNotice',
          'Проверяем открытые данные pandorasaga-os.com и опубликованный каталог Build Studio (D1). Это не прямое подключение к игровому серверу.',
          'Comparing public pandorasaga-os.com data with the Build Studio catalog published in D1. This is not a direct connection to the game server.');
@@ -1079,7 +1090,7 @@
     };
 
     publish.onclick=async()=>{
-      if(busy)return;
+      if(busy||!permitMutation())return;
       let publishingSnapshot=null;
       let staged;
       try{staged=prepare()}catch(error){status.textContent='Нельзя публиковать: '+error.message;return}
@@ -1119,6 +1130,7 @@
         uncertainWarning+atomicWarning+impactPreview+otherPreview+
         '\n\nОбновляется ТОЛЬКО сайт Build Studio (D1), не сервер игры. '+
         'Ничего не опубликовано до этого подтверждения.'))return;
+      if(!permitMutation())return;
       setBusy(true);
       try {
         const current=await request('/api/admin/catalog/status',{});
@@ -1197,7 +1209,7 @@
     // A separate, authenticated server operation. No GitHub token or file
     // contents ever pass through the browser.
     testWrite.onclick=async()=>{
-      if(busy)return;
+      if(busy||!permitMutation())return;
       if(!confirm('Проверить, работают ли сохранение и удаление правок? Будут созданы и удалены две временные записи. Игровой каталог и билды не изменяются.'))return;
       setBusy(true);
       try{
@@ -1214,7 +1226,7 @@
       }finally{setBusy(false)}
     };
     testCAS.onclick=async()=>{
-      if(busy)return;
+      if(busy||!permitMutation())return;
       if(!confirm('Проверить конфликты правок? Будут временно записаны и удалены только две случайные тестовые записи D1. Игровые данные и билды не меняются.'))return;
       setBusy(true);
       try{
@@ -1230,7 +1242,7 @@
       }finally{setBusy(false)}
     };
     github.onclick=async()=>{
-      if(busy||!githubReady||!publishedSnapshot)return;
+      if(busy||!githubReady||!publishedSnapshot||!permitMutation())return;
       if(!confirm('Создать отдельный GitHub PR из текущего опубликованного игрового каталога?\n'+
         'Он не объединится с основной веткой автоматически.'))return;
       setBusy(true);

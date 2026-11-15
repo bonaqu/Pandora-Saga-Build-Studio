@@ -469,3 +469,16 @@ body>#ownerDock{
  #ownerDock .owner-dock-action-slot>button:focus-visible,
  #ownerDock .owner-workflow-copy-pencil:focus-visible{outline:2px solid Highlight;outline-offset:2px}
 }
+
+/* 0.792 · Clarify in-flight writes without extra badges or dashboard cards. */
+#ownerDock .owner-dock-save-state[data-state="saving"]{
+ border-color:#b9955f;background:#352618;color:#ffe0ae}
+#ownerDock .owner-dock-save-state[data-state="saved"]{
+ border-color:#688363;background:#222a1e;color:#d4e2c5}
+#ownerDock .owner-dock-count{font-variant-numeric:tabular-nums}
+#ownerDock .owner-dock-group-heading:focus-within{border-color:#af8b60}
+@media(max-width:350px){
+ #ownerDock .owner-dock-head{padding-right:100px}
+ #ownerDock .owner-dock-footer-note{font-size:10px}
+ #ownerDock .owner-dock-action-slot>button:not(.owner-dock-action-pencil){font-size:11px}
+}

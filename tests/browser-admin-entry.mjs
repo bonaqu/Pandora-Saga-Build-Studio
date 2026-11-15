@@ -812,6 +812,17 @@ export async function runAdminEntrySmoke(browser,base){
    'After D1 edit, the authored archive message must remain visible');
   assert.match(await dialog.locator('.os-sync-overview').innerText(),/Предметы · 1/);
   const searchBlock=dialog.locator('.os-sync-search-field');
+  assert.equal(await dialog.locator('.os-sync-source-banner').getAttribute('data-source'),'archive',
+   'Archive comparisons must remain visually distinguishable from live data');
+  const catalogClear=searchBlock.locator('.os-sync-search-clear');
+  assert.equal(await catalogClear.isDisabled(),true);
+  await dialog.locator('.os-sync-search').fill('no-matching-catalog-entry-792');
+  assert.equal(await catalogClear.isEnabled(),true);
+  assert.equal(await dialog.locator('.os-sync-record').count(),0);
+  await catalogClear.click();
+  assert.equal(await dialog.locator('.os-sync-search').inputValue(),'');
+  assert.equal(await dialog.locator('.os-sync-record').count(),1,
+   'Clearing catalog search must restore the review without changing selection');
   assert.equal(await searchBlock.locator('.os-sync-secondary-pencil').count(),1);
   await searchBlock.locator('.os-sync-secondary-pencil').click();
   const searchHelp=searchBlock.locator('.os-sync-secondary-host [contenteditable]');
@@ -1260,6 +1271,22 @@ export async function runAdminEntrySmoke(browser,base){
   await historyButton.click();
   const history=page.getByRole('dialog',{name:'Все ручные правки'});
   await history.waitFor({state:'visible'});
+  const sections=history.locator('.owner-manager-section');
+  const sessionFilter=history.locator('.owner-manager-session input');
+  assert.ok(await sections.locator('option').count()>=1,
+   'History needs a native section filter, even with an empty archive');
+  assert.equal(await sessionFilter.isChecked(),false);
+  const allHistory=await history.locator('.owner-review-row').count();
+  await sessionFilter.check();
+  assert.ok(await history.locator('.owner-review-row').count()<=allHistory,
+   'Session filter cannot add unrelated D1 edits');
+  await sessionFilter.uncheck();
+  if(await sections.locator('option').count()>1){
+   await sections.selectOption({index:1});
+   assert.ok(await history.locator('.owner-review-row').count()<=allHistory);
+   await sections.selectOption('');
+  }
+  assert.match(await history.locator('.owner-manager-summary').innerText(),/Показано/);
   const intro=history.locator('[data-owner-copy-section="owner-history"][data-owner-copy-id="intro"]');
   await intro.waitFor({state:'visible'});
   const introWrap=intro.locator('xpath=..');
