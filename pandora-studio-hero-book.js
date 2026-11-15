@@ -327,7 +327,10 @@ function make(tag,attrs={},children=[]){
 
  }
  for(const child of children)n.append(typeof child==='string'?document.createTextNode(bookText(child)):child);
- if(tag==='input'&&attrs.type==='number')root.PandoraNumericField?.prepare(n);
+ if(tag==='input'){
+  if(attrs.type==='number')root.PandoraNumericField?.prepare(n);
+  if(attrs.type==='search')root.PandoraSearchField?.prepare(n);
+ }
  return n;
 }
 
