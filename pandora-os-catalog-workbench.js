@@ -1239,7 +1239,7 @@
             ' GitHub backup is not configured: the fallback has not been verified.');
           return;
         }
-        if(integration.connected===false||integration.writeAccess===false){
+        if(integration.connected!==true||integration.writeAccess!==true){
           status.textContent+=tr(
             ' GitHub не подтвердил подключение и право записи. Резервный PR не создан.',
             ' GitHub connection or write access was not verified. No fallback PR was created.');
@@ -1263,8 +1263,8 @@
             ' GitHub fallback already matches D1.');
         }else if(/^https:\/\/github\.com\/bonaqu\/Pandora-Saga-Build-Studio\/pull\/\d+$/.test(result.url||'')){
           status.append(document.createTextNode(tr(
-            ' Подготовлен резервный PR (нужны CI и принятие): ',
-            ' Fallback PR prepared (CI and merge required): ')),
+            ' Резервный PR создан; Node и Chromium запускаются автоматически, затем PR будет объединён при успехе: ',
+            ' Backup PR created; Node and Chromium run automatically, followed by merge if successful: ')),
             h('a',{href:result.url,target:'_blank',rel:'noopener noreferrer',
               text:'PR #'+result.number}));
         }else throw Error('Некорректный ответ GitHub');
@@ -1386,6 +1386,32 @@
       if(closeButton)closeButton.disabled=true;
       setBusy(true);
       try {
+        // Fail BEFORE any D1 catalog write if the owner requested fully
+        // automatic GitHub fallback but the real credential is unusable.
+        // Merely having a named Cloudflare Secret is not proof of write scope.
+        status.textContent=tr(
+          'Проверяю доступ GitHub для автоматической резервной копии…',
+          'Checking GitHub access for automatic backup…');
+        let gitReady;
+        try{gitReady=await request('/api/admin/catalog/github-status',null)}
+        catch(error){
+          const failure=new Error(tr(
+            'Не удалось проверить подключение GitHub. Игровой каталог не изменён. '+String(error.message||error),
+            'GitHub connection could not be verified. Game catalog was not changed. '+String(error.message||error)));
+          failure.preflight=true;throw failure;
+        }
+        if(gitReady?.configured!==true||gitReady?.connected!==true||
+           gitReady?.writeAccess!==true){
+          const reason=gitReady?.configured!==true?
+           tr('GitHub-токен не настроен.','GitHub token is not configured.'):
+           gitReady?.connected!==true?
+           tr('GitHub не подтвердил подключение.','GitHub connection was not verified.'):
+           tr('GitHub не подтвердил право записи.','GitHub write access was not verified.');
+          const failure=new Error(reason+tr(
+            ' Публикация остановлена до записи в D1. Проверь интеграцию, затем повтори применение.',
+            ' Publication was stopped before any D1 write. Check integration, then retry.'));
+          failure.preflight=true;throw failure;
+        }
         const current=await request('/api/admin/catalog/status',{});
         if (current.active!==activeSnapshot) throw Error('D1 обновлена после проверки. Сверь данные заново.');
         await request('/api/admin/catalog/initialize',{});
@@ -1427,6 +1453,10 @@
         refreshActions();
         await finalizePublication(result.active,staged.combined,{superseded});
       }catch(error){
+        if(error?.preflight){
+          status.textContent=error.message;
+          return;
+        }
         // A lost publish response is ambiguous: inspect D1 before any retry.
         if(publishingSnapshot){
           try{
@@ -1516,7 +1546,7 @@
       request('/api/admin/catalog/github-status',null),
       request('/api/admin/catalog/status',{})
     ]).then(([settings,current])=>{
-      githubReady=settings.configured===true&&settings.connected!==false&&settings.writeAccess!==false;
+      githubReady=settings.configured===true&&settings.connected===true&&settings.writeAccess===true;
       publishedSnapshot=current.active||null;
       github.setAttribute('aria-label',githubReady
         ? 'Создать PR в GitHub из опубликованного каталога'
