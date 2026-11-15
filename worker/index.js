@@ -70,7 +70,7 @@ function validPlannerProgression(raw){
  for(const field of ['attributes','skills']){
   const list=data[field];
   if(!Array.isArray(list)||list.length!==data.maxLevel+1||
-   list[0]!==0||list[1]!==0||
+   list[0]!==0||
    !list.every(v=>Number.isSafeInteger(v)&&v>=0&&v<=500)||
    list.reduce((sum,v)=>sum+v,0)>30000)return false;
  }
