@@ -4207,12 +4207,16 @@ function craftingSkillPreview({skillCatalog=null,jobKey=null,level=1,
    ep:'EP_CONSUME_ITEM',id,dir,qty})),{
    ep:'EP_ADDITION_ITEM',id:recipe.out[0],dir:recipe.out[1],qty:recipe.out[2]}];
   const equal=(f,x)=>f?.ep===x.ep&&f.dir===x.dir&&
+   Object.keys(f).sort().join('|')==='dir|ep|fv1|fv2'&&
    Array.isArray(f.fv1)&&f.fv1.length===4&&
    f.fv1.every((n,i)=>n===(i===3?x.id:0))&&
    Array.isArray(f.fv2)&&f.fv2.length===4&&
-   f.fv2.every((n,i)=>n===(i===3?x.qty:0));
-  // All source IDs, directions, quantities and the number of effects
-  // must match. A mutated/extended recipe must not show a partial result.
+   f.fv2.every((n,i)=>i===3?
+    Number.isSafeInteger(n)&&n>0:n===0);
+  // Only the signed quantity FV2[3] is data-driven. EP, direction,
+  // ingredient/product ID, remaining FV lanes, skill requirements and
+  // effect order stay strict. A new effect or unknown field is NOT a
+  // known recipe; no server crafting-success probability is inferred.
   if(skill.funcs.length!==rows.length||!rows.every((x,i)=>equal(skill.funcs[i],x))){
    out.rejected.push(recipe.id);continue;
   }
@@ -4220,8 +4224,9 @@ function craftingSkillPreview({skillCatalog=null,jobKey=null,level=1,
   const legal=Number.isSafeInteger(rank)&&rank>=0&&rank<=cap;
   const ready=legal&&rank>=recipe.rank;
   out.rows.push({id:skill.id,name:skill.name,
-   uses:recipe.uses.map(([id,,quantity])=>({id,quantity})),
-   produces:{id:recipe.out[0],quantity:recipe.out[2]},
+   uses:recipe.uses.map(([id],i)=>({
+    id,quantity:skill.funcs[i].fv2[3]})),
+   produces:{id:recipe.out[0],quantity:skill.funcs[rows.length-1].fv2[3]},
    requirementsMet:ready,ingredientsChecked:false,
    reasonRu:ready?'':legal?'Нужно мастерство «'+
     (branchLabels?.[recipe.branch]||recipe.branch)+'»: '+recipe.rank:
