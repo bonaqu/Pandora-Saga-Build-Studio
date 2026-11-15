@@ -15,6 +15,8 @@ export async function runAdminEntrySmoke(browser,base){
    'access-control-allow-headers':'Content-Type,Authorization',
    'access-control-allow-methods':'GET,POST,OPTIONS'};
   if(method==='OPTIONS')return route.fulfill({status:204,headers});
+  if(path==='/api/runtime-capabilities'&&method==='GET')
+   return route.fulfill({status:200,headers,contentType:'application/json',body:JSON.stringify({ownerProgressionD1:true})});
   const json=(value,status=200)=>route.fulfill({
    status,headers,contentType:'application/json',body:JSON.stringify(value)});
   if(path==='/api/admin/catalog/test-write'&&method==='POST'){
