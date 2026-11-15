@@ -64,7 +64,8 @@ test('source-only song stage without class access still protects priest song pro
  });
  const updated=C.priestCastPreviews({...caster,skills:next.skills});
  assert.equal(updated.sageCooldownDelta,null);
- assert.ok(Number.isFinite(updated.sage),'unrelated song coefficient is retained');
+ assert.equal(updated.sage,null,
+  'the exact signed song chain becomes unproven when either effect changes');
  const result=S.replaySkills(before,next);
  assert.equal(result.ok,false,'missing recipient cooldown model blocks precommit');
  assert.ok(result.samples.some(x=>x.id===String(id)&&
