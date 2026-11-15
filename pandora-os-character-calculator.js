@@ -1301,6 +1301,54 @@ function movementSkillSourcePreview({skillCatalog=null,jobKey=null,level=1,
  return result;
 }
 
+// Explicit, deliberately small source contracts whose CURRENT coefficient
+// preview is fully driven by FV1, not by baked-in numeric literals.
+// The contract does NOT prove server damage, timing, mitigation or proc rules.
+// Other Skill Effects and Remaked buff IDs retain strict exact-vector gates.
+const dynamicSkillContracts=Object.freeze({
+  330002001:Object.freeze({ep:'EP_ABSOLUTE_MAGIC',
+   fv1:Object.freeze([20,0,20,10]),fv2:Object.freeze([0,0,0,0]),
+   branch:'exorcism',additional:Object.freeze([])}),
+  420002001:Object.freeze({ep:'EP_MANA_SHIELD',
+   fv1:Object.freeze([0,0,10,10]),fv2:Object.freeze([0,0,0,15]),
+   branch:'embody',additional:Object.freeze([
+    Object.freeze({ep:'EP_TOGGLE',dir:'TARGET',
+     fv1:Object.freeze([0,0,0,0]),fv2:Object.freeze([0,0,0,0])})
+   ])}),
+  420002002:Object.freeze({ep:'EP_MANA_SHIELD',
+   fv1:Object.freeze([0,0,20,10]),fv2:Object.freeze([0,0,0,15]),
+   branch:'embody',additional:Object.freeze([
+    Object.freeze({ep:'EP_TOGGLE',dir:'TARGET',
+     fv1:Object.freeze([0,0,0,0]),fv2:Object.freeze([0,0,0,0])})
+   ])}),
+  420004001:Object.freeze({ep:'EP_CASTINGCANCEL_RESISTANCE_CONST',
+   fv1:Object.freeze([10,0,10,1]),fv2:Object.freeze([0,0,0,15]),
+   branch:'embody',additional:Object.freeze([])})
+});
+function dynamicSkillSourceMatches(record,ep,baseline){
+ const contract=dynamicSkillContracts[String(record?.id)];
+ if(!contract||contract.ep!==ep||
+  JSON.stringify(baseline)!==JSON.stringify(contract.fv1)||
+  !Array.isArray(record?.funcs)||
+  record.funcs.length!==contract.additional.length+1)return false;
+ const row=record.funcs[0],fv=row?.fv1;
+ if(row?.ep!==ep||row.dir!=='TARGET'||
+  Object.keys(row).sort().join(',')!=='dir,ep,fv1,fv2'||
+  !Array.isArray(fv)||fv.length!==4||
+  !fv.every(Number.isSafeInteger)||fv[0]<0||fv[2]<0||
+  fv[1]!==contract.fv1[1]||
+  contract.fv1[0]===0&&fv[0]!==0||
+  contract.fv1[2]===0&&fv[2]!==0||
+  JSON.stringify(row.fv2)!==JSON.stringify(contract.fv2))return false;
+ return contract.additional.every((reference,index)=>{
+  const actual=record.funcs[index+1];
+  return actual&&Object.keys(actual).sort().join(',')==='dir,ep,fv1,fv2'&&
+   actual.ep===reference.ep&&actual.dir===reference.dir&&
+   JSON.stringify(actual.fv1)===JSON.stringify(reference.fv1)&&
+   JSON.stringify(actual.fv2)===JSON.stringify(reference.fv2);
+ });
+}
+
 function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  branchMasteries={},branchCaps={},branchLabels={},englishBranches={},
  stats={},combat=null,weaponKind='BARE_HAND',hasShield=false}={}){
@@ -1373,7 +1421,8 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
    predecessor?.classes?.[jobKey]===1;
   if(!record||Number(record.id)!==id||record.learnable!==true||
    !sourceChainValid||!Array.isArray(record.reqs)||
-   !Array.isArray(record.funcs)||!required.every(([ep,coeff])=>exact(record,ep,coeff))||
+   !Array.isArray(record.funcs)||!required.every(([ep,coeff])=>
+    exact(record,ep,coeff)||dynamicSkillSourceMatches(record,ep,coeff))||
    seen.has(id))return;
   const recipient=options.recipient===true;
   if(!recipient&&!record.classes?.[jobKey])return;
@@ -5125,6 +5174,6 @@ function supportEffectPreview({skillCatalog=null,jobKey=null,level=1,
  }
 root.PandoraOSCalculator=Object.freeze({alliedFreeWindPreview,alliedHpPulsePreview,alliedRecipientPreviews,alliedNaturalRecoveryPreview,alliedInspirationPreview,alliedPeaceSongPreview,skillExecutionChains,craftingSkillPreview,trapSkillCostPreview,tacticalSkillPreview,rangedAmmoPreview,combatTechniquePreview,specializedSkillPreview,supportEffectPreview,situationalSkillPreview,statusApplicationPreview,enemyDebuffPreview,complexSkillSourcePreview,priestCastPreviews,movementSkillSourcePreview,utilitySkillSourcePreview,scalingSkillPreview,directStrikeCoefficientPreview,elementalSpellCoefficientPreview,defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
  base,characterSheetPhysicalAttackRange,classBase,classBaseComponents,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,racialWeaponPreview,incredibleStrengthPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
- recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,healingActionPreview,periodicRecoveryPreview,consumableRecoveryPreview,consumableSkillPreview,statusCurePreview,harmfulConsumablePreview,gemstonePreview,legacyBuffPreview,songSkillPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,skillAttackRangePreview,racialUtilityPreview,elementalMagicPreview,elementalRefinementPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive
+ recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,healingActionPreview,periodicRecoveryPreview,consumableRecoveryPreview,consumableSkillPreview,statusCurePreview,harmfulConsumablePreview,gemstonePreview,legacyBuffPreview,songSkillPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,skillAttackRangePreview,racialUtilityPreview,elementalMagicPreview,elementalRefinementPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive,dynamicSkillContracts,dynamicSkillSourceMatches
 });
 })(typeof window==='undefined'?globalThis:window);

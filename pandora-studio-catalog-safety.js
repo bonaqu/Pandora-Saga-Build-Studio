@@ -403,6 +403,64 @@ function verifiedForthAmountChanges(id,oldForth,newForth,before,after){
  return true;
 }
 
+
+// An explicitly registered coefficient preview can read a revised FV1 number
+// with no code change. Before saying "model supported", prove that BOTH
+// source shapes match the calculator's exact declared contract and that its
+// actual old/new preview changes on an eligible class + mastery combination.
+// Other skills still need review even when their FV arrays look similar.
+function verifiedDynamicSkillFV(id,old,now,before,after){
+ const C=root.PandoraOSCalculator,contract=C?.dynamicSkillContracts?.[id];
+ if(!contract||!old||!now||old.id!==now.id||String(old.id)!==String(id)||
+  !C?.dynamicSkillSourceMatches||!C?.scalingSkillPreview||
+  !C.dynamicSkillSourceMatches(old,contract.ep,contract.fv1)||
+  !C.dynamicSkillSourceMatches(now,contract.ep,contract.fv1))return false;
+ const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+ const fields=new Set([...Object.keys(old),...Object.keys(now)]);
+ if([...fields].some(key=>!['funcs','name','nameEn','desc','descEn'].includes(key)&&
+  !same(old[key],now[key])))return false;
+ const prev=old.funcs[0],next=now.funcs[0];
+ if(same(prev.fv1,next.fv1)||
+  [...new Set([...Object.keys(prev),...Object.keys(next)])]
+   .some(key=>key!=='fv1'&&!same(prev[key],next[key]))||
+  old.funcs.length!==now.funcs.length||
+  old.funcs.slice(1).some((record,i)=>!same(record,now.funcs[i+1])))
+  return false;
+ // Only the stat, mastery and constant lanes already consumed by this
+ // specific coefficient model can move. The reserved FV1[1] stays zero.
+ if(prev.fv1[1]!==next.fv1[1]||
+  contract.fv1[0]===0&&prev.fv1[0]!==next.fv1[0]||
+  contract.fv1[2]===0&&prev.fv1[2]!==next.fv1[2])return false;
+ const stats={vit:80,str:100,agi:100,dex:90,spi:100,int:100};
+ const combat={attack:{walkingBase:200},defense:{directRaw:100},
+  accuracy:{base:140},dodge:{base:120}};
+ const get=(catalog,job,level,caps,masteries)=>{
+  const model=C.scalingSkillPreview({skillCatalog:catalog,jobKey:job,level,
+   branchCaps:caps,branchMasteries:masteries,stats,combat,
+   weaponKind:'BARE_HAND',hasShield:true});
+  const row=[...(model.offense||[]),...(model.defense||[]),
+   ...(model.movement||[]),...(model.utility||[])].find(x=>String(x.id)===id);
+  return row?.coefficientModels?.some(x=>x.ep===contract.ep&&
+   Number.isFinite(x.amount))&&Number.isFinite(row?.amount)?row.amount:null;
+ };
+ const classes=before?.classes||{};
+ for(const [job,klass] of Object.entries(classes)){
+  if(!old.classes?.[job]||!now.classes?.[job]||
+   !after?.classes?.[job])continue;
+  const caps=klass?.branchCaps;
+  if(!validObject(caps)||!Number.isSafeInteger(caps[contract.branch])||
+   caps[contract.branch]<=0)continue;
+  const masters=Object.fromEntries(Object.entries(caps).map(([key,value])=>
+   [key,Number.isSafeInteger(value)&&value>=0?value:0]));
+  for(const level of [45,55]){
+   const a=get(before.skills,job,level,caps,masters);
+   const b=get(after.skills,job,level,after.classes[job]?.branchCaps,masters);
+   if(Number.isFinite(a)&&Number.isFinite(b)&&a!==b)return true;
+  }
+ }
+ return false;
+}
+
 // Before publication classify *changes*, not just JSON schema validity.
 // A matching source shape does not prove that the calculator interprets a
 // newly introduced gameplay effect. Lists are intentionally bounded for UI.
@@ -461,8 +519,13 @@ function compatibility(before,after){
     const old=oldData?.[id],now=newData?.[id];
     if(same(old,now))continue;
     const name=String(now?.name||old?.name||id).slice(0,90);
-    if(!old||!now||!same(old.funcs,now.funcs)){
-     add('needsReview','skill:'+id,name+' · изменены игровые эффекты');
+    if(!old||!now){
+     add('needsReview','skill:'+id,name+' · добавлен или удалён навык');
+    }else if(!same(old.funcs,now.funcs)){
+     const dynamic=verifiedDynamicSkillFV(id,old,now,before,after);
+     add(dynamic?'verified':'needsReview','skill:'+id,
+      name+(dynamic?' · проверено изменение FV действующей формулой':
+       ' · изменены игровые эффекты'));
     }else if(!same(old.damage,now.damage)||!same(old.weaponUse,now.weaponUse)||
       // A prerequisite chain or the stat driving the effect can change
       // the actual result without changing funcs/FV vectors.
@@ -600,7 +663,9 @@ function replaySkills(before,after){
      }
      for(const group of ['offense','defense','movement','utility'])
       for(const row of result[group]){
-       if(row?.available===false)continue;
+       // Numerical previews may be shown even when the current hero cannot
+       // cast the skill. Availability is not proof that the formula is absent.
+       // Keep protecting those displayed numbers during catalog updates.
        write(row.id,'skill-effects',weaponKind,row.amount);
       }
     }
