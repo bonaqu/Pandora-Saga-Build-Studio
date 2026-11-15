@@ -127,7 +127,7 @@ const pvpVictories=Object.freeze({
  weekly:Object.freeze([
   Object.freeze({rewardRu:'50 000 золота',rewardEn:'50,000 gold',
    costRu:'50 боевых жетонов',costEn:'50 combat tokens',limit:35}),
-  Object.freeze({rewardRu:'Шкатулка древнего короля ×1',rewardEn:'Ancient King's Chest ×1',
+  Object.freeze({rewardRu:'Шкатулка древнего короля ×1',rewardEn:"Ancient King's Chest ×1",
    costRu:'100 жетонов и 1 000 чести',costEn:'100 tokens and 1,000 Honor',limit:7}),
   Object.freeze({rewardRu:'Золотой молот ×1',rewardEn:'Golden Hammer ×1',
    costRu:'100 боевых жетонов',costEn:'100 combat tokens',limit:3})

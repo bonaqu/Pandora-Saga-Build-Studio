@@ -230,7 +230,10 @@ function effectiveSkillCatalog(skills,api){
   const base=index.get(String(advanced.prereq));
   if(!base||Number(base.charLevel)>=50||base.branch!==advanced.branch||
      typeof base.name!=='string'||base.name!==advanced.name||
-     !allowedForJob(base,api.job)||!allowedForJob(advanced,api.job))continue;
+     !allowedForJob(base,api.job))continue;
+  if(!allowedForJob(advanced,api.job)){
+   hidden.add(String(advanced.id));continue;
+  }
   upgrades.set(String(base.id),advanced);
   if(readiness(advanced,api,new Set(),index).learned){
    hidden.add(String(base.id));aliases.set(String(base.id),String(advanced.id));
