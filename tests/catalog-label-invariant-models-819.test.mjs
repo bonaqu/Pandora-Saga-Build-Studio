@@ -43,12 +43,12 @@ test('Purify ally coefficients survive independent translations of root and inne
  };
  const old=baseline.defense.find(x=>x.id===310014001);
  assert.ok(old);
- assert.deepEqual(old.coefficientModels.map(x=>x.amount),[100,100]);
+ assert.deepEqual(JSON.parse(JSON.stringify(old.coefficientModels.map(x=>x.amount))),[100,100]);
  for(const catalog of [renamed(310014001),renamed(310014002),
   renamed(310014001,310014002)]){
   const updated=find(catalog.skills);
   assert.ok(updated,'localized labels must not erase the signed Purify chain');
-  assert.deepEqual(updated.coefficientModels.map(x=>x.amount),[100,100]);
+  assert.deepEqual(JSON.parse(JSON.stringify(updated.coefficientModels.map(x=>x.amount))),[100,100]);
   assert.equal(S.replaySkills(before,catalog).changedSkills,0);
  }
 });
@@ -66,10 +66,10 @@ test('conditional on-hit links remain source-driven after root/child rename',()=
  const view=skills=>C.skillExecutionChains({
   ...args('CALAMITY',skills),onHit:true
  }).rows.find(x=>x.id===430057001);
- assert.deepEqual(view(before.skills).paths,[[430057001,430057002]]);
+ assert.deepEqual(JSON.parse(JSON.stringify(view(before.skills).paths)),[[430057001,430057002]]);
  for(const catalog of [renamed(430057001),renamed(430057002),
   renamed(430057001,430057002)])
-  assert.deepEqual(view(catalog.skills).paths,[[430057001,430057002]]);
+  assert.deepEqual(JSON.parse(JSON.stringify(view(catalog.skills).paths)),[[430057001,430057002]]);
 });
 test('source-verified nested Sandstorm chain does not use text equality',()=>{
  const id=420007101,child=420007102;
