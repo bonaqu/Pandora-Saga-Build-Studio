@@ -1618,12 +1618,24 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  const windTrailParameter=coefficientModel(windTrailId,
   'EP_CASTINGCANCEL_RESISTANCE_CONST','spi','embody',
   'Сопротивление прерыванию','Cast interruption resistance');
+ const windSource=skill(windTrailId);
+ // The new D1 variant (Conjurer level 50+) adds a separate,
+ // SPI-derived EP_ALL_RESISTANCE_CONST vector. Require the exact
+ // two-effect source and cast/cooldown values. Keep it as a read-only
+ // coefficient, never a passive resistance or permanent hero stat.
+ const windAdditional=conjurerUpgrade&&windSource?.id===420004002&&
+  windSource.skillType==='MYSELF'&&windSource.cast===1&&
+  windSource.cooldown===1.5&&windSource.funcs?.length===2&&
+  exact(windSource,'EP_CASTINGCANCEL_RESISTANCE_CONST',[15,0,15,1])&&
+  exact(windSource,'EP_ALL_RESISTANCE_CONST',[11,0,0,1])?
+  coefficientModel(windTrailId,'EP_ALL_RESISTANCE_CONST','spi',null,
+   'Сопротивление всем стихиям','All-element resistance'):null;
  add(windTrailId,'defense',[
   ['EP_CASTINGCANCEL_RESISTANCE_CONST',
    conjurerUpgrade?[15,0,15,1]:[10,0,10,1]]
  ],()=>windTrailParameter?.amount??null,{branch:'embody',modelOnly:true,
   predecessor:conjurerUpgrade?420004001:null,
-  unit:'',models:[windTrailParameter],
+  unit:'',models:[windTrailParameter,windAdditional],
   detailRu:'СД и мастерство Воплощения',
   detailEn:'SPI and Embodiment mastery'});
  add(320011001,'offense',[
