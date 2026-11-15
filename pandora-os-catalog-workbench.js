@@ -3,7 +3,7 @@
 
   // Administrator-only review. UI selection is never a D1 write.
   // The Worker validates the auth token and the expected active snapshot.
-  async function open({request, apiBase, modal, h, afterPublish,
+  async function open({request, apiBase, modal, h, afterPublish, getHero=()=>null,
     lang='ru',canEdit=false,copyLabel,editLabel,canCommit=()=>true}) {
     const tr=(ru,en)=>lang==='en'?en:ru;
     const copy=(key,ru,en)=>copyLabel?.(key,ru,en)||tr(ru,en);
@@ -134,7 +134,9 @@
     const difference = root.PandoraCatalogDiff;
     const review = root.PandoraOSCatalogReview;
     const human = root.PandoraCatalogHumanReview;
-    if (!importer || !difference || !review || !human) throw Error('Catalog review modules are missing');
+    const safety = root.PandoraCatalogSafety;
+    if (!importer || !difference || !review || !human || !safety)
+      throw Error('Catalog review modules are missing');
 
     const view = h('div', {class:'os-sync'});
     const intro = h('div',{class:'os-sync-intro'},[
@@ -220,13 +222,22 @@
     const decisionHeading=h('strong',{text:tr('Перед применением','Before publishing')});
     const decisionSummary=h('p',{class:'os-sync-decision-summary'});
     const decisionWarnings=h('p',{class:'os-sync-decision-warnings'});
+    const formulaPreview=h('div',{class:'os-sync-formula-preview',hidden:true});
+    const formulaTitle=h('strong',{text:tr(
+      'Как обновление повлияет на персонажа','How this update affects a character')});
+    const formulaStatus=h('p',{class:'os-sync-formula-status'});
+    const formulaRows=h('div',{class:'os-sync-formula-rows'});
+    const formulaNote=h('small',{class:'os-sync-formula-note',text:tr(
+      'Сравниваются реальные модели очков, стартовых характеристик и базовых ОЗ/ОМ без снаряжения и усилений. Урон, эффекты предметов и навыков этим предварительным расчётом не проверяются.',
+      'The actual points, base attributes and base HP/MP models are compared without gear or buffs. This preview does not verify damage, item effects or skill effects.')});
+    formulaPreview.append(formulaTitle,formulaStatus,formulaRows,formulaNote);
     const riskApproval=h('input',{type:'checkbox',disabled:true});
     const riskApprovalLabel=h('label',{class:'os-sync-risk-approval',hidden:true},[
      riskApproval,h('span',{text:tr(
       'Я проверил спорные изменения и понимаю, что обновится каталог Build Studio.',
       'I reviewed the flagged changes and understand that the Build Studio catalog will change.')})
     ]);
-    decisionPreview.append(decisionHeading,decisionSummary,decisionWarnings,riskApprovalLabel);
+    decisionPreview.append(decisionHeading,decisionSummary,decisionWarnings,formulaPreview,riskApprovalLabel);
     const reviewSteps=h('section',{class:'os-sync-review-steps'});
     reviewSteps.hidden=true;
     reviewSteps.append(
@@ -359,7 +370,7 @@
 
     let baseline = null, upstream = null, legacy = null, legacyRows = null, mode = null;
     let activeSnapshot = null, changes = [], chosen = new Set(), busy = false;
-    let publishing=false,riskApprovalFingerprint='';
+    let publishing=false,riskApprovalFingerprint='',impactCache=null;
     let formattingCount=0,verifiedRussian=[],localInstances=null;
     let expanded = new Set(), full = new Set(), expandedDetails=new Set(),
         expandedReferences=new Set(), filterKind='all';
@@ -375,6 +386,27 @@
     const selectedFingerprint=()=>JSON.stringify([
      mode,activeSnapshot,[...chosen].sort(),formattingToggle.checked,russianToggle.checked
     ]);
+    // Compare the exact selective merge, not the entire upstream snapshot.
+    function selectedImpact(){
+      const hero=typeof getHero==='function'?getHero():null;
+      const fingerprint=JSON.stringify([selectedFingerprint(),hero]);
+      if(impactCache?.fingerprint===fingerprint)return impactCache.result;
+      let result;
+      try{
+        const selected=review.compose(baseline,upstream,chosen,importer.files,{
+          syncFormatting:mode==='server'&&formattingToggle.checked&&formattingCount>0,
+          syncRussianInstances:mode==='server'&&russianToggle.checked&&verifiedRussian.length>0,
+          localInstances
+        });
+        result={validation:safety.check(selected),
+          comparison:safety.compare(baseline,selected,hero)};
+      }catch(error){
+        result={validation:{ok:false,issues:[String(error.message||error)]},
+          comparison:null};
+      }
+      impactCache={fingerprint,result};
+      return result;
+    }
     riskApproval.addEventListener('change',()=>{
      riskApprovalFingerprint=riskApproval.checked?selectedFingerprint():'';
      refreshActions();
@@ -491,7 +523,49 @@
         'No flagged changes in the selection.');
       riskApprovalLabel.hidden=!risky;
       riskApproval.disabled=busy||!ready;
-      publish.disabled=!ready||!acknowledged;
+      const preview=ready?selectedImpact():null;
+      formulaPreview.hidden=!ready;
+      formulaRows.replaceChildren();
+      if(preview){
+        const validation=preview.validation;
+        if(!validation.ok){
+          formulaStatus.textContent=tr('Публикация остановлена: ',
+           'Publication blocked: ')+validation.issues.join(' · ');
+          formulaPreview.classList.add('os-sync-formula-error');
+        }else{
+          formulaPreview.classList.remove('os-sync-formula-error');
+          formulaStatus.textContent=tr(
+           'Проверено: предел планировщика 55 · на 55-м уровне ',
+           'Verified: planner level 55 · at level 55 ')+
+           validation.attributesAt55+' / '+validation.skillsAt55+
+           tr(' очков характеристик / умений. Игровое ограничение ',
+            ' attribute / skill points. Game cap ')+
+           String(validation.levelCap??tr('не указано','not stated'))+
+           tr(' на максимум планировщика не влияет.',
+            ' does not limit the planner.');
+          const comparison=preview.comparison;
+          if(comparison?.warning)
+            formulaRows.append(h('p',{class:'os-sync-formula-warning',
+             text:comparison.warning}));
+          else if(comparison?.hasHero){
+            if(!comparison.changes.length)
+              formulaRows.append(h('p',{text:tr(
+               'У текущего героя выбранные изменения не меняют перечисленные расчётные показатели.',
+               'The selected changes do not alter these modeled values for the current hero.')}));
+            for(const row of comparison.changes.slice(0,10))
+              formulaRows.append(h('p',{class:'os-sync-formula-row'},[
+                h('span',{text:lang==='en'?row.en:row.ru}),
+                h('strong',{text:String(row.before??'—')+' → '+String(row.after??'—')})
+              ]));
+            if(comparison.changes.length>10)
+              formulaRows.append(h('small',{text:tr('Ещё изменений: ',
+               'More changes: ')+(comparison.changes.length-10)}));
+          }else formulaRows.append(h('p',{text:tr(
+           'Выбери расу и профессию на главном экране, чтобы увидеть изменения именно своего героя.',
+           'Choose a race and class on the main screen to compare your own hero.')}));
+        }
+      }
+      publish.disabled=!ready||!acknowledged||preview?.validation?.ok!==true;
       exportButton.disabled = !ready;
       github.disabled = busy || !githubReady || !publishedSnapshot;
       testWrite.disabled = busy;
@@ -1050,6 +1124,7 @@
         const findings=importer.files.flatMap(name=>
           name==='meta'&&onlyTechnicalMeta?[]:review.changes(name,old[name],next[name]));
         baseline=old;upstream=next;legacy=retained.locales;legacyRows=retained.records;mode=from;
+        impactCache=null;
         activeSnapshot=[...versions][0];changes=findings;
         const complete=findings.length
           ? ['comparisonFound',
@@ -1114,12 +1189,12 @@
           ' · Причина: '+(error.reason||'не указана')+
           ' · '+String(error.message||error);
         diagnostic.hidden=false;
-        baseline=null;upstream=null;changes=[];
+        baseline=null;upstream=null;changes=[];impactCache=null;
         refreshActions();
       }finally{setBusy(false)}
     }
 
-    async function verifyPublishedForPlayers(snapshot){
+    async function verifyPublishedForPlayers(snapshot,expected){
       // Do not say that players see the new catalog until the public endpoint
       // returns the same immutable active version after the UI reload.
       await afterPublish();
@@ -1131,7 +1206,27 @@
        throw Error(tr(
         'Публичный каталог пока не подтвердил новую версию. Проверь снова или обнови страницу.',
         'The public catalog has not confirmed the new version yet. Check again or reload.'));
-      return true;
+      // A version header alone is not enough. Verify both exact public source
+      // tables and classes, then execute the real level-55 calculation models.
+      const publicData={};
+      for(const name of ['tables','classes']){
+        const dataResponse=await fetch(apiBase+'/api/catalog/'+name+'.json',{
+          cache:'no-store',signal:AbortSignal.timeout(15000)
+        });
+        if(!dataResponse.ok||
+           dataResponse.headers.get('x-ps-catalog')!=='d1'||
+           dataResponse.headers.get('x-ps-catalog-snapshot')!==snapshot)
+          throw Error(tr('Не подтверждена версия игровых расчётов: ',
+           'Character calculation revision not verified: ')+name);
+        publicData[name]=await dataResponse.json();
+        if(!review.strictEqual(publicData[name],expected[name]))
+          throw Error(tr('Опубликованные данные отличаются от подготовленных: ',
+           'Published data differs from the reviewed version: ')+name);
+      }
+      const check=safety.check(publicData);
+      if(!check.ok)throw Error(tr('Проверка расчётов после публикации: ',
+       'Post-publication character checks failed: ')+check.issues.join(' · '));
+      return check;
     }
 
     function prepare() {
@@ -1142,6 +1237,9 @@
       const combined=review.compose(baseline,upstream,chosen,importer.files,
         {syncFormatting,syncRussianInstances,localInstances});
       // Full structural and count validation is required after selective merging.
+      const modelCheck=safety.check(combined);
+      if(!modelCheck.ok)
+        throw Error('Проверка расчётов перед публикацией: '+modelCheck.issues.join(' · '));
       const normalized=importer.normalize(combined,legacy);
       if(!Array.isArray(legacyRows)||legacyRows.length!==normalized.counts.legacyLocale)
         throw Error('Published D1 translation count changed during review');
@@ -1266,12 +1364,12 @@
         chosen.clear();changes=[];baseline=null;upstream=null;
         refreshActions();
         try{
-          await verifyPublishedForPlayers(result.active);
+          await verifyPublishedForPlayers(result.active,staged.combined);
           status.textContent=superseded?
            tr('Изменения опубликованы, но уже доступна другая версия каталога. Проверь её заново.',
             'Changes were published, but another catalog revision is already live. Review it again.'):
-           tr('Каталог обновлён и доступная игрокам версия проверена. Игровой сервер и GitHub не изменились.',
-            'The catalog was updated and the player-visible version was verified. The game server and GitHub were not changed.');
+           tr('Каталог обновлён. Проверены опубликованные данные и базовые расчёты героев до 55-го уровня (544 / 134). Игровой сервер и GitHub не изменились.',
+            'Catalog updated. Published data and basic hero calculations through level 55 (544 / 134) were verified. The game server and GitHub were not changed.');
         }catch(error){
           status.textContent=tr('Публикация принята, но обновление данных у игроков пока не подтверждено: ',
            'Publication was accepted, but the player-visible update is not yet verified: ')+error.message;
@@ -1288,7 +1386,7 @@
               status.textContent='Каталог опубликован (D1: '+observed.active+
                 '). Ответ потерялся, но активная версия подтверждена. GitHub не изменён.';
               try{
-                await verifyPublishedForPlayers(observed.active);
+                await verifyPublishedForPlayers(observed.active,staged.combined);
                 status.textContent=tr('Каталог опубликован, и новая версия проверена для игроков. Ответ публикации сначала потерялся.',
                  'Catalog published; the player-visible version was verified after the original response was lost.');
               }catch(refreshError){

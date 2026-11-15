@@ -490,3 +490,19 @@
  .os-sync-decision-preview,.os-sync-risk-approval{border-color:CanvasText}
  .os-sync-risk-approval input:focus-visible{outline:2px solid Highlight}
 }
+
+/* Compact and explicitly scoped before/after calculations. The selected
+   hero's base stats and point budgets are checked, not a simulated combat. */
+.os-sync-formula-preview{margin:9px 0;padding:10px 12px;border-left:2px solid #a58454;
+ background:#211a13;border-radius:5px;display:grid;gap:6px;min-width:0}
+.os-sync-formula-preview>strong{font-size:12px;color:#ecd0a1}
+.os-sync-formula-preview p{margin:0;font-size:11px;line-height:1.55}
+.os-sync-formula-status{color:#dfcbac;overflow-wrap:anywhere}
+.os-sync-formula-rows{display:grid;gap:4px}
+.os-sync-formula-row{display:flex;justify-content:space-between;gap:10px;
+ flex-wrap:wrap;color:#dcc7a8}
+.os-sync-formula-row strong{color:#f2d09c;font-variant-numeric:tabular-nums}
+.os-sync-formula-note{color:#ab9980;font-size:10px;line-height:1.5}
+.os-sync-formula-error{border-left-color:#d58b74}
+.os-sync-formula-error .os-sync-formula-status,
+.os-sync-formula-warning{color:#eebba4}
