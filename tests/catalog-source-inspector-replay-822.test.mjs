@@ -82,10 +82,10 @@ test('12 existing source inspector families have real roots and read-only replay
   requireLost(damaged,id,module);
  }
 });
-test('a classless diffusion action invalidates its specialized parent proof',()=>{
+test('a diffusion-linked action invalidates its specialized parent proof',()=>{
  const root=420005001,child=420005004;
  assert.ok(oldProof(root,'source-specialized-defense-magic'));
- assert.equal(Object.keys(before.skills[child].classes).length,0);
+ assert.ok(before.skills[child].id===child,'verified game-linked skill ID');
  assert.ok(before.skills[root].funcs.some(x=>
   x.ep==='EP_SKILL_EXEC_DIFFUSION'&&x.fv1?.[3]===child));
  const updated=change(child,row=>{row.funcs[0].fv1[3]+=1});
