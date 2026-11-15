@@ -1,0 +1,42 @@
+name: Verified catalog fallback auto-merge
+
+on:
+  workflow_run:
+    workflows:
+      - Studio quality checks
+      - Chromium browser smoke
+    types: [completed]
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: read
+
+concurrency:
+  group: catalog-fallback-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: false
+
+jobs:
+  merge:
+    name: Merge only fully tested catalog JSON fallback
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_repository.full_name == github.repository &&
+      startsWith(github.event.workflow_run.head_branch, 'catalog/snapshot-ps-')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      # workflow_run always checks out the trusted DEFAULT BRANCH, never the PR
+      - name: Checkout trusted merge verifier
+        uses: actions/checkout@v5
+        with:
+          ref: bonaqu_projects
+          persist-credentials: false
+      - name: Use Node 22
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Check both CI suites and conditionally merge all 17 JSON files
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/catalog-fallback-auto-merge.mjs
