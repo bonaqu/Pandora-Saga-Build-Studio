@@ -440,8 +440,13 @@ function verifiedDynamicSkillFV(id,old,now,before,after){
    weaponKind:'BARE_HAND',hasShield:true});
   const row=[...(model.offense||[]),...(model.defense||[]),
    ...(model.movement||[]),...(model.utility||[])].find(x=>String(x.id)===id);
-  return row?.coefficientModels?.some(x=>x.ep===contract.ep&&
-   Number.isFinite(x.amount))&&Number.isFinite(row?.amount)?row.amount:null;
+  const models=row?.coefficientModels||[];
+  // A multi-effect skill is only safe when EVERY independently modeled
+  // dependent vector remains present, not just its primary coefficient.
+  if(!models.some(x=>x.ep===contract.ep&&Number.isFinite(x.amount))||
+   !contract.additional.every(effect=>!effect.modeled||
+    models.some(x=>x.ep===effect.ep&&Number.isFinite(x.amount))))return null;
+  return Number.isFinite(row?.amount)?row.amount:null;
  };
  const classes=before?.classes||{};
  for(const [job,klass] of Object.entries(classes)){
@@ -526,19 +531,13 @@ function compatibility(before,after){
      add(dynamic?'verified':'needsReview','skill:'+id,
       name+(dynamic?' · проверено изменение FV действующей формулой':
        ' · изменены игровые эффекты'));
-    }else if(!same(old.damage,now.damage)||!same(old.weaponUse,now.weaponUse)||
-      // A prerequisite chain or the stat driving the effect can change
-      // the actual result without changing funcs/FV vectors.
-      !same(old.prereq,now.prereq)||!same(old.powerStat,now.powerStat)||
-      !same(old.skillType,now.skillType)||!same(old.element,now.element)||
-      !same(old.aoe,now.aoe)||!same(old.rangeFromWeapon,now.rangeFromWeapon)||
-      // A skill's job access, learnable level and mastery requirements
-      // are gameplay conditions, never merely a localization update.
-      !same(old.classes,now.classes)||!same(old.learnable,now.learnable)||
-      !same(old.charLevel,now.charLevel)||!same(old.reqLevel,now.reqLevel)||
-      !same(old.reqs,now.reqs)||!same(old.branch,now.branch)||
-      !same(old.branchRaw,now.branchRaw)||!same(old.isLevelBased,now.isLevelBased)){
-     add('needsReview','skill:'+id,name+' · изменены условия действия или доступность');
+    }else if([...new Set([...Object.keys(old),...Object.keys(now)])]
+     .some(field=>!['name','nameEn','desc','descEn','iconId'].includes(field)&&
+      !same(old[field],now[field]))){
+     // Explicit allow-list for presentation changes; new/unrecognized
+     // gameplay fields (including cast/cooldown/mana) fail closed.
+     add('needsReview','skill:'+id,
+      name+' · изменены игровые параметры, механика или доступность');
     }else{
      add('sourceOnly','skill:'+id,name+' · обновлены условия/описание навыка');
     }
@@ -598,13 +597,14 @@ function compatibility(before,after){
 function replaySkills(before,after){
  const changed=new Set();
  const oldSkills=before?.skills||{},newSkills=after?.skills||{};
- const fields=['funcs','damage','weaponUse','prereq','powerStat','skillType',
-  'element','aoe','rangeFromWeapon','classes','charLevel','reqs',
-  'reqLevel','branch','branchRaw','isLevelBased','learnable'];
+ // Track any gameplay-field changes, including previously overlooked timing,
+ // cost and future unknown fields; ignore only user-visible presentation.
+ const displayOnly=new Set(['name','nameEn','desc','descEn','iconId']);
  const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
  for(const id of new Set([...Object.keys(oldSkills),...Object.keys(newSkills)])){
   const prev=oldSkills[id],next=newSkills[id];
-  if(!prev||!next||fields.some(field=>!same(prev[field],next[field])))
+  if(!prev||!next||[...new Set([...Object.keys(prev),...Object.keys(next)])]
+   .some(field=>!displayOnly.has(field)&&!same(prev[field],next[field])))
    changed.add(id);
  }
  // Updated class caps can invalidate an unchanged, otherwise modeled skill.
@@ -663,10 +663,13 @@ function replaySkills(before,after){
      }
      for(const group of ['offense','defense','movement','utility'])
       for(const row of result[group]){
-       // Numerical previews may be shown even when the current hero cannot
-       // cast the skill. Availability is not proof that the formula is absent.
-       // Keep protecting those displayed numbers during catalog updates.
+       // A null aggregate does NOT mean its individual effect coefficients
+       // are unknown. Protect each model (EP) against silent disappearance.
        write(row.id,'skill-effects',weaponKind,row.amount);
+       for(const model of row.coefficientModels||[])
+        if(typeof model.ep==='string')
+         write(row.id,'skill-effect-coefficient',
+          weaponKind+':'+model.ep,model.amount);
       }
     }
     const healing=calc.healingSpellsPreview({skillCatalog:skills,jobKey:job,level,

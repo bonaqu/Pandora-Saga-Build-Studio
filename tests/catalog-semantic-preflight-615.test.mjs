@@ -8,12 +8,14 @@ const check=root.PandoraCatalogSafety.compatibility;
 const base={skills:{a:{id:1,name:'Ability',cast:5,funcs:[{ep:'EP_DMG',fv1:[5,0,0,1]}]}},
  items:{x:{id:10,name:'Hat',desc:'Old',W:2}},
  tables:{abilityPoint:{45:3}},trades:{trades:[]}};
-test('text edits and changed cast timing do not falsely prove new battle formulas',()=>{
+test('changed cast timing requires mechanics review; item description stays source-only',()=>{
  const changed=structuredClone(base);
  changed.skills.a.cast=1;changed.items.x.desc='New';
  const report=check(base,changed);
- assert.equal(report.totals.needsReview,0);
- assert.equal(report.totals.sourceOnly,2);
+ assert.equal(report.totals.needsReview,1);
+ assert.equal(report.totals.sourceOnly,1);
+ assert.equal(report.requiresMechanicReview,true);
+ assert.ok(report.samples.needsReview.some(x=>x.key==='skill:a'));
 });
 test('source effect changes and equipment stat changes flag model review before publish',()=>{
  const changed=structuredClone(base);

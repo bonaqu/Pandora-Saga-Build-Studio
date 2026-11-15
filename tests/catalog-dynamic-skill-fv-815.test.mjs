@@ -32,7 +32,7 @@ const sample=(catalog,id,job,level=45)=>{
 };
 
 test('declarative dynamic source registry includes only independent modeled source parameters',()=>{
- const expected=[330002001,420002001,420002002,420004001];
+ const expected=[330002001,420002001,420002002,420004001,420004002];
  assert.deepEqual(Object.keys(C.dynamicSkillContracts).map(Number).sort((a,b)=>a-b),expected);
  assert.ok(Object.isFrozen(C.dynamicSkillContracts));
  for(const id of expected){
@@ -40,7 +40,7 @@ test('declarative dynamic source registry includes only independent modeled sour
   assert.equal(C.dynamicSkillSourceMatches(before.skills[id],
    contract.ep,contract.fv1),true,String(id));
  }
- for(const id of [260005001,142051001,420004002,320011001])
+ for(const id of [260005001,142051001,320011001])
   assert.equal(C.dynamicSkillContracts[id],undefined,
    'existing cross-module buffs and partly gated chains must not be generalized');
 });
@@ -49,7 +49,8 @@ test('real scalar FV change remains modeled by actual class-specific Skill Effec
   [330002001,'EXORCIST',45],
   [420002001,'WIZARD',45],
   [420002002,'CONJURER',55],
-  [420004001,'WIZARD',45]
+  [420004001,'WIZARD',45],
+  [420004002,'CONJURER',55]
  ]){
   const next=amended(id,skill=>{skill.funcs[0].fv1[3]+=5});
   const old=sample(before.skills,id,job,level);

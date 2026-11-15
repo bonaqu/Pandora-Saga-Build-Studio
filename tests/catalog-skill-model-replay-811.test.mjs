@@ -16,15 +16,25 @@ const amended=()=>{
  return after;
 };
 
-test('a text/timing-only patch needs no numeric-model replay',()=>{
+test('a strictly textual patch needs no numeric-model replay',()=>{
  const next=amended();
- next.skills['320001001']={...before.skills['320001001'],desc:'Updated',
-  cast:before.skills['320001001'].cast+1};
+ next.skills['320001001']={...before.skills['320001001'],desc:'Updated'};
  const result=replay(before,next);
  assert.equal(result.ok,true);
  assert.equal(result.changedSkills,0);
  assert.equal(result.scenarios,0);
  assert.equal(result.lost,0);
+});
+test('cast timing is a mechanical change and replays known previews without D1 writes',()=>{
+ const next=amended();
+ next.skills['320001001']={...before.skills['320001001'],
+  cast:before.skills['320001001'].cast+1};
+ const result=replay(before,next);
+ assert.equal(result.changedSkills,1);
+ assert.ok(result.scenarios>0,'timing changes must trigger a full read-only model replay');
+ assert.equal(result.lost,0,'an unchanged numerical source may keep the same preview');
+ assert.equal(result.ok,true);
+ assert.equal(root.PandoraCatalogSafety.compatibility(before,next).totals.needsReview,1);
 });
 test('known source-gated combat effect lost on an FV mutation blocks the selected snapshot',()=>{
  const next=amended();
