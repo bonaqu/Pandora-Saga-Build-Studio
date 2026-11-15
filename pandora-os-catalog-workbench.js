@@ -405,8 +405,14 @@
         const replay=typeof safety.replaySkills==='function'?
          safety.replaySkills(baseline,selected):null;
         if(replay&&!replay.ok){
-          const missing=replay.samples.map(row=>
-           row.name+' ('+row.job+(row.level?' · '+row.level:'')+')');
+          const missing=replay.samples.map(row=>{
+           const role=row.module==='ally-recipient'?
+            tr('Усиление союзника','Ally buff'):
+            row.module==='priest-cast'?
+             tr('Усиление жреца','Priest buff'):
+             row.job==='target'?tr('Эффект цели','Target effect'):row.job;
+           return row.name+' ('+role+(row.level?' · '+row.level:'')+')';
+          });
           validation.ok=false;
           validation.issues.push(...replay.errors);
           if(replay.lost)validation.issues.push(tr(
@@ -1372,7 +1378,10 @@
       if(replay&&!replay.ok)throw Error(
        'Проверка известных расчётов навыков: '+replay.lost+
        ' прежних сценариев перестали рассчитываться. '+
-       [...replay.errors,...replay.samples.map(x=>x.name+' / '+x.job+
+       [...replay.errors,...replay.samples.map(x=>x.name+' / '+
+        (x.module==='ally-recipient'?'усиление союзника':
+         x.module==='priest-cast'?'усиление жреца':
+         x.job==='target'?'эффект цели':x.job)+
         (x.level?' / '+x.level:''))].slice(0,4).join(' · '));
       const equipment=typeof safety.replayEquipmentEffects==='function'?
        safety.replayEquipmentEffects(baseline,combined):null;
