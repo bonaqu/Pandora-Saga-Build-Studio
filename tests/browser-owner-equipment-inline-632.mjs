@@ -112,7 +112,7 @@ export async function runOwnerEquipmentInlineSmoke(browser,base){
   assert.equal((await value().innerText()).trim(),'0/2');
   console.log('Owner equipment 632: RU committed to mock CAS');
   // Locale switching may switch the inspector to Choose; reopen Properties.
-  await page.locator('#stagePicker .stage-picker-head button').click();
+  await page.locator('#stagePicker .stage-picker-head > button').click();
   await page.locator('#locale [data-locale="en"]').click();
   await page.waitForFunction(()=>document.documentElement.lang==='en');
   await page.locator('.equipment-slot[data-slot-index="5"]').click();
