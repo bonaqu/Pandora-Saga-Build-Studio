@@ -66,7 +66,7 @@ test('publication retains source CAS, blocks close while writing and checks play
  assert.match(workbench,/const closeButton=view\.closest\('\.modal'\)\?\.querySelector\('button\.close'\)/);
  assert.match(workbench,/if\(closeButton\)closeButton\.disabled=true/);
  assert.match(workbench,/canClose:\(\)=>!publishing/);
- assert.match(app,/function modal\(title,content,\{canClose=\(\)=>true\}=\{\}\)/);
+ assert.match(app,/function modal\(title,content\)\{/);
  assert.match(app,/if\(!canClose\(\)\)return/);
  assert.match(workbench,/async function verifyPublishedForPlayers\(snapshot\)/);
  assert.match(workbench,/response\.headers\.get\('x-ps-catalog-snapshot'\)/);

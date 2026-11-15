@@ -140,7 +140,7 @@
     const intro = h('div',{class:'os-sync-intro'},[
       authored('strong',{},'title','Обновление игрового каталога','Game catalog updates'),
       authored('p',{},'introExplanation',
-       'Проверка сравнивает открытые данные текущей игры с каталогом Build Studio. Она ничего не меняет до отдельного подтверждения и не читает файлы на твоём компьютере. Доступные JSON не являются прямой проверкой игрового клиента.',
+       'Проверка сравнивает открытые данные текущей игры с каталогом Build Studio. Она ничего не меняет до отдельного подтверждения и не ищет файлы на твоём компьютере. Доступные JSON не являются прямой проверкой игрового клиента.',
        'Compare the currently available public game data with the Build Studio catalog. Nothing changes until you explicitly confirm; no local files are read. Public JSON is not a direct game-client verification.')
     ]);
     const actions = h('div', {class:'os-sync-actions'});
@@ -151,7 +151,7 @@
     const archiveChoice=h('details',{class:'os-sync-archive-choice'},[
       h('summary',{text:copy('archiveSummary','Если сайт игры не отдаёт данные','When the game site is unavailable')}),
       authored('p',{},'archiveExplanation',
-       'Архивная сверка берёт сохранённые данные проекта, а не текущие данные игры. Архив может быть старее: не применяй изменения без отдельной проверки.',
+       'Архивная сверка берёт файлы из репозитория Build Studio, а не текущие данные игры. Она не проверяет свежесть игрового сервера: архив может быть старее. Не применяй изменения без отдельной проверки.',
        'Archive comparison uses a saved project snapshot, not current game data. It may be older: do not publish archived changes without verifying them.'),
       action(archive,'archiveButton','Сверить с сохранённой копией','Compare saved snapshot')
     ]);
@@ -481,6 +481,8 @@
       }
       if(unsure)cautions.push(tr('Нужна ручная проверка: ','Manual review needed: ')+unsure);
       if(links)cautions.push(tr('Связи и скрытые отличия: ','Links and hidden differences: ')+links);
+      if(syncRussian)cautions.push(tr('Русские описания — проверенная копия проекта, не данные игры',
+       'Russian descriptions are verified project text, not live game data'));
       if(mode==='archive')cautions.push(tr('Архив может быть старее текущей игры',
        'The archive may be older than the current game'));
       decisionWarnings.hidden=!cautions.length;
@@ -1205,7 +1207,8 @@
        (notSelectedGame?'\nНе выбрано игровых изменений: '+notSelectedGame+'.':'')+
        (unselectedSettings?'\nНе выбрано настроек: '+unselectedSettings+'.':'')+
        sourceWarning+uncertainWarning+atomicWarning+impactPreview+otherPreview+
-       '\n\nМеняется каталог Build Studio, а НЕ сама игра. Проверь выбранное перед подтверждением.';
+       '\n\nМеняется каталог Build Studio, а НЕ сама игра. Проверь выбранное перед подтверждением. '+
+       'Ничего не опубликовано до этого подтверждения.';
       const confirmationEn='Publish these changes to the Build Studio catalog?\n'+
        'New: '+added+' · Changed: '+changed+' · Removed: '+removed+
        ' · Line breaks: '+formatted+' · Russian descriptions: '+ruCount+'.'+

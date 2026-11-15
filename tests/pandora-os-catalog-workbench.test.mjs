@@ -91,7 +91,7 @@ test('live sync detects changing source revision and cannot misreport published 
  assert.match(workbench,/sourceFile\('meta','server'\)/);
  assert.match(workbench,/review\.equal\(next\.meta,finalMeta\)/);
  assert.match(workbench,/await afterPublish\(\)/);
- assert.match(workbench,/Данные опубликованы, но не удалось обновить страницу/);
+ assert.match(workbench,/Публикация принята, но обновление данных у игроков пока не подтверждено/);
  assert.match(workbench,/if \(busy\) return/);
 });
 

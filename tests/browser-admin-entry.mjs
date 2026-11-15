@@ -918,7 +918,7 @@ export async function runAdminEntrySmoke(browser,base){
   // Check the current game, Select all, review risks, and cancel publish.
   assert.equal(await dialog.locator('.os-sync-source-banner').getAttribute('data-source'),'server');
   const publishButton=dialog.getByRole('button',{name:'Применить выбранные изменения'});
-  const decision=dialog.locator('.os-sync-decision-preview');
+  const decisionReview793=dialog.locator('.os-sync-decision-preview');
   const bulkConfirm=page.waitForEvent('dialog').then(async selectionDialog=>{
    assert.match(selectionDialog.message(),/Выбрать все/);
    await selectionDialog.accept();
@@ -927,11 +927,11 @@ export async function runAdminEntrySmoke(browser,base){
   await bulkConfirm;
   await page.waitForFunction(()=>
     document.querySelector('.os-sync-decision-preview')?.textContent?.includes('Будет обновлено: 2'));
-  assert.match(await decision.innerText(),/Будет обновлено: 2 изменений из 2/);
-  assert.match(await decision.innerText(),/проверки|Связи и скрытые отличия/);
+  assert.match(await decisionReview793.innerText(),/Будет обновлено: 2 изменений из 2/);
+  assert.match(await decisionReview793.innerText(),/проверки|Связи и скрытые отличия/);
   assert.equal(await publishButton.isDisabled(),true,
    'High-risk Select all must require explicit review acknowledgment');
-  const approval=decision.locator('.os-sync-risk-approval input');
+  const approval=decisionReview793.locator('.os-sync-risk-approval input');
   await approval.check();
   assert.equal(await publishButton.isEnabled(),true);
   const publishRequests=[];

@@ -7740,7 +7740,8 @@ async function restoreSharedHash(){
    history.replaceState(history.state,'',location.pathname+location.search);
  }
 }
-function modal(title,content,{canClose=()=>true}={}){
+function modal(title,content){
+ const canClose=arguments[2]?.canClose||(()=>true);
  const root=$('modalRoot'),origin=document.activeElement;
  root.replaceChildren();root.hidden=false;
  const box=h('div',{class:'modal',role:'dialog','aria-modal':'true','aria-label':title});
