@@ -4019,6 +4019,27 @@ function skillExecutionChains({skillCatalog=null,jobKey=null,level=1,onHit=false
   // Conditional on-hit root, then any ordinary OS internal child links.
   const calls=s.funcs.filter(f=>f?.ep===(onHit&&visited.size===0?rootEP:'EP_SKILL_EXEC'));
   if(!calls.length)return [[id]];
+  // Sandstorm must execute its own source-confirmed inner action, not
+  // merely another existing (but unrelated) skill ID. The exact child
+  // effect vectors are catalog parameters, NOT a final damage formula.
+  if(!onHit&&visited.size===0&&id===420007101){
+   const child=get(420007102);
+   const expectedChild=[
+    ['EP_ELEMENT_DAMAGE','TARGET',[120,0,160,50],[0,0,0,0]],
+    ['EP_CAUSE_SLEEP','TARGET',[0,0,0,20],[40,0,40,0]],
+    ['EP_DESTINED_KNOCKBACK','TARGET',[0,0,0,300],[0,0,0,0]]
+   ];
+   if(s.skillType!=='POINT'||s.learnable!==true||
+    JSON.stringify(s.reqs)!=='[{"branch":"embody","amount":61}]'||
+    calls.length!==1||calls[0].dir!=='TARGET'||
+    JSON.stringify(calls[0].fv1)!=='[0,0,0,420007102]'||
+    JSON.stringify(calls[0].fv2)!=='[0,0,0,0]'||
+    child?.skillType!=='SPHBOLT'||child.learnable!==false||
+    child.name!==s.name||child.branch!==s.branch||
+    JSON.stringify(child.aoe)!=='[500,0]'||
+    JSON.stringify(child.funcs?.map(f=>[f.ep,f.dir,f.fv1,f.fv2]))!==
+     JSON.stringify(expectedChild))return null;
+  }
   if(onHit&&visited.size===0&&calls.length!==1)return null;
   const paths=[];
   for(const f of calls){
