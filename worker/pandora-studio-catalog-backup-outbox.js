@@ -34,7 +34,9 @@ export async function deliverCatalogBackupJob(env,readActive,createPR,{now=Date.
  const snapshot=job.snapshot;
  if(!valid(snapshot))return {state:'invalid'};
  const active=await readActive(env);
- if(active?.snapshot!==snapshot){
+ // A temporary D1 read failure is not evidence of a superseded snapshot.
+ if(!active)return {state:'unavailable',snapshot};
+ if(active.snapshot!==snapshot){
   await env.DB.prepare("UPDATE catalog_backup_jobs SET state='superseded',lease_until=0,updated_at=? WHERE snapshot=? AND state IN ('pending','retry','running')").bind(stamp,snapshot).run();
   return {state:'superseded',snapshot};
  }
@@ -50,7 +52,8 @@ export async function deliverCatalogBackupJob(env,readActive,createPR,{now=Date.
   ).bind(now(),JSON.stringify(safe(result)),snapshot,lease).run();
   return {state:'done',snapshot,result:safe(result)};
  }catch(error){
-  if((await readActive(env))?.snapshot!==snapshot){
+  const latest=await readActive(env);
+  if(latest&&latest.snapshot!==snapshot){
    await env.DB.prepare("UPDATE catalog_backup_jobs SET state='superseded',lease_until=0,updated_at=? WHERE snapshot=? AND state='running' AND lease_until=?").bind(now(),snapshot,lease).run();
    return {state:'superseded',snapshot};
   }
