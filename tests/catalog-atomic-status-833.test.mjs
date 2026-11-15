@@ -19,7 +19,7 @@ const changed=(dataset,edit)=>{
  edit(after[dataset]);
  const changes=review.changes(dataset,before[dataset],after[dataset]);
  const rows=safety.compatibility(before,after);
- return {after,changes,rows,statuses:changes.map(x=>status(x,rows.entries))};
+ return {after,changes,rows,statuses:Array.from(changes,x=>status(x,rows.entries))};
 };
 
 test('NPC names in atomic trade update get a visible source-only status',()=>{
