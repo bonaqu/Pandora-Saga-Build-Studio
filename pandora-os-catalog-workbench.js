@@ -1281,13 +1281,14 @@
       const modelCheck=safety.check(combined);
       if(!modelCheck.ok)
         throw Error('Проверка расчётов перед публикацией: '+modelCheck.issues.join(' · '));
+      const compatibility=safety.compatibility(baseline,combined);
       const normalized=importer.normalize(combined,legacy);
       if(!Array.isArray(legacyRows)||legacyRows.length!==normalized.counts.legacyLocale)
         throw Error('Published D1 translation count changed during review');
       normalized.entries.legacyLocale=legacyRows; // Preserve exact IDs, payloads and source attribution.
       review.auditSelection(baseline,upstream,combined,chosen,importer.files,
         {syncRussianInstances});
-      return {combined,normalized};
+      return {combined,normalized,compatibility};
     }
 
     exportButton.onclick=()=>{
@@ -1340,12 +1341,22 @@
         'Применить только одну строку внутри невозможно.':'';
       const uncertainWarning=uncertain
         ?'\nВНИМАНИЕ: '+uncertain+' выбранных изменений требуют ручной проверки.':'';
+      const compatibility=staged.compatibility;
+      const mechanicWarning=compatibility?.requiresMechanicReview?
+       '\\n\\nПРОВЕРКА МЕХАНИК: '+compatibility.totals.needsReview+
+       ' изменений игровых свойств и эффектов требуют проверки совместимости. '+
+       'Новая формула не подтверждается одним обновлением D1. Примеры: '+
+       compatibility.samples.needsReview.slice(0,3).map(x=>x.title).join('; ')+
+       '. Публикация не гарантирует численные результаты неизвестных эффектов.':'';
+      const verifiedNotice=compatibility?.totals.verified?
+       '\\nБазовые расчёты и таблицы: проверено '+compatibility.totals.verified+
+       ' разделов (не полная проверка всех боевых механик).':'';
       const confirmationRu='Применить выбранные изменения в каталог Build Studio?\n'+
        'Новых: '+added+' · Изменённых: '+changed+' · Удалённых: '+removed+
        ' · Переносов: '+formatted+' · Русских описаний: '+ruCount+'.'+
        (notSelectedGame?'\nНе выбрано игровых изменений: '+notSelectedGame+'.':'')+
        (unselectedSettings?'\nНе выбрано настроек: '+unselectedSettings+'.':'')+
-       sourceWarning+uncertainWarning+atomicWarning+impactPreview+otherPreview+
+       sourceWarning+uncertainWarning+mechanicWarning+verifiedNotice+atomicWarning+impactPreview+otherPreview+
        '\n\nМеняется каталог Build Studio, а НЕ сама игра. Проверь выбранное перед подтверждением. '+
        'Ничего не опубликовано до этого подтверждения.';
       const confirmationEn='Publish these changes to the Build Studio catalog?\n'+
@@ -1354,6 +1365,10 @@
        (notSelectedGame?'\nUnselected game changes: '+notSelectedGame+'.':'')+
        (unselectedSettings?'\nUnselected settings: '+unselectedSettings+'.':'')+
        sourceWarning+
+       (compatibility?.requiresMechanicReview?
+        '\\nMECHANICS: '+compatibility.totals.needsReview+
+        ' effect/property changes require an independent model review. '+
+        'Publishing D1 does not prove unknown formulas.':'')+
        (uncertain?'\nFlagged for manual review: '+uncertain+'.':'')+
        (selectedChanges.some(x=>x.dataset==='tables')?
          '\nGame formula tables, including level caps, are replaced together.':'')+

@@ -131,5 +131,63 @@ function compare(before,after,hero){
     old.branchCaps[key]??null,next.branchCaps[key]??null);
  return {hasHero:true,changes,warning:null,level:hero.level};
 }
-root.PandoraCatalogSafety=Object.freeze({MAX_LEVEL,EXPECTED,check,project,compare});
+
+// Before publication classify *changes*, not just JSON schema validity.
+// A matching source shape does not prove that the calculator interprets a
+// newly introduced gameplay effect. Lists are intentionally bounded for UI.
+function compatibility(before,after){
+ const issues={verified:[],sourceOnly:[],needsReview:[]},totals={
+  verified:0,sourceOnly:0,needsReview:0};
+ const add=(kind,key,title)=>{
+  totals[kind]++;
+  if(issues[kind].length<6)issues[kind].push({key,title});
+ };
+ const same=(x,y)=>JSON.stringify(x)===JSON.stringify(y);
+ const keys=new Set([...Object.keys(before||{}),...Object.keys(after||{})]);
+ for(const dataset of keys){
+  const oldData=before?.[dataset],newData=after?.[dataset];
+  if(same(oldData,newData))continue;
+  if(dataset==='classes'||dataset==='tables'){
+   add('verified',dataset,dataset==='classes'?'Профессии: базовые ОЗ/ОМ и ограничения':
+    'Таблицы: очки характеристик и умений');
+   continue;
+  }
+  if(dataset==='skills'){
+   const ids=new Set([...Object.keys(oldData||{}),...Object.keys(newData||{})]);
+   for(const id of ids){
+    const old=oldData?.[id],now=newData?.[id];
+    if(same(old,now))continue;
+    const name=String(now?.name||old?.name||id).slice(0,90);
+    if(!old||!now||!same(old.funcs,now.funcs)){
+     add('needsReview','skill:'+id,name+' · изменены игровые эффекты');
+    }else if(!same(old.damage,now.damage)||!same(old.weaponUse,now.weaponUse)){
+     add('needsReview','skill:'+id,name+' · изменена механика урона или оружия');
+    }else{
+     add('sourceOnly','skill:'+id,name+' · обновлены условия/описание навыка');
+    }
+   }
+   continue;
+  }
+  if(dataset==='items'||dataset==='souls'||dataset==='racialPassives'){
+   const ids=new Set([...Object.keys(oldData||{}),...Object.keys(newData||{})]);
+   for(const id of ids){
+    const old=oldData?.[id],now=newData?.[id];
+    if(same(old,now))continue;
+    const name=String(now?.name||old?.name||id).slice(0,90);
+    const looksTextual=old&&now&&
+     // A text-only edit must not be treated as a changed gameplay modifier.
+     same(Object.fromEntries(Object.entries(old).filter(([k])=>
+      !['name','nameEn','desc','descEn'].includes(k))),
+     Object.fromEntries(Object.entries(now).filter(([k])=>
+      !['name','nameEn','desc','descEn'].includes(k))));
+    add(looksTextual?'sourceOnly':'needsReview',dataset+':'+id,
+     name+(looksTextual?' · тексты':' · свойства/эффекты'));
+   }
+   continue;
+  }
+  add('sourceOnly',dataset,'Раздел «'+dataset+'»: структурно проверенные данные');
+ }
+ return {totals,samples:issues,requiresMechanicReview:totals.needsReview>0};
+}
+root.PandoraCatalogSafety=Object.freeze({MAX_LEVEL,EXPECTED,check,project,compare,compatibility});
 })(typeof window==='undefined'?globalThis:window);
