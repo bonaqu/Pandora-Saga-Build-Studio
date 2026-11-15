@@ -142,7 +142,7 @@ test('invalid public share payload is isolated without deleting any other valid 
   {schema:1,type:'build',buildId:other},OWNER);
  assert.equal(first.status,201);assert.equal(second.status,201);
  for(const broken of ['{not-json',JSON.stringify({schema:9,type:'build',data:character}),
-  JSON.stringify({schema:1,type:'build',data:{race:3,job:0,level:56}})]){
+  JSON.stringify({schema:1,type:'build',data:{race:3,job:0,level:121}})]){
   DB.replaceLink(first.data.id,broken);
   const response=await call(DB,'/api/shared/'+first.data.id,'GET',null,OWNER);
   assert.equal(response.status,410);
