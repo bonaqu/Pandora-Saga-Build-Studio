@@ -7,7 +7,7 @@ const amount=(value,max=999999999)=>Number.isSafeInteger(value)&&value>=0&&value
 function recipeValid(rec,items,npcs){
  if(!rec||typeof rec!=='object'||Array.isArray(rec)||!id(rec.id)||!id(rec.i)||
   !own(items||{},String(rec.i))||
-  Object.keys(rec).some(k=>!['id','i','npc','mats','gold','honor','exp'].includes(k)))return false;
+  Object.keys(rec).some(k=>!['id','i','npc','mats','gold','honor','exp','limit'].includes(k)))return false;
  if(!Array.isArray(rec.npc)||!rec.npc.length||rec.npc.length>24||
   new Set(rec.npc).size!==rec.npc.length||
   rec.npc.some(n=>!id(n)||!own(npcs||{},String(n))))return false;
@@ -16,6 +16,11 @@ function recipeValid(rec,items,npcs){
   rec.mats.some(row=>!row||typeof row!=='object'||Array.isArray(row)||
    Object.keys(row).some(k=>!['i','n'].includes(k))||
    !id(row.i)||!own(items||{},String(row.i))||!amount(row.n,999999)||row.n===0))return false;
+ const limit=rec.limit;
+ if(limit!=null&&(!limit||typeof limit!=='object'||Array.isArray(limit)||
+  Object.keys(limit).some(k=>!['n','period'].includes(k))||
+  !Number.isSafeInteger(limit.n)||limit.n<1||limit.n>9999||
+  !['daily','weekly','lifetime'].includes(limit.period)))return false;
  return ['gold','honor','exp'].every(k=>amount(rec[k]));
 }
 function apply(trades,items,overrides){
@@ -36,5 +41,19 @@ function apply(trades,items,overrides){
  }
  return changed?{...trades,trades:[...rows.values()]}:trades;
 }
-root.PandoraStudioTradeOwnerData=Object.freeze({recipeValid,apply});
+// The absence of a limit is a verified unrestricted source recipe.
+function limitLabel(limit,lang='ru'){
+ const en=lang==='en';
+ if(limit==null)return en?'No limit':'Без ограничений';
+ if(!Number.isSafeInteger(limit?.n)||limit.n<1||
+    !['daily','weekly','lifetime'].includes(limit.period))
+  return en?'Limit not verified':'Ограничение не подтверждено';
+ const n=limit.n,once=new Intl.PluralRules('ru').select(n)==='one',
+  twice=new Intl.PluralRules('ru').select(n)==='few';
+ const count=en?String(n):n+' '+(once?'раз':twice?'раза':'раз');
+ const period=en?{daily:'per day',weekly:'per week',lifetime:'total'}[limit.period]:
+  {daily:'в день',weekly:'в неделю',lifetime:'за всё время'}[limit.period];
+ return count+' '+period;
+}
+root.PandoraStudioTradeOwnerData=Object.freeze({recipeValid,apply,limitLabel});
 })(typeof window==='undefined'?globalThis:window);
