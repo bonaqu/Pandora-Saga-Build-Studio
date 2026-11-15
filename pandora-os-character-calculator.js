@@ -4883,6 +4883,29 @@ function complexSkillSourcePreview({skillCatalog=null,jobKey=null,level=1,
 // Exact ammunition counts are catalog inputs, not guaranteed number of hits.
 // Linked silence effects are validated as independent internal actions.
 const expandedRangedAmmoProofs=Object.freeze([{"id":213602001,"root":{"skillType":"BOLT","element":"NONE","learnable":true,"mana":12,"cast":0,"cooldown":15,"motion":0.4,"range":4000,"rangeFromWeapon":false,"aoe":[10000,4800],"branch":"archery","reqLevel":12,"charLevel":0,"isLevelBased":false,"prereq":null,"powerStat":"DEX","classes":["ACOLYTE","AGENT","ARCHER","ASCETIC","ASSASSIN","CALAMITY","CLERIC","CONJURER","DARKROAR","DISTURBANCE","DRAGOON","ENCHANTER","EXORCIST","GENERAL","GLADIATOR","JESTER","JUGGERNAUT","KNIGHT","MAGE","MONK","PALADIN","PREDATOR","PRIEST","SCOUT","SNIPER","WARLOCK","WARRIOR","WIZARD"],"reqs":[["archery",12]],"funcs":[["EP_ONHIT_POISON","CASTER",[0,200,400,40],[0,0,0,50]],["EP_PLAYER_ATTACK","TARGET",[0,0,0,1],[0,0,0,0]],["EP_CONSUME_AMMO","CASTER",[0,0,0,0],[0,0,0,1]]],"damage":{"kernel":"physical","slotIndex":1},"weaponUse":["BOW","CROSSBOW"]},"linked":[],"noteRu":"Выстрел с возможным отравлением. Итоговый урон, вероятность и длительность яда не рассчитаны.","noteEn":"A shot that can inflict poison. Final damage, poison chance and duration are not calculated."},{"id":213603501,"root":{"skillType":"BOLT","element":"NONE","learnable":true,"mana":33,"cast":0,"cooldown":10,"motion":0.3,"range":4000,"rangeFromWeapon":false,"aoe":[10000,4800],"branch":"archery","reqLevel":54,"charLevel":0,"isLevelBased":false,"prereq":null,"powerStat":"DEX","classes":["ACOLYTE","AGENT","ARCHER","ASCETIC","ASSASSIN","CALAMITY","CLERIC","CONJURER","DARKROAR","DISTURBANCE","DRAGOON","ENCHANTER","EXORCIST","GENERAL","GLADIATOR","JESTER","JUGGERNAUT","KNIGHT","MAGE","MONK","PALADIN","PREDATOR","PRIEST","SCOUT","SNIPER","WARLOCK","WARRIOR","WIZARD"],"reqs":[["archery",54]],"funcs":[["EP_SKILL_EXEC_CHANGE","TARGET",[0,0,0,213603511],[0,0,0,18]],["EP_SKILL_EXEC","TARGET",[0,0,0,213603521],[0,0,0,0]],["EP_CONSUME_AMMO","CASTER",[0,0,0,0],[0,0,0,1]]],"damage":null,"weaponUse":["BOW","CROSSBOW"]},"linked":[{"id":213603511,"signature":{"skillType":"ENEMY","element":"NONE","learnable":false,"mana":0,"cast":0,"cooldown":0,"motion":0,"range":4000,"rangeFromWeapon":false,"aoe":[0,0],"branch":"archery","reqLevel":0,"charLevel":0,"isLevelBased":true,"prereq":null,"powerStat":"DEX","classes":[],"reqs":[],"funcs":[["EP_ONHIT_DAMAGE_SCALE","CASTER",[0,0,30,30],[0,0,0,0]],["EP_PLAYER_ATTACK","TARGET",[0,0,0,1],[0,0,0,0]],["EP_CAUSE_SILENCE","TARGET",[0,0,0,20],[0,0,40,60]]],"damage":{"kernel":"physical","slotIndex":1},"weaponUse":["BOW","CROSSBOW"]}},{"id":213603521,"signature":{"skillType":"ENEMY","element":"NONE","learnable":false,"mana":0,"cast":0,"cooldown":0,"motion":0,"range":4000,"rangeFromWeapon":false,"aoe":[0,0],"branch":"archery","reqLevel":0,"charLevel":0,"isLevelBased":true,"prereq":null,"powerStat":"DEX","classes":[],"reqs":[],"funcs":[["EP_PLAYER_ATTACK","TARGET",[0,0,0,1],[0,0,0,0]],["EP_CAUSE_SILENCE","TARGET",[0,0,0,3],[0,0,20,35]]],"damage":{"kernel":"physical","slotIndex":0},"weaponUse":["BOW","CROSSBOW"]}}],"noteRu":"Выстрел с возможной немотой. В игре предусмотрены два связанных действия; вероятность и длительность не рассчитаны.","noteEn":"A shot that can inflict silence. Two linked actions are recorded; chance and duration are not calculated."},{"id":213701001,"root":{"skillType":"ENEMY","element":null,"learnable":true,"mana":20,"cast":0,"cooldown":15,"motion":1,"range":1250,"rangeFromWeapon":false,"aoe":[0,0],"branch":"archery","reqLevel":41,"charLevel":0,"isLevelBased":false,"prereq":null,"powerStat":"STR","classes":["ACOLYTE","AGENT","ARCHER","ASCETIC","ASSASSIN","CALAMITY","CLERIC","CONJURER","DARKROAR","DISTURBANCE","DRAGOON","ENCHANTER","EXORCIST","GENERAL","GLADIATOR","JESTER","JUGGERNAUT","KNIGHT","MAGE","MONK","PALADIN","PREDATOR","PRIEST","SCOUT","SNIPER","WARLOCK","WARRIOR","WIZARD"],"reqs":[["archery",41],["trap",21]],"funcs":[["EP_DAMAGERATE_SCALE","CASTER",[0,0,0,-20],[0,0,0,0]],["EP_MULTI_MISSILE","CASTER",[0,0,0,2],[0,0,0,2]],["EP_CONSUME_AMMO","CASTER",[0,0,0,0],[0,0,0,5]]],"damage":null,"weaponUse":["CROSSBOW"]},"linked":[],"noteRu":"По игровой записи расходуются пять боеприпасов; это не означает пять гарантированных попаданий.","noteEn":"The game record consumes five rounds; this does not guarantee five hits."}]);
+// Ammunition is a signed source quantity, not a number of hits or damage.
+// Compare the immutable proof, allowing only the positive integer FV2[3] of
+// its ONE EP_CONSUME_AMMO action to differ. Linked actions remain exact.
+function sourceVerifiedAmmoQuantityMatches(record,proof){
+ const current=sourceVerifiedSkillSignature(record);
+ const rows=proof?.funcs,actual=current?.funcs,raw=record?.funcs;
+ if(!Array.isArray(rows)||!Array.isArray(actual)||!Array.isArray(raw)||
+  rows.length!==actual.length||raw.length!==rows.length)return false;
+ const positions=rows.map((row,i)=>row?.[0]==='EP_CONSUME_AMMO'?i:-1)
+  .filter(i=>i>=0);
+ if(positions.length!==1)return false;
+ const index=positions[0],effect=raw[index],vector=effect?.fv2;
+ if(effect?.ep!=='EP_CONSUME_AMMO'||effect.dir!=='CASTER'||
+  Object.keys(effect).sort().join(',')!=='dir,ep,fv1,fv2'||
+  !Array.isArray(vector)||vector.length!==4||
+  !Number.isSafeInteger(vector[3])||vector[3]<1||
+  !Array.isArray(actual[index])||!Array.isArray(actual[index][3])||
+  actual[index][3].length!==4)return false;
+ if(JSON.stringify(current)===JSON.stringify(proof))return true;
+ const normalized={...current,funcs:actual.map((row,i)=>i===index?
+  [row[0],row[1],row[2],[...row[3].slice(0,3),rows[index][3][3]]]:row)};
+ return JSON.stringify(normalized)===JSON.stringify(proof);
+}
 function rangedAmmoPreview({skillCatalog=null,jobKey=null,level=1,
   branchMasteries={},branchCaps={},weaponKind='BARE_HAND',
   branchLabels={},englishBranches={}}={}){
@@ -4903,7 +4926,7 @@ function rangedAmmoPreview({skillCatalog=null,jobKey=null,level=1,
     child?.id===proof.childId&&
      JSON.stringify(sourceVerifiedSkillSignature(child))===JSON.stringify(proof.child);
    const exact=source?.id===proof.id&&
-    JSON.stringify(sourceVerifiedSkillSignature(source))===JSON.stringify(proof.root)&&
+    sourceVerifiedAmmoQuantityMatches(source,proof.root)&&
     childrenExact&&
     (!proof.parentId||(parent?.id===proof.parentId&&
      JSON.stringify(sourceVerifiedSkillSignature(parent))===JSON.stringify(proof.parent)));
@@ -4934,7 +4957,11 @@ function rangedAmmoPreview({skillCatalog=null,jobKey=null,level=1,
     ammoCount:ammo[0].fv2[3],mana:source.mana,cooldown:source.cooldown,
     prerequisiteId:proof.parentId??null,linkedEffectId:proof.childId??null,
     linkedEffectIds:proof.linked?proof.linked.map(entry=>entry.id):[proof.childId],
-    noteRu:proof.noteRu,noteEn:proof.noteEn,requirementsMet:ru.length===0,
+    noteRu:proof.id===213701001?
+      'Расход боеприпасов указан отдельно; он не гарантирует столько же попаданий.':proof.noteRu,
+     noteEn:proof.id===213701001?
+      'Ammunition consumption is listed separately; it does not guarantee as many hits.':proof.noteEn,
+     requirementsMet:ru.length===0,
     reasonRu:ru.join(' · '),reasonEn:en.join(' · '),
     sourceOnly:true,finalDamage:null,inventoryChecked:false,appliedToHero:false});
   }
