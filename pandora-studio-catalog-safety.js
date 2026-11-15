@@ -663,7 +663,9 @@ function replaySkills(before,after){
      }
      for(const group of ['offense','defense','movement','utility'])
       for(const row of result[group]){
-       if(row?.available===false)continue;
+       // Numerical previews may be shown even when the current hero cannot
+       // cast the skill. Availability is not proof that the formula is absent.
+       // Keep protecting those displayed numbers during catalog updates.
        write(row.id,'skill-effects',weaponKind,row.amount);
       }
     }
