@@ -62,7 +62,7 @@ test('pre-apply warnings and approval are driven by exact selected snapshot mech
  assert.match(code,/compatibility:safety\.compatibility\(baseline,selected\)/);
  assert.match(code,/const mechanicsReview=preview\?\.compatibility\?\.requiresMechanicReview===true/);
  assert.match(code,/const risky=Boolean\(deleted\|\|settings\|\|unsure\|\|links\|\|formulas\|\|mechanicsReview/);
- assert.match(code,/Изменения механик без подтверждённого расчёта/);
+ assert.match(code,/Требуют адаптации механики; публикация не подтвердит их расчёты/);
  assert.match(code,/const preview=ready\?selectedImpact\(\):null/);
  const model=readFileSync(new URL('../pandora-studio-catalog-safety.js',import.meta.url),'utf8');
  assert.match(model,/sampleLevels=\[\.\.\.new Set\(\[1,15,30,45,max\]/);

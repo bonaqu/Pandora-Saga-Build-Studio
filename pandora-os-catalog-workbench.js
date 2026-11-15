@@ -249,8 +249,8 @@
     const formulaStatus=h('p',{class:'os-sync-formula-status'});
     const formulaRows=h('div',{class:'os-sync-formula-rows'});
     const formulaNote=h('small',{class:'os-sync-formula-note',text:tr(
-      'Сравниваются реальные модели очков, стартовых характеристик и базовых ОЗ/ОМ без снаряжения и усилений. Урон, эффекты предметов и навыков этим предварительным расчётом не проверяются.',
-      'The actual points, base attributes and base HP/MP models are compared without gear or buffs. This preview does not verify damage, item effects or skill effects.')});
+      'Числа очков и базовых ОЗ/ОМ проверяются отдельно от известных эффектов навыков, экипировки и связанных игровых записей. Новые и неизвестные механики не считаются рассчитанными.',
+      'Point budgets and base HP/MP are checked separately from known skill effects, equipment bonuses and linked game records. New and unknown mechanics are not claimed to be calculated.')});
     formulaPreview.append(formulaTitle,formulaStatus,formulaRows,formulaNote);
     const riskApproval=h('input',{type:'checkbox',disabled:true});
     const riskApprovalLabel=h('label',{class:'os-sync-risk-approval',hidden:true},[
@@ -258,7 +258,9 @@
       'Я проверил спорные изменения и понимаю, что обновится каталог Build Studio.',
       'I reviewed the flagged changes and understand that the Build Studio catalog will change.')})
     ]);
-    decisionPreview.append(decisionHeading,decisionSummary,decisionWarnings,formulaPreview,riskApprovalLabel);
+    const coverageSummary=h('p',{class:'os-sync-coverage-summary',hidden:true});
+    decisionPreview.append(decisionHeading,decisionSummary,coverageSummary,
+      decisionWarnings,formulaPreview,riskApprovalLabel);
     const reviewSteps=h('section',{class:'os-sync-review-steps'});
     reviewSteps.hidden=true;
     reviewSteps.append(
@@ -456,6 +458,19 @@
            missing.slice(0,3).join(', ')+
            (replay.lost>3?' (+'+(replay.lost-3)+')':''));
         }
+        // Every linked ID is audited, even when no old numeric model exists.
+        // This catches new orphan skills/items that model replay cannot see.
+        const graph=typeof safety.sourceGraphIntegrity==='function'?
+         safety.sourceGraphIntegrity(baseline,selected):null;
+        if(graph&&!graph.ok){
+          validation.ok=false;
+          const examples=graph.samples.map(x=>x.kind+' '+x.owner+
+           ' · '+x.field+' → '+String(x.target??'—'));
+          validation.issues.push(tr(
+           'Новые или повреждённые игровые ссылки: ',
+           'New or broken game references: ')+graph.newBroken+
+           (examples.length?' · '+examples.slice(0,3).join('; '):''));
+        }
         // Grade 0–10 source-EP replay: an unsupported replacement for a
         // previously numeric Soul/item bonus must block D1, before confirm.
         const equipment=typeof safety.replayEquipmentEffects==='function'?
@@ -472,13 +487,26 @@
         }
         result={validation,
           comparison:safety.compare(baseline,selected,hero),
-          compatibility:safety.compatibility(baseline,selected),replay,equipment};
+          compatibility:safety.compatibility(baseline,selected),replay,equipment,graph};
       }catch(error){
         result={validation:{ok:false,issues:[String(error.message||error)]},
           comparison:null};
       }
       impactCache={fingerprint,result};
       return result;
+    }
+    // Report every selected source, not only the first six summary samples.
+    // Records not selected for publication have not been preflighted here.
+    function selectedMechanicStatus(change){
+      if(!chosen.has(change.id))return null;
+      const entries=selectedImpact()?.compatibility?.entries||[];
+      const dataset=change.dataset,key=change.key;
+      const hits=entries.filter(row=>row.key===dataset+':'+key||
+       row.key===dataset||
+       (dataset==='tables'&&row.key.startsWith('table:')));
+      if(!hits.length)return null;
+      return hits.some(row=>row.kind==='needsReview')?'needsReview':
+       hits.some(row=>row.kind==='verified')?'verified':'sourceOnly';
     }
     riskApproval.addEventListener('change',()=>{
      riskApprovalFingerprint=riskApproval.checked?selectedFingerprint():'';
@@ -520,7 +548,8 @@
     function matchesFilter(change){
       if(filterKind==='accepted')return chosen.has(change.id);
       if(filterKind==='declined')return !chosen.has(change.id);
-      if(filterKind==='needsReview')return describe(change).uncertain;
+      if(filterKind==='needsReview')return describe(change).uncertain||
+        selectedMechanicStatus(change)==='needsReview';
       if(filterKind==='links')return describe(change).rows.some(row=>row.linkChanged);
       if(filterKind==='sameVisible')return describe(change).rows.some(row=>row.sameVisible);
       if(filterKind==='readable')return !describe(change).unexplained;
@@ -573,6 +602,21 @@
       if(riskApprovalFingerprint!==fingerprint)riskApproval.checked=false;
       const acknowledged=!risky||(riskApproval.checked&&riskApprovalFingerprint===fingerprint);
       decisionPreview.hidden=!ready;
+      coverageSummary.hidden=!ready||!preview?.compatibility;
+      if(preview?.compatibility){
+        const counts=preview.compatibility.totals;
+        coverageSummary.textContent=tr(
+         'Проверка выбранного каталога — рассчитано и проверено: ',
+         'Selected catalog preflight — calculated and verified: ')+counts.verified+
+         tr(' · только исходные сведения: ',' · source information only: ')+
+         counts.sourceOnly+
+         tr(' · нужна адаптация механики: ',' · mechanic adaptation needed: ')+
+         counts.needsReview+
+         (preview.graph?tr(' · игровые ссылки проверены: ',' · linked records inspected: ')+
+          preview.graph.inspected:'')+
+         (preview.graph?.newBroken?tr(' · повреждённых новых ссылок: ',
+          ' · new broken links: ')+preview.graph.newBroken:'');
+      }
       decisionSummary.textContent=tr('Будет обновлено: ','Will update: ')+selected+
        tr(' изменений из ',' changes of ')+changes.length+
        (syncFormatting?tr(' · переносы описаний',' · description line breaks'):'')+
@@ -583,8 +627,8 @@
       if(deleted)cautions.push(tr('Удаление записей: ','Record removals: ')+deleted);
       if(settings)cautions.push(tr('Настройки игры: ','Game settings: ')+settings);
       if(mechanicsReview)cautions.push(tr(
-       'Изменения механик без подтверждённого расчёта: ',
-       'Gameplay changes not yet proven by a calculation: ')+
+       'Требуют адаптации механики; публикация не подтвердит их расчёты: ',
+       'Mechanic adaptation required; publication cannot verify these calculations: ')+
        preview.compatibility.totals.needsReview);
       if(formulas){
        cautions.push(tr('Игровые формулы обновятся целым разделом',
@@ -1031,6 +1075,11 @@
               description.unexplained?tr('Есть нерасшифрованные параметры','Some parameters are unexplained'):
               description.uncertain?tr('Расшифровано · требуется ручная проверка','Explained · manual approval required'):
               tr('Значения расшифрованы · проверь перед выбором','Values explained · verify before selecting')});
+          const mechanic=selectedMechanicStatus(change);
+          if(mechanic)helper.textContent+=' · '+(
+           mechanic==='verified'?tr('Расчёт проверен','Model checked'):
+           mechanic==='sourceOnly'?tr('Только сведения из игры','Game data only'):
+           tr('Нужна адаптация механики','Mechanic adaptation required'));
           if(variantTotal.get(description.title)>1)
             helper.textContent+=tr(' · Вариант ',' · Variant ')+variantOrder.get(change.id)+
               tr(' из ',' of ')+variantTotal.get(description.title)+
@@ -1426,6 +1475,12 @@
          x.module.startsWith('source-')?replaySourceLabel(x.module):
          x.job==='target'?'эффект цели':x.job)+
         (x.level?' / '+x.level:''))].slice(0,4).join(' · '));
+      const graph=typeof safety.sourceGraphIntegrity==='function'?
+       safety.sourceGraphIntegrity(baseline,combined):null;
+      if(graph&&!graph.ok)throw Error(
+       'Проверка связей: обнаружено новых повреждённых ссылок: '+
+       graph.newBroken+' · '+graph.samples.map(x=>x.kind+' '+x.owner+
+        ' / '+x.field+' → '+String(x.target??'—')).slice(0,4).join(' · '));
       const equipment=typeof safety.replayEquipmentEffects==='function'?
        safety.replayEquipmentEffects(baseline,combined):null;
       if(equipment&&!equipment.ok)throw Error(
@@ -1439,7 +1494,7 @@
       normalized.entries.legacyLocale=legacyRows; // Preserve exact IDs, payloads and source attribution.
       review.auditSelection(baseline,upstream,combined,chosen,importer.files,
         {syncRussianInstances});
-      return {combined,normalized,compatibility,replay,equipment};
+      return {combined,normalized,compatibility,replay,equipment,graph};
     }
 
     exportButton.onclick=()=>{

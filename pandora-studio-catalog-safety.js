@@ -676,8 +676,13 @@ function verifiedDynamicSkillFV(id,old,now,before,after){
 function compatibility(before,after){
  const issues={verified:[],sourceOnly:[],needsReview:[]},totals={
   verified:0,sourceOnly:0,needsReview:0};
+ // Samples remain compact in the admin summary, but NO changed source may
+ // disappear from machine-readable coverage after the first six records.
+ const entries=[];
  const add=(kind,key,title)=>{
+  const item={kind,key,title};
   totals[kind]++;
+  entries.push(item);
   if(issues[kind].length<6)issues[kind].push({key,title});
  };
  const same=(x,y)=>JSON.stringify(x)===JSON.stringify(y);
@@ -801,9 +806,132 @@ function compatibility(before,after){
    }
   }else if(['unison','expertise'].includes(dataset))
    add('needsReview',dataset,'Раздел «'+dataset+'»: изменены игровые бонусы или мастерство');
-  else add('sourceOnly',dataset,'Раздел «'+dataset+'»: структурно проверенные данные');
+  else if(['monsters','drops','maps'].includes(dataset)){
+   // Source encyclopedia data, not proven damage/HP calculations. Report
+   // every selected record, not one opaque dataset status.
+   for(const id of new Set([...Object.keys(oldData||{}),...Object.keys(newData||{})])){
+    const a=oldData?.[id],b=newData?.[id];
+    if(!same(a,b))add('sourceOnly',dataset+':'+id,
+     String(b?.name||a?.name||id).slice(0,90)+
+     ' · сведения из игры, без подтверждённой боевой формулы');
+   }
+  }else if(dataset==='strings.en'){
+   const groups=new Set([...Object.keys(oldData||{}),...Object.keys(newData||{})]);
+   for(const group of groups){
+    const a=oldData?.[group],b=newData?.[group];
+    if(same(a,b))continue;
+    if(a&&b&&typeof a==='object'&&!Array.isArray(a)&&
+     typeof b==='object'&&!Array.isArray(b)){
+     for(const id of new Set([...Object.keys(a),...Object.keys(b)]))
+      if(!same(a[id],b[id]))add('sourceOnly',dataset+':'+group+'/'+id,
+       'Английский перевод · '+String(group)+' / '+String(id));
+    }else add('sourceOnly',dataset+':'+group,'Английский перевод · '+String(group));
+   }
+  }else if(['meta','instances','trades','chests'].includes(dataset))
+   add('sourceOnly',dataset,'Раздел «'+dataset+'»: только исходные игровые сведения');
+  else add('needsReview',dataset,
+   'Новый раздел «'+dataset+'»: поддержка его механики не подтверждена');
  }
- return {totals,samples:issues,requiresMechanicReview:totals.needsReview>0};
+ return {totals,samples:issues,entries,requiresMechanicReview:totals.needsReview>0};
+}
+
+// An OLD-model replay alone cannot detect a newly introduced broken source
+// link. This read-only audit traverses both full catalog snapshots, including
+// previously unmodeled skills and item-triggered skills. Baseline source oddities
+// (e.g. existing zero-ID placeholders) are grandfathered *only while
+// unchanged*: new or modified dangling references always block pre-D1 writes.
+// Inspect structural links; do not infer game-server activation or damage.
+function sourceGraphIntegrity(before,after){
+ const executionEP=new Set(['EP_SKILL_EXEC','EP_ONHIT_SKILL_EXEC',
+  'EP_ONHIT_SKILL_EXEC_CHANGE_BA','EP_SKILL_EXEC_COUNT',
+  'EP_SKILL_EXEC_DIFFUSION','EP_SKILL_PARRY_COUNTER',
+  'EP_ATTACK_BLOCK_BREAK']);
+ const inspect=data=>{
+  const issues=[],skills=data?.skills||{},items=data?.items||{},
+   classes=data?.classes||{};
+  let inspected=0;
+  const executionEdges=new Map();
+  const present=(map,id)=>id!=null&&Object.hasOwn(map,String(id));
+  const signed=(kind,owner,index,field,target,reason)=>{
+   issues.push({kind,owner:String(owner),index,field,
+    target:target==null?null:String(target),reason});
+  };
+  const link=(kind,owner,index,field,target,records)=>{
+   inspected++;
+   if(!Number.isSafeInteger(target)||target<=0||!present(records,target))
+    signed(kind,owner,index,field,target,
+     !Number.isSafeInteger(target)||target<=0?'Некорректный ID ссылки':'Связанная запись отсутствует');
+  };
+  for(const [id,skill] of Object.entries(skills)){
+   if(!skill||typeof skill!=='object')continue;
+   if(skill.prereq!=null)link('skill',id,-1,'prereq',skill.prereq,skills);
+   for(const klass of Object.keys(skill.classes||{})){
+    inspected++;
+    if(!present(classes,klass))
+     signed('skill',id,-1,'class',klass,'Профессия отсутствует');
+   }
+   for(const [index,effect] of (Array.isArray(skill.funcs)?skill.funcs:[]).entries()){
+    if(executionEP.has(effect?.ep)){
+     const child=effect?.fv1?.[3];
+     link('skill',id,index,effect.ep,child,skills);
+     if(Number.isSafeInteger(child)&&child>0&&present(skills,child)){
+      if(!executionEdges.has(id))executionEdges.set(id,[]);
+      executionEdges.get(id).push({id:String(child),index});
+     }
+    }
+    if(effect?.ep==='EP_CONSUME_ITEM'){
+     link('skill',id,index,'EP_CONSUME_ITEM',effect?.fv1?.[3],items);
+     inspected++;
+     if(!Array.isArray(effect.fv2)||effect.fv2.length!==4||
+      !Number.isSafeInteger(effect.fv2[3])||effect.fv2[3]<1)
+      signed('skill',id,index,'EP_CONSUME_ITEM.quantity',
+       effect?.fv2?.[3],'Некорректное количество материала');
+    }
+   }
+  }
+  for(const [id,item] of Object.entries(items))
+   for(const [index,effect] of (Array.isArray(item?.effects)?item.effects:[]).entries())
+    if(['EP_SKILL_EXEC','EP_SKILL_EXEC_BALM'].includes(effect?.func))
+     link('item',id,index,effect.func,effect?.a,skills);
+  // An existing target ID does not prove a linked skill graph terminates.
+  // Detect introduced direct and multi-step execution cycles, including
+  // unlearnable skills without a previously verified numeric preview.
+  const visited=new Set(),active=new Set();
+  const visit=id=>{
+   if(visited.has(id))return;
+   visited.add(id);active.add(id);
+   for(const edge of executionEdges.get(id)||[]){
+    inspected++;
+    if(active.has(edge.id))
+     signed('skill',id,edge.index,'execution-cycle',edge.id,
+      'Циклическая цепочка игровых действий');
+    else visit(edge.id);
+   }
+   active.delete(id);
+  };
+  for(const id of Object.keys(skills))visit(id);
+  return {issues,inspected};
+ };
+ const previous=inspect(before),selected=inspect(after);
+ const fingerprint=p=>[p.kind,p.owner,p.index,p.field,p.target,p.reason].join('|');
+ const acknowledged=new Set(previous.issues.map(fingerprint));
+ const displayOnly=new Set(['name','nameEn','desc','descEn','iconId']);
+ const modelRecord=(data,row)=>{
+  const record=(row.kind==='item'?data?.items:data?.skills)?.[row.owner];
+  if(!record||typeof record!=='object')return null;
+  return Object.fromEntries(Object.entries(record).filter(([key])=>!displayOnly.has(key)));
+ };
+ // Grandfather a legacy broken reference ONLY while its owning gameplay
+ // record is unchanged. A title/translation edit is harmless; changed FV,
+ // execution, class permissions and timing must requalify, not borrow the
+ // old zero-ID exception to bypass review.
+ const unchanged=row=>JSON.stringify(modelRecord(before,row))===
+  JSON.stringify(modelRecord(after,row));
+ const added=selected.issues.filter(row=>!acknowledged.has(fingerprint(row))||
+  !unchanged(row));
+ return {ok:added.length===0,inspected:selected.inspected,
+  historical:previous.issues.length,unresolved:selected.issues.length,
+  newBroken:added.length,samples:added.slice(0,8)};
 }
 
 // Re-run EXISTING calculator models against both source snapshots, before D1.
@@ -1220,5 +1348,5 @@ function replaySkills(before,after){
   errors:problems.slice(0,5)};
 }
 
-root.PandoraCatalogSafety=Object.freeze({MAX_LEVEL,EXPECTED,check,project,compare,compatibility,replaySkills,replayEquipmentEffects});
+root.PandoraCatalogSafety=Object.freeze({MAX_LEVEL,EXPECTED,check,project,compare,compatibility,sourceGraphIntegrity,replaySkills,replayEquipmentEffects});
 })(typeof window==='undefined'?globalThis:window);
