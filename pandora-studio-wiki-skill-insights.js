@@ -138,7 +138,8 @@ function hymnChainEvidence(skill,catalog,classes){
    [0,0,0,p.area],[0,0,0,4])||
   !same(skill.funcs[1],'EP_MOVESPEED_CONST','CASTER',[0,0,p.move,0])||
   !same(skill.funcs[2],'EP_TOGGLE','CASTER',[0,0,-20,50],[0,0,0,5])||
-  !same(skill.funcs[3],'EP_STATE_CHANT','CASTER',zero)||
+  !['EP_STATE_CHANT','EP_UNABLE_CAST'].some(ep=>
+   same(skill.funcs[3],ep,'CASTER',zero))||
   (p.previous!=null&&catalog?.[String(p.previous)]?.id!==p.previous))
   return null;
  // Raw classes lists can be broad; at least one current job must meet
@@ -159,6 +160,34 @@ function hymnChainEvidence(skill,catalog,classes){
    same(end.funcs[i],ep,'TARGET',vector)))return null;
  return {notes:[{ru:p.ru,en:p.en}],paths:[[skill.id,p.area,p.final]],
   extra:[],pathKind:'hymn',sourceOnly:true,finalAmount:null};
+}
+// An exact, source-only note for the current level-50 Saboteur passive.
+// The new second vector must NOT be treated as a final trap limit or damage.
+function trapCapacityEvidence(skill,classes){
+ if(skill.id!==240009001)return null;
+ const expected=[
+  ['EP_TRAP_CNT','TARGET',[0,0,5,0],[0,0,0,0]],
+  ['EP_ELEMENT_DAMAGE_SCALE','TARGET',[0,0,14,0],[0,0,0,0]]
+ ];
+ if(skill.learnable!==true||skill.skillType!=='PASSIVE'||
+  skill.element!==null||skill.branch!=='trap'||
+  skill.branchRaw!=='TECHNIQUE_TRAP'||skill.charLevel!==50||
+  skill.reqLevel!==0||skill.isLevelBased!==true||
+  skill.prereq!==null||skill.powerStat!=='STR'||
+  skill.mana!==0||skill.cast!==0||skill.cooldown!==0||
+  skill.damage!==null||skill.weaponUse!==null||
+  JSON.stringify(skill.aoe)!=='[0,0]'||
+  JSON.stringify(skill.reqs)!=='[]'||
+  JSON.stringify(skill.classes)!=='{"DISTURBANCE":1}'||
+  !Number.isSafeInteger(classes?.DISTURBANCE?.branchCaps?.trap)||
+  classes.DISTURBANCE.branchCaps.trap<1||
+  JSON.stringify(skill.funcs?.map(f=>[f.ep,f.dir,f.fv1,f.fv2]))!==
+   JSON.stringify(expected))return null;
+ return {notes:[{
+  ru:'С 50-го уровня это пассивное умение влияет на предел установленных ловушек и усиливает взрывающиеся ловушки в зависимости от мастерства. Точное число дополнительных ловушек и итоговый урон не подтверждены.',
+  en:'From level 50, this passive affects the number of placed traps and strengthens explosive traps based on mastery. The exact extra trap count and final damage are not verified.'
+ }],paths:[],extra:[],pathKind:'trap-passive',
+  sourceOnly:true,finalAmount:null};
 }
 function rowsOf(result){
  if(!result||typeof result!=='object')return [];
@@ -551,6 +580,11 @@ function inspect({skillCatalog,classes,id,calculator}={}){
  if(hymn){
   store.values.set(skill.id,hymn);
   return hymn;
+ }
+ const trapPassive=trapCapacityEvidence(skill,classes);
+ if(trapPassive){
+  store.values.set(skill.id,trapPassive);
+  return trapPassive;
  }
  const jobs=Object.keys(classes).filter(job=>
   skill.classes?.[job]===1&&classes[job]?.branchCaps);
