@@ -71,7 +71,7 @@
     // Reuse the game's hover/focus helper. All hints remain plain text;
     // owner-authored copy updates the existing tooltip, never HTML.
     const hint=(node,description)=>{
-      root.PandoraGuideTooltip?.attach(node,description,{hoverDelay:1000});
+      root.PandoraGuideTooltip?.attach(node,description,{hoverDelay:420});
       return node;
     };
     const actionHint=(node,key,ru,en)=>{
