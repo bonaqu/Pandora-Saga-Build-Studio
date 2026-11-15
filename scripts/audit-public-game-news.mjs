@@ -11,14 +11,14 @@ console.log('PATCH_NEWS_HEADLINES '+JSON.stringify(items.slice(0,15).map(x=>({
 const article=items[0];
 if(!article)throw Error('No current game news');
 const html=String(article.content||article.body||'');
-const images=[...html.matchAll(/<img\\b[^>]*src=["']([^"']+)["'][^>]*>/gi)]
+const images=[...html.matchAll(/<img\b[^>]*src=["']([^"']+)["'][^>]*>/gi)]
  .map(m=>m[1]).filter(url=>!url.includes('/icons/')).slice(0,30);
 const decode=s=>s.replace(/&nbsp;/g,' ').replace(/&laquo;/g,'«')
  .replace(/&raquo;/g,'»').replace(/&quot;/g,'"').replace(/&amp;/g,'&')
- .replace(/&#(\\d+);/g,(_,c)=>String.fromCodePoint(Number(c)));
+ .replace(/&#(\d+);/g,(_,c)=>String.fromCodePoint(Number(c)));
 const plain=decode(html
- .replace(/<\\/\\s*(p|h[1-6]|tr|li|blockquote|div)\\s*>/gi,'\n')
- .replace(/<br\\s*\\/?>/gi,'\n')
+ .replace(/<\/\s*(p|h[1-6]|tr|li|blockquote|div)\s*>/gi,'\n')
+ .replace(/<br\s*\/?>/gi,'\n')
  .replace(/<[^>]*>/g,'')
  .replace(/[ \t]+/g,' ')
  .replace(/\n[ \t]*/g,'\n'));
