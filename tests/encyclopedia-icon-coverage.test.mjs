@@ -5,13 +5,17 @@ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 test('all packaged item icons have local verified paths or an explicit original-404 record',()=>{
  const items=Object.values(JSON.parse(read('data/os/items.json')));
  const manifest=JSON.parse(read('assets/os-icon-manifest.json'));
- const missing=new Set(manifest.missing.filter(x=>x.kind==='items'&&x.error==='HTTP 404')
-  .map(x=>x.stem));
+ const missing=new Map(manifest.missing.filter(x=>x.kind==='items')
+  .map(x=>[x.stem,x.error]));
  for(const item of items){
   if(!item.icon)continue;
   const local=manifest.icons.items[item.icon];
-  assert.ok(local||missing.has(item.icon),
+  assert.ok(local||['HTTP 404','Not attempted'].includes(missing.get(item.icon)),
    'Unverified item icon identity '+item.icon+' (item '+item.id+')');
+  if(missing.get(item.icon)==='Not attempted'){
+   assert.equal(local,undefined,
+    'An unprobed original must never be substituted with unrelated art');
+  }
   if(local){
    assert.match(local,/^assets\/items\/icons\/[A-Za-z0-9_-]+\.webp$/);
    assert.ok(existsSync(new URL('../'+local,import.meta.url)),local);

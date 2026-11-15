@@ -28,9 +28,11 @@ test('icon audit reconciles complete source, verified WebP, and recorded source 
  assert.equal(run.status,0,run.stderr||run.stdout.slice(-1800));
  const data=JSON.parse(run.stdout);
  assert.deepEqual(data.issues,[]);
- assert.equal(data.expected,1437);
- assert.equal(data.present,1173);
- assert.equal(data.missing,264);
+ assert.equal(data.expected,1454);
+ assert.equal(data.present,1170);
+ assert.equal(data.missing,284);
+ assert.equal(data.confirmed404,264,'Only observed HTTP 404 entries');
+ assert.equal(data.unverified,20,'Unprobed originals are not 404');
  assert.equal(data.corrupt,0);
  assert.equal(data.manifest,true);
 });

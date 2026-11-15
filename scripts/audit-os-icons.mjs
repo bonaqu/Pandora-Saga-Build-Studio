@@ -80,7 +80,9 @@ if(manifest){
  if(recordedPresent.size!==totals.present||recordedMissing.size!==totals.missing)
   issues.push('Manifest path sets do not match current disk state');
  const aliases=manifest.displayAliases?.skills||{};
- const expected=buildSkillDisplayAliases(skills,manifest.icons?.skills,manifest.missing);
+ const expected=buildSkillDisplayAliases(skills,manifest.icons?.skills,
+  manifest.missing.filter(row=>row.error==='HTTP 404'));
+ // Display-only aliases cannot be inferred from unprobed new originals.
  if(JSON.stringify(aliases)!==JSON.stringify(expected))
   issues.push('Skill display-only aliases differ from original catalog names and rank families');
  for(const [target,donor] of Object.entries(aliases)){
