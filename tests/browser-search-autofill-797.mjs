@@ -101,11 +101,18 @@ export async function runGlobalSearchAutofill797Smoke(browser,base){
    field.type='search';field.placeholder='Найти предмет…';
    document.body.append(field);
    await new Promise(resolve=>setTimeout(resolve,0));
-   const secured=field.getAttribute('data-ps-noncredential-search')==='true'&&
-    field.readOnly&&field.autocomplete==='none';
+   const secured={
+    protected:field.getAttribute('data-ps-noncredential-search')==='true',
+    readonly:field.readOnly,
+    autocomplete:field.getAttribute('autocomplete'),
+    name:field.getAttribute('name')
+   };
    field.remove();return secured;
   });
-  assert.equal(observed,true,'Newly added native search must receive shared guard');
+  assert.deepEqual(observed,{
+   protected:true,readonly:true,autocomplete:'none',name:observed.name
+  },'Newly added native search must receive shared guard');
+  assert.match(observed.name,/^ps-filter-/);
   const untouched=await page.evaluate(()=>{
    const auth=document.createElement('input');auth.type='password';
    auth.autocomplete='current-password';
