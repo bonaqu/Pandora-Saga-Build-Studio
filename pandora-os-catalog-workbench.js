@@ -1,6 +1,25 @@
 (function (root) {
   'use strict';
 
+  // Map nested per-record findings onto the one selectable atomic dataset
+  // row. The most serious issue wins, even when it is far beyond the first
+  // six preview samples.
+  function statusForSelection(change,entries){
+    if(!change||!Array.isArray(entries))return null;
+    const dataset=change.dataset,key=change.key;
+    if(typeof dataset!=='string'||typeof key!=='string')return null;
+    const atomic=key==='@dataset'&&
+      root.PandoraOSCatalogReview?.atomicDatasets?.has(dataset)===true;
+    const prefix=dataset+':';
+    const hits=entries.filter(row=>
+      row.key===prefix+key||row.key===dataset||
+      (dataset==='tables'&&row.key.startsWith('table:'))||
+      (atomic&&row.key.startsWith(prefix)));
+    if(!hits.length)return null;
+    return hits.some(row=>row.kind==='needsReview')?'needsReview':
+      hits.some(row=>row.kind==='verified')?'verified':'sourceOnly';
+  }
+
   // Administrator-only review. UI selection is never a D1 write.
   // The Worker validates the auth token and the expected active snapshot.
   async function open({request, apiBase, modal, h, afterPublish, getHero=()=>null,
@@ -499,14 +518,7 @@
     // Records not selected for publication have not been preflighted here.
     function selectedMechanicStatus(change){
       if(!chosen.has(change.id))return null;
-      const entries=selectedImpact()?.compatibility?.entries||[];
-      const dataset=change.dataset,key=change.key;
-      const hits=entries.filter(row=>row.key===dataset+':'+key||
-       row.key===dataset||
-       (dataset==='tables'&&row.key.startsWith('table:')));
-      if(!hits.length)return null;
-      return hits.some(row=>row.kind==='needsReview')?'needsReview':
-       hits.some(row=>row.kind==='verified')?'verified':'sourceOnly';
+      return statusForSelection(change,selectedImpact()?.compatibility?.entries||[]);
     }
     riskApproval.addEventListener('change',()=>{
      riskApprovalFingerprint=riskApproval.checked?selectedFingerprint():'';
@@ -1836,5 +1848,5 @@
     return {...check,verifiedDatasets:files.length};
   }
 
-  root.PandoraOSCatalogWorkbench=Object.freeze({open,verifyPublishedSnapshot});
+  root.PandoraOSCatalogWorkbench=Object.freeze({open,verifyPublishedSnapshot,statusForSelection});
 })(typeof window === 'undefined' ? globalThis : window);
