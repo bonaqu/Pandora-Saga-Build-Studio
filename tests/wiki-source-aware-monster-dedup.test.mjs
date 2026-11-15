@@ -81,7 +81,7 @@ test('real game encyclopedia hides unreferenced identical monster records withou
  assert.equal(lamplighters.length,1,
   'Identical event phases with the same drop and spawns should show only once');
  assert.equal(index.canonical('monster','43642'),'43641');
- assert.equal(index.drops('43641').length,2);
+ // Active 2026-11-15 data no longer assigns this event enemy a drop table.
  // The latest D1 removed the event drops and map appearances.
  // Historical sources stay testable separately; do not invent active spawns.
  assert.equal(index.locations('43641').length,0);
