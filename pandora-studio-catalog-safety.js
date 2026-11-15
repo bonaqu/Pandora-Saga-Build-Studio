@@ -676,8 +676,13 @@ function verifiedDynamicSkillFV(id,old,now,before,after){
 function compatibility(before,after){
  const issues={verified:[],sourceOnly:[],needsReview:[]},totals={
   verified:0,sourceOnly:0,needsReview:0};
+ // Samples remain compact in the admin summary, but NO changed source may
+ // disappear from machine-readable coverage after the first six records.
+ const entries=[];
  const add=(kind,key,title)=>{
+  const item={kind,key,title};
   totals[kind]++;
+  entries.push(item);
   if(issues[kind].length<6)issues[kind].push({key,title});
  };
  const same=(x,y)=>JSON.stringify(x)===JSON.stringify(y);
@@ -803,7 +808,69 @@ function compatibility(before,after){
    add('needsReview',dataset,'Раздел «'+dataset+'»: изменены игровые бонусы или мастерство');
   else add('sourceOnly',dataset,'Раздел «'+dataset+'»: структурно проверенные данные');
  }
- return {totals,samples:issues,requiresMechanicReview:totals.needsReview>0};
+ return {totals,samples:issues,entries,requiresMechanicReview:totals.needsReview>0};
+}
+
+// An OLD-model replay alone cannot detect a newly introduced broken source
+// link. This read-only audit traverses both full catalog snapshots, including
+// previously unmodeled skills and item-triggered skills. Baseline source oddities
+// (e.g. two historical zero-ID placeholders) are grandfathered *only while
+// unchanged*: new or modified dangling references always block pre-D1 writes.
+// Inspect structural links; do not infer game-server activation or damage.
+function sourceGraphIntegrity(before,after){
+ const executionEP=new Set(['EP_SKILL_EXEC','EP_ONHIT_SKILL_EXEC',
+  'EP_ONHIT_SKILL_EXEC_CHANGE_BA','EP_SKILL_EXEC_COUNT',
+  'EP_SKILL_EXEC_DIFFUSION','EP_SKILL_PARRY_COUNTER',
+  'EP_ATTACK_BLOCK_BREAK']);
+ const inspect=data=>{
+  const issues=[],skills=data?.skills||{},items=data?.items||{},
+   classes=data?.classes||{};
+  let inspected=0;
+  const present=(map,id)=>id!=null&&Object.hasOwn(map,String(id));
+  const signed=(kind,owner,index,field,target,reason)=>{
+   issues.push({kind,owner:String(owner),index,field,
+    target:target==null?null:String(target),reason});
+  };
+  const link=(kind,owner,index,field,target,records)=>{
+   inspected++;
+   if(!Number.isSafeInteger(target)||target<=0||!present(records,target))
+    signed(kind,owner,index,field,target,
+     !Number.isSafeInteger(target)||target<=0?'Некорректный ID ссылки':'Связанная запись отсутствует');
+  };
+  for(const [id,skill] of Object.entries(skills)){
+   if(!skill||typeof skill!=='object')continue;
+   if(skill.prereq!=null)link('skill',id,-1,'prereq',skill.prereq,skills);
+   for(const klass of Object.keys(skill.classes||{})){
+    inspected++;
+    if(!present(classes,klass))
+     signed('skill',id,-1,'class',klass,'Профессия отсутствует');
+   }
+   for(const [index,effect] of (Array.isArray(skill.funcs)?skill.funcs:[]).entries()){
+    if(executionEP.has(effect?.ep))
+     link('skill',id,index,effect.ep,effect?.fv1?.[3],skills);
+    if(effect?.ep==='EP_CONSUME_ITEM'){
+     link('skill',id,index,'EP_CONSUME_ITEM',effect?.fv1?.[3],items);
+     inspected++;
+     if(!Array.isArray(effect.fv2)||effect.fv2.length!==4||
+      !Number.isSafeInteger(effect.fv2[3])||effect.fv2[3]<1)
+      signed('skill',id,index,'EP_CONSUME_ITEM.quantity',
+       effect?.fv2?.[3],'Некорректное количество материала');
+    }
+   }
+  }
+  for(const [id,item] of Object.entries(items))
+   for(const [index,effect] of (Array.isArray(item?.effects)?item.effects:[]).entries())
+    if(['EP_SKILL_EXEC','EP_SKILL_EXEC_BALM'].includes(effect?.func))
+     link('item',id,index,effect.func,effect?.a,skills);
+  return {issues,inspected};
+ };
+ const previous=inspect(before),selected=inspect(after);
+ const fingerprint=p=>[p.kind,p.owner,p.index,p.field,p.target,p.reason].join('|');
+ const acknowledged=new Set(previous.issues.map(fingerprint));
+ const added=selected.issues.filter(row=>!acknowledged.has(fingerprint(row)));
+ return {ok:added.length===0,inspected:selected.inspected,
+  historical:previous.issues.length,unresolved:selected.issues.length,
+  newBroken:added.length,samples:added.slice(0,8)};
 }
 
 // Re-run EXISTING calculator models against both source snapshots, before D1.
@@ -1220,5 +1287,5 @@ function replaySkills(before,after){
   errors:problems.slice(0,5)};
 }
 
-root.PandoraCatalogSafety=Object.freeze({MAX_LEVEL,EXPECTED,check,project,compare,compatibility,replaySkills,replayEquipmentEffects});
+root.PandoraCatalogSafety=Object.freeze({MAX_LEVEL,EXPECTED,check,project,compare,compatibility,sourceGraphIntegrity,replaySkills,replayEquipmentEffects});
 })(typeof window==='undefined'?globalThis:window);
