@@ -876,7 +876,38 @@ function compatibility(before,after){
        'Английский перевод · '+String(group)+' / '+String(id));
     }else add('sourceOnly',dataset+':'+group,'Английский перевод · '+String(group));
    }
-  }else if(['meta','instances','trades','chests'].includes(dataset))
+  }else if(['instances','trades','chests'].includes(dataset)){
+   // Keep one source-only status per changed entity, not per whole dataset.
+   const status=(key,label)=>add('sourceOnly',dataset+':'+key,
+    String(label).slice(0,90)+' · только сведения из игры');
+   if(dataset==='instances'){
+    for(const id of new Set([...Object.keys(oldData||{}),...Object.keys(newData||{})])){
+     const a=oldData?.[id],b=newData?.[id];
+     if(!same(a,b))status(id,b?.name||a?.name||id);
+    }
+   }else{
+    const groups=dataset==='trades'?
+     ['trades','npcs','mapNames','limitMeta']:['boxes','npc','npcId','masterKey'];
+    for(const group of groups){
+     const a=oldData?.[group],b=newData?.[group];
+     if(same(a,b))continue;
+     if(Array.isArray(a)||Array.isArray(b)){
+      const prev=Array.isArray(a)?a:[],next=Array.isArray(b)?b:[];
+      for(let i=0;i<Math.max(prev.length,next.length);i++)
+       if(!same(prev[i],next[i]))
+        status(group+'/'+i,next[i]?.name||prev[i]?.name||group+' / '+i);
+     }else if(validObject(a)||validObject(b)){
+      for(const id of new Set([...Object.keys(a||{}),...Object.keys(b||{})]))
+       if(!same(a?.[id],b?.[id]))
+        status(group+'/'+id,b?.[id]?.name||a?.[id]?.name||group+' / '+id);
+     }else status(group,group);
+    }
+    for(const group of new Set([...Object.keys(oldData||{}),...Object.keys(newData||{})]))
+     if(!groups.includes(group)&&!same(oldData?.[group],newData?.[group]))
+      add('needsReview',dataset+':'+group,
+       'Неподтверждённое новое поле '+dataset+' / '+group);
+   }
+  }else if(dataset==='meta')
    add('sourceOnly',dataset,'Раздел «'+dataset+'»: только исходные игровые сведения');
   else add('needsReview',dataset,
    'Новый раздел «'+dataset+'»: поддержка его механики не подтверждена');
@@ -969,15 +1000,33 @@ function sourceGraphIntegrity(before,after){
    link('chest',owner,-1,'container-item',box?.i,items);
    checkRolls(owner,box?.rolls);
   }
-  for(const [index,npc] of (Array.isArray(chests.npc)?chests.npc:[]).entries())
-   checkRolls('npc:'+index,npc?.rolls);
+  for(const [index,npc] of (Array.isArray(chests.npc)?chests.npc:[]).entries()){
+   const owner='npc:'+index;
+   link('chest',owner,-1,'npc-container-item',npc?.i,items);
+   link('chest',owner,-1,'key-item',npc?.key,items);
+   checkRolls(owner,npc?.rolls);
+  }
+  if(chests.masterKey!=null)
+   link('chest','masterKey',-1,'master-key-item',chests.masterKey,items);
   for(const [index,trade] of (Array.isArray(trades.trades)?trades.trades:[]).entries()){
    const owner=String(trade?.id??index);
    link('trade',owner,-1,'output-item',trade?.i,items);
    for(const [materialIndex,material] of
     (Array.isArray(trade?.mats)?trade.mats:[]).entries())
     link('trade',owner,materialIndex,'material-item',material?.i,items);
+   for(const [npcIndex,npcId] of
+    (Array.isArray(trade?.npc)?trade.npc:[]).entries())
+    link('trade',owner,npcIndex,'npc',npcId,trades.npcs||{});
   }
+  // World map listings omit arena/trade zones; game mapNames supplements them.
+  const knownMaps={...maps,...(validObject(trades.mapNames)?trades.mapNames:{})};
+  for(const [npcId,npc] of Object.entries(trades.npcs||{}))
+   for(const [index,mapId] of (Array.isArray(npc?.maps)?npc.maps:[]).entries())
+    link('npc',npcId,index,'map',mapId,knownMaps);
+  for(const [instanceId,instance] of Object.entries(data?.instances||{}))
+   for(const [index,mobId] of
+    (Array.isArray(instance?.mobs)?instance.mobs:[]).entries())
+    link('instance',instanceId,index,'monster',mobId,monsters);
   // An existing target ID does not prove a linked skill graph terminates.
   // Detect introduced direct and multi-step execution cycles, including
   // unlearnable skills without a previously verified numeric preview.
@@ -1007,12 +1056,17 @@ function sourceGraphIntegrity(before,after){
   else if(row.kind==='skill')record=data?.skills?.[row.owner];
   else if(row.kind==='drop')record=data?.drops?.[row.owner];
   else if(row.kind==='map')record=data?.maps?.[row.owner];
+  else if(row.kind==='npc')record=data?.trades?.npcs?.[row.owner];
+  else if(row.kind==='instance')record=data?.instances?.[row.owner];
   else if(row.kind==='trade')record=data?.trades?.trades?.find(
    entry=>String(entry?.id)===row.owner);
   else if(row.kind==='chest'){
-   const [kind,index]=row.owner.split(':');
-   const rows=kind==='box'?data?.chests?.boxes:data?.chests?.npc;
-   record=Number.isSafeInteger(Number(index))?rows?.[Number(index)]:null;
+   if(row.owner==='masterKey')record=data?.chests;
+   else{
+    const [kind,index]=row.owner.split(':');
+    const rows=kind==='box'?data?.chests?.boxes:data?.chests?.npc;
+    record=Number.isSafeInteger(Number(index))?rows?.[Number(index)]:null;
+   }
   }
   if(!record||typeof record!=='object')return null;
   return Object.fromEntries(Object.entries(record).filter(([key])=>!displayOnly.has(key)));
