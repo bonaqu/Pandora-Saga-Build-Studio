@@ -48,11 +48,11 @@ test('regular player skills require both learnability and a real class assignmen
  const classified=classifier.build(skills,null,manifest,{},racialPassives);
  assert.equal(classified.total,Object.keys(skills).length);
  assert.equal(classified.counts.racial,18);
- assert.equal(classified.counts.player,232);
+ assert.equal(classified.counts.player,234);
  assert.equal(classified.group('161202001'),'player'); // Counterattack
  assert.equal(classified.group('161202050'),'variants'); // extra version with same name
  assert.equal(classified.counts.variants>100,true);
- assert.equal(classified.counts.player,232);
+ assert.equal(classified.counts.player,234);
  assert.equal(classified.group('260006002'),'variants'); // legacy learnable flag, no assigned class
  assert.equal(classified.group('310023002'),'variants'); // Temple triggered effect
  assert.equal(classified.group('500000001'),'other'); // Sleep status, not player skill

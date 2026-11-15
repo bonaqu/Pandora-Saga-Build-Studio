@@ -22,8 +22,8 @@ test('real OS breakpoints persist between grades for block break, knockback and 
  }
 });
 
-test('all 162 OS Forth item snapshots carry forward until the next breakpoint',()=>{
- assert.equal(Object.keys(forth).length,162);
+test('all 172 current game Forth item snapshots carry forward until the next breakpoint',()=>{
+ assert.equal(Object.keys(forth).length,172);
  let inspected=0,plateaus=0;
  for(const [id,byGrade] of Object.entries(forth)){
   assert.ok(data[id]&&data[id].id===Number(id));
@@ -39,7 +39,7 @@ test('all 162 OS Forth item snapshots carry forward until the next breakpoint',(
    inspected++;
   }
  }
- assert.equal(inspected,162*11);
+ assert.equal(inspected,172*11);
  assert.ok(plateaus>50,'source contains many sparse levels');
 });
 

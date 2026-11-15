@@ -7,8 +7,8 @@ const data=JSON.parse(readFileSync(new URL('../data/os/skills.json',import.meta.
 const report=skillIdentityAudit(data);
 
 test('diagnose overlapping, catalog-eligible skill names without hiding them',()=>{
- assert.equal(report.summary.allSkillRecords,569);
- assert.equal(report.summary.eligiblePlayerRows,232);
+ assert.equal(report.summary.allSkillRecords,571);
+ assert.equal(report.summary.eligiblePlayerRows,234);
  assert.equal(report.summary.repeatedPlayerNames,19);
  assert.equal(report.summary.eligibleRowsInRepeatedNames,41);
  assert.equal(report.summary.groupsWithOverlappingClassAssignments,19);

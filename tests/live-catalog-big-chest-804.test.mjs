@@ -6,7 +6,7 @@ const host={};
 Function('window',readFileSync(new URL('../pandora-studio-wiki-owner-data.js',import.meta.url),'utf8'))(host);
 const valid=host.PandoraWikiOwnerData.validChest;
 const candidate=read('data/catalog-review/ps-ca9a604163b54a2da5c83ea55077ef96/chests.json');
-const historical=read('data/os/chests.json');
+const historical=read('data/catalog-history/pre-2026-11-15/chests.json');
 
 test('all 45 current source chests, including 127 entries in one group, pass the owner schema',()=>{
  assert.equal(historical.boxes.length,32);

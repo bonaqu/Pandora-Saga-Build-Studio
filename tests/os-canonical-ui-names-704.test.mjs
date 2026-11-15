@@ -30,7 +30,7 @@ test('all OS skill identities always display canonical RU and matching EN by ID'
    withoutEn++;
   }
  }
- assert.equal(withEn,553);
+ assert.equal(withEn,555);
  assert.equal(withoutEn,16);
 });
 

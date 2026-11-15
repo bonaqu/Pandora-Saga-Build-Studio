@@ -5,9 +5,9 @@ import {auditOsSkillFormulaCoverage} from '../scripts/audit-os-skill-formulas.mj
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const host={};Function('window',read('pandora-os-character-calculator.js'))(host);
 const C=host.PandoraOSCalculator;
-const skills=JSON.parse(read('data/os/skills.json'));
-const classes=JSON.parse(read('data/os/classes.json'));
-const english=JSON.parse(read('data/os/strings.en.json')).skills;
+const skills=JSON.parse(read('data/catalog-history/pre-2026-11-15/skills.json'));
+const classes=JSON.parse(read('data/catalog-history/pre-2026-11-15/classes.json'));
+const english=JSON.parse(read('data/catalog-history/pre-2026-11-15/strings.en.json')).skills;
 const magicIds=[
  [330061001,'Круг света','Holy Rays',[330061002]],
  [330081001,'Изгнание','Banish',[330081002]]

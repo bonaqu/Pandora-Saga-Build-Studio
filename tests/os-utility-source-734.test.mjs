@@ -5,9 +5,9 @@ import {auditOsSkillFormulaCoverage} from '../scripts/audit-os-skill-formulas.mj
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const host={}; Function('window',read('pandora-os-character-calculator.js'))(host);
 const C=host.PandoraOSCalculator;
-const skills=JSON.parse(read('data/os/skills.json'));
-const classes=JSON.parse(read('data/os/classes.json'));
-const english=JSON.parse(read('data/os/strings.en.json')).skills;
+const skills=JSON.parse(read('data/catalog-history/pre-2026-11-15/skills.json'));
+const classes=JSON.parse(read('data/catalog-history/pre-2026-11-15/classes.json'));
+const english=JSON.parse(read('data/catalog-history/pre-2026-11-15/strings.en.json')).skills;
 const cases=[
  [410000201,'Телепорт','Teleport','other',[410000202,410000203]],
  [240003001,'Обезвреживание ловушек','Disarm','stealth',[240003002]],

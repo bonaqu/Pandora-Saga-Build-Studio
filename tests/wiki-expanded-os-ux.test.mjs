@@ -44,13 +44,13 @@ test('level reward chest cards show singular base class labels in RU/EN',()=>{
 });
 
 test('every available OS chest has a canonical item image identity',()=>{
- assert.equal(chests.boxes.length,32);
+ assert.equal(chests.boxes.length,33);
  for(const chest of chests.boxes)
   assert.ok(items[chest.i]?.icon,'Missing real OS item icon for chest '+chest.i);
 });
 
 test('every live OS soul shares a source-backed item sprite identity',()=>{
- assert.equal(Object.keys(souls).length,112);
+ assert.equal(Object.keys(souls).length,115);
  for(const [id,soul] of Object.entries(souls))
   assert.ok(items[id]?.icon||soul.icon,'Missing icon identity for soul '+id);
 });

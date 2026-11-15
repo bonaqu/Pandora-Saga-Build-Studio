@@ -92,7 +92,7 @@ test('all eight original level-reward series entries remain distinct and future 
  const wiki=ctx.window.PandoraWikiData.build({items,chests:boxes,
   trades:{npcs:{},trades:[],mapNames:{}},tables:{zoneDrops:[]}});
  assert.equal(boxes.boxes.length,33,'Current D1 game loot tables are not synthesized');
- assert.equal(wiki.search('chest','').length,52);
+ assert.equal(wiki.search('chest','').length,53);
  assert.equal(wiki.rewardChest(51003).level,5);
  assert.equal(wiki.rewardChest(51005).family,'warrior');
  assert.equal(wiki.rewardChest(51018).family,'scout');
