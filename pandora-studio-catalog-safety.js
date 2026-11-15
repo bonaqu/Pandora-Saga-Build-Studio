@@ -636,7 +636,8 @@ function replaySkills(before,after){
   previouslyModeled:0,retained:0,lost:0,unmodeled:0,samples:[],errors:[]};
  const calc=root.PandoraOSCalculator;
  if(!calc||!['base','scalingSkillPreview','healingSpellsPreview','periodicRecoveryPreview',
-  'resistanceSkillChoices'].every(name=>typeof calc[name]==='function'))
+  'resistanceSkillChoices','alliedRecipientPreviews','priestCastPreviews']
+  .every(name=>typeof calc[name]==='function'))
   return {ok:false,changedSkills:changed.size,scenarios:0,
    previouslyModeled:0,retained:0,lost:0,unmodeled:changed.size,samples:[],
    errors:['Не подключены проверенные расчётные модели навыков.']};
@@ -644,6 +645,30 @@ function replaySkills(before,after){
   {vit:6,str:12,agi:6,dex:12,spi:10,int:12}},
   {level:55,allocation:{vit:10,str:18,agi:10,dex:18,spi:14,int:18}}];
  const equipment=[['BARE_HAND',false],['1H_SWORD',true],['CROSSBOW',false],['STAFF',false]];
+ // A recipient can receive buffs from ANOTHER class. These verified,
+ // source-gated previews must be replayed independently of hero job access.
+ // Each listed ID is consumed by the CURRENT calculator implementation;
+ // song stages are explicit links rather than guessed prereq relationships.
+ const recipientSources=[
+  ['warCry',[320001001]],['massConcentration',[100055001]],
+  ['windAssist',[260006001]],['windBlessing',[320004001]],
+  ['divineBlessing',[330004001]],['blessedRepose',[320002001]]
+ ];
+ const priestSources=[
+  ['gratia',[320007001]],['lapisMedio',[320008001]],
+  ['encouragement',[320012001]],['groupBarrier',[320003001]],
+  ['holyWeapon',[330051001]],['holyEnhanced',[330051001,320011001]],
+  ['enchantAuraRate',[320011001]],['enchantAuraFlat',[320011001]],
+  ['enchantElementRate',[320011001]],
+  ['peaceful',[340003001,340003002,340003003]],
+  ['minstrel',[340001001,340001002,340001003]],
+  ['sage',[340004001,340004002,340004003]],
+  ['sageCooldownDelta',[340004001,340004002,340004003]]
+ ];
+ const watches=(sources)=>sources.some(([,ids])=>
+  ids.some(id=>changed.has(String(id))));
+ const replayRecipient=watches(recipientSources),
+  replayPriest=watches(priestSources);
  const measure=data=>{
   const found=new Map(),errors=[];
   let count=0;
@@ -701,6 +726,41 @@ function replaySkills(before,after){
      spi:base.stats.spi});
     for(const row of periodic?.rows||[])
      if(row.available)write(row.id,'periodic-recovery','no-equipment',row.amount);
+   }
+  }
+  // Evaluate the actual recipient/caster calculation engines on stable
+  // independent control inputs. These are projections, NOT live combat claims.
+  // "target" avoids treating a party buff as a self-learned class skill.
+  const keep=(group,sources,values,scenario)=>{
+   for(const [field,owners] of sources){
+    const item=values?.[field];
+    const amount=item&&typeof item==='object'?item.bonus:item;
+    if(!Number.isFinite(amount))continue;
+    for(const id of owners){
+     if(!changed.has(String(id)))continue;
+     const detail=field+':'+scenario;
+     found.set([id,group,detail].join('|'),{
+      id:String(id),job:'target',level:null,module:group,detail,value:amount
+     });
+    }
+   }
+  };
+  if(replayRecipient||replayPriest)for(const [index,delta] of [0,25,70].entries()){
+   if(replayRecipient){
+    keep('ally-recipient',recipientSources,calc.alliedRecipientPreviews({
+     skillCatalog:skills,combat:{
+      attack:{walkingBase:180+delta},accuracy:{base:135+delta},
+      dodge:{base:110+delta}
+     }
+    }),index);
+    count++;
+   }
+   if(replayPriest){
+    keep('priest-cast',priestSources,calc.priestCastPreviews({
+     skills,spi:80+delta,blessing:65+delta,
+     hymn:45+delta,exorcism:40
+    }),index);
+    count++;
    }
   }
   // Target-side signed resistances have a separate, source-gated inspector.
