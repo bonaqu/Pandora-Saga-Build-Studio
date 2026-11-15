@@ -318,8 +318,8 @@
        'Open a comparison with the GitHub Pages archive. An archived copy cannot verify current game-server values.'),
      reviewSteps,
      secondaryHint(advanced,'hintAdvancedDisclosure',
-       'Необязательные операции: тест записи D1, экспорт и предложение изменений GitHub.',
-       'Optional operations: D1 write test, export and GitHub pull request.'));
+       'Дополнительные инструменты: диагностика D1, ручной экспорт и повторное создание резервного PR при ошибке автоматической отправки.',
+       'Advanced tools: D1 diagnostics, manual export, and retrying the fallback PR if automatic delivery failed.'));
     // Each action tooltip has independent RU/EN D1 copy. Its ? editor is
     // a sibling of the real action button, never part of its click target.
     for(const [node,key,ru,en] of [
@@ -348,8 +348,8 @@
        'Проверить конфликты на двух случайных временных записях. Запись только после подтверждения, без изменения игрового каталога и билдов.',
        'Check conflicts using two randomized temporary records, after confirmation, without changing the game catalog or builds.'],
       [github,'hintGithub',
-       'Создать предложение изменений в репозитории GitHub из уже опубликованной версии D1. Автоматического принятия изменений не будет.',
-       'Create a GitHub pull request from the already published D1 version. The proposal is never merged automatically.'],
+       'Повторить создание резервного PR из D1. Обычно он создаётся автоматически после обновления каталога и принимается после успешных Node и Chromium проверок, если изменены только игровые JSON.',
+       'Retry creating a fallback PR from published D1. Normally it is created automatically and merged after green Node and Chromium checks if only approved game JSON files changed.'],
       [exportButton,'hintExport',
        'Скачать файл с выбранными изменениями для ручного обновления GitHub. Ничего не публикует.',
        'Download selected changes for a manual GitHub update. Nothing is published.']
