@@ -715,7 +715,7 @@ function viewSkills(target,details,api){
  }
  if(!rows.length)target.append(authored(api,'skillSearchEmpty',
   'По этим параметрам навыки не найдены.','No skills match these filters.'));
- const selected=api.selectedSkill?rows.find(row=>String(row.skill.id)===String(api.selectedSkill.id)):null;
+ const selected=api.selectedSkill?rows.find(row=>String(row.skill.id)===selectedId):null;
  if(selected){details.hidden=false;
   const skill=selected.skill,gate=selected.gate;
   details.append(make('h3',{text:skill.name||tr(api,'Умение без названия','Unnamed skill')}));
