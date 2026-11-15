@@ -853,8 +853,24 @@ function compatibility(before,after){
      name+(numeric?' · известные бонусы заточки рассчитаны':
       ' · изменена механика улучшения'));
    }
-  }else if(['unison','expertise'].includes(dataset))
-   add('needsReview',dataset,'Раздел «'+dataset+'»: изменены игровые бонусы или мастерство');
+  }else if(dataset==='unison'){
+   for(const id of new Set([...Object.keys(oldData||{}),...Object.keys(newData||{})]))
+    if(!same(oldData?.[id],newData?.[id]))
+     add('needsReview','unison:'+id,
+      'Комплект '+id+' · изменены игровые бонусы или состав предметов');
+  }else if(dataset==='expertise'){
+   for(const group of new Set([...Object.keys(oldData||{}),...Object.keys(newData||{})])){
+    const a=oldData?.[group],b=newData?.[group];
+    if(same(a,b))continue;
+    if(validObject(a)||validObject(b)){
+     for(const id of new Set([...Object.keys(a||{}),...Object.keys(b||{})]))
+      if(!same(a?.[id],b?.[id]))
+       add('needsReview','expertise:'+group+'/'+id,
+        'Мастерство '+group+' / '+id+' · изменён игровой контракт');
+    }else add('needsReview','expertise:'+group,
+     'Мастерство '+group+' · изменён игровой контракт');
+   }
+  }
   else if(['monsters','drops','maps'].includes(dataset)){
    // Source encyclopedia data, not proven damage/HP calculations. Report
    // every selected record, not one opaque dataset status.
@@ -1027,6 +1043,32 @@ function sourceGraphIntegrity(before,after){
    for(const [index,mobId] of
     (Array.isArray(instance?.mobs)?instance.mobs:[]).entries())
     link('instance',instanceId,index,'monster',mobId,monsters);
+  // Check the full item-to-class catalog, not only modeled numeric bonuses.
+  for(const [itemId,item] of Object.entries(items))
+   for(const job of Object.keys(item?.classes||{})){
+    inspected++;
+    if(!present(classes,job))
+     signed('item',itemId,-1,'class',job,'Профессия отсутствует');
+   }
+  // Refinement records and union groups use real item IDs, not arbitrary labels.
+  for(const id of Object.keys(data?.itemForth||{}))
+   link('itemForth',id,-1,'item',Number(id),items);
+  for(const [id,group] of Object.entries(data?.unison||{})){
+   link('unison',id,-1,'item',Number(id),items);
+   for(const [index,member] of
+    (Array.isArray(group?.members)?group.members:[]).entries())
+    link('unison',id,index,'member-item',member,items);
+  }
+  for(const job of Object.keys(data?.expertise?.limit||{})){
+   inspected++;
+   if(!present(classes,job))
+    signed('expertise',job,-1,'class',job,'Профессия отсутствует');
+  }
+  for(const job of Object.keys(data?.tables?.jobInit||{})){
+   inspected++;
+   if(!present(classes,job))
+    signed('table',job,-1,'jobInit-class',job,'Профессия отсутствует');
+  }
   // An existing target ID does not prove a linked skill graph terminates.
   // Detect introduced direct and multi-step execution cycles, including
   // unlearnable skills without a previously verified numeric preview.
@@ -1058,6 +1100,10 @@ function sourceGraphIntegrity(before,after){
   else if(row.kind==='map')record=data?.maps?.[row.owner];
   else if(row.kind==='npc')record=data?.trades?.npcs?.[row.owner];
   else if(row.kind==='instance')record=data?.instances?.[row.owner];
+  else if(row.kind==='itemForth')record=data?.itemForth?.[row.owner];
+  else if(row.kind==='unison')record=data?.unison?.[row.owner];
+  else if(row.kind==='expertise')record=data?.expertise?.limit?.[row.owner];
+  else if(row.kind==='table')record=data?.tables?.jobInit?.[row.owner];
   else if(row.kind==='trade')record=data?.trades?.trades?.find(
    entry=>String(entry?.id)===row.owner);
   else if(row.kind==='chest'){
@@ -1079,9 +1125,22 @@ function sourceGraphIntegrity(before,after){
   JSON.stringify(modelRecord(after,row));
  const added=selected.issues.filter(row=>!acknowledged.has(fingerprint(row))||
   !unchanged(row));
+ // A removed class can break hundreds of skills AND equipment records.
+ // Show different relationship families in the eight compact UI examples.
+ const samples=[],seenGroups=new Set();
+ for(const row of added){
+  const group=row.kind+'|'+row.field;
+  if(seenGroups.has(group))continue;
+  seenGroups.add(group);samples.push(row);
+  if(samples.length>=8)break;
+ }
+ for(const row of added){
+  if(samples.length>=8)break;
+  if(!samples.includes(row))samples.push(row);
+ }
  return {ok:added.length===0,inspected:selected.inspected,
   historical:previous.issues.length,unresolved:selected.issues.length,
-  newBroken:added.length,samples:added.slice(0,8)};
+  newBroken:added.length,samples};
 }
 
 // Re-run EXISTING calculator models against both source snapshots, before D1.
