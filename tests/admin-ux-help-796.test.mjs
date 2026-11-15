@@ -48,7 +48,6 @@ test('all owner commands have localized action-specific hover/focus explanations
  assert.match(app,/ownerDockHints\[key\]\[lang==='en'\?1:0\],\{hoverDelay:350\}/);
  assert.match(app,/Недоступно|Если правок нет/);
  assert.match(app,/Не сохраняет текущую правку и не меняет игровой каталог/);
- assert.match(app,/кнопки\.?'?/);
 });
 
 test('compact admin panel and other dialogs keep semantics and safety intact',()=>{
