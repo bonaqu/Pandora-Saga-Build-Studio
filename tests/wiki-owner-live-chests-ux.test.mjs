@@ -25,7 +25,7 @@ test('all known 12 real location chests and their reward sources appear in encyc
  const chests=JSON.parse(file('data/os/chests.json'));
  const items=JSON.parse(file('data/os/items.json'));
  assert.equal(chests.npc.length,12);
- assert.equal(chests.boxes.length,32);
+ assert.equal(chests.boxes.length,33);
  const a=chests.npc[0],reward=a.rolls.flat().find(x=>x.i!=null);
  const data={chests,items,monsters:{},drops:{},maps:{},instances:[],
   trades:{trades:[],npcs:{},mapNames:{}},skills:{},souls:{},tables:{}};

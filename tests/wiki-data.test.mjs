@@ -91,7 +91,7 @@ test('all eight original level-reward series entries remain distinct and future 
  const boxes=JSON.parse(fs.readFileSync(new URL('../data/os/chests.json',import.meta.url),'utf8'));
  const wiki=ctx.window.PandoraWikiData.build({items,chests:boxes,
   trades:{npcs:{},trades:[],mapNames:{}},tables:{zoneDrops:[]}});
- assert.equal(boxes.boxes.length,32,'Original OS loot tables are unchanged');
+ assert.equal(boxes.boxes.length,33,'Current D1 game loot tables are not synthesized');
  assert.equal(wiki.search('chest','').length,52);
  assert.equal(wiki.rewardChest(51003).level,5);
  assert.equal(wiki.rewardChest(51005).family,'warrior');
@@ -123,7 +123,7 @@ test('location chests are indexed separately from storage upgrades and unverifie
  assert.equal(wiki.chestPlaces('52011').length,2);
  for(const id of [90057,90058,90059,90060,90061,90062])
   assert.equal(wiki.records('chest')[id],undefined,'Warehouse upgrades are not loot chests');
- assert.equal(chests.boxes.length,32,'Do not fabricate chest tables in OS data');
+ assert.equal(chests.boxes.length,33,'Do not fabricate chest tables outside published source');
 });
 test('group rewards do not claim per-item probability',()=>{
  const w=ctx.window.PandoraWikiData.build({tables:{zoneDrops:[{map:8,rows:[{base:10,items:[{i:1},{i:2}]}]}]}});
