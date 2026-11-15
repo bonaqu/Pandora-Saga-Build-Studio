@@ -203,8 +203,14 @@ function compatibility(before,after){
       // the actual result without changing funcs/FV vectors.
       !same(old.prereq,now.prereq)||!same(old.powerStat,now.powerStat)||
       !same(old.skillType,now.skillType)||!same(old.element,now.element)||
-      !same(old.aoe,now.aoe)||!same(old.rangeFromWeapon,now.rangeFromWeapon)){
-     add('needsReview','skill:'+id,name+' · изменены условия действия или источник урона');
+      !same(old.aoe,now.aoe)||!same(old.rangeFromWeapon,now.rangeFromWeapon)||
+      // A skill's job access, learnable level and mastery requirements
+      // are gameplay conditions, never merely a localization update.
+      !same(old.classes,now.classes)||!same(old.learnable,now.learnable)||
+      !same(old.charLevel,now.charLevel)||!same(old.reqLevel,now.reqLevel)||
+      !same(old.reqs,now.reqs)||!same(old.branch,now.branch)||
+      !same(old.branchRaw,now.branchRaw)||!same(old.isLevelBased,now.isLevelBased)){
+     add('needsReview','skill:'+id,name+' · изменены условия действия или доступность');
     }else{
      add('sourceOnly','skill:'+id,name+' · обновлены условия/описание навыка');
     }
