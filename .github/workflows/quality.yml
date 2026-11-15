@@ -24,6 +24,9 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: '22'
+      - name: Diagnostic current public game news (non-blocking)
+        continue-on-error: true
+        run: node scripts/audit-public-game-news.mjs
       - name: Check release metadata and HTML asset versions
         run: npm run release:check
       - name: Run full Node test suite
