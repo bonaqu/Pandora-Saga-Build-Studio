@@ -68,11 +68,11 @@ test('publication retains source CAS, blocks close while writing and checks play
  assert.match(workbench,/canClose:\(\)=>!publishing/);
  assert.match(app,/function modal\(title,content\)\{/);
  assert.match(app,/if\(!canClose\(\)\)return/);
- assert.match(workbench,/async function verifyPublishedForPlayers\(snapshot\)/);
+ assert.match(workbench,/async function verifyPublishedForPlayers\(snapshot,expected\)/);
  assert.match(workbench,/response\.headers\.get\('x-ps-catalog-snapshot'\)/);
  assert.match(workbench,/active!==snapshot/);
- assert.match(workbench,/await verifyPublishedForPlayers\(result\.active\)/);
- assert.match(workbench,/await verifyPublishedForPlayers\(observed\.active\)/);
+ assert.match(workbench,/await verifyPublishedForPlayers\(result\.active,staged\.combined\)/);
+ assert.match(workbench,/await verifyPublishedForPlayers\(observed\.active,staged\.combined\)/);
  assert.match(workbench,/обновление данных у игроков пока не подтверждено/);
 });
 test('players are not shown the name of the third-party source',()=>{
