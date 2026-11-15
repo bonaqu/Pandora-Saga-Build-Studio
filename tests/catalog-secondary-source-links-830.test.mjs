@@ -125,7 +125,7 @@ test('unknown new schema fields in chests or trades require explicit mechanics r
 
 test('the same read-only source graph protects preview and final CAS preparation',()=>{
  const workbench=read('pandora-os-catalog-workbench.js');
- assert.match(workbench,/safety\\.sourceGraphIntegrity\\(baseline,selected\\)/);
- assert.match(workbench,/safety\\.sourceGraphIntegrity\\(baseline,combined\\)/);
- assert.match(workbench,/if\\(graph&&!graph\\.ok\\)throw Error/);
+ assert.match(workbench,/safety\.sourceGraphIntegrity\(baseline,selected\)/);
+ assert.match(workbench,/safety\.sourceGraphIntegrity\(baseline,combined\)/);
+ assert.match(workbench,/if\(graph&&!graph\.ok\)throw Error/);
 });
