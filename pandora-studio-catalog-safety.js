@@ -928,6 +928,8 @@ function sourceGraphIntegrity(before,after){
       executionEdges.get(id).push({id:String(child),index});
      }
     }
+    if(effect?.ep==='EP_ADDITION_ITEM')
+     link('skill',id,index,'EP_ADDITION_ITEM',effect?.fv1?.[3],items);
     if(effect?.ep==='EP_CONSUME_ITEM'){
      link('skill',id,index,'EP_CONSUME_ITEM',effect?.fv1?.[3],items);
      inspected++;
@@ -942,6 +944,40 @@ function sourceGraphIntegrity(before,after){
    for(const [index,effect] of (Array.isArray(item?.effects)?item.effects:[]).entries())
     if(['EP_SKILL_EXEC','EP_SKILL_EXEC_BALM'].includes(effect?.func))
      link('item',id,index,effect.func,effect?.a,skills);
+  // Full read-only cross-catalog integrity; distinguish source-linked
+  // ID fields from numeric probabilities, gold and soul slot counts.
+  const monsters=data?.monsters||{},drops=data?.drops||{},
+   maps=data?.maps||{},chests=data?.chests||{},
+   trades=data?.trades||{};
+  for(const [monsterId,record] of Object.entries(drops)){
+   link('drop',monsterId,-1,'monster',Number(monsterId),monsters);
+   for(const [index,entry] of (Array.isArray(record?.d)?record.d:[]).entries())
+    if(Object.hasOwn(entry||{},'i'))
+     link('drop',monsterId,index,'item',entry.i,items);
+  }
+  for(const [mapId,record] of Object.entries(maps))
+   for(const [index,mobId] of (Array.isArray(record?.mobs)?record.mobs:[]).entries())
+    link('map',mapId,index,'monster',mobId,monsters);
+  const checkRolls=(owner,rolls)=>{
+   for(const [groupIndex,group] of (Array.isArray(rolls)?rolls:[]).entries())
+    for(const [entryIndex,entry] of (Array.isArray(group)?group:[]).entries())
+     if(Object.hasOwn(entry||{},'i'))
+      link('chest',owner,groupIndex+':'+entryIndex,'reward-item',entry.i,items);
+  };
+  for(const [index,box] of (Array.isArray(chests.boxes)?chests.boxes:[]).entries()){
+   const owner='box:'+index;
+   link('chest',owner,-1,'container-item',box?.i,items);
+   checkRolls(owner,box?.rolls);
+  }
+  for(const [index,npc] of (Array.isArray(chests.npc)?chests.npc:[]).entries())
+   checkRolls('npc:'+index,npc?.rolls);
+  for(const [index,trade] of (Array.isArray(trades.trades)?trades.trades:[]).entries()){
+   const owner=String(trade?.id??index);
+   link('trade',owner,-1,'output-item',trade?.i,items);
+   for(const [materialIndex,material] of
+    (Array.isArray(trade?.mats)?trade.mats:[]).entries())
+    link('trade',owner,materialIndex,'material-item',material?.i,items);
+  }
   // An existing target ID does not prove a linked skill graph terminates.
   // Detect introduced direct and multi-step execution cycles, including
   // unlearnable skills without a previously verified numeric preview.
@@ -966,7 +1002,18 @@ function sourceGraphIntegrity(before,after){
  const acknowledged=new Set(previous.issues.map(fingerprint));
  const displayOnly=new Set(['name','nameEn','desc','descEn','iconId']);
  const modelRecord=(data,row)=>{
-  const record=(row.kind==='item'?data?.items:data?.skills)?.[row.owner];
+  let record;
+  if(row.kind==='item')record=data?.items?.[row.owner];
+  else if(row.kind==='skill')record=data?.skills?.[row.owner];
+  else if(row.kind==='drop')record=data?.drops?.[row.owner];
+  else if(row.kind==='map')record=data?.maps?.[row.owner];
+  else if(row.kind==='trade')record=data?.trades?.trades?.find(
+   entry=>String(entry?.id)===row.owner);
+  else if(row.kind==='chest'){
+   const [kind,index]=row.owner.split(':');
+   const rows=kind==='box'?data?.chests?.boxes:data?.chests?.npc;
+   record=Number.isSafeInteger(Number(index))?rows?.[Number(index)]:null;
+  }
   if(!record||typeof record!=='object')return null;
   return Object.fromEntries(Object.entries(record).filter(([key])=>!displayOnly.has(key)));
  };
