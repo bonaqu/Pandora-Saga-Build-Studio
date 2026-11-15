@@ -716,6 +716,38 @@ function verifiedDynamicSkillFV(id,old,now,before,after){
  return false;
 }
 
+// Source-only is distinct from verified numeric output. Every contract
+// delegates to an already present strict old/new calculator proof.
+const SKILL_SOURCE_CONTRACTS=Object.freeze([
+ {id:'skill.effect-fv',kind:'verified',title:' · проверено изменение FV действующей формулой',matches:verifiedDynamicSkillFV},
+ {id:'skill.recipe-quantity',kind:'verified',title:' · количество в рецепте подтверждено игровым источником',matches:verifiedCraftingQuantityChange},
+ {id:'skill.ammunition-quantity',kind:'verified',title:' · расход боеприпасов проверен по игровому источнику',matches:verifiedRangedAmmoQuantityChange},
+ {id:'skill.support-material',kind:'verified',title:' · количество материала воскрешения проверено по игровому источнику',matches:verifiedSupportMaterialQuantityChange},
+ {id:'skill.trap-material',kind:'verified',title:' · расход материала ловушки проверен по игровому источнику',matches:verifiedTrapMaterialQuantityChange},
+ {id:'skill.source-resource',kind:'sourceOnly',title:' · только количество расходников из игрового источника; эффект навыка не рассчитан',matches:sourceOnlyResourceQuantityChange}
+].map(Object.freeze));
+const EQUIPMENT_SOURCE_CONTRACTS=Object.freeze([
+ {id:'equipment.base-values',kind:'verified',datasets:['items'],
+  matches:(dataset,id,old,now,before,after)=>dataset==='items'&&
+   replaySimpleEquipmentChange(id,old,now,before,after)},
+ {id:'equipment.effect-amount',kind:'verified',datasets:['items','souls'],
+  matches:(dataset,id,old,now)=>['items','souls'].includes(dataset)&&
+   replayNumericEquipmentAmounts(dataset,id,old,now)}
+].map(Object.freeze));
+const FORTH_SOURCE_CONTRACTS=Object.freeze([
+ Object.freeze({id:'equipment.forth-amount',kind:'verified',
+  matches:verifiedForthAmountChanges})
+]);
+// Immutable public contract census: code may evolve without a new hardcoded
+// list of skill IDs or guessing what unknown game effects do.
+const SOURCE_CONTRACT_REGISTRY=Object.freeze([
+ ...SKILL_SOURCE_CONTRACTS.map(({id,kind})=>Object.freeze({id,kind,dataset:'skills'})),
+ ...EQUIPMENT_SOURCE_CONTRACTS.map(({id,kind,datasets})=>
+  Object.freeze({id,kind,dataset:datasets.join(',')})),
+ ...FORTH_SOURCE_CONTRACTS.map(({id,kind})=>
+  Object.freeze({id,kind,dataset:'itemForth'}))
+]);
+
 // Before publication classify *changes*, not just JSON schema validity.
 // A matching source shape does not prove that the calculator interprets a
 // newly introduced gameplay effect. Lists are intentionally bounded for UI.
@@ -725,8 +757,9 @@ function compatibility(before,after){
  // Samples remain compact in the admin summary, but NO changed source may
  // disappear from machine-readable coverage after the first six records.
  const entries=[];
- const add=(kind,key,title)=>{
+ const add=(kind,key,title,contract)=>{
   const item={kind,key,title};
+  if(contract)item.contract=contract;
   totals[kind]++;
   entries.push(item);
   if(issues[kind].length<6)issues[kind].push({key,title});
@@ -782,25 +815,10 @@ function compatibility(before,after){
     if(!old||!now){
      add('needsReview','skill:'+id,name+' · добавлен или удалён навык');
     }else if(!same(old.funcs,now.funcs)){
-     const dynamic=verifiedDynamicSkillFV(id,old,now,before,after);
-     const recipe=!dynamic&&verifiedCraftingQuantityChange(
-      id,old,now,before,after);
-     const ammunition=!dynamic&&!recipe&&verifiedRangedAmmoQuantityChange(
-      id,old,now,before,after);
-     const supportMaterial=!dynamic&&!recipe&&!ammunition&&
-      verifiedSupportMaterialQuantityChange(id,old,now,before,after);
-     const trapMaterial=!dynamic&&!recipe&&!ammunition&&!supportMaterial&&
-      verifiedTrapMaterialQuantityChange(id,old,now,before,after);
-     const known=dynamic||recipe||ammunition||supportMaterial||trapMaterial;
-     const sourceCount=!known&&sourceOnlyResourceQuantityChange(id,old,now,before,after);
-     add(known?'verified':sourceCount?'sourceOnly':'needsReview','skill:'+id,
-      name+(dynamic?' · проверено изменение FV действующей формулой':
-       recipe?' · количество в рецепте подтверждено игровым источником':
-       ammunition?' · расход боеприпасов проверен по игровому источнику':
-       supportMaterial?' · количество материала воскрешения проверено по игровому источнику':
-       trapMaterial?' · расход материала ловушки проверен по игровому источнику':
-       sourceCount?' · только количество расходников из игрового источника; эффект навыка не рассчитан':
-       ' · изменены игровые эффекты'));
+     const contract=SKILL_SOURCE_CONTRACTS.find(entry=>
+      entry.matches(id,old,now,before,after));
+     add(contract?.kind||'needsReview','skill:'+id,
+      name+(contract?.title||' · изменены игровые эффекты'),contract?.id);
     }else if([...new Set([...Object.keys(old),...Object.keys(now)])]
      .some(field=>!['name','nameEn','desc','descEn','iconId'].includes(field)&&
       !same(old[field],now[field]))){
@@ -826,10 +844,9 @@ function compatibility(before,after){
       !['name','nameEn','desc','descEn'].includes(k))),
      Object.fromEntries(Object.entries(now).filter(([k])=>
       !['name','nameEn','desc','descEn'].includes(k))));
-    const numerical=(dataset==='items'&&
-     replaySimpleEquipmentChange(id,old,now,before,after))||
-     ((dataset==='items'||dataset==='souls')&&
-     replayNumericEquipmentAmounts(dataset,id,old,now));
+    const contract=EQUIPMENT_SOURCE_CONTRACTS.find(entry=>
+     entry.matches(dataset,id,old,now,before,after));
+    const numerical=Boolean(contract);
     const narrativeChanged=dataset==='items'&&looksTextual&&
      sourceEquipmentEffectsChanged(id,old,now,before,after);
     const category=numerical?'verified':
@@ -838,7 +855,7 @@ function compatibility(before,after){
      name+(numerical?' · известные числовые бонусы рассчитаны моделью':
       category==='sourceOnly'?' · тексты':
       narrativeChanged?' · текст меняет бонусы заточки':
-      ' · свойства/эффекты'));
+      ' · свойства/эффекты'),contract?.id);
    }
    continue;
   }
@@ -848,10 +865,11 @@ function compatibility(before,after){
     const a=oldData?.[id],b=newData?.[id];
     if(same(a,b))continue;
     const name=String(after?.items?.[id]?.name||before?.items?.[id]?.name||id).slice(0,90);
-    const numeric=verifiedForthAmountChanges(id,a,b,before,after);
-    add(numeric?'verified':'needsReview','itemForth:'+id,
-     name+(numeric?' · известные бонусы заточки рассчитаны':
-      ' · изменена механика улучшения'));
+    const contract=FORTH_SOURCE_CONTRACTS.find(entry=>
+     entry.matches(id,a,b,before,after));
+    add(contract?.kind||'needsReview','itemForth:'+id,
+     name+(contract?' · известные бонусы заточки рассчитаны':
+      ' · изменена механика улучшения'),contract?.id);
    }
   }else if(dataset==='unison'){
    for(const id of new Set([...Object.keys(oldData||{}),...Object.keys(newData||{})]))
@@ -1557,5 +1575,5 @@ function replaySkills(before,after){
   errors:problems.slice(0,5)};
 }
 
-root.PandoraCatalogSafety=Object.freeze({MAX_LEVEL,EXPECTED,check,project,compare,compatibility,sourceGraphIntegrity,replaySkills,replayEquipmentEffects});
+root.PandoraCatalogSafety=Object.freeze({MAX_LEVEL,EXPECTED,check,project,compare,compatibility,sourceGraphIntegrity,replaySkills,replayEquipmentEffects,sourceContractRegistry:SOURCE_CONTRACT_REGISTRY});
 })(typeof window==='undefined'?globalThis:window);
