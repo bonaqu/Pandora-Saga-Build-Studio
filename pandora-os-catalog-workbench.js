@@ -535,9 +535,10 @@
         }else{
           formulaPreview.classList.remove('os-sync-formula-error');
           formulaStatus.textContent=tr(
-           'Проверено: предел планировщика 55 · на 55-м уровне ',
-           'Verified: planner level 55 · at level 55 ')+
-           validation.attributesAt55+' / '+validation.skillsAt55+
+           'Проверено: максимум планировщика ',
+           'Verified: planner maximum ')+validation.plannerMax+
+           tr(' · на этом уровне ', ' · at this level ')+
+           validation.attributesAtMax+' / '+validation.skillsAtMax+
            tr(' очков характеристик / умений. Игровое ограничение ',
             ' attribute / skill points. Game cap ')+
            String(validation.levelCap??tr('не указано','not stated'))+
@@ -1368,8 +1369,8 @@
           status.textContent=superseded?
            tr('Изменения опубликованы, но уже доступна другая версия каталога. Проверь её заново.',
             'Changes were published, but another catalog revision is already live. Review it again.'):
-           tr('Каталог обновлён. Проверены опубликованные данные и базовые расчёты героев до 55-го уровня (544 / 134). Игровой сервер и GitHub не изменились.',
-            'Catalog updated. Published data and basic hero calculations through level 55 (544 / 134) were verified. The game server and GitHub were not changed.');
+           tr('Каталог обновлён. Опубликованные игровые таблицы и расчёты на настроенном максимальном уровне проверены. Игровой сервер и GitHub не изменились.',
+            'Catalog updated. Published tables and calculations at the configured maximum level were verified. The game server and GitHub were not changed.');
         }catch(error){
           status.textContent=tr('Публикация принята, но обновление данных у игроков пока не подтверждено: ',
            'Publication was accepted, but the player-visible update is not yet verified: ')+error.message;
