@@ -614,29 +614,49 @@ function replaySkills(before,after){
  if(alteredJobs.size)
   for(const [id,skill] of Object.entries(oldSkills))
    if([...alteredJobs].some(job=>skill?.classes?.[job]))changed.add(id);
- // A parent source can invalidate an unchanged advanced skill. Expand the
- // replay set transitively through BOTH old and selected prerequisite graphs.
- // Checking only the directly edited ID silently missed lost child previews.
- const children=new Map();
+ // Prerequisites are only ONE kind of skill relationship. Internal
+ // EP_SKILL_EXEC / on-hit actions and toggle/song stage IDs frequently have
+ // no class and no prereq, yet their source controls a modeled parent.
+ // Traverse the union of OLD and CANDIDATE signed ID graphs in both
+ // directions, so a child-only edit always replays its owning skill.
+ const relatives=new Map();
+ const link=(a,b)=>{
+  if(a===b)return;
+  if(!relatives.has(a))relatives.set(a,new Set());
+  if(!relatives.has(b))relatives.set(b,new Set());
+  relatives.get(a).add(b);
+  relatives.get(b).add(a);
+ };
+ const linkedEP=new Set(['EP_SKILL_EXEC','EP_ONHIT_SKILL_EXEC',
+  'EP_ONHIT_SKILL_EXEC_CHANGE_BA','EP_SKILL_EXEC_COUNT']);
  for(const skills of [oldSkills,newSkills])
   for(const [id,record] of Object.entries(skills)){
-   if(!Number.isSafeInteger(record?.prereq)||record.prereq<=0)continue;
-   const parent=String(record.prereq);
-   if(!children.has(parent))children.set(parent,new Set());
-   children.get(parent).add(id);
+   if(Number.isSafeInteger(record?.prereq)&&record.prereq>0&&
+    skills[String(record.prereq)])
+    link(id,String(record.prereq));
+   for(const effect of record?.funcs||[]){
+    if(!linkedEP.has(effect?.ep))continue;
+    const linked=effect?.fv1?.[3];
+    if(Number.isSafeInteger(linked)&&linked>0&&skills[String(linked)])
+     link(id,String(linked));
+   }
   }
+ // Preserve the explicitly edited IDs for actionable regression reports.
+ // A single internal effect can otherwise drown in the five sampled parents.
+ const directlyChanged=new Set(changed);
  const pending=[...changed];
  for(let i=0;i<pending.length;i++)
-  for(const child of children.get(pending[i])||[])
-   if(!changed.has(child)){
-    changed.add(child);
-    pending.push(child);
+  for(const relative of relatives.get(pending[i])||[])
+   if(!changed.has(relative)){
+    changed.add(relative);
+    pending.push(relative);
    }
  if(!changed.size)return {ok:true,changedSkills:0,scenarios:0,
   previouslyModeled:0,retained:0,lost:0,unmodeled:0,samples:[],errors:[]};
  const calc=root.PandoraOSCalculator;
  if(!calc||!['base','scalingSkillPreview','healingSpellsPreview','periodicRecoveryPreview',
-  'resistanceSkillChoices','alliedRecipientPreviews','priestCastPreviews']
+  'resistanceSkillChoices','alliedRecipientPreviews','priestCastPreviews',
+  'trapSkillCostPreview']
   .every(name=>typeof calc[name]==='function'))
   return {ok:false,changedSkills:changed.size,scenarios:0,
    previouslyModeled:0,retained:0,lost:0,unmodeled:changed.size,samples:[],
@@ -714,6 +734,20 @@ function replaySkills(before,after){
          write(row.id,'skill-effect-coefficient',
           weaponKind+':'+model.ep,model.amount);
       }
+    }
+    // Encyclopedia material consumption is a numeric source projection,
+    // not invented skill damage. If an internal unlearnable action changes,
+    // its learnable root must not silently lose the exact trap cost or
+    // the signed level-50 improved variant.
+    const traps=calc.trapSkillCostPreview({skillCatalog:skills,jobKey:job,level,
+     branchCaps:caps,branchMasteries:mastery});
+    if(!traps||!Array.isArray(traps.rows)){
+     errors.push('Нет источниковых расчётов материалов ловушек '+job+' / '+level);
+    }else for(const row of traps.rows){
+     write(row.id,'trap-material','item:'+row.itemId,row.count);
+     if(row.level50Variant)
+      write(row.id,'trap-level-50','linked:'+
+       row.level50Variant.linkedEffectId,row.level50Variant.itemCount);
     }
     const healing=calc.healingSpellsPreview({skillCatalog:skills,jobKey:job,level,
      benevolenceCap:mastery.benevolence||0,
@@ -797,6 +831,9 @@ function replaySkills(before,after){
  // five repeated hero/equipment scenarios hid the actual missing ally buff.
  const representatives=[],seenSamples=new Set();
  for(const row of [
+  ...lost.filter(x=>directlyChanged.has(x.id)&&
+   (x.module==='ally-recipient'||x.module==='priest-cast')),
+  ...lost.filter(x=>directlyChanged.has(x.id)),
   ...lost.filter(x=>x.module==='ally-recipient'||x.module==='priest-cast'),
   ...lost
  ]){
