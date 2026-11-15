@@ -1212,8 +1212,8 @@
           'D1 приняла публикацию, но полная проверка каталога на сайте не пройдена: ',
           'D1 accepted publication, but the full public catalog check failed: ')+
           String(error.message||error)+tr(
-          ' Проверь текущую версию перед повтором. Это не означает откат D1.',
-          ' Check the active version before retrying. This does not mean D1 rolled back.');
+          ' Проверь текущую версию перед повтором. Это не означает откат D1. Серверное задание GitHub-резерва сохранено.',
+          ' Check the active version before retrying. This does not mean D1 rolled back. GitHub backup job is persisted on the server.');
         return;
       }
       status.textContent=tr(
@@ -1287,10 +1287,16 @@
               text:'PR #'+result.number}));
         }else throw Error('Некорректный ответ GitHub');
       }catch(error){
-        status.textContent+=tr(
-          ' GitHub-резерв не обновлён. D1 опубликована; повтори копирование из дополнительных инструментов: ',
-          ' GitHub fallback was not updated. D1 remains published; retry from advanced tools: ')+
-          String(error.message||error);
+        const saved=await request('/api/admin/catalog/backup-status',null).catch(()=>null);
+        if(saved?.snapshot===snapshot&&['pending','retry','running'].includes(saved.job?.state)){
+          status.textContent+=tr(
+           ' GitHub временно недоступен. Сервер повторит создание резервной копии автоматически, даже после закрытия вкладки.',
+           ' GitHub is temporarily unavailable. The server will retry the backup automatically, even after the tab closes.');
+        }else{
+          status.textContent+=tr(
+           ' Резерв GitHub требует внимания. D1 опубликована; проверь подключение: ',
+           ' GitHub backup needs attention. D1 was published; check the connection: ')+String(error.message||error);
+        }
       }
     }
 
