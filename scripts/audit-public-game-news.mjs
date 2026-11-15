@@ -1,17 +1,29 @@
-// Temporary read-only GitHub Actions diagnosis. No tokens, cookies or D1 writes.
-const origin='https://pandorasaga-os.com';
-const endpoints=['/','/news','/news/','/en/news','/ru/news','/api/news','/api/news?limit=10'];
-const results=await Promise.all(endpoints.map(async path=>{
- try{
-  const res=await fetch(origin+path,{signal:AbortSignal.timeout(12000),
-   headers:{'User-Agent':'Mozilla/5.0 PandoraCatalogReview/1.0','Accept':'text/html,application/json'}});
-  const body=(await res.text()).slice(0,500000);
-  const matches=[...body.matchAll(/(?:href|src)=["']([^"'<>]{1,280})["']/ig)].map(x=>x[1])
-   .filter(x=>/news|update|patch|2026|post|blog/i.test(x)).slice(0,20);
-  const hints=[...body.matchAll(/.{0,75}(?:Победы в PvP|По следам ветра|50 level|PvP victories|тыквенн|огненн).{0,160}/gi)]
-   .slice(0,12).map(x=>x[0].replace(/\s+/g,' '));
-  const head=body.slice(0,250).replace(/\s+/g,' ').replace(/<[^>]+>/g,' ');
-  return {path,status:res.status,url:res.url,len:body.length,type:res.headers.get('content-type'),head,links:matches,hints};
- }catch(e){return {path,error:String(e.message||e).slice(0,200)}}
-}));
-for(const r of results)console.log(JSON.stringify(r));
+// Temporary read-only official patch analysis. No credentials, no D1 writes.
+const res=await fetch('https://pandorasaga-os.com/api/news',{
+ signal:AbortSignal.timeout(20000),headers:{Accept:'application/json'}});
+if(!res.ok)throw Error('Current game news HTTP '+res.status);
+const payload=await res.json();
+const items=Array.isArray(payload.items)?payload.items:[];
+console.log('PATCH_NEWS_HEADLINES '+JSON.stringify(items.slice(0,15).map(x=>({
+ id:x.id,title:x.title,date:x.publishedAt||x.createdAt||x.date||null,
+ keys:Object.keys(x)
+}))));
+const article=items[0];
+if(!article)throw Error('No current game news');
+const html=String(article.content||article.body||'');
+const images=[...html.matchAll(/<img\\b[^>]*src=["']([^"']+)["'][^>]*>/gi)]
+ .map(m=>m[1]).filter(url=>!url.includes('/icons/')).slice(0,30);
+const decode=s=>s.replace(/&nbsp;/g,' ').replace(/&laquo;/g,'«')
+ .replace(/&raquo;/g,'»').replace(/&quot;/g,'"').replace(/&amp;/g,'&')
+ .replace(/&#(\\d+);/g,(_,c)=>String.fromCodePoint(Number(c)));
+const plain=decode(html
+ .replace(/<\\/\\s*(p|h[1-6]|tr|li|blockquote|div)\\s*>/gi,'\n')
+ .replace(/<br\\s*\\/?>/gi,'\n')
+ .replace(/<[^>]*>/g,'')
+ .replace(/[ \t]+/g,' ')
+ .replace(/\n[ \t]*/g,'\n'));
+console.log('PATCH_NEWS_META '+JSON.stringify({id:article.id,title:article.title,
+ date:article.publishedAt||article.createdAt||article.date||null,
+ images,contentLength:html.length}));
+for(let i=0;i<plain.length;i+=2500)
+ console.log('PATCH_NEWS_TEXT_PART '+(1+Math.floor(i/2500))+' '+JSON.stringify(plain.slice(i,i+2500)));
