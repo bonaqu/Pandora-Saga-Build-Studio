@@ -806,7 +806,31 @@ function compatibility(before,after){
    }
   }else if(['unison','expertise'].includes(dataset))
    add('needsReview',dataset,'Раздел «'+dataset+'»: изменены игровые бонусы или мастерство');
-  else add('sourceOnly',dataset,'Раздел «'+dataset+'»: структурно проверенные данные');
+  else if(['monsters','drops','maps'].includes(dataset)){
+   // Source encyclopedia data, not proven damage/HP calculations. Report
+   // every selected record, not one opaque dataset status.
+   for(const id of new Set([...Object.keys(oldData||{}),...Object.keys(newData||{})])){
+    const a=oldData?.[id],b=newData?.[id];
+    if(!same(a,b))add('sourceOnly',dataset+':'+id,
+     String(b?.name||a?.name||id).slice(0,90)+
+     ' · сведения из игры, без подтверждённой боевой формулы');
+   }
+  }else if(dataset==='strings.en'){
+   const groups=new Set([...Object.keys(oldData||{}),...Object.keys(newData||{})]);
+   for(const group of groups){
+    const a=oldData?.[group],b=newData?.[group];
+    if(same(a,b))continue;
+    if(a&&b&&typeof a==='object'&&!Array.isArray(a)&&
+     typeof b==='object'&&!Array.isArray(b)){
+     for(const id of new Set([...Object.keys(a),...Object.keys(b)]))
+      if(!same(a[id],b[id]))add('sourceOnly',dataset+':'+group+'/'+id,
+       'Английский перевод · '+String(group)+' / '+String(id));
+    }else add('sourceOnly',dataset+':'+group,'Английский перевод · '+String(group));
+   }
+  }else if(['meta','instances','trades','chests'].includes(dataset))
+   add('sourceOnly',dataset,'Раздел «'+dataset+'»: только исходные игровые сведения');
+  else add('needsReview',dataset,
+   'Новый раздел «'+dataset+'»: поддержка его механики не подтверждена');
  }
  return {totals,samples:issues,entries,requiresMechanicReview:totals.needsReview>0};
 }
