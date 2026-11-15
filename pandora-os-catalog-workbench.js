@@ -602,6 +602,21 @@
       if(riskApprovalFingerprint!==fingerprint)riskApproval.checked=false;
       const acknowledged=!risky||(riskApproval.checked&&riskApprovalFingerprint===fingerprint);
       decisionPreview.hidden=!ready;
+      coverageSummary.hidden=!ready||!preview?.compatibility;
+      if(preview?.compatibility){
+        const counts=preview.compatibility.totals;
+        coverageSummary.textContent=tr(
+         'Проверка выбранного каталога — рассчитано и проверено: ',
+         'Selected catalog preflight — calculated and verified: ')+counts.verified+
+         tr(' · только исходные сведения: ',' · source information only: ')+
+         counts.sourceOnly+
+         tr(' · нужна адаптация механики: ',' · mechanic adaptation needed: ')+
+         counts.needsReview+
+         (preview.graph?tr(' · игровые ссылки проверены: ',' · linked records inspected: ')+
+          preview.graph.inspected:'')+
+         (preview.graph?.newBroken?tr(' · повреждённых новых ссылок: ',
+          ' · new broken links: ')+preview.graph.newBroken:'');
+      }
       decisionSummary.textContent=tr('Будет обновлено: ','Will update: ')+selected+
        tr(' изменений из ',' changes of ')+changes.length+
        (syncFormatting?tr(' · переносы описаний',' · description line breaks'):'')+
@@ -612,8 +627,8 @@
       if(deleted)cautions.push(tr('Удаление записей: ','Record removals: ')+deleted);
       if(settings)cautions.push(tr('Настройки игры: ','Game settings: ')+settings);
       if(mechanicsReview)cautions.push(tr(
-       'Изменения механик без подтверждённого расчёта: ',
-       'Gameplay changes not yet proven by a calculation: ')+
+       'Требуют адаптации механики; публикация не подтвердит их расчёты: ',
+       'Mechanic adaptation required; publication cannot verify these calculations: ')+
        preview.compatibility.totals.needsReview);
       if(formulas){
        cautions.push(tr('Игровые формулы обновятся целым разделом',
@@ -1060,6 +1075,11 @@
               description.unexplained?tr('Есть нерасшифрованные параметры','Some parameters are unexplained'):
               description.uncertain?tr('Расшифровано · требуется ручная проверка','Explained · manual approval required'):
               tr('Значения расшифрованы · проверь перед выбором','Values explained · verify before selecting')});
+          const mechanic=selectedMechanicStatus(change);
+          if(mechanic)helper.textContent+=' · '+(
+           mechanic==='verified'?tr('Расчёт проверен','Model checked'):
+           mechanic==='sourceOnly'?tr('Только сведения из игры','Game data only'):
+           tr('Нужна адаптация механики','Mechanic adaptation required'));
           if(variantTotal.get(description.title)>1)
             helper.textContent+=tr(' · Вариант ',' · Variant ')+variantOrder.get(change.id)+
               tr(' из ',' of ')+variantTotal.get(description.title)+
@@ -1455,6 +1475,12 @@
          x.module.startsWith('source-')?replaySourceLabel(x.module):
          x.job==='target'?'эффект цели':x.job)+
         (x.level?' / '+x.level:''))].slice(0,4).join(' · '));
+      const graph=typeof safety.sourceGraphIntegrity==='function'?
+       safety.sourceGraphIntegrity(baseline,combined):null;
+      if(graph&&!graph.ok)throw Error(
+       'Проверка связей: обнаружено новых повреждённых ссылок: '+
+       graph.newBroken+' · '+graph.samples.map(x=>x.kind+' '+x.owner+
+        ' / '+x.field+' → '+String(x.target??'—')).slice(0,4).join(' · '));
       const equipment=typeof safety.replayEquipmentEffects==='function'?
        safety.replayEquipmentEffects(baseline,combined):null;
       if(equipment&&!equipment.ok)throw Error(
@@ -1468,7 +1494,7 @@
       normalized.entries.legacyLocale=legacyRows; // Preserve exact IDs, payloads and source attribution.
       review.auditSelection(baseline,upstream,combined,chosen,importer.files,
         {syncRussianInstances});
-      return {combined,normalized,compatibility,replay,equipment};
+      return {combined,normalized,compatibility,replay,equipment,graph};
     }
 
     exportButton.onclick=()=>{
