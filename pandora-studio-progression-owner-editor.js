@@ -21,8 +21,8 @@ function open({modal,h,lang='ru',readRaw,write,reset,canCommit=()=>true,onApplie
  const capInput=maxLabel.querySelector('input');
  const quick=h('button',{type:'button',class:'button-action',text:tr('Повторить прибавку последнего уровня','Copy last level gain')});
  const head=h('p',{class:'ps-level-editor-help',text:tr(
-  'Первый уровень — 0 свободных очков. Для новых уровней прибавки равны нулю, пока ты их не заполнишь. Можно выделить конкретное число и изменить его.',
-  'Level 1 starts with 0 free points. New levels have zero gains until you enter them. You can edit any individual gain.')});
+  'На 1-м уровне по умолчанию прибавка 0/0, но её тоже можно изменить. Новые уровни добавляются с нулевыми прибавками — заполни их после проверки патча.',
+  'Level 1 starts with 0/0 but is editable too. New levels start at zero until their gains are verified.')});
  top.append(maxLabel,quick);
  const scroller=h('div',{class:'ps-level-editor-scroll'});
  const table=h('table',{class:'ps-level-editor-table'});
@@ -58,10 +58,10 @@ function open({modal,h,lang='ru',readRaw,write,reset,canCommit=()=>true,onApplie
    const original=level<=before.maxLevel?before:null;
    const row=h('tr',{'data-level':String(level)});
    const at=h('input',{type:'number',min:'0',max:String(model.MAX_GRANT),step:'1',
-    value:String(draft.attributes[level]),disabled:level===1,
+    value:String(draft.attributes[level]),
     'aria-label':tr('Очки характеристик за уровень ','Attribute points gained at level ')+level});
    const sk=h('input',{type:'number',min:'0',max:String(model.MAX_GRANT),step:'1',
-    value:String(draft.skills[level]),disabled:level===1,
+    value:String(draft.skills[level]),
     'aria-label':tr('Очки умений за уровень ','Skill points gained at level ')+level});
    const prevAttr=h('small',{class:'ps-level-editor-was'});
    const prevSkill=h('small',{class:'ps-level-editor-was'});
@@ -120,8 +120,8 @@ function open({modal,h,lang='ru',readRaw,write,reset,canCommit=()=>true,onApplie
   undo.disabled=saving||!hasDiff;
   restore.disabled=saving||previousRaw===null;
   capInput.disabled=saving;quick.disabled=saving;
-  for(const node of entries.values()){node.at.disabled=saving||node.at.closest('tr')?.dataset.level==='1';
-   node.sk.disabled=saving||node.sk.closest('tr')?.dataset.level==='1';}
+  for(const node of entries.values()){node.at.disabled=saving;
+   node.sk.disabled=saving;}
  };
  capInput.addEventListener('change',()=>{
   const n=Number(capInput.value);
