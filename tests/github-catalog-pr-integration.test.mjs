@@ -153,7 +153,7 @@ test('invalid GitHub Secret does not pass token readiness',async()=>{
 
 function gitBlobSha(sourceText){
  const bytes=Buffer.from(sourceText,'utf8');
- return createHash('sha1').update(Buffer.from('blob '+bytes.length+'\\0'))
+ return createHash('sha1').update(Buffer.from('blob '+bytes.length+'\0'))
   .update(bytes).digest('hex');
 }
 test('interrupted backup resumes its missing PR only after every stranded Git blob matches D1',async()=>{
@@ -162,7 +162,7 @@ test('interrupted backup resumes its missing PR only after every stranded Git bl
  const catalog=await readPublishedGameCatalog(environment.DB,active);
  const directory=importer.files.map(name=>({
   path:name+'.json',type:'blob',mode:'100644',
-  sha:gitBlobSha(JSON.stringify(catalog[name])+'\\n')
+  sha:gitBlobSha(JSON.stringify(catalog[name])+'\n')
  }));
  const respond=data=>new Response(JSON.stringify(data),{status:200});
  globalThis.fetch=async(url,options)=>{
