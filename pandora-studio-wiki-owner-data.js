@@ -102,7 +102,9 @@ function validDrops(rows){
 }
 function validChest(rolls){
  return Array.isArray(rolls)&&rolls.length<=50&&rolls.every(group=>
-  Array.isArray(group)&&group.length<=100&&group.every(row=>{
+  // The active game has a verified chest with 127 choices in one group.
+  // Keep a strict upper bound, without truncating authentic reward lists.
+  Array.isArray(group)&&group.length<=200&&group.every(row=>{
    if(!record(row))return false;
    // Source NPC rolls include actual gold ranges with no item ID.
    // Do not force these into a fabricated item or silently discard them.
