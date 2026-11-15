@@ -398,9 +398,26 @@
           syncRussianInstances:mode==='server'&&russianToggle.checked&&verifiedRussian.length>0,
           localInstances
         });
-        result={validation:safety.check(selected),
+        const validation=safety.check(selected);
+        // Read-only numeric replay uses the exact selected snapshot and the
+        // site's existing formula modules. Missing old calculations are hard
+        // blockers, not just an acknowledgement checkbox.
+        const replay=typeof safety.replaySkills==='function'?
+         safety.replaySkills(baseline,selected):null;
+        if(replay&&!replay.ok){
+          const missing=replay.samples.map(row=>
+           row.name+' ('+row.job+(row.level?' · '+row.level:'')+')');
+          validation.ok=false;
+          validation.issues.push(...replay.errors);
+          if(replay.lost)validation.issues.push(tr(
+           'Пропали ранее доступные расчёты умений: ',
+           'Previously supported skill calculations disappeared: ')+
+           missing.slice(0,3).join(', ')+
+           (replay.lost>3?' (+'+(replay.lost-3)+')':''));
+        }
+        result={validation,
           comparison:safety.compare(baseline,selected,hero),
-          compatibility:safety.compatibility(baseline,selected)};
+          compatibility:safety.compatibility(baseline,selected),replay};
       }catch(error){
         result={validation:{ok:false,issues:[String(error.message||error)]},
           comparison:null};
@@ -553,6 +570,13 @@
            String(validation.levelCap??tr('не указано','not stated'))+
            tr(' на максимум планировщика не влияет.',
             ' does not limit the planner.');
+          if(preview.replay?.changedSkills)
+           formulaStatus.textContent+=tr(
+            ' · Известные расчёты навыков: ', 
+            ' · Known skill model samples retained: ')+
+            String(preview.replay.retained)+'/'+String(preview.replay.previouslyModeled)+
+            tr(' сохранено, ',' retained, ')+String(preview.replay.unmodeled)+
+            tr(' без числовой модели.',' without a numeric model.');
           const comparison=preview.comparison;
           if(comparison?.warning)
             formulaRows.append(h('p',{class:'os-sync-formula-warning',
@@ -1321,13 +1345,22 @@
       if(!modelCheck.ok)
         throw Error('Проверка расчётов перед публикацией: '+modelCheck.issues.join(' · '));
       const compatibility=safety.compatibility(baseline,combined);
+      // Recheck immediately before confirmed publication, independently
+      // of the cached UI preview. Do not silently discard old numeric models.
+      const replay=typeof safety.replaySkills==='function'?
+       safety.replaySkills(baseline,combined):null;
+      if(replay&&!replay.ok)throw Error(
+       'Проверка известных расчётов навыков: '+replay.lost+
+       ' прежних сценариев перестали рассчитываться. '+
+       [...replay.errors,...replay.samples.map(x=>x.name+' / '+x.job+
+        (x.level?' / '+x.level:''))].slice(0,4).join(' · '));
       const normalized=importer.normalize(combined,legacy);
       if(!Array.isArray(legacyRows)||legacyRows.length!==normalized.counts.legacyLocale)
         throw Error('Published D1 translation count changed during review');
       normalized.entries.legacyLocale=legacyRows; // Preserve exact IDs, payloads and source attribution.
       review.auditSelection(baseline,upstream,combined,chosen,importer.files,
         {syncRussianInstances});
-      return {combined,normalized,compatibility};
+      return {combined,normalized,compatibility,replay};
     }
 
     exportButton.onclick=()=>{
