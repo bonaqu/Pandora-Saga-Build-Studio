@@ -10,7 +10,7 @@ const editor=load('pandora-studio-owner-inline-ui.css');
 test('owner commands are reorganized without rebuilding the action buttons',()=>{
  assert.match(app,/const actionSlots=new Map\(\[\.\.\.actions\.querySelectorAll\('\.owner-dock-action-slot'\)\]/);
  assert.match(app,/\['openWiki','undo','history'\]/);
- assert.match(app,/\['catalog','translations'\]/);
+ assert.match(app,/\['catalog','levels','translations'\]/);
  assert.match(app,/\['testD1','githubExport'\]/);
  assert.match(app,/actions\.replaceChildren\(editGroup,gameGroup,toolsGroup\)/);
  assert.match(app,/actionSlots\.get\('finish'\)/);
