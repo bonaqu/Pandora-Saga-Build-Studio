@@ -25,7 +25,7 @@
 2. D1 CAS-protected active revision switches; browser reads back all 17 public sets and verifies base hero model.
 3. If Worker `GITHUB_CATALOG_TOKEN` is configured and works, the same browser action asks Worker to create exactly 17 JSON fallback files as `catalog/snapshot-ps-…` PR. The token never enters the browser.
 4. GitHub `quality.yml` and `browser-smoke.yml` test that PR.
-5. The trusted-base `catalog-fallback-auto-merge.yml` receives both completions, confirms same commit SHA and exactly 17 safe data/os files and no additions elsewhere, merges with expected SHA. Pages updates automatically. Failed/unknown CI means **no merge**.
+5. The trusted-base `catalog-fallback-auto-merge.yml` receives both completions, confirms same commit SHA and only changed safe data/os files (between 1 and 17) and no additions elsewhere, merges with expected SHA. Pages updates automatically. Failed/unknown CI means **no merge**.
 6. Live read-only Pages/D1 workflow confirms release and data parity after deployment. A safe catalog-only PR cannot fix unproven semantics; source changes must not be announced as verified gameplay formulas.
 
 **Important:** We cannot read Cloudflare Worker secrets from public GitHub. The Worker `github-status` is admin-authorized. Therefore actual deployed-token permissions and an end-to-end automatic merge of a real future D1 publication remain unverified until a legitimate owner-catalog publication exercises the flow. No artificial production D1 write or unsafe CI-bypass probe is performed.

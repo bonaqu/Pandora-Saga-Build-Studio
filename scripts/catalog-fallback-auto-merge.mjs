@@ -32,8 +32,9 @@ export function assessCatalogPullRequest({event,pr,files,runs}){
   return {ok:false,reason:'The PR head differs from the completed CI revision'};
  if(pr.title!=='catalog: reviewed game-data update ('+snapshot+')')
   return {ok:false,reason:'Unexpected PR identity'};
- if(!Array.isArray(files)||files.length!==ALLOWED_FILES.length||
-  new Set(files.map(row=>row?.filename)).size!==ALLOWED_FILES.length||
+ if(!Array.isArray(files)||files.length<1||files.length>ALLOWED_FILES.length||
+  pr.changed_files!==files.length||
+  new Set(files.map(row=>row?.filename)).size!==files.length||
   files.some(row=>!ALLOWED_FILES.includes(row?.filename)||
    !['modified','added'].includes(row.status)))
   return {ok:false,reason:'Changes are not exactly the 17 approved catalog JSON files'};
@@ -72,7 +73,8 @@ export async function autoMergeFromEvent({event,fetcher=fetch,token,apiBase='htt
  if(!Array.isArray(pulls)||pulls.length!==1)
   return {ok:false,reason:'Expected exactly one open catalog PR'};
  const pr=await call('/repos/'+REPO+'/pulls/'+pulls[0].number);
- if(pr?.changed_files!==ALLOWED_FILES.length)
+ if(!Number.isSafeInteger(pr?.changed_files)||pr.changed_files<1||
+    pr.changed_files>ALLOWED_FILES.length)
   return {ok:false,reason:'Pull request has an unexpected number of files'};
  const files=await call('/repos/'+REPO+'/pulls/'+pr.number+'/files?per_page=100');
  const workflowRuns=await call('/repos/'+REPO+'/actions/runs?'+qs({

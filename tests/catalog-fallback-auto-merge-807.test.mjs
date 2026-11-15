@@ -22,12 +22,25 @@ test('exactly 17 JSON files and both CI suites allow an atomic merge',()=>{
  assert.equal(assessCatalogPullRequest(a).ok,true);
  assert.equal(ALLOWED_FILES.length,17);
 });
-test('reject changed source code, missing JSON or extra files',()=>{
+test('reject changed source code, extra paths and duplicates',()=>{
  const a=fixtures();
  for(const files of [[...a.files,{filename:'worker/index.js',status:'modified'}],
-  a.files.slice(1),a.files.map((r,i)=>i===1?{...r,filename:'index.html'}:r)]){
+  a.files.map((r,i)=>i===1?{...r,filename:'index.html'}:r),
+  [...a.files.slice(0,3),a.files[0]]]){
   assert.equal(assessCatalogPullRequest({...a,files}).ok,false);
  }
+});
+
+test('one-data-file or a subset is enough: Git diffs omit unchanged JSON blobs',()=>{
+ const a=fixtures();
+ for(const count of [1,2,8,16,17]){
+  const files=a.files.slice(0,count);
+  const pr={...a.pr,changed_files:count};
+  assert.equal(assessCatalogPullRequest({...a,files,pr}).ok,true);
+ }
+ const files=a.files.slice(0,2);
+ assert.equal(assessCatalogPullRequest({...a,files}).ok,false,
+  'GitHub-reported changed_files must match the complete inspected file list');
 });
 test('reject missing, failing and stale CI suites',()=>{
  const a=fixtures();
