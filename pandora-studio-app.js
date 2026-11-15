@@ -7834,7 +7834,7 @@ async function apiRequest(path,body,token=adminToken) {
  finishOwnerWrite()
  return data;
 }
-function showAdmin(){const body=h('div');body.append(h('p',{class:'muted',text:adminToken?'Режим редактора подтверждён сервером. Изменения сохраняются в Cloudflare D1.':'Вход администратора защищён сервером Cloudflare Worker. Никаких паролей в GitHub Pages нет.'}));if(adminToken){body.append(h('button',{class:'button-action',text:'Игровой каталог',onclick:showCatalogImport}));body.append(h('button',{class:'button-action',text:'Очки за уровни',onclick:showOwnerLevelProgression}));body.append(h('button',{class:'button-action',text:'Синхронизировать ручные правки с GitHub',onclick:showOwnerGitHubExport}));body.append(h('button',{class:'button-action primary',text:adminEditing?'Выключить редактирование':'Включить редактирование',onclick:()=>{adminEditing=!adminEditing;$('modalRoot').hidden=true;render();updateAdminHint()}}),h('button',{class:'button-action',text:'Выйти',onclick:async()=>{try{await apiRequest('/api/admin/logout',{})}catch{}adminToken='';adminEditing=false;ownerEdits.length=0;closeInlineEditor();$('modalRoot').hidden=true;render();updateAdminHint()}}));modal('Управление сайтом',body);return}
+function showAdmin(){const body=h('div');body.append(h('p',{class:'muted',text:adminToken?'Режим редактора подтверждён сервером. Изменения сохраняются в Cloudflare D1.':'Вход администратора защищён сервером Cloudflare Worker. Никаких паролей в GitHub Pages нет.'}));if(adminToken){body.append(h('button',{class:'button-action',text:'Игровой каталог',onclick:showCatalogImport}));body.append(h('button',{class:'button-action',text:'Очки за уровни',onclick:showOwnerLevelProgression}));body.append(h('button',{class:'button-action',text:'Копия правок в GitHub (необязательно)',onclick:showOwnerGitHubExport}));body.append(h('button',{class:'button-action primary',text:adminEditing?'Выключить редактирование':'Включить редактирование',onclick:()=>{adminEditing=!adminEditing;$('modalRoot').hidden=true;render();updateAdminHint()}}),h('button',{class:'button-action',text:'Выйти',onclick:async()=>{try{await apiRequest('/api/admin/logout',{})}catch{}adminToken='';adminEditing=false;ownerEdits.length=0;closeInlineEditor();$('modalRoot').hidden=true;render();updateAdminHint()}}));modal('Управление сайтом',body);return}
  const user=h('input',{value:'administrator',readOnly:true}),password=h('input',{type:'password',placeholder:'Пароль администратора',autocomplete:'current-password'}),setup=h('input',{type:'password',placeholder:'Одноразовый секрет первичной настройки (если ещё нет пароля)'}),feedback=h('div',{class:'error'}),go=h('button',{class:'button-action primary',text:'Войти'});go.onclick=async()=>{feedback.textContent='';try{if(!password.value||password.value.length<12)throw Error('Нужен пароль от 12 символов');const data=await apiRequest(setup.value?'/api/admin/setup':'/api/admin/login',setup.value?{username:'administrator',password:password.value,setupToken:setup.value}:{username:'administrator',password:password.value},'');adminToken=data.token;adminEditing=true;$('modalRoot').hidden=true;render();updateAdminHint()}catch(e){feedback.textContent=e.message}};body.append(h('label',{text:'Логин'}),user,h('label',{text:'Пароль'}),password,h('label',{text:'Первичная настройка (заполняется только один раз)'}),setup,go,feedback,h('p',{class:'muted',text:'Первичная настройка требует секрет ADMIN_SETUP_TOKEN, созданный владельцем в настройках Worker. Это защищает имя administrator от захвата посторонними.'}));const checkApi=h('button',{type:'button',class:'button-action',text:'Проверить Cloudflare API',onclick:async()=>{feedback.textContent='Проверяю сервер…';try{const result=await apiRequest('/api/health',null,'');feedback.textContent=result.status==='ok'?'Worker отвечает, D1 подключена.':'Ответ сервера: '+JSON.stringify(result)}catch(e){feedback.textContent=e.message}}});body.append(checkApi);modal('Служебный вход',body)}
 function updateAdminHint(){
  const indicator=$('authState');
@@ -8150,6 +8150,28 @@ const ownerDockText=Object.freeze({
  collapse:['◀ Скрыть','◀ Hide'],
  expand:['✎ Редактор','✎ Editor']
 });
+// Help is action-specific and follows RU/EN without depending on owner-edited
+// button captions. These descriptions never trigger any D1 writes.
+const ownerDockHints=Object.freeze({
+ openWiki:['Открывает энциклопедию. Двойной клик или ✎ позволяет редактировать данные и сохраняет изменения в D1.',
+  'Open the encyclopedia. Double-click or ✎ to edit records; edits save to D1.'],
+ undo:['Отменяет последнее изменение этого сеанса. Если правок нет, действие недоступно.',
+  'Undo the latest edit in this session. Unavailable if there are no edits.'],
+ history:['Показывает все сохранённые ручные правки, их прежние и новые значения. Здесь можно вернуть отдельную запись.',
+  'Review all saved manual edits with before/after values and restore individual records.'],
+ catalog:['Проверяет изменения игровых данных и позволяет выбрать, что применить в D1. Сверка ничего не публикует сама.',
+  'Compare game-data changes and choose what to publish to D1. Comparison alone never publishes.'],
+ levels:['Открывает начисления очков за каждый уровень и максимум героя. Сохранение — отдельно от обновления игрового каталога.',
+  'Edit points earned per level and the hero maximum. Saving is separate from game catalog updates.'],
+ translations:['Просматривает готовые переводы ваших русских правок на английский. Запись только после подтверждения.',
+  'Review prepared English translations of your Russian edits. Save only after confirmation.'],
+ testD1:['Создаёт, читает и удаляет только временные проверочные записи D1. Не сохраняет текущую правку и не меняет игровой каталог.',
+  'Create, read and remove temporary D1 test records only. Does not save an active edit or change game data.'],
+ githubExport:['Необязательная копия уже сохранённых изменений в GitHub через PR. Для работы сайта и D1 не нужна.',
+  'Optional GitHub PR backup of existing D1 edits. Not required for the live site.'],
+ finish:['Закрывает редактор сайта. Ранее сохранённые в D1 изменения останутся; при ошибке записи завершение блокируется.',
+  'Turn off editing. D1-saved changes stay intact; a failed write prevents finishing.']
+});
 function ownerDockCopy(key){
  const pair=ownerDockText[key];
  return pair?ownerCopy('owner-dock',key,pair[0],pair[1]):key;
@@ -8174,6 +8196,10 @@ function decorateOwnerDockActions(actions){
    text:'✎','aria-label':(lang==='en'?'Edit label: ':'Изменить надпись: ')+ownerDockCopy(key)});
   const host=h('span',{class:'owner-dock-action-edit-host',hidden:true});
   button.before(slot);slot.append(button,pencil,host);
+  window.PandoraGuideTooltip?.attach(pencil,lang==='en'?
+   'Edit the button label only. Does not execute the action.':
+   'Изменяет только название кнопки. Само действие не запускается.',
+   {hoverDelay:350});
   pencil.onclick=event=>{
    event.preventDefault();event.stopPropagation();
    if(!adminEditing||!adminToken||!host.hidden)return;
@@ -8232,13 +8258,25 @@ function refreshOwnerUI(){
    const key=slot.dataset.ownerDockKey,button=slot.querySelector('button:not(.owner-dock-action-pencil)');
    if(button&&key!=='translations')button.textContent=ownerDockCopy(key);
    // Purely visual CSS glyphs must not become part of the spoken button name.
-   if(button)button.setAttribute('aria-label',button.textContent);
+   if(button){
+    button.setAttribute('aria-label',button.textContent);
+    if(ownerDockHints[key])button.dataset.guideHint=ownerDockHints[key][lang==='en'?1:0];
+   }
    const pencil=slot.querySelector('.owner-dock-action-pencil');
-   if(pencil)pencil.setAttribute('aria-label',
-    (lang==='en'?'Edit label: ':'Изменить надпись: ')+ownerDockCopy(key));
+   if(pencil){
+    pencil.setAttribute('aria-label',
+     (lang==='en'?'Edit label: ':'Изменить надпись: ')+ownerDockCopy(key));
+    pencil.dataset.guideHint=lang==='en'?
+     'Edit the button label only. Does not execute the action.':
+     'Изменяет только название кнопки. Само действие не запускается.';
+   }
   }
+  // Two everyday game-data tools share a row; conditional English fills
+  // a whole row rather than leaving an awkward half-empty space.
   const catalogSlot=root.querySelector('.owner-dock-catalog')?.closest('.owner-dock-action-slot');
-  if(catalogSlot)catalogSlot.classList.toggle('owner-dock-action-wide',Boolean(translations?.hidden));
+  if(catalogSlot)catalogSlot.classList.remove('owner-dock-action-wide');
+  const englishSlot=translations?.closest('.owner-dock-action-slot');
+  if(englishSlot)englishSlot.classList.toggle('owner-dock-action-wide',!translations.hidden);
   const title=root.querySelector('.owner-dock-title');
   if(title&&!title.querySelector('.wiki-inline-input'))title.textContent=ownerDockCopy('title');
   const online=root.querySelector('.owner-dock-online');
@@ -8247,7 +8285,7 @@ function refreshOwnerUI(){
   if(extra)extra.textContent=ownerDockCopy('extra');
   const labels={
    editing:[['Редактирование','Editing'],['Основные действия и история правок','Editing and change history']],
-   game:[['Игровые данные','Game data'],['Каталог и переводы','Catalog and translations']],
+   game:[['Игровые данные','Game data'],['Каталог, очки и переводы','Catalog, points and translations']],
    tools:[['Дополнительно','More tools'],['Проверка D1 и резервная копия','D1 testing and optional backup']]
   };
   for(const node of root.querySelectorAll('[data-owner-group-heading],[data-owner-group-hint]')){
@@ -8307,6 +8345,9 @@ function refreshOwnerUI(){
      (lang==='en'?'Open site editor drawer':'Открыть боковую панель редактора сайта'):
     (lang==='en'?'Hide site editor drawer':'Скрыть боковую панель редактора сайта'));
    toggle.setAttribute('aria-expanded',String(!ownerDockCollapsed));
+   toggle.dataset.guideHint=lang==='en'?
+    'Show or hide the editor. Saved D1 edits are preserved.':
+    'Показать или скрыть редактор. Сохранённые правки D1 не пропадут.';
   }
  };
  if(dock){update(dock);return}
@@ -8406,7 +8447,7 @@ function refreshOwnerUI(){
   'Основные действия и история правок','Editing and change history',
   ['openWiki','undo','history']);
  const gameGroup=group('game','Игровые данные','Game data',
-  'Каталог, уровни и переводы','Catalog, levels and translations',['catalog','levels','translations']);
+  'Каталог, очки и переводы','Catalog, points and translations',['catalog','levels','translations']);
  const toolsGroup=group('tools','Дополнительно','More tools',
   'Проверка D1 и резервная копия','D1 testing and optional backup',
   ['testD1','githubExport']);
@@ -8423,7 +8464,7 @@ function refreshOwnerUI(){
  for(const node of guide.querySelectorAll('[data-owner-dock-static]')){
   const key=node.dataset.ownerDockStatic;
   if(!['step1','step2','step3','historyHelp','catalogHelp','githubHelp',
-   'd1Help','finishHelp'].includes(key))continue;
+   'd1Help','levelsHelp','finishHelp'].includes(key))continue;
   const pair=ownerDockText[key];
   ownerCopyLabel(node,'owner-dock',key,pair[0],pair[1]);
   node.after(h('button',{type:'button',class:'owner-workflow-copy-pencil',
@@ -8452,22 +8493,27 @@ function refreshOwnerUI(){
  // An edge drawer must not alter the left character column or page height.
  document.body.append(root);
  const hints=[
-  ['.owner-dock-primary','Открыть энциклопедию для редактирования данных прямо в карточках.'],
-  ['[data-owner-undo]','Отменяет последнюю ручную правку этого сеанса в Cloudflare D1.'],
-  ['.owner-dock-history','Посмотреть сохранённые ручные правки и вернуть исходные значения.'],
-  ['.owner-dock-catalog','Сравнить опубликованный каталог с игровым источником; ничего не применяется автоматически.'],
-  ['.owner-dock-levels','Изменить прибавки характеристик и умений по уровням; сохранить одной версией в D1.'],
-  ['.owner-dock-d1-check','Проверить запись, чтение и удаление временных данных. Билды и игровой каталог не изменятся.'],
-  ['.owner-dock-export','Предложить уже сохранённые правки для проверки в GitHub.'],
-  ['[data-owner-en-sync]','Предварительно просмотреть английские переводы только уже существующих русских правок. Ничего не записывается до подтверждения.'],
-  ['.owner-dock-finish','Выключить режим редактирования. Уже сохранённые данные D1 останутся на месте.']
+  ['.owner-dock-primary','openWiki'],
+  ['[data-owner-undo]','undo'],
+  ['.owner-dock-history','history'],
+  ['.owner-dock-catalog','catalog'],
+  ['.owner-dock-levels','levels'],
+  ['.owner-dock-d1-check','testD1'],
+  ['.owner-dock-export','githubExport'],
+  ['[data-owner-en-sync]','translations'],
+  ['.owner-dock-finish','finish']
  ];
- for(const [selector,message] of hints){
+ for(const [selector,key] of hints){
   const button=panel.querySelector(selector);
   if(!button)continue;
   button.removeAttribute('title');
-  window.PandoraGuideTooltip?.attach(button,message,{hoverDelay:1000});
+  window.PandoraGuideTooltip?.attach(button,
+   ownerDockHints[key][lang==='en'?1:0],{hoverDelay:350});
  }
+ window.PandoraGuideTooltip?.attach(toggle,lang==='en'?
+  'Open or hide the site editor. D1 edits remain saved.':
+  'Открыть или скрыть редактор. Уже записанные в D1 правки не исчезнут.',
+  {hoverDelay:350});
  root.addEventListener('keydown',event=>{
   if(event.key!=='Escape'||ownerDockCollapsed||event.defaultPrevented)return;
   // Escape from an active text editor cancels the edit, not the drawer.
@@ -8720,6 +8766,9 @@ function showOverrideManager(){
   text:tr('Очистить','Clear'),disabled:true,
   'aria-label':tr('Очистить поиск по правкам','Clear edits search'),
   onclick:()=>{search.value='';draw();search.focus({preventScroll:true})}});
+ window.PandoraGuideTooltip?.attach(clearSearch,
+  tr('Очищает только поиск. Сохранённые правки D1 не меняются.',
+   'Clear the search only. Saved D1 edits stay unchanged.'),{hoverDelay:350});
  const draw=()=>{
   list.replaceChildren();
   const q=String(search.value||'').trim().toLocaleLowerCase('ru');
@@ -8817,6 +8866,16 @@ function showOverrideManager(){
      }
     }}));
    row.append(head,edits,actions);list.append(row);
+   const reset=actions.querySelector('.owner-review-reset');
+   if(reset)window.PandoraGuideTooltip?.attach(reset,tr(
+    'После подтверждения удаляет только эту ручную правку из D1 и возвращает исходное значение.',
+    'After confirmation removes just this D1 edit and restores the original value.'
+   ),{hoverDelay:350});
+   const openAction=actions.querySelector('button:not(.owner-review-reset)');
+   if(openAction)window.PandoraGuideTooltip?.attach(openAction,tr(
+    'Показывает объект в энциклопедии без изменения его данных.',
+    'Open the matching encyclopedia record without modifying it.'
+   ),{hoverDelay:350});
   }
  };
  function wikiDataOrCatalogHasRecord(target){
@@ -9432,6 +9491,14 @@ function ownerDialogHelp(key,ru,en){
 function ownerDialogAction(button,key,ru,en){
  button.textContent=ownerCopy('owner-dialog',key,ru,en);
  button.classList.add('owner-dialog-action');
+ const hints={
+  translationsSaveButton:['Сохранит проверенные EN-переводы в D1. Перед записью проверит, не изменилось ли содержимое облака.',
+   'Save reviewed English translations to D1, after checking for concurrent cloud changes.'],
+  githubCreateButton:['Создаст необязательный PR с копией уже сохранённых D1-правок. На сайте ничего не изменится.',
+   'Create an optional GitHub PR copying already saved D1 edits. This does not change the live site.']
+ };
+ if(hints[key])window.PandoraGuideTooltip?.attach(button,
+  hints[key][lang==='en'?1:0],{hoverDelay:350});
  if(!adminEditing||!adminToken)return button;
  const wrapper=h('span',{class:'owner-dialog-action-editor'});
  const host=h('span',{class:'owner-dialog-action-host',hidden:true});

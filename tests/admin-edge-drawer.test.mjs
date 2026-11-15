@@ -101,10 +101,11 @@ test('admin hover hint is delayed and cancelled, while keyboard focus is immedia
  assert.equal(attrs['aria-describedby'],undefined);
 });
 
-test('admin action tooltips opt into one second, not global instant behavior',()=>{
+test('admin action tooltips are quicker, deliberate and keyboard accessible',()=>{
  const workbench=read('pandora-os-catalog-workbench.js');
  const app=read('pandora-studio-app.js');
- assert.match(workbench,/PandoraGuideTooltip\?\.attach\(node,description,\{hoverDelay:1000\}\)/);
- assert.match(app,/PandoraGuideTooltip\?\.attach\(button,message,\{hoverDelay:1000\}\)/);
+ assert.match(workbench,/PandoraGuideTooltip\?\.attach\(node,description,\{hoverDelay:420\}\)/);
+ assert.match(app,/ownerDockHints\[key\]\[lang==='en'\?1:0\],\{hoverDelay:350\}\)/);
  assert.match(app,/button\.removeAttribute\('title'\)/);
+ assert.match(app,/pencil\.dataset\.guideHint=lang==='en'/);
 });

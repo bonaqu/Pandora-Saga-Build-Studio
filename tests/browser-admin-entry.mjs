@@ -282,7 +282,20 @@ export async function runAdminEntrySmoke(browser,base){
   // 0.795 owner progression editor: make an unsaved 60-level plan, verify
   // the derived table and discard without writing any D1 override.
   assert.ok(dockStructure.keys.includes('levels'));
-  await ownerPanel.locator('.owner-dock-levels').click();
+  const gameButtons=await ownerPanel.locator(
+   '.owner-dock-action-group[data-owner-group="game"] .owner-dock-action-grid').evaluate(node=>{
+    const catalog=node.querySelector('.owner-dock-catalog')?.getBoundingClientRect();
+    const levels=node.querySelector('.owner-dock-levels')?.getBoundingClientRect();
+    return {sideBySide:!!catalog&&!!levels&&Math.abs(catalog.top-levels.top)<4&&
+     catalog.right<=levels.left+2};
+   });
+  assert.equal(gameButtons.sideBySide,true,'Catalog and level tools should share an uncluttered row');
+  const dockLevelAction=ownerPanel.locator('.owner-dock-levels');
+  assert.match(await dockLevelAction.getAttribute('data-guide-hint'),/максимум героя/);
+  await dockLevelAction.hover();
+  await page.locator('#stage-guide-tooltip').waitFor({state:'visible',timeout:3000});
+  assert.match(await page.locator('#stage-guide-tooltip').innerText(),/Сохранение — отдельно/);
+  await dockLevelAction.click();
   const levelDialog=page.getByRole('dialog',{name:/Очки за уровни/});
   await levelDialog.waitFor({state:'visible'});
   assert.equal(await levelDialog.locator('.ps-level-editor-table tbody tr').count(),55);
@@ -291,9 +304,29 @@ export async function runAdminEntrySmoke(browser,base){
   await capInput.press('Tab');
   assert.equal(await levelDialog.locator('.ps-level-editor-table tbody tr').count(),60);
   const row56=levelDialog.locator('.ps-level-editor-table tbody tr[data-level="56"]');
-  await row56.getByRole('spinbutton',{name:'Очки характеристик за уровень 56'}).fill('8');
-  await row56.getByRole('spinbutton',{name:'Очки умений за уровень 56'}).fill('3');
+  const levelAttr=row56.getByRole('spinbutton',{name:'Очки характеристик за уровень 56'});
+  const levelSkill=row56.getByRole('spinbutton',{name:'Очки умений за уровень 56'});
+  await levelAttr.fill('8');
+  await levelSkill.fill('3');
   assert.match(await levelDialog.locator('.ps-level-editor-summary').innerText(),/552 характеристик · 137 умений/);
+  const fillNew=levelDialog.getByRole('button',{name:'Заполнить пустые новые уровни'});
+  assert.equal(await fillNew.isEnabled(),true);
+  assert.match(await levelDialog.locator('.ps-level-editor-fill-hint').innerText(),
+   /С уровня 55: \+8 характеристик \/ \+3 умений/);
+  // The action is not a mysterious mass reset. It preserves manually edited
+  // 56 while filling only empty new rows 57–60. Still no D1 write.
+  await levelAttr.fill('10');
+  await levelSkill.fill('4');
+  await fillNew.click();
+  assert.equal(await levelAttr.inputValue(),'10');
+  assert.equal(await levelSkill.inputValue(),'4');
+  for(let level=57;level<=60;level++){
+   const row=levelDialog.locator('.ps-level-editor-table tbody tr[data-level="'+level+'"]');
+   assert.equal(await row.locator('input').nth(0).inputValue(),'8');
+   assert.equal(await row.locator('input').nth(1).inputValue(),'3');
+  }
+  assert.match(await levelDialog.locator('.ps-level-editor-summary').innerText(),/586 характеристик · 150 умений/);
+  assert.equal(await fillNew.isDisabled(),true);
   assert.equal(townOverrides.has('planner.progression.v1'),false,
    'Draft edits must not write to D1');
   await levelDialog.getByRole('button',{name:'Отменить несохранённое'}).click();

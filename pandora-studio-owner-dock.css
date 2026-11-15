@@ -482,3 +482,26 @@ body>#ownerDock{
  #ownerDock .owner-dock-footer-note{font-size:10px}
  #ownerDock .owner-dock-action-slot>button:not(.owner-dock-action-pencil){font-size:11px}
 }
+
+/* 0.796 · Two equally discoverable game-data actions, no orphaned grid cell. */
+#ownerDock .owner-dock-actions .owner-dock-levels{
+ background:#322c1f;border-color:#96764d;color:#f0d9ab
+}
+#ownerDock .owner-dock-levels:before{content:"+";font-size:17px}
+#ownerDock .owner-dock-actions .owner-dock-levels:hover:not(:disabled){
+ border-color:#dbb681;background:#483521
+}
+#ownerDock .owner-dock-action-group[data-owner-group="game"] .owner-dock-action-grid{
+ align-items:stretch
+}
+#ownerDock .owner-dock-action-slot>button:not(.owner-dock-action-pencil){
+ text-wrap:pretty
+}
+#ownerDock .owner-dock-action-slot>.owner-dock-action-pencil:focus-visible{
+ opacity:1
+}
+@media(max-width:480px){
+ #ownerDock .owner-dock-action-group[data-owner-group="game"] .owner-dock-action-grid{
+  grid-template-columns:1fr
+ }
+}
