@@ -350,6 +350,59 @@ function replayEquipmentEffects(before,after){
   samples:lost.slice(0,5),errors};
 }
 
+
+// Additive Forth refinement can be data-only when its *existing* effect
+// identity, step boundaries, direction and every nonnumeric field are stable.
+// Both old and new 0..10 snapshots must pass the active numeric calculator;
+// unknown procs and newly introduced step semantics stay review-only.
+function verifiedForthAmountChanges(id,oldForth,newForth,before,after){
+ const C=root.PandoraOSCalculator;
+ const item=before?.items?.[id],updated=after?.items?.[id];
+ const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+ if(!C?.sourceEffects||!item||!updated||
+  String(item.id)!==String(id)||!same(item,updated)||
+  !validObject(oldForth)||!validObject(newForth))return false;
+ const grades=Object.keys(oldForth).sort((a,b)=>Number(a)-Number(b));
+ if(!grades.length||!same(grades,
+  Object.keys(newForth).sort((a,b)=>Number(a)-Number(b))))return false;
+ let changed=0;
+ const source='item:'+id;
+ for(const level of grades){
+  if(!Number.isSafeInteger(Number(level))||Number(level)<1||
+   Number(level)>10||String(Number(level))!==level)return false;
+  const oldRows=oldForth[level],newRows=newForth[level];
+  if(!Array.isArray(oldRows)||!Array.isArray(newRows)||
+   oldRows.length!==newRows.length)return false;
+  for(let i=0;i<oldRows.length;i++){
+   const a=oldRows[i],b=newRows[i];
+   if(same(a,b))continue;
+   if(!validObject(a)||!validObject(b)||
+    !Number.isFinite(a.a)||!Number.isFinite(b.a)||a.a===b.a||
+    [...new Set([...Object.keys(a),...Object.keys(b)])].some(key=>
+     key!=='a'&&!same(a[key],b[key])))return false;
+   if(!modeledEquipmentEffect(source,item,Number(level),a)||
+    !modeledEquipmentEffect(source,updated,Number(level),b))return false;
+   changed++;
+  }
+ }
+ if(!changed)return false;
+ for(let grade=0;grade<=10;grade++){
+  const a=C.sourceEffects(source,item,grade,before.itemForth);
+  const b=C.sourceEffects(source,updated,grade,after.itemForth);
+  if(a.length!==b.length)return false;
+  for(let i=0;i<a.length;i++){
+   if(same(a[i],b[i]))continue;
+   if(!validObject(a[i])||!validObject(b[i])||
+    !Number.isFinite(a[i].a)||!Number.isFinite(b[i].a)||
+    [...new Set([...Object.keys(a[i]),...Object.keys(b[i])])]
+     .some(key=>key!=='a'&&!same(a[i][key],b[i][key])))return false;
+   if(!modeledEquipmentEffect(source,item,grade,a[i])||
+    !modeledEquipmentEffect(source,updated,grade,b[i]))return false;
+  }
+ }
+ return true;
+}
+
 // Before publication classify *changes*, not just JSON schema validity.
 // A matching source shape does not prove that the calculator interprets a
 // newly introduced gameplay effect. Lists are intentionally bounded for UI.
@@ -457,7 +510,18 @@ function compatibility(before,after){
    }
    continue;
   }
-  if(['itemForth','unison','expertise'].includes(dataset))
+  if(dataset==='itemForth'){
+   const ids=new Set([...Object.keys(oldData||{}),...Object.keys(newData||{})]);
+   for(const id of ids){
+    const a=oldData?.[id],b=newData?.[id];
+    if(same(a,b))continue;
+    const name=String(after?.items?.[id]?.name||before?.items?.[id]?.name||id).slice(0,90);
+    const numeric=verifiedForthAmountChanges(id,a,b,before,after);
+    add(numeric?'verified':'needsReview','itemForth:'+id,
+     name+(numeric?' · известные бонусы заточки рассчитаны':
+      ' · изменена механика улучшения'));
+   }
+  }else if(['unison','expertise'].includes(dataset))
    add('needsReview',dataset,'Раздел «'+dataset+'»: изменены игровые бонусы или мастерство');
   else add('sourceOnly',dataset,'Раздел «'+dataset+'»: структурно проверенные данные');
  }
