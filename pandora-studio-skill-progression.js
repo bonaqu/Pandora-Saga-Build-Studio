@@ -118,17 +118,26 @@ function legacyPrayerSpirit(job,state,innate={},caps={}){
 // The OS abilityPoint table has different values (e.g. L2=2 rather than 1),
 // so it is used only as a catalog-readiness check, never as this budget.
 function skillGrant(level){
+ const custom=root.PandoraLevelProgression;
+ if(custom)return custom.grant('skills',level)??0;
  if(!Number.isInteger(level)||level<2||level>55)return 0;
  return level<=10?1:level<=20?2:3;
 }
 function spending(table,level,points){
  const max=Number(level);
  const spent=Object.entries(points||{}).reduce((sum,[key,n])=>sum+(key==='race'?0:value(n)),0);
- if(!table||!Number.isInteger(max)||max<1||max>55)return {total:null,spent,remaining:null};
+ const configured=root.PandoraLevelProgression;
+ if(!table||!Number.isInteger(max)||max<1||
+  max>(configured?.maxLevel()??55))return {total:null,spent,remaining:null};
  let total=0;
  for(let lv=2;lv<=max;lv++){
-  const existing=table[String(lv)];
-  if(!Number.isInteger(existing)||existing<0)return {total:null,spent,remaining:null};
+  // The independent owner progression can extend beyond the old game's
+  // tables. Keep checking the original 2–55 records for data integrity.
+  if(lv<=55){
+   const existing=table[String(lv)];
+   if(!Number.isInteger(existing)||existing<0)
+    return {total:null,spent,remaining:null};
+  }
   total+=skillGrant(lv);
  }
  return {total,spent,remaining:total-spent};
