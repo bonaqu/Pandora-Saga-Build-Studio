@@ -4,6 +4,7 @@
 // character planner limit. Check the ACTUAL production models on staged D1
 // datasets before publish and on public D1 data after publish.
 const MAX_LEVEL=55;
+const configuredMax=()=>root.PandoraLevelProgression?.maxLevel()??MAX_LEVEL;
 const EXPECTED=Object.freeze({
  45:[432,104],46:[446,107],47:[460,110],48:[474,113],
  49:[488,116],50:[504,119],51:[512,122],52:[520,125],
@@ -29,22 +30,29 @@ function check(data){
     !validObject(tables.jobInit))
   return {ok:false,issues:['В каталоге отсутствуют таблицы прокачки персонажа.']};
  // Source levelCap may be 45, 50 or another server value. It must NOT
- // restrict our independently modeled 1–55 planning progression.
- for(let level=2;level<=MAX_LEVEL;level++){
+ // restrict the independent planner. Legacy 2–55 source completeness stays required.
+ for(let level=2;level<=55;level++){
   if(!Number.isSafeInteger(tables.abilityPoint[String(level)])||
      tables.abilityPoint[String(level)]<0){
    issues.push('Нет корректных игровых данных для '+level+'-го уровня.');
    break;
   }
  }
- for(const [raw,[expectedStats,expectedSkills]] of Object.entries(EXPECTED)){
-  const level=Number(raw),attributePoints=attributes.budget(level);
-  const skillPoints=skills.spending(tables.abilityPoint,level,{}).total;
-  if(attributePoints!==expectedStats||skillPoints!==expectedSkills)
-   issues.push('На '+level+'-м уровне начисления отличаются от закреплённых: '+
-    String(attributePoints)+' / '+String(skillPoints)+
-    ' вместо '+expectedStats+' / '+expectedSkills+'.');
- }
+ // Historical 45–55 baselines hold unless the owner has intentionally
+ // published a different CAS-protected progression table in D1.
+ if(!root.PandoraLevelProgression||root.PandoraLevelProgression.isDefault())
+  for(const [raw,[expectedStats,expectedSkills]] of Object.entries(EXPECTED)){
+   const level=Number(raw),attributePoints=attributes.budget(level);
+   const skillPoints=skills.spending(tables.abilityPoint,level,{}).total;
+   if(attributePoints!==expectedStats||skillPoints!==expectedSkills)
+    issues.push('На '+level+'-м уровне начисления отличаются от закреплённых: '+
+     String(attributePoints)+' / '+String(skillPoints)+
+     ' вместо '+expectedStats+' / '+expectedSkills+'.');
+  }
+ const max=configuredMax(),actualPoints=attributes.budget(max);
+ const actualSkills=skills.spending(tables.abilityPoint,max,{}).total;
+ if(!Number.isSafeInteger(actualPoints)||!Number.isSafeInteger(actualSkills))
+  issues.push('Нельзя рассчитать очки для максимального уровня '+max+'.');
  const races=Object.keys(tables.raceInit);
  if(!races.length||!Object.keys(classes).length)
   issues.push('Нет происхождений или профессий для проверки.');
@@ -54,25 +62,26 @@ function check(data){
   const rootClass=definition?.baseClass||klass;
   for(const race of races){
    const sample=attributes.snapshot({
-    tables,race,klass:rootClass,level:MAX_LEVEL,
+    tables,race,klass:rootClass,level:max,
     added:[0,0,0,0,0,0],caps:definition?.statCaps
    });
-   const hp=sample&&calculator.classBase(definition?.hp,MAX_LEVEL,sample.values[0],'vit');
-   const mp=sample&&calculator.classBase(definition?.mp,MAX_LEVEL,sample.values[4],'spi');
-   if(!sample||sample.total!==544||!Number.isFinite(hp)||!Number.isFinite(mp)){
-    issues.push('Не рассчитан герой '+klass+' / '+race+' на 55-м уровне.');
+   const hp=sample&&calculator.classBase(definition?.hp,max,sample.values[0],'vit');
+   const mp=sample&&calculator.classBase(definition?.mp,max,sample.values[4],'spi');
+   if(!sample||sample.total!==actualPoints||!Number.isFinite(hp)||!Number.isFinite(mp)){
+    issues.push('Не рассчитан герой '+klass+' / '+race+' на '+max+'-м уровне.');
     if(issues.length>=8)break;
    }
   }
   if(issues.length>=8)break;
  }
  return {ok:issues.length===0,issues,levelCap:tables.levelCap,
-  plannerMax:MAX_LEVEL,attributesAt55:attributes.budget(MAX_LEVEL),
-  skillsAt55:skills.spending(tables.abilityPoint,MAX_LEVEL,{}).total};
+  plannerMax:max,attributesAt55:attributes.budget(55),
+  skillsAt55:skills.spending(tables.abilityPoint,55,{}).total,
+  attributesAtMax:actualPoints,skillsAtMax:actualSkills};
 }
 
 function project(data,hero){
- if(!hero||!Number.isInteger(hero.level)||hero.level<1||hero.level>MAX_LEVEL||
+ if(!hero||!Number.isInteger(hero.level)||hero.level<1||hero.level>configuredMax()||
     !hero.race||!hero.klass)return null;
  const definition=data?.classes?.[hero.klass];
  if(!definition)return {error:'Профессия персонажа отсутствует в выбранном каталоге.'};
