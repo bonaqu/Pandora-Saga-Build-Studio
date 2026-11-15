@@ -838,7 +838,7 @@ function compatibility(before,after){
 // An OLD-model replay alone cannot detect a newly introduced broken source
 // link. This read-only audit traverses both full catalog snapshots, including
 // previously unmodeled skills and item-triggered skills. Baseline source oddities
-// (e.g. two historical zero-ID placeholders) are grandfathered *only while
+// (e.g. existing zero-ID placeholders) are grandfathered *only while
 // unchanged*: new or modified dangling references always block pre-D1 writes.
 // Inspect structural links; do not infer game-server activation or damage.
 function sourceGraphIntegrity(before,after){
@@ -850,6 +850,7 @@ function sourceGraphIntegrity(before,after){
   const issues=[],skills=data?.skills||{},items=data?.items||{},
    classes=data?.classes||{};
   let inspected=0;
+  const executionEdges=new Map();
   const present=(map,id)=>id!=null&&Object.hasOwn(map,String(id));
   const signed=(kind,owner,index,field,target,reason)=>{
    issues.push({kind,owner:String(owner),index,field,
@@ -870,8 +871,14 @@ function sourceGraphIntegrity(before,after){
      signed('skill',id,-1,'class',klass,'Профессия отсутствует');
    }
    for(const [index,effect] of (Array.isArray(skill.funcs)?skill.funcs:[]).entries()){
-    if(executionEP.has(effect?.ep))
-     link('skill',id,index,effect.ep,effect?.fv1?.[3],skills);
+    if(executionEP.has(effect?.ep)){
+     const child=effect?.fv1?.[3];
+     link('skill',id,index,effect.ep,child,skills);
+     if(Number.isSafeInteger(child)&&child>0&&present(skills,child)){
+      if(!executionEdges.has(id))executionEdges.set(id,[]);
+      executionEdges.get(id).push({id:String(child),index});
+     }
+    }
     if(effect?.ep==='EP_CONSUME_ITEM'){
      link('skill',id,index,'EP_CONSUME_ITEM',effect?.fv1?.[3],items);
      inspected++;
@@ -886,6 +893,23 @@ function sourceGraphIntegrity(before,after){
    for(const [index,effect] of (Array.isArray(item?.effects)?item.effects:[]).entries())
     if(['EP_SKILL_EXEC','EP_SKILL_EXEC_BALM'].includes(effect?.func))
      link('item',id,index,effect.func,effect?.a,skills);
+  // An existing target ID does not prove a linked skill graph terminates.
+  // Detect introduced direct and multi-step execution cycles, including
+  // unlearnable skills without a previously verified numeric preview.
+  const visited=new Set(),active=new Set();
+  const visit=id=>{
+   if(visited.has(id))return;
+   visited.add(id);active.add(id);
+   for(const edge of executionEdges.get(id)||[]){
+    inspected++;
+    if(active.has(edge.id))
+     signed('skill',id,edge.index,'execution-cycle',edge.id,
+      'Циклическая цепочка игровых действий');
+    else visit(edge.id);
+   }
+   active.delete(id);
+  };
+  for(const id of Object.keys(skills))visit(id);
   return {issues,inspected};
  };
  const previous=inspect(before),selected=inspect(after);
