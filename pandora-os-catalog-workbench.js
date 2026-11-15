@@ -1349,13 +1349,13 @@
         ?'\nВНИМАНИЕ: '+uncertain+' выбранных изменений требуют ручной проверки.':'';
       const compatibility=staged.compatibility;
       const mechanicWarning=compatibility?.requiresMechanicReview?
-       '\\n\\nПРОВЕРКА МЕХАНИК: '+compatibility.totals.needsReview+
+       '\n\nПРОВЕРКА МЕХАНИК: '+compatibility.totals.needsReview+
        ' изменений игровых свойств и эффектов требуют проверки совместимости. '+
        'Новая формула не подтверждается одним обновлением D1. Примеры: '+
        compatibility.samples.needsReview.slice(0,3).map(x=>x.title).join('; ')+
        '. Публикация не гарантирует численные результаты неизвестных эффектов.':'';
       const verifiedNotice=compatibility?.totals.verified?
-       '\\nБазовые расчёты и таблицы: проверено '+compatibility.totals.verified+
+       '\nБазовые расчёты и таблицы: проверено '+compatibility.totals.verified+
        ' разделов (не полная проверка всех боевых механик).':'';
       const confirmationRu='Применить выбранные изменения в каталог Build Studio?\n'+
        'Новых: '+added+' · Изменённых: '+changed+' · Удалённых: '+removed+
@@ -1372,7 +1372,7 @@
        (unselectedSettings?'\nUnselected settings: '+unselectedSettings+'.':'')+
        sourceWarning+
        (compatibility?.requiresMechanicReview?
-        '\\nMECHANICS: '+compatibility.totals.needsReview+
+        '\nMECHANICS: '+compatibility.totals.needsReview+
         ' effect/property changes require an independent model review. '+
         'Publishing D1 does not prove unknown formulas.':'')+
        (uncertain?'\nFlagged for manual review: '+uncertain+'.':'')+
