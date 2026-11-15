@@ -683,6 +683,12 @@ export async function runAdminEntrySmoke(browser,base){
   const sourceCallsBefore=calls.filter(x=>x.startsWith('game-source:')).length;
   const originalCaption='Привести переносы строк в описаниях к виду игрового сайта';
   for(const value of ['Настройка переносов строк QA',originalCaption]){
+   // Async status refresh can hide this optional section again. Restore
+   // the isolated test fixture before each interaction, without publishing.
+   await formattingChoice.evaluate(el=>{
+    el.closest('.os-sync-review-steps').hidden=false;
+    el.closest('.os-sync-formatting-review').hidden=false;
+   });
    await formattingChoice.locator('.os-sync-choice-pencil').click();
    const editor=formattingChoice.locator('[contenteditable]').first();
    await editor.waitFor({state:'visible'});
