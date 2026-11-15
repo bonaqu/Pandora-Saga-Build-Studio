@@ -641,6 +641,9 @@ function replaySkills(before,after){
      link(id,String(linked));
    }
   }
+ // Preserve the explicitly edited IDs for actionable regression reports.
+ // A single internal effect can otherwise drown in the five sampled parents.
+ const directlyChanged=new Set(changed);
  const pending=[...changed];
  for(let i=0;i<pending.length;i++)
   for(const relative of relatives.get(pending[i])||[])
@@ -828,6 +831,9 @@ function replaySkills(before,after){
  // five repeated hero/equipment scenarios hid the actual missing ally buff.
  const representatives=[],seenSamples=new Set();
  for(const row of [
+  ...lost.filter(x=>directlyChanged.has(x.id)&&
+   (x.module==='ally-recipient'||x.module==='priest-cast')),
+  ...lost.filter(x=>directlyChanged.has(x.id)),
   ...lost.filter(x=>x.module==='ally-recipient'||x.module==='priest-cast'),
   ...lost
  ]){
