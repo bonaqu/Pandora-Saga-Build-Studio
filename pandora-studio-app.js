@@ -7363,7 +7363,7 @@ function sanitizeSharedState(original){
  if(!original||typeof original!=='object'||Array.isArray(original)||
    !Number.isInteger(original.race)||original.race<0||original.race>=races.length||
    !Number.isInteger(original.job)||original.job<0||original.job>=jobKeys.length||
-   !Number.isInteger(original.level)||original.level<1||original.level>55)
+   !Number.isInteger(original.level)||original.level<1||original.level>(window.PandoraLevelProgression?.maxLevel()??55))
   throw Error('Ссылка содержит некорректные параметры персонажа');
  const safe=fresh();
  safe.race=original.race;safe.gender=original.gender===1?1:0;
@@ -7834,7 +7834,7 @@ async function apiRequest(path,body,token=adminToken) {
  finishOwnerWrite()
  return data;
 }
-function showAdmin(){const body=h('div');body.append(h('p',{class:'muted',text:adminToken?'Режим редактора подтверждён сервером. Изменения сохраняются в Cloudflare D1.':'Вход администратора защищён сервером Cloudflare Worker. Никаких паролей в GitHub Pages нет.'}));if(adminToken){body.append(h('button',{class:'button-action',text:'Игровой каталог',onclick:showCatalogImport}));body.append(h('button',{class:'button-action',text:'Синхронизировать ручные правки с GitHub',onclick:showOwnerGitHubExport}));body.append(h('button',{class:'button-action primary',text:adminEditing?'Выключить редактирование':'Включить редактирование',onclick:()=>{adminEditing=!adminEditing;$('modalRoot').hidden=true;render();updateAdminHint()}}),h('button',{class:'button-action',text:'Выйти',onclick:async()=>{try{await apiRequest('/api/admin/logout',{})}catch{}adminToken='';adminEditing=false;ownerEdits.length=0;closeInlineEditor();$('modalRoot').hidden=true;render();updateAdminHint()}}));modal('Управление сайтом',body);return}
+function showAdmin(){const body=h('div');body.append(h('p',{class:'muted',text:adminToken?'Режим редактора подтверждён сервером. Изменения сохраняются в Cloudflare D1.':'Вход администратора защищён сервером Cloudflare Worker. Никаких паролей в GitHub Pages нет.'}));if(adminToken){body.append(h('button',{class:'button-action',text:'Игровой каталог',onclick:showCatalogImport}));body.append(h('button',{class:'button-action',text:'Очки за уровни',onclick:showOwnerLevelProgression}));body.append(h('button',{class:'button-action',text:'Синхронизировать ручные правки с GitHub',onclick:showOwnerGitHubExport}));body.append(h('button',{class:'button-action primary',text:adminEditing?'Выключить редактирование':'Включить редактирование',onclick:()=>{adminEditing=!adminEditing;$('modalRoot').hidden=true;render();updateAdminHint()}}),h('button',{class:'button-action',text:'Выйти',onclick:async()=>{try{await apiRequest('/api/admin/logout',{})}catch{}adminToken='';adminEditing=false;ownerEdits.length=0;closeInlineEditor();$('modalRoot').hidden=true;render();updateAdminHint()}}));modal('Управление сайтом',body);return}
  const user=h('input',{value:'administrator',readOnly:true}),password=h('input',{type:'password',placeholder:'Пароль администратора',autocomplete:'current-password'}),setup=h('input',{type:'password',placeholder:'Одноразовый секрет первичной настройки (если ещё нет пароля)'}),feedback=h('div',{class:'error'}),go=h('button',{class:'button-action primary',text:'Войти'});go.onclick=async()=>{feedback.textContent='';try{if(!password.value||password.value.length<12)throw Error('Нужен пароль от 12 символов');const data=await apiRequest(setup.value?'/api/admin/setup':'/api/admin/login',setup.value?{username:'administrator',password:password.value,setupToken:setup.value}:{username:'administrator',password:password.value},'');adminToken=data.token;adminEditing=true;$('modalRoot').hidden=true;render();updateAdminHint()}catch(e){feedback.textContent=e.message}};body.append(h('label',{text:'Логин'}),user,h('label',{text:'Пароль'}),password,h('label',{text:'Первичная настройка (заполняется только один раз)'}),setup,go,feedback,h('p',{class:'muted',text:'Первичная настройка требует секрет ADMIN_SETUP_TOKEN, созданный владельцем в настройках Worker. Это защищает имя administrator от захвата посторонними.'}));const checkApi=h('button',{type:'button',class:'button-action',text:'Проверить Cloudflare API',onclick:async()=>{feedback.textContent='Проверяю сервер…';try{const result=await apiRequest('/api/health',null,'');feedback.textContent=result.status==='ok'?'Worker отвечает, D1 подключена.':'Ответ сервера: '+JSON.stringify(result)}catch(e){feedback.textContent=e.message}}});body.append(checkApi);modal('Служебный вход',body)}
 function updateAdminHint(){
  const indicator=$('authState');
@@ -8122,6 +8122,7 @@ const ownerDockText=Object.freeze({
  undo:['↶ Отменить','↶ Undo'],
  history:['Все правки','All edits'],
  catalog:['Игровой каталог','Game catalog'],
+ levels:['Очки за уровни','Level-up points'],
  translations:['EN-переводы','EN translations'],
  testD1:['Проверить сохранение','Test saving'],
  githubExport:['Копия в GitHub','GitHub copy'],
@@ -8138,6 +8139,8 @@ const ownerDockText=Object.freeze({
   ' — find saved edits and restore original values.'],
  catalogHelp:[' — сравнить игровые JSON с каталогом D1. Применение только после подтверждения.',
   ' — compare public game JSON to D1. Applying changes requires confirmation.'],
+ levelsHelp:[' — посмотреть и изменить начисления по уровням независимо от игрового каталога.',
+  ' — view and edit level-up points independently from the game catalog.'],
  githubHelp:[' — необязательная копия уже сохранённых правок в GitHub. Сайту она не нужна.',
   ' — optional GitHub copy of edits already saved in D1. The live site does not require it.'],
  d1Help:[' — проверить запись и удаление временных данных без изменения каталога и билдов.',
@@ -8157,6 +8160,7 @@ function decorateOwnerDockActions(actions){
   ['[data-owner-undo]','undo'],
   ['.owner-dock-history','history'],
   ['.owner-dock-catalog','catalog'],
+  ['.owner-dock-levels','levels'],
   ['.owner-en-sync','translations'],
   ['.owner-dock-d1-check','testD1'],
   ['.owner-dock-export','githubExport'],
@@ -8328,6 +8332,7 @@ function refreshOwnerUI(){
   h('div',{class:'owner-workflow-glossary'},[
    h('p',{},[h('strong',{'data-owner-dock-static':'history',text:'Все правки'}),h('span',{'data-owner-dock-static':'historyHelp',text:' — посмотреть сохранённые изменения и вернуть исходное.'})]),
    h('p',{},[h('strong',{'data-owner-dock-static':'catalog',text:'Игровой каталог'}),h('span',{'data-owner-dock-static':'catalogHelp',text:' — отдельная сверка новых данных с сервером игры; для ручных правок не нужен.'})]),
+   h('p',{},[h('strong',{'data-owner-dock-static':'levels',text:'Очки за уровни'}),h('span',{'data-owner-dock-static':'levelsHelp',text:' — отдельная таблица начислений и максимального уровня.'})]),
    h('p',{},[h('strong',{'data-owner-dock-static':'githubExport',text:'Экспорт в GitHub'}),h('span',{'data-owner-dock-static':'githubHelp',text:' — необязательный экспорт изменений в GitHub для проверки и объединения. Данные в D1 уже сохранены.'})]),
    h('p',{},[h('strong',{'data-owner-dock-static':'testD1',text:'Проверить сохранение'}),h('span',{'data-owner-dock-static':'d1Help',text:' — безопасная запись и удаление случайных временных тестовых записей; пользовательские данные не затрагиваются.'})]),
    h('p',{},[h('strong',{'data-owner-dock-static':'finish',text:'Завершить'}),h('span',{'data-owner-dock-static':'finishHelp',text:' — только скрыть инструменты редактирования, не удалить изменения.'})])
@@ -8342,6 +8347,8 @@ function refreshOwnerUI(){
    title:'Просмотр всех сохранённых переопределений в D1'}),
   h('button',{type:'button',class:'owner-dock-catalog',text:'Игровой каталог',onclick:showCatalogImport,
    title:'Отдельное обновление снимка игрового каталога'}),
+  h('button',{type:'button',class:'owner-dock-levels',text:'Очки за уровни',onclick:showOwnerLevelProgression,
+   title:'Таблица начисления очков за уровни и максимальный уровень героя'}),
   h('button',{type:'button',class:'owner-en-sync','data-owner-en-sync':'',
    text:'EN-переводы',onclick:showOwnerEnglishReview,
    title:'Проверить и записать готовые английские переводы русских правок'}),
@@ -8399,7 +8406,7 @@ function refreshOwnerUI(){
   'Основные действия и история правок','Editing and change history',
   ['openWiki','undo','history']);
  const gameGroup=group('game','Игровые данные','Game data',
-  'Каталог и переводы','Catalog and translations',['catalog','translations']);
+  'Каталог, уровни и переводы','Catalog, levels and translations',['catalog','levels','translations']);
  const toolsGroup=group('tools','Дополнительно','More tools',
   'Проверка D1 и резервная копия','D1 testing and optional backup',
   ['testD1','githubExport']);
@@ -8449,6 +8456,7 @@ function refreshOwnerUI(){
   ['[data-owner-undo]','Отменяет последнюю ручную правку этого сеанса в Cloudflare D1.'],
   ['.owner-dock-history','Посмотреть сохранённые ручные правки и вернуть исходные значения.'],
   ['.owner-dock-catalog','Сравнить опубликованный каталог с игровым источником; ничего не применяется автоматически.'],
+  ['.owner-dock-levels','Изменить прибавки характеристик и умений по уровням; сохранить одной версией в D1.'],
   ['.owner-dock-d1-check','Проверить запись, чтение и удаление временных данных. Билды и игровой каталог не изменятся.'],
   ['.owner-dock-export','Предложить уже сохранённые правки для проверки в GitHub.'],
   ['[data-owner-en-sync]','Предварительно просмотреть английские переводы только уже существующих русских правок. Ничего не записывается до подтверждения.'],
@@ -9552,6 +9560,31 @@ async function showOwnerGitHubExport(){
   modal(tr('Необязательная копия энциклопедии в GitHub','Optional GitHub encyclopedia copy'),panel);
  }catch(error){showStudioToast('Не удалось подготовить экспорт: '+error.message,'warning')}
 }
+async function showOwnerLevelProgression(){
+ if(!adminToken||!adminEditing||!ownerCanStartAdminOperation())return;
+ const key=window.PandoraLevelProgression.KEY;
+ const editor=window.PandoraProgressionOwnerEditor;
+ if(!editor)throw Error('Редактор очков уровней не подключён');
+ editor.open({
+  modal,h,lang,canCommit:ownerCanStartAdminOperation,
+  readRaw:()=>override[key]??null,
+  write:async value=>{await apiRequest('/api/admin/override',{key,value})},
+  reset:async()=>{await apiRequest('/api/admin/reset',{key})},
+  onApplied:async expected=>{
+   // A successful write is not proof until public D1 returns exactly
+   // the expected canonical progression. Keep the current edit on failures.
+   const fresh=await apiRequest('/api/overrides',null,'');
+   const confirmed=fresh.values?.[key]??null;
+   if(confirmed!==expected)
+    throw Error('D1 не подтвердила таблицу прокачки. Повтори проверку.');
+   const previous=override[key]??null;
+   if(confirmed===null)delete override[key];else override[key]=confirmed;
+   applyPlannerOverride(confirmed);
+   ownerEdits.push({key,before:previous,after:confirmed});
+   await refreshOwnerCatalog();
+  }
+ });
+}
 async function showCatalogImport(){
  if(!adminToken||!ownerCanStartAdminOperation())return;
  const workbench=window.PandoraOSCatalogWorkbench;
@@ -9826,9 +9859,18 @@ async function refreshOwnerCatalog(){
  }else render();
  updateAdminHint();
 }
+function applyPlannerOverride(raw){
+ const model=window.PandoraLevelProgression,applied=model.configure(raw);
+ if(!applied.ok)throw Error('Повреждена таблица прокачки в D1: '+applied.error);
+ const slider=$('level');if(slider)slider.max=String(model.maxLevel());
+ const cap=$('level')?.parentElement?.querySelector('.range-caps span:last-child');
+ if(cap)cap.textContent=String(model.maxLevel());
+ return applied;
+}
 async function loadOverrides({strict=false}={}){try{
  const response=await apiRequest('/api/overrides',null,'');
  override=response.values||{};
+ applyPlannerOverride(override[window.PandoraLevelProgression.KEY]??null);
  window.PandoraUILocale.setOverrides(override);
  window.PandoraUILocale.apply(lang);
  refreshVisibleWikiLabels();
@@ -9842,7 +9884,7 @@ $('originTabs').onclick=event=>{
  if(!button)return;
  originActive=button.dataset.originTab;renderOriginTabs();saveView();
 };
-$('nav').onclick=e=>{const b=e.target.closest('[data-tab]');if(b)changeTab(b.dataset.tab)};$('level').oninput=e=>{state.level=Math.max(1,Math.min(55,Number(e.target.value)||1));persist();render()};$('genderF').onclick=()=>{if(!window.PandoraUIPlanner.raceHasGender(races,state.race))return;state.gender=0;persist();render()};$('genderM').onclick=()=>{if(!window.PandoraUIPlanner.raceHasGender(races,state.race))return;state.gender=1;persist();render()};$('swapGender').onclick=()=>{if(!window.PandoraUIPlanner.raceHasGender(races,state.race))return;state.gender=1-state.gender;persist();render()};$('jumpEquipment').onclick=()=>{
+$('nav').onclick=e=>{const b=e.target.closest('[data-tab]');if(b)changeTab(b.dataset.tab)};$('level').oninput=e=>{state.level=Math.max(1,Math.min(window.PandoraLevelProgression.maxLevel(),Number(e.target.value)||1));persist();render()};$('genderF').onclick=()=>{if(!window.PandoraUIPlanner.raceHasGender(races,state.race))return;state.gender=0;persist();render()};$('genderM').onclick=()=>{if(!window.PandoraUIPlanner.raceHasGender(races,state.race))return;state.gender=1;persist();render()};$('swapGender').onclick=()=>{if(!window.PandoraUIPlanner.raceHasGender(races,state.race))return;state.gender=1-state.gender;persist();render()};$('jumpEquipment').onclick=()=>{
  selectedSlot=0;stageSlotQuery='';stageSlotView=state.equipment?.[0]?'details':'choose';
  stageSlotPickerOpen=true;renderSlotRails();renderStagePicker(true);
 };
