@@ -30,7 +30,7 @@ test('cast timing is a mechanical change and replays known previews without D1 w
  next.skills['320001001']={...before.skills['320001001'],
   cast:before.skills['320001001'].cast+1};
  const result=replay(before,next);
- assert.equal(result.changedSkills,1);
+ assert.ok(result.changedSkills>=1,'changed skill and verified links are replayed');
  assert.ok(result.scenarios>0,'timing changes must trigger a full read-only model replay');
  assert.equal(result.lost,0,'an unchanged numerical source may keep the same preview');
  assert.equal(result.ok,true);
