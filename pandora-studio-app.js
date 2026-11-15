@@ -8766,6 +8766,9 @@ function showOverrideManager(){
   text:tr('Очистить','Clear'),disabled:true,
   'aria-label':tr('Очистить поиск по правкам','Clear edits search'),
   onclick:()=>{search.value='';draw();search.focus({preventScroll:true})}});
+ window.PandoraGuideTooltip?.attach(clearSearch,
+  tr('Очищает только поиск. Сохранённые правки D1 не меняются.',
+   'Clear the search only. Saved D1 edits stay unchanged.'),{hoverDelay:350});
  const draw=()=>{
   list.replaceChildren();
   const q=String(search.value||'').trim().toLocaleLowerCase('ru');
@@ -8863,6 +8866,16 @@ function showOverrideManager(){
      }
     }}));
    row.append(head,edits,actions);list.append(row);
+   const reset=actions.querySelector('.owner-review-reset');
+   if(reset)window.PandoraGuideTooltip?.attach(reset,tr(
+    'После подтверждения удаляет только эту ручную правку из D1 и возвращает исходное значение.',
+    'After confirmation removes just this D1 edit and restores the original value.'
+   ),{hoverDelay:350});
+   const openAction=actions.querySelector('button:not(.owner-review-reset)');
+   if(openAction)window.PandoraGuideTooltip?.attach(openAction,tr(
+    'Показывает объект в энциклопедии без изменения его данных.',
+    'Open the matching encyclopedia record without modifying it.'
+   ),{hoverDelay:350});
   }
  };
  function wikiDataOrCatalogHasRecord(target){
@@ -9478,6 +9491,14 @@ function ownerDialogHelp(key,ru,en){
 function ownerDialogAction(button,key,ru,en){
  button.textContent=ownerCopy('owner-dialog',key,ru,en);
  button.classList.add('owner-dialog-action');
+ const hints={
+  translationsSaveButton:['Сохранит проверенные EN-переводы в D1. Перед записью проверит, не изменилось ли содержимое облака.',
+   'Save reviewed English translations to D1, after checking for concurrent cloud changes.'],
+  githubCreateButton:['Создаст необязательный PR с копией уже сохранённых D1-правок. На сайте ничего не изменится.',
+   'Create an optional GitHub PR copying already saved D1 edits. This does not change the live site.']
+ };
+ if(hints[key])window.PandoraGuideTooltip?.attach(button,
+  hints[key][lang==='en'?1:0],{hoverDelay:350});
  if(!adminEditing||!adminToken)return button;
  const wrapper=h('span',{class:'owner-dialog-action-editor'});
  const host=h('span',{class:'owner-dialog-action-host',hidden:true});
