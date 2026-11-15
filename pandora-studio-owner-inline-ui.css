@@ -777,3 +777,59 @@
  .modal:has(.owner-github-review)>h2,
  .modal:has(.os-sync)>h2{margin-right:72px}
 }
+
+/* 0.792 · One compact, filterable history without another card dashboard. */
+.owner-manager-filters{display:flex;align-items:center;flex-wrap:wrap;gap:8px;min-width:0}
+.owner-manager-section{min-width:150px;max-width:100%;flex:1 1 180px;
+ min-height:38px;box-sizing:border-box;padding:7px 10px;
+ border:1px solid #816442;border-radius:7px;background:#241b15;
+ color:#f1d5ab;font:600 12px/1.4 Manrope,Arial,sans-serif}
+.owner-manager-session{display:inline-flex;align-items:center;gap:7px;
+ min-height:38px;box-sizing:border-box;padding:6px 10px;
+ border:1px solid #655039;border-radius:7px;background:#2c2219;
+ color:#e1c49a;font-size:12px;cursor:pointer;white-space:nowrap}
+.owner-manager-session input{width:16px;height:16px;accent-color:#d3aa6f}
+.owner-manager-section:focus-visible,
+.owner-manager-session:focus-within,
+.owner-manager .owner-review-heading:focus-visible,
+.owner-manager-search-clear:focus-visible{
+ outline:2px solid #efc784;outline-offset:2px}
+.owner-manager-pending-note{margin:0;padding:8px 11px;
+ border-left:3px solid #c89461;border-radius:5px;
+ background:#3d2920;color:#ffe0b6;font-size:12px;line-height:1.5}
+.owner-manager .owner-manager-row{display:block;padding:0;overflow:hidden}
+.owner-manager .owner-review-heading{display:flex;align-items:center;justify-content:space-between;
+ gap:10px;list-style:none;padding:11px 13px;cursor:pointer}
+.owner-manager .owner-review-heading::-webkit-details-marker{display:none}
+.owner-manager .owner-review-heading::after{content:"⌄";margin-left:auto;
+ color:#e4bb7c;font-size:18px;line-height:1}
+.owner-manager .owner-review-row[open]>.owner-review-heading{
+ border-bottom:1px solid #58432c;background:#342619}
+.owner-manager .owner-review-row[open]>.owner-review-heading::after{transform:rotate(180deg)}
+.owner-manager .owner-review-changes{display:grid;gap:8px;padding:11px 13px 3px;min-width:0}
+.owner-manager .owner-review-actions{display:flex;flex-wrap:wrap;gap:8px;
+ padding:10px 13px 13px}
+.owner-manager .owner-manager-row:not([open])>.owner-review-heading:hover{
+ background:#36291c}
+.owner-manager .owner-review-heading strong{flex:1;min-width:0;overflow-wrap:anywhere}
+.owner-manager .owner-review-heading small{flex:none}
+.owner-dialog-translations .owner-manager-row{padding:11px 13px}
+.owner-dialog-translations .owner-manager-row>p{margin:7px 0 0;
+ line-height:1.5;overflow-wrap:anywhere}
+.owner-dialog-save-row{display:flex;align-items:center;flex-wrap:wrap;gap:10px;
+ padding:10px 0;border-top:1px solid #5e4731}
+.owner-dialog-save-row .button-action:focus-visible,
+.owner-github-review .button-action:focus-visible,
+.owner-manager .owner-review-actions button:focus-visible{
+ outline:2px solid #efc784;outline-offset:2px}
+@media(max-width:520px){
+ .owner-manager-filters{align-items:stretch}
+ .owner-manager-section{flex-basis:100%}
+ .owner-manager-session{justify-content:center}
+ .owner-manager .owner-review-heading{flex-wrap:wrap}
+ .owner-manager .owner-review-heading small{margin-left:0}
+}
+@media(forced-colors:active){
+ .owner-manager-section,.owner-manager-session,.owner-manager .owner-manager-row{
+  border:1px solid CanvasText}
+}

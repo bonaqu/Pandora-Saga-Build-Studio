@@ -8091,6 +8091,28 @@ function refreshVisibleWikiLabels(){
 }
 // Admin toolbar captions use the same bilingual, CAS-protected guideedit.book
 // D1 store as other authored labels. Never store diagnostics or credentials.
+// One gate for all cross-window D1 operations; never hide a queued write.
+function ownerSaveInFlight(){
+ return editIsSaving||ownerWritePendingCount>0||wikiLabelPendingWrites>0||
+  wikiRecordWriteQueue.size>0||ownerSaveState==='saving';
+}
+function ownerCanStartAdminOperation(){
+ if(ownerSaveInFlight()){
+  showStudioToast(lang==='en'?'Wait for the current D1 save to finish.':
+   'Дождись окончания текущего сохранения в D1.','warning');
+  return false;
+ }
+ if(ownerSaveState==='error'){
+  showStudioToast(lang==='en'?'Resolve the failed edit before continuing.':
+   'Сначала исправь ошибку сохранения правки.','warning');
+  return false;
+ }
+ return true;
+}
+function ownerRuRecordCount(n){
+ return n%10===1&&n%100!==11?'запись':
+  n%10>=2&&n%10<=4&&(n%100<12||n%100>14)?'записи':'записей';
+}
 const ownerDockText=Object.freeze({
  title:['✎ Редактор сайта','✎ Site editor'],
  online:['Редактирование включено','Editing enabled'],
@@ -8149,7 +8171,7 @@ function decorateOwnerDockActions(actions){
   pencil.onclick=event=>{
    event.preventDefault();event.stopPropagation();
    if(!adminEditing||!adminToken||!host.hidden)return;
-   if(editIsSaving||wikiLabelPendingWrites>0||ownerSaveState==='saving'){
+   if(ownerSaveInFlight()){
     showStudioToast(lang==='en'?'Finish the current save first.':
      'Сначала заверши текущее сохранение.','warning');return;
    }
@@ -8188,7 +8210,7 @@ function refreshOwnerUI(){
  const update=root=>{
   const counter=root.querySelector('[data-owner-count]');
   if(counter)counter.textContent=lang==='en'?count+' D1 edits':
-   count+' '+(count===1?'запись':'записей')+' в D1';
+   count+' '+ownerRuRecordCount(count)+' в D1';
   const recent=root.querySelector('[data-owner-recent]');
   if(recent)recent.textContent=(lang==='en'?'This session: ':'За этот сеанс: ')+ownerEdits.length;
   const translations=root.querySelector('[data-owner-en-sync]');
@@ -8326,8 +8348,7 @@ function refreshOwnerUI(){
    text:'Проверить сохранение',
    title:'Безопасно записать, прочитать и удалить временные тестовые записи в D1',
    onclick:async function(){
-    if(editIsSaving||wikiLabelPendingWrites>0||wikiRecordWriteQueue.size>0||
-     ownerSaveState==='saving')return;
+    if(!ownerCanStartAdminOperation())return;
     this.disabled=true;
     try{
      const result=await apiRequest('/api/admin/catalog/test-write',{});
@@ -8676,6 +8697,13 @@ function showOverrideManager(){
   'Manual changes saved in Cloudflare D1. Every entry shows its section, field, original game-catalog value, and your edit. Unknown original values are marked.'));
  const search=ownerPlainTextField({placeholder:tr('Найти предмет, NPC или изменённое поле…','Find an item, NPC or edited field…'),
   class:'owner-manager-search wiki-owner-search','aria-label':tr('Поиск среди ручных изменений','Search manual edits')});
+ const sectionFilter=h('select',{class:'owner-manager-section',
+  'aria-label':tr('Раздел ручных правок','Manual edit section')});
+ const sessionOnly=h('input',{type:'checkbox'});
+ const sessionLabel=h('label',{class:'owner-manager-session'},[
+  sessionOnly,h('span',{text:tr('За этот сеанс','This session')})
+ ]);
+ const pendingNote=h('p',{class:'owner-manager-pending-note',role:'status',hidden:true});
  const count=h('p',{class:'owner-manager-summary',role:'status'});
  const list=h('div',{class:'owner-manager-list'});
  const clearSearch=h('button',{type:'button',class:'button-action owner-manager-search-clear',
@@ -8686,19 +8714,38 @@ function showOverrideManager(){
   list.replaceChildren();
   const q=String(search.value||'').trim().toLocaleLowerCase('ru');
   clearSearch.disabled=!q;
-  const entries=Object.entries(override).map(([key,value])=>
+  const allEntries=Object.entries(override).map(([key,value])=>
    window.PandoraOwnerChangeReview.inspect(key,value,{
     base:wikiBaseData,items:wikiBaseData?.items||catalogSource?.items,
-    classes:catalog?.classes,lang,englishBranches:officialEnglish?.branches||{}}))
+    classes:catalog?.classes,lang,englishBranches:officialEnglish?.branches||{}}));
+  const sections=[...new Set(allEntries.map(record=>record.section))]
+   .sort((a,b)=>a.localeCompare(b,lang));
+  const previousSection=sectionFilter.value;
+  sectionFilter.replaceChildren(h('option',{value:'',
+   text:tr('Все разделы','All sections')}));
+  for(const section of sections)sectionFilter.append(h('option',{value:section,text:section}));
+  sectionFilter.value=sections.includes(previousSection)?previousSection:'';
+  const recentKeys=new Set(ownerEdits.map(edit=>edit.key));
+  const entries=allEntries
+   .filter(record=>!sectionFilter.value||record.section===sectionFilter.value)
+   .filter(record=>!sessionOnly.checked||recentKeys.has(record.key))
    .filter(record=>!q||searchWords([record.key,record.title,...record.changes.flatMap(x=>
     [x.field,x.before,x.after])].join(' '),q))
    .sort((a,b)=>a.section.localeCompare(b.section,lang)||a.title.localeCompare(b.title,lang));
-  count.textContent=tr('Найдено ','Found ')+entries.length+tr(' из ',' of ')+Object.keys(override).length+tr(' ручных изменений',' manual edits');
+  count.textContent=tr('Показано ','Showing ')+entries.length+
+   tr(' из ',' of ')+allEntries.length+tr(' правок',' edits');
+  pendingNote.hidden=!ownerSaveInFlight()&&ownerSaveState!=='error';
+  if(!pendingNote.hidden)pendingNote.textContent=ownerSaveState==='error'?
+   tr('Есть ошибка сохранения. Исправь её перед изменением записей.',
+    'A save failed. Resolve it before modifying records.'):
+   tr('Идёт сохранение. Возврат исходных значений пока недоступен.',
+    'Saving is in progress. Restoring original values is temporarily unavailable.');
   if(!entries.length)list.append(authoredHistory('empty',
    'Не найдено правок по выбранному запросу.','No edits match your search.'));
   for(const record of entries){
-   const row=h('section',{class:'owner-manager-row owner-review-row'});
-   const head=h('div',{class:'owner-review-heading'},[
+   const row=h('details',{class:'owner-manager-row owner-review-row'});
+   row.open=Boolean(q)||entries.length<=4;
+   const head=h('summary',{class:'owner-review-heading'},[
     h('strong',{text:record.title}),
     h('small',{text:tr('Изменено полей: ','Changed fields: ')+record.changes.length})
    ]);
@@ -8724,8 +8771,12 @@ function showOverrideManager(){
      }}));
    }
    actions.append(h('button',{type:'button',class:'owner-review-reset',
-    text:tr('Вернуть оригинал','Restore original'),onclick:async()=>{
+    text:tr('Вернуть оригинал','Restore original'),onclick:async event=>{
+     if(!ownerCanStartAdminOperation())return;
      if(!confirm(tr('Вернуть исходные данные для «','Restore original data for “')+record.title+tr('»?','”?')))return;
+     editIsSaving=true;
+     const resetButton=event.currentTarget;
+     resetButton.disabled=true;refreshOwnerUI();
      const previous=activeOverride(record.key);
      try{
       await apiRequest('/api/admin/reset',{key:record.key});
@@ -8748,7 +8799,12 @@ function showOverrideManager(){
         refreshVisibleOwnerCopy(record.key);saveView();
        }else void refreshOwnerCatalog();
        refreshOwnerUI();
-     }catch(error){showStudioToast('Не удалось отменить правку: '+error.message,'warning')}
+     }catch(error){showStudioToast(tr('Не удалось отменить правку: ','Could not restore edit: ')+error.message,'warning')}
+     finally{
+      editIsSaving=false;refreshOwnerUI();
+      if(resetButton.isConnected)resetButton.disabled=false;
+      if(body.isConnected)draw();
+     }
     }}));
    row.append(head,edits,actions);list.append(row);
   }
@@ -8772,7 +8828,12 @@ function showOverrideManager(){
   return false;
  }
  search.addEventListener('input',draw);
- body.append(h('div',{class:'owner-manager-search-row'},[search,clearSearch]),count,list);
+ sectionFilter.addEventListener('change',draw);
+ sessionOnly.addEventListener('change',draw);
+ body.append(
+  h('div',{class:'owner-manager-search-row'},[search,clearSearch]),
+  h('div',{class:'owner-manager-filters'},[sectionFilter,sessionLabel]),
+  pendingNote,count,list);
  draw();
  modal(tr('Все ручные правки','All manual edits'),body);
  if(!wikiBaseData)void loadWiki().then(()=>{if(body.isConnected)draw()})
@@ -9384,16 +9445,14 @@ function ownerDialogAction(button,key,ru,en){
 function showOwnerEnglishReview(){
  if(!adminEditing||!adminToken)return;
  const tr=(ru,en)=>lang==='en'?en:ru;
- if(editIsSaving||wikiLabelPendingWrites>0||ownerSaveState==='saving'){
-  showStudioToast('Сначала заверши текущее сохранение.','warning');return;
- }
+ if(!ownerCanStartAdminOperation())return;
  const helper=window.PandoraOwnerBilingual;
  const planned=helper?.pending(override)||[];
  if(!planned.length){
   showStudioToast('Все подготовленные английские переводы уже сохранены.','success');return;
  }
  const fields=planned.reduce((sum,entry)=>sum+entry.fields.length,0);
- const body=h('div',{class:'owner-manager'});
+ const body=h('div',{class:'owner-manager owner-dialog-translations'});
  body.append(ownerDialogHelp('translationsIntro',
   'Готовые переводы русских правок. Здесь только записи с подтверждённым исходным текстом. Уже сохранённые EN-названия не заменяются.',
   'Suggested English translations of Russian edits. Only verified source texts are included. Existing English names are not replaced.'));
@@ -9407,6 +9466,7 @@ function showOwnerEnglishReview(){
  const status=h('p',{role:'status',class:'muted'});
  const save=h('button',{type:'button',class:'button-action primary'});
  save.onclick=async()=>{
+  if(!ownerCanStartAdminOperation())return;
   save.disabled=true;editIsSaving=true;refreshOwnerUI();
   let saved=0;
   try{
@@ -9449,14 +9509,7 @@ function showOwnerEnglishReview(){
 async function showOwnerGitHubExport(){
  if(!adminToken)return;
  const tr=(ru,en)=>lang==='en'?en:ru;
- if(editIsSaving||wikiLabelPendingWrites>0||ownerSaveState==='saving'){
-  showStudioToast('Дождись завершения сохранения в Cloudflare D1 перед созданием PR.','warning');
-  return;
- }
- if(ownerSaveState==='error'){
-  showStudioToast('Сначала исправь ошибку сохранения. PR пока недоступен.','warning');
-  return;
- }
+ if(!ownerCanStartAdminOperation())return;
  try{
   const info=await apiRequest('/api/admin/catalog/owner-review');
   if(!info.configured){showStudioToast('GitHub-токен пока недоступен Worker.','warning');return}
@@ -9473,6 +9526,7 @@ async function showOwnerGitHubExport(){
   const feedback=h('p',{class:'inline-owner-error',role:'status'});
   const go=h('button',{type:'button',class:'button-action primary',disabled:!info.count});
   go.onclick=async()=>{
+   if(!ownerCanStartAdminOperation())return;
    go.disabled=true;
    try{
     const result=await apiRequest('/api/admin/catalog/owner-pr',{
@@ -9497,13 +9551,14 @@ async function showOwnerGitHubExport(){
  }catch(error){showStudioToast('Не удалось подготовить экспорт: '+error.message,'warning')}
 }
 async function showCatalogImport(){
- if(!adminToken)return;
+ if(!adminToken||!ownerCanStartAdminOperation())return;
  const workbench=window.PandoraOSCatalogWorkbench;
  if(!workbench)throw Error('Модуль сверки актуального игрового сервера не подключён');
  return workbench.open({
   request:(path,body)=>apiRequest(path,body,adminToken),
   apiBase:API,modal,h,lang,
   canEdit:Boolean(adminEditing&&adminToken),
+  canCommit:ownerCanStartAdminOperation,
   copyLabel:(key,ru,en)=>ownerCopy('catalog-sync',key,ru,en),
   editLabel:(node,key,ru,en,callbacks)=>ownerCopyLabel(
    node,'catalog-sync',key,ru,en,callbacks),
