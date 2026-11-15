@@ -249,8 +249,8 @@
     const formulaStatus=h('p',{class:'os-sync-formula-status'});
     const formulaRows=h('div',{class:'os-sync-formula-rows'});
     const formulaNote=h('small',{class:'os-sync-formula-note',text:tr(
-      'Сравниваются реальные модели очков, стартовых характеристик и базовых ОЗ/ОМ без снаряжения и усилений. Урон, эффекты предметов и навыков этим предварительным расчётом не проверяются.',
-      'The actual points, base attributes and base HP/MP models are compared without gear or buffs. This preview does not verify damage, item effects or skill effects.')});
+      'Числа очков и базовых ОЗ/ОМ проверяются отдельно от известных эффектов навыков, экипировки и связанных игровых записей. Новые и неизвестные механики не считаются рассчитанными.',
+      'Point budgets and base HP/MP are checked separately from known skill effects, equipment bonuses and linked game records. New and unknown mechanics are not claimed to be calculated.')});
     formulaPreview.append(formulaTitle,formulaStatus,formulaRows,formulaNote);
     const riskApproval=h('input',{type:'checkbox',disabled:true});
     const riskApprovalLabel=h('label',{class:'os-sync-risk-approval',hidden:true},[
@@ -258,7 +258,9 @@
       'Я проверил спорные изменения и понимаю, что обновится каталог Build Studio.',
       'I reviewed the flagged changes and understand that the Build Studio catalog will change.')})
     ]);
-    decisionPreview.append(decisionHeading,decisionSummary,decisionWarnings,formulaPreview,riskApprovalLabel);
+    const coverageSummary=h('p',{class:'os-sync-coverage-summary',hidden:true});
+    decisionPreview.append(decisionHeading,decisionSummary,coverageSummary,
+      decisionWarnings,formulaPreview,riskApprovalLabel);
     const reviewSteps=h('section',{class:'os-sync-review-steps'});
     reviewSteps.hidden=true;
     reviewSteps.append(
@@ -456,6 +458,19 @@
            missing.slice(0,3).join(', ')+
            (replay.lost>3?' (+'+(replay.lost-3)+')':''));
         }
+        // Every linked ID is audited, even when no old numeric model exists.
+        // This catches new orphan skills/items that model replay cannot see.
+        const graph=typeof safety.sourceGraphIntegrity==='function'?
+         safety.sourceGraphIntegrity(baseline,selected):null;
+        if(graph&&!graph.ok){
+          validation.ok=false;
+          const examples=graph.samples.map(x=>x.kind+' '+x.owner+
+           ' · '+x.field+' → '+String(x.target??'—'));
+          validation.issues.push(tr(
+           'Новые или повреждённые игровые ссылки: ',
+           'New or broken game references: ')+graph.newBroken+
+           (examples.length?' · '+examples.slice(0,3).join('; '):''));
+        }
         // Grade 0–10 source-EP replay: an unsupported replacement for a
         // previously numeric Soul/item bonus must block D1, before confirm.
         const equipment=typeof safety.replayEquipmentEffects==='function'?
@@ -472,13 +487,26 @@
         }
         result={validation,
           comparison:safety.compare(baseline,selected,hero),
-          compatibility:safety.compatibility(baseline,selected),replay,equipment};
+          compatibility:safety.compatibility(baseline,selected),replay,equipment,graph};
       }catch(error){
         result={validation:{ok:false,issues:[String(error.message||error)]},
           comparison:null};
       }
       impactCache={fingerprint,result};
       return result;
+    }
+    // Report every selected source, not only the first six summary samples.
+    // Records not selected for publication have not been preflighted here.
+    function selectedMechanicStatus(change){
+      if(!chosen.has(change.id))return null;
+      const entries=selectedImpact()?.compatibility?.entries||[];
+      const dataset=change.dataset,key=change.key;
+      const hits=entries.filter(row=>row.key===dataset+':'+key||
+       row.key===dataset||
+       (dataset==='tables'&&row.key.startsWith('table:')));
+      if(!hits.length)return null;
+      return hits.some(row=>row.kind==='needsReview')?'needsReview':
+       hits.some(row=>row.kind==='verified')?'verified':'sourceOnly';
     }
     riskApproval.addEventListener('change',()=>{
      riskApprovalFingerprint=riskApproval.checked?selectedFingerprint():'';
@@ -520,7 +548,8 @@
     function matchesFilter(change){
       if(filterKind==='accepted')return chosen.has(change.id);
       if(filterKind==='declined')return !chosen.has(change.id);
-      if(filterKind==='needsReview')return describe(change).uncertain;
+      if(filterKind==='needsReview')return describe(change).uncertain||
+        selectedMechanicStatus(change)==='needsReview';
       if(filterKind==='links')return describe(change).rows.some(row=>row.linkChanged);
       if(filterKind==='sameVisible')return describe(change).rows.some(row=>row.sameVisible);
       if(filterKind==='readable')return !describe(change).unexplained;
