@@ -29,3 +29,13 @@
 6. Live read-only Pages/D1 workflow confirms release and data parity after deployment. A safe catalog-only PR cannot fix unproven semantics; source changes must not be announced as verified gameplay formulas.
 
 **Important:** We cannot read Cloudflare Worker secrets from public GitHub. The Worker `github-status` is admin-authorized. Therefore actual deployed-token permissions and an end-to-end automatic merge of a real future D1 publication remain unverified until a legitimate owner-catalog publication exercises the flow. No artificial production D1 write or unsafe CI-bypass probe is performed.
+
+## Historical SHA integrity vs future automatic backups
+
+Previously `scripts/check-catalog-review-2026-11-15.mjs` demanded that all *future* active `data/os` files remain byte-identical to the one-time November 15 pinned snapshot. This guaranteed every legitimate later data-only PR would fail CI, even if it exactly matched a new, reviewed D1 publication. The 0.807 process separates these concerns:
+
+- `auditReview()` continues to verify the historical, immutable candidate (all 17 SHA-256 values, recorded changes and known relationships) independently of current production.
+- `auditCurrentFallback()` validates the latest candidate's schema, record identities, full 17-file counts, English translations, level progression, item links and NPC/loot/chest relationships.
+- The GitHub auto-merge gate still requires the entire normal Node + Chromium CI on exact PR head, and rejects all changes outside the 17 JSON files. Unknown semantics still fail the specific formula regressions and require deliberate work; there is no test bypass.
+
+This change makes later **pure data refreshes** eligible for automatic CI acceptance without disabling safety rules or rewriting historical evidence.

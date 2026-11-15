@@ -3,14 +3,14 @@ import assert from 'node:assert/strict';
 import {readFileSync,mkdtempSync,symlinkSync,writeFileSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {resolve,join} from 'node:path';
-import {auditReview} from '../scripts/check-catalog-review-2026-11-15.mjs';
+import {auditReview,auditCurrentFallback} from '../scripts/check-catalog-review-2026-11-15.mjs';
 
 const root=resolve(new URL('../',import.meta.url).pathname);
 const candidate=join(root,'data/catalog-review/ps-ca9a604163b54a2da5c83ea55077ef96');
 const archive=join(root,'data/catalog-history/pre-2026-11-15');
 const read=(dir,file)=>JSON.parse(readFileSync(join(dir,file),'utf8'));
 
-test('promoted fallback has pinned current counts and preserved RU texts',()=>{
+test('historic Nov 15 pinned candidate retains its reviewed counts and RU texts',()=>{
  const result=auditReview();
  assert.equal(result.snapshot,'ps-ca9a604163b54a2da5c83ea55077ef96');
  assert.equal(result.files,17);
@@ -48,11 +48,22 @@ test('runtime loads the promoted data/os copy, not catalog-review candidate path
  assert.doesNotMatch(catalog,/data\/catalog-review/);
  assert.ok(app.includes("const base=archive?'./data/os'"));
 });
-test('all 17 published standby files match the exact SHA-256 review candidate',()=>{
- const data=read(candidate,'REVIEW_MANIFEST.json');
- for(const name of data.candidateFiles){
-  const source=readFileSync(join(candidate,name));
-  const deployed=readFileSync(join(root,'data/os',name));
-  assert.ok(source.equals(deployed),'Pinned source/backup drift: '+name);
- }
+test('all 17 current Pages fallback datasets pass a source-independent integrity audit',()=>{
+ const result=auditCurrentFallback();
+ assert.equal(result.datasets,17);
+ assert.equal(result.unresolved,0);
+ assert.ok(result.counts.skills>=571);
+ assert.ok(result.counts.items>=1140);
+});
+test('active fallback corruption cannot pass the source-independent audit',()=>{
+ const temp=mkdtempSync(join(tmpdir(),'ps-active-catalog-'));
+ try{
+  const manifest=read(candidate,'REVIEW_MANIFEST.json');
+  for(const file of manifest.candidateFiles)
+   symlinkSync(join(root,'data/os',file),join(temp,file));
+  rmSync(join(temp,'items.json'));
+  writeFileSync(join(temp,'items.json'),JSON.stringify({}));
+  assert.throws(()=>auditCurrentFallback({fallbackDir:temp}),
+   /count mismatch: items/);
+ }finally{rmSync(temp,{recursive:true,force:true})}
 });
