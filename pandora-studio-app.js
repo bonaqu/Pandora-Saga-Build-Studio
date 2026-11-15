@@ -8647,7 +8647,7 @@ function refreshVisibleProfileCopy(){
  }
 }
 async function undoOwnerEdit(){
-  if(!adminToken||!ownerEdits.length||ownerSaveInFlight())return;
+  if(!adminToken||!ownerEdits.length||editIsSaving||wikiLabelPendingWrites>0||wikiRecordWriteQueue.size>0)return;
   const last=ownerEdits[ownerEdits.length-1];
   editIsSaving=true;refreshOwnerUI();
   try{

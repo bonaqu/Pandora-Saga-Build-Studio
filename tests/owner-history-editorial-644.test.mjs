@@ -22,7 +22,7 @@ test('owner history has stable bilingual editorial keys and does not expose game
  assert.match(manager,/ownerCopyLabel\(node,'owner-history',key,ru,en\)/);
  assert.match(manager,/class:'owner-history-pencil'/);
  assert.match(manager,/node\.dispatchEvent\(new MouseEvent\('dblclick'/);
- assert.match(manager,/count\.textContent=tr\('Найдено '/);
+ assert.match(manager,/count\.textContent=tr\('Показано '/);
  assert.match(manager,/h\('p',\{text:entry\.before\}\)/);
  assert.match(manager,/h\('p',\{text:entry\.after\}\)/);
  assert.doesNotMatch(manager,/ownerCopyLabel\(count/);
