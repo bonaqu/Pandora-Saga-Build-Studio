@@ -99,7 +99,7 @@ test('resurrection material consumption is protected without promising the reviv
  assert.equal(beforeRow.requiredItemId,50059);
  assert.equal(beforeRow.requiredItemCount,3);
  const after=updatedSkill(id,row=>{
-  row.funcs.find(effect=>effect.ep==='EP_CONSUME_ITEM').fv2[3]+=1;
+  row.funcs.find(effect=>effect.ep==='EP_CONSUME_ITEM').fv2[3]=0;
  });
  requireLost(after,String(id),'source-support-material');
 });
