@@ -69,13 +69,19 @@ test('new Forth, unison and expertise modifiers are not labeled source-only',()=
   assert.equal(report.totals.sourceOnly,0,name);
  }
 });
-test('soul numeric effects remain explicitly reviewable unless formula contract is proven',()=>{
+test('known Soul numeric amount is verified, unknown EP is never assumed modeled',()=>{
  const next={...source,souls:{...source.souls}};
  next.souls['101000']=structuredClone(source.souls['101000']);
  next.souls['101000'].effects[0].a+=1;
  const report=compat(source,next);
- assert.equal(report.totals.needsReview,1);
- assert.equal(report.totals.verified,0);
+ assert.equal(report.totals.needsReview,0);
+ assert.equal(report.totals.verified,1,
+  'the existing numeric accuracy channel supports amount-only edits');
+ next.souls['101000'].effects[0].func='EP_NEW_UNVERIFIED_SOURCE';
+ const unknown=compat(source,next);
+ assert.equal(unknown.totals.needsReview,1,
+  'changing an EP identity is not a numeric-only supported edit');
+ assert.equal(unknown.totals.verified,0);
 });
 test('compatibility tests never mutate existing D1 nor source objects',()=>{
  const next=itemChange(1,item=>{item.W+=4});
