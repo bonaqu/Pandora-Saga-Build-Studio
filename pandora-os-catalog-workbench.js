@@ -1255,8 +1255,26 @@
         status.textContent+=tr(
           ' Подготавливаю PR для обновления резерва GitHub…',
           ' Preparing a GitHub fallback PR…');
-        const result=await request('/api/admin/catalog/github-pr',{
-          expectedActive:snapshot});
+        let result;
+        try{
+          result=await request('/api/admin/catalog/github-pr',{
+            expectedActive:snapshot});
+        }catch(error){
+          // The GH branch may have been created before a response was lost.
+          // Retry the same snapshot automatically; the Worker independently
+          // verifies all 17 D1 blob hashes before reusing a stranded branch.
+          // Never retry authentication, permission or CAS conflicts.
+          const retryable=!error.httpStatus||error.httpStatus>=500&&
+            error.httpStatus!==503;
+          if(!retryable)throw error;
+          const now=await request('/api/admin/catalog/status',{});
+          if(now.active!==snapshot)throw error;
+          status.textContent+=tr(
+            ' GitHub не ответил; повторяю резервирование автоматически…',
+            ' GitHub response was interrupted; retrying the backup automatically…');
+          result=await request('/api/admin/catalog/github-pr',{
+            expectedActive:snapshot});
+        }
         if(result.unchanged){
           status.textContent+=tr(
             ' Резерв GitHub уже совпадает с D1.',
