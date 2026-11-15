@@ -7,7 +7,7 @@ const items=Object.values(JSON.parse(read('data/os/items.json')));
 const host={};Function('window',read('pandora-studio-attribute-progression.js'))(host);
 const levels=host.PandoraAttributeProgression;
 test('planned level 50 and 55 retain original Remaked attribute budgets',()=>{
- assert.equal(tables.levelCap,45,'server metadata is not planner cap');
+ assert.equal(tables.levelCap,50,'source level cap 50 is independent of level 55 planning');
  assert.equal(levels.budget(45),432);
  assert.equal(levels.budget(50),504);
  assert.equal(levels.budget(55),544);

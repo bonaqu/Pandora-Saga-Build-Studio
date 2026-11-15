@@ -14,8 +14,8 @@ const mutate=(change)=>{const data=clean();change(data);return data};
 
 test('all live-snapshot originals retain their sourced nested fields',()=>{
  assert.doesNotThrow(()=>catalog.validate(clean()));
- assert.equal(Object.keys(original.souls).length,112);
- assert.equal(Object.keys(original.trades.npcs).length,24);
+ assert.equal(Object.keys(original.souls).length,115);
+ assert.equal(Object.keys(original.trades.npcs).length,21);
  assert.equal(original.instances.length,6);
 });
 

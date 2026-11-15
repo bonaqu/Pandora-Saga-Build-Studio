@@ -17,7 +17,7 @@ const safety=browser.window.PandoraCatalogSafety;
 const review=browser.window.PandoraOSCatalogReview;
 const importer=browser.window.PandoraCatalogImport;
 const old=Object.fromEntries(importer.files.map(key=>[
- key,JSON.parse(read('data/os/'+key+'.json'))
+ key,JSON.parse(read('data/catalog-history/pre-2026-11-15/'+key+'.json'))
 ]));
 const hero={race:'HUMAN',klass:'WARRIOR',level:55,
  stats:{vit:0,str:0,agi:0,dex:0,spi:0,int:0},points:{slash:5}};
