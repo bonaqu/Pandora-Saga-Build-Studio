@@ -159,11 +159,11 @@ export async function runWikiIconManifestFallbackSmoke(browser,base){
   await page.waitForFunction(()=>{
    const select=document.querySelector('.wiki-skill-type');
    const label=select?.querySelector('option[value="unknown"]')?.textContent||'';
-   return select?.value==='unknown'&&/569$/.test(label)&&
+   return select?.value==='unknown'&&/571$/.test(label)&&
     document.querySelectorAll('.wiki-list [data-wiki-record]').length>0;
   },null,{timeout:20000});
-  assert.match(await filter.locator('option[value="unknown"]').innerText(),/569$/,
-   'With unavailable manifest all 569 archive skills render with question-mark art');
+  assert.match(await filter.locator('option[value="unknown"]').innerText(),/571$/,
+   'With unavailable manifest all 571 current source skills render with question-mark art');
   assert.equal(await page.locator('.wiki-list [data-wiki-record]').first()
    .locator('img[src*="skill_unknown.webp"]').count(),1,
    'Visible rows must agree with question-mark selection');
