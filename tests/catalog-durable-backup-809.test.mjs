@@ -58,6 +58,12 @@ test('superseded snapshot is never sent to GitHub',async()=>{
  assert.equal(result.state,'superseded');
  assert.equal(DB.row.state,'superseded');
 });
+test('temporary failure to read active D1 never destroys a queued job',async()=>{
+ const DB=fake(),env={DB};await queueBackupStatement(env,snapshot,1000).run();
+ const result=await deliverCatalogBackupJob(env,async()=>null,
+  ()=>{throw Error('GitHub must not run while D1 is unknown')},{now:()=>2000});
+ assert.equal(result.state,'unavailable');assert.equal(DB.row.state,'pending');
+});
 test('temporary network failures retry and do not falsely report success',async()=>{
  const DB=fake(),env={DB};await queueBackupStatement(env,snapshot,1000).run();
  const fail=async()=>{throw Error('network lost')};
