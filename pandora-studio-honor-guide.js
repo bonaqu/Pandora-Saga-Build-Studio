@@ -122,14 +122,14 @@ const pvpVictories=Object.freeze({
   Object.freeze({wins:50,rewardRu:'Простое зелье скорости ×2',rewardEn:'Simple Speed Potion ×2'}),
   Object.freeze({wins:100,rewardRu:'25 000 золота',rewardEn:'25,000 gold'}),
   Object.freeze({wins:200,rewardRu:'Простое зелье скорости ×5',rewardEn:'Simple Speed Potion ×5'}),
-  Object.freeze({wins:300,rewardRu:'Ключ из Мальдии ×1',rewardEn:'Muldia Key ×1'})
+  Object.freeze({wins:300,rewardRu:'Ключ из Мальдии ×1',rewardEn:'Muldian Key ×1'})
  ]),
  weekly:Object.freeze([
   Object.freeze({rewardRu:'50 000 золота',rewardEn:'50,000 gold',
    costRu:'50 боевых жетонов',costEn:'50 combat tokens',limit:35}),
-  Object.freeze({rewardRu:'Шкатулка древнего короля ×1',rewardEn:"Ancient King's Chest ×1",
+  Object.freeze({rewardRu:'Шкатулка древнего короля ×1',rewardEn:"Lost Kingdom Chest ×1",
    costRu:'100 жетонов и 1 000 чести',costEn:'100 tokens and 1,000 Honor',limit:7}),
-  Object.freeze({rewardRu:'Золотой молот ×1',rewardEn:'Golden Hammer ×1',
+  Object.freeze({rewardRu:'Золотой молот ×1',rewardEn:'Artisan's Hammer ×1',
    costRu:'100 боевых жетонов',costEn:'100 combat tokens',limit:3})
  ]),
  hunts:Object.freeze([
@@ -160,8 +160,8 @@ const intro=Object.freeze({
  gainEn:'Earn Honor by defeating players of enemy nations in PvP zones and participating in wars.',
  lossRu:'При гибели персонажа честь может уменьшаться.',
  lossEn:'Honor may decrease when your character dies.',
- currentRu:'С 23 октября 2026 года на OS: «Честь» — расходуемый ресурс; «Вся честь» — общий заработанный запас для рангов и рейтинга. Оба показателя могут уменьшаться после смерти.',
- currentEn:'Since October 23, 2026 on OS: “Honor” is spendable; “Total Honor” tracks lifetime earned Honor for ranks and leaderboards. Both can decrease on death.',
+ currentRu:'С 23 октября 2026 года: «Честь» — расходуемый ресурс; «Вся честь» — общий заработанный запас для рангов и рейтинга. Оба показателя могут уменьшаться после смерти.',
+ currentEn:'Since October 23, 2026: “Honor” is spendable; “Total Honor” tracks lifetime earned Honor for ranks and leaderboards. Both can decrease on death.',
  ranksRu:'12 рангов. Обычные ранги требуют «Вся честь» и игровое золото. Высшие места определяются результатами прошлого месяца и действуют один месяц.',
  ranksEn:'12 ranks. Standard ranks require Total Honor and gold. Monthly titles are awarded from the previous month’s results and last one month.',
  joiningRu:'При вступлении в любую из существующих наций в игре',
