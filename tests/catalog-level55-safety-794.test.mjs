@@ -99,10 +99,10 @@ test('publication verifies actual public tables/classes, not only a snapshot hea
  assert.match(app,/getHero:\(\)=>Number\.isInteger\(state\.race\)/);
  assert.match(workbench,/const modelCheck=safety\.check\(combined\)/);
  assert.match(workbench,/publish\.disabled=!ready\|\|!acknowledged\|\|preview\?\.validation\?\.ok!==true/);
- assert.match(workbench,/for\(const name of \['tables','classes'\]\)/);
- assert.match(workbench,/review\.strictEqual\(publicData\[name\],expected\[name\]\)/);
- assert.match(workbench,/const check=safety\.check\(publicData\)/);
- assert.match(workbench,/await verifyPublishedForPlayers\(result\.active,staged\.combined\)/);
- assert.match(workbench,/await verifyPublishedForPlayers\(observed\.active,staged\.combined\)/);
+ assert.match(workbench,/const files=root\.PandoraCatalogImport\?\.files/);
+ assert.match(workbench,/review\.strictEqual\(data,expected\?\.\[name\]\)/);
+ assert.match(workbench,/const check=safety\.check\(received\)/);
+ assert.match(workbench,/await finalizePublication\(result\.active,staged\.combined,\{superseded\}\)/);
+ assert.match(workbench,/await finalizePublication\(observed\.active,staged\.combined,\{recovered:true\}\)/);
  assert.match(workbench,/formulaRows\.append/);
 });
