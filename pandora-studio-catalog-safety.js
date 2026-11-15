@@ -500,6 +500,59 @@ function verifiedSupportMaterialQuantityChange(id,old,now,before,after){
  return false;
 }
 
+// Confirm the selected trap quantity against BOTH real 55-level source
+// inspectors before allowing data-only publication. The item ID, effect type,
+// all non-quantity fields, source graph and recipient requirements stay pinned.
+// A level-50 nonlearnable variant is reachable only through the canonical
+// Plant Mine root, never a free-standing invented skill.
+function verifiedTrapMaterialQuantityChange(id,old,now,before,after){
+ const C=root.PandoraOSCalculator;
+ const supported=new Set(['240001001','240002001','240005001',
+  '240008001','240010001','240002002']);
+ if(!supported.has(String(id))||!C?.trapSkillCostPreview||
+  !old||!now||old.id!==now.id||String(old.id)!==String(id)||
+  !Array.isArray(old.funcs)||!Array.isArray(now.funcs)||
+  old.funcs.length!==now.funcs.length)return false;
+ const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+ if([...new Set([...Object.keys(old),...Object.keys(now)])].some(key=>
+  !['funcs','name','nameEn','desc','descEn','iconId'].includes(key)&&
+  !same(old[key],now[key])))return false;
+ let changed=0;
+ for(let i=0;i<old.funcs.length;i++){
+  const a=old.funcs[i],b=now.funcs[i];
+  if(same(a,b))continue;
+  if(i!==0||a?.ep!=='EP_CONSUME_ITEM'||a.dir!=='CASTER'||
+   a?.fv1?.[3]!==65007||a.ep!==b?.ep||
+   !Number.isSafeInteger(a?.fv2?.[3])||a.fv2[3]<1||
+   !Number.isSafeInteger(b?.fv2?.[3])||b.fv2[3]<1||
+   a.fv2[3]===b.fv2[3]||
+   !Array.isArray(a.fv2)||a.fv2.length!==4||
+   !Array.isArray(b.fv2)||b.fv2.length!==4||
+   !same({...a,fv2:[...a.fv2.slice(0,3),b.fv2[3]]},b))return false;
+  changed++;
+ }
+ if(changed!==1)return false;
+ const variant=String(id)==='240002002';
+ const parentId=variant?'240002001':String(id);
+ const oldAmount=old.funcs[0].fv2[3],newAmount=now.funcs[0].fv2[3];
+ const inspect=(data,job,caps)=>{
+  const model=C.trapSkillCostPreview({skillCatalog:data.skills,jobKey:job,
+   level:55,branchCaps:caps,branchMasteries:caps});
+  const entry=model?.rows?.find(row=>String(row.id)===parentId);
+  if(!entry?.requirementsMet||entry.itemId!==65007)return null;
+  return variant?entry.level50Variant?.itemCount:entry.count;
+ };
+ for(const [job,klass] of Object.entries(before?.classes||{})){
+  if(variant&&job!=='DISTURBANCE')continue;
+  if(!variant&&(!old.classes?.[job]||!now.classes?.[job]))continue;
+  if(!after?.classes?.[job])continue;
+  const a=inspect(before,job,klass.branchCaps);
+  const b=inspect(after,job,after.classes[job].branchCaps);
+  if(a===oldAmount&&b===newAmount)return true;
+ }
+ return false;
+}
+
 // Data-only recipe counts are safe only when EVERY source effect retains
 // the exact established EP, ID, direction, order and other FV slots. This
 // invokes the same current calculator used by the Encyclopedia; neither the
@@ -685,11 +738,14 @@ function compatibility(before,after){
       id,old,now,before,after);
      const supportMaterial=!dynamic&&!recipe&&!ammunition&&
       verifiedSupportMaterialQuantityChange(id,old,now,before,after);
-     add(dynamic||recipe||ammunition||supportMaterial?'verified':'needsReview','skill:'+id,
+     const trapMaterial=!dynamic&&!recipe&&!ammunition&&!supportMaterial&&
+      verifiedTrapMaterialQuantityChange(id,old,now,before,after);
+     add(dynamic||recipe||ammunition||supportMaterial||trapMaterial?'verified':'needsReview','skill:'+id,
       name+(dynamic?' · проверено изменение FV действующей формулой':
        recipe?' · количество в рецепте подтверждено игровым источником':
        ammunition?' · расход боеприпасов проверен по игровому источнику':
        supportMaterial?' · количество материала воскрешения проверено по игровому источнику':
+       trapMaterial?' · расход материала ловушки проверен по игровому источнику':
        ' · изменены игровые эффекты'));
     }else if([...new Set([...Object.keys(old),...Object.keys(now)])]
      .some(field=>!['name','nameEn','desc','descEn','iconId'].includes(field)&&
