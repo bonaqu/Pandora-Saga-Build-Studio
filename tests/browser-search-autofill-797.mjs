@@ -51,7 +51,7 @@ export async function runGlobalSearchAutofill797Smoke(browser,base){
    const [skills,classes,tables,monsters,english]=files;
    const host=document.createElement('div');
    host.id='global-search-797-book';
-   host.style.cssText='position:relative;width:440px;height:700px;overflow:auto';
+   host.setAttribute('style','position:relative;width:440px;height:700px;overflow:auto');
    document.body.append(host);
    const choices=window.PandoraOSTargetDamage.availableMonsterTargets({
     monsters,englishMonsters:english.monsters});
