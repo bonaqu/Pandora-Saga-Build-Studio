@@ -9844,6 +9844,7 @@ async function loadCatalog({archive=false}={}){
 }
 let ownerWikiRefreshId=0;
 async function refreshOwnerCatalog(){
+ applyPlannerOverride(override[window.PandoraLevelProgression.KEY]??null);
  const generation=++ownerWikiRefreshId;
  invalidateWikiCatalog();
  if(catalogSource)applyGameLocale({redraw:false});
