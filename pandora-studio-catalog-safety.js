@@ -138,6 +138,67 @@ function compare(before,after,hero){
  return {hasHero:true,changes,warning:null,level:hero.level};
 }
 
+// A source item's physical W or armor AC is a supported numeric input, not
+// a newly invented EP formula. Only direct W/AC changes with every other
+// gameplay field intact can be confirmed by the existing calculator.
+// This proves model compatibility, NOT actual server damage/mitigation.
+function replaySimpleEquipmentChange(id,old,now,before,after){
+ const C=root.PandoraOSCalculator;
+ if(!old||!now||String(old.id)!==String(id)||String(now.id)!==String(id)||
+  !C||typeof C.weaponAttackPreview!=='function'||
+  typeof C.defensePreview!=='function'||typeof C.sourceEffects!=='function')
+  return false;
+ const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+ const editorial=['name','nameEn','desc','descEn','sourceDesc'];
+ const changed=[...new Set([...Object.keys(old),...Object.keys(now)])]
+  .filter(key=>!same(old[key],now[key]));
+ if(!changed.some(field=>['W','AC'].includes(field))||
+  changed.some(field=>!['W','AC',...editorial].includes(field)))return false;
+ // Narrative fallback can contain numeric refinement. Treat any change
+ // in actual sourceEffects at ANY grade as a separate mechanism risk.
+ for(let grade=0;grade<=10;grade++)
+  if(!same(C.sourceEffects('item:'+id,old,grade,before?.itemForth),
+   C.sourceEffects('item:'+id,now,grade,after?.itemForth)))return false;
+ if(changed.includes('W')){
+  if(old.slot!=='weapon'||now.slot!=='weapon'||
+   !Number.isFinite(old.W)||!Number.isFinite(now.W))return false;
+  for(const str of [20,50,100])for(const grade of [0,5,10]){
+   const a=C.weaponAttackPreview({str,weapon:old,grade,
+    weaponPlus:before?.tables?.weaponPlus});
+   const b=C.weaponAttackPreview({str,weapon:now,grade,
+    weaponPlus:after?.tables?.weaponPlus});
+   if(!Number.isFinite(a?.known)||!Number.isFinite(b?.known))return false;
+  }
+ }
+ if(changed.includes('AC')){
+  const slots=['shield','head','body','gloves','legs','feet'];
+  if(!slots.includes(old.slot)||old.slot!==now.slot||
+   !Number.isFinite(old.AC)||!Number.isFinite(now.AC))return false;
+  for(const grade of [0,5,10]){
+   const a=C.defensePreview({records:[['item:'+id,old,grade]],
+    itemForth:before?.itemForth});
+   const b=C.defensePreview({records:[['item:'+id,now,grade]],
+    itemForth:after?.itemForth});
+   if(!Number.isFinite(a?.known)||!Number.isFinite(b?.known))return false;
+  }
+ }
+ return true;
+}
+function sourceEquipmentEffectsChanged(id,old,now,before,after){
+ const C=root.PandoraOSCalculator;
+ const text=String(old?.desc||old?.sourceDesc||'')+' '+
+  String(now?.desc||now?.sourceDesc||'');
+ // In a partial/headless caller without the module, fail closed only for
+ // narrative refinement wording; plain descriptions stay editorial.
+ if(typeof C?.sourceEffects!=='function')
+  return /За каждые\s+\d+\s+единиц[ыу]\s+улучшения|При улучшении на\s*\+\d+/i.test(text);
+ for(let grade=0;grade<=10;grade++)
+  if(JSON.stringify(C.sourceEffects('item:'+id,old,grade,before?.itemForth))!==
+     JSON.stringify(C.sourceEffects('item:'+id,now,grade,after?.itemForth)))
+   return true;
+ return false;
+}
+
 // Before publication classify *changes*, not just JSON schema validity.
 // A matching source shape does not prove that the calculator interprets a
 // newly introduced gameplay effect. Lists are intentionally bounded for UI.
@@ -229,12 +290,23 @@ function compatibility(before,after){
       !['name','nameEn','desc','descEn'].includes(k))),
      Object.fromEntries(Object.entries(now).filter(([k])=>
       !['name','nameEn','desc','descEn'].includes(k))));
-    add(looksTextual?'sourceOnly':'needsReview',dataset+':'+id,
-     name+(looksTextual?' · тексты':' · свойства/эффекты'));
+    const numerical=dataset==='items'&&
+     replaySimpleEquipmentChange(id,old,now,before,after);
+    const narrativeChanged=dataset==='items'&&looksTextual&&
+     sourceEquipmentEffectsChanged(id,old,now,before,after);
+    const category=numerical?'verified':
+     looksTextual&&!narrativeChanged?'sourceOnly':'needsReview';
+    add(category,dataset+':'+id,
+     name+(numerical?' · W/AC рассчитаны действующей моделью':
+      category==='sourceOnly'?' · тексты':
+      narrativeChanged?' · текст меняет бонусы заточки':
+      ' · свойства/эффекты'));
    }
    continue;
   }
-  add('sourceOnly',dataset,'Раздел «'+dataset+'»: структурно проверенные данные');
+  if(['itemForth','unison','expertise'].includes(dataset))
+   add('needsReview',dataset,'Раздел «'+dataset+'»: изменены игровые бонусы или мастерство');
+  else add('sourceOnly',dataset,'Раздел «'+dataset+'»: структурно проверенные данные');
  }
  return {totals,samples:issues,requiresMechanicReview:totals.needsReview>0};
 }
