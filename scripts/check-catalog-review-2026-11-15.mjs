@@ -8,7 +8,8 @@ import {validateDescriptionReferences} from './audit-live-catalog-parity.mjs';
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const PIN='ps-ca9a604163b54a2da5c83ea55077ef96';
 const candidate=join(root,'data/catalog-review',PIN);
-const archive=join(root,'data/os');
+// Review candidate against preserved old snapshot, not a promoted fallback.
+const archive=join(root,'data/catalog-history/pre-2026-11-15');
 const names=['meta','items','skills','souls','monsters','drops','maps',
  'instances','trades','tables','chests','racialPassives','classes',
  'itemForth','unison','expertise','stringsEn'];
@@ -100,8 +101,8 @@ export function auditGameRelationships({items={},monsters={},drops={},trades={},
 
 export function auditReview({candidateDir=candidate,archiveDir=archive}={}){
  const m=JSON.parse(readFileSync(join(candidateDir,'REVIEW_MANIFEST.json'),'utf8'));
- if(m.kind!=='read-only-catalog-review'||m.promoted!==false||m.snapshot!==PIN)
-  throw Error('Unpinned or promoted catalog review');
+ if(m.kind!=='read-only-catalog-review'||m.promoted!==true||m.snapshot!==PIN)
+  throw Error('Unpinned or unpromoted catalog review');
  const files=names.map(filename);
  if(!sameSet(m.candidateFiles,files)||!sameSet(Object.keys(m.files||{}),files))
   throw Error('Missing or unexpected D1 review files');
@@ -112,6 +113,16 @@ export function auditReview({candidateDir=candidate,archiveDir=archive}={}){
   if(m.files[file]?.sha256!==sha||m.files[file]?.bytes!==buffer.byteLength)
    throw Error('Checksum or file-size mismatch: '+file);
   source[name]=JSON.parse(buffer.toString('utf8'));
+ }
+ // A release is acceptable only when every byte of every published local
+ // fallback JSON matches the reviewed, SHA-256 pinned D1 candidate.
+ const fallbackDir=join(root,'data/os');
+ for(const name of names){
+  const file=filename(name),candidateBytes=readFileSync(join(candidateDir,file));
+  const published=readFileSync(join(fallbackDir,file));
+  if(!published.equals(candidateBytes)||
+   createHash('sha256').update(published).digest('hex')!==m.files[file].sha256)
+   throw Error('Published archive does not match reviewed snapshot: '+file);
  }
  const meta=source.meta;
  if(meta.schemaVersion!==1||meta.curated!==true||meta.baseLocale!=='ru')
@@ -158,9 +169,9 @@ export function auditReview({candidateDir=candidate,archiveDir=archive}={}){
   changedSkills:changed.length,addedSkills:added.length,
   preservedRuBlurbs:m.changeReview.intentionalRuInstanceIds.length,
   brokenItemReferences:refs.unresolved,gameRelations:relations.checked,
-  promoted:false};
+  promoted:m.promoted};
 }
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
- try{console.log('REVIEW ONLY; not published to data/os: '+JSON.stringify(auditReview()))}
+ try{console.log('PROMOTED ARCHIVE VERIFIED: '+JSON.stringify(auditReview()))}
  catch(error){console.error(error.message);process.exitCode=1}
 }

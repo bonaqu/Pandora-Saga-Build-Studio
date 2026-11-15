@@ -53,7 +53,7 @@ test('unverified malformed supplemental mastery requirement is rejected',()=>{
 });
 test('official OS catalog has validated entry types and still supports planning to level 55',()=>{
  const catalog=Object.values(JSON.parse(read('data/os/skills.json')));
- assert.equal(catalog.length,569);
+ assert.equal(catalog.length,571);
  for(const row of catalog){
   assert.equal(typeof row.charLevel,'number',row.id);
   assert.ok(Number.isInteger(row.charLevel)&&row.charLevel>=0,row.id);

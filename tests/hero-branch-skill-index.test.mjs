@@ -12,7 +12,7 @@ const nav={};Function('window',read('pandora-studio-navigation.js'))(nav);
 const branchIds=[...new Set(nav.PandoraGameNavigation.groups.flatMap(group=>group.branches).filter(k=>k!=='race'))];
 
 test('one-pass indexed branch skills exactly match old filter across every official class',()=>{
- assert.equal(skills.length,569);
+ assert.equal(skills.length,571);
  assert.equal(Object.keys(classes).length,28);
  for(const job of Object.keys(classes)){
   const byBranch=index(skills,job);

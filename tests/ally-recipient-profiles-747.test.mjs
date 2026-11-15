@@ -7,8 +7,8 @@ const host={};
 Function('window',read('pandora-studio-remaked-buffs.js'))(host);
 Function('window',read('pandora-os-character-calculator.js'))(host);
 const C=host.PandoraOSCalculator,B=host.PandoraRemakedBuffs;
-const skills=JSON.parse(read('data/os/skills.json'));
-const classes=JSON.parse(read('data/os/classes.json'));
+const skills=JSON.parse(read('data/catalog-history/pre-2026-11-15/skills.json'));
+const classes=JSON.parse(read('data/catalog-history/pre-2026-11-15/classes.json'));
 const zero={vit:0,str:0,agi:0,dex:0,spi:0,int:0};
 const source={classData:classes.MAGE,
  raceData:{vit:40,str:50,agi:30,dex:20,spi:70,int:15},

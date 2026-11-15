@@ -54,7 +54,7 @@ test('priest and guild controls persist and combat applies only manually selecte
 });
 
 test('current live OS drop slot variants are preserved as source-specific annotations',()=>{
- const drops=JSON.parse(source('data/os/drops.json'));
+ const drops=JSON.parse(source('data/catalog-history/pre-2026-11-15/drops.json'));
  for(const id of ['43106','43650','43730','43731','43732']){
   assert.equal(drops[id].d.find(x=>x.i===11095)?.slotAdd,1);
  }

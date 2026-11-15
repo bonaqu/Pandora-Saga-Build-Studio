@@ -9,9 +9,9 @@ Function('window',read('pandora-studio-skill-progression.js'))(host);
 Function('window','document',read('pandora-studio-hero-path.js'))(host,{});
 const C=host.PandoraOSCalculator,M=host.PandoraSkillProgression;
 const readiness=host.PandoraHeroPath.readiness;
-const skills=JSON.parse(read('data/os/skills.json'));
-const classes=JSON.parse(read('data/os/classes.json'));
-const english=JSON.parse(read('data/os/strings.en.json')).skills;
+const skills=JSON.parse(read('data/catalog-history/pre-2026-11-15/skills.json'));
+const classes=JSON.parse(read('data/catalog-history/pre-2026-11-15/classes.json'));
+const english=JSON.parse(read('data/catalog-history/pre-2026-11-15/strings.en.json')).skills;
 const cases=[
  [100056001,'Отвлечение','Misdirection',70],
  [100057001,'Безболезненность','Ossify',100],

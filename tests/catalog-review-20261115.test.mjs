@@ -7,10 +7,10 @@ import {auditReview} from '../scripts/check-catalog-review-2026-11-15.mjs';
 
 const root=resolve(new URL('../',import.meta.url).pathname);
 const candidate=join(root,'data/catalog-review/ps-ca9a604163b54a2da5c83ea55077ef96');
-const archive=join(root,'data/os');
+const archive=join(root,'data/catalog-history/pre-2026-11-15');
 const read=(dir,file)=>JSON.parse(readFileSync(join(dir,file),'utf8'));
 
-test('staged D1 review has complete counts and preserved RU text without promoting',()=>{
+test('promoted fallback has pinned current counts and preserved RU texts',()=>{
  const result=auditReview();
  assert.equal(result.snapshot,'ps-ca9a604163b54a2da5c83ea55077ef96');
  assert.equal(result.files,17);
@@ -23,7 +23,7 @@ test('staged D1 review has complete counts and preserved RU text without promoti
  assert.equal(result.addedSkills,2);
  assert.equal(result.preservedRuBlurbs,6);
  assert.equal(result.brokenItemReferences,0);
- assert.equal(result.promoted,false);
+ assert.equal(result.promoted,true);
  assert.equal(Object.keys(read(archive,'items.json')).length,1116);
  assert.equal(Object.keys(read(archive,'skills.json')).length,569);
  assert.equal(read(archive,'tables.json').levelCap,45);
@@ -41,10 +41,18 @@ test('review guard rejects tampered candidate file hashes',()=>{
    /Checksum or file-size mismatch: items.json/);
  }finally{rmSync(temp,{recursive:true,force:true})}
 });
-test('inert staged snapshot is not a runtime fallback or game-source rewrite',()=>{
+test('runtime loads the promoted data/os copy, not catalog-review candidate paths',()=>{
  const app=readFileSync(join(root,'pandora-studio-app.js'),'utf8');
  const catalog=readFileSync(join(root,'pandora-studio-encyclopedia-catalog.js'),'utf8');
  assert.doesNotMatch(app,/data\/catalog-review/);
  assert.doesNotMatch(catalog,/data\/catalog-review/);
  assert.ok(app.includes("const base=archive?'./data/os'"));
+});
+test('all 17 published standby files match the exact SHA-256 review candidate',()=>{
+ const data=read(candidate,'REVIEW_MANIFEST.json');
+ for(const name of data.candidateFiles){
+  const source=readFileSync(join(candidate,name));
+  const deployed=readFileSync(join(root,'data/os',name));
+  assert.ok(source.equals(deployed),'Pinned source/backup drift: '+name);
+ }
 });

@@ -31,7 +31,7 @@ export function auditCatalogIconDelta({historical={},candidate={},
  manifest={},verifyAsset=()=>false}={}){
  const byKind={},entries=[];
  const declaredMissing=new Set((manifest.missing||[])
-  .filter(x=>x&&typeof x.kind==='string'&&typeof x.stem==='string')
+  .filter(x=>x&&x.error==='HTTP 404'&&typeof x.kind==='string'&&typeof x.stem==='string')
   .map(x=>x.kind+'/'+x.stem));
  for(const kind of gameKinds){
   const previous=iconIdentities(historical[kind],kind);
@@ -60,7 +60,13 @@ export function auditCatalogIconDelta({historical={},candidate={},
 }
 
 export function auditPinnedCandidateIcons(){
- const source=kind=>localJson('data/os/'+kind+'.json');
+ const source=kind=>{
+ // Keep comparison stable before and after future archive promotion.
+ const historic=join(root,'data/catalog-history/pre-2026-11-15',kind+'.json');
+ try{return JSON.parse(readFileSync(historic,'utf8'))}
+ catch(error){if(error.code!=='ENOENT')throw error;
+  return localJson('data/os/'+kind+'.json')}
+};
  const proposed=kind=>localJson('data/catalog-review/'+snapshot+'/'+kind+'.json');
  const historical=Object.fromEntries(gameKinds.map(k=>[k,source(k)]));
  const candidate=Object.fromEntries(gameKinds.map(k=>[k,proposed(k)]));

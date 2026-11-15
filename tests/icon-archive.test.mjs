@@ -8,19 +8,22 @@ const manifest=JSON.parse(readFileSync(new URL('assets/os-icon-manifest.json',ro
 
 test('archived OS icons have complete, consistent source coverage metadata',()=>{
  const {count,icons,missing}=manifest;
- assert.equal(count.expected,1437,'re-audit if upstream catalog inventory changes');
+ assert.equal(count.expected,1454,'re-audit if upstream catalog inventory changes');
  const paths=Object.values(icons).flatMap(v=>Object.values(v));
  assert.equal(paths.length,count.present);
  assert.equal(count.expected-count.present,count.missing);
  assert.ok(count.present>=1100,'original icon archive unexpectedly lost');
  assert.equal(new Set(paths).size,paths.length,'every asset path is unique');
  assert.equal(missing.length,count.missing,'every unavailable source has an explicit record');
+ assert.equal(count.known404,264,'Only observed source 404 evidence');
+ assert.equal(count.unverified,20,'New paths have no HTTP verdict');
  const failures=new Set();
  for(const row of missing){
   const key=row.kind+'/'+row.stem;
   assert.equal(failures.has(key),false,'duplicate missing '+key);
   failures.add(key);
-  assert.match(row.error,/^HTTP 404$/,'missing originals are not substitute images');
+  assert.ok(['HTTP 404','Not attempted'].includes(row.error),
+   'Unprobed originals must never be attributed fabricated HTTP 404 results');
  }
 });
 

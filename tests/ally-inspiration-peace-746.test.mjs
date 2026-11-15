@@ -6,8 +6,8 @@ const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const host={};
 Function('window',read('pandora-os-character-calculator.js'))(host);
 const C=host.PandoraOSCalculator;
-const skills=JSON.parse(read('data/os/skills.json'));
-const classes=JSON.parse(read('data/os/classes.json'));
+const skills=JSON.parse(read('data/catalog-history/pre-2026-11-15/skills.json'));
+const classes=JSON.parse(read('data/catalog-history/pre-2026-11-15/classes.json'));
 
 test('Inspiration: canonical OS 50 means half the normal casting time, not an unknown number',()=>{
  const spell=skills['320006001'];

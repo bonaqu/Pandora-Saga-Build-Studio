@@ -21,8 +21,8 @@
     "expertise.json",
     "strings.en.json"
   ],
-  "promoted": false,
-  "note": "Not used at runtime. Production D1 remains the sole current live source. Archive data/os deliberately unchanged until source-derived formula regression review.",
+  "promoted": true,
+  "note": "Promoted to versioned GitHub Pages fallback data/os after Node, Chromium and strict catalog relationship audit. Immutable historical pre-2026-11-15 data retained separately. No production D1 writes.",
   "files": {
     "meta.json": {
       "sha256": "cd3e4318fa7f346628c7293f05dc9f4a3831343e34a2ef318094b2044a6006ce",
@@ -121,5 +121,6 @@
       "20030100",
       "20030110"
     ]
-  }
+  },
+  "promotedRelease": "2026.11.15.805"
 }

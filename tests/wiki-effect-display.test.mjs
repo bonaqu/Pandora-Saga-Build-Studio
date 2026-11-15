@@ -8,9 +8,9 @@ const root={};
 Function('window',read('pandora-studio-item-owner-editor.js'))(root);
 const presenter=root.PandoraStudioItemOwnerEditor;
 
-test('all 81 observed effect codes have English descriptions with no raw game codes',()=>{
+test('all 83 current source effect codes have English descriptions with no raw game codes',()=>{
  const seen=new Set(Object.values(items).flatMap(item=>(item.effects||[]).map(effect=>effect.func)));
- assert.equal(seen.size,81);
+ assert.equal(seen.size,83);
  for(const code of seen){
   const english=presenter.effectDisplayLabel(code,'en');
   assert.ok(english&&english!=='Item effect'&&!english.startsWith('EP_'),code);

@@ -11,8 +11,8 @@ const combat=(weapon,combatLunge=true)=>C.combatPreview({
  stats,level:45,jobKey:'GLADIATOR',weapon,skillCatalog:skills,
  combatBuffs:{combatLunge}
 });
-test('level 55 remains available for future planning regardless of live OS level 45',()=>{
- assert.equal(tables.levelCap,45,'server metadata stays authentic');
+test('level 55 remains available for planning while current game metadata reports level 50',()=>{
+ assert.equal(tables.levelCap,50,'server metadata stays authentic');
  const html=read('index.html'),app=read('pandora-studio-app.js');
  assert.match(html,/id="level"[^>]*max="55"[^>]*value="1"/);
  assert.match(html,/Уровень героя<\/span> <strong id="levelOut">1/);

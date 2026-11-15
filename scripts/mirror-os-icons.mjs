@@ -111,11 +111,17 @@ for(const row of unique){
  else manifest.missing.push({kind:row.kind,stem:row.stem,error:
   failures.get(id)||(known404.has(id)?'HTTP 404':'Not attempted')});
 }
+const confirmed404=manifest.missing.filter(row=>row.error==='HTTP 404').length;
+const unverified=manifest.missing.filter(row=>row.error!=='HTTP 404').length;
 manifest.count={expected:unique.length,present:available.size,
- missing:manifest.missing.length,processed:dry?0:pending.length,planned:pending.length};
+ missing:manifest.missing.length,known404:confirmed404,unverified,
+ processed:dry?0:pending.length,planned:pending.length};
 // Presentation aliases are kept separate from verified originals and
 // automatically rebuilt when source icon coverage changes.
-manifest.displayAliases={skills:buildSkillDisplayAliases(skills,manifest.icons.skills,manifest.missing)};
+// Only a confirmed missing original may get a source-reviewed display alias.
+// New unprobed identities remain clearly without original artwork.
+manifest.displayAliases={skills:buildSkillDisplayAliases(skills,manifest.icons.skills,
+ manifest.missing.filter(row=>row.error==='HTTP 404'))};
 if(!dry){
  await mkdir(join(root,'assets'),{recursive:true});
  await writeFile(manifestPath,JSON.stringify(manifest,null,2)+'\n');

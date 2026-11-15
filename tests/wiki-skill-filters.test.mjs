@@ -25,11 +25,11 @@ test('question-mark filter describes the artwork shown, without implying that a 
 });
 test('icon filter mirrors the question-mark fallback if the artwork manifest fails to load',()=>{
  const offline=classifier.build(skills,null,null,{},racialPassives);
- assert.equal(offline.counts.unknown,569);
+ assert.equal(offline.counts.unknown,Object.keys(skills).length);
  assert.equal(offline.missing('161202001'),true,
   'A known original is still rendered as question-mark when manifest is absent');
  const owner=classifier.build(skills,null,null,{'visual.skill.500000001':'assets/custom.webp'},racialPassives);
- assert.equal(owner.counts.unknown,568);
+ assert.equal(owner.counts.unknown,Object.keys(skills).length-1);
  assert.equal(owner.missing('500000001'),false);
 });
 test('new D1 skill without iconId stays in the question-mark filter despite a namesake donor',()=>{
@@ -46,13 +46,13 @@ test('new D1 skill without iconId stays in the question-mark filter despite a na
 });
 test('regular player skills require both learnability and a real class assignment',()=>{
  const classified=classifier.build(skills,null,manifest,{},racialPassives);
- assert.equal(classified.total,569);
+ assert.equal(classified.total,Object.keys(skills).length);
  assert.equal(classified.counts.racial,18);
- assert.equal(classified.counts.player,232);
+ assert.equal(classified.counts.player,234);
  assert.equal(classified.group('161202001'),'player'); // Counterattack
  assert.equal(classified.group('161202050'),'variants'); // extra version with same name
  assert.equal(classified.counts.variants>100,true);
- assert.equal(classified.counts.player,232);
+ assert.equal(classified.counts.player,234);
  assert.equal(classified.group('260006002'),'variants'); // legacy learnable flag, no assigned class
  assert.equal(classified.group('310023002'),'variants'); // Temple triggered effect
  assert.equal(classified.group('500000001'),'other'); // Sleep status, not player skill

@@ -6,7 +6,7 @@ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const host={};Function('window',read('pandora-os-character-calculator.js'))(host);
 const C=host.PandoraOSCalculator;
 const live=JSON.parse(read('data/catalog-review/ps-ca9a604163b54a2da5c83ea55077ef96/skills.json'));
-const older=JSON.parse(read('data/os/skills.json'));
+const older=JSON.parse(read('data/catalog-history/pre-2026-11-15/skills.json'));
 const classes=JSON.parse(read('data/catalog-review/ps-ca9a604163b54a2da5c83ea55077ef96/classes.json'));
 const preview=(skills,ranks=classes.CONJURER.branchCaps)=>C.scalingSkillPreview({
  skillCatalog:skills,jobKey:'CONJURER',level:55,

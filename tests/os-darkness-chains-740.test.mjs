@@ -85,7 +85,7 @@ test('every root/child wrong source value or direction rejects the described eff
 });
 test('source-only spells increase qualitative coverage, not numeric damage',()=>{
  const report=auditOsSkillFormulaCoverage({skills,classes,calculator:C});
- assert.equal(report.summary.skillRecords,569);
+ assert.equal(report.summary.skillRecords,571);
  assert.equal(report.summary.statuses['numeric-preview'],74);
  assert.equal(report.summary.statuses['coefficient-model'],27);
  assert.equal(report.summary.statuses['source-parameter'],3);

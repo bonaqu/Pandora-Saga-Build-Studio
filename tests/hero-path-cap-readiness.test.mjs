@@ -53,7 +53,7 @@ test('malformed requirements fail closed rather than silently counting as zero',
 });
 
 test('official 569-skill OS source contains no malformed branch requirement',()=>{
- assert.equal(catalog.length,569);
+ assert.equal(catalog.length,571);
  for(const skill of catalog){
   for(const req of skill.reqs||[]){
    assert.equal(typeof req.branch,'string');

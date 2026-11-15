@@ -77,5 +77,5 @@ test('future progression and fractional historical experience remain untouched',
  source.abilityPoint['100']=source.abilityPoint['99'];
  assert.equal(validate(source),true);
  assert.equal(source.exp['60'].expReq,fraction);
- assert.equal(source.levelCap,45,'server limit is not the planner range');
+ assert.equal(source.levelCap,50,'server limit is not the planner range');
 });

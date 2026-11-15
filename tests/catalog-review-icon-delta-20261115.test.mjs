@@ -7,7 +7,7 @@ import {auditCatalogIconDelta,auditPinnedCandidateIcons}
 const read=p=>JSON.parse(readFileSync(new URL('../'+p,import.meta.url),'utf8'));
 const manifest=read('assets/os-icon-manifest.json');
 const old=Object.fromEntries(['items','skills','souls'].map(k=>[
- k,read('data/os/'+k+'.json')]));
+ k,read('data/catalog-history/pre-2026-11-15/'+k+'.json')]));
 const candidate=Object.fromEntries(['items','skills','souls'].map(k=>[
  k,read('data/catalog-review/ps-ca9a604163b54a2da5c83ea55077ef96/'+k+'.json')]));
 
@@ -26,6 +26,8 @@ test('source icon delta is deterministic and does not mutate the catalog',()=>{
 
 test('new catalog identities are not silently assigned images from similar names',()=>{
  const report=auditCatalogIconDelta({historical:old,candidate,manifest});
+ assert.equal(report.added,20);
+ assert.equal(report.unverified,20);
  for(const row of report.entries){
   assert.equal(row.verification,'unverified');
   assert.equal(row.previouslyReported404,false,

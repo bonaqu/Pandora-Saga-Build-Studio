@@ -14,14 +14,16 @@ function plan(...args){
  assert.equal(out.status,0,out.stderr||out.stdout);
  return JSON.parse(out.stdout.trim().split('\n').at(-1));
 }
-test('normal offline planning skips all 264 previously verified upstream 404s',()=>{
+test('normal offline planning retries only 20 unprobed originals, not 264 observed 404s',()=>{
  const before=manifest(),out=plan();
  assert.equal(out.dryRun,true);
- assert.equal(out.expected,1437);
- assert.equal(out.present,1173);
- assert.equal(out.missing,264);
+ assert.equal(out.expected,1454);
+ assert.equal(out.present,1170);
+ assert.equal(out.missing,284);
  assert.equal(out.skippedKnown404,264);
- assert.equal(out.planned,0);
+ assert.equal(out.unverified,20);
+ assert.equal(out.known404,264);
+ assert.equal(out.planned,20);
  assert.equal(out.processed,0);
  assert.equal(manifest(),before,'dry-run must not rewrite the manifest');
 });
@@ -31,19 +33,17 @@ test('explicit source recheck is bounded and never downloads during dry-run',()=
  assert.equal(limited.retry404,true);
  assert.equal(limited.planned,12);
  assert.equal(limited.skippedKnown404,0);
- assert.deepEqual(new Set(limited.firstPlanned.slice(0,4)),new Set([
-  'items/I_050011_00','items/I_900001_00',
-  'items/I_900002_00','items/I_900003_00'
- ]));
- assert.ok(limited.firstPlanned.slice(4,9).every(id=>
-  ['skills/skill_168051002','skills/skill_168052002',
-   'skills/skill_260003002','skills/skill_330002002',
-   'skills/skill_330003002'].includes(id)));
+ const retained=JSON.parse(before).missing;
+ assert.ok(limited.firstPlanned.every(id=>
+  retained.some(row=>id===row.kind+'/'+row.stem)),
+  'Only explicit existing evidence or unprobed new identities are scheduled');
+ assert.ok(limited.firstPlanned.every(id=>id.startsWith('items/')),
+  'Current bounded retry prioritizes original item textures');
  assert.equal(limited.processed,0);
  assert.equal(limited.downloaded,0);
  const all=plan('--retry-404');
- assert.equal(all.planned,264);
- assert.equal(all.missing,264);
+ assert.equal(all.planned,284);
+ assert.equal(all.missing,284);
  assert.equal(manifest(),before);
 });
 test('partial runs preserve prior HTTP 404 evidence and stop retries on new 404',()=>{

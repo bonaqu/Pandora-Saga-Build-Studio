@@ -14,7 +14,7 @@ const corrupt=fn=>{const x=fixture();fn(x);return x};
 test('all original professions, unison groups and item refinement rows validate',()=>{
  assert.equal(Object.keys(original.classes).length,28);
  assert.equal(Object.keys(original.unison).length,3);
- assert.equal(Object.keys(original.itemForth).length,162);
+ assert.equal(Object.keys(original.itemForth).length,172);
  assert.equal(validate(fixture()),true);
  const builder=read('pandora-studio-app.js');
  assert.match(builder,/PandoraWikiCatalog\.validateCharacterExtras\(data\)/);

@@ -14,9 +14,9 @@ const fixture=()=>structuredClone(original);
 test('all OS monster-drop refine intervals and trade recipe groups are source-valid',()=>{
  const rows=Object.values(original.drops).flatMap(group=>
   [...(group.d||[]),...(group.s||[])]);
- assert.equal(rows.length,1288);
+ assert.equal(rows.length,1287);
  assert.ok(rows.every(row=>row.lo<=row.hi));
- assert.equal(original.trades.trades.length,236);
+ assert.equal(original.trades.trades.length,212);
  assert.ok(original.trades.trades.every(recipe=>
   new Set((recipe.mats||[]).map(row=>String(row.i))).size===(recipe.mats||[]).length&&
   new Set((recipe.npc||[]).map(String)).size===(recipe.npc||[]).length));

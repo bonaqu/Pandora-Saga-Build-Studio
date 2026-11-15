@@ -5,7 +5,7 @@ import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const host={};Function('window',read('pandora-os-character-calculator.js'))(host);
 const C=host.PandoraOSCalculator;
-const previous=JSON.parse(read('data/os/skills.json'));
+const previous=JSON.parse(read('data/catalog-history/pre-2026-11-15/skills.json'));
 const current=JSON.parse(read('data/catalog-review/ps-ca9a604163b54a2da5c83ea55077ef96/skills.json'));
 const classes=JSON.parse(read('data/catalog-review/ps-ca9a604163b54a2da5c83ea55077ef96/classes.json'));
 const preview=(skills,jobKey='JESTER')=>C.specializedSkillPreview({

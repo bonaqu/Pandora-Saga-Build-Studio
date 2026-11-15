@@ -142,5 +142,5 @@ test('integrated Hero Book, audit and source-only semantics are consistent',()=>
   assert.equal(row?.coefficientModel,false);
   assert.equal(row?.numericPreview,false);
  }
- assert.equal(Object.values(audit.summary.statuses).reduce((a,b)=>a+b,0),569);
+ assert.equal(Object.values(audit.summary.statuses).reduce((a,b)=>a+b,0),571);
 });

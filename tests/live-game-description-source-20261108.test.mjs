@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 const read=name=>JSON.parse(readFileSync(
- new URL('../data/os/'+name+'.json',import.meta.url),'utf8'));
+ new URL('../data/catalog-history/pre-2026-11-15/'+name+'.json',import.meta.url),'utf8'));
 const items=read('items'),souls=read('souls'),en=read('strings.en');
 
 test('game source item descriptions retain authoritative lore/bonus breaks',()=>{

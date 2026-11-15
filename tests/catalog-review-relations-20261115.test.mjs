@@ -22,7 +22,7 @@ test('pinned candidate has no unresolved loot, NPC, chest or enhancement links',
  assert.ok(result.checked.itemForth>150);
  const full=auditReview();
  assert.deepEqual(full.gameRelations,result.checked);
- assert.equal(full.promoted,false);
+ assert.equal(full.promoted,true);
 });
 
 test('candidate relation gate detects each independent broken source link',()=>{
