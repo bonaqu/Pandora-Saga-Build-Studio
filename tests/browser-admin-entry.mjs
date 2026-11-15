@@ -35,7 +35,7 @@ export async function runAdminEntrySmoke(browser,base){
    return json({url:'https://github.com/bonaqu/Pandora-Saga-Build-Studio/pull/246'});
   }
   if(path==='/api/admin/catalog/github-status'&&method==='GET')
-   return json({configured:true});
+   return json({configured:true,connected:true,writeAccess:true});
   if(path==='/api/admin/catalog/status'&&method==='POST')
    return json({active:'ps-browser-snapshot'});
   if(path==='/api/admin/catalog/github-pr'&&method==='POST'){
