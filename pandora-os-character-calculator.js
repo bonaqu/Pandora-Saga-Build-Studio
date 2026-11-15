@@ -4951,11 +4951,31 @@ function specializedSkillPreview({skillCatalog=null,jobKey=null,level=1,
   const child=proof.childId?skillCatalog[String(proof.childId)]:null;
   const linkedExact=!proof.linked||proof.linked.every(entry=>{
    const linked=skillCatalog[String(entry.id)];
-   return linked?.id===entry.id&&
-    JSON.stringify(sourceVerifiedSkillSignature(linked))===JSON.stringify(entry.signature);
+   if(linked?.id!==entry.id)return false;
+   const signed=sourceVerifiedSkillSignature(linked);
+   const historical=JSON.stringify(signed)===JSON.stringify(entry.signature);
+   // Only the current D1 Silent Storm child changes mana-drain FV1
+   // and adds a knockback effect. Every linked field is still gated.
+   const latest=entry.id===440009002&&
+    JSON.stringify(signed)===JSON.stringify({...entry.signature,funcs:[
+     ['EP_LOSSMANA_NOWMANA','TARGET',[8,0,8,2],[0,0,0,0]],
+     ['EP_CAUSE_SILENCE','TARGET',[0,0,0,8],[0,0,20,35]],
+     ['EP_DESTINED_KNOCKBACK','TARGET',[0,0,0,-100],[0,0,0,0]]
+    ]});
+   return historical||latest;
   });
+  const currentSilence=proof.id===440009001&&
+   sourceVerifiedSkillSignature(skillCatalog['440009002'])?.funcs?.length===3&&
+   linkedExact;
   const signature=sourceVerifiedSkillSignature(source);
   const oldProof=JSON.stringify(signature)===JSON.stringify(proof.root);
+  // Current D1 Plague only changes BOLT→ENEMY and root AoE.
+  // Keep its exact linked curse/disease child independent.
+  const newPlague=proof.id===440011001&&
+   signature?.skillType==='ENEMY'&&
+   JSON.stringify(signature.aoe)==='[0,0]'&&
+   JSON.stringify({...signature,skillType:proof.root.skillType,aoe:proof.root.aoe})===
+    JSON.stringify(proof.root);
   // Only Psychic Blade's verified 50-level variant changes its action
   // timer in D1: cast 3.5 -> 2, cooldown 10 -> 12. Preserve all
   // other fields and linked child/parent signatures as exact gates.
@@ -4963,7 +4983,7 @@ function specializedSkillPreview({skillCatalog=null,jobKey=null,level=1,
    signature?.cast===2&&signature.cooldown===12&&
    JSON.stringify({...signature,cast:proof.root.cast,cooldown:proof.root.cooldown})===
     JSON.stringify(proof.root);
-  const valid=source?.id===proof.id&&linkedExact&&(oldProof||newBlade)&&
+  const valid=source?.id===proof.id&&linkedExact&&(oldProof||newBlade||newPlague)&&
    (!proof.parentId||(parent?.id===proof.parentId&&
     JSON.stringify(sourceVerifiedSkillSignature(parent))===JSON.stringify(proof.parent)))&&
    (!proof.childId||(child?.id===proof.childId&&
@@ -4984,7 +5004,11 @@ function specializedSkillPreview({skillCatalog=null,jobKey=null,level=1,
   }
   out[proof.group].push({id:proof.id,name:source.name,description:source.desc||'',
    mana:source.mana,cooldown:source.cooldown,prerequisiteId:proof.parentId,
-   noteRu:proof.noteRu,noteEn:proof.noteEn,requirementsMet:ru.length===0,
+   noteRu:currentSilence?
+    proof.noteRu+' Также указан эффект отталкивания; итог не рассчитан.':proof.noteRu,
+   noteEn:currentSilence?
+    proof.noteEn+' A knockback effect is also listed; the final result is unknown.':proof.noteEn,
+   requirementsMet:ru.length===0,
    reasonRu:ru.join(' · '),reasonEn:en.join(' · '),
    sourceOnly:true,finalAmount:null,appliedToHero:false});
  }
