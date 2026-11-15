@@ -4888,7 +4888,6 @@ const expandedRangedAmmoProofs=Object.freeze([{"id":213602001,"root":{"skillType
 // its ONE EP_CONSUME_AMMO action to differ. Linked actions remain exact.
 function sourceVerifiedAmmoQuantityMatches(record,proof){
  const current=sourceVerifiedSkillSignature(record);
- if(JSON.stringify(current)===JSON.stringify(proof))return true;
  const rows=proof?.funcs,actual=current?.funcs,raw=record?.funcs;
  if(!Array.isArray(rows)||!Array.isArray(actual)||!Array.isArray(raw)||
   rows.length!==actual.length||raw.length!==rows.length)return false;
@@ -4902,6 +4901,7 @@ function sourceVerifiedAmmoQuantityMatches(record,proof){
   !Number.isSafeInteger(vector[3])||vector[3]<1||
   !Array.isArray(actual[index])||!Array.isArray(actual[index][3])||
   actual[index][3].length!==4)return false;
+ if(JSON.stringify(current)===JSON.stringify(proof))return true;
  const normalized={...current,funcs:actual.map((row,i)=>i===index?
   [row[0],row[1],row[2],[...row[3].slice(0,3),rows[index][3][3]]]:row)};
  return JSON.stringify(normalized)===JSON.stringify(proof);
