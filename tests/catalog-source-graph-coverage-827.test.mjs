@@ -30,7 +30,7 @@ test('full current-source graph is readable with grandfathered zero-ID placehold
  const original=JSON.stringify(before);
  const report=safety.sourceGraphIntegrity(before,before);
  assert.equal(report.ok,true);
- assert.equal(report.historical,2,'only two existing source placeholders are known');
+ assert.equal(report.historical,4,'two zero prerequisites and two zero action placeholders are known');
  assert.equal(report.newBroken,0);
  assert.ok(report.inspected>5000,'all skill classes and internal actions were inspected');
  assert.equal(JSON.stringify(before),original);
@@ -56,6 +56,24 @@ test('new and changed classless execution links are blocked even without an old 
 test('historical zero placeholders are not a permit to add more broken links',()=>{
  missingLink('skills','240005001',s=>{s.funcs[1].fv1[3]=0;},
   'skill','EP_SKILL_EXEC');
+});
+
+test('cyclic source actions are rejected even when every target ID exists',()=>{
+ const id='240005001',original=before.skills[id];
+ const after=edit('skills',id,s=>{s.funcs[1].fv1[3]=s.id;});
+ const report=safety.sourceGraphIntegrity(before,after);
+ assert.equal(report.ok,false,'self-recursive skill is not a valid execution chain');
+ assert.ok(report.samples.some(x=>x.field==='execution-cycle'&&x.owner===id));
+ assert.equal(original.funcs[1].fv1[3],240005002,'baseline untouched');
+ const next={...before,skills:{...before.skills}};
+ const x=999997911,y=999997912;
+ next.skills[String(x)]={id:x,learnable:false,prereq:null,classes:{},
+  funcs:[{ep:'EP_SKILL_EXEC',dir:'TARGET',fv1:[0,0,0,y],fv2:[0,0,0,0]}]};
+ next.skills[String(y)]={id:y,learnable:false,prereq:null,classes:{},
+  funcs:[{ep:'EP_SKILL_EXEC',dir:'TARGET',fv1:[0,0,0,x],fv2:[0,0,0,0]}]};
+ const cycle=safety.sourceGraphIntegrity(before,next);
+ assert.equal(cycle.ok,false,'two new linked skills cannot call one another indefinitely');
+ assert.ok(cycle.samples.some(row=>row.field==='execution-cycle'));
 });
 
 test('new broken class and prerequisite references are detected before D1',()=>{
