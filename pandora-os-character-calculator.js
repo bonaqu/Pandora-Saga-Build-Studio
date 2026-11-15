@@ -4886,16 +4886,16 @@ const expandedRangedAmmoProofs=Object.freeze([{"id":213602001,"root":{"skillType
 // Ammunition is a signed source quantity, not a number of hits or damage.
 // Compare the immutable proof, allowing only the positive integer FV2[3] of
 // its ONE EP_CONSUME_AMMO action to differ. Linked actions remain exact.
-function sourceVerifiedAmmoQuantityMatches(record,proof){
+function sourceVerifiedEffectQuantityMatches(record,proof,ep,dir){
  const current=sourceVerifiedSkillSignature(record);
  const rows=proof?.funcs,actual=current?.funcs,raw=record?.funcs;
  if(!Array.isArray(rows)||!Array.isArray(actual)||!Array.isArray(raw)||
   rows.length!==actual.length||raw.length!==rows.length)return false;
- const positions=rows.map((row,i)=>row?.[0]==='EP_CONSUME_AMMO'?i:-1)
+ const positions=rows.map((row,i)=>row?.[0]===ep?i:-1)
   .filter(i=>i>=0);
  if(positions.length!==1)return false;
  const index=positions[0],effect=raw[index],vector=effect?.fv2;
- if(effect?.ep!=='EP_CONSUME_AMMO'||effect.dir!=='CASTER'||
+ if(effect?.ep!==ep||effect.dir!==dir||
   Object.keys(effect).sort().join(',')!=='dir,ep,fv1,fv2'||
   !Array.isArray(vector)||vector.length!==4||
   !Number.isSafeInteger(vector[3])||vector[3]<1||
@@ -4905,6 +4905,9 @@ function sourceVerifiedAmmoQuantityMatches(record,proof){
  const normalized={...current,funcs:actual.map((row,i)=>i===index?
   [row[0],row[1],row[2],[...row[3].slice(0,3),rows[index][3][3]]]:row)};
  return JSON.stringify(normalized)===JSON.stringify(proof);
+}
+function sourceVerifiedAmmoQuantityMatches(record,proof){
+ return sourceVerifiedEffectQuantityMatches(record,proof,'EP_CONSUME_AMMO','CASTER');
 }
 function rangedAmmoPreview({skillCatalog=null,jobKey=null,level=1,
   branchMasteries={},branchCaps={},weaponKind='BARE_HAND',
@@ -5137,7 +5140,9 @@ function supportEffectPreview({skillCatalog=null,jobKey=null,level=1,
    parent=proof.parentId?skillCatalog[String(proof.parentId)]:null,
    child=proof.childId?skillCatalog[String(proof.childId)]:null;
   const exact=source?.id===proof.id&&
-   JSON.stringify(sourceVerifiedSkillSignature(source))===JSON.stringify(proof.root)&&
+   (proof.id===310003001?
+    sourceVerifiedEffectQuantityMatches(source,proof.root,'EP_CONSUME_ITEM','CASTER'):
+    JSON.stringify(sourceVerifiedSkillSignature(source))===JSON.stringify(proof.root))&&
    (!proof.parentId||(parent?.id===proof.parentId&&
     JSON.stringify(sourceVerifiedSkillSignature(parent))===JSON.stringify(proof.parent)))&&
    (!proof.childId||(child?.id===proof.childId&&
