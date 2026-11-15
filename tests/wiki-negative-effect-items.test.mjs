@@ -152,7 +152,9 @@ test('all current on-use source effects are accounted for or belong to loot cont
  const containers=effects.filter(([,item])=>!classify(item).length);
  assert.equal(effects.length,108);
  assert.equal(classified.length,71);
- assert.equal(containers.length,36);
+ assert.equal(containers.length,37);
+ assert.ok(containers.some(([id])=>id==='51036'),
+  'The 127-reward chest stays explicitly recognized as a loot container');
  for(const [id,item]of containers)
   assert.deepEqual(item.effects.map(e=>e.func),['EP_RANDOM_BOX'],
    id+' must really be a loot container, not an overlooked potion');

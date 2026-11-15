@@ -9,9 +9,15 @@ const report=skillIdentityAudit(data);
 test('diagnose overlapping, catalog-eligible skill names without hiding them',()=>{
  assert.equal(report.summary.allSkillRecords,571);
  assert.equal(report.summary.eligiblePlayerRows,234);
- assert.equal(report.summary.repeatedPlayerNames,19);
- assert.equal(report.summary.eligibleRowsInRepeatedNames,41);
- assert.equal(report.summary.groupsWithOverlappingClassAssignments,19);
+ assert.equal(report.summary.repeatedPlayerNames,20);
+ assert.equal(report.summary.eligibleRowsInRepeatedNames,43);
+ assert.equal(report.summary.groupsWithOverlappingClassAssignments,20);
+ // The level-50 Sandstorm has the same name as an existing source skill.
+ // Identity overlap is metadata, not proof that either is inactive.
+ const sandstorm=report.ambiguousNames.find(row=>row.name==='песчаная буря');
+ assert.deepEqual(sandstorm?.candidates.map(x=>x.id),[420007001,420007101]);
+ assert.equal(sandstorm?.candidates.find(x=>x.id===420007101)?.level,50);
+ assert.ok(sandstorm?.overlappingClasses.length>0);
  assert.equal(report.ambiguousNames.some(row=>row.name==='контратака'),false,
   'Only one Counterattack entry has learnable and class assignment');
  const blocking=report.ambiguousNames.find(row=>row.name==='блокирование');

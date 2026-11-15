@@ -17,5 +17,7 @@ test('current published 571-skill/1076-effect graph is not historical 569/1070',
  assert.equal(current['420007101'].funcs[0].fv1[3],420007102);
  assert.equal(current['420007102'].learnable,false);
  assert.equal(current['240009001'].learnable,true);
+ assert.equal(Object.values(current).filter(x=>x.learnable&&
+  Object.values(x.classes||{}).some(Boolean)).length,234);
  assert.equal(historical['240009001'].learnable,false);
 });

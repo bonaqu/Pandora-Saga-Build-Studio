@@ -191,6 +191,9 @@ export function auditOsSkillFormulaCoverage({skills,classes,calculator}={}){
   for(const chain of preview.rows){
    eligibleExecRoots.add(chain.id);
    const record=coverage.get(chain.id);
+   // Complete OS execution chains are qualitative source evidence only.
+   // Sandstorm 420007101 has a valid child but no final damage formula.
+   if(!record.sourcePreview)mark(chain.id,'execution-chain-source');
    record.executionChain=true;
    record.executionPaths=Math.max(record.executionPaths||0,chain.paths.length);
   }

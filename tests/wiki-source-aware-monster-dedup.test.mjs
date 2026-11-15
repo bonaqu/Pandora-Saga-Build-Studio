@@ -82,7 +82,20 @@ test('real game encyclopedia hides unreferenced identical monster records withou
   'Identical event phases with the same drop and spawns should show only once');
  assert.equal(index.canonical('monster','43642'),'43641');
  assert.equal(index.drops('43641').length,2);
- assert.equal(index.locations('43641').length,2);
+ // The latest D1 removed the event drops and map appearances.
+ // Historical sources stay testable separately; do not invent active spawns.
+ assert.equal(index.locations('43641').length,0);
+ assert.equal(index.drops('43641').length,0);
+ const historic=fixture();
+ Object.assign(historic,{
+  monsters:json('data/catalog-history/pre-2026-11-15/monsters.json'),
+  drops:json('data/catalog-history/pre-2026-11-15/drops.json'),
+  maps:json('data/catalog-history/pre-2026-11-15/maps.json'),
+  instances:json('data/catalog-history/pre-2026-11-15/instances.json'),
+  tables:json('data/catalog-history/pre-2026-11-15/tables.json')
+ });
+ assert.equal(build(historic).locations('43641').length,2,
+  'Old event evidence remains available as a historical snapshot');
  assert.equal(Object.keys(input.monsters).length,707,
   'Deduplication must never delete original OS game records');
 });
