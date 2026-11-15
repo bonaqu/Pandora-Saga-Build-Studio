@@ -1125,9 +1125,22 @@ function sourceGraphIntegrity(before,after){
   JSON.stringify(modelRecord(after,row));
  const added=selected.issues.filter(row=>!acknowledged.has(fingerprint(row))||
   !unchanged(row));
+ // A removed class can break hundreds of skills AND equipment records.
+ // Show different relationship families in the eight compact UI examples.
+ const samples=[],seenGroups=new Set();
+ for(const row of added){
+  const group=row.kind+'|'+row.field;
+  if(seenGroups.has(group))continue;
+  seenGroups.add(group);samples.push(row);
+  if(samples.length>=8)break;
+ }
+ for(const row of added){
+  if(samples.length>=8)break;
+  if(!samples.includes(row))samples.push(row);
+ }
  return {ok:added.length===0,inspected:selected.inspected,
   historical:previous.issues.length,unresolved:selected.issues.length,
-  newBroken:added.length,samples:added.slice(0,8)};
+  newBroken:added.length,samples};
 }
 
 // Re-run EXISTING calculator models against both source snapshots, before D1.
