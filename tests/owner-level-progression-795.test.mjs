@@ -78,6 +78,19 @@ test('admin explicitly increases to 60 and independent D1 rules affect full plan
  assert.equal(model.maxLevel(),55);
 });
 
+test('owner can edit grants even at the first level while default remains zero',()=>{
+ const custom=model.defaults();
+ custom.attributes[1]=7;custom.skills[1]=2;
+ assert.equal(model.configure(custom).ok,true);
+ assert.equal(attr.budget(1),7);
+ assert.equal(skills.spending(tables.abilityPoint,1,{}).total,2);
+ assert.equal(attr.budget(55),551);
+ assert.equal(skills.spending(tables.abilityPoint,55,{}).total,136);
+ model.configure(null);
+ assert.equal(attr.budget(1),0);
+ assert.equal(skills.spending(tables.abilityPoint,1,{}).total,0);
+});
+
 test('invalid owner tables are rejected without discarding the active version',()=>{
  const cases=[];
  const baseline=model.defaults();
