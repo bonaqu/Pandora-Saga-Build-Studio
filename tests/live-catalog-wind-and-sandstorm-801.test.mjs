@@ -74,13 +74,34 @@ test('new Sandstorm is an OS skill execution chain, not a claimed damage formula
   branchMasteries:{...classes.CONJURER.branchCaps,embody:0}
  }).rows.find(x=>x.id===420007101);
  assert.ok(zero&&!zero.requirementsMet,'61 Embodiment mastery is still required');
+ // 999999999 is an ACTUAL but unrelated internal skill, not a missing
+ // ID. Mere catalog existence must never authorize a false Sandstorm link.
+ assert.ok(live[999999999]);
  const bad=structuredClone(live);
  bad[420007101].funcs[0].fv1[3]=999999999;
- const missing=C.skillExecutionChains({
-  skillCatalog:bad,jobKey:'CONJURER',level:55,
+ const options=skillCatalog=>C.skillExecutionChains({
+  skillCatalog,jobKey:'CONJURER',level:55,
   branchCaps:classes.CONJURER.branchCaps,
   branchMasteries:classes.CONJURER.branchCaps
  });
- assert.ok(missing.rejected.includes(420007101));
- assert.ok(!missing.rows.some(x=>x.id===420007101));
+ const unrelated=options(bad);
+ assert.ok(unrelated.rejected.includes(420007101));
+ assert.ok(!unrelated.rows.some(x=>x.id===420007101));
+ const absent=structuredClone(live);
+ absent[420007101].funcs[0].fv1[3]=987654321;
+ assert.ok(options(absent).rejected.includes(420007101),
+  'A nonexistent inner skill must also be refused');
+ for(const mutate of [
+  row=>{row.funcs[0].fv1[0]=121},
+  row=>{row.funcs[1].fv2[0]=41},
+  row=>{row.funcs[2].ep='EP_UNKNOWN'},
+  row=>{row.aoe[0]=501}
+ ]){
+  const child=structuredClone(live);
+  mutate(child[420007102]);
+  const check=options(child);
+  assert.ok(check.rejected.includes(420007101),
+   'Any unapproved inner effect must invalidate the source-only chain');
+  assert.ok(!check.rows.some(x=>x.id===420007101));
+ }
 });
