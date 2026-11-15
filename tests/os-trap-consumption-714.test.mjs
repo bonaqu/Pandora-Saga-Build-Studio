@@ -48,7 +48,7 @@ test('class capacity and actually invested trap mastery are independent',()=>{
 test('wrong items, counts, child links, unexpected directions and changed subskills fail closed',()=>{
  const job=Object.keys(jobs).find(x=>row(preview(x).rows,240005001));
  for(const mutate of [
-  s=>{s[240005001].funcs[0].fv2[3]=1;},
+  s=>{s[240005001].funcs[0].fv2[3]=0;},
   s=>{s[240005001].funcs[0].fv1[3]=65011;},
   s=>{s[240005001].funcs[1].fv1[3]=240002050;},
   s=>{s[240005001].funcs[0].dir='TARGET';},

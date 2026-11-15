@@ -4565,13 +4565,28 @@ function trapOutcomeMatches(catalog,root,proof){
  });
 }
 
+// The game source can change how many trap consumables a known action uses.
+// Only EP_CONSUME_ITEM's last FV2 lane is a material count: preserve the ID,
+// zero lanes, direction and exact effect shape, never infer triggered damage.
+function trapMaterialSourceCount(effect,itemId=65007){
+ if(!effect||Object.keys(effect).sort().join(',')!=='dir,ep,fv1,fv2'||
+  effect.ep!=='EP_CONSUME_ITEM'||effect.dir!=='CASTER'||
+  !Array.isArray(effect.fv1)||effect.fv1.length!==4||
+  effect.fv1.some((n,i)=>n!==(i===3?itemId:0))||
+  !Array.isArray(effect.fv2)||effect.fv2.length!==4||
+  effect.fv2.slice(0,3).some(x=>x!==0)||
+  !Number.isSafeInteger(effect.fv2[3])||effect.fv2[3]<=0)return null;
+ return effect.fv2[3];
+}
 /* A distinct nonlearnable level-50 source record, not a verified
    automatic replacement for the regular Plant Mine. */
 function trapLevel50Source({catalog,root,jobKey,level,rank,cap,same,make}){
  if(root?.id!==240002001||jobKey!=='DISTURBANCE')return null;
  const variant=catalog['240002002'],child=catalog['240002051'];
+ const materialCount=trapMaterialSourceCount(variant?.funcs?.[0]);
+ if(materialCount===null)return null;
  const expected=[
-  make('EP_CONSUME_ITEM','CASTER',65007,1),
+  make('EP_CONSUME_ITEM','CASTER',65007,materialCount),
   make('EP_SKILL_EXEC','TARGET',240002051,0),
   make('EP_CANCEL_TRAP','CASTER',240002050,0)
  ];
@@ -4606,7 +4621,7 @@ function trapLevel50Source({catalog,root,jobKey,level,rank,cap,same,make}){
   !effects.every((row,i)=>same(child.funcs[i],row)))return null;
  return {requiredLevel:50,levelMet:level>=50,masteryMet:
   Number.isSafeInteger(rank)&&Number.isSafeInteger(cap)&&rank>=26&&rank<=cap,
-  itemCount:1,linkedEffectId:240002051,
+  itemCount:materialCount,linkedEffectId:240002051,
   sourceEffectRu:'Более сильный стихийный удар; отталкивание остаётся',
   sourceEffectEn:'Stronger elemental attack; knockback remains',
   activationVerified:false,damageVerified:false,sourceOnly:true};
@@ -4632,8 +4647,10 @@ function trapSkillCostPreview({skillCatalog=null,jobKey=null,level=1,
    record.reqs.length!==1||record.reqs[0]?.branch!=='trap'||
    record.reqs[0]?.amount!==required||
    !Number.isSafeInteger(cap)||cap<required)continue;
+  const materialCount=trapMaterialSourceCount(record?.funcs?.[0]);
+  if(materialCount===null){result.rejected.push(id);continue;}
   const expected=[
-   make('EP_CONSUME_ITEM','CASTER',65007,count),
+   make('EP_CONSUME_ITEM','CASTER',65007,materialCount),
    make('EP_SKILL_EXEC','TARGET',childId,0),
    ...(cancel?[make('EP_CANCEL_TRAP','CASTER',childId,0)]:[])
   ];
@@ -4651,7 +4668,7 @@ function trapSkillCostPreview({skillCatalog=null,jobKey=null,level=1,
   const ready=legal&&rank>=required;
   const level50Variant=trapLevel50Source({
    catalog:skillCatalog,root:record,jobKey,level,rank,cap,same,make});
-  result.rows.push({id,name:record.name,itemId:65007,count,
+  result.rows.push({id,name:record.name,itemId:65007,count:materialCount,
    linkedEffectId:childId,requirementsMet:ready,
    ...(level50Variant?{level50Variant}:{}),
    sourceEffectRu:trapOutcomeProofs[id].ru,
