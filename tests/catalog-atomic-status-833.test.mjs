@@ -13,7 +13,7 @@ const review=host.PandoraOSCatalogReview;
 const status=host.PandoraOSCatalogWorkbench.statusForSelection;
 const source=name=>JSON.parse(read('data/os/'+name+'.json'));
 const before=Object.fromEntries(['trades','chests','instances','expertise',
- 'tables','unison','items'].map(name=>[name,source(name)]));
+ 'tables','unison','items','skills','classes'].map(name=>[name,source(name)]));
 const changed=(dataset,edit)=>{
  const after={...before,[dataset]:structuredClone(before[dataset])};
  edit(after[dataset]);
@@ -71,6 +71,14 @@ test('atomic table and ordinary item/set records keep their independent statuses
  const item=changed('items',data=>{data['1'].name+=' •';});
  assert.equal(item.changes[0].key,'1');
  assert.deepEqual(item.statuses,['sourceOnly']);
+ // Source compatibility intentionally uses singular class:/skill: keys;
+ // selected UI rows use plural classes/skills dataset names.
+ const skill=changed('skills',data=>{data['213601001'].name+=' •';});
+ assert.equal(skill.changes[0].key,'213601001');
+ assert.deepEqual(skill.statuses,['sourceOnly']);
+ const klass=changed('classes',data=>{data.WARRIOR.name+=' •';});
+ assert.equal(klass.changes[0].key,'WARRIOR');
+ assert.deepEqual(klass.statuses,['sourceOnly']);
 });
 
 test('all statuses are evaluated, not just the six preview samples',()=>{
@@ -89,6 +97,12 @@ test('missing or unrelated evidence produces no false compatibility badge',()=>{
  assert.equal(status(null,[]),null);
  assert.equal(status({dataset:'items',key:'1'},[
   {key:'items:2',kind:'verified'}
+ ]),null);
+ assert.equal(status({dataset:'skills',key:'213601001'},[
+  {key:'skill:213601002',kind:'verified'}
+ ]),null);
+ assert.equal(status({dataset:'classes',key:'WARRIOR'},[
+  {key:'class:SCOUT',kind:'verified'}
  ]),null);
 });
 
