@@ -1,0 +1,125 @@
+{
+  "kind": "read-only-catalog-review",
+  "snapshot": "ps-ca9a604163b54a2da5c83ea55077ef96",
+  "collectedAt": "2026-11-15",
+  "candidateFiles": [
+    "meta.json",
+    "items.json",
+    "skills.json",
+    "souls.json",
+    "monsters.json",
+    "drops.json",
+    "maps.json",
+    "instances.json",
+    "trades.json",
+    "tables.json",
+    "chests.json",
+    "racialPassives.json",
+    "classes.json",
+    "itemForth.json",
+    "unison.json",
+    "expertise.json",
+    "strings.en.json"
+  ],
+  "promoted": false,
+  "note": "Not used at runtime. Production D1 remains the sole current live source. Archive data/os deliberately unchanged until source-derived formula regression review.",
+  "files": {
+    "meta.json": {
+      "sha256": "cd3e4318fa7f346628c7293f05dc9f4a3831343e34a2ef318094b2044a6006ce",
+      "bytes": 3300
+    },
+    "items.json": {
+      "sha256": "3aebd29cdfd1c81c16ae1035bc9bb48dac14cea815408dacbd2e882a25f6e533",
+      "bytes": 752404
+    },
+    "skills.json": {
+      "sha256": "b2b95b6df2ad6d33a9cf9131e70c38903c2c76a88f57569be91ccc9d4262f3ed",
+      "bytes": 461353
+    },
+    "souls.json": {
+      "sha256": "c28bf398cc57ad28dbed009d1b997e72bf31277fc6b428e68215cceb0ee588c7",
+      "bytes": 35075
+    },
+    "monsters.json": {
+      "sha256": "8aee6949901ca9f0233be84884129aeb9fcc88fc2d7078899a69c5087c0216f1",
+      "bytes": 203233
+    },
+    "drops.json": {
+      "sha256": "f4e3cb656089512edb21eae5e401a974448e719272068f796094b915a6cce373",
+      "bytes": 48358
+    },
+    "maps.json": {
+      "sha256": "55d9cb66f9d663cdc583491b2a11765e237f52ca5a65da8f257db422547d77ba",
+      "bytes": 2970
+    },
+    "instances.json": {
+      "sha256": "883f327cd940b1d2ff52fafc392a8da133f0f3f04ccf8d38f573f596bfd93f65",
+      "bytes": 1677
+    },
+    "trades.json": {
+      "sha256": "2d2777c0d6c04dba9323e3798addff0fb7c15ca2778ff56e713acc16f0d0def4",
+      "bytes": 24561
+    },
+    "tables.json": {
+      "sha256": "c2f3166886fd8bab90c6c67775fbb0740bfd67faa0483950c6a7d42b22baf8bb",
+      "bytes": 61658
+    },
+    "chests.json": {
+      "sha256": "59a9d8eb7f2a189a9d44fb22d936a80c1ac33b9a25f31cf37207849868a5b6af",
+      "bytes": 17842
+    },
+    "racialPassives.json": {
+      "sha256": "f8f897b9f144c70716a69aeda3c60dd3642eb923094abea48292e6cf7a4e48ab",
+      "bytes": 455
+    },
+    "classes.json": {
+      "sha256": "c5e707ede04d4aebb9f2c3d6c9a56e6c992fabab1d5f58f9a2b69b5b816d7596",
+      "bytes": 16095
+    },
+    "itemForth.json": {
+      "sha256": "2369ea647a0e77d228dee0464c1d5c596533b89fc00007b20513976833831189",
+      "bytes": 61669
+    },
+    "unison.json": {
+      "sha256": "aeb2043f9ce0ac747e60d9c93b7e1b54c818eb732c724e698777e65786bcd9de",
+      "bytes": 1257
+    },
+    "expertise.json": {
+      "sha256": "6270294ea762c7d14fbf5153369888588b5ec0c9ffb029173d16cb543a9d4fd0",
+      "bytes": 6035
+    },
+    "strings.en.json": {
+      "sha256": "74b0d7b08d78c4d1536049108c815359261974a13047e44c64677248111c7416",
+      "bytes": 242654
+    }
+  },
+  "changeReview": {
+    "skillAdded": [
+      "420007101",
+      "420007102"
+    ],
+    "skillChanged": [
+      "240009001",
+      "320006001",
+      "340001001",
+      "340001004",
+      "340003001",
+      "340004001",
+      "420004002",
+      "420005002",
+      "440009002",
+      "440011001"
+    ],
+    "classChanged": [
+      "CONJURER"
+    ],
+    "intentionalRuInstanceIds": [
+      "20030040",
+      "20030070",
+      "20030080",
+      "20030090",
+      "20030100",
+      "20030110"
+    ]
+  }
+}
