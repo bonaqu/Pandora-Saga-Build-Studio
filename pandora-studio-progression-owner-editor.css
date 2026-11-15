@@ -31,3 +31,35 @@
  .ps-level-editor-table input{width:58px;padding:7px 2px}
  .ps-level-editor-actions button{flex:1}
 }
+
+/* 0.796: explain autofill in place instead of expecting users to infer it. */
+.ps-level-editor-top{align-items:start;gap:10px 16px}
+.ps-level-editor-fill-tools{display:grid;justify-items:start;align-content:start;
+ gap:5px;min-width:0;flex:1 1 250px}
+.ps-level-editor-fill-tools>.button-action{max-width:100%;white-space:normal;
+ text-align:left;min-height:36px}
+.ps-level-editor-fill-tools>.button-action:disabled{opacity:.58;cursor:not-allowed}
+.ps-level-editor-fill-hint{font-size:11px;line-height:1.5;color:#c2af92;
+ max-width:48ch;overflow-wrap:anywhere}
+.ps-level-editor-help{color:#bca88a}
+.ps-level-editor-table thead th{font-weight:680;line-height:1.4;white-space:normal}
+.ps-level-editor-table tbody tr.ps-level-edited{background:rgba(192,144,76,.095)}
+.ps-level-editor-changes{color:#ceb993}
+.ps-level-editor-state{min-height:1.3em;color:#d8c29f}
+.ps-level-editor-actions{padding-top:9px;border-top:1px solid #54432e;
+ gap:8px;align-items:center}
+.ps-level-editor-actions button{white-space:normal;min-height:37px}
+.ps-level-editor-actions .ps-level-editor-restore{border-color:#815749;color:#dfb49c;
+ margin-right:auto}
+.ps-level-editor-actions .ps-level-editor-restore:hover:not(:disabled){
+ border-color:#cc987d;background:#40271f}
+.ps-level-editor-actions button:focus-visible{outline:2px solid #f8d59f;outline-offset:2px}
+@media(max-width:550px){
+ .ps-level-editor-fill-tools{flex-basis:100%;justify-items:stretch}
+ .ps-level-editor-actions .ps-level-editor-restore{flex-basis:100%}
+ .ps-level-editor-fill-hint{max-width:none}
+}
+@media(forced-colors:active){
+ .ps-level-editor-table input.ps-level-changed{outline:2px solid Highlight}
+ .ps-level-editor-actions button:focus-visible{outline-color:Highlight}
+}
