@@ -107,16 +107,17 @@ test('unknown/new gameplay semantics and malformed trap material sources remain 
   const after=updated([[id,fn]]);
   assert.equal(safety.compatibility(before,after).totals.needsReview,1);
   const result=check(after,job);
-  assert.equal(result.rows.some(x=>x.id===id),false);
-  assert.ok(result.rejected.includes(id));
   const replay=safety.replaySkills(before,after);
   if(after.skills[id].cooldown!==before.skills[id].cooldown){
    // The cost inspector is still intact. Timing is an independent
    // unmodeled gameplay parameter and remains NEEDS REVIEW, not a
    // fabricated loss of the previously modeled material count.
+   assert.ok(result.rows.some(x=>x.id===id),'material cost remains visible');
    assert.equal(replay.ok,true,'existing source material proof still holds');
    continue;
   }
+  assert.equal(result.rows.some(x=>x.id===id),false);
+  assert.ok(result.rejected.includes(id));
   assert.equal(replay.ok,false,'lost source evidence must block publication');
   assert.ok(replay.samples.some(x=>x.id===String(id)&&
    (x.module==='trap-material'||x.module==='source-execution-chain')));
