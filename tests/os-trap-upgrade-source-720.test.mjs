@@ -58,7 +58,7 @@ test('variant belongs to Saboteur; level and trap mastery remain separate requir
 });
 test('any corrupted special root or child effect hides only the special note',()=>{
  const bad=[
- [240002002,s=>s.funcs[0].fv2[3]++],
+ [240002002,s=>s.funcs[0].fv2[3]=0],
  [240002002,s=>s.funcs[1].fv1[3]=240002050],
  [240002002,s=>s.funcs[2].fv1[3]=240002051],
  [240002002,s=>s.charLevel=49],
