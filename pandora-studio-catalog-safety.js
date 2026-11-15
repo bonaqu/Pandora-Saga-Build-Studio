@@ -232,5 +232,136 @@ function compatibility(before,after){
  }
  return {totals,samples:issues,requiresMechanicReview:totals.needsReview>0};
 }
-root.PandoraCatalogSafety=Object.freeze({MAX_LEVEL,EXPECTED,check,project,compare,compatibility});
+
+// Re-run EXISTING calculator models against both source snapshots, before D1.
+// These are legal, unaugmented representative builds (no equipment, no buffs),
+// not game-server damage measurements. A previously displayed numeric result
+// must not silently disappear after updating a skill's source contract.
+function replaySkills(before,after){
+ const changed=new Set();
+ const oldSkills=before?.skills||{},newSkills=after?.skills||{};
+ const fields=['funcs','damage','weaponUse','prereq','powerStat','skillType',
+  'element','aoe','rangeFromWeapon','classes','charLevel','reqs',
+  'reqLevel','branch','branchRaw','isLevelBased','learnable'];
+ const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+ for(const id of new Set([...Object.keys(oldSkills),...Object.keys(newSkills)])){
+  const prev=oldSkills[id],next=newSkills[id];
+  if(!prev||!next||fields.some(field=>!same(prev[field],next[field])))
+   changed.add(id);
+ }
+ // Updated class caps can invalidate an unchanged, otherwise modeled skill.
+ const oldClasses=before?.classes||{},newClasses=after?.classes||{};
+ const alteredJobs=new Set([...Object.keys(oldClasses),...Object.keys(newClasses)]
+  .filter(job=>!same(oldClasses[job],newClasses[job])));
+ if(alteredJobs.size)
+  for(const [id,skill] of Object.entries(oldSkills))
+   if([...alteredJobs].some(job=>skill?.classes?.[job]))changed.add(id);
+ if(!changed.size)return {ok:true,changedSkills:0,scenarios:0,
+  previouslyModeled:0,retained:0,lost:0,unmodeled:0,samples:[],errors:[]};
+ const calc=root.PandoraOSCalculator;
+ if(!calc||!['base','scalingSkillPreview','healingSpellsPreview','periodicRecoveryPreview',
+  'resistanceSkillChoices'].every(name=>typeof calc[name]==='function'))
+  return {ok:false,changedSkills:changed.size,scenarios:0,
+   previouslyModeled:0,retained:0,lost:0,unmodeled:changed.size,samples:[],
+   errors:['Не подключены проверенные расчётные модели навыков.']};
+ const scenarios=[{level:15,allocation:{},},{level:45,allocation:
+  {vit:6,str:12,agi:6,dex:12,spi:10,int:12}},
+  {level:55,allocation:{vit:10,str:18,agi:10,dex:18,spi:14,int:18}}];
+ const equipment=[['BARE_HAND',false],['1H_SWORD',true],['CROSSBOW',false],['STAFF',false]];
+ const measure=data=>{
+  const found=new Map(),errors=[];
+  let count=0;
+  const classes=data?.classes||{},tables=data?.tables||{},skills=data?.skills||{};
+  const human=tables.raceInit?.HUMAN;
+  if(!human)return {found,count,errors:['Нет данных расы человека для проверочных билдов.']};
+  for(const [job,definition] of Object.entries(classes)){
+   if(![...changed].some(id=>skills[id]?.classes?.[job]))continue;
+   const origin=tables.jobInit?.[definition?.baseClass||job];
+   const caps=definition?.branchCaps;
+   if(!origin||!caps){errors.push('Нет исходных характеристик или мастерства '+job);continue}
+   const mastery=Object.fromEntries(Object.entries(caps).map(([key,value])=>
+    [key,Number.isSafeInteger(value)&&value>=0?value:0]));
+   for(const scenario of scenarios){
+    const {level,allocation}=scenario;
+    const base=calc.base({classData:definition,raceData:human,jobData:origin,
+     allocation,level,records:[],combatContext:{jobKey:job}});
+    if(!base?.stats||!base?.combat){
+     errors.push('Не удалось рассчитать контрольного героя '+job+' / '+level);
+     continue;
+    }
+    count++;
+    const write=(id,module,detail,value)=>{
+     if(!changed.has(String(id))||!Number.isFinite(value))return;
+     found.set([id,module,job,level,detail].join('|'),{
+      id:String(id),job,level,module,detail,value});
+    };
+    for(const [weaponKind,hasShield] of equipment){
+     const result=calc.scalingSkillPreview({skillCatalog:skills,jobKey:job,level,
+      branchCaps:caps,branchMasteries:mastery,stats:base.stats,combat:base.combat,
+      weaponKind,hasShield});
+     if(!result||!['offense','defense','movement','utility'].every(key=>
+      Array.isArray(result[key]))){
+      errors.push('Нет расчёта умений '+job+' / '+level);continue;
+     }
+     for(const group of ['offense','defense','movement','utility'])
+      for(const row of result[group]){
+       if(row?.available===false)continue;
+       write(row.id,'skill-effects',weaponKind,Number(row.amount));
+      }
+    }
+    const healing=calc.healingSpellsPreview({skillCatalog:skills,jobKey:job,level,
+     benevolenceCap:mastery.benevolence||0,
+     benevolence:mastery.benevolence||0,int:base.stats.int,spi:base.stats.spi,
+     healingPercent:100});
+    for(const row of healing?.rows||[])
+     if(row.available)write(row.skillId,'healing','no-equipment',Number(row.amount));
+    const periodic=calc.periodicRecoveryPreview({skillCatalog:skills,jobKey:job,level,
+     benevolenceCap:mastery.benevolence||0,benevolence:mastery.benevolence||0,
+     spi:base.stats.spi});
+    for(const row of periodic?.rows||[])
+     if(row.available)write(row.id,'periodic-recovery','no-equipment',Number(row.amount));
+   }
+  }
+  // Target-side signed resistances have a separate, source-gated inspector.
+  // They are not automatically equipped as self-buffs or final hit chances.
+  for(const row of calc.resistanceSkillChoices(skills)||[]){
+   if(!changed.has(String(row?.id)))continue;
+   const values=Object.values(row.effects||{});
+   if(!values.length||!values.every(Number.isFinite))continue;
+   found.set([row.id,'target-resistance'].join('|'),{
+    id:String(row.id),job:'target',level:null,module:'target-resistance',
+    detail:'recipient',value:JSON.stringify(row.effects)});
+  }
+  return {found,count,errors};
+ };
+ let prior,next;
+ try{prior=measure(before);next=measure(after)}
+ catch(error){
+  return {ok:false,changedSkills:changed.size,scenarios:0,
+   previouslyModeled:0,retained:0,lost:0,unmodeled:changed.size,samples:[],
+   errors:['Ошибка контрольного пересчёта: '+String(error?.message||error).slice(0,160)]};
+ }
+ const lost=[],retained=[];
+ for(const [key,old] of prior.found){
+  const latest=newSkills[old.id];
+  // Removed skills, classes and newly restricted skill levels are source
+  // changes, not a silent regression in an unchanged numeric formula.
+  if(!latest||old.job!=='target'&&
+   (!latest.classes?.[old.job]||Number(latest.charLevel||0)>old.level))
+   continue;
+  if(next.found.has(key))retained.push(old);
+  else lost.push(old);
+ }
+ const recognized=new Set([...prior.found.values(),...next.found.values()].map(x=>x.id));
+ const problems=[...prior.errors,...next.errors];
+ return {ok:lost.length===0&&problems.length===0,
+  changedSkills:changed.size,scenarios:prior.count+next.count,
+  previouslyModeled:prior.found.size,retained:retained.length,
+  lost:lost.length,unmodeled:[...changed].filter(id=>!recognized.has(id)).length,
+  samples:lost.slice(0,5).map(row=>({...row,name:String(
+   newSkills[row.id]?.name||oldSkills[row.id]?.name||row.id).slice(0,75)})),
+  errors:problems.slice(0,5)};
+}
+
+root.PandoraCatalogSafety=Object.freeze({MAX_LEVEL,EXPECTED,check,project,compare,compatibility,replaySkills});
 })(typeof window==='undefined'?globalThis:window);
