@@ -118,7 +118,7 @@ test('one unavailable D1 dataset switches the ENTIRE catalog to local files',asy
  assert.equal(res.source,'local');
  assert.equal(res.data.items[1].name,'local');
  assert.equal(res.data.souls[1].name,'Soul');
- assert.equal(mock.paths.filter(x=>x.startsWith('./data/os/')).length,loader.keys.length);
+ assert.equal(mock.paths.filter(x=>x.startsWith('./data/catalog-history/pre-2026-11-15/')).length,loader.keys.length);
 });
 test('cross-snapshot D1 requests never mix different published releases',async()=>{
  const mock=mockFetch(catalog('new'),catalog('safe'),{
@@ -138,7 +138,7 @@ test('D1 dataset with an incomplete count falls back without partial records',as
 test('the bundled real OS snapshots satisfy the same schema and catalog counts',()=>{
  const data={};
  for(const key of loader.keys)data[key]=JSON.parse(readFileSync(
-  new URL('../data/os/'+key+'.json',import.meta.url),'utf8'));
+  new URL('../data/catalog-history/pre-2026-11-15/'+key+'.json',import.meta.url),'utf8'));
  const checked=loader.validate(data);
  assert.equal(Object.keys(checked.items).length,checked.meta.counts.items);
  assert.equal(checked.instances.length,checked.meta.counts.instances);
@@ -185,7 +185,7 @@ test('strict production Wiki refuses a broken D1 snapshot instead of silently lo
  await assert.rejects(
   loader.load({api:'https://worker.example',fetcher:mock.fetcher,strict:true}),
   /souls HTTP 503/);
- assert.equal(mock.paths.filter(url=>url.startsWith('./data/os/')).length,0);
+ assert.equal(mock.paths.filter(url=>url.startsWith('./data/catalog-history/pre-2026-11-15/')).length,0);
 });
 
 test('obsolete source hashes cannot rewrite D1 gameplay stats using a stale archive',async()=>{
@@ -206,7 +206,7 @@ test('obsolete source hashes cannot rewrite D1 gameplay stats using a stale arch
  assert.equal(loaded.data.monsters['43650'].life,3000000);
  assert.equal(loaded.data.monsters['43650'].resists.physical,20);
  assert.equal(loaded.overlay,undefined);
- assert.equal(mock.paths.filter(x=>x.startsWith('./data/os/')).length,0,
+ assert.equal(mock.paths.filter(x=>x.startsWith('./data/catalog-history/pre-2026-11-15/')).length,0,
   'A valid D1 snapshot must not trigger hidden monster/loot archive GETs');
 });
 test('the read-only Russian dungeon translation bridge remains source-matched',async()=>{
@@ -235,7 +235,7 @@ test('encyclopedia rejects a forged D1 provenance despite matching snapshot IDs'
  const strict=mockFetch(remote,safe,{provenance:'archive'});
  await assert.rejects(loader.load({api:'https://worker.example',
   fetcher:strict.fetcher,strict:true}),/не подтвердил источник D1/);
- assert.equal(strict.paths.filter(path=>path.startsWith('./data/os/')).length,0);
+ assert.equal(strict.paths.filter(path=>path.startsWith('./data/catalog-history/pre-2026-11-15/')).length,0);
 });
 
 test('NPC chest links, exchange keys and gold-only rewards are validated like regular chests',async()=>{
@@ -421,14 +421,14 @@ test('invalid or object-shaped keyed entries fail without breaking historical ke
 
 
 test('all 457 source reward rows retain valid chances without rewriting game probabilities',()=>{
- const chests=JSON.parse(readFileSync(new URL('../data/os/chests.json',import.meta.url),'utf8'));
+ const chests=JSON.parse(readFileSync(new URL('../data/catalog-history/pre-2026-11-15/chests.json',import.meta.url),'utf8'));
  const rows=[...chests.boxes,...chests.npc].flatMap(box=>box.rolls.flat());
  assert.equal(rows.length,457);
  assert.equal(rows.filter(row=>typeof row.p==='number'&&
   Number.isFinite(row.p)&&row.p>=0&&row.p<=100).length,rows.length);
  const data={};
  for(const key of loader.keys)data[key]=JSON.parse(readFileSync(
-  new URL('../data/os/'+key+'.json',import.meta.url),'utf8'));
+  new URL('../data/catalog-history/pre-2026-11-15/'+key+'.json',import.meta.url),'utf8'));
  const before=JSON.stringify(chests);
  assert.doesNotThrow(()=>loader.validate(data));
  assert.equal(JSON.stringify(chests),before,'Validation must not change original chances');
@@ -478,8 +478,8 @@ test('missing chance remains unspecified rather than becoming invented 0 or 100'
 
 
 test('current 1288 monster drops retain valid source chances and referenced Souls',()=>{
- const drops=JSON.parse(readFileSync(new URL('../data/os/drops.json',import.meta.url),'utf8'));
- const souls=JSON.parse(readFileSync(new URL('../data/os/souls.json',import.meta.url),'utf8'));
+ const drops=JSON.parse(readFileSync(new URL('../data/catalog-history/pre-2026-11-15/drops.json',import.meta.url),'utf8'));
+ const souls=JSON.parse(readFileSync(new URL('../data/catalog-history/pre-2026-11-15/souls.json',import.meta.url),'utf8'));
  const rows=Object.values(drops).flatMap(g=>[...(g.d||[]),...(g.s||[])]);
  const pairs=rows.flatMap(row=>row.souls||[]);
  assert.equal(rows.length,1288);
@@ -489,7 +489,7 @@ test('current 1288 monster drops retain valid source chances and referenced Soul
  assert.equal(pairs.filter(([id])=>Object.hasOwn(souls,String(id))).length,pairs.length);
  const data={};
  for(const key of loader.keys)data[key]=JSON.parse(readFileSync(
-  new URL('../data/os/'+key+'.json',import.meta.url),'utf8'));
+  new URL('../data/catalog-history/pre-2026-11-15/'+key+'.json',import.meta.url),'utf8'));
  const before=JSON.stringify(data.drops);
  assert.doesNotThrow(()=>loader.validate(data));
  assert.equal(JSON.stringify(data.drops),before);
@@ -541,7 +541,7 @@ test('absent chance remains unspecified, never fabricated as zero',()=>{
 
 
 test('all current 485 zone-drop groups and 1445 item references validate without mutation',()=>{
- const table=JSON.parse(readFileSync(new URL('../data/os/tables.json',import.meta.url),'utf8'));
+ const table=JSON.parse(readFileSync(new URL('../data/catalog-history/pre-2026-11-15/tables.json',import.meta.url),'utf8'));
  const groups=table.zoneDrops.flatMap(zone=>zone.rows);
  const rows=groups.flatMap(group=>group.items);
  assert.equal(groups.length,485);
@@ -552,7 +552,7 @@ test('all current 485 zone-drop groups and 1445 item references validate without
  const before=JSON.stringify(table.zoneDrops);
  const data={};
  for(const key of loader.keys)data[key]=JSON.parse(readFileSync(
-  new URL('../data/os/'+key+'.json',import.meta.url),'utf8'));
+  new URL('../data/catalog-history/pre-2026-11-15/'+key+'.json',import.meta.url),'utf8'));
  assert.doesNotThrow(()=>loader.validate(data));
  assert.equal(JSON.stringify(data.tables.zoneDrops),before);
 });
@@ -599,7 +599,7 @@ test('historical zone groups with omitted optional rates stay compatible',()=>{
 
 
 test('all 236 current NPC trades, 339 ingredients and 48 exchange limits validate intact',()=>{
- const trades=JSON.parse(readFileSync(new URL('../data/os/trades.json',import.meta.url),'utf8'));
+ const trades=JSON.parse(readFileSync(new URL('../data/catalog-history/pre-2026-11-15/trades.json',import.meta.url),'utf8'));
  const rows=trades.trades,materials=rows.flatMap(row=>row.mats||[]);
  const limits=rows.filter(row=>row.limit!=null);
  assert.equal(rows.length,236);
@@ -614,7 +614,7 @@ test('all 236 current NPC trades, 339 ingredients and 48 exchange limits validat
   limits.length);
  const data={};
  for(const key of loader.keys)data[key]=JSON.parse(readFileSync(
-  new URL('../data/os/'+key+'.json',import.meta.url),'utf8'));
+  new URL('../data/catalog-history/pre-2026-11-15/'+key+'.json',import.meta.url),'utf8'));
  const original=JSON.stringify(data.trades);
  assert.doesNotThrow(()=>loader.validate(data));
  assert.equal(JSON.stringify(data.trades),original);
@@ -667,7 +667,7 @@ test('omitted optional legacy trade charges are not invented as zero',()=>{
 
 
 test('current 569 OS skills keep their source costs, AoE and 179 mastery requirements',()=>{
- const skills=JSON.parse(readFileSync(new URL('../data/os/skills.json',import.meta.url),'utf8'));
+ const skills=JSON.parse(readFileSync(new URL('../data/catalog-history/pre-2026-11-15/skills.json',import.meta.url),'utf8'));
  const rows=Object.values(skills),reqs=rows.flatMap(row=>row.reqs||[]);
  const prerequisites=rows.filter(row=>row.prereq!=null);
  assert.equal(rows.length,569);
@@ -681,7 +681,7 @@ test('current 569 OS skills keep their source costs, AoE and 179 mastery require
  const original=JSON.stringify(skills);
  const data={};
  for(const key of loader.keys)data[key]=JSON.parse(readFileSync(
-  new URL('../data/os/'+key+'.json',import.meta.url),'utf8'));
+  new URL('../data/catalog-history/pre-2026-11-15/'+key+'.json',import.meta.url),'utf8'));
  assert.doesNotThrow(()=>loader.validate(data));
  assert.equal(JSON.stringify(data.skills),original);
 });
@@ -736,7 +736,7 @@ test('older skill records with unspecified optional costs remain valid',()=>{
 
 
 test('all 702 live-source monster stats preserve legitimate negative resistances',()=>{
- const monsters=JSON.parse(readFileSync(new URL('../data/os/monsters.json',import.meta.url),'utf8'));
+ const monsters=JSON.parse(readFileSync(new URL('../data/catalog-history/pre-2026-11-15/monsters.json',import.meta.url),'utf8'));
  const rows=Object.values(monsters);
  assert.equal(rows.length,702);
  assert.equal(rows.filter(row=>Number.isSafeInteger(row.life)&&row.life>0&&
@@ -746,7 +746,7 @@ test('all 702 live-source monster stats preserve legitimate negative resistances
  const before=JSON.stringify(monsters);
  const data={};
  for(const key of loader.keys)data[key]=JSON.parse(readFileSync(
-  new URL('../data/os/'+key+'.json',import.meta.url),'utf8'));
+  new URL('../data/catalog-history/pre-2026-11-15/'+key+'.json',import.meta.url),'utf8'));
  assert.doesNotThrow(()=>loader.validate(data));
  assert.equal(JSON.stringify(data.monsters),before);
 });
@@ -798,7 +798,7 @@ test('unknown optional monster fields remain absent, not fabricated as zeros',()
 
 
 test('all 1116 source items have safe stats and Soul defaults without mutation',()=>{
- const items=JSON.parse(readFileSync(new URL('../data/os/items.json',import.meta.url),'utf8'));
+ const items=JSON.parse(readFileSync(new URL('../data/catalog-history/pre-2026-11-15/items.json',import.meta.url),'utf8'));
  const rows=Object.values(items);
  assert.equal(rows.length,1116);
  assert.equal(rows.filter(item=>Number.isSafeInteger(item.soulslot)&&
@@ -810,7 +810,7 @@ test('all 1116 source items have safe stats and Soul defaults without mutation',
  const before=JSON.stringify(items);
  const data={};
  for(const key of loader.keys)data[key]=JSON.parse(readFileSync(
-  new URL('../data/os/'+key+'.json',import.meta.url),'utf8'));
+  new URL('../data/catalog-history/pre-2026-11-15/'+key+'.json',import.meta.url),'utf8'));
  assert.doesNotThrow(()=>loader.validate(data));
  assert.equal(JSON.stringify(data.items),before,
   'Reject malformed remote data, never rewrite source equipment definitions');

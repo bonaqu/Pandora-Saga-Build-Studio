@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 
 const base=new URL('../',import.meta.url);
-const read=name=>JSON.parse(readFileSync(new URL('data/os/'+name+'.json',base),'utf8'));
+const read=name=>JSON.parse(readFileSync(new URL('data/catalog-history/pre-2026-11-15/'+name+'.json',base),'utf8'));
 const sandbox={window:{}};
 vm.runInNewContext(readFileSync(new URL('pandora-os-catalog-human-review.js',base),'utf8'),sandbox);
 const describe=sandbox.window.PandoraCatalogHumanReview.describe;

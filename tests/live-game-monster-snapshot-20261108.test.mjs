@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
-const read=name=>JSON.parse(readFileSync(new URL('../data/os/'+name+'.json',
+const read=name=>JSON.parse(readFileSync(new URL('../data/catalog-history/pre-2026-11-15/'+name+'.json',
  import.meta.url),'utf8'));
 const monsters=read('monsters'),meta=read('meta');
 
