@@ -36,6 +36,18 @@ test('full current-source graph is readable with grandfathered zero-ID placehold
  assert.equal(JSON.stringify(before),original);
 });
 
+test('legacy zero-action placeholders are exempt only while source gameplay data is unchanged',()=>{
+ const key='620002061';
+ assert.ok(before.skills[key].funcs.some(x=>x.ep==='EP_SKILL_EXEC'&&x.fv1[3]===0));
+ const renamed=edit('skills',key,s=>{s.name+=' •';});
+ assert.equal(safety.sourceGraphIntegrity(before,renamed).ok,true,
+  'source labels may be translated without changing model trust');
+ const changed=edit('skills',key,s=>{s.cooldown=(s.cooldown||0)+1;});
+ const audit=safety.sourceGraphIntegrity(before,changed);
+ assert.equal(audit.ok,false,'a modified source cannot reuse legacy malformed source proof');
+ assert.ok(audit.samples.some(x=>x.owner===key&&x.field==='EP_SKILL_EXEC'));
+});
+
 test('new and changed classless execution links are blocked even without an old numeric proof',()=>{
  const newId=999997901;
  const after={...before,skills:{...before.skills,[newId]:{
