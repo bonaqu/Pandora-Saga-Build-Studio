@@ -793,13 +793,27 @@ function replaySkills(before,after){
   if(next.found.has(key))retained.push(old);
   else lost.push(old);
  }
+ // Show distinct, actionable recipient effects first. Without this,
+ // five repeated hero/equipment scenarios hid the actual missing ally buff.
+ const representatives=[],seenSamples=new Set();
+ for(const row of [
+  ...lost.filter(x=>x.module==='ally-recipient'||x.module==='priest-cast'),
+  ...lost
+ ]){
+  const signature=[row.id,row.module,
+   row.module==='ally-recipient'||row.module==='priest-cast'?
+    row.detail.split(':')[0]:row.detail].join('|');
+  if(seenSamples.has(signature))continue;
+  seenSamples.add(signature);representatives.push(row);
+  if(representatives.length>=5)break;
+ }
  const recognized=new Set([...prior.found.values(),...next.found.values()].map(x=>x.id));
  const problems=[...prior.errors,...next.errors];
  return {ok:lost.length===0&&problems.length===0,
   changedSkills:changed.size,scenarios:prior.count+next.count,
   previouslyModeled:prior.found.size,retained:retained.length,
   lost:lost.length,unmodeled:[...changed].filter(id=>!recognized.has(id)).length,
-  samples:lost.slice(0,5).map(row=>({...row,name:String(
+  samples:representatives.map(row=>({...row,name:String(
    newSkills[row.id]?.name||oldSkills[row.id]?.name||row.id).slice(0,75)})),
   errors:problems.slice(0,5)};
 }
