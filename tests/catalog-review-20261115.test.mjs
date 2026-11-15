@@ -46,5 +46,5 @@ test('inert staged snapshot is not a runtime fallback or game-source rewrite',()
  const catalog=readFileSync(join(root,'pandora-studio-encyclopedia-catalog.js'),'utf8');
  assert.doesNotMatch(app,/data\/catalog-review/);
  assert.doesNotMatch(catalog,/data\/catalog-review/);
- assert.match(app,/const base=archive\?'\\.\/data\/os'/);
+ assert.ok(app.includes("const base=archive?'./data/os'"));
 });
