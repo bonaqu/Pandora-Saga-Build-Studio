@@ -48,6 +48,15 @@ test('only a text change is source-only, and a changed FV vector is unverified',
  assert.equal(report.totals.sourceOnly,1);
  assert.equal(report.totals.needsReview,1);
 });
+test('changing a prerequisite chain or effect-driving stat requires review',()=>{
+ const next=structuredClone(base);next.skills.a.prereq=321;
+ let report=check(base,next);
+ assert.equal(report.totals.needsReview,1);
+ next.skills.a.prereq=undefined; // original field is absent
+ next.skills.a.powerStat='INT';
+ report=check(base,next);
+ assert.equal(report.totals.needsReview,1);
+});
 test('pre-apply warnings and approval are driven by exact selected snapshot mechanics',()=>{
  const code=readFileSync(new URL('../pandora-os-catalog-workbench.js',import.meta.url),'utf8');
  assert.match(code,/compatibility:safety\.compatibility\(baseline,selected\)/);
