@@ -22,7 +22,7 @@ function validate(value){
  for(const field of ['attributes','skills']){
   const a=value[field];
   if(!Array.isArray(a)||a.length!==value.maxLevel+1||
-    a[0]!==0||a[1]!==0||
+    a[0]!==0||
     !a.every(v=>Number.isSafeInteger(v)&&v>=0&&v<=MAX_GRANT))
    return {ok:false,error:'Проверь все прибавки очков от 1-го до '+value.maxLevel+'-го уровня (целые числа 0–500).'};
   if(a.reduce((sum,n)=>sum+n,0)>30000)
