@@ -399,7 +399,8 @@
           localInstances
         });
         result={validation:safety.check(selected),
-          comparison:safety.compare(baseline,selected,hero)};
+          comparison:safety.compare(baseline,selected,hero),
+          compatibility:safety.compatibility(baseline,selected)};
       }catch(error){
         result={validation:{ok:false,issues:[String(error.message||error)]},
           comparison:null};
@@ -490,7 +491,12 @@
       const links=selectedRows.filter(row=>describe(row).rows.some(field=>
        field.linkChanged||field.sameVisible)).length;
       const formulas=selectedRows.some(row=>row.dataset==='tables');
-      const risky=Boolean(deleted||settings||unsure||links||formulas||mode==='archive');
+      // Check the exact selective merge, before displaying Publish as safe.
+      // A changed gameplay effect needs an explicit owner acknowledgement
+      // even if its JSON is syntactically valid and the diff is readable.
+      const preview=ready?selectedImpact():null;
+      const mechanicsReview=preview?.compatibility?.requiresMechanicReview===true;
+      const risky=Boolean(deleted||settings||unsure||links||formulas||mechanicsReview||mode==='archive');
       const fingerprint=selectedFingerprint();
       if(riskApprovalFingerprint!==fingerprint)riskApproval.checked=false;
       const acknowledged=!risky||(riskApproval.checked&&riskApprovalFingerprint===fingerprint);
@@ -504,6 +510,10 @@
       const cautions=[];
       if(deleted)cautions.push(tr('Удаление записей: ','Record removals: ')+deleted);
       if(settings)cautions.push(tr('Настройки игры: ','Game settings: ')+settings);
+      if(mechanicsReview)cautions.push(tr(
+       'Изменения механик без подтверждённого расчёта: ',
+       'Gameplay changes not yet proven by a calculation: ')+
+       preview.compatibility.totals.needsReview);
       if(formulas){
        cautions.push(tr('Игровые формулы обновятся целым разделом',
         'Game formula tables will be replaced as a whole'));
@@ -523,7 +533,6 @@
         'No flagged changes in the selection.');
       riskApprovalLabel.hidden=!risky;
       riskApproval.disabled=busy||!ready;
-      const preview=ready?selectedImpact():null;
       formulaPreview.hidden=!ready;
       formulaRows.replaceChildren();
       if(preview){

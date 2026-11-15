@@ -56,21 +56,27 @@ function check(data){
  const races=Object.keys(tables.raceInit);
  if(!races.length||!Object.keys(classes).length)
   issues.push('Нет происхождений или профессий для проверки.');
- // Exercise real attribute and basic HP/MP models for every race/class pair;
- // the checks never assume the server levelCap is the planner maximum.
- for(const [klass,definition] of Object.entries(classes)){
-  const rootClass=definition?.baseClass||klass;
-  for(const race of races){
-   const sample=attributes.snapshot({
-    tables,race,klass:rootClass,level:max,
-    added:[0,0,0,0,0,0],caps:definition?.statCaps
-   });
-   const hp=sample&&calculator.classBase(definition?.hp,max,sample.values[0],'vit');
-   const mp=sample&&calculator.classBase(definition?.mp,max,sample.values[4],'spi');
-   if(!sample||sample.total!==actualPoints||!Number.isFinite(hp)||!Number.isFinite(mp)){
-    issues.push('Не рассчитан герой '+klass+' / '+race+' на '+max+'-м уровне.');
-    if(issues.length>=8)break;
+ // Exercise the real published models for early, mid and endgame builds;
+ // a successful level-55 check alone cannot prove progression at 15 or 45.
+ // The planner cap is independent of the current game-server level cap.
+ const sampleLevels=[...new Set([1,15,30,45,max].filter(level=>level<=max))];
+ for(const level of sampleLevels){
+  const expected=attributes.budget(level);
+  for(const [klass,definition] of Object.entries(classes)){
+   const rootClass=definition?.baseClass||klass;
+   for(const race of races){
+    const sample=attributes.snapshot({
+     tables,race,klass:rootClass,level,
+     added:[0,0,0,0,0,0],caps:definition?.statCaps
+    });
+    const hp=sample&&calculator.classBase(definition?.hp,level,sample.values[0],'vit');
+    const mp=sample&&calculator.classBase(definition?.mp,level,sample.values[4],'spi');
+    if(!sample||sample.total!==expected||!Number.isFinite(hp)||!Number.isFinite(mp)){
+     issues.push('Не рассчитан герой '+klass+' / '+race+' на '+level+'-м уровне.');
+     if(issues.length>=8)break;
+    }
    }
+   if(issues.length>=8)break;
   }
   if(issues.length>=8)break;
  }
@@ -147,9 +153,41 @@ function compatibility(before,after){
  for(const dataset of keys){
   const oldData=before?.[dataset],newData=after?.[dataset];
   if(same(oldData,newData))continue;
-  if(dataset==='classes'||dataset==='tables'){
-   add('verified',dataset,dataset==='classes'?'Профессии: базовые ОЗ/ОМ и ограничения':
-    'Таблицы: очки характеристик и умений');
+  if(dataset==='classes'){
+   // Class names are editorial; HP/MP/stat limits and base race mapping
+   // are exercised by check(). Other class chains are not automatically
+   // proven by numerical HP/MP parity.
+   const ids=new Set([...Object.keys(oldData||{}),...Object.keys(newData||{})]);
+   for(const id of ids){
+    const old=oldData?.[id],now=newData?.[id];
+    if(same(old,now))continue;
+    const name=String(now?.name||old?.name||id).slice(0,90);
+    if(!old||!now){
+     add('needsReview','class:'+id,name+' · добавлена или удалена профессия');
+     continue;
+    }
+    const changed=[...new Set([...Object.keys(old),...Object.keys(now)])]
+     .filter(field=>!same(old[field],now[field]));
+    const textual=['name','nameEn','desc','descEn'];
+    const modeled=['hp','mp','statCaps','baseClass'];
+    if(changed.every(field=>textual.includes(field)))
+     add('sourceOnly','class:'+id,name+' · изменён текст');
+    else if(changed.every(field=>modeled.includes(field)||textual.includes(field)))
+     add('verified','class:'+id,name+' · проверены базовые расчёты ОЗ/ОМ и характеристик');
+    else add('needsReview','class:'+id,name+' · изменились связи или пределы мастерства');
+   }
+   continue;
+  }
+  if(dataset==='tables'){
+   const fields=new Set([...Object.keys(oldData||{}),...Object.keys(newData||{})]);
+   for(const field of fields){
+    if(same(oldData?.[field],newData?.[field]))continue;
+    if(['abilityPoint','raceInit','jobInit'].includes(field))
+     add('verified','table:'+field,'Игровые таблицы · '+field+' · базовая прокачка проверена');
+    else if(['levelCap','expCap'].includes(field))
+     add('sourceOnly','table:'+field,'Игровые таблицы · '+field+' · сведения сервера');
+    else add('needsReview','table:'+field,'Игровые таблицы · '+field+' · боевые/игровые коэффициенты');
+   }
    continue;
   }
   if(dataset==='skills'){
@@ -160,8 +198,13 @@ function compatibility(before,after){
     const name=String(now?.name||old?.name||id).slice(0,90);
     if(!old||!now||!same(old.funcs,now.funcs)){
      add('needsReview','skill:'+id,name+' · изменены игровые эффекты');
-    }else if(!same(old.damage,now.damage)||!same(old.weaponUse,now.weaponUse)){
-     add('needsReview','skill:'+id,name+' · изменена механика урона или оружия');
+    }else if(!same(old.damage,now.damage)||!same(old.weaponUse,now.weaponUse)||
+      // A prerequisite chain or the stat driving the effect can change
+      // the actual result without changing funcs/FV vectors.
+      !same(old.prereq,now.prereq)||!same(old.powerStat,now.powerStat)||
+      !same(old.skillType,now.skillType)||!same(old.element,now.element)||
+      !same(old.aoe,now.aoe)||!same(old.rangeFromWeapon,now.rangeFromWeapon)){
+     add('needsReview','skill:'+id,name+' · изменены условия действия или источник урона');
     }else{
      add('sourceOnly','skill:'+id,name+' · обновлены условия/описание навыка');
     }
