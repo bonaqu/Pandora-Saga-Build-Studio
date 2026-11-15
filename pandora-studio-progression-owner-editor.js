@@ -6,6 +6,13 @@ function open({modal,h,lang='ru',readRaw,write,reset,canCommit=()=>true,onApplie
  const model=root.PandoraLevelProgression;
  if(!model)throw Error('Модель уровней не подключена');
  const tr=(ru,en)=>lang==='en'?en:ru;
+ const tip=(node,ru,en)=>{
+  const message=tr(ru,en);
+  if(root.PandoraGuideTooltip?.attach)
+   root.PandoraGuideTooltip.attach(node,message,{hoverDelay:350});
+  else node.title=message;
+  return node;
+ };
  let before=model.get(),draft=model.get(),saving=false;
  let previousRaw=readRaw();
  const wrap=h('section',{class:'ps-level-editor'});
@@ -18,29 +25,47 @@ function open({modal,h,lang='ru',readRaw,write,reset,canCommit=()=>true,onApplie
   h('input',{type:'number',min:String(model.MIN_LEVEL),max:String(model.CEILING),step:'1',
     value:String(draft.maxLevel),'aria-label':tr('Максимальный уровень героя','Character maximum level')})
  ]);
- const capInput=maxLabel.querySelector('input');
- const quick=h('button',{type:'button',class:'button-action',text:tr('Повторить прибавку последнего уровня','Copy last level gain')});
+ const capInput=tip(maxLabel.querySelector('input'),
+  'Измени максимум от 55 до 120. Добавленные уровни сначала имеют прибавку 0/0; это ещё не запись в D1.',
+  'Set a maximum from 55 to 120. Newly added levels start at 0/0; this does not write to D1.');
+ const quick=tip(h('button',{type:'button',class:'button-action ps-level-editor-fill',
+  text:tr('Заполнить пустые новые уровни','Fill empty new levels')}),
+  'Пример: при максимуме 60 перенесёт прибавки с уровня 55 на пустые уровни 56–60. Заполненные вручную строки не затронет. Нужна отдельная кнопка сохранения.',
+  'Example: at level 60 copies level-55 gains into empty levels 56–60. Manually edited rows are not changed. Saving is separate.');
+ const quickHint=h('small',{class:'ps-level-editor-fill-hint'});
  const head=h('p',{class:'ps-level-editor-help',text:tr(
-  'На 1-м уровне по умолчанию прибавка 0/0, но её тоже можно изменить. Новые уровни добавляются с нулевыми прибавками — заполни их после проверки патча.',
-  'Level 1 starts with 0/0 but is editable too. New levels start at zero until their gains are verified.')});
- top.append(maxLabel,quick);
+  '«+» — новые очки за конкретный уровень, «Всего» — накопленные очки к нему. Первый уровень по умолчанию даёт 0/0, но его тоже можно изменить.',
+  '“+” is the gain at one level, while “Total” is the accumulated points through it. Level 1 defaults to 0/0 but is editable.')});
+ top.append(maxLabel,h('div',{class:'ps-level-editor-fill-tools'},[quick,quickHint]));
  const scroller=h('div',{class:'ps-level-editor-scroll'});
  const table=h('table',{class:'ps-level-editor-table'});
- const thead=h('thead',{},[h('tr',{},[
-  h('th',{text:tr('Ур.','Lv.')}),
-  h('th',{text:tr('+ Характеристики','+ Attributes')}),
-  h('th',{text:tr('Всего','Total')}),
-  h('th',{text:tr('+ Умения','+ Skills')}),
-  h('th',{text:tr('Всего','Total')})
- ])]);
+ const headings=[
+  ['Ур.','Lv.','Уровень героя','Character level'],
+  ['+ Характеристики','+ Attributes','Свободные очки характеристик, начисленные на этом уровне','Attribute points gained at this level'],
+  ['Всего','Total','Всего очков характеристик, начисленных к этому уровню','Total attribute points earned so far'],
+  ['+ Умения','+ Skills','Свободные очки умений, начисленные на этом уровне','Skill points gained at this level'],
+  ['Всего','Total','Всего очков умений, начисленных к этому уровню','Total skill points earned so far']
+ ];
+ const thead=h('thead',{},[h('tr',{},headings.map(row=>
+  h('th',{scope:'col',text:tr(row[0],row[1]),title:tr(row[2],row[3])})))]);
+
  const body=h('tbody');table.append(thead,body);scroller.append(table);
  const total=h('p',{class:'ps-level-editor-summary'});
  const changes=h('p',{class:'ps-level-editor-changes'});
  const status=h('p',{class:'ps-level-editor-state',role:'status'});
  const controls=h('div',{class:'ps-level-editor-actions'});
- const undo=h('button',{type:'button',class:'button-action',text:tr('Отменить несохранённое','Discard unsaved')});
- const restore=h('button',{type:'button',class:'button-action',text:tr('Вернуть исходные начисления','Restore defaults')});
- const save=h('button',{type:'button',class:'button-action primary',text:tr('Сохранить в D1','Save to D1')});
+ const undo=tip(h('button',{type:'button',class:'button-action',
+  text:tr('Отменить несохранённое','Discard unsaved edits')}),
+  'Сбрасывает только черновик этого окна. Ранее сохранённая в D1 таблица не изменится.',
+  'Discard changes in this window only. The table already saved in D1 stays unchanged.');
+ const restore=tip(h('button',{type:'button',class:'button-action ps-level-editor-restore',
+  text:tr('Вернуть исходную прокачку','Restore original progression')}),
+  'После подтверждения удаляет личную таблицу из D1 и возвращает исходные начисления 1–55. Затронет расчёты всех билдов.',
+  'After confirmation removes the custom D1 table and restores original 1–55 grants for all builds.');
+ const save=tip(h('button',{type:'button',class:'button-action primary',
+  text:tr('Сохранить в D1','Save to D1')}),
+  'Публикует таблицу целиком после подтверждения. Все билды будут использовать новые значения начислений.',
+  'Publish this entire table after confirmation. All builds will use the updated gains.');
  controls.append(undo,restore,save);
  wrap.append(intro,top,head,scroller,total,changes,status,controls);
  const dialog=modal(tr('Очки за уровни · 1–120','Level-up points · 1–120'),wrap,{
@@ -119,7 +144,28 @@ function open({modal,h,lang='ru',readRaw,write,reset,canCommit=()=>true,onApplie
   save.disabled=saving||!valid||!hasDiff;
   undo.disabled=saving||!hasDiff;
   restore.disabled=saving||previousRaw===null;
-  capInput.disabled=saving;quick.disabled=saving;
+  const added=Math.max(0,draft.maxLevel-before.maxLevel);
+  const sourceLevel=Math.min(before.maxLevel,draft.maxLevel);
+  const toFill=Array.from({length:added},(_,i)=>before.maxLevel+i+1)
+   .filter(level=>draft.attributes[level]===0&&draft.skills[level]===0);
+  const sourceA=draft.attributes[sourceLevel],sourceS=draft.skills[sourceLevel];
+  quick.disabled=saving||!valid||!toFill.length||
+   !Number.isInteger(sourceA)||!Number.isInteger(sourceS);
+  quickHint.textContent=added===0?
+   tr('Сначала увеличь максимальный уровень, например до 60.',
+    'First raise the maximum level, for example to 60.'):
+   toFill.length?
+    tr('С уровня ','From level ')+sourceLevel+': +'+sourceA+
+     tr(' характеристик / +',' attributes / +')+sourceS+
+     tr(' умений → на ',' skills → levels ')+toFill[0]+
+     (toFill.length>1?'–'+toFill.at(-1):'')+
+     tr('. Только пустые строки, без сохранения.','. Blank rows only; no save.'):
+    tr('Новые уровни уже заполнены. Ручные значения не заменяются.',
+      'New levels are already filled. Manual entries are preserved.');
+  quick.dataset.guideHint=quickHint.textContent+
+   tr(' Нажми «Сохранить в D1» для применения.',
+    ' Choose “Save to D1” to publish.');
+  capInput.disabled=saving;
   for(const node of entries.values()){node.at.disabled=saving;
    node.sk.disabled=saving;}
  };
@@ -133,20 +179,25 @@ function open({modal,h,lang='ru',readRaw,write,reset,canCommit=()=>true,onApplie
    return;
   }
   draft=changedMax;drawRows();
+  if(n>before.maxLevel)scroller.scrollTop=scroller.scrollHeight;
  });
  quick.onclick=()=>{
-  if(draft.maxLevel<=55)return;
+  if(draft.maxLevel<=before.maxLevel)return;
   const lastKnown=Math.min(before.maxLevel,draft.maxLevel);
   const a=draft.attributes[lastKnown],b=draft.skills[lastKnown];
   if(!isInteger(a)||!isInteger(b))return;
-  for(let i=lastKnown+1;i<=draft.maxLevel;i++){
-   draft.attributes[i]=a;draft.skills[i]=b;
+  let filled=0;
+  for(let i=before.maxLevel+1;i<=draft.maxLevel;i++){
+   // Existing manual entries are authoritative. Never silently overwrite.
+   if(draft.attributes[i]!==0||draft.skills[i]!==0)continue;
+   draft.attributes[i]=a;draft.skills[i]=b;filled++;
    const node=entries.get(i);
    if(node){node.at.value=String(a);node.sk.value=String(b)}
   }
   update();
-  status.textContent=tr('Прибавки скопированы как шаблон. Проверь их соответствие игровому обновлению.',
-   'Gains were copied as a template. Verify them against the game update.');
+  status.textContent=tr('Пустых новых уровней заполнено: ','Empty new levels filled: ')+filled+
+   tr('. Это черновик. Проверь прибавки, затем нажми «Сохранить в D1».',
+    '. This is a draft. Verify the gains, then choose “Save to D1”.');
  };
  undo.onclick=()=>{draft=model.validate(before).value;capInput.value=String(draft.maxLevel);drawRows()};
  restore.onclick=async()=>{
