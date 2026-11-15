@@ -1194,7 +1194,7 @@
       }finally{setBusy(false)}
     }
 
-    async function verifyPublishedForPlayers(snapshot){
+    async function verifyPublishedForPlayers(snapshot,expected){
       // Do not say that players see the new catalog until the public endpoint
       // returns the same immutable active version after the UI reload.
       await afterPublish();
@@ -1206,7 +1206,27 @@
        throw Error(tr(
         'Публичный каталог пока не подтвердил новую версию. Проверь снова или обнови страницу.',
         'The public catalog has not confirmed the new version yet. Check again or reload.'));
-      return true;
+      // A version header alone is not enough. Verify both exact public source
+      // tables and classes, then execute the real level-55 calculation models.
+      const publicData={};
+      for(const name of ['tables','classes']){
+        const dataResponse=await fetch(apiBase+'/api/catalog/'+name+'.json',{
+          cache:'no-store',signal:AbortSignal.timeout(15000)
+        });
+        if(!dataResponse.ok||
+           dataResponse.headers.get('x-ps-catalog')!=='d1'||
+           dataResponse.headers.get('x-ps-catalog-snapshot')!==snapshot)
+          throw Error(tr('Не подтверждена версия игровых расчётов: ',
+           'Character calculation revision not verified: ')+name);
+        publicData[name]=await dataResponse.json();
+        if(!review.strictEqual(publicData[name],expected[name]))
+          throw Error(tr('Опубликованные данные отличаются от подготовленных: ',
+           'Published data differs from the reviewed version: ')+name);
+      }
+      const check=safety.check(publicData);
+      if(!check.ok)throw Error(tr('Проверка расчётов после публикации: ',
+       'Post-publication character checks failed: ')+check.issues.join(' · '));
+      return check;
     }
 
     function prepare() {
@@ -1217,6 +1237,9 @@
       const combined=review.compose(baseline,upstream,chosen,importer.files,
         {syncFormatting,syncRussianInstances,localInstances});
       // Full structural and count validation is required after selective merging.
+      const modelCheck=safety.check(combined);
+      if(!modelCheck.ok)
+        throw Error('Проверка расчётов перед публикацией: '+modelCheck.issues.join(' · '));
       const normalized=importer.normalize(combined,legacy);
       if(!Array.isArray(legacyRows)||legacyRows.length!==normalized.counts.legacyLocale)
         throw Error('Published D1 translation count changed during review');
@@ -1341,12 +1364,12 @@
         chosen.clear();changes=[];baseline=null;upstream=null;
         refreshActions();
         try{
-          await verifyPublishedForPlayers(result.active);
+          await verifyPublishedForPlayers(result.active,staged.combined);
           status.textContent=superseded?
            tr('Изменения опубликованы, но уже доступна другая версия каталога. Проверь её заново.',
             'Changes were published, but another catalog revision is already live. Review it again.'):
-           tr('Каталог обновлён и доступная игрокам версия проверена. Игровой сервер и GitHub не изменились.',
-            'The catalog was updated and the player-visible version was verified. The game server and GitHub were not changed.');
+           tr('Каталог обновлён. Проверены опубликованные данные и базовые расчёты героев до 55-го уровня (544 / 134). Игровой сервер и GitHub не изменились.',
+            'Catalog updated. Published data and basic hero calculations through level 55 (544 / 134) were verified. The game server and GitHub were not changed.');
         }catch(error){
           status.textContent=tr('Публикация принята, но обновление данных у игроков пока не подтверждено: ',
            'Publication was accepted, but the player-visible update is not yet verified: ')+error.message;
@@ -1363,7 +1386,7 @@
               status.textContent='Каталог опубликован (D1: '+observed.active+
                 '). Ответ потерялся, но активная версия подтверждена. GitHub не изменён.';
               try{
-                await verifyPublishedForPlayers(observed.active);
+                await verifyPublishedForPlayers(observed.active,staged.combined);
                 status.textContent=tr('Каталог опубликован, и новая версия проверена для игроков. Ответ публикации сначала потерялся.',
                  'Catalog published; the player-visible version was verified after the original response was lost.');
               }catch(refreshError){
