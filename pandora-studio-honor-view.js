@@ -419,6 +419,14 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  // premium-store purchases or account services from the game website.
  const victories=section('victories','Победы в PvP','PvP Victories');
  paragraph(victories,en?o.pvpIntroEn:o.pvpIntroRu,'honor.overview',en?'pvpIntroEn':'pvpIntroRu');
+ const eventImage=make('img',{
+  class:'wiki-honor-pvp-illustration',
+  src:'https://pandorasaga-os.com/uploads/images/f4be126de5ed488981aeeb2298255095.jpg',
+  alt:tr('Окно постоянного события «Победы в PvP»',
+         'Permanent PvP Victories event window'),
+  loading:'lazy',decoding:'async'});
+ eventImage.addEventListener('error',()=>eventImage.remove());
+ victories.append(eventImage);
  const event=article.pvpVictories;
  if(event?.daily&&event?.weekly&&event?.hunts){
   const addTable=(captionRu,captionEn,headers,rows)=>{
