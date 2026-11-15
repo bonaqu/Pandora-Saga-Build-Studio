@@ -6927,7 +6927,7 @@ function newBlankBuild(){
  changeTab('character');saveView();
  return true;
 }
-let buildSearchQuery='',newBuildPromptOpen=false,newBuildDraftName=null;
+let buildSearchQuery='',buildSortMode='saved',newBuildPromptOpen=false,newBuildDraftName=null;
 let buildHintEditorExpanded=false;
 // Retired legacy-import UI: old guest builds stay in their original local
 // backup and cannot be migrated into an account through the player interface.
@@ -7174,7 +7174,20 @@ function renderBuilds(root){
   type:'search',class:'build-library-search','data-build-library-search':'',
   'aria-label':libraryText('librarySearchInputLabel'),
   placeholder:libraryText('librarySearchPlaceholder'),value:buildSearchQuery}):null;
- if(search)root.append(search);
+ const sort=builds.length>1?h('label',{class:'build-library-sort'},[
+  h('span',{text:tr('Сортировка','Sort')}),
+  h('select',{class:'build-library-sort-select',
+   'aria-label':tr('Сортировка билдов','Sort builds')},[
+    h('option',{value:'saved',text:tr('По порядку сохранения','Saved order')}),
+    h('option',{value:'name',text:tr('По названию','Name')}),
+    h('option',{value:'level',text:tr('По уровню','Level')}),
+    h('option',{value:'class',text:tr('По профессии','Class')})
+   ])
+ ]):null;
+ if(sort)sort.querySelector('select').value=buildSortMode;
+ if(search||sort)root.append(h('div',{class:'build-library-controls'},[
+  ...(search?[search]:[]),...(sort?[sort]:[])
+ ]));
  // One game-style hint popup is shared across all buttons and the Hero Book.
  // Only authored RU/EN copy is passed to the read-only tooltip; never a
  // saved build name, link/token, account or live server response.
@@ -7292,6 +7305,26 @@ function renderBuilds(root){
  }
  setGridColumns(searchable.length);
  root.append(grid);
+ // Reorder DOM cards rather than saved builds: original order and selections
+ // remain untouched, including the rule that newly saved builds go last.
+ const applySort=()=>{
+  const collate=(a,b)=>String(a||'').localeCompare(String(b||''),lang==='en'?'en':'ru',
+   {sensitivity:'base'});
+  const sorted=[...searchable].sort((a,b)=>{
+   let result=0;
+   if(buildSortMode==='name')result=collate(a.build.name,b.build.name);
+   else if(buildSortMode==='level')
+    result=(Number(b.build.data?.level)||0)-(Number(a.build.data?.level)||0);
+   else if(buildSortMode==='class')
+    result=collate(jobs[a.build.data?.job],jobs[b.build.data?.job]);
+   return result||searchable.indexOf(a)-searchable.indexOf(b);
+  });
+  for(const row of sorted)grid.append(row.box);
+ };
+ if(sort)sort.querySelector('select').addEventListener('change',event=>{
+  buildSortMode=event.target.value;applySort();
+ });
+ applySort();
  comparison=renderBuildComparison(comparisonSlot,syncCompareCheckboxes);
  if(search){
   const none=h('p',{class:'muted','data-build-library-state-copy':'librarySearchEmpty',
