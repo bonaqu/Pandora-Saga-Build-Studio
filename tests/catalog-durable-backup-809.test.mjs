@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {queueBackupStatement,getBackupJob,completeBackupJob,deliverCatalogBackupJob}
  from '../worker/pandora-studio-catalog-backup-outbox.js';
+import worker from '../worker/index.js';
 const snapshot='ps-test-durable-809';
 function fake(){
  let row=null;
@@ -79,6 +80,13 @@ test('GitHub branch conflicts halt unsafe retries',async()=>{
  assert.equal((await deliverCatalogBackupJob(env,active,async()=>{throw conflict},{now:()=>2000})).state,'attention');
  assert.equal(await completeBackupJob(env,snapshot,{unchanged:true},3000),true);
  assert.equal(DB.row.state,'done');
+});
+test('Cron does not require a manual D1 migration before the first owner import',async()=>{
+ const DB={prepare(sql){assert.match(sql,/sqlite_master/);return {async first(){return null}}}};
+ let task;
+ await worker.scheduled(null,{DB},{waitUntil(p){task=p}});
+ assert.ok(task);
+ await task;
 });
 test('publish pointer/outbox batch, Cron and UI status are connected',()=>{
  const w=readFileSync(new URL('../worker/index.js',import.meta.url),'utf8');
