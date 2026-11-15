@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
 import vm from 'node:vm';
 import worker from '../worker/index.js';
 import {readPublishedGameCatalog,createCatalogPullRequest}
@@ -147,5 +148,77 @@ test('invalid GitHub Secret does not pass token readiness',async()=>{
   const response=await worker.fetch(req('/api/admin/catalog/github-status'),environment);
   assert.deepEqual(await response.json(),
    {configured:true,connected:false,writeAccess:null});
+ }finally{globalThis.fetch=original}
+});
+
+function gitBlobSha(sourceText){
+ const bytes=Buffer.from(sourceText,'utf8');
+ return createHash('sha1').update(Buffer.from('blob '+bytes.length+'\0'))
+  .update(bytes).digest('hex');
+}
+test('interrupted backup resumes its missing PR only after every stranded Git blob matches D1',async()=>{
+ const environment=env(),original=globalThis.fetch,requests=[];
+ const head='f'.repeat(40),root='1'.repeat(40),data='2'.repeat(40),os='3'.repeat(40);
+ const catalog=await readPublishedGameCatalog(environment.DB,active);
+ const directory=importer.files.map(name=>({
+  path:name+'.json',type:'blob',mode:'100644',
+  sha:gitBlobSha(JSON.stringify(catalog[name])+'\n')
+ }));
+ const respond=data=>new Response(JSON.stringify(data),{status:200});
+ globalThis.fetch=async(url,options)=>{
+  const path=new URL(url).pathname;
+  requests.push({path,url,method:options.method});
+  assert.equal(options.headers.Authorization,'Bearer '+environment.GITHUB_CATALOG_TOKEN);
+  if(path.endsWith('/git/ref/heads/catalog/snapshot-'+snap))
+   return respond({object:{sha:head}});
+  if(url.includes('/pulls?state=open&head='))return respond([]);
+  if(path.endsWith('/git/ref/heads/bonaqu_projects'))return respond({object:{sha}});
+  if(path.endsWith('/git/commits/'+head))
+   return respond({message:'catalog: reviewed game data snapshot '+snap,
+    parents:[{sha}],tree:{sha:root}});
+  if(path.includes('/compare/'))return respond({files:[
+   {filename:'data/os/skills.json',status:'modified'}]});
+  if(path.endsWith('/git/trees/'+root))
+   return respond({tree:[{path:'data',type:'tree',sha:data}]});
+  if(path.endsWith('/git/trees/'+data))
+   return respond({tree:[{path:'os',type:'tree',sha:os}]});
+  if(path.endsWith('/git/trees/'+os))return respond({tree:directory});
+  if(path.endsWith('/pulls')&&options.method==='POST')
+   return respond({number:124,
+    html_url:'https://github.com/bonaqu/Pandora-Saga-Build-Studio/pull/124'});
+  throw Error('Unexpected GitHub request '+url);
+ };
+ try{
+  const result=await createCatalogPullRequest(environment,active,async()=>snap);
+  assert.deepEqual(result,{url:'https://github.com/bonaqu/Pandora-Saga-Build-Studio/pull/124',
+   number:124,reused:false,recovered:true});
+  assert.equal(requests.filter(x=>x.method==='POST').length,1,
+   'Restore a reviewed PR without rewriting the existing Git branch');
+  assert.equal(requests.filter(x=>x.path.includes('/git/blobs')).length,0);
+ }finally{globalThis.fetch=original}
+});
+test('foreign source changes on a stranded branch cannot be silently turned into a PR',async()=>{
+ const environment=env(),original=globalThis.fetch,requests=[];
+ const head='f'.repeat(40);
+ globalThis.fetch=async(url,options)=>{
+  requests.push({url,method:options.method});
+  if(url.includes('/pulls?state=open&head='))
+   return new Response('[]');
+  if(url.endsWith('/git/ref/heads/catalog/snapshot-'+snap))
+   return new Response(JSON.stringify({object:{sha:head}}));
+  if(url.endsWith('/git/ref/heads/bonaqu_projects'))
+   return new Response(JSON.stringify({object:{sha}}));
+  if(url.endsWith('/git/commits/'+head))
+   return new Response(JSON.stringify({message:'catalog: reviewed game data snapshot '+snap,
+    parents:[{sha}],tree:{sha:'1'.repeat(40)}}));
+  if(url.includes('/compare/'))
+   return new Response(JSON.stringify({files:[{filename:'worker/index.js',status:'modified'}]}));
+  throw Error('Unexpected route '+url);
+ };
+ try{
+  await assert.rejects(createCatalogPullRequest(environment,active,async()=>snap),
+   /unexpected changes/);
+  assert.ok(!requests.some(x=>x.method==='POST'),
+   'No GitHub writes on mismatched or untrusted stranded branch');
  }finally{globalThis.fetch=original}
 });
