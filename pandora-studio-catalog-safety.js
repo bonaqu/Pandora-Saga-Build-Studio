@@ -915,7 +915,20 @@ function sourceGraphIntegrity(before,after){
  const previous=inspect(before),selected=inspect(after);
  const fingerprint=p=>[p.kind,p.owner,p.index,p.field,p.target,p.reason].join('|');
  const acknowledged=new Set(previous.issues.map(fingerprint));
- const added=selected.issues.filter(row=>!acknowledged.has(fingerprint(row)));
+ const displayOnly=new Set(['name','nameEn','desc','descEn','iconId']);
+ const modelRecord=(data,row)=>{
+  const record=(row.kind==='item'?data?.items:data?.skills)?.[row.owner];
+  if(!record||typeof record!=='object')return null;
+  return Object.fromEntries(Object.entries(record).filter(([key])=>!displayOnly.has(key)));
+ };
+ // Grandfather a legacy broken reference ONLY while its owning gameplay
+ // record is unchanged. A title/translation edit is harmless; changed FV,
+ // execution, class permissions and timing must requalify, not borrow the
+ // old zero-ID exception to bypass review.
+ const unchanged=row=>JSON.stringify(modelRecord(before,row))===
+  JSON.stringify(modelRecord(after,row));
+ const added=selected.issues.filter(row=>!acknowledged.has(fingerprint(row))||
+  !unchanged(row));
  return {ok:added.length===0,inspected:selected.inspected,
   historical:previous.issues.length,unresolved:selected.issues.length,
   newBroken:added.length,samples:added.slice(0,8)};
