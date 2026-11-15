@@ -156,7 +156,7 @@ function selectActiveBuild(id){
  try{if(id)sessionStorage.setItem(ACTIVE_BUILD_KEY,id);else sessionStorage.removeItem(ACTIVE_BUILD_KEY)}catch{}
  try{window.PandoraBuildScope.setOwned(localStorage,libraryScopeId(),ACTIVE_BUILD_KEY,id)}catch{}
 }
-let racePreviewIndex=selectedPortraitIndex(state.race,state.gender),stageSlotPickerOpen=false,stageSlotQuery='',stageSlotShown=48,
+let racePreviewIndex=selectedPortraitIndex(state.race,state.gender),stageSlotPickerOpen=false,stageSlotQuery='',stageSlotShown=48,stagePickerOnlyAvailable=false,
 inlineBranchId=bootView.groupTouched&&bootView.expandedBranch===''?'':(
  typeof bootView.expandedBranch==='string'&&window.PandoraGameNavigation.all.has(bootView.expandedBranch)?
  bootView.expandedBranch:null),
@@ -1918,6 +1918,26 @@ function closeStagePicker(focusSlot=true){
  stageSlotPickerOpen=false;renderSlotRails();renderStagePicker();
  if(focusSlot)focusSelectedSlot();
 }
+// A compact, shared way to fill neighbouring slots. It never equips anything:
+ // selecting a slot only opens its verified, slot-compatible catalog.
+function appendStageSlotNavigation(root){
+ const head=root.querySelector('.stage-picker-head');
+ if(!head)return;
+ const tr=(ru,en)=>lang==='en'?en:ru;
+ const nav=h('div',{class:'stage-picker-slot-navigation',role:'group',
+  'aria-label':tr('Переход между слотами','Switch equipment slots')});
+ for(const [direction,glyph] of [[-1,'‹'],[1,'›']]){
+  const next=(selectedSlot+direction+slots.length)%slots.length;
+  const label=tr(direction<0?'Предыдущий слот: ':'Следующий слот: ',
+   direction<0?'Previous slot: ':'Next slot: ')+gearSlotName(next);
+  const button=h('button',{type:'button',class:'stage-picker-slot-nav',
+   text:glyph,'aria-label':label,title:label,
+   'data-stage-slot-nav':direction<0?'previous':'next',
+   onclick:()=>openStageEquipmentSlot(next,'choose')});
+  nav.append(button);
+ }
+ head.append(nav);
+}
 function renderStagePicker(focusSearch=false){
  const root=$('stagePicker');if(!root)return;
  const previousMode=root.dataset.view||'';
@@ -2007,6 +2027,7 @@ function renderStagePicker(focusSearch=false){
       '"][data-enchant-value="'+focusValue+'"]')?.focus({preventScroll:true});
    }
   });
+  appendStageSlotNavigation(root);
   if(adminEditing&&adminToken){
    const panel=ownerInterfaceEditor('equipment',[
     ['pickerItemClose','Закрыть настройку','Close item settings','Закрытие настроек','Close settings'],
@@ -2047,6 +2068,11 @@ function renderStagePicker(focusSearch=false){
  bindOwnerInterfaceText(search,'equipment','pickerSearchAria',
   'Поиск предмета для','Search equipment for','aria-label',' '+gearSlotName(selectedSlot));
  const count=h('small',{class:'stage-picker-count'});
+ const onlyAvailable=h('label',{class:'stage-picker-only-available'},[
+  h('input',{type:'checkbox',checked:stagePickerOnlyAvailable,
+   'aria-label':lang==='en'?'Only items available at my level':'Только доступные на моём уровне'}),
+  h('span',{text:lang==='en'?'Available at my level':'Доступные на моём уровне'})
+ ]);
  const list=h('div',{class:'stage-picker-list',role:'list'});
  const more=h('button',{type:'button',class:'stage-picker-more'});
  const remove=bindOwnerInterfaceText(h('button',{type:'button',
@@ -2073,9 +2099,11 @@ function renderStagePicker(focusSearch=false){
   return futureA-futureB||Number(a.level||1)-Number(b.level||1)||
    itemName(a).localeCompare(itemName(b),lang==='en'?'en':'ru');
  }):[];
+ onlyAvailable.hidden=!records.some(rec=>Number(rec.level||1)>state.level);
  const draw=()=>{
   list.replaceChildren();
-  const matches=records.filter(rec=>searchWords([itemName(rec),
+  const matches=records.filter(rec=>!stagePickerOnlyAvailable||
+   Number(rec.level||1)<=state.level).filter(rec=>searchWords([itemName(rec),
    catalogSource?.items?.[String(rec.id)]?.name,
    officialEnglish?.items?.[String(rec.id)]?.n].filter(Boolean).join(' '),stageSlotQuery));
   count.textContent=lang==='en'?
@@ -2143,11 +2171,15 @@ function renderStagePicker(focusSearch=false){
   more.textContent=(lang==='en'?'Show more (':'Показать ещё (')+
    Math.max(0,matches.length-stageSlotShown)+')';
  };
+ onlyAvailable.querySelector('input').addEventListener('change',event=>{
+  stagePickerOnlyAvailable=event.target.checked;stageSlotShown=48;draw();
+ });
  search.addEventListener('input',()=>{stageSlotQuery=search.value;stageSlotShown=48;draw()});
  more.addEventListener('click',()=>{stageSlotShown+=48;draw()});
  root.append(top);
+ appendStageSlotNavigation(root);
  if(outfitNote)root.append(outfitNote);
- root.append(search);
+ root.append(search,onlyAvailable);
  if(adminEditing&&adminToken)root.append(ownerInterfaceEditor('equipment',[
   ['pickerChoosePrefix','Выбор:','Choose:','Заголовок слота','Slot heading'],
   ['pickerDetails','Свойства →','Details →','Переход к свойствам','Open properties'],
@@ -3033,8 +3065,12 @@ function openWikiChapterList(){
  const listView={type:chapter,itemType:wikiItemType,search:wikiSearch,
   skillFilter:wikiSkillFilter,shown:wikiShown};
  const previous=history.state&&typeof history.state==='object'?history.state:{};
- // Back reopens the current record; Forward returns to this chapter list.
- history.pushState({...previous,psWikiEntry:false,psWikiList:listView},'',
+ // Capture the article position *before* pushing a chapter-list entry.
+ // Without this, browser Back returns to the article but loses its scroll.
+ history.replaceState({...previous,psWikiPosition:wikiPosition()},'',location.href);
+ // Do not carry the article position onto the newly opened chapter list.
+ history.pushState({...previous,psWikiPosition:null,psWikiEntry:false,
+  psWikiList:listView},'',
   location.pathname+location.search);
  wikiSelection={type:chapter,id:null,highlight:null};
  activeTab='wiki';

@@ -22,6 +22,28 @@ export async function runEquipmentEligibilitySmoke(browser,base){
   },null,{timeout:20000});
   const underLevel=Number(await page.locator('#originHp').textContent());
   assert.ok(Number.isFinite(underLevel));
+  // A user can inspect an equipped item, then browse adjacent slot catalogs
+  // without closing and reopening the portrait picker.
+  await page.locator('.equipment-slot[data-slot-index="2"]').click();
+  const next=page.locator('#stagePicker [data-stage-slot-nav="next"]');
+  const prev=page.locator('#stagePicker [data-stage-slot-nav="previous"]');
+  assert.match(await next.getAttribute('aria-label'),/Следующий слот: Броня/);
+  await next.click();
+  assert.match(await page.locator('#stagePicker .stage-picker-head strong').innerText(),/Броня/);
+  const onlyAvailable=page.getByRole('checkbox',{name:'Только доступные на моём уровне'});
+  await onlyAvailable.waitFor({state:'visible'});
+  const allCount=Number((await page.locator('#stagePicker .stage-picker-count').innerText()).match(/^\d+/)?.[0]);
+  assert.ok(allCount>0,'Source must include compatible items');
+  await onlyAvailable.check();
+  const currentCount=Number((await page.locator('#stagePicker .stage-picker-count').innerText()).match(/^\d+/)?.[0]);
+  assert.ok(currentCount<=allCount);
+  assert.equal(await page.locator('#stagePicker .stage-picker-item.future').count(),0);
+  await prev.click();
+  assert.match(await page.locator('#stagePicker .stage-picker-head strong').innerText(),/Шлем/);
+  assert.equal(await page.getByRole('checkbox',{name:'Только доступные на моём уровне'}).isChecked(),true);
+  await page.locator('#stagePicker .stage-picker-head button[aria-label="Закрыть выбор"]').click();
+  assert.equal(await page.locator('.equipment-slot[data-slot-index="2"].equipped').count(),1,
+   'Navigation and filtering must not unequip or replace the current hat');
   await page.locator('#level').evaluate(el=>{
    el.value='38';el.dispatchEvent(new Event('input',{bubbles:true}));
   });
