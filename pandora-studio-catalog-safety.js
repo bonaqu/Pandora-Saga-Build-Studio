@@ -452,6 +452,54 @@ function verifiedRangedAmmoQuantityChange(id,old,now,before,after){
  return false;
 }
 
+// An established consumable *quantity* for revival may change without
+// pretending that the success chance or restored HP is known. The immutable
+// source must keep Holy Water ID, all EP/FV directions, and class requirements.
+function verifiedSupportMaterialQuantityChange(id,old,now,before,after){
+ const C=root.PandoraOSCalculator;
+ if(String(id)!=='310003001'||!C?.supportEffectPreview||
+  !old||!now||old.id!==now.id||String(old.id)!==String(id)||
+  !Array.isArray(old.funcs)||!Array.isArray(now.funcs)||
+  old.funcs.length!==now.funcs.length)return false;
+ const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+ if([...new Set([...Object.keys(old),...Object.keys(now)])].some(key=>
+  !['funcs','name','nameEn','desc','descEn','iconId'].includes(key)&&
+  !same(old[key],now[key])))return false;
+ let changed=0;
+ for(let i=0;i<old.funcs.length;i++){
+  const a=old.funcs[i],b=now.funcs[i];
+  if(same(a,b))continue;
+  if(a?.ep!=='EP_CONSUME_ITEM'||a.dir!=='CASTER'||a.ep!==b?.ep||
+   !Number.isSafeInteger(a?.fv2?.[3])||a.fv2[3]<1||
+   !Number.isSafeInteger(b?.fv2?.[3])||b.fv2[3]<1||
+   a.fv2[3]===b.fv2[3]||
+   !Array.isArray(a.fv2)||a.fv2.length!==4||
+   !Array.isArray(b.fv2)||b.fv2.length!==4||
+   !same({...a,fv2:[...a.fv2.slice(0,3),b.fv2[3]]},b))return false;
+  changed++;
+ }
+ if(changed!==1)return false;
+ const source=old.funcs.find(f=>f.ep==='EP_CONSUME_ITEM');
+ const replacement=now.funcs.find(f=>f.ep==='EP_CONSUME_ITEM');
+ if(source?.fv1?.[3]!==50059||replacement?.fv1?.[3]!==50059)return false;
+ const inspect=(catalog,job,caps)=>{
+  const model=C.supportEffectPreview({skillCatalog:catalog,jobKey:job,
+   level:55,branchCaps:caps,branchMasteries:caps});
+  return model?.help?.find(row=>String(row.id)===String(id));
+ };
+ for(const [job,klass] of Object.entries(before?.classes||{})){
+  if(!old.classes?.[job]||!now.classes?.[job]||
+   !after?.classes?.[job])continue;
+  const a=inspect(before.skills,job,klass.branchCaps);
+  const b=inspect(after.skills,job,after.classes[job].branchCaps);
+  if(a?.requiredItemId===50059&&b?.requiredItemId===50059&&
+   a.requiredItemCount===source.fv2[3]&&
+   b.requiredItemCount===replacement.fv2[3]&&
+   a.requirementsMet&&b.requirementsMet)return true;
+ }
+ return false;
+}
+
 // Data-only recipe counts are safe only when EVERY source effect retains
 // the exact established EP, ID, direction, order and other FV slots. This
 // invokes the same current calculator used by the Encyclopedia; neither the
@@ -635,10 +683,13 @@ function compatibility(before,after){
       id,old,now,before,after);
      const ammunition=!dynamic&&!recipe&&verifiedRangedAmmoQuantityChange(
       id,old,now,before,after);
-     add(dynamic||recipe||ammunition?'verified':'needsReview','skill:'+id,
+     const supportMaterial=!dynamic&&!recipe&&!ammunition&&
+      verifiedSupportMaterialQuantityChange(id,old,now,before,after);
+     add(dynamic||recipe||ammunition||supportMaterial?'verified':'needsReview','skill:'+id,
       name+(dynamic?' · проверено изменение FV действующей формулой':
        recipe?' · количество в рецепте подтверждено игровым источником':
        ammunition?' · расход боеприпасов проверен по игровому источнику':
+       supportMaterial?' · количество материала воскрешения проверено по игровому источнику':
        ' · изменены игровые эффекты'));
     }else if([...new Set([...Object.keys(old),...Object.keys(now)])]
      .some(field=>!['name','nameEn','desc','descEn','iconId'].includes(field)&&
