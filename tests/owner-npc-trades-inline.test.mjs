@@ -58,3 +58,8 @@ test('limits are validated per recipe, not inherited from its merchant',()=>{
  assert.match(display,/entry\.append\(limitRow\)/);
  assert.match(display,/limit:nextLimit/);
 });
+
+test('NPC save normalization preserves a live limit even when another field is edited',()=>{
+ const source=readFileSync(new URL('pandora-studio-app.js',root),'utf8');
+ assert.match(source,/recipe\.limit!=null\?\{limit:\{n:Number\(recipe\.limit\.n\),period:recipe\.limit\.period\}\}/);
+});

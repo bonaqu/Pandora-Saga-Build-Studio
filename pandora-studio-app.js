@@ -9509,7 +9509,8 @@ async function saveWikiTradeRecipe(recipe,changes=null){
  const normalized={id:Number(recipe.id),i:Number(recipe.i),
   npc:(recipe.npc||[]).map(Number),
   mats:(recipe.mats||[]).map(row=>({i:Number(row.i),n:Number(row.n)})),
-  gold:Number(recipe.gold||0),honor:Number(recipe.honor||0),exp:Number(recipe.exp||0)};
+  gold:Number(recipe.gold||0),honor:Number(recipe.honor||0),exp:Number(recipe.exp||0),
+  ...(recipe.limit!=null?{limit:{n:Number(recipe.limit.n),period:recipe.limit.period}}:{})};
  const key='tradeedit.'+normalized.id,expectedBefore=activeOverride(key);
  const value=JSON.stringify(changes||{recipe:normalized});
  return enqueueWikiOwnerListWrite(key,expectedBefore,async()=>{
