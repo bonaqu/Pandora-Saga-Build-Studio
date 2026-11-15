@@ -40,7 +40,8 @@ test('classification does not mutate the baseline or candidate',()=>{
 test('review is wired into confirmed publication preflight, not a post-D1 warning',()=>{
  const source=readFileSync(new URL('../pandora-os-catalog-workbench.js',import.meta.url),'utf8');
  assert.match(source,/const compatibility=safety\.compatibility\(baseline,combined\)/);
- assert.match(source,/return \{combined,normalized,compatibility,replay\}/);
+ assert.match(source,/return \{combined,normalized,compatibility,replay,equipment\}/);
+ assert.match(source,/safety\.replayEquipmentEffects\(baseline,combined\)/);
  assert.match(source,/safety\.replaySkills\(baseline,combined\)/);
  assert.match(source,/const compatibility=staged\.compatibility/);
  assert.match(source,/ПРОВЕРКА МЕХАНИК:/);

@@ -415,9 +415,23 @@
            missing.slice(0,3).join(', ')+
            (replay.lost>3?' (+'+(replay.lost-3)+')':''));
         }
+        // Grade 0–10 source-EP replay: an unsupported replacement for a
+        // previously numeric Soul/item bonus must block D1, before confirm.
+        const equipment=typeof safety.replayEquipmentEffects==='function'?
+         safety.replayEquipmentEffects(baseline,selected):null;
+        if(equipment&&!equipment.ok){
+          validation.ok=false;
+          validation.issues.push(...equipment.errors);
+          if(equipment.lost)validation.issues.push(tr(
+           'Перестали рассчитываться прежние бонусы предметов или душ: ',
+           'Existing item or Soul bonuses are no longer calculated: ')+
+           equipment.samples.map(row=>row.name+' (+'+row.grade+
+            ', '+row.previous+' → '+row.next+')').slice(0,3).join(', ')+
+           (equipment.lost>3?' (+'+(equipment.lost-3)+')':''));
+        }
         result={validation,
           comparison:safety.compare(baseline,selected,hero),
-          compatibility:safety.compatibility(baseline,selected),replay};
+          compatibility:safety.compatibility(baseline,selected),replay,equipment};
       }catch(error){
         result={validation:{ok:false,issues:[String(error.message||error)]},
           comparison:null};
@@ -577,6 +591,12 @@
             String(preview.replay.retained)+'/'+String(preview.replay.previouslyModeled)+
             tr(' сохранено, ',' retained, ')+String(preview.replay.unmodeled)+
             tr(' без числовой модели.',' without a numeric model.');
+          if(preview.equipment?.changedSources)
+           formulaStatus.textContent+=tr(
+            ' · Бонусы предметов/душ: ',' · Item/Soul effect checks: ')+
+            String(preview.equipment.retained)+'/'+String(preview.equipment.oldModeled)+
+            tr(' известных источников сохранено.',
+               ' previously modeled sources retained.');
           const comparison=preview.comparison;
           if(comparison?.warning)
             formulaRows.append(h('p',{class:'os-sync-formula-warning',
@@ -1354,13 +1374,20 @@
        ' прежних сценариев перестали рассчитываться. '+
        [...replay.errors,...replay.samples.map(x=>x.name+' / '+x.job+
         (x.level?' / '+x.level:''))].slice(0,4).join(' · '));
+      const equipment=typeof safety.replayEquipmentEffects==='function'?
+       safety.replayEquipmentEffects(baseline,combined):null;
+      if(equipment&&!equipment.ok)throw Error(
+       'Проверка бонусов предметов и душ: '+equipment.lost+
+       ' известных числовых действий перестали рассчитываться. '+
+       [...equipment.errors,...equipment.samples.map(x=>x.name+' / +'+
+        x.grade+' / '+x.previous+' → '+x.next)].slice(0,4).join(' · '));
       const normalized=importer.normalize(combined,legacy);
       if(!Array.isArray(legacyRows)||legacyRows.length!==normalized.counts.legacyLocale)
         throw Error('Published D1 translation count changed during review');
       normalized.entries.legacyLocale=legacyRows; // Preserve exact IDs, payloads and source attribution.
       review.auditSelection(baseline,upstream,combined,chosen,importer.files,
         {syncRussianInstances});
-      return {combined,normalized,compatibility,replay};
+      return {combined,normalized,compatibility,replay,equipment};
     }
 
     exportButton.onclick=()=>{
