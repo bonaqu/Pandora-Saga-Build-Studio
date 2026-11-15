@@ -21,6 +21,48 @@ const methods=Object.freeze([
  ['songSkillPreview',null]
 ]);
 const cache=new WeakMap();
+// Official November 13 game patch: source-pinned gameplay explanations.
+// These are mechanics verified in news #9, NOT calculated final damage.
+function officialPatchNotes(skill,catalog){
+ const id=Number(skill?.id),effects=skill?.funcs||[];
+ const has=ep=>effects.some(x=>x.ep===ep);
+ const note=(ru,en)=>[{ru,en}],none=[];
+ if([320006001,320006002].includes(id)&&skill.name==='Воодушевление'&&
+    skill.skillType==='ALLY'&&has('EP_SKILL_DELAY_FIN'))
+  return note('Умение можно применять и на самого персонажа.',
+   'This skill can now be cast on yourself.');
+ if([340001001,340003001,340004001].includes(id)&&
+    skill.skillType==='TOGGLE'&&has('EP_UNABLE_CAST'))
+  return note('Во время действия этой песни теперь разрешено использовать зелья.',
+   'Potions can now be used while this song is active.');
+ if(id===440009001&&skill.name==='Немая буря'&&
+    effects.some(x=>x.ep==='EP_SKILL_EXEC'&&x.fv1?.[3]===440009002)&&
+    catalog?.['440009002']?.funcs?.some(x=>x.ep==='EP_DESTINED_KNOCKBACK'))
+  return note('Умение периодически стягивает противников к центру. Число срабатываний зависит от мастерства и достигает трёх при 87 ед. мастерства. Потеря ОМ за одно срабатывание уменьшена.',
+   'This skill periodically pulls enemies toward the center. The number of triggers scales with mastery, reaching three at 87 mastery. MP loss per trigger was reduced.');
+ if(id===440011001&&skill.name==='Чума'&&skill.skillType==='ENEMY'&&
+    effects.some(x=>x.ep==='EP_SKILL_EXEC'&&x.fv1?.[3]===440011002))
+  return note('Умение теперь применяется на выбранного противника.',
+   'This skill now targets a selected enemy.');
+ if(id===420004002&&skill.name==='По следам ветра'&&
+    skill.charLevel===50&&skill.prereq===420004001&&skill.cast===1&&
+    skill.classes?.CONJURER===1&&has('EP_ALL_RESISTANCE_CONST'))
+  return note('Улучшенная версия Заклинателя с 50-го уровня: подготовка 1 с вместо 5 с; дополнительное сопротивление стихиям растёт с Духом (СД). Точное итоговое сопротивление проверяйте в расчётах персонажа.',
+   'Conjurer level-50 upgrade: 1 s cast instead of 5 s; additional elemental resistance scales with Spirit. See character calculations for the actual result.');
+ if(id===420005002&&skill.name==='Летящее лезвие'&&
+    skill.charLevel===50&&skill.prereq===420005001&&
+    skill.cast===2&&skill.cooldown===12)
+  return note('Улучшенная версия Заклинателя с 50-го уровня: подготовка 2 с вместо 3,5 с; перезарядка 12 с вместо 10 с.',
+   'Conjurer level-50 upgrade: cast reduced from 3.5 s to 2 s; cooldown increased from 10 s to 12 s.');
+ if(id===420007101&&skill.name==='Песчаная буря'&&
+    skill.charLevel===50&&skill.prereq===420007001&&skill.cast===4&&
+    effects.some(x=>x.ep==='EP_SKILL_EXEC'&&x.fv1?.[3]===420007102)&&
+    catalog?.['420007102']?.funcs?.some(x=>x.ep==='EP_ELEMENT_DAMAGE'))
+  return note('На 50-м уровне Заклинателю доступна усиленная версия: время подготовки 4 с вместо 7 с и повышенный урон. Точный итоговый урон без проверки игровых коэффициентов не утверждается.',
+   'At level 50, Conjurer gains an improved version with a 4 s cast instead of 7 s and increased damage. Final damage is not asserted without verifying coefficients.');
+ return none;
+}
+
 // Some OS entries advertise learnable=true but have no class acquisition
 // path or require mastery beyond every current class cap. Present their
 // source-limited status ONLY in Wiki, never as a build buff or final effect.
@@ -637,6 +679,9 @@ function inspect({skillCatalog,classes,id,calculator}={}){
    if(!paths.some(row=>row.join(':')===path.join(':')))paths.push(path);
   }
  }
+ for(const note of officialPatchNotes(skill,skillCatalog)){
+  if(!notes.some(x=>x.ru===note.ru&&x.en===note.en))notes.push(note);
+ }
  // A trap needs BOTH a valid execution chain and the strict, complete
  // source proof used by trapSkillCostPreview. Generic execution graphs alone
  // do not prove a trap's resulting effect.
@@ -651,5 +696,5 @@ function inspect({skillCatalog,classes,id,calculator}={}){
  store.values.set(skill.id,result);
  return result;
 }
-root.PandoraWikiSkillInsights=Object.freeze({inspect});
+root.PandoraWikiSkillInsights=Object.freeze({inspect,officialPatchNotes});
 })(typeof window==='undefined'?globalThis:window);
