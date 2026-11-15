@@ -7,7 +7,7 @@ import {auditReview} from '../scripts/check-catalog-review-2026-11-15.mjs';
 
 const root=resolve(new URL('../',import.meta.url).pathname);
 const candidate=join(root,'data/catalog-review/ps-ca9a604163b54a2da5c83ea55077ef96');
-const archive=join(root,'data/os');
+const archive=join(root,'data/catalog-history/pre-2026-11-15');
 const read=(dir,file)=>JSON.parse(readFileSync(join(dir,file),'utf8'));
 
 test('staged D1 review has complete counts and preserved RU text without promoting',()=>{

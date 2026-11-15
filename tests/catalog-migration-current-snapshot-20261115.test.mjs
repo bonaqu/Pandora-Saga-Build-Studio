@@ -14,10 +14,10 @@ test('current published D1 source is accepted by the same strict catalog validat
  assert.equal(Object.keys(game.monsters).length,707);
  assert.equal(Object.keys(game.drops).length,180);
  assert.equal(game.trades.trades.length,212);
- assert.equal(Object.keys(game.itemForth).length,172);
+ assert.equal(Object.keys(read('itemForth')).length,172);
  assert.equal(game.chests.boxes.length,33);
  assert.equal(game.tables.levelCap,50);
- assert.equal(game.meta.curated,true);
+ assert.equal(read('meta').curated,true);
 });
 test('changes to current game tables do not fabricate removed historical drop sources',()=>{
  const before=old('tables'),after=read('tables');

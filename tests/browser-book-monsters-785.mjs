@@ -60,7 +60,7 @@ export async function runHeroBookMonsterPicker785Smoke(browser,base){
   });
   const select=page.locator('#monster-785-qa .stage-book-damage-target select');
   assert.equal(await select.count(),1);
-  assert.equal(await select.locator('option').count(),702);
+  assert.equal(await select.locator('option').count(),707);
   assert.equal(await select.inputValue(),'22104');
   assert.match(await page.locator('#monster-785-qa .stage-target-damage-row strong').first().textContent(),
    /Гигантский огр.*34–194 ОЗ/);
@@ -68,7 +68,7 @@ export async function runHeroBookMonsterPicker785Smoke(browser,base){
   assert.equal(await search.count(),1);
   await search.fill('дИНгО');
   assert.ok(await select.locator('option').count()<35,
-   'The 702-monster native list must narrow immediately without re-render');
+   'The 707-monster native list must narrow immediately without re-render');
   assert.equal(await select.inputValue(),'22104',
    'Typing must not change the current target or its damage');
   assert.equal(await page.locator('#monster-785-qa .stage-target-damage-row').count(),2);
@@ -76,7 +76,7 @@ export async function runHeroBookMonsterPicker785Smoke(browser,base){
   assert.equal(await search.inputValue(),'дИНгО',
    'Search remains after the hit is recalculated');
   await search.fill('');
-  assert.equal(await select.locator('option').count(),702);
+  assert.equal(await select.locator('option').count(),707);
   assert.equal(await page.evaluate(()=>window.__monster785.selected()),11104);
   assert.equal(await select.inputValue(),'11104');
   const russian=await page.locator('#monster-785-qa .stage-target-damage-row strong').first().textContent();
@@ -172,6 +172,6 @@ export async function runHeroBookMonsterPicker785Smoke(browser,base){
   assert.equal(await select.inputValue(),'22104');
   assert.equal(await page.locator('#monster-785-qa .stage-target-damage-row').count(),2);
   assert.deepEqual(errors,[]);
-  console.log('Chromium Hero Book 785: 702 verified monsters, RU/EN, target change, no stale Ogre');
+  console.log('Chromium Hero Book 785: 707 verified monsters, RU/EN, target change, no stale Ogre');
  }finally{await context.close()}
 }

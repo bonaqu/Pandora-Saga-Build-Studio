@@ -8,7 +8,8 @@ import {validateDescriptionReferences} from './audit-live-catalog-parity.mjs';
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const PIN='ps-ca9a604163b54a2da5c83ea55077ef96';
 const candidate=join(root,'data/catalog-review',PIN);
-const archive=join(root,'data/os');
+// The historical comparison baseline must not move when data/os is updated.
+const archive=join(root,'data/catalog-history/pre-2026-11-15');
 const names=['meta','items','skills','souls','monsters','drops','maps',
  'instances','trades','tables','chests','racialPassives','classes',
  'itemForth','unison','expertise','stringsEn'];
