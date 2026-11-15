@@ -705,9 +705,6 @@
       "I_018001_00": "assets/items/icons/I_018001_00.webp",
       "I_018003_00": "assets/items/icons/I_018003_00.webp",
       "I_018005_00": "assets/items/icons/I_018005_00.webp",
-      "I_018008_00": "assets/items/icons/I_018008_00.webp",
-      "I_018009_00": "assets/items/icons/I_018009_00.webp",
-      "I_018011_00": "assets/items/icons/I_018011_00.webp",
       "I_018018_00": "assets/items/icons/I_018018_00.webp",
       "I_018019_00": "assets/items/icons/I_018019_00.webp",
       "I_018022_00": "assets/items/icons/I_018022_00.webp",
@@ -2502,14 +2499,116 @@
       "kind": "items",
       "stem": "I_900003_00",
       "error": "HTTP 404"
+    },
+    {
+      "kind": "items",
+      "stem": "I_013042_00",
+      "error": "Not attempted"
+    },
+    {
+      "kind": "items",
+      "stem": "I_013033_00",
+      "error": "Not attempted"
+    },
+    {
+      "kind": "items",
+      "stem": "I_013113_00",
+      "error": "Not attempted"
+    },
+    {
+      "kind": "items",
+      "stem": "I_013103_00",
+      "error": "Not attempted"
+    },
+    {
+      "kind": "items",
+      "stem": "I_017129_00",
+      "error": "Not attempted"
+    },
+    {
+      "kind": "items",
+      "stem": "I_018002_00",
+      "error": "Not attempted"
+    },
+    {
+      "kind": "items",
+      "stem": "I_018006_00",
+      "error": "Not attempted"
+    },
+    {
+      "kind": "items",
+      "stem": "I_018007_00",
+      "error": "Not attempted"
+    },
+    {
+      "kind": "items",
+      "stem": "I_018014_00",
+      "error": "Not attempted"
+    },
+    {
+      "kind": "items",
+      "stem": "I_018016_00",
+      "error": "Not attempted"
+    },
+    {
+      "kind": "items",
+      "stem": "I_018017_00",
+      "error": "Not attempted"
+    },
+    {
+      "kind": "items",
+      "stem": "I_019010_00",
+      "error": "Not attempted"
+    },
+    {
+      "kind": "items",
+      "stem": "I_019011_00",
+      "error": "Not attempted"
+    },
+    {
+      "kind": "items",
+      "stem": "I_020007_00",
+      "error": "Not attempted"
+    },
+    {
+      "kind": "items",
+      "stem": "I_020005_00",
+      "error": "Not attempted"
+    },
+    {
+      "kind": "items",
+      "stem": "I_021019_00",
+      "error": "Not attempted"
+    },
+    {
+      "kind": "items",
+      "stem": "I_021020_00",
+      "error": "Not attempted"
+    },
+    {
+      "kind": "items",
+      "stem": "I_051036_00",
+      "error": "Not attempted"
+    },
+    {
+      "kind": "items",
+      "stem": "I_094087_00",
+      "error": "Not attempted"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_420007102",
+      "error": "Not attempted"
     }
   ],
   "count": {
-    "expected": 1437,
-    "present": 1173,
-    "missing": 264,
-    "processed": 275,
-    "planned": 275
+    "expected": 1454,
+    "present": 1170,
+    "missing": 284,
+    "known404": 264,
+    "unverified": 20,
+    "processed": 0,
+    "planned": 20
   },
   "displayAliases": {
     "skills": {
@@ -2715,5 +2814,7 @@
       "skill_620002061": "skill_620001061",
       "skill_620002062": "skill_620001061"
     }
-  }
+  },
+  "reviewedAt": "2026-11-15",
+  "reviewNote": "20 new current-D1 image identities have not been downloaded or HTTP-checked. No unverified icon is marked HTTP 404 or linked to a substitute. 3 historical verified sprites remain on disk but are not referenced by current runtime."
 }

@@ -56,7 +56,8 @@ if(manifest){
   recordedMissing.add(path);
   if(!paths.has(path))issues.push('Missing entry not in live OS catalog: '+path);
   if(!missingPaths.has(path))issues.push('Stale missing entry (recovered or invalid file): '+path);
-  if(row?.error!=='HTTP 404')issues.push('Unverified missing source: '+path);
+  if(!['HTTP 404','Not attempted'].includes(row?.error))
+   issues.push('Invalid missing-artwork evidence status: '+path);
  }
  for(const path of missingPaths)if(!recordedMissing.has(path))
   issues.push('Missing original has no manifest record: '+path);
@@ -66,6 +67,14 @@ if(manifest){
   issues.push('Manifest expected count differs from source catalog');
  if(manifest.count?.present!==totals.present)
   issues.push('Manifest present count differs from verified WebP');
+ // Missing original image identities must distinguish observed HTTP 404
+ // from an untested new source URL. Do not promote unknowns to 404s.
+ const confirmed404=(manifest.missing||[]).filter(row=>row?.error==='HTTP 404').length;
+ const unverified=(manifest.missing||[]).filter(row=>row?.error==='Not attempted').length;
+ if(manifest.count?.known404!==confirmed404)
+  issues.push('Manifest confirmed-404 count differs from evidence');
+ if(manifest.count?.unverified!==unverified)
+  issues.push('Manifest unverified-original count differs from evidence');
  if(manifest.count?.missing!==totals.missing)
   issues.push('Manifest missing count differs from checked files');
  if(recordedPresent.size!==totals.present||recordedMissing.size!==totals.missing)
@@ -86,5 +95,7 @@ if(manifest){
  }catch{issues.push('Missing unknown skill fallback WebP')}
 
 }
-console.log(JSON.stringify({source:'data/os',...totals,groups,manifest:!!manifest,issues,examples:sample},null,2));
+const evidence=manifest?{confirmed404:(manifest.missing||[]).filter(row=>row.error==='HTTP 404').length,
+ unverified:(manifest.missing||[]).filter(row=>row.error==='Not attempted').length}:{confirmed404:0,unverified:totals.missing};
+console.log(JSON.stringify({source:'data/os',...totals,...evidence,groups,manifest:!!manifest,issues,examples:sample},null,2));
 if(issues.length||(process.argv.includes('--strict')&&(totals.missing||totals.corrupt)))process.exitCode=1;
