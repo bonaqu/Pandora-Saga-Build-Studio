@@ -9564,6 +9564,16 @@ async function showCatalogImport(){
   copyLabel:(key,ru,en)=>ownerCopy('catalog-sync',key,ru,en),
   editLabel:(node,key,ru,en,callbacks)=>ownerCopyLabel(
    node,'catalog-sync',key,ru,en,callbacks),
+  // Compare the selected update against the character being planned.
+  // The review module gets only level, race/class and invested points, not
+  // personal account data or private build metadata.
+  getHero:()=>Number.isInteger(state.race)&&Number.isInteger(state.job)?{
+   race:window.PandoraGameNavigation.raceKeys[state.race],
+   klass:jobKeys[state.job],level:state.level,
+   stats:Object.fromEntries(window.PandoraAttributeProgression.codes.map((key,i)=>
+    [key,Number(state.stats?.[STATS[i]]||0)])),
+   points:{...state.points}
+  }:null,
   afterPublish:async()=>{invalidateWikiCatalog({dropSnapshot:true});await loadCatalog()}
  });
 }
