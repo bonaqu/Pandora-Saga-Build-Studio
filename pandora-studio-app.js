@@ -5229,6 +5229,15 @@ function renderWiki(root){
        Number.isSafeInteger(extra.count)&&extra.count>0)
        section.append(materialLine(wt('Для применения нужно: ','Requires: '),
         extra.count,extra.itemId));
+      // These are source-only numbers, not verified inventory or damage.
+      if(extra.type==='sourceMaterial'&&itemName(extra.itemId)&&
+       Number.isSafeInteger(extra.count)&&extra.count>0)
+       section.append(materialLine(wt('Материал в игровых данных: ',
+        'Material in game data: '),extra.count,extra.itemId));
+      if(extra.type==='sourceAmmo'&&Number.isSafeInteger(extra.count)&&extra.count>0)
+       section.append(h('p',{class:'wiki-skill-source-material',
+        text:wt('Боеприпасы в игровых данных: ',
+         'Ammunition in game data: ')+extra.count}));
       if(extra.type==='resource')
        section.append(h('p',{text:wt('Особый расход: ','Special cost: ')+
         extra.value}));

@@ -355,6 +355,52 @@ function replayEquipmentEffects(before,after){
 // identity, step boundaries, direction and every nonnumeric field are stable.
 // Both old and new 0..10 snapshots must pass the active numeric calculator;
 // unknown procs and newly introduced step semantics stay review-only.
+// Generic source-only resource count, NOT a combat result. The two
+// existing source EPs use exactly FV2[3] for a positive integer quantity.
+// Item identity, reserved vectors, direction, effect graph and every
+// unrelated gameplay property must remain unmodified. A known model keeps
+// priority; pre-D1 replay still blocks lost prior verified calculations.
+function sourceOnlyResourceQuantityChange(id,old,now,before,after){
+ const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+ if(!old||!now||old.id!==now.id||String(old.id)!==String(id)||
+  !Array.isArray(old.funcs)||!Array.isArray(now.funcs)||
+  old.funcs.length!==now.funcs.length)return false;
+ for(const field of new Set([...Object.keys(old),...Object.keys(now)]))
+  if(!['funcs','name','nameEn','desc','descEn','iconId'].includes(field)&&
+   !same(old[field],now[field]))return false;
+ let changed=0;
+ for(let i=0;i<old.funcs.length;i++){
+  const a=old.funcs[i],b=now.funcs[i];
+  if(same(a,b))continue;
+  if(!a||!b||a.ep!==b.ep||a.dir!==b.dir||
+   !['EP_CONSUME_ITEM','EP_CONSUME_AMMO'].includes(a.ep)||
+   Object.keys(a).sort().join(',')!=='dir,ep,fv1,fv2'||
+   Object.keys(b).sort().join(',')!=='dir,ep,fv1,fv2'||
+   !Array.isArray(a.fv1)||a.fv1.length!==4||
+   !Array.isArray(b.fv1)||b.fv1.length!==4||
+   !same(a.fv1,b.fv1)||a.fv1.slice(0,3).some(v=>v!==0)||
+   !Array.isArray(a.fv2)||a.fv2.length!==4||
+   !Array.isArray(b.fv2)||b.fv2.length!==4||
+   a.fv2.slice(0,3).some(v=>v!==0)||
+   !same(a.fv2.slice(0,3),b.fv2.slice(0,3))||
+   !Number.isSafeInteger(a.fv2[3])||a.fv2[3]<1||
+   !Number.isSafeInteger(b.fv2[3])||b.fv2[3]<1||
+   a.fv2[3]===b.fv2[3])return false;
+  if(a.ep==='EP_CONSUME_AMMO'){
+   if(a.dir!=='CASTER'||a.fv1[3]!==0)return false;
+  }else{
+   const itemId=a.fv1[3];
+   if(!['CASTER','TARGET'].includes(a.dir)||
+    !Number.isSafeInteger(itemId)||itemId<1||
+    !before?.items||!after?.items||
+    !Object.hasOwn(before.items,String(itemId))||
+    !Object.hasOwn(after.items,String(itemId)))return false;
+  }
+  changed++;
+ }
+ return changed>0;
+}
+
 function verifiedForthAmountChanges(id,oldForth,newForth,before,after){
  const C=root.PandoraOSCalculator;
  const item=before?.items?.[id],updated=after?.items?.[id];
@@ -745,12 +791,15 @@ function compatibility(before,after){
       verifiedSupportMaterialQuantityChange(id,old,now,before,after);
      const trapMaterial=!dynamic&&!recipe&&!ammunition&&!supportMaterial&&
       verifiedTrapMaterialQuantityChange(id,old,now,before,after);
-     add(dynamic||recipe||ammunition||supportMaterial||trapMaterial?'verified':'needsReview','skill:'+id,
+     const known=dynamic||recipe||ammunition||supportMaterial||trapMaterial;
+     const sourceCount=!known&&sourceOnlyResourceQuantityChange(id,old,now,before,after);
+     add(known?'verified':sourceCount?'sourceOnly':'needsReview','skill:'+id,
       name+(dynamic?' · проверено изменение FV действующей формулой':
        recipe?' · количество в рецепте подтверждено игровым источником':
        ammunition?' · расход боеприпасов проверен по игровому источнику':
        supportMaterial?' · количество материала воскрешения проверено по игровому источнику':
        trapMaterial?' · расход материала ловушки проверен по игровому источнику':
+       sourceCount?' · только количество расходников из игрового источника; эффект навыка не рассчитан':
        ' · изменены игровые эффекты'));
     }else if([...new Set([...Object.keys(old),...Object.keys(now)])]
      .some(field=>!['name','nameEn','desc','descEn','iconId'].includes(field)&&

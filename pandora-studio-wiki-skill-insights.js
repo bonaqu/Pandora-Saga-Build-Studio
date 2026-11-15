@@ -668,6 +668,37 @@ function inspect({skillCatalog,classes,id,calculator}={}){
   // complete set of notes avoids repeated scans of all 28 class snapshots.
   if(notes.length||paths.length||extra.length)break;
  }
+ // The game catalog provides direct resource quantities even when no
+ // numeric combat model exists. Report only the exact source FV2 count,
+ // without claiming proc chance, final damage or actual inventory.
+ // Do not duplicate strictly modeled recipes, traps and resurrection costs.
+ const materialModeled=extra.some(row=>['recipe','trap','requiredItem'].includes(row.type));
+ // A linked action requires its complete pre-existing child signature proof.
+ // Showing a generic standalone resource cost must never resurrect a
+ // previously rejected multi-stage ability as seemingly source-verified.
+ const linkedActionEP=new Set(['EP_SKILL_EXEC','EP_ONHIT_SKILL_EXEC',
+  'EP_ONHIT_SKILL_EXEC_CHANGE_BA','EP_SKILL_EXEC_COUNT',
+  'EP_SKILL_EXEC_DIFFUSION','EP_SKILL_PARRY_COUNTER',
+  'EP_ATTACK_BLOCK_BREAK','EP_ONHIT_CASTING_TARGET']);
+ const linkedAction=(skill.funcs||[]).some(f=>linkedActionEP.has(f?.ep));
+ for(const effect of linkedAction?[]:skill.funcs||[]){
+  if(!effect||!['EP_CONSUME_ITEM','EP_CONSUME_AMMO'].includes(effect.ep)||
+   Object.keys(effect).sort().join(',')!=='dir,ep,fv1,fv2'||
+   !Array.isArray(effect.fv1)||effect.fv1.length!==4||
+   effect.fv1.slice(0,3).some(v=>v!==0)||
+   !Array.isArray(effect.fv2)||effect.fv2.length!==4||
+   effect.fv2.slice(0,3).some(v=>v!==0)||
+   !Number.isSafeInteger(effect.fv2[3])||effect.fv2[3]<1)continue;
+  if(effect.ep==='EP_CONSUME_ITEM'){
+   if(materialModeled||!['CASTER','TARGET'].includes(effect.dir)||
+    !Number.isSafeInteger(effect.fv1[3])||effect.fv1[3]<1)continue;
+   extra.push({type:'sourceMaterial',itemId:effect.fv1[3],
+    count:effect.fv2[3],sourceOnly:true});
+  }else if(effect.dir==='CASTER'&&effect.fv1[3]===0&&
+   !extra.some(row=>row.type==='sourceAmmo')){
+   extra.push({type:'sourceAmmo',count:effect.fv2[3],sourceOnly:true});
+  }
+ }
  // Add source-pinned action chains without losing existing verified
  // item costs, song details or full trap paths already found above.
  const linked=sourceLinkedEvidence(skill,skillCatalog,classes);
