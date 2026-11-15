@@ -110,6 +110,13 @@ test('unknown/new gameplay semantics and malformed trap material sources remain 
   assert.equal(result.rows.some(x=>x.id===id),false);
   assert.ok(result.rejected.includes(id));
   const replay=safety.replaySkills(before,after);
+  if(after.skills[id].cooldown!==before.skills[id].cooldown){
+   // The cost inspector is still intact. Timing is an independent
+   // unmodeled gameplay parameter and remains NEEDS REVIEW, not a
+   // fabricated loss of the previously modeled material count.
+   assert.equal(replay.ok,true,'existing source material proof still holds');
+   continue;
+  }
   assert.equal(replay.ok,false,'lost source evidence must block publication');
   assert.ok(replay.samples.some(x=>x.id===String(id)&&
    (x.module==='trap-material'||x.module==='source-execution-chain')));
