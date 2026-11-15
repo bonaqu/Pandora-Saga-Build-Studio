@@ -8150,6 +8150,28 @@ const ownerDockText=Object.freeze({
  collapse:['◀ Скрыть','◀ Hide'],
  expand:['✎ Редактор','✎ Editor']
 });
+// Help is action-specific and follows RU/EN without depending on owner-edited
+// button captions. These descriptions never trigger any D1 writes.
+const ownerDockHints=Object.freeze({
+ openWiki:['Открывает энциклопедию. Двойной клик или ✎ позволяет редактировать данные и сохраняет изменения в D1.',
+  'Open the encyclopedia. Double-click or ✎ to edit records; edits save to D1.'],
+ undo:['Отменяет последнее изменение этого сеанса. Если правок нет, действие недоступно.',
+  'Undo the latest edit in this session. Unavailable if there are no edits.'],
+ history:['Показывает все сохранённые ручные правки, их прежние и новые значения. Здесь можно вернуть отдельную запись.',
+  'Review all saved manual edits with before/after values and restore individual records.'],
+ catalog:['Проверяет изменения игровых данных и позволяет выбрать, что применить в D1. Сверка ничего не публикует сама.',
+  'Compare game-data changes and choose what to publish to D1. Comparison alone never publishes.'],
+ levels:['Открывает начисления очков за каждый уровень и максимум героя. Сохранение — отдельно от обновления игрового каталога.',
+  'Edit points earned per level and the hero maximum. Saving is separate from game catalog updates.'],
+ translations:['Просматривает готовые переводы ваших русских правок на английский. Запись только после подтверждения.',
+  'Review prepared English translations of your Russian edits. Save only after confirmation.'],
+ testD1:['Создаёт, читает и удаляет только временные проверочные записи D1. Не сохраняет текущую правку и не меняет игровой каталог.',
+  'Create, read and remove temporary D1 test records only. Does not save an active edit or change game data.'],
+ githubExport:['Необязательная копия уже сохранённых изменений в GitHub через PR. Для работы сайта и D1 не нужна.',
+  'Optional GitHub PR backup of existing D1 edits. Not required for the live site.'],
+ finish:['Закрывает редактор сайта. Ранее сохранённые в D1 изменения останутся; при ошибке записи завершение блокируется.',
+  'Turn off editing. D1-saved changes stay intact; a failed write prevents finishing.']
+});
 function ownerDockCopy(key){
  const pair=ownerDockText[key];
  return pair?ownerCopy('owner-dock',key,pair[0],pair[1]):key;
@@ -8174,6 +8196,10 @@ function decorateOwnerDockActions(actions){
    text:'✎','aria-label':(lang==='en'?'Edit label: ':'Изменить надпись: ')+ownerDockCopy(key)});
   const host=h('span',{class:'owner-dock-action-edit-host',hidden:true});
   button.before(slot);slot.append(button,pencil,host);
+  window.PandoraGuideTooltip?.attach(pencil,lang==='en'?
+   'Edit the button label only. Does not execute the action.':
+   'Изменяет только название кнопки. Само действие не запускается.',
+   {hoverDelay:350});
   pencil.onclick=event=>{
    event.preventDefault();event.stopPropagation();
    if(!adminEditing||!adminToken||!host.hidden)return;
@@ -8232,10 +8258,18 @@ function refreshOwnerUI(){
    const key=slot.dataset.ownerDockKey,button=slot.querySelector('button:not(.owner-dock-action-pencil)');
    if(button&&key!=='translations')button.textContent=ownerDockCopy(key);
    // Purely visual CSS glyphs must not become part of the spoken button name.
-   if(button)button.setAttribute('aria-label',button.textContent);
+   if(button){
+    button.setAttribute('aria-label',button.textContent);
+    if(ownerDockHints[key])button.dataset.guideHint=ownerDockHints[key][lang==='en'?1:0];
+   }
    const pencil=slot.querySelector('.owner-dock-action-pencil');
-   if(pencil)pencil.setAttribute('aria-label',
-    (lang==='en'?'Edit label: ':'Изменить надпись: ')+ownerDockCopy(key));
+   if(pencil){
+    pencil.setAttribute('aria-label',
+     (lang==='en'?'Edit label: ':'Изменить надпись: ')+ownerDockCopy(key));
+    pencil.dataset.guideHint=lang==='en'?
+     'Edit the button label only. Does not execute the action.':
+     'Изменяет только название кнопки. Само действие не запускается.';
+   }
   }
   const catalogSlot=root.querySelector('.owner-dock-catalog')?.closest('.owner-dock-action-slot');
   if(catalogSlot)catalogSlot.classList.toggle('owner-dock-action-wide',Boolean(translations?.hidden));
@@ -8247,7 +8281,7 @@ function refreshOwnerUI(){
   if(extra)extra.textContent=ownerDockCopy('extra');
   const labels={
    editing:[['Редактирование','Editing'],['Основные действия и история правок','Editing and change history']],
-   game:[['Игровые данные','Game data'],['Каталог и переводы','Catalog and translations']],
+   game:[['Игровые данные','Game data'],['Каталог, очки и переводы','Catalog, points and translations']],
    tools:[['Дополнительно','More tools'],['Проверка D1 и резервная копия','D1 testing and optional backup']]
   };
   for(const node of root.querySelectorAll('[data-owner-group-heading],[data-owner-group-hint]')){
@@ -8307,6 +8341,9 @@ function refreshOwnerUI(){
      (lang==='en'?'Open site editor drawer':'Открыть боковую панель редактора сайта'):
     (lang==='en'?'Hide site editor drawer':'Скрыть боковую панель редактора сайта'));
    toggle.setAttribute('aria-expanded',String(!ownerDockCollapsed));
+   toggle.dataset.guideHint=lang==='en'?
+    'Show or hide the editor. Saved D1 edits are preserved.':
+    'Показать или скрыть редактор. Сохранённые правки D1 не пропадут.';
   }
  };
  if(dock){update(dock);return}
@@ -8406,7 +8443,7 @@ function refreshOwnerUI(){
   'Основные действия и история правок','Editing and change history',
   ['openWiki','undo','history']);
  const gameGroup=group('game','Игровые данные','Game data',
-  'Каталог, уровни и переводы','Catalog, levels and translations',['catalog','levels','translations']);
+  'Каталог, очки и переводы','Catalog, points and translations',['catalog','levels','translations']);
  const toolsGroup=group('tools','Дополнительно','More tools',
   'Проверка D1 и резервная копия','D1 testing and optional backup',
   ['testD1','githubExport']);
@@ -8423,7 +8460,7 @@ function refreshOwnerUI(){
  for(const node of guide.querySelectorAll('[data-owner-dock-static]')){
   const key=node.dataset.ownerDockStatic;
   if(!['step1','step2','step3','historyHelp','catalogHelp','githubHelp',
-   'd1Help','finishHelp'].includes(key))continue;
+   'd1Help','levelsHelp','finishHelp'].includes(key))continue;
   const pair=ownerDockText[key];
   ownerCopyLabel(node,'owner-dock',key,pair[0],pair[1]);
   node.after(h('button',{type:'button',class:'owner-workflow-copy-pencil',
@@ -8452,22 +8489,27 @@ function refreshOwnerUI(){
  // An edge drawer must not alter the left character column or page height.
  document.body.append(root);
  const hints=[
-  ['.owner-dock-primary','Открыть энциклопедию для редактирования данных прямо в карточках.'],
-  ['[data-owner-undo]','Отменяет последнюю ручную правку этого сеанса в Cloudflare D1.'],
-  ['.owner-dock-history','Посмотреть сохранённые ручные правки и вернуть исходные значения.'],
-  ['.owner-dock-catalog','Сравнить опубликованный каталог с игровым источником; ничего не применяется автоматически.'],
-  ['.owner-dock-levels','Изменить прибавки характеристик и умений по уровням; сохранить одной версией в D1.'],
-  ['.owner-dock-d1-check','Проверить запись, чтение и удаление временных данных. Билды и игровой каталог не изменятся.'],
-  ['.owner-dock-export','Предложить уже сохранённые правки для проверки в GitHub.'],
-  ['[data-owner-en-sync]','Предварительно просмотреть английские переводы только уже существующих русских правок. Ничего не записывается до подтверждения.'],
-  ['.owner-dock-finish','Выключить режим редактирования. Уже сохранённые данные D1 останутся на месте.']
+  ['.owner-dock-primary','openWiki'],
+  ['[data-owner-undo]','undo'],
+  ['.owner-dock-history','history'],
+  ['.owner-dock-catalog','catalog'],
+  ['.owner-dock-levels','levels'],
+  ['.owner-dock-d1-check','testD1'],
+  ['.owner-dock-export','githubExport'],
+  ['[data-owner-en-sync]','translations'],
+  ['.owner-dock-finish','finish']
  ];
- for(const [selector,message] of hints){
+ for(const [selector,key] of hints){
   const button=panel.querySelector(selector);
   if(!button)continue;
   button.removeAttribute('title');
-  window.PandoraGuideTooltip?.attach(button,message,{hoverDelay:1000});
+  window.PandoraGuideTooltip?.attach(button,
+   ownerDockHints[key][lang==='en'?1:0],{hoverDelay:350});
  }
+ window.PandoraGuideTooltip?.attach(toggle,lang==='en'?
+  'Open or hide the site editor. D1 edits remain saved.':
+  'Открыть или скрыть редактор. Уже записанные в D1 правки не исчезнут.',
+  {hoverDelay:350});
  root.addEventListener('keydown',event=>{
   if(event.key!=='Escape'||ownerDockCollapsed||event.defaultPrevented)return;
   // Escape from an active text editor cancels the edit, not the drawer.
