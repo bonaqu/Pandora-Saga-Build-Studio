@@ -3,13 +3,13 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import worker from '../worker/index.js';
 const source=readFileSync(new URL('../pandora-os-catalog-workbench.js',import.meta.url),'utf8');
-const token='example-admin-token-'+'x'.repeat(25);
+const token='x'.repeat(43);
 const makeRequest=path=>new Request('https://ps-build-studio-cloud.bonaqu.workers.dev'+path,{
  headers:{Authorization:'Bearer '+token,Origin:'https://bonaqu.github.io'}
 });
 function env(){
  return {GITHUB_CATALOG_TOKEN:'source-secret-'+'y'.repeat(45),DB:{
-  prepare(query){return {async first(){if(query.includes('FROM sessions'))return {id:1};throw Error(query)}}}
+  prepare(query){return {bind(){return this},async first(){if(query.includes('FROM sessions'))return {id:1};throw Error(query)}}}
  }};
 }
 test('readiness preflight is performed before any D1 initialization or catalog writing',()=>{
