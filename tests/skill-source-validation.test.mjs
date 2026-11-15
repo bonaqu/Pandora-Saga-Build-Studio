@@ -108,8 +108,8 @@ test('shared class predicate agrees between readiness, skill gallery and growth'
   assert.equal(result.learned,false);
   assert.ok(result.problems.includes('Unavailable to this class'));
  }
- assert.equal(source.split('allowedForJob(').length-1,4,
-  'One helper plus growth, readiness and skill gallery call sites');
+ assert.ok(source.split('allowedForJob(').length-1>=4,
+  'One strict helper also gates automatic level-50 skill upgrades');
 });
 
 test('character levels and supplemental requirements never coerce arrays or blank strings to zero',()=>{

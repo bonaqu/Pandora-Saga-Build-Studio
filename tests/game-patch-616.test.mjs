@@ -71,6 +71,13 @@ test('permanent armor exchange appears in all three capitals and includes Pumpki
 test('ancient Muldia bosses and King chest are retained in the current game catalog',()=>{
  assert.deepEqual([95120,95121,95122].map(id=>monsters[id].name),
   ['Древний исполин','Древний рукокрыл','Древняя гончая']);
+ for(const id of [51009,51017,51025,51033]){
+  const commander=chests.boxes.find(x=>x.i===id);
+  assert.ok(commander,'missing lvl50 commander box '+id);
+  assert.deepEqual(commander.rolls[0],[{i:65006,n:7,p:100}]);
+  assert.ok(!commander.rolls.some(group=>group.some(row=>
+   row.i===80098&&row.n===100)));
+ }
  const king=chests.boxes.find(x=>x.i===51036);
  assert.ok(king);
  assert.equal(king.rolls[0].length,127);

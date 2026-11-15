@@ -72,7 +72,7 @@ test('real Hero Path renders saved over-cap points instead of a misleading dash'
 });
 
 test('growth reads pre-indexed branch data rather than rescanning 569 skills per branch',()=>{
- assert.match(source,/const skillIndex=indexSkills\(skillCatalog\),skillsByBranch=indexSkillsByBranch\(skillCatalog,job\)/);
+ assert.match(source,/const skillIndex=indexSkills\(skillCatalog\),skillsByBranch=indexSkillsByBranch\(effectiveSkillCatalog\(skillCatalog,api\)\.skills,job\)/);
  assert.match(source,/const skills=skillsByBranch\.get\(key\)\|\|\[\]/);
  assert.doesNotMatch(source,/const skills=skillCatalog\.filter\(/);
 });
@@ -91,5 +91,5 @@ test('all Hero Path class surfaces agree on strict OS class permissions',()=>{
  assert.match(source,/function allowedForJob\(skill,job\)/);
  assert.match(source,/if\(!allowedForJob\(skill,job\)\|\|!Array\.isArray\(skill\.reqs\)\)continue/);
  assert.match(source,/if\(!allowedForJob\(skill,job\)\)/);
- assert.match(source,/api\.skillCatalog\.filter\(skill=>allowedForJob\(skill,api\.job\)&&/);
+ assert.match(source,/effective\.skills\.filter\(skill=>allowedForJob\(skill,api\.job\)&&/);
 });
