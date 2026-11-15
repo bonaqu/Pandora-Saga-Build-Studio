@@ -129,7 +129,7 @@ function spending(table,level,points){
  const configured=root.PandoraLevelProgression;
  if(!table||!Number.isInteger(max)||max<1||
   max>(configured?.maxLevel()??55))return {total:null,spent,remaining:null};
- let total=0;
+ let total=skillGrant(1);
  for(let lv=2;lv<=max;lv++){
   // The independent owner progression can extend beyond the old game's
   // tables. Keep checking the original 2–55 records for data integrity.
