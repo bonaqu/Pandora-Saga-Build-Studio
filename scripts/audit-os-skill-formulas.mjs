@@ -153,17 +153,22 @@ export function auditOsSkillFormulaCoverage({skills,classes,calculator}={}){
   const source=skills[String(proof.id)];
   if(source?.id!==proof.id||source?.skillType!==proof.type||
    source?.learnable!==true||source?.prereq!==null||
-   !Array.isArray(source?.funcs)||source.funcs.length!==proof.vectors.length)
-   continue;
-  const exact=proof.vectors.every(([ep,value],index)=>{
-   const effect=source.funcs[index];
-   return effect?.ep===ep&&effect?.dir==='TARGET'&&
-    Array.isArray(effect.fv1)&&effect.fv1.length===4&&
-    effect.fv1.every((n,i)=>n===(i===3?value:0))&&
-    Array.isArray(effect.fv2)&&effect.fv2.length===4&&
-    effect.fv2.every(n=>n===0);
-  });
-  if(exact)mark(proof.id,proof.module,{numeric:proof.numeric});
+   !Array.isArray(source?.funcs))continue;
+  // The newer D1 Inspiration removes CANCEL_IDENTITY but preserves the
+  // exact target-side SKILL_DELAY_FIN 50. The old and new source shapes
+  // remain independent, strict, no guessed cast-time stacking.
+  const variants=proof.id===320006001?
+   [proof.vectors,[['EP_SKILL_DELAY_FIN',50]]]:[proof.vectors];
+  const valid=variants.some(vectors=>source.funcs.length===vectors.length&&
+   vectors.every(([ep,value],index)=>{
+    const effect=source.funcs[index];
+    return effect?.ep===ep&&effect?.dir==='TARGET'&&
+     Array.isArray(effect.fv1)&&effect.fv1.length===4&&
+     effect.fv1.every((n,i)=>n===(i===3?value:0))&&
+     Array.isArray(effect.fv2)&&effect.fv2.length===4&&
+     effect.fv2.every(n=>n===0);
+   }));
+  if(valid)mark(proof.id,proof.module,{numeric:proof.numeric});
  }
  // The five enemy elemental spells are modeled on the hero as incoming
  // target and are NOT own passive resistance. Divine Blessing is an
