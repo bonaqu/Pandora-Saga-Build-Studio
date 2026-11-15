@@ -218,6 +218,29 @@ function readiness(skill,api,seen=new Set(),skillIndex){
   problems.push(tr(api,'Дополнительное условие ','Unverified additional requirement ')+skill.reqLevel);
  return {learned:!problems.length,problems};
 }
+// A linked 50-level version is the same skill family in the character
+// planner, never a second simultaneous skill effect. A level threshold alone
+// is insufficient: check class, learned branch and complete source lineage.
+function effectiveSkillCatalog(skills,api){
+ const source=Array.isArray(skills)?skills:[];
+ const index=indexSkills(source),hidden=new Set(),aliases=new Map(),upgrades=new Map();
+ for(const advanced of source){
+  if(!advanced||advanced.prereq==null||advanced.learnable!==true||
+     Number(advanced.charLevel)!==50)continue;
+  const base=index.get(String(advanced.prereq));
+  if(!base||Number(base.charLevel)>=50||base.branch!==advanced.branch||
+     typeof base.name!=='string'||base.name!==advanced.name||
+     !allowedForJob(base,api.job)||!allowedForJob(advanced,api.job))continue;
+  upgrades.set(String(base.id),advanced);
+  if(readiness(advanced,api,new Set(),index).learned){
+   hidden.add(String(base.id));aliases.set(String(base.id),String(advanced.id));
+  }else{
+   hidden.add(String(advanced.id));aliases.set(String(advanced.id),String(base.id));
+  }
+ }
+ return {skills:source.filter(skill=>!hidden.has(String(skill?.id))),
+  aliases,upgrades};
+}
 // Skill markers are sorted once per render; nearest hover uses binary search.
 function nearestMilestone(marks,fraction){
  if(!marks.length||!Number.isFinite(fraction))return null;
@@ -237,7 +260,7 @@ function viewGrowth(target,api){
  target.replaceChildren();
  const {state,groups,selectedGroup,expandedBranch,job,skillCatalog,budget}=api,auto=state.masteryAuto!==false;
  const innate=api.innate||{},caps=api.branchCaps||{};
- const skillIndex=indexSkills(skillCatalog),skillsByBranch=indexSkillsByBranch(skillCatalog,job);
+ const skillIndex=indexSkills(skillCatalog),skillsByBranch=indexSkillsByBranch(effectiveSkillCatalog(skillCatalog,api).skills,job);
  for(const group of groups){
   const branchKeys=group.branches.filter(key=>key!=='race');
   const wrap=make('section',{class:'game-tree-group'});
@@ -623,7 +646,8 @@ function viewSkills(target,details,api){
   target.append(authored(api,'skillCatalogLoading','Каталог умений загружается.','Loading skill catalog…'));return
  }
  const skillIndex=indexSkills(api.skillCatalog);
- const ordered=api.skillCatalog.filter(skill=>allowedForJob(skill,api.job)&&
+ const effective=effectiveSkillCatalog(api.skillCatalog,api);
+ const ordered=effective.skills.filter(skill=>allowedForJob(skill,api.job)&&
   matchesSkillSearch(typeof api.skillSearchText==='function'?
    api.skillSearchText(skill):String(skill.name||'')+' '+String(skill.id??''),api.query))
   .map(skill=>({skill,gate:readiness(skill,api,new Set(),skillIndex)})).filter(({gate})=>
@@ -632,7 +656,8 @@ function viewSkills(target,details,api){
  // card placement only, never what "previous/next in results" means.
  ordered.sort((a,b)=>Number(b.gate.learned)-Number(a.gate.learned)||
   String(a.skill.name||'').localeCompare(String(b.skill.name||''),'ru'));
- const selectedId=api.selectedSkill?.id==null?'':String(api.selectedSkill.id);
+ const rawSelectedId=api.selectedSkill?.id==null?'':String(api.selectedSkill.id);
+ const selectedId=effective.aliases.get(rawSelectedId)||rawSelectedId;
  const rows=[...ordered];
  rows.sort((a,b)=>Number(String(b.skill.id)===selectedId)-
   Number(String(a.skill.id)===selectedId));
@@ -640,7 +665,7 @@ function viewSkills(target,details,api){
  const grid=make('div',{class:'path-skill-grid'});
  for(const {skill,gate}of rows.slice(0,api.shown||24)){
   const item=make('button',{type:'button',class:'path-skill-card'+(gate.learned?' learned':' locked')+
-    (String(api.selectedSkill?.id)===String(skill.id)?' active':''),
+    (selectedId===String(skill.id)?' active':''),
       'aria-label':(skill.name||tr(api,'Умение без названия','Unnamed skill'))+' · '+(gate.learned?tr(api,'доступно','available'):tr(api,'недоступно','unavailable')),
    'data-skill-id':String(skill.id),
    'aria-current':String(skill.id)===selectedId?'true':'false',
@@ -737,6 +762,30 @@ function viewSkills(target,details,api){
     typeof api.attributeLabel==='function'?api.attributeLabel(skill.powerStat):
      tr(api,'Неизвестная характеристика','Unknown attribute'));
    details.append(stats);
+  const nextVersion=effective.upgrades.get(String(skill.id));
+  const previousVersion=skill.prereq==null?null:
+   skillIndex.get(String(skill.prereq));
+  const isUpgrade=Number(skill.charLevel)===50&&
+   previousVersion?.name===skill.name&&
+   previousVersion?.branch===skill.branch;
+  if(nextVersion||isUpgrade){
+   const oldSkill=isUpgrade?previousVersion:skill;
+   const newSkill=isUpgrade?skill:nextVersion;
+   const oldCast=Number(oldSkill?.cast),newCast=Number(newSkill?.cast);
+   const hasTiming=Number.isFinite(oldCast)&&Number.isFinite(newCast)&&
+    oldCast!==newCast;
+   const timing=hasTiming?tr(api,
+    ' Подготовка: '+oldCast+' → '+newCast+' с.',
+    ' Cast time: '+oldCast+' → '+newCast+' s.'):'';
+   details.append(make('p',{class:'path-skill-version-note',text:
+    (isUpgrade?tr(api,
+      'Улучшенная версия с 50-го уровня для подходящей профессии.',
+      'Improved version from level 50 for an eligible class.'):
+      tr(api,
+       'С 50-го уровня для подходящей профессии доступна улучшенная версия.',
+       'An improved version becomes available from level 50 for an eligible class.'))+
+    timing}));
+  }
   const requirements=Array.isArray(skill.reqs)?skill.reqs:[];
   if(requirements.length){
    const reqList=make('div',{class:'path-skill-prereqs'});
@@ -811,5 +860,5 @@ function viewSkills(target,details,api){
   if(typeof api.skillWiki==='function')details.append(api.skillWiki(skill));
  }
 }
-root.PandoraHeroPath=Object.freeze({viewGrowth,viewSkills,readiness,skillCountLabel});
+root.PandoraHeroPath=Object.freeze({viewGrowth,viewSkills,readiness,skillCountLabel,effectiveSkillCatalog});
 })(typeof window==='undefined'?globalThis:window);

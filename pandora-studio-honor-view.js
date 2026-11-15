@@ -190,10 +190,11 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  const sidebar=[
   ['overview','Система чести','Honor system','◈'],
   ['gain','Получение и потеря','Earning and losing','⚔'],
+  ['victories','Победы в PvP','PvP Victories','✦'],
   ['ranks','Ранги и привилегии','Ranks and privileges','♜'],
   ['monthly','Ежемесячные звания','Monthly titles','✦']
  ];
- browse.append(node('p','muted',tr('Разделы · 4','Sections · 4')));
+ browse.append(node('p','muted',tr('Разделы · 5','Sections · 5')));
  browse.append(node('h4','wiki-location-list-heading',
   label('chapter','honor','Честь','Honor')));
  const nav=[];
@@ -414,6 +415,50 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  gain.append(listField(article.zones,'zones','PvP-локации','PvP locations'));
  gain.append(listField(article.battles,'wars','PvP-войны','PvP wars'));
  paragraph(gain,en?o.lossEn:o.lossRu,'honor.overview',en?'lossEn':'lossRu');
+ // Permanent November 13 update. These are in-game battle rewards, not
+ // premium-store purchases or account services from the game website.
+ const victories=section('victories','Победы в PvP','PvP Victories');
+ paragraph(victories,en?o.pvpIntroEn:o.pvpIntroRu,'honor.overview',en?'pvpIntroEn':'pvpIntroRu');
+ const event=article.pvpVictories;
+ if(event?.daily&&event?.weekly&&event?.hunts){
+  const addTable=(captionRu,captionEn,headers,rows)=>{
+   const group=make('div',{class:'wiki-honor-pvp-group'});
+   group.append(node('h5','wiki-honor-pvp-label',tr(captionRu,captionEn)));
+   const table=make('table',{class:'wiki-honor-pvp-table'});
+   const thead=make('thead'),head=make('tr');
+   for(const [ru,english] of headers)head.append(node('th','',tr(ru,english)));
+   thead.append(head);table.append(thead);
+   const tbody=make('tbody');
+   for(const values of rows){
+    const row=make('tr');
+    for(const value of values)row.append(node('td','',String(value)));
+    tbody.append(row);
+   }
+   table.append(tbody);group.append(table);victories.append(group);
+  };
+  addTable('Ежедневные награды','Daily rewards',
+   [['Победы за день','Daily victories'],['Награда','Reward']],
+   event.daily.map(row=>[row.wins,en?row.rewardEn:row.rewardRu]));
+  paragraph(victories,en?o.pvpDailyEn:o.pvpDailyRu,'honor.overview',
+   en?'pvpDailyEn':'pvpDailyRu');
+  addTable('Обмен боевых жетонов','Combat-token exchange',
+   [['Награда','Reward'],['Стоимость','Cost'],['Лимит за неделю','Weekly limit']],
+   event.weekly.map(row=>[en?row.rewardEn:row.rewardRu,
+    en?row.costEn:row.costRu,row.limit]));
+  paragraph(victories,en?o.pvpWeeklyEn:o.pvpWeeklyRu,'honor.overview',
+   en?'pvpWeeklyEn':'pvpWeeklyRu');
+  victories.append(node('h5','wiki-honor-pvp-label',
+   tr('Двойные награды: вторник и четверг','Double rewards: Tuesday and Thursday')));
+  paragraph(victories,en?o.pvpHuntEn:o.pvpHuntRu,'honor.overview',
+   en?'pvpHuntEn':'pvpHuntRu');
+  addTable('Расписание охоты (МСК)','Hunt schedule (Moscow time)',
+   [['День','Day'],['Время','Time'],['Карта','Map']],
+   event.hunts.map(row=>[en?row.daysEn:row.daysRu,row.hours,
+    en?row.mapEn:row.mapRu]));
+  victories.append(node('small','wiki-honor-pvp-source',
+   tr('Источник: официальное обновление от 13 ноября 2026 года.',
+      'Source: official game update published November 13, 2026.')));
+ }
  const ranks=section('ranks','Ранги и привилегии','Honor ranks and privileges');
  paragraph(ranks,en?o.ranksEn:o.ranksRu,'honor.overview',
   en?'ranksEn':'ranksRu');
