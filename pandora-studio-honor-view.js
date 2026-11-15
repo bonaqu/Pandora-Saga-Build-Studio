@@ -419,14 +419,22 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  // premium-store purchases or account services from the game website.
  const victories=section('victories','Победы в PvP','PvP Victories');
  paragraph(victories,en?o.pvpIntroEn:o.pvpIntroRu,'honor.overview',en?'pvpIntroEn':'pvpIntroRu');
+ const officialScreenshot='https://pandorasaga-os.com/uploads/images/f4be126de5ed488981aeeb2298255095.jpg';
  const eventImage=make('img',{
   class:'wiki-honor-pvp-illustration',
-  src:'https://pandorasaga-os.com/uploads/images/f4be126de5ed488981aeeb2298255095.jpg',
+  src:officialScreenshot,
   alt:tr('Окно постоянного события «Победы в PvP»',
          'Permanent PvP Victories event window'),
   loading:'lazy',decoding:'async'});
+ // The original host can block hotlink requests. Keep an accessible source
+ // link instead of showing a broken image or silently hiding the evidence.
  eventImage.addEventListener('error',()=>eventImage.remove());
- victories.append(eventImage);
+ const screenshotSource=make('a',{
+  class:'wiki-honor-pvp-screenshot-link',href:officialScreenshot,
+  target:'_blank',rel:'noopener noreferrer',
+  text:tr('Открыть оригинальный скриншот события',
+          'Open the original event screenshot')});
+ victories.append(eventImage,screenshotSource);
  const event=article.pvpVictories;
  if(event?.daily&&event?.weekly&&event?.hunts){
   const addTable=(captionRu,captionEn,headers,rows)=>{
