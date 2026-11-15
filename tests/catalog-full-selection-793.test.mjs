@@ -50,7 +50,8 @@ test('select all explains risks and requires a fresh acknowledgement per selecti
  assert.match(workbench,/class:'os-sync-decision-preview'/);
  assert.match(workbench,/class:'os-sync-risk-approval'/);
  assert.match(workbench,/const selectedFingerprint=\(\)=>JSON\.stringify/);
- assert.match(workbench,/const risky=Boolean\(deleted\|\|settings\|\|unsure\|\|links\|\|formulas\|\|mode==='archive'\)/);
+ assert.match(workbench,/const risky=Boolean\(deleted\|\|settings\|\|unsure\|\|links\|\|formulas\|\|mechanicsReview\|\|mode==='archive'\)/);
+ assert.match(workbench,/const mechanicsReview=preview\?\.compatibility\?\.requiresMechanicReview===true/);
  assert.match(workbench,/riskApprovalFingerprint!==fingerprint/);
  assert.match(workbench,/publish\.disabled=!ready\|\|!acknowledged/);
  assert.match(workbench,/Предел уровня:/);
