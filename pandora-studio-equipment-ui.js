@@ -18,6 +18,8 @@ const el=(tag,attrs={},children=[])=>{
   else if(v!==null&&v!==undefined)e.setAttribute(k,String(v));
  }
  for(const child of children)e.append(typeof child==='string'?document.createTextNode(child):child);
+ if(tag==='input'&&String(attrs.type||'').toLowerCase()==='search')
+  root.PandoraSearchField?.prepare(e);
  return e;
 };
 function summary(record,icon,kind='item',context=null){
