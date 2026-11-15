@@ -1,3 +1,8 @@
+## 0.819.0 · Игровые контракты не зависят от русских названий (#615)
+- Не использовать `skill.name` или совпадение имён родитель/дочерний навык как условие числового расчёта, исхода ловушки или связи `EP_SKILL_EXEC`. Данные RU/EN меняются независимо. Защищать ID, ветки `branch/branchRaw`, `skillType`, `learnable`, требования, shape EP/FV и проверенные дочерние действия.
+- `encouragementBonus` обязан сохранять +СИЛ/+ЛВК/+ИНТ от внешнего жреца при переименовании навыка 320012001, но отвергать любое дополнительное `FV2` в трёх подписанных эффектах. `310014001/2` (Полное исцеление), условные on-hit, Песчаная буря, ловушки и 240002002/51 проверяются по идентичности источников, не меткам.
+- Регрессии `tests/catalog-label-invariant-models-819.test.mjs` и актуализированные `tests/os-purify-chain-locale-701.test.mjs`, `tests/os-onhit-skill-chains-712.test.mjs`, `tests/remaked-encouragement-and-element-names.test.mjs`. Node/Chromium до merge; Pages/Worker/D1 read-only после merge.
+
 ## 0.818.0 · Регрессия внешних бафов и дочерних песен (#615)
 - `PandoraCatalogSafety.replaySkills` проверяет числовые результаты `alliedRecipientPreviews` и `priestCastPreviews` независимо от класса получателя. Никогда не отфильтровывать такие эффекты как собственные не изученные героем умения.
 - Проверить шесть независимых союзных бафов и существующие модели жреца, включая `enchantAuraRate`/`enchantAuraFlat`/`enchantElementRate`, `sageCooldownDelta` и linked song chains с классами `{}`. Привязывать каждый вывод только к подтверждённым потребителям навыка, без допущений про серверное округление/стекинг.
