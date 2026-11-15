@@ -104,8 +104,9 @@ test('dropping a referenced item invalidates every affected loot, recipe and ven
  delete after.items['80098'];
  const broken=check(after);
  assert.equal(broken.ok,false);
- assert.ok(broken.newBroken>1,'shared item id cascades through multiple sources');
- assert.ok(broken.samples.some(x=>x.kind==='trade'));
+ assert.ok(broken.newBroken>8,'shared item id cascades across loot and vendor sources');
+ assert.ok(broken.samples.some(x=>x.kind==='drop'),
+  'first eight actionable examples show at least one affected source');
 });
 
 test('bulk selected changes with intact references remain source descriptions, never combat proofs',()=>{
