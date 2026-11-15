@@ -1056,7 +1056,8 @@ export async function runAdminEntrySmoke(browser,base){
   await speedCheck.click();
   await page.waitForFunction(()=>document.querySelector('.wiki-speed-result')?.textContent?.includes('мс'),null,{timeout:15000});
   assert.match(await page.locator('.wiki-speed-result').innerText(),/записей/);
-  assert.equal(await wikiSearch.getAttribute('autocomplete'),'off');
+  assert.equal(await wikiSearch.getAttribute('autocomplete'),'none');
+  assert.equal(await wikiSearch.getAttribute('data-ps-noncredential-search'),'true');
   assert.equal(await wikiSearch.getAttribute('data-lpignore'),'true');
   await wikiSearch.click();
   // Search-name overrides can change while a mock catalog refreshes. This
