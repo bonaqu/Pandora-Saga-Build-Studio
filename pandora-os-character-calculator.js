@@ -1424,7 +1424,11 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
   const predecessor=options.predecessor==null?null:skill(options.predecessor);
   const sourceChainValid=options.predecessor==null?record?.prereq==null:
    record?.prereq===options.predecessor&&predecessor?.id===options.predecessor&&
-   predecessor?.learnable===true&&predecessor?.name===record?.name&&
+   // Names are translations/labels, not a gameplay dependency contract.
+   // Require the actual source branch identity of both linked versions.
+   predecessor?.learnable===true&&
+   predecessor?.branch===record?.branch&&
+   predecessor?.branchRaw===record?.branchRaw&&
    predecessor?.skillType===record?.skillType&&
    predecessor?.classes?.[jobKey]===1;
   if(!record||Number(record.id)!==id||record.learnable!==true||
