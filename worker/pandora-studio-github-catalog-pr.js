@@ -81,6 +81,62 @@ export async function readPublishedGameCatalog(db,active){
   throw fault('Published metadata is inconsistent',409);
  return data;
 }
+const validPull=pull=>typeof pull?.html_url==='string'&&
+ /^https:\/\/github\.com\/bonaqu\/Pandora-Saga-Build-Studio\/pull\/\d+$/.test(pull.html_url)&&
+ Number.isSafeInteger(pull.number)&&pull.number>0;
+
+// Git's SHA-1 blob envelope is deterministic. A stranded catalog branch must
+// match EACH source JSON from the active D1 snapshot before we can restore its
+// missing PR. Never reuse arbitrary branches named like a catalog snapshot.
+async function gitBlobSha(content){
+ const encoder=new TextEncoder(),body=encoder.encode(content);
+ const envelope=encoder.encode('blob '+body.byteLength+'\0');
+ const bytes=new Uint8Array(envelope.length+body.length);
+ bytes.set(envelope);bytes.set(body,envelope.length);
+ const hash=new Uint8Array(await crypto.subtle.digest('SHA-1',bytes));
+ return Array.from(hash,n=>n.toString(16).padStart(2,'0')).join('');
+}
+async function verifyStrandedCatalogBranch(env,active,snapshot,sha){
+ if(!/^[a-f0-9]{40}$/.test(sha||''))throw fault('Invalid catalog branch reference',409);
+ const [base,commit]=await Promise.all([
+  gh(env,'/git/ref/heads/'+BASE),gh(env,'/git/commits/'+sha)
+ ]);
+ const baseSha=base?.object?.sha;
+ if(!/^[a-f0-9]{40}$/.test(baseSha||'')||
+  commit?.message!=='catalog: reviewed game data snapshot '+snapshot||
+  commit?.parents?.length!==1||commit.parents[0]?.sha!==baseSha||
+  !/^[a-f0-9]{40}$/.test(commit?.tree?.sha||''))
+  throw fault('Catalog branch is not a verified child of the current base',409);
+ const diff=await gh(env,'/compare/'+baseSha+'...'+sha);
+ const allowed=new Set(SOURCES.map(([name])=>'data/os/'+name+'.json'));
+ if(!Array.isArray(diff?.files)||diff.files.length<1||
+   diff.files.length>SOURCES.length||diff.files.some(file=>
+    !allowed.has(file.filename)||!['added','modified'].includes(file.status)))
+  throw fault('Catalog branch contains unexpected changes',409);
+ const nextTree=async(current,name)=>{
+  const tree=await gh(env,'/git/trees/'+current);
+  if(tree.truncated===true||!Array.isArray(tree.tree))
+   throw fault('Catalog tree incomplete',409);
+  const match=tree.tree.find(row=>row.path===name&&row.type==='tree');
+  if(!/^[a-f0-9]{40}$/.test(match?.sha||''))
+   throw fault('Missing expected catalog directory',409);
+  return match.sha;
+ };
+ const dataTree=await nextTree(commit.tree.sha,'data');
+ const osTree=await nextTree(dataTree,'os');
+ const directory=await gh(env,'/git/trees/'+osTree);
+ if(directory.truncated===true||!Array.isArray(directory.tree))
+  throw fault('Catalog tree incomplete',409);
+ const catalog=await readPublishedGameCatalog(env.DB,active);
+ for(const [name] of SOURCES){
+  const file=directory.tree.find(row=>
+   row.path===name+'.json'&&row.type==='blob'&&row.mode==='100644');
+  const expected=await gitBlobSha(JSON.stringify(catalog[name])+'\n');
+  if(file?.sha!==expected)
+   throw fault('The stranded catalog branch differs from published D1: '+name,409);
+ }
+ return true;
+}
 export async function createCatalogPullRequest(env,active,activeSnapshot){
  if(!githubCatalogEnabled(env))throw fault('GitHub PR integration not configured',503);
  const snapshot=active?.snapshot;
@@ -90,9 +146,28 @@ export async function createCatalogPullRequest(env,active,activeSnapshot){
  const existing=await gh(env,ref,{optional:true});
  if(existing){
   const pulls=await gh(env,'/pulls?state=open&head=bonaqu%3A'+encodeURIComponent(branch));
-  if(Array.isArray(pulls)&&pulls.length)
-   return {url:pulls[0].html_url,number:pulls[0].number,reused:true};
-  throw fault('The catalog branch already exists. Inspect it in GitHub before retrying.',409);
+  if(Array.isArray(pulls)&&pulls.length){
+   const pull=pulls[0];
+   if(!validPull(pull)||pull.head?.ref!==branch||pull.base?.ref!==BASE)
+    throw fault('Unexpected open catalog PR identity',409);
+   return {url:pull.html_url,number:pull.number,reused:true};
+  }
+  // A previous request can create the Git branch successfully but time out
+  // before GitHub creates the PR. Verify all 17 exact D1 file hashes and
+  // ensure the branch has no code changes before resuming automatically.
+  await verifyStrandedCatalogBranch(env,active,snapshot,existing?.object?.sha);
+  if(await activeSnapshot()!==snapshot)
+   throw fault('Published catalog changed before GitHub PR recovery',409);
+  const restored=await gh(env,'/pulls',{method:'POST',body:{
+   title:'catalog: reviewed game-data update ('+snapshot+')',
+   head:branch,base:BASE,
+   body:'Recovered verified D1 game-data backup after an interrupted PR request.\n\n'+
+    'Current published D1 snapshot: '+snapshot+'\n'+
+    'All 17 JSON blobs were verified against the live D1 snapshot.\n'+
+    'Node and Chromium must pass before automatic merging.'
+  }});
+  if(!validPull(restored))throw fault('GitHub returned an invalid recovered PR',502);
+  return {url:restored.html_url,number:restored.number,reused:false,recovered:true};
  }
  const catalog=await readPublishedGameCatalog(env.DB,active);
  const base=await gh(env,'/git/ref/heads/'+BASE),baseSha=base?.object?.sha;
@@ -119,7 +194,14 @@ export async function createCatalogPullRequest(env,active,activeSnapshot){
  const next=await gh(env,'/git/commits',{method:'POST',body:{
   message:'catalog: reviewed game data snapshot '+snapshot,tree:tree.sha,parents:[baseSha]}});
  if(!/^[a-f0-9]{40}$/.test(next?.sha||''))throw fault('GitHub commit failed');
- await gh(env,'/git/refs',{method:'POST',body:{ref:'refs/heads/'+branch,sha:next.sha}});
+ try{
+  await gh(env,'/git/refs',{method:'POST',body:{ref:'refs/heads/'+branch,sha:next.sha}});
+ }catch(error){
+  // A dropped response after GitHub accepted the branch is recoverable.
+  // A different conflicting branch must never be overwritten.
+  const created=await gh(env,ref,{optional:true});
+  if(created?.object?.sha!==next.sha)throw error;
+ }
  const pull=await gh(env,'/pulls',{method:'POST',body:{
   title:'catalog: reviewed game-data update ('+snapshot+')',
   head:branch,base:BASE,
@@ -129,8 +211,7 @@ export async function createCatalogPullRequest(env,active,activeSnapshot){
    'Review the diff and wait for Node and Chromium checks before merging.\n'+
    'No player accounts, passwords or Cloudflare settings are included.'
  }});
- if(!/^https:\/\/github\.com\/bonaqu\/Pandora-Saga-Build-Studio\/pull\/\d+$/.test(pull?.html_url||''))
-  throw fault('Unexpected GitHub pull request URL');
+ if(!validPull(pull))throw fault('Unexpected GitHub pull request URL');
  return {url:pull.html_url,number:pull.number,reused:false};
 }
 
