@@ -63,17 +63,27 @@ test('wiki resolves chests by item ID and soul portraits through item icon catal
  assert.match(app,/const wikiImage=/);
 });
 
-test('soul icon resolution uses canonical item URLs in sockets and wiki',()=>{
+test('soul icon resolution uses local canonical sprites and rejects remote owner overrides',()=>{
  const app=read('pandora-studio-app.js');
+ const localStart=app.indexOf('function localArtwork(value){');
+ const localEnd=app.indexOf('function skillIcon(',localStart);
+ assert.ok(localStart>=0&&localEnd>localStart);
+ const localArtwork=Function(app.slice(localStart,localEnd)+'\nreturn localArtwork;')();
  const start=app.indexOf('function itemIcon('),end=app.indexOf('\nfunction branchCap',start);
  assert.ok(start>=0&&end>start);
- const factory=Function('override','iconManifest','unavailableIconIds','OS',app.slice(start,end)+'\nreturn itemIcon');
- const normal=factory({},{icons:{souls:{I_101000_00:'assets/souls/icons/I_101000_00.webp'}}},new Set(),'https://pandorasaga-os.com');
- assert.equal(normal({id:101000,kind:'SOUL',icon:'I_101000_00'},'souls'),
-  'assets/souls/icons/I_101000_00.webp');
- const overridden=factory({'visual.soul.101000':'real-custom-image.webp'},null,new Set(),'https://pandorasaga-os.com');
- assert.equal(overridden({id:101000,kind:'SOUL',icon:'I_101000_00'},'souls'),
-  'real-custom-image.webp');
+ const factory=Function('override','iconManifest','unavailableIconIds',
+  'localArtwork',app.slice(start,end)+'\nreturn itemIcon');
+ const icons={icons:{souls:{I_101000_00:'assets/souls/icons/I_101000_00.webp'}}};
+ const item={id:101000,kind:'SOUL',icon:'I_101000_00'};
+ const normal=factory({},icons,new Set(),localArtwork);
+ assert.equal(normal(item,'souls'),'assets/souls/icons/I_101000_00.webp');
+ const custom='assets/items/icons/I_101000_00.webp';
+ assert.equal(factory({'visual.soul.101000':custom},icons,new Set(),
+  localArtwork)(item,'souls'),custom);
+ const remote='https://pandorasaga-os.com/icons/items/I_101000_00.webp';
+ assert.equal(factory({'visual.soul.101000':remote},icons,new Set(),
+  localArtwork)(item,'souls'),'assets/souls/icons/I_101000_00.webp',
+  'old external D1 overrides must be ignored even if a local original exists');
 });
 
 test('NPC recipes, monster details and locations are searchable game data',()=>{
