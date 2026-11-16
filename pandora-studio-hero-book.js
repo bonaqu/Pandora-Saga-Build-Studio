@@ -2,7 +2,6 @@
 'use strict';
 // Partial source-backed combat preview. Do not claim current OS parity for missing buffs or procs.
 // Exact, player-interface labels only; source names and item descriptions stay untouched.
-// A view-only filter for the 702 current monster names. Never saved in builds.
 const bookEnglish=Object.freeze({
  'Итоги': "Summary",
  'Атака': "Attack",
