@@ -1,5 +1,5 @@
 ## 0.838.0 · Зональная добыча и связи (#615)
-- table.zone-drop-parameters (sourceOnly) распознаёт только числовые изменения base/perMember и lo/hi при сохранении identity, порядка, map/mob/item IDs, видов csv/hook и slotP/slotN. Не приписывать source-only весам шансы дропа на сервере.
+- table.zone-drop-parameters (sourceOnly) распознаёт только числовые изменения base/perMember и lo/hi при сохранении identity, порядка, map/mob/item IDs, видов csv/hook и slotP/slotN. Два исходных hook без mob являются осмысленными zone-wide правилами, не добавлять им ложную ссылку на монстра. Не приписывать source-only весам шансы дропа на сервере.
 - sourceGraphIntegrity до D1 дополнительно охватывает zoneDrops: zone.map -> maps, hook.mob -> monsters, reward.i -> items. Контролировать все 11 зон, 285 правил и 1 091 предмет; изменения формы требуют review.
 - tests/catalog-zone-drops-source-838.test.mjs; Node+Chromium на exact PR SHA и после merge read-only Pages/Worker/D1, без записей в production.
 

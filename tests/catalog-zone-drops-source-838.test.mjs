@@ -21,6 +21,18 @@ test('whole source contains 11 zones / 285 rules / 1091 item links with no broke
  assert.equal(check.newBroken,0);
  assert.equal(check.historical,4);
 });
+test('two zone-wide hooks have no monster ID and remain valid source data',()=>{
+ const rows=base.tables.zoneDrops.flatMap(z=>z.rows);
+ const zoneWide=rows.filter(r=>r.kind==='hook'&&!Object.hasOwn(r,'mob'));
+ assert.equal(zoneWide.length,2);
+ const {after,report}=change(zones=>{
+  for(const zone of zones)for(const row of zone.rows)
+   if(row.kind==='hook'&&!Object.hasOwn(row,'mob'))row.base+=0.01;
+ });
+ assert.equal(report.entries[0].kind,'sourceOnly');
+ assert.equal(report.entries[0].contract,'table.zone-drop-parameters');
+ assert.equal(safety.sourceGraphIntegrity(base,after).ok,true);
+});
 test('all 285 source-only rule weight updates preserve original identities',()=>{
  const prev=JSON.stringify(base);
  const {after,report}=change(zones=>{

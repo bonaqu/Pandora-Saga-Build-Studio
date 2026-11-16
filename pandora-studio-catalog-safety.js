@@ -1014,13 +1014,17 @@ function sourceZoneDropNumbers(field,before,after){
    left.rows.length!==right.rows.length||!left.rows.length)return false;
   for(let j=0;j<left.rows.length;j++){
    const x=left.rows[j],y=right.rows[j];
+   // Current source has two zone-wide hook rules without mob, besides
+   // monster-specific hooks. Neither gets a fabricated monster ID.
+   const hasMob=Object.hasOwn(x||{},'mob');
+   const rowFields=hasMob?
+    ['base','items','kind','mob','perMember']:
+    ['base','items','kind','perMember'];
    if(!contractKeys(x,y)||!['csv','hook'].includes(x?.kind)||
     x.kind!==y?.kind||x.mob!==y.mob||
-    !contractSame(Object.keys(x).sort(),
-     (x.kind==='hook'?
-      ['base','items','kind','mob','perMember']:
-      ['base','items','kind','perMember']).sort()))return false;
-   if(x.kind==='hook'&&(!exists(before,'monsters',x.mob)||
+    x.kind==='csv'&&hasMob||
+    !contractSame(Object.keys(x).sort(),rowFields.sort()))return false;
+   if(hasMob&&(!exists(before,'monsters',x.mob)||
     !exists(after,'monsters',y.mob)))return false;
    for(const k of ['base','perMember']){
     if(!Number.isFinite(x[k])||!Number.isFinite(y[k])||
