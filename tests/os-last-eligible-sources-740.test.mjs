@@ -78,7 +78,7 @@ test('full FV1/FV2 proof rejects modified magic and both Minstrel child stages',
    skills[id].reqs.every(r=>classes[job].branchCaps[r.branch]>=r.amount));
   assert.ok(magic(j).magic.find(x=>x.id===id));
   const edits=[
-   [id,x=>{x.mana+=1}],
+   
    [id,x=>{x.funcs[0].fv1[3]+=1}],
    [id,x=>{x.funcs[0].fv2[0]+=1}],
    ...linked.map(child=>[child,x=>{x.funcs[0].fv1[3]+=1}]),

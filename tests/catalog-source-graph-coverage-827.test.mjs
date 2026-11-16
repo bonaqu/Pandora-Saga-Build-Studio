@@ -37,16 +37,26 @@ test('full current-source graph is readable with grandfathered zero-ID placehold
  assert.equal(JSON.stringify(before),original);
 });
 
-test('legacy zero-action placeholders are exempt only while source gameplay data is unchanged',()=>{
+test('legacy zero placeholders keep identical link references during signed metadata-only changes',()=>{
  const key='620002061';
  assert.ok(before.skills[key].funcs.some(x=>x.ep==='EP_SKILL_EXEC'&&x.fv1[3]===0));
  const renamed=edit('skills',key,s=>{s.name+=' •';});
  assert.equal(safety.sourceGraphIntegrity(before,renamed).ok,true,
   'source labels may be translated without changing model trust');
  const changed=edit('skills',key,s=>{s.cooldown=(s.cooldown||0)+1;});
- const audit=safety.sourceGraphIntegrity(before,changed);
- assert.equal(audit.ok,false,'a modified source cannot reuse legacy malformed source proof');
- assert.ok(audit.samples.some(x=>x.owner===key&&x.field==='EP_SKILL_EXEC'));
+ const meta=safety.compatibility(before,changed);
+ assert.equal(meta.entries[0].kind,'sourceOnly');
+ assert.equal(meta.entries[0].contract,'skill.source-parameters');
+ const graph=safety.sourceGraphIntegrity(before,changed);
+ assert.equal(graph.ok,true,'unchanged legacy edge survives a source-only timing edit');
+ assert.equal(graph.newBroken,0);
+ const corrupt=edit('skills',key,s=>{
+  s.cooldown=(s.cooldown||0)+1;
+  s.funcs.find(effect=>effect.ep==='EP_SKILL_EXEC').fv1[3]=999999991;
+ });
+ const denied=safety.sourceGraphIntegrity(before,corrupt);
+ assert.equal(denied.ok,false,'changing the old action target is never grandfathered');
+ assert.ok(denied.samples.some(x=>x.owner===key&&x.field==='EP_SKILL_EXEC'));
 });
 
 test('new and changed classless execution links are blocked even without an old numeric proof',()=>{

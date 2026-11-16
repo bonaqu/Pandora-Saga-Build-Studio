@@ -3288,11 +3288,22 @@ function songSkillPreview({skillCatalog=null,jobKey=null,level=1,
     JSON.stringify(rootSignature.funcs[3].slice(2))===
      JSON.stringify(extra.root.funcs[3].slice(2)))
   rootSignature.funcs[3]=[extra.root.funcs[3][0],...rootSignature.funcs[3].slice(1)];
- const exact=source?.id===extra.id&&middle?.id===extra.middleId&&
-  last?.id===extra.lastId&&
-  JSON.stringify(rootSignature)===JSON.stringify(extra.root)&&
-  JSON.stringify(sourceVerifiedSkillSignature(middle))===JSON.stringify(extra.middle)&&
-  JSON.stringify(sourceVerifiedSkillSignature(last))===JSON.stringify(extra.last);
+ // All three current source-only song stages may change their existing
+ // mana/cooldown; every EP, FV, requirement, class and link remains exact.
+ const safeSongMetadata=x=>Number.isFinite(x?.mana)&&x.mana>=0&&
+  x.mana<=10000&&Number.isFinite(x?.cooldown)&&
+  x.cooldown>=0&&x.cooldown<=3600;
+ const expectedSongMetadata=(template,record)=>({...template,
+  mana:record.mana,cooldown:record.cooldown});
+ const exact=safeSongMetadata(source)&&safeSongMetadata(middle)&&
+  safeSongMetadata(last)&&source.id===extra.id&&
+  middle.id===extra.middleId&&last.id===extra.lastId&&
+  JSON.stringify(rootSignature)===
+   JSON.stringify(expectedSongMetadata(extra.root,source))&&
+  JSON.stringify(sourceVerifiedSkillSignature(middle))===
+   JSON.stringify(expectedSongMetadata(extra.middle,middle))&&
+  JSON.stringify(sourceVerifiedSkillSignature(last))===
+   JSON.stringify(expectedSongMetadata(extra.last,last));
  const cap=branchCaps?.hymn;
  if(exact&&source.classes?.[jobKey]===1&&Number.isSafeInteger(cap)&&cap>=8){
   const points=branchMasteries?.hymn;
@@ -4917,9 +4928,15 @@ function sourceVerifiedEffectQuantityMatches(record,proof,ep,dir){
   !Number.isSafeInteger(vector[3])||vector[3]<1||
   !Array.isArray(actual[index])||!Array.isArray(actual[index][3])||
   actual[index][3].length!==4)return false;
- if(JSON.stringify(current)===JSON.stringify(proof))return true;
- const normalized={...current,funcs:actual.map((row,i)=>i===index?
-  [row[0],row[1],row[2],[...row[3].slice(0,3),rows[index][3][3]]]:row)};
+ // Only descriptive cost/cooldown metadata and the explicit resource-count
+ // slot may diverge from a pinned source-only inspector signature. Neither
+ // change proves actual hit count, damage, resources in inventory or EP logic.
+ if(!Number.isFinite(current.mana)||current.mana<0||current.mana>10000||
+  !Number.isFinite(current.cooldown)||current.cooldown<0||
+  current.cooldown>3600)return false;
+ const normalized={...current,mana:proof.mana,cooldown:proof.cooldown,
+  funcs:actual.map((row,i)=>i===index?
+   [row[0],row[1],row[2],[...row[3].slice(0,3),rows[index][3][3]]]:row)};
  return JSON.stringify(normalized)===JSON.stringify(proof);
 }
 function sourceVerifiedAmmoQuantityMatches(record,proof){
@@ -4940,15 +4957,15 @@ function rangedAmmoPreview({skillCatalog=null,jobKey=null,level=1,
     proof.linked.every(entry=>{
      const linked=skillCatalog[String(entry.id)];
      return linked?.id===entry.id&&
-      JSON.stringify(sourceVerifiedSkillSignature(linked))===JSON.stringify(entry.signature);
+      qualitativeSkillMetadataMatches(linked,entry.signature);
     }):
     child?.id===proof.childId&&
-     JSON.stringify(sourceVerifiedSkillSignature(child))===JSON.stringify(proof.child);
+     qualitativeSkillMetadataMatches(child,proof.child);
    const exact=source?.id===proof.id&&
     sourceVerifiedAmmoQuantityMatches(source,proof.root)&&
     childrenExact&&
     (!proof.parentId||(parent?.id===proof.parentId&&
-     JSON.stringify(sourceVerifiedSkillSignature(parent))===JSON.stringify(proof.parent)));
+     qualitativeSkillMetadataMatches(parent,proof.parent)));
    if(!exact){out.rejected.push(proof.id);continue;}
    if(proof.root.reqs.some(([branch,amount])=>
     !Number.isSafeInteger(branchCaps?.[branch])||branchCaps[branch]<amount))continue;
@@ -5036,12 +5053,7 @@ function combatTechniquePreview({skillCatalog=null,jobKey=null,level=1,
   const valid=skill?.id===proof.id&&linkedExact&&
    (!proof.groupRequirement||(proof.groupRequirement==='MELEE'&&
     skill.branchRaw==='MELEE'&&skill.branch==='martial'))&&
-   // Ossify (100057001) has an additional numeric Book projection.
-   // Its entire source signature must remain exact; other techniques
-   // here are source-only descriptions with no calculated final amount.
-   (proof.id===100057001?
-    JSON.stringify(sourceVerifiedSkillSignature(skill))===JSON.stringify(proof.root):
-    qualitativeSkillMetadataMatches(skill,proof.root))&&
+   qualitativeSkillMetadataMatches(skill,proof.root)&&
    (!proof.childId||(child?.id===proof.childId&&
     qualitativeSkillMetadataMatches(child,proof.child)))&&
    (!proof.parentId||(parent?.id===proof.parentId&&
@@ -5100,11 +5112,11 @@ function specializedSkillPreview({skillCatalog=null,jobKey=null,level=1,
    const linked=skillCatalog[String(entry.id)];
    if(linked?.id!==entry.id)return false;
    const signed=sourceVerifiedSkillSignature(linked);
-   const historical=JSON.stringify(signed)===JSON.stringify(entry.signature);
+   const historical=qualitativeSkillMetadataMatches(linked,entry.signature);
    // Only the current D1 Silent Storm child changes mana-drain FV1
    // and adds a knockback effect. Every linked field is still gated.
    const latest=entry.id===440009002&&
-    JSON.stringify(signed)===JSON.stringify({...entry.signature,funcs:[
+    qualitativeSkillMetadataMatches(linked,{...entry.signature,funcs:[
      ['EP_LOSSMANA_NOWMANA','TARGET',[8,0,8,2],[0,0,0,0]],
      ['EP_CAUSE_SILENCE','TARGET',[0,0,0,8],[0,0,20,35]],
      ['EP_DESTINED_KNOCKBACK','TARGET',[0,0,0,-100],[0,0,0,0]]
@@ -5115,26 +5127,23 @@ function specializedSkillPreview({skillCatalog=null,jobKey=null,level=1,
    sourceVerifiedSkillSignature(skillCatalog['440009002'])?.funcs?.length===3&&
    linkedExact;
   const signature=sourceVerifiedSkillSignature(source);
-  const oldProof=JSON.stringify(signature)===JSON.stringify(proof.root);
+  const oldProof=qualitativeSkillMetadataMatches(source,proof.root);
   // Current D1 Plague only changes BOLT→ENEMY and root AoE.
   // Keep its exact linked curse/disease child independent.
   const newPlague=proof.id===440011001&&
-   signature?.skillType==='ENEMY'&&
-   JSON.stringify(signature.aoe)==='[0,0]'&&
-   JSON.stringify({...signature,skillType:proof.root.skillType,aoe:proof.root.aoe})===
-    JSON.stringify(proof.root);
+   qualitativeSkillMetadataMatches(source,
+    {...proof.root,skillType:'ENEMY',aoe:[0,0]});
   // Only Psychic Blade's verified 50-level variant changes its action
   // timer in D1: cast 3.5 -> 2, cooldown 10 -> 12. Preserve all
   // other fields and linked child/parent signatures as exact gates.
   const newBlade=proof.id===420005002&&
-   signature?.cast===2&&signature.cooldown===12&&
-   JSON.stringify({...signature,cast:proof.root.cast,cooldown:proof.root.cooldown})===
-    JSON.stringify(proof.root);
+   qualitativeSkillMetadataMatches(source,
+    {...proof.root,cast:2,cooldown:12});
   const valid=source?.id===proof.id&&linkedExact&&(oldProof||newBlade||newPlague)&&
    (!proof.parentId||(parent?.id===proof.parentId&&
-    JSON.stringify(sourceVerifiedSkillSignature(parent))===JSON.stringify(proof.parent)))&&
+    qualitativeSkillMetadataMatches(parent,proof.parent)))&&
    (!proof.childId||(child?.id===proof.childId&&
-    JSON.stringify(sourceVerifiedSkillSignature(child))===JSON.stringify(proof.child)));
+    qualitativeSkillMetadataMatches(child,proof.child)));
   if(!valid){out.rejected.push(proof.id);continue;}
   if(proof.root.reqs.some(([branch,amount])=>
    !Number.isSafeInteger(branchCaps?.[branch])||branchCaps[branch]<amount))continue;
@@ -5231,13 +5240,13 @@ function supportEffectPreview({skillCatalog=null,jobKey=null,level=1,
    const linkedExact=!proof.linked||proof.linked.every(entry=>{
     const linked=skillCatalog[String(entry.id)];
     return linked?.id===entry.id&&
-     JSON.stringify(sourceVerifiedSkillSignature(linked))===JSON.stringify(entry.signature);
+     qualitativeSkillMetadataMatches(linked,entry.signature);
    });
    const exact=source?.id===proof.id&&
-    JSON.stringify(sourceVerifiedSkillSignature(source))===JSON.stringify(proof.root)&&
+    qualitativeSkillMetadataMatches(source,proof.root)&&
     linkedExact&&
     (!proof.parentId||(parent?.id===proof.parentId&&
-     JSON.stringify(sourceVerifiedSkillSignature(parent))===JSON.stringify(proof.parent)));
+     qualitativeSkillMetadataMatches(parent,proof.parent)));
    if(!exact){out.rejected.push(proof.id);continue;}
    if(proof.root.reqs.some(([branch,amount])=>
     !Number.isSafeInteger(branchCaps?.[branch])||branchCaps[branch]<amount))continue;

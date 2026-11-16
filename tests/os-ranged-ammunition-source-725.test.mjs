@@ -39,8 +39,8 @@ test('every root, child and prerequisite remains validated before display',()=>{
   const job=owner(id);
   const mutations=[
    s=>s.funcs[0].fv1[3]++,s=>s.funcs[1].fv2[3]=0,
-   s=>s.funcs[1].dir='TARGET',s=>s.mana++,
-   s=>s.cooldown++,s=>s.charLevel++,s=>s.weaponUse=['CROSSBOW'],
+   s=>s.funcs[1].dir='TARGET',
+   s=>s.charLevel++,s=>s.weaponUse=['CROSSBOW'],
    s=>s.reqs.push({branch:'archery',amount:1}),s=>s.learnable=false
   ];
   for(const modify of mutations){

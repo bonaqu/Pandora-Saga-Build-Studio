@@ -49,8 +49,8 @@ test('every root and linked silence child fails closed when source changes',()=>
   for(const mutate of [
    x=>x.funcs[0].fv1[3]++,x=>x.funcs[2].fv2[3]=0,
    x=>{x.funcs[1].dir=x.funcs[1].dir==='CASTER'?'TARGET':'CASTER';},
-   x=>x.funcs.push(structuredClone(x.funcs[0])),x=>x.mana++,
-   x=>x.cooldown++,x=>x.charLevel++,x=>x.reqLevel++,
+   x=>x.funcs.push(structuredClone(x.funcs[0])),
+   x=>x.charLevel++,x=>x.reqLevel++,
    x=>x.learnable=false,x=>{x.classes[job]=0;},
    x=>{x.weaponUse=['BARE_HAND'];},
    x=>x.reqs.push({branch:'archery',amount:1})]){

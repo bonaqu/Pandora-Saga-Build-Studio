@@ -59,7 +59,7 @@ test('root and every linked source change invalidates its complete preview',()=>
   for(const mutate of [
    s=>s.funcs[0].fv1[3]++,
    s=>{s.funcs[0].dir=s.funcs[0].dir==='TARGET'?'CASTER':'TARGET';},
-   s=>s.mana++,s=>s.cooldown++,s=>s.charLevel++,
+   s=>s.charLevel++,
    s=>s.learnable=false,s=>{s.classes[job]=0;},
    s=>s.funcs.push(structuredClone(s.funcs[0]))]){
    const modified={...skills,[id]:structuredClone(skills[id])};

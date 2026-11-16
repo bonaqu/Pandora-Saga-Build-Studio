@@ -44,7 +44,7 @@ test('modified root, effect, cost, class or prerequisite is rejected',()=>{
   for(const mutate of [
    s=>s.funcs[0].fv1[3]++,s=>s.funcs[0].fv2[3]++,
    s=>s.funcs[0].dir='CASTER',s=>s.funcs.push(structuredClone(s.funcs[0])),
-   s=>s.mana++,s=>s.cooldown++,s=>s.charLevel++,s=>s.reqLevel++,
+   s=>s.charLevel++,s=>s.reqLevel++,
    s=>s.learnable=false,s=>{s.classes[job]=0;} ]){
    const altered={...skills,[id]:structuredClone(skills[id])};
    mutate(altered[id]);

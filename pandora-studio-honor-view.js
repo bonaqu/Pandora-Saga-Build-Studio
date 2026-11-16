@@ -417,7 +417,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  paragraph(gain,en?o.lossEn:o.lossRu,'honor.overview',en?'lossEn':'lossRu');
  const victories=section('victories','Победы в PvP','PvP Victories');
  paragraph(victories,en?o.pvpIntroEn:o.pvpIntroRu,'honor.overview',en?'pvpIntroEn':'pvpIntroRu');
- const officialScreenshot='https://pandorasaga-os.com/uploads/images/f4be126de5ed488981aeeb2298255095.jpg';
+ // Self-hosted illustration only. No external image host is exposed to players.
  const eventImage=make('img',{
   class:'wiki-honor-pvp-illustration',
   src:'assets/wiki/honor-victories.jpg',
@@ -426,12 +426,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
   loading:'lazy',decoding:'async'});
  // A gameplay illustration is not a navigation action. Never expose the
  // image host, external game server, or provenance in the player-facing Wiki.
- eventImage.addEventListener('error',()=>{
-  if(!eventImage.dataset.originalTried){
-   eventImage.dataset.originalTried='1';
-   eventImage.src=officialScreenshot;
-  }else eventImage.remove();
- });
+ eventImage.addEventListener('error',()=>eventImage.remove());
  victories.append(eventImage);
  const event=article.pvpVictories;
  if(event?.daily&&event?.weekly&&event?.hunts){

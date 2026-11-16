@@ -86,7 +86,7 @@ test('new D1 Psychic Blade upgrade keeps exact linked proof and current cooldown
  assert.equal(older[420005002].cooldown,10);
  assert.equal(live[420005002].cooldown,12);
  for(const change of [
-  row=>row.cooldown=13,row=>row.cast=3,
+  row=>row.cast=3,
   row=>row.funcs[0].fv1[3]++,
   row=>row.reqs[0].amount++
  ]){
@@ -102,6 +102,17 @@ test('new D1 Psychic Blade upgrade keeps exact linked proof and current cooldown
  }
 });
 
+test('updated Psychic Blade cooldown is metadata rather than fictional damage',()=>{
+ const changed=structuredClone(live);changed[420005002].cooldown=13;
+ const result=C.specializedSkillPreview({
+  skillCatalog:changed,jobKey:'CONJURER',level:55,
+  branchCaps:classes.CONJURER.branchCaps,
+  branchMasteries:classes.CONJURER.branchCaps
+ });
+ const row=result.magic.find(x=>x.id===420005002);
+ assert.ok(row);assert.equal(row.cooldown,13);
+ assert.equal(row.finalAmount,null);
+});
 test('current game ID and caster cap changes remain explicit, not fabricated',()=>{
  assert.deepEqual(Object.keys(live).filter(id=>!Object.hasOwn(older,id)),
   ['420007101','420007102']);

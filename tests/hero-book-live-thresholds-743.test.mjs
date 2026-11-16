@@ -103,7 +103,6 @@ test('full signed Ossify root rejects changed secondary game effects',()=>{
  for(const mutate of [
   s=>{s[100057001].funcs[0].fv1[3]++},
   s=>{s[100057001].funcs[3].fv2[3]++},
-  s=>{s[100057001].mana++},
   s=>{s[100057001].branchRaw='OTHER'}
  ]){
   const tampered=structuredClone(skills);mutate(tampered);
@@ -111,6 +110,15 @@ test('full signed Ossify root rejects changed secondary game effects',()=>{
   assert.equal(by(inspect('JUGGERNAUT',rank,{skillCatalog:tampered}),100057001),
    undefined,'An altered source may not produce numeric Book values');
  }
+});
+test('known mana metadata does not change the signed Ossify ATK coefficient',()=>{
+ const source=skills[100057001];
+ const updated={...skills,[100057001]:{...source,mana:source.mana+1}};
+ const rank=trained(classes.JUGGERNAUT.branchCaps,100);
+ const original=by(inspect('JUGGERNAUT',rank),100057001);
+ const variant=by(inspect('JUGGERNAUT',rank,{skillCatalog:updated}),100057001);
+ assert.ok(original&&variant);
+ assert.equal(original.amount,variant.amount);
 });
 test('Book is build-scoped, bilingual, and external-buff block is not a toggle',()=>{
  const book=read('pandora-studio-hero-book.js');
