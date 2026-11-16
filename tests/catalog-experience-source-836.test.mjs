@@ -38,6 +38,13 @@ test('each expReq-only grade change uses a signed source-only contract',()=>{
   assert.equal(audit.entries[0].contract,'table.experience-requirement');
  }
 });
+test('actual fractional expReq values at levels 60–69 are accepted without rounding',()=>{
+ assert.equal(Number.isInteger(before.tables.exp['60'].expReq),false);
+ const {data,audit}=next(t=>{t.exp[60].expReq+=0.125;});
+ assert.equal(audit.entries[0].kind,'sourceOnly');
+ assert.equal(audit.entries[0].contract,'table.experience-requirement');
+ assert.equal(data.tables.exp[60].expReq,before.tables.exp[60].expReq+0.125);
+});
 test('changing ability, skill or skillLimit is never certified from experience data',()=>{
  for(const field of ['ability','skill','skillLimit']){
   const {audit}=next(t=>{t.exp[45][field]++;});
@@ -52,7 +59,7 @@ test('missing/extra grades, new fields and invalid numeric values fail closed',(
   t=>{t.exp[45].future=1;},
   t=>{t.exp[45].expReq='999';},
   t=>{t.exp[45].expReq=-5;},
-  t=>{t.exp[45].expReq=1.5;},
+  t=>{t.exp[45].expReq=Number.MAX_SAFE_INTEGER+1;},
   t=>{t.exp[45].expReq=NaN;},
   t=>{t.exp[45].expReq+=1;t.exp[45].ability++;}
  ];

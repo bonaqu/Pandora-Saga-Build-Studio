@@ -898,8 +898,14 @@ function sourceExperienceRequirements(field,before,after){
  for(let level=1;level<=99;level++){
   const id=String(level),a=old[id],b=now[id];
   if(!contractShape(a,names)||!contractShape(b,names))return false;
-  if(![...Object.values(a),...Object.values(b)].every(v=>
-   Number.isSafeInteger(v)&&v>=0))return false;
+  // OS source levels 60–69 already contain fractional expReq values.
+  // Preserve the exact finite source number; only level-grant columns must
+  // remain integer. Never silently round imported experience requirements.
+  if(![a,b].every(row=>
+   ['ability','skill','skillLimit'].every(k=>
+    Number.isSafeInteger(row[k])&&row[k]>=0)&&
+   Number.isFinite(row.expReq)&&row.expReq>=0&&
+   row.expReq<=Number.MAX_SAFE_INTEGER))return false;
   for(const field of names)if(field!=='expReq'&&a[field]!==b[field])
    return false;
   if(a.expReq!==b.expReq)count++;
