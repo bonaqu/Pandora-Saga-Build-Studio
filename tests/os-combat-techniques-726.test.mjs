@@ -47,7 +47,7 @@ test('all root attributes and related child vectors are validated before display
   s=>s.funcs[0].fv2[3]++,
   s=>s.funcs[0].dir='WRONG',
   s=>s.funcs.push(structuredClone(s.funcs[0])),
-  s=>s.mana++,s=>s.cooldown++,s=>s.charLevel++,
+  s=>s.cast++,s=>s.charLevel++,
   s=>s.learnable=false,s=>s.reqLevel++,
   s=>s.reqs.push({branch:'slash',amount:999}),
   s=>{s.classes[Object.keys(s.classes)[0]]=0}
@@ -69,6 +69,19 @@ test('all root attributes and related child vectors are validated before display
   const out=inspect(owner(root),changed);
   assert.equal(out.rows.some(row=>row.id===root),false,'stale child '+root);
   assert.ok(out.rejected.includes(root));
+ }
+});
+test('legitimate cost and cooldown changes keep current qualitative combat source rows',()=>{
+ for(const [id] of cases){
+  const job=owner(id),old=skills[id];
+  const updated={...skills,[String(id)]:{...old,mana:old.mana+1,
+   cooldown:old.cooldown+0.5}};
+  const row=inspect(job,updated).rows.find(x=>x.id===id);
+  assert.ok(row,'source metadata should not drop known qualitative technique '+id);
+  assert.equal(row.mana,old.mana+1);
+  assert.equal(row.cooldown,old.cooldown+0.5);
+  assert.equal(row.sourceOnly,true);
+  assert.equal(row.finalAmount,null);
  }
 });
 test('levels, mastery and equipped weapons affect availability correctly',()=>{
