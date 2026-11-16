@@ -61,7 +61,7 @@ test('changed resource ID, EP, unknown FV and shape cannot acquire verified clas
   skill=>{row(skill).ep='EP_FUTURE_REVIVAL';},
   skill=>{row(skill).future=1;},
   skill=>{skill.funcs.push({ep:'EP_FUTURE',dir:'CASTER',fv1:[0,0,0,0],fv2:[0,0,0,1]});},
-  skill=>{row(skill).fv2[3]=4;skill.cooldown+=1;}
+  skill=>{row(skill).fv2[3]=4;skill.reqs[0].amount++;}
  ]){
   const next=edited(mutate);
   const classifier=S.compatibility(before,next);

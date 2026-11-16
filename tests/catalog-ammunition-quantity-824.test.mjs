@@ -90,7 +90,7 @@ test('source-only quantity does not overwrite independent gameplay changes',()=>
  assert.ok(selected);
  const updated=mutate(id,row=>{
   ammo(row).fv2[3]+=1;
-  row.cooldown+=1;
+  row.funcs[0].fv1[0]+=1; // Non-approved effect change
  });
  assert.equal(S.compatibility(before,updated).totals.needsReview,1);
  assert.equal(inspect(updated.skills,selected.job,selected.weapon)

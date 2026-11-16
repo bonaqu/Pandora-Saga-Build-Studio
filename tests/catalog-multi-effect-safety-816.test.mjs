@@ -55,7 +55,7 @@ test('upgraded Wind Trail loses proof if its extra FV or casting conditions chan
   C.dynamicSkillContracts[id].ep,C.dynamicSkillContracts[id].fv1),false);
  assert.ok(S.replaySkills(before,secondary).lost>0);
  const timing=change(id,skill=>{skill.cast=2});
- assert.equal(S.compatibility(before,timing).totals.needsReview,1);
+ assert.equal(S.compatibility(before,timing).totals.sourceOnly,1);
  const old=row(before.skills,id,'CONJURER',55);
  const next=row(timing.skills,id,'CONJURER',55);
  assert.ok(old.coefficientModels.some(x=>x.ep==='EP_ALL_RESISTANCE_CONST'));
@@ -75,12 +75,14 @@ test('replay protects source coefficients of manual multi-effect previews',()=>{
  assert.ok(replay.previouslyModeled>0);
  assert.ok(replay.lost>0,'unknown new coefficient must not quietly remove old preview');
 });
-test('non-presentational skill changes fail closed while copy/icon changes remain source-only',()=>{
+test('known source metadata remains source-only, unknown mechanics need review',()=>{
  for(const field of ['mana','cast','cooldown','motion','range','unrecognizedFutureField']){
   const after=change(420004001,skill=>{
    skill[field]=field==='unrecognizedFutureField'?{newMechanic:1}:skill[field]+1;
   });
-  assert.equal(S.compatibility(before,after).totals.needsReview,1,field);
+  assert.equal(field==='unrecognizedFutureField'?
+   S.compatibility(before,after).totals.needsReview:
+   S.compatibility(before,after).totals.sourceOnly,1,field);
   assert.ok(S.replaySkills(before,after).changedSkills>=1,field);
  }
  const display=change(420004001,skill=>{
