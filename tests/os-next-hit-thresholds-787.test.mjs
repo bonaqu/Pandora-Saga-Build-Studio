@@ -137,10 +137,8 @@ test('Current D1 source mutation must recalculate future hit gains; no result ca
 });
 test('Book shows at most one new bilingual line in existing disclosure; no recipes or status totals',()=>{
  const book=read('pandora-studio-hero-book.js');
- assert.match(book,/nextHitImprovements/);
- assert.match(book,/Следующий прирост среднего удара/);
- assert.match(book,/Next higher average hit/);
- assert.match(book,/nextHitParts\.join\(' · '\)/);
+ assert.doesNotMatch(book,/nextHitImprovements|Следующий прирост среднего удара|Next higher average hit|nextHitParts/);
+ assert.match(book,/scalingSkillPreview\?\.\(/);
  assert.doesNotMatch(book,/stage-material-actions|function materialSkillResults\(/);
  const os=read('pandora-studio-target-damage.js');
  assert.match(os,/seekIncrease/);
