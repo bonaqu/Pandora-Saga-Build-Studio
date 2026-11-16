@@ -42,13 +42,22 @@ test('all 571 existing skills can update signed source mana without manual id co
  assert.ok(report.entries.every(row=>row.contract==='skill.source-parameters'));
  assert.equal(JSON.stringify(before),oldJSON);
 });
-test('source-only does not bypass independent loss-of-known-model preflight',()=>{
+test('a signed combat-technique mana change retains the current qualitative inspector',()=>{
  const {after,report}=change(id,s=>{s.mana++;});
  assert.equal(report.entries[0].kind,'sourceOnly');
  const replay=safety.replaySkills(before,after);
- assert.equal(replay.ok,false,'known source inspector must block lost modeled row');
+ assert.equal(replay.ok,true,'known combat technique inspector must follow source metadata');
+ assert.equal(replay.lost,0);
+ assert.ok(replay.retained>0);
+});
+test('source-only status still cannot bypass lost source inspections in other families',()=>{
+ const changed='100000501';
+ const {after,report}=change(changed,s=>{s.mana++;});
+ assert.equal(report.entries[0].kind,'sourceOnly');
+ const replay=safety.replaySkills(before,after);
+ assert.equal(replay.ok,false);
  assert.ok(replay.lostSourceOnly>0);
- assert.ok(replay.samples.some(row=>row.id===id));
+ assert.ok(replay.samples.some(row=>row.id===changed));
  const wb=read('pandora-os-catalog-workbench.js');
  assert.ok(wb.includes('if(replay&&!replay.ok)throw Error('));
 });
