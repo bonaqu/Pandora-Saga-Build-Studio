@@ -2,6 +2,24 @@
 'use strict';
 // Presentation-only interpretation of independent loot groups.
 // Never normalize game probabilities, infer missing chances, or mutate the source.
+
+// Descending source-listed chance, then original order for equal or unknown
+// entries. Each roll stays in its own independent group; no fake aggregate
+// probability, no reordering of the source and no changes to editor indices.
+const chanceKey=row=>typeof row?.p==='number'&&Number.isFinite(row.p)?
+ row.p:Number.NEGATIVE_INFINITY;
+function orderedRewards(entries){
+ return (Array.isArray(entries)?entries:[]).map((row,index)=>({index,row}))
+  .sort((a,b)=>chanceKey(b.row)-chanceKey(a.row)||a.index-b.index);
+}
+function orderedGroups(rolls){
+ return (Array.isArray(rolls)?rolls:[]).map((entries,index)=>({index,entries}))
+  .sort((a,b)=>{
+   const high=list=>Math.max(Number.NEGATIVE_INFINITY,
+    ...(Array.isArray(list)?list:[]).map(chanceKey));
+   return high(b.entries)-high(a.entries)||a.index-b.index;
+  });
+}
 function analyze(rolls,chestIds=[]){
  const boxes=chestIds&&typeof chestIds.has==='function'?chestIds:
   new Set((Array.isArray(chestIds)?chestIds:[]).map(String));
@@ -43,5 +61,5 @@ function goldLabel(row,language='ru'){
   '':'–'+fmt.format(values[1]));
  return (language==='en'?'Gold: ':'Золото: ')+amount;
 }
-root.PandoraStudioChestPresentation=Object.freeze({analyze,chance,goldLabel});
+root.PandoraStudioChestPresentation=Object.freeze({analyze,chance,goldLabel,orderedRewards,orderedGroups});
 })(typeof window==='undefined'?globalThis:window);

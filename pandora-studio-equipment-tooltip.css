@@ -118,3 +118,29 @@
  .stage-picker-slot-navigation{gap:4px}
  .stage-picker-head .stage-picker-slot-nav{min-width:31px}
 }
+
+/* Equipment modal: slot arrows share the existing compact action sizing,
+   remain before Close in DOM and keyboard order, and never shrink the title. */
+.stage-picker-head{justify-content:flex-start}
+.stage-picker-head>strong{flex:1 1 auto;min-width:0}
+.stage-picker-slot-navigation{display:inline-flex;align-items:center;gap:5px;
+ margin-left:auto;flex:0 0 auto}
+.stage-picker-head .stage-picker-slot-nav,
+.stage-picker-head>button:last-child{box-sizing:border-box;flex:0 0 32px;
+ width:32px;height:32px;min-width:32px;min-height:32px;padding:0;
+ display:inline-grid;place-items:center;border:1px solid #947047;
+ border-radius:4px;background:#38271b;color:#f0c990;line-height:1;
+ font-size:20px;font-weight:500;box-shadow:none;vertical-align:middle}
+.stage-picker-head .stage-picker-slot-nav:hover,
+.stage-picker-head>button:last-child:hover{border-color:#d2a16a;
+ color:#ffe0ac;background:#4b3422}
+.stage-picker-head .stage-picker-slot-nav:focus-visible,
+.stage-picker-head>button:last-child:focus-visible{outline:2px solid #eec887;
+ outline-offset:2px}
+@media(max-width:460px){
+ .stage-picker-head{gap:5px}
+ .stage-picker-slot-navigation{gap:4px}
+ .stage-picker-head .stage-picker-slot-nav,
+ .stage-picker-head>button:last-child{width:30px;min-width:30px;
+  height:30px;min-height:30px;flex-basis:30px}
+}

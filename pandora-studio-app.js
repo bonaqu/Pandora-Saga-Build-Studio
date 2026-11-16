@@ -550,11 +550,31 @@ function skillIcon(cat,idx,record=null){
    .trim().toLocaleLowerCase('ru').replace(/\s+/g,' ');
   const match=skillIcon.nameIndex.byName.get(key);
   if(match)return match;
+  const catalogued=Boolean(catalog.skills?.[String(record.id)]||
+   wikiData?.skills?.[String(record.id)]);
+  if(catalogued){
+   const original=unmirroredArtwork('skills',stem);
+   if(original)return original;
+  }
  }
  // An iconless skill uses the transparent, original-client question mark.
  // This is a presentation fallback, NOT an original for its missing OS ID.
  if(record)return 'assets/skills/icons/skill_unknown.webp';
  return branchIcon(cat);
+}
+// Only a checked source ID can be tried; nothing is labeled as recovered.
+// The client uses this while catalog/D1 has a new icon not in GitHub yet.
+// Known original 404s remain hidden; browser image.onerror owns fallback.
+function unmirroredArtwork(kind,stem){
+ if(!iconManifest||!['skills','items','souls'].includes(kind)||
+  !/^[A-Za-z0-9_-]{1,120}$/.test(String(stem)))return null;
+ const named=iconManifest?.icons?.[kind]?.[stem];
+ if(named)return named;
+ const missing=iconManifest?.missing?.find?.(row=>
+  row?.kind===kind&&row.stem===stem);
+ if(missing?.error==='HTTP 404')return null;
+ const directory=kind==='souls'?'items':kind;
+ return 'https://pandorasaga-os.com/icons/'+directory+'/'+stem+'.webp';
 }
 function itemIcon(rec,kind='items'){
  const soul=kind==='souls'||rec?.kind==='SOUL';
@@ -565,9 +585,14 @@ function itemIcon(rec,kind='items'){
  const selfHostedSoul=soul?iconManifest?.icons?.souls?.[rec.icon]:null;
  const archived=selfHostedSoul||iconManifest?.icons?.[pathKind]?.[rec.icon];
  if(archived)return archived;
- // Missing/unknown originals are never probed on every encyclopedia hover.
- // The local verified artwork manifest is the only image authority.
- return null;
+ const catalogued=Boolean(wikiData?.items?.[String(rec.id)]||
+  wikiData?.souls?.[String(rec.id)]||
+  catalog?.equipment?.[String(rec.id)]||
+  catalog?.souls?.[String(rec.id)]||
+  (typeof catalogSource!=='undefined'&&
+   (catalogSource?.items?.[String(rec.id)]||
+    catalogSource?.souls?.[String(rec.id)])));
+ return catalogued?unmirroredArtwork(soul?'souls':pathKind,rec.icon):null;
 }
 function branchCap(branch){
  // No invented cap: when a game class is still loading, disable spending until real caps exist.
@@ -1936,7 +1961,7 @@ function appendStageSlotNavigation(root){
    onclick:()=>openStageEquipmentSlot(next,'choose')});
   nav.append(button);
  }
- head.append(nav);
+ head.insertBefore(nav,head.lastElementChild);
 }
 function renderStagePicker(focusSearch=false){
  const root=$('stagePicker');if(!root)return;
@@ -6355,7 +6380,7 @@ function renderWiki(root){
     ]));
     const certainItems=h('div',{class:'wiki-chest-assured-grid'});
     certainBoard.append(certainItems);
-    for(const [i,group]of groups.entries()){
+    for(const {index:i,entries:group} of window.PandoraStudioChestPresentation.orderedGroups(groups)){
      const listedSingle=group.length===1&&group[0]?.p===100;
      const heading=h('summary',{class:'wiki-chest-group-summary'},[
       ...(adminEditing&&adminToken?[h('span',{class:'wiki-chest-group-mark',
@@ -6373,7 +6398,7 @@ function renderWiki(root){
       h('span',{class:'wiki-chest-chevron','aria-hidden':'true',text:'⌄'})
      ]);
      const options=h('div',{class:'wiki-chest-options'});
-     for(const [rowIndex,row] of group.entries()){
+     for(const {index:rowIndex,row} of window.PandoraStudioChestPresentation.orderedRewards(group)){
       const nextChest=chestIds.has(String(row.i))&&String(row.i)!==String(id);
       const option=h('div',{class:'wiki-chest-reward'+
        (nextChest?' wiki-chest-reward-nested':'')+
@@ -10315,7 +10340,7 @@ window.addEventListener('hashchange',()=>{
   }
  }
 });
-fetch('./assets/os-icon-manifest.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null).then(data=>{
+fetch('./assets/os-icon-manifest.json',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(data=>{
  const label=$('iconStatus');
  if(data?.icons&&data.count&&Number.isInteger(data.count.present)&&Number.isInteger(data.count.expected)&&data.count.present<=data.count.expected){
   if(data.count.present>0){
