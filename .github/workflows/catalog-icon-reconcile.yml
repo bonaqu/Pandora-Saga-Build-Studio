@@ -4,7 +4,9 @@ on:
   # No cron and no extra admin click. A source release that passed full live
   # verification initiates one bounded original-only mirror attempt.
   workflow_run:
-    workflows: [Live Pages and Worker readiness (on release or manual)]
+    workflows:
+      - Live Pages and Worker readiness (on release or manual)
+      - Verified catalog fallback auto-merge
     types: [completed]
   workflow_dispatch:
 
@@ -12,6 +14,7 @@ permissions:
   contents: write
   pull-requests: write
   actions: write
+  pages: write
 
 concurrency:
   group: catalog-original-icons-main

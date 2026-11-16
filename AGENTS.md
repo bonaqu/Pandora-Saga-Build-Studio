@@ -1,5 +1,5 @@
 ## Автоматическое восстановление иконок после публикации D1 (0.846.0)
-- После успешного live-readonly релиза workflow catalog-icon-reconcile.yml запускает существующий mirror-os-icons.mjs с лимитом 100 на источниках data/os; корректность файла проверяется isWebP и assets:audit.
+- После успешного live-readonly релиза ИЛИ подтверждённого auto-merge каталожного PR workflow catalog-icon-reconcile.yml запускает существующий mirror-os-icons.mjs с лимитом 100 на источниках data/os; корректность файла проверяется isWebP и assets:audit.
 - Только WebP и точный манифест попадают в отдельный PR. Bot явно запускает workflow_dispatch quality+Chromium на SHA PR и объединяет только если обе проверки success, список файлов разрешён и main HEAD не изменился. Нет cron, неизвестных замен, D1 writes.
 - Отсутствующие временно файлы остаются Not attempted; HTTP 404 доказывается только реальным HTTP 404. Повторное выполнение с неизменёнными файлами не меняет timestamp манифеста, значит не создаёт бесконечные PR.
 - Изображение события «Победы в PvP» зеркалируется как assets/wiki/honor-victories.jpg с проверкой JPEG. При его отсутствии разрешён только некликабельный preview того же оригинала.

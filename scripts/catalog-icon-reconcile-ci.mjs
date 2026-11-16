@@ -103,6 +103,17 @@ async function main(){
     commit_title:'assets: auto-publish verified original icons'});
    if(merge?.merged!==true)throw Error('GitHub refused original icon merge');
    console.log('Verified original icon PR #'+pr.number+' merged at '+merge.sha);
+   // GITHUB_TOKEN-made merges do not always schedule a fresh Pages build.
+   // Request the built-in Pages rebuild explicitly; never rewrite game data.
+   try{
+    await call('/pages/builds','POST',{});
+    console.log('Requested Pages rebuild for verified artwork');
+   }catch(error){
+    console.warn('Automatic Pages build request was unavailable: '+error.message);
+   }
+   try{await call('/actions/workflows/live-readonly.yml/dispatches',
+     'POST',{ref:BASE})}
+   catch(error){console.warn('Read-only follow-up could not be dispatched: '+error.message)}
    return;
   }
  }
