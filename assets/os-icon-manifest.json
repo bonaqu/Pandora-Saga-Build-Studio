@@ -1,6 +1,6 @@
 {
   "source": "Pandora Saga OS, one-time archive",
-  "createdAt": "2026-11-01T09:22:55.921Z",
+  "createdAt": "2026-11-16T03:31:14.802Z",
   "icons": {
     "skills": {
       "skill_100000501": "assets/skills/icons/skill_100000501.webp",
@@ -541,6 +541,8 @@
       "I_013021_00": "assets/items/icons/I_013021_00.webp",
       "I_013031_00": "assets/items/icons/I_013031_00.webp",
       "I_013032_00": "assets/items/icons/I_013032_00.webp",
+      "I_013042_00": "assets/items/icons/I_013042_00.webp",
+      "I_013033_00": "assets/items/icons/I_013033_00.webp",
       "I_013041_00": "assets/items/icons/I_013041_00.webp",
       "I_013051_00": "assets/items/icons/I_013051_00.webp",
       "I_013052_00": "assets/items/icons/I_013052_00.webp",
@@ -557,6 +559,8 @@
       "I_013101_00": "assets/items/icons/I_013101_00.webp",
       "I_013102_00": "assets/items/icons/I_013102_00.webp",
       "I_013104_00": "assets/items/icons/I_013104_00.webp",
+      "I_013113_00": "assets/items/icons/I_013113_00.webp",
+      "I_013103_00": "assets/items/icons/I_013103_00.webp",
       "I_013111_00": "assets/items/icons/I_013111_00.webp",
       "I_013501_00": "assets/items/icons/I_013501_00.webp",
       "I_013502_00": "assets/items/icons/I_013502_00.webp",
@@ -699,12 +703,19 @@
       "I_017011_00": "assets/items/icons/I_017011_00.webp",
       "I_017021_00": "assets/items/icons/I_017021_00.webp",
       "I_017031_00": "assets/items/icons/I_017031_00.webp",
+      "I_017129_00": "assets/items/icons/I_017129_00.webp",
       "I_017033_00": "assets/items/icons/I_017033_00.webp",
       "I_017032_00": "assets/items/icons/I_017032_00.webp",
       "I_017041_00": "assets/items/icons/I_017041_00.webp",
       "I_018001_00": "assets/items/icons/I_018001_00.webp",
+      "I_018002_00": "assets/items/icons/I_018002_00.webp",
       "I_018003_00": "assets/items/icons/I_018003_00.webp",
       "I_018005_00": "assets/items/icons/I_018005_00.webp",
+      "I_018006_00": "assets/items/icons/I_018006_00.webp",
+      "I_018007_00": "assets/items/icons/I_018007_00.webp",
+      "I_018014_00": "assets/items/icons/I_018014_00.webp",
+      "I_018016_00": "assets/items/icons/I_018016_00.webp",
+      "I_018017_00": "assets/items/icons/I_018017_00.webp",
       "I_018018_00": "assets/items/icons/I_018018_00.webp",
       "I_018019_00": "assets/items/icons/I_018019_00.webp",
       "I_018022_00": "assets/items/icons/I_018022_00.webp",
@@ -721,6 +732,8 @@
       "I_019002_00": "assets/items/icons/I_019002_00.webp",
       "I_019004_00": "assets/items/icons/I_019004_00.webp",
       "I_019006_00": "assets/items/icons/I_019006_00.webp",
+      "I_019010_00": "assets/items/icons/I_019010_00.webp",
+      "I_019011_00": "assets/items/icons/I_019011_00.webp",
       "I_019019_00": "assets/items/icons/I_019019_00.webp",
       "I_019020_00": "assets/items/icons/I_019020_00.webp",
       "I_019021_00": "assets/items/icons/I_019021_00.webp",
@@ -734,6 +747,8 @@
       "I_020010_00": "assets/items/icons/I_020010_00.webp",
       "I_020013_00": "assets/items/icons/I_020013_00.webp",
       "I_020014_00": "assets/items/icons/I_020014_00.webp",
+      "I_020007_00": "assets/items/icons/I_020007_00.webp",
+      "I_020005_00": "assets/items/icons/I_020005_00.webp",
       "I_020021_00": "assets/items/icons/I_020021_00.webp",
       "I_021001_00": "assets/items/icons/I_021001_00.webp",
       "I_021002_00": "assets/items/icons/I_021002_00.webp",
@@ -742,6 +757,8 @@
       "I_021005_00": "assets/items/icons/I_021005_00.webp",
       "I_021006_00": "assets/items/icons/I_021006_00.webp",
       "I_021011_00": "assets/items/icons/I_021011_00.webp",
+      "I_021019_00": "assets/items/icons/I_021019_00.webp",
+      "I_021020_00": "assets/items/icons/I_021020_00.webp",
       "I_021025_00": "assets/items/icons/I_021025_00.webp",
       "I_021009_00": "assets/items/icons/I_021009_00.webp",
       "I_021015_00": "assets/items/icons/I_021015_00.webp",
@@ -837,6 +854,7 @@
       "I_051033_00": "assets/items/icons/I_051033_00.webp",
       "I_051034_00": "assets/items/icons/I_051034_00.webp",
       "I_051035_00": "assets/items/icons/I_051035_00.webp",
+      "I_051036_00": "assets/items/icons/I_051036_00.webp",
       "I_051038_00": "assets/items/icons/I_051038_00.webp",
       "I_051040_00": "assets/items/icons/I_051040_00.webp",
       "I_051042_00": "assets/items/icons/I_051042_00.webp",
@@ -1134,6 +1152,7 @@
       "I_300004_00": "assets/items/icons/I_300004_00.webp",
       "I_300005_00": "assets/items/icons/I_300005_00.webp",
       "I_300013_00": "assets/items/icons/I_300013_00.webp",
+      "I_094087_00": "assets/items/icons/I_094087_00.webp",
       "I_011301_00": "assets/items/icons/I_011301_00.webp",
       "I_011302_00": "assets/items/icons/I_011302_00.webp",
       "I_011303_00": "assets/items/icons/I_011303_00.webp",
@@ -1172,11 +1191,11 @@
       "I_103000_00": "assets/souls/icons/I_103000_00.webp",
       "I_103023_00": "assets/souls/icons/I_103023_00.webp",
       "I_103025_00": "assets/souls/icons/I_103025_00.webp",
+      "I_103028_00": "assets/souls/icons/I_103028_00.webp",
       "I_104000_00": "assets/souls/icons/I_104000_00.webp",
       "I_105000_00": "assets/souls/icons/I_105000_00.webp",
       "I_106000_00": "assets/souls/icons/I_106000_00.webp",
-      "I_107000_00": "assets/souls/icons/I_107000_00.webp",
-      "I_103028_00": "assets/souls/icons/I_103028_00.webp"
+      "I_107000_00": "assets/souls/icons/I_107000_00.webp"
     }
   },
   "missing": [
@@ -1202,12 +1221,12 @@
     },
     {
       "kind": "skills",
-      "stem": "skill_121703511",
+      "stem": "skill_100103050",
       "error": "HTTP 404"
     },
     {
       "kind": "skills",
-      "stem": "skill_100103050",
+      "stem": "skill_121703511",
       "error": "HTTP 404"
     },
     {
@@ -1222,12 +1241,12 @@
     },
     {
       "kind": "skills",
-      "stem": "skill_121707003",
+      "stem": "skill_121707002",
       "error": "HTTP 404"
     },
     {
       "kind": "skills",
-      "stem": "skill_121707002",
+      "stem": "skill_121707003",
       "error": "HTTP 404"
     },
     {
@@ -1242,22 +1261,22 @@
     },
     {
       "kind": "skills",
-      "stem": "skill_168005050",
-      "error": "HTTP 404"
-    },
-    {
-      "kind": "skills",
       "stem": "skill_161202050",
       "error": "HTTP 404"
     },
     {
       "kind": "skills",
-      "stem": "skill_168052002",
+      "stem": "skill_168005050",
       "error": "HTTP 404"
     },
     {
       "kind": "skills",
       "stem": "skill_168051002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_168052002",
       "error": "HTTP 404"
     },
     {
@@ -1317,6 +1336,11 @@
     },
     {
       "kind": "skills",
+      "stem": "skill_240002050",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
       "stem": "skill_240002051",
       "error": "HTTP 404"
     },
@@ -1327,17 +1351,12 @@
     },
     {
       "kind": "skills",
-      "stem": "skill_240002050",
+      "stem": "skill_240004050",
       "error": "HTTP 404"
     },
     {
       "kind": "skills",
       "stem": "skill_240005002",
-      "error": "HTTP 404"
-    },
-    {
-      "kind": "skills",
-      "stem": "skill_240004050",
       "error": "HTTP 404"
     },
     {
@@ -1352,12 +1371,17 @@
     },
     {
       "kind": "skills",
-      "stem": "skill_260003002",
+      "stem": "skill_240010002",
       "error": "HTTP 404"
     },
     {
       "kind": "skills",
       "stem": "skill_240010003",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_260003002",
       "error": "HTTP 404"
     },
     {
@@ -1377,17 +1401,12 @@
     },
     {
       "kind": "skills",
-      "stem": "skill_240010002",
+      "stem": "skill_300004004",
       "error": "HTTP 404"
     },
     {
       "kind": "skills",
       "stem": "skill_310001003",
-      "error": "HTTP 404"
-    },
-    {
-      "kind": "skills",
-      "stem": "skill_300004004",
       "error": "HTTP 404"
     },
     {
@@ -1422,12 +1441,12 @@
     },
     {
       "kind": "skills",
-      "stem": "skill_320004002",
+      "stem": "skill_320003002",
       "error": "HTTP 404"
     },
     {
       "kind": "skills",
-      "stem": "skill_320003002",
+      "stem": "skill_320004002",
       "error": "HTTP 404"
     },
     {
@@ -1512,12 +1531,12 @@
     },
     {
       "kind": "skills",
-      "stem": "skill_340004002",
+      "stem": "skill_340003003",
       "error": "HTTP 404"
     },
     {
       "kind": "skills",
-      "stem": "skill_340003003",
+      "stem": "skill_340004002",
       "error": "HTTP 404"
     },
     {
@@ -1582,12 +1601,12 @@
     },
     {
       "kind": "skills",
-      "stem": "skill_410026004",
+      "stem": "skill_410026003",
       "error": "HTTP 404"
     },
     {
       "kind": "skills",
-      "stem": "skill_410026003",
+      "stem": "skill_410026004",
       "error": "HTTP 404"
     },
     {
@@ -1612,6 +1631,11 @@
     },
     {
       "kind": "skills",
+      "stem": "skill_420007102",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
       "stem": "skill_430001002",
       "error": "HTTP 404"
     },
@@ -1622,12 +1646,12 @@
     },
     {
       "kind": "skills",
-      "stem": "skill_430053002",
+      "stem": "skill_430052003",
       "error": "HTTP 404"
     },
     {
       "kind": "skills",
-      "stem": "skill_430052003",
+      "stem": "skill_430053002",
       "error": "HTTP 404"
     },
     {
@@ -1702,12 +1726,12 @@
     },
     {
       "kind": "skills",
-      "stem": "skill_500000000",
+      "stem": "skill_440011002",
       "error": "HTTP 404"
     },
     {
       "kind": "skills",
-      "stem": "skill_440011002",
+      "stem": "skill_500000000",
       "error": "HTTP 404"
     },
     {
@@ -1782,12 +1806,12 @@
     },
     {
       "kind": "skills",
-      "stem": "skill_500000016",
+      "stem": "skill_500000015",
       "error": "HTTP 404"
     },
     {
       "kind": "skills",
-      "stem": "skill_500000015",
+      "stem": "skill_500000016",
       "error": "HTTP 404"
     },
     {
@@ -1807,12 +1831,12 @@
     },
     {
       "kind": "skills",
-      "stem": "skill_500000021",
+      "stem": "skill_500000020",
       "error": "HTTP 404"
     },
     {
       "kind": "skills",
-      "stem": "skill_500000020",
+      "stem": "skill_500000021",
       "error": "HTTP 404"
     },
     {
@@ -1902,12 +1926,12 @@
     },
     {
       "kind": "skills",
-      "stem": "skill_500000040",
+      "stem": "skill_500000039",
       "error": "HTTP 404"
     },
     {
       "kind": "skills",
-      "stem": "skill_500000039",
+      "stem": "skill_500000040",
       "error": "HTTP 404"
     },
     {
@@ -1917,12 +1941,12 @@
     },
     {
       "kind": "skills",
-      "stem": "skill_500000043",
+      "stem": "skill_500000042",
       "error": "HTTP 404"
     },
     {
       "kind": "skills",
-      "stem": "skill_500000045",
+      "stem": "skill_500000043",
       "error": "HTTP 404"
     },
     {
@@ -1932,7 +1956,7 @@
     },
     {
       "kind": "skills",
-      "stem": "skill_500000042",
+      "stem": "skill_500000045",
       "error": "HTTP 404"
     },
     {
@@ -1982,12 +2006,12 @@
     },
     {
       "kind": "skills",
-      "stem": "skill_600000002",
+      "stem": "skill_520005003",
       "error": "HTTP 404"
     },
     {
       "kind": "skills",
-      "stem": "skill_520005003",
+      "stem": "skill_600000002",
       "error": "HTTP 404"
     },
     {
@@ -2002,12 +2026,12 @@
     },
     {
       "kind": "skills",
-      "stem": "skill_600000006",
+      "stem": "skill_600000005",
       "error": "HTTP 404"
     },
     {
       "kind": "skills",
-      "stem": "skill_600000005",
+      "stem": "skill_600000006",
       "error": "HTTP 404"
     },
     {
@@ -2042,12 +2066,12 @@
     },
     {
       "kind": "skills",
-      "stem": "skill_600000024",
+      "stem": "skill_600000023",
       "error": "HTTP 404"
     },
     {
       "kind": "skills",
-      "stem": "skill_600000023",
+      "stem": "skill_600000024",
       "error": "HTTP 404"
     },
     {
@@ -2102,12 +2126,12 @@
     },
     {
       "kind": "skills",
-      "stem": "skill_600000054",
+      "stem": "skill_600000053",
       "error": "HTTP 404"
     },
     {
       "kind": "skills",
-      "stem": "skill_600000053",
+      "stem": "skill_600000054",
       "error": "HTTP 404"
     },
     {
@@ -2162,12 +2186,12 @@
     },
     {
       "kind": "skills",
-      "stem": "skill_600000073",
+      "stem": "skill_600000072",
       "error": "HTTP 404"
     },
     {
       "kind": "skills",
-      "stem": "skill_600000072",
+      "stem": "skill_600000073",
       "error": "HTTP 404"
     },
     {
@@ -2182,12 +2206,12 @@
     },
     {
       "kind": "skills",
-      "stem": "skill_600000203",
+      "stem": "skill_600000202",
       "error": "HTTP 404"
     },
     {
       "kind": "skills",
-      "stem": "skill_600000202",
+      "stem": "skill_600000203",
       "error": "HTTP 404"
     },
     {
@@ -2222,12 +2246,12 @@
     },
     {
       "kind": "skills",
-      "stem": "skill_600000223",
+      "stem": "skill_600000222",
       "error": "HTTP 404"
     },
     {
       "kind": "skills",
-      "stem": "skill_600000222",
+      "stem": "skill_600000223",
       "error": "HTTP 404"
     },
     {
@@ -2242,12 +2266,12 @@
     },
     {
       "kind": "skills",
-      "stem": "skill_600000233",
+      "stem": "skill_600000232",
       "error": "HTTP 404"
     },
     {
       "kind": "skills",
-      "stem": "skill_600000232",
+      "stem": "skill_600000233",
       "error": "HTTP 404"
     },
     {
@@ -2282,12 +2306,12 @@
     },
     {
       "kind": "skills",
-      "stem": "skill_610000211",
+      "stem": "skill_610000205",
       "error": "HTTP 404"
     },
     {
       "kind": "skills",
-      "stem": "skill_610000205",
+      "stem": "skill_610000211",
       "error": "HTTP 404"
     },
     {
@@ -2317,7 +2341,7 @@
     },
     {
       "kind": "skills",
-      "stem": "skill_610000224",
+      "stem": "skill_610000222",
       "error": "HTTP 404"
     },
     {
@@ -2327,7 +2351,7 @@
     },
     {
       "kind": "skills",
-      "stem": "skill_610000222",
+      "stem": "skill_610000224",
       "error": "HTTP 404"
     },
     {
@@ -2342,12 +2366,12 @@
     },
     {
       "kind": "skills",
-      "stem": "skill_610000233",
+      "stem": "skill_610000232",
       "error": "HTTP 404"
     },
     {
       "kind": "skills",
-      "stem": "skill_610000232",
+      "stem": "skill_610000233",
       "error": "HTTP 404"
     },
     {
@@ -2382,12 +2406,17 @@
     },
     {
       "kind": "skills",
+      "stem": "skill_620002041",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
       "stem": "skill_620002042",
       "error": "HTTP 404"
     },
     {
       "kind": "skills",
-      "stem": "skill_620002041",
+      "stem": "skill_620002043",
       "error": "HTTP 404"
     },
     {
@@ -2407,11 +2436,6 @@
     },
     {
       "kind": "skills",
-      "stem": "skill_620002043",
-      "error": "HTTP 404"
-    },
-    {
-      "kind": "skills",
       "stem": "skill_620002062",
       "error": "HTTP 404"
     },
@@ -2422,22 +2446,22 @@
     },
     {
       "kind": "skills",
-      "stem": "skill_700000001",
-      "error": "HTTP 404"
-    },
-    {
-      "kind": "skills",
       "stem": "skill_620002072",
       "error": "HTTP 404"
     },
     {
       "kind": "skills",
-      "stem": "skill_700000011",
+      "stem": "skill_700000001",
       "error": "HTTP 404"
     },
     {
       "kind": "skills",
       "stem": "skill_700000002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_700000011",
       "error": "HTTP 404"
     },
     {
@@ -2487,127 +2511,27 @@
     },
     {
       "kind": "items",
-      "stem": "I_900002_00",
+      "stem": "I_900001_00",
       "error": "HTTP 404"
     },
     {
       "kind": "items",
-      "stem": "I_900001_00",
+      "stem": "I_900002_00",
       "error": "HTTP 404"
     },
     {
       "kind": "items",
       "stem": "I_900003_00",
       "error": "HTTP 404"
-    },
-    {
-      "kind": "items",
-      "stem": "I_013042_00",
-      "error": "Not attempted"
-    },
-    {
-      "kind": "items",
-      "stem": "I_013033_00",
-      "error": "Not attempted"
-    },
-    {
-      "kind": "items",
-      "stem": "I_013113_00",
-      "error": "Not attempted"
-    },
-    {
-      "kind": "items",
-      "stem": "I_013103_00",
-      "error": "Not attempted"
-    },
-    {
-      "kind": "items",
-      "stem": "I_017129_00",
-      "error": "Not attempted"
-    },
-    {
-      "kind": "items",
-      "stem": "I_018002_00",
-      "error": "Not attempted"
-    },
-    {
-      "kind": "items",
-      "stem": "I_018006_00",
-      "error": "Not attempted"
-    },
-    {
-      "kind": "items",
-      "stem": "I_018007_00",
-      "error": "Not attempted"
-    },
-    {
-      "kind": "items",
-      "stem": "I_018014_00",
-      "error": "Not attempted"
-    },
-    {
-      "kind": "items",
-      "stem": "I_018016_00",
-      "error": "Not attempted"
-    },
-    {
-      "kind": "items",
-      "stem": "I_018017_00",
-      "error": "Not attempted"
-    },
-    {
-      "kind": "items",
-      "stem": "I_019010_00",
-      "error": "Not attempted"
-    },
-    {
-      "kind": "items",
-      "stem": "I_019011_00",
-      "error": "Not attempted"
-    },
-    {
-      "kind": "items",
-      "stem": "I_020007_00",
-      "error": "Not attempted"
-    },
-    {
-      "kind": "items",
-      "stem": "I_020005_00",
-      "error": "Not attempted"
-    },
-    {
-      "kind": "items",
-      "stem": "I_021019_00",
-      "error": "Not attempted"
-    },
-    {
-      "kind": "items",
-      "stem": "I_021020_00",
-      "error": "Not attempted"
-    },
-    {
-      "kind": "items",
-      "stem": "I_051036_00",
-      "error": "Not attempted"
-    },
-    {
-      "kind": "items",
-      "stem": "I_094087_00",
-      "error": "Not attempted"
-    },
-    {
-      "kind": "skills",
-      "stem": "skill_420007102",
-      "error": "Not attempted"
     }
   ],
   "count": {
     "expected": 1454,
-    "present": 1170,
-    "missing": 284,
-    "known404": 264,
-    "unverified": 20,
-    "processed": 0,
+    "present": 1189,
+    "missing": 265,
+    "known404": 265,
+    "unverified": 0,
+    "processed": 20,
     "planned": 20
   },
   "displayAliases": {
@@ -2698,6 +2622,7 @@
       "skill_420005003": "skill_420005001",
       "skill_420005004": "skill_420005001",
       "skill_420007002": "skill_420007001",
+      "skill_420007102": "skill_420007001",
       "skill_430001002": "skill_430001001",
       "skill_430001004": "skill_430001001",
       "skill_430052003": "skill_430052001",
@@ -2814,7 +2739,5 @@
       "skill_620002061": "skill_620001061",
       "skill_620002062": "skill_620001061"
     }
-  },
-  "reviewedAt": "2026-11-15",
-  "reviewNote": "20 new current-D1 image identities have not been downloaded or HTTP-checked. No unverified icon is marked HTTP 404 or linked to a substitute. 3 historical verified sprites remain on disk but are not referenced by current runtime."
+  }
 }
