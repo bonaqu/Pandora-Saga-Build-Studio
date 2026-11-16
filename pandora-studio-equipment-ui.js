@@ -391,15 +391,15 @@ function render(root,api){
    const choices=el('div',{class:'stage-enchant-options is-element-options'});
    for(let n=0;n<=3;n++){
     const occupiedBeyond=plan.asSocketArray(souls).slice(n).some(Boolean);
-    const btn=el('button',{type:'button',text:String(n),
+    const btn=bind(el('button',{type:'button',text:String(n),
      class:n===cap?'chosen':'','aria-pressed':String(n===cap),
-     'aria-label':tr('Слоты душ: ','Soul slots: ')+n,
      'data-socket-capacity':String(n),
      title:occupiedBeyond?copy('socketOverflowHint',
       'Сначала извлеките души из лишних слотов',
       'Remove Souls from extra sockets first'):'',
      disabled:occupiedBeyond,
-     onclick:()=>api.updateSocketCapacity(n)});
+     onclick:()=>api.updateSocketCapacity(n)}),
+     'socketCapacityHeading','Слоты душ','Soul slots','aria-label',': '+n);
     choices.append(btn);
    }
    frame.append(choices);
@@ -438,13 +438,14 @@ function render(root,api){
      const button=el('button',{type:'button',
       text:iconText+copy(captionKey,option.ru,option.en),
       class:choice?.[key]===option.id?'chosen':'',
-      'aria-label':label+': '+name,'aria-pressed':String(choice?.[key]===option.id),
+      'aria-pressed':String(choice?.[key]===option.id),
       'data-enchant-key':key,'data-enchant-value':option.id,
       onclick:event=>{
        if(event?.target?.closest?.('.stage-control-pencil,.wiki-inline-input'))return;
        api.assignGem({type:key==='type'?option.id:(choice?.type||'physical'),
         element:key==='element'?option.id:(choice?.element||'fire')});
       }});
+     bind(button,editKey,baseRu,baseEn,'aria-label',': '+name);
      line.append(labeledAction(button,captionKey,option.ru,option.en,iconText));
     }
     box.append(line);return box;
