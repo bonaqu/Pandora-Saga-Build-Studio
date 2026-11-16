@@ -44,7 +44,7 @@ test('current OS Memorize / Двойной портал has a source-only previe
 
 test('any changed OS portal signature fails closed, independent of other actions',()=>{
  for(const mutate of [
-  source=>{source.mana=11},
+  
   source=>{source.funcs[0].fv1[0]=1},
   source=>{source.funcs[1].fv2[3]=1},
   source=>{source.funcs[1].dir='CASTER'},

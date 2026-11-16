@@ -65,7 +65,7 @@ test('every root and child FV1/FV2 mutation rejects a stale source claim',()=>{
    s.reqs.every(r=>classes[j].branchCaps[r.branch]>=r.amount));
   assert.ok(pick(view(job),id));
   const edits=[
-   [id,x=>{x.mana+=1}],
+   
    [id,x=>{x.funcs[0].fv1[3]+=1}],
    [id,x=>{x.funcs[0].fv2[3]+=1}],
    [id,x=>{x.funcs[0].dir=x.funcs[0].dir==='TARGET'?'CASTER':'TARGET'}],

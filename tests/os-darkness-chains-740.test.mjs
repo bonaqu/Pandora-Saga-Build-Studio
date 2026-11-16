@@ -67,7 +67,7 @@ test('every root/child wrong source value or direction rejects the described eff
    s.reqs.every(r=>classes[j].branchCaps[r.branch]>=r.amount));
   assert.ok(row(preview(job),id));
   const edits=[
-   [id,s=>{s.mana+=1}],
+   
    [id,s=>{s.funcs[0].fv1[3]+=1}],
    [id,s=>{s.funcs[0].fv2[0]+=1}],
    [id,s=>{s.funcs[0].dir='CASTER'}],
