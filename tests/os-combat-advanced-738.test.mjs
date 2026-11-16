@@ -76,7 +76,7 @@ test('all linked and root effects fail closed on current-OS mutations',()=>{
   const weapon=s.weaponUse?.[0]||'BARE_HAND';
   assert.ok(find(preview(job,55,weapon),id));
   const edits=[
-   [id,s=>{s.mana+=1}],
+   [id,s=>{s.cast+=1}],
    [id,s=>{s.funcs[0].fv1[3]+=1}],
    [id,s=>{s.funcs[0].fv2[0]+=1}],
    [id,s=>{s.funcs[0].dir=s.funcs[0].dir==='TARGET'?'CASTER':'TARGET'}],
@@ -91,6 +91,46 @@ test('all linked and root effects fail closed on current-OS mutations',()=>{
    assert.ok(result.rejected.includes(id));
   }
  }
+});
+test('seven current OS combat-technique descriptions follow source mana and cooldown updates',()=>{
+ for(const [id,ru,,linked] of cases){
+  const skill=skills[id],job=Object.keys(classes).find(j=>skill.classes[j]&&
+   skill.reqs.every(req=>classes[j].branchCaps[req.branch]>=req.amount));
+  assert.ok(job);
+  const weapon=skill.weaponUse?.[0]||'BARE_HAND';
+  const modified={...skills,[String(id)]:{
+   ...skill,mana:skill.mana+1,cooldown:skill.cooldown+0.5
+  }};
+  const row=find(preview(job,55,weapon,modified),id);
+  assert.ok(row,ru+' must remain supported when only source metadata changes');
+  assert.equal(row.mana,skill.mana+1);
+  assert.equal(row.cooldown,skill.cooldown+0.5);
+  assert.equal(row.finalAmount,null);
+  assert.equal(row.sourceOnly,true);
+  assert.equal(row.appliedToHero,false);
+  const wrong={...skills,[String(id)]:{
+   ...skill,funcs:structuredClone(skill.funcs)}};
+  wrong[String(id)].funcs[0].fv2[0]+=1;
+  assert.equal(find(preview(job,55,weapon,wrong),id),undefined,
+   ru+' must reject modified gameplay vectors');
+ }
+});
+test('linked technique action metadata follows source without relaxing FV identity',()=>{
+ const id=350001001,childId=350001002;
+ const root=skills[id],child=skills[childId];
+ const job=Object.keys(classes).find(j=>root.classes[j]&&
+  root.reqs.every(req=>classes[j].branchCaps[req.branch]>=req.amount));
+ assert.ok(job);
+ const weapon=root.weaponUse?.[0]||'BARE_HAND';
+ const altered={...skills,[String(childId)]:{
+  ...child,mana:child.mana+1,cooldown:child.cooldown+0.5
+ }};
+ const positive=preview(job,55,weapon,altered);
+ assert.ok(find(positive,id));
+ const invalid={...altered,[String(childId)]:{
+  ...altered[String(childId)],funcs:structuredClone(child.funcs)}};
+ invalid[String(childId)].funcs[0].fv1[3]+=1;
+ assert.equal(find(preview(job,55,weapon,invalid),id),undefined);
 });
 test('seven existing source records become qualitative without any damage guess',()=>{
  const report=auditOsSkillFormulaCoverage({skills,classes,calculator});
