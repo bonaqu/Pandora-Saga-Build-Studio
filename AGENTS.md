@@ -1,3 +1,9 @@
+## 0.835.0 · Доказанные таблицы физической и магической заточки (#615)
+- table.weapon-refinement подписывает weaponPlus ratio+flat только при полном старом/новом 1..10 model replay через weaponAttackPreview для STR/W.
+- table.magic-refinement-rate подписывает magicPlus ratio через magicAttackPreview при магической заточке; magicPlus.flat калькулятор НЕ использует и новая правка flat остаётся needsReview.
+- Неизвестные поля, лишние уровни, нецелые и отрицательные значения — needsReview. tests/catalog-refinement-tables-835.test.mjs.
+- node+Chromium exact SHA; Pages и D1 Worker parity только в чтении, без production D1 writes/auth/CAS/builds.
+
 ## 0.834.0 · Доказуемые контракты профессий и таблиц (#615)
 - class.base-parameters, table.race-origin, table.job-origin получают verified только при полной old/new проверке по 28 профессиям, 6 расам, уровням 1/15/30/45/55 и веткам мастерства. Незнакомые коэффициенты и изменения class.parent/baseClass — needsReview.
 - table.ability-source sourceOnly: планировщик рассчитывает очки навыков через собственную модель PandoraSkillProgression/PandoraLevelProgression, а не через OS abilityPoint.

@@ -836,10 +836,61 @@ const FORTH_SOURCE_CONTRACTS=Object.freeze([
  Object.freeze({id:'equipment.forth-amount',kind:'verified',
   matches:verifiedForthAmountChanges})
 ]);
+
+// Source-table proof is limited to parameters consumed by today's calculator.
+// In particular magicPlus.flat is not an established MATK bonus.
+function verifiedRefinementTable(field,before,after){
+ if(!['weaponPlus','magicPlus'].includes(field))return false;
+ const C=root.PandoraOSCalculator;
+ if(!C?.weaponAttackPreview||!C?.magicAttackPreview)return false;
+ const old=before?.tables?.[field],now=after?.tables?.[field];
+ const grades=Array.from({length:10},(_,i)=>String(i+1));
+ if(!contractKeys(old,now)||
+  !contractSame(Object.keys(old).sort(),grades.slice().sort()))return false;
+ let count=0;
+ for(const key of grades){
+  const a=old[key],b=now[key],grade=Number(key);
+  if(!contractShape(a,['ratio','flat'])||
+   !contractShape(b,['ratio','flat'])||
+   ![a.ratio,a.flat,b.ratio,b.flat].every(n=>
+    Number.isSafeInteger(n)&&n>=0))return false;
+  if(!contractSame(a,b)){
+   count++;
+   if(field==='magicPlus'&&a.flat!==b.flat)return false;
+  }
+  for(const data of [old,now]){
+   const step=data[key];
+   if(field==='weaponPlus'){
+    for(const W of [25,100,260])for(const str of [20,50,100]){
+     const p=C.weaponAttackPreview({str,weapon:{slot:'weapon',
+      kind:'1H_SWORD',id:12345,W},grade,weaponPlus:data});
+     if(!Number.isFinite(p?.known)||
+      p.refinement!==Math.floor(W*step.ratio/100)+step.flat)return false;
+    }
+   }else{
+    for(const int of [30,80,150]){
+     const p=C.magicAttackPreview({int,jobKey:'MAGE',magicMastery:45,
+      weapon:{slot:'weapon',kind:'STAFF',id:2802,W:50},
+      weaponGrade:grade,weaponEnhancementType:'magical',magicPlus:data});
+     if(!Number.isFinite(p?.known)||p.refinement!==step.ratio)return false;
+    }
+   }
+  }
+ }
+ return count>0;
+}
+const REFINEMENT_SOURCE_CONTRACTS=Object.freeze([
+ Object.freeze({id:'table.weapon-refinement',dataset:'tables',kind:'verified',
+  matches:verifiedRefinementTable}),
+ Object.freeze({id:'table.magic-refinement-rate',dataset:'tables',kind:'verified',
+  matches:verifiedRefinementTable})
+]);
+
 // Immutable public contract census: code may evolve without a new hardcoded
 // list of skill IDs or guessing what unknown game effects do.
 const SOURCE_CONTRACT_REGISTRY=Object.freeze([
  ...CHARACTER_SOURCE_CONTRACTS.map(({id,kind,dataset})=>Object.freeze({id,kind,dataset})),
+ ...REFINEMENT_SOURCE_CONTRACTS.map(({id,kind,dataset})=>Object.freeze({id,kind,dataset})),
  ...SKILL_SOURCE_CONTRACTS.map(({id,kind})=>Object.freeze({id,kind,dataset:'skills'})),
  ...EQUIPMENT_SOURCE_CONTRACTS.map(({id,kind,datasets})=>
   Object.freeze({id,kind,dataset:datasets.join(',')})),
@@ -899,10 +950,13 @@ function compatibility(before,after){
    const fields=new Set([...Object.keys(oldData||{}),...Object.keys(newData||{})]);
    for(const field of fields){
     if(same(oldData?.[field],newData?.[field]))continue;
-    const contract=CHARACTER_SOURCE_CONTRACTS.slice(1).find(entry=>
+    const contract=[...CHARACTER_SOURCE_CONTRACTS.slice(1),
+     ...REFINEMENT_SOURCE_CONTRACTS].find(entry=>
      (field==='raceInit'&&entry.id==='table.race-origin'||
       field==='jobInit'&&entry.id==='table.job-origin'||
-      field==='abilityPoint'&&entry.id==='table.ability-source')&&
+      field==='abilityPoint'&&entry.id==='table.ability-source'||
+      field==='weaponPlus'&&entry.id==='table.weapon-refinement'||
+      field==='magicPlus'&&entry.id==='table.magic-refinement-rate')&&
      entry.matches(field,before,after));
     if(contract)add(contract.kind,'table:'+field,
      'Игровые таблицы · '+field+(contract.kind==='verified'?
