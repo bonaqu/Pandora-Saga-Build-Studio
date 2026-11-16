@@ -1,3 +1,9 @@
+## 0.847.0 · Статус подтверждённых ограничений вместо выдуманных формул (#615)
+- scripts/audit-os-skill-formulas.mjs в CLI подключает PandoraWikiSkillInsights.inspect и добавляет source-access-limited только при строгом источниковом совпадении no-class-variant/above-class-cap. Это НЕ числовой эффект, не изученное умение и не подтверждение сервера.
+- IDs 260006002 (classless variant «Помощь ветра»), 300001001 и 300002001 (исходный порог 102 выше class cap 90). Изменённый эффект/требование теряет доказанный статус и должен показываться как unmodeled-learnable.
+- replaySkills перед D1 проверяет, что существующие Wiki accessNotice не исчезли; loss module source-access-notice блокирует запись. При отсутствии модуля в Node-only окружениях старые числовые проверки работают как прежде; на сайте Wiki загружается до CatalogSafety.
+- Никаких новых гипотез числовых эффектов. Тесты tests/catalog-wiki-source-access-replay-847.test.mjs, обязательны Node+Chromium exact SHA и read-only production parity.
+
 ## 0.846.0 · Исторический алгоритм + актуальные серверные данные (#615)
 - Архивное Remaked Legacy js/calc.js годится только как формульная гипотеза/основа модели. Всегда подставлять актуальные данные D1 и game JSON: weaponPlus/magicPlus; несоответствие текущему источнику не считать доказанной формулой. Тесты catalog-hybrid-server-data-846.test.mjs.
 - Пять sourceOnly контрактов: table.forge-source-rates (только rates/tiers, не pity/rework/hammer rules), table.drop-level-source, table.level-gap-source, table.premium-source, table.afk-source. Не называть их проверенными конечными шансами, крафтом, боевыми результатами.

@@ -7,7 +7,7 @@ import {resolve} from 'node:path';
 
 const local=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 
-export function auditOsSkillFormulaCoverage({skills,classes,calculator}={}){
+export function auditOsSkillFormulaCoverage({skills,classes,calculator,wikiInsights=null}={}){
  const modules=['scalingSkillPreview','healingSpellsPreview',
   'periodicRecoveryPreview','songSkillPreview','resistanceSkillChoices','skillExecutionChains','craftingSkillPreview','trapSkillCostPreview','complexSkillSourcePreview','statusApplicationPreview','enemyDebuffPreview','tacticalSkillPreview','rangedAmmoPreview','combatTechniquePreview','specializedSkillPreview','supportEffectPreview','situationalSkillPreview'];
  if(!skills||!classes||!modules.every(name=>typeof calculator?.[name]==='function'))
@@ -296,8 +296,27 @@ export function auditOsSkillFormulaCoverage({skills,classes,calculator}={}){
     numeric:Number.isSafeInteger(row.requiredItemCount)});
 
  }
+ // Skills that cannot normally be learned may still have a rigorously
+ // source-matched access explanation in the Encyclopedia. The explanation
+ // is NOT a damage/effect model, and must never mark a numeric preview.
+ // An unmatched or drifted record remains explicitly unmodeled.
+ if(wikiInsights?.inspect)for(const item of coverage.values()){
+  if(!item.learnable||item.triggeredChild||item.numericPreview||
+   item.coefficientModel||item.sourceParameter||item.sourcePreview||
+   item.skillType==='PASSIVE')continue;
+  const notice=wikiInsights.inspect({skillCatalog:skills,classes,
+   id:item.id,calculator});
+  if(notice?.sourceOnly!==true||notice.finalAmount!==null||
+   !['no-class-variant','above-class-cap'].includes(notice.accessNotice?.kind))
+   continue;
+  item.accessNoticeKind=notice.accessNotice.kind;
+  item.accessRequired=notice.accessNotice.required??null;
+  item.accessMaximum=notice.accessNotice.maximum??null;
+  item.relatedSkillId=notice.accessNotice.relatedSkillId??null;
+ }
  const statusKeys=['numeric-preview','coefficient-model','source-parameter','qualitative-preview',
-  'passive-source','internal-or-triggered-source','unmodeled-learnable'];
+  'passive-source','internal-or-triggered-source','source-access-limited',
+  'unmodeled-learnable'];
  const byStatus=Object.fromEntries(statusKeys.map(key=>[key,0]));
  const rows=[...coverage.values()].map(item=>{
   let status;
@@ -307,6 +326,7 @@ export function auditOsSkillFormulaCoverage({skills,classes,calculator}={}){
   else if(item.sourceParameter)status='source-parameter';
   else if(item.sourcePreview)status='qualitative-preview';
   else if(item.skillType==='PASSIVE')status='passive-source';
+  else if(item.accessNoticeKind)status='source-access-limited';
   else status='unmodeled-learnable';
   byStatus[status]++;
   return {...item,status};
@@ -326,10 +346,12 @@ export function auditOsSkillFormulaCoverage({skills,classes,calculator}={}){
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
  const host={};
  Function('window',local('pandora-os-character-calculator.js'))(host);
+ Function('window',local('pandora-studio-wiki-skill-insights.js'))(host);
  const skills=JSON.parse(local('data/os/skills.json'));
  const classes=JSON.parse(local('data/os/classes.json'));
  const report=auditOsSkillFormulaCoverage({
-  skills,classes,calculator:host.PandoraOSCalculator});
+  skills,classes,calculator:host.PandoraOSCalculator,
+  wikiInsights:host.PandoraWikiSkillInsights});
  const all=process.argv.includes('--all');
  console.log(JSON.stringify(all?report:{
   source:report.source,methodology:report.methodology,

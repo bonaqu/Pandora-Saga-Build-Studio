@@ -2164,6 +2164,31 @@ function replaySkills(before,after){
   if(next.found.has(key))retained.push(old);
   else lost.push(old);
  }
+ // Preserve source-only access explanations already visible in the Wiki.
+ // Three exceptional current skills have strict evidence about a blocked
+ // learning path, not a playable spell effect. Before D1, do not silently
+ // lose that explanation when a related skill/threshold changes.
+ const accessErrors=[],W=root.PandoraWikiSkillInsights;
+ let accessNoticesChecked=0;
+ if(W?.inspect){
+  for(const id of [260006002,300001001,300002001]){
+   try{
+    const oldNotice=W.inspect({skillCatalog:before?.skills,
+     classes:before?.classes,id,calculator:C})?.accessNotice;
+    if(!oldNotice)continue;
+    const newNotice=W.inspect({skillCatalog:after?.skills,
+     classes:after?.classes,id,calculator:C})?.accessNotice;
+    accessNoticesChecked++;
+    if(newNotice?.kind===oldNotice.kind)continue;
+    lost.push({id:String(id),job:'source-access',module:'source-access-notice',
+     evidence:'source-only',detail:String(oldNotice.kind),
+     level:0});
+   }catch(error){
+    accessErrors.push('Не удалось проверить описание доступности '+id+': '+
+     String(error?.message||error).slice(0,110));
+   }
+  }
+ }
  // Show distinct, actionable recipient effects first. Without this,
  // five repeated hero/equipment scenarios hid the actual missing ally buff.
  const representatives=[],seenSamples=new Set();
@@ -2192,10 +2217,10 @@ function replaySkills(before,after){
    newSkills[row.id]?.name||oldSkills[row.id]?.name||row.id).slice(0,75)}));
  const lostSkillIds=[...new Set(lost.map(row=>row.id))];
  const recognized=new Set([...prior.found.values(),...next.found.values()].map(x=>x.id));
- const problems=[...prior.errors,...next.errors];
+ const problems=[...prior.errors,...next.errors,...accessErrors];
  return {ok:lost.length===0&&problems.length===0,
   changedSkills:changed.size,scenarios:prior.count+next.count,
-  previouslyModeled:prior.found.size,retained:retained.length,
+  accessNoticesChecked,previouslyModeled:prior.found.size,retained:retained.length,
   lost:lost.length,lostEntries,lostByModule,lostSkillIds,
   lostSourceOnly:lost.filter(row=>row.evidence==='source-only').length,
   lostCalculated:lost.filter(row=>row.evidence!=='source-only').length,
