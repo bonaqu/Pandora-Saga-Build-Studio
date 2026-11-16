@@ -448,6 +448,14 @@ function summaryRows(calc){
    row('АТК спереди','Front ATK',c.frontAttack,'%'),
    row('АТК сзади','Back ATK',sum(c.backAttack,c.backAttackEquipmentRate),'%'),
    row('МАТК','MATK',c.magicAttack?.known,'%'),
+   // The game declares elemental-spell damage boosts, not a universal
+   // MATK increase. Keep the two ally effects visible but distinct.
+   ...(Number.isFinite(calc?.priestApplied?.priestEnchantment?.magicRate)?[
+    row('Чары усиления · стихийный урон','Enhancement · elemental damage',
+     calc.priestApplied.priestEnchantment.magicRate,'%')]:[]),
+   ...(Number(calc?.combat?.priestSong?.sageElementDamage)>0?[
+    row('Песнь чар · стихийный урон','Sage Song · elemental damage',
+     calc.combat.priestSong.sageElementDamage,'%')]:[]),
    row('Точность','Accuracy',c.accuracy?.known),
    row('Точн. спереди','Front accuracy',c.frontAccuracy?.known),
    row('Шанс крита','Critical chance',c.critical?.known,'%'),
@@ -1079,8 +1087,8 @@ function buffsPage(body,options){
     'Reduces damage taken by the party, scaling with priest Blessing.'],
   330051001:['Добавляет святую ауру оружию союзника. Сила зависит от СД жреца.',
     'Adds holy damage aura to an ally’s weapon, scaling with priest SPR.'],
-  320011001:['Усиливает ауру оружия и магический урон союзника. Эффект зависит от жреца.',
-    'Boosts an ally’s weapon aura and magical damage, scaling with the priest.'],
+  320011001:['Усиливает существующую ауру оружия (физические атаки с аурой) и урон стихийных заклинаний. Не прибавляет отдельный показатель общего АТК.',
+    'Boosts an existing weapon aura (aura-assisted physical hits) and elemental spell damage. Does not add a separate general ATK bonus.'],
   340001001:['Повышает точность и уклонение ближайших союзников.',
     'Raises accuracy and evasion for nearby allies.'],
   340004001:['Повышает магическую атаку союзников и сокращает перезарядку умений.',
@@ -1768,6 +1776,10 @@ function attackChapterGroups(calc){
   'Melee attack range · total',range.totalMelee);
  put(0,'totalRangedRange','Дальность атаки дальнего боя · всего',
   'Ranged attack range · total',range.totalRanged);
+ const enchant=calc.priestApplied?.priestEnchantment;
+ if(Number.isFinite(enchant?.magicRate))
+  put(2,'priestEnchantElement','Чары усиления · урон стихийных заклинаний',
+   'Enhance Enchantment · elemental spell damage',enchant.magicRate,'%');
  const song=calc.combat?.priestSong;
  if(Number(song?.sageElementDamage)>0)
   put(2,'priestSageElement','Песнь чар · стихийный урон',
