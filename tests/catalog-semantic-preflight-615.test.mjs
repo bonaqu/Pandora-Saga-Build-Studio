@@ -17,14 +17,17 @@ test('changed cast timing requires mechanics review; item description stays sour
  assert.equal(report.requiresMechanicReview,true);
  assert.ok(report.samples.needsReview.some(x=>x.key==='skill:a'));
 });
-test('source effect changes and equipment stat changes flag model review before publish',()=>{
+test('unknown effects and equipment need review; source abilityPoint is not proof of skill grant',()=>{
  const changed=structuredClone(base);
  changed.skills.a.funcs[0].fv1[0]=22;
  changed.items.x.W=9;changed.tables.abilityPoint[45]=4;
  const report=check(base,changed);
  assert.equal(report.requiresMechanicReview,true);
  assert.equal(report.totals.needsReview,2);
- assert.equal(report.totals.verified,1);
+ assert.equal(report.totals.verified,0);
+ assert.equal(report.totals.sourceOnly,1);
+ assert.equal(report.entries.find(x=>x.key==='table:abilityPoint')?.contract,
+  'table.ability-source');
  assert.match(report.samples.needsReview[0].title,/Ability/);
 });
 test('new skill and changed source effect identity are never silently confirmed',()=>{
