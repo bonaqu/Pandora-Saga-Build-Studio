@@ -1,3 +1,8 @@
+## 0.841.0 · Тактические источниковые умения и затраты (#615)
+- tacticalSkillPreview для шести pinned source-only skill IDs использует уже существующий строгий combatTechniqueMetadataMatches: только mana/cooldown читаются из актуального источника. Требования, уровни, class permissions, parent, cast, range, EP/FV, damage/weaponUse остаются неизменными.
+- Никакой игровой шанс/итоговый урон не выводится. sourceOnly в compatibility не означает, что независимый replaySkills допускает публикацию без потери других расчетов.
+- tests/os-tactical-source-metadata-841.test.mjs. Выпуск только после Node+Chromium exact SHA, live Pages/D1 read-only; не менять D1/Worker/CAS/auth/builds.
+
 ## 0.840.0 · Source metadata для семи справочных боевых навыков (#615)
 - combatTechniquePreview сохраняет только существующие sourceOnly/qualitative строки при изменении настоящих mana/cooldown, которые UI уже читает из skill catalog. Игровые EP/FV, классы, reqs, prereq, range, cast, AoE, linked child/parent, а также другие инспекторы остаются со строгой sourceVerifiedSkillSignature. Не менять числовые боевые формулы.
 - Сохранить independent replaySkills до D1: изменение mana у 233001001 теперь не теряет источник и допускается, но у 100000501 остаётся loss + blocking preflight, пока отдельный контракт там не доказан.

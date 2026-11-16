@@ -4866,10 +4866,14 @@ function complexSkillSourcePreview({skillCatalog=null,jobKey=null,level=1,
    const skill=skillCatalog[String(proof.id)];
    const parent=proof.signature.prereq&&tacticalSkillProofs.find(
     x=>x.id===proof.signature.prereq);
+   // Six already-source-only tactical descriptions read their actual
+   // mana/cooldown from the catalog. Keep every other pinned skill property,
+   // related prerequisite and EP/FV vector immutable. No damage or success
+   // probability is calculated from either metadata field.
    if(!skill||skill.id!==proof.id||
-    JSON.stringify(sourceVerifiedSkillSignature(skill))!==JSON.stringify(proof.signature)||
-    (parent&&JSON.stringify(sourceVerifiedSkillSignature(
-     skillCatalog[String(parent.id)]))!==JSON.stringify(parent.signature))){
+    !combatTechniqueMetadataMatches(skill,proof.signature)||
+    (parent&&!combatTechniqueMetadataMatches(
+     skillCatalog[String(parent.id)],parent.signature))){
     out.rejected.push(proof.id);continue;
    }
    if(proof.signature.reqs.some(([branch,amount])=>
