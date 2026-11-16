@@ -1219,6 +1219,12 @@ function validTargetSource(id,record){
 function verifiedMonsterTargetSource(id,old,now){
  if(!old||!now||!validTargetSource(id,old)||
   !validTargetSource(id,now))return false;
+ // Unknown nested resistance keys are NOT modeled by the OS target engine.
+ // A permissive target picker must not certify their gameplay semantics.
+ const known=Object.keys(root.PandoraOSTargetDamage?.target?.resists||{}).sort();
+ if(!known.length||[old,now].some(record=>
+  !validObject(record.resists)||
+  !contractSame(Object.keys(record.resists).sort(),known)))return false;
  const fields=[...new Set([...Object.keys(old),...Object.keys(now)])]
   .filter(field=>!contractSame(old[field],now[field]));
  const allowed=new Set([...TARGET_MONSTER_FIELDS,
@@ -1441,10 +1447,21 @@ function compatibility(before,after){
     const invalid=Boolean(b)&&(
      a&&validTargetSource(id,a)&&!validTargetSource(id,b)||
      !a&&!validTargetSource(id,b));
-    const kind=contract?'verified':invalid?'needsReview':'sourceOnly';
+    const changedFields=a&&b?[...new Set([...Object.keys(a),...Object.keys(b)])]
+     .filter(field=>!same(a[field],b[field])):[];
+    const displayOnly=new Set(['name','nameEn','desc','descEn','iconId']);
+    const unsupported=changedFields.some(field=>
+     !displayOnly.has(field)&&!TARGET_MONSTER_FIELDS.includes(field))||
+     changedFields.includes('resists')&&Boolean(a&&b)&&
+     [a,b].some(row=>!validObject(row.resists)||
+      !contractSame(Object.keys(row.resists).sort(),
+       Object.keys(root.PandoraOSTargetDamage?.target?.resists||{}).sort()));
+    const kind=contract?'verified':
+     invalid||unsupported?'needsReview':'sourceOnly';
     add(kind,'monsters:'+id,String(b?.name||a?.name||id).slice(0,90)+
      (contract?' · данные цели проверены существующей расчётной моделью':
       invalid?' · нельзя рассчитать игровую цель':
+      unsupported?' · изменены свойства без проверенной игровой формулы':
       ' · справочные сведения, без подтверждения боевой формулы'),
      contract?.id);
    }
