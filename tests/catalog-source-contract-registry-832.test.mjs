@@ -22,12 +22,12 @@ const snapshot=(id,edit)=>{
 };
 const quantity=(skill,ep)=>skill.funcs.find(row=>row.ep===ep);
 
-test('one declared registry contains fifteen stable distinct data-only contracts',()=>{
+test('one declared registry contains sixteen stable distinct data-only contracts',()=>{
  const contracts=safety.sourceContractRegistry;
  assert.ok(Array.isArray(contracts));
  assert.equal(Object.isFrozen(contracts),true);
- assert.equal(contracts.length,15);
- assert.equal(new Set(contracts.map(x=>x.id)).size,15);
+ assert.equal(contracts.length,16);
+ assert.equal(new Set(contracts.map(x=>x.id)).size,16);
  assert.deepEqual([...new Set(contracts.map(x=>x.kind))].sort(),
   ['sourceOnly','verified']);
  for(const contract of contracts){
@@ -35,7 +35,7 @@ test('one declared registry contains fifteen stable distinct data-only contracts
   assert.match(contract.id,/^(skill|equipment|class|table)\./);
   assert.ok(contract.dataset&&typeof contract.dataset==='string');
  }
- assert.equal(contracts.filter(x=>x.kind==='sourceOnly').length,2);
+ assert.equal(contracts.filter(x=>x.kind==='sourceOnly').length,3);
 });
 
 test('43 resource-count updates retain strict old/new proof with an explicit source contract ID',()=>{

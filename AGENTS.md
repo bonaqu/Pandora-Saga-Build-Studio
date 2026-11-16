@@ -1,3 +1,8 @@
+## 0.836.0 · Исходный опыт отдельно от модельной прокачки (#615)
+- table.experience-requirement — sourceOnly для целочисленного неотрицательного tables.exp[1..99].expReq при неизменных полях ability/skill/skillLimit и неизменной схеме.
+- Нельзя утверждать, что source OS exp таблицы определяют очки актуального планировщика. Изменение ability/skill/skillLimit — needsReview. tests/catalog-experience-source-836.test.mjs.
+- Обязательные Node+Chromium exact SHA и проверка Pages/Worker/D1 parity без production writes; релизы публикуются только по порядку после зелёных CI.
+
 ## 0.835.0 · Доказанные таблицы физической и магической заточки (#615)
 - table.weapon-refinement подписывает weaponPlus ratio+flat только при полном старом/новом 1..10 model replay через weaponAttackPreview для STR/W.
 - table.magic-refinement-rate подписывает magicPlus ratio через magicAttackPreview при магической заточке; magicPlus.flat калькулятор НЕ использует и новая правка flat остаётся needsReview.
