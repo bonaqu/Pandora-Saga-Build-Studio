@@ -107,8 +107,7 @@ test('Encyclopedia shows verified linked actions; Book does not import reference
  broken['430053002'].funcs[1].fv2[3]=6;
  assert.equal(W.inspect({skillCatalog:broken,classes,id:430053001,calculator:{}}),null);
  const book=read('pandora-studio-hero-book.js');
- assert.match(book,/прямой удар/);
- assert.match(book,/Средний прямой урон по цели/);
+ assert.doesNotMatch(book,/прямой удар|Средний прямой урон по цели|targetMonsterId/);
  assert.match(book,/gameTerms\.branchLabels/);
  assert.match(book,/gameTerms\.englishBranches/);
  assert.doesNotMatch(book,/stage-material-actions|function materialSkillResults\(/);
