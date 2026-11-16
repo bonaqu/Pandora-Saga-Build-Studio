@@ -109,7 +109,8 @@ for(const row of unique){
  }
  if(available.has(id))manifest.icons[row.kind][row.stem]=path;
  else manifest.missing.push({kind:row.kind,stem:row.stem,error:
-  failures.get(id)||(known404.has(id)?'HTTP 404':'Not attempted')});
+  failures.get(id)==='HTTP 404'||known404.has(id)?
+   'HTTP 404':'Not attempted'});
 }
 const confirmed404=manifest.missing.filter(row=>row.error==='HTTP 404').length;
 const unverified=manifest.missing.filter(row=>row.error!=='HTTP 404').length;
@@ -122,7 +123,15 @@ manifest.count={expected:unique.length,present:available.size,
 // New unprobed identities remain clearly without original artwork.
 manifest.displayAliases={skills:buildSkillDisplayAliases(skills,manifest.icons.skills,
  manifest.missing.filter(row=>row.error==='HTTP 404'))};
-if(!dry){
+// A read-only audit/periodic release check must NOT create a meaningless
+// timestamp-only diff and another automated PR if nothing actually changed.
+const meaningful=m=>JSON.stringify({
+ icons:m?.icons,missing:m?.missing,displayAliases:m?.displayAliases,
+ counts:['expected','present','missing','known404','unverified']
+  .map(k=>m?.count?.[k])
+});
+const contentChanged=!prior||meaningful(prior)!==meaningful(manifest);
+if(!dry&&contentChanged){
  await mkdir(join(root,'assets'),{recursive:true});
  await writeFile(manifestPath,JSON.stringify(manifest,null,2)+'\n');
 }
