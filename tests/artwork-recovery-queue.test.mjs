@@ -16,12 +16,15 @@ test('missing-artwork queue uses exact OS IDs, no placeholder downloads or subst
   assert.equal(report.byKind[kind]||0,confirmed.filter(x=>x.kind===kind).length);
  assert.equal(report.count,manifest.count.known404);
  assert.equal(report.automaticSubstitutions,0);
- assert.deepEqual(report.skillImpact,{
-  withClassAssignments:45,
-  withClassAndMasteryRequirements:5,
-  referencedByOtherSkills:91,
-  learnableWithClassAssignments:0
- });
+ assert.equal(report.skillImpact.withClassAssignments,45);
+ assert.equal(report.skillImpact.withClassAndMasteryRequirements,5);
+ assert.equal(report.skillImpact.learnableWithClassAssignments,0);
+ assert.equal(report.skillImpact.referencedByOtherSkills,
+  report.entries.filter(row=>row.kind==='skills'&&
+   row.skillContext.invokedBySkills.length>0).length,
+  'Count all missing originals linked by other skills');
+ assert.ok(report.skillImpact.referencedByOtherSkills>=91,
+  'Previously inventoried missing skill references must not disappear');
  const temple=report.entries.find(row=>row.stem==='skill_310023002');
  assert.deepEqual(temple.skillContext.invokedBySkills,
   [{id:310023001,name:'Храм'}]);

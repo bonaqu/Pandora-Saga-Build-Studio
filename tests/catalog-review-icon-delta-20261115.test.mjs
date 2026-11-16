@@ -25,7 +25,7 @@ test('source icon delta is deterministic and does not mutate the catalog',()=>{
 });
 
 test('new catalog identities are not silently assigned images from similar names',()=>{
- const report=auditCatalogIconDelta({historical:old,candidate,manifest});
+ const report=auditPinnedCandidateIcons();
  assert.equal(report.added,20);
  assert.equal(report.verified,19,'Nineteen actual source textures were recovered');
  assert.equal(report.unverified,1,'One source URL confirmed HTTP 404');
