@@ -63,7 +63,16 @@ test('admin status signs validated target numbers, not arbitrary monster changes
  assert.equal(sourceOnly.totals.sourceOnly,1);
  assert.equal(sourceOnly.totals.verified,0);
  const unsupported=updatedMonsters(monsters=>{monsters['22104'].warding++});
- assert.equal(S.compatibility(current,unsupported).totals.sourceOnly,1);
+ assert.equal(S.compatibility(current,unsupported).totals.needsReview,1,
+  'warding must not be certified as covered by target hit model');
+ const extraResistance=updatedMonsters(monsters=>{
+  monsters['22104'].resists.futureUnmodeled=30;
+  monsters['22104'].resists.fire=-5;
+ });
+ const future=S.compatibility(current,extraResistance);
+ assert.equal(future.totals.verified,0);
+ assert.equal(future.totals.needsReview,1,
+  'unknown resistance key must not borrow proof from modeled fire resistance');
  const invalid=updatedMonsters(monsters=>{monsters['22104'].life=0});
  assert.equal(S.compatibility(current,invalid).totals.needsReview,1);
 });
