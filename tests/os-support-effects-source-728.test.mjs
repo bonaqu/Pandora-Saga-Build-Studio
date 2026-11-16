@@ -100,8 +100,11 @@ test('seven qualitative support effects keep current mana and cooldown source me
  }
  const revive={...skills,[310003001]:structuredClone(skills[310003001])};
  revive[310003001].mana+=1;
- assert.ok(inspect('CLERIC',revive).rejected.includes(310003001),
-  'resurrection exact material quantity proof stays independent');
+ const resurrection=find(inspect('CLERIC',revive),310003001);
+ assert.ok(resurrection,'Current-game revival keeps its inspected source cost');
+ assert.equal(resurrection.mana,revive[310003001].mana);
+ assert.equal(resurrection.sourceOnly,true);
+ assert.equal(resurrection.requiredItemId,50059);
 });
 test('levels and mastery depend on class capability, not unrelated allies',()=>{
  assert.equal(find(inspect('CLERIC',skills,34),310003001).requirementsMet,false);

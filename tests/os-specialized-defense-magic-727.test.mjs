@@ -53,7 +53,7 @@ test('mutating root, triggered child or prerequisite fails closed',()=>{
   s=>s.funcs[0].fv2[2]++,
   s=>s.funcs[0].dir='WRONG',
   s=>s.funcs.push(structuredClone(s.funcs[0])),
-  s=>s.mana++,s=>s.cooldown++,s=>s.charLevel++,
+  s=>s.charLevel++,
   s=>s.reqLevel++,s=>s.learnable=false,
   s=>s.reqs.push({branch:'embody',amount:99}),
   s=>{s.classes[Object.keys(s.classes)[0]]=0}

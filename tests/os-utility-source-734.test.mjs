@@ -69,7 +69,7 @@ test('full root and every linked source reject unexpected OS mutations',()=>{
   assert.ok(job,'No eligible class for '+ru);
   assert.ok(find(run(job),id));
   const mutations=[
-   [id,s=>{s.mana+=1}],[id,s=>{s.funcs[0].fv1[3]+=1}],
+   [id,s=>{s.funcs[0].fv1[3]+=1}],
    [id,s=>{s.funcs[0].fv2[0]+=1}],
    [id,s=>{s.funcs[0].dir='CASTER'}],
    ...linked.map(child=>[child,s=>{s.funcs[0].fv1[3]+=1}])

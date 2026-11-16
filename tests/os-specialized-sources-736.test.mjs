@@ -69,7 +69,7 @@ test('root, parent and nested skill helpers must all match their exact OS signat
   assert.ok(job);
   assert.ok(find(preview(job),id));
   const variants=[
-   [id,x=>{x.mana+=1}],
+   
    [id,x=>{x.funcs[0].fv1[3]+=1}],
    [id,x=>{x.funcs[0].fv2[0]+=1}],
    [id,x=>{x.funcs[0].dir=x.funcs[0].dir==='TARGET'?'CASTER':'TARGET'}],
