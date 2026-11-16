@@ -14,7 +14,7 @@ export async function runSoulSearch852Smoke(browser,base){
   await page.evaluate(()=>{
    const panel=document.createElement('section');
    panel.id='soul-search-852';
-   panel.style.cssText='position:fixed;inset:70px auto auto 10px;z-index:99999;width:440px;min-height:200px;background:#211818;color:white;overflow:auto';
+   panel.setAttribute('style','position:fixed;inset:70px auto auto 10px;z-index:99999;width:440px;min-height:200px;background:#211818;color:white;overflow:auto');
    document.body.append(panel);
    const catalog={souls:{
     101000:{id:101000,name:"Marksman's Soul",sourceNameRu:'Душа стрелка',

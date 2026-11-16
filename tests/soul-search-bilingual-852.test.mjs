@@ -4,7 +4,9 @@ import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const host={};
-runInNewContext(read('pandora-studio-equipment-ui.js'),{window:host});
+runInNewContext(read('pandora-studio-equipment-ui.js'),{
+ window:host,document:{addEventListener(){}}
+});
 const match=host.PandoraStageItemUI.matchesSoulSearch;
 const ru=JSON.parse(read('data/os/souls.json'));
 const translated=JSON.parse(read('data/os/strings.en.json')).souls;
