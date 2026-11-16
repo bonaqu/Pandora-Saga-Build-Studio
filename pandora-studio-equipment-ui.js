@@ -158,7 +158,12 @@ function summary(record,icon,kind='item',context=null){
  }
  if(kind==='item'&&Array.isArray(context?.souls)&&context.souls.length){
   const group=el('div',{class:'stage-gear-souls'});
-  group.append(el('strong',{text:tr('Вставленные души','Socketed Souls')}));
+  // Stable bilingual owner copy; never edit the equipped Soul IDs/names.
+  const titleRu='Вставленные души',titleEn='Socketed Souls';
+  const title=el('strong',{text:context?.copyLabel?.('socketedSoulHeading',titleRu,titleEn)||
+   tr(titleRu,titleEn)});
+  context?.editLabel?.(title,'socketedSoulHeading',titleRu,titleEn);
+  group.append(title);
   for(const soul of context.souls){
    const row=el('div',{class:'stage-gear-soul'});
    const src=icon(soul,'soul');
