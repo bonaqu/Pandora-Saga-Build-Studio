@@ -142,13 +142,13 @@ test('Bad monster life or resistance is not silently replaced by historical Ogre
  }
  assert.equal(trap({targetMonsterId:999999}),null);
 });
-test('Compact RU/EN Book line uses only current D1 max life and exact component deltas',()=>{
+test('standalone target resistance diagnostics remain intact, but Book omits monster-hit details',()=>{
  const book=read('pandora-studio-hero-book.js');
- assert.match(book,/targetAverageLifePercent/);
- assert.match(book,/hitResult\.targetMaxLife/);
- assert.match(book,/Средний удар:/);
- assert.match(book,/Average hit:/);
- assert.match(book,/targetElementResistanceAverageImpact/);
- assert.match(book,/targetMagicResistanceAverageImpact/);
+ const target=read('pandora-studio-target-damage.js');
+ for(const term of ['targetAverageLifePercent','targetElementResistanceAverageImpact',
+  'targetMagicResistanceAverageImpact','targetMaxLife'])
+  assert.ok(target.includes(term),'preserve independent source audit '+term);
+ assert.doesNotMatch(book,/hitResult|targetMaxLife|targetAverageLifePercent|Средний удар:/);
+ assert.match(book,/scalingSkillPreview\?\.\(/);
  assert.doesNotMatch(book,/stage-material-actions|function materialSkillResults\(/);
 });
