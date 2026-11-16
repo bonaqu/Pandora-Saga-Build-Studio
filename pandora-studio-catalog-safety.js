@@ -2036,12 +2036,22 @@ function replaySkills(before,after){
   seenSamples.add(signature);representatives.push(row);
   if(representatives.length>=5)break;
  }
+ // The UI shows five samples, but 500+ selected changes must still yield
+ // COMPLETE machine-readable loss provenance for owner diagnostics.
+ const lostByModule={};
+ for(const row of lost)
+  lostByModule[row.module]=(lostByModule[row.module]||0)+1;
+ const lostEntries=lost.map(row=>({...row,name:String(
+  row.job==='item'?
+   newItems[row.id.slice(5)]?.name||oldItems[row.id.slice(5)]?.name||row.id:
+   newSkills[row.id]?.name||oldSkills[row.id]?.name||row.id).slice(0,75)}));
+ const lostSkillIds=[...new Set(lost.map(row=>row.id))];
  const recognized=new Set([...prior.found.values(),...next.found.values()].map(x=>x.id));
  const problems=[...prior.errors,...next.errors];
  return {ok:lost.length===0&&problems.length===0,
   changedSkills:changed.size,scenarios:prior.count+next.count,
   previouslyModeled:prior.found.size,retained:retained.length,
-  lost:lost.length,
+  lost:lost.length,lostEntries,lostByModule,lostSkillIds,
   lostSourceOnly:lost.filter(row=>row.evidence==='source-only').length,
   lostCalculated:lost.filter(row=>row.evidence!=='source-only').length,
   unmodeled:[...changed].filter(id=>!recognized.has(id)).length,
