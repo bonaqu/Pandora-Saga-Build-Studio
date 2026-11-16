@@ -55,7 +55,11 @@ test('upgraded Wind Trail loses proof if its extra FV or casting conditions chan
   C.dynamicSkillContracts[id].ep,C.dynamicSkillContracts[id].fv1),false);
  assert.ok(S.replaySkills(before,secondary).lost>0);
  const timing=change(id,skill=>{skill.cast=2});
- assert.equal(S.compatibility(before,timing).totals.needsReview,1);
+ const timingAudit=S.compatibility(before,timing);
+ assert.equal(timingAudit.totals.sourceOnly,1);
+ assert.equal(timingAudit.entries[0].contract,'skill.source-parameters');
+ // A metadata source-only signature does not override the independent
+ // old/new proof of the *secondary* coefficient below.
  const old=row(before.skills,id,'CONJURER',55);
  const next=row(timing.skills,id,'CONJURER',55);
  assert.ok(old.coefficientModels.some(x=>x.ep==='EP_ALL_RESISTANCE_CONST'));
@@ -75,13 +79,21 @@ test('replay protects source coefficients of manual multi-effect previews',()=>{
  assert.ok(replay.previouslyModeled>0);
  assert.ok(replay.lost>0,'unknown new coefficient must not quietly remove old preview');
 });
-test('non-presentational skill changes fail closed while copy/icon changes remain source-only',()=>{
+test('known timing/cost source changes retain source status but unknown fields still fail closed',()=>{
  for(const field of ['mana','cast','cooldown','motion','range','unrecognizedFutureField']){
   const after=change(420004001,skill=>{
    skill[field]=field==='unrecognizedFutureField'?{newMechanic:1}:skill[field]+1;
   });
-  assert.equal(S.compatibility(before,after).totals.needsReview,1,field);
-  assert.ok(S.replaySkills(before,after).changedSkills>=1,field);
+  const audit=S.compatibility(before,after);
+  const isUnknown=field==='unrecognizedFutureField';
+  assert.equal(isUnknown?audit.totals.needsReview:audit.totals.sourceOnly,1,field);
+  assert.equal(audit.entries[0].contract,
+   isUnknown?undefined:'skill.source-parameters',field);
+  const replay=S.replaySkills(before,after);
+  assert.ok(replay.changedSkills>=1,field);
+  // The independent replay remains mandatory even when the metadata
+  // contract succeeds. Failures must not silently disappear on publish.
+  assert.equal(replay.ok,replay.lost===0,field);
  }
  const display=change(420004001,skill=>{
   skill.name+=' (обновлено)';skill.desc='Текст';skill.iconId+=1;

@@ -1059,6 +1059,40 @@ const ZONE_DROP_SOURCE_CONTRACTS=Object.freeze([
  Object.freeze({id:'table.zone-drop-parameters',kind:'sourceOnly',
   dataset:'tables',matches:sourceZoneDropNumbers})
 ]);
+
+// Source-only skill parameters: these values are shown by game data consumers,
+// but never certify damage, hit chance, proc rules or linked effects. Final
+// before/after replay MUST still reject a lost previously modeled skill.
+function sourceSkillPresentationNumbers(id,old,now){
+ if(!old||!now||!Number.isSafeInteger(old.id)||old.id<=0||
+  old.id!==now.id||String(old.id)!==String(id))return false;
+ const numericLimits={mana:10000,cast:3600,cooldown:3600,
+  motion:3600,range:1000000};
+ const numericFields=Object.keys(numericLimits);
+ const gameplayAllowed=new Set([...numericFields,'aoe',
+  'name','nameEn','desc','descEn','iconId']);
+ let changed=0;
+ for(const key of new Set([...Object.keys(old),...Object.keys(now)])){
+  if(contractSame(old[key],now[key]))continue;
+  if(!gameplayAllowed.has(key))return false;
+  if(numericFields.includes(key)||key==='aoe')changed++;
+ }
+ if(!changed)return false;
+ for(const skill of [old,now]){
+  for(const [field,max] of Object.entries(numericLimits)){
+   const n=skill[field];
+   if(!Number.isFinite(n)||n<0||n>max)return false;
+  }
+  if(!Array.isArray(skill.aoe)||skill.aoe.length!==2||
+   skill.aoe.some(n=>!Number.isFinite(n)||n<0||n>1000000))
+   return false;
+ }
+ return true;
+}
+const SKILL_PRESENTATION_SOURCE_CONTRACTS=Object.freeze([
+ Object.freeze({id:'skill.source-parameters',kind:'sourceOnly',
+  dataset:'skills',matches:sourceSkillPresentationNumbers})
+]);
 // Immutable public contract census: code may evolve without a new hardcoded
 // list of skill IDs or guessing what unknown game effects do.
 const SOURCE_CONTRACT_REGISTRY=Object.freeze([
@@ -1067,6 +1101,7 @@ const SOURCE_CONTRACT_REGISTRY=Object.freeze([
  ...ZONE_DROP_SOURCE_CONTRACTS.map(({id,kind,dataset})=>Object.freeze({id,kind,dataset})),
  ...REFINEMENT_SOURCE_CONTRACTS.map(({id,kind,dataset})=>Object.freeze({id,kind,dataset})),
  ...EXPERIENCE_SOURCE_CONTRACTS.map(({id,kind,dataset})=>Object.freeze({id,kind,dataset})),
+ ...SKILL_PRESENTATION_SOURCE_CONTRACTS.map(({id,kind,dataset})=>Object.freeze({id,kind,dataset})),
  ...SKILL_SOURCE_CONTRACTS.map(({id,kind})=>Object.freeze({id,kind,dataset:'skills'})),
  ...EQUIPMENT_SOURCE_CONTRACTS.map(({id,kind,datasets})=>
   Object.freeze({id,kind,dataset:datasets.join(',')})),
@@ -1166,11 +1201,15 @@ function compatibility(before,after){
       entry.matches(id,old,now,before,after));
      add(contract?.kind||'needsReview','skill:'+id,
       name+(contract?.title||' · изменены игровые эффекты'),contract?.id);
+    }else if(sourceSkillPresentationNumbers(id,old,now)){
+     const contract=SKILL_PRESENTATION_SOURCE_CONTRACTS[0];
+     add(contract.kind,'skill:'+id,
+      name+' · затраты, время или дальность из игры; эффект не подтверждён',
+      contract.id);
     }else if([...new Set([...Object.keys(old),...Object.keys(now)])]
      .some(field=>!['name','nameEn','desc','descEn','iconId'].includes(field)&&
       !same(old[field],now[field]))){
-     // Explicit allow-list for presentation changes; new/unrecognized
-     // gameplay fields (including cast/cooldown/mana) fail closed.
+     // Unknown gameplay fields and formulas remain an explicit review.
      add('needsReview','skill:'+id,
       name+' · изменены игровые параметры, механика или доступность');
     }else{

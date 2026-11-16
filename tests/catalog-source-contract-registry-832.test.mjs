@@ -22,12 +22,12 @@ const snapshot=(id,edit)=>{
 };
 const quantity=(skill,ep)=>skill.funcs.find(row=>row.ep===ep);
 
-test('one declared registry contains twenty stable distinct data-only contracts',()=>{
+test('one declared registry contains twenty-one stable distinct data-only contracts',()=>{
  const contracts=safety.sourceContractRegistry;
  assert.ok(Array.isArray(contracts));
  assert.equal(Object.isFrozen(contracts),true);
- assert.equal(contracts.length,20);
- assert.equal(new Set(contracts.map(x=>x.id)).size,20);
+ assert.equal(contracts.length,21);
+ assert.equal(new Set(contracts.map(x=>x.id)).size,21);
  assert.deepEqual([...new Set(contracts.map(x=>x.kind))].sort(),
   ['sourceOnly','verified']);
  for(const contract of contracts){
@@ -35,7 +35,7 @@ test('one declared registry contains twenty stable distinct data-only contracts'
   assert.match(contract.id,/^(skill|equipment|class|table)\./);
   assert.ok(contract.dataset&&typeof contract.dataset==='string');
  }
- assert.equal(contracts.filter(x=>x.kind==='sourceOnly').length,6);
+ assert.equal(contracts.filter(x=>x.kind==='sourceOnly').length,7);
 });
 
 test('43 resource-count updates retain strict old/new proof with an explicit source contract ID',()=>{
@@ -79,7 +79,7 @@ test('unmodeled archery ammunition is explicitly sourceOnly, never verified dama
  assert.match(report.entries[0].title,/эффект навыка не рассчитан/);
 });
 
-test('unknown skill EP and cast timing never borrow another source contract',()=>{
+test('unknown skill EP remains review; valid casting metadata is source-only, not numeric proof',()=>{
  const next=snapshot('213601001',skill=>{
   skill.funcs.push({ep:'EP_FUTURE_UNMODELED',dir:'TARGET',
    fv1:[0,0,0,1],fv2:[0,0,0,99]});
@@ -89,8 +89,13 @@ test('unknown skill EP and cast timing never borrow another source contract',()=
  assert.equal(report.entries[0].contract,undefined);
  const cast=snapshot('213601001',skill=>{skill.cast+=1;});
  const check=safety.compatibility(before,cast);
- assert.equal(check.totals.needsReview,1);
- assert.equal(check.entries[0].contract,undefined);
+ assert.equal(check.totals.sourceOnly,1);
+ assert.equal(check.totals.needsReview,0);
+ assert.equal(check.entries[0].contract,'skill.source-parameters');
+ const replay=safety.replaySkills(before,cast);
+ assert.ok(replay.changedSkills>0,
+  'source-only classification must not bypass independent model replay');
+ assert.equal(replay.ok,replay.lost===0);
 });
 
 test('unverified equipment effect must remain needsReview; text-only changes have no contract',()=>{
