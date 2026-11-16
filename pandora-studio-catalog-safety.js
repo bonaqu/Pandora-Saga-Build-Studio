@@ -930,6 +930,20 @@ function verifiedBranchLimit(id,a,b,before,after){
  if(!changed.includes('branchCaps')||
   changed.some(k=>!['branchCaps','name','nameEn','desc','descEn'].includes(k)))
   return false;
+ // A cap crossing a skill requirement changes availability. Mastery maths
+ // alone cannot prove effects of a newly unlocked (or disabled) skill.
+ const previousSkills=before?.skills,candidateSkills=after?.skills;
+ if(!contractKeys(previousSkills,candidateSkills))return false;
+ for(const [skillId,ability] of Object.entries(previousSkills)){
+  const updated=candidateSkills[skillId];
+  if(!ability?.classes?.[id]&&!updated?.classes?.[id])continue;
+  if(!updated||!contractSame(ability?.reqs,updated?.reqs)||
+   !contractSame(ability?.classes?.[id],updated?.classes?.[id])||
+   !Array.isArray(ability.reqs))return false;
+  const eligible=caps=>ability.reqs.every(req=>
+   Number.isSafeInteger(caps?.[req.branch])&&caps[req.branch]>=req.amount);
+  if(eligible(a.branchCaps)!==eligible(b.branchCaps))return false;
+ }
  const names=Object.keys(before?.classes?.WARRIOR?.branchCaps||{});
  if(names.length!==27||
   !contractSame(Object.keys(a.branchCaps).sort(),names.slice().sort()))

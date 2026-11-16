@@ -14,12 +14,17 @@ const before={tables:load('tables'),classes:load('classes'),
  skills:load('skills'),items:load('items')};
 const edited=(name,fn)=>{const after={...before,[name]:structuredClone(before[name])};
  fn(after[name]);return {after,result:safe.compatibility(before,after)};};
+const safeCap=(id,caps)=>Object.keys(caps).find(key=>
+ caps[key]>0&&caps[key]<90&&Object.values(before.skills).every(s=>{
+  if(!s?.classes?.[id]||!Array.isArray(s.reqs))return true;
+  const allowed=c=>s.reqs.every(r=>c[r.branch]>=r.amount);
+  return allowed(caps)===allowed({...caps,[key]:caps[key]+1});
+ }));
 test('28 classes and 27 distinct mastery caps have signed old/new projection',()=>{
  assert.equal(Object.keys(before.classes).length,28);
  for(const [id,klass] of Object.entries(before.classes)){
   assert.equal(Object.keys(klass.branchCaps).length,27);
-  const key=Object.keys(klass.branchCaps).find(k=>
-   klass.branchCaps[k]>0&&klass.branchCaps[k]<90);
+  const key=safeCap(id,klass.branchCaps);
   assert.ok(key,id);
   const {after,result}=edited('classes',c=>{c[id].branchCaps[key]++;});
   assert.equal(result.entries.length,1);
@@ -29,6 +34,17 @@ test('28 classes and 27 distinct mastery caps have signed old/new projection',()
   assert.equal(P.branchPotential({points:{[key]:90}},key,start,after.classes[id].branchCaps),
    after.classes[id].branchCaps[key]);
  }
+});
+test('unlocking a new skill demands review despite valid branch-cap arithmetic',()=>{
+ const skill=before.skills['100054001'];
+ assert.equal(skill.name,'Сосредоточенность');
+ assert.equal(skill.classes.WARRIOR,1);
+ assert.equal(before.classes.WARRIOR.branchCaps.slash,25);
+ assert.ok(skill.reqs.some(r=>r.branch==='slash'&&r.amount===26));
+ const {after,result}=edited('classes',c=>{c.WARRIOR.branchCaps.slash=26;});
+ assert.equal(result.entries[0].kind,'needsReview');
+ assert.equal(result.entries[0].contract,undefined);
+ assert.equal(safe.sourceGraphIntegrity(before,after).ok,true);
 });
 test('unknown caps, lost start points and mixed HP changes cannot borrow a contract',()=>{
  for(const fn of [
@@ -97,8 +113,7 @@ test('bulk class/metadata edits retain 30 statuses and immutable source',()=>{
  const after={...before,classes:structuredClone(before.classes),
   tables:structuredClone(before.tables)};
  for(const x of Object.values(after.classes)){
-  const key=Object.keys(x.branchCaps).find(k=>
-   x.branchCaps[k]>0&&x.branchCaps[k]<90);
+  const key=safeCap(x.id,x.branchCaps);
   x.branchCaps[key]++;
  }
  after.tables.levelCap=55;after.tables.expCap+=1;
