@@ -383,6 +383,4 @@
  border-bottom:1px solid rgba(181,155,106,.17);white-space:normal}
 .wiki-honor-pvp-table th{font-weight:650;color:var(--gold,#d9bb83)}
 .wiki-honor-pvp-table tr:last-child td{border-bottom:0}
-.wiki-honor-pvp-source{opacity:.72;font-size:11px}
-
 .wiki-honor-pvp-illustration{display:block;width:100%;height:auto;max-height:400px;object-fit:contain;object-position:center;border-radius:7px;}
