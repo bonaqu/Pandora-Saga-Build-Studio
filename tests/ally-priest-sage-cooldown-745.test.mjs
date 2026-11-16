@@ -30,8 +30,11 @@ test('Sage Song gives two distinct recipient-side models regardless of the recei
  assert.equal(inactive.combat.priestSong.sageCooldownDelta,0);
  assert.equal(selected.combat.priestSong.sageElementDamage,16);
  assert.equal(selected.combat.priestSong.sageCooldownDelta,-47);
- assert.equal(selected.combat.cooldown,inactive.combat.cooldown,
-  'without confirmed server stacking, do not invent a final cooldown');
+ assert.equal(selected.combat.cooldown,inactive.combat.cooldown-47,
+  'current OS TARGET cooldown index is applied to the recipient');
+ assert.equal(selected.combat.cooldownParts.sageSong,-47);
+ assert.equal(selected.combat.cooldownParts.verified,false,
+  'this is an index projection, not proven final server seconds');
  assert.deepEqual(selected.stats,inactive.stats);
 });
 

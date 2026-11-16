@@ -2046,9 +2046,18 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const weaponPhysical=(meleeLineage.has(jobKey)?1+Math.floor(meleeMastery/10):0)
   +(title.weaponPhysical||0);
  const backAttack=15,frontAttack=title.frontAttack||0;
- const cooldown=Number.isFinite(stats.int)?100+
+ // Song of Enchantment uses EP_SKILL_BENCH_FIN (TARGET), a cooldown-index
+ // adjustment for the RECIPIENT. This is separate from cast-time reduction
+ // (Inspiration) and is not a claim about seconds or skill-specific minimums.
+ const cooldownBase=Number.isFinite(stats.int)?100+
   (mounted?Math.ceil(-2*Math.floor(stats.int/10)*mountedRate):
    -2*Math.floor(stats.int/10))+secondary.cooldown:null;
+ const sageCooldown=Number.isFinite(priestEffects?.sageCooldownDelta)&&
+  priestEffects.sageCooldownDelta<0?priestEffects.sageCooldownDelta:0;
+ const cooldown=cooldownBase===null?null:cooldownBase+sageCooldown;
+ const cooldownParts={base:cooldownBase,sageSong:sageCooldown,
+  source:'Current OS EP_SKILL_BENCH_FIN + Remaked cooldown-index model',
+  verified:false,excluded:['final per-skill cooldown seconds','server minimum cooldown caps','unknown buff stacking']};
  // Remaked Calc('ACC') writes the regular and front accuracy from the
  // same computed subtotal, plus independent EquipOpt[63] for front. Current
  // OS data has no verified front-only field mapping, so the explicitly
@@ -2111,7 +2120,7 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
   activeSkillValues:activeValues,secondary,supportSkills,supportSkillValues,
   guildArouse,guildAtk,attackSpeed,castingSpeed,castTime,manaCost,
   frontAccuracy,rangedEvasion,
-  weaponPhysical,backAttack,frontAttack,cooldown,
+  weaponPhysical,backAttack,frontAttack,cooldown,cooldownParts,
   mounted:{enabled:mounted,rate:mountedStatus?.known??null,verified:false,
    source:'Remaked Legacy Calc: Flag[7]'},
   spellDamageEquipmentRate,castInterruption,movementSpeed,skillDelayEquipment,
@@ -4035,6 +4044,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   minstrel:priestCanCast(340001001)&&
    chosenPriestSong.has(340001001)&&
    Number.isFinite(priestCast.minstrel)?priestCast.minstrel:0,
+  enchantElementRate:priestEnchantment?.magicRate??0,
   sageElementDamage:priestCanCast(340004001)&&
    chosenPriestSong.has(340004001)&&
    Number.isFinite(priestCast.sage)?priestCast.sage:0,

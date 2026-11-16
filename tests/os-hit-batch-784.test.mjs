@@ -67,6 +67,7 @@ test('changed Honor metadata never keeps an obsolete 5% school bonus',()=>{
 });
 test('Book stays current-build only: one target result, no recipes',()=>{
  const book=read('pandora-studio-hero-book.js');
- assert.match(book,/stage-target-damage-row/);
+ assert.doesNotMatch(book,/stage-target-damage-row|damageAgainstEnemy/);
+ assert.match(book,/scalingSkillPreview\?\.\(/);
  assert.doesNotMatch(book,/stage-material-actions|function materialSkillResults\(/);
 });

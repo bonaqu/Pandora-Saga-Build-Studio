@@ -120,11 +120,9 @@ test('Book uses one current skill row and retains materials only in Wiki',()=>{
  const app=read('pandora-studio-app.js');
  const index=read('index.html');
  assert.ok(index.includes('pandora-studio-target-damage.js?v='+JSON.parse(read('site-version.json')).release));
- assert.match(app,/PandoraOSTargetDamage\?\.supportedSkillHits/);
- assert.match(book,/stage-target-damage-row/);
- assert.match(book,/Средний урон по цели/);
- assert.match(book,/Average hit against/);
- assert.match(book,/mastery<required/);
+ assert.doesNotMatch(app,/PandoraOSTargetDamage\?\.supportedSkillHits/);
+ assert.doesNotMatch(book,/stage-target-damage-row|Средний урон по цели|Average hit against|mastery<required/);
+ assert.match(book,/scalingSkillPreview\?\.\(/);
  assert.doesNotMatch(book,/stage-material-actions|function materialSkillResults\(/);
  assert.doesNotMatch(book,/function monsterDamageSimulator\(/);
 });

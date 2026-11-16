@@ -2,8 +2,6 @@
 'use strict';
 // Partial source-backed combat preview. Do not claim current OS parity for missing buffs or procs.
 // Exact, player-interface labels only; source names and item descriptions stay untouched.
-// A view-only filter for the 702 current monster names. Never saved in builds.
-let damageTargetSearchQuery='';
 const bookEnglish=Object.freeze({
  'Итоги': "Summary",
  'Атака': "Attack",
@@ -449,6 +447,14 @@ function summaryRows(calc){
    row('АТК спереди','Front ATK',c.frontAttack,'%'),
    row('АТК сзади','Back ATK',sum(c.backAttack,c.backAttackEquipmentRate),'%'),
    row('МАТК','MATK',c.magicAttack?.known,'%'),
+   // The game declares elemental-spell damage boosts, not a universal
+   // MATK increase. Keep the two ally effects visible but distinct.
+   ...(Number.isFinite(calc?.priestApplied?.priestEnchantment?.magicRate)?[
+    row('Чары усиления · стихийный урон','Enhancement · elemental damage',
+     calc.priestApplied.priestEnchantment.magicRate,'%')]:[]),
+   ...(Number(calc?.combat?.priestSong?.sageElementDamage)>0?[
+    row('Песнь чар · стихийный урон','Sage Song · elemental damage',
+     calc.combat.priestSong.sageElementDamage,'%')]:[]),
    row('Точность','Accuracy',c.accuracy?.known),
    row('Точн. спереди','Front accuracy',c.frontAccuracy?.known),
    row('Шанс крита','Critical chance',c.critical?.known,'%'),
@@ -1080,8 +1086,8 @@ function buffsPage(body,options){
     'Reduces damage taken by the party, scaling with priest Blessing.'],
   330051001:['Добавляет святую ауру оружию союзника. Сила зависит от СД жреца.',
     'Adds holy damage aura to an ally’s weapon, scaling with priest SPR.'],
-  320011001:['Усиливает ауру оружия и магический урон союзника. Эффект зависит от жреца.',
-    'Boosts an ally’s weapon aura and magical damage, scaling with the priest.'],
+  320011001:['Усиливает существующую ауру оружия (физические атаки с аурой) и урон стихийных заклинаний. Не прибавляет отдельный показатель общего АТК.',
+    'Boosts an existing weapon aura (aura-assisted physical hits) and elemental spell damage. Does not add a separate general ATK bonus.'],
   340001001:['Повышает точность и уклонение ближайших союзников.',
     'Raises accuracy and evasion for nearby allies.'],
   340004001:['Повышает магическую атаку союзников и сокращает перезарядку умений.',
@@ -1365,65 +1371,8 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
  remakedBuffRows=[],availability={},combatSkillCards={},
  heroJobKey=null,heroLevel=1,heroMasteries={},heroBranchCaps={},
  heroWeaponKind='BARE_HAND',heroHasShield=false,
- targetSkillDamage=null,targetSkillDamages=[],
- targetMonsterId=22104,targetMonsterChoices=[],onTargetMonster=()=>{},
  onItem=()=>{},onSkill=null}={}){
  const en=document.documentElement?.lang==='en';
- // One native, keyboard-accessible selector; no new card and no change to
- // the hero's build. The target list comes from the current D1 snapshot.
- if(Array.isArray(targetMonsterChoices)&&targetMonsterChoices.length){
-  const row=make('div',{class:'stage-book-field stage-book-damage-target'},[
-   make('label',{text:en?'Damage target':'Цель удара',
-    for:'stageBookDamageTarget'})
-  ]);
-  const choice=make('select',{id:'stageBookDamageTarget',
-   'data-book-setting':'damageTarget',
-   'aria-label':en?'Choose a monster for skill damage':'Выбрать монстра для расчёта урона',
-   onchange:event=>onTargetMonster(Number(event.target.value))});
-  const sorted=[...targetMonsterChoices].sort((a,b)=>
-   (en?a.nameEn:a.name).localeCompare(en?b.nameEn:b.name,en?'en':'ru')||
-   a.level-b.level||a.id-b.id);
-  const targetAvailable=sorted.some(monster=>monster.id===targetMonsterId);
-  // The full list is available by default. Typing only filters its native
-  // options; it NEVER recomputes damage or changes the chosen target.
-  const normalize=value=>String(value??'').normalize('NFKC')
-   .toLocaleLowerCase('ru').replace(/ё/g,'е').trim();
-  const updateOptions=()=>{
-   const terms=normalize(damageTargetSearchQuery).split(/\s+/).filter(Boolean);
-   const chosen=sorted.find(monster=>monster.id===targetMonsterId);
-   const matches=terms.length?sorted.filter(monster=>{
-    const text=normalize(monster.name+' '+monster.nameEn+' '+monster.level);
-    return terms.every(term=>text.includes(term));
-   }):sorted;
-   // Keep the currently displayed monster visible even when it doesn't
-   // match the typed filter. Never show damage for a different selection.
-   const visible=chosen&&!matches.some(monster=>monster.id===chosen.id)?
-    [chosen,...matches]:matches;
-   const fragment=document.createDocumentFragment();
-   if(!targetAvailable)fragment.append(make('option',{value:'',disabled:true,
-    selected:true,text:en?'Choose a monster':'Выберите монстра'}));
-   if(terms.length&&!matches.length)fragment.append(make('option',{
-    value:'',disabled:true,text:en?'No matches':'Ничего не найдено'
-   }));
-   for(const monster of visible)fragment.append(make('option',{
-    value:String(monster.id),text:(en?monster.nameEn:monster.name)+' · '+
-     (en?'Lv ':'ур. ')+monster.level
-   }));
-   choice.replaceChildren(fragment);
-   choice.value=targetAvailable?String(targetMonsterId):'';
-  };
-  const search=make('input',{type:'search',class:'stage-book-target-search',
-   'aria-label':en?'Find monster by name':'Поиск монстра по названию',
-   placeholder:en?'Find monster…':'Найти монстра…',
-   value:damageTargetSearchQuery,
-   oninput:event=>{
-    damageTargetSearchQuery=event.target.value;
-    updateOptions();
-   }});
-  updateOptions();
-  row.append(search,choice);
-  body.append(row);
- }
  const gates=root.PandoraBookSkillThresholds;
  const healingNumber=new Intl.NumberFormat(en?'en-US':'ru-RU',
   {maximumFractionDigits:2});
@@ -1622,38 +1571,6 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   weaponKind:heroWeaponKind,hasShield:heroHasShield,
   stats:modifiers?.stats,combat:modifiers?.combat
  })||{offense:[],defense:[]};
- // Source-validated, learned spell only. Place it in the existing offense
- // skill list; do not invent extra panels or expose item requirements.
- const rawHits=[
-  ...(Array.isArray(targetSkillDamages)?targetSkillDamages:[]),
-  ...(targetSkillDamage?[targetSkillDamage]:[])
- ];
- const seenHits=new Set(),hits=[];
- for(const result of rawHits){
-  const id=result?.skillId,source=gameTerms.skills?.[String(id)];
-  const branch=source?.branch,mastery=heroMasteries?.[branch]??0;
-  const required=source?.reqs?.find(r=>r.branch===branch)?.amount??0;
-  if(![240005001,330001001,410001001,410011001,410012001,
-    410021001,410023001,420003001,430001001,430052001,
-    410002001,430053001,240002001,410014001,410014003,
-    410022001,420007001,430001003,430052002,430053003,
-    430056001,213608001].includes(id)||
-   seenHits.has(id)||result.monsterId!==targetMonsterId||
-   source?.id!==id||source.classes?.[heroJobKey]!==1||
-   !Number.isSafeInteger(mastery)||mastery<required||
-   !Number.isSafeInteger(heroBranchCaps?.[branch])||
-   mastery>heroBranchCaps[branch]||
-   heroLevel<source.charLevel||
-   ![result.min,result.average,result.max].every(n=>
-    Number.isSafeInteger(n)&&n>=0)||
-   result.min>result.average||result.average>result.max)continue;
-  seenHits.add(id);
-  hits.push({id,name:source.name,available:true,recipient:false,
-   hostile:false,damageAgainstEnemy:result,
-   // The actual target hit replaces provisional coefficient previews;
-   // don't show a second, easily confused "attack value".
-   coefficientModels:[],sourceParameters:[],nextStat:null});
- }
  for(const [groupName,captionRu,captionEn,sectionClass,rowClass] of [
   ['offense','Атакующие умения','Offensive skills',
    'stage-attacking-skills','stage-offense-skill-row'],
@@ -1669,25 +1586,9 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   // Only effects calculable for this hero remain here. Static source
   // coefficients and enemy-target descriptors live in the Encyclopedia.
   const baseSkills=rows[groupName]||[];
-  // Specialised skill upgrades may keep the old source name and coefficient.
-  // If a higher variant is available for the CURRENT class and build,
-  // render one upgraded result instead of two indistinguishable rows.
-  const upgradedRoots=new Set(hits.map(row=>
-   gameTerms.skills?.[String(row.id)]?.prereq).filter(Number.isSafeInteger));
-  const relevantBase=groupName==='offense'?
-   baseSkills.filter(row=>!upgradedRoots.has(row.id)):baseSkills;
-  const relevantHits=groupName==='offense'?
-   hits.filter(row=>!upgradedRoots.has(row.id)):[];
-  const calculatedById=new Map(relevantHits.map(row=>[row.id,row]));
-  const currentSkills=groupName==='offense'?[
-   ...relevantBase.map(row=>calculatedById.has(row.id)?
-    {...row,...calculatedById.get(row.id)}:row),
-   ...relevantHits.filter(row=>!relevantBase.some(base=>base.id===row.id))
-  ]:baseSkills;
-  const skills=currentSkills.filter(skill=>
+  const skills=baseSkills.filter(skill=>
    skill.available===true&&!skill.hostile&&!skill.recipient&&
-   (skill.damageAgainstEnemy||
-    Number.isFinite(skill.amount)||
+   (Number.isFinite(skill.amount)||
     (skill.coefficientModels||[]).some(part=>
      Number.isSafeInteger(part?.amount)&&
      part.confidence==='coefficient-model'&&
@@ -1707,15 +1608,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    // for final target damage or added to persistent hero ATK.
    const singlePart=!Number.isFinite(skill.amount)&&modelParts.length===1?
     modelParts[0]:null;
-   const hitResult=skill.damageAgainstEnemy;
-   const amount=hitResult?
-    (en?hitResult.targetNameEn:hitResult.targetName)+' · '+
-     (hitResult.hitKind==='trap-hit'?
-      (en?'one explosion ':'один взрыв '):
-      hitResult.hitKind==='direct-part'?
-      (en?'direct hit ':'прямой удар '):'')+
-     hitResult.min+'–'+hitResult.max+' '+(en?'HP':'ОЗ'):
-    Number.isFinite(skill.amount)?
+   const amount=Number.isFinite(skill.amount)?
     (skill.amount>0?'+':'')+String(skill.amount)+
      (en?skill.unit.replace(' защиты',' DEF').replace(' уклонения',' evasion')
       .replace(' АТК',' ATK').replace(' точности и уклонения',' accuracy & evasion')
@@ -1729,7 +1622,6 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    const detail=en?(skill.detailEn||source?.d||skill.description):
     (skill.detailRu||skill.description);
    const preview=make('div',{class:'stage-heal-row '+rowClass+
-    (hitResult?' stage-target-damage-row':'')+
     (!skill.available?' stage-book-unavailable':'')},[
     gameSkillBadge(skill.id,skill.name,source?.n||skill.name,
      gameTerms,en,skillIconForId,onSkill),
@@ -1739,178 +1631,6 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    const more=make('details',{class:'stage-skill-gate-help stage-skill-more'},[
     make('summary',{text:en?'More details':'Подробнее'})
    ]);
-   if(hitResult){
-    const partial=hitResult.hitKind==='direct-part';
-    more.append(make('small',{class:'stage-target-damage-average',text:en?
-     (partial?'Average direct hit against ':'Average hit against ')+
-      hitResult.targetNameEn+': '+hitResult.average+' HP':
-     (partial?'Средний прямой урон по цели «':'Средний урон по цели «')+
-      hitResult.targetName+'»: '+hitResult.average+' ОЗ'}));
-    // One current-hit packet relative to the selected D1 monster's FULL
-    // health, not a time-to-kill or a claim about guaranteed hit chances.
-    if(Number.isSafeInteger(hitResult.targetMaxLife)&&
-     hitResult.targetMaxLife>0&&
-     Number.isFinite(hitResult.targetAverageLifePercent)&&
-     hitResult.targetAverageLifePercent>=0){
-     const pct=hitResult.targetAverageLifePercent;
-     const ratio=pct>0&&pct<0.005?
-      (en?'<0.01%':'<0,01%'):
-      new Intl.NumberFormat(en?'en-US':'ru-RU',{
-       maximumFractionDigits:2
-      }).format(pct)+'%';
-     const fullLife=new Intl.NumberFormat(en?'en-US':'ru-RU')
-      .format(hitResult.targetMaxLife);
-     more.append(make('small',{class:'stage-target-damage-stats',
-      text:en?
-       'Average hit: '+ratio+' of target full HP ('+fullLife+')':
-       'Средний удар: '+ratio+' от полного запаса ОЗ цели ('+fullLife+')'
-     }));
-    }
-    const statLabel=en?
-     {str:'STR',dex:'DEX',int:'INT',spi:'SPI'}:
-     {str:'СИЛ',dex:'ЛВК',int:'ИНТ',spi:'СД'};
-    const branchLabel=en?
-     {...{trap:'Trapping',element:'Elemental',darkness:'Darkness',
-      exorcism:'Exorcism',charm:'Confusion',archery:'Archery'},
-      ...(gameTerms.englishBranches||{})}:
-     {...{trap:'Ловушки',element:'Магия стихий',darkness:'Магия тьмы',
-      exorcism:'Экзорцизм',charm:'Чары',archery:'Стрельба'},
-      ...(gameTerms.branchLabels||{})};
-    // Show only stats which actually contribute to this skill packet.
-    // Kindling Arrow declares STR, but its current STR coefficient is zero.
-    const powerRelevant=hitResult.heroPowerCoefficient!==0;
-    const statsLine=hitResult.heroMasteryKey==='trap'?
-     (en?'DEX ':'ЛВК ')+hitResult.heroDex+
-      (en?' · INT ':' · ИНТ ')+hitResult.heroInt+
-      (en?' · Traps ':' · Ловушки ')+hitResult.trapMastery:
-     [
-      ...(powerRelevant?
-       [statLabel[hitResult.heroPowerKey]+' '+hitResult.heroPower]:[]),
-      ...(hitResult.heroPowerKey==='int'&&powerRelevant?
-       []:[(en?'INT ':'ИНТ ')+hitResult.heroInt]),
-      branchLabel[hitResult.heroMasteryKey]+' '+hitResult.heroMastery
-     ].join(' · ');
-    more.append(make('small',{class:'stage-target-damage-stats',
-     text:statsLine}));
-    // Every source-verified hit displays the ACTUAL selected D1 target's
-    // elemental and magic resistance, never an unrelated Ogre value.
-    const schoolRu={fire:'огню',cold:'льду',lightning:'молнии',
-     poison:'яду',charm:'чарам',holy:'свету',dark:'тьме'};
-    const schoolEn={fire:'Fire',cold:'Cold',lightning:'Lightning',
-     poison:'Poison',charm:'Charm',holy:'Holy',dark:'Dark'};
-    const sourceOgre=hitResult.monsterId===22104&&
-     hitResult.targetName==='Гигантский огр'&&
-     hitResult.targetNameEn==='Ogre Bouncer';
-    const targetTitle=en?
-     (sourceOgre?'Ogre':hitResult.targetNameEn):
-     (sourceOgre?'Огр':hitResult.targetName);
-    more.append(make('small',{class:'stage-target-damage-stats',
-     text:en?
-      targetTitle+' · '+(schoolEn[hitResult.element]||hitResult.element)+
-       ' resistance '+hitResult.targetElementResistance+
-       ' · Magic resistance '+hitResult.targetMagicResistance+
-       (hitResult.itemPenetration?' · Gear penetration +'+hitResult.itemPenetration:''):
-      targetTitle+' · Сопр. '+(schoolRu[hitResult.element]||hitResult.element)+
-       ' '+hitResult.targetElementResistance+
-       ' · Сопр. магии '+hitResult.targetMagicResistance+
-       (hitResult.itemPenetration?' · Пробитие от вещей +'+hitResult.itemPenetration:'')
-    }));
-    // These are numeric contributions to THIS hit from the selected build,
-    // not a general skill description or an additional skill card.
-    const boostParts=[];
-    if(hitResult.bonusRate){
-     const value=(hitResult.bonusRate>0?'+':'')+hitResult.bonusRate+'%';
-     boostParts.push((en?'Damage boosts ':'Усиление урона ')+value);
-    }
-    if(hitResult.honorRate){
-     boostParts.push((en?'Honor title +':'Титул чести +')+
-      hitResult.honorRate+'%');
-    }
-    if(hitResult.nextMagicRate){
-     boostParts.push((en?'Concentration +':'Сосредоточенность +')+
-      hitResult.nextMagicRate+'%'+(hitResult.nextMagicPenetration?
-       (en?' · penetration +':' · пробитие +')+hitResult.nextMagicPenetration:''));
-    }
-    if(hitResult.magicGemRate||hitResult.magicGemFlat){
-     const rate=(hitResult.magicGemRate>0?'+':'')+hitResult.magicGemRate+'%';
-     const flat=(hitResult.magicGemFlat>0?'+':'')+hitResult.magicGemFlat;
-     boostParts.push((en?'Magical refinement ':'Магическая заточка ')+
-      rate+' · '+flat+(en?' to hit power':' к силе удара'));
-    }
-    if(boostParts.length)more.append(make('small',{
-     class:'stage-target-damage-stats',text:boostParts.join(' · ')
-    }));
-    // Actual average-hit differences from the SAME current hero and ogre.
-    // Show only nonzero changes, in one existing details line.
-    const realGains=[];
-    const addAverageGain=(amount,labelRu,labelEn)=>{
-     if(!Number.isSafeInteger(amount)||amount===0)return;
-     realGains.push((en?labelEn:labelRu)+': '+
-      (amount>0?'+':'')+amount+(en?' HP to average hit':' ОЗ к среднему удару'));
-    };
-    addAverageGain(hitResult.magicKnowledgeAverageGain,
-     'Магические знания','Magic Knowledge');
-    addAverageGain(hitResult.honorAverageGain,
-     'Титул чести','Honor title');
-    addAverageGain(hitResult.nextMagicAverageGain,
-     'Сосредоточенность','Concentration');
-    addAverageGain(hitResult.itemDamageAverageGain,
-     'Бонусы урона вещей','Item damage bonuses');
-    addAverageGain(hitResult.itemPenetrationAverageGain,
-     'Пробитие от вещей','Gear resistance penetration');
-    addAverageGain(hitResult.allyAverageGain,
-     'Усиления союзников','Ally buffs');
-    addAverageGain(hitResult.refinementAverageGain,
-     'Магическая заточка','Magical refinement');
-    if(realGains.length)more.append(make('small',{
-     class:'stage-target-damage-stats',text:realGains.join(' · ')
-    }));
-    // A separate, compact breakdown of the selected monster's defenses:
-    // each difference is a standalone "same hit without this factor" result,
-    // not three amounts a player should add together.
-    const targetImpacts=[];
-    const addTargetImpact=(value,ru,enLabel)=>{
-     if(!Number.isSafeInteger(value)||value===0)return;
-     targetImpacts.push((en?enLabel:ru)+': '+
-      (value>0?'+':'')+value+(en?' HP':' ОЗ'));
-    };
-    // Separate elemental/magic comparisons. They share OS rounding but
-    // never get summed into the old combined resistance delta.
-    addTargetImpact(hitResult.targetElementResistanceAverageImpact,
-     'Сопр. '+(schoolRu[hitResult.element]||hitResult.element),
-     (schoolEn[hitResult.element]||hitResult.element)+' resistance');
-    addTargetImpact(hitResult.targetMagicResistanceAverageImpact,
-     'Сопр. магии','Magic resistance');
-    addTargetImpact(hitResult.targetAbsorptionAverageImpact,
-     'СД и маг. защита цели','Target SPI and magic defense');
-    addTargetImpact(hitResult.targetLevelAverageImpact,
-     'Разница уровней','Level difference');
-    if(targetImpacts.length)more.append(make('small',{
-     class:'stage-target-damage-stats',
-     text:(en?'Average-hit impact · ':'Влияние на средний удар · ')+
-      targetImpacts.join(' · ')
-    }));
-    // These are actual changes in average HP for THIS hero/monster,
-    // unlike a provisional strike-strength coefficient milestone.
-    const nextHitParts=[],improvements=hitResult.nextHitImprovements||{};
-    const statLabels=en?
-     {int:'INT',str:'STR',dex:'DEX',spi:'SPI',agi:'AGI'}:
-     {int:'ИНТ',str:'СИЛ',dex:'ЛВК',spi:'СД',agi:'ПРВ'};
-    for(const future of [improvements.mastery,improvements.primary,
-     improvements.int]){
-     if(!future||!Number.isSafeInteger(future.value)||
-      !Number.isSafeInteger(future.needed)||future.needed<1||
-      !Number.isSafeInteger(future.averageGain)||future.averageGain<1)continue;
-     const label=statLabels[future.key]||branchLabel[future.key]||future.key;
-     nextHitParts.push(label+' '+future.value+' (+'+future.needed+
-      '): +'+future.averageGain+(en?' HP':' ОЗ'));
-    }
-    if(nextHitParts.length)more.append(make('small',{
-     class:'stage-skill-coefficient-next',
-     text:(en?'Next higher average hit · ':
-      'Следующий прирост среднего удара · ')+nextHitParts.join(' · ')
-    }));
-   }
    // General skill descriptions are available via its tooltip and Wiki.
    if(modelParts.length&&!Number.isFinite(skill.amount)){
     // A single source-checked result is already the main line;
@@ -1981,46 +1701,6 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    showBaseManaBudget(more,action);
    if(more.childElementCount>1)preview.append(more);
    section.append(preview);
-  }
-  body.append(section);
- }
- // Effects from party skills are not abilities learned by this profession.
- // Still, their numeric effect ON this hero is derived from this hero's
- // actual attack, accuracy and evasion. Never activate the buff automatically.
- const fromParty=[...rows.offense,...rows.defense].filter(skill=>
-  skill.recipient===true&&skill.available===true&&
-  Number.isSafeInteger(skill.amount)&&skill.recipientBasis?.applied===false);
- if(fromParty.length){
-  const section=make('details',{class:'stage-attribute-row stage-skill-party-effects'});
-  section.append(make('summary',{text:en?'Party buffs calculated for this hero':
-   'Усиления союзников для этого героя'}));
-  for(const skill of fromParty){
-   const source=gameTerms.englishSkills?.[String(skill.id)];
-   const basis=skill.recipientBasis;
-   const label={
-    physicalAttack:[en?'Base physical attack':'Базовая физическая атака',' ATK'],
-    accuracy:[en?'Accuracy':'Точность',''],
-    evasion:[en?'Evasion':'Уклонение','']
-   }[basis.source];
-   if(!label)continue;
-   const card=make('div',{class:'stage-heal-row stage-skill-party-row'},[
-    gameSkillBadge(skill.id,skill.name,source?.n||skill.name,gameTerms,en,skillIconForId,onSkill),
-    make('strong',{text:'+'+skill.amount+(en?skill.unit:
-     skill.unit===' ATK'?' АТК':skill.unit)})
-   ]);
-   const how=make('details',{class:'stage-skill-gate-help'},[
-    make('summary',{text:en?'Calculation and next threshold':
-     'Расчёт и следующий порог'})
-   ]);
-   how.append(make('small',{text:label[0]+': '+basis.base+
-    ' · '+basis.flat+' + '+basis.percent+'% ('+
-    (en?'round down':'округлить вниз')+') = +'+skill.amount}));
-   if(basis.nextBase!=null)
-    how.append(make('small',{text:en?
-     'Next +1 at '+label[0].toLowerCase()+' '+basis.nextBase:
-     'Следующая +1 при значении «'+label[0]+'» '+basis.nextBase}));
-   card.append(how);
-   section.append(card);
   }
   body.append(section);
  }
@@ -2095,6 +1775,10 @@ function attackChapterGroups(calc){
   'Melee attack range · total',range.totalMelee);
  put(0,'totalRangedRange','Дальность атаки дальнего боя · всего',
   'Ranged attack range · total',range.totalRanged);
+ const enchant=calc.priestApplied?.priestEnchantment;
+ if(Number.isFinite(enchant?.magicRate))
+  put(2,'priestEnchantElement','Чары усиления · урон стихийных заклинаний',
+   'Enhance Enchantment · elemental spell damage',enchant.magicRate,'%');
  const song=calc.combat?.priestSong;
  if(Number(song?.sageElementDamage)>0)
   put(2,'priestSageElement','Песнь чар · стихийный урон',
@@ -2650,8 +2334,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
  combatSkillCards={},resistanceSkillChoices=[],remakedBuffRows=[],
  heroJobKey=null,heroLevel=1,heroMasteries={},heroBranchCaps={},
  heroWeaponKind='BARE_HAND',heroHasShield=false,
- targetSkillDamage=null,targetSkillDamages=[],nextMagicConcentrationPreview=null,
- targetMonsterId=22104,targetMonsterChoices=[],onTargetMonster=()=>{},
+ nextMagicConcentrationPreview=null,
  itemById=()=>null,onItem=()=>{},onSkill=null,gameTerms={},
  copy={},onTextEdit=null,canEdit=false,onHonor=()=>{}}={}){
  root.PandoraGuideTooltip?.dismiss();
@@ -2760,8 +2443,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
   gameTerms,remakedBuffRows,skillIconForId,nextMagicConcentrationPreview,...copyOptions});
  if(chosen==='effects')skillEffectsPage(body,{modifiers,gameTerms,skillIconForId,
   remakedBuffRows,availability,combatSkillCards,heroJobKey,heroLevel,heroMasteries,
-   heroBranchCaps,heroWeaponKind,heroHasShield,targetSkillDamage,targetSkillDamages,
-   targetMonsterId,targetMonsterChoices,onTargetMonster,onItem,onSkill});
+   heroBranchCaps,heroWeaponKind,heroHasShield,onItem,onSkill});
  if(chosen==='recovery'){
   const english=document.documentElement?.lang==='en';
   const percent=modifiers?.potion?.percent;

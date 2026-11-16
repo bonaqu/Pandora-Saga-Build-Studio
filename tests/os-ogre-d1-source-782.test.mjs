@@ -55,8 +55,7 @@ test('invalid, absent or cross-snapshot Ogre records never produce stale fake da
  ]){const modified=structuredClone(monsters);edit(modified);
   assert.equal(hit({monsters:modified}),null);
  }
- // Old public calculator fixtures (without D1) remain supported; the live
- // Hero Book always passes an explicit monster snapshot or displays no hit.
+ // Standalone calculator fixtures without a monster source retain the pinned baseline.
  assert.deepEqual(triple(hit({monsters:undefined})),[34,148,194]);
 });
 test('items can pierce Ogre resistance without increasing spell-damage percentage',()=>{
@@ -126,13 +125,10 @@ test('broad independent build-state matrix keeps hit range and target state cohe
  }
  assert.equal(checked,320);
 });
-test('live D1 snapshot is lazy, checked and passed into existing Hero Book',()=>{
+test('standalone target calculator stays testable but no longer appears in the Hero Book',()=>{
  const app=read('pandora-studio-app.js'),book=read('pandora-studio-hero-book.js');
- assert.match(app,/function ensureOgreSource\(/);
- assert.match(app,/stageAttributesPage==='effects'&&!ogreMonsters/);
- assert.match(app,/x-ps-catalog-snapshot/);
- assert.match(app,/monsters:ogreMonsters,englishMonsters:/);
- assert.match(book,/itemPenetrationAverageGain/);
- assert.match(book,/targetMagicResistance/);
+ assert.doesNotMatch(app,/ensureOgreSource|currentDamageTargetChoices|selectedDamageTargetId/);
+ assert.doesNotMatch(book,/targetMonsterId|hitResult|targetMagicResistance|targetSkillDamages/);
+ assert.match(book,/scalingSkillPreview\?\.\(/);
  assert.doesNotMatch(book,/stage-material-actions|function materialSkillResults\(/);
 });

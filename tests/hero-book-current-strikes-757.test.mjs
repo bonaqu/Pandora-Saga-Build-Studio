@@ -28,22 +28,18 @@ test('Real character mastery drives a modeled strike, not final damage',()=>{
  malformed['142002001'].funcs[0].fv1[2]=2000;
  assert.equal(strikeOf(preview('JUGGERNAUT',{brush:40},'1H_AXE',malformed),142002001),undefined);
 });
-test('Hero Book shows explicitly labeled direct strike model while keeping final amount unknown',()=>{
- const start=book.indexOf('// Only effects calculable for this hero remain here.');
- const end=book.indexOf('// Effects from party skills are not abilities learned',start);
+test('Hero Book keeps current hero coefficient previews but no selected-target hit simulation',()=>{
+ const start=book.indexOf('function skillEffectsPage(');
+ const end=book.indexOf('function attackChapterGroups(',start);
  assert.ok(start>0&&end>start);
  const ui=book.slice(start,end);
  assert.match(ui,/skill\.available===true&&!skill\.hostile&&!skill\.recipient/);
  assert.match(ui,/part\.ep==='EP_ONHIT_DAMAGE_SCALE'/);
  assert.match(ui,/part\.confidence==='coefficient-model'/);
  assert.match(ui,/roundingParts\?\.method==='floor-components'/);
- assert.match(ui,/const amount=hitResult\?/);
  assert.match(ui,/Number\.isFinite\(skill\.amount\)/);
- assert.match(ui,/stage-target-damage-row/);
- assert.match(ui,/singlePart\?/);
  assert.match(ui,/stage-skill-primary-coefficient/);
- assert.doesNotMatch(ui,/    '—';/);
- assert.match(ui,/if\(!singlePart\)/);
+ assert.doesNotMatch(ui,/hitResult|stage-target-damage-row|damageAgainstEnemy/);
  assert.doesNotMatch(ui,/final combat result|не подтверждённый итоговый результат/);
  assert.doesNotMatch(ui,/stat\.attack\s*\+=|damageTotal/);
 });

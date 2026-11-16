@@ -37,7 +37,7 @@ test('Hero Path keeps class-gated OS lineage and bounded selected gallery',()=>{
 });
 test('Hero Book adds current full MP budget in existing single details',()=>{
  const begin=book.indexOf('for(const [groupName,captionRu,captionEn,sectionClass,rowClass]');
- const end=book.indexOf('// Effects from party skills are not abilities learned',begin);
+ const end=book.indexOf('function attackChapterGroups(',begin);
  assert.ok(begin>0&&end>begin);
  const stage=book.slice(begin,end);
  assert.match(stage,/gates\?\.sourceAction/);

@@ -136,7 +136,8 @@ test('Target damage is current hero only, no phantom sleep, freeze or knockdown 
   assert.ok(packet(raised,id).max>=packet(base,id).max);
  assert.ok(packet(raised,420003001).max>packet(base,420003001).max);
  const book=read('pandora-studio-hero-book.js');
- for(const id of newIds)assert.match(book,new RegExp(String(id)));
+ assert.doesNotMatch(book,/stage-target-damage-row|targetMonsterId|damageAgainstEnemy/);
+ assert.match(book,/scalingSkillPreview\?\.\(/);
  assert.doesNotMatch(book,/stage-material-actions|function materialSkillResults\(/);
  assert.equal(hitList().some(x=>x.skillId===410002001&&
   x.hitKind==='direct-part'),true);

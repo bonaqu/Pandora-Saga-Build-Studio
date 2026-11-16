@@ -113,11 +113,8 @@ test('Physical trap uses OS NONE→physical 30% spread; poison uses -25% target 
 });
 test('One Book row per upgraded skill: no duplicate name or invented status-tick total',()=>{
  const book=read('pandora-studio-hero-book.js');
- for(const id of specIds)assert.match(book,new RegExp(String(id)));
- assert.match(book,/const upgradedRoots=new Set/);
- assert.match(book,/relevantBase=groupName/);
- assert.match(book,/relevantHits=groupName/);
- assert.match(book,/прямой удар/);
+ assert.match(book,/scalingSkillPreview\?\.\(/);
+ assert.doesNotMatch(book,/relevantHits=groupName|stage-target-damage-row|прямой удар/);
  assert.doesNotMatch(book,/stage-material-actions|function materialSkillResults\(/);
  const effects=calc('CALAMITY',{darkness:70});
  for(const [base,upgrade] of [[430001001,430001003],
