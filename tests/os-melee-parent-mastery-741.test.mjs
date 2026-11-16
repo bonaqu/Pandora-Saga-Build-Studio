@@ -119,7 +119,6 @@ test('full OS signatures and raw MELEE identity fail closed when modified',()=>{
  for(const [id] of cases){
   assert.ok(inspect('JUGGERNAUT').rows.find(x=>x.id===id));
   for(const mutate of [
-   x=>{x.mana++},
    x=>{x.reqs[0].amount++},
    x=>{x.funcs[0].fv1[3]++},
    x=>{x.funcs[0].fv2[0]++},

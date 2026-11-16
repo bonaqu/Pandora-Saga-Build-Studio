@@ -34,7 +34,9 @@ test('cast timing is a mechanical change and replays known previews without D1 w
  assert.ok(result.scenarios>0,'timing changes must trigger a full read-only model replay');
  assert.equal(result.lost,0,'an unchanged numerical source may keep the same preview');
  assert.equal(result.ok,true);
- assert.equal(root.PandoraCatalogSafety.compatibility(before,next).totals.needsReview,1);
+ const status=root.PandoraCatalogSafety.compatibility(before,next);
+ assert.equal(status.totals.sourceOnly,1);
+ assert.equal(status.entries[0].contract,'skill.source-parameters');
 });
 test('known source-gated combat effect lost on an FV mutation blocks the selected snapshot',()=>{
  const next=amended();
