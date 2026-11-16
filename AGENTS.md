@@ -1,3 +1,8 @@
+## 0.838.0 · Зональная добыча и связи (#615)
+- table.zone-drop-parameters (sourceOnly) распознаёт только числовые изменения base/perMember и lo/hi при сохранении identity, порядка, map/mob/item IDs, видов csv/hook и slotP/slotN. Не приписывать source-only весам шансы дропа на сервере.
+- sourceGraphIntegrity до D1 дополнительно охватывает zoneDrops: zone.map -> maps, hook.mob -> monsters, reward.i -> items. Контролировать все 11 зон, 285 правил и 1 091 предмет; изменения формы требуют review.
+- tests/catalog-zone-drops-source-838.test.mjs; Node+Chromium на exact PR SHA и после merge read-only Pages/Worker/D1, без записей в production.
+
 ## 0.837.0 · Подписанные лимиты мастерства и требования навыков (#615)
 - Если изменение class.branchCaps пересекает порог reqs любого классового навыка, оно остаётся needsReview, даже если старая/новая арифметика зелёного мастерства работает. Новая доступность требует проверки механики.
 - class.branch-limits: old/new проверка изменения только существующих 27 веток через PandoraSkillProgression branchPotential/trained/setPotential на всех профессиях. Не смешивать с HP/MP, parent, новыми ветками и не подтверждать неизвестные условия.

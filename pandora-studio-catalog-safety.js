@@ -990,11 +990,77 @@ const ADDITIONAL_SOURCE_CONTRACTS=Object.freeze([
  Object.freeze({id:'table.server-experience-cap',kind:'sourceOnly',
   dataset:'tables',matches:sourceServerNumber})
 ]);
+
+// Zone-drop parameters are source-only probabilities/counts, NOT final
+// monster kill chances. Keep the entire map/mob/item identity graph signed.
+function sourceZoneDropNumbers(field,before,after){
+ if(field!=='zoneDrops')return false;
+ const a=before?.tables?.zoneDrops,b=after?.tables?.zoneDrops;
+ if(!Array.isArray(a)||!Array.isArray(b)||!a.length||a.length!==b.length)
+  return false;
+ const exists=(data,section,id)=>data?.[section]&&
+  Number.isSafeInteger(id)&&id>0&&
+  Object.hasOwn(data[section],String(id));
+ let changed=0;
+ const seen=new Set();
+ for(let z=0;z<a.length;z++){
+  const left=a[z],right=b[z];
+  if(!contractShape(left,['map','rows'])||
+   !contractShape(right,['map','rows'])||
+   left.map!==right.map||seen.has(left.map)||!exists(before,'maps',left.map)||
+   !exists(after,'maps',right.map))return false;
+  seen.add(left.map);
+  if(!Array.isArray(left.rows)||!Array.isArray(right.rows)||
+   left.rows.length!==right.rows.length||!left.rows.length)return false;
+  for(let j=0;j<left.rows.length;j++){
+   const x=left.rows[j],y=right.rows[j];
+   if(!contractKeys(x,y)||!['csv','hook'].includes(x?.kind)||
+    x.kind!==y?.kind||x.mob!==y.mob||
+    !contractSame(Object.keys(x).sort(),
+     (x.kind==='hook'?
+      ['base','items','kind','mob','perMember']:
+      ['base','items','kind','perMember']).sort()))return false;
+   if(x.kind==='hook'&&(!exists(before,'monsters',x.mob)||
+    !exists(after,'monsters',y.mob)))return false;
+   for(const k of ['base','perMember']){
+    if(!Number.isFinite(x[k])||!Number.isFinite(y[k])||
+     x[k]<0||y[k]<0||x[k]>100||y[k]>100)return false;
+    if(x[k]!==y[k])changed++;
+   }
+   if(!Array.isArray(x.items)||!Array.isArray(y.items)||
+    !x.items.length||x.items.length!==y.items.length)return false;
+   for(let i=0;i<x.items.length;i++){
+    const old=x.items[i],now=y.items[i];
+    if(!contractKeys(old,now)||old.i!==now.i||
+     !exists(before,'items',old.i)||!exists(after,'items',now.i))
+     return false;
+    if(!contractSame(Object.keys(old).sort(),
+     (Object.hasOwn(old,'slotP')?
+      ['hi','i','lo','slotN','slotP']:['hi','i','lo']).sort()))
+     return false;
+    if(Object.hasOwn(old,'slotP')&&
+     (old.slotP!==now.slotP||old.slotN!==now.slotN))
+     return false;
+    if(![old.lo,old.hi,now.lo,now.hi].every(v=>
+     Number.isSafeInteger(v)&&v>=0)||
+     old.lo>old.hi||now.lo>now.hi)return false;
+    if(old.lo!==now.lo)changed++;
+    if(old.hi!==now.hi)changed++;
+   }
+  }
+ }
+ return changed>0;
+}
+const ZONE_DROP_SOURCE_CONTRACTS=Object.freeze([
+ Object.freeze({id:'table.zone-drop-parameters',kind:'sourceOnly',
+  dataset:'tables',matches:sourceZoneDropNumbers})
+]);
 // Immutable public contract census: code may evolve without a new hardcoded
 // list of skill IDs or guessing what unknown game effects do.
 const SOURCE_CONTRACT_REGISTRY=Object.freeze([
  ...CHARACTER_SOURCE_CONTRACTS.map(({id,kind,dataset})=>Object.freeze({id,kind,dataset})),
  ...ADDITIONAL_SOURCE_CONTRACTS.map(({id,kind,dataset})=>Object.freeze({id,kind,dataset})),
+ ...ZONE_DROP_SOURCE_CONTRACTS.map(({id,kind,dataset})=>Object.freeze({id,kind,dataset})),
  ...REFINEMENT_SOURCE_CONTRACTS.map(({id,kind,dataset})=>Object.freeze({id,kind,dataset})),
  ...EXPERIENCE_SOURCE_CONTRACTS.map(({id,kind,dataset})=>Object.freeze({id,kind,dataset})),
  ...SKILL_SOURCE_CONTRACTS.map(({id,kind})=>Object.freeze({id,kind,dataset:'skills'})),
@@ -1061,7 +1127,8 @@ function compatibility(before,after){
     if(same(oldData?.[field],newData?.[field]))continue;
     const contract=[...CHARACTER_SOURCE_CONTRACTS.slice(1),
      ...REFINEMENT_SOURCE_CONTRACTS,...EXPERIENCE_SOURCE_CONTRACTS,
-     ...ADDITIONAL_SOURCE_CONTRACTS.filter(x=>x.dataset==='tables')]
+     ...ADDITIONAL_SOURCE_CONTRACTS.filter(x=>x.dataset==='tables'),
+     ...ZONE_DROP_SOURCE_CONTRACTS]
      .find(entry=>
      (field==='raceInit'&&entry.id==='table.race-origin'||
       field==='jobInit'&&entry.id==='table.job-origin'||
@@ -1070,7 +1137,8 @@ function compatibility(before,after){
       field==='magicPlus'&&entry.id==='table.magic-refinement-rate'||
       field==='exp'&&entry.id==='table.experience-requirement'||
       field==='levelCap'&&entry.id==='table.server-level-cap'||
-      field==='expCap'&&entry.id==='table.server-experience-cap')&&
+      field==='expCap'&&entry.id==='table.server-experience-cap'||
+      field==='zoneDrops'&&entry.id==='table.zone-drop-parameters')&&
      entry.matches(field,before,after));
     if(contract)add(contract.kind,'table:'+field,
      'Игровые таблицы · '+field+(contract.kind==='verified'?
@@ -1314,6 +1382,21 @@ function sourceGraphIntegrity(before,after){
   for(const [mapId,record] of Object.entries(maps))
    for(const [index,mobId] of (Array.isArray(record?.mobs)?record.mobs:[]).entries())
     link('map',mapId,index,'monster',mobId,monsters);
+  // Zone-drop source has its own map -> monster -> reward-item links,
+  // independent of normal monster drop lists and published map listings.
+  for(const [zoneIndex,zone] of
+   (Array.isArray(data?.tables?.zoneDrops)?data.tables.zoneDrops:[]).entries()){
+   const id=String(zone?.map??zoneIndex);
+   link('zoneDrop',id,-1,'map',zone?.map,maps);
+   for(const [rowIndex,entry] of
+    (Array.isArray(zone?.rows)?zone.rows:[]).entries()){
+    if(entry?.mob!=null)
+     link('zoneDrop',id,rowIndex,'monster',entry.mob,monsters);
+    for(const [itemIndex,item] of
+     (Array.isArray(entry?.items)?entry.items:[]).entries())
+     link('zoneDrop',id,rowIndex+':'+itemIndex,'item',item?.i,items);
+   }
+  }
   const checkRolls=(owner,rolls)=>{
    for(const [groupIndex,group] of (Array.isArray(rolls)?rolls:[]).entries())
     for(const [entryIndex,entry] of (Array.isArray(group)?group:[]).entries())
@@ -1460,6 +1543,7 @@ function sourceGraphIntegrity(before,after){
   else if(row.kind==='unison')record=data?.unison?.[row.owner];
   else if(row.kind==='expertise')record=data?.expertise?.limit?.[row.owner];
   else if(row.kind==='class')record=data?.classes?.[row.owner];
+  else if(row.kind==='zoneDrop')record=data?.tables?.zoneDrops?.find(z=>String(z?.map)===row.owner);
   else if(row.kind==='table')record=data?.tables?.jobInit?.[row.owner];
   else if(row.kind==='trade')record=data?.trades?.trades?.find(
    entry=>String(entry?.id)===row.owner);
