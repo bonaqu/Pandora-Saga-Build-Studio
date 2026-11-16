@@ -74,7 +74,7 @@ test('one mass update confirms distinct physical and magical table models, reado
  assert.equal(report.totals.verified,2);
  assert.equal(report.totals.needsReview,0);
  assert.equal(report.totals.sourceOnly,0);
- assert.deepEqual(report.entries.map(row=>row.contract),
+ assert.deepEqual(Array.from(report.entries,row=>row.contract),
   ['table.weapon-refinement','table.magic-refinement-rate']);
  assert.equal(safety.check(after).ok,true);
  assert.equal(safety.sourceGraphIntegrity(before,after).ok,true);
