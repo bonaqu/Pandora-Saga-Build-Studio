@@ -1605,8 +1605,19 @@ function sourceGraphIntegrity(before,after){
  // record is unchanged. A title/translation edit is harmless; changed FV,
  // execution, class permissions and timing must requalify, not borrow the
  // old zero-ID exception to bypass review.
- const unchanged=row=>JSON.stringify(modelRecord(before,row))===
-  JSON.stringify(modelRecord(after,row));
+ const unchanged=row=>{
+  // Four current-source placeholder refs are tolerated only when the
+  // referenced action itself is unchanged. A signed metadata-only update
+  // (mana/timing/range) does NOT alter the EP/FV, prerequisite, class or
+  // item reference, so it must not turn an old placeholder into a NEW
+  // broken link. If any additional gameplay property moves, the strict
+  // whole-record fingerprint remains mandatory.
+  if(row.kind==='skill'&&
+   sourceSkillPresentationNumbers(row.owner,
+    before?.skills?.[row.owner],after?.skills?.[row.owner]))return true;
+  return JSON.stringify(modelRecord(before,row))===
+   JSON.stringify(modelRecord(after,row));
+ };
  const added=selected.issues.filter(row=>!acknowledged.has(fingerprint(row))||
   !unchanged(row));
  // A removed class can break hundreds of skills AND equipment records.

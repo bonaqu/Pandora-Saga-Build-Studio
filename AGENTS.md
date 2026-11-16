@@ -1,3 +1,8 @@
+## 0.842.0 · Исторические ссылки и подписанные метаданные (#615)
+- sourceGraphIntegrity дедуплицирует исторические повреждённые ссылки только для НЕИЗМЕННОГО реального EP/FV/ID в sourceSkillPresentationNumbers с проверенной формой маны, времени и дальности. Любые другие игровые поля и неправильные числа сохраняют строгую whole-record блокировку.
+- Массовый 571-skill metadata update более не создаёт четыре ложные новые ссылки, но независимый replaySkills может/должен блокировать публикацию, пока потерян хотя бы один ранее подтверждённый эффект.
+- tests/catalog-legacy-source-metadata-842.test.mjs, tests/catalog-source-graph-coverage-827.test.mjs. Node+Chromium exact SHA, Pages/Worker/D1 только read-only; не трогать CAS/auth/builds/D1.
+
 ## 0.841.0 · Справочные навыки тактики и поддержки (#615)
 - qualitativeSkillMetadataMatches разрешает источник mana/cooldown только для sourceOnly combatTechniquePreview, tacticalSkillPreview и supportEffectPreview. EP/FV1/FV2, классы, reqs, parent/child, каст и остальные поля по-прежнему exact.
 - Тесты tests/catalog-qualitative-skill-metadata-841.test.mjs и tests/catalog-skill-source-parameters-839.test.mjs: исходные затраты «Провокации»/«Лечения отравления» не удаляют справочные строки, «Блокирование» ещё блокируется replaySkills при изменении расхода.
