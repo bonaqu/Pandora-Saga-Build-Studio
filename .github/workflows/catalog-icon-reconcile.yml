@@ -39,8 +39,16 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: '22'
-      - name: Fetch bounded current-source original WebP identities
+      - name: Mirror new source icons after ordinary verified release
+        if: >-
+          github.event_name != 'workflow_dispatch' &&
+          github.event.workflow_run.name != 'Verified catalog fallback auto-merge'
         run: node scripts/mirror-os-icons.mjs --limit=90
+      - name: Recheck all missing originals after game catalog refresh
+        if: >-
+          github.event_name == 'workflow_dispatch' ||
+          github.event.workflow_run.name == 'Verified catalog fallback auto-merge'
+        run: node scripts/mirror-os-icons.mjs --retry-404
       - name: Recover exact PvP event screenshot where available
         run: node scripts/mirror-honor-victories.mjs
       - name: Validate all local image identities and WebP bytes
