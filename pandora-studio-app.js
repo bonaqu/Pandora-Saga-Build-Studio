@@ -8762,6 +8762,35 @@ function refreshVisibleOwnerCopy(recordKey){
     node.setAttribute(attr,value);
   }
  }
+ // Gemstone option names and group headings are independently editable.
+ // Refresh the composite accessible name after either D1 save or Undo,
+ // without remounting the forge or changing the selected enhancement.
+ if(key==='equipment.gem-type-label'||key==='equipment.gem-element-label'||
+    /^equipment\.gem\.(?:type|element)\.[a-z0-9-]+$/.test(key)){
+  for(const button of document.querySelectorAll(
+   '#stagePicker [data-enchant-key][data-enchant-value]')){
+   const kind=button.dataset.enchantKey,id=button.dataset.enchantValue;
+   if(kind!=='type'&&kind!=='element')continue;
+   const option=window.PandoraEnchantModel?.[kind==='type'?'types':'elements']
+    ?.find(entry=>entry.id===id);
+   if(!option)continue;
+   const headingKey=kind==='type'?'gemTypeLabel':'gemElementLabel';
+   const titleRu=kind==='type'?'Тип':'Стихия';
+   const titleEn=kind==='type'?'Type':'Element';
+   const suffix=': '+ownerCopy('equipment','gem.'+kind+'.'+id,option.ru,option.en);
+   let bindings={};
+   try{bindings=JSON.parse(button.dataset.ownerInterfaceBindings||'{}')}catch{}
+   if(bindings['aria-label']?.key!==headingKey||
+      bindings['aria-label']?.section!=='equipment')continue;
+   bindings['aria-label'].suffix=suffix;
+   button.dataset.ownerInterfaceBindings=JSON.stringify(bindings);
+   button.setAttribute('aria-label',
+    ownerCopy('equipment',headingKey,titleRu,titleEn)+suffix);
+   const pencil=button.parentElement?.querySelector('.stage-control-pencil');
+   pencil?.setAttribute('aria-label',(lang==='en'?'Edit caption: ':'Изменить надпись: ')+
+    ownerCopy('equipment','gem.'+kind+'.'+id,option.ru,option.en));
+  }
+ }
  // The editable word "empty" is separate from dynamic Soul slot IDs.
  // Reconstruct only that aria suffix after a successful owner CAS or Undo.
  if(key==='equipment.picker-empty-soul'){

@@ -444,9 +444,10 @@ function render(root,api){
     box.append(editable(el('legend',{text:copy(editKey,baseRu,baseEn)}),
      editKey,baseRu,baseEn));
     for(const option of entries){
-     const name=english?option.en:option.ru;
      const iconText=key==='element'?(elementIcons[option.id]||'✦')+' ':'';
      const captionKey='gem.'+key+'.'+option.id;
+     // An existing D1 rename must affect both the text and accessible name.
+     const name=copy(captionKey,option.ru,option.en);
      const button=el('button',{type:'button',
       text:iconText+copy(captionKey,option.ru,option.en),
       class:choice?.[key]===option.id?'chosen':'',
