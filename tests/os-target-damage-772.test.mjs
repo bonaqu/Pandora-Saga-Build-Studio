@@ -115,8 +115,7 @@ test('OS unison companions exclude the root and repeated IDs',()=>{
 });
 test('Existing Book stays compact with only selected numeric hit components',()=>{
  const book=read('pandora-studio-hero-book.js');
- assert.match(book,/Усиление урона/);
- assert.match(book,/Магическая заточка/);
- assert.match(book,/if\(boostParts\.length\)more\.append/);
+ assert.doesNotMatch(book,/if\(boostParts\.length\)more\.append|stage-target-damage-row/);
+ assert.match(book,/scalingSkillPreview\?\.\(/);
  assert.doesNotMatch(book,/stage-material-actions|function materialSkillResults\(/);
 });
