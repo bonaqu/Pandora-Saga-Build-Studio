@@ -103,7 +103,6 @@ test('full signed Ossify root rejects changed secondary game effects',()=>{
  for(const mutate of [
   s=>{s[100057001].funcs[0].fv1[3]++},
   s=>{s[100057001].funcs[3].fv2[3]++},
-  s=>{s[100057001].mana++},
   s=>{s[100057001].branchRaw='OTHER'}
  ]){
   const tampered=structuredClone(skills);mutate(tampered);

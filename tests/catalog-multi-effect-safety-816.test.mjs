@@ -55,7 +55,10 @@ test('upgraded Wind Trail loses proof if its extra FV or casting conditions chan
   C.dynamicSkillContracts[id].ep,C.dynamicSkillContracts[id].fv1),false);
  assert.ok(S.replaySkills(before,secondary).lost>0);
  const timing=change(id,skill=>{skill.cast=2});
- assert.equal(S.compatibility(before,timing).totals.needsReview,1);
+ const timingStatus=S.compatibility(before,timing);
+ assert.equal(timingStatus.totals.sourceOnly,1);
+ assert.equal(timingStatus.totals.verified,0);
+ // Even valid source-only timing must not erase a previous numeric model.
  const old=row(before.skills,id,'CONJURER',55);
  const next=row(timing.skills,id,'CONJURER',55);
  assert.ok(old.coefficientModels.some(x=>x.ep==='EP_ALL_RESISTANCE_CONST'));
@@ -75,12 +78,18 @@ test('replay protects source coefficients of manual multi-effect previews',()=>{
  assert.ok(replay.previouslyModeled>0);
  assert.ok(replay.lost>0,'unknown new coefficient must not quietly remove old preview');
 });
-test('non-presentational skill changes fail closed while copy/icon changes remain source-only',()=>{
+test('unknown gameplay still fails closed; signed costs stay source-only with independent replay',()=>{
  for(const field of ['mana','cast','cooldown','motion','range','unrecognizedFutureField']){
   const after=change(420004001,skill=>{
    skill[field]=field==='unrecognizedFutureField'?{newMechanic:1}:skill[field]+1;
   });
-  assert.equal(S.compatibility(before,after).totals.needsReview,1,field);
+  const status=S.compatibility(before,after);
+  if(field==='unrecognizedFutureField')
+   assert.equal(status.totals.needsReview,1,field);
+  else{
+   assert.equal(status.totals.sourceOnly,1,field);
+   assert.equal(status.entries[0].contract,'skill.source-parameters');
+  }
   assert.ok(S.replaySkills(before,after).changedSkills>=1,field);
  }
  const display=change(420004001,skill=>{
