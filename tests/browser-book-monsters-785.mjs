@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 
+// The target calculator stays independently source-tested, but a monster
+// picker or guessed hit result must no longer appear anywhere in the Book.
 export async function runHeroBookMonsterPicker785Smoke(browser,base){
  const context=await browser.newContext({viewport:{width:900,height:700}});
  await context.route('**/*',route=>
@@ -9,169 +11,70 @@ export async function runHeroBookMonsterPicker785Smoke(browser,base){
  try{
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
   await page.locator('#startupOverlay').waitFor({state:'hidden',timeout:30000});
-  await page.evaluate(async()=>{
-   const files=await Promise.all([
+  const source=await page.evaluate(async()=>{
+   const [skills,classes,tables,monsters,english]=await Promise.all([
     'data/os/skills.json','data/os/classes.json','data/os/tables.json',
     'data/os/monsters.json','data/os/strings.en.json'
    ].map(async path=>{
     const response=await fetch(path);
-    if(!response.ok)throw Error('Missing OS data '+path);
+    if(!response.ok)throw Error('Missing current OS data '+path);
     return response.json();
    }));
-   const [skills,classes,tables,monsters,english]=files;
+   window.__retiredMonsterBookSource={skills,classes,tables,monsters,english};
    const host=document.createElement('div');
-   host.id='monster-785-qa';
-   host.setAttribute('style','width:350px;height:640px;overflow:auto');
+   host.id='monster-785-qa';host.style.width='350px';
+   host.style.height='640px';host.style.overflow='auto';
    document.body.append(host);
-   const C=window.PandoraOSTargetDamage,B=window.PandoraStageAttributes;
-   const available=C.availableMonsterTargets({
+   const engine=window.PandoraOSTargetDamage;
+   const common={
+    skillCatalog:skills,classes,jobKey:'DISTURBANCE',level:45,
+    masteries:{trap:41},branchCaps:classes.DISTURBANCE.branchCaps,
+    stats:{dex:70,int:20},equipment:[],itemForth:{},unison:{},tables,
+    monsters,englishMonsters:english.monsters,
+    targetMonsterId:22104,
+    modifiers:{combat:{spellDamageEquipmentRate:0,priestSong:{}},priestApplied:{}}
+   };
+   const original=engine.crawlingTrap(common);
+   const changed=engine.crawlingTrap({...common,targetMonsterId:11104});
+   const available=engine.availableMonsterTargets({
     monsters,englishMonsters:english.monsters});
-   const stats={dex:70,int:20};
-   const modifiers={mp:220,stats,combat:{spellDamageEquipmentRate:0,
-    priestSong:{}},priestApplied:{},healingSpells:{rows:[]},
-    periodicRecovery:{rows:[]}};
-   let selected=22104,latestHits=[];
-   const draw=()=>{
-    const results=C.supportedSkillHits({
-     skillCatalog:skills,classes,jobKey:'DISTURBANCE',level:45,
-     masteries:{trap:41},branchCaps:classes.DISTURBANCE.branchCaps,
-     stats,equipment:[],itemForth:{},unison:{},tables,
-     monsters,englishMonsters:english.monsters,
-     targetMonsterId:selected,modifiers
-    });
-    latestHits=results;
-    B.render(host,{page:'effects',modifiers,
+   const render=(lang)=>{
+    document.documentElement.lang=lang;
+    const mods={mp:220,stats:{dex:70,int:20},combat:{
+     spellDamageEquipmentRate:0,priestSong:{}},
+     priestApplied:{},healingSpells:{rows:[]},periodicRecovery:{rows:[]}};
+    // Old callers may still supply removed presentation-only props; they
+    // must not revive target results or spawn an additional Book section.
+    window.PandoraStageAttributes.render(host,{page:'effects',modifiers:mods,
      gameTerms:{skills,englishSkills:english.skills,
       branchLabels:{trap:'Ловушки'},englishBranches:{trap:'Trapping'},
       classes,englishClasses:english.classes},
      heroJobKey:'DISTURBANCE',heroLevel:45,
-     heroMasteries:{trap:41},
-     heroBranchCaps:classes.DISTURBANCE.branchCaps,
-     targetMonsterChoices:available,targetMonsterId:selected,
-     targetSkillDamages:results,
-     onTargetMonster:id=>{selected=id;draw();}
-    });
+     heroMasteries:{trap:41},heroBranchCaps:classes.DISTURBANCE.branchCaps,
+     targetMonsterChoices:available,targetMonsterId:22104,
+     targetSkillDamages:[original,changed]});
    };
-   window.__monster785={draw,selected:()=>selected,
-    currentHit:id=>latestHits.find(row=>row.skillId===id),
-    force:id=>{selected=id;draw();}};
-   document.documentElement.lang='ru';
-   draw();
+   window.__retiredMonsterBookRender=render;
+   render('ru');
+   return {count:available.length,ogre:[original.min,original.average,original.max],
+    dingo:[changed.min,changed.average,changed.max]};
   });
-  const select=page.locator('#monster-785-qa .stage-book-damage-target select');
-  assert.equal(await select.count(),1);
-  assert.equal(await select.locator('option').count(),707);
-  assert.equal(await select.inputValue(),'22104');
-  assert.match(await page.locator('#monster-785-qa .stage-target-damage-row strong').first().textContent(),
-   /Гигантский огр.*34–194 ОЗ/);
-  const search=page.locator('#monster-785-qa .stage-book-target-search');
-  assert.equal(await search.count(),1);
-  await search.fill('дИНгО');
-  assert.ok(await select.locator('option').count()<35,
-   'The 707-monster native list must narrow immediately without re-render');
-  assert.equal(await select.inputValue(),'22104',
-   'Typing must not change the current target or its damage');
-  assert.equal(await page.locator('#monster-785-qa .stage-target-damage-row').count(),2);
-  await select.selectOption('11104');
-  assert.equal(await search.inputValue(),'дИНгО',
-   'Search remains after the hit is recalculated');
-  await search.fill('');
-  assert.equal(await select.locator('option').count(),707);
-  assert.equal(await page.evaluate(()=>window.__monster785.selected()),11104);
-  assert.equal(await select.inputValue(),'11104');
-  const russian=await page.locator('#monster-785-qa .stage-target-damage-row strong').first().textContent();
-  assert.match(russian,/Рыжий динго/);
-  assert.doesNotMatch(russian,/Гигантский огр/);
-  const ruDetails=await page.locator('#monster-785-qa .stage-target-damage-row .stage-skill-more').first().textContent();
-  assert.match(ruDetails,/Рыжий динго · Сопр\. огню -25 · Сопр\. магии 7/);
-  assert.match(ruDetails,/Влияние на средний удар/);
-  assert.match(ruDetails,/Сопр\. огню: [+−-]?\d+ ОЗ/);
-  assert.match(ruDetails,/Сопр\. магии: [+−-]?\d+ ОЗ/);
-  const ruLife=await page.evaluate(()=>
-   window.__monster785.currentHit(240005001));
-  assert.ok(ruLife?.targetMaxLife>0);
-  assert.ok(ruLife.targetAverageLifePercent>0);
-  assert.ok(ruDetails.includes('Средний удар: '+
-   new Intl.NumberFormat('ru-RU',{maximumFractionDigits:2})
-    .format(ruLife.targetAverageLifePercent)+
-   '% от полного запаса ОЗ цели ('+
-   new Intl.NumberFormat('ru-RU').format(ruLife.targetMaxLife)+')'),
-   'RU health share must use the currently selected D1 monster');
-  assert.match(ruDetails,/СД и маг\. защита цели: [+−-]?\d+ ОЗ/);
-  assert.doesNotMatch(ruDetails,/Разница уровней:/,
-   'A 6-level gap is below the OS level correction threshold');
-  const russianSteps=await page.evaluate(()=>
-   window.__monster785.currentHit(240005001)?.nextHitImprovements);
-  assert.ok(russianSteps?.mastery&&russianSteps?.primary&&russianSteps?.int,
-   'OS target must provide a first real hit increase for mastery, DEX and INT');
-  assert.match(ruDetails,/Следующий прирост среднего удара/);
-  for(const [key,label] of [['mastery','Ловушки'],['primary','ЛВК'],['int','ИНТ']]){
-   const next=russianSteps[key];
-   assert.ok(ruDetails.includes(label+' '+next.value+' (+'+next.needed+
-    '): +'+next.averageGain+' ОЗ'),key+' must match the source calculation');
-  }
-  await page.evaluate(()=>{document.documentElement.lang='en';window.__monster785.draw();});
-  assert.equal(await select.inputValue(),'11104');
-  assert.match(await page.locator('#monster-785-qa .stage-book-damage-target').textContent(),
-   /Damage target/);
-  const english=await page.locator('#monster-785-qa .stage-target-damage-row strong').first().textContent();
-  assert.match(english,/HP/);
-  assert.doesNotMatch(english,/Ogre Bouncer/);
-  const enDetails=await page.locator('#monster-785-qa .stage-target-damage-row .stage-skill-more').first().textContent();
-  assert.match(enDetails,/Fire resistance -25 · Magic resistance 7/);
-  assert.match(enDetails,/Average-hit impact/);
-  assert.match(enDetails,/Fire resistance: [+−-]?\d+ HP/);
-  assert.match(enDetails,/Magic resistance: [+−-]?\d+ HP/);
-  assert.ok(enDetails.includes('Average hit: '+
-   new Intl.NumberFormat('en-US',{maximumFractionDigits:2})
-    .format(ruLife.targetAverageLifePercent)+
-   '% of target full HP ('+
-   new Intl.NumberFormat('en-US').format(ruLife.targetMaxLife)+')'),
-   'EN monster health-share line must match unchanged RU data');
-  assert.match(enDetails,/Target SPI and magic defense: [+−-]?\d+ HP/);
-  assert.doesNotMatch(enDetails,/Level difference:/,
-   'No invented level penalty below the real OS threshold');
-  assert.match(enDetails,/Next higher average hit/);
-  for(const [key,label] of [['mastery','Trapping'],['primary','DEX'],['int','INT']]){
-   const next=russianSteps[key];
-   assert.ok(enDetails.includes(label+' '+next.value+' (+'+next.needed+
-    '): +'+next.averageGain+' HP'),key+' must retain exact values in English');
-  }
-  assert.equal(await page.locator('#monster-785-qa .stage-target-damage-row').count(),2,
-   'The current Traps mastery learns two distinct attacks, not duplicate results');
-  const allHits=await page.locator('#monster-785-qa .stage-target-damage-row strong').allTextContents();
-  const selectedName=(await select.locator('option:checked').textContent()).split(' · ')[0];
-  assert.ok(allHits.every(row=>row.includes(selectedName)),
-   'Switching target must refresh every available strike');
-  await select.selectOption('22104');
-  assert.equal(await select.inputValue(),'22104');
-  assert.match(await page.locator('#monster-785-qa .stage-target-damage-row strong').first().textContent(),
-   /Ogre Bouncer.*34–194 HP/);
-  const ogreDetails=await page.locator('#monster-785-qa .stage-target-damage-row .stage-skill-more').first().textContent();
-  assert.match(ogreDetails,/Ogre · Fire resistance 0 · Magic resistance 17/);
-  assert.match(ogreDetails,/Average hit: 2\.42% of target full HP \(6,126\)/);
-  assert.doesNotMatch(ogreDetails,/Fire resistance: /,
-   'Zero elemental resistance must not create an invented hit delta');
-  assert.match(ogreDetails,/Magic resistance: [-−]\d+ HP/);
-  assert.match(ogreDetails,/Level difference: [-−]\d+ HP/,
-   'The 8-level Ogre gap must use the exact OS penalty');
-  const ogreSteps=await page.evaluate(()=>
-   window.__monster785.currentHit(240005001)?.nextHitImprovements);
-  assert.ok(ogreSteps?.mastery&&ogreSteps?.int);
-  assert.ok(ogreDetails.includes('Trapping '+ogreSteps.mastery.value+
-   ' (+'+ogreSteps.mastery.needed+'): +'+
-   ogreSteps.mastery.averageGain+' HP'));
-  assert.equal(await page.locator('#monster-785-qa .stage-book-damage-target').count(),1);
-  assert.equal(await page.locator('#monster-785-qa .stage-book-damage-target select[aria-label]').count(),1);
-  await page.evaluate(()=>window.__monster785.force(99999999));
-  assert.equal(await select.inputValue(),'',
-   'A disappeared monster must not silently switch to Ogre');
-  assert.match(await select.locator('option:checked').textContent(),/Choose a monster/);
-  assert.equal(await page.locator('#monster-785-qa .stage-target-damage-row').count(),0);
-  await select.selectOption('22104');
-  assert.equal(await select.inputValue(),'22104');
-  assert.equal(await page.locator('#monster-785-qa .stage-target-damage-row').count(),2);
+  assert.equal(source.count,707);
+  assert.deepEqual(source.ogre,[34,148,194]);
+  assert.notDeepEqual(source.dingo,source.ogre,
+   'Standalone source model still respects selected game monster');
+  const book=page.locator('#monster-785-qa');
+  assert.equal(await book.locator('.stage-book-page').count(),1);
+  for(const selector of ['.stage-book-damage-target','.stage-book-target-search',
+   '.stage-target-damage-row','[data-book-setting="damageTarget"]'])
+   assert.equal(await book.locator(selector).count(),0,
+    'Retired monster-target UI must never reappear: '+selector);
+  assert.doesNotMatch(await book.innerText(),/Гигантский огр|Рыжий динго|Средний удар по цели/);
+  await page.evaluate(()=>window.__retiredMonsterBookRender('en'));
+  assert.equal(await book.locator('.stage-book-page').count(),1);
+  assert.equal(await book.locator('.stage-target-damage-row').count(),0);
+  assert.doesNotMatch(await book.innerText(),/Ogre Bouncer|Dingo|Average hit against/);
   assert.deepEqual(errors,[]);
-  console.log('Chromium Hero Book 785: 707 verified monsters, RU/EN, target change, no stale Ogre');
+  console.log('Chromium Hero Book 785: 707 standalone source targets, no Book target picker in RU/EN');
  }finally{await context.close()}
 }
