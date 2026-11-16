@@ -105,13 +105,14 @@ test('one common policy is loaded before all dynamic search constructors',()=>{
  assert.match(source,/attributeFilter:\['type'\]/);
 });
 
-test('search fields in the Hero Book and five other surfaces keep native role/searchbox',()=>{
+test('remaining search surfaces preserve native searchbox while retired Book target search is absent',()=>{
  const book=read('pandora-studio-hero-book.js');
  const app=read('pandora-studio-app.js');
  const equipment=read('pandora-studio-equipment-ui.js');
  const honor=read('pandora-studio-honor-view.js');
  const catalog=read('pandora-os-catalog-workbench.js');
- assert.match(book,/class:'stage-book-target-search'/);
+ assert.doesNotMatch(book,/class:'stage-book-target-search'/);
+ assert.match(book,/function skillEffectsPage\(/);
  assert.match(app,/class:'build-library-search'/);
  assert.match(app,/id:'pathSkillSearch'|search=h\('input',\{type:'search',value:wikiSearch/);
  assert.match(equipment,/type:'search',placeholder:copy\('soulSearch'/);
