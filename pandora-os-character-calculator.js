@@ -5036,7 +5036,12 @@ function combatTechniquePreview({skillCatalog=null,jobKey=null,level=1,
   const valid=skill?.id===proof.id&&linkedExact&&
    (!proof.groupRequirement||(proof.groupRequirement==='MELEE'&&
     skill.branchRaw==='MELEE'&&skill.branch==='martial'))&&
-   qualitativeSkillMetadataMatches(skill,proof.root)&&
+   // Ossify (100057001) has an additional numeric Book projection.
+   // Its entire source signature must remain exact; other techniques
+   // here are source-only descriptions with no calculated final amount.
+   (proof.id===100057001?
+    JSON.stringify(sourceVerifiedSkillSignature(skill))===JSON.stringify(proof.root):
+    qualitativeSkillMetadataMatches(skill,proof.root))&&
    (!proof.childId||(child?.id===proof.childId&&
     qualitativeSkillMetadataMatches(child,proof.child)))&&
    (!proof.parentId||(parent?.id===proof.parentId&&
