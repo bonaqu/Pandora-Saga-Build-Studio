@@ -1093,6 +1093,129 @@ const SKILL_PRESENTATION_SOURCE_CONTRACTS=Object.freeze([
  Object.freeze({id:'skill.source-parameters',kind:'sourceOnly',
   dataset:'skills',matches:sourceSkillPresentationNumbers})
 ]);
+
+// Source-only tables: make compatible raw game parameters editable without
+// claiming that the complete server success/mitigation algorithm is known.
+// Remaked's preserved formulas are a reference, while current OS numbers
+// remain the only values supplied to active numeric models.
+function sourcedForgeRates(field,before,after){
+ if(field!=='forge')return false;
+ const a=before?.tables?.forge,b=after?.tables?.forge;
+ if(!contractShape(a,['rates','gemTiers','hammers','rework'])||
+  !contractShape(b,['rates','gemTiers','hammers','rework'])||
+  !contractSame(a.hammers,b.hammers)||!contractSame(a.rework,b.rework)||
+  !Array.isArray(a.rates)||!Array.isArray(b.rates)||
+  a.rates.length!==10||b.rates.length!==10||
+  !Array.isArray(a.gemTiers)||!Array.isArray(b.gemTiers)||
+  a.gemTiers.length!==4||b.gemTiers.length!==4)return false;
+ let changed=0;
+ for(let i=0;i<10;i++){
+  const old=a.rates[i],now=b.rates[i];
+  if(!contractShape(old,['plus','weapon','armor'])||
+   !contractShape(now,['plus','weapon','armor'])||
+   old.plus!==i+1||now.plus!==old.plus)return false;
+  for(const k of ['weapon','armor']){
+   if(!Number.isSafeInteger(old[k])||!Number.isSafeInteger(now[k])||
+    old[k]<-100||old[k]>100||now[k]<-100||now[k]>100)return false;
+   if(old[k]!==now[k])changed++;
+  }
+ }
+ for(let i=0;i<4;i++){
+  const old=a.gemTiers[i],now=b.gemTiers[i],expected=i<3?
+   ['tier','rate','cost','colors','sample']:
+   ['tier','rate','cost','colors'];
+  if(!contractShape(old,expected)||!contractShape(now,expected)||
+   old.tier!==i+1||now.tier!==old.tier||
+   old.colors!==now.colors||!Number.isSafeInteger(old.colors)||
+   old.colors<1||old.sample!==now.sample)return false;
+  if(Object.hasOwn(old,'sample')&&(!Number.isSafeInteger(old.sample)||
+   old.sample<=0||!before?.items?.[String(old.sample)]||
+   !after?.items?.[String(now.sample)]))return false;
+  for(const row of [old,now])
+   if(!Number.isSafeInteger(row.rate)||row.rate< -100||row.rate>100||
+    !Number.isSafeInteger(row.cost)||row.cost<0)return false;
+  if(old.rate!==now.rate)changed++;
+  if(old.cost!==now.cost)changed++;
+ }
+ return changed>0;
+}
+function sourcedDropLevelWeights(field,before,after){
+ if(field!=='dropModify')return false;
+ const a=before?.tables?.dropModify,b=after?.tables?.dropModify;
+ if(!Array.isArray(a)||!Array.isArray(b)||a.length!==12||b.length!==12)
+  return false;
+ let changed=0;
+ for(let i=0;i<12;i++){
+  const x=a[i],y=b[i];
+  if(!contractShape(x,['diff','mod'])||!contractShape(y,['diff','mod'])||
+   !Number.isSafeInteger(x.diff)||x.diff!==y.diff||
+   !Number.isSafeInteger(x.mod)||!Number.isSafeInteger(y.mod)||
+   x.mod<0||x.mod>100||y.mod<0||y.mod>100)return false;
+  if(i&&x.diff<=a[i-1].diff)return false;
+  if(x.mod!==y.mod)changed++;
+ }
+ return changed>0;
+}
+function sourcedLevelGapWeights(field,before,after){
+ if(field!=='lvModify')return false;
+ const a=before?.tables?.lvModify,b=after?.tables?.lvModify;
+ if(!Array.isArray(a)||!Array.isArray(b)||a.length!==20||b.length!==20)
+  return false;
+ const names=['diff','atk','def','magicDef','resistRate','magicEffectResist',
+  'effectTime','magicProtection'];
+ let changed=0;
+ for(let i=0;i<a.length;i++){
+  const x=a[i],y=b[i];
+  if(!contractShape(x,names)||!contractShape(y,names)||
+   !Number.isSafeInteger(x.diff)||x.diff!==y.diff)return false;
+  for(const k of names.slice(1)){
+   if(!Number.isFinite(x[k])||!Number.isFinite(y[k])||
+    x[k]<0||x[k]>10000||y[k]<0||y[k]>10000)return false;
+   if(x[k]!==y[k])changed++;
+  }
+ }
+ return changed>0;
+}
+function sourcedPremiumNumbers(field,before,after){
+ if(field!=='premium')return false;
+ const a=before?.tables?.premium,b=after?.tables?.premium;
+ const fields=['EXP_RATE','DROPRATE_RATE','DEATHPENALTYRATE_CONST',
+  'FORGE_ITEM_RESCUE','EXTRACTRATE_CONST','WAR_REGULAR_PRIORITY'];
+ if(!contractShape(a,fields)||!contractShape(b,fields))return false;
+ let changed=0;
+ for(const key of fields){
+  const x=a[key],y=b[key];
+  if(!contractShape(x,['normal','special'])||
+   !contractShape(y,['normal','special']))return false;
+  for(const sub of ['normal','special']){
+   if(!Number.isSafeInteger(x[sub])||!Number.isSafeInteger(y[sub])||
+    x[sub]<0||y[sub]<0||x[sub]>1000000||y[sub]>1000000)return false;
+   if(x[sub]!==y[sub])changed++;
+  }
+ }
+ return changed>0;
+}
+function sourcedAfkThreshold(field,before,after){
+ if(field!=='afk')return false;
+ const a=before?.tables?.afk,b=after?.tables?.afk;
+ if(!contractShape(a,['thresholdSec'])||!contractShape(b,['thresholdSec']))
+  return false;
+ return Number.isSafeInteger(a.thresholdSec)&&a.thresholdSec>=1&&
+  a.thresholdSec<=86400&&Number.isSafeInteger(b.thresholdSec)&&
+  b.thresholdSec>=1&&b.thresholdSec<=86400&&a.thresholdSec!==b.thresholdSec;
+}
+const SERVER_TABLE_SOURCE_CONTRACTS=Object.freeze([
+ Object.freeze({id:'table.forge-source-rates',kind:'sourceOnly',
+  dataset:'tables',matches:sourcedForgeRates}),
+ Object.freeze({id:'table.drop-level-source',kind:'sourceOnly',
+  dataset:'tables',matches:sourcedDropLevelWeights}),
+ Object.freeze({id:'table.level-gap-source',kind:'sourceOnly',
+  dataset:'tables',matches:sourcedLevelGapWeights}),
+ Object.freeze({id:'table.premium-source',kind:'sourceOnly',
+  dataset:'tables',matches:sourcedPremiumNumbers}),
+ Object.freeze({id:'table.afk-source',kind:'sourceOnly',
+  dataset:'tables',matches:sourcedAfkThreshold})
+]);
 // Immutable public contract census: code may evolve without a new hardcoded
 // list of skill IDs or guessing what unknown game effects do.
 const SOURCE_CONTRACT_REGISTRY=Object.freeze([
@@ -1102,6 +1225,7 @@ const SOURCE_CONTRACT_REGISTRY=Object.freeze([
  ...REFINEMENT_SOURCE_CONTRACTS.map(({id,kind,dataset})=>Object.freeze({id,kind,dataset})),
  ...EXPERIENCE_SOURCE_CONTRACTS.map(({id,kind,dataset})=>Object.freeze({id,kind,dataset})),
  ...SKILL_PRESENTATION_SOURCE_CONTRACTS.map(({id,kind,dataset})=>Object.freeze({id,kind,dataset})),
+ ...SERVER_TABLE_SOURCE_CONTRACTS.map(({id,kind,dataset})=>Object.freeze({id,kind,dataset})),
  ...SKILL_SOURCE_CONTRACTS.map(({id,kind})=>Object.freeze({id,kind,dataset:'skills'})),
  ...EQUIPMENT_SOURCE_CONTRACTS.map(({id,kind,datasets})=>
   Object.freeze({id,kind,dataset:datasets.join(',')})),
@@ -1167,7 +1291,7 @@ function compatibility(before,after){
     const contract=[...CHARACTER_SOURCE_CONTRACTS.slice(1),
      ...REFINEMENT_SOURCE_CONTRACTS,...EXPERIENCE_SOURCE_CONTRACTS,
      ...ADDITIONAL_SOURCE_CONTRACTS.filter(x=>x.dataset==='tables'),
-     ...ZONE_DROP_SOURCE_CONTRACTS]
+     ...ZONE_DROP_SOURCE_CONTRACTS,...SERVER_TABLE_SOURCE_CONTRACTS]
      .find(entry=>
      (field==='raceInit'&&entry.id==='table.race-origin'||
       field==='jobInit'&&entry.id==='table.job-origin'||
@@ -1177,7 +1301,12 @@ function compatibility(before,after){
       field==='exp'&&entry.id==='table.experience-requirement'||
       field==='levelCap'&&entry.id==='table.server-level-cap'||
       field==='expCap'&&entry.id==='table.server-experience-cap'||
-      field==='zoneDrops'&&entry.id==='table.zone-drop-parameters')&&
+      field==='zoneDrops'&&entry.id==='table.zone-drop-parameters'||
+      field==='forge'&&entry.id==='table.forge-source-rates'||
+      field==='dropModify'&&entry.id==='table.drop-level-source'||
+      field==='lvModify'&&entry.id==='table.level-gap-source'||
+      field==='premium'&&entry.id==='table.premium-source'||
+      field==='afk'&&entry.id==='table.afk-source')&&
      entry.matches(field,before,after));
     if(contract)add(contract.kind,'table:'+field,
      'Игровые таблицы · '+field+(contract.kind==='verified'?
@@ -1504,6 +1633,18 @@ function sourceGraphIntegrity(before,after){
    if(!present(classes,job))
     signed('table',job,-1,'jobInit-class',job,'Профессия отсутствует');
   }
+  // Forge gem/hammer IDs are actual item references. Reject newly broken
+  // identities before D1 even if the forge percentages were unchanged.
+  for(const [index,tier] of
+   (Array.isArray(data?.tables?.forge?.gemTiers)?
+    data.tables.forge.gemTiers:[]).entries()){
+   if(tier?.sample!=null)
+    link('forge','gem:'+index,-1,'gem-item',tier.sample,items);
+  }
+  for(const [index,hammer] of
+   (Array.isArray(data?.tables?.forge?.hammers)?
+    data.tables.forge.hammers:[]).entries())
+   link('forge','hammer:'+index,-1,'hammer-item',hammer?.id,items);
   // Independently protect old/new root job and class promotion graph.
   for(const [id,record] of Object.entries(classes)){
    const caps=record?.branchCaps;
@@ -1586,6 +1727,7 @@ function sourceGraphIntegrity(before,after){
   else if(row.kind==='unison')record=data?.unison?.[row.owner];
   else if(row.kind==='expertise')record=data?.expertise?.limit?.[row.owner];
   else if(row.kind==='class')record=data?.classes?.[row.owner];
+  else if(row.kind==='forge')record=data?.tables?.forge;
   else if(row.kind==='zoneDrop')record=data?.tables?.zoneDrops?.find(z=>String(z?.map)===row.owner);
   else if(row.kind==='table')record=data?.tables?.jobInit?.[row.owner];
   else if(row.kind==='trade')record=data?.trades?.trades?.find(

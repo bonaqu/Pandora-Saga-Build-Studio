@@ -1,3 +1,9 @@
+## 0.846.0 · Исторический алгоритм + актуальные серверные данные (#615)
+- Архивное Remaked Legacy js/calc.js годится только как формульная гипотеза/основа модели. Всегда подставлять актуальные данные D1 и game JSON: weaponPlus/magicPlus; несоответствие текущему источнику не считать доказанной формулой. Тесты catalog-hybrid-server-data-846.test.mjs.
+- Пять sourceOnly контрактов: table.forge-source-rates (только rates/tiers, не pity/rework/hammer rules), table.drop-level-source, table.level-gap-source, table.premium-source, table.afk-source. Не называть их проверенными конечными шансами, крафтом, боевыми результатами.
+- Не менять identity молотков и sample gem; sourceGraphIntegrity дополнительно контролирует их item ID перед D1. Все неизвестные поля, типы, саму семантику rework и source-only боевых модификаторов оставлять needsReview.
+- CI Node+Chromium exact SHA и postrelease Pages/Worker/D1 read-only; не менять Worker, CAS, auth, пользовательские билды и игровые JSON.
+
 ## 0.845.0 · Локальные изображения и полное восстановление после обновления каталога (#615)
 - До помещения изображения в любой пользовательский список / слот проверять локальный путь, даже если owner visual.* унаследован из старой D1 записи. Не использовать внешние домены в public UI; редактор также принимает только assets/... с bounded именами. Публичный manifest не должен указывать происхождение каталога.
 - После подтверждённого backup auto-merge или явного workflow_dispatch workflow rechecks ALL previous confirmed 404s с параметром --retry-404 и новые IDs (new first). Обычные Pages/read-only релизы проверяют только новые с ограничением, без лишних запросов.
