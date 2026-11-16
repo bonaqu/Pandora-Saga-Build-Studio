@@ -63,7 +63,7 @@ test('changed root, parent or triggered child invalidates the exact claim',()=>{
   s=>s.funcs[0].fv2[3]++,
   s=>s.funcs[0].dir='CASTER',
   s=>s.funcs.push(structuredClone(s.funcs[0])),
-  s=>s.mana++,s=>s.cooldown++,s=>s.charLevel++,
+  s=>s.cast++,s=>s.charLevel++,
   s=>s.reqLevel++,s=>s.learnable=false,
   s=>s.reqs.push({branch:'benevolence',amount:999}),
   s=>{s.classes[Object.keys(s.classes)[0]]=0}
@@ -85,6 +85,23 @@ test('changed root, parent or triggered child invalidates the exact claim',()=>{
  const changed={...skills,[310003001]:structuredClone(skills[310003001])};
  changed[310003001].funcs.find(f=>f.ep==='EP_CONSUME_ITEM').fv2[3]=0;
  assert.ok(inspect('CLERIC',changed).rejected.includes(310003001));
+});
+test('seven qualitative support effects keep current mana and cooldown source metadata',()=>{
+ for(const [id] of cases.filter(([id])=>id!==310003001)){
+  const original=skills[id],job=owner(id);
+  const altered={...skills,[String(id)]:{...original,
+   mana:original.mana+1,cooldown:original.cooldown+0.5}};
+  const row=find(inspect(job,altered),id);
+  assert.ok(row,'source-only support metadata '+id);
+  assert.equal(row.mana,original.mana+1);
+  assert.equal(row.cooldown,original.cooldown+0.5);
+  assert.equal(row.sourceOnly,true);
+  assert.equal(row.finalAmount,null);
+ }
+ const revive={...skills,[310003001]:structuredClone(skills[310003001])};
+ revive[310003001].mana+=1;
+ assert.ok(inspect('CLERIC',revive).rejected.includes(310003001),
+  'resurrection exact material quantity proof stays independent');
 });
 test('levels and mastery depend on class capability, not unrelated allies',()=>{
  assert.equal(find(inspect('CLERIC',skills,34),310003001).requirementsMet,false);

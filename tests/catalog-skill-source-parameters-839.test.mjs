@@ -51,7 +51,7 @@ test('a signed combat-technique mana change retains the current qualitative insp
  assert.ok(replay.retained>0);
 });
 test('source-only status still cannot bypass lost source inspections in other families',()=>{
- const changed='100000501';
+ const changed='168001004';
  const {after,report}=change(changed,s=>{s.mana++;});
  assert.equal(report.entries[0].kind,'sourceOnly');
  const replay=safety.replaySkills(before,after);
@@ -108,4 +108,18 @@ test('combined timing, cost and AoE changes remain source-only, without changing
  assert.deepEqual(after.skills[id].funcs,before.skills[id].funcs);
  assert.deepEqual(after.skills[id].reqs,before.skills[id].reqs);
  assert.equal(safety.sourceGraphIntegrity(before,after).ok,true);
+});
+
+test('tactical and support inspectors retain legitimate old/new source metadata',()=>{
+ for(const changed of ['100000501','310011001']){
+  const {after,report}=change(changed,skill=>{
+   skill.mana+=1;skill.cooldown+=0.5;
+  });
+  assert.equal(report.entries[0].kind,'sourceOnly');
+  assert.equal(report.entries[0].contract,'skill.source-parameters');
+  const replay=safety.replaySkills(before,after);
+  assert.equal(replay.ok,true,'source-only inspector must retain '+changed);
+  assert.equal(replay.lost,0);
+  assert.ok(replay.retained>0);
+ }
 });

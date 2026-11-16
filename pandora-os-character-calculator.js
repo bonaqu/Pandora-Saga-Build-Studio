@@ -4867,9 +4867,8 @@ function complexSkillSourcePreview({skillCatalog=null,jobKey=null,level=1,
    const parent=proof.signature.prereq&&tacticalSkillProofs.find(
     x=>x.id===proof.signature.prereq);
    if(!skill||skill.id!==proof.id||
-    JSON.stringify(sourceVerifiedSkillSignature(skill))!==JSON.stringify(proof.signature)||
-    (parent&&JSON.stringify(sourceVerifiedSkillSignature(
-     skillCatalog[String(parent.id)]))!==JSON.stringify(parent.signature))){
+    !qualitativeSkillMetadataMatches(skill,proof.signature)||
+    (parent&&!qualitativeSkillMetadataMatches(skillCatalog[String(parent.id)],parent.signature))){
     out.rejected.push(proof.id);continue;
    }
    if(proof.signature.reqs.some(([branch,amount])=>
@@ -5008,7 +5007,7 @@ const combatTechniqueProofs=Object.freeze([{"id":161201001,"root":{"skillType":"
 // from current game data. Freeze the entire gameplay signature EXCEPT these
 // two displayed metadata values; effects, prerequisites and linked action
 // contracts remain exact. Do not use for numeric damage projection.
-function combatTechniqueMetadataMatches(record,pinned){
+function qualitativeSkillMetadataMatches(record,pinned){
  if(!record||!pinned)return false;
  const signed=sourceVerifiedSkillSignature(record);
  for(const field of ['mana','cooldown']){
@@ -5032,7 +5031,7 @@ function combatTechniquePreview({skillCatalog=null,jobKey=null,level=1,
   const linkedExact=!proof.linked||proof.linked.every(entry=>{
    const linked=skillCatalog[String(entry.id)];
    return linked?.id===entry.id&&
-    combatTechniqueMetadataMatches(linked,entry.signature);
+    qualitativeSkillMetadataMatches(linked,entry.signature);
   });
   const valid=skill?.id===proof.id&&linkedExact&&
    (!proof.groupRequirement||(proof.groupRequirement==='MELEE'&&
@@ -5042,11 +5041,11 @@ function combatTechniquePreview({skillCatalog=null,jobKey=null,level=1,
    // here are source-only descriptions with no calculated final amount.
    (proof.id===100057001?
     JSON.stringify(sourceVerifiedSkillSignature(skill))===JSON.stringify(proof.root):
-    combatTechniqueMetadataMatches(skill,proof.root))&&
+    qualitativeSkillMetadataMatches(skill,proof.root))&&
    (!proof.childId||(child?.id===proof.childId&&
-    combatTechniqueMetadataMatches(child,proof.child)))&&
+    qualitativeSkillMetadataMatches(child,proof.child)))&&
    (!proof.parentId||(parent?.id===proof.parentId&&
-    combatTechniqueMetadataMatches(parent,proof.parent)));
+    qualitativeSkillMetadataMatches(parent,proof.parent)));
   if(!valid){out.rejected.push(proof.id);continue;}
   const groupCap=meleeSourceGroupValue(branchCaps,branchCaps);
   const groupTrained=meleeSourceGroupValue(branchMasteries,branchCaps);
@@ -5179,11 +5178,11 @@ function supportEffectPreview({skillCatalog=null,jobKey=null,level=1,
   const exact=source?.id===proof.id&&
    (proof.id===310003001?
     sourceVerifiedEffectQuantityMatches(source,proof.root,'EP_CONSUME_ITEM','CASTER'):
-    JSON.stringify(sourceVerifiedSkillSignature(source))===JSON.stringify(proof.root))&&
+    qualitativeSkillMetadataMatches(source,proof.root))&&
    (!proof.parentId||(parent?.id===proof.parentId&&
-    JSON.stringify(sourceVerifiedSkillSignature(parent))===JSON.stringify(proof.parent)))&&
+    qualitativeSkillMetadataMatches(parent,proof.parent)))&&
    (!proof.childId||(child?.id===proof.childId&&
-    JSON.stringify(sourceVerifiedSkillSignature(child))===JSON.stringify(proof.child)));
+    qualitativeSkillMetadataMatches(child,proof.child)));
   if(!exact){out.rejected.push(proof.id);continue;}
   if(proof.root.reqs.some(([branch,amount])=>
    !Number.isSafeInteger(branchCaps?.[branch])||branchCaps[branch]<amount))continue;
