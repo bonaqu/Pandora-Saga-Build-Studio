@@ -1,3 +1,8 @@
+## 0.841.0 · Справочные навыки тактики и поддержки (#615)
+- qualitativeSkillMetadataMatches разрешает источник mana/cooldown только для sourceOnly combatTechniquePreview, tacticalSkillPreview и supportEffectPreview. EP/FV1/FV2, классы, reqs, parent/child, каст и остальные поля по-прежнему exact.
+- Тесты tests/catalog-qualitative-skill-metadata-841.test.mjs и tests/catalog-skill-source-parameters-839.test.mjs: исходные затраты «Провокации»/«Лечения отравления» не удаляют справочные строки, «Блокирование» ещё блокируется replaySkills при изменении расхода.
+- Node+Chromium exact SHA, потом live D1 только чтение. Не изменять данные игры, Worker, CAS, auth и билды.
+
 ## 0.840.0 · Source metadata для семи справочных боевых навыков (#615)
 - combatTechniquePreview сохраняет только существующие sourceOnly/qualitative строки при изменении настоящих mana/cooldown, которые UI уже читает из skill catalog. Игровые EP/FV, классы, reqs, prereq, range, cast, AoE, linked child/parent, а также другие инспекторы остаются со строгой sourceVerifiedSkillSignature. Не менять числовые боевые формулы.
 - Сохранить independent replaySkills до D1: изменение mana у 233001001 теперь не теряет источник и допускается, но у 100000501 остаётся loss + blocking preflight, пока отдельный контракт там не доказан.
