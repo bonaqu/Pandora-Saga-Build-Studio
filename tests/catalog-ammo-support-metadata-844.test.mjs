@@ -67,7 +67,7 @@ test('unknown FV, direction, class and requirement changes still fail closed',()
   const skill=source[String(row.id)];
   for(const fn of [
    s=>{s.funcs[0].fv1[3]+=1;},
-   s=>{s.funcs[0].dir='TARGET';},
+   s=>{s.funcs[0].dir=s.funcs[0].dir==='TARGET'?'CASTER':'TARGET';},
    s=>{s.reqs=[{branch:'future',amount:999}];},
    s=>{s.classes.FUTURE=1;}
   ]){
