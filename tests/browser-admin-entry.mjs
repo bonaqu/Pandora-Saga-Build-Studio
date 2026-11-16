@@ -874,11 +874,26 @@ export async function runAdminEntrySmoke(browser,base){
   const statusEditor=state.locator('[contenteditable]');
   await statusEditor.fill('Сверка завершена. Изменения не выбраны.');
   await statusEditor.press('Tab');
-  await page.waitForFunction(()=>
+  const savedComparisonKey='guideedit.book.catalog-sync.comparison-found';
+  const savedComparisonRu='Сверка завершена. Изменения не выбраны.';
+  // The DOM may optimistically update before the asynchronous mocked Worker
+  // commits the override. Assert the actual saved value, not just the label.
+  await page.waitForFunction(expected=>
    document.querySelector('.os-sync-status .os-sync-state-caption')?.textContent===
-   'Сверка завершена. Изменения не выбраны.',null,{timeout:12000});
-  assert.equal(JSON.parse(townOverrides.get('guideedit.book.catalog-sync.comparison-found')).ru,
-   'Сверка завершена. Изменения не выбраны.');
+   expected,savedComparisonRu,{timeout:12000});
+  const readSavedComparison=()=>{
+   const value=townOverrides.get(savedComparisonKey);
+   if(!value)return null;
+   try{return JSON.parse(value)}catch{return null}
+  };
+  const savedAt=Date.now();
+  while(readSavedComparison()?.ru!==savedComparisonRu){
+   if(Date.now()-savedAt>12000)
+    throw Error('Mock D1 did not commit '+savedComparisonKey+
+     ' after editor blur; current state: '+String(townOverrides.get(savedComparisonKey)));
+   await new Promise(resolve=>setTimeout(resolve,30));
+  }
+  assert.equal(readSavedComparison().ru,savedComparisonRu);
   assert.equal(calls.filter(x=>x.startsWith('game-source:')).length,originalCompareCalls);
   assert.equal(await banner.locator('.os-sync-state-pencil').count(),1);
   assert.equal(await state.locator('.os-sync-state-pencil').count(),1);
