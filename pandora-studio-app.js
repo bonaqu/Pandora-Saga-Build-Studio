@@ -1842,39 +1842,11 @@ function renderStageAttributes(calculated=undefined){
    level:state.level,masteries:branchMasteries,
    branchCaps:catalog.classes?.[cls]?.branchCaps||{}
   })||null;
- // Target hits are selected from source-checked learned skills, using
- // precisely the current hero and one shared OS elemental damage kernel.
+ // The Hero Book only shows current-character skill effects.
+ // Monster targeting belongs outside the Book and is not fetched here.
  const bookModifiers=calculated===undefined?previewBaseStats():calculated;
- // Ogre source is lazy: opening Skill Effects fetches exactly one D1
- // snapshot-matched monster dataset, not an extra file on every site visit.
- const ogreMonsters=activeOgreSource();
- if(stageAttributesPage==='effects'&&!ogreMonsters)
-  void ensureOgreSource();
- const targetMonsterChoices=stageAttributesPage==='effects'&&ogreMonsters?
-  currentDamageTargetChoices(ogreMonsters):[];
- // If the selected monster was removed from a new D1 snapshot, do not
- // silently replace it with Ogre data: keep its ID and show no hit until
- // the player explicitly chooses another current target.
- const activeDamageTargetId=selectedDamageTargetId;
- const targetSkillDamages=stageAttributesPage==='effects'&&ogreMonsters?
-  window.PandoraOSTargetDamage?.supportedSkillHits({
-   skillCatalog:skillMap,classes:catalog.classes||{},jobKey:cls,
-   level:state.level,masteries:branchMasteries,
-   branchCaps:catalog.classes?.[cls]?.branchCaps||{},
-   stats:bookModifiers?.stats,equipment:items,tables:gameTables,
-   itemForth:gameItemForth,unison:catalogSource?.unison||{},
-   monsters:ogreMonsters,englishMonsters:officialEnglish?.monsters||null,
-   targetMonsterId:activeDamageTargetId,modifiers:bookModifiers,
-   nextMagicConcentration:state.attributeBuffs?.nextMagicConcentration===true
-  })||[]:[];
  window.PandoraStageAttributes.render(root,{
-  page:stageAttributesPage,items,targetSkillDamages,nextMagicConcentrationPreview,
-  targetMonsterId:activeDamageTargetId,targetMonsterChoices,
-  onTargetMonster:id=>{
-   if(!targetMonsterChoices.some(row=>row.id===id))return;
-   selectedDamageTargetId=id;
-   refreshOpenHeroBook();
-  },
+  page:stageAttributesPage,items,nextMagicConcentrationPreview,
   skillIconForId:id=>{
    const record=skillMap[String(id)];
    return record?skillIcon(record.branch,id,record):null;
@@ -9908,63 +9880,6 @@ function applyGameLocale({redraw=true}={}){
 // archive as current game data; only the user's explicit offline choice may
 // install the bundled copy. RU and EN use the same verified snapshot.
 let activeCatalogSnapshot=null,catalogLoadVersion=0;
-// The Ogre is part of the active game catalog, but the whole monster table
-// is only needed when the player opens damage results in the Hero Book.
-let ogreSourceData=null,ogreSourceDataKey=null,ogreSourceRequest=null,
- ogreSourceTriedKey=null;
-// The selected damage target is a Book-only view preference, not a build
-// attribute and never written to saved character or account records.
-let selectedDamageTargetId=22104,damageTargetChoiceSource=null,
- damageTargetChoiceEnglish=null,damageTargetChoices=[];
-function currentDamageTargetChoices(monsters){
- const englishMonsters=officialEnglish?.monsters||null;
- if(monsters!==damageTargetChoiceSource||
-  englishMonsters!==damageTargetChoiceEnglish){
-  damageTargetChoiceSource=monsters;
-  damageTargetChoiceEnglish=englishMonsters;
-  damageTargetChoices=window.PandoraOSTargetDamage?.availableMonsterTargets({
-   monsters,englishMonsters
-  })||[];
- }
- return damageTargetChoices;
-}
-function ogreSourceKey(){return catalogArchived?'archive':activeCatalogSnapshot}
-function activeOgreSource(){
- const key=ogreSourceKey();
- return key&&ogreSourceDataKey===key?ogreSourceData:null;
-}
-function ensureOgreSource(){
- const key=ogreSourceKey();
- if(!catalogSource||!key)return Promise.resolve(null);
- if(activeOgreSource())return Promise.resolve(ogreSourceData);
- if(ogreSourceRequest)return ogreSourceRequest;
- if(ogreSourceTriedKey===key)return Promise.resolve(null);
- ogreSourceTriedKey=key;
- const archived=catalogArchived;
- const source=archived?'./data/os/monsters.json':API+'/api/catalog/monsters.json';
- const pending=(async()=>{
-  const response=await fetch(source,{cache:archived?'default':'no-cache',
-   signal:AbortSignal.timeout(14000)});
-  if(!response.ok)throw Error('Ogre source HTTP '+response.status);
-  if(!archived&&(response.headers.get('x-ps-catalog')!=='d1'||
-   response.headers.get('x-ps-catalog-snapshot')!==key))
-   throw Error('Ogre source catalog snapshot mismatch');
-  const data=await response.json(),expected=Number(catalogSource?.meta?.counts?.monsters);
-  if(!data||typeof data!=='object'||Array.isArray(data)||
-   !Number.isSafeInteger(expected)||expected<1||
-   Object.keys(data).length!==expected)
-   throw Error('Incomplete Ogre monster catalog');
-  if(ogreSourceKey()!==key||catalogArchived!==archived)return null;
-  ogreSourceData=data;ogreSourceDataKey=key;
-  if(stageAttributesPage==='effects'&&!stageSlotPickerOpen)
-   refreshOpenHeroBook();
-  return data;
- })().catch(error=>{
-  console.warn('Giant Ogre live source unavailable',error);return null;
- }).finally(()=>{if(ogreSourceRequest===pending)ogreSourceRequest=null});
- ogreSourceRequest=pending;
- return pending;
-}
 let englishCatalogPending=null,officialEnglishSnapshot=null;
 async function ensureEnglishCatalog(){
  if(!catalogSource)throw Error('Сначала требуется каталог игры');
