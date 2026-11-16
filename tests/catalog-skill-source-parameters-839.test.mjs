@@ -83,3 +83,20 @@ test('textual metadata stays source-only without a numeric contract',()=>{
  assert.equal(report.totals.sourceOnly,1);
  assert.equal(report.entries[0].contract,undefined);
 });
+
+test('combined timing, cost and AoE changes remain source-only, without changing combat source vectors',()=>{
+ const {after,report}=change(id,skill=>{
+  skill.mana+=2;
+  skill.cast+=0.25;
+  skill.cooldown+=0.5;
+  skill.range+=100;
+  skill.aoe=[...skill.aoe];
+  skill.aoe[1]+=10;
+ });
+ assert.equal(report.entries.length,1);
+ assert.equal(report.entries[0].kind,'sourceOnly');
+ assert.equal(report.entries[0].contract,'skill.source-parameters');
+ assert.deepEqual(after.skills[id].funcs,before.skills[id].funcs);
+ assert.deepEqual(after.skills[id].reqs,before.skills[id].reqs);
+ assert.equal(safety.sourceGraphIntegrity(before,after).ok,true);
+});
