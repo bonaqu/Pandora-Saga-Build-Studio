@@ -415,8 +415,6 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  gain.append(listField(article.zones,'zones','PvP-локации','PvP locations'));
  gain.append(listField(article.battles,'wars','PvP-войны','PvP wars'));
  paragraph(gain,en?o.lossEn:o.lossRu,'honor.overview',en?'lossEn':'lossRu');
- // Permanent November 13 update. These are in-game battle rewards, not
- // premium-store purchases or account services from the game website.
  const victories=section('victories','Победы в PvP','PvP Victories');
  paragraph(victories,en?o.pvpIntroEn:o.pvpIntroRu,'honor.overview',en?'pvpIntroEn':'pvpIntroRu');
  const officialScreenshot='https://pandorasaga-os.com/uploads/images/f4be126de5ed488981aeeb2298255095.jpg';
@@ -426,15 +424,10 @@ function render({browse,detail,make,lang='ru',article,editable=false,
   alt:tr('Окно постоянного события «Победы в PvP»',
          'Permanent PvP Victories event window'),
   loading:'lazy',decoding:'async'});
- // The original host can block hotlink requests. Keep an accessible source
- // link instead of showing a broken image or silently hiding the evidence.
+ // A gameplay illustration is not a navigation action. Never expose the
+ // image host, external game server, or provenance in the player-facing Wiki.
  eventImage.addEventListener('error',()=>eventImage.remove());
- const screenshotSource=make('a',{
-  class:'wiki-honor-pvp-screenshot-link',href:officialScreenshot,
-  target:'_blank',rel:'noopener noreferrer',
-  text:tr('Открыть оригинальный скриншот события',
-          'Open the original event screenshot')});
- victories.append(eventImage,screenshotSource);
+ victories.append(eventImage);
  const event=article.pvpVictories;
  if(event?.daily&&event?.weekly&&event?.hunts){
   const addTable=(captionRu,captionEn,headers,rows)=>{
@@ -471,9 +464,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
    [['День','Day'],['Время','Time'],['Карта','Map']],
    event.hunts.map(row=>[en?row.daysEn:row.daysRu,row.hours,
     en?row.mapEn:row.mapRu]));
-  victories.append(node('small','wiki-honor-pvp-source',
-   tr('Источник: официальное обновление от 13 ноября 2026 года.',
-      'Source: official game update published November 13, 2026.')));
+
  }
  const ranks=section('ranks','Ранги и привилегии','Honor ranks and privileges');
  paragraph(ranks,en?o.ranksEn:o.ranksRu,'honor.overview',

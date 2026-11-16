@@ -526,6 +526,8 @@ function skillIcon(cat,idx,record=null){
    return originals[localeStem];
   // Exact original always beats a display-only reuse.
   if(originals[stem])return originals[stem];
+  const remote=unmirroredArtwork('skills',stem);
+  if(remote)return remote;
   const source=iconManifest?.displayAliases?.skills?.[stem];
   if(source&&originals[source])return originals[source];
   // For newer D1-only skill records absent from the checked-in snapshot,
@@ -556,6 +558,20 @@ function skillIcon(cat,idx,record=null){
  if(record)return 'assets/skills/icons/skill_unknown.webp';
  return branchIcon(cat);
 }
+// Only a checked source ID can be tried; nothing is labeled as recovered.
+// The client uses this while catalog/D1 has a new icon not in GitHub yet.
+// Known original 404s remain hidden; browser image.onerror owns fallback.
+function unmirroredArtwork(kind,stem){
+ if(!iconManifest||!['skills','items','souls'].includes(kind)||
+  !/^[A-Za-z0-9_-]{1,120}$/.test(String(stem)))return null;
+ const named=iconManifest?.icons?.[kind]?.[stem];
+ if(named)return named;
+ const missing=iconManifest?.missing?.find?.(row=>
+  row?.kind===kind&&row.stem===stem);
+ if(missing?.error==='HTTP 404')return null;
+ const directory=kind==='souls'?'items':kind;
+ return 'https://pandorasaga-os.com/icons/'+directory+'/'+stem+'.webp';
+}
 function itemIcon(rec,kind='items'){
  const soul=kind==='souls'||rec?.kind==='SOUL';
  const custom=override[(soul?'visual.soul.':'visual.item.')+rec?.id];
@@ -565,9 +581,7 @@ function itemIcon(rec,kind='items'){
  const selfHostedSoul=soul?iconManifest?.icons?.souls?.[rec.icon]:null;
  const archived=selfHostedSoul||iconManifest?.icons?.[pathKind]?.[rec.icon];
  if(archived)return archived;
- // Missing/unknown originals are never probed on every encyclopedia hover.
- // The local verified artwork manifest is the only image authority.
- return null;
+ return unmirroredArtwork(soul?'souls':pathKind,rec.icon);
 }
 function branchCap(branch){
  // No invented cap: when a game class is still loading, disable spending until real caps exist.
@@ -1936,7 +1950,7 @@ function appendStageSlotNavigation(root){
    onclick:()=>openStageEquipmentSlot(next,'choose')});
   nav.append(button);
  }
- head.append(nav);
+ head.insertBefore(nav,head.lastElementChild);
 }
 function renderStagePicker(focusSearch=false){
  const root=$('stagePicker');if(!root)return;
@@ -6355,7 +6369,7 @@ function renderWiki(root){
     ]));
     const certainItems=h('div',{class:'wiki-chest-assured-grid'});
     certainBoard.append(certainItems);
-    for(const [i,group]of groups.entries()){
+    for(const {index:i,entries:group} of window.PandoraStudioChestPresentation.orderedGroups(groups)){
      const listedSingle=group.length===1&&group[0]?.p===100;
      const heading=h('summary',{class:'wiki-chest-group-summary'},[
       ...(adminEditing&&adminToken?[h('span',{class:'wiki-chest-group-mark',
@@ -6373,7 +6387,7 @@ function renderWiki(root){
       h('span',{class:'wiki-chest-chevron','aria-hidden':'true',text:'⌄'})
      ]);
      const options=h('div',{class:'wiki-chest-options'});
-     for(const [rowIndex,row] of group.entries()){
+     for(const {index:rowIndex,row} of window.PandoraStudioChestPresentation.orderedRewards(group)){
       const nextChest=chestIds.has(String(row.i))&&String(row.i)!==String(id);
       const option=h('div',{class:'wiki-chest-reward'+
        (nextChest?' wiki-chest-reward-nested':'')+

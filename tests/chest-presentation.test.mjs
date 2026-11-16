@@ -37,6 +37,40 @@ test('mixed reward groups preserve all source chances and original indices',()=>
  assert.equal(view.nestedCount,1);
 });
 
+test('every chest displays high chances first, without changing any source order',()=>{
+ const all=[...catalog.boxes,...catalog.npc];
+ const preserved=JSON.stringify(all);
+ for(const chest of all){
+  const sortedGroups=model.orderedGroups(chest.rolls||[]);
+  assert.deepEqual(sortedGroups.map(g=>g.index).slice().sort((a,b)=>a-b),
+   [...(chest.rolls||[]).keys()]);
+  let last=Infinity;
+  for(const group of sortedGroups){
+   const max=Math.max(-Infinity,...group.entries.map(r=>
+    typeof r?.p==='number'&&Number.isFinite(r.p)?r.p:-Infinity));
+   assert.ok(max<=last,'Wrong chest group chance order for '+chest.i);
+   last=max;
+   let previous=Infinity;
+   const sorted=model.orderedRewards(group.entries);
+   for(const {row} of sorted){
+    const chance=Number.isFinite(row?.p)?row.p:-Infinity;
+    assert.ok(chance<=previous,'Wrong reward order in '+chest.i);
+    previous=chance;
+   }
+   assert.deepEqual(sorted.map(x=>x.index).slice().sort((a,b)=>a-b),
+    [...group.entries.keys()]);
+  }
+ }
+ assert.equal(JSON.stringify(all),preserved);
+});
+test('stable ties and unknown chances preserve editor indices',()=>{
+ const rows=[{i:1,p:5},{i:2,p:null},{i:3,p:20},{i:4,p:5},
+  {i:5,p:undefined},{i:6,p:20}];
+ assert.deepEqual(Array.from(model.orderedRewards(rows),x=>x.index),
+  [2,5,0,3,1,4]);
+ assert.deepEqual(Array.from(model.orderedGroups([rows,[{i:7,p:99}],
+  [{i:8,p:50}]]),x=>x.index),[1,2,0]);
+});
 test('unknown chance remains unknown, not 0%; a real 0% is shown as zero',()=>{
  assert.equal(model.chance(null,'ru'),'Шанс не указан');
  assert.equal(model.chance(undefined,'en'),'Chance not listed');
@@ -51,6 +85,8 @@ test('unknown chance remains unknown, not 0%; a real 0% is shown as zero',()=>{
 test('edit UI keeps the native group index and does not rewrite source arrays',()=>{
  const app=readFileSync(new URL('pandora-studio-app.js',root),'utf8');
  assert.match(app,/data-roll-group':String\(i\+1\)/);
+ assert.match(app,/PandoraStudioChestPresentation\.orderedGroups\(groups\)/);
+ assert.match(app,/PandoraStudioChestPresentation\.orderedRewards\(group\)/);
  assert.match(app,/if\(!adminEditing&&!adminToken&&listedSingle\)certainItems.append\(options.firstElementChild\)/);
  assert.match(app,/changeChest\(groups.map\(\(g,gi\)=>gi!==i\?g:/);
  assert.match(app,/editWikiValue\(chance,row.p,\{type:'number',min:0,max:100/);
