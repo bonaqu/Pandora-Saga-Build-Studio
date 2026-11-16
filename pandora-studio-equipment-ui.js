@@ -22,6 +22,18 @@ const el=(tag,attrs={},children=[])=>{
   root.PandoraSearchField?.prepare(e);
  return e;
 };
+// Search only source-backed Soul names. No fuzzy translation or item-ID
+// matching: the UI's chosen locale and verified RU/EN aliases are searchable.
+function matchesSoulSearch(record,query){
+ const normalize=value=>String(value??'').normalize('NFKC')
+  .toLocaleLowerCase('ru').replace(/ё/g,'е').replace(/\s+/g,' ').trim();
+ const terms=normalize(query).split(' ').filter(Boolean);
+ if(!terms.length)return true;
+ const names=[record?.name,record?.nameEn,record?.sourceNameRu,record?.sourceNameEn]
+  .filter(value=>typeof value==='string').join(' ');
+ const haystack=normalize(names);
+ return terms.every(term=>haystack.includes(term));
+}
 function summary(record,icon,kind='item',context=null){
  if(!record)return el('p',{class:'muted',text:document.documentElement?.lang==='en'?
   'Item information is not loaded yet':'Данные о предмете пока не загружены'});
@@ -481,9 +493,9 @@ function render(root,api){
   bind(query,'pickerSoulSearchAria','Поиск души','Find Soul','aria-label');
   const list=el('div',{class:'stage-rich-list'});
   const draw=()=>{
-   list.replaceChildren();const needle=String(query.value||'').trim().toLocaleLowerCase('ru');
+   list.replaceChildren();const needle=String(query.value||'');
    const results=Object.values(api.catalog.souls||{}).filter(rec=>plan.validSoul(rec,slot)&&
-    String(rec.name||'').toLocaleLowerCase('ru').includes(needle));
+    matchesSoulSearch(rec,needle));
    for(const rec of results.slice(0,80)){
     const button=el('button',{type:'button',class:'stage-rich-result',
      onclick:event=>{
@@ -542,5 +554,5 @@ function render(root,api){
   draw();
  }
 }
-root.PandoraStageItemUI=Object.freeze({render,summary,attachPreview,dismissPreview});
+root.PandoraStageItemUI=Object.freeze({render,summary,matchesSoulSearch,attachPreview,dismissPreview});
 })(typeof window==='undefined'?globalThis:window);

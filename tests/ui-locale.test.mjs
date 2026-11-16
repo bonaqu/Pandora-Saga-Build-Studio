@@ -118,7 +118,9 @@ test('English equipment labels retain original source text solely for numeric fa
  assert.match(app,/keepSourceDesc\?\{sourceDesc:item\.desc\}:\{\}/);
  assert.match(app,/equipment:translate\(itemRecords,en\?\.items,true\)/);
  assert.match(app,/PandoraStudioItemOwnerEditor\.applyItems\(catalogSource\.items,override\)/);
- assert.match(app,/souls:translate\(ownerGameData\.souls,en\?\.souls\)/);
+ assert.match(app,/const localizedSouls=translate\(ownerGameData\.souls,en\?\.souls\)/);
+ assert.match(app,/sourceNameRu:typeof raw\?\.name==='string'\?raw\.name:''/);
+ assert.match(app,/souls:localizedSouls,racialPassives/);
  assert.match(calc,/const description=record\?\.sourceDesc\?\?record\?\.desc/);
 });
 
