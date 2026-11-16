@@ -75,7 +75,7 @@ test('all exact source FV1/FV2, linked combo, child and prerequisite mutations f
   const kind=s.weaponUse?.[0]||'BARE_HAND';
   assert.ok(row(preview(job,55,kind),id),'Verified baseline not present: '+ru);
   const variants=[
-   [id,record=>{record.mana+=1}],
+   [id,record=>{record.cast+=1}],
    [id,record=>{record.funcs[0].fv1[3]+=1}],
    [id,record=>{record.funcs[0].fv2[3]+=1}],
    [id,record=>{record.funcs[0].dir=record.funcs[0].dir==='TARGET'?'CASTER':'TARGET'}],
