@@ -8,7 +8,8 @@ const host={};vm.runInNewContext(read('pandora-studio-catalog-safety.js'),{windo
 const safety=host.PandoraCatalogSafety;
 const json=name=>JSON.parse(read('data/os/'+name+'.json'));
 const before={skills:json('skills'),items:json('items'),
- classes:json('classes'),tables:json('tables')};
+ classes:json('classes'),tables:json('tables'),
+ maps:json('maps'),monsters:json('monsters')};
 function edit(section,id,mutate){
  const after={...before,[section]:{...before[section]}};
  after[section][id]=structuredClone(before[section][id]);
