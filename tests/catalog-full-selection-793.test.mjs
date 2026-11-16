@@ -87,7 +87,7 @@ test('players are not shown the name of the third-party source',()=>{
  for(const name of publicModules)
   assert.doesNotMatch(read(name),/pandorasaga-os\.com|Pandora Saga OS/i,name);
  assert.doesNotMatch(workbench,/сайта OS|модель сайта OS|модели сайта OS|pandorasaga-os\.com/i);
- // Live URLs needed for source ingestion and icons remain internal code data.
- assert.match(app,/const OS='https:\/\/pandorasaga-os\.com'/);
+ // Public app must not embed source-host image URL even in unused constants.
+ assert.doesNotMatch(app,/pandorasaga-os\.com|Pandora Saga OS/i);
  assert.doesNotMatch(human,/расчёт сайта OS|модели OS|сайта OS/);
 });

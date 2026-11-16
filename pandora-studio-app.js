@@ -65,7 +65,7 @@ function saveView(){try{sessionStorage.setItem(VIEW_KEY,JSON.stringify({
  pathScroll:document.getElementById('skillBranches')?.scrollTop||0
  }))}catch{}}
 
-const OS='https://pandorasaga-os.com';
+
 const API='https://ps-build-studio-cloud.bonaqu.workers.dev';
 const STATS=['Выносливость','Сила','Ловкость','Сноровка','Дух','Интеллект'];
 const portraitOptions=[{"race":0,"gender":1},{"race":0,"gender":0},{"race":1,"gender":1},{"race":1,"gender":0},{"race":2,"gender":0},{"race":3,"gender":0},{"race":4,"gender":0},{"race":5,"gender":0}];
@@ -514,9 +514,14 @@ function localizedRaceSkillStem(stem,language){
  if(stem==='skill_900060003')return 'skill_900050003';
  return stem;
 }
+// Player artwork is always a local, bounded asset path.
+function localArtwork(value){
+ return typeof value==='string'&&value.length<=255&&
+  /^assets\/(?:[A-Za-z0-9_-]+\/){0,3}[A-Za-z0-9_.-]+\.(?:png|webp|jpe?g)$/.test(value);
+}
 function skillIcon(cat,idx,record=null){
  const custom=override['visual.skill.'+(record?.id??(cat+'.'+idx))];
- if(custom)return custom;
+ if(localArtwork(custom))return custom;
  if(record?.iconId){
   const stem='skill_'+record.iconId,originals=iconManifest?.icons?.skills||{};
   // The client uses the opposite existing sprite for these two race
@@ -577,7 +582,7 @@ function unmirroredArtwork(kind,stem){
 function itemIcon(rec,kind='items'){
  const soul=kind==='souls'||rec?.kind==='SOUL';
  const custom=override[(soul?'visual.soul.':'visual.item.')+rec?.id];
- if(custom)return custom;
+ if(localArtwork(custom))return custom;
  if(!rec?.icon)return null;
  const pathKind=soul?'items':kind;
  const selfHostedSoul=soul?iconManifest?.icons?.souls?.[rec.icon]:null;
@@ -9044,9 +9049,7 @@ function showOverrideManager(){
   .catch(()=>{if(body.isConnected)showStudioToast(tr('Исходный каталог временно недоступен','Game catalog temporarily unavailable'),'warning')});
 }
 
-function allowedArtwork(value){
-return /^(?:assets\/[A-Za-z0-9_.-]+\.(?:png|webp|jpe?g)|https:\/\/pandorasaga-os\.com\/icons\/(?:items|souls|skills)\/[A-Za-z0-9_-]+\.webp(?:\?v=[0-9]{1,12})?)$/.test(value);
-}
+function allowedArtwork(value){return localArtwork(value); }
 function editor(el){
   const key=el?.dataset?.editKey;
   if(!adminEditing||!adminToken||!key)return;

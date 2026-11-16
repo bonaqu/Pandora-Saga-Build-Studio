@@ -61,6 +61,20 @@ async function main(){
    ' '+(await r.text()).slice(0,250));
   return r.status===204?null:r.json();
  };
+ // Inspect every approved asset diff, not only GitHub's first 100 files.
+ // For 100+ recovered originals, silently authorizing a partial page is unsafe.
+ const listPRFiles=async number=>{
+  const rows=[];
+  for(let page=1;page<=6;page++){
+   const chunk=await call('/pulls/'+number+'/files?per_page=100&page='+page);
+   if(!Array.isArray(chunk)||chunk.length>100)
+    throw Error('GitHub returned an invalid asset diff page');
+   rows.push(...chunk);
+   if(chunk.length<100)break;
+  }
+  if(rows.length>600)throw Error('Icon PR exceeds bounded asset audit');
+  return rows;
+ };
  const original=await call('/git/ref/heads/'+BASE);
  if(original?.object?.sha!==baseline)
   throw Error('Main branch changed during icon preparation; do not create stale PR');
@@ -87,13 +101,9 @@ async function main(){
     'Original icons CI failed on '+head);
    const [details,prFiles,latest]=await Promise.all([
     call('/pulls/'+pr.number),
-    call('/pulls/'+pr.number+'/files?per_page=100'),
+    listPRFiles(pr.number),
     call('/git/ref/heads/'+BASE)
    ]);
-   if(prFiles.length>=100){
-    // GitHub file list is paginated: a partial authorization is unsafe.
-    throw Error('Icon PR exceeds inspected file page');
-   }
    if(details.head.sha!==head||!eligibleMirrorPR({
     pr:details,files:prFiles,sourceSha:baseline,
     currentBase:latest.object.sha,checks:current
