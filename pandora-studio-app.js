@@ -562,9 +562,8 @@ function skillIcon(cat,idx,record=null){
  if(record)return 'assets/skills/icons/skill_unknown.webp';
  return branchIcon(cat);
 }
-// Only a checked source ID can be tried; nothing is labeled as recovered.
-// The client uses this while catalog/D1 has a new icon not in GitHub yet.
-// Known original 404s remain hidden; browser image.onerror owns fallback.
+// Client image URLs are always local. The verified original-only mirror
+// recovers later catalog images after release; never hotlink a source host.
 function unmirroredArtwork(kind,stem){
  if(!iconManifest||!['skills','items','souls'].includes(kind)||
   !/^[A-Za-z0-9_-]{1,120}$/.test(String(stem)))return null;
@@ -573,8 +572,7 @@ function unmirroredArtwork(kind,stem){
  const missing=iconManifest?.missing?.find?.(row=>
   row?.kind===kind&&row.stem===stem);
  if(missing?.error==='HTTP 404')return null;
- const directory=kind==='souls'?'items':kind;
- return 'https://pandorasaga-os.com/icons/'+directory+'/'+stem+'.webp';
+ return null; // Unmirrored source image: keep local placeholder.
 }
 function itemIcon(rec,kind='items'){
  const soul=kind==='souls'||rec?.kind==='SOUL';

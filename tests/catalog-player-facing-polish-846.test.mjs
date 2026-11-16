@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const app=read('pandora-studio-app.js'),css=read('pandora-studio-equipment-tooltip.css'),
+const app=read('pandora-studio-app.js'),css=read('pandora-studio-theme.css'),
  honor=read('pandora-studio-honor-view.js');
 const items=JSON.parse(read('data/os/items.json'));
 const manifest=JSON.parse(read('assets/os-icon-manifest.json'));
@@ -35,6 +35,8 @@ test('Eagle Mantle and Ancient King Box have exact game icon IDs and safe non-mi
  }
  assert.match(app,/function unmirroredArtwork\(kind,stem\)/);
  assert.match(app,/missing\?\.error==='HTTP 404'/);
+ assert.doesNotMatch(app,/https:\/\/pandorasaga-os\.com\/icons\//);
+ assert.match(app,/return null; \/\/ Unmirrored source image/);
  assert.match(app,/unmirroredArtwork\(soul\?'souls':pathKind,rec.icon\)/);
  assert.match(app,/if\(archived\)return archived;/);
  assert.match(app,/\^\[A-Za-z0-9_-\]\{1,120\}\$/);

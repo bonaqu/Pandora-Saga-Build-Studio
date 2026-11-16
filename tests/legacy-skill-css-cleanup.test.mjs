@@ -17,8 +17,9 @@ test('obsolete detached/diamond skill markers are absent from current CSS and He
   'path-current-notch'])
   assert.ok(css.includes('.'+name)&&path.includes(name),name);
  // The new accessible four-section Book accordion adds a bounded set of
- // gold-trim/focus/responsive rules; keep guarding CSS runaway growth.
- assert.ok(css.length<166000,'Stylesheet must stay bounded after new encyclopedia UI components');
+ // gold-trim/focus/responsive rules plus compact equipment navigation;
+ // keep guarding CSS runaway growth.
+ assert.ok(css.length<170000,'Stylesheet must stay bounded after equipment navigation UI additions');
 });
 
 test('actual milestone tooltip and 18px hidden native thumb remain after pruning',()=>{
