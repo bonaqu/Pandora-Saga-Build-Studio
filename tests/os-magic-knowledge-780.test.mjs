@@ -92,14 +92,14 @@ test('Worm Bomb consumes two items but fires one source-defined damage packet',(
  assert.equal(root.funcs.find(f=>f.ep==='EP_CONSUME_ITEM').fv2[3],2);
  assert.equal(skills['240005003'].funcs.filter(f=>f.ep==='EP_ELEMENT_DAMAGE').length,1);
  const book=read('pandora-studio-hero-book.js');
- assert.match(book,/один взрыв/);
+ assert.doesNotMatch(book,/один взрыв|stage-target-damage-row/);
  assert.doesNotMatch(book,/Если обе ловушки попали|If both traps hit/);
 });
 test('Same compact Book details; no invented direct ATK/MATK addition',()=>{
  const book=read('pandora-studio-hero-book.js');
  const code=read('pandora-studio-target-damage.js');
- assert.match(book,/Магические знания/);
- assert.match(book,/Magic Knowledge/);
+ assert.doesNotMatch(book,/nextHitImprovements|hitResult|stage-target-damage-row/);
+ assert.match(book,/scalingSkillPreview\?\.\(/);
  assert.match(code,/sourceMagicKnowledge\(options\)/);
  assert.doesNotMatch(book,/stage-material-actions|function materialSkillResults\(/);
 });
