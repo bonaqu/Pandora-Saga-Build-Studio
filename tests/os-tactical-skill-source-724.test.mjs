@@ -39,7 +39,7 @@ test('full source identity and every FV slot must match the pinned spell',()=>{
   s=>s.funcs[0].fv1[0]++,s=>s.funcs[0].fv1[3]++,
   s=>s.funcs[0].fv2[3]++,s=>s.funcs[0].dir='CASTER',
   s=>s.funcs.push(structuredClone(s.funcs[0])),
-  s=>s.mana++,s=>s.cooldown++,s=>s.range++,s=>s.cast++,
+  s=>s.range++,s=>s.cast++,
   s=>s.charLevel++,s=>s.reqLevel++,s=>s.prereq=42,s=>s.learnable=false
  ];
  for(const [id] of cases)for(const change of mutate){
@@ -47,6 +47,19 @@ test('full source identity and every FV slot must match the pinned spell',()=>{
   change(changed[id]);const out=inspect(owner(id),changed);
   assert.equal(out.rows.some(x=>x.id===id),false,'stale '+id);
   assert.ok(out.rejected.includes(id));
+ }
+});
+test('signed source costs and cooldowns remain current across six tactical roots',()=>{
+ for(const [id] of cases){
+  const old=skills[id],job=owner(id);
+  const candidate={...skills,[String(id)]:{...old,
+   mana:old.mana+1,cooldown:old.cooldown+0.5}};
+  const row=inspect(job,candidate).rows.find(x=>x.id===id);
+  assert.ok(row,'current cost/cooldown must not hide '+id);
+  assert.equal(row.mana,old.mana+1);
+  assert.equal(row.cooldown,old.cooldown+0.5);
+  assert.equal(row.sourceOnly,true);
+  assert.equal(row.finalAmount,null);
  }
 });
 test('level, mastery and prior skill are separate conditions',()=>{
