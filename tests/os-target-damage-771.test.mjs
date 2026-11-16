@@ -106,9 +106,8 @@ test('An INT, SPI or mastery change recalculates target damage, not just a coeff
 test('Hero Book reads computed hits once, materials remain in the Encyclopedia',()=>{
  const book=read('pandora-studio-hero-book.js');
  const app=read('pandora-studio-app.js');
- assert.match(app,/PandoraOSTargetDamage\?\.supportedSkillHits/);
- assert.match(book,/calculatedById=new Map\(relevantHits\.map/);
- assert.match(book,/stage-target-damage-row/);
- assert.match(book,/heroMasteryKey/);
+ assert.doesNotMatch(app,/PandoraOSTargetDamage\?\.supportedSkillHits/);
+ assert.doesNotMatch(book,/calculatedById=new Map\(relevantHits\.map|stage-target-damage-row|heroMasteryKey/);
+ assert.match(book,/scalingSkillPreview\?\.\(/);
  assert.doesNotMatch(book,/stage-material-actions|function materialSkillResults\(/);
 });
