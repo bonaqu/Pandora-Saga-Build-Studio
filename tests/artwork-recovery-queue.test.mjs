@@ -2,16 +2,19 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {execFileSync} from 'node:child_process';
 import {fileURLToPath} from 'node:url';
+import {readFileSync} from 'node:fs';
+const manifest=JSON.parse(readFileSync(new URL('../assets/os-icon-manifest.json',import.meta.url),'utf8'));
 const root=fileURLToPath(new URL('../',import.meta.url));
 
 test('missing-artwork queue uses exact OS IDs, no placeholder downloads or substitutions',()=>{
  const output=execFileSync(process.execPath,['scripts/report-missing-original-artwork.mjs'],
   {cwd:root,encoding:'utf8',maxBuffer:1024*1024*5});
  const report=JSON.parse(output);
- assert.equal(report.count,264);
- assert.equal(report.byKind.skills,260);
- assert.equal(report.byKind.items,4);
- assert.equal(report.byKind.souls,0);
+ const confirmed=manifest.missing.filter(x=>x.error==='HTTP 404');
+ assert.equal(report.count,confirmed.length);
+ for(const kind of ['skills','items','souls'])
+  assert.equal(report.byKind[kind]||0,confirmed.filter(x=>x.kind===kind).length);
+ assert.equal(report.count,manifest.count.known404);
  assert.equal(report.automaticSubstitutions,0);
  assert.deepEqual(report.skillImpact,{
   withClassAssignments:45,

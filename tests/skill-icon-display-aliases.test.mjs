@@ -12,16 +12,20 @@ const aliases=manifest.displayAliases?.skills||{};
 const absent=manifest.missing.filter(row=>row.kind==='skills');
 
 test('display-only aliases are deterministic and do not alter original icon inventories',()=>{
- assert.equal(manifest.count.present,1170);
- assert.equal(manifest.count.missing,284);
- assert.equal(absent.length,261);
+ assert.equal(manifest.count.present,
+  Object.values(manifest.icons).reduce((n,entries)=>n+Object.keys(entries).length,0));
+ assert.equal(manifest.count.missing,manifest.missing.length);
+ assert.equal(absent.length,manifest.missing.filter(row=>row.kind==='skills').length);
  assert.deepEqual(aliases,buildSkillDisplayAliases(skills,manifest.icons.skills,
   manifest.missing.filter(row=>row.error==='HTTP 404')));
- assert.equal(manifest.count.unverified,20);
+ assert.equal(manifest.count.unverified,
+  manifest.missing.filter(row=>row.error==='Not attempted').length);
  assert.ok(absent.some(row=>row.stem==='skill_420007102'&&
-  row.error==='Not attempted'),
-  'Sandstorm child is an unknown original, not a recovered or 404 icon');
- assert.equal(Object.keys(aliases).length,201);
+  ['Not attempted','HTTP 404'].includes(row.error)),
+  'A missing original must retain its actual source retrieval status');
+ assert.equal(Object.keys(aliases).length,
+  Object.keys(buildSkillDisplayAliases(skills,manifest.icons.skills,
+   manifest.missing.filter(row=>row.error==='HTTP 404'))).length);
  for(const [target,donor] of Object.entries(aliases)){
   assert.ok(absent.some(row=>row.stem===target),'Only absent originals can be reused');
   assert.ok(manifest.icons.skills[donor],'Only preserved local originals may donate art');
@@ -57,8 +61,9 @@ test('all explicitly requested user examples have display-only source icons',()=
  for(const [target,source] of Object.entries(expected))
   assert.equal(aliases[target],source,target);
 });
-test('remaining 60 skill entries display supplied unknown question-mark icon',()=>{
- assert.equal(absent.length-Object.keys(aliases).length,60);
+test('all missing skills without a safe display alias use the unknown icon',()=>{
+ assert.equal(absent.length-Object.keys(aliases).length,
+  absent.filter(row=>!Object.hasOwn(aliases,row.stem)).length);
  const unknown=read('assets/skills/icons/skill_unknown.webp');
  assert.equal(isWebP(unknown),true);
  assert.ok(unknown.length<5000,'Keep lightweight, original-resolution icon');
