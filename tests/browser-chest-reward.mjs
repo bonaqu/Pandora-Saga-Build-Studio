@@ -62,14 +62,18 @@ export async function runChestRewardLayoutSmoke(browser,base){
     .waitFor({state:'visible',timeout:20000});
   };
   await openNpcChest();
+  const sourceChances=await page.locator('.wiki-chest-reward .wiki-reward-percent').allInnerTexts();
+  const values=sourceChances.map(value=>Number(value.replace(/[,%\s]/g,'')));
+  assert.ok(values.every((value,i)=>i===0||value<=values[i-1]),
+   'NPC chest rewards must be sorted by descending listed chance');
   assert.equal(await page.locator('.wiki-chest-gold-reward').first().innerText(),
-   'Gold: 60,000–100,000');
+   'Gold: 1,000–4,999');
   await page.locator('#dockClose').click();
   await page.locator('#locale [data-locale="ru"]').click();
   await openNpcChest();
   const ruGold=(await page.locator('.wiki-chest-gold-reward').first().innerText())
    .replace(/\s/g,' ');
-  assert.equal(ruGold,'Золото: 60 000–100 000');
+  assert.equal(ruGold,'Золото: 1 000–4 999');
   assert.deepEqual(errors,[],'Browser JS error in scout or NPC chests');
   console.log('Chromium chest rewards passed: scout level 15 and NPC gold ranges in RU/EN');
  }finally{await context.close()}
