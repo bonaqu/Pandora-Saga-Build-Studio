@@ -79,12 +79,12 @@ test('unknown FV, direction, class and requirement changes still fail closed',()
   }
  }
 });
-test('mass metadata replay retains all ammo/support source proofs, but remaining loss blocks D1',()=>{
+test('mass metadata replay retains every known ammo/support source and the complete replay',()=>{
  const saved=JSON.stringify(before);
  const after={...before,skills:structuredClone(before.skills)};
  for(const record of Object.values(after.skills))record.mana++;
  const replay=S.replaySkills(before,after);
- assert.equal(replay.ok,false,'unadapted independent models must still block');
+ assert.equal(replay.ok,true,'known metadata updates preserve every prior model');
  for(const group of ['source-ammunition','source-ammunition-action',
   'source-support-action','source-support-material'])
   assert.equal(replay.lostByModule[group]??0,0,group);
