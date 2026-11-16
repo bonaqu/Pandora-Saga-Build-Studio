@@ -40,7 +40,6 @@ test('changed target, EP, requirements, access and unknown fields cannot borrow 
  const key='620002061';
  const changes=[
   s=>{s.funcs.find(f=>f.ep==='EP_SKILL_EXEC').fv1[3]=999999997;},
-  s=>{s.funcs.find(f=>f.ep==='EP_SKILL_EXEC').ep='EP_FUTURE';},
   s=>{s.reqs.push({branch:'slash',amount:12});},
   s=>{s.classes.FUTURE_CLASS=1;},
   s=>{s.unrecognizedMechanic={scale:500};},
@@ -55,6 +54,18 @@ test('changed target, EP, requirements, access and unknown fields cannot borrow 
   assert.equal(graph.ok,false);
   assert.ok(graph.newBroken>0);
  }
+});
+test('unknown EP is a semantic review even if removing a dangling link repairs the graph',()=>{
+ const after=edit('620002061',s=>{
+  s.mana++;
+  s.funcs.find(f=>f.ep==='EP_SKILL_EXEC').ep='EP_FUTURE';
+ });
+ const row=S.compatibility(before,after).entries[0];
+ assert.equal(row.kind,'needsReview');
+ assert.equal(row.contract,undefined);
+ // Graph integrity checks references, not the meaning of an unknown EP.
+ const graph=S.sourceGraphIntegrity(before,after);
+ assert.equal(graph.newBroken,0);
 });
 test('text-only legacy edits remain harmless; source graph protects actual new zero IDs',()=>{
  const renamed=edit('620002061',s=>{s.desc+=' новая редакция';});
