@@ -59,8 +59,9 @@ test('Unsupported build or altered source cannot get invisible extra damage',()=
 test('Saved buff flows to the existing RU/EN Book without materials or new cards',()=>{
  const app=read('pandora-studio-app.js'),book=read('pandora-studio-hero-book.js');
  assert.match(app,/nextMagicConcentration:false/);
- assert.match(app,/nextMagicConcentration:state\.attributeBuffs\?\.nextMagicConcentration===true/);
+ assert.match(app,/PandoraOSTargetDamage\?\.nextMagicConcentrationPreview/);
+ assert.doesNotMatch(app,/supportedSkillHits\(/);
  assert.match(book,/toggle\(skills,'Сосредоточенность','nextMagicConcentration'/);
- assert.match(book,/nextMagicAverageGain/);
+ assert.doesNotMatch(book,/nextMagicAverageGain/);
  assert.doesNotMatch(book,/stage-material-actions|function materialSkillResults\(/);
 });
