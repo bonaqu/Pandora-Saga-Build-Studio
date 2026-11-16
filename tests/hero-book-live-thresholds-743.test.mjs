@@ -134,9 +134,8 @@ test('Book is build-scoped, bilingual, and external-buff block is not a toggle',
  assert.doesNotMatch(path,/path-next-melee|data-next-melee-skill-id/);
  assert.doesNotMatch(app,/nextMelee:window.PandoraBookSkillThresholds/);
  assert.equal('nextMelee' in T,false);
- assert.match(effects,/stage-skill-party-effects/);
- assert.match(effects,/skill\.recipient===true/);
- assert.match(effects,/applied===false/);
+ assert.doesNotMatch(effects,/stage-skill-party-effects|skill\.recipient===true|applied===false/,
+  'ally controls and previews are in Buffs, not duplicated in Skill Effects');
  assert.doesNotMatch(effects,/not enabled in the build/);
  assert.doesNotMatch(effects,/Расчётная модель по игровым данным/);
  assert.match(effects,/const detail=en\?/);
