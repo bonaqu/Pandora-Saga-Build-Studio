@@ -22,17 +22,17 @@ const snapshot=(id,edit)=>{
 };
 const quantity=(skill,ep)=>skill.funcs.find(row=>row.ep===ep);
 
-test('one declared registry contains twenty-six stable distinct data-only contracts',()=>{
+test('one declared registry contains twenty-seven stable distinct data-only contracts',()=>{
  const contracts=safety.sourceContractRegistry;
  assert.ok(Array.isArray(contracts));
  assert.equal(Object.isFrozen(contracts),true);
- assert.equal(contracts.length,26);
- assert.equal(new Set(contracts.map(x=>x.id)).size,26);
+ assert.equal(contracts.length,27);
+ assert.equal(new Set(contracts.map(x=>x.id)).size,27);
  assert.deepEqual([...new Set(contracts.map(x=>x.kind))].sort(),
   ['sourceOnly','verified']);
  for(const contract of contracts){
   assert.equal(Object.isFrozen(contract),true);
-  assert.match(contract.id,/^(skill|equipment|class|table)\./);
+  assert.match(contract.id,/^(skill|equipment|class|table|monster)\./);
   assert.ok(contract.dataset&&typeof contract.dataset==='string');
  }
  assert.equal(contracts.filter(x=>x.kind==='sourceOnly').length,12);
