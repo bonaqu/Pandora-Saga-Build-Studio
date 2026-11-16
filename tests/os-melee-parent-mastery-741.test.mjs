@@ -139,7 +139,8 @@ test('all four roots remain source checked and Ossify now has a numeric build pr
  assert.deepEqual(r.summary.statuses,{
   'numeric-preview':74,'coefficient-model':27,'source-parameter':3,
   'qualitative-preview':97,'passive-source':29,
-  'internal-or-triggered-source':336,'unmodeled-learnable':3
+  'internal-or-triggered-source':336,'source-access-limited':0,
+  'unmodeled-learnable':3
  });
  for(const [id] of cases){
   const row=r.rows.find(x=>x.id===id);
