@@ -31,6 +31,7 @@
     "assets:aliases:refresh": "node scripts/skill-icon-display-aliases.mjs --write",
     "skills:duplicates": "node scripts/report-skill-identity-overlaps.mjs",
     "skills:formula-audit": "node scripts/audit-os-skill-formulas.mjs",
+    "skills:effect-audit": "node scripts/audit-os-effect-families.mjs",
     "skills:trap-target-audit": "node scripts/audit-os-trap-target.mjs"
   },
   "pandoraRelease": "2026.11.17.850"
