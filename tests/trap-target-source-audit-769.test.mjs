@@ -50,8 +50,8 @@ test('Malformed target resistance fails closed; Hero Book stays build-only',()=>
  const book=read('pandora-studio-hero-book.js');
  const path=read('pandora-studio-hero-path.js');
  assert.doesNotMatch(book,/audit-os-trap-target|240005003/);
- assert.match(book,/result\.monsterId!==targetMonsterId/,
-  'A valid current character must match the currently selected verified target');
+ assert.doesNotMatch(book,/result\.monsterId!==targetMonsterId|stage-book-damage-target/,
+  'Target selection was removed from the Hero Book by user request');
  assert.doesNotMatch(path,/path-next-melee|data-next-melee-skill-id/);
  assert.doesNotMatch(book,/stage-material-actions/);
 });
