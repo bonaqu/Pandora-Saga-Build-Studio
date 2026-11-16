@@ -26,7 +26,7 @@ const el=(tag,attrs={},children=[])=>{
 // matching: the UI's chosen locale and verified RU/EN aliases are searchable.
 function matchesSoulSearch(record,query){
  const normalize=value=>String(value??'').normalize('NFKC')
-  .toLocaleLowerCase('ru').replace(/ё/g,'е').replace(/\\s+/g,' ').trim();
+  .toLocaleLowerCase('ru').replace(/ё/g,'е').replace(/\s+/g,' ').trim();
  const terms=normalize(query).split(' ').filter(Boolean);
  if(!terms.length)return true;
  const names=[record?.name,record?.nameEn,record?.sourceNameRu,record?.sourceNameEn]
