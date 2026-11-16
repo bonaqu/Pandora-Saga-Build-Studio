@@ -50,6 +50,6 @@ test('partial runs preserve prior HTTP 404 evidence and stop retries on new 404'
  const source=readFileSync(new URL('scripts/mirror-os-icons.mjs',root),'utf8');
  assert.match(source,/const known404=new Set/);
  assert.match(source,/known404\.has\(key\(row\)\)&&!retry404/);
- assert.match(source,/failures\.get\(id\)\|\|\(known404\.has\(id\)\?'HTTP 404':'Not attempted'\)/);
+ assert.match(source,/failures\.get\(id\)==='HTTP 404'\|\|known404\.has\(id\)/);
  assert.match(source,/if\(response\.status===404\)\{failures\.set\(key\(row\),'HTTP 404'\);return\}/);
 });
