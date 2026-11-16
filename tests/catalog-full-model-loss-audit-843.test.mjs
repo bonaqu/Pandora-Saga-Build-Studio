@@ -26,7 +26,7 @@ test('571-skill mass update reports EVERY lost model, with compact UI samples',(
   replay.lost);
  assert.equal(new Set(replay.lostSkillIds).size,replay.lostSkillIds.length);
  assert.deepEqual(Array.from(new Set(replay.lostEntries.map(x=>x.id))),
-  replay.lostSkillIds);
+  Array.from(replay.lostSkillIds));
  assert.ok(replay.samples.length<=5);
  for(const row of replay.samples)
   assert.ok(replay.lostEntries.some(x=>
