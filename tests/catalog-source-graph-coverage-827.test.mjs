@@ -213,6 +213,6 @@ test('owner review, preview and final publish use the same link graph and full s
  assert.match(wb,/Проверка выбранного каталога/);
  assert.match(wb,/повреждённых новых ссылок/);
  assert.match(wb,/const coverageSummary=h\('p'/);
- assert.match(wb,/return \{combined,normalized,compatibility,replay,equipment,graph\}/);
+ assert.match(wb,/return \{combined,normalized,compatibility,replay,equipment,graph,targets\}/);
  assert.match(read('pandora-studio-catalog-safety.js'),/entries,requiresMechanicReview/);
 });

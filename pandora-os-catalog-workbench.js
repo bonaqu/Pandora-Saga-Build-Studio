@@ -510,9 +510,20 @@
             ', '+row.previous+' → '+row.next+')').slice(0,3).join(', ')+
            (equipment.lost>3?' (+'+(equipment.lost-3)+')':''));
         }
+        const targets=typeof safety.replayMonsterTargets==='function'?
+          safety.replayMonsterTargets(baseline,selected):null;
+        if(targets&&!targets.ok){
+          validation.ok=false;
+          validation.issues.push(...targets.errors);
+          if(targets.lost)validation.issues.push(tr(
+            'Пропали ранее доступные игровые цели или расчёты ударов: ',
+            'Previously available targets or hit calculations disappeared: ')+
+            targets.samples.slice(0,3).map(row=>row.name+' · '+row.detail).join('; ')+
+            (targets.lost>3?' (+'+(targets.lost-3)+')':''));
+        }
         result={validation,
           comparison:safety.compare(baseline,selected,hero),
-          compatibility:safety.compatibility(baseline,selected),replay,equipment,graph};
+          compatibility:safety.compatibility(baseline,selected),replay,equipment,graph,targets};
       }catch(error){
         result={validation:{ok:false,issues:[String(error.message||error)]},
           comparison:null};
@@ -1511,13 +1522,20 @@
        ' известных числовых действий перестали рассчитываться. '+
        [...equipment.errors,...equipment.samples.map(x=>x.name+' / +'+
         x.grade+' / '+x.previous+' → '+x.next)].slice(0,4).join(' · '));
+      const targets=typeof safety.replayMonsterTargets==='function'?
+        safety.replayMonsterTargets(baseline,combined):null;
+      if(targets&&!targets.ok)throw Error(
+        'Проверка игровых целей и разницы уровней: '+
+        targets.lost+' ранее доступных целей или расчётов перестали подтверждаться. '+
+        [...targets.errors,...targets.samples.map(row=>
+         row.name+' / '+row.detail)].slice(0,4).join(' · '));
       const normalized=importer.normalize(combined,legacy);
       if(!Array.isArray(legacyRows)||legacyRows.length!==normalized.counts.legacyLocale)
         throw Error('Published D1 translation count changed during review');
       normalized.entries.legacyLocale=legacyRows; // Preserve exact IDs, payloads and source attribution.
       review.auditSelection(baseline,upstream,combined,chosen,importer.files,
         {syncRussianInstances});
-      return {combined,normalized,compatibility,replay,equipment,graph};
+      return {combined,normalized,compatibility,replay,equipment,graph,targets};
     }
 
     exportButton.onclick=()=>{

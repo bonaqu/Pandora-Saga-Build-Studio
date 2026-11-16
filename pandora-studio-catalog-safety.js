@@ -1204,6 +1204,39 @@ function sourcedAfkThreshold(field,before,after){
   a.thresholdSec<=86400&&Number.isSafeInteger(b.thresholdSec)&&
   b.thresholdSec>=1&&b.thresholdSec<=86400&&a.thresholdSec!==b.thresholdSec;
 }
+// OS monster HP and defenses are current inputs to the target model, not
+// evidence about the server's actual hit chances or unknown effects.
+const TARGET_MONSTER_FIELDS=Object.freeze([
+ 'level','life','vit','spi','ac','magicProtection','lvMod','resists'
+]);
+function validTargetSource(id,record){
+ const T=root.PandoraOSTargetDamage;
+ if(!T||typeof T.availableMonsterTargets!=='function'||!validObject(record))
+  return false;
+ const rows=T.availableMonsterTargets({monsters:{[id]:record}});
+ return Array.isArray(rows)&&rows.some(row=>String(row.id)===String(id));
+}
+function verifiedMonsterTargetSource(id,old,now){
+ if(!old||!now||!validTargetSource(id,old)||
+  !validTargetSource(id,now))return false;
+ // Unknown nested resistance keys are NOT modeled by the OS target engine.
+ // A permissive target picker must not certify their gameplay semantics.
+ const known=Object.keys(root.PandoraOSTargetDamage?.target?.resists||{}).sort();
+ if(!known.length||[old,now].some(record=>
+  !validObject(record.resists)||
+  !contractSame(Object.keys(record.resists).sort(),known)))return false;
+ const fields=[...new Set([...Object.keys(old),...Object.keys(now)])]
+  .filter(field=>!contractSame(old[field],now[field]));
+ const allowed=new Set([...TARGET_MONSTER_FIELDS,
+  'name','nameEn','desc','descEn','iconId']);
+ return fields.some(field=>TARGET_MONSTER_FIELDS.includes(field))&&
+  fields.every(field=>allowed.has(field));
+}
+const MONSTER_TARGET_SOURCE_CONTRACTS=Object.freeze([
+ Object.freeze({id:'monster.target-source-parameters',
+  kind:'verified',dataset:'monsters',matches:verifiedMonsterTargetSource})
+]);
+
 const SERVER_TABLE_SOURCE_CONTRACTS=Object.freeze([
  Object.freeze({id:'table.forge-source-rates',kind:'sourceOnly',
   dataset:'tables',matches:sourcedForgeRates}),
@@ -1225,6 +1258,7 @@ const SOURCE_CONTRACT_REGISTRY=Object.freeze([
  ...REFINEMENT_SOURCE_CONTRACTS.map(({id,kind,dataset})=>Object.freeze({id,kind,dataset})),
  ...EXPERIENCE_SOURCE_CONTRACTS.map(({id,kind,dataset})=>Object.freeze({id,kind,dataset})),
  ...SKILL_PRESENTATION_SOURCE_CONTRACTS.map(({id,kind,dataset})=>Object.freeze({id,kind,dataset})),
+ ...MONSTER_TARGET_SOURCE_CONTRACTS.map(({id,kind,dataset})=>Object.freeze({id,kind,dataset})),
  ...SERVER_TABLE_SOURCE_CONTRACTS.map(({id,kind,dataset})=>Object.freeze({id,kind,dataset})),
  ...SKILL_SOURCE_CONTRACTS.map(({id,kind})=>Object.freeze({id,kind,dataset:'skills'})),
  ...EQUIPMENT_SOURCE_CONTRACTS.map(({id,kind,datasets})=>
@@ -1404,7 +1438,34 @@ function compatibility(before,after){
      'Мастерство '+group+' · изменён игровой контракт');
    }
   }
-  else if(['monsters','drops','maps'].includes(dataset)){
+  else if(dataset==='monsters'){
+   for(const id of new Set([...Object.keys(oldData||{}),...Object.keys(newData||{})])){
+    const a=oldData?.[id],b=newData?.[id];
+    if(same(a,b))continue;
+    const contract=MONSTER_TARGET_SOURCE_CONTRACTS.find(x=>
+     x.matches(id,a,b,before,after));
+    const invalid=Boolean(b)&&(
+     a&&validTargetSource(id,a)&&!validTargetSource(id,b)||
+     !a&&!validTargetSource(id,b));
+    const changedFields=a&&b?[...new Set([...Object.keys(a),...Object.keys(b)])]
+     .filter(field=>!same(a[field],b[field])):[];
+    const displayOnly=new Set(['name','nameEn','desc','descEn','iconId']);
+    const unsupported=changedFields.some(field=>
+     !displayOnly.has(field)&&!TARGET_MONSTER_FIELDS.includes(field))||
+     changedFields.includes('resists')&&Boolean(a&&b)&&
+     [a,b].some(row=>!validObject(row.resists)||
+      !contractSame(Object.keys(row.resists).sort(),
+       Object.keys(root.PandoraOSTargetDamage?.target?.resists||{}).sort()));
+    const kind=contract?'verified':
+     invalid||unsupported?'needsReview':'sourceOnly';
+    add(kind,'monsters:'+id,String(b?.name||a?.name||id).slice(0,90)+
+     (contract?' · данные цели проверены существующей расчётной моделью':
+      invalid?' · нельзя рассчитать игровую цель':
+      unsupported?' · изменены свойства без проверенной игровой формулы':
+      ' · справочные сведения, без подтверждения боевой формулы'),
+     contract?.id);
+   }
+  }else if(['drops','maps'].includes(dataset)){
    // Source encyclopedia data, not proven damage/HP calculations. Report
    // every selected record, not one opaque dataset status.
    for(const id of new Set([...Object.keys(oldData||{}),...Object.keys(newData||{})])){
@@ -2232,5 +2293,119 @@ function replaySkills(before,after){
   errors:problems.slice(0,5)};
 }
 
-root.PandoraCatalogSafety=Object.freeze({MAX_LEVEL,EXPECTED,check,project,compare,compatibility,sourceGraphIntegrity,replaySkills,replayEquipmentEffects,sourceContractRegistry:SOURCE_CONTRACT_REGISTRY});
+// An OS monster can be source-only in the Encyclopedia while the Hero Book
+// ALSO uses its current HP, level and resistances for target-hit projections.
+// A structurally valid D1 snapshot must never silently remove an old selectable
+// target or a previously source-gated hit. This is not a measurement of live
+// combat damage or a certification of unmodeled monster mechanics.
+function replayMonsterTargets(before,after){
+ const oldMonsters=before?.monsters,newMonsters=after?.monsters;
+ const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+ const changed=[...new Set([...Object.keys(oldMonsters||{}),
+  ...Object.keys(newMonsters||{})])].filter(id=>
+  !same(oldMonsters?.[id],newMonsters?.[id]));
+ const gapChanged=!same(before?.tables?.lvModify,after?.tables?.lvModify);
+ const empty={ok:true,changedMonsters:changed.length,gapChanged,
+  inspected:0,scenarios:0,lost:0,lostEntries:[],samples:[],errors:[]};
+ if(!changed.length&&!gapChanged)return empty;
+ const engine=root.PandoraOSTargetDamage;
+ if(!engine||!['availableMonsterTargets','monsterLevelModifier',
+  'supportedSkillHits'].every(key=>typeof engine[key]==='function'))
+  return {...empty,ok:false,errors:[
+   'Не подключена проверенная модель расчёта урона по игровым целям.']};
+ if(!validObject(oldMonsters)||!validObject(newMonsters))
+  return {...empty,ok:false,errors:['Нет полного справочника игровых целей.']};
+ const prevTargets=engine.availableMonsterTargets({monsters:oldMonsters});
+ const nextTargets=engine.availableMonsterTargets({monsters:newMonsters});
+ if(!Array.isArray(prevTargets)||!Array.isArray(nextTargets))
+  return {...empty,ok:false,errors:[
+   'Не удалось проверить доступность игровых целей.']};
+ const oldIds=new Set(prevTargets.map(row=>String(row.id)));
+ const newIds=new Set(nextTargets.map(row=>String(row.id)));
+ const lost=[],errors=[];
+ let inspected=0,scenarios=0;
+ const add=(id,module,detail)=>{
+  lost.push({id:String(id),module,detail,
+   name:String(newMonsters?.[id]?.name||oldMonsters?.[id]?.name||id).slice(0,85)});
+ };
+ // Check EVERY changed target, not only an arbitrary handful of heroes.
+ // Deliberate removal is a separate catalog selection; an updated existing
+ // record may not silently vanish from the Book's target picker.
+ for(const id of changed){
+  if(!Object.hasOwn(newMonsters,id))continue;
+  inspected++;
+  if(!newIds.has(id)&&(oldIds.has(id)||!Object.hasOwn(oldMonsters,id)))
+   add(id,'target-source-shape','Неполные ОЗ, уровень или сопротивления');
+ }
+ // Current OS level-gap coefficients affect every target, even when none
+ // of its monster records changed. Exercise the real engine over ALL old
+ // selectable targets and all supported planner checkpoints (1..55).
+ const evaluated=gapChanged?[...oldIds]:changed.filter(id=>oldIds.has(id));
+ for(const id of evaluated){
+  if(!newIds.has(id))continue;
+  for(const level of [1,15,30,45,55]){
+   try{
+    const oldModifier=engine.monsterLevelModifier(
+     level,oldMonsters[id],before?.tables?.lvModify);
+    const newModifier=engine.monsterLevelModifier(
+     level,newMonsters[id],after?.tables?.lvModify);
+    scenarios+=2;
+    if(oldModifier&&!newModifier)
+     add(id,'target-level-gap','На '+level+'-м уровне пропал расчёт разницы уровней');
+   }catch(error){
+    errors.push('Ошибка проверки уровня '+level+' и цели '+id+': '+
+     String(error?.message||error).slice(0,100));
+   }
+  }
+ }
+ // Representative actual attack-model replay complements the exhaustive
+ // target-shape and level-gap checks. The game files supply all coefficients;
+ // historical Legacy data are never used as current server numbers.
+ const witnesses=new Set();
+ for(const id of [22104,11104,11101,600])
+  if(oldIds.has(String(id))&&newIds.has(String(id)))witnesses.add(String(id));
+ const relevant=changed.filter(id=>oldIds.has(id)&&newIds.has(id));
+ for(const id of [...relevant.slice(0,8),
+  ...relevant.slice(-4)])witnesses.add(id);
+ const targetOptions=(snapshot,id,job)=>{
+  const klass=snapshot?.classes?.[job];
+  return {skillCatalog:snapshot?.skills,classes:snapshot?.classes,
+   monsters:snapshot?.monsters,tables:snapshot?.tables,
+   itemForth:snapshot?.itemForth||{},unison:snapshot?.unison||{},
+   jobKey:job,level:45,targetMonsterId:Number(id),
+   branchCaps:klass?.branchCaps,
+   masteries:job==='DISTURBANCE'?{trap:41}:
+    {element:70,exorcism:20,charm:20,darkness:25},
+   stats:job==='DISTURBANCE'?{dex:70,int:20}:
+    {str:55,dex:65,int:80,spi:50},
+   equipment:[],modifiers:{combat:{
+    spellDamageEquipmentRate:0,priestSong:{}},priestApplied:{}}};
+ };
+ for(const id of witnesses){
+  for(const job of ['DISTURBANCE','WARLOCK']){
+   try{
+    const oldHits=engine.supportedSkillHits(targetOptions(before,id,job));
+    const newHits=engine.supportedSkillHits(targetOptions(after,id,job));
+    scenarios+=2;
+    if(!Array.isArray(oldHits)||!Array.isArray(newHits)){
+     errors.push('Нет результата расчёта цели '+id+' / '+job);
+     continue;
+    }
+    const nextHitIds=new Set(newHits.map(row=>String(row.skillId)));
+    for(const row of oldHits)
+     if(Number.isSafeInteger(row?.skillId)&&!nextHitIds.has(String(row.skillId)))
+      add(id,'target-skill-hit','Исчез расчёт умения '+row.skillId+' / '+job);
+   }catch(error){
+    errors.push('Ошибка контрольного удара по цели '+id+': '+
+     String(error?.message||error).slice(0,100));
+   }
+  }
+ }
+ return {ok:lost.length===0&&errors.length===0,
+  changedMonsters:changed.length,gapChanged,inspected,scenarios,
+  lost:lost.length,lostEntries:lost,
+  samples:lost.slice(0,6),errors:errors.slice(0,6)};
+}
+
+root.PandoraCatalogSafety=Object.freeze({MAX_LEVEL,EXPECTED,check,project,compare,compatibility,sourceGraphIntegrity,replaySkills,replayEquipmentEffects,replayMonsterTargets,sourceContractRegistry:SOURCE_CONTRACT_REGISTRY});
 })(typeof window==='undefined'?globalThis:window);
