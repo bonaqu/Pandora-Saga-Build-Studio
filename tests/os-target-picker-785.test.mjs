@@ -69,16 +69,12 @@ test('missing, malformed or unverified target never yields a fake Ogre result',(
  assert.equal(choices.some(x=>x.id===22104),true);
  assert.deepEqual(C.availableMonsterTargets({monsters:null}),[]);
 });
-test('book choice is a focused native select; monster ID comes from current D1, not hardcoded Ogre',()=>{
+test('Hero Book never shows target picker or requests monster data just for Skill Effects',()=>{
  const book=read('pandora-studio-hero-book.js');
  const app=read('pandora-studio-app.js');
- assert.match(book,/data-book-setting':'damageTarget'/);
- assert.match(book,/onTargetMonster\(Number\(event\.target\.value\)\)/);
- assert.match(book,/result\.monsterId!==targetMonsterId/);
- assert.match(app,/targetMonsterId:activeDamageTargetId/);
- assert.match(app,/const activeDamageTargetId=selectedDamageTargetId/);
- assert.match(book,/if\(!targetAvailable\)fragment\.append/);
- assert.match(app,/currentDamageTargetChoices\(ogreMonsters\)/);
- assert.match(app,/selectedDamageTargetId=id/);
+ assert.doesNotMatch(book,/stageBookDamageTarget|damageTargetSearchQuery|targetMonsterChoices|damageAgainstEnemy/);
+ assert.doesNotMatch(app,/currentDamageTargetChoices|selectedDamageTargetId|ensureOgreSource|targetSkillDamages/);
+ assert.match(book,/scalingSkillPreview\?\.\(/);
+ assert.match(book,/function skillEffectsPage\(/);
  assert.doesNotMatch(book,/stage-material-actions|function materialSkillResults\(/);
 });
