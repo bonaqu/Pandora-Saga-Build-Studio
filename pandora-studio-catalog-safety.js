@@ -1730,7 +1730,8 @@ function replaySkills(before,after){
   }
  }
  if(!changed.size&&!changedItems.size)return {ok:true,changedSkills:0,scenarios:0,
-  previouslyModeled:0,retained:0,lost:0,unmodeled:0,samples:[],errors:[]};
+  previouslyModeled:0,retained:0,lost:0,unmodeled:0,
+  lostEntries:[],lostByModule:{},lostSkillIds:[],samples:[],errors:[]};
  const calc=root.PandoraOSCalculator;
  if(!calc||!['base','scalingSkillPreview','healingSpellsPreview','periodicRecoveryPreview',
   'resistanceSkillChoices','alliedRecipientPreviews','priestCastPreviews',
@@ -1743,6 +1744,7 @@ function replaySkills(before,after){
   .every(name=>typeof calc[name]==='function'))
   return {ok:false,changedSkills:changed.size,scenarios:0,
    previouslyModeled:0,retained:0,lost:0,unmodeled:changed.size,samples:[],
+   lostEntries:[],lostByModule:{},lostSkillIds:[],
    errors:['Не подключены проверенные расчётные модели навыков.']};
  const scenarios=[{level:15,allocation:{},},{level:45,allocation:
   {vit:6,str:12,agi:6,dex:12,spi:10,int:12}},
@@ -2005,6 +2007,7 @@ function replaySkills(before,after){
  catch(error){
   return {ok:false,changedSkills:changed.size,scenarios:0,
    previouslyModeled:0,retained:0,lost:0,unmodeled:changed.size,samples:[],
+   lostEntries:[],lostByModule:{},lostSkillIds:[],
    errors:['Ошибка контрольного пересчёта: '+String(error?.message||error).slice(0,160)]};
  }
  const lost=[],retained=[];
