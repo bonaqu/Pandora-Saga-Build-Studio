@@ -4917,9 +4917,15 @@ function sourceVerifiedEffectQuantityMatches(record,proof,ep,dir){
   !Number.isSafeInteger(vector[3])||vector[3]<1||
   !Array.isArray(actual[index])||!Array.isArray(actual[index][3])||
   actual[index][3].length!==4)return false;
- if(JSON.stringify(current)===JSON.stringify(proof))return true;
- const normalized={...current,funcs:actual.map((row,i)=>i===index?
-  [row[0],row[1],row[2],[...row[3].slice(0,3),rows[index][3][3]]]:row)};
+ // Only descriptive cost/cooldown metadata and the explicit resource-count
+ // slot may diverge from a pinned source-only inspector signature. Neither
+ // change proves actual hit count, damage, resources in inventory or EP logic.
+ if(!Number.isFinite(current.mana)||current.mana<0||current.mana>10000||
+  !Number.isFinite(current.cooldown)||current.cooldown<0||
+  current.cooldown>3600)return false;
+ const normalized={...current,mana:proof.mana,cooldown:proof.cooldown,
+  funcs:actual.map((row,i)=>i===index?
+   [row[0],row[1],row[2],[...row[3].slice(0,3),rows[index][3][3]]]:row)};
  return JSON.stringify(normalized)===JSON.stringify(proof);
 }
 function sourceVerifiedAmmoQuantityMatches(record,proof){
@@ -4940,15 +4946,15 @@ function rangedAmmoPreview({skillCatalog=null,jobKey=null,level=1,
     proof.linked.every(entry=>{
      const linked=skillCatalog[String(entry.id)];
      return linked?.id===entry.id&&
-      JSON.stringify(sourceVerifiedSkillSignature(linked))===JSON.stringify(entry.signature);
+      qualitativeSkillMetadataMatches(linked,entry.signature);
     }):
     child?.id===proof.childId&&
-     JSON.stringify(sourceVerifiedSkillSignature(child))===JSON.stringify(proof.child);
+     qualitativeSkillMetadataMatches(child,proof.child);
    const exact=source?.id===proof.id&&
     sourceVerifiedAmmoQuantityMatches(source,proof.root)&&
     childrenExact&&
     (!proof.parentId||(parent?.id===proof.parentId&&
-     JSON.stringify(sourceVerifiedSkillSignature(parent))===JSON.stringify(proof.parent)));
+     qualitativeSkillMetadataMatches(parent,proof.parent)));
    if(!exact){out.rejected.push(proof.id);continue;}
    if(proof.root.reqs.some(([branch,amount])=>
     !Number.isSafeInteger(branchCaps?.[branch])||branchCaps[branch]<amount))continue;

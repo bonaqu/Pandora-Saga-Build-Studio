@@ -1,3 +1,9 @@
+## 0.844.0 · Источниковые умения с боеприпасами и материалами (#615)
+- rangedAmmoPreview: sourceVerifiedAmmoQuantityMatches для EP_CONSUME_AMMO допускает только метаданные mana/cooldown + уже существующий позитивный FV2[3] count. Linked parent/child/extra actions проходят качественный source-only matcher; EP/FV/ID/reqs/caps/weapon остаются строгими.
+- sourceVerifiedEffectQuantityMatches поддерживает тот же переход для EP_CONSUME_ITEM в supportEffectPreview, но не рассчитывает расход инвентаря или шанс попадания.
+- При массовой правке маны 571 навыка снижаются ложные утраты 173 сценариев, однако независимый replaySkills продолжает блокировать 144 других. tests/catalog-ammo-support-metadata-844.test.mjs.
+- Node+Chromium exact SHA, Pages/Worker/D1 only read-only after merge. CAS/auth/builds/D1 не менять.
+
 ## 0.843.0 · Полная диагностика утраты моделей (#615)
 - replaySkills возвращает complete lostEntries, lostByModule и lostSkillIds (все причины), при этом UI показывает первые 5 примеров и компактную группировку до 3 типов через replaySourceLabel.
 - Не изменять требования финального pre-D1 prepare: любое lost>0 или errors всё так же бросает ошибку и блокирует CAS/D1. Списки являются read-only данными аудита.
