@@ -5101,11 +5101,11 @@ function specializedSkillPreview({skillCatalog=null,jobKey=null,level=1,
    const linked=skillCatalog[String(entry.id)];
    if(linked?.id!==entry.id)return false;
    const signed=sourceVerifiedSkillSignature(linked);
-   const historical=JSON.stringify(signed)===JSON.stringify(entry.signature);
+   const historical=qualitativeSkillMetadataMatches(linked,entry.signature);
    // Only the current D1 Silent Storm child changes mana-drain FV1
    // and adds a knockback effect. Every linked field is still gated.
    const latest=entry.id===440009002&&
-    JSON.stringify(signed)===JSON.stringify({...entry.signature,funcs:[
+    qualitativeSkillMetadataMatches(linked,{...entry.signature,funcs:[
      ['EP_LOSSMANA_NOWMANA','TARGET',[8,0,8,2],[0,0,0,0]],
      ['EP_CAUSE_SILENCE','TARGET',[0,0,0,8],[0,0,20,35]],
      ['EP_DESTINED_KNOCKBACK','TARGET',[0,0,0,-100],[0,0,0,0]]
@@ -5116,26 +5116,23 @@ function specializedSkillPreview({skillCatalog=null,jobKey=null,level=1,
    sourceVerifiedSkillSignature(skillCatalog['440009002'])?.funcs?.length===3&&
    linkedExact;
   const signature=sourceVerifiedSkillSignature(source);
-  const oldProof=JSON.stringify(signature)===JSON.stringify(proof.root);
+  const oldProof=qualitativeSkillMetadataMatches(source,proof.root);
   // Current D1 Plague only changes BOLT→ENEMY and root AoE.
   // Keep its exact linked curse/disease child independent.
   const newPlague=proof.id===440011001&&
-   signature?.skillType==='ENEMY'&&
-   JSON.stringify(signature.aoe)==='[0,0]'&&
-   JSON.stringify({...signature,skillType:proof.root.skillType,aoe:proof.root.aoe})===
-    JSON.stringify(proof.root);
+   qualitativeSkillMetadataMatches(source,
+    {...proof.root,skillType:'ENEMY',aoe:[0,0]});
   // Only Psychic Blade's verified 50-level variant changes its action
   // timer in D1: cast 3.5 -> 2, cooldown 10 -> 12. Preserve all
   // other fields and linked child/parent signatures as exact gates.
   const newBlade=proof.id===420005002&&
-   signature?.cast===2&&signature.cooldown===12&&
-   JSON.stringify({...signature,cast:proof.root.cast,cooldown:proof.root.cooldown})===
-    JSON.stringify(proof.root);
+   qualitativeSkillMetadataMatches(source,
+    {...proof.root,cast:2,cooldown:12});
   const valid=source?.id===proof.id&&linkedExact&&(oldProof||newBlade||newPlague)&&
    (!proof.parentId||(parent?.id===proof.parentId&&
-    JSON.stringify(sourceVerifiedSkillSignature(parent))===JSON.stringify(proof.parent)))&&
+    qualitativeSkillMetadataMatches(parent,proof.parent)))&&
    (!proof.childId||(child?.id===proof.childId&&
-    JSON.stringify(sourceVerifiedSkillSignature(child))===JSON.stringify(proof.child)));
+    qualitativeSkillMetadataMatches(child,proof.child)));
   if(!valid){out.rejected.push(proof.id);continue;}
   if(proof.root.reqs.some(([branch,amount])=>
    !Number.isSafeInteger(branchCaps?.[branch])||branchCaps[branch]<amount))continue;
@@ -5232,13 +5229,13 @@ function supportEffectPreview({skillCatalog=null,jobKey=null,level=1,
    const linkedExact=!proof.linked||proof.linked.every(entry=>{
     const linked=skillCatalog[String(entry.id)];
     return linked?.id===entry.id&&
-     JSON.stringify(sourceVerifiedSkillSignature(linked))===JSON.stringify(entry.signature);
+     qualitativeSkillMetadataMatches(linked,entry.signature);
    });
    const exact=source?.id===proof.id&&
-    JSON.stringify(sourceVerifiedSkillSignature(source))===JSON.stringify(proof.root)&&
+    qualitativeSkillMetadataMatches(source,proof.root)&&
     linkedExact&&
     (!proof.parentId||(parent?.id===proof.parentId&&
-     JSON.stringify(sourceVerifiedSkillSignature(parent))===JSON.stringify(proof.parent)));
+     qualitativeSkillMetadataMatches(parent,proof.parent)));
    if(!exact){out.rejected.push(proof.id);continue;}
    if(proof.root.reqs.some(([branch,amount])=>
     !Number.isSafeInteger(branchCaps?.[branch])||branchCaps[branch]<amount))continue;

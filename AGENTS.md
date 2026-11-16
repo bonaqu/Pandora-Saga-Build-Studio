@@ -1,3 +1,8 @@
+## 0.845.0 · Справочные защитные, магические и ситуационные источники (#615)
+- specializedSkillPreview и situationalSkillPreview допускают только mana/cooldown (bounded; qualitativeSkillMetadataMatches) как source-only данные, сохраняя полный EP/FV, все связанные записи и все исходные исключения Silent Storm/Plague/Psychic Blade. Не изменять фактический урон/шанс/числовое действие.
+- Массовый 571-skill replay снижает false loss 144→3, но три источниковые песни пока всё ещё блокируют D1; не обходить pre-D1 replay.
+- tests/catalog-specialized-situational-metadata-845.test.mjs; node+Chromium exact SHA и read-only Pages/Worker/D1. CAS/auth/builds и production JSON неизменны.
+
 ## 0.844.0 · Источниковые умения с боеприпасами и материалами (#615)
 - rangedAmmoPreview: sourceVerifiedAmmoQuantityMatches для EP_CONSUME_AMMO допускает только метаданные mana/cooldown + уже существующий позитивный FV2[3] count. Linked parent/child/extra actions проходят качественный source-only matcher; EP/FV/ID/reqs/caps/weapon остаются строгими.
 - sourceVerifiedEffectQuantityMatches поддерживает тот же переход для EP_CONSUME_ITEM в supportEffectPreview, но не рассчитывает расход инвентаря или шанс попадания.
