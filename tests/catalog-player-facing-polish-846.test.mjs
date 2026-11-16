@@ -27,9 +27,11 @@ test('Eagle Mantle and Ancient King Box have exact game icon IDs and safe non-mi
   const item=named.find(row=>row.name===name);
   assert.ok(item);
   assert.equal(item.icon,stem);
-  assert.equal(manifest.icons.items[stem],undefined);
-  assert.ok(manifest.missing.some(x=>x.kind==='items'&&x.stem===stem&&
-   x.error==='Not attempted'));
+  const mirrored=manifest.icons.items[stem];
+  const pending=manifest.missing.find(row=>row.kind==='items'&&row.stem===stem);
+  assert.ok(mirrored==='assets/items/icons/'+stem+'.webp'||
+   pending?.error==='Not attempted'||pending?.error==='HTTP 404',
+   'The exact original must be mirrored or have an explicit missing status');
  }
  assert.match(app,/function unmirroredArtwork\(kind,stem\)/);
  assert.match(app,/missing\?\.error==='HTTP 404'/);

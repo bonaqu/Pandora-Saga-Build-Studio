@@ -13,6 +13,7 @@ export function permittedFiles(changed){
  return Array.isArray(changed)&&changed.length>0&&changed.length<=600&&
   new Set(changed).size===changed.length&&changed.every(path=>
    path==='assets/os-icon-manifest.json'||
+   path==='assets/wiki/honor-victories.jpg'||
    /^assets\/(items|skills|souls)\/icons\/[A-Za-z0-9_-]{1,120}\.webp$/.test(path));
 }
 export function eligibleMirrorPR({pr,files,sourceSha,currentBase,checks}={}){
@@ -89,7 +90,7 @@ async function main(){
     call('/pulls/'+pr.number+'/files?per_page=100'),
     call('/git/ref/heads/'+BASE)
    ]);
-   if(prFiles.length>100){
+   if(prFiles.length>=100){
     // GitHub file list is paginated: a partial authorization is unsafe.
     throw Error('Icon PR exceeds inspected file page');
    }

@@ -37,7 +37,9 @@ jobs:
         with:
           node-version: '22'
       - name: Fetch bounded current-source original WebP identities
-        run: node scripts/mirror-os-icons.mjs --limit=100
+        run: node scripts/mirror-os-icons.mjs --limit=90
+      - name: Recover exact PvP event screenshot where available
+        run: node scripts/mirror-honor-victories.mjs
       - name: Validate all local image identities and WebP bytes
         run: npm run assets:audit
       - name: Create, exact-test and merge an original-only asset PR

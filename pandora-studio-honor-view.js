@@ -420,13 +420,18 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  const officialScreenshot='https://pandorasaga-os.com/uploads/images/f4be126de5ed488981aeeb2298255095.jpg';
  const eventImage=make('img',{
   class:'wiki-honor-pvp-illustration',
-  src:officialScreenshot,
+  src:'assets/wiki/honor-victories.jpg',
   alt:tr('Окно постоянного события «Победы в PvP»',
          'Permanent PvP Victories event window'),
   loading:'lazy',decoding:'async'});
  // A gameplay illustration is not a navigation action. Never expose the
  // image host, external game server, or provenance in the player-facing Wiki.
- eventImage.addEventListener('error',()=>eventImage.remove());
+ eventImage.addEventListener('error',()=>{
+  if(!eventImage.dataset.originalTried){
+   eventImage.dataset.originalTried='1';
+   eventImage.src=officialScreenshot;
+  }else eventImage.remove();
+ });
  victories.append(eventImage);
  const event=article.pvpVictories;
  if(event?.daily&&event?.weekly&&event?.hunts){
