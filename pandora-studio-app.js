@@ -10329,7 +10329,7 @@ window.addEventListener('hashchange',()=>{
   }
  }
 });
-fetch('./assets/os-icon-manifest.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null).then(data=>{
+fetch('./assets/os-icon-manifest.json',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(data=>{
  const label=$('iconStatus');
  if(data?.icons&&data.count&&Number.isInteger(data.count.present)&&Number.isInteger(data.count.expected)&&data.count.present<=data.count.expected){
   if(data.count.present>0){

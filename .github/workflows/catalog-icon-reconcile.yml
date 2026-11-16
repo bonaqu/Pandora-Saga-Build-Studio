@@ -1,0 +1,46 @@
+name: Recover original game icons after a verified catalog release
+
+on:
+  # No cron and no extra admin click. A source release that passed full live
+  # verification initiates one bounded original-only mirror attempt.
+  workflow_run:
+    workflows: [Live Pages and Worker readiness (on release or manual)]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+concurrency:
+  group: catalog-original-icons-main
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'bonaqu_projects' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout trusted published source
+        uses: actions/checkout@v5
+        with:
+          ref: bonaqu_projects
+          fetch-depth: 1
+      - name: Use Node 22
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Fetch bounded current-source original WebP identities
+        run: node scripts/mirror-os-icons.mjs --limit=100
+      - name: Validate all local image identities and WebP bytes
+        run: npm run assets:audit
+      - name: Create, exact-test and merge an original-only asset PR
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/catalog-icon-reconcile-ci.mjs
