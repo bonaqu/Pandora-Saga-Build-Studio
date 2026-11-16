@@ -25,15 +25,18 @@ test('source icon delta is deterministic and does not mutate the catalog',()=>{
 });
 
 test('new catalog identities are not silently assigned images from similar names',()=>{
- const report=auditCatalogIconDelta({historical:old,candidate,manifest});
+ const report=auditPinnedCandidateIcons();
  assert.equal(report.added,20);
- assert.equal(report.unverified,20);
+ assert.equal(report.verified,19,'Nineteen actual source textures were recovered');
+ assert.equal(report.unverified,1,'One source URL confirmed HTTP 404');
  for(const row of report.entries){
-  assert.equal(row.verification,'unverified');
-  assert.equal(row.previouslyReported404,false,
-   'Unprobed icons must not be labeled HTTP 404');
+  const exact=manifest.icons?.[row.kind]?.[row.stem];
+  assert.equal(row.verification,exact?'verified':'unverified');
+  if(exact)assert.equal(exact,row.path,'Never borrow a similarly named file');
+  else assert.ok(manifest.missing.some(x=>x.kind===row.kind&&
+   x.stem===row.stem&&x.error==='HTTP 404'));
  }
- assert.equal(report.unverified,report.added);
+ assert.equal(report.verified+report.unverified,report.added);
 });
 
 test('even an injected manifest entry is not proof of local WebP bytes',()=>{

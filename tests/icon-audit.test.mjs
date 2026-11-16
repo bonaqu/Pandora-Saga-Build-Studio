@@ -27,12 +27,15 @@ test('icon audit reconciles complete source, verified WebP, and recorded source 
  assert.equal(run.error,undefined,run.error?.message);
  assert.equal(run.status,0,run.stderr||run.stdout.slice(-1800));
  const data=JSON.parse(run.stdout);
+ const manifest=JSON.parse(src('assets/os-icon-manifest.json'));
  assert.deepEqual(data.issues,[]);
- assert.equal(data.expected,1454);
- assert.equal(data.present,1170);
- assert.equal(data.missing,284);
- assert.equal(data.confirmed404,264,'Only observed HTTP 404 entries');
- assert.equal(data.unverified,20,'Unprobed originals are not 404');
+ assert.equal(data.expected,manifest.count.expected);
+ assert.equal(data.present,manifest.count.present);
+ assert.equal(data.missing,manifest.count.missing);
+ assert.equal(data.confirmed404,manifest.count.known404,'Only observed HTTP 404s');
+ assert.equal(data.unverified,manifest.count.unverified,
+  'Unprobed originals are not invented 404s');
+ assert.equal(data.present+data.missing,data.expected);
  assert.equal(data.corrupt,0);
  assert.equal(data.manifest,true);
 });

@@ -15,8 +15,13 @@ test('archived OS icons have complete, consistent source coverage metadata',()=>
  assert.ok(count.present>=1100,'original icon archive unexpectedly lost');
  assert.equal(new Set(paths).size,paths.length,'every asset path is unique');
  assert.equal(missing.length,count.missing,'every unavailable source has an explicit record');
- assert.equal(count.known404,264,'Only observed source 404 evidence');
- assert.equal(count.unverified,20,'New paths have no HTTP verdict');
+ assert.equal(count.known404,missing.filter(x=>x.error==='HTTP 404').length,
+  'Only observed original HTTP 404 evidence');
+ assert.equal(count.unverified,missing.filter(x=>x.error==='Not attempted').length,
+  'Unprobed source originals must remain distinguishable');
+ assert.ok(count.present>=1189,'Previously verified originals cannot disappear');
+ assert.equal(icons.items.I_018017_00,'assets/items/icons/I_018017_00.webp');
+ assert.equal(icons.items.I_051036_00,'assets/items/icons/I_051036_00.webp');
  const failures=new Set();
  for(const row of missing){
   const key=row.kind+'/'+row.stem;
