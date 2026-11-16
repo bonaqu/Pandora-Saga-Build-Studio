@@ -1,3 +1,10 @@
+## 0.837.0 · Подписанные лимиты мастерства и требования навыков (#615)
+- Если изменение class.branchCaps пересекает порог reqs любого классового навыка, оно остаётся needsReview, даже если старая/новая арифметика зелёного мастерства работает. Новая доступность требует проверки механики.
+- class.branch-limits: old/new проверка изменения только существующих 27 веток через PandoraSkillProgression branchPotential/trained/setPotential на всех профессиях. Не смешивать с HP/MP, parent, новыми ветками и не подтверждать неизвестные условия.
+- sourceGraphIntegrity проверяет reqs.branch, reqs.amount, циклы prereq и форму class.branchCaps до D1. Требования 100/102 есть в исходной игре; не приравнивать их к пределу зелёного мастерства 90.
+- table.server-level-cap/table.server-experience-cap sourceOnly только для корректных целочисленных метаданных; не менять независимый планировщик до 55 ур.
+- tests/catalog-branch-and-requirements-837.test.mjs, Node+Chromium exact SHA, Pages+Worker+D1 read-only. Не писать production D1, не менять auth/CAS/builds.
+
 ## 0.836.0 · Исходный опыт отдельно от модельной прокачки (#615)
 - table.experience-requirement — sourceOnly для неотрицательного конечного tables.exp[1..99].expReq, включая дробный архивный опыт уровней 60–69 при неизменных полях ability/skill/skillLimit и неизменной схеме.
 - Нельзя утверждать, что source OS exp таблицы определяют очки актуального планировщика. Изменение ability/skill/skillLimit — needsReview. tests/catalog-experience-source-836.test.mjs.

@@ -917,10 +917,84 @@ const EXPERIENCE_SOURCE_CONTRACTS=Object.freeze([
   dataset:'tables',matches:sourceExperienceRequirements})
 ]);
 
+
+// Branch limits are directly consumed by the planner's green and invested
+// mastery model. The signed proof rejects new branch names and mixed changes.
+function verifiedBranchLimit(id,a,b,before,after){
+ const P=root.PandoraSkillProgression;
+ if(!P?.branchPotential||!P?.trained||!P?.setPotential||
+  !a||!b||String(a.id)!==String(id)||String(b.id)!==String(id)||
+  !contractKeys(a.branchCaps,b.branchCaps))return false;
+ const changed=[...new Set([...Object.keys(a),...Object.keys(b)])]
+  .filter(k=>!contractSame(a[k],b[k]));
+ if(!changed.includes('branchCaps')||
+  changed.some(k=>!['branchCaps','name','nameEn','desc','descEn'].includes(k)))
+  return false;
+ // A cap crossing a skill requirement changes availability. Mastery maths
+ // alone cannot prove effects of a newly unlocked (or disabled) skill.
+ const previousSkills=before?.skills,candidateSkills=after?.skills;
+ if(!contractKeys(previousSkills,candidateSkills))return false;
+ for(const [skillId,ability] of Object.entries(previousSkills)){
+  const updated=candidateSkills[skillId];
+  if(!ability?.classes?.[id]&&!updated?.classes?.[id])continue;
+  if(!updated||!contractSame(ability?.reqs,updated?.reqs)||
+   !contractSame(ability?.classes?.[id],updated?.classes?.[id])||
+   !Array.isArray(ability.reqs))return false;
+  const eligible=caps=>ability.reqs.every(req=>
+   Number.isSafeInteger(caps?.[req.branch])&&caps[req.branch]>=req.amount);
+  if(eligible(a.branchCaps)!==eligible(b.branchCaps))return false;
+ }
+ const names=Object.keys(before?.classes?.WARRIOR?.branchCaps||{});
+ if(names.length!==27||
+  !contractSame(Object.keys(a.branchCaps).sort(),names.slice().sort()))
+  return false;
+ for(const data of [before,after]){
+  const klass=data?.classes?.[id],caps=klass?.branchCaps;
+  const innate=data?.tables?.jobInit?.[klass?.baseClass]?.branches;
+  if(!innate||!contractKeys(a.branchCaps,caps))return false;
+  for(const name of names){
+   const limit=caps[name],base=innate[name]??0;
+   if(!Number.isSafeInteger(limit)||limit<0||limit>P.TRACK_MAX||
+    !Number.isSafeInteger(base)||base<0||base>limit||
+    P.classLimit(name,caps)!==limit)return false;
+   for(const invested of [0,1,10,25,55,90]){
+    const state={points:{[name]:invested},masteryAuto:true};
+    const expected=Math.min(limit,base+invested);
+    if(P.branchPotential(state,name,innate,caps)!==expected||
+     P.trained(state,name,innate,caps)!==expected)return false;
+   }
+   const current={points:{[name]:0},masteryAuto:false,masteryFormat:2,
+    mastery:{[name]:0}};
+   if(!P.setPotential(current,name,0,innate,caps))return false;
+   const invalid={points:{[name]:0},masteryAuto:false,masteryFormat:2,
+    mastery:{[name]:0}};
+   if(P.setPotential(invalid,name,limit-base+1,innate,caps))return false;
+  }
+ }
+ return true;
+}
+// Source-only server metadata: neither value changes the independently
+// configured level/skill budget. Unknown types and invalid ranges need review.
+function sourceServerNumber(field,before,after){
+ const a=before?.tables?.[field],b=after?.tables?.[field];
+ if(!Number.isSafeInteger(a)||!Number.isSafeInteger(b)||a===b)return false;
+ if(field==='levelCap')return a>=1&&a<=99&&b>=1&&b<=99;
+ if(field==='expCap')return a>=0&&b>=0;
+ return false;
+}
+const ADDITIONAL_SOURCE_CONTRACTS=Object.freeze([
+ Object.freeze({id:'class.branch-limits',kind:'verified',
+  dataset:'classes',matches:verifiedBranchLimit}),
+ Object.freeze({id:'table.server-level-cap',kind:'sourceOnly',
+  dataset:'tables',matches:sourceServerNumber}),
+ Object.freeze({id:'table.server-experience-cap',kind:'sourceOnly',
+  dataset:'tables',matches:sourceServerNumber})
+]);
 // Immutable public contract census: code may evolve without a new hardcoded
 // list of skill IDs or guessing what unknown game effects do.
 const SOURCE_CONTRACT_REGISTRY=Object.freeze([
  ...CHARACTER_SOURCE_CONTRACTS.map(({id,kind,dataset})=>Object.freeze({id,kind,dataset})),
+ ...ADDITIONAL_SOURCE_CONTRACTS.map(({id,kind,dataset})=>Object.freeze({id,kind,dataset})),
  ...REFINEMENT_SOURCE_CONTRACTS.map(({id,kind,dataset})=>Object.freeze({id,kind,dataset})),
  ...EXPERIENCE_SOURCE_CONTRACTS.map(({id,kind,dataset})=>Object.freeze({id,kind,dataset})),
  ...SKILL_SOURCE_CONTRACTS.map(({id,kind})=>Object.freeze({id,kind,dataset:'skills'})),
@@ -967,12 +1041,15 @@ function compatibility(before,after){
     const changed=[...new Set([...Object.keys(old),...Object.keys(now)])]
      .filter(field=>!same(old[field],now[field]));
     const textual=['name','nameEn','desc','descEn'];
-    const contract=CHARACTER_SOURCE_CONTRACTS[0];
+    const contract=[...CHARACTER_SOURCE_CONTRACTS,
+     ...ADDITIONAL_SOURCE_CONTRACTS.filter(x=>x.dataset==='classes')]
+     .find(x=>x.matches(id,old,now,before,after));
     if(changed.every(k=>textual.includes(k)))
      add('sourceOnly','class:'+id,name+' · изменён текст');
-    else if(contract.matches(id,old,now,before,after))
-     add('verified','class:'+id,
-      name+' · расчёт контрольных героев проверен',contract.id);
+    else if(contract)add(contract.kind,'class:'+id,
+     name+(contract.id==='class.branch-limits'?
+      ' · ограничения мастерства проверены расчётной моделью':
+      ' · расчёт контрольных героев проверен'),contract.id);
     else add('needsReview','class:'+id,
      name+' · неподтверждённые свойства или коэффициенты профессии');
    }
@@ -983,21 +1060,22 @@ function compatibility(before,after){
    for(const field of fields){
     if(same(oldData?.[field],newData?.[field]))continue;
     const contract=[...CHARACTER_SOURCE_CONTRACTS.slice(1),
-     ...REFINEMENT_SOURCE_CONTRACTS,...EXPERIENCE_SOURCE_CONTRACTS]
+     ...REFINEMENT_SOURCE_CONTRACTS,...EXPERIENCE_SOURCE_CONTRACTS,
+     ...ADDITIONAL_SOURCE_CONTRACTS.filter(x=>x.dataset==='tables')]
      .find(entry=>
      (field==='raceInit'&&entry.id==='table.race-origin'||
       field==='jobInit'&&entry.id==='table.job-origin'||
       field==='abilityPoint'&&entry.id==='table.ability-source'||
       field==='weaponPlus'&&entry.id==='table.weapon-refinement'||
       field==='magicPlus'&&entry.id==='table.magic-refinement-rate'||
-      field==='exp'&&entry.id==='table.experience-requirement')&&
+      field==='exp'&&entry.id==='table.experience-requirement'||
+      field==='levelCap'&&entry.id==='table.server-level-cap'||
+      field==='expCap'&&entry.id==='table.server-experience-cap')&&
      entry.matches(field,before,after));
     if(contract)add(contract.kind,'table:'+field,
      'Игровые таблицы · '+field+(contract.kind==='verified'?
       ' · старый и новый герой проверены':
       ' · игровые сведения; не формула очков планировщика'),contract.id);
-    else if(['levelCap','expCap'].includes(field))
-     add('sourceOnly','table:'+field,'Игровые таблицы · '+field+' · сведения сервера');
     else add('needsReview','table:'+field,
      'Игровые таблицы · '+field+' · требуется проверка неизвестной формулы');
    }
@@ -1160,6 +1238,7 @@ function sourceGraphIntegrity(before,after){
  const inspect=data=>{
   const issues=[],skills=data?.skills||{},items=data?.items||{},
    classes=data?.classes||{};
+  const branchNames=new Set(Object.keys(classes.WARRIOR?.branchCaps||{}));
   let inspected=0;
   const executionEdges=new Map();
   const present=(map,id)=>id!=null&&Object.hasOwn(map,String(id));
@@ -1176,6 +1255,21 @@ function sourceGraphIntegrity(before,after){
   for(const [id,skill] of Object.entries(skills)){
    if(!skill||typeof skill!=='object')continue;
    if(skill.prereq!=null)link('skill',id,-1,'prereq',skill.prereq,skills);
+   // A requirement must name an existing tree. Some current-game sources
+   // legitimately require 100/102 mastery: do not cap reqs at 90.
+   if(!Array.isArray(skill.reqs))
+    signed('skill',id,-1,'requirements',null,'Отсутствует список требований');
+   else for(const [index,req] of skill.reqs.entries()){
+    inspected++;
+    if(!req||typeof req.branch!=='string'||
+     !branchNames.has(req.branch))
+     signed('skill',id,index,'requirement-branch',req?.branch,
+      'Неизвестная ветка мастерства');
+    inspected++;
+    if(!Number.isSafeInteger(req?.amount)||req.amount<0)
+     signed('skill',id,index,'requirement-amount',req?.amount,
+      'Некорректное требование мастерства');
+   }
    for(const klass of Object.keys(skill.classes||{})){
     inspected++;
     if(!present(classes,klass))
@@ -1286,6 +1380,18 @@ function sourceGraphIntegrity(before,after){
   }
   // Independently protect old/new root job and class promotion graph.
   for(const [id,record] of Object.entries(classes)){
+   const caps=record?.branchCaps;
+   const starting=data?.tables?.jobInit?.[record?.baseClass]?.branches||{};
+   if(!validObject(caps)||branchNames.size!==27||
+    Object.keys(caps).length!==27||
+    [...branchNames].some(key=>!Object.hasOwn(caps,key)))
+    signed('class',id,-1,'branch-schema',id,'Изменилась схема веток профессии');
+   else for(const [name,limit] of Object.entries(caps)){
+    inspected++;
+    if(!Number.isSafeInteger(limit)||limit<0||limit>90||
+     Number.isSafeInteger(starting[name])&&limit<starting[name])
+     signed('class',id,-1,'branch-cap',name,'Некорректный предел мастерства');
+   }
    for(const [field,target] of [['baseClass',record?.baseClass],
     ['parent',record?.parent]]){
     if(field==='parent'&&target==null)continue;
@@ -1302,6 +1408,21 @@ function sourceGraphIntegrity(before,after){
      break;
     }
     path.add(parent);parent=classes[parent]?.parent;
+   }
+  }
+  // Detect new prerequisite cycles separately from skill-effect recursion.
+  for(const [id,record] of Object.entries(skills)){
+   const visited=new Set([id]);let ancestor=record?.prereq;
+   while(Number.isSafeInteger(ancestor)&&ancestor>0&&
+    present(skills,ancestor)){
+    inspected++;
+    if(visited.has(String(ancestor))){
+     signed('skill',id,-1,'prerequisite-cycle',ancestor,
+      'Циклическая цепочка изучения навыков');
+     break;
+    }
+    visited.add(String(ancestor));
+    ancestor=skills[String(ancestor)]?.prereq;
    }
   }
   // An existing target ID does not prove a linked skill graph terminates.
