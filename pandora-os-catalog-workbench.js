@@ -1477,9 +1477,13 @@
       // of the cached UI preview. Do not silently discard old numeric models.
       const replay=typeof safety.replaySkills==='function'?
        safety.replaySkills(baseline,combined):null;
+      const lossSummary=Object.entries(replay?.lostByModule||{})
+       .sort((a,b)=>b[1]-a[1]).slice(0,3)
+       .map(([group,count])=>replaySourceLabel(group)+' · '+count);
       if(replay&&!replay.ok)throw Error(
        'Проверка расчётов и источниковых связей: '+replay.lost+
        ' ранее проверенных сценариев перестали подтверждаться. '+
+       (lossSummary.length?'Основные разделы: '+lossSummary.join(' · ')+'. ':'')+
        [...replay.errors,...replay.samples.map(x=>x.name+' / '+
         (x.module==='ally-recipient'?'усиление союзника':
          x.module==='priest-cast'?'усиление жреца':

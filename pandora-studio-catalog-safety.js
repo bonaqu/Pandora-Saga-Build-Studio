@@ -1605,8 +1605,19 @@ function sourceGraphIntegrity(before,after){
  // record is unchanged. A title/translation edit is harmless; changed FV,
  // execution, class permissions and timing must requalify, not borrow the
  // old zero-ID exception to bypass review.
- const unchanged=row=>JSON.stringify(modelRecord(before,row))===
-  JSON.stringify(modelRecord(after,row));
+ const unchanged=row=>{
+  // Four current-source placeholder refs are tolerated only when the
+  // referenced action itself is unchanged. A signed metadata-only update
+  // (mana/timing/range) does NOT alter the EP/FV, prerequisite, class or
+  // item reference, so it must not turn an old placeholder into a NEW
+  // broken link. If any additional gameplay property moves, the strict
+  // whole-record fingerprint remains mandatory.
+  if(row.kind==='skill'&&
+   sourceSkillPresentationNumbers(row.owner,
+    before?.skills?.[row.owner],after?.skills?.[row.owner]))return true;
+  return JSON.stringify(modelRecord(before,row))===
+   JSON.stringify(modelRecord(after,row));
+ };
  const added=selected.issues.filter(row=>!acknowledged.has(fingerprint(row))||
   !unchanged(row));
  // A removed class can break hundreds of skills AND equipment records.
@@ -1719,7 +1730,8 @@ function replaySkills(before,after){
   }
  }
  if(!changed.size&&!changedItems.size)return {ok:true,changedSkills:0,scenarios:0,
-  previouslyModeled:0,retained:0,lost:0,unmodeled:0,samples:[],errors:[]};
+  previouslyModeled:0,retained:0,lost:0,unmodeled:0,
+  lostEntries:[],lostByModule:{},lostSkillIds:[],samples:[],errors:[]};
  const calc=root.PandoraOSCalculator;
  if(!calc||!['base','scalingSkillPreview','healingSpellsPreview','periodicRecoveryPreview',
   'resistanceSkillChoices','alliedRecipientPreviews','priestCastPreviews',
@@ -1732,6 +1744,7 @@ function replaySkills(before,after){
   .every(name=>typeof calc[name]==='function'))
   return {ok:false,changedSkills:changed.size,scenarios:0,
    previouslyModeled:0,retained:0,lost:0,unmodeled:changed.size,samples:[],
+   lostEntries:[],lostByModule:{},lostSkillIds:[],
    errors:['Не подключены проверенные расчётные модели навыков.']};
  const scenarios=[{level:15,allocation:{},},{level:45,allocation:
   {vit:6,str:12,agi:6,dex:12,spi:10,int:12}},
@@ -1994,6 +2007,7 @@ function replaySkills(before,after){
  catch(error){
   return {ok:false,changedSkills:changed.size,scenarios:0,
    previouslyModeled:0,retained:0,lost:0,unmodeled:changed.size,samples:[],
+   lostEntries:[],lostByModule:{},lostSkillIds:[],
    errors:['Ошибка контрольного пересчёта: '+String(error?.message||error).slice(0,160)]};
  }
  const lost=[],retained=[];
@@ -2025,12 +2039,22 @@ function replaySkills(before,after){
   seenSamples.add(signature);representatives.push(row);
   if(representatives.length>=5)break;
  }
+ // The UI shows five samples, but 500+ selected changes must still yield
+ // COMPLETE machine-readable loss provenance for owner diagnostics.
+ const lostByModule={};
+ for(const row of lost)
+  lostByModule[row.module]=(lostByModule[row.module]||0)+1;
+ const lostEntries=lost.map(row=>({...row,name:String(
+  row.job==='item'?
+   newItems[row.id.slice(5)]?.name||oldItems[row.id.slice(5)]?.name||row.id:
+   newSkills[row.id]?.name||oldSkills[row.id]?.name||row.id).slice(0,75)}));
+ const lostSkillIds=[...new Set(lost.map(row=>row.id))];
  const recognized=new Set([...prior.found.values(),...next.found.values()].map(x=>x.id));
  const problems=[...prior.errors,...next.errors];
  return {ok:lost.length===0&&problems.length===0,
   changedSkills:changed.size,scenarios:prior.count+next.count,
   previouslyModeled:prior.found.size,retained:retained.length,
-  lost:lost.length,
+  lost:lost.length,lostEntries,lostByModule,lostSkillIds,
   lostSourceOnly:lost.filter(row=>row.evidence==='source-only').length,
   lostCalculated:lost.filter(row=>row.evidence!=='source-only').length,
   unmodeled:[...changed].filter(id=>!recognized.has(id)).length,
