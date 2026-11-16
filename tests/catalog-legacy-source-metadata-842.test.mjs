@@ -11,7 +11,8 @@ for(const p of ['pandora-os-character-calculator.js',
 const S=host.PandoraCatalogSafety;
 const json=name=>JSON.parse(read('data/os/'+name+'.json'));
 const before={skills:json('skills'),classes:json('classes'),
- tables:json('tables'),items:json('items')};
+ tables:json('tables'),items:json('items'),
+ maps:json('maps'),monsters:json('monsters')};
 const edit=(id,fn)=>{
  const after={...before,skills:{...before.skills,
   [id]:structuredClone(before.skills[id])}};
