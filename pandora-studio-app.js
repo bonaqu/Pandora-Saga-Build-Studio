@@ -9853,6 +9853,15 @@ function applyGameLocale({redraw=true}={}){
  if(en?.branches)meta.branchLabels={...meta.branchLabels,...en.branches};
  // Verified ID-based Remaked names only; never fuzzy-translate at runtime.
  const ownerGameData=window.PandoraWikiOwnerData.apply({skills:catalogSource.skills,souls:catalogSource.souls},override);
+ // Keep the source RU Soul name alongside translated display text. This
+ // transient search alias does not alter D1, equipment state or saved builds.
+ const localizedSouls=translate(ownerGameData.souls,en?.souls);
+ for(const [id,soul] of Object.entries(localizedSouls)){
+  const raw=ownerGameData.souls[id];
+  localizedSouls[id]={...soul,
+   sourceNameRu:typeof raw?.name==='string'?raw.name:'',
+   sourceNameEn:raw?.nameEn||officialEnglish?.souls?.[id]?.n||''};
+ }
  const localizedSkills=translate(ownerGameData.skills,en?.skills);
  if(lang==='ru'){
   for(const [id,name] of Object.entries(approvedSkillIdNames||{})){
@@ -9869,7 +9878,7 @@ function applyGameLocale({redraw=true}={}){
     [match[1]==='skill'?'name':'desc']:value};
  }
  catalog={meta,classes:translate(catalogSource.classes,en?.classes),skills:localizedSkills,
-   equipment:translate(itemRecords,en?.items,true),souls:translate(ownerGameData.souls,en?.souls),racialPassives:catalogSource.racialPassives,live:true};
+   equipment:translate(itemRecords,en?.items,true),souls:localizedSouls,racialPassives:catalogSource.racialPassives,live:true};
  // Remove stale Soul arrays left by older builds that reused equipment slots.
  if(window.PandoraEquipmentPlan.reconcileSoulOwnership(state,catalog.equipment,catalog.souls))persist();
  jobs=jobKeys.map(id=>catalog.classes[id]?.name||id);
