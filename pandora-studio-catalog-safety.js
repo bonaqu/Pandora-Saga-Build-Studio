@@ -1204,6 +1204,33 @@ function sourcedAfkThreshold(field,before,after){
   a.thresholdSec<=86400&&Number.isSafeInteger(b.thresholdSec)&&
   b.thresholdSec>=1&&b.thresholdSec<=86400&&a.thresholdSec!==b.thresholdSec;
 }
+// OS monster HP and defenses are current inputs to the target model, not
+// evidence about the server's actual hit chances or unknown effects.
+const TARGET_MONSTER_FIELDS=Object.freeze([
+ 'level','life','vit','spi','ac','magicProtection','lvMod','resists'
+]);
+function validTargetSource(id,record){
+ const T=root.PandoraOSTargetDamage;
+ if(!T||typeof T.availableMonsterTargets!=='function'||!validObject(record))
+  return false;
+ const rows=T.availableMonsterTargets({monsters:{[id]:record}});
+ return Array.isArray(rows)&&rows.some(row=>String(row.id)===String(id));
+}
+function verifiedMonsterTargetSource(id,old,now){
+ if(!old||!now||!validTargetSource(id,old)||
+  !validTargetSource(id,now))return false;
+ const fields=[...new Set([...Object.keys(old),...Object.keys(now)])]
+  .filter(field=>!contractSame(old[field],now[field]));
+ const allowed=new Set([...TARGET_MONSTER_FIELDS,
+  'name','nameEn','desc','descEn','iconId']);
+ return fields.some(field=>TARGET_MONSTER_FIELDS.includes(field))&&
+  fields.every(field=>allowed.has(field));
+}
+const MONSTER_TARGET_SOURCE_CONTRACTS=Object.freeze([
+ Object.freeze({id:'monster.target-source-parameters',
+  kind:'verified',dataset:'monsters',matches:verifiedMonsterTargetSource})
+]);
+
 const SERVER_TABLE_SOURCE_CONTRACTS=Object.freeze([
  Object.freeze({id:'table.forge-source-rates',kind:'sourceOnly',
   dataset:'tables',matches:sourcedForgeRates}),
@@ -1225,6 +1252,7 @@ const SOURCE_CONTRACT_REGISTRY=Object.freeze([
  ...REFINEMENT_SOURCE_CONTRACTS.map(({id,kind,dataset})=>Object.freeze({id,kind,dataset})),
  ...EXPERIENCE_SOURCE_CONTRACTS.map(({id,kind,dataset})=>Object.freeze({id,kind,dataset})),
  ...SKILL_PRESENTATION_SOURCE_CONTRACTS.map(({id,kind,dataset})=>Object.freeze({id,kind,dataset})),
+ ...MONSTER_TARGET_SOURCE_CONTRACTS.map(({id,kind,dataset})=>Object.freeze({id,kind,dataset})),
  ...SERVER_TABLE_SOURCE_CONTRACTS.map(({id,kind,dataset})=>Object.freeze({id,kind,dataset})),
  ...SKILL_SOURCE_CONTRACTS.map(({id,kind})=>Object.freeze({id,kind,dataset:'skills'})),
  ...EQUIPMENT_SOURCE_CONTRACTS.map(({id,kind,datasets})=>
@@ -1404,7 +1432,23 @@ function compatibility(before,after){
      'Мастерство '+group+' · изменён игровой контракт');
    }
   }
-  else if(['monsters','drops','maps'].includes(dataset)){
+  else if(dataset==='monsters'){
+   for(const id of new Set([...Object.keys(oldData||{}),...Object.keys(newData||{})])){
+    const a=oldData?.[id],b=newData?.[id];
+    if(same(a,b))continue;
+    const contract=MONSTER_TARGET_SOURCE_CONTRACTS.find(x=>
+     x.matches(id,a,b,before,after));
+    const invalid=Boolean(b)&&(
+     a&&validTargetSource(id,a)&&!validTargetSource(id,b)||
+     !a&&!validTargetSource(id,b));
+    const kind=contract?'verified':invalid?'needsReview':'sourceOnly';
+    add(kind,'monsters:'+id,String(b?.name||a?.name||id).slice(0,90)+
+     (contract?' · данные цели проверены существующей расчётной моделью':
+      invalid?' · нельзя рассчитать игровую цель':
+      ' · справочные сведения, без подтверждения боевой формулы'),
+     contract?.id);
+   }
+  }else if(['drops','maps'].includes(dataset)){
    // Source encyclopedia data, not proven damage/HP calculations. Report
    // every selected record, not one opaque dataset status.
    for(const id of new Set([...Object.keys(oldData||{}),...Object.keys(newData||{})])){
