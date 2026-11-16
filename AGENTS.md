@@ -1,3 +1,8 @@
+## 0.839.0 · Источниковые затраты/время/дальность навыков (#615)
+- skill.source-parameters (sourceOnly): только mana/cast/cooldown/motion/range/aoe старого и нового существующего skill ID, при неизменном funcs, reqs, классе, prereq, powerStat и прочих игровых полях. Качественные/числовые боевые эффекты не подтверждаются этим источником.
+- Независимый replaySkills по-прежнему блокирует потерю любого ранее моделируемого эффекта/описания до CAS; пример 233001001 «Внезапная атака», mana+1 — sourceOnly классификация, но blocked final preflight.
+- tests/catalog-skill-source-parameters-839.test.mjs, 571-source batch и отрицательные случаи. Node+Chromium exact SHA, Pages/Worker/D1 read-only после merge. Не писать D1 и не менять auth/CAS/builds.
+
 ## 0.838.0 · Зональная добыча и связи (#615)
 - table.zone-drop-parameters (sourceOnly) распознаёт только числовые изменения base/perMember и lo/hi при сохранении identity, порядка, map/mob/item IDs, видов csv/hook и slotP/slotN. Два исходных hook без mob являются осмысленными zone-wide правилами, не добавлять им ложную ссылку на монстра. Не приписывать source-only весам шансы дропа на сервере.
 - sourceGraphIntegrity до D1 дополнительно охватывает zoneDrops: zone.map -> maps, hook.mob -> monsters, reward.i -> items. Контролировать все 11 зон, 285 правил и 1 091 предмет; изменения формы требуют review.
