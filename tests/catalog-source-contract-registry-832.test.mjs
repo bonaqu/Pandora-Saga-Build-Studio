@@ -79,7 +79,7 @@ test('unmodeled archery ammunition is explicitly sourceOnly, never verified dama
  assert.match(report.entries[0].title,/эффект навыка не рассчитан/);
 });
 
-test('unknown skill EP and cast timing never borrow another source contract',()=>{
+test('unknown EP requires review, while known cast timing stays source-only',()=>{
  const next=snapshot('213601001',skill=>{
   skill.funcs.push({ep:'EP_FUTURE_UNMODELED',dir:'TARGET',
    fv1:[0,0,0,1],fv2:[0,0,0,99]});
@@ -89,8 +89,8 @@ test('unknown skill EP and cast timing never borrow another source contract',()=
  assert.equal(report.entries[0].contract,undefined);
  const cast=snapshot('213601001',skill=>{skill.cast+=1;});
  const check=safety.compatibility(before,cast);
- assert.equal(check.totals.needsReview,1);
- assert.equal(check.entries[0].contract,undefined);
+ assert.equal(check.totals.sourceOnly,1);
+ assert.equal(check.entries[0].contract,'skill.source-parameters');
 });
 
 test('unverified equipment effect must remain needsReview; text-only changes have no contract',()=>{

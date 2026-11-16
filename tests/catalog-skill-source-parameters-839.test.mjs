@@ -50,10 +50,13 @@ test('a signed combat-technique mana change retains the current qualitative insp
  assert.equal(replay.lost,0);
  assert.ok(replay.retained>0);
 });
-test('source-only status still cannot bypass lost source inspections in other families',()=>{
+test('source-only cost survives, but an unknown EP blocks the independent replay',()=>{
  const changed='168001004';
- const {after,report}=change(changed,s=>{s.mana++;});
- assert.equal(report.entries[0].kind,'sourceOnly');
+ const safe=change(changed,s=>{s.mana++;});
+ assert.equal(safe.report.entries[0].kind,'sourceOnly');
+ assert.equal(safety.replaySkills(before,safe.after).lost,0);
+ const {after,report}=change(changed,s=>{s.mana++;s.funcs[0].ep='EP_FUTURE_UNMODELED';});
+ assert.equal(report.entries[0].kind,'needsReview');
  const replay=safety.replaySkills(before,after);
  assert.equal(replay.ok,false);
  assert.ok(replay.lostSourceOnly>0);
