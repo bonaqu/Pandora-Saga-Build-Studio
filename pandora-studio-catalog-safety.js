@@ -886,11 +886,43 @@ const REFINEMENT_SOURCE_CONTRACTS=Object.freeze([
   matches:verifiedRefinementTable})
 ]);
 
+
+// Experience requirements are descriptive source data. The planner's
+// attribute/skill grants are independent and NEVER proved by exp.expReq.
+function sourceExperienceRequirements(field,before,after){
+ if(field!=='exp')return false;
+ const old=before?.tables?.exp,now=after?.tables?.exp;
+ if(!contractKeys(old,now)||Object.keys(old).length!==99)return false;
+ const names=['ability','skill','skillLimit','expReq'];
+ let count=0;
+ for(let level=1;level<=99;level++){
+  const id=String(level),a=old[id],b=now[id];
+  if(!contractShape(a,names)||!contractShape(b,names))return false;
+  // OS source levels 60–69 already contain fractional expReq values.
+  // Preserve the exact finite source number; only level-grant columns must
+  // remain integer. Never silently round imported experience requirements.
+  if(![a,b].every(row=>
+   ['ability','skill','skillLimit'].every(k=>
+    Number.isSafeInteger(row[k])&&row[k]>=0)&&
+   Number.isFinite(row.expReq)&&row.expReq>=0&&
+   row.expReq<=Number.MAX_SAFE_INTEGER))return false;
+  for(const field of names)if(field!=='expReq'&&a[field]!==b[field])
+   return false;
+  if(a.expReq!==b.expReq)count++;
+ }
+ return count>0;
+}
+const EXPERIENCE_SOURCE_CONTRACTS=Object.freeze([
+ Object.freeze({id:'table.experience-requirement',kind:'sourceOnly',
+  dataset:'tables',matches:sourceExperienceRequirements})
+]);
+
 // Immutable public contract census: code may evolve without a new hardcoded
 // list of skill IDs or guessing what unknown game effects do.
 const SOURCE_CONTRACT_REGISTRY=Object.freeze([
  ...CHARACTER_SOURCE_CONTRACTS.map(({id,kind,dataset})=>Object.freeze({id,kind,dataset})),
  ...REFINEMENT_SOURCE_CONTRACTS.map(({id,kind,dataset})=>Object.freeze({id,kind,dataset})),
+ ...EXPERIENCE_SOURCE_CONTRACTS.map(({id,kind,dataset})=>Object.freeze({id,kind,dataset})),
  ...SKILL_SOURCE_CONTRACTS.map(({id,kind})=>Object.freeze({id,kind,dataset:'skills'})),
  ...EQUIPMENT_SOURCE_CONTRACTS.map(({id,kind,datasets})=>
   Object.freeze({id,kind,dataset:datasets.join(',')})),
@@ -951,12 +983,14 @@ function compatibility(before,after){
    for(const field of fields){
     if(same(oldData?.[field],newData?.[field]))continue;
     const contract=[...CHARACTER_SOURCE_CONTRACTS.slice(1),
-     ...REFINEMENT_SOURCE_CONTRACTS].find(entry=>
+     ...REFINEMENT_SOURCE_CONTRACTS,...EXPERIENCE_SOURCE_CONTRACTS]
+     .find(entry=>
      (field==='raceInit'&&entry.id==='table.race-origin'||
       field==='jobInit'&&entry.id==='table.job-origin'||
       field==='abilityPoint'&&entry.id==='table.ability-source'||
       field==='weaponPlus'&&entry.id==='table.weapon-refinement'||
-      field==='magicPlus'&&entry.id==='table.magic-refinement-rate')&&
+      field==='magicPlus'&&entry.id==='table.magic-refinement-rate'||
+      field==='exp'&&entry.id==='table.experience-requirement')&&
      entry.matches(field,before,after));
     if(contract)add(contract.kind,'table:'+field,
      'Игровые таблицы · '+field+(contract.kind==='verified'?
