@@ -57,7 +57,10 @@ for(const row of unique){
  if(known404.has(key(row))&&!retry404){skippedKnown404++;continue}
  pending.push(row);
 }
-if(retry404)pending.sort((a,b)=>retryPriority(a)-retryPriority(b));
+// Newly imported icons take priority over known historical 404s.
+if(retry404)pending.sort((a,b)=>
+ Number(known404.has(key(a)))-Number(known404.has(key(b)))||
+ retryPriority(a)-retryPriority(b));
 if(Number.isFinite(limit))pending.splice(limit);
 let index=0,downloaded=0;
 async function download(row){
@@ -99,7 +102,7 @@ async function worker(){
 await Promise.all(Array.from({length:concurrency},worker));
 // Reconstruct the complete manifest from disk after the batch. Every previous
 // verified 404 survives partial --limit runs unless its original was recovered.
-const manifest={source:'Pandora Saga OS, one-time archive',createdAt:new Date().toISOString(),
+const manifest={createdAt:new Date().toISOString(),
  icons:{skills:{},items:{},souls:{}},missing:[]};
 for(const row of unique){
  const id=key(row),path=fileOf(row);
@@ -137,4 +140,7 @@ if(!dry&&contentChanged){
 }
 console.log(JSON.stringify({dryRun:dry,retry404,skippedKnown404,downloaded,
  firstPlanned:pending.slice(0,12).map(key),...manifest.count}));
-if(failures.size&&!Number.isFinite(limit))process.exitCode=1;
+// Confirmed 404 remains evidence; only non-404 network failures abort
+// a full unbounded recheck.
+if(!Number.isFinite(limit)&&[...failures.values()].some(x=>x!=='HTTP 404'))
+ process.exitCode=1;
