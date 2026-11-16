@@ -155,21 +155,11 @@ export async function runHeroBookGameNames664Smoke(browser,base){
 
   assert.doesNotMatch(ru,/11 ОЗ каждые 2 сек\./,
    'Sanctuary is a direct heal, not a periodic pulse');
-  // Real browser proof: the source-only catalog remains outside the Book, but
-  // exact recipient-side bonuses are again calculated for THIS build.
+  // External-caster effects are toggled only in Buffs, never duplicated
+  // as a second computed-allies section within Skill Effects.
   const party=page.locator('#book-source-qa .stage-skill-party-effects');
-  assert.equal(await party.count(),1,'Computed effects from allies must remain visible');
-  await party.locator('summary').first().click();
-  const partyText=await party.innerText();
-  for(const [name,amount] of [['Боевой клич','+42 АТК'],
-   ['Массовая сосредоточенность','+35'],['Помощь ветра','+34']])
-   assert.ok(partyText.includes(name)&&partyText.includes(amount),
-    'Computed beneficiary bonus missing: '+name);
-  assert.doesNotMatch(partyText,/не включаются в билд автоматически/);
-  const how=party.locator('.stage-skill-party-row .stage-skill-gate-help').first();
-  await how.locator('summary').click();
-  assert.match(await how.innerText(),/Следующая \+1 при значении/);
-  assert.match(await how.innerText(),/165/);
+  assert.equal(await party.count(),0,
+   'Ally effects must not duplicate their Buffs chapter inside Skill Effects');
   assert.equal(await page.locator('#book-source-qa .stage-skill-next-mastery').count(),0,
    'Next unlock is a Path hint, not a current calculated combat effect');
   assert.equal(await page.locator('#book-source-qa .stage-skill-gate-line').count(),0,
@@ -272,6 +262,10 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   assert.equal(missingManaPanel,0,
    'Item creation stays outside the Book regardless of MP');
   const buffsRu=await render({lang:'ru',chapter:'buffs'});
+  assert.match(buffsRu,/Усиления от союзников/);
+  assert.match(buffsRu,/Усиления жреца/);
+  const activeBuffSection=page.locator('#book-source-qa .stage-book-buff-group');
+  assert.ok(await activeBuffSection.count()>1,'Buffs retains its separate ally and priest groups');
   for(const name of ['Знак атаки','Знак защиты','Чары усиления','Рывок']){
    assert.ok(buffsRu.includes(name),'Book buffs must use exact OS skill name: '+name);
   }
@@ -281,6 +275,8 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   assert.equal(await page.locator('#book-source-qa [data-book-setting="honorTitle"] option').nth(4).textContent(),
    'Том бури','Russian Honor title must match the current OS catalog');
   const buffsEn=await render({lang:'en',chapter:'buffs'});
+  assert.match(buffsEn,/Ally buffs/);
+  assert.match(buffsEn,/Priest buffs/);
   for(const name of ['Velox','Lapis Medio','Enchantment','Lunge'])
    assert.ok(buffsEn.includes(name),'Buff English source name: '+name);
   assert.equal(await page.locator('#book-source-qa [data-book-setting="honorTitle"] option').nth(4).textContent(),
@@ -368,295 +364,35 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   assert.match(strikeSummary.en.budget,/450 MP.*23 casts.*13 MP/);
   assert.match(strikeSummary.en.next.join(' '),
    /Next strike strength \+1%.*42 \(\+2\)/);
-  // Current build's exact OS skill-vs-Ogre outcome, shown as ONE skill row.
-  const ogreBook=await page.evaluate(async()=>{
+  // Keep the independent target engine pinned in actual Chromium,
+  // but the Hero Book no longer renders any target or hit preview.
+  const targetSource=await page.evaluate(async()=>{
    const terms=window.__bookGameTermsQA;
    const tables=await (await fetch('data/os/tables.json')).json();
-   const stats={dex:70,int:20};
-   const [allItems,itemForth,monsters]=await Promise.all([
-    fetch('data/os/items.json').then(r=>r.json()),
-    fetch('data/os/itemForth.json').then(r=>r.json()),
-    fetch('data/os/monsters.json').then(r=>r.json())
-   ]);
-   const equipment=(id,grade,gem=null)=>[{
-    record:allItems[String(id)],refinement:grade,gem,issue:[],souls:[]
-   }];
-   const trapArgs={
-    skillCatalog:terms.skills,classes:terms.classes,jobKey:'DISTURBANCE',
-    level:45,masteries:{trap:41},
-    branchCaps:terms.classes.DISTURBANCE.branchCaps,stats,tables,itemForth,monsters
-   };
-   const coat=window.PandoraOSTargetDamage.crawlingTrap({
-    ...trapArgs,equipment:equipment(12605,3),
-    modifiers:{combat:{spellDamageEquipmentRate:1,priestSong:{}},
-     priestApplied:{}}
-   });
-   const gem=window.PandoraOSTargetDamage.crawlingTrap({
-    ...trapArgs,equipment:equipment(1,3,{type:'magical',element:'fire'}),
-    modifiers:{combat:{spellDamageEquipmentRate:0,priestSong:{}},
-     priestApplied:{}}
-   });
-   const result=window.PandoraOSTargetDamage.crawlingTrap({
-    ...trapArgs,equipment:[],
-    modifiers:{combat:{spellDamageEquipmentRate:0,priestSong:{}},priestApplied:{}}
-   });
-   const honor=window.PandoraOSTargetDamage.crawlingTrap({
-    ...trapArgs,equipment:[],modifiers:{
-     combat:{spellDamageEquipmentRate:0,priestSong:{}},
-     priestApplied:{},honor:{id:3},
-     elementalMagic:{fire:5,ice:0,lightning:0}
-    }
-   });
-   const pierced=window.PandoraOSTargetDamage.crawlingTrap({
-    ...trapArgs,equipment:[{record:{...allItems['1'],effects:[
-     {func:'EP_ELEMENT_BONUS',a:18}]},
-     refinement:0,gem:null,issue:[],souls:[]}],
-    modifiers:{combat:{spellDamageEquipmentRate:0,priestSong:{}},priestApplied:{}}
-   });
-   const host=document.createElement('div');host.id='book-ogre-qa';
-   host.style.width='780px';document.body.append(host);
-   const render=(language,mastery,dmg)=>{
-    document.documentElement.lang=language;
-    window.PandoraStageAttributes.render(host,{
-     page:'effects',modifiers:{mp:450,stats,
-      combat:{spellDamageEquipmentRate:0},
-      healingSpells:{rows:[]},periodicRecovery:{rows:[]}},
-     gameTerms:terms,heroJobKey:'DISTURBANCE',heroLevel:45,
-     heroMasteries:{trap:mastery},
-     heroBranchCaps:terms.classes.DISTURBANCE.branchCaps,
-     targetSkillDamage:dmg
-    });
-    const row=host.querySelector('.stage-target-damage-row');
-    return {count:host.querySelectorAll('.stage-target-damage-row').length,
-     main:row?.textContent||'',strong:row?.querySelector('strong')?.textContent||'',
-     details:row?.querySelector('.stage-skill-more')?.textContent||''};
-   };
-   return {source:result,ru:render('ru',41,result),en:render('en',41,result),
-    locked:render('ru',40,result),missing:render('ru',41,null),
-    coat:render('ru',41,coat),gem:render('ru',41,gem),
-    pierced:render('ru',41,pierced),
-    honorRu:render('ru',41,honor),honorEn:render('en',41,honor)};
+   const monsters=await (await fetch('data/os/monsters.json')).json();
+   const C=window.PandoraOSTargetDamage;
+   const args={skillCatalog:terms.skills,classes:terms.classes,
+    jobKey:'DISTURBANCE',level:45,
+    masteries:{trap:41},branchCaps:terms.classes.DISTURBANCE.branchCaps,
+    stats:{dex:70,int:20},equipment:[],itemForth:{},unison:{},
+    tables,monsters,modifiers:{combat:{spellDamageEquipmentRate:0,priestSong:{}},
+     priestApplied:{}}};
+   const ogre=C.crawlingTrap({...args,targetMonsterId:22104});
+   const dingo=C.crawlingTrap({...args,targetMonsterId:11104});
+   const all=C.supportedSkillHits({...args,targetMonsterId:22104});
+   return {ogre:[ogre.min,ogre.average,ogre.max],
+    dingo:[dingo.min,dingo.average,dingo.max],
+    linked:all.map(row=>row.skillId)};
   });
-  assert.deepEqual([ogreBook.source.min,ogreBook.source.average,ogreBook.source.max],
-   [34,148,194]);
-  assert.equal(ogreBook.ru.count,1);
-  assert.match(ogreBook.ru.main,/Ползучая ловушка/);
-  assert.match(ogreBook.ru.strong,/Гигантский огр · один взрыв 34–194 ОЗ/);
-  assert.match(ogreBook.ru.details,/Средний урон по цели.*148 ОЗ/);
-  assert.match(ogreBook.ru.details,/ЛВК 70 · ИНТ 20 · Ловушки 41/);
-  assert.match(ogreBook.ru.details,/Огр · Сопр\. огню 0 · Сопр\. магии 17/);
-  assert.equal(ogreBook.en.count,1);
-  assert.match(ogreBook.en.main,/Worm Bomb/);
-  assert.match(ogreBook.en.strong,/Ogre Bouncer · one explosion 34–194 HP/);
-  assert.match(ogreBook.en.details,/Average hit against.*148 HP/);
-  assert.equal(ogreBook.locked.count,0);
-  assert.equal(ogreBook.missing.count,0);
-  assert.match(ogreBook.coat.strong,/Гигантский огр · один взрыв 35–196 ОЗ/);
-  assert.match(ogreBook.coat.details,/Усиление урона \+1%/);
-  assert.match(ogreBook.gem.details,/Магическая заточка \+5% · \+3 к силе удара/);
-  assert.equal(ogreBook.pierced.count,1);
-  assert.match(ogreBook.pierced.details,/Пробитие от вещей \+18/);
-  assert.match(ogreBook.pierced.details,/Пробитие от вещей: \+[0-9]+ ОЗ к среднему удару/);
-  assert.equal(ogreBook.honorRu.count,1);
-  assert.match(ogreBook.honorRu.details,/Титул чести \+5%/);
-  assert.match(ogreBook.honorRu.details,/Титул чести: \+[0-9]+ ОЗ к среднему удару/);
-  assert.equal(ogreBook.honorEn.count,1);
-  assert.match(ogreBook.honorEn.details,/Honor title \+5%/);
-  assert.match(ogreBook.honorEn.details,/Honor title: \+[0-9]+ HP to average hit/);
-  assert.equal(ogreBook.coat.count,1);
-  assert.equal(ogreBook.gem.count,1);
-  assert.doesNotMatch(ogreBook.ru.main,/материал|рецепт|создани|Ловушка × 2/i);
-  // Source-checked current spells share the same compact skill list;
-  // Fire Bolt, Blood Drain and Infect are one hit, NOT cast totals/DOT.
-  const spellBook=await page.evaluate(async()=>{
-   const terms=window.__bookGameTermsQA;
-   const tables=await (await fetch('data/os/tables.json')).json();
-   const stats={dex:70,int:80,spi:50};
-   const modifiers={combat:{spellDamageEquipmentRate:0,priestSong:{}},
-    priestApplied:{}};
-   const chosen={element:50,darkness:25};
-   const expanded={...chosen,exorcism:20,charm:20,darkness:26};
-   const calculated=(masteries,job='WARLOCK')=>
-    window.PandoraOSTargetDamage.supportedSkillHits({
-    skillCatalog:terms.skills,classes:terms.classes,jobKey:job,
-    level:45,masteries,branchCaps:terms.classes[job].branchCaps,
-    stats,equipment:[],tables,modifiers
-   });
-   const host=document.createElement('div');
-   host.id='book-ogre-spells-qa';host.style.width='780px';
-   document.body.append(host);
-   const render=(language,masteries,effects,job='WARLOCK')=>{
-    document.documentElement.lang=language;
-    window.PandoraStageAttributes.render(host,{
-     page:'effects',modifiers:{mp:450,stats,...modifiers,
-      healingSpells:{rows:[]},periodicRecovery:{rows:[]}},
-     gameTerms:terms,heroJobKey:job,heroLevel:45,
-     heroMasteries:masteries,
-     heroBranchCaps:terms.classes[job].branchCaps,
-     targetSkillDamages:effects
-    });
-    return [...host.querySelectorAll('.stage-target-damage-row')]
-     .map(row=>({text:row.textContent||'',
-      main:row.querySelector('strong')?.textContent||'',
-      details:row.querySelector('.stage-skill-more')?.textContent||''}));
-   };
-   const basic=calculated(chosen),extended=calculated(expanded);
-   const calamityMasteries={element:30,darkness:70,charm:55};
-   const calamity=calculated(calamityMasteries,'CALAMITY');
-   const trapMasteries={trap:60};
-   const trap=calculated(trapMasteries,'DISTURBANCE');
-   const conjurerMasteries={embody:61};
-   const conjurer=calculated(conjurerMasteries,'CONJURER');
-   // Sniper 50 + real equipped bow: one fire packet, burn is NOT added.
-   const sniperMasteries={archery:80},sniperStats={...stats,str:70};
-   const sniperBow={record:terms.items['2201'],issue:[],
-    refinement:0,gem:null,souls:[]};
-   const sniper=window.PandoraOSTargetDamage.supportedSkillHits({
-    skillCatalog:terms.skills,classes:terms.classes,jobKey:'SNIPER',
-    level:50,masteries:sniperMasteries,
-    branchCaps:terms.classes.SNIPER.branchCaps,
-    stats:sniperStats,equipment:[sniperBow],tables,modifiers
-   });
-   const renderSniper=(language,spellRows=sniper,activeModifiers=modifiers)=>{
-    document.documentElement.lang=language;
-    window.PandoraStageAttributes.render(host,{
-     page:'effects',modifiers:{mp:450,stats:sniperStats,...activeModifiers,
-      healingSpells:{rows:[]},periodicRecovery:{rows:[]}},
-     gameTerms:terms,heroJobKey:'SNIPER',heroLevel:50,
-     heroMasteries:sniperMasteries,
-     heroBranchCaps:terms.classes.SNIPER.branchCaps,
-     heroWeaponKind:'BOW',targetSkillDamages:spellRows
-    });
-    return [...host.querySelectorAll('.stage-target-damage-row')]
-     .map(row=>({text:row.textContent||'',
-      main:row.querySelector('strong')?.textContent||'',
-      details:row.querySelector('.stage-skill-more')?.textContent||''}));
-   };
-   // Independent, current-build numerical contributions are visible only
-   // inside the EXISTING skill disclosure, on both locales.
-   const allyModifiers={combat:{
-    spellDamageEquipmentRate:0,priestSong:{sageElementDamage:21}},
-    priestApplied:{priestEnchantment:{magicRate:15}}};
-   const boostedBow={...sniperBow,refinement:10,
-    gem:{type:'magical',element:'fire'}};
-   const boostedSniper=window.PandoraOSTargetDamage.supportedSkillHits({
-    skillCatalog:terms.skills,classes:terms.classes,jobKey:'SNIPER',
-    level:50,masteries:sniperMasteries,
-    branchCaps:terms.classes.SNIPER.branchCaps,stats:sniperStats,
-    equipment:[boostedBow],tables,modifiers:allyModifiers
-   });
-   const extract=effects=>effects.map(({skillId,min,average,max})=>
-    [skillId,min,average,max]);
-   return {basic:extract(basic),expanded:extract(extended),
-    calamity:extract(calamity),trap:extract(trap),conjurer:extract(conjurer),
-    ru:render('ru',chosen,basic),en:render('en',chosen,basic),
-    expandedRu:render('ru',expanded,extended),
-    expandedEn:render('en',expanded,extended),
-    calamityRu:render('ru',calamityMasteries,calamity,'CALAMITY'),
-    calamityEn:render('en',calamityMasteries,calamity,'CALAMITY'),
-    trapRu:render('ru',trapMasteries,trap,'DISTURBANCE'),
-    trapEn:render('en',trapMasteries,trap,'DISTURBANCE'),
-    conjurerRu:render('ru',conjurerMasteries,conjurer,'CONJURER'),
-    conjurerEn:render('en',conjurerMasteries,conjurer,'CONJURER'),
-    sniper:extract(sniper),sniperRu:renderSniper('ru'),
-    sniperEn:renderSniper('en'),
-    boostedSniper:extract(boostedSniper),
-    boostedSniperRu:renderSniper('ru',boostedSniper,allyModifiers),
-    boostedSniperEn:renderSniper('en',boostedSniper,allyModifiers)};
-  });
-  // All eligible Lv45 WARLOCK magic hits now receive the source-locked
-  // Lv20 passive "Магические знания". Keep the source IDs fixed.
-  assert.deepEqual(spellBook.basic.map(row=>row[0]),[
-   410001001,410011001,410012001,410021001,410023001,
-   430001001,430052001,410002001,410022001
-  ]);
-  assert.deepEqual(spellBook.basic[0],[410001001,6,27,36]);
-  assert.deepEqual(spellBook.sniper,[[213608001,61,65,69]]);
-  assert.equal(spellBook.boostedSniper.length,1);
-  assert.ok(spellBook.boostedSniper[0][2]>spellBook.sniper[0][2]);
-  assert.equal(spellBook.boostedSniperRu.length,1);
-  assert.equal(spellBook.boostedSniperEn.length,1);
-  assert.match(spellBook.boostedSniperRu[0].details,
-   /Усиления союзников: \+\d+ ОЗ к среднему удару/);
-  assert.match(spellBook.boostedSniperRu[0].details,
-   /Магическая заточка: \+\d+ ОЗ к среднему удару/);
-  assert.match(spellBook.boostedSniperEn[0].details,
-   /Ally buffs: \+\d+ HP to average hit/);
-  assert.match(spellBook.boostedSniperEn[0].details,
-   /Magical refinement: \+\d+ HP to average hit/);
-  assert.equal(spellBook.sniperRu.length,1);
-  assert.equal(spellBook.sniperEn.length,1);
-  assert.match(spellBook.sniperRu[0].text,/Пламенная стрела/);
-  assert.match(spellBook.sniperEn[0].text,/Kindling Arrow/);
-  assert.match(spellBook.sniperRu[0].main,/Гигантский огр · прямой удар 61–69 ОЗ/);
-  assert.match(spellBook.sniperRu[0].details,/ИНТ 80 · Стрельба 80/);
-  assert.doesNotMatch(spellBook.sniperRu[0].details,/СИЛ 70/);
-  assert.match(spellBook.sniperEn[0].details,/INT 80 · Ranged 80/);
-  assert.doesNotMatch(spellBook.sniperRu[0].text,/боеприпас|ожог|рецепт|материал/i);
-  assert.equal(spellBook.ru.length,9,'one compact row for each learned direct hit');
-  assert.equal(spellBook.en.length,9);
-  for(const [name,english] of [
-   ['Огненная стрела','Fire Bolt'],['Ледяные осколки','Hailstone'],
-   ['Ледяное копье','Ice Spear'],['Удар молнии','Shock'],
-   ['Громовой разряд','Thunder Crash'],['Кража жизни','Blood Drain'],
-   ['Ядовитый удар','Infect'],['Огненная буря','Fire Storm'],
-   ['Шаровая молния','Thunder Ball']
-  ]){
-   assert.equal(spellBook.ru.filter(x=>x.text.includes(name)).length,1,name);
-   assert.equal(spellBook.en.filter(x=>x.text.includes(english)).length,1,english);
-  }
-  assert.match(spellBook.ru[0].main,/Гигантский огр · 6–36 ОЗ/);
-  assert.match(spellBook.ru[0].details,/Магические знания: \+6 ОЗ к среднему удару/);
-  assert.match(spellBook.en[0].details,/Magic Knowledge: \+6 HP to average hit/);
-  assert.match(spellBook.ru[0].details,/ИНТ 80.*Магия стихий 50/);
-  assert.match(spellBook.ru.find(row=>row.text.includes('Ядовитый удар'))?.details||'',/СД 50.*Магия тьмы 25/);
-  assert.match(spellBook.en.find(row=>row.text.includes('Blood Drain'))?.details||'',/Average hit against.*60 HP/);
-  assert.equal(spellBook.expanded.length,12);
-  assert.equal(spellBook.expandedRu.length,12);
-  assert.equal(spellBook.expandedEn.length,12);
-  assert.equal(spellBook.expandedRu.filter(x=>x.text.includes('Святая стрела')).length,1);
-  assert.equal(spellBook.expandedEn.filter(x=>x.text.includes('Pure Arrow')).length,1);
-  assert.equal(spellBook.expandedRu.filter(x=>x.text.includes('Песчаный вихрь')).length,1);
-  assert.equal(spellBook.expandedEn.filter(x=>x.text.includes('Sandstorm')).length,1);
-  const fireRow=spellBook.ru.find(row=>row.text.includes('Огненная буря'));
-  assert.match(fireRow?.main||'',/прямой удар 13–76 ОЗ/);
-  assert.match(fireRow?.details||'',/Средний прямой урон по цели.*57 ОЗ/);
-  const rotRow=spellBook.expandedRu.find(row=>row.text.includes('Гниение'));
-  assert.match(rotRow?.main||'',/прямой удар 5–38 ОЗ/);
-  assert.match(rotRow?.details||'',/Средний прямой урон по цели.*25 ОЗ/);
-  const rotEn=spellBook.expandedEn.find(row=>row.text.includes('Mind Venom'));
-  assert.match(rotEn?.main||'',/direct hit 5–38 HP/);
-  assert.match(rotEn?.details||'',/Average direct hit against.*25 HP/);
-  assert.equal(spellBook.expandedRu.some(x=>x.text.includes('Неотвратимый взрыв')),false);
-  // Level-45 Calamity gets an upgraded area attack of the same name.
-  // The real Book must show its upgraded version only once per skill.
-  assert.equal(spellBook.calamity.length,14);
-  assert.equal(spellBook.calamityRu.length,11);
-  assert.equal(spellBook.calamityEn.length,11);
-  for(const [name,english] of [
-   ['Кража жизни','Blood Drain'],
-   ['Ядовитый удар','Infect'],
-   ['Гниение','Mind Venom']
-  ]){
-   assert.equal(spellBook.calamityRu.filter(x=>x.text.includes(name)).length,1,
-    'no duplicated upgraded skill '+name);
-   assert.equal(spellBook.calamityEn.filter(x=>x.text.includes(english)).length,1,
-    'no duplicated EN upgraded skill '+english);
-  }
-  assert.equal(spellBook.calamityRu.filter(x=>x.text.includes('Ненависть')).length,1);
-  assert.equal(spellBook.calamityEn.filter(x=>x.text.includes('Pestilence')).length,1);
-  assert.match(spellBook.calamityRu.find(x=>x.text.includes('Ненависть'))?.main||'',
-   /прямой удар 6–34 ОЗ/);
-  assert.equal(spellBook.trapRu.filter(x=>x.text.includes('Взрывающаяся ловушка')).length,1);
-  assert.equal(spellBook.trapEn.filter(x=>x.text.includes('Plant Mine')).length,1);
-  assert.match(spellBook.trapRu.find(x=>x.text.includes('Взрывающаяся ловушка'))?.main||'',
-   /прямой удар 11–84 ОЗ/);
-  assert.equal(spellBook.conjurerRu.filter(x=>x.text.includes('Песчаная буря')).length,1);
-  assert.equal(spellBook.conjurerEn.filter(x=>x.text.includes('Summon Sandman')).length,1);
-  assert.match(spellBook.conjurerRu.find(x=>x.text.includes('Песчаная буря'))?.main||'',
-   /прямой удар 6–34 ОЗ/);
-  assert.doesNotMatch(spellBook.expandedRu.map(row=>row.text).join(' '),
-   /материал|рецепт|изготовлени/i);
+  assert.deepEqual(targetSource.ogre,[34,148,194],
+   'Standalone source model remains stable after Book retirement');
+  assert.notDeepEqual(targetSource.dingo,targetSource.ogre);
+  assert.ok(targetSource.linked.includes(240005001));
+  await render({lang:'ru',chapter:'effects'});
+  assert.equal(await page.locator('#book-source-qa .stage-target-damage-row').count(),0);
+  assert.equal(await page.locator('#book-source-qa .stage-book-damage-target').count(),0);
+  await render({lang:'en',chapter:'effects'});
+  assert.equal(await page.locator('#book-source-qa .stage-target-damage-row').count(),0);
 
   assert.deepEqual(errors,[]);
   console.log('Chromium Book 664: OS/Remaked RU+EN skills, Hymn/Песнопения, Адепт, buffs and defense');
