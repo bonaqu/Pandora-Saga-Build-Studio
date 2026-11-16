@@ -1,5 +1,6 @@
 ## 0.840.0 · Source metadata для семи справочных боевых навыков (#615)
 - combatTechniquePreview сохраняет только существующие sourceOnly/qualitative строки при изменении настоящих mana/cooldown, которые UI уже читает из skill catalog. Игровые EP/FV, классы, reqs, prereq, range, cast, AoE, linked child/parent, а также другие инспекторы остаются со строгой sourceVerifiedSkillSignature. Не менять числовые боевые формулы.
+- Проверку парных source-only мана/перезарядка вести на старом/новом каталоге для 7 качественных combatTechniquePreview; дочерняя цепочка не может изменять FV1/FV2, даже если стоимость допустима.
 - Сохранить independent replaySkills до D1: изменение mana у 233001001 теперь не теряет источник и допускается, но у 100000501 остаётся loss + blocking preflight, пока отдельный контракт там не доказан.
 - tests/os-combat-advanced-738.test.mjs и tests/catalog-skill-source-parameters-839.test.mjs; обязательны Node+Chromium exact SHA, live D1 только чтение.
 
