@@ -18,12 +18,14 @@ test('a revised weapon-enhancement formula is NOT misreported as verified by HP/
  assert.equal(report.totals.needsReview,1);
  assert.ok(report.samples.needsReview.some(x=>x.key==='table:weaponPlus'));
 });
-test('source level cap is informational, while ability points have actual modeled coverage',()=>{
+test('source level cap and OS abilityPoint are informational, not the planner skill grant formula',()=>{
  const next=structuredClone(base);next.tables.levelCap=50;next.tables.abilityPoint[45]=5;
  const report=check(base,next);
- assert.equal(report.totals.sourceOnly,1);
- assert.equal(report.totals.verified,1);
+ assert.equal(report.totals.sourceOnly,2);
+ assert.equal(report.totals.verified,0);
  assert.equal(report.totals.needsReview,0);
+ assert.equal(report.entries.find(x=>x.key==='table:abilityPoint')?.contract,
+  'table.ability-source');
 });
 test('a changed class parent or branch mastery cap needs mechanic review',()=>{
  const next=structuredClone(base);next.classes.MAGE.branchCaps.element=60;
@@ -35,11 +37,15 @@ test('a changed class parent or branch mastery cap needs mechanic review',()=>{
  report=check(base,next);
  assert.equal(report.totals.needsReview,1);
 });
-test('modeled HP coefficients are checked, not silently put in source-only status',()=>{
+test('incomplete synthetic class is not certified as a modeled HP source contract',()=>{
  const next=structuredClone(base);next.classes.MAGE.hp.lv=11;
  const report=check(base,next);
- assert.equal(report.totals.verified,1);
- assert.equal(report.totals.needsReview,0);
+ assert.equal(report.totals.verified,0);
+ assert.equal(report.totals.needsReview,1);
+ assert.equal(report.entries[0].contract,undefined);
+ // This tiny mocked catalog lacks race/job origins, full stat caps, and
+ // calculator modules. Real signed HP proof is tested on all 28 classes
+ // in catalog-character-preflight-834.test.mjs.
 });
 test('only a text change is source-only, and a changed FV vector is unverified',()=>{
  const next=structuredClone(base);next.classes.MAGE.name='Маг II';
