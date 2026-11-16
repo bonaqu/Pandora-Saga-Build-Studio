@@ -37,24 +37,20 @@ export async function runGlobalSearchAutofill797Smoke(browser,base){
   await staticSearch.press('Tab');
   assert.equal(await staticSearch.evaluate(input=>input.readOnly),true);
 
-  // The real Hero Book renderer uses a *different* element factory than the
-  // app; this previously missed the common search policy (the screenshot).
+  // Hero Book no longer has a target search. Its removal must not
+  // weaken common credential-autofill protections for the remaining searches.
   await page.evaluate(async()=>{
-   const files=await Promise.all([
-    'data/os/skills.json','data/os/classes.json','data/os/tables.json',
-    'data/os/monsters.json','data/os/strings.en.json'
+   const [skills,classes,english]=await Promise.all([
+    'data/os/skills.json','data/os/classes.json','data/os/strings.en.json'
    ].map(async path=>{
     const response=await fetch(path);
     if(!response.ok)throw Error('Cannot open '+path);
     return response.json();
    }));
-   const [skills,classes,tables,monsters,english]=files;
    const host=document.createElement('div');
    host.id='global-search-797-book';
    host.setAttribute('style','position:relative;width:440px;height:700px;overflow:auto');
    document.body.append(host);
-   const choices=window.PandoraOSTargetDamage.availableMonsterTargets({
-    monsters,englishMonsters:english.monsters});
    window.PandoraStageAttributes.render(host,{
     page:'effects',
     modifiers:{mp:220,stats:{dex:70,int:20},
@@ -64,35 +60,12 @@ export async function runGlobalSearchAutofill797Smoke(browser,base){
     gameTerms:{skills,englishSkills:english.skills,
      classes,englishClasses:english.classes},
     heroJobKey:'DISTURBANCE',heroLevel:45,
-    heroMasteries:{trap:41},heroBranchCaps:classes.DISTURBANCE.branchCaps,
-    targetMonsterChoices:choices,targetMonsterId:22104
+    heroMasteries:{trap:41},heroBranchCaps:classes.DISTURBANCE.branchCaps
    });
   });
-  const bookSearch=page.locator('#global-search-797-book .stage-book-target-search');
-  await bookSearch.waitFor({state:'attached'});
-  assert.equal(await bookSearch.getAttribute('data-ps-noncredential-search'),'true');
-  assert.equal(await bookSearch.getAttribute('autocomplete'),'none');
-  assert.match(await bookSearch.getAttribute('name'),/^ps-filter-/);
-  assert.equal(await bookSearch.evaluate(input=>input.readOnly),true);
-  const blocked=await bookSearch.evaluate(input=>{
-   let observed=0;
-   input.addEventListener('input',()=>observed++);
-   input.value='administrator';
-   input.dispatchEvent(new InputEvent('input',{
-    bubbles:true,inputType:'insertReplacementText'
-   }));
-   return {value:input.value,observed};
-  });
-  assert.deepEqual(blocked,{value:'',observed:0},
-   'The target search must not accept injected login text');
-  await bookSearch.click();
-  await bookSearch.fill('динго');
-  const choice=page.locator('#global-search-797-book select[data-book-setting="damageTarget"]');
-  assert.ok(await choice.locator('option').count()<40);
-  assert.equal(await choice.inputValue(),'22104',
-   'Filtering never changes the selected target automatically');
-  await bookSearch.press('Tab');
-  assert.equal(await bookSearch.evaluate(input=>input.readOnly),true);
+  assert.equal(await page.locator('#global-search-797-book .stage-book-page').count(),1);
+  assert.equal(await page.locator('#global-search-797-book .stage-book-target-search').count(),0);
+  assert.equal(await page.locator('#global-search-797-book [data-book-setting="damageTarget"]').count(),0);
 
   // Any future search created by a different module is also guarded by the
   // observer, without reimplementing or invoking a legacy input factory.
@@ -122,6 +95,6 @@ export async function runGlobalSearchAutofill797Smoke(browser,base){
   });
   assert.deepEqual(untouched,{autocomplete:'current-password',locked:false,guarded:false});
   assert.deepEqual(errors,[]);
-  console.log('Chromium autofill 797: YaBrowser marker, Hero Book target, native search, manual editing, auth isolation');
+  console.log('Chromium autofill 797: YaBrowser marker, Book without retired target, native search, manual editing, auth isolation');
  }finally{await context.close()}
 }
