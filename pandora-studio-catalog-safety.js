@@ -716,6 +716,104 @@ function verifiedDynamicSkillFV(id,old,now,before,after){
  return false;
 }
 
+
+// Prove signed character changes on the real before/after planner, not on
+// schema field names. Unfamiliar gameplay properties stay needsReview.
+const contractSame=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+const contractKeys=(a,b)=>validObject(a)&&validObject(b)&&
+ Object.keys(a).length===Object.keys(b).length&&Object.keys(a).every(k=>Object.hasOwn(b,k));
+const contractShape=(x,fields)=>validObject(x)&&
+ Object.keys(x).length===fields.length&&fields.every(k=>Object.hasOwn(x,k));
+const contractStats=x=>contractShape(x,keys)&&keys.every(k=>
+ Number.isSafeInteger(x[k])&&x[k]>=0&&x[k]<=99);
+const contractHP=(x,k)=>contractShape(x,['base','lv',k])&&
+ Object.values(x).every(v=>Number.isFinite(v)&&v>=0);
+const contractJob=x=>contractShape(x,[...keys,'branches'])&&
+ keys.every(k=>Number.isSafeInteger(x[k])&&x[k]>=0&&x[k]<=99)&&
+ validObject(x.branches)&&Object.keys(x.branches).length>0&&
+ Object.values(x.branches).every(v=>Number.isSafeInteger(v)&&
+  v>=0&&v<=root.PandoraSkillProgression?.TRACK_MAX);
+function replayCharacterContract(before,after,ids){
+ const attr=root.PandoraAttributeProgression,skill=root.PandoraSkillProgression;
+ if(!attr?.snapshot||!skill?.branchPotential||
+  !root.PandoraOSCalculator?.classBase)return false;
+ const races=Object.keys(before?.tables?.raceInit||{});
+ if(!races.length||!contractSame(races,Object.keys(after?.tables?.raceInit||{})))
+  return false;
+ for(const data of [before,after])for(const id of ids){
+  const klass=data?.classes?.[id];
+  if(!klass||!contractHP(klass.hp,'vit')||
+   !contractHP(klass.mp,'spi')||!contractStats(klass.statCaps))return false;
+  const job=data.tables?.jobInit?.[klass.baseClass];
+  if(!contractJob(job))return false;
+  for(const race of races)for(const level of [1,15,30,45,55]){
+   const model=project(data,{klass:id,race,level,stats:{},points:{}});
+   const snap=attr.snapshot({tables:data.tables,race,
+    klass:klass.baseClass,level,added:[0,0,0,0,0,0],
+    caps:klass.statCaps});
+   if(!model||model.error||!snap||
+    !Number.isFinite(model.baseHp)||model.baseHp<0||
+    !Number.isFinite(model.baseMp)||model.baseMp<0||
+    !Number.isSafeInteger(model.attributeBudget)||
+    !Number.isSafeInteger(model.skillBudget)||
+    snap.base.some((n,i)=>!Number.isSafeInteger(n)||n<0||n>snap.max[i]))
+    return false;
+  }
+  for(const name of Object.keys(job.branches)){
+   const mastery=skill.branchPotential({points:{[name]:1}},
+    name,job.branches,klass.branchCaps);
+   if(!Number.isSafeInteger(mastery)||mastery<0||mastery>skill.TRACK_MAX)
+    return false;
+  }
+ }
+ return true;
+}
+function verifiedCharacterClass(id,old,now,before,after){
+ if(!old||!now||String(old.id)!==String(id)||String(now.id)!==String(id))
+  return false;
+ const changed=[...new Set([...Object.keys(old),...Object.keys(now)])]
+  .filter(k=>!contractSame(old[k],now[k]));
+ if(!changed.some(k=>['hp','mp','statCaps'].includes(k))||
+  changed.some(k=>!['hp','mp','statCaps','name','nameEn','desc','descEn'].includes(k)))
+  return false;
+ if(!contractHP(old.hp,'vit')||!contractHP(now.hp,'vit')||
+  !contractHP(old.mp,'spi')||!contractHP(now.mp,'spi')||
+  !contractStats(old.statCaps)||!contractStats(now.statCaps))return false;
+ return replayCharacterContract(before,after,[id]);
+}
+function verifiedCharacterTable(field,before,after){
+ if(!['raceInit','jobInit'].includes(field))return false;
+ const a=before?.tables?.[field],b=after?.tables?.[field];
+ if(!contractKeys(a,b)||!Object.keys(a).length)return false;
+ for(const key of Object.keys(a)){
+  if(field==='raceInit'){
+   if(!contractStats(a[key])||!contractStats(b[key]))return false;
+  }else if(!contractJob(a[key])||!contractJob(b[key])||
+   !contractKeys(a[key].branches,b[key].branches))return false;
+ }
+ const ids=Object.keys(before?.classes||{});
+ if(!ids.length||!contractSame(ids,Object.keys(after?.classes||{})))return false;
+ return replayCharacterContract(before,after,ids);
+}
+// The source abilityPoint table does NOT determine planner skill grants.
+function sourceOnlyAbilityTable(field,before,after){
+ if(field!=='abilityPoint')return false;
+ const a=before?.tables?.abilityPoint,b=after?.tables?.abilityPoint;
+ if(!contractKeys(a,b))return false;
+ return Object.keys(a).every(k=>Number.isSafeInteger(Number(k))&&
+  Number(k)>=2&&Number(k)<=99&&String(Number(k))===k&&
+  Number.isSafeInteger(a[k])&&a[k]>=0&&Number.isSafeInteger(b[k])&&b[k]>=0);
+}
+const CHARACTER_SOURCE_CONTRACTS=Object.freeze([
+ Object.freeze({id:'class.base-parameters',kind:'verified',dataset:'classes',
+  matches:verifiedCharacterClass}),
+ Object.freeze({id:'table.race-origin',kind:'verified',dataset:'tables',
+  matches:verifiedCharacterTable}),
+ Object.freeze({id:'table.job-origin',kind:'verified',dataset:'tables',
+  matches:verifiedCharacterTable}),
+ Object.freeze({id:'table.ability-source',kind:'sourceOnly',dataset:'tables',
+  matches:sourceOnlyAbilityTable})
+]);
 // Source-only is distinct from verified numeric output. Every contract
 // delegates to an already present strict old/new calculator proof.
 const SKILL_SOURCE_CONTRACTS=Object.freeze([
@@ -741,6 +839,7 @@ const FORTH_SOURCE_CONTRACTS=Object.freeze([
 // Immutable public contract census: code may evolve without a new hardcoded
 // list of skill IDs or guessing what unknown game effects do.
 const SOURCE_CONTRACT_REGISTRY=Object.freeze([
+ ...CHARACTER_SOURCE_CONTRACTS.map(({id,kind,dataset})=>Object.freeze({id,kind,dataset})),
  ...SKILL_SOURCE_CONTRACTS.map(({id,kind})=>Object.freeze({id,kind,dataset:'skills'})),
  ...EQUIPMENT_SOURCE_CONTRACTS.map(({id,kind,datasets})=>
   Object.freeze({id,kind,dataset:datasets.join(',')})),
@@ -785,12 +884,14 @@ function compatibility(before,after){
     const changed=[...new Set([...Object.keys(old),...Object.keys(now)])]
      .filter(field=>!same(old[field],now[field]));
     const textual=['name','nameEn','desc','descEn'];
-    const modeled=['hp','mp','statCaps','baseClass'];
-    if(changed.every(field=>textual.includes(field)))
+    const contract=CHARACTER_SOURCE_CONTRACTS[0];
+    if(changed.every(k=>textual.includes(k)))
      add('sourceOnly','class:'+id,name+' · изменён текст');
-    else if(changed.every(field=>modeled.includes(field)||textual.includes(field)))
-     add('verified','class:'+id,name+' · проверены базовые расчёты ОЗ/ОМ и характеристик');
-    else add('needsReview','class:'+id,name+' · изменились связи или пределы мастерства');
+    else if(contract.matches(id,old,now,before,after))
+     add('verified','class:'+id,
+      name+' · расчёт контрольных героев проверен',contract.id);
+    else add('needsReview','class:'+id,
+     name+' · неподтверждённые свойства или коэффициенты профессии');
    }
    continue;
   }
@@ -798,11 +899,19 @@ function compatibility(before,after){
    const fields=new Set([...Object.keys(oldData||{}),...Object.keys(newData||{})]);
    for(const field of fields){
     if(same(oldData?.[field],newData?.[field]))continue;
-    if(['abilityPoint','raceInit','jobInit'].includes(field))
-     add('verified','table:'+field,'Игровые таблицы · '+field+' · базовая прокачка проверена');
+    const contract=CHARACTER_SOURCE_CONTRACTS.slice(1).find(entry=>
+     (field==='raceInit'&&entry.id==='table.race-origin'||
+      field==='jobInit'&&entry.id==='table.job-origin'||
+      field==='abilityPoint'&&entry.id==='table.ability-source')&&
+     entry.matches(field,before,after));
+    if(contract)add(contract.kind,'table:'+field,
+     'Игровые таблицы · '+field+(contract.kind==='verified'?
+      ' · старый и новый герой проверены':
+      ' · игровые сведения; не формула очков планировщика'),contract.id);
     else if(['levelCap','expCap'].includes(field))
      add('sourceOnly','table:'+field,'Игровые таблицы · '+field+' · сведения сервера');
-    else add('needsReview','table:'+field,'Игровые таблицы · '+field+' · боевые/игровые коэффициенты');
+    else add('needsReview','table:'+field,
+     'Игровые таблицы · '+field+' · требуется проверка неизвестной формулы');
    }
    continue;
   }
@@ -1087,6 +1196,26 @@ function sourceGraphIntegrity(before,after){
    if(!present(classes,job))
     signed('table',job,-1,'jobInit-class',job,'Профессия отсутствует');
   }
+  // Independently protect old/new root job and class promotion graph.
+  for(const [id,record] of Object.entries(classes)){
+   for(const [field,target] of [['baseClass',record?.baseClass],
+    ['parent',record?.parent]]){
+    if(field==='parent'&&target==null)continue;
+    inspected++;
+    if(typeof target!=='string'||!target||!present(classes,target))
+     signed('class',id,-1,field,target,'Связанная профессия отсутствует');
+   }
+   const path=new Set([id]);let parent=record?.parent;
+   while(typeof parent==='string'&&present(classes,parent)){
+    inspected++;
+    if(path.has(parent)){
+     signed('class',id,-1,'promotion-cycle',parent,
+      'Циклическая цепочка профессий');
+     break;
+    }
+    path.add(parent);parent=classes[parent]?.parent;
+   }
+  }
   // An existing target ID does not prove a linked skill graph terminates.
   // Detect introduced direct and multi-step execution cycles, including
   // unlearnable skills without a previously verified numeric preview.
@@ -1121,6 +1250,7 @@ function sourceGraphIntegrity(before,after){
   else if(row.kind==='itemForth')record=data?.itemForth?.[row.owner];
   else if(row.kind==='unison')record=data?.unison?.[row.owner];
   else if(row.kind==='expertise')record=data?.expertise?.limit?.[row.owner];
+  else if(row.kind==='class')record=data?.classes?.[row.owner];
   else if(row.kind==='table')record=data?.tables?.jobInit?.[row.owner];
   else if(row.kind==='trade')record=data?.trades?.trades?.find(
    entry=>String(entry?.id)===row.owner);

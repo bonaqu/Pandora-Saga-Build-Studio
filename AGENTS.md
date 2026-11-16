@@ -1,3 +1,9 @@
+## 0.834.0 · Доказуемые контракты профессий и таблиц (#615)
+- class.base-parameters, table.race-origin, table.job-origin получают verified только при полной old/new проверке по 28 профессиям, 6 расам, уровням 1/15/30/45/55 и веткам мастерства. Незнакомые коэффициенты и изменения class.parent/baseClass — needsReview.
+- table.ability-source sourceOnly: планировщик рассчитывает очки навыков через собственную модель PandoraSkillProgression/PandoraLevelProgression, а не через OS abilityPoint.
+- sourceGraphIntegrity до CAS блокирует новые сломанные class.parent/baseClass и promotion cycles. Тесты tests/catalog-character-preflight-834.test.mjs.
+- Проверить Node и Chromium на точном PR SHA, затем Pages и live read-only Worker/D1 parity, без записи D1, auth, билды и CAS не менять.
+
 ## 0.833.0 · Видимые статусы проверки атомарных разделов игрового каталога (#615)
 - `PandoraOSCatalogWorkbench.statusForSelection(change,entries)` объединяет все `compatibility.entries` вложенных источников для одной выбираемой целиком записи `@dataset` (`trades`, `chests`, `instances`, `expertise`, `tables`). Публикация этих разделов намеренно остаётся атомарной: **не** разбивать её на частичные записи без отдельного CAS- и D1-контракта.
 - Правило приоритета статуса: `needsReview` > `verified` > `sourceOnly`. Учитывается полный список machine-readable `entries`, а не первые шесть UI примеров. Ранее для выбранного целого раздела отображение статуса могло пропадать из-за несовпадения `@dataset` и вложенных ключей `trades:trades/0`, `chests:boxes/0`, `instances:0`, `expertise:limit/WARRIOR`.

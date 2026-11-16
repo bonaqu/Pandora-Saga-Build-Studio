@@ -62,9 +62,9 @@ test('atomic instance and expertise changes map to the correct status',()=>{
 });
 
 test('atomic table and ordinary item/set records keep their independent statuses',()=>{
- const tables=changed('tables',data=>{data.abilityPoint['1']+=1;});
+ const tables=changed('tables',data=>{data.abilityPoint['2']+=1;});
  assert.equal(tables.changes[0].key,'@dataset');
- assert.deepEqual(tables.statuses,['verified']);
+ assert.deepEqual(tables.statuses,['sourceOnly']);
  const unison=changed('unison',data=>{data['12081'].rows[0].a.c+=1;});
  assert.equal(unison.changes[0].key,'12081');
  assert.deepEqual(unison.statuses,['needsReview']);
