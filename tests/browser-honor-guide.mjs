@@ -48,12 +48,11 @@ export async function runHonorGuideSmoke(browser,base){
   assert.equal(await panel.locator('#honor-victories').count(),1);
  assert.equal(await panel.locator('#honor-victories .wiki-honor-pvp-table').count(),3);
  assert.match(await panel.locator('#honor-victories').innerText(),/50 000|50,000/);
- const eventScreenshot=panel.locator('#honor-victories a.wiki-honor-pvp-screenshot-link');
- assert.equal(await eventScreenshot.count(),1,
-  'An official screenshot link remains available when the image host rejects hotlinking');
- assert.ok((await eventScreenshot.getAttribute('href')).endsWith(
-  '/f4be126de5ed488981aeeb2298255095.jpg'),
-  'Screenshot link must retain the exact source image filename');
+ // PvP illustration is decorative, never an outbound source link.
+ assert.equal(await panel.locator('#honor-victories a.wiki-honor-pvp-screenshot-link').count(),0);
+ assert.equal(await panel.locator('#honor-victories a[href*="pandorasaga-os"]').count(),0);
+ assert.doesNotMatch(await panel.locator('#honor-victories').innerText(),
+  /Источник:|официальное обновление от|Source: official game update/i);
  assert.equal(await panel.locator('.wiki-honor-rank:not([hidden])').count(),12);
   // Regression: Honor used to return from renderWiki before attaching the
   // universal search listener. Search the article, not the OS record index.
