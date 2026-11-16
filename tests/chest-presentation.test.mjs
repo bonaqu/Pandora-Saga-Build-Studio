@@ -42,7 +42,7 @@ test('every chest displays high chances first, without changing any source order
  const preserved=JSON.stringify(all);
  for(const chest of all){
   const sortedGroups=model.orderedGroups(chest.rolls||[]);
-  assert.deepEqual(sortedGroups.map(g=>g.index).slice().sort((a,b)=>a-b),
+  assert.deepEqual(Array.from(sortedGroups,g=>g.index).sort((a,b)=>a-b),
    [...(chest.rolls||[]).keys()]);
   let last=Infinity;
   for(const group of sortedGroups){
@@ -57,7 +57,7 @@ test('every chest displays high chances first, without changing any source order
     assert.ok(chance<=previous,'Wrong reward order in '+chest.i);
     previous=chance;
    }
-   assert.deepEqual(sorted.map(x=>x.index).slice().sort((a,b)=>a-b),
+   assert.deepEqual(Array.from(sorted,x=>x.index).sort((a,b)=>a-b),
     [...group.entries.keys()]);
   }
  }
