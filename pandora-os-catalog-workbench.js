@@ -1485,7 +1485,8 @@
        ' ранее проверенных сценариев перестали подтверждаться. '+
        (lossSummary.length?'Основные разделы: '+lossSummary.join(' · ')+'. ':'')+
        [...replay.errors,...replay.samples.map(x=>x.name+' / '+
-        (x.module==='ally-recipient'?'усиление союзника':
+        (x.module==='source-access-notice'?'доступность навыка':
+         x.module==='ally-recipient'?'усиление союзника':
          x.module==='priest-cast'?'усиление жреца':
          x.module.startsWith('source-recipe-')?'рецепт':
          x.module==='source-ammunition'?'расход стрел':
