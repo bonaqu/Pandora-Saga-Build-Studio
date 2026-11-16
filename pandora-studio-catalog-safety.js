@@ -2174,10 +2174,10 @@ function replaySkills(before,after){
   for(const id of [260006002,300001001,300002001]){
    try{
     const oldNotice=W.inspect({skillCatalog:before?.skills,
-     classes:before?.classes,id,calculator:C})?.accessNotice;
+     classes:before?.classes,id,calculator:root.PandoraOSCalculator})?.accessNotice;
     if(!oldNotice)continue;
     const newNotice=W.inspect({skillCatalog:after?.skills,
-     classes:after?.classes,id,calculator:C})?.accessNotice;
+     classes:after?.classes,id,calculator:root.PandoraOSCalculator})?.accessNotice;
     accessNoticesChecked++;
     if(newNotice?.kind===oldNotice.kind)continue;
     lost.push({id:String(id),job:'source-access',module:'source-access-notice',
