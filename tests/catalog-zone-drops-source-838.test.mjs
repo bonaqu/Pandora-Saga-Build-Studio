@@ -107,3 +107,20 @@ test('zone-drop source change can combine with physical forge and XP data-only u
  assert.ok(audit.entries.some(x=>x.contract==='table.zone-drop-parameters'));
  assert.equal(safety.sourceGraphIntegrity(base,a).ok,true);
 });
+
+test('an existing alternative monster ID is valid structurally but NOT a proven same loot rule',()=>{
+ const candidate=Object.keys(base.monsters).map(Number);
+ const hook=base.tables.zoneDrops.flatMap(zone=>zone.rows)
+  .find(row=>row.kind==='hook'&&Number.isSafeInteger(row.mob));
+ assert.ok(hook);
+ const other=candidate.find(id=>id!==hook.mob);
+ assert.ok(other);
+ const {after,report}=change(zones=>{
+  zones.flatMap(zone=>zone.rows)
+   .find(row=>row.kind==='hook'&&row.mob===hook.mob).mob=other;
+ });
+ assert.equal(report.entries[0].kind,'needsReview');
+ assert.equal(report.entries[0].contract,undefined);
+ assert.equal(safety.sourceGraphIntegrity(base,after).ok,true,
+  'a resolvable relation is not evidence of unchanged loot semantics');
+});
