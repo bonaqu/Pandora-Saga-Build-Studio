@@ -60,7 +60,7 @@ test('No status total, duplicate effect rows or crafting content in Hero Book',(
  assert.equal(hits.filter(row=>row.skillId===410026001).length,1);
  assert.equal(hits.find(row=>row.skillId===410026001)?.hitKind,'direct-part');
  const book=read('pandora-studio-hero-book.js');
- assert.match(book,/stage-target-damage-row/);
- assert.match(book,/hitResult\.hitKind==='direct-part'/);
+ assert.doesNotMatch(book,/stage-target-damage-row|hitResult\.hitKind==='direct-part'/);
+ assert.match(book,/scalingSkillPreview\?\.\(/);
  assert.doesNotMatch(book,/function materialSkillResults\(/);
 });
