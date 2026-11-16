@@ -51,6 +51,22 @@ test('valid server HP/resistance updates keep the calculated target and use NEW 
  assert.equal(trap(after)?.targetElementResistance,-25);
  assert.equal(JSON.stringify(current),before,'preflight must be read-only');
 });
+test('admin status signs validated target numbers, not arbitrary monster changes',()=>{
+ const numbers=updatedMonsters(monsters=>{monsters['22104'].life++});
+ const signed=S.compatibility(current,numbers);
+ assert.equal(signed.totals.verified,1);
+ assert.equal(signed.entries[0].contract,'monster.target-source-parameters');
+ assert.equal(signed.entries[0].key,'monsters:22104');
+ assert.ok(S.sourceContractRegistry.some(x=>x.id===signed.entries[0].contract));
+ const textual=updatedMonsters(monsters=>{monsters['22104'].name+=' •'});
+ const sourceOnly=S.compatibility(current,textual);
+ assert.equal(sourceOnly.totals.sourceOnly,1);
+ assert.equal(sourceOnly.totals.verified,0);
+ const unsupported=updatedMonsters(monsters=>{monsters['22104'].warding++});
+ assert.equal(S.compatibility(current,unsupported).totals.sourceOnly,1);
+ const invalid=updatedMonsters(monsters=>{monsters['22104'].life=0});
+ assert.equal(S.compatibility(current,invalid).totals.needsReview,1);
+});
 test('corrupt current target HP or resistance cannot make a Book target disappear',()=>{
  for(const mutate of [
   m=>{m.life=0;},m=>{m.life='6126';},
