@@ -128,7 +128,7 @@ test('Book Honor selection uses D1 Russian/English skill name, numeric effect ha
  const book=read('pandora-studio-hero-book.js');
  assert.match(book,/gameTerms\.skills\?\.\[String\(950000000\+id\)\]\?\.name/);
  assert.match(book,/gameTerms\.englishSkills\?\.\[String\(950000000\+id\)\]\?\.n/);
- assert.match(book,/hitResult\.honorAverageGain/);
+ assert.doesNotMatch(book,/hitResult\.honorAverageGain|targetMonsterId/);
  assert.match(book,/Титул чести/);
  assert.doesNotMatch(book,/stage-material-actions|function materialSkillResults\(/);
 });
