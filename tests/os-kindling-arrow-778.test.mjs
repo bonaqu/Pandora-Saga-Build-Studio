@@ -98,10 +98,9 @@ test('Hero Book shows numerical current hit, not ingredients or guessed burn tot
  const book=read('pandora-studio-hero-book.js');
  const app=read('pandora-studio-app.js');
  const wiki=read('pandora-studio-wiki-skill-insights.js');
- assert.match(book,/heroPowerCoefficient!==0/);
- assert.match(book,/430056001,213608001\]\.includes\(id\)/);
- assert.match(book,/archery:'Стрельба'/);
- assert.match(app,/PandoraOSTargetDamage\?\.supportedSkillHits/);
+ assert.doesNotMatch(book,/heroPowerCoefficient!==0|430056001,213608001\]\.includes\(id\)|stage-target-damage-row/);
+ assert.doesNotMatch(app,/PandoraOSTargetDamage\?\.supportedSkillHits/);
+ assert.match(book,/scalingSkillPreview\?\.\(/);
  assert.doesNotMatch(book,/function materialSkillResults\(/);
  assert.match(wiki,/213608001/);
 });
