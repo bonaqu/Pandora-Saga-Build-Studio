@@ -1,3 +1,10 @@
+## 0.871.0 · Единые иконки и понятная группировка экипировки
+- SVG-стрелка вправо всегда имеет видимый наконечник `M13 6l6 6-6 6` в общем `PandoraStudioIcons` и `PandoraStageItemUI`; тесты проверяют не только path, но и реальную геометрию Chromium.
+- В свойствах вещи `stage-rich-choose-group` — отдельно от `stage-rich-settings-group`; внутри второй — свойства и управление душами со спокойным разделителем. Не увеличивать размеры кнопок/панелей, сохранять RU/EN/D1-копию.
+- В каталоге выбора предмета кнопка `stage-picker-unequip` показывает общий SVG `remove`, а подпись `pickerUnequip` остаётся отдельно редактируемой. Логика снятия общая с контекстным меню.
+- `CHANGELOG.md` содержит только последние записи, остальное в `docs/changelog/README.md` и небольших архивах. Будущие выпуски через `scripts/release-version.mjs` автоматически ротируют историю посредством `scripts/changelog-archive.mjs`. Не склеивать архив обратно в корневой CHANGELOG.
+- Не менять D1, Worker, сохранения и игровые значения без отдельной разрешённой задачи. Node + полный Chromium по exact SHA, после merge read-only Pages/Worker/D1.
+
 ## Production D1: защищённый GitHub Actions — проверенный способ записи (17.11.2026)
 - Не утверждать «нет доступа к D1», пока не проверены существующие `.github/workflows/`, права подключённого GitHub-инструмента и действующие Cloudflare service secrets. Прямого личного D1-коннектора может не быть, но защищённый GitHub Actions с `CLOUDFLARE_API_TOKEN` уже успешно публиковал реальные изменения.
 - **Подтверждение:** [PR #692](https://github.com/bonaqu/Pandora-Saga-Build-Studio/pull/692), [запуск #44012837738](https://github.com/bonaqu/Pandora-Saga-Build-Studio/actions/runs/44012837738) — семь item.level 55→50 записаны в production D1 и прочитаны через публичный Worker, затем 16/16 наборов данных совпали. Это не означает неограниченного права менять любые данные.
