@@ -2605,6 +2605,9 @@ function heroPathApi(){
   state,groups,job:klass,lang,selectedGroup:selectedSkillGroup,expandedBranch:inlineBranchId,
   innate:innateBranches(),branchCaps:branchCapacities(),
   skillCatalog:heroSkillRows(catalog.skills),catalogReady:!!catalog.skills,
+  maxLevel:55,
+  maxSkillPoints:window.PandoraSkillProgression.spending(
+   gameTables?.abilityPoint,55,{}).total,
   // Search both the displayed locale and source-backed alternate language.
   // These aliases never affect class gates, skill IDs or calculated effects.
   skillSearchText:skill=>[skill.name,catalogSource?.skills?.[String(skill.id)]?.name,
