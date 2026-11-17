@@ -290,12 +290,11 @@ export async function runUIContentInlineSmoke(browser,base){
   await patchNote.waitFor({state:'visible',timeout:15000});
   assert.doesNotMatch(await patchNote.textContent(),/коэффициент|не утверждается/);
   await patchNote.locator('.ui-content-pencil').click();
-  const patchInput=patchNote.locator('[contenteditable]');
+  const patchInput=page.locator('.wiki-skill-source-insight p.wiki-description [contenteditable]');
   await patchInput.fill('Усиленная версия с сокращённой подготовкой и повышенным уроном.');
   await patchInput.press('Tab');
-  await page.waitForFunction(()=>document.querySelector(
-   '.wiki-skill-source-insight p.wiki-description')?.textContent?.includes(
-   'Усиленная версия с сокращённой подготовкой и повышенным уроном.'),null,
+  await page.waitForFunction(()=>Array.from(document.querySelectorAll('.wiki-skill-source-insight p.wiki-description')).some(node=>node.textContent?.includes(
+   'Усиленная версия с сокращённой подготовкой и повышенным уроном.')),null,
    {timeout:15000});
   assert.equal(JSON.parse(values['guideedit.book.wiki-ui.os-patch420007101']).ru,
    'Усиленная версия с сокращённой подготовкой и повышенным уроном.');
