@@ -10890,6 +10890,31 @@ function saveLiveDraft(){
  const draft=persist(),library=persistBuilds();
  return draft===true&&library===true;
 }
+let inlineDraftCopyReady=false;
+function pendingOwnerInlineText(){
+ if(!adminToken||!adminEditing)return '';
+ return [...document.querySelectorAll('[contenteditable="true"],[contenteditable="plaintext-only"]')]
+  .filter(node=>!startupOverlay.contains(node)&&node.isConnected)
+  .map(node=>node.textContent?.trim()||'').filter(Boolean).join('\n\n');
+}
+function refreshOwnerDraftRecovery(){
+ let field=$('startupUnsentOwnerText');
+ const text=pendingOwnerInlineText();
+ if(!text){field?.remove();inlineDraftCopyReady=false;return}
+ if(!field){
+  field=document.createElement('textarea');
+  field.id='startupUnsentOwnerText';
+  field.className='ps-boot-owner-draft';
+  field.readOnly=true;
+  field.rows=4;
+  field.setAttribute('aria-label',lang==='en'?
+   'Unsubmitted owner text — copy before updating':
+   'Несохранённая текстовая правка — скопируй перед обновлением');
+  startupOverlay.querySelector('.ps-boot-card')?.append(field);
+ }
+ field.value=text;
+ inlineDraftCopyReady=false;
+}
 function showLiveGate(kind){
  if(localCatalogHost||!studioLiveReady)return;
  // Once a newer published snapshot is detected, a later offline browser
@@ -10921,9 +10946,13 @@ function showLiveGate(kind){
   liveLocalSaved?
   'Your current hero is saved in this browser. Cloud saves are confirmed separately.':
   'Could not save the local draft. Keep this tab open.');
+ if(changed)refreshOwnerDraftRecovery();
+ else $('startupUnsentOwnerText')?.remove();
+ const needsCopy=changed&&Boolean($('startupUnsentOwnerText'));
  setBootCopy('startupRetry',storage?'Повторить сохранение':
-  changed?'Сохранить и перезагрузить':'Повторить подключение',
-  storage?'Retry saving':changed?'Save and reload':'Retry connection');
+  needsCopy?'Скопировать текст':'Сохранить и перезагрузить',
+  storage?'Retry saving':needsCopy?'Copy text':'Save and reload');
+ if(!changed&&!storage)setBootCopy('startupRetry','Повторить подключение','Retry connection');
  document.body.classList.add('studio-live-blocked');
  if(!changed&&!storage)scheduleOnlineRetry();
 }
@@ -10936,6 +10965,7 @@ function leaveLiveGate(){
   if(!liveLocalSaved){showLiveGate('storage');return}
  }
  liveGateReason=null;liveLocalSaved=true;
+ $('startupUnsentOwnerText')?.remove();inlineDraftCopyReady=false;
  clearOnlineRetry();
  document.body.classList.remove('studio-live-blocked');
  startupDone();
@@ -10985,12 +11015,25 @@ function reloadVerifiedCatalog(){
  // Never destroy an unacknowledged one-time recovery secret, password form,
  // in-flight owner CAS write, or current library draft.
  const accountBusy=window.PandoraAccountUI?.updateGuard?.();
- const editOpen=Boolean(document.querySelector(
-  '[contenteditable="true"],[contenteditable="plaintext-only"]'));
- if(accountBusy||ownerSaveInFlight()||editOpen){
+ if(accountBusy||ownerSaveInFlight()){
   $('startupStatus').textContent=lang==='en'?
-   'An account or inline edit is unfinished. Copy your unsaved text before reloading.':
-   'Есть незавершённая правка. Скопируй несохранённый текст перед обновлением.';
+   'An account operation or D1 save is unfinished. Keep this tab open.':
+   'Действие аккаунта или сохранение D1 ещё не завершено. Не закрывай вкладку.';
+  return;
+ }
+ // An active inline editor can contain text that has NOT reached D1. Keep
+ // a selectable, read-only copy in the blocking dialog. Require an explicit
+ // second click after copying; never silently discard it on refresh.
+ const pendingCopy=$('startupUnsentOwnerText');
+ if(pendingCopy&&!inlineDraftCopyReady){
+  inlineDraftCopyReady=true;
+  pendingCopy.focus({preventScroll:true});
+  pendingCopy.select();
+  setBootCopy('startupRetry','Я скопировал — перезагрузить',
+   'I copied it — reload');
+  $('startupStatus').textContent=lang==='en'?
+   'Copy the selected unsent text (Ctrl+C), then confirm the reload.':
+   'Скопируй выделенный несохранённый текст (Ctrl+C), затем подтверди обновление.';
   return;
  }
  const okay=document.dispatchEvent(new Event('pandora:before-update',{cancelable:true}));
