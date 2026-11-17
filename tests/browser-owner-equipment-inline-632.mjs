@@ -197,6 +197,12 @@ export async function runOwnerEquipmentInlineSmoke(browser,base){
   assert.equal(Object.hasOwn(values,headingKey),false);
   assert.match(await page.locator('#stagePicker .stage-picker-slot-pencil')
    .getAttribute('aria-label'),/Slot/);
+  // On narrow viewports the deliberately persistent owner dock can cover
+  // the picker close control. Collapse it through the actual admin UI;
+  // never use a forced pointer click through an overlapping panel.
+  if(!await page.locator('#ownerDock').evaluate(el=>
+   el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
   await page.locator('#stagePicker .stage-picker-head > button').click();
   await page.locator('#locale [data-locale="ru"]').click();
   await page.waitForFunction(()=>document.documentElement.lang==='ru');
@@ -216,6 +222,9 @@ export async function runOwnerEquipmentInlineSmoke(browser,base){
   assert.equal(await page.locator('#stagePicker .stage-picker-slot-title span').last().textContent(),
    russianSlotSuffix);
   assert.equal((await value().innerText()).trim(),'0/2');
+  if(await page.locator('#ownerDock').evaluate(el=>
+   el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
   await page.locator('#ownerDock [data-owner-undo]').click();
   await page.waitForFunction(()=>
    document.querySelector('#stagePicker .stage-picker-slot-prefix')?.textContent==='Слот',
