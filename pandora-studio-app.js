@@ -7376,23 +7376,23 @@ function renderBuilds(root){
  choice.append(h('span',{'data-owner-copy-key':'libraryDraftUnsaved',text:libraryText('libraryDraftUnsaved')}),
   h('div',{class:'new-build-choice-actions'},[
    draft,
-   h('button',{type:'button',class:'button-action primary',text:libraryText('librarySaveAndCreate'),onclick:()=>{if(saveBuild(draft.value))newBlankBuild()}}),
-   h('button',{type:'button',class:'button-action',text:libraryText('libraryCreateWithoutSave'),onclick:newBlankBuild}),
-   h('button',{type:'button',class:'button-action',text:libraryText('libraryCancel'),onclick:()=>{
+   h('button',{type:'button',class:'button-action primary','data-library-action-copy':'librarySaveAndCreate',text:libraryText('librarySaveAndCreate'),onclick:()=>{if(saveBuild(draft.value))newBlankBuild()}}),
+   h('button',{type:'button',class:'button-action','data-library-action-copy':'libraryCreateWithoutSave',text:libraryText('libraryCreateWithoutSave'),onclick:newBlankBuild}),
+   h('button',{type:'button',class:'button-action','data-library-action-copy':'libraryCancel',text:libraryText('libraryCancel'),onclick:()=>{
      newBuildPromptOpen=false;newBuildDraftName=null;choice.hidden=true;
     }})
   ]));
  toolbar.append(name,
   h('button',{type:'button',class:'button-action primary',
-   text:libraryText('librarySaveNew'),
+   'data-library-action-copy':'librarySaveNew',text:libraryText('librarySaveNew'),
    onclick:()=>saveBuild(name.value)}),
   ...(activeBuildId&&builds.some(b=>b.id===activeBuildId)?[
-   h('button',{type:'button',class:'button-action',text:libraryText('librarySaveCopy'),onclick:()=>{
+   h('button',{type:'button',class:'button-action','data-library-action-copy':'librarySaveCopy',text:libraryText('librarySaveCopy'),onclick:()=>{
     const previous=activeBuildId;selectActiveBuild(null);
     if(!saveBuild(name.value))selectActiveBuild(previous);
    }})
   ]:[]),
-  h('button',{type:'button',id:'newBuildButton',class:'button-action',text:libraryText('libraryNewBuild'),onclick:()=>{
+  h('button',{type:'button',id:'newBuildButton',class:'button-action','data-library-action-copy':'libraryNewBuild',text:libraryText('libraryNewBuild'),onclick:()=>{
    if(!unsavedBuild()){newBuildPromptOpen=false;newBlankBuild();return}
    newBuildPromptOpen=!newBuildPromptOpen;
    choice.hidden=!newBuildPromptOpen;
@@ -7401,7 +7401,7 @@ function renderBuilds(root){
     draft.value=newBuildDraftName;draft.focus();
    }
   }}),
-  h('button',{type:'button',class:'button-action',text:libraryText('libraryRefresh'),
+  h('button',{type:'button',class:'button-action','data-library-action-copy':'libraryRefresh',text:libraryText('libraryRefresh'),
    onclick:()=>{reportCloudStatus('Проверяем облако…');void loadCloudBuilds()}}));
  root.append(toolbar,choice,h('p',{class:'cloud-library-status',role:'status',
   text:cloudStatusText(cloudLibraryStatus)}));
@@ -7604,7 +7604,8 @@ function renderBuilds(root){
      'data-owner-copy-key':'libraryCurrentBadge',text:libraryText('libraryCurrentBadge')})]:[])
    ]),
    h('label',{class:'build-card-compare'},[
-    check,h('span',{text:libraryText('libraryCompare')})
+    check,h('span',{'data-library-compare-copy':'libraryCompare',
+     text:libraryText('libraryCompare')})
    ])
   ]);
   // A second confirmation replaces the first instead of stacking panels.
