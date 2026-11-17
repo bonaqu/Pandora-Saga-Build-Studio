@@ -240,6 +240,10 @@ export async function publish(){
 if(process.argv[1]&&fileURLToPath(import.meta.url)===process.argv[1]){
  if(process.argv.length===3&&process.argv[2]==='--preflight'){
   preflight().catch(e=>{console.error(e.message);process.exitCode=1});
+ }else if(process.argv.length===3&&process.argv[2]==='--verify-published'){
+  preflight().then(state=>{if(state!=='published')
+   throw Error('Public D1 item levels have not yet been updated')})
+   .catch(e=>{console.error(e.message);process.exitCode=1});
  }else if(process.argv.length===3&&process.argv[2]==='--publish-owner-authorized-seven-levels-20261117'){
   publish().catch(e=>{console.error(e.message);process.exitCode=1});
  }else{
