@@ -65,6 +65,7 @@ import {runOwnerDualSessionCasSmoke} from './browser-owner-dual-session-cas.mjs'
 import {runWikiOwnerEnglishSyncSmoke} from './browser-wiki-owner-english-sync.mjs';
 import {runWikiSpawnReplacementSmoke} from './browser-wiki-spawn-replace.mjs';
 import {runChestRewardLayoutSmoke} from './browser-chest-reward.mjs';
+import {runChestCategoryFiltersSmoke} from './browser-chest-category-filters-20261117.mjs';
 import {runEncyclopediaPerformanceSmoke} from './browser-encyclopedia-performance.mjs';
 
 const base='http://127.0.0.1:4173';
@@ -144,6 +145,7 @@ const scenarios=[
   ['wiki-spawn-replace',runWikiSpawnReplacementSmoke],
   ['wiki-icons-offline',runWikiIconManifestFallbackSmoke],
   ['chest-reward-layout',runChestRewardLayoutSmoke],
+  ['chest-category-filters',runChestCategoryFiltersSmoke],
   ['hidden-admin-entry',runAdminEntrySmoke],
   ['inline-skill-milestones',runInlineMilestonesSmoke]
  ];
