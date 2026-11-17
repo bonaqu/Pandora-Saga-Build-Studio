@@ -20,7 +20,9 @@ function makeFixture(language,editable){
  const window={PandoraEquipmentPlan:{
   canRefine:()=>false,socketCapacity:()=>0,canSocket:()=>false
  }};
- runInNewContext(read('pandora-studio-equipment-ui.js'),{window,document,MouseEvent:class{}});
+ runInNewContext(read('pandora-studio-equipment-ui.js'),{
+  window,document,PandoraEquipmentPlan:window.PandoraEquipmentPlan,MouseEvent:class{}
+ });
  const tree=document.createElement('section'),edits=[];
  const ru='Ячейка',en='Socket position';
  window.PandoraStageItemUI.render(tree,{
