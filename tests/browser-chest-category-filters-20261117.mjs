@@ -74,6 +74,33 @@ export async function runChestCategoryFiltersSmoke(browser,base){
   assert.ok(maxCardWidth<=341,'A small filtered result must not stretch to a huge card: '+maxCardWidth);
   await slots.locator('[data-chest-slot="weapon"]').click();
   assert.equal(await verifyFacets('equipment','weapon'),sourceSlot(51036,'weapon'));
+  // Regression: in a partial last row, rewards must keep exactly the same
+  // widths as preceding full rows (not grow to fill the remaining columns).
+  const incompleteRows=await page.locator('.wiki-chest-group:not([hidden])').evaluateAll(sections=>{
+   const output=[];
+   for(const section of sections){
+    const visible=[...section.querySelectorAll('.wiki-chest-reward:not([hidden])')];
+    const rows=[];
+    for(const card of visible){
+     const rect=card.getBoundingClientRect();
+     if(!rect.width||!rect.height)continue;
+     const previous=rows.find(row=>Math.abs(row.top-rect.top)<2);
+     if(previous)previous.widths.push(rect.width);
+     else rows.push({top:rect.top,widths:[rect.width]});
+    }
+    if(rows.length>1&&rows.at(-1).widths.length<rows[0].widths.length)
+     output.push({first:rows[0].widths,last:rows.at(-1).widths});
+   }
+   return output;
+  });
+  assert.ok(incompleteRows.length>0,
+   'Ancient King weapon inventory must exercise at least one incomplete final row');
+  for(const {first,last} of incompleteRows){
+   const reference=first[0];
+   for(const width of [...first,...last])
+    assert.ok(Math.abs(width-reference)<=1.5,
+     'Last row card expanded relative to first row: '+JSON.stringify({first,last}));
+  }
   await type.selectOption('all');
   assert.equal(await cards().count(),sourceRows(51036).length,
    'Removing filter must restore all source rows');
