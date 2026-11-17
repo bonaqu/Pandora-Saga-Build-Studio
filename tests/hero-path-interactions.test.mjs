@@ -139,7 +139,9 @@ test('actual app category handler collapses and reopens on repeated click',()=>{
 test('HTML boolean attributes in app factory use actual property semantics',()=>{
  const app=sources['pandora-studio-app.js'],begin=app.indexOf('function h('),end=app.indexOf('\nfunction imageUrl',begin);
  assert.ok(begin>=0&&end>begin);
- const h=Function('document',app.slice(begin,end)+'\nreturn h;')(doc);
+ const factoryStart=app.indexOf('const controlGlyphIcon=');
+ assert.ok(factoryStart>=0&&factoryStart<begin,'Shared icon mapping is part of the app factory');
+ const h=Function('document',app.slice(factoryStart,end)+'\nreturn h;')(doc);
  const enabled=h('button',{disabled:false,text:'Enabled'});
  const disabled=h('button',{disabled:true,text:'Disabled'});
  assert.equal(enabled.disabled,false);
