@@ -5221,9 +5221,29 @@ function renderWiki(root){
       }
       section.append(note);
      }
-     const explanations=evidence.notes.map(n=>lang==='en'?(n.en||n.ru):(n.ru||n.en));
-     for(const description of explanations.filter(Boolean))
-      section.append(h('p',{class:'wiki-description',text:description}));
+     // Only source-authored, fixed game-patch explanations get owner copy keys.
+     // Calculated results and generated game data remain outside editorial D1.
+     for(const note of evidence.notes){
+      const ru=note.ru||note.en||'',en=note.en||note.ru||'';
+      if(!ru&&!en)continue;
+      const ownerKey=/^osPatch[0-9]+$/.test(note.editorialKey||'')?
+       note.editorialKey:null;
+      const visible=ownerKey?ownerCopy('wiki-ui',ownerKey,ru,en):
+       (lang==='en'?en:ru);
+      const label=h('span',{text:visible});
+      const description=h('p',{class:'wiki-description'},[label]);
+      if(ownerKey&&adminEditing&&adminToken){
+       ownerCopyLabel(label,'wiki-ui',ownerKey,ru,en);
+       description.append(h('button',{type:'button',class:'ui-content-pencil',
+        text:'✎',title:wt('Изменить пояснение','Edit note'),
+        'aria-label':wt('Изменить пояснение умения','Edit skill note'),
+        onclick:event=>{
+         event.preventDefault();event.stopPropagation();
+         label.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
+        }}));
+      }
+      section.append(description);
+     }
      if(evidence.paths.length){
       section.append(h('h5',{text:wt('Связанные действия','Linked actions')}));
       for(const path of evidence.paths){

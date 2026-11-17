@@ -274,6 +274,31 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(JSON.parse(values['guideedit.book.wiki.item-field.pen']).hintRu,
    'Чем меньше пробитие, тем выше минимальная атака.');
   assert.equal(await page.locator('.item-fields dt[data-item-field="PEN"] + dd').textContent(),penBefore);
+  // The visible, source-verified patch note is real editorial UI copy.
+  // A guest never sees the pencil; an owner changes only the text, not the
+  // supported gameplay signature or character build.
+  if(await page.locator('#detailPanel.is-open').count())
+   await page.locator('#dockClose').click();
+  await wiki.click();
+  await page.locator('[data-wiki-chapter="skill"]').click();
+  await search.click();
+  await search.fill('Песчаная буря');
+  const sandstorm=page.locator('[data-wiki-record="420007101"]');
+  await sandstorm.waitFor({state:'visible',timeout:25000});
+  await sandstorm.click();
+  const patchNote=page.locator('.wiki-skill-source-insight p.wiki-description')
+   .filter({hasText:'повышенный урон'});
+  await patchNote.waitFor({state:'visible',timeout:15000});
+  assert.doesNotMatch(await patchNote.textContent(),/коэффициент|не утверждается/);
+  await patchNote.locator('.ui-content-pencil').click();
+  const patchInput=page.locator('.wiki-skill-source-insight p.wiki-description [contenteditable]');
+  await patchInput.fill('Усиленная версия с сокращённой подготовкой и повышенным уроном.');
+  await patchInput.press('Tab');
+  await page.waitForFunction(()=>Array.from(document.querySelectorAll('.wiki-skill-source-insight p.wiki-description')).some(node=>node.textContent?.includes(
+   'Усиленная версия с сокращённой подготовкой и повышенным уроном.')),null,
+   {timeout:15000});
+  assert.equal(JSON.parse(values['guideedit.book.wiki-ui.os-patch420007101']).ru,
+   'Усиленная версия с сокращённой подготовкой и повышенным уроном.');
   // Leave the existing Encyclopedia detail workbench before opening the
   // account UI: a modal workbench correctly intercepts background clicks.
   if(await page.locator('#detailPanel.is-open').count())
