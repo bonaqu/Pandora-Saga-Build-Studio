@@ -5,8 +5,14 @@ import vm from 'node:vm';
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const source={window:{}};
-for(const path of ['pandora-os-catalog-import.js',
- 'pandora-os-catalog-review.js','pandora-studio-catalog-safety.js'])
+for(const path of [
+ 'pandora-os-character-calculator.js',
+ 'pandora-studio-attribute-progression.js',
+ 'pandora-studio-skill-progression.js',
+ 'pandora-os-catalog-import.js',
+ 'pandora-os-catalog-review.js',
+ 'pandora-studio-catalog-safety.js'
+])
  vm.runInNewContext(read(path),source,{filename:path});
 const importer=source.window.PandoraCatalogImport,
  review=source.window.PandoraOSCatalogReview,
@@ -34,7 +40,7 @@ test('confirmed seven-level D1-like fixture yields exactly seven selectable item
  const differences=importer.files.flatMap(name=>
   review.changes(name,old[name],source[name]));
  assert.equal(differences.length,7,'No unselected gameplay formulas, skills, Souls or names');
- assert.deepEqual(differences.map(row=>row.key).sort(),[...ids].sort());
+ assert.deepEqual(Array.from(differences,row=>row.key).sort(),[...ids].sort());
  assert.ok(differences.every(row=>row.dataset==='items'&&
   row.kind==='changed'&&row.before.level===55&&row.after.level===50));
  for(const row of differences){
@@ -60,7 +66,8 @@ test('existing selective CAS publish compose stages only seven corrected level f
  for(const id of ids){
   assert.equal(merged.items[id].level,50);
   assert.equal(merged.items[id].desc,old.items[id].desc);
-  assert.deepEqual(merged.items[id].effects,old.items[id].effects);
+  assert.equal(JSON.stringify(merged.items[id].effects),
+   JSON.stringify(old.items[id].effects));
  }
  for(const name of importer.files)
   assert.equal(review.strictEqual(merged[name],source[name]),true,
