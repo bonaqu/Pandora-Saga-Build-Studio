@@ -1561,13 +1561,16 @@ function openStageGearMenu(index,sourceSlot,event,anchor){
   h('strong',{text:hasItem?itemName(equipped):tr('Пустой слот','Empty slot')})
  ]);
  menu.append(title);
+ // Actions borrow the exact same glyphs as the equipment modal tabs.
+ // Keeping icon identity in PandoraStageItemUI prevents menu/tab drift.
  const actions=hasItem?[
-  ['properties','◇','Свойства','Properties',false],
-  ['souls','○','Управление душами','Manage Souls',!canManageSouls],
-  ['replace','⇄','Выбрать другую вещь','Choose another item',false],
-  ['remove','×','Снять вещь','Unequip item',false]
- ]:[['choose','+','Выбрать вещь','Choose item',false]];
- for(const [id,glyph,ru,en,disabled] of actions){
+  ['properties','Свойства','Properties',false],
+  ['souls','Управление душами','Manage Souls',!canManageSouls],
+  ['replace','Выбрать другую вещь','Choose another item',false],
+  ['remove','Снять вещь','Unequip item',false]
+ ]:[['choose','Выбрать вещь','Choose item',false]];
+ for(const [id,ru,en,disabled] of actions){
+  const glyph=window.PandoraStageItemUI.actionIcon(id);
   const label=h('span',{class:'stage-gear-context-caption',
    text:equipmentCopy('context.'+id,ru,en)});
   const button=h('button',{type:'button',role:'menuitem',
