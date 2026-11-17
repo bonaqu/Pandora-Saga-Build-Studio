@@ -327,14 +327,33 @@ function attachPreview(target,record,icon,kind='item',context=null){
  target.addEventListener('blur',()=>{focusPreviewToken++;remove()});
  target.addEventListener('click',remove);
 }
-// Shared icon mapping for equipment tabs and the character portrait context menu.
-// It also keeps localized admin labels independent of decorative glyphs.
-const actionIcons=Object.freeze({
- choose:'⇄',replace:'⇄',details:'≡',properties:'≡',
- souls:'○',remove:'×'
+// Shared vector icons for all item tabs, right-click actions and navigation.
+const actionIconNames=Object.freeze({
+ choose:'choose',replace:'choose',details:'details',properties:'details',
+ souls:'souls',remove:'remove'
+});
+const actionIconPaths=Object.freeze({
+ choose:['M4 7h16','M16 3l4 4-4 4','M20 17H4','M8 13l-4 4 4 4'],
+ details:['M8 6h13','M8 12h13','M8 18h13','M3 6h.01','M3 12h.01','M3 18h.01'],
+ souls:['M12 2l8 9-8 11-8-11 8-9','M4 11h16','M9 7l3 15 3-15'],
+ remove:['M18 6 6 18','M6 6l12 12'],
+ 'arrow-right':['M5 12h14','m-6-6 6 6-6 6']
 });
 function actionIcon(action,{forward=false}={}){
- return forward&&action==='details'?'→':actionIcons[action]||'';
+ const name=forward&&action==='details'?'arrow-right':actionIconNames[action];
+ if(!name)return null;
+ const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+ for(const [key,value] of Object.entries({
+  viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',
+  'stroke-width':'1.8','stroke-linecap':'round','stroke-linejoin':'round',
+  'aria-hidden':'true',focusable:'false','data-gear-icon':name,
+  class:'stage-action-svg'
+ }))svg.setAttribute(key,value);
+ for(const d of actionIconPaths[name]){
+  const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+  path.setAttribute('d',d);svg.append(path);
+ }
+ return svg;
 }
 function render(root,api){
  const {record,slot,mode,icons,refinement,souls,gems,gameTables}=api;
@@ -403,7 +422,7 @@ function render(root,api){
   pencil.addEventListener('focus',syncName);
   pencil.addEventListener('pointerenter',syncName);
   button.replaceChildren(...(prefix?[el('span',{class:'stage-action-glyph',
-   'aria-hidden':'true',text:prefix})]:[]),caption);
+   'aria-hidden':'true'},[prefix])]:[]),caption);
   const wrapper=el('span',{class:'stage-action-edit-wrap'});
   wrapper.append(button,pencil);
   return wrapper;
@@ -414,10 +433,10 @@ function render(root,api){
   ['choose',tr('Выбор','Choose')],
   ['details',tr('Свойства','Properties')]
  ];
- if(hasSouls)sections.push(['souls',tr('Души','Souls')]);
+ if(hasSouls)sections.push(['souls',tr('Управление душами','Manage Souls')]);
  for(const [key,title]of sections){
   const names={choose:['Выбор','Choose'],details:['Свойства','Properties'],
-   souls:['Души','Souls']};
+   souls:['Управление душами','Manage Souls']};
   const [ru,en]=names[key],text=copy('tab.'+key,ru,en);
   const hints={
    choose:['Выбрать или сменить предмет в этом слоте.','Choose or replace gear in this slot.'],
@@ -434,7 +453,7 @@ function render(root,api){
     if(event?.target?.closest?.('.stage-control-pencil,.wiki-inline-input'))return;
     api.changeMode(key);
    }});
-  button.append(el('span',{class:'stage-tab-symbol','aria-hidden':'true',text:glyph}),
+  button.append(el('span',{class:'stage-tab-symbol','aria-hidden':'true'},[glyph]),
    document.createTextNode(text));
   if(returningToDetails){
    button.setAttribute('aria-label',tr('Перейти к свойствам','Go to properties'));
@@ -444,7 +463,8 @@ function render(root,api){
    button.dataset.guideHint=actionHelp;
    root.PandoraGuideTooltip?.attach(button,actionHelp,{hoverDelay:300});
   }
-  tabs.append(labeledAction(button,'tab.'+key,ru,en,glyph));
+  tabs.append(labeledAction(button,'tab.'+key,ru,en,
+   actionIcon(key,{forward:returningToDetails})));
  }
  root.append(tabs);
  if(!record){
