@@ -22,7 +22,7 @@ test('editable bilingual labels preserve stable internal chapter and section key
  assert.equal(registry.value({},'skillFilter','racial','en'),'Racial passive');
  assert.equal(registry.value({},'skillFilter','special','ru'),'Особое');
  assert.equal(registry.value({},'skillFilter','special','en'),'Special');
- assert.equal(registry.value({},'skillFilter','variants','ru'),'Дубли навыков');
+ assert.equal(registry.value({},'skillFilter','variants','ru'),'Дубли умений');
  assert.equal(registry.value({},'skillFilter','variants','en'),'Duplicate skills');
  const patch={chapter_honor_ru:'Честь и ранги',chapter_honor_en:'Honor and ranks',
   honor_gain_ru:'Получение и потеря чести',honor_gain_en:'Earning and losing Honor',
@@ -73,7 +73,7 @@ test('exact older default labels are updated while custom owner names survive',(
  })};
  assert.equal(registry.value(old,'skillFilter','special','ru'),'Особое');
  assert.equal(registry.value(old,'skillFilter','special','en'),'Special');
- assert.equal(registry.value(old,'skillFilter','variants','ru'),'Дубли навыков');
+ assert.equal(registry.value(old,'skillFilter','variants','ru'),'Дубли умений');
  assert.equal(registry.value(old,'skillFilter','variants','en'),'Duplicate skills');
  const custom={'guideedit.wiki.labels':JSON.stringify({
   skill_filter_special_ru:'Другая категория',skill_filter_variants_en:'Other variants'

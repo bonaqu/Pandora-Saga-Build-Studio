@@ -40,7 +40,7 @@ test('shared receiver buttons, dialogs and dynamic build name use explicit local
   "const incomingName=String(incoming.name"
  ])assert.ok(app.includes(fragment),'Share dialog copy is not bilingual: '+fragment);
  assert.match(app,/class:'shared-personal-name',text:incomingName/);
- assert.match(app,/sharedText\('После открытия «','Opening “'\)\+incomingName/);
+ assert.match(app,/sharedText\('Открытие билда «','Opening build “'\)\+incomingName/);
  assert.match(app,/PandoraUILocale\?\.localize\(unsavedWarning,lang\)/);
  assert.doesNotMatch(app,/modal\('Открыть билд по ссылке\?',view\)/);
 });

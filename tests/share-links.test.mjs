@@ -22,7 +22,7 @@ test('sharing never replaces an existing build without explicit choice',()=>{
  assert.match(src,/Сохранить текущий и открыть/);
  assert.match(src,/Открыть без сохранения/);
  assert.match(src,/Отмена/);
- assert.match(src,/if\(saveBuild\(\)\)apply\(\)/);
+ assert.match(src,/saveBuild\(state\.name\|\|currentName,savedCurrent\?\.id\|\|null\)/);
  assert.match(src,/function restoreSharedHash\(/);
  assert.match(src,/window\.addEventListener\('hashchange'/);
  assert.equal((src.match(/window\.addEventListener\('hashchange'/g)||[]).length,1,

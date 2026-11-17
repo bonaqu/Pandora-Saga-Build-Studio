@@ -17,7 +17,7 @@ test('question-mark filter describes the artwork shown, without implying that a 
  assert.equal(classifier.names.player.ru,'Умения персонажа');
  assert.deepEqual(classifier.names.racial,{ru:'Расовая пассивка',en:'Racial passive'});
  assert.deepEqual(classifier.names.special,{ru:'Особое',en:'Special'});
- assert.deepEqual(classifier.names.variants,{ru:'Дубли навыков',en:'Duplicate skills'});
+ assert.deepEqual(classifier.names.variants,{ru:'Дубли умений',en:'Duplicate skills'});
  const model=classifier.build(skills,null,manifest,{},racialPassives);
  assert.equal(model.counts.unknown,59);
  assert.equal(model.missing('500000001'),true);
