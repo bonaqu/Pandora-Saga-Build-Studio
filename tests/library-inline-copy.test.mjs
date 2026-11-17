@@ -241,7 +241,7 @@ test('shared build import caption and unsaved warning are isolated from dynamic 
  assert.match(shared,/class:'shared-import-count-value',text:' '\+added\.length\+'\.'/);
  assert.match(shared,/PandoraUILocale\?\.localize\(unsavedWarning,lang\)/);
  assert.match(shared,/class:'shared-unsaved-warning-row|shared-receiver-copy-row shared-unsaved-warning-row'/);
- assert.match(shared,/incoming\.name\+sharedText\('»\?','”\?'\)/);
+ assert.match(shared,/class:'shared-personal-name',text:incomingName/);
  assert.doesNotMatch(shared,/localize\(incoming,lang\)/);
  assert.doesNotMatch(shared,/localize\(importCount,lang\)/);
  for(const unknown of ['Билдов по ссылке: 4.','Another hero name','Friend private QA hero']){
