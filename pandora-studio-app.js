@@ -7509,7 +7509,7 @@ function renderBuilds(root){
   openChoice.append(h('p',{text:tr('Есть несохранённые изменения. Открыть другой билд?',
     'You have unsaved changes. Open another build?')}),
    h('button',{type:'button',class:'button-action primary',text:tr('Сохранить текущий и открыть','Save current and open'),
-    onclick:()=>{if(saveBuild())openSavedBuild(b)}}),
+    onclick:()=>{if(saveBuild(state.name||'Новый герой',activeBuildId))openSavedBuild(b)}}),
    h('button',{type:'button',class:'button-action',text:tr('Открыть без сохранения','Open without saving'),
     onclick:()=>openSavedBuild(b)}),
    h('button',{type:'button',class:'button-action',text:tr('Отмена','Cancel'),
