@@ -52,7 +52,7 @@ export async function runChestRewardLayoutSmoke(browser,base){
    const cards=[...real.querySelectorAll('.wiki-chest-reward')].slice(0,2);
    const outer=document.createElement('div');
    outer.className='wiki-chest-board';
-   outer.style.cssText='position:fixed;top:-10000px;left:0;width:1120px;visibility:hidden';
+   outer.setAttribute('style','position:fixed;top:-10000px;left:0;width:1120px;visibility:hidden');
    const grid=document.createElement('div');
    grid.className='wiki-chest-assured-grid';
    for(const card of cards)grid.append(card.cloneNode(true));
