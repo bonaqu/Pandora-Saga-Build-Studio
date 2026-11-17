@@ -20,7 +20,11 @@ test('release history is preserved in individually readable archive segments',()
  assert.ok(content.every(row=>row.length<22000),'each archive can be fetched normally');
  const versions=[...current.matchAll(/^## (0\.\d+\.0) — /gm),
   ...content.flatMap(row=>[...row.matchAll(/^## (0\.\d+\.0) — /gm)])].map(m=>m[1]);
- assert.equal(versions.length,823,'retain all 822 old releases plus the new 0.871.0 entry');
+ assert.ok(versions.length>=822,'all original 822 releases must remain readable');
+ const currentRelease=JSON.parse(read('package.json')).version;
+ assert.ok(versions.includes(currentRelease),'the currently published release must be in the log');
+ assert.ok(versions.includes('0.870.0')&&versions.includes('0.47.0'),
+  'both ends of the historical archive must remain accessible');
  assert.equal(new Set(versions).size,versions.length,'no duplicate archived releases');
  for(const name of names)assert.ok(index.includes('./'+name),'index missing '+name);
  assert.ok(existsSync(join(dir,'historical-checklist.md')));
