@@ -7974,7 +7974,7 @@ function openSharedSnapshot(share){
  view.append(
   h('div',{class:'shared-open-actions'},[
    hintButton(sharedText('Сохранить текущий и открыть','Save current and open'),
-    saveHint,()=>{if(verifyViewer()&&saveBuild())apply()},' primary'),
+    saveHint,()=>{if(verifyViewer()){if(saveBuild())apply()}},' primary'),
    hintButton(sharedText('Открыть без сохранения','Open without saving'),
     discardHint,apply)
   ]),
@@ -10105,8 +10105,8 @@ function refreshWorkbenchHints(){
 function applyGameLocale({redraw=true}={}){
  window.PandoraUILocale.setOverrides(override);
  window.PandoraUILocale.apply(lang);
- refreshWorkbenchHints();
  refreshOpenAuthoredToast();
+ refreshWorkbenchHints();
  renderArchiveNotice();
  renderCatalogStatus();
  renderOriginCopyLabels();

@@ -217,8 +217,8 @@ test('shared build import caption and unsaved warning are isolated from dynamic 
  const fields={
   librarySharedImportCountLabel:['Билдов по ссылке:','Builds in link:'],
   librarySharedUnsavedWarning:[
-   'Несохранённые изменения текущего персонажа будут заменены.',
-   'The current character’s unsaved changes will be replaced.']
+   'Если открыть без сохранения, последние несохранённые изменения текущего билда будут потеряны.',
+   'If you open without saving, your current build’s latest unsaved changes will be lost.']
  };
  for(const [key,[ru,en]] of Object.entries(fields)){
   assert.equal(locale.literalKey(ru),key);

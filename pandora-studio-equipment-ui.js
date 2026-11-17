@@ -408,7 +408,6 @@ function render(root,api){
    souls:tr('Вставить, заменить или убрать душу в доступном слоте.',
     'Insert, replace or remove a Soul from an available socket.')
   };
-  const glyph={choose:'◈',details:'≡',souls:'✧'}[key];
   const button=el('button',{type:'button',text,
    class:mode===key?'chosen':'','aria-pressed':String(mode===key),
    'aria-description':actionHelp[key],
@@ -417,10 +416,8 @@ function render(root,api){
     if(event?.target?.closest?.('.stage-control-pencil,.wiki-inline-input'))return;
     api.changeMode(key);
    }});
-  if(!api.canEdit)button.prepend(el('span',{class:'stage-tab-symbol',
-   'aria-hidden':'true',text:glyph}));
   root.PandoraGuideTooltip?.attach(button,actionHelp[key],{hoverDelay:300});
-  tabs.append(labeledAction(button,'tab.'+key,ru,en,glyph));
+  tabs.append(labeledAction(button,'tab.'+key,ru,en));
  }
  root.append(tabs);
  if(!record){
