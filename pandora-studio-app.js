@@ -46,8 +46,11 @@ function startupDone(){
 function startupError(error){
  console.warn('Build Studio startup failed',error);
  startupOverlay.hidden=false;startupOverlay.classList.remove('is-finished');
- startupOverlay.dataset.state='error';
+ startupOverlay.dataset.state='error';startupOverlay.dataset.language=lang;
  startupOverlay.setAttribute('aria-label',lang==='en'?'Game data unavailable':'Игровые данные недоступны');
+ setBootCopy('startupTitle','Нет подключения к игровым данным','Game data connection unavailable');
+ setBootCopy('startupMicro','Для запуска необходим проверенный каталог игры.',
+  'A verified game catalog is required to start.');
  $('startupStatus').textContent=lang==='en'?
   'Could not verify current game data. Check your connection and retry.':
   'Не удалось проверить актуальные игровые данные. Проверь соединение и повтори попытку.';
@@ -10954,11 +10957,11 @@ function reloadVerifiedCatalog(){
  if(liveGateReason!=='changed'||!liveLocalSaved)return;
  // Never destroy an unacknowledged one-time recovery secret, password form,
  // in-flight owner CAS write, or current library draft.
- if(window.PandoraAccountUI?.updateGuard?.()||
-  window.PandoraStudioAdminActive?.()){
+ const accountBusy=window.PandoraAccountUI?.updateGuard?.();
+ if(accountBusy||ownerSaveInFlight()){
   $('startupStatus').textContent=lang==='en'?
-   'Finish the account or editor action before reloading.':
-   'Сначала заверши действие в аккаунте или редакторе перед перезагрузкой.';
+   'An account or editor action is still unfinished. Keep this tab open to protect your changes.':
+   'Действие в аккаунте или сохранение ещё не завершено. Не закрывай вкладку, чтобы не потерять изменения.';
   return;
  }
  const okay=document.dispatchEvent(new Event('pandora:before-update',{cancelable:true}));
