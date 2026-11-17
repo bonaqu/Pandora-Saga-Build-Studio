@@ -11060,7 +11060,9 @@ function blockUnverifiedInput(event){
  event.preventDefault();
  event.stopImmediatePropagation();
 }
-for(const type of ['keydown','click','input','change','submit'])
+// Owner text editors often auto-save on blur. A recovery overlay must
+// never trigger a hidden blur commit before the owner copies the unsent text.
+for(const type of ['keydown','click','input','change','submit','blur','focusout'])
  document.addEventListener(type,blockUnverifiedInput,true);
 window.addEventListener('offline',()=>{
  if(localCatalogHost)return;
