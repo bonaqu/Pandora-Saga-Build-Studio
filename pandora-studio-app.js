@@ -10423,7 +10423,7 @@ function applyGameLocale({redraw=true,persistReconciled=true}={}){
 // install the bundled copy. RU and EN use the same verified snapshot.
 let activeCatalogSnapshot=null,catalogLoadVersion=0;
 let englishCatalogPending=null,officialEnglishSnapshot=null;
-async function ensureEnglishCatalog(){
+async function ensureEnglishCatalog({persistReconciled=true}={}){
  if(!catalogSource)throw Error('Сначала требуется каталог игры');
  if(officialEnglish&&officialEnglishSnapshot===activeCatalogSnapshot)return officialEnglish;
  if(englishCatalogPending)return englishCatalogPending;
@@ -10442,7 +10442,7 @@ async function ensureEnglishCatalog(){
    throw Error('Английский каталог неполон или не совпадает с версией игры');
   if(snapshot!==activeCatalogSnapshot)return null;
   officialEnglish=data;officialEnglishSnapshot=snapshot;
-  if(lang==='en')applyGameLocale();
+  if(lang==='en')applyGameLocale({persistReconciled});
   return data;
  })().finally(()=>{englishCatalogPending=null});
  return englishCatalogPending;
@@ -10510,7 +10510,7 @@ async function loadCatalog({archive=false,commit=true}={}){
  if(!window.PandoraGameNavigation.all.has(state.branch))state.branch='slash';
  if(!pathGroupTouched)
   selectedSkillGroup=window.PandoraGameNavigation.branchGroup(state.branch)?.id||'melee';
- if(lang==='en')await ensureEnglishCatalog();
+ if(lang==='en')await ensureEnglishCatalog({persistReconciled:commit});
  if(version!==catalogLoadVersion)return;
  renderArchiveNotice();
  invalidateWikiCatalog({dropSnapshot:true});
