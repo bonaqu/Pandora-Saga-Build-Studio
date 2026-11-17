@@ -69,8 +69,15 @@ export async function runEquippedSoulCapacitySmoke(browser,base){
   assert.equal(await slotValue(),'0','Zero sockets display 0, not 0/0');
   assert.equal(await fill().count(),0,'Zero sockets remain plain without a colored counter');
   assert.equal(await hasDuplicateSoulRow(),0);
-  assert.equal(await props.locator('[data-stage-tab="souls"]').count(),0,
-   'A specific zero-socket belt must hide the Souls tab');
+  assert.equal(await props.locator('[data-stage-tab="souls"]').count(),1,
+   'Zero-socket belt keeps its Soul-management tab');
+  await props.locator('[data-stage-tab="souls"]').click();
+  const unavailable=props.locator('[data-soul-unavailable="zero"]');
+  assert.equal(await unavailable.count(),1);
+  assert.match(await unavailable.innerText(),/этого пояса.*0 слотов для душ/);
+  assert.equal(await props.locator('[data-socket-index]').count(),0,
+   'Zero capacity never exposes a Soul insertion control');
+  await props.locator('[data-stage-tab="details"]').click();
   await cap(1).click();
   assert.equal(await slotValue(),'0/1');
   assert.equal(await props.locator('[data-stage-tab="souls"]').count(),1);

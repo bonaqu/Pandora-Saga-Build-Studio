@@ -1980,7 +1980,7 @@ function renderStagePicker(focusSearch=false){
  const capacity=window.PandoraEquipmentPlan.equippedSocketCapacity(
   state,selectedSlot,equipped,record);
  if(stageSlotView==='gems'||(stageSlotView==='souls'&&
-  !window.PandoraEquipmentPlan.canSocket(key,record,capacity)))stageSlotView='details';
+  (!record||!window.PandoraEquipmentPlan.supportsSoulSlot(key))))stageSlotView='details';
  if(stageSlotView!=='choose'){
   const plan=window.PandoraEquipmentPlan;
   window.PandoraStageItemUI.render(root,{
@@ -2001,7 +2001,7 @@ function renderStagePicker(focusSearch=false){
    catalog,gameTables,close:()=>closeStagePicker(),
    changeMode:mode=>{
     if(mode==='gems')mode='details';
-    if(mode==='souls'&&!plan.canSocket(key,record,capacity))mode='details';
+    if(mode==='souls'&&(!record||!plan.supportsSoulSlot(key)))mode='details';
     stageSlotView=mode;saveView();renderStagePicker(mode==='choose')
    },
    updateGrade:n=>{if(!plan.canRefine(key)||!Number.isInteger(n)||n<0||n>10)return;
