@@ -92,7 +92,9 @@ test('Phoenix is shown active only for valid equipped fire-gem +7 weapon',()=>{
  assert.equal(cond.phoenixDamage(active.phoenix,6,{str:100}),null);
  assert.equal(cond.phoenixDamage(active.phoenix,7,{}),null);
  const app=read('pandora-studio-app.js');
- assert.match(app,/stage-elemental-proc/);
+ assert.doesNotMatch(app,/stage-elemental-proc/);
+ const equipment=read('pandora-studio-equipment-ui.js');
+ assert.match(equipment,/if\(phoenix\)rows\.push/);
  const book=read('pandora-studio-hero-book.js');
  assert.match(book,/PandoraConditionalItemBonuses\?\.activeFor/);
  assert.match(book,/function appendWeaponConditions\(body,calc,items,english\)/);
