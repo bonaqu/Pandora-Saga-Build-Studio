@@ -10892,6 +10892,9 @@ function saveLiveDraft(){
 }
 function showLiveGate(kind){
  if(localCatalogHost||!studioLiveReady)return;
+ // Once a newer published snapshot is detected, a later offline browser
+ // event must not downgrade the required explicit refresh to an old retry.
+ if(liveGateReason==='changed'&&kind!=='changed')return;
  if(!liveGateReason)liveLocalSaved=saveLiveDraft();
  liveGateReason=kind;
  startupOverlay.hidden=false;
@@ -10982,10 +10985,12 @@ function reloadVerifiedCatalog(){
  // Never destroy an unacknowledged one-time recovery secret, password form,
  // in-flight owner CAS write, or current library draft.
  const accountBusy=window.PandoraAccountUI?.updateGuard?.();
- if(accountBusy||ownerSaveInFlight()){
+ const editOpen=Boolean(document.querySelector(
+  '[contenteditable="true"],[contenteditable="plaintext-only"]'));
+ if(accountBusy||ownerSaveInFlight()||editOpen){
   $('startupStatus').textContent=lang==='en'?
-   'An account or editor action is still unfinished. Keep this tab open to protect your changes.':
-   'Действие в аккаунте или сохранение ещё не завершено. Не закрывай вкладку, чтобы не потерять изменения.';
+   'An account or inline edit is unfinished. Copy your unsaved text before reloading.':
+   'Есть незавершённая правка. Скопируй несохранённый текст перед обновлением.';
   return;
  }
  const okay=document.dispatchEvent(new Event('pandora:before-update',{cancelable:true}));
@@ -10999,13 +11004,21 @@ function reloadVerifiedCatalog(){
  url.searchParams.set('ps-revision',String(Date.now()));
  location.replace(url.toString());
 }
-document.addEventListener('keydown',event=>{
- if(!liveGateReason||startupOverlay.contains(event.target))return;
- // A modal overlay must actually block keyboard-triggered edits behind it,
- // without blurring and prematurely committing an in-progress D1 field.
- if(event.key==='Tab')$('startupRetry').focus({preventScroll:true});
- event.preventDefault();event.stopImmediatePropagation();
-},true);
+// A fixed overlay by itself does not stop keyboard shortcuts, programmatic
+// form submission or an already focused edit control behind it. Gate all
+// public user-input surfaces until the current D1 snapshot is verified.
+function blockUnverifiedInput(event){
+ if(localCatalogHost||startupOverlay.hidden||
+  startupOverlay.classList.contains('is-finished')||
+  studioLiveReady&&!liveGateReason||
+  startupOverlay.contains(event.target))return;
+ if(event.type==='keydown'&&event.key==='Tab')
+  $('startupRetry').focus({preventScroll:true});
+ event.preventDefault();
+ event.stopImmediatePropagation();
+}
+for(const type of ['keydown','click','input','change','submit'])
+ document.addEventListener(type,blockUnverifiedInput,true);
 window.addEventListener('offline',()=>{
  if(localCatalogHost)return;
  ++liveCheckpointId;liveCheckpointPromise=null;
@@ -11019,7 +11032,11 @@ window.addEventListener('online',()=>{
 setInterval(()=>{
  if(!localCatalogHost&&studioLiveReady&&liveGateReason!=='changed'&&
   document.visibilityState==='visible')void checkLiveConnection();
-},120000);
+},45000);
+window.addEventListener('focus',()=>{
+ if(!localCatalogHost&&studioLiveReady&&liveGateReason!=='changed')
+  void checkLiveConnection();
+});
 document.addEventListener('visibilitychange',()=>{
  if(!localCatalogHost&&studioLiveReady&&liveGateReason!=='changed'&&
   document.visibilityState==='visible')void checkLiveConnection();
@@ -11104,7 +11121,9 @@ void window.PandoraAccountUI.init({
   activateLibraryScope();
   libraryChangeId++;
   reportCloudStatus('Подключаем облачную библиотеку…');
-  void loadCloudBuilds();
+  // A public account login must not start cloud reconciliation behind an
+  // unverified game-data gate. Startup/reconnect already retries it safely.
+  if(localCatalogHost||studioLiveReady&&!liveGateReason)void loadCloudBuilds();
   if(activeTab==='builds')renderDetails();
   finishBuildAccountEntry();
  },
