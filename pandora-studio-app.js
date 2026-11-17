@@ -1964,6 +1964,7 @@ function renderStagePicker(focusSearch=false){
    canEdit:Boolean(adminEditing&&adminToken),
    record,item:equipped,slot:key,capacity,
    slotLabel:(lang==='en'?'Slot: ':'Слот: ')+gearSlotName(selectedSlot),
+   slotName:gearSlotName(selectedSlot),
    slotIndex:selectedSlot,selectedSocket,mode:stageSlotView,
    icons:(entry,kind)=>itemIcon(entry,kind==='soul'?'souls':'items'),
    refinement:plan.refinementValue(state.refinements,selectedSlot,equipped),
@@ -8730,6 +8731,13 @@ function refreshVisibleOwnerCopy(recordKey){
    const helpPencil=node.parentElement?.classList?.contains('path-owner-edit-row')?
     node.parentElement.querySelector('.path-owner-pencil'):null;
    (tabPencil||inlinePencil||helpPencil)?.setAttribute('aria-label',
+    (lang==='en'?'Edit caption: ':'Изменить надпись: ')+value);
+  }
+  if(section==='equipment'&&id==='pickerSlotHeading'){
+   // The dynamic game slot beside this caption is never part of the D1 key.
+   const pencil=node.closest('.stage-picker-slot-title-wrap')
+    ?.querySelector('.stage-picker-slot-pencil');
+   pencil?.setAttribute('aria-label',
     (lang==='en'?'Edit caption: ':'Изменить надпись: ')+value);
   }
   if(section==='owner-dialog'){

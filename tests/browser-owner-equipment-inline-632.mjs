@@ -163,6 +163,73 @@ export async function runOwnerEquipmentInlineSmoke(browser,base){
    'History reset must not remount equipment');
   assert.equal((await value().innerText()).trim(),'0/2');
   await page.locator('#modalRoot .modal button.close').click();
+  // A separate bilingual title-prefix edit never serializes the selected
+  // item name and never remounts the picker. Test real CAS, Undo and language.
+  const headingKey='guideedit.book.equipment.picker-slot-heading';
+  const readHeading=()=>{try{return JSON.parse(values[headingKey]||'null')}catch{return null}};
+  const expectSavedHeading=async (locale,expected)=>{
+   for(let n=0;n<150;n++){
+    if(readHeading()?.[locale]===expected)return;
+    await new Promise(resolve=>setTimeout(resolve,25));
+   }
+   throw Error('Mock D1 never saved equipment slot prefix '+locale+': '+
+    String(values[headingKey]));
+  };
+  const slotPrefix=page.locator('#stagePicker .stage-picker-slot-prefix');
+  const slotTitle=page.locator('#stagePicker .stage-picker-slot-title');
+  await slotPrefix.waitFor({state:'visible'});
+  assert.equal((await slotPrefix.innerText()).trim(),'Slot');
+  const englishSlotSuffix=await slotTitle.locator('span').last().textContent();
+  await page.locator('#stagePicker .stage-picker-slot-pencil').click();
+  await slotPrefix.locator('[data-owner-text-field]').fill('Socket position');
+  await slotPrefix.locator('[data-owner-text-field]').press('Tab');
+  await page.waitForFunction(()=>
+   document.querySelector('#stagePicker .stage-picker-slot-prefix')?.textContent===
+   'Socket position',null,{timeout:12000});
+  await expectSavedHeading('en','Socket position');
+  assert.equal(await slotTitle.locator('span').last().textContent(),englishSlotSuffix,
+   'Changing title must not rename selected game slot');
+  assert.equal((await value().innerText()).trim(),'0/2');
+  await page.locator('#ownerDock [data-owner-undo]').click();
+  await page.waitForFunction(()=>
+   document.querySelector('#stagePicker .stage-picker-slot-prefix')?.textContent==='Slot',
+   null,{timeout:12000});
+  assert.equal(Object.hasOwn(values,headingKey),false);
+  assert.match(await page.locator('#stagePicker .stage-picker-slot-pencil')
+   .getAttribute('aria-label'),/Slot/);
+  // On narrow viewports the deliberately persistent owner dock can cover
+  // the picker close control. Collapse it through the actual admin UI;
+  // never use a forced pointer click through an overlapping panel.
+  if(!await page.locator('#ownerDock').evaluate(el=>
+   el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
+  await page.locator('#stagePicker .stage-picker-head > button').click();
+  await page.locator('#locale [data-locale="ru"]').click();
+  await page.waitForFunction(()=>document.documentElement.lang==='ru');
+  await page.locator('.equipment-slot[data-slot-index="5"]').click();
+  await page.locator('#stagePicker [data-stage-tab="details"]').click();
+  const ruPrefix=page.locator('#stagePicker .stage-picker-slot-prefix');
+  await ruPrefix.waitFor({state:'visible'});
+  assert.equal((await ruPrefix.innerText()).trim(),'Слот');
+  const russianSlotSuffix=await page.locator('#stagePicker .stage-picker-slot-title span').last().textContent();
+  await ruPrefix.dblclick();
+  await ruPrefix.locator('[data-owner-text-field]').fill('Ячейка');
+  await ruPrefix.locator('[data-owner-text-field]').press('Tab');
+  await page.waitForFunction(()=>
+   document.querySelector('#stagePicker .stage-picker-slot-prefix')?.textContent==='Ячейка',
+   null,{timeout:12000});
+  await expectSavedHeading('ru','Ячейка');
+  assert.equal(await page.locator('#stagePicker .stage-picker-slot-title span').last().textContent(),
+   russianSlotSuffix);
+  assert.equal((await value().innerText()).trim(),'0/2');
+  if(await page.locator('#ownerDock').evaluate(el=>
+   el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
+  await page.locator('#ownerDock [data-owner-undo]').click();
+  await page.waitForFunction(()=>
+   document.querySelector('#stagePicker .stage-picker-slot-prefix')?.textContent==='Слот',
+   null,{timeout:12000});
+  assert.equal(Object.hasOwn(values,headingKey),false);
   // A text-only history reset does not remount the item picker or change Souls.
   assert.deepEqual(errors,[]);
   console.log('Chromium owner equipment: RU/EN CAS, Undo and in-place history reset passed');
