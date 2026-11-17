@@ -10,7 +10,8 @@ test('item chooser points forward toward item properties in both interfaces',()=
  const app=read('pandora-studio-app.js');
  const item=read('pandora-studio-equipment-ui.js');
  assert.match(css,/stage-picker-mode-link::before\{content:"→"/);
- assert.match(css,/return-to-properties::before\{content:"→"/);
+ assert.match(item,/actionIcon\(key,\{forward:returningToDetails\}\)/);
+ assert.match(css,/return-to-properties :is\(\.stage-tab-symbol,\.stage-action-glyph\)/);
  assert.match(item,/setAttribute\('aria-label',tr\('Перейти к свойствам','Go to properties'\)\)/);
  assert.match(app,/'aria-label':lang==='en'\?'Go to properties':'Перейти к свойствам'/);
  assert.doesNotMatch(app,/PandoraGuideTooltip\?\.attach\(detailsLink/);
