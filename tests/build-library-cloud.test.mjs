@@ -7,8 +7,8 @@ test('new heroes are level 1 and sharing is exclusively per saved build',()=>{
  const app=read('pandora-studio-app.js'),html=read('index.html');
  assert.match(app,/function fresh\(\)\{return\{race:null,gender:0,job:null,level:1,/);
  assert.match(html,/id="level"[^>]*max="55"[^>]*value="1"/);
- assert.match(app,/Сохранить и создать/);
- assert.match(app,/Создать без сохранения/);
+ assert.match(app,/text:libraryText\('librarySaveAndCreate'\)/);
+ assert.match(app,/text:libraryText\('libraryCreateWithoutSave'\)/);
  assert.match(app,/void putCloudBuild\(entry\)/);
  assert.doesNotMatch(app,/Поделиться текущим/);
  assert.doesNotMatch(app,/Поделиться всей библиотекой/);
