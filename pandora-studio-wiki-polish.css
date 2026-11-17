@@ -1,6 +1,36 @@
 /* Shared encyclopedia presentation. The universal Back button is
    styled once in pandora-studio-wiki-history.css. */
 .wiki-chest-board{display:grid;gap:12px;margin:10px 0 16px}
+.wiki-chest-reward-filters{
+ display:flex;flex-wrap:wrap;gap:7px 10px;align-items:center;
+ margin:10px 0 3px;min-width:0;
+}
+.wiki-chest-reward-filters select{
+ box-sizing:border-box;min-height:36px;min-width:0;max-width:100%;
+ padding:7px 28px 7px 10px;border-radius:6px;
+ border:1px solid #85643e;background:#241a13;color:#efcc9d;
+ font:500 12px Manrope,Arial,sans-serif;
+}
+.wiki-chest-reward-filters select:focus-visible{
+ outline:2px solid #e7b878;outline-offset:2px;
+}
+.wiki-chest-reward-filters .wiki-chest-filter-count{
+ margin-left:auto;color:#c6b395;font-size:11px;white-space:nowrap;
+ font-variant-numeric:tabular-nums;
+}
+.wiki-chest-filter-empty{margin:8px 0;padding:8px 10px}
+.wiki-chest-board .wiki-chest-reward[hidden],
+.wiki-chest-board .wiki-chest-collection[hidden],
+.wiki-chest-board>.wiki-chest-group[hidden],
+.wiki-chest-reward-filters select[hidden],
+.wiki-chest-filter-empty[hidden]{display:none!important}
+@media(max-width:520px){
+ .wiki-chest-reward-filters select{flex:1 1 145px}
+ .wiki-chest-reward-filters .wiki-chest-filter-count{
+  width:100%;margin:0;text-align:right;
+ }
+}
+
 .wiki-chest-collection{
  min-width:0;border:1px solid #927044;border-radius:6px;
  background:linear-gradient(160deg,#2e2117,#1a1510);
