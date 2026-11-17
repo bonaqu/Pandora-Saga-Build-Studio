@@ -164,7 +164,8 @@ export async function runOutfitSoulScrollSmoke(browser,base){
   const choose=page.locator('#stagePicker [data-stage-tab="choose"]');
   assert.equal(await choose.count(),1);
   await page.locator('#stagePicker [data-stage-tab="souls"]').click();
-  const soulTab=page.locator('#stagePicker .stage-rich-tabs').getByRole('button',{name:'Души'});
+  const soulTab=page.locator('#stagePicker .stage-rich-tabs [data-stage-tab="souls"]');
+  assert.equal((await soulTab.innerText()).trim(),'Управление душами');
   assert.equal(await soulTab.getAttribute('aria-pressed'),'true');
   const socketCards=page.locator('#stagePicker .stage-rich-sockets button');
   const socketMetrics=await socketCards.evaluateAll(nodes=>nodes.map(node=>{
