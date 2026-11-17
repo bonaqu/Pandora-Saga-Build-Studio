@@ -73,7 +73,7 @@ export async function runOwnerBuildHints660Smoke(browser,base){
   const panel=page.locator('.build-hint-owner-panel');
   await panel.waitFor({state:'visible'});
   await panel.locator('summary').click();
-  assert.equal(await panel.locator('.build-hint-owner-row').count(),29);
+  assert.equal(await panel.locator('.build-hint-owner-row').count(),21);
   for(const key of ['libraryCardOpen','libraryCardOverwrite','libraryCardShare',
    'libraryCardDelete','libraryHintOpen','libraryHintOverwrite','libraryHintShare',
    'libraryHintDelete','libraryHintDeleteLocal','librarySearchInputLabel',
@@ -90,11 +90,21 @@ export async function runOwnerBuildHints660Smoke(browser,base){
     document.querySelector('.build-hint-owner-panel [data-owner-copy-key="'+key+'"]')
      ?.textContent===text,{key,text},{timeout:15000});
   };
-  for(const key of ['libraryCurrentBadge','librarySortSaved','libraryCompare',
+  for(const key of ['librarySortSaved','libraryCompare',
    'librarySortAria','libraryBuildNameAria','libraryDraftNameAria']){
    assert.equal(await panel.locator('[data-owner-copy-pencil="'+key+'"]').count(),1,
     'Owner can edit additional RU/EN library captions: '+key);
   }
+  const editCurrent=async text=>{
+   const current=page.locator('.build-card.is-current');
+   await current.locator('[data-owner-copy-pencil="libraryCurrentBadge"]').click();
+   const field=current.locator('.account-copy-edit-host [contenteditable]');
+   await field.fill(text);
+   await field.press('Tab');
+   await page.waitForFunction(value=>
+    document.querySelector('#detailContent .build-card.is-current [data-owner-copy-key="libraryCurrentBadge"]')
+     ?.textContent===value,text,{timeout:15000});
+  };
   const russian='Открывает выбранного героя.';
   await edit('libraryHintOpen',russian);
   const key='guideedit.book.ui.label.library-hint-open';
@@ -129,7 +139,7 @@ export async function runOwnerBuildHints660Smoke(browser,base){
 
   const current=page.locator('.build-card.is-current');
   assert.equal(await current.locator('.build-card-current-label').innerText(),'● Текущий билд');
-  await edit('libraryCurrentBadge','● Редактируется');
+  await editCurrent('● Редактируется');
   assert.equal(await current.locator('.build-card-current-label').innerText(),'● Редактируется');
   assert.equal(JSON.parse(values['guideedit.book.ui.label.library-current-badge']).ru,'● Редактируется');
   const sort=page.locator('.build-library-sort-select');
@@ -153,7 +163,7 @@ export async function runOwnerBuildHints660Smoke(browser,base){
   await edit('libraryHintOpen',english);
   assert.deepEqual(JSON.parse(values[key]),{ru:russian,en:english});
   await edit('libraryCardOpen','View character');
-  await edit('libraryCurrentBadge','● Editing now');
+  await editCurrent('● Editing now');
   assert.equal(await page.locator('.build-card.is-current .build-card-current-label').innerText(),
    '● Editing now');
   assert.deepEqual(JSON.parse(values[labelKey]),{
@@ -167,7 +177,7 @@ export async function runOwnerBuildHints660Smoke(browser,base){
    overflow:el.scrollWidth-el.clientWidth,
    rows:el.querySelectorAll('.build-hint-owner-row').length
   }));
-  assert.equal(geo.rows,29);
+  assert.equal(geo.rows,21);
   assert.ok(geo.overflow<=4,'Mobile hint editor must not overflow horizontally');
   assert.equal(await page.locator('.build-card h3').first().innerText(),name);
   assert.deepEqual(errors,[]);
