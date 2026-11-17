@@ -2068,6 +2068,7 @@ function renderStagePicker(focusSearch=false){
  bindOwnerInterfaceText(detailsLink,'equipment','hint.details',
   'Посмотреть свойства, заточку и слоты душ.',
   'View properties, refinement and Soul sockets.','aria-description');
+ detailsLink.dataset.guideHint=detailsHelp;
  window.PandoraGuideTooltip?.attach(detailsLink,detailsHelp,{hoverDelay:300});
  const top=h('div',{class:'stage-picker-head'},[
   bindOwnerInterfaceText(h('strong',{}),'equipment','pickerChoosePrefix',

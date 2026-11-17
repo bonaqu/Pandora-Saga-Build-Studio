@@ -414,6 +414,7 @@ function render(root,api){
     if(event?.target?.closest?.('.stage-control-pencil,.wiki-inline-input'))return;
     api.changeMode(key);
    }}),'hint.'+key,...hints[key],'aria-description');
+  button.dataset.guideHint=actionHelp;
   root.PandoraGuideTooltip?.attach(button,actionHelp,{hoverDelay:300});
   tabs.append(labeledAction(button,'tab.'+key,ru,en));
  }
