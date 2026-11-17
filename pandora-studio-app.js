@@ -7477,8 +7477,10 @@ function renderBuilds(root){
   }}),
   h('button',{type:'button',class:'button-action','data-library-action-copy':'libraryRefresh',text:libraryText('libraryRefresh'),
    onclick:()=>{reportCloudStatus('Проверяем облако…');void loadCloudBuilds()}}));
+ const cloudStatusRow=h('div',{class:'cloud-library-status-row'});
  const cloudStatus=h('p',{class:'cloud-library-status',role:'status'});
- root.append(toolbar,choice,cloudStatus);
+ cloudStatusRow.append(cloudStatus);
+ root.append(toolbar,choice,cloudStatusRow);
  syncCloudStatusNode(cloudStatus,cloudLibraryStatus);
  // Owner-only inline editing of these five authored explanations. Keep the
  // four player action buttons intact; do not nest pencils in real actions.
