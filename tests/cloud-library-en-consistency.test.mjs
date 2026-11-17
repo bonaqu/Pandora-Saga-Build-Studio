@@ -62,14 +62,15 @@ test('all cloud-library statuses and warnings have explicit verified RU/EN displ
 });
 
 test('cloud status is translated on updates and when reopening the Builds tab',()=>{
- const from=app.indexOf('function cloudStatusText(');
+ const from=app.indexOf('function cloudStatusSource(');
  const to=app.indexOf('\nasync function putCloudBuild(',from);
  assert.ok(from>=0&&to>from);
- const node={textContent:''},document={querySelector:()=>node};
+ const node={textContent:'',dataset:{},removeAttribute:()=>{}};
+ const document={querySelector:()=>node};
  const code=app.slice(from,to);
  for(const lang of ['ru','en']){
   const holder=Function('window','document','lang',
-   'let cloudLibraryStatus=null;'+code+
+   'let cloudLibraryStatus=null,adminEditing=false,adminToken=null;'+code+
    '\nreturn {set:reportCloudStatus,source:()=>cloudLibraryStatus}')
    ({PandoraUILocale:ui,PandoraAccountUI:{isLoggedIn:()=>false}},document,lang);
   holder.set('Синхронизируем локальные изменения…');
