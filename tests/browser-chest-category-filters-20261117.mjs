@@ -156,6 +156,19 @@ export async function runChestCategoryFiltersSmoke(browser,base){
   assert.ok((await cards().allInnerTexts()).some(text=>text.includes('Молот подмастерья')),
    'Repair hammer must be visible in Utility items');
 
+  // A source-confirmed festival chest has a distinct category. It does not
+  // reclassify unrelated level-up TOY containers or invent event rewards.
+  await openChest(51049);
+  const festival=page.locator('.wiki-chest-filter-type');
+  assert.equal(await cards().count(),sourceRows(51049).length);
+  assert.ok(await festival.locator('option[value="festival"]').count()>0);
+  await festival.selectOption('festival');
+  assert.equal(await verifyFacets('festival'),9);
+  assert.equal(await page.locator('.wiki-chest-slot-copy-pencil').count(),0,
+   'Owner-only editing controls are never shown to normal visitors');
+  await festival.selectOption('all');
+  assert.equal(await cards().count(),sourceRows(51049).length);
+
   await openChest(52001); // NPC chest with Soul and Potion types
   const types=page.locator('.wiki-chest-filter-type');
   assert.equal(await cards().count(),sourceRows(52001).length);

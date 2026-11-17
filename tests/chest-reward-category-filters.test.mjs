@@ -128,7 +128,7 @@ test('future unknown types, missing IDs, and gold-only rows never fabricate game
  const facets=model.rewardFilters(rolls,customItems,{},ids);
  assert.equal(facets.total,10);
  assert.deepEqual(plain(facets.types),{
-  equipment:1,potions:1,boosts:1,gems:1,souls:1,utility:0,
+  equipment:1,potions:1,boosts:1,gems:1,souls:1,utility:0,festival:0,
   materials:1,containers:1,gold:1,other:2
  });
  assert.equal(facets.slots.body,1);
