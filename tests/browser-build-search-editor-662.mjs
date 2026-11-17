@@ -79,7 +79,7 @@ export async function runOwnerBuildSearch662Smoke(browser,base){
   const panel=page.locator('.build-hint-owner-panel');
   await panel.waitFor({state:'visible'});
   if(!(await panel.evaluate(node=>node.open)))await panel.locator('summary').click();
-  assert.equal(await panel.locator('.build-hint-owner-row').count(),13);
+  assert.equal(await panel.locator('.build-hint-owner-row').count(),21);
 
   const edit=async(key,value)=>{
    await panel.locator('[data-owner-copy-pencil="'+key+'"]').click();
@@ -127,7 +127,7 @@ export async function runOwnerBuildSearch662Smoke(browser,base){
    rows:node.querySelectorAll('.build-hint-owner-row').length
   }));
   assert.ok(geom.overflow<=4,'Owner search copy editor must fit at mobile width');
-  assert.equal(geom.rows,13);
+  assert.equal(geom.rows,21);
   assert.deepEqual((await page.locator('.build-card h3').allInnerTexts()),builds.map(x=>x.name));
   assert.deepEqual(errors,[]);
   console.log('Chromium owner search 662: D1 RU/EN edits, no-result, 390px, query and build preservation');

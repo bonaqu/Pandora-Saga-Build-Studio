@@ -8,15 +8,19 @@ export async function runOwnerBuildHints660Smoke(browser,base){
  const record={id:'b'.repeat(32),name,at:100,createdAt:100,
   data:{race:1,job:16,level:10,name,stats:{},points:{},mastery:{},
    equipment:{},souls:{},refinements:{},gems:{}}};
- const initial=JSON.stringify([record]),values={},writes=[],errors=[];
+ const alternate={...record,id:'c'.repeat(32),name:'QA another build',
+  createdAt:101,at:101,data:{...record.data,name:'QA another build'}};
+ const initial=JSON.stringify([record,alternate]),values={},writes=[],errors=[];
  const context=await browser.newContext({viewport:{width:1150,height:820}});
- await context.addInitScript(({playerToken,initial})=>{
+ await context.addInitScript(({playerToken,initial,activeId})=>{
+  sessionStorage.setItem('ps-active-build-id.v1',activeId);
+  localStorage.setItem('ps-active-build-id.v1',activeId);
   localStorage.setItem('ps-build-library-secret.v1','f'.repeat(64));
   localStorage.setItem('ps-account-session.v1',JSON.stringify({
    token:playerToken,username:'hintqa',expires:Number.MAX_SAFE_INTEGER}));
   localStorage.setItem('ps-build-owner-scope.v1','account:hintqa');
   localStorage.setItem('ps-build-library.v1',initial);
- },{playerToken,initial});
+ },{playerToken,initial,activeId:record.id});
  const headers={'access-control-allow-origin':'*',
   'access-control-allow-headers':'Authorization,Content-Type',
   'access-control-allow-methods':'GET,POST,OPTIONS'};
@@ -31,7 +35,7 @@ export async function runOwnerBuildHints660Smoke(browser,base){
   if(path==='/api/overrides')return respond({values:{...values}});
   if(path==='/api/account/me')return respond({account:{username:'hintqa'}});
   if(path==='/api/library'&&method==='GET')
-   return respond({records:[{id:record.id,entry:record}]});
+   return respond({records:[{id:record.id,entry:record},{id:alternate.id,entry:alternate}]});
   if(path==='/api/admin/login'&&method==='POST')
    return respond({token:ownerToken,expires:Date.now()+600000});
   if(path==='/api/admin/catalog/test-write')return respond({
@@ -40,7 +44,7 @@ export async function runOwnerBuildHints660Smoke(browser,base){
   if(path==='/api/admin/override'&&method==='POST'){
    assert.equal(req.headers().authorization,'Bearer '+ownerToken);
    const body=req.postDataJSON();
-   assert.match(body.key,/^guideedit\.book\.ui\.label\.library-(?:hint-|card-)/);
+   assert.match(body.key,/^guideedit\.book\.ui\.label\.library-(?:hint-|card-|sort-|compare|current-badge)/);
    assert.equal(body.expectedValue,Object.hasOwn(values,body.key)?values[body.key]:null,
     'CAS keeps the previous version');
    values[body.key]=body.value;writes.push(body);
@@ -69,7 +73,7 @@ export async function runOwnerBuildHints660Smoke(browser,base){
   const panel=page.locator('.build-hint-owner-panel');
   await panel.waitFor({state:'visible'});
   await panel.locator('summary').click();
-  assert.equal(await panel.locator('.build-hint-owner-row').count(),13);
+  assert.equal(await panel.locator('.build-hint-owner-row').count(),21);
   for(const key of ['libraryCardOpen','libraryCardOverwrite','libraryCardShare',
    'libraryCardDelete','libraryHintOpen','libraryHintOverwrite','libraryHintShare',
    'libraryHintDelete','libraryHintDeleteLocal','librarySearchInputLabel',
@@ -85,6 +89,21 @@ export async function runOwnerBuildHints660Smoke(browser,base){
    await page.waitForFunction(({key,text})=>
     document.querySelector('.build-hint-owner-panel [data-owner-copy-key="'+key+'"]')
      ?.textContent===text,{key,text},{timeout:15000});
+  };
+  for(const key of ['librarySortSaved','libraryCompare',
+   'librarySortAria','libraryBuildNameAria','libraryDraftNameAria']){
+   assert.equal(await panel.locator('[data-owner-copy-pencil="'+key+'"]').count(),1,
+    'Owner can edit additional RU/EN library captions: '+key);
+  }
+  const editCurrent=async text=>{
+   const current=page.locator('.build-card.is-current');
+   await current.locator('[data-owner-copy-pencil="libraryCurrentBadge"]').click();
+   const field=current.locator('.account-copy-edit-host [contenteditable]');
+   await field.fill(text);
+   await field.press('Tab');
+   await page.waitForFunction(value=>
+    document.querySelector('#detailContent .build-card.is-current [data-owner-copy-key="libraryCurrentBadge"]')
+     ?.textContent===value,text,{timeout:15000});
   };
   const russian='Открывает выбранного героя.';
   await edit('libraryHintOpen',russian);
@@ -118,6 +137,22 @@ export async function runOwnerBuildHints660Smoke(browser,base){
   assert.equal(await card.locator('[data-build-action-hint="libraryHintOpen"]')
    .getAttribute('data-guide-hint'),russian);
 
+  const current=page.locator('.build-card.is-current');
+  assert.equal(await current.locator('.build-card-current-label').innerText(),'● Текущий билд');
+  await editCurrent('● Редактируется');
+  assert.equal(await current.locator('.build-card-current-label').innerText(),'● Редактируется');
+  assert.equal(JSON.parse(values['guideedit.book.ui.label.library-current-badge']).ru,'● Редактируется');
+  const sort=page.locator('.build-library-sort-select');
+  await sort.selectOption('name');
+  await edit('librarySortSaved','Порядок создания');
+  assert.equal(await sort.inputValue(),'name','D1 editing never resets current sort');
+  assert.equal(await sort.locator('option[value="saved"]').innerText(),'Порядок создания');
+  await edit('libraryCompare','Сопоставить');
+  assert.equal(await card.locator('[data-library-compare-copy]').innerText(),'Сопоставить');
+  assert.equal(await card.locator('.build-card-compare input').getAttribute('aria-label'),
+   'Сопоставить '+await card.locator('h3').innerText(),
+   'Accessible compare label follows the current sorted card, not its old position');
+  await sort.selectOption('saved');
   await page.locator('#dockClose').click();
   await page.locator('#locale [data-locale="en"]').click();
   await page.locator('#nav [data-tab="builds"]').click();
@@ -128,6 +163,9 @@ export async function runOwnerBuildHints660Smoke(browser,base){
   await edit('libraryHintOpen',english);
   assert.deepEqual(JSON.parse(values[key]),{ru:russian,en:english});
   await edit('libraryCardOpen','View character');
+  await editCurrent('● Editing now');
+  assert.equal(await page.locator('.build-card.is-current .build-card-current-label').innerText(),
+   '● Editing now');
   assert.deepEqual(JSON.parse(values[labelKey]),{
    ru:'Открыть персонажа',en:'View character'});
   assert.equal(await page.locator('.build-card').first()
@@ -139,10 +177,10 @@ export async function runOwnerBuildHints660Smoke(browser,base){
    overflow:el.scrollWidth-el.clientWidth,
    rows:el.querySelectorAll('.build-hint-owner-row').length
   }));
-  assert.equal(geo.rows,13);
+  assert.equal(geo.rows,21);
   assert.ok(geo.overflow<=4,'Mobile hint editor must not overflow horizontally');
   assert.equal(await page.locator('.build-card h3').first().innerText(),name);
   assert.deepEqual(errors,[]);
-  console.log('Chromium owner build hints: RU/EN CAS edit, immediate hover, Escape, mobile, no player data change');
+  console.log('Chromium owner build hints and library sort: RU/EN D1 CAS, live badge, sort, actions and mobile');
  }finally{await context.close()}
 }

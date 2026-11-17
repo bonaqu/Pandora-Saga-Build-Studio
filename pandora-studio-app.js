@@ -2076,7 +2076,7 @@ function renderStagePicker(focusSearch=false){
  }
  const detailsLink=bindOwnerInterfaceText(h('button',{type:'button',
    class:'stage-picker-mode-link',disabled:!record,
-   'aria-label':lang==='en'?'Back to properties':'Вернуться к свойствам',
+   'aria-label':lang==='en'?'Go to properties':'Перейти к свойствам',
    onclick:()=>{stageSlotView='details';renderStagePicker()}}),
    'equipment','pickerDetails','Свойства','Properties');
   // The back arrow and caption already explain this action; no popup.
@@ -7368,31 +7368,31 @@ function renderBuilds(root){
  const tr=(ru,en)=>lang==='en'?en:ru;
  const libraryText=key=>window.PandoraUILocale.text(key,lang);
  const toolbar=h('div',{class:'build-toolbar'});
- const name=h('input',{type:'text',class:'build-name-input',maxLength:'70',value:state.name||'Новый герой','aria-label':'Название билда'});
+ const name=h('input',{type:'text',class:'build-name-input',maxLength:'70',value:state.name||'Новый герой','aria-label':libraryText('libraryBuildNameAria')});
  const choice=h('div',{class:'new-build-choice',hidden:!newBuildPromptOpen});
  const draft=h('input',{type:'text',maxLength:'70',value:newBuildDraftName??(state.name||'Новый герой'),
-  'aria-label':'Название сохраняемого черновика'});
+  'aria-label':libraryText('libraryDraftNameAria')});
  draft.addEventListener('input',()=>{newBuildDraftName=draft.value});
- choice.append(h('span',{text:'Текущий персонаж ещё не сохранён.'}),
+ choice.append(h('span',{'data-owner-copy-key':'libraryDraftUnsaved',text:libraryText('libraryDraftUnsaved')}),
   h('div',{class:'new-build-choice-actions'},[
    draft,
-   h('button',{type:'button',class:'button-action primary',text:'Сохранить и создать',onclick:()=>{if(saveBuild(draft.value))newBlankBuild()}}),
-   h('button',{type:'button',class:'button-action',text:'Создать без сохранения',onclick:newBlankBuild}),
-   h('button',{type:'button',class:'button-action',text:'Отмена',onclick:()=>{
+   h('button',{type:'button',class:'button-action primary','data-library-action-copy':'librarySaveAndCreate',text:libraryText('librarySaveAndCreate'),onclick:()=>{if(saveBuild(draft.value))newBlankBuild()}}),
+   h('button',{type:'button',class:'button-action','data-library-action-copy':'libraryCreateWithoutSave',text:libraryText('libraryCreateWithoutSave'),onclick:newBlankBuild}),
+   h('button',{type:'button',class:'button-action','data-library-action-copy':'libraryCancel',text:libraryText('libraryCancel'),onclick:()=>{
      newBuildPromptOpen=false;newBuildDraftName=null;choice.hidden=true;
     }})
   ]));
  toolbar.append(name,
   h('button',{type:'button',class:'button-action primary',
-   text:'✧ Сохранить новый билд',
+   'data-owner-copy-key':'librarySaveNew','data-library-action-copy':'librarySaveNew',text:libraryText('librarySaveNew'),
    onclick:()=>saveBuild(name.value)}),
   ...(activeBuildId&&builds.some(b=>b.id===activeBuildId)?[
-   h('button',{type:'button',class:'button-action',text:'Сохранить копию',onclick:()=>{
+   h('button',{type:'button',class:'button-action','data-library-action-copy':'librarySaveCopy',text:libraryText('librarySaveCopy'),onclick:()=>{
     const previous=activeBuildId;selectActiveBuild(null);
     if(!saveBuild(name.value))selectActiveBuild(previous);
    }})
   ]:[]),
-  h('button',{type:'button',id:'newBuildButton',class:'button-action',text:'＋ Новый билд',onclick:()=>{
+  h('button',{type:'button',id:'newBuildButton',class:'button-action','data-library-action-copy':'libraryNewBuild',text:libraryText('libraryNewBuild'),onclick:()=>{
    if(!unsavedBuild()){newBuildPromptOpen=false;newBlankBuild();return}
    newBuildPromptOpen=!newBuildPromptOpen;
    choice.hidden=!newBuildPromptOpen;
@@ -7401,7 +7401,7 @@ function renderBuilds(root){
     draft.value=newBuildDraftName;draft.focus();
    }
   }}),
-  h('button',{type:'button',class:'button-action',text:'↻ Обновить библиотеку',
+  h('button',{type:'button',class:'button-action','data-library-action-copy':'libraryRefresh',text:libraryText('libraryRefresh'),
    onclick:()=>{reportCloudStatus('Проверяем облако…');void loadCloudBuilds()}}));
  root.append(toolbar,choice,h('p',{class:'cloud-library-status',role:'status',
   text:cloudStatusText(cloudLibraryStatus)}));
@@ -7458,6 +7458,27 @@ function renderBuilds(root){
      'data-owner-copy-key':key,text:libraryText(key)})
    ]));
   }
+  // Only inaccessible option/ARIA/checkbox copy belongs in this panel.
+  // Visible toolbar actions and the active badge have their own inline pencil;
+  // duplicating them here breaks focus and creates a second editing target.
+  rows.append(h('h4',{class:'build-hint-owner-section',
+   text:tr('Сортировка и поля','Sorting and fields')}));
+  for(const [key,ru,en] of [
+   ['libraryCompare','Сравнить','Compare'],
+   ['librarySortAria','Поле сортировки','Sort field label'],
+   ['librarySortSaved','Порядок сохранения','Saved order'],
+   ['librarySortName','По названию','By name'],
+   ['librarySortLevel','По уровню','By level'],
+   ['librarySortClass','По профессии','By class'],
+   ['libraryBuildNameAria','Имя билда','Build name field'],
+   ['libraryDraftNameAria','Имя черновика','Draft name field']
+  ]){
+   rows.append(h('div',{class:'build-hint-owner-row'},[
+    h('span',{class:'build-hint-owner-action',text:tr(ru,en)}),
+    h('span',{class:'build-hint-owner-value',
+     'data-owner-copy-key':key,text:libraryText(key)})
+   ]));
+  }
   editor.append(rows);root.append(editor);
  }
  const comparisonSlot=h('section',{'data-build-compare-slot':''});
@@ -7474,14 +7495,17 @@ function renderBuilds(root){
   type:'search',class:'build-library-search','data-build-library-search':'',
   'aria-label':libraryText('librarySearchInputLabel'),
   placeholder:libraryText('librarySearchPlaceholder'),value:buildSearchQuery}):null;
- const sort=builds.length>1?h('label',{class:'build-library-sort'},[
-  h('span',{text:tr('Сортировка','Sort')}),
-  h('select',{class:'build-library-sort-select',
-   'aria-label':tr('Сортировка билдов','Sort builds')},[
-    h('option',{value:'saved',text:tr('По порядку сохранения','Saved order')}),
-    h('option',{value:'name',text:tr('По названию','Name')}),
-    h('option',{value:'level',text:tr('По уровню','Level')}),
-    h('option',{value:'class',text:tr('По профессии','Class')})
+ const sort=builds.length>1?h('div',{class:'build-library-sort'},[
+  h('div',{class:'build-library-sort-head'},[
+   h('label',{for:'buildLibrarySort','data-owner-copy-key':'librarySortCaption',
+    text:libraryText('librarySortCaption')})
+  ]),
+  h('select',{id:'buildLibrarySort',class:'build-library-sort-select',
+   'aria-label':libraryText('librarySortAria')},[
+    h('option',{value:'saved',text:libraryText('librarySortSaved')}),
+    h('option',{value:'name',text:libraryText('librarySortName')}),
+    h('option',{value:'level',text:libraryText('librarySortLevel')}),
+    h('option',{value:'class',text:libraryText('librarySortClass')})
    ])
  ]):null;
  if(sort)sort.querySelector('select').value=buildSortMode;
@@ -7509,7 +7533,7 @@ function renderBuilds(root){
   if(isCurrent)box.setAttribute('aria-current','true');
   const shareSlot=h('div',{class:'build-share-slot',role:'status'});
   const openChoice=h('div',{class:'build-open-choice',hidden:true});
-  const check=h('input',{type:'checkbox','aria-label':(lang==='en'?'Compare ':'Сравнить ')+b.name});
+  const check=h('input',{type:'checkbox','aria-label':libraryText('libraryCompare')+' '+b.name});
   openChoice.append(h('p',{text:tr('Есть несохранённые изменения. Открыть другой билд?',
     'You have unsaved changes. Open another build?')}),
    h('button',{type:'button',class:'button-action primary',text:tr('Сохранить текущий и открыть','Save current and open'),
@@ -7570,10 +7594,11 @@ function renderBuilds(root){
    h('div',{class:'build-card-title-wrap'},[
     h('h3',{class:'build-card-title',text:b.name}),
     ...(isCurrent?[h('span',{class:'build-card-current-label',
-     text:tr('● Текущий билд','● Current build')})]:[])
+     'data-owner-copy-key':'libraryCurrentBadge',text:libraryText('libraryCurrentBadge')})]:[])
    ]),
    h('label',{class:'build-card-compare'},[
-    check,h('span',{text:tr('Сравнить','Compare')})
+    check,h('span',{'data-library-compare-copy':'libraryCompare',
+     text:libraryText('libraryCompare')})
    ])
   ]);
   // A second confirmation replaces the first instead of stacking panels.
@@ -7595,8 +7620,7 @@ function renderBuilds(root){
   ]);
   box.append(cardHead,
    ...(b.localOnly===true?[h('p',{class:'build-local-only-note',
-    text:tr('Локальная копия · чтобы сохранить в облако, откройте её и нажмите «Перезаписать»',
-     'Local copy · to save it to the cloud, open it and select Overwrite')})]:[]),
+    'data-owner-copy-key':'libraryLocalCopyNote',text:libraryText('libraryLocalCopyNote')})]:[]),
    h('p',{class:'build-card-meta',
     text:(races[b.data?.race]?.[lang==='en'?1:0]||'?')+' · '+
      (jobs[b.data?.job]||'?')+' · '+(lang==='en'?'Lv. ':'ур. ')+(b.data?.level||'?')}),
@@ -8941,6 +8965,44 @@ function refreshVisibleUICopy(recordKey){
     search.setAttribute('aria-label',locale.text('librarySearchInputLabel',lang));
    if(id===locale.fieldKey('librarySearchPlaceholder'))
     search.placeholder=locale.text('librarySearchPlaceholder',lang);
+  }
+  // Owner-edited library captions refresh in place: no lost search, sorting,
+  // comparison state, cursor position or unsaved hero when D1 CAS completes.
+  for(const button of document.querySelectorAll('#detailContent [data-library-action-copy]')){
+   const key=button.dataset.libraryActionCopy;
+   if(locale.fieldKey(key)===id)button.textContent=locale.text(key,lang);
+  }
+  const sort=document.querySelector('#detailContent .build-library-sort-select');
+  if(sort){
+   if(id===locale.fieldKey('librarySortAria'))
+    sort.setAttribute('aria-label',locale.text('librarySortAria',lang));
+   for(const [key,value] of [
+    ['librarySortSaved','saved'],['librarySortName','name'],
+    ['librarySortLevel','level'],['librarySortClass','class']
+   ]){
+    if(id===locale.fieldKey(key)){
+     const option=[...sort.options].find(item=>item.getAttribute('value')===value);
+     if(option)option.textContent=locale.text(key,lang);
+    }
+   }
+  }
+  if(id===locale.fieldKey('libraryBuildNameAria')){
+   const name=document.querySelector('#detailContent .build-name-input');
+   name?.setAttribute('aria-label',locale.text('libraryBuildNameAria',lang));
+  }
+  if(id===locale.fieldKey('libraryDraftNameAria')){
+   const draft=document.querySelector('#detailContent .new-build-choice input[type="text"]');
+   draft?.setAttribute('aria-label',locale.text('libraryDraftNameAria',lang));
+  }
+  if(id===locale.fieldKey('libraryCompare')){
+   const label=locale.text('libraryCompare',lang);
+   for(const row of document.querySelectorAll('#detailContent .build-card-compare')){
+    const caption=row.querySelector('[data-library-compare-copy]');
+    if(caption)caption.textContent=label;
+    const checkbox=row.querySelector('input[type="checkbox"]');
+    const name=row.closest('.build-card')?.querySelector('.build-card-title')?.textContent||'';
+    if(checkbox)checkbox.setAttribute('aria-label',label+' '+name);
+   }
   }
   for(const state of document.querySelectorAll('#detailContent [data-build-library-state-copy]')){
    const key=state.dataset.buildLibraryStateCopy;

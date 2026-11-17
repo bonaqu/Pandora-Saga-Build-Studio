@@ -36,13 +36,13 @@ test('obvious origin and hero path tabs do not show duplicate hover guides',()=>
  assert.match(locale,/Развитие — вложить очки\. Умения — посмотреть доступные умения\./);
 });
 
-test('item selection offers an arrow back to properties without another tooltip',()=>{
+test('item selection offers a forward arrow to properties without another tooltip',()=>{
  const app=read('pandora-studio-app.js'),gear=read('pandora-studio-equipment-ui.js');
  const css=read('pandora-studio-workbench-guidance.css');
  assert.match(gear,/returningToDetails=mode==='choose'&&key==='details'/);
- assert.match(gear,/button\.setAttribute\('aria-label',tr\('Вернуться к свойствам'/);
- assert.match(css,/return-to-properties::before\{content:"←"/);
- assert.match(css,/stage-picker-mode-link::before\{content:"←"/);
+ assert.match(gear,/button\.setAttribute\('aria-label',tr\('Перейти к свойствам'/);
+ assert.match(css,/return-to-properties::before\{content:"→"/);
+ assert.match(css,/stage-picker-mode-link::before\{content:"→"/);
  assert.match(css,/transform:translateY\(-1px\)/);
  assert.doesNotMatch(app,/PandoraGuideTooltip\?\.attach\(detailsLink/);
 });
