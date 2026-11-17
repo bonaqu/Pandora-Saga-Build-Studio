@@ -162,6 +162,11 @@ export async function runChestCategoryFiltersSmoke(browser,base){
   const festival=page.locator('.wiki-chest-filter-type');
   assert.equal(await cards().count(),sourceRows(51049).length);
   assert.ok(await festival.locator('option[value="festival"]').count()>0);
+  assert.equal(await page.locator('.studio-owner-interface-editor').count(),0,
+   'Editorial controls must never appear to guests');
+  assert.match(await festival.locator('option[value="festival"]').innerText(),
+   /Праздничные предметы · 9/,
+   'The source count remains appended to the category label');
   await festival.selectOption('festival');
   assert.equal(await verifyFacets('festival'),9);
   assert.equal(await page.locator('.wiki-chest-slot-copy-pencil').count(),0,
