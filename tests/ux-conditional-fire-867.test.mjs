@@ -13,7 +13,13 @@ const conditional=window.PandoraConditionalItemBonuses;
 
 test('Phoenix Flame is gated by actual fire weapon, gem, grade and eligibility',()=>{
  const record=items[252];
+ const translated=JSON.parse(read('data/os/strings.en.json')).items[252];
  assert.ok(conditional.parse(record).phoenix,'catalog must contain a real Phoenix proc');
+ const localized={...record,name:translated.n,desc:translated.d,sourceDesc:record.desc};
+ assert.ok(conditional.parse(localized)?.phoenix,'English translation retains original proc rules');
+ assert.ok(conditional.activeFor({record:localized,refinement:7,
+  gem:{element:'fire'},issue:[]})?.phoenix,'English mode must keep fire proc active');
+ assert.equal(conditional.elementOf(localized),'fire','verified source origin survives translation');
  for(const grade of [0,1,6]){
   assert.equal(conditional.activeFor({record,refinement:grade,gem:{element:'fire'}}),null);
  }
