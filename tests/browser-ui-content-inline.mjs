@@ -279,6 +279,7 @@ export async function runUIContentInlineSmoke(browser,base){
   // supported gameplay signature or character build.
   if(await page.locator('#detailPanel.is-open').count())
    await page.locator('#dockClose').click();
+  await wiki.click();
   await page.locator('[data-wiki-chapter="skill"]').click();
   await search.click();
   await search.fill('Песчаная буря');
