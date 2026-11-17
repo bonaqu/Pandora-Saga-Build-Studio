@@ -125,13 +125,20 @@ export function describeDescriptionDrift(local,remote,dataset){
    if(typeof source!=='string'||typeof live!=='string'){
     counts.otherText++;continue;
    }
-   const noBreaks=live.replace(/<br\s*\/?>/gi,'');
-   if(source===noBreaks)counts.lineBreaks++;
-   else if(source===noBreaks.replace(/<\/?b>/gi,''))counts.inlineMarkup++;
-   else if(/<item\s+[1-9][0-9]{0,11}\s*\/?>/i.test(live)&&
-    !/<item\s+[1-9][0-9]{0,11}\s*\/?>/i.test(source))
-    counts.itemReferences++;
-   else counts.otherText++;
+   // The published D1 description can be flattened while the bundled
+   // backup retains authored line breaks, or the reverse after a source
+   // import. This is classification only: strict parity still reports FAIL.
+   const withoutBreaks=value=>value.replace(/<br\s*\/?>/gi,'');
+   const sourceText=withoutBreaks(source),liveText=withoutBreaks(live);
+   if(sourceText===liveText)counts.lineBreaks++;
+   else if(sourceText.replace(/<\/?b>/gi,'')===
+    liveText.replace(/<\/?b>/gi,''))counts.inlineMarkup++;
+   else{
+    const itemRef=/<item\s+[1-9][0-9]{0,11}\s*\/?>/i;
+    if(itemRef.test(source)!==itemRef.test(live))
+     counts.itemReferences++;
+    else counts.otherText++;
+   }
   }
  }
  return counts;
