@@ -26,6 +26,14 @@ test('Phoenix Flame is gated by actual fire weapon, gem, grade and eligibility',
   'weapon with fire bonuses but no Phoenix proc must never gain one');
 });
 
+test('equipment tab and context icons follow one understandable visual language',()=>{
+ const css=read('pandora-studio-workbench-guidance.css');
+ assert.match(css,/button\[data-stage-tab="choose"\]::before\{content:"⇄"/);
+ assert.match(css,/button\[data-stage-tab="souls"\]::before\{content:"○"/);
+ assert.match(source,/\['souls','○','Управление душами'/);
+ assert.match(source,/\['replace','⇄','Выбрать другую вещь'/);
+});
+
 test('equipment rail never adds a mystery Phoenix glyph; Properties keeps condition',()=>{
  assert.doesNotMatch(source,/class:'stage-elemental-proc'/);
  assert.match(source,/stage-enhance',text:'\+'\+level/);
