@@ -11,14 +11,14 @@ const cut=(start,end)=>{
 
 // Test the actual production functions against synthetic HTTP responses,
 // not merely a regex in source. They reject *before* mutating game state.
-const coreCode=cut('async function loadCatalog({archive=false}={})',
+const coreCode=cut('async function loadCatalog({archive=false,commit=true}={})',
  'let ownerWikiRefreshId=0;');
 function core(fetcher){
  return new Function('fetch','AbortSignal','API','catalogLoadVersion',
   coreCode+'\nreturn loadCatalog;')(fetcher,AbortSignal,'https://worker.invalid',0);
 }
-const englishCode=cut('async function ensureEnglishCatalog(){',
- 'async function loadCatalog({archive=false}={})');
+const englishCode=cut('async function ensureEnglishCatalog({persistReconciled=true}={}){',
+ 'async function loadCatalog({archive=false,commit=true}={})');
 const locales=['items','skills','monsters','souls','classes'];
 function english(fetcher,archive=false){
  const catalog={meta:{localeCounts:{en:Object.fromEntries(locales.map(x=>[x,0]))}}};
