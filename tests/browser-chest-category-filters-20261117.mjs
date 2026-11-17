@@ -1,4 +1,18 @@
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const catalogItems=JSON.parse(readFileSync(new URL('../data/os/items.json',import.meta.url),'utf8'));
+const chestData=JSON.parse(readFileSync(new URL('../data/os/chests.json',import.meta.url),'utf8'));
+const sourceRows=id=>{
+ const chest=[...chestData.boxes,...chestData.npc].find(row=>row.i===id);
+ assert.ok(chest,'Missing current archive chest '+id);
+ return chest.rolls.flat();
+};
+const sourceSlot=(id,slot)=>sourceRows(id).filter(row=>
+ catalogItems[row.i]?.slot===slot).length;
+const sourceKind=(id,kind)=>sourceRows(id).filter(row=>
+ catalogItems[row.i]?.kind===kind).length;
+const sourceGold=id=>sourceRows(id).filter(row=>Array.isArray(row.gold)).length;
+
 
 // Real, unauthenticated Chromium. Source data is loaded from the local static
 // archive; no game client, admin login, account or production D1 writes.
@@ -37,28 +51,30 @@ export async function runChestCategoryFiltersSmoke(browser,base){
   const type=toolbar.locator('.wiki-chest-filter-type');
   const slot=toolbar.locator('.wiki-chest-filter-slot');
   assert.equal(await toolbar.count(),1);
-  assert.equal(await cards().count(),127);
+  assert.equal(await cards().count(),sourceRows(51036).length);
   assert.equal(await type.getAttribute('aria-label'),'Тип награды в сундуке');
   await type.selectOption('equipment');
   assert.equal(await slot.isVisible(),true);
   await slot.selectOption('body');
-  assert.equal(await verifyFacets('equipment','body'),36);
-  assert.match(await toolbar.locator('.wiki-chest-filter-count').innerText(),/36\s*\/\s*127/);
+  assert.equal(await verifyFacets('equipment','body'),sourceSlot(51036,'body'));
+  assert.ok((await toolbar.locator('.wiki-chest-filter-count').innerText()).includes(
+   sourceSlot(51036,'body')+' / '+sourceRows(51036).length));
   await slot.selectOption('weapon');
-  assert.equal(await verifyFacets('equipment','weapon'),39);
+  assert.equal(await verifyFacets('equipment','weapon'),sourceSlot(51036,'weapon'));
   await type.selectOption('all');
-  assert.equal(await cards().count(),127,'Removing filter must restore all source rows');
+  assert.equal(await cards().count(),sourceRows(51036).length,
+   'Removing filter must restore all source rows');
   assert.equal(await slot.isVisible(),false);
 
   await openChest(52001); // NPC chest with Soul and Potion types
   const types=page.locator('.wiki-chest-filter-type');
-  assert.equal(await cards().count(),25);
+  assert.equal(await cards().count(),sourceRows(52001).length);
   await types.selectOption('souls');
-  assert.equal(await verifyFacets('souls'),24);
+  assert.equal(await verifyFacets('souls'),sourceKind(52001,'SOUL'));
   await types.selectOption('potions');
-  assert.equal(await verifyFacets('potions'),1);
+  assert.equal(await verifyFacets('potions'),sourceKind(52001,'POTION'));
   await types.selectOption('souls');
-  assert.equal(await verifyFacets('souls'),24);
+  assert.equal(await verifyFacets('souls'),sourceKind(52001,'SOUL'));
 
   // Language change keeps current filter but uses new labels; never filters
   // a different chest automatically with a previous chest's selection.
@@ -68,12 +84,13 @@ export async function runChestCategoryFiltersSmoke(browser,base){
   assert.equal(await page.locator('.wiki-chest-filter-type').inputValue(),'souls');
   assert.equal(await page.locator('.wiki-chest-filter-type').getAttribute('aria-label'),
    'Chest reward category');
-  assert.equal(await verifyFacets('souls'),24);
+  assert.equal(await verifyFacets('souls'),sourceKind(52001,'SOUL'));
   await openChest(52002);
   assert.equal(await page.locator('.wiki-chest-filter-type').inputValue(),'all');
   await page.locator('.wiki-chest-filter-type').selectOption('gold');
-  assert.equal(await verifyFacets('gold'),6);
-  assert.equal(await page.locator('.wiki-chest-gold-reward:not([hidden])').count(),6);
+  assert.equal(await verifyFacets('gold'),sourceGold(52002));
+  assert.equal(await page.locator('.wiki-chest-gold-reward:not([hidden])').count(),
+   sourceGold(52002));
   await page.setViewportSize({width:390,height:844});
   const geometry=await page.evaluate(()=>({
    overflow:Math.max(document.body.scrollWidth,document.documentElement.scrollWidth)-
@@ -88,6 +105,6 @@ export async function runChestCategoryFiltersSmoke(browser,base){
   assert.equal(await page.locator('.wiki-level-reward').isVisible(),true);
   assert.ok(await cards().count()>1,'Level-up chest retains its normal rewards');
   assert.deepEqual(errors,[],'Browser errors in filtered or level-up chest');
-  console.log('Chromium chest categories: 127 gear, 24 Souls, gold, RU/EN, mobile and exempt level-up box');
+  console.log('Chromium chest categories: all source gear, Souls, gold, RU/EN, mobile and exempt level-up box');
  }finally{await context.close()}
 }
