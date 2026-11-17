@@ -406,16 +406,23 @@ function render(root,api){
    details:['Посмотреть свойства, заточку и слоты душ.','View properties, refinement and Soul sockets.'],
    souls:['Вставить, заменить или снять душу.','Insert, replace or remove a Soul.']
   };
-  const actionHelp=copy('hint.'+key,...hints[key]);
-  const button=bind(el('button',{type:'button',text,
-   class:mode===key?'chosen':'','aria-pressed':String(mode===key),
+  const returningToDetails=mode==='choose'&&key==='details'&&Boolean(record);
+  const button=el('button',{type:'button',text,
+   class:(mode===key?'chosen':'')+(returningToDetails?' return-to-properties':''),
+   'aria-pressed':String(mode===key),
    'data-stage-tab':key,disabled:!record&&key!=='choose',
    onclick:event=>{
     if(event?.target?.closest?.('.stage-control-pencil,.wiki-inline-input'))return;
     api.changeMode(key);
-   }}),'hint.'+key,...hints[key],'aria-description');
-  button.dataset.guideHint=actionHelp;
-  root.PandoraGuideTooltip?.attach(button,actionHelp,{hoverDelay:300});
+   }});
+  if(returningToDetails){
+   button.setAttribute('aria-label',tr('Вернуться к свойствам','Back to properties'));
+  }else{
+   const actionHelp=copy('hint.'+key,...hints[key]);
+   bind(button,'hint.'+key,...hints[key],'aria-description');
+   button.dataset.guideHint=actionHelp;
+   root.PandoraGuideTooltip?.attach(button,actionHelp,{hoverDelay:300});
+  }
   tabs.append(labeledAction(button,'tab.'+key,ru,en));
  }
  root.append(tabs);
