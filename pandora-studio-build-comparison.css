@@ -171,6 +171,9 @@
  width:auto;margin:0}
 .build-library-sort{display:grid;gap:4px;flex:0 1 210px;min-width:145px;
  color:#d8bc94;font:600 11px Manrope,Arial,sans-serif}
+.build-library-sort-head{display:flex;align-items:center;justify-content:space-between;
+ gap:5px;min-width:0;min-height:17px}
+.build-library-sort-head>label{min-width:0;overflow-wrap:anywhere}
 .build-library-sort-select{min-height:40px;width:100%;box-sizing:border-box;
  border:1px solid #937044;border-radius:6px;padding:7px 9px;
  background:#241b13;color:#f3d3a5;font:12px Manrope,Arial,sans-serif}
