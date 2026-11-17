@@ -20,13 +20,13 @@ test('failed browser-storage reconciliation never overwrites the working local l
    return {merged:[remote],outgoing:[remote],activeId:null,copies:1,unavailable:0};
   }}};
  scope.PandoraAccountUI={isLoggedIn:()=>true};
- const app=Function('window','localStorage','libraryScopeId','queuedDeletes',
+ const app=Function('window','cloudOperationsAllowed','localStorage','libraryScopeId','queuedDeletes',
   'cloudLibraryRequest','reportCloudStatus','showStudioToast','putCloudBuild',
   'newId','console','renderDetails','selectActiveBuild',
   'let builds=[JSON.parse(JSON.stringify('+JSON.stringify(first)+'))],'+
   'activeBuildId=null,libraryChangeId=0,cloudLoadRequestId=0,lang="ru",activeTab="builds";\n'+
   persistent+'\n'+loader+'\nreturn {load:loadCloudBuilds,builds:()=>builds};')(
-  scope,{},()=> 'account:alice_01',()=>[],
+  scope,()=>true,{},()=> 'account:alice_01',()=>[],
   async value=>{requests.push(value||null);return {records:[{id:remote.id,entry:remote}]}},
   x=>statuses.push(x),(...args)=>toasts.push(args),
   async value=>uploads.push(value),()=> 'c'.repeat(32),
