@@ -76,3 +76,18 @@ test('English locale completion cannot override a later D1 offline/changed gate'
  assert.doesNotMatch(handler,/error\.message,'warning'/,
   'Do not expose a raw Worker or D1 error to ordinary visitors');
 });
+
+test('legacy numeric mastery and skill points survive canonical default zeros',()=>{
+ const start=source.indexOf('const migrateLegacyBranches=record=>{');
+ const end=source.indexOf('state.points=migrateLegacyBranches',start);
+ assert.ok(start>0&&end>start);
+ const migrate=Function('oldToOS',source.slice(start,end)+
+  '\nreturn migrateLegacyBranches;')({'1':'slash','2':'thrust'});
+ assert.deepEqual(migrate({'1':5,slash:0}),{slash:5},
+  'Nonzero legacy slash investment is retained over an inserted default');
+ assert.deepEqual(migrate({'1':5,slash:8}),{slash:8},
+  'A meaningful modern value always wins');
+ assert.deepEqual(migrate({'2':3,thrust:0,'1':7,slash:0}),
+  {thrust:3,slash:7},'Multiple original branches migrate without loss');
+ assert.deepEqual(migrate({'1':0,slash:0}),{slash:0});
+});
