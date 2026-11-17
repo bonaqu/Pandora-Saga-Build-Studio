@@ -372,8 +372,14 @@ function reportCloudStatus(message){
  cloudLibraryStatus=message;
  syncCloudStatusNode(document.querySelector('.cloud-library-status'),message);
 }
+function cloudOperationsAllowed(){
+ // The code may be called from callbacks initiated BEFORE an outage. Every
+ // network continuation must re-check the verified D1 gate before touching
+ // the account's live library or dispatching a new write.
+ return localCatalogHost||studioLiveReady&&!liveGateReason;
+}
 async function putCloudBuild(entry){
- if(!window.PandoraAccountUI?.isLoggedIn())return false;
+ if(!cloudOperationsAllowed()||!window.PandoraAccountUI?.isLoggedIn())return false;
  // This guard also protects accidental call sites added in future changes.
  if(entry?.localOnly===true)return false;
  const owner=libraryScopeId(),generation=libraryChangeId;
@@ -402,10 +408,10 @@ async function putCloudBuild(entry){
 async function uploadSharedBuildBatch(entries,owner,generation){
  let confirmed=0;
  for(const entry of entries){
-  if(libraryScopeId()!==owner||libraryChangeId!==generation)return;
+  if(!cloudOperationsAllowed()||libraryScopeId()!==owner||libraryChangeId!==generation)return;
   if(await putCloudBuild(entry))confirmed++;
  }
- if(libraryScopeId()!==owner||libraryChangeId!==generation)return;
+ if(!cloudOperationsAllowed()||libraryScopeId()!==owner||libraryChangeId!==generation)return;
  reportCloudStatus(confirmed===entries.length?
   (lang==='en'?'All imported builds saved to cloud':'Все добавленные билды сохранены в облаке'):
   (lang==='en'?
@@ -415,7 +421,7 @@ async function uploadSharedBuildBatch(entries,owner,generation){
     '. Остальные пока только в браузере. Обнови библиотеку для повторной попытки.'));
 }
 async function deleteCloudBuild(id){
- if(!window.PandoraAccountUI?.isLoggedIn())return false;
+ if(!cloudOperationsAllowed()||!window.PandoraAccountUI?.isLoggedIn())return false;
  const owner=libraryScopeId();
  let queued=false;
  try{queueDelete(id);queued=true}
@@ -443,16 +449,16 @@ async function deleteCloudBuild(id){
  }
 }
 async function loadCloudBuilds(){
- if(!window.PandoraAccountUI?.isLoggedIn())return;
+ if(!cloudOperationsAllowed()||!window.PandoraAccountUI?.isLoggedIn())return;
  const generation=libraryChangeId,requestId=++cloudLoadRequestId;
  const latest=()=>requestId===cloudLoadRequestId;
  let pendingDeleteFailures=0;
  try{
   for(const id of queuedDeletes()){
-   if(libraryChangeId!==generation||!latest())return;
+   if(!cloudOperationsAllowed()||libraryChangeId!==generation||!latest())return;
    try{
     await cloudLibraryRequest({action:'delete',id});
-    if(libraryChangeId!==generation||!latest())return;
+    if(!cloudOperationsAllowed()||libraryChangeId!==generation||!latest())return;
     acknowledgeDelete(id);
    }catch(error){
     if(libraryChangeId!==generation||!latest())return;
@@ -462,7 +468,9 @@ async function loadCloudBuilds(){
     console.warn('Pending cloud deletion will be retried',error);
    }
   }
+  if(!cloudOperationsAllowed())return;
   const response=await cloudLibraryRequest();
+  if(!cloudOperationsAllowed())return;
   // A manual refresh can overtake an older request for the same owner:
   // only the newest GET is allowed to reconcile the visible library.
   if(!latest())return;
@@ -491,7 +499,7 @@ async function loadCloudBuilds(){
     'Облако подключено · локальные копии ещё не сохранены':
     'Облачная библиотека подключена');
   for(const entry of outgoing){
-   if(libraryChangeId!==generation)break;
+   if(!cloudOperationsAllowed()||libraryChangeId!==generation)break;
    if(!latest())break;
    const current=builds.find(x=>x.id===entry.id);
    if(!current||current.at!==entry.at||queuedDeletes().includes(entry.id))continue;
