@@ -33,8 +33,8 @@ export async function runConditionalFire867Smoke(browser,base){
    return at<0?null:values[at]?.textContent.trim()||null;
   });
   assert.equal(await activeEffect(),'Пламя феникса');
-  const glyph=async name=>panel.locator('[data-stage-tab="'+name+'"]').evaluate(
-   el=>getComputedStyle(el,'::before').content);
+  const glyph=async name=>panel.locator('[data-stage-tab="'+name+'"]')
+   .locator('.stage-tab-symbol,.stage-action-glyph').innerText();
   assert.match(await glyph('choose'),/⇄/);
   assert.match(await glyph('souls'),/○/);
   await panel.locator('[data-grade="6"]').click();
