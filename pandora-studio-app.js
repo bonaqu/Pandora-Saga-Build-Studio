@@ -1563,7 +1563,7 @@ function openStageGearMenu(index,sourceSlot,event,anchor){
  menu.append(title);
  const actions=hasItem?[
   ['properties','◇','Свойства','Properties',false],
-  ['souls','◈','Управление душами','Manage Souls',!canManageSouls],
+  ['souls','○','Управление душами','Manage Souls',!canManageSouls],
   ['replace','⇄','Выбрать другую вещь','Choose another item',false],
   ['remove','×','Снять вещь','Unequip item',false]
  ]:[['choose','+','Выбрать вещь','Choose item',false]];
