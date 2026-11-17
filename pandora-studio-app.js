@@ -1114,8 +1114,11 @@ function applyOwnerInterfaceEditedValue(section,key,visible){
    if(field.section!==section||field.key!==key)continue;
    const value=visible+(field.suffix||'');
    if(attr==='text')node.textContent=value;
-   else if(['placeholder','aria-label','title'].includes(attr))
+   else if(['placeholder','aria-label','title','aria-description'].includes(attr)){
     node.setAttribute(attr,value);
+    if(attr==='aria-description'&&node.dataset.guideHint!==undefined)
+     node.dataset.guideHint=value;
+   }
   }
  }
 }
@@ -2918,7 +2921,8 @@ $('jobTitle').textContent=hasJob?editableValue('job.'+state.job,jobs[state.job])
  const calculated=previewBaseStats();
  renderOriginStats(calculated);renderBranches();refreshBudgetLabel();
  renderPathPages();renderDetails();renderOriginVitals(calculated);
- renderVitalsEnhancements(calculated);renderOriginCopyLabels();updateAdminHint()}
+ renderVitalsEnhancements(calculated);renderOriginCopyLabels();renderWorkbenchHintEditors();
+ refreshWorkbenchHints();updateAdminHint()}
 // Cloud reconciliation replaces saved-build cards, but it must not erase a
 // title being typed or move the reader away from the filtered results.
 function refreshBuildsAfterCloudLoad(){
@@ -8919,6 +8923,7 @@ function refreshVisibleUICopy(recordKey){
 // An Origin copy Undo refreshes visible captions without remounting the build.
 function refreshVisibleOriginCopy(recordKey){
  const wanted=String(recordKey).replace(/^guideedit\.book\.origin\./,'');
+ if(wanted.startsWith('hint')){refreshVisibleOwnerCopy(recordKey);return}
  for(const node of document.querySelectorAll('[data-origin-copy-key]')){
   const key=node.dataset.originCopyKey;
   if(originGuideKey(key)!==wanted||node.dataset.originEditing==='1'||
@@ -8938,7 +8943,8 @@ function refreshVisibleOriginCopy(recordKey){
 function refreshVisibleOwnerCopy(recordKey){
  const key=String(recordKey).replace(/^guideedit\.book\./,'');
  if(key.startsWith('owner-dock.')){refreshOwnerUI();return}
-  if(!/^(equipment|path|catalog-sync|honor-view|owner-history|owner-dialog|wiki-ui|skill-ui|stats-ui)\./.test(key))return;
+ if(/^(origin|equipment|path)\.hint/.test(key))refreshWorkbenchHints();
+  if(!/^(origin|equipment|path|catalog-sync|honor-view|owner-history|owner-dialog|wiki-ui|skill-ui|stats-ui)\./.test(key))return;
  for(const node of document.querySelectorAll('[data-owner-copy-section][data-owner-copy-id]')){
   const {ownerCopySection:section,ownerCopyId:id,ownerCopyRu:ru,ownerCopyEn:en}=node.dataset;
   if(ownerCopyKey(section,id)!==key||node.querySelector('.wiki-inline-input'))continue;
@@ -8989,8 +8995,11 @@ function refreshVisibleOwnerCopy(recordKey){
    if(ownerCopyKey(section,id)!==key)continue;
    const value=ownerCopy(section,id,ru,en)+(suffix||'');
    if(attr==='text')node.textContent=value;
-   else if(['placeholder','aria-label','title'].includes(attr))
+   else if(['placeholder','aria-label','title','aria-description'].includes(attr)){
     node.setAttribute(attr,value);
+    if(attr==='aria-description'&&node.dataset.guideHint!==undefined)
+     node.dataset.guideHint=value;
+   }
   }
  }
  // Gemstone option names and group headings are independently editable.
@@ -9519,7 +9528,7 @@ async function saveGuidePatchNow(key,fields){
   if(key==='wiki.labels')refreshVisibleWikiLabels();
   if(key.startsWith('book.ui.label.'))
    refreshVisibleUICopy('guideedit.'+key);
-  if(key.startsWith('book.equipment.')||key.startsWith('book.path.')||
+  if(key.startsWith('book.origin.hint')||key.startsWith('book.equipment.')||key.startsWith('book.path.')||
      key.startsWith('book.catalog-sync.')||key.startsWith('book.honor-view.')||
      key.startsWith('book.owner-dock.')||key.startsWith('book.owner-history.')||
      key.startsWith('book.owner-dialog.')||key.startsWith('book.wiki-ui.')||
@@ -10086,22 +10095,23 @@ function renderCatalogStatus(){
   data.meta.counts.items+(lang==='en'?' items · ':' предметов · ')+
   data.meta.counts.souls+(lang==='en'?' souls':' душ');
 }
+// Fixed action help can be edited via D1; live player/game data cannot.
+const WORKBENCH_HINTS=[
+ ['origin','hintRace','[data-origin-tab="race"]','Выбрать происхождение и расовые способности.','Choose race and passive abilities.'],
+ ['origin','hintClass','[data-origin-tab="class"]','Выбрать профессию и направление развития.','Choose class and progression.'],
+ ['origin','hintStats','[data-origin-tab="stats"]','Установить уровень и распределить характеристики.','Set level and allocate attributes.'],
+ ['equipment','hintPortrait','#hero','Открыть Книгу героя с рассчитанными характеристиками.','Open the Hero Book with calculated stats.'],
+ ['equipment','hintWeapon','#jumpEquipment','Выбрать или сменить оружие. Для других вещей нажми на нужный слот.','Change weapons. Choose another gear slot for other items.'],
+ ['equipment','hintNewBuild','#newBuildQuick','Открыть создание нового билда.','Open the New Build workflow.'],
+ ['equipment','hintSaveBuild','#snapshot','Открыть «Мои билды», чтобы сохранить текущего героя.','Open My Builds to save the current hero.'],
+ ['path','hintGrowth','#pathGrowthTab','Вкладывать очки в ветки и смотреть пороги мастерства.','Allocate branch points and view mastery thresholds.'],
+ ['path','hintSkills','#pathSkillsTab','Посмотреть изученные и доступные для изучения умения этого героя.','View learned skills and abilities this hero could learn.'],
+ ['path','hintReset','#pathResetPoints','Сбросить вложенные очки веток для нового распределения.','Reset allocated branch points for redistribution.']
+];
 function refreshWorkbenchHints(){
- const hints=[
-  ['[data-origin-tab="race"]','Выбрать происхождение и расовые способности.','Choose the race and its passive abilities.'],
-  ['[data-origin-tab="class"]','Выбрать профессию и направление развития.','Choose a class and its progression.'],
-  ['[data-origin-tab="stats"]','Установить уровень и распределить характеристики.','Set level and allocate attributes.'],
-  ['#hero','Нажми на портрет для Книги героя с рассчитанными характеристиками.','Select the portrait for the Hero Book with calculated stats.'],
-  ['#jumpEquipment','Открыть выбор оружия. Для других вещей нажми на нужный слот у портрета.','Open the weapon picker. Select other slots around the portrait for other gear.'],
-  ['#newBuildQuick','Перейти к созданию нового билда.','Go to create a new build.'],
-  ['#snapshot','Открыть «Мои билды», чтобы сохранить текущего героя.','Open My Builds to save your current character.'],
-  ['#pathGrowthTab','Вложить очки и посмотреть пороги мастерства.','Allocate branch points and view mastery thresholds.'],
-  ['#pathSkillsTab','Посмотреть доступные и закрытые навыки.','View available and locked skills.'],
-  ['#pathResetPoints','Сбросить вложенные очки для нового распределения.','Reset allocated points to redistribute them.']
- ];
- for(const [selector,ru,en] of hints){
+ for(const [section,key,selector,ru,en] of WORKBENCH_HINTS){
   const node=document.querySelector(selector);if(!node)continue;
-  const hint=lang==='en'?en:ru;
+  const hint=ownerCopy(section,key,ru,en);
   if(!node.dataset.workbenchGuideBound&&window.PandoraGuideTooltip?.attach){
    window.PandoraGuideTooltip.attach(node,hint,{hoverDelay:350});
    node.dataset.workbenchGuideBound='1';
@@ -10110,11 +10120,30 @@ function refreshWorkbenchHints(){
   node.setAttribute('aria-description',hint);
  }
 }
+function renderWorkbenchHintEditors(){
+ for(const [section,i18n,ru,en] of [
+  ['origin','originGuide','Подсказки происхождения','Origin tooltips'],
+  ['equipment','appearanceGuide','Подсказки экипировки','Equipment tooltips'],
+  ['path','pathGuide','Подсказки пути героя','Hero Path tooltips']]){
+  const target=document.querySelector('[data-i18n="'+i18n+'"]');if(!target)continue;
+  const old=target.nextElementSibling?.classList?.contains('workbench-hint-editor')?
+   target.nextElementSibling:null;
+  if(!adminEditing||!adminToken){old?.remove();continue}
+  if(old?.querySelector('.wiki-inline-input'))continue;
+  old?.remove();
+  const rows=WORKBENCH_HINTS.filter(row=>row[0]===section).map(([,key,,hintRu,hintEn])=>
+   [key,hintRu,hintEn,key.replace(/^hint/,'')+' · '+hintRu,
+    key.replace(/^hint/,'')+' · '+hintEn]);
+  const panel=ownerInterfaceEditor(section,rows,ru,en);
+  if(panel){panel.classList.add('workbench-hint-editor');target.after(panel)}
+ }
+}
 function applyGameLocale({redraw=true}={}){
  window.PandoraUILocale.setOverrides(override);
  window.PandoraUILocale.apply(lang);
  refreshOpenAuthoredToast();
  refreshWorkbenchHints();
+ renderWorkbenchHintEditors();
  renderArchiveNotice();
  renderCatalogStatus();
  renderOriginCopyLabels();
