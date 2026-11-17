@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 
 // This scenario simulates the D1 overrides API in-memory. Production D1 is
 // never written; real client edit, CAS payload, reload and guest rendering run.
@@ -27,6 +28,17 @@ export async function runPublicD1Copy874Smoke(browser,base){
     contentType:'application/json',body:JSON.stringify(value)});
    if(method==='OPTIONS')return reply({},204);
    if(path==='/api/overrides'&&method==='GET')return reply({values});
+   // A full live D1 snapshot is necessary: explicit archive mode intentionally
+   // skips /api/overrides, so it cannot prove the public D1 copy round-trip.
+   if(path.startsWith('/api/catalog/')&&path.endsWith('.json')&&method==='GET'){
+    const name=path.slice('/api/catalog/'.length,-5);
+    const file=name==='stringsEn'?'strings.en':name;
+    const body=readFileSync(new URL('../data/os/'+file+'.json',import.meta.url),'utf8');
+    return route.fulfill({status:200,headers:{...headers,
+     'access-control-expose-headers':'X-PS-Catalog-Snapshot,X-PS-Catalog',
+     'x-ps-catalog-snapshot':'qa-d1-snapshot-874','x-ps-catalog':'d1'},
+     contentType:'application/json',body});
+   }
    if(path==='/api/admin/login'&&method==='POST'){
     assert.equal(req.postDataJSON().password,'Correct admin password!');
     return reply({token:'a'.repeat(43),expires:Date.now()+600000});
