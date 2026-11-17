@@ -7458,6 +7458,34 @@ function renderBuilds(root){
      'data-owner-copy-key':key,text:libraryText(key)})
    ]));
   }
+  // Action buttons and select options are edited separately: never nest a
+  // pencil inside a player button, checkbox label or <option>.
+  rows.append(h('h4',{class:'build-hint-owner-section',
+   text:tr('Библиотека и сортировка','Library and sorting')}));
+  for(const [key,ru,en] of [
+   ['libraryCurrentBadge','Текущий билд','Current build'],
+   ['libraryCompare','Сравнить','Compare'],
+   ['librarySortCaption','Сортировка','Sort'],
+   ['librarySortAria','Поле сортировки','Sort field label'],
+   ['librarySortSaved','Порядок сохранения','Saved order'],
+   ['librarySortName','По названию','By name'],
+   ['librarySortLevel','По уровню','By level'],
+   ['librarySortClass','По профессии','By class'],
+   ['libraryBuildNameAria','Имя билда','Build name field'],
+   ['libraryDraftNameAria','Имя черновика','Draft name field'],
+   ['librarySaveAndCreate','Сохранить и создать','Save and create'],
+   ['libraryCreateWithoutSave','Создать без сохранения','Create without save'],
+   ['librarySaveNew','Сохранить новый билд','Save new build'],
+   ['librarySaveCopy','Сохранить копию','Save copy'],
+   ['libraryNewBuild','Новый билд','New build'],
+   ['libraryRefresh','Обновить библиотеку','Refresh library']
+  ]){
+   rows.append(h('div',{class:'build-hint-owner-row'},[
+    h('span',{class:'build-hint-owner-action',text:tr(ru,en)}),
+    h('span',{class:'build-hint-owner-value',
+     'data-owner-copy-key':key,text:libraryText(key)})
+   ]));
+  }
   editor.append(rows);root.append(editor);
  }
  const comparisonSlot=h('section',{'data-build-compare-slot':''});
