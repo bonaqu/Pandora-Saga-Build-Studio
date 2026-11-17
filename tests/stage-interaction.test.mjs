@@ -21,7 +21,9 @@ class FakeElement{
  replaceWith(){}
  replaceChildren(...values){this.children=values}
 }
-const document={createElement:t=>new FakeElement(t),createTextNode:t=>({tag:'#text',textContent:t,attributes:{}}),body:new FakeElement('body')};
+const document={createElement:t=>new FakeElement(t),
+  createElementNS:(_ns,t)=>new FakeElement(t),
+  createTextNode:t=>({tag:'#text',textContent:t,attributes:{}}),body:new FakeElement('body')};
 const stage={};
 Function('window','document',load('pandora-studio-equipment-ui.js'))(stage,document);
 stage.PandoraEquipmentPlan=host.PandoraEquipmentPlan;
@@ -59,7 +61,7 @@ test('equipped weapon shows working refinement, gem type and Soul socket handler
  byText(state.box,'Магический').events.click();
  assert.deepEqual(state.calls.gem,[{type:'magical',element:'fire'}]);
  assert.ok(walk(state.box).some(x=>x.textContent==='Заточка: +0…+10'));
- byText(state.box,'Души').events.click();
+ byText(state.box,'Управление душами').events.click();
  assert.deepEqual(state.calls.mode,['souls']);
 });
 
@@ -76,7 +78,7 @@ test('jewelry and cloak have no refinement or gemstone editor',()=>{
   stage.PandoraStageItemUI.render(state.box,state.api);
   assert.equal(byText(state.box,'+8'),undefined,slot);
   assert.equal(byText(state.box,'Самоцветы'),undefined,slot);
-  assert.equal(byText(state.box,'Души'),undefined,slot);
+  assert.equal(byText(state.box,'Управление душами'),undefined,slot);
   const gems=makeApi(slot,'gems');
   stage.PandoraStageItemUI.render(gems.box,gems.api);
   assert.deepEqual(gems.calls.mode,['details'],slot);
@@ -86,10 +88,10 @@ test('jewelry and cloak have no refinement or gemstone editor',()=>{
 test('belt sockets are available; empty belt never invents a Soul tab',()=>{
  const sample=makeApi('belt');
  sample.api.record.slot='belt';stage.PandoraStageItemUI.render(sample.box,sample.api);
- assert.ok(byText(sample.box,'Души'));
+ assert.ok(byText(sample.box,'Управление душами'));
  const empty=makeApi('belt');empty.api.record.soulslot=0;
  stage.PandoraStageItemUI.render(empty.box,empty.api);
- assert.equal(byText(empty.box,'Души'),undefined);
+ assert.equal(byText(empty.box,'Управление душами'),undefined);
 });
 test('Soul socket controls are in Souls only, not under properties',()=>{
  const props=makeApi('weapon','details');stage.PandoraStageItemUI.render(props.box,props.api);
@@ -107,7 +109,7 @@ test('Soul search state survives socket choice and selection, with no duplicate 
  assert.equal(search.attributes.value,'свет');
  search.value='огонь';search.events.input();
  assert.equal(next,'огонь');
- assert.equal(byText(state.box,'Души')?.className,'chosen');
+ assert.equal(byText(state.box,'Управление душами')?.className,'chosen');
 });
 test('grade, element and soul socket controls have stable focus restoration identifiers',()=>{
  const state=makeApi('weapon');stage.PandoraStageItemUI.render(state.box,state.api);
@@ -122,7 +124,7 @@ test('Properties has no duplicate Soul shortcut, reset-gem button, or explanator
  stage.PandoraStageItemUI.render(state.box,state.api);
  assert.equal(byText(state.box,'Сбросить тип и стихию'),undefined);
  assert.equal(walk(state.box).filter(x=>x.tag==='button'&&String(x.textContent).startsWith('✦ Души:')).length,0);
- assert.ok(byText(state.box,'Души'),'dedicated Soul tab is still available');
+ assert.ok(byText(state.box,'Управление душами'),'dedicated Soul tab is still available');
  const all=walk(state.box).map(x=>x.textContent||'').join(' ');
  assert.ok(!all.includes('Выбирай здесь — применяется сразу'));
  assert.ok(!all.includes('Таблица OS:'));
@@ -203,12 +205,12 @@ test('an individually upgraded zero-slot belt gains the Souls tab without editin
  base.api.record.slot='belt';base.api.record.soulslot=0;
  base.api.capacity=0;base.api.updateSocketCapacity=()=>{};
  stage.PandoraStageItemUI.render(base.box,base.api);
- assert.equal(byText(base.box,'Души'),undefined);
+ assert.equal(byText(base.box,'Управление душами'),undefined);
  assert.equal(byText(base.box,'0')?.className,'chosen');
  const selected=makeApi('belt','details');
  selected.api.record.slot='belt';selected.api.record.soulslot=0;
  selected.api.capacity=1;selected.api.updateSocketCapacity=()=>{};
  stage.PandoraStageItemUI.render(selected.box,selected.api);
- assert.ok(byText(selected.box,'Души'));
+ assert.ok(byText(selected.box,'Управление душами'));
  assert.equal(byText(selected.box,'1')?.className,'chosen');
 });

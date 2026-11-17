@@ -34,9 +34,9 @@ export async function runConditionalFire867Smoke(browser,base){
   });
   assert.equal(await activeEffect(),'Пламя феникса');
   const glyph=async name=>panel.locator('[data-stage-tab="'+name+'"]')
-   .locator('.stage-tab-symbol,.stage-action-glyph').innerText();
-  assert.match(await glyph('choose'),/⇄/);
-  assert.match(await glyph('souls'),/○/);
+    .locator('svg[data-gear-icon]').getAttribute('data-gear-icon');
+   assert.equal(await glyph('choose'),'choose');
+   assert.equal(await glyph('souls'),'souls');
   await panel.locator('[data-grade="6"]').click();
   assert.equal(await activeEffect(),null,'+6 is below the fire effect gate');
   await panel.locator('[data-grade="7"]').click();

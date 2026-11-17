@@ -35,17 +35,30 @@ test('Phoenix Flame is gated by actual fire weapon, gem, grade and eligibility',
 test('all item tabs and right-click menu actions reuse a single icon mapping',()=>{
  const css=read('pandora-studio-workbench-guidance.css');
  const uiWindow={};
- vm.runInNewContext(equipment,{window:uiWindow,document:{addEventListener(){}}});
+ vm.runInNewContext(equipment,{window:uiWindow,document:{
+   addEventListener(){},
+   createElementNS(_ns,tag){return{tag,attributes:{},children:[],
+    setAttribute(k,v){this.attributes[k]=v},append(node){this.children.push(node)}}}
+  }});
  const icon=uiWindow.PandoraStageItemUI.actionIcon;
- for(const [key,glyph] of Object.entries({
-  choose:'⇄',replace:'⇄',details:'≡',properties:'≡',souls:'○',remove:'×'
- }))assert.equal(icon(key),glyph,key);
- assert.equal(icon('details',{forward:true}),'→');
- assert.equal(icon('unknown'),'');
+ for(const [key,name] of Object.entries({
+   choose:'choose',replace:'choose',details:'details',properties:'details',
+   souls:'souls',remove:'remove'
+  })){
+   const svg=icon(key);
+   assert.equal(svg.tag,'svg',key);
+   assert.equal(svg.attributes['data-gear-icon'],name,key);
+   assert.equal(svg.attributes['aria-hidden'],'true');
+   assert.ok(svg.children.length>=2,key);
+  }
+  assert.equal(icon('details',{forward:true}).attributes['data-gear-icon'],'arrow-right');
+  assert.equal(icon('unknown'),null);
  assert.match(source,/PandoraStageItemUI\.actionIcon\(id\)/);
- assert.match(source,/data-gear-action-icon':window\.PandoraStageItemUI\.actionIcon\('details',\{forward:true\}\)/);
+ assert.match(source,/PandoraStageItemUI\.actionIcon\('details',\{forward:true\}\)/);
  assert.match(equipment,/const glyph=actionIcon\(key,\{forward:returningToDetails\}\)/);
  assert.match(css,/\.stage-rich-tabs \.stage-tab-symbol/);
+  assert.match(css,/\.stage-action-svg\{/);
+  assert.doesNotMatch(css,/stage-picker-mode-link::before/);
  assert.doesNotMatch(css,/button\[data-stage-tab="(?:choose|details|souls)"\]::before/);
 });
 

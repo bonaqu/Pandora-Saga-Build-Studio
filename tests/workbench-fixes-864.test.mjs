@@ -75,8 +75,9 @@ test('slot indicators and chapter use unambiguous labels',()=>{
  assert.match(css,/\.stage-rich-tabs \.stage-tab-symbol/);
  assert.match(css,/\.stage-gear-context-icon/);
  const equip=read('pandora-studio-equipment-ui.js');
- assert.match(equip,/choose:'⇄',replace:'⇄',details:'≡',properties:'≡'/);
- assert.match(equip,/souls:'○',remove:'×'/);
+ assert.match(equip,/choose:'choose',replace:'choose',details:'details',properties:'details'/);
+  assert.match(equip,/souls:'souls',remove:'remove'/);
+  assert.match(equip,/const actionIconPaths=Object.freeze/);
  assert.match(labels,/skill:\['Умения','Skills'\]/);
  assert.match(app,/text:Math\.min\(report\.count,cap\)\+'\/'\+cap/);
 });
