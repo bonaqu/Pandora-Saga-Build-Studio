@@ -2076,7 +2076,7 @@ function renderStagePicker(focusSearch=false){
  }
  const detailsLink=bindOwnerInterfaceText(h('button',{type:'button',
    class:'stage-picker-mode-link',disabled:!record,
-   'aria-label':lang==='en'?'Back to properties':'Вернуться к свойствам',
+   'aria-label':lang==='en'?'Go to properties':'Перейти к свойствам',
    onclick:()=>{stageSlotView='details';renderStagePicker()}}),
    'equipment','pickerDetails','Свойства','Properties');
   // The back arrow and caption already explain this action; no popup.
