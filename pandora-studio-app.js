@@ -219,9 +219,23 @@ function persist(){
  }
 }
 function persistBuilds(){
- try{return window.PandoraBuildScope.setOwned(localStorage,libraryScopeId(),
-  'ps-build-library.v1',JSON.stringify(builds))}
- catch(error){console.warn('Build library could not be stored locally',error);return false}
+ try{
+  const normalized=JSON.stringify(builds);
+  let serialized=normalized;
+  // Sorting is a UI preference. A readiness checkpoint or a no-op draft
+  // save must not silently rewrite the original build library's order.
+  // Only an actual library change may replace the persisted row sequence.
+  const stored=window.PandoraBuildScope.getOwned(localStorage,libraryScopeId(),
+   'ps-build-library.v1');
+  try{
+   const rows=JSON.parse(stored);
+   if(Array.isArray(rows)&&rows.length===builds.length&&
+    JSON.stringify(safeStoredBuildRows(rows))===normalized)
+    serialized=stored;
+  }catch{ /* A damaged library is never treated as an equivalent copy. */ }
+  return window.PandoraBuildScope.setOwned(localStorage,libraryScopeId(),
+   'ps-build-library.v1',serialized);
+ }catch(error){console.warn('Build library could not be stored locally',error);return false}
 }
 const CLOUD_TOKEN_KEY='ps-build-library-secret.v1';
 const CLOUD_DELETES_KEY='ps-build-library-pending-deletes.v1';
