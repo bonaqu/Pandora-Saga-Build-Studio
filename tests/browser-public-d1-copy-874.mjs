@@ -132,6 +132,9 @@ export async function runPublicD1Copy874Smoke(browser,base){
  try{
   await view.goto(base+'/',{waitUntil:'domcontentloaded'});
   await view.locator('#startupOverlay').waitFor({state:'hidden',timeout:30000});
+  // The local smoke server deliberately boots in archive mode. Explicitly
+  // enter the mocked live-D1 path, which is what real GitHub Pages uses.
+  await view.evaluate(()=>startStudio({archive:false}));
   let picker=await openBelt(view);
   assert.equal((await picker.locator('.stage-soul-unavailable').innerText()).trim(),
    'У этого пояса нет слотов для душ.');
