@@ -23,7 +23,7 @@ test('all authored cloud-library lifecycle notices have bilingual CAS-safe D1 ke
   assert.match(id,/^ui\.label\.status-cloud-[a-z0-9-]+$/);
   const override={ru:'Проверено '+key,en:'Edited '+key};
   assert.equal(guide.validOverride('book.'+id,JSON.stringify(override)),true);
-  locale.setOverrides({'guideedit.book.'+id:JSON.stringify(override)});
+  locale.setOverrides({['guideedit.book.'+id]:JSON.stringify(override)});
   assert.equal(locale.text(key,'ru'),override.ru);
   assert.equal(locale.text(key,'en'),override.en);
  }
