@@ -7,10 +7,10 @@ const names={
  racial:{ru:'Расовая пассивка',en:'Racial passive'},
  guild:{ru:'Гильдия и осада',en:'Guild and siege'},
  special:{ru:'Особое',en:'Special'},
- variants:{ru:'Дубли навыков',en:'Duplicate skills'},
- other:{ru:'Другие навыки',en:'Other skills'},
+ variants:{ru:'Дубли умений',en:'Duplicate skills'},
+ other:{ru:'Другие умения',en:'Other skills'},
  unknown:{ru:'Неуточнённые',en:'Unresolved'},
- all:{ru:'Все навыки',en:'All skills'}
+ all:{ru:'Все умения',en:'All skills'}
 };
 const normalize=name=>String(name||'').normalize('NFKC').trim()
  .toLocaleLowerCase('ru').replace(/\s+/g,' ');

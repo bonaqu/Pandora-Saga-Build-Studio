@@ -244,6 +244,73 @@ function effectiveSkillCatalog(skills,api){
  return {skills:source.filter(skill=>!hidden.has(String(skill?.id))),
   aliases,upgrades};
 }
+
+// A skill belongs in the Hero Path gallery only when this class could
+// eventually learn it. Current shortages (level/allocated points) do not
+// hide it; permanent blockers do. The Encyclopedia remains comprehensive.
+// Validate the full predecessor chain without relying on current allocation.
+function futureSkillReachable(skill,api,skillIndex=indexSkills(api.skillCatalog)){
+ const caps=api.branchCaps||{},innate=api.innate||{};
+ const needs=new Map(),chain=new Set();
+ let meleeNeed=0;
+ const maxLevel=Number.isInteger(api.maxLevel)?api.maxLevel:55;
+ const capFor=branch=>{
+  const explicit=M.classLimit(branch,caps);
+  const other=typeof api.cap==='function'?api.cap(branch):null;
+  return explicit===null&&Number.isInteger(other)?Math.min(90,other):explicit;
+ };
+ const visit=current=>{
+  if(!current||current.id==null||!allowedForJob(current,api.job)||
+     current.learnable!==true)return false;
+  const id=String(current.id);
+  if(chain.has(id))return false;
+  chain.add(id);
+  if(current.charLevel!==undefined&&(!validSourceLevel(current.charLevel)||
+     Number(current.charLevel)>maxLevel))return false;
+  if(current.reqLevel!==undefined&&!validSourceLevel(current.reqLevel))return false;
+  if(current.reqs!==undefined&&!Array.isArray(current.reqs))return false;
+  const reqs=Array.isArray(current.reqs)?current.reqs:[];
+  if(Number(current.reqLevel)>0&&!reqs.length)return false;
+  for(const req of reqs){
+   if(!req||typeof req.branch!=='string'||!req.branch.trim()||
+      !validSourceLevel(req.amount)||Number(req.amount)<1)return false;
+   const threshold=Number(req.amount);
+   if(req.branch==='martial'&&current.branchRaw==='MELEE'){
+    if(M.meleeGroupCap(caps)<threshold)return false;
+    meleeNeed=Math.max(meleeNeed,threshold);
+    continue;
+   }
+   const cap=capFor(req.branch);
+   if(!Number.isInteger(cap)||cap<threshold)return false;
+   needs.set(req.branch,Math.max(needs.get(req.branch)||0,threshold));
+  }
+  if(current.prereq!=null&&String(current.prereq).trim()){
+   const prior=skillIndex.get(String(current.prereq));
+   if(!prior||!visit(prior))return false;
+  }
+  return true;
+ };
+ if(!visit(skill))return false;
+ const budget=api.maxSkillPoints;
+ if(Number.isInteger(budget)&&budget>=0){
+  let minimum=0,meleeCommitted=0,meleeInitial=0;
+  for(const [branch,need] of needs){
+   const innatePoints=M.branchBase(innate,branch);
+   const additional=Math.max(0,need-innatePoints);
+   minimum+=additional;
+   if(M.MELEE.includes(branch))meleeCommitted+=need;
+  }
+  if(meleeNeed){
+   meleeInitial=M.MELEE.reduce((sum,key)=>sum+
+    Math.min(capFor(key)||0,M.branchBase(innate,key)),0);
+   // Training green cannot exceed allocated potential. Account for branch
+   // requirements already spending part of the group capacity.
+   minimum+=Math.max(0,meleeNeed-Math.max(meleeCommitted,meleeInitial));
+  }
+  if(minimum>budget)return false;
+ }
+ return true;
+}
 // Skill markers are sorted once per render; nearest hover uses binary search.
 function nearestMilestone(marks,fraction){
  if(!marks.length||!Number.isFinite(fraction))return null;
@@ -650,7 +717,7 @@ function viewSkills(target,details,api){
  }
  const skillIndex=indexSkills(api.skillCatalog);
  const effective=effectiveSkillCatalog(api.skillCatalog,api);
- const ordered=effective.skills.filter(skill=>allowedForJob(skill,api.job)&&
+ const ordered=effective.skills.filter(skill=>futureSkillReachable(skill,api,skillIndex)&&
   matchesSkillSearch(typeof api.skillSearchText==='function'?
    api.skillSearchText(skill):String(skill.name||'')+' '+String(skill.id??''),api.query))
   .map(skill=>({skill,gate:readiness(skill,api,new Set(),skillIndex)})).filter(({gate})=>
@@ -863,5 +930,5 @@ function viewSkills(target,details,api){
   if(typeof api.skillWiki==='function')details.append(api.skillWiki(skill));
  }
 }
-root.PandoraHeroPath=Object.freeze({viewGrowth,viewSkills,readiness,skillCountLabel,effectiveSkillCatalog});
+root.PandoraHeroPath=Object.freeze({viewGrowth,viewSkills,readiness,skillCountLabel,effectiveSkillCatalog,futureSkillReachable});
 })(typeof window==='undefined'?globalThis:window);

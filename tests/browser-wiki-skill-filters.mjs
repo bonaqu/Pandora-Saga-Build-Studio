@@ -43,7 +43,7 @@ export async function runWikiSkillFiltersSmoke(browser,base){
    'Extra Counterattack must not appear among playable character skills');
   assert.ok((await filter.locator('option[value="racial"]').innerText()).startsWith('Расовая пассивка'));
   assert.ok((await filter.locator('option[value="special"]').innerText()).startsWith('Особое'));
-  assert.ok((await filter.locator('option[value="variants"]').innerText()).startsWith('Дубли навыков'));
+  assert.ok((await filter.locator('option[value="variants"]').innerText()).startsWith('Дубли умений'));
   await filter.selectOption('racial');
   await page.locator('[data-wiki-record="900050003"]').waitFor({state:'visible'});
   assert.match(await filter.locator('option[value="racial"]').innerText(),/18$/);

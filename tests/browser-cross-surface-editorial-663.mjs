@@ -33,7 +33,7 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   if(path==='/api/admin/override'&&req.method()==='POST'){
    assert.equal(req.headers().authorization,'Bearer '+token);
    const body=req.postDataJSON();
-   assert.match(body.key,/^guideedit\.book\.(?:equipment|wiki-ui|skill-ui|stats-ui)\./);
+   assert.match(body.key,/^guideedit\.book\.(?:origin|path|equipment|wiki-ui|skill-ui|stats-ui)\./);
    assert.equal(body.expectedValue,Object.hasOwn(values,body.key)?values[body.key]:null,
     'All owner copy writes must use D1 expectedValue CAS');
    values[body.key]=body.value;writes.push(body);
@@ -111,6 +111,30 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   // Skills: work inside the real right-hand Hero Path instead of the
   // retired standalone skills workbench, which has no navigation tab.
   await page.locator('#dockClose').click();
+  // 864: fixed tooltips in all three workbench areas are owner-authored D1
+  // content. Editing must refresh the target without changing the hero.
+  const hints=page.locator('.workbench-hint-editor');
+  assert.equal(await hints.count(),3);
+  for(const [section,key,selector,newCopy] of [
+   ['origin','hintRace','[data-origin-tab="race"]','Помощь: раса'],
+   ['equipment','hintWeapon','#jumpEquipment','Помощь: выбор оружия'],
+   ['path','hintSkills','#pathSkillsTab','Помощь: умения героя']
+  ]){
+   const panel=page.locator('[data-i18n="'+
+    (section==='origin'?'originGuide':section==='equipment'?'appearanceGuide':'pathGuide')+
+    '"] + .workbench-hint-editor');
+   await panel.locator('summary').click();
+   const target=page.locator(selector);
+   const original=await target.getAttribute('data-guide-hint');
+   assert.ok(original,'Initial action hint must be shown');
+   const beforeLevel=await page.locator('#levelOut').innerText();
+   await edit(section,key,newCopy);
+   assert.equal(await target.getAttribute('data-guide-hint'),newCopy);
+   assert.equal(await target.getAttribute('aria-description'),newCopy);
+   assert.equal(await page.locator('#levelOut').innerText(),beforeLevel);
+   await panel.locator('summary').click();
+  }
+  assert.equal(writes.filter(write=>/(origin|equipment|path)\.hint-/.test(write.key)).length,3);
   await page.locator('#pathSkillsTab').click();
   const pathSearch=page.locator('#pathSkillSearch');
   await pathSearch.waitFor({state:'visible'});
@@ -193,8 +217,11 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   await picker.locator('[data-stage-tab="details"]').waitFor({state:'visible'});
   const detailsPanel=picker.locator('.studio-owner-interface-editor');
   await detailsPanel.locator('summary').click();
-  assert.equal(await detailsPanel.locator('.studio-owner-interface-row').count(),6);
+  assert.equal(await detailsPanel.locator('.studio-owner-interface-row').count(),9);
   await edit('equipment','pickerItemSettings','Параметры экипировки');
+  await edit('equipment','hint.souls','Подсказка слотов душ');
+  assert.equal(await picker.locator('[data-stage-tab="souls"]')
+   .getAttribute('data-guide-hint'),'Подсказка слотов душ');
   assert.equal(await picker.locator('[role="group"][data-owner-interface-key="pickerItemSettings"]')
    .getAttribute('aria-label'),'Параметры экипировки');
   assert.equal(await page.locator('.equipment-slot[data-slot-index="5"].equipped').count(),1);

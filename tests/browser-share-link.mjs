@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 export async function runShareLinkSmoke(browser,base){
  const api='https://ps-build-studio-cloud.bonaqu.workers.dev';
  const shareId='A1234567890',stored=new Map(),token='t'.repeat(43),username='share_tester';
- let mismatched=false,revoked=false,created=0,readbacks=0,sharedGets=0;
+ let mismatched=false,revoked=false,created=0,readbacks=0,sharedGets=0,sharedSource=null;
  let holdNextSharedRead=false,releaseStaleRead=null,notifyStaleRead=null;
  const context=await browser.newContext({viewport:{width:1365,height:850}});
  const seedSession=({token,username})=>localStorage.setItem('ps-account-session.v1',
@@ -48,6 +48,7 @@ export async function runShareLinkSmoke(browser,base){
     'Only signed-in accounts may publish links');
    const body=request.postDataJSON();
    if(!stored.has(body?.buildId))return json({error:'Missing stored build'},409);
+   sharedSource=structuredClone(stored.get(body.buildId));
    created++;return json({ok:true,id:shareId});
   }
   if(path==='/api/shared/'+shareId&&method==='GET'){
@@ -61,7 +62,7 @@ export async function runShareLinkSmoke(browser,base){
     return json({error:'Old deleted-link response',reason:'deleted'},410);
    }
    if(revoked)return json({error:'Владелец удалил билд',reason:'deleted'},410);
-   const entry=[...stored.values()].at(-1);
+   const entry=sharedSource||[...stored.values()].at(-1);
    if(!entry)return json({error:'Missing'},404);
    readbacks++;
    const data=mismatched?{...entry.data,level:1}:entry.data;
@@ -151,10 +152,11 @@ export async function runShareLinkSmoke(browser,base){
    assert.match(await dialog.locator('.shared-personal-name').innerText(),/Новый герой/);
    assert.equal(await dialog.locator('.shared-build-identity').count(),2);
    assert.match(await dialog.locator('.shared-build-replacement').innerText(),/заменит/);
-   const saveChoice=dialog.getByRole('button',{name:'Сохранить текущий и открыть'});
    const discardChoice=dialog.getByRole('button',{name:'Открыть без сохранения'});
-   assert.match(await saveChoice.getAttribute('data-guide-hint'),/новую копию билда/);
-   assert.match(await saveChoice.getAttribute('data-guide-hint'),/синхронизируется с облаком/);
+   assert.match(await dialog.getByRole('button',{name:'Сохранить новый и открыть'})
+    .getAttribute('data-guide-hint'),/создадим запись/i);
+   assert.match(await dialog.getByRole('button',{name:'Сохранить новый и открыть'})
+    .getAttribute('data-guide-hint'),/синхронизируются с облаком/i);
    assert.match(await discardChoice.getAttribute('data-guide-hint'),/Несохранённые изменения/);
    assert.match(await discardChoice.getAttribute('aria-description'),/Новый герой/);
    assert.equal(sharedGets,3,'one same-tab hashchange must issue exactly one shared GET');
@@ -182,8 +184,8 @@ export async function runShareLinkSmoke(browser,base){
    assert.equal(sharedGets,5,'EN navigation must issue one shared GET');
    assert.match(await englishDialog.innerText(),/unsaved changes will be lost/i);
    assert.equal(await englishDialog.locator('.shared-build-identity').count(),2);
-   assert.match(await englishDialog.getByRole('button',{name:'Save current and open'})
-    .getAttribute('data-guide-hint'),/synced to the cloud/i);
+   assert.match(await englishDialog.getByRole('button',{name:'Save new and open'})
+    .getAttribute('data-guide-hint'),/synchronized with the cloud separately/i);
    assert.equal(await englishDialog.locator('[data-owner-copy-key="librarySharedOpenNote"]').innerText(),
     'Existing saved builds will not be deleted.');
    await englishDialog.getByRole('button',{name:'Cancel'}).click();
@@ -222,6 +224,42 @@ export async function runShareLinkSmoke(browser,base){
    assert.match(await toast.innerText(),/Владелец удалил этот билд/);
    assert.equal(await incoming.locator('#levelOut').textContent(),'55');
    assert.equal(await incoming.evaluate(()=>location.hash),'');
+   // Saved-current branch: overwrite its existing ID instead of adding a
+   // duplicate. The linked snapshot stays immutable while local saves change.
+   revoked=false;
+   await incoming.locator('[data-origin-tab="stats"]').click();
+   await incoming.locator('#level').evaluate(el=>{
+    el.value='26';el.dispatchEvent(new Event('input',{bubbles:true}));
+   });
+   await incoming.locator('#snapshot').click();
+   await incoming.getByRole('button',{name:'Сохранить новый билд'}).click();
+   await incoming.locator('.build-card').first().waitFor({state:'visible'});
+   await incoming.waitForFunction(()=>document.querySelector('.cloud-library-status')
+    ?.textContent.includes('Сохранено в облаке'),null,{timeout:15000});
+   const owned=[...stored.values()].filter(entry=>entry.data?.level===26);
+   await incoming.waitForFunction(()=>document.querySelector('.build-card')!==null);
+   assert.equal(owned.length,1);
+   const ownedId=owned[0].id,sizeBefore=stored.size;
+   await incoming.locator('.build-card').first().getByRole('button',{name:'Открыть',exact:true}).click();
+   await incoming.locator('[data-origin-tab="stats"]').click();
+   await incoming.locator('#level').evaluate(el=>{
+    el.value='29';el.dispatchEvent(new Event('input',{bubbles:true}));
+   });
+   await incoming.evaluate(id=>{location.hash='#b/'+id},shareId);
+   await dialog.waitFor({state:'visible',timeout:20000});
+   const replaceButton=dialog.getByRole('button',{name:'Сохранить текущий и открыть'});
+   assert.match(await replaceButton.getAttribute('data-guide-hint'),/Перезапишем текущий сохранённый билд/);
+   assert.match(await dialog.locator('.shared-build-replacement').innerText(),/текущий билд/);
+   const overwriteResponse=incoming.waitForResponse(response=>
+    response.url().endsWith('/api/library')&&response.request().method()==='POST');
+   await replaceButton.click();
+   await overwriteResponse;
+   await incoming.waitForFunction(()=>document.querySelector('#levelOut')?.textContent==='55');
+   await incoming.waitForFunction(id=>
+    document.querySelector('#levelOut')?.textContent==='55',ownedId);
+   assert.equal(stored.size,sizeBefore,'overwrite must not create another library record');
+   assert.equal(stored.get(ownedId)?.data.level,29,
+    'latest unsaved changes overwrite the original record before the external build opens');
    assert.deepEqual(incomingErrors,[]);
   }finally{await receiver.close()}
   console.log('Chromium share link smoke passed: verified URL, clipboard, mismatch, receiver cancellation/import and revoked link');

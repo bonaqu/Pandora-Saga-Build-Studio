@@ -1114,8 +1114,11 @@ function applyOwnerInterfaceEditedValue(section,key,visible){
    if(field.section!==section||field.key!==key)continue;
    const value=visible+(field.suffix||'');
    if(attr==='text')node.textContent=value;
-   else if(['placeholder','aria-label','title'].includes(attr))
+   else if(['placeholder','aria-label','title','aria-description'].includes(attr)){
     node.setAttribute(attr,value);
+    if(attr==='aria-description'&&node.dataset.guideHint!==undefined)
+     node.dataset.guideHint=value;
+   }
   }
  }
 }
@@ -1661,7 +1664,7 @@ function renderSlotRails(){
     'aria-hidden':'true',title:'',
     'data-shared-slots':'armor+pants'}));
    if(!shared&&item&&plan.canSocket(slotKeys[i],source,cap))
-    button.append(h('span',{class:'stage-sockets',text:'◈ '+Math.min(report.count,cap)+'/'+cap}));
+    button.append(h('span',{class:'stage-sockets',text:Math.min(report.count,cap)+'/'+cap}));
    if(!shared&&item&&level>0)button.append(h('span',{class:'stage-enhance',text:'+'+level}));
    if(source){
     const equippedGem=window.PandoraEnchantModel.normalizeForSlot(key,
@@ -2036,7 +2039,10 @@ function renderStagePicker(focusSearch=false){
     ['pickerSoulSearchAria','Поиск души','Find Soul','Поиск душ','Soul search'],
     ['pickerSoulSlotAria','Слот души','Soul slot','Название слота','Soul slot name'],
     ['pickerSoulSlotCaption','Слот','Slot','Подпись слота','Slot caption'],
-    ['pickerEmptySoul','пусто','empty','Пустой слот','Empty slot']
+    ['pickerEmptySoul','пусто','empty','Пустой слот','Empty slot'],
+    ['hint.choose','Выбрать или сменить предмет в этом слоте.','Choose or replace gear in this slot.','Подсказка выбора','Choose help'],
+    ['hint.details','Посмотреть свойства, заточку и слоты душ.','View properties, refinement and Soul sockets.','Подсказка свойств','Properties help'],
+    ['hint.souls','Вставить, заменить или снять душу.','Insert, replace or remove a Soul.','Подсказка душ','Soul help']
    ],'Подписи свойств и душ','Item and Soul labels');
    if(panel)root.insertBefore(panel,root.querySelector('.stage-rich-body')||null);
   }
@@ -2053,12 +2059,21 @@ function renderStagePicker(focusSearch=false){
   }
   return;
  }
+ const detailsLink=bindOwnerInterfaceText(h('button',{type:'button',
+   class:'stage-picker-mode-link',disabled:!record,
+   onclick:()=>{stageSlotView='details';renderStagePicker()}}),
+   'equipment','pickerDetails','Свойства','Properties');
+ const detailsHelp=equipmentCopy('hint.details',
+  'Посмотреть свойства, заточку и слоты душ.','View properties, refinement and Soul sockets.');
+ bindOwnerInterfaceText(detailsLink,'equipment','hint.details',
+  'Посмотреть свойства, заточку и слоты душ.',
+  'View properties, refinement and Soul sockets.','aria-description');
+ detailsLink.dataset.guideHint=detailsHelp;
+ window.PandoraGuideTooltip?.attach(detailsLink,detailsHelp,{hoverDelay:300});
  const top=h('div',{class:'stage-picker-head'},[
   bindOwnerInterfaceText(h('strong',{}),'equipment','pickerChoosePrefix',
    'Выбор:','Choose:','text',' '+gearSlotName(selectedSlot)),
-  bindOwnerInterfaceText(h('button',{type:'button',
-   disabled:!record,onclick:()=>{stageSlotView='details';renderStagePicker()}}),
-   'equipment','pickerDetails','Свойства →','Details →'),
+  detailsLink,
   bindOwnerInterfaceText(h('button',{type:'button',text:'✕',
    onclick:()=>closeStagePicker()}),'equipment','pickerClose',
    'Закрыть выбор','Close item picker','aria-label')
@@ -2605,6 +2620,9 @@ function heroPathApi(){
   state,groups,job:klass,lang,selectedGroup:selectedSkillGroup,expandedBranch:inlineBranchId,
   innate:innateBranches(),branchCaps:branchCapacities(),
   skillCatalog:heroSkillRows(catalog.skills),catalogReady:!!catalog.skills,
+  maxLevel:55,
+  maxSkillPoints:window.PandoraSkillProgression.spending(
+   gameTables?.abilityPoint,55,{}).total,
   // Search both the displayed locale and source-backed alternate language.
   // These aliases never affect class gates, skill IDs or calculated effects.
   skillSearchText:skill=>[skill.name,catalogSource?.skills?.[String(skill.id)]?.name,
@@ -2915,7 +2933,8 @@ $('jobTitle').textContent=hasJob?editableValue('job.'+state.job,jobs[state.job])
  const calculated=previewBaseStats();
  renderOriginStats(calculated);renderBranches();refreshBudgetLabel();
  renderPathPages();renderDetails();renderOriginVitals(calculated);
- renderVitalsEnhancements(calculated);renderOriginCopyLabels();updateAdminHint()}
+ renderVitalsEnhancements(calculated);renderOriginCopyLabels();renderWorkbenchHintEditors();
+ refreshWorkbenchHints();updateAdminHint()}
 // Cloud reconciliation replaces saved-build cards, but it must not erase a
 // title being typed or move the reader away from the filtered results.
 function refreshBuildsAfterCloudLoad(){
@@ -3224,7 +3243,7 @@ function renderWiki(root){
   ['monster','Монстры','Monsters'],['map','Локации','Locations'],
   ['honor','Честь','Honor'],['npc','NPC-обмен','NPC trades'],
   ['chest','Сундуки','Chests'],['instance','Подземелья','Dungeons'],
-  ['skill','Навыки','Skills'],['soul','Души','Souls']]){
+  ['skill','Умения','Skills'],['soul','Души','Souls']]){
   const current=wikiTitle('chapter',key,ru,en);
   const chapter=h('button',{
    class:(key==='utility'?wikiSelection.type==='item'&&wikiItemType==='utility':
@@ -7917,6 +7936,7 @@ function openSharedSnapshot(share){
   return;
  }
  const incoming=sanitizeSharedState(share.data);
+ const savedCurrent=builds.find(b=>b.id===activeBuildId)||null;
  const currentName=String(state.name||sharedText('Новый герой','New hero')).trim().slice(0,70)||
   sharedText('Новый герой','New hero');
  const incomingName=String(incoming.name||sharedText('Без названия','Unnamed build')).trim().slice(0,70)||
@@ -7942,8 +7962,8 @@ function openSharedSnapshot(share){
    ])
   ]),
   h('p',{class:'shared-build-replacement',
-   text:sharedText('После открытия «','Opening “')+incomingName+
-    sharedText('» заменит «','” will replace “')+currentName+
+   text:sharedText('Открытие билда «','Opening build “')+incomingName+
+    sharedText('» заменит текущий билд «','” will replace the current build “')+currentName+
     sharedText('» в редакторе.','” in the editor.')}),
   h('div',{class:'shared-receiver-copy-row shared-unsaved-warning-row'},unsavedWarning),
   h('div',{class:'shared-receiver-copy-row'},openNote)
@@ -7955,14 +7975,16 @@ function openSharedSnapshot(share){
   clear();render();changeTab('character');
   return true;
  };
- const saveHint=sharedText('Создадим новую копию билда «','Create a new saved copy of “')+
-  currentName+sharedText('» в «Мои билды» и откроем «','” in My Builds, then open “')+
-  incomingName+sharedText('». Копия сначала сохраняется в браузере, затем синхронизируется с облаком.',
-   '”. The copy is saved in this browser first, then synced to the cloud.');
+ const saveHint=(savedCurrent?
+  sharedText('Перезапишем текущий сохранённый билд «','Overwrite the currently saved build “'):
+  sharedText('Текущий билд ещё не сохранён. Создадим запись «','The current build has no saved entry. Create a saved build “'))+
+  currentName+sharedText('» в «Мои билды», затем откроем «','” in My Builds, then open “')+
+  incomingName+sharedText('». Изменения записываются в браузер и отдельно синхронизируются с облаком.',
+   '”. Changes are saved locally first and synchronized with the cloud separately.');
  const discardHint=sharedText('Откроем «','Open “')+incomingName+
   sharedText('» вместо «','” instead of “')+currentName+
-  sharedText('» без новой копии. Несохранённые изменения текущего билда пропадут. Старые сохранения останутся.',
-   '” without saving a new copy. Unsaved current changes will be lost. Existing saved builds stay intact.');
+  sharedText('» без перезаписи текущего сохранения. Несохранённые изменения пропадут. Сохранённые билды останутся.',
+   '” without overwriting your current save. Unsaved changes will be lost. Saved builds stay intact.');
  const cancelHint=sharedText('Оставить открытым «','Keep “')+currentName+
   sharedText('» без изменений.','” open without changing it.');
  const hintButton=(text,hint,action,kind='')=>{
@@ -7973,8 +7995,10 @@ function openSharedSnapshot(share){
  };
  view.append(
   h('div',{class:'shared-open-actions'},[
-   hintButton(sharedText('Сохранить текущий и открыть','Save current and open'),
-    saveHint,()=>{if(verifyViewer()){if(saveBuild())apply()}},' primary'),
+   hintButton(savedCurrent?
+     sharedText('Сохранить текущий и открыть','Save current and open'):
+     sharedText('Сохранить новый и открыть','Save new and open'),
+    saveHint,()=>{if(verifyViewer()){if(saveBuild(state.name||currentName,savedCurrent?.id||null))apply()}},' primary'),
    hintButton(sharedText('Открыть без сохранения','Open without saving'),
     discardHint,apply)
   ]),
@@ -8911,6 +8935,7 @@ function refreshVisibleUICopy(recordKey){
 // An Origin copy Undo refreshes visible captions without remounting the build.
 function refreshVisibleOriginCopy(recordKey){
  const wanted=String(recordKey).replace(/^guideedit\.book\.origin\./,'');
+ if(wanted.startsWith('hint')){refreshVisibleOwnerCopy(recordKey);return}
  for(const node of document.querySelectorAll('[data-origin-copy-key]')){
   const key=node.dataset.originCopyKey;
   if(originGuideKey(key)!==wanted||node.dataset.originEditing==='1'||
@@ -8930,7 +8955,8 @@ function refreshVisibleOriginCopy(recordKey){
 function refreshVisibleOwnerCopy(recordKey){
  const key=String(recordKey).replace(/^guideedit\.book\./,'');
  if(key.startsWith('owner-dock.')){refreshOwnerUI();return}
-  if(!/^(equipment|path|catalog-sync|honor-view|owner-history|owner-dialog|wiki-ui|skill-ui|stats-ui)\./.test(key))return;
+ if(/^(origin|equipment|path)\.hint/.test(key))refreshWorkbenchHints();
+  if(!/^(origin|equipment|path|catalog-sync|honor-view|owner-history|owner-dialog|wiki-ui|skill-ui|stats-ui)\./.test(key))return;
  for(const node of document.querySelectorAll('[data-owner-copy-section][data-owner-copy-id]')){
   const {ownerCopySection:section,ownerCopyId:id,ownerCopyRu:ru,ownerCopyEn:en}=node.dataset;
   if(ownerCopyKey(section,id)!==key||node.querySelector('.wiki-inline-input'))continue;
@@ -8981,8 +9007,11 @@ function refreshVisibleOwnerCopy(recordKey){
    if(ownerCopyKey(section,id)!==key)continue;
    const value=ownerCopy(section,id,ru,en)+(suffix||'');
    if(attr==='text')node.textContent=value;
-   else if(['placeholder','aria-label','title'].includes(attr))
+   else if(['placeholder','aria-label','title','aria-description'].includes(attr)){
     node.setAttribute(attr,value);
+    if(attr==='aria-description'&&node.dataset.guideHint!==undefined)
+     node.dataset.guideHint=value;
+   }
   }
  }
  // Gemstone option names and group headings are independently editable.
@@ -9511,7 +9540,7 @@ async function saveGuidePatchNow(key,fields){
   if(key==='wiki.labels')refreshVisibleWikiLabels();
   if(key.startsWith('book.ui.label.'))
    refreshVisibleUICopy('guideedit.'+key);
-  if(key.startsWith('book.equipment.')||key.startsWith('book.path.')||
+  if(key.startsWith('book.origin.hint')||key.startsWith('book.equipment.')||key.startsWith('book.path.')||
      key.startsWith('book.catalog-sync.')||key.startsWith('book.honor-view.')||
      key.startsWith('book.owner-dock.')||key.startsWith('book.owner-history.')||
      key.startsWith('book.owner-dialog.')||key.startsWith('book.wiki-ui.')||
@@ -10078,22 +10107,23 @@ function renderCatalogStatus(){
   data.meta.counts.items+(lang==='en'?' items · ':' предметов · ')+
   data.meta.counts.souls+(lang==='en'?' souls':' душ');
 }
+// Fixed action help can be edited via D1; live player/game data cannot.
+const WORKBENCH_HINTS=[
+ ['origin','hintRace','[data-origin-tab="race"]','Выбрать происхождение и расовые способности.','Choose race and passive abilities.'],
+ ['origin','hintClass','[data-origin-tab="class"]','Выбрать профессию и направление развития.','Choose class and progression.'],
+ ['origin','hintStats','[data-origin-tab="stats"]','Установить уровень и распределить характеристики.','Set level and allocate attributes.'],
+ ['equipment','hintPortrait','#hero','Открыть Книгу героя с рассчитанными характеристиками.','Open the Hero Book with calculated stats.'],
+ ['equipment','hintWeapon','#jumpEquipment','Выбрать или сменить оружие. Для других вещей нажми на нужный слот.','Change weapons. Choose another gear slot for other items.'],
+ ['equipment','hintNewBuild','#newBuildQuick','Открыть создание нового билда.','Open the New Build workflow.'],
+ ['equipment','hintSaveBuild','#snapshot','Открыть «Мои билды», чтобы сохранить текущего героя.','Open My Builds to save the current hero.'],
+ ['path','hintGrowth','#pathGrowthTab','Вкладывать очки в ветки и смотреть пороги мастерства.','Allocate branch points and view mastery thresholds.'],
+ ['path','hintSkills','#pathSkillsTab','Посмотреть изученные и доступные для изучения умения этого героя.','View learned skills and abilities this hero could learn.'],
+ ['path','hintReset','#pathResetPoints','Сбросить вложенные очки веток для нового распределения.','Reset allocated branch points for redistribution.']
+];
 function refreshWorkbenchHints(){
- const hints=[
-  ['[data-origin-tab="race"]','Выбрать происхождение и расовые способности.','Choose the race and its passive abilities.'],
-  ['[data-origin-tab="class"]','Выбрать профессию и направление развития.','Choose a class and its progression.'],
-  ['[data-origin-tab="stats"]','Установить уровень и распределить характеристики.','Set level and allocate attributes.'],
-  ['#hero','Нажми на портрет для Книги героя с рассчитанными характеристиками.','Select the portrait for the Hero Book with calculated stats.'],
-  ['#jumpEquipment','Открыть выбор оружия. Для других вещей нажми на нужный слот у портрета.','Open the weapon picker. Select other slots around the portrait for other gear.'],
-  ['#newBuildQuick','Перейти к созданию нового билда.','Go to create a new build.'],
-  ['#snapshot','Открыть «Мои билды», чтобы сохранить текущего героя.','Open My Builds to save your current character.'],
-  ['#pathGrowthTab','Вложить очки и посмотреть пороги мастерства.','Allocate branch points and view mastery thresholds.'],
-  ['#pathSkillsTab','Посмотреть доступные и закрытые навыки.','View available and locked skills.'],
-  ['#pathResetPoints','Сбросить вложенные очки для нового распределения.','Reset allocated points to redistribute them.']
- ];
- for(const [selector,ru,en] of hints){
+ for(const [section,key,selector,ru,en] of WORKBENCH_HINTS){
   const node=document.querySelector(selector);if(!node)continue;
-  const hint=lang==='en'?en:ru;
+  const hint=ownerCopy(section,key,ru,en);
   if(!node.dataset.workbenchGuideBound&&window.PandoraGuideTooltip?.attach){
    window.PandoraGuideTooltip.attach(node,hint,{hoverDelay:350});
    node.dataset.workbenchGuideBound='1';
@@ -10102,11 +10132,30 @@ function refreshWorkbenchHints(){
   node.setAttribute('aria-description',hint);
  }
 }
+function renderWorkbenchHintEditors(){
+ for(const [section,i18n,ru,en] of [
+  ['origin','originGuide','Подсказки происхождения','Origin tooltips'],
+  ['equipment','appearanceGuide','Подсказки экипировки','Equipment tooltips'],
+  ['path','pathGuide','Подсказки пути героя','Hero Path tooltips']]){
+  const target=document.querySelector('[data-i18n="'+i18n+'"]');if(!target)continue;
+  const old=target.nextElementSibling?.classList?.contains('workbench-hint-editor')?
+   target.nextElementSibling:null;
+  if(!adminEditing||!adminToken){old?.remove();continue}
+  if(old?.querySelector('.wiki-inline-input'))continue;
+  old?.remove();
+  const rows=WORKBENCH_HINTS.filter(row=>row[0]===section).map(([,key,,hintRu,hintEn])=>
+   [key,hintRu,hintEn,key.replace(/^hint/,'')+' · '+hintRu,
+    key.replace(/^hint/,'')+' · '+hintEn]);
+  const panel=ownerInterfaceEditor(section,rows,ru,en);
+  if(panel){panel.classList.add('workbench-hint-editor');target.after(panel)}
+ }
+}
 function applyGameLocale({redraw=true}={}){
  window.PandoraUILocale.setOverrides(override);
  window.PandoraUILocale.apply(lang);
  refreshOpenAuthoredToast();
  refreshWorkbenchHints();
+ renderWorkbenchHintEditors();
  renderArchiveNotice();
  renderCatalogStatus();
  renderOriginCopyLabels();

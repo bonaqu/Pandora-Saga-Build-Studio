@@ -51,3 +51,18 @@
 .stage-rich-tabs button[data-stage-tab]::before{
  color:#e9bc76;font-size:14px;font-weight:700;line-height:1;flex:none
 }
+
+/* Unfocused heading is descriptive, not an interactive action. */
+#modalRoot .modal h2:focus-visible{outline:none;box-shadow:none}
+/* Clear, non-decorative equipment affordances. */
+.stage-rich-tabs button[data-stage-tab="choose"]::before{content:"⇄"}
+.stage-rich-tabs button[data-stage-tab="souls"]::before{content:"○"}
+.stage-picker-head .stage-picker-mode-link{min-width:88px;min-height:32px;
+ display:inline-flex;align-items:center;justify-content:center;gap:6px;
+ font-weight:650;font-size:11px;border-radius:4px;
+ border:1px solid #b38c57;background:#3a291b;color:#f1d2a1}
+.stage-picker-head .stage-picker-mode-link::before{content:"≡";font-size:15px;color:#efc17a}
+.stage-picker-head .stage-picker-mode-link:hover:not(:disabled),
+.stage-picker-head .stage-picker-mode-link:focus-visible{
+ border-color:#f0c384;background:#604225;outline-offset:2px}
+.stage-picker-head .stage-picker-mode-link:disabled{opacity:.55;cursor:not-allowed}

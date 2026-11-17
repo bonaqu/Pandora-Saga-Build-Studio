@@ -7,7 +7,7 @@ test('shared build names are runtime-only and both actions explain their outcome
  assert.match(app,/class:'shared-current-name',text:currentName/);
  assert.match(app,/class:'shared-personal-name',text:incomingName/);
  assert.match(app,/class:'shared-build-replacement'/);
- assert.match(app,/if\(verifyViewer\(\)\)\{if\(saveBuild\(\)\)apply\(\)\}/);
+ assert.match(app,/saveBuild\(state\.name\|\|currentName,savedCurrent\?\.id\|\|null\)/);
  assert.match(app,/hintButton\(sharedText\('Открыть без сохранения'/);
  assert.doesNotMatch(app,/class:'shared-personal-name',\s*'data-owner-copy-key'/);
 });
@@ -18,7 +18,7 @@ test('three onboarding steps and equipment tabs have bilingual help',()=>{
   assert.match(html,new RegExp('data-i18n="'+key+'"'));
   assert.match(locale,new RegExp(key+':\\['));
  }
- assert.match(equipment,/actionHelp=\{/);
- for(const id of ['choose','details','souls'])assert.match(equipment,new RegExp(id+':tr\\('));
- assert.match(equipment,/PandoraGuideTooltip\?\.attach\(button,actionHelp\[key\]/);
+ assert.match(equipment,/const hints=\{/);
+ for(const id of ['choose','details','souls'])assert.match(equipment,new RegExp(id+':\\['));
+ assert.match(equipment,/PandoraGuideTooltip\?\.attach\(button,actionHelp,/);
 });

@@ -91,5 +91,5 @@ test('all Hero Path class surfaces agree on strict OS class permissions',()=>{
  assert.match(source,/function allowedForJob\(skill,job\)/);
  assert.match(source,/if\(!allowedForJob\(skill,job\)\|\|!Array\.isArray\(skill\.reqs\)\)continue/);
  assert.match(source,/if\(!allowedForJob\(skill,job\)\)/);
- assert.match(source,/effective\.skills\.filter\(skill=>allowedForJob\(skill,api\.job\)&&/);
+ assert.match(source,/effective\.skills\.filter\(skill=>futureSkillReachable\(skill,api,skillIndex\)&&/);
 });

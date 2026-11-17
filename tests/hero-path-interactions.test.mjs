@@ -467,8 +467,9 @@ test('Tactics shows 44 trained / 44 learned / 29 invested, then 0 trained but 44
 test('Hero Path skill lookup is order-independent and hides internal ID in both languages',()=>{
  const skill={id:390077001,name:'Огненный удар',desc:'Игровой навык',
   classes:{WARRIOR:1},learnable:true,prereq:390077999,reqs:[]};
+ const previous={id:390077999,name:'Первый огонь',classes:{WARRIOR:1},learnable:true,reqs:[]};
  const api={state:{level:20,points:{}},job:'WARRIOR',lang:'ru',
-  skillCatalog:[skill],catalogReady:true,query:'удар   ОГНЕННЫЙ',
+  skillCatalog:[skill,previous],catalogReady:true,query:'удар   ОГНЕННЫЙ',
   filter:'all',shown:24,selectedSkill:skill,
   icon:()=>null,hover:()=>{},onInspect:()=>{}};
  const target=new BrowserElement('root'),details=new BrowserElement('root');
@@ -479,7 +480,7 @@ test('Hero Path skill lookup is order-independent and hides internal ID in both 
  assert.ok(walk(details).some(x=>x.className==='path-skill-previous-label'&&
   x.textContent==='Предыдущее умение'));
  assert.ok(walk(details).some(x=>x.className==='path-skill-previous-value'&&
-  x.textContent==='Умение отсутствует в каталоге'));
+  x.textContent==='Первый огонь'));
  assert.equal(walk(details).some(x=>x.tag==='dt'&&x.textContent==='ID умения'),false);
  assert.equal(walk(details).some(x=>String(x.textContent).includes('390077')),false,
   'A nontechnical player must not see unknown catalog identifiers');
@@ -488,7 +489,7 @@ test('Hero Path skill lookup is order-independent and hides internal ID in both 
  assert.ok(walk(details).some(x=>x.className==='path-skill-previous-label'&&
   x.textContent==='Previous skill'));
  assert.ok(walk(details).some(x=>x.className==='path-skill-previous-value'&&
-  x.textContent==='Skill not in catalog'));
+  x.textContent==='Первый огонь'));
  assert.equal(walk(details).some(x=>x.tag==='dt'&&x.textContent==='Skill ID'),false);
  api.query='390077001';render();
  assert.equal(walk(target).filter(x=>x.attributes?.['data-skill-id']==='390077001').length,1,
@@ -643,7 +644,7 @@ test('Path Show More owner label is editable independently of live skill count',
  const f=fixture('CLERIC','special','riding');
  f.api.catalogReady=true;f.api.filter='all';f.api.query='';f.api.shown=24;
  f.api.skillCatalog=Array.from({length:26},(_,i)=>({
-  id:i+1,name:'Test '+i,classes:{CLERIC:true},reqs:[]
+  id:i+1,name:'Test '+i,classes:{CLERIC:true},learnable:true,reqs:[]
  }));
  let calls=0;f.api.onMoreSkills=()=>calls++;f.api.onInspect=()=>{};
  f.api.canEdit=true;
@@ -711,34 +712,17 @@ test('previous-skill caption has separate RU/EN D1 editor and preserves source s
  assert.equal(skill.prereq,91002);
 });
 
-test('missing prerequisite copy can be edited without changing unknown source IDs',()=>{
- const missing={id:91005,name:'Скилл',classes:{WARRIOR:1},learnable:true,prereq:91004,reqs:[]};
+test('missing predecessor is hidden from Hero Path but preserved in the source catalog',()=>{
+ const missing={id:91005,name:'Скилл',classes:{WARRIOR:1},learnable:true,
+  prereq:91004,reqs:[]};
  const api={state:{level:45,points:{}},job:'WARRIOR',lang:'ru',
   skillCatalog:[missing],catalogReady:true,query:'',filter:'all',shown:24,
-  selectedSkill:missing,icon:()=>null,hover:()=>{},onInspect:()=>{},canEdit:true};
- const edits=[];api.copyLabel=(key,ru)=>key==='skillPrerequisiteMissing'?'Нет в базе':ru;
- api.editLabel=(node,key,ru,en)=>edits.push({node,key,ru,en});
+  selectedSkill:missing,icon:()=>null,hover:()=>{},onInspect:()=>{}};
  const gallery=new BrowserElement('root'),details=new BrowserElement('root');
- const render=()=>root.PandoraHeroPath.viewSkills(gallery,details,api);
- render();
- let row=walk(details).find(n=>String(n.className).includes('path-skill-previous-row'));
- assert.ok(row);
- let fallback=walk(row).find(n=>String(n.className).includes('path-skill-previous-value'));
- assert.ok(walk(fallback).some(n=>n.className==='path-owner-copy-text'&&n.textContent==='Нет в базе'));
- assert.ok(walk(fallback).some(n=>n.className==='path-owner-pencil'));
- assert.equal(edits.find(x=>x.key==='skillPrerequisiteMissing')?.ru,'Умение отсутствует в каталоге');
- assert.equal(edits.find(x=>x.key==='skillPrerequisiteMissing')?.en,'Skill not in catalog');
- assert.equal(missing.prereq,91004);
- api.lang='en';api.copyLabel=(key,ru,en)=>en;render();
- row=walk(details).find(n=>String(n.className).includes('path-skill-previous-row'));
- fallback=walk(row).find(n=>String(n.className).includes('path-skill-previous-value'));
- assert.ok(walk(fallback).some(n=>n.textContent==='Skill not in catalog'));
- api.canEdit=false;render();
- row=walk(details).find(n=>String(n.className).includes('path-skill-previous-row'));
- fallback=walk(row).find(n=>n.className==='path-skill-previous-value');
- assert.equal(fallback.textContent,'Skill not in catalog');
- assert.ok(!walk(details).some(n=>n.className==='path-owner-pencil'));
- assert.equal(missing.prereq,91004);
+ root.PandoraHeroPath.viewSkills(gallery,details,api);
+ assert.equal(root.PandoraHeroPath.futureSkillReachable(missing,api),false);
+ assert.equal(walk(gallery).some(x=>x.attributes?.['data-skill-id']==='91005'),false);
+ assert.equal(missing.prereq,91004,'Do not invent a missing prerequisite');
 });
 
 test('Skill results pager uses stable filtered order, pins selection and keeps the search',()=>{
