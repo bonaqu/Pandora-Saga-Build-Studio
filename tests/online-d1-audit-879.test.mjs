@@ -15,6 +15,9 @@ test('a tentative D1 boot never commits migrated character data before source ve
  assert.match(loader,/async function loadCatalog\(\{archive=false,commit=true\}=\{\}\)/);
  assert.match(loader,/applyGameLocale\(\{persistReconciled:commit\}\)/);
  assert.match(loader,/if\(commit\)persist\(\)/);
+ assert.match(loader,/ensureEnglishCatalog\(\{persistReconciled:commit\}\)/);
+ const english=portion('async function ensureEnglishCatalog(', 'async function loadCatalog(');
+ assert.match(english,/applyGameLocale\(\{persistReconciled\}\)/);
  const overrides=portion('async function loadOverrides(', "$('originTabs').onclick");
  assert.match(overrides,/await refreshOwnerCatalog\(\{persistReconciled:commit\}\)/);
  const boot=portion('async function startStudio(', "$('startupRetry').onclick");
