@@ -8733,6 +8733,13 @@ function refreshVisibleOwnerCopy(recordKey){
    (tabPencil||inlinePencil||helpPencil)?.setAttribute('aria-label',
     (lang==='en'?'Edit caption: ':'Изменить надпись: ')+value);
   }
+  if(section==='equipment'&&id==='pickerSlotHeading'){
+   // The dynamic game slot beside this caption is never part of the D1 key.
+   const pencil=node.closest('.stage-picker-slot-title-wrap')
+    ?.querySelector('.stage-picker-slot-pencil');
+   pencil?.setAttribute('aria-label',
+    (lang==='en'?'Edit caption: ':'Изменить надпись: ')+value);
+  }
   if(section==='owner-dialog'){
    const action=node.closest('.owner-dialog-action-editor')?.querySelector('.owner-dialog-action');
    if(action)action.textContent=value;
