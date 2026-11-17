@@ -25,6 +25,19 @@ export async function runItemPropertiesArrow866Smoke(browser,base){
    const picker=page.locator('#stagePicker');
    const properties=picker.locator('[data-stage-tab="details"].chosen');
    await properties.waitFor({state:'visible',timeout:15000});
+   const chooseGroup=picker.locator('.stage-rich-choose-group');
+   const settings=picker.locator('.stage-rich-settings-group');
+   assert.equal(await chooseGroup.locator('[data-stage-tab="choose"]').count(),1);
+   assert.equal(await settings.locator('[data-stage-tab="details"]').count(),1);
+   assert.equal(await settings.locator('[data-stage-tab="souls"]').count(),1);
+   const chooseBox=await chooseGroup.boundingBox(),settingsBox=await settings.boundingBox();
+   assert.ok(chooseBox.x+chooseBox.width<=settingsBox.x-4,
+    'Choose is visually separated from grouped item settings');
+   assert.ok(Math.abs(chooseBox.y-settingsBox.y)<2,
+    'Both groups share one compact row');
+   const soulDivider=await settings.locator('[data-stage-tab="souls"]').evaluate(
+    element=>getComputedStyle(element.closest('.stage-action-edit-wrap')||element).borderLeftWidth);
+   assert.notEqual(soulDivider,'0px','Properties and Souls have a visible separator');
    await picker.locator('[data-stage-tab="choose"]').click();
    const link=picker.locator('.stage-picker-mode-link');
    await link.waitFor({state:'visible',timeout:15000});
@@ -44,19 +57,6 @@ export async function runItemPropertiesArrow866Smoke(browser,base){
     assert.ok(tip.x>=0&&tip.y>=0&&tip.width>0&&tip.height>0&&
      tip.x+tip.width<=24&&tip.y+tip.height<=24,
      'Right arrowhead is visible inside the icon: '+JSON.stringify(tip));
-   const chooseGroup=picker.locator('.stage-rich-choose-group');
-   const settings=picker.locator('.stage-rich-settings-group');
-   assert.equal(await chooseGroup.locator('[data-stage-tab="choose"]').count(),1);
-   assert.equal(await settings.locator('[data-stage-tab="details"]').count(),1);
-   assert.equal(await settings.locator('[data-stage-tab="souls"]').count(),1);
-   const chooseBox=await chooseGroup.boundingBox(),settingsBox=await settings.boundingBox();
-   assert.ok(chooseBox.x+chooseBox.width<=settingsBox.x-4,
-    'Choose is visually separated from grouped item settings');
-   assert.ok(Math.abs(chooseBox.y-settingsBox.y)<2,
-    'Both groups share one compact row');
-   const soulDivider=await settings.locator('[data-stage-tab="souls"]').evaluate(
-    element=>getComputedStyle(element.closest('.stage-action-edit-wrap')||element).borderLeftWidth);
-   assert.notEqual(soulDivider,'0px','Properties and Souls have a visible separator');
    const unequip=picker.locator('.stage-picker-unequip');
    assert.equal(await unequip.count(),1);
    assert.equal(await unequip.locator('svg[data-gear-icon="remove"]').count(),1);
