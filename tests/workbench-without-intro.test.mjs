@@ -14,28 +14,34 @@ test('no visible introduction and character editor immediately follows site noti
  assert.doesNotMatch(css,/\.intro(?:\{|\s|>| )/);
  assert.match(css,/main\{padding-top:10px\}/);
 });
-test('admin status still exists in header and only shows when editor active',()=>{
+test('owner indicator mounts only with a verified editor session, never for guests',()=>{
  const match=app.match(/function updateAdminHint\(\)\{[\s\S]*?\n\}/);
- assert.ok(match,'admin visibility handler not found');
- const indicator={hidden:true,textContent:''};
+ assert.ok(match,'owner indicator handler not found');
+ let indicator=null,refreshed=0;
  const editable=[{classList:{toggle(name,value){this.last={name,value}}}}];
- let refreshed=0;
- const document={querySelectorAll:()=>editable};
- const run=Function('$','document','refreshOwnerUI','adminEditing',
-  match[0]+'\nupdateAdminHint();')(
-   id=>id==='authState'?indicator:null,document,()=>refreshed++,true);
- assert.equal(indicator.hidden,false);
- assert.equal(indicator.textContent,'✎ Редактор');
- assert.deepEqual(editable[0].classList.last,{name:'admin-edit',value:true});
- assert.equal(refreshed,1);
- const runOff=Function('$','document','refreshOwnerUI','adminEditing',
-  match[0]+'\nupdateAdminHint();')(
-   id=>id==='authState'?indicator:null,document,()=>refreshed++,false);
- assert.equal(indicator.hidden,true);
- assert.equal(indicator.textContent,'');
+ const header={prepend(el){indicator=el}};
+ const document={querySelectorAll:()=>editable,querySelector:()=>header};
+ const h=(tag,attrs)=>({tag,attrs,hidden:true,textContent:'',
+  remove(){indicator=null}});
+ const get=id=>id==='authState'?indicator:null;
+ const call=(editing,token)=>Function('$','document','refreshOwnerUI',
+  'adminEditing','adminToken','h',match[0]+'\nupdateAdminHint();')(
+   get,document,()=>refreshed++,editing,token,h);
+ call(false,'');
+ assert.equal(indicator,null,'Guest must have no hidden admin node');
  assert.deepEqual(editable[0].classList.last,{name:'admin-edit',value:false});
- assert.equal(refreshed,2);
- assert.match(html,/<div class="header-actions"><span id="authState" class="owner-session-state" role="status" hidden>/);
+ call(true,'');
+ assert.equal(indicator,null,'A local editing flag without server token cannot unlock UI');
+ call(true,'a'.repeat(43));
+ assert.equal(indicator?.attrs?.id,'authState');
+ assert.equal(indicator?.hidden,false);
+ assert.equal(indicator?.textContent,'✎ Редактор');
+ assert.deepEqual(editable[0].classList.last,{name:'admin-edit',value:true});
+ call(false,'');
+ assert.equal(indicator,null,'Indicator is removed after logout');
+ assert.deepEqual(editable[0].classList.last,{name:'admin-edit',value:false});
+ assert.equal(refreshed,4);
+ assert.doesNotMatch(html,/id="authState"/);
  assert.match(css,/\.owner-session-state\[hidden\],\.notice\[hidden\]\{display:none!important\}/);
 });
 test('catalog footer is natural-language while archive warning stays separate',()=>{
