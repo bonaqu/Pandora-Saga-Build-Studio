@@ -11,7 +11,7 @@ test('portrait item editor combines instant enchantment with Soul-specific socke
  assert.match(app,/window\.PandoraStageItemUI\.render\(/);
  assert.match(ui,/\['choose',tr\('Выбор','Choose'\)\]/);
  assert.match(ui,/\['details',tr\('Свойства','Properties'\)\]/);
- assert.match(ui,/\['souls',tr\('Души','Souls'\)\]/);
+ assert.match(ui,/\['souls',tr\('Управление душами','Manage Souls'\)\]/);
  assert.doesNotMatch(ui,/\['gems','Самоцветы'\]/);
  assert.match(ui,/for\(let n=0;n<=10;n\+\+\)/);
  assert.match(ui,/api\.assignGem\(/);
