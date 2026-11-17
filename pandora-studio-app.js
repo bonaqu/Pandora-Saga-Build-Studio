@@ -1661,7 +1661,7 @@ function renderSlotRails(){
     'aria-hidden':'true',title:'',
     'data-shared-slots':'armor+pants'}));
    if(!shared&&item&&plan.canSocket(slotKeys[i],source,cap))
-    button.append(h('span',{class:'stage-sockets',text:'◈ '+Math.min(report.count,cap)+'/'+cap}));
+    button.append(h('span',{class:'stage-sockets',text:Math.min(report.count,cap)+'/'+cap}));
    if(!shared&&item&&level>0)button.append(h('span',{class:'stage-enhance',text:'+'+level}));
    if(source){
     const equippedGem=window.PandoraEnchantModel.normalizeForSlot(key,
@@ -2056,9 +2056,9 @@ function renderStagePicker(focusSearch=false){
  const top=h('div',{class:'stage-picker-head'},[
   bindOwnerInterfaceText(h('strong',{}),'equipment','pickerChoosePrefix',
    'Выбор:','Choose:','text',' '+gearSlotName(selectedSlot)),
-  bindOwnerInterfaceText(h('button',{type:'button',
+  bindOwnerInterfaceText(h('button',{type:'button',class:'stage-picker-mode-link',
    disabled:!record,onclick:()=>{stageSlotView='details';renderStagePicker()}}),
-   'equipment','pickerDetails','Свойства →','Details →'),
+   'equipment','pickerDetails','Свойства','Properties'),
   bindOwnerInterfaceText(h('button',{type:'button',text:'✕',
    onclick:()=>closeStagePicker()}),'equipment','pickerClose',
    'Закрыть выбор','Close item picker','aria-label')
@@ -3224,7 +3224,7 @@ function renderWiki(root){
   ['monster','Монстры','Monsters'],['map','Локации','Locations'],
   ['honor','Честь','Honor'],['npc','NPC-обмен','NPC trades'],
   ['chest','Сундуки','Chests'],['instance','Подземелья','Dungeons'],
-  ['skill','Навыки','Skills'],['soul','Души','Souls']]){
+  ['skill','Умения','Skills'],['soul','Души','Souls']]){
   const current=wikiTitle('chapter',key,ru,en);
   const chapter=h('button',{
    class:(key==='utility'?wikiSelection.type==='item'&&wikiItemType==='utility':
@@ -7917,6 +7917,7 @@ function openSharedSnapshot(share){
   return;
  }
  const incoming=sanitizeSharedState(share.data);
+ const savedCurrent=builds.find(b=>b.id===activeBuildId)||null;
  const currentName=String(state.name||sharedText('Новый герой','New hero')).trim().slice(0,70)||
   sharedText('Новый герой','New hero');
  const incomingName=String(incoming.name||sharedText('Без названия','Unnamed build')).trim().slice(0,70)||
@@ -7942,8 +7943,8 @@ function openSharedSnapshot(share){
    ])
   ]),
   h('p',{class:'shared-build-replacement',
-   text:sharedText('После открытия «','Opening “')+incomingName+
-    sharedText('» заменит «','” will replace “')+currentName+
+   text:sharedText('Открытие билда «','Opening build “')+incomingName+
+    sharedText('» заменит текущий билд «','” will replace the current build “')+currentName+
     sharedText('» в редакторе.','” in the editor.')}),
   h('div',{class:'shared-receiver-copy-row shared-unsaved-warning-row'},unsavedWarning),
   h('div',{class:'shared-receiver-copy-row'},openNote)
@@ -7955,14 +7956,16 @@ function openSharedSnapshot(share){
   clear();render();changeTab('character');
   return true;
  };
- const saveHint=sharedText('Создадим новую копию билда «','Create a new saved copy of “')+
-  currentName+sharedText('» в «Мои билды» и откроем «','” in My Builds, then open “')+
-  incomingName+sharedText('». Копия сначала сохраняется в браузере, затем синхронизируется с облаком.',
-   '”. The copy is saved in this browser first, then synced to the cloud.');
+ const saveHint=(savedCurrent?
+  sharedText('Перезапишем текущий сохранённый билд «','Overwrite the currently saved build “'):
+  sharedText('Текущий билд ещё не сохранён. Создадим запись «','The current build has no saved entry. Create a saved build “'))+
+  currentName+sharedText('» в «Мои билды», затем откроем «','” in My Builds, then open “')+
+  incomingName+sharedText('». Изменения записываются в браузер и отдельно синхронизируются с облаком.',
+   '”. Changes are saved locally first and synchronized with the cloud separately.');
  const discardHint=sharedText('Откроем «','Open “')+incomingName+
   sharedText('» вместо «','” instead of “')+currentName+
-  sharedText('» без новой копии. Несохранённые изменения текущего билда пропадут. Старые сохранения останутся.',
-   '” without saving a new copy. Unsaved current changes will be lost. Existing saved builds stay intact.');
+  sharedText('» без перезаписи текущего сохранения. Несохранённые изменения пропадут. Сохранённые билды останутся.',
+   '” without overwriting your current save. Unsaved changes will be lost. Saved builds stay intact.');
  const cancelHint=sharedText('Оставить открытым «','Keep “')+currentName+
   sharedText('» без изменений.','” open without changing it.');
  const hintButton=(text,hint,action,kind='')=>{
@@ -7973,8 +7976,10 @@ function openSharedSnapshot(share){
  };
  view.append(
   h('div',{class:'shared-open-actions'},[
-   hintButton(sharedText('Сохранить текущий и открыть','Save current and open'),
-    saveHint,()=>{if(verifyViewer()){if(saveBuild())apply()}},' primary'),
+   hintButton(savedCurrent?
+     sharedText('Сохранить текущий и открыть','Save current and open'):
+     sharedText('Сохранить новый и открыть','Save new and open'),
+    saveHint,()=>{if(verifyViewer()){if(saveBuild(state.name||currentName,savedCurrent?.id||null))apply()}},' primary'),
    hintButton(sharedText('Открыть без сохранения','Open without saving'),
     discardHint,apply)
   ]),

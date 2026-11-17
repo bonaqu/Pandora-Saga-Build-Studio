@@ -11,7 +11,7 @@ const chapter=Object.freeze({
  npc:['NPC-обмен','NPC trades'],
  chest:['Сундуки','Chests'],
  instance:['Подземелья','Dungeons'],
- skill:['Навыки','Skills'],
+ skill:['Умения','Skills'],
  soul:['Души','Souls']
 });
 const honor=Object.freeze({
@@ -25,10 +25,10 @@ const skillFilter=Object.freeze({
  racial:['Расовая пассивка','Racial passive'],
  guild:['Гильдия и осада','Guild and siege'],
  special:['Особое','Special'],
- variants:['Дубли навыков','Duplicate skills'],
- other:['Другие навыки','Other skills'],
+ variants:['Дубли умений','Duplicate skills'],
+ other:['Другие умения','Other skills'],
  unknown:['Неуточнённые','Unresolved'],
- all:['Все навыки','All skills']
+ all:['Все умения','All skills']
 });
 const key=(group,id,lang)=>(group==='chapter'?'chapter_':
  group==='skillFilter'?'skill_filter_':'honor_')+id+
