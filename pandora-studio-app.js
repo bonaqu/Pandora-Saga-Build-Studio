@@ -7368,31 +7368,31 @@ function renderBuilds(root){
  const tr=(ru,en)=>lang==='en'?en:ru;
  const libraryText=key=>window.PandoraUILocale.text(key,lang);
  const toolbar=h('div',{class:'build-toolbar'});
- const name=h('input',{type:'text',class:'build-name-input',maxLength:'70',value:state.name||'Новый герой','aria-label':'Название билда'});
+ const name=h('input',{type:'text',class:'build-name-input',maxLength:'70',value:state.name||'Новый герой','aria-label':libraryText('libraryBuildNameAria')});
  const choice=h('div',{class:'new-build-choice',hidden:!newBuildPromptOpen});
  const draft=h('input',{type:'text',maxLength:'70',value:newBuildDraftName??(state.name||'Новый герой'),
-  'aria-label':'Название сохраняемого черновика'});
+  'aria-label':libraryText('libraryDraftNameAria')});
  draft.addEventListener('input',()=>{newBuildDraftName=draft.value});
- choice.append(h('span',{text:'Текущий персонаж ещё не сохранён.'}),
+ choice.append(h('span',{'data-owner-copy-key':'libraryDraftUnsaved',text:libraryText('libraryDraftUnsaved')}),
   h('div',{class:'new-build-choice-actions'},[
    draft,
-   h('button',{type:'button',class:'button-action primary',text:'Сохранить и создать',onclick:()=>{if(saveBuild(draft.value))newBlankBuild()}}),
-   h('button',{type:'button',class:'button-action',text:'Создать без сохранения',onclick:newBlankBuild}),
-   h('button',{type:'button',class:'button-action',text:'Отмена',onclick:()=>{
+   h('button',{type:'button',class:'button-action primary',text:libraryText('librarySaveAndCreate'),onclick:()=>{if(saveBuild(draft.value))newBlankBuild()}}),
+   h('button',{type:'button',class:'button-action',text:libraryText('libraryCreateWithoutSave'),onclick:newBlankBuild}),
+   h('button',{type:'button',class:'button-action',text:libraryText('libraryCancel'),onclick:()=>{
      newBuildPromptOpen=false;newBuildDraftName=null;choice.hidden=true;
     }})
   ]));
  toolbar.append(name,
   h('button',{type:'button',class:'button-action primary',
-   text:'✧ Сохранить новый билд',
+   text:libraryText('librarySaveNew'),
    onclick:()=>saveBuild(name.value)}),
   ...(activeBuildId&&builds.some(b=>b.id===activeBuildId)?[
-   h('button',{type:'button',class:'button-action',text:'Сохранить копию',onclick:()=>{
+   h('button',{type:'button',class:'button-action',text:libraryText('librarySaveCopy'),onclick:()=>{
     const previous=activeBuildId;selectActiveBuild(null);
     if(!saveBuild(name.value))selectActiveBuild(previous);
    }})
   ]:[]),
-  h('button',{type:'button',id:'newBuildButton',class:'button-action',text:'＋ Новый билд',onclick:()=>{
+  h('button',{type:'button',id:'newBuildButton',class:'button-action',text:libraryText('libraryNewBuild'),onclick:()=>{
    if(!unsavedBuild()){newBuildPromptOpen=false;newBlankBuild();return}
    newBuildPromptOpen=!newBuildPromptOpen;
    choice.hidden=!newBuildPromptOpen;
@@ -7401,7 +7401,7 @@ function renderBuilds(root){
     draft.value=newBuildDraftName;draft.focus();
    }
   }}),
-  h('button',{type:'button',class:'button-action',text:'↻ Обновить библиотеку',
+  h('button',{type:'button',class:'button-action',text:libraryText('libraryRefresh'),
    onclick:()=>{reportCloudStatus('Проверяем облако…');void loadCloudBuilds()}}));
  root.append(toolbar,choice,h('p',{class:'cloud-library-status',role:'status',
   text:cloudStatusText(cloudLibraryStatus)}));
@@ -7474,14 +7474,15 @@ function renderBuilds(root){
   type:'search',class:'build-library-search','data-build-library-search':'',
   'aria-label':libraryText('librarySearchInputLabel'),
   placeholder:libraryText('librarySearchPlaceholder'),value:buildSearchQuery}):null;
- const sort=builds.length>1?h('label',{class:'build-library-sort'},[
-  h('span',{text:tr('Сортировка','Sort')}),
-  h('select',{class:'build-library-sort-select',
-   'aria-label':tr('Сортировка билдов','Sort builds')},[
-    h('option',{value:'saved',text:tr('По порядку сохранения','Saved order')}),
-    h('option',{value:'name',text:tr('По названию','Name')}),
-    h('option',{value:'level',text:tr('По уровню','Level')}),
-    h('option',{value:'class',text:tr('По профессии','Class')})
+ const sort=builds.length>1?h('div',{class:'build-library-sort'},[
+  h('label',{for:'buildLibrarySort','data-owner-copy-key':'librarySortCaption',
+   text:libraryText('librarySortCaption')}),
+  h('select',{id:'buildLibrarySort',class:'build-library-sort-select',
+   'aria-label':libraryText('librarySortAria')},[
+    h('option',{value:'saved',text:libraryText('librarySortSaved')}),
+    h('option',{value:'name',text:libraryText('librarySortName')}),
+    h('option',{value:'level',text:libraryText('librarySortLevel')}),
+    h('option',{value:'class',text:libraryText('librarySortClass')})
    ])
  ]):null;
  if(sort)sort.querySelector('select').value=buildSortMode;
@@ -7509,7 +7510,7 @@ function renderBuilds(root){
   if(isCurrent)box.setAttribute('aria-current','true');
   const shareSlot=h('div',{class:'build-share-slot',role:'status'});
   const openChoice=h('div',{class:'build-open-choice',hidden:true});
-  const check=h('input',{type:'checkbox','aria-label':(lang==='en'?'Compare ':'Сравнить ')+b.name});
+  const check=h('input',{type:'checkbox','aria-label':libraryText('libraryCompare')+' '+b.name});
   openChoice.append(h('p',{text:tr('Есть несохранённые изменения. Открыть другой билд?',
     'You have unsaved changes. Open another build?')}),
    h('button',{type:'button',class:'button-action primary',text:tr('Сохранить текущий и открыть','Save current and open'),
@@ -7570,10 +7571,10 @@ function renderBuilds(root){
    h('div',{class:'build-card-title-wrap'},[
     h('h3',{class:'build-card-title',text:b.name}),
     ...(isCurrent?[h('span',{class:'build-card-current-label',
-     text:tr('● Текущий билд','● Current build')})]:[])
+     'data-owner-copy-key':'libraryCurrentBadge',text:libraryText('libraryCurrentBadge')})]:[])
    ]),
    h('label',{class:'build-card-compare'},[
-    check,h('span',{text:tr('Сравнить','Compare')})
+    check,h('span',{text:libraryText('libraryCompare')})
    ])
   ]);
   // A second confirmation replaces the first instead of stacking panels.
@@ -7595,8 +7596,7 @@ function renderBuilds(root){
   ]);
   box.append(cardHead,
    ...(b.localOnly===true?[h('p',{class:'build-local-only-note',
-    text:tr('Локальная копия · чтобы сохранить в облако, откройте её и нажмите «Перезаписать»',
-     'Local copy · to save it to the cloud, open it and select Overwrite')})]:[]),
+    'data-owner-copy-key':'libraryLocalCopyNote',text:libraryText('libraryLocalCopyNote')})]:[]),
    h('p',{class:'build-card-meta',
     text:(races[b.data?.race]?.[lang==='en'?1:0]||'?')+' · '+
      (jobs[b.data?.job]||'?')+' · '+(lang==='en'?'Lv. ':'ур. ')+(b.data?.level||'?')}),
