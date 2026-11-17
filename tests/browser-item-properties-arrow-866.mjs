@@ -15,7 +15,7 @@ export async function runItemPropertiesArrow866Smoke(browser,base){
    }));
   },{lang});
   await context.route('**/*',route=>
-   route.request().url.startsWith(base+'/')?route.continue():route.abort());
+   route.request().url().startsWith(base+'/')?route.continue():route.abort());
   const page=await context.newPage(),errors=[];
   page.on('pageerror',error=>errors.push(error.message));
   try{
