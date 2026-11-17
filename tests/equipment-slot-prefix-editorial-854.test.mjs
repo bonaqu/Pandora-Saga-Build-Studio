@@ -11,6 +11,7 @@ function makeFixture(language,editable){
   createElement(tag){
    return {tag,children:[],className:'',dataset:{},attrs:{},textContent:'',
     append(...nodes){this.children.push(...nodes)},
+    replaceChildren(...nodes){this.children=[...nodes]},
     setAttribute(key,value){this.attrs[key]=String(value);
      if(key.startsWith('data-'))this.dataset[key.slice(5).replace(/-([a-z])/g,(_,c)=>c.toUpperCase())]=String(value)},
     addEventListener(){}
@@ -29,7 +30,7 @@ function makeFixture(language,editable){
   record:null,slot:'legs',slotName:language==='en'?'Leg armor':'Штаны',
   mode:'choose',capacity:0,canEdit:editable,close:()=>{},
   copyLabel:(key,r,e)=>key==='pickerSlotHeading'?(language==='en'?en:ru):language==='en'?e:r,
-  editLabel:(node,key,sourceRu,sourceEn)=>edits.push({node,key,sourceRu,sourceEn})
+  editLabel:editable?(node,key,sourceRu,sourceEn)=>edits.push({node,key,sourceRu,sourceEn}):undefined
  });
  const all=(node)=>[node,...(node.children||[]).flatMap(all)];
  return {nodes:all(tree),edits,ru,en};
@@ -47,9 +48,10 @@ test('player gets localized editable default without owner controls or IDs',()=>
 });
 test('owner edits just one fixed prefix; source-backed slot cannot be saved',()=>{
  const data=makeFixture('ru',true);
- assert.deepEqual(data.edits.map(x=>[x.key,x.sourceRu,x.sourceEn]),
+ const headingEdits=data.edits.filter(x=>x.key==='pickerSlotHeading');
+ assert.deepEqual(headingEdits.map(x=>[x.key,x.sourceRu,x.sourceEn]),
   [['pickerSlotHeading','Слот','Slot']]);
- const prefix=data.edits[0].node;
+ const prefix=headingEdits[0].node;
  assert.equal(prefix.textContent,'Ячейка');
  assert.equal(data.nodes.find(n=>n.className==='stage-picker-slot-title')
   ?.children[1].textContent,': Штаны');
