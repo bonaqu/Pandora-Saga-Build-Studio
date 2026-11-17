@@ -1597,10 +1597,22 @@ function sourceGraphIntegrity(before,after){
     }
    }
   }
-  for(const [id,item] of Object.entries(items))
-   for(const [index,effect] of (Array.isArray(item?.effects)?item.effects:[]).entries())
-    if(['EP_SKILL_EXEC','EP_SKILL_EXEC_BALM'].includes(effect?.func))
-     link('item',id,index,effect.func,effect?.a,skills);
+  // All currently source-proven item/Soul -> skill ID fields share
+  // effect.a as the called skill. Effect.b is NOT a target ID (often a
+  // probability-like source parameter) and must never be linked as one.
+  // These are structural links only, not proof of actual proc/chance.
+  const itemSoulSkillEP=new Set([
+   'EP_SKILL_EXEC','EP_SKILL_EXEC_BALM','EP_ONHIT_SKILL_EXEC',
+   'EP_ONDAMAGE_SKILL_EXEC','EP_ONHIT_SKILL_EXEC_ATTACKER',
+   'EP_ONDAMAGE_SKILL_EXEC_ATTACKER','EP_ONDAMAGE_ELEM_SKILL_EXEC',
+   'EP_SKILL_EXEC_MAPIN'
+  ]);
+  for(const [kind,records] of [['item',items],['soul',data?.souls||{}]])
+   for(const [id,record] of Object.entries(records))
+    for(const [index,effect] of
+     (Array.isArray(record?.effects)?record.effects:[]).entries())
+     if(itemSoulSkillEP.has(effect?.func))
+      link(kind,id,index,effect.func,effect?.a,skills);
   // Full read-only cross-catalog integrity; distinguish source-linked
   // ID fields from numeric probabilities, gold and soul slot counts.
   const monsters=data?.monsters||{},drops=data?.drops||{},
