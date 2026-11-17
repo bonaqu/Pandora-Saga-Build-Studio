@@ -45,9 +45,9 @@
 
 /* Tab glyphs are CSS-only; visible to players, ignored by screen readers
    and compatible with the server-side minimal DOM test fixtures. */
-.stage-rich-tabs button[data-stage-tab="choose"]::before{content:"◈"}
+.stage-rich-tabs button[data-stage-tab="choose"]::before{content:"⇄"}
 .stage-rich-tabs button[data-stage-tab="details"]::before{content:"≡"}
-.stage-rich-tabs button[data-stage-tab="souls"]::before{content:"✧"}
+.stage-rich-tabs button[data-stage-tab="souls"]::before{content:"○"}
 .stage-rich-tabs button[data-stage-tab]::before{
  display:inline-grid;place-items:center;flex:0 0 16px;
  width:16px;height:16px;line-height:1;
