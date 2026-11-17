@@ -1302,14 +1302,30 @@ function renderJobs(){
  const selectedProfession=byKey.get(jobKeys[state.job])||null;
  const selectedCurrent=Boolean(current&&state.job===current.i);
  for(let k=jobKeys[state.job];k&&byKey.has(k);k=parentOf(k))activeAncestors.add(k);
+ // Stage headers navigate backward and forward along the chosen profession.
+ const chosenRoute=[];
+ for(let k=jobKeys[state.job];k&&byKey.has(k);k=parentOf(k))chosenRoute.unshift(byKey.get(k));
+ const onChosenRoute=!path.length||path.every((node,i)=>chosenRoute[i]?.key===node.key);
+ const navigationPath=onChosenRoute?chosenRoute:path;
+ const stageTargets=[null,navigationPath[0]?.key||null,navigationPath[1]?.key||null];
  const progress=h('div',{class:'class-wizard-progress','aria-label':tr('Этап выбора профессии','Class selection stages')});
  const stepNames=[['stepDirection','Направление','Direction'],
   ['stepProfession','Профессия','Profession'],
   ['stepSpecialization','Специализация','Specialization']];
  for(let i=0;i<3;i++){
-  const [key,ru,en]=stepNames[i];
-  const step=h('span',{class:'class-wizard-step'+(i===depth?' current':'')+(i<depth?' completed':'')+
-   (i===depth&&selectedCurrent?' selected':'')});
+  const [key,ru,en]=stepNames[i],available=i===0||Boolean(stageTargets[i]);
+  const attrs={class:'class-wizard-step'+(i===depth?' current':'')+(i<depth?' completed':'')+
+   (i===depth&&selectedCurrent?' selected':''),
+   'aria-current':i===depth?'step':null};
+  if(available){
+   attrs.type='button';
+   attrs.onclick=event=>{
+    // The owner double-click editor must win on the caption itself.
+    if(adminEditing&&adminToken&&event.target?.closest?.('[data-origin-copy-key]'))return;
+    jobPathKey=stageTargets[i];renderJobs();saveView();
+   };
+  }
+  const step=h(available?'button':'span',attrs);
   step.append(h('span',{text:(i+1)+'. '}),originCopyLabel(h('span'),key,ru,en));
   progress.append(step);
  }
@@ -1374,9 +1390,8 @@ function renderJobs(){
     ]));
  }
  grid.append(choices);
- if(!next.length&&current)grid.append(h('p',{class:'class-wizard-hint',text:selectedCurrent?
- tr('Специализация выбрана. Можно вернуться и изменить направление.','Specialization selected. Go back to change direction.'):
- tr('Выберите специализацию или вернитесь назад.','Choose the specialization or go back.')}));
+ if(!next.length&&current&&!selectedCurrent)grid.append(h('p',{class:'class-wizard-hint',
+  text:tr('Выберите специализацию или вернитесь назад.','Choose the specialization or go back.')}));
 }
 let workbenchReturnFocus=null;
 function showWorkbench(){
@@ -2061,15 +2076,10 @@ function renderStagePicker(focusSearch=false){
  }
  const detailsLink=bindOwnerInterfaceText(h('button',{type:'button',
    class:'stage-picker-mode-link',disabled:!record,
+   'aria-label':lang==='en'?'Back to properties':'Вернуться к свойствам',
    onclick:()=>{stageSlotView='details';renderStagePicker()}}),
    'equipment','pickerDetails','Свойства','Properties');
- const detailsHelp=equipmentCopy('hint.details',
-  'Посмотреть свойства, заточку и слоты душ.','View properties, refinement and Soul sockets.');
- bindOwnerInterfaceText(detailsLink,'equipment','hint.details',
-  'Посмотреть свойства, заточку и слоты душ.',
-  'View properties, refinement and Soul sockets.','aria-description');
- detailsLink.dataset.guideHint=detailsHelp;
- window.PandoraGuideTooltip?.attach(detailsLink,detailsHelp,{hoverDelay:300});
+  // The back arrow and caption already explain this action; no popup.
  const top=h('div',{class:'stage-picker-head'},[
   bindOwnerInterfaceText(h('strong',{}),'equipment','pickerChoosePrefix',
    'Выбор:','Choose:','text',' '+gearSlotName(selectedSlot)),
@@ -7494,14 +7504,16 @@ function renderBuilds(root){
   return button;
  };
  for(const b of builds){
-  const box=h('div',{class:'build-card'});
+  const isCurrent=b.id===activeBuildId;
+  const box=h('div',{class:'build-card'+(isCurrent?' is-current':'')});
+  if(isCurrent)box.setAttribute('aria-current','true');
   const shareSlot=h('div',{class:'build-share-slot',role:'status'});
   const openChoice=h('div',{class:'build-open-choice',hidden:true});
   const check=h('input',{type:'checkbox','aria-label':(lang==='en'?'Compare ':'Сравнить ')+b.name});
   openChoice.append(h('p',{text:tr('Есть несохранённые изменения. Открыть другой билд?',
     'You have unsaved changes. Open another build?')}),
    h('button',{type:'button',class:'button-action primary',text:tr('Сохранить текущий и открыть','Save current and open'),
-    onclick:()=>{if(saveBuild())openSavedBuild(b)}}),
+    onclick:()=>{if(saveBuild(state.name||'Новый герой',activeBuildId))openSavedBuild(b)}}),
    h('button',{type:'button',class:'button-action',text:tr('Открыть без сохранения','Open without saving'),
     onclick:()=>openSavedBuild(b)}),
    h('button',{type:'button',class:'button-action',text:tr('Отмена','Cancel'),
@@ -7555,7 +7567,11 @@ function renderBuilds(root){
   // Keep the compare selector separate from the four one-row actions.
   // Build names remain user-owned; only static labels use D1 editorial copy.
   const cardHead=h('div',{class:'build-card-head'},[
-   h('h3',{class:'build-card-title',text:b.name}),
+   h('div',{class:'build-card-title-wrap'},[
+    h('h3',{class:'build-card-title',text:b.name}),
+    ...(isCurrent?[h('span',{class:'build-card-current-label',
+     text:tr('● Текущий билд','● Current build')})]:[])
+   ]),
    h('label',{class:'build-card-compare'},[
     check,h('span',{text:tr('Сравнить','Compare')})
    ])
@@ -10120,9 +10136,19 @@ const WORKBENCH_HINTS=[
  ['path','hintSkills','#pathSkillsTab','Посмотреть изученные и доступные для изучения умения этого героя.','View learned skills and abilities this hero could learn.'],
  ['path','hintReset','#pathResetPoints','Сбросить вложенные очки веток для нового распределения.','Reset allocated branch points for redistribution.']
 ];
+// Self-explanatory tabs need no duplicate hover guide; D1 copy stays editable.
+const SELF_EXPLANATORY_TABS=new Set([
+ '[data-origin-tab="race"]','[data-origin-tab="class"]','[data-origin-tab="stats"]',
+ '#pathGrowthTab','#pathSkillsTab'
+]);
 function refreshWorkbenchHints(){
  for(const [section,key,selector,ru,en] of WORKBENCH_HINTS){
   const node=document.querySelector(selector);if(!node)continue;
+  if(SELF_EXPLANATORY_TABS.has(selector)){
+   node.removeAttribute('aria-description');
+   delete node.dataset.guideHint;
+   continue;
+  }
   const hint=ownerCopy(section,key,ru,en);
   if(!node.dataset.workbenchGuideBound&&window.PandoraGuideTooltip?.attach){
    window.PandoraGuideTooltip.attach(node,hint,{hoverDelay:350});

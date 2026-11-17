@@ -2089,6 +2089,7 @@ textarea:focus-visible,select:focus-visible{
 .class-wizard-progress{align-items:stretch;gap:5px}
 .class-wizard-progress .class-wizard-step{
  display:grid;grid-template-rows:13px minmax(22px,1fr);
+ font-family:inherit;cursor:default;
  align-content:center;justify-items:center;align-items:center;
  min-height:51px;min-width:0;padding:6px 3px;gap:2px;
  border-radius:4px;background:linear-gradient(145deg,#2b2117,#1b1510);
@@ -2102,6 +2103,13 @@ textarea:focus-visible,select:focus-visible{
 .class-wizard-progress .class-wizard-step>span:last-child{
  display:grid;place-items:center;min-width:0;max-width:100%;
  font:600 10px/1.22 Manrope,Arial,sans-serif;text-align:center;
+}
+.class-wizard-progress .class-wizard-step:is(button){cursor:pointer}
+.class-wizard-progress .class-wizard-step:is(button):hover{
+ border-color:#e8ba79;background:linear-gradient(145deg,#554029,#2b2016)
+}
+.class-wizard-progress .class-wizard-step:is(button):focus-visible{
+ outline:2px solid #f1ca8c;outline-offset:2px
 }
 .class-wizard-progress .class-wizard-step.current{
  background:linear-gradient(145deg,#735031,#3d2919);border-color:#dcaf71

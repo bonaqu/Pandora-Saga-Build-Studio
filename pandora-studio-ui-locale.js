@@ -28,7 +28,7 @@ const strings={
  heroProgress:['Развитие героя','Hero progression'],levelParameters:['Уровень и параметры','Level and attributes'],
  originGuide:['Выбери расу, профессию и затем характеристики.','Choose a race, a class, then your attributes.'],
  appearanceGuide:['Нажми на слот для выбора вещи, на портрет — для Книги героя.','Select an equipment slot for items, or the portrait for the Hero Book.'],
- pathGuide:['Развитие — вложить очки. Умения — посмотреть доступные для изучения умения.','Progression allocates points. Skills shows abilities your hero can learn.'],
+ pathGuide:['Развитие — вложить очки. Умения — посмотреть доступные умения.','Progression — allocate points. Skills — view available skills.'],
  heroLevel:['Уровень героя','Hero level'],hpShort:['ОЗ','HP'],mpShort:['ОМ','MP'],
  baseStats:['Базовые характеристики','Base attributes'],
  distributePoints:['Распредели очки','Allocate points'],heroGear:['Экипировка персонажа','Hero equipment'],
