@@ -44,3 +44,9 @@ test('item selection offers an arrow back to properties without another tooltip'
  assert.match(css,/transform:translateY\(-1px\)/);
  assert.doesNotMatch(app,/PandoraGuideTooltip\?\.attach\(detailsLink/);
 });
+
+test('save current and open overwrites the active saved build instead of adding a copy',()=>{
+ const app=read('pandora-studio-app.js');
+ assert.match(app,/if\(saveBuild\(state\.name\|\|'Новый герой',activeBuildId\)\)openSavedBuild\(b\)/);
+ assert.doesNotMatch(app,/if\(saveBuild\(\)\)openSavedBuild\(b\)/);
+});
