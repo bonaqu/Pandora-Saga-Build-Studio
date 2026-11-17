@@ -108,7 +108,8 @@ test('the implementation excludes every source-backed level-up reward box',()=>{
  assert.match(app,/wikiChestRewardFilter=\{id:String\(id\),type:'all',slot:'all'\}/);
  assert.match(app,/window\.PandoraStudioChestPresentation\.orderedGroups\(groups\)/);
  assert.match(app,/window\.PandoraStudioChestPresentation\.orderedRewards\(group\)/);
- assert.match(app,/rowIndex\?\\{...r,n\\}:r/);
+ assert.ok(app.includes('ri===rowIndex?{...r,n}:r'),
+  'Editor reward index must not be reindexed by category filtering');
  assert.match(app,/data-reward-slot/);
  assert.match(app,/gallery\.querySelectorAll\('\.wiki-chest-reward'\)/);
  const css=read('pandora-studio-wiki-polish.css');
