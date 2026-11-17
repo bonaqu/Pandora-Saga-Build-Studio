@@ -10505,10 +10505,25 @@ async function loadCatalog({archive=false,commit=true}={}){
  },()=>lang);
  officialEnglish=null;officialEnglishSnapshot=null;
   const oldToOS={1:'slash',2:'thrust',3:'brush',4:'blow',5:'defense',7:'archery',8:'alchemy',9:'assassin',10:'trap',11:'warding',13:'benevolence',14:'blessing',15:'exorcism',16:'hymn',18:'element',19:'embody',20:'darkness',21:'charm',23:'race',24:'riding'};
-  state.points=Object.fromEntries(Object.entries(state.points).map(([key,val])=>[oldToOS[key]||key,val]));
+  // Legacy builds may contain numeric branch IDs alongside modern default
+  // keys (e.g. {1:5,slash:0}). Object.fromEntries would overwrite the
+  // invested 5 with the default 0 because the canonical key comes last.
+  // Keep a meaningful modern allocation when present; otherwise migrate the
+  // invested legacy value without discarding the original character points.
+  const migrateLegacyBranches=record=>{
+   const converted={...record};
+   for(const [legacy,canonical] of Object.entries(oldToOS)){
+    if(!Object.hasOwn(converted,legacy))continue;
+    const original=converted[legacy],modern=converted[canonical];
+    if(!Object.hasOwn(converted,canonical)||
+     Number(modern)===0&&Number(original)>0)converted[canonical]=original;
+    delete converted[legacy];
+   }
+   return converted;
+  };
+  state.points=migrateLegacyBranches(state.points);
   if(state.mastery&&typeof state.mastery==='object'&&!Array.isArray(state.mastery))
-   state.mastery=Object.fromEntries(Object.entries(state.mastery)
-    .map(([key,val])=>[oldToOS[key]||key,val]));
+   state.mastery=migrateLegacyBranches(state.mastery);
   if(typeof state.branch==='number')state.branch=oldToOS[state.branch]||'brush';
   if(!window.PandoraGameNavigation.all.has(state.branch)){state.branch='slash'}
   if(!pathGroupTouched)
