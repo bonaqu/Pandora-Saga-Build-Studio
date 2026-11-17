@@ -61,5 +61,51 @@ function goldLabel(row,language='ru'){
   '':'–'+fmt.format(values[1]));
  return (language==='en'?'Gold: ':'Золото: ')+amount;
 }
-root.PandoraStudioChestPresentation=Object.freeze({analyze,chance,goldLabel,orderedRewards,orderedGroups});
+// These are UI-only facets of a chest reward, never a game mechanic. Group
+// chances, original editor indices and source records must remain untouched.
+const equipmentSlots=Object.freeze([
+ 'weapon','shield','head','body','gloves','legs','feet',
+ 'cloak','ring','neck','belt','ear'
+]);
+const knownSlots=new Set(equipmentSlots);
+const categoryOrder=Object.freeze([
+ 'equipment','potions','boosts','gems','souls',
+ 'materials','containers','gold','other'
+]);
+function rewardCategory(row,items={},souls={},chestIds=new Set()){
+ if(Array.isArray(row?.gold))return {type:'gold',slot:null};
+ const id=row?.i==null?'':String(row.i);
+ if(id&&chestIds?.has?.(id))return {type:'containers',slot:null};
+ const item=items?.[id]||null;
+ const kind=String(item?.kind||'').toUpperCase();
+ if(souls?.[id]||kind==='SOUL')return {type:'souls',slot:null};
+ const slot=String(item?.slot||'');
+ if(knownSlots.has(slot))return {type:'equipment',slot};
+ if(kind==='POTION')return {type:'potions',slot:null};
+ if(kind==='BALM')return {type:'boosts',slot:null};
+ if(kind==='RUNEGEM')return {type:'gems',slot:null};
+ if(kind==='ETC'||kind==='RECIPE')return {type:'materials',slot:null};
+ return {type:'other',slot:null};
+}
+function rewardFilters(rolls,items={},souls={},chestIds=new Set()){
+ const types=Object.fromEntries(categoryOrder.map(key=>[key,0]));
+ const slots=Object.fromEntries(equipmentSlots.map(key=>[key,0]));
+ let total=0;
+ for(const group of Array.isArray(rolls)?rolls:[]){
+  if(!Array.isArray(group))continue;
+  for(const row of group){
+   const classified=rewardCategory(row,items,souls,chestIds);
+   types[classified.type]++;total++;
+   if(classified.slot)slots[classified.slot]++;
+  }
+ }
+ return {total,types,slots};
+}
+function rewardMatches(category,type='all',slot='all'){
+ if(!category||typeof category.type!=='string')return false;
+ if(type!=='all'&&category.type!==type)return false;
+ return type!=='equipment'||slot==='all'||category.slot===slot;
+}
+
+root.PandoraStudioChestPresentation=Object.freeze({analyze,chance,goldLabel,orderedRewards,orderedGroups,rewardCategory,rewardFilters,rewardMatches,equipmentSlots,categoryOrder});
 })(typeof window==='undefined'?globalThis:window);
