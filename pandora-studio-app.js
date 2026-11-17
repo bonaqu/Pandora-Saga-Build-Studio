@@ -10934,9 +10934,10 @@ function leaveLiveGate(){
  clearOnlineRetry();
  document.body.classList.remove('studio-live-blocked');
  startupDone();
- // Once D1 has been revalidated, the existing account-specific reconciliation
- // fetches any cloud-only builds; it never uploads an unsaved current hero.
- resumeCloudLibrary();
+ // Once D1 has been revalidated, retry even if a previous cloud GET failed
+ // less than 20 seconds ago. The merge guards keep account identity isolated.
+ // This never uploads an unsaved current hero.
+ resumeCloudLibrary({force:true});
 }
 async function checkLiveConnection(){
  if(localCatalogHost||!studioLiveReady||liveGateReason==='changed')return;
@@ -11054,6 +11055,9 @@ async function startStudio({archive=false}={}){
   liveGateReason=null;
   document.body.classList.remove('studio-live-blocked');
   startupDone();
+  // Existing account sessions may have failed the library GET during the
+  // initial offline boot. A verified startup must restore them automatically.
+  if(studioLiveReady)resumeCloudLibrary({force:true});
   // Locale prefetch is intentionally nonblocking for RU. A future EN switch
   // waits for this exact D1-snapshot translation before exposing EN UI.
   if(lang==='ru'&&!archive){
@@ -11109,13 +11113,13 @@ void window.PandoraAccountUI.init({
 }).catch(error=>{console.warn('Account UI unavailable',error)});
 // Return to a saved library after network loss; an unsaved draft is never uploaded.
 let lastCloudReconnect=0;
-function resumeCloudLibrary(){
+function resumeCloudLibrary({force=false}={}){
  // An account's builds may exist exclusively in D1 even when the local cache is empty.
  // Do not reconnect cloud operations before the published D1 checkpoint
  // confirms that this page is safe to use again.
  if(!localCatalogHost&&(!studioLiveReady||liveGateReason))return;
  if(!window.PandoraAccountUI?.isLoggedIn())return;
- if(Date.now()-lastCloudReconnect<20000)return;
+ if(!force&&Date.now()-lastCloudReconnect<20000)return;
  lastCloudReconnect=Date.now();
  void loadCloudBuilds();
 }
