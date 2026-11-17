@@ -11070,7 +11070,10 @@ $('startupRetry').onclick=()=>{
  if(liveGateReason==='changed'){reloadVerifiedCatalog();return}
  if(liveGateReason==='storage'){leaveLiveGate();return}
  if(liveGateReason==='offline'){void checkLiveConnection();return}
- void startStudio({archive:localCatalogHost});
+ // An explicit Retry always requests D1, including local Chromium fixtures
+ // that initially boot from bundled development data. No user-facing path
+ // opens the archive on a published hostname.
+ void startStudio();
 };
 // Local fixture mode is never exposed as a player-facing fallback.
 void startStudio({archive:localCatalogHost});
