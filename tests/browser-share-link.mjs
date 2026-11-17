@@ -147,6 +147,16 @@ export async function runShareLinkSmoke(browser,base){
    assert.equal(await dialog.locator('[data-owner-copy-key="librarySharedOpenNote"]').count(),1);
    assert.equal(await dialog.locator('.shared-receiver-copy-row .account-copy-pencil').count(),0);
    assert.equal(await dialog.locator('.shared-personal-name [data-owner-copy-key]').count(),0);
+   assert.match(await dialog.locator('.shared-current-name').innerText(),/Новый герой/);
+   assert.match(await dialog.locator('.shared-personal-name').innerText(),/Новый герой/);
+   assert.equal(await dialog.locator('.shared-build-identity').count(),2);
+   assert.match(await dialog.locator('.shared-build-replacement').innerText(),/заменит/);
+   const saveChoice=dialog.getByRole('button',{name:'Сохранить текущий и открыть'});
+   const discardChoice=dialog.getByRole('button',{name:'Открыть без сохранения'});
+   assert.match(await saveChoice.getAttribute('data-guide-hint'),/новую копию билда/);
+   assert.match(await saveChoice.getAttribute('data-guide-hint'),/синхронизируется с облаком/);
+   assert.match(await discardChoice.getAttribute('data-guide-hint'),/Несохранённые изменения/);
+   assert.match(await discardChoice.getAttribute('aria-description'),/Новый герой/);
    assert.equal(sharedGets,3,'one same-tab hashchange must issue exactly one shared GET');
    await dialog.getByRole('button',{name:'Отмена'}).click();
    assert.equal(await incoming.locator('#levelOut').textContent(),'22',
@@ -170,7 +180,10 @@ export async function runShareLinkSmoke(browser,base){
    const englishDialog=incoming.getByRole('dialog',{name:'Open build from link?'});
    await englishDialog.waitFor({state:'visible',timeout:20000});
    assert.equal(sharedGets,5,'EN navigation must issue one shared GET');
-   assert.match(await englishDialog.innerText(),/unsaved changes will be replaced/i);
+   assert.match(await englishDialog.innerText(),/unsaved changes will be lost/i);
+   assert.equal(await englishDialog.locator('.shared-build-identity').count(),2);
+   assert.match(await englishDialog.getByRole('button',{name:'Save current and open'})
+    .getAttribute('data-guide-hint'),/synced to the cloud/i);
    assert.equal(await englishDialog.locator('[data-owner-copy-key="librarySharedOpenNote"]').innerText(),
     'Existing saved builds will not be deleted.');
    await englishDialog.getByRole('button',{name:'Cancel'}).click();

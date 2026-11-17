@@ -7917,39 +7917,72 @@ function openSharedSnapshot(share){
   return;
  }
  const incoming=sanitizeSharedState(share.data);
- const view=h('div',{class:'shared-receiver-dialog'});
+ const currentName=String(state.name||sharedText('Новый герой','New hero')).trim().slice(0,70)||
+  sharedText('Новый герой','New hero');
+ const incomingName=String(incoming.name||sharedText('Без названия','Unnamed build')).trim().slice(0,70)||
+  sharedText('Без названия','Unnamed build');
+ const view=h('div',{class:'shared-receiver-dialog shared-open-dialog'});
  const openNote=h('p',{class:'muted shared-receiver-note',
   text:'Сохранённые в «Мои билды» записи при этом не удаляются.'});
  const unsavedWarning=h('p',{class:'muted shared-receiver-note',
-  text:'Несохранённые изменения текущего персонажа будут заменены.'});
+  text:'Если открыть без сохранения, последние несохранённые изменения текущего билда будут потеряны.'});
  window.PandoraUILocale?.localize(openNote,lang);
  window.PandoraUILocale?.localize(unsavedWarning,lang);
- // Split the incoming player's name from the authored warning. No portion
- // of the name becomes a D1 editable label, even when the name matches copy.
+ // Both build names are runtime data and must never be D1-editable copy.
  view.append(
-  h('p',{class:'shared-personal-name',
-   text:sharedText('Открыть билд «','Open build “')+
-    incoming.name+sharedText('»?','”?')}),
+  h('div',{class:'shared-build-transition'},[
+   h('div',{class:'shared-build-identity shared-build-current'},[
+    h('small',{text:sharedText('Сейчас открыт','Currently open')}),
+    h('strong',{class:'shared-current-name',text:currentName})
+   ]),
+   h('span',{class:'shared-build-transition-arrow','aria-hidden':'true',text:'→'}),
+   h('div',{class:'shared-build-identity shared-build-incoming'},[
+    h('small',{text:sharedText('Билд по ссылке','Build from link')}),
+    h('strong',{class:'shared-personal-name',text:incomingName})
+   ])
+  ]),
+  h('p',{class:'shared-build-replacement',
+   text:sharedText('После открытия «','Opening “')+incomingName+
+    sharedText('» заменит «','” will replace “')+currentName+
+    sharedText('» в редакторе.','” in the editor.')}),
   h('div',{class:'shared-receiver-copy-row shared-unsaved-warning-row'},unsavedWarning),
   h('div',{class:'shared-receiver-copy-row'},openNote)
  );
  const apply=()=>{
-  // Do not dismiss the preview or discard the previous hero when the new
-  // draft cannot be saved (for example, browser storage quota exhaustion).
   if(!verifyViewer()||!requireBuildAccount({shared:true})||
    !switchActiveDraft(incoming,null))return false;
   $('modalRoot').hidden=true;$('modalRoot').replaceChildren();
   clear();render();changeTab('character');
   return true;
  };
- view.append(h('button',{class:'button-action primary',
-  text:sharedText('Сохранить текущий и открыть','Save current and open'),
-   onclick:()=>{if(saveBuild())apply()}}),
-  h('button',{class:'button-action',
-   text:sharedText('Открыть без сохранения','Open without saving'),onclick:apply}),
-  h('button',{class:'button-action',text:sharedText('Отмена','Cancel'),onclick:()=>{
-   $('modalRoot').hidden=true;clear();
-  }}));
+ const saveHint=sharedText('Создадим новую копию билда «','Create a new saved copy of “')+
+  currentName+sharedText('» в «Мои билды» и откроем «','” in My Builds, then open “')+
+  incomingName+sharedText('». Копия сначала сохраняется в браузере, затем синхронизируется с облаком.',
+   '”. The copy is saved in this browser first, then synced to the cloud.');
+ const discardHint=sharedText('Откроем «','Open “')+incomingName+
+  sharedText('» вместо «','” instead of “')+currentName+
+  sharedText('» без новой копии. Несохранённые изменения текущего билда пропадут. Старые сохранения останутся.',
+   '” without saving a new copy. Unsaved current changes will be lost. Existing saved builds stay intact.');
+ const cancelHint=sharedText('Оставить открытым «','Keep “')+currentName+
+  sharedText('» без изменений.','” open without changing it.');
+ const hintButton=(text,hint,action,kind='')=>{
+  const button=h('button',{type:'button',class:'button-action'+kind,
+   text,'aria-description':hint,onclick:action});
+  window.PandoraGuideTooltip?.attach(button,hint,{hoverDelay:280});
+  return button;
+ };
+ view.append(
+  h('div',{class:'shared-open-actions'},[
+   hintButton(sharedText('Сохранить текущий и открыть','Save current and open'),
+    saveHint,()=>{if(verifyViewer()&&saveBuild())apply()},' primary'),
+   hintButton(sharedText('Открыть без сохранения','Open without saving'),
+    discardHint,apply)
+  ]),
+  h('div',{class:'shared-open-cancel'},
+   hintButton(sharedText('Отмена','Cancel'),cancelHint,()=>{
+    $('modalRoot').hidden=true;clear();
+   }))
+ );
  modal(sharedText('Открыть билд по ссылке?','Open build from link?'),view);
  if(adminEditing&&adminToken)bindAccountCopyEditors(view);
 }
@@ -10045,9 +10078,34 @@ function renderCatalogStatus(){
   data.meta.counts.items+(lang==='en'?' items · ':' предметов · ')+
   data.meta.counts.souls+(lang==='en'?' souls':' душ');
 }
+function refreshWorkbenchHints(){
+ const hints=[
+  ['[data-origin-tab="race"]','Выбрать происхождение и расовые способности.','Choose the race and its passive abilities.'],
+  ['[data-origin-tab="class"]','Выбрать профессию и направление развития.','Choose a class and its progression.'],
+  ['[data-origin-tab="stats"]','Установить уровень и распределить характеристики.','Set level and allocate attributes.'],
+  ['#hero','Нажми на портрет для Книги героя с рассчитанными характеристиками.','Select the portrait for the Hero Book with calculated stats.'],
+  ['#jumpEquipment','Открыть выбор оружия. Для других вещей нажми на нужный слот у портрета.','Open the weapon picker. Select other slots around the portrait for other gear.'],
+  ['#newBuildQuick','Перейти к созданию нового билда.','Go to create a new build.'],
+  ['#snapshot','Открыть «Мои билды», чтобы сохранить текущего героя.','Open My Builds to save your current character.'],
+  ['#pathGrowthTab','Вложить очки и посмотреть пороги мастерства.','Allocate branch points and view mastery thresholds.'],
+  ['#pathSkillsTab','Посмотреть доступные и закрытые навыки.','View available and locked skills.'],
+  ['#pathResetPoints','Сбросить вложенные очки для нового распределения.','Reset allocated points to redistribute them.']
+ ];
+ for(const [selector,ru,en] of hints){
+  const node=document.querySelector(selector);if(!node)continue;
+  const hint=lang==='en'?en:ru;
+  if(!node.dataset.workbenchGuideBound&&window.PandoraGuideTooltip?.attach){
+   window.PandoraGuideTooltip.attach(node,hint,{hoverDelay:350});
+   node.dataset.workbenchGuideBound='1';
+  }
+  node.dataset.guideHint=hint;
+  node.setAttribute('aria-description',hint);
+ }
+}
 function applyGameLocale({redraw=true}={}){
  window.PandoraUILocale.setOverrides(override);
  window.PandoraUILocale.apply(lang);
+ refreshWorkbenchHints();
  refreshOpenAuthoredToast();
  renderArchiveNotice();
  renderCatalogStatus();
