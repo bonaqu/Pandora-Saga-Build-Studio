@@ -91,3 +91,12 @@ test('legacy numeric mastery and skill points survive canonical default zeros',(
   {thrust:3,slash:7},'Multiple original branches migrate without loss');
  assert.deepEqual(migrate({'1':0,slash:0}),{slash:0});
 });
+
+test('owner one-click catalog publication cannot silently replace live hero calculations',()=>{
+ const publish=portion('async function showCatalogImport(){','function syncLocaleControls(){');
+ assert.match(publish,/afterPublish:async\(\)=>\{/);
+ assert.match(publish,/if\(!localCatalogHost&&studioLiveReady\)\{\s*showLiveGate\('changed'\);\s*return;/);
+ const pos=publish.indexOf("showLiveGate('changed')");
+ const direct=publish.indexOf('await loadCatalog()');
+ assert.ok(pos>=0&&direct>pos,'only the localhost fixture may refresh without safe reload');
+});
