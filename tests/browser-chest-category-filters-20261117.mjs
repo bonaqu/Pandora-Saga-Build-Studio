@@ -49,22 +49,41 @@ export async function runChestCategoryFiltersSmoke(browser,base){
   await openChest(51036); // Ancient King: actual 127 source reward variants
   const toolbar=page.locator('.wiki-chest-reward-filters');
   const type=toolbar.locator('.wiki-chest-filter-type');
-  const slot=toolbar.locator('.wiki-chest-filter-slot');
+  const slots=toolbar.locator('.wiki-chest-slot-filters');
   assert.equal(await toolbar.count(),1);
   assert.equal(await cards().count(),sourceRows(51036).length);
   assert.equal(await type.getAttribute('aria-label'),'Тип награды в сундуке');
-  await type.selectOption('equipment');
-  assert.equal(await slot.isVisible(),true);
-  await slot.selectOption('body');
+  assert.equal(await slots.isVisible(),true,
+   'Equipment slots must be discoverable before selecting Equipment');
+  assert.equal(await slots.getAttribute('aria-label'),'Типы экипировки');
+  assert.ok(await slots.locator('[data-chest-slot="body"]').count()>0);
+  assert.ok(await slots.locator('[data-chest-slot="weapon"]').count()>0);
+  // A direct slot click also chooses Equipment: one interaction, not two.
+  await slots.locator('[data-chest-slot="body"]').click();
+  assert.equal(await type.inputValue(),'equipment');
+  assert.equal(await slots.locator('[data-chest-slot="body"]').getAttribute('aria-pressed'),'true');
   assert.equal(await verifyFacets('equipment','body'),sourceSlot(51036,'body'));
   assert.ok((await toolbar.locator('.wiki-chest-filter-count').innerText()).includes(
    sourceSlot(51036,'body')+' / '+sourceRows(51036).length));
-  await slot.selectOption('weapon');
+  const groupCounter=page.locator('.wiki-chest-group:not([hidden]) .wiki-chest-group-count').first();
+  assert.ok((await groupCounter.innerText()).includes('/ '),
+   'Visible groups must display filtered count alongside original size');
+  assert.equal(await page.locator('.wiki-chest-board').getAttribute('data-filtered'),'true');
+  const maxCardWidth=await cards().evaluateAll(nodes=>Math.max(...nodes.map(
+   node=>node.getBoundingClientRect().width)));
+  assert.ok(maxCardWidth<=341,'A small filtered result must not stretch to a huge card: '+maxCardWidth);
+  await slots.locator('[data-chest-slot="weapon"]').click();
   assert.equal(await verifyFacets('equipment','weapon'),sourceSlot(51036,'weapon'));
   await type.selectOption('all');
   assert.equal(await cards().count(),sourceRows(51036).length,
    'Removing filter must restore all source rows');
-  assert.equal(await slot.isVisible(),false);
+  assert.equal(await slots.isVisible(),true,
+   'Equipment facets must remain discoverable under All rewards');
+  assert.equal(await page.locator('.wiki-chest-board').getAttribute('data-filtered'),'false');
+  await slots.locator('[data-chest-slot="all"]').click();
+  assert.equal(await verifyFacets('equipment'),sourceRows(51036).filter(row=>
+   catalogItems[row.i]?.slot).length);
+  assert.equal(await slots.locator('[data-chest-slot="all"]').getAttribute('aria-pressed'),'true');
 
   await openChest(52001); // NPC chest with Soul and Potion types
   const types=page.locator('.wiki-chest-filter-type');
