@@ -92,6 +92,58 @@ test('English nested locale descriptions are classified without leaking translat
  assert.doesNotMatch(summary,/Sword|Cut|Soul|HP/);
 });
 
+test('bundled rich RU descriptions versus flattened D1 classify layout without hiding strict drift',()=>{
+ const archive=JSON.parse(read('data/os/items.json'));
+ const sample=Object.fromEntries(Object.entries(archive).filter(([,rec])=>
+  typeof rec.desc==='string'&&/<br\\s*\\/?>/i.test(rec.desc)).slice(0,30));
+ assert.equal(Object.keys(sample).length,30);
+ const flattened=Object.fromEntries(Object.entries(sample).map(([id,rec])=>
+  [id,{...rec,desc:rec.desc.replace(/<br\\s*\\/?>/gi,'')}]));
+ const before=JSON.stringify([sample,flattened]);
+ assert.deepEqual(describeDescriptionDrift(sample,flattened,'items'),{
+  lineBreaks:30,inlineMarkup:0,itemReferences:0,otherText:0
+ });
+ assert.deepEqual(describeDescriptionDrift(flattened,sample,'items'),{
+  lineBreaks:30,inlineMarkup:0,itemReferences:0,otherText:0
+ });
+ assert.equal(compareCatalog(sample,flattened,'items').equal,false,
+  'Even display-only drift is never silently made equal');
+ assert.equal(JSON.stringify([sample,flattened]),before);
+});
+
+test('both directions classify markup stripping and item-reference loss but preserve real edits',()=>{
+ const rich={
+  1:{desc:'A.<br/><br>Attack +10'},
+  2:{desc:'<b>Strength</b> +2'},
+  3:{desc:'Use <item 300001>.'},
+  4:{desc:'Defense +5'}
+ };
+ const flattened={
+  1:{desc:'A.Attack +10'},
+  2:{desc:'Strength +2'},
+  3:{desc:'Use .'},
+  4:{desc:'Defense +7'}
+ };
+ const result={lineBreaks:1,inlineMarkup:1,itemReferences:1,otherText:1};
+ assert.deepEqual(describeDescriptionDrift(rich,flattened,'items'),result);
+ assert.deepEqual(describeDescriptionDrift(flattened,rich,'items'),result);
+ assert.equal(compareCatalog(rich,flattened,'items').equal,false);
+ const moved=structuredClone(rich);
+ moved[3].desc='Use <item 400002>.';
+ assert.deepEqual(describeDescriptionDrift(rich,moved,'items'),{
+  lineBreaks:0,inlineMarkup:0,itemReferences:0,otherText:1
+ },'A changed linked ID is substantive content, not merely restored markup');
+});
+
+test('flattened English item and Soul descriptions have symmetric drift reports',()=>{
+ const local={items:{1:{d:'Blade.<br>STR +2'}},souls:{5:{d:'HP +6<br>'}}};
+ const remote={items:{1:{d:'Blade.STR +2'}},souls:{5:{d:'HP +6'}}};
+ const expected={lineBreaks:2,inlineMarkup:0,itemReferences:0,otherText:0};
+ assert.deepEqual(describeDescriptionDrift(local,remote,'stringsEn'),expected);
+ assert.deepEqual(describeDescriptionDrift(remote,local,'stringsEn'),expected);
+ assert.equal(compareCatalog(local,remote,'stringsEn').equal,false);
+});
+
 test('description item references resolve only to real catalog records',()=>{
  const input={items:{'80100':{desc:'Используется <item 300001>.'},
   '300001':{desc:'Билет'}},souls:{1:{desc:'Ссылка <item 80100>'}},
