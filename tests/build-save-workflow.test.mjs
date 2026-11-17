@@ -10,8 +10,8 @@ test('saving an opened build reuses ID instead of duplicating it',()=>{
  assert.match(source,/else builds\.push\(entry\)/);
  assert.match(source,/if\(!switchActiveDraft\(next,latest\.id\)\)return false/);
  assert.match(source,/if\(!switchActiveDraft\(fresh\(\),null\)\)return false/);
- assert.match(source,/text:'Сохранить копию'/);
- assert.match(source,/text:'↻ Обновить библиотеку'/);
+ assert.match(source,/text:libraryText\('librarySaveCopy'\)/);
+ assert.match(source,/text:libraryText\('libraryRefresh'\)/);
 });
 test('opening imported public build does not overwrite an unrelated saved original',()=>{
  const source=read('pandora-studio-app.js');
