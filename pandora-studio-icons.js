@@ -9,7 +9,7 @@ const PATHS=Object.freeze({
  'chevron-left':['m15 18-6-6 6-6'],
  'chevron-right':['m9 18 6-6-6-6'],
  'arrow-left':['M19 12H5','m12 19-7-7 7-7'],
- 'arrow-right':['M5 12h14','m-6-6 6 6-6 6'],
+ 'arrow-right':['M5 12h14','M13 6l6 6-6 6'],
  check:['M20 6 9 17l-5-5'],
  search:['m21 21-4.35-4.35','M19 11a8 8 0 1 1-16 0 8 8 0 0 1 16 0'],
  plus:['M12 5v14','M5 12h14'],

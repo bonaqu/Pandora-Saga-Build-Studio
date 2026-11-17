@@ -342,7 +342,7 @@ const actionIconPaths=Object.freeze({
  details:['M8 6h13','M8 12h13','M8 18h13','M3 6h.01','M3 12h.01','M3 18h.01'],
  souls:['M12 2l8 9-8 11-8-11 8-9','M4 11h16','M9 7l3 15 3-15'],
  remove:['M18 6 6 18','M6 6l12 12'],
- 'arrow-right':['M5 12h14','m-6-6 6 6-6 6']
+ 'arrow-right':['M5 12h14','M13 6l6 6-6 6']
 });
 function actionIcon(action,{forward=false}={}){
  const name=forward&&action==='details'?'arrow-right':actionIconNames[action];
@@ -440,6 +440,12 @@ function render(root,api){
  };
  const tabs=bind(el('nav',{class:'stage-rich-tabs'+(hasSouls?' has-souls':' no-souls'),
   role:'group'}),'pickerItemSettings','Настройка предмета','Item settings','aria-label');
+ // Choosing gear opens the separate item picker. Properties/Souls are one
+ // settings surface with a shared frame and a visible divider.
+ const chooseGroup=el('div',{class:'stage-rich-choose-group'});
+ const settingsGroup=el('div',{class:'stage-rich-settings-group',role:'group',
+  'aria-label':tr('Свойства предмета','Item properties')});
+ tabs.append(chooseGroup,settingsGroup);
  const sections=[
   ['choose',tr('Выбор','Choose')],
   ['details',tr('Свойства','Properties')]
@@ -474,8 +480,8 @@ function render(root,api){
    button.dataset.guideHint=actionHelp;
    root.PandoraGuideTooltip?.attach(button,actionHelp,{hoverDelay:300});
   }
-  tabs.append(labeledAction(button,'tab.'+key,ru,en,
-   actionIcon(key,{forward:returningToDetails})));
+  (key==='choose'?chooseGroup:settingsGroup).append(labeledAction(
+   button,'tab.'+key,ru,en,actionIcon(key,{forward:returningToDetails})));
  }
  root.append(tabs);
  if(!record){

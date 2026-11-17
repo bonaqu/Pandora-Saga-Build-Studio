@@ -2131,14 +2131,17 @@ function renderStagePicker(focusSearch=false){
    'Показать ещё','Show more'),h('span',{text:' ('}),moreCount,
   h('span',{text:')'})
  ]);
- const remove=bindOwnerInterfaceText(h('button',{type:'button',
+ const removeLabel=bindOwnerInterfaceText(h('span',{class:'stage-picker-unequip-label'}),
+  'equipment','pickerUnequip','Снять предмет','Unequip item');
+ const remove=h('button',{type:'button',class:'stage-picker-unequip',
   disabled:!equipped&&!(selectedSlot===5&&window.PandoraUIPlanner.occupiesBodyAndLegs(equippedRecord(3))),
   onclick:()=>{
    // Use the exact same removal semantics as the rail context menu.
    if(!equipped&&selectedSlot===5&&window.PandoraUIPlanner.occupiesBodyAndLegs(equippedRecord(3)))
     unequipStageEquipmentSlot(3);
    else unequipStageEquipmentSlot(selectedSlot);
-  }}),'equipment','pickerUnequip','Снять предмет','Unequip item');
+  }},[h('span',{class:'stage-picker-unequip-symbol','aria-hidden':'true'},[
+   window.PandoraStageItemUI.actionIcon('remove')]),removeLabel]);
  const bottom=h('div',{class:'stage-picker-foot'},[remove,more]);
  const isSharedPants=selectedSlot===5&&window.PandoraUIPlanner.occupiesBodyAndLegs(equippedRecord(3));
  const outfitNote=isSharedPants?bindOwnerInterfaceText(h('small',{class:'stage-outfit-note'}),

@@ -36,6 +36,14 @@ export async function runItemPropertiesArrow866Smoke(browser,base){
      lang==='en'?'Properties':'Свойства');
     assert.equal(await link.locator('svg path').first().getAttribute('d'),'M5 12h14',
      'Arrow shaft should point right');
+    assert.equal(await link.locator('svg path').nth(1).getAttribute('d'),'M13 6l6 6-6 6',
+     'Arrow tip must be inside the 24x24 SVG viewBox, not clipped');
+    const tip=await link.locator('svg path').nth(1).evaluate(path=>{
+     const {x,y,width,height}=path.getBBox();return{x,y,width,height}
+    });
+    assert.ok(tip.x>=0&&tip.y>=0&&tip.width>0&&tip.height>0&&
+     tip.x+tip.width<=24&&tip.y+tip.height<=24,
+     'Right arrowhead is visible inside the icon: '+JSON.stringify(tip));
    assert.equal(await link.getAttribute('title'),null,
     'No duplicate native tooltip on a self-explanatory arrow');
    await link.hover();
