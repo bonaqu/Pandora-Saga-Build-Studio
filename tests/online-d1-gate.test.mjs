@@ -84,4 +84,7 @@ test('disconnect saves both scoped local states and blocks editing, even on a fa
  assert.match(app,/pandora:before-update/);
  assert.match(app,/location\.replace\(url\.toString\(\)\)/);
  assert.match(app,/if\(!localCatalogHost&&\(!studioLiveReady\|\|liveGateReason\)\)return/);
+ const updater=read('pandora-studio-update-manager.js');
+ assert.match(updater,/classList\.contains\('studio-live-blocked'\)/);
+ assert.match(updater,/#startupOverlay:not\(\[hidden\]\):not\(\.is-finished\)/);
 });
