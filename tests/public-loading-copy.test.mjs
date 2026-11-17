@@ -10,11 +10,11 @@ function boot(lang){
   setAttribute(name,value){this[name]=value}};
  const status={textContent:''},document={getElementById:id=>
   id==='startupOverlay'?overlay:id==='startupStatus'?status:null};
- return Function('document','console','lang',prefix+
+ return Function('document','console','lang','scheduleOnlineRetry',prefix+
   'return {startupMessage,startupError,'+
    'overlay:document.getElementById("startupOverlay"),'+
    'status:document.getElementById("startupStatus")};')(
-  document,{warn(){}},lang);
+  document,{warn(){}},lang,()=>{});
 }
 test('startup error hides raw backend exceptions and offers working UI actions',()=>{
  for(const lang of ['ru','en']){
@@ -24,11 +24,12 @@ test('startup error hides raw backend exceptions and offers working UI actions',
   page.startupError(new Error('internal D1 override ID 12345 secret-token'));
   assert.equal(page.overlay.dataset.state,'error');
   assert.doesNotMatch(page.status.textContent,/D1|12345|secret-token/i);
-  assert.match(page.status.textContent,lang==='en'?/Try again or open the saved copy/:/Повтори загрузку или открой сохранённую копию/);
+  assert.match(page.status.textContent,lang==='en'?/Could not verify current game data/:/Не удалось проверить актуальные игровые данные/);
   assert.equal(page.overlay['aria-label'],lang==='en'?'Game data unavailable':'Игровые данные недоступны');
  }
  assert.match(html,/id="startupRetry"/);
- assert.match(html,/id="startupArchive"/);
+ assert.doesNotMatch(html,/id="startupArchive"/);
+ assert.match(html,/id="startupRetry"/);
 });
 test('archive notices change language without exposing storage internals',()=>{
  const start=app.indexOf('function renderArchiveNotice(){');

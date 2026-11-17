@@ -34,7 +34,13 @@ test('private library refuses access without migration and bearer key',async()=>
 
 test('only signed-in cloud libraries retry after network recovery',()=>{
  const app=read('pandora-studio-app.js');
- assert.match(app,/window\.addEventListener\('online',resumeCloudLibrary\)/);
+ // Public sites must validate D1 before resuming cloud reads; localhost
+ // retains the direct reconnect path used by the isolated smoke fixtures.
+ assert.match(app,/if\(!localCatalogHost&&\(!studioLiveReady\|\|liveGateReason\)\)return/);
+ assert.match(app,/if\(localCatalogHost\)resumeCloudLibrary\(\)/);
+ assert.match(app,/if\(studioLiveReady\)resumeCloudLibrary\(\{force:true\}\)/);
+ assert.match(app,/resumeCloudLibrary\(\{force:true\}\)/);
+ assert.match(app,/window\.addEventListener\('online',[\s\S]*?checkLiveConnection\(\)/);
  assert.match(app,/document\.addEventListener\('visibilitychange'/);
  assert.match(app,/if\(!window\.PandoraAccountUI\?\.isLoggedIn\(\)\)return/);
  assert.match(app,/lastCloudReconnect<20000/);

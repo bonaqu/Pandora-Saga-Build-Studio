@@ -13,7 +13,21 @@ const searchWords=(text,query)=>{
 };
 const startupOverlay=$('startupOverlay');
 let startupFinishId=0;
+function setBootCopy(id,ru,en){
+ const node=$(id);
+ if(!node)return;
+ const russian=node.querySelector('[data-boot-ru]'),english=node.querySelector('[data-boot-en]');
+ if(russian)russian.textContent=ru;
+ if(english)english.textContent=en;
+}
+function defaultBootCopy(){
+ setBootCopy('startupTitle','Загружаем мир Пандоры','Entering the world of Pandora');
+ setBootCopy('startupMicro','Игровые данные проверяются перед показом',
+  'Validating live catalog before display');
+ setBootCopy('startupRetry','Повторить подключение','Reconnect');
+}
 function startupMessage(ru,en,locale=lang){
+ defaultBootCopy();
  startupOverlay.hidden=false;
  startupOverlay.classList.remove('is-finished');
  startupOverlay.dataset.state='loading';
@@ -32,11 +46,15 @@ function startupDone(){
 function startupError(error){
  console.warn('Build Studio startup failed',error);
  startupOverlay.hidden=false;startupOverlay.classList.remove('is-finished');
- startupOverlay.dataset.state='error';
+ startupOverlay.dataset.state='error';startupOverlay.dataset.language=lang;
  startupOverlay.setAttribute('aria-label',lang==='en'?'Game data unavailable':'Игровые данные недоступны');
+ setBootCopy('startupTitle','Нет подключения к игровым данным','Game data connection unavailable');
+ setBootCopy('startupMicro','Для запуска необходим проверенный каталог игры.',
+  'A verified game catalog is required to start.');
  $('startupStatus').textContent=lang==='en'?
-  'Could not load game data. Try again or open the saved copy.':
-  'Не удалось загрузить игровые данные. Повтори загрузку или открой сохранённую копию.';
+  'Could not verify current game data. Check your connection and retry.':
+  'Не удалось проверить актуальные игровые данные. Проверь соединение и повтори попытку.';
+ scheduleOnlineRetry();
 }
 const VIEW_KEY='ps-studio-navigation.v2';
 function readView(){try{return JSON.parse(sessionStorage.getItem(VIEW_KEY)||'{}')||{}}catch{return{}}}
@@ -10842,6 +10860,168 @@ const skillLabelsReady=fetch('./data/localization/remaked-skill-identity.v1.json
    throw Error('Не удалось проверить русский перевод умений');
   approvedSkillIdNames=mapping.skillLabelsById;
  });
+// Published Pages never silently falls back to bundled game files.
+// Localhost keeps its fixture catalog solely for development and Chromium CI.
+const localCatalogHost=['127.0.0.1','localhost'].includes(location.hostname);
+let studioLiveReady=false,liveGateReason=null,liveCheckpointId=0,
+ liveCheckpointPromise=null,liveRetryTimer=null,liveRetryFailures=0,
+ liveLocalSaved=true;
+function clearOnlineRetry(){
+ if(liveRetryTimer!==null){clearTimeout(liveRetryTimer);liveRetryTimer=null;}
+ liveRetryFailures=0;
+}
+function scheduleOnlineRetry(){
+ if(localCatalogHost||liveRetryTimer!==null||liveGateReason==='changed')return;
+ const delay=Math.min(30000,4000*2**Math.min(liveRetryFailures++,3));
+ liveRetryTimer=setTimeout(()=>{
+  liveRetryTimer=null;
+  // Navigator online/offline is merely advisory (VPNs and captive portals
+  // may misreport it). Retry the D1 endpoint itself, with bounded backoff.
+  if(studioLiveReady){
+   if(liveGateReason==='offline')void checkLiveConnection();
+  }else if(startupOverlay.dataset.state==='error')void startStudio();
+ },delay);
+}
+function saveLiveDraft(){
+ // These are owner-scoped local recovery copies. A failed write must not
+ // become a false success message or grant permission to reload.
+ const draft=persist(),library=persistBuilds();
+ return draft===true&&library===true;
+}
+function showLiveGate(kind){
+ if(localCatalogHost||!studioLiveReady)return;
+ if(!liveGateReason)liveLocalSaved=saveLiveDraft();
+ liveGateReason=kind;
+ startupOverlay.hidden=false;
+ startupOverlay.classList.remove('is-finished');
+ startupOverlay.dataset.state='error';
+ startupOverlay.dataset.language=lang;
+ startupOverlay.setAttribute('aria-label',lang==='en'?
+  'Game data connection required':'Требуется подключение к игровым данным');
+ const changed=kind==='changed',storage=kind==='storage';
+ setBootCopy('startupTitle',storage?'Не удалось сохранить изменения':
+  changed?'Игровые данные обновились':'Соединение прервано',
+  storage?'Could not save your changes':
+  changed?'Game data has changed':'Connection interrupted');
+ $('startupStatus').textContent=lang==='en'?
+  (storage?'Connection restored, but this browser could not save your current hero. Free some storage and retry without closing the tab.':
+   changed?'A newer verified game catalog or site copy is available. Save your progress and reload before continuing.':
+   'Current game data is unavailable. Editing is paused until the connection is verified.'):
+  (storage?'Соединение восстановлено, но браузер не сохранил текущего героя. Освободи место и повтори сохранение, не закрывая вкладку.':
+   changed?'Опубликованы новые игровые данные или тексты сайта. Сохрани прогресс и обнови страницу, чтобы продолжить.':
+   'Актуальные игровые данные временно недоступны. Работа приостановлена до восстановления соединения.');
+ setBootCopy('startupMicro',liveLocalSaved?
+  'Текущий герой сохранён в браузере. Облачное сохранение подтвердится отдельно.':
+  'Не удалось сохранить черновик в браузере. Не закрывай вкладку.',
+  liveLocalSaved?
+  'Your current hero is saved in this browser. Cloud saves are confirmed separately.':
+  'Could not save the local draft. Keep this tab open.');
+ setBootCopy('startupRetry',storage?'Повторить сохранение':
+  changed?'Сохранить и перезагрузить':'Повторить подключение',
+  storage?'Retry saving':changed?'Save and reload':'Retry connection');
+ document.body.classList.add('studio-live-blocked');
+ if(!changed&&!storage)scheduleOnlineRetry();
+}
+function leaveLiveGate(){
+ // Re-establish durability before removing the protection. If the browser
+ // storage quota is still exhausted, keep the recoverable in-memory hero
+ // open and let the user free space rather than silently losing the warning.
+ if(!liveLocalSaved){
+  liveLocalSaved=saveLiveDraft();
+  if(!liveLocalSaved){showLiveGate('storage');return}
+ }
+ liveGateReason=null;liveLocalSaved=true;
+ clearOnlineRetry();
+ document.body.classList.remove('studio-live-blocked');
+ startupDone();
+ // Once D1 has been revalidated, retry even if a previous cloud GET failed
+ // less than 20 seconds ago. The merge guards keep account identity isolated.
+ // This never uploads an unsaved current hero.
+ resumeCloudLibrary({force:true});
+}
+async function checkLiveConnection(){
+ if(localCatalogHost||!studioLiveReady||liveGateReason==='changed')return;
+ if(liveCheckpointPromise)return liveCheckpointPromise;
+ if(adminToken&&ownerSaveInFlight())return;
+ const revision=++liveCheckpointId,copyAtStart=window.PandoraStudioOnlineGate.digest(override);
+ const job=(async()=>{
+  try{
+   const result=await window.PandoraStudioOnlineGate.inspect({
+    api:API,fetcher:fetch,expectedSnapshot:activeCatalogSnapshot,
+    expectedOverrides:override,expectedCounts:catalogSource?.meta?.counts,
+    signal:AbortSignal.timeout(12000)
+   });
+   if(revision!==liveCheckpointId||!studioLiveReady)return;
+   // An owner edit in another outstanding request is never treated as a
+   // remote conflict until the local D1 CAS write has completed.
+   if(adminToken&&(ownerSaveInFlight()||
+    window.PandoraStudioOnlineGate.digest(override)!==copyAtStart))return;
+   if(result.status==='changed'){showLiveGate('changed');return}
+   if(liveGateReason==='offline')leaveLiveGate();
+  }catch(error){
+   if(revision!==liveCheckpointId||!studioLiveReady)return;
+   console.warn('Live game data checkpoint failed',error);
+   showLiveGate('offline');
+  }
+ })();
+ liveCheckpointPromise=job;
+ try{await job}finally{if(liveCheckpointPromise===job)liveCheckpointPromise=null}
+}
+function reloadVerifiedCatalog(){
+ if(liveGateReason!=='changed')return;
+ // A full browser storage area may become writable again after the user
+ // clears space. Re-attempt BOTH local saves rather than permanently
+ // disabling the explicit safe-reload action after the first failed write.
+ if(!liveLocalSaved){
+  liveLocalSaved=saveLiveDraft();
+  if(!liveLocalSaved){showLiveGate('changed');return}
+  showLiveGate('changed');
+ }
+ // Never destroy an unacknowledged one-time recovery secret, password form,
+ // in-flight owner CAS write, or current library draft.
+ const accountBusy=window.PandoraAccountUI?.updateGuard?.();
+ if(accountBusy||ownerSaveInFlight()){
+  $('startupStatus').textContent=lang==='en'?
+   'An account or editor action is still unfinished. Keep this tab open to protect your changes.':
+   'Действие в аккаунте или сохранение ещё не завершено. Не закрывай вкладку, чтобы не потерять изменения.';
+  return;
+ }
+ const okay=document.dispatchEvent(new Event('pandora:before-update',{cancelable:true}));
+ if(!okay){
+  liveLocalSaved=false;
+  showLiveGate('changed');
+  return;
+ }
+ saveView();
+ const url=new URL(location.href);
+ url.searchParams.set('ps-revision',String(Date.now()));
+ location.replace(url.toString());
+}
+document.addEventListener('keydown',event=>{
+ if(!liveGateReason||startupOverlay.contains(event.target))return;
+ // A modal overlay must actually block keyboard-triggered edits behind it,
+ // without blurring and prematurely committing an in-progress D1 field.
+ if(event.key==='Tab')$('startupRetry').focus({preventScroll:true});
+ event.preventDefault();event.stopImmediatePropagation();
+},true);
+window.addEventListener('offline',()=>{
+ if(localCatalogHost)return;
+ ++liveCheckpointId;liveCheckpointPromise=null;
+ if(studioLiveReady)showLiveGate('offline');
+});
+window.addEventListener('online',()=>{
+ if(localCatalogHost)return;
+ if(studioLiveReady){if(liveGateReason!=='changed')void checkLiveConnection();}
+ else if(startupOverlay.dataset.state==='error')void startStudio();
+});
+setInterval(()=>{
+ if(!localCatalogHost&&studioLiveReady&&liveGateReason!=='changed'&&
+  document.visibilityState==='visible')void checkLiveConnection();
+},120000);
+document.addEventListener('visibilitychange',()=>{
+ if(!localCatalogHost&&studioLiveReady&&liveGateReason!=='changed'&&
+  document.visibilityState==='visible')void checkLiveConnection();
+});
 let startupAttempt=0;
 async function startStudio({archive=false}={}){
  const attempt=++startupAttempt;
@@ -10857,8 +11037,27 @@ async function startStudio({archive=false}={}){
   if(attempt!==startupAttempt)return;
   if(activeTab==='wiki')await loadWiki();
   if(attempt!==startupAttempt)return;
+  // A publication can happen between the character catalog and the later
+  // override/Wiki requests. Recheck their exact live state before unlocking
+  // the public editor, not only during subsequent reconnects.
+  if(!archive){
+   const confirmed=await window.PandoraStudioOnlineGate.inspect({
+    api:API,fetcher:fetch,expectedSnapshot:activeCatalogSnapshot,
+    expectedOverrides:override,expectedCounts:catalogSource?.meta?.counts,
+    signal:AbortSignal.timeout(12000)
+   });
+   if(confirmed.status!=='ready')throw Error('Game data changed during startup');
+  }
+  if(attempt!==startupAttempt)return;
   applyGameLocale();
+  studioLiveReady=!archive;
+  clearOnlineRetry();
+  liveGateReason=null;
+  document.body.classList.remove('studio-live-blocked');
   startupDone();
+  // Existing account sessions may have failed the library GET during the
+  // initial offline boot. A verified startup must restore them automatically.
+  if(studioLiveReady)resumeCloudLibrary({force:true});
   // Locale prefetch is intentionally nonblocking for RU. A future EN switch
   // waits for this exact D1-snapshot translation before exposing EN UI.
   if(lang==='ru'&&!archive){
@@ -10871,11 +11070,17 @@ async function startStudio({archive=false}={}){
   if(attempt===startupAttempt)startupError(error);
  }
 }
-$('startupRetry').onclick=()=>void startStudio();
-$('startupArchive').onclick=()=>void startStudio({archive:true});
-// Local development serves its bundled snapshot; the published GitHub Pages
-// site always requires D1 unless the visitor explicitly opts into archive mode.
-void startStudio({archive:['127.0.0.1','localhost'].includes(location.hostname)});
+$('startupRetry').onclick=()=>{
+ if(liveGateReason==='changed'){reloadVerifiedCatalog();return}
+ if(liveGateReason==='storage'){leaveLiveGate();return}
+ if(liveGateReason==='offline'){void checkLiveConnection();return}
+ // An explicit Retry always requests D1, including local Chromium fixtures
+ // that initially boot from bundled development data. No user-facing path
+ // opens the archive on a published hostname.
+ void startStudio();
+};
+// Local fixture mode is never exposed as a player-facing fallback.
+void startStudio({archive:localCatalogHost});
 void window.PandoraAccountUI.init({
  baseUrl:API,
  onCopyReady:bindAccountCopyEditors,
@@ -10908,16 +11113,24 @@ void window.PandoraAccountUI.init({
 }).catch(error=>{console.warn('Account UI unavailable',error)});
 // Return to a saved library after network loss; an unsaved draft is never uploaded.
 let lastCloudReconnect=0;
-function resumeCloudLibrary(){
+function resumeCloudLibrary({force=false}={}){
  // An account's builds may exist exclusively in D1 even when the local cache is empty.
+ // Do not reconnect cloud operations before the published D1 checkpoint
+ // confirms that this page is safe to use again.
+ if(!localCatalogHost&&(!studioLiveReady||liveGateReason))return;
  if(!window.PandoraAccountUI?.isLoggedIn())return;
- if(Date.now()-lastCloudReconnect<20000)return;
+ if(!force&&Date.now()-lastCloudReconnect<20000)return;
  lastCloudReconnect=Date.now();
  void loadCloudBuilds();
 }
-window.addEventListener('online',resumeCloudLibrary);
+// Local development keeps its existing account-library reconnection smoke.
+// Published pages reconnect only after the live D1 checkpoint succeeds.
+window.addEventListener('online',()=>{
+ if(localCatalogHost)resumeCloudLibrary();
+});
 document.addEventListener('visibilitychange',()=>{
- if(document.visibilityState==='visible'&&navigator.onLine)resumeCloudLibrary();
+ if(localCatalogHost&&document.visibilityState==='visible'&&navigator.onLine)
+  resumeCloudLibrary();
 });
 requestAnimationFrame(syncOriginPanelHeight);
 // Main attributes, item effects and formula tables come from the SAME

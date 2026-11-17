@@ -8,7 +8,7 @@ const source=read('pandora-studio-update-manager.js');
 function boot(local,remote,href='https://bonaqu.github.io/Pandora-Saga-Build-Studio/',locale='ru'){
  let banner=null,check=null,normalized=null,navigated=null,saved=0,languageChanged=null;
  let currentRemote=remote,holdResponses=false,saveAllowed=true,lastEventCancelable=null;
- let guard=null,accountPanelOpen=false,heroBookOpen=false,now=Date.now();
+ let guard=null,accountPanelOpen=false,heroBookOpen=false,onlineRecoveryOpen=false,now=Date.now();
  const intervals=[];
  class Clock extends Date{static now(){return now}}
  const heldRequests=[];
@@ -24,7 +24,8 @@ function boot(local,remote,href='https://bonaqu.github.io/Pandora-Saga-Build-Stu
    append(...items){this.children.push(...items)},
    remove(){this.removed=true}
   }),
-  body:{appendChild(node){banner=node}},visibilityState:'visible'
+  body:{classList:{contains:name=>name==='studio-live-blocked'&&onlineRecoveryOpen},
+   appendChild(node){banner=node}},visibilityState:'visible'
  };
  const location={href,replace:url=>{navigated=url}};
  const history={state:null,replaceState:(_state,_title,url)=>{normalized=url}};
@@ -49,6 +50,7 @@ function boot(local,remote,href='https://bonaqu.github.io/Pandora-Saga-Build-Stu
   setAccountGuard:value=>{guard=value},
   setAccountPanelOpen:value=>{accountPanelOpen=value},
   setHeroBookOpen:value=>{heroBookOpen=value},
+  setOnlineRecovery:value=>{onlineRecoveryOpen=value},
   advance:ms=>{now+=ms},
   checkAuto:()=>intervals.find(x=>x.ms===15000)?.fn(),
   holdChecks:()=>{holdResponses=true},
@@ -216,4 +218,19 @@ test('idle update waits until an open Hero Book is closed',async()=>{
  page.checkAuto();
  assert.match(page.navigated,/ps-revision=2026[.]11[.]09[.]581/);
  assert.equal(page.saved,1,'Existing before-update save still runs after closing');
+});
+
+test('an active D1 recovery overlay blocks automatic site upgrades until reconnect',async()=>{
+ const page=boot('2026.11.17.877','2026.11.18.878');
+ await page.check();
+ assert.ok(page.banner);
+ page.advance(121000);
+ page.setOnlineRecovery(true);
+ page.checkAuto();
+ assert.equal(page.navigated,null,'Never reload away from the last in-memory hero while D1 recovery is open');
+ assert.equal(page.saved,0,'No automatic save or navigation during a D1 outage');
+ page.setOnlineRecovery(false);
+ page.checkAuto();
+ assert.match(page.navigated,/ps-revision=2026[.]11[.]18[.]878/);
+ assert.equal(page.saved,1,'After reconnect the existing safe-save hook remains required');
 });

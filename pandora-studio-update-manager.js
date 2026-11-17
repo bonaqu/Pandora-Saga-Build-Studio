@@ -32,7 +32,11 @@
   document.addEventListener('input', onActivity, { passive: true });
   const busy = () => {
     const el = document.activeElement;
+    // A forced update during a D1 outage could destroy the last live draft.
+    // The online gate owns recovery; update prompts must wait until it unlocks.
     return document.visibilityState !== 'visible' ||
+      document.body.classList.contains('studio-live-blocked') ||
+      !!document.querySelector('#startupOverlay:not([hidden]):not(.is-finished)') ||
       !!document.querySelector('#modalRoot:not([hidden]), #detailPanel.is-open, #stagePicker:not([hidden]), #stageAttributes:not([hidden]), .inline-owner-editor, #accountPanel:not([hidden])') ||
       !!window.PandoraAccountUI?.updateGuard?.() ||
       !!(el && el.matches && el.matches('input, textarea, select, [contenteditable="true"]')) ||
