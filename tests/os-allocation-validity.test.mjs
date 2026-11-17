@@ -13,14 +13,18 @@ test('planned level 50 and 55 retain original Remaked attribute budgets',()=>{
  assert.equal(levels.budget(55),544);
  assert.equal(levels.budget(56),null);
 });
-test('future armor remains in OS catalog with original requirements',()=>{
+test('future armor remains in OS catalog with current source requirements',()=>{
  for(const [name,level,id] of [
   ['Крепкий шлем',51,11023],['Доспех тьмы',48,12073],['Штаны тени',48,13052]]){
   const entry=items.find(item=>item.id===id);
   assert.equal(entry.name,name);assert.equal(entry.level,level);
  }
- assert.ok(items.filter(item=>item.level>45).length>=39);
- assert.ok(items.filter(item=>item.level>50).length>=23);
+ assert.equal(items.filter(item=>item.level>45).length,54,
+  'level-50 jewelry remains future gear relative to level 45');
+ assert.equal(items.filter(item=>item.level>50).length,22,
+  'seven live jewelry requirements moved from 55 to 50');
+ assert.equal(items.filter(item=>item.level===50).length,13,
+  'the changed jewelry must stay in the current level-50 source band');
 });
 test('level 55 builds keep their allocation and calculated outputs, not server-45 clamp',()=>{
  assert.match(app,/!Number.isInteger\(original\.level\)\|\|original\.level<1\|\|original\.level>\(window\.PandoraLevelProgression\?\.maxLevel\(\)\?\?55\)/);
