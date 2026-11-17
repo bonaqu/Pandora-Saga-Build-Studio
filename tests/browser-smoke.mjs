@@ -333,8 +333,8 @@ async function main(){
  const elemental=page.locator('#stageBookPanel .stage-active-elemental');
  assert.equal(await elemental.count(),1,'The elemental-weapon chapter stays discoverable');
  assert.equal((await elemental.locator('summary').innerText()).replace(/\s+/g,' ').trim(),
-  '✦ Эффекты стихийных оружий ⌄');
- assert.equal(await elemental.locator('summary .stage-result-chevron').count(),1);
+  '✦ Эффекты стихийных оружий');
+ assert.equal(await elemental.locator('summary .stage-result-chevron svg[data-ui-icon="chevron-down"]').count(),1);
  await page.locator('#stageAttributes [data-book-page="attack"]').press('ArrowRight');
  assert.equal(await page.locator('#stageBookPanel').getAttribute('data-book-visible'),'defense');
   assert.equal(await page.locator('#stageBookPanel .stage-result-tile').count(),0,
@@ -344,8 +344,8 @@ async function main(){
  assert.equal(await exp.count(),1,
   'Experience-bonus chapter MUST be present even without any active bonus');
  const xpHeader=exp.locator('summary');
- assert.equal((await xpHeader.innerText()).replace(/\s+/g,' ').trim(),'✦ Бонусы к опыту ⌄');
- assert.equal(await xpHeader.locator('.stage-result-chevron').count(),1);
+ assert.equal((await xpHeader.innerText()).replace(/\s+/g,' ').trim(),'✦ Бонусы к опыту');
+ assert.equal(await xpHeader.locator('.stage-result-chevron svg[data-ui-icon="chevron-down"]').count(),1);
  await xpHeader.click();
  assert.ok((await exp.innerText()).includes('бонусов к опыту'));
  const recoveryHelp=page.locator('#stageBookPanel [data-guide-key="defense.hpRecoverySpeed"]');
@@ -384,15 +384,15 @@ async function main(){
  const hpOnly=page.locator('#stageAttributes .stage-health-consumables');
  await hpOnly.waitFor({state:'visible',timeout:20000});
  const healthHeading=hpOnly.locator('summary');
- assert.equal((await healthHeading.innerText()).replace(/\s+/g,' ').trim(),'✦ Предметы восстановления ОЗ ⌄');
- assert.equal(await healthHeading.locator('.stage-result-chevron').count(),1);
+ assert.equal((await healthHeading.innerText()).replace(/\s+/g,' ').trim(),'✦ Предметы восстановления ОЗ');
+ assert.equal(await healthHeading.locator('.stage-result-chevron svg[data-ui-icon="chevron-down"]').count(),1);
  await healthHeading.click();
  assert.equal(await hpOnly.locator('.stage-potion-item').count(),12);
  assert.match(await hpOnly.innerText(),/Легкое исцеляющее зелье/);
  const statusCures=page.locator('#stageAttributes .stage-status-cures');
  await statusCures.waitFor({state:'visible',timeout:20000});
  const cureHeader=statusCures.locator('summary');
- assert.equal((await cureHeader.innerText()).replace(/\s+/g,' ').trim(),'✦ Снятие состояний ⌄');
+ assert.equal((await cureHeader.innerText()).replace(/\s+/g,' ').trim(),'✦ Снятие состояний');
  await cureHeader.click();
  assert.equal(await statusCures.locator('.stage-potion-item').count(),10);
   assert.match(await statusCures.innerText(),/Чудесное зелье/);
@@ -401,8 +401,8 @@ async function main(){
  const skillItems=page.locator('#stageAttributes .stage-consumable-skills');
  assert.equal(await skillItems.count(),1);
  assert.equal((await skillItems.locator('summary').innerText()).replace(/\s+/g,' ').trim(),
-  '✦ Предметы, активирующие умения ⌄');
- assert.equal(await skillItems.locator('summary .stage-result-chevron').count(),1);
+  '✦ Предметы, активирующие умения');
+ assert.equal(await skillItems.locator('summary .stage-result-chevron svg[data-ui-icon="chevron-down"]').count(),1);
  await skillItems.locator('summary').click();
  const skillHint=skillItems.locator('[data-triggered-skill-id]').first();
  assert.ok(await skillHint.count()>0,'Each triggered skill has a dedicated hover target');

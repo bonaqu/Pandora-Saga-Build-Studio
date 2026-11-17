@@ -475,6 +475,7 @@ async function loadCloudBuilds(){
  }
 }
 
+const controlGlyphIcon=Object.freeze({'✎':'edit','×':'close','✕':'close'});
 function h(tag,attrs={},children=[]){const el=document.createElement(tag);
  if(tag==='input'||tag==='textarea'){
   const hint=String(attrs.autocomplete||'').toLowerCase();
@@ -496,6 +497,15 @@ function h(tag,attrs={},children=[]){const el=document.createElement(tag);
   }
  }
 for(const[k,v]of Object.entries(attrs)){if(k==='class')el.className=v;else if(k==='text')el.textContent=v;else if(k==='html')throw Error('HTML injection prohibited');else if(k.startsWith('on'))el.addEventListener(k.slice(2),v);else if(['disabled','checked','selected','hidden','required','readOnly','multiple'].includes(k))el[k]=Boolean(v);else if(v!==undefined&&v!==null)el.setAttribute(k,String(v))}for(const c of [].concat(children))if(c!==null&&c!==undefined)el.append(typeof c==='string'?document.createTextNode(c):c);
+ // Icon-only actions share SVGs and retain their existing ARIA names.
+ if(tag==='button'&&children.length===0&&Object.hasOwn(controlGlyphIcon,attrs.text)){
+  const icon=window.PandoraStudioIcons?.create(controlGlyphIcon[attrs.text]);
+  if(icon)el.replaceChildren(icon);
+ }
+ if(tag==='span'&&attrs.class==='wiki-chest-chevron'){
+  const icon=window.PandoraStudioIcons?.create('chevron-down');
+  if(icon)el.replaceChildren(icon);
+ }
  if(tag==='input'){
   if(String(attrs.type||'').toLowerCase()==='number')window.PandoraNumericField?.prepare(el);
   if(String(attrs.type||'').toLowerCase()==='search')window.PandoraSearchField?.prepare(el);

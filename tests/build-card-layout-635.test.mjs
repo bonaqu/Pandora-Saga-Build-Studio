@@ -42,9 +42,9 @@ test('saved build card keeps Compare in the top corner and exactly four actions 
 test('disclosure arrows have centered vector glyphs and text fields keep a soft visible focus',()=>{
  const css=read('pandora-studio-theme.css');
  assert.match(css,/\.stage-result-chevron\{\s*display:grid;place-items:center/);
- assert.match(css,/\.stage-result-chevron::before\{\s*content:''/);
+ assert.match(css,/\.stage-result-chevron>\.ps-ui-icon\{width:12px;height:12px\}/);
  assert.match(css,/\.wiki-chest-chevron\{display:grid;place-items:center/);
- assert.match(css,/\.wiki-chest-chevron::before\{content:''/);
+ assert.match(css,/\.wiki-chest-chevron>\.ps-ui-icon\{width:12px;height:12px\}/);
  assert.match(css,/\.account-password-toggle:after\{content:'';display:block/);
  assert.match(css,/input:not\(\[type=checkbox\]\):not\(\[type=radio\]\):not\(\[type=range\]\):focus-visible/);
  assert.match(css,/outline:2px solid #d4aa72/);

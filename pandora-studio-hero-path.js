@@ -35,6 +35,13 @@ function make(tag,attr={},children=[]){
   else if(val!==undefined&&val!==null)e.setAttribute(key,String(val));
  }
  for(const v of children)e.append(typeof v==='string'?document.createTextNode(v):v);
+ // Hero Path uses the same compact SVG edit and paging affordances.
+ const controlIcon=tag==='button'&&!children.length?
+  ({'✎':'edit','←':'arrow-left','→':'arrow-right'}[attr.text]):null;
+ if(controlIcon){
+  const icon=root.PandoraStudioIcons?.create(controlIcon);
+  if(icon)e.replaceChildren(icon);
+ }
  if(tag==='input'&&attr.type==='number')root.PandoraNumericField?.prepare(e);
  return e;
 }

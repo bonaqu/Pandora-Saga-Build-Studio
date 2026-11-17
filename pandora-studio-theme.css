@@ -1176,11 +1176,7 @@ main{padding-top:10px}
  background:#241a13;color:#efc68c;
  font:600 0/0 Georgia,serif;transition:transform .15s ease,background .15s ease
 }
-.stage-result-chevron::before{
- content:'';display:block;width:9px;height:9px;
- box-sizing:border-box;border-right:2px solid currentColor;border-bottom:2px solid currentColor;
- transform:rotate(45deg);transform-origin:center
-}
+.stage-result-chevron>.ps-ui-icon{width:12px;height:12px}
 .stage-result-section[open] .stage-result-chevron{
  transform:rotate(180deg);background:#3d2b1d
 }
@@ -1958,9 +1954,7 @@ textarea:focus-visible,select:focus-visible{
 .wiki-chest-group-summary small{margin-left:auto;font-size:10px;color:#bfaa8a}
 .wiki-chest-chevron{display:grid;place-items:center;flex:0 0 24px;
  width:24px;height:24px;transition:transform .16s;color:#c49b65;font-size:0}
-.wiki-chest-chevron::before{content:'';display:block;width:9px;height:9px;
- box-sizing:border-box;border-right:2px solid currentColor;border-bottom:2px solid currentColor;
- transform:rotate(45deg);transform-origin:center}
+.wiki-chest-chevron>.ps-ui-icon{width:12px;height:12px}
 .wiki-chest-group[open] .wiki-chest-chevron{transform:rotate(180deg)}
 .wiki-chest-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
  gap:7px;padding:11px;border-top:1px solid #674b30}
@@ -2393,3 +2387,9 @@ footer .footer-version{margin-inline-start:auto;align-self:center;white-space:no
   height:30px;min-height:30px;flex-basis:30px}
 }
 
+
+/* Shared SVGs inherit current control dimensions, not additional padding. */
+.ps-ui-icon{display:inline-block;flex:0 0 auto;width:1em;height:1em;box-sizing:border-box;
+ vertical-align:-.125em;fill:none;stroke:currentColor;stroke-width:1.8;
+ stroke-linecap:round;stroke-linejoin:round;pointer-events:none;user-select:none}
+.stage-book-arrow>.ps-ui-icon,.stage-book-close>.ps-ui-icon{display:block;margin:auto}
