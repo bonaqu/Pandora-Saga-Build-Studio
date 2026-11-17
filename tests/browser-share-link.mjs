@@ -234,6 +234,8 @@ export async function runShareLinkSmoke(browser,base){
    await incoming.locator('#snapshot').click();
    await incoming.getByRole('button',{name:'Сохранить новый билд'}).click();
    await incoming.locator('.build-card').first().waitFor({state:'visible'});
+   await incoming.waitForFunction(()=>document.querySelector('.cloud-library-status')
+    ?.textContent.includes('Сохранено в облаке'),null,{timeout:15000});
    const owned=[...stored.values()].filter(entry=>entry.data?.level===26);
    await incoming.waitForFunction(()=>document.querySelector('.build-card')!==null);
    assert.equal(owned.length,1);
@@ -248,7 +250,10 @@ export async function runShareLinkSmoke(browser,base){
    const replaceButton=dialog.getByRole('button',{name:'Сохранить текущий и открыть'});
    assert.match(await replaceButton.getAttribute('data-guide-hint'),/Перезапишем текущий сохранённый билд/);
    assert.match(await dialog.locator('.shared-build-replacement').innerText(),/текущий билд/);
+   const overwriteResponse=incoming.waitForResponse(response=>
+    response.url().endsWith('/api/library')&&response.request().method()==='POST');
    await replaceButton.click();
+   await overwriteResponse;
    await incoming.waitForFunction(()=>document.querySelector('#levelOut')?.textContent==='55');
    await incoming.waitForFunction(id=>
     document.querySelector('#levelOut')?.textContent==='55',ownedId);
