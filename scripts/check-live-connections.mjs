@@ -3,6 +3,7 @@
 import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import {classifyGameSource} from './source-egress-status.mjs';
+import {readPublishedCatalog} from './read-only-catalog-fetch.mjs';
 const site='https://bonaqu.github.io/Pandora-Saga-Build-Studio/';
 const worker='https://ps-build-studio-cloud.bonaqu.workers.dev';
 const origin='https://bonaqu.github.io';
@@ -153,11 +154,17 @@ try{
 }catch(e){check(false,'Worker OPTIONS preflight',e.message)}
 for(const name of sets){
  try{
-  const {response,payload}=await read(worker+'/api/catalog/'+name+'.json',{cors:true});
+  // Idempotent GET only: a single transient 502/503/timeout must not
+  // falsely label a healthy D1 snapshot as corrupt. Invalid JSON, CORS,
+  // missing D1 provenance and 4xx errors still fail immediately.
+  const {response,payload,attempts}=await readPublishedCatalog(
+   worker+'/api/catalog/'+name+'.json',{origin});
   const valid=payload!==null&&typeof payload==='object'&&Object.keys(payload).length>0;
   check(response.ok&&valid&&response.headers.get('x-ps-catalog')==='d1'&&
    response.headers.get('access-control-allow-origin')===origin,
-   'D1 dataset '+name,response.status+' / source '+(response.headers.get('x-ps-catalog')||'unknown'));
+   'D1 dataset '+name,response.status+' / source '+
+    (response.headers.get('x-ps-catalog')||'unknown')+
+    (attempts>1?' / GET attempt '+attempts+'/3':''));
  }catch(e){check(false,'D1 dataset '+name,e.message)}
 }
 console.log(failures?'Connection diagnostics: '+failures+' check(s) need attention.':'Connection diagnostics: all queried checks passed.');
