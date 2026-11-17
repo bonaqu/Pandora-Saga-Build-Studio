@@ -78,6 +78,8 @@ test('disconnect saves both scoped local states and blocks editing, even on a fa
  assert.match(app,/const draft=persist\(\),library=persistBuilds\(\)/);
  assert.match(app,/return draft===true&&library===true/);
  assert.match(app,/liveLocalSaved=saveLiveDraft\(\)/);
+ assert.match(app,/if\(!liveLocalSaved\)\{[\s\S]*?showLiveGate\('storage'\)/);
+ assert.match(app,/liveGateReason==='storage'/);
  assert.match(app,/document\.body\.classList\.add\('studio-live-blocked'\)/);
  assert.match(app,/event\.stopImmediatePropagation\(\)/);
  assert.match(app,/window\.PandoraAccountUI\?\.updateGuard\?\.\(\)/);
