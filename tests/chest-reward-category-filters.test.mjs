@@ -137,4 +137,9 @@ test('the implementation excludes every source-backed level-up reward box',()=>{
  assert.match(css,/\.wiki-chest-reward-filters select:focus-visible/);
  assert.match(css,/\.wiki-chest-slot-option\[aria-pressed="true"\]/);
  assert.match(css,/\.wiki-chest-board\[data-filtered="true"\]/);
+ assert.match(css,/\.wiki-chest-board\[data-filtered="true"\][^}]*display:grid;grid-template-columns:repeat\(auto-fill/s,
+  'Incomplete final rows must use stable grid tracks, not growing flex cards');
+ assert.doesNotMatch(css,/flex:1 1 210px/,
+  'No last-row flex growth is allowed in the filtered chest');
+
 });
