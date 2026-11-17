@@ -219,9 +219,23 @@ function persist(){
  }
 }
 function persistBuilds(){
- try{return window.PandoraBuildScope.setOwned(localStorage,libraryScopeId(),
-  'ps-build-library.v1',JSON.stringify(builds))}
- catch(error){console.warn('Build library could not be stored locally',error);return false}
+ try{
+  const normalized=JSON.stringify(builds);
+  let serialized=normalized;
+  // Sorting is a UI preference. A readiness checkpoint or a no-op draft
+  // save must not silently rewrite the original build library's order.
+  // Only an actual library change may replace the persisted row sequence.
+  const stored=window.PandoraBuildScope.getOwned(localStorage,libraryScopeId(),
+   'ps-build-library.v1');
+  try{
+   const rows=JSON.parse(stored);
+   if(Array.isArray(rows)&&rows.length===builds.length&&
+    JSON.stringify(safeStoredBuildRows(rows))===normalized)
+    serialized=stored;
+  }catch{ /* A damaged library is never treated as an equivalent copy. */ }
+  return window.PandoraBuildScope.setOwned(localStorage,libraryScopeId(),
+   'ps-build-library.v1',serialized);
+ }catch(error){console.warn('Build library could not be stored locally',error);return false}
 }
 const CLOUD_TOKEN_KEY='ps-build-library-secret.v1';
 const CLOUD_DELETES_KEY='ps-build-library-pending-deletes.v1';
@@ -10969,12 +10983,17 @@ function refreshOwnerDraftRecovery(){
  field.value=text;
  inlineDraftCopyReady=false;
 }
-function showLiveGate(kind){
+function showLiveGate(kind,{saved=null}={}){
  if(localCatalogHost||!studioLiveReady)return;
  // Once a newer published snapshot is detected, a later offline browser
  // event must not downgrade the required explicit refresh to an old retry.
  if(liveGateReason==='changed'&&kind!=='changed')return;
- if(!liveGateReason)liveLocalSaved=saveLiveDraft();
+ if(!liveGateReason){
+  // Initial D1 verification already attempted both storage writes. Never
+  // replace that failure with a second, misleading startup save attempt.
+  if(saved===null)liveLocalSaved=saveLiveDraft();
+  else liveLocalSaved=saved;
+ }
  liveGateReason=kind;
  startupOverlay.hidden=false;
  startupOverlay.classList.remove('is-finished');
@@ -10988,18 +11007,18 @@ function showLiveGate(kind){
   storage?'Could not save your changes':
   changed?'Game data has changed':'Connection interrupted');
  $('startupStatus').textContent=lang==='en'?
-  (storage?'Connection restored, but this browser could not save your current hero. Free some storage and retry without closing the tab.':
+  (storage?'This browser could not save the current hero or build library. Free some storage and retry without closing the tab.':
    changed?'A newer verified game catalog or site copy is available. Save your progress and reload before continuing.':
    'Current game data is unavailable. Editing is paused until the connection is verified.'):
-  (storage?'Соединение восстановлено, но браузер не сохранил текущего героя. Освободи место и повтори сохранение, не закрывая вкладку.':
+  (storage?'Браузер не сохранил текущего героя или библиотеку билдов. Освободи место и повтори сохранение, не закрывая вкладку.':
    changed?'Опубликованы новые игровые данные или тексты сайта. Сохрани прогресс и обнови страницу, чтобы продолжить.':
    'Актуальные игровые данные временно недоступны. Работа приостановлена до восстановления соединения.');
  setBootCopy('startupMicro',liveLocalSaved?
   'Текущий герой сохранён в браузере. Облачное сохранение подтвердится отдельно.':
-  'Не удалось сохранить черновик в браузере. Не закрывай вкладку.',
+  'Не удалось сохранить черновик или библиотеку билдов в браузере. Не закрывай вкладку.',
   liveLocalSaved?
   'Your current hero is saved in this browser. Cloud saves are confirmed separately.':
-  'Could not save the local draft. Keep this tab open.');
+  'Could not save the local draft or build library. Keep this tab open.');
  if(changed)refreshOwnerDraftRecovery();
  else $('startupUnsentOwnerText')?.remove();
  const needsCopy=changed&&Boolean($('startupUnsentOwnerText'));
@@ -11174,16 +11193,21 @@ async function startStudio({archive=false}={}){
   }
   if(attempt!==startupAttempt)return;
   // Only a fully verified boot may commit catalog migrations to local storage.
+  // A healthy D1 response is not enough to unlock an unsaved local character.
   applyGameLocale({persistReconciled:false});
-  persist();
+  const draftSaved=persist(),librarySaved=persistBuilds();
   studioLiveReady=!archive;
   clearOnlineRetry();
   liveGateReason=null;
   document.body.classList.remove('studio-live-blocked');
-  startupDone();
+  if(studioLiveReady&&(!draftSaved||!librarySaved)){
+   // Keep the in-memory hero, do not issue a D1 write, and allow an explicit
+   // retry of local persistence without reloading the verified catalog.
+   showLiveGate('storage',{saved:false});
+  }else startupDone();
   // Existing account sessions may have failed the library GET during the
   // initial offline boot. A verified startup must restore them automatically.
-  if(studioLiveReady)resumeCloudLibrary({force:true});
+  if(studioLiveReady&&!liveGateReason)resumeCloudLibrary({force:true});
   // Locale prefetch is intentionally nonblocking for RU. A future EN switch
   // waits for this exact D1-snapshot translation before exposing EN UI.
   if(lang==='ru'&&!archive){

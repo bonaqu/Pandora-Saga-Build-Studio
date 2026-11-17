@@ -26,7 +26,7 @@ test('a tentative D1 boot never commits migrated character data before source ve
  assert.match(boot,/loadOverrides\(\{strict:true,commit:false\}\)/);
  assert.match(boot,/if\(confirmed.status!=='ready'\)throw Error/);
  assert.match(boot,/if\(libraryScopeId\(\)===draftOwner\)state=originalDraft/);
- assert.ok(boot.indexOf('if(confirmed.status')<boot.indexOf('  persist();'),
+ assert.ok(boot.indexOf('if(confirmed.status')<boot.indexOf('const draftSaved=persist()'),
   'The final catalog and authorial copy must be verified before local state is committed');
 });
 

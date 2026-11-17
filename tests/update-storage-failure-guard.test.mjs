@@ -14,7 +14,9 @@ const saveBeforeUpdate=extract('function saveBeforeUpdate(event){','\n// Restore
 
 function attempt({failure=null,lang='ru'}={}){
  const writes=[],toasts=[],listeners={},draftWarnings=[];
- const window={PandoraBuildScope:{setOwned(_storage,_scope,key){
+ const window={PandoraBuildScope:{
+  getOwned:()=> '[]',
+  setOwned(_storage,_scope,key){
   writes.push(key);
   if(key===failure)throw Error('Quota exceeded');
   return true;
@@ -24,11 +26,11 @@ function attempt({failure=null,lang='ru'}={}){
  // Execute actual production functions, but with isolated storage and event
  // dependencies. This verifies both failure paths without a production D1 write.
  Function('window','localStorage','libraryScopeId','state','builds',
-  'console','document','showStudioToast','lang','draftStorageStatus',
+  'console','document','showStudioToast','lang','draftStorageStatus','safeStoredBuildRows',
   saveDraft+'\n'+saveBuilds+'\n'+saveBeforeUpdate
  ) (window,{},()=> 'account:alice_01',{race:1,level:1},[],
   {warn(){}},document,showStudioToast,lang,
-  failed=>draftWarnings.push(failed));
+  failed=>draftWarnings.push(failed),rows=>rows);
  let cancelled=false;
  assert.equal(typeof listeners['pandora:before-update'],'function');
  listeners['pandora:before-update']({preventDefault(){cancelled=true}});
