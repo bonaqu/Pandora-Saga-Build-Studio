@@ -35,7 +35,7 @@ test('Phoenix Flame is gated by actual fire weapon, gem, grade and eligibility',
 test('all item tabs and right-click menu actions reuse a single icon mapping',()=>{
  const css=read('pandora-studio-workbench-guidance.css');
  const uiWindow={};
- vm.runInNewContext(equipment,{window:uiWindow});
+ vm.runInNewContext(equipment,{window:uiWindow,document:{addEventListener(){}}});
  const icon=uiWindow.PandoraStageItemUI.actionIcon;
  for(const [key,glyph] of Object.entries({
   choose:'⇄',replace:'⇄',details:'≡',properties:'≡',souls:'○',remove:'×'
