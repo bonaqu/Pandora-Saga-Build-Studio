@@ -10969,12 +10969,17 @@ function refreshOwnerDraftRecovery(){
  field.value=text;
  inlineDraftCopyReady=false;
 }
-function showLiveGate(kind){
+function showLiveGate(kind,{saved=null}={}){
  if(localCatalogHost||!studioLiveReady)return;
  // Once a newer published snapshot is detected, a later offline browser
  // event must not downgrade the required explicit refresh to an old retry.
  if(liveGateReason==='changed'&&kind!=='changed')return;
- if(!liveGateReason)liveLocalSaved=saveLiveDraft();
+ if(!liveGateReason){
+  // Initial D1 verification already attempted both storage writes. Never
+  // replace that failure with a second, misleading startup save attempt.
+  if(saved===null)liveLocalSaved=saveLiveDraft();
+  else liveLocalSaved=saved;
+ }
  liveGateReason=kind;
  startupOverlay.hidden=false;
  startupOverlay.classList.remove('is-finished');
@@ -11174,16 +11179,21 @@ async function startStudio({archive=false}={}){
   }
   if(attempt!==startupAttempt)return;
   // Only a fully verified boot may commit catalog migrations to local storage.
+  // A healthy D1 response is not enough to unlock an unsaved local character.
   applyGameLocale({persistReconciled:false});
-  persist();
+  const draftSaved=persist(),librarySaved=persistBuilds();
   studioLiveReady=!archive;
   clearOnlineRetry();
   liveGateReason=null;
   document.body.classList.remove('studio-live-blocked');
-  startupDone();
+  if(studioLiveReady&&(!draftSaved||!librarySaved)){
+   // Keep the in-memory hero, do not issue a D1 write, and allow an explicit
+   // retry of local persistence without reloading the verified catalog.
+   showLiveGate('storage',{saved:false});
+  }else startupDone();
   // Existing account sessions may have failed the library GET during the
   // initial offline boot. A verified startup must restore them automatically.
-  if(studioLiveReady)resumeCloudLibrary({force:true});
+  if(studioLiveReady&&!liveGateReason)resumeCloudLibrary({force:true});
   // Locale prefetch is intentionally nonblocking for RU. A future EN switch
   // waits for this exact D1-snapshot translation before exposing EN UI.
   if(lang==='ru'&&!archive){
