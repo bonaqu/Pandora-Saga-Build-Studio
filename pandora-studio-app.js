@@ -6506,6 +6506,7 @@ function renderWiki(root){
        ['boosts','Бальзамы и усиления','Balms and boosts'],
        ['gems','Самоцветы','Gems'],
        ['souls','Души','Souls'],
+       ['utility','Полезные предметы','Utility items'],
        ['materials','Материалы и рецепты','Materials and recipes'],
        ['containers','Другие сундуки','Other chests'],
        ['gold','Золото','Gold'],

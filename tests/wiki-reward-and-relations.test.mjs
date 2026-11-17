@@ -15,7 +15,9 @@ test('level reward layout is compact and class appears below level as a chip',()
  assert.match(rules,/grid-template-columns:minmax\(0,1fr\)/);
  assert.match(rules,/\.wiki-level-reward-details \.wiki-level-reward-class/);
  assert.match(rules,/border-radius:999px/);
- assert.match(css,/repeat\(auto-fit,minmax\(min\(100%,205px\),1fr\)\)/);
+ assert.match(css,/repeat\(auto-fill,minmax\(min\(100%,205px\),1fr\)\)/);
+ // Underfilled guaranteed reward rows must not stretch card widths.
+ assert.doesNotMatch(css,/repeat\(auto-fit,minmax\(min\(100%,205px\),1fr\)\)/);
  assert.match(source,/class:'wiki-level-reward-class'/);
 });
 

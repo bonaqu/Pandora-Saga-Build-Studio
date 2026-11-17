@@ -44,6 +44,30 @@ export async function runChestRewardLayoutSmoke(browser,base){
   await verify('ru');
   assert.ok(await page.locator('.wiki-chest-assured-grid .wiki-chest-reward').count()>1,
    'The real scout chest should display its 100%-listed rewards');
+  // Synthetic two-reward view using real chest card DOM and production CSS:
+  // auto-fit used to widen both to half the board. auto-fill must reserve
+  // all eligible tracks, even when later track positions stay empty.
+  const sparse=await page.evaluate(()=>{
+   const real=document.querySelector('.wiki-chest-assured-grid');
+   const cards=[...real.querySelectorAll('.wiki-chest-reward')].slice(0,2);
+   const outer=document.createElement('div');
+   outer.className='wiki-chest-board';
+   outer.setAttribute('style','position:fixed;top:-10000px;left:0;width:1120px;visibility:hidden');
+   const grid=document.createElement('div');
+   grid.className='wiki-chest-assured-grid';
+   for(const card of cards)grid.append(card.cloneNode(true));
+   outer.append(grid);document.body.append(outer);
+   const widths=[...grid.children].map(n=>n.getBoundingClientRect().width);
+   const tracks=getComputedStyle(grid).gridTemplateColumns.split(' ').length;
+   const groupWidth=grid.getBoundingClientRect().width;
+   outer.remove();
+   return {widths,tracks,groupWidth};
+  });
+  assert.equal(sparse.widths.length,2);
+  assert.ok(sparse.tracks>=4,'Sparse guaranteed rewards need reserved tracks: '+JSON.stringify(sparse));
+  assert.ok(sparse.widths.every(w=>w>170&&w<320),
+   'Sparse rewards must not stretch to fill the entire row: '+JSON.stringify(sparse));
+  assert.ok(Math.abs(sparse.widths[0]-sparse.widths[1])<1.5);
   await page.setViewportSize({width:390,height:844});
   await verify('ru');
   await page.locator('#dockClose').click();

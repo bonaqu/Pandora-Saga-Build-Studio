@@ -133,6 +133,29 @@ export async function runChestCategoryFiltersSmoke(browser,base){
   assert.equal(await verifyFacets('equipment','body'),sourceSlot(51036,'body'));
   await page.setViewportSize({width:1366,height:860});
 
+  // Source-backed ETC exceptions: don't hide utility tickets, bags and
+  // repair tools in the generic crafting materials filter.
+  const utilityIds=new Set(['65004','65006','90001','90004','90037','90053',
+   '90045','90046','90049','90050','90057','90060','90080']);
+  const utilityCount=id=>sourceRows(id).filter(row=>
+   utilityIds.has(String(row.i))).length;
+  await openChest(52000);
+  const utilityFilter=page.locator('.wiki-chest-filter-type');
+  assert.ok(await utilityFilter.locator('option[value="utility"]').count()>0);
+  assert.ok(utilityCount(52000)>0);
+  await utilityFilter.selectOption('utility');
+  assert.equal(await verifyFacets('utility'),utilityCount(52000));
+  await utilityFilter.selectOption('potions');
+  assert.equal(await verifyFacets('potions'),sourceRows(52000).filter(row=>
+   catalogItems[row.i]?.kind==='POTION'||Number(row.i)===90038).length,
+   'Universal potion must be listed with other potions, not materials');
+  await openChest(52005);
+  const toolFilter=page.locator('.wiki-chest-filter-type');
+  await toolFilter.selectOption('utility');
+  assert.equal(await verifyFacets('utility'),utilityCount(52005));
+  assert.ok((await cards().allInnerTexts()).some(text=>text.includes('Молот подмастерья')),
+   'Repair hammer must be visible in Utility items');
+
   await openChest(52001); // NPC chest with Soul and Potion types
   const types=page.locator('.wiki-chest-filter-type');
   assert.equal(await cards().count(),sourceRows(52001).length);

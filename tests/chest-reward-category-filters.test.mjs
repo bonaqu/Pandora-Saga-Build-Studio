@@ -76,6 +76,40 @@ test('actual map chests separate Souls, potions, materials, gems and currency',(
  assert.ok(scout.types.containers>0);
 });
 
+test('published ETC utility and potion rewards are not mislabeled as crafting materials',()=>{
+ const before=JSON.stringify([items,souls,chests]);
+ const expectedUtility=[65004,65006,90001,90004,90037,90053,
+  90045,90046,90049,90050,90057,90060,90080];
+ for(const id of expectedUtility){
+  assert.equal(items[id]?.kind,'ETC','Source classification changed for '+id);
+  assert.deepEqual(plain(model.rewardCategory({i:id},items,souls,chestIds)),
+   {type:'utility',slot:null},'Source-supported utility '+id);
+ }
+ assert.equal(items[90038]?.kind,'ETC');
+ assert.equal(model.rewardCategory({i:90038},items,souls,chestIds).type,'potions',
+  'The universal status-curing potion is really a consumable');
+ assert.equal(model.rewardCategory({i:70012},items,souls,chestIds).type,'materials',
+  'Source ETC jadeite must not be mistaken for a socket gem');
+ assert.equal(model.rewardCategory({i:90080},items,souls,chestIds).type,'utility',
+  'Repair hammer is not a crafting material or unspecified Soul');
+ assert.equal(model.rewardCategory({i:90080},{90080:{kind:'NEW_UNKNOWN'}},
+  {},new Set()).type,'other','No classification override when source kind changes');
+ const serviceChest=model.rewardFilters(box(52000).rolls,items,souls,chestIds);
+ assert.ok(serviceChest.types.utility>=5,'An ordinary chest exposes utility items');
+ assert.ok(serviceChest.types.potions>0,'The universal potion is visible under Potions');
+ const hammerChest=model.rewardFilters(box(52005).rolls,items,souls,chestIds);
+ assert.ok(hammerChest.types.utility>0,'Repair hammer appears under Utility items');
+ assert.equal(JSON.stringify([items,souls,chests]),before,'Faceting is purely presentational');
+});
+
+test('guaranteed chest rewards use stable auto-fill tracks across screen widths',()=>{
+ const css=read('pandora-studio-wiki-polish.css');
+ assert.match(css,/\.wiki-chest-assured-grid\s*\{[^}]*grid-template-columns:repeat\(auto-fill,/s);
+ assert.doesNotMatch(css,/\.wiki-chest-assured-grid\s*\{[^}]*repeat\(auto-fit,/s);
+ const app=read('pandora-studio-app.js');
+ assert.match(app,/\['utility','Полезные предметы','Utility items'\]/);
+});
+
 test('future unknown types, missing IDs, and gold-only rows never fabricate game facts',()=>{
  const customItems={
   991001:{id:991001,kind:'FUTURE_KIND',slot:'unknown'},
@@ -94,7 +128,7 @@ test('future unknown types, missing IDs, and gold-only rows never fabricate game
  const facets=model.rewardFilters(rolls,customItems,{},ids);
  assert.equal(facets.total,10);
  assert.deepEqual(plain(facets.types),{
-  equipment:1,potions:1,boosts:1,gems:1,souls:1,
+  equipment:1,potions:1,boosts:1,gems:1,souls:1,utility:0,
   materials:1,containers:1,gold:1,other:2
  });
  assert.equal(facets.slots.body,1);
