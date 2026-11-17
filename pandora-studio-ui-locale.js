@@ -26,6 +26,9 @@ const strings={
  raceSelect:['Выбери расу','Choose a race'],racePassive:['Расовая пассивка','Racial passive'],
  chooseOne:['Выбери одну','Choose one'],classCount:['28 классов','28 classes'],
  heroProgress:['Развитие героя','Hero progression'],levelParameters:['Уровень и параметры','Level and attributes'],
+ originGuide:['Выбери расу, профессию и затем характеристики.','Choose a race, a class, then your attributes.'],
+ appearanceGuide:['Нажми на слот для выбора вещи, на портрет — для Книги героя.','Select an equipment slot for items, or the portrait for the Hero Book.'],
+ pathGuide:['Развитие — вложить очки. Умения — выбрать навыки.','Progression allocates points. Skills lists hero abilities.'],
  heroLevel:['Уровень героя','Hero level'],hpShort:['ОЗ','HP'],mpShort:['ОМ','MP'],
  baseStats:['Базовые характеристики','Base attributes'],
  distributePoints:['Распредели очки','Allocate points'],heroGear:['Экипировка персонажа','Hero equipment'],
@@ -137,7 +140,7 @@ const libraryCopy=Object.freeze({
  // Editorial labels in received shared-build dialogs. The incoming record
  // count and another player's build name are generated, never D1 strings.
  librarySharedImportCountLabel:['Билдов по ссылке:','Builds in link:'],
- librarySharedUnsavedWarning:['Несохранённые изменения текущего персонажа будут заменены.','The current character’s unsaved changes will be replaced.']
+ librarySharedUnsavedWarning:['Если открыть без сохранения, последние несохранённые изменения текущего билда будут потеряны.','If you open without saving, your current build’s latest unsaved changes will be lost.']
 });
 // Fixed toast notifications are safe authored copy. Exclude runtime details,
  // player build names, network errors and security diagnostics.

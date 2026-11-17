@@ -401,13 +401,22 @@ function render(root,api){
   const names={choose:['Выбор','Choose'],details:['Свойства','Properties'],
    souls:['Души','Souls']};
   const [ru,en]=names[key],text=copy('tab.'+key,ru,en);
+  const actionHelp={
+   choose:tr('Выбрать другой предмет для этого слота.','Choose another item for this slot.'),
+   details:tr('Посмотреть характеристики, заточку, самоцветы и слоты душ.',
+    'View item stats, refinement, gemstones and Soul socket capacity.'),
+   souls:tr('Вставить, заменить или убрать душу в доступном слоте.',
+    'Insert, replace or remove a Soul from an available socket.')
+  };
   const button=el('button',{type:'button',text,
    class:mode===key?'chosen':'','aria-pressed':String(mode===key),
+   'aria-description':actionHelp[key],
    'data-stage-tab':key,disabled:!record&&key!=='choose',
    onclick:event=>{
     if(event?.target?.closest?.('.stage-control-pencil,.wiki-inline-input'))return;
     api.changeMode(key);
    }});
+  root.PandoraGuideTooltip?.attach(button,actionHelp[key],{hoverDelay:300});
   tabs.append(labeledAction(button,'tab.'+key,ru,en));
  }
  root.append(tabs);

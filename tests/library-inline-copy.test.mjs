@@ -217,8 +217,8 @@ test('shared build import caption and unsaved warning are isolated from dynamic 
  const fields={
   librarySharedImportCountLabel:['Билдов по ссылке:','Builds in link:'],
   librarySharedUnsavedWarning:[
-   'Несохранённые изменения текущего персонажа будут заменены.',
-   'The current character’s unsaved changes will be replaced.']
+   'Если открыть без сохранения, последние несохранённые изменения текущего билда будут потеряны.',
+   'If you open without saving, your current build’s latest unsaved changes will be lost.']
  };
  for(const [key,[ru,en]] of Object.entries(fields)){
   assert.equal(locale.literalKey(ru),key);
@@ -241,7 +241,7 @@ test('shared build import caption and unsaved warning are isolated from dynamic 
  assert.match(shared,/class:'shared-import-count-value',text:' '\+added\.length\+'\.'/);
  assert.match(shared,/PandoraUILocale\?\.localize\(unsavedWarning,lang\)/);
  assert.match(shared,/class:'shared-unsaved-warning-row|shared-receiver-copy-row shared-unsaved-warning-row'/);
- assert.match(shared,/incoming\.name\+sharedText\('»\?','”\?'\)/);
+ assert.match(shared,/class:'shared-personal-name',text:incomingName/);
  assert.doesNotMatch(shared,/localize\(incoming,lang\)/);
  assert.doesNotMatch(shared,/localize\(importCount,lang\)/);
  for(const unknown of ['Билдов по ссылке: 4.','Another hero name','Friend private QA hero']){

@@ -130,7 +130,7 @@ export async function runSharedReceiverEditorial655Smoke(browser,base){
   assert.equal(await openDialog.locator('.shared-personal-name [data-owner-copy-key]').count(),0);
   const warnKey='guideedit.book.ui.label.library-shared-unsaved-warning';
   assert.match(await openDialog.locator('[data-owner-copy-key="librarySharedUnsavedWarning"]').innerText(),
-   /unsaved changes will be replaced/i);
+   /unsaved changes will be lost/i);
   await openDialog.locator('[data-owner-copy-pencil="librarySharedUnsavedWarning"]').click();
   const warnInput=openDialog.locator('.shared-unsaved-warning-row .account-copy-edit-host [contenteditable]');
   await warnInput.fill('Unsaved character changes will be discarded.');
