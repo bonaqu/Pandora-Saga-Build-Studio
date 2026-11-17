@@ -44,6 +44,25 @@ export async function runItemPropertiesArrow866Smoke(browser,base){
     assert.ok(tip.x>=0&&tip.y>=0&&tip.width>0&&tip.height>0&&
      tip.x+tip.width<=24&&tip.y+tip.height<=24,
      'Right arrowhead is visible inside the icon: '+JSON.stringify(tip));
+   const chooseGroup=picker.locator('.stage-rich-choose-group');
+   const settings=picker.locator('.stage-rich-settings-group');
+   assert.equal(await chooseGroup.locator('[data-stage-tab="choose"]').count(),1);
+   assert.equal(await settings.locator('[data-stage-tab="details"]').count(),1);
+   assert.equal(await settings.locator('[data-stage-tab="souls"]').count(),1);
+   const chooseBox=await chooseGroup.boundingBox(),settingsBox=await settings.boundingBox();
+   assert.ok(chooseBox.x+chooseBox.width<=settingsBox.x-4,
+    'Choose is visually separated from grouped item settings');
+   assert.ok(Math.abs(chooseBox.y-settingsBox.y)<2,
+    'Both groups share one compact row');
+   const soulDivider=await settings.locator('[data-stage-tab="souls"]').evaluate(
+    element=>getComputedStyle(element.parentElement).borderLeftWidth);
+   assert.notEqual(soulDivider,'0px','Properties and Souls have a visible separator');
+   const unequip=picker.locator('.stage-picker-unequip');
+   assert.equal(await unequip.count(),1);
+   assert.equal(await unequip.locator('svg[data-gear-icon="remove"]').count(),1);
+   assert.equal((await unequip.innerText()).trim(),lang==='en'?'Unequip item':'Снять предмет');
+   assert.equal(await unequip.isEnabled(),true);
+   assert.equal(await unequip.evaluate(el=>getComputedStyle(el).borderRadius),'4px');
    assert.equal(await link.getAttribute('title'),null,
     'No duplicate native tooltip on a self-explanatory arrow');
    await link.hover();
