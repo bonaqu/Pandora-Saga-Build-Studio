@@ -11,7 +11,8 @@ test('worn gear context actions reuse picker and one shared unequip lifecycle',(
  for(const action of ['properties','souls','replace','remove'])
   assert.match(app,new RegExp("'"+action+"'"));
  assert.match(app,/oncontextmenu:event=>\{\s*event\.preventDefault\(\)/);
- assert.match(app,/\['choose','\+','Выбрать вещь','Choose item',false\]/);
+ assert.match(app,/\['choose','Выбрать вещь','Choose item',false\]/);
+ assert.match(app,/PandoraStageItemUI\.actionIcon\(id\)/);
  assert.match(app,/const actions=hasItem\?/);
  assert.match(app,/openStageGearMenu\(i,sourceSlot,event,button\)/);
  assert.match(app,/function unequipStageEquipmentSlot\(index\)/);
