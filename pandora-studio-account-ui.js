@@ -41,7 +41,52 @@ function activeSession(){
  return false;
 }
 function token(){return activeSession()?session.token:null}
-const tr=value=>root.PandoraUILocale?.ui(value,document.documentElement.lang)||value;
+const tr=value=>{
+ const lang=document.documentElement.lang,pair=accountApiLocalized[value];
+ return pair?pair[lang==='en'?1:0]:
+  (root.PandoraUILocale?.ui(value,lang)||value);
+};
+// Only exact human-readable messages emitted by the account API are allowed
+// through. Raw server exceptions, SQL details and arbitrary HTML are never
+// rendered in the guest/profile UI or offered to the D1 text editor.
+const accountApiMessages=Object.freeze({
+ "Not found":["Запрос не найден.","Request not found."],
+ "Request too large":["Слишком большой запрос.","Request is too large."],
+ "Invalid request":["Проверь введённые данные и повтори попытку.","Check the entered information and try again."],
+ "Method not allowed":["Не удалось выполнить действие. Попробуй снова.","Could not perform this action. Try again."],
+ "Sign in required":["Войди в аккаунт и повтори действие.","Sign in and try again."],
+ "Invalid password":["Неверный пароль.","Invalid password."],
+ "Current password is incorrect":["Неверный текущий пароль.","Current password is incorrect."],
+ "Too many requests. Try later.":["Слишком много попыток. Попробуй позже.","Too many attempts. Try again later."],
+ "Use a 3–20 character Latin username and a password of 8–128 characters":["Логин: 3–20 латинских символов, цифры или _. Пароль: 8–128 символов.","Username: 3–20 Latin letters, digits or _. Password: 8–128 characters."],
+ "Registration limit reached":["Лимит регистраций достигнут. Попробуй позже.","Registration limit reached. Try again later."],
+ "This username or library is already registered":["Этот логин или библиотека уже зарегистрированы.","This username or library is already registered."],
+ "Invalid username or password":["Неверный логин или пароль.","Invalid username or password."],
+ "Invalid username, recovery code or password":["Неверный логин, резервный код или пароль.","Invalid username, recovery code or password."],
+});
+// Preserve the semantic error across language switches and form remounts.
+// This lookup is presentation-only: even a matching raw server response is
+// never marked as D1-authored UI text.
+const accountApiLocalized=Object.freeze(Object.fromEntries(
+ [...Object.values(accountApiMessages),
+  ['Не удалось подключиться. Проверь соединение и повтори попытку.',
+   'Cannot connect. Check your connection and try again.'],
+  ['Сервис временно недоступен. Повтори попытку позже.',
+   'Service temporarily unavailable. Try again later.']
+ ].flatMap(pair=>[[pair[0],pair],[pair[1],pair]])));
+function publicAccountError(message,status=0){
+ const en=document.documentElement?.lang==='en';
+ const known=typeof message==='string'&&Object.hasOwn(accountApiMessages,message)?
+  accountApiMessages[message]:null;
+ if(known)return known[en?1:0];
+ if(status===429)return en?'Too many attempts. Try again later.':
+  'Слишком много попыток. Попробуй позже.';
+ if(status===0)return en?'Cannot connect. Check your connection and try again.':
+  'Не удалось подключиться. Проверь соединение и повтори попытку.';
+ return en?'Service temporarily unavailable. Try again later.':
+  'Сервис временно недоступен. Повтори попытку позже.';
+}
+
 function node(tag,cls='',text=''){
  const el=document.createElement(tag);
  if(cls)el.className=cls;
@@ -94,14 +139,23 @@ async function request(kind,data=null,auth=token()){
  const signal=typeof AbortSignal!=='undefined'&&
   typeof AbortSignal.timeout==='function'?
   AbortSignal.timeout(kind==='me'?12000:20000):null;
- const response=await fetch(options.baseUrl+'/api/account/'+kind,{
-  ...(signal?{signal}:{}),
-  method:data===null?'GET':'POST',
-  headers:{'Content-Type':'application/json',...(auth?{Authorization:'Bearer '+auth}:{})},
-  ...(data===null?{}:{body:JSON.stringify(data)})
- });
+ let response;
+ try{
+  response=await fetch(options.baseUrl+'/api/account/'+kind,{
+   ...(signal?{signal}:{}),
+   method:data===null?'GET':'POST',
+   headers:{'Content-Type':'application/json',...(auth?{Authorization:'Bearer '+auth}:{})},
+   ...(data===null?{}:{body:JSON.stringify(data)})
+  });
+ }catch{
+  // A browser-level failure is not an account revocation or a useful trace.
+  const error=new Error(publicAccountError('',0));error.httpStatus=0;throw error;
+ }
  const result=await response.json().catch(()=>({}));
- if(!response.ok){const error=new Error(result.error||'Ошибка сервера');error.httpStatus=response.status;throw error;}
+ if(!response.ok){
+  const error=new Error(publicAccountError(result.error,response.status));
+  error.httpStatus=response.status;throw error;
+ }
  return result;
 }
 function setSession(result){
