@@ -1162,6 +1162,20 @@ function ownerInterfaceEditor(section,rows,headingRu='Подписи интер�
 const equipmentCopy=(key,ru,en)=>ownerCopy('equipment',key,ru,en);
 const equipmentCopyLabel=(node,key,ru,en,options)=>
  ownerCopyLabel(node,'equipment',key,ru,en,options);
+// Source confidence stays visible, implementation details do not.
+function wikiSourceCopy(key,ru,en){
+ const label=h('small',{class:'wiki-source-meta',
+  text:ownerCopy('wiki-ui',key,ru,en)});
+ ownerCopyLabel(label,'wiki-ui',key,ru,en);
+ if(!(adminEditing&&adminToken))return label;
+ const pencil=h('button',{type:'button',class:'ui-content-pencil wiki-source-pencil',
+  'aria-label':(lang==='en'?'Edit caption: ':'Изменить надпись: ')+label.textContent,
+  text:'✎',onclick:event=>{
+   event.preventDefault();event.stopPropagation();
+   label.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
+  }});
+ return h('span',{class:'wiki-source-copy-owner'},[label,pencil]);
+}
 const originFixedLabels=[
  ['.workspace>.left>.panel-heading h2','heading','Происхождение','Origin'],
  ['#originTabs [data-origin-tab="race"]','tabRace','Раса','Race'],
@@ -1243,7 +1257,7 @@ function renderOriginCopyLabels(){
   originCopyLabel(node,key,ru,en,{pencilHost});
  }
 }
-function editAttr(el,key){el.dataset.editKey=key;if(adminEditing)el.classList.add('admin-edit');return el}
+function editAttr(el,key){el.dataset.editKey=key;if(adminEditing&&adminToken)el.classList.add('admin-edit');return el}
 function raceSource(i,gender){
 if(!Number.isInteger(i)||i<0||i>=races.length)return 'assets/pandora-logo.png';
 return override["visual.race."+i+"."+(gender?"m":"f")]||imageUrl(races[i][gender?3:2]);
@@ -3958,12 +3972,14 @@ function renderWiki(root){
    line.append(link('◈ '+dataName('map',row.id),'map',row.id,'wiki-source-primary'));
   }else if(row.type==='owner-monster'){
    line.append(link('♞ '+dataName('monster',row.id),'monster',row.id,'wiki-source-primary'));
-   line.append(h('small',{class:'wiki-source-meta',text:wt(
-    'Указано редактором · шанс не задан','Curated entry · chance unspecified')}));
+   line.append(wikiSourceCopy('additionalSourceChance',
+    'Дополнительные сведения · шанс выпадения неизвестен',
+    'Additional information · drop chance unknown'));
   }else if(row.type==='owner-map'){
    line.append(link('◈ '+dataName('map',row.id),'map',row.id,'wiki-source-primary'));
-   line.append(h('small',{class:'wiki-source-meta',text:wt(
-    'Связь с добычей добавлена редактором','Curated loot reference')}));
+   line.append(wikiSourceCopy('additionalLocation',
+    'Дополнительное место получения · сведения уточняются',
+    'Additional acquisition location · details unconfirmed'));
   }
   if(row.manual&&adminEditing&&adminToken){
    if(row.type==='monster'){
@@ -5527,9 +5543,9 @@ function renderWiki(root){
      else if(entries.length)detail.append(linkFlow(entries.map(itemId=>
       itemLink(itemId,dataName('item',itemId),id))));
      else detail.append(h('p',{class:'wiki-empty-value',text:'—'}));
-     detail.append(h('small',{class:'wiki-source-meta',text:wt(
-      'Связи с добычей добавлены редактором; шанс выпадения не указан.',
-      'Loot is curated by the owner; drop rates are not specified.')}));
+     detail.append(wikiSourceCopy('additionalMonsterLoot',
+      'Дополнительные сведения о добыче · шанс выпадения неизвестен.',
+      'Additional loot information · drop chance unknown.'));
     }else{
     const ownDrop=wikiData.drops?.[id]||{d:[],s:[]};
     const dropRows=()=>({
@@ -6934,8 +6950,8 @@ function renderCharacter(root){
   }
   body.append(racialTitle,passivePicker);
   body.append(profileCopyNote('overview-help',
-   'Умения развиваются в «Пути героя», а очки характеристик распределяются в «Происхождении». Других редакторов этих значений здесь нет.',
-   'Train skills in Hero Path and allocate attributes in Origin; these values have no duplicate editor here.'));
+   'Развивай умения в «Пути героя», а характеристики — в «Происхождении».',
+   'Train skills in Hero Path and allocate attributes in Origin.'));
   const jump=h("div",{class:"ps-overview-actions"});
   jump.append(h("button",{class:"button-action",text:tr("⚔ Путь героя · умения","⚔ Hero Path · skills"),onclick:()=>{
    closeWorkbench();heroPathPage='skills';renderPathPages();saveView();
@@ -8213,19 +8229,30 @@ async function apiRequest(path,body,token=adminToken) {
    ...(requestBody?{body:JSON.stringify(requestBody)}:{})
   });
  } catch {
-  finishOwnerWrite('Cloudflare Worker недоступен')
-  throw new Error("Нет соединения с Cloudflare Worker. Проверь Builds и /api/health. Пароль ещё не проверялся сервером.");
+  if(path.startsWith('/api/admin/')){
+   finishOwnerWrite('Cloudflare Worker недоступен');
+   throw new Error('Нет соединения с Cloudflare Worker. Проверь сервер.');
+  }
+  throw new Error(lang==='en'?
+   'Cannot connect right now. Check your connection and try again.':
+   'Не удалось подключиться. Проверь соединение и повтори попытку.');
  }
- const data=await response.json().catch(()=>({error:"Сервер вернул ответ без JSON"}));
+ const data=await response.json().catch(()=>({error:lang==='en'?
+  'Could not read the server response':'Не удалось обработать ответ сервера'}));
  if(!response.ok){
   const conflict=response.status===409&&data.code==='OWNER_EDIT_CONFLICT';
   const outdated=response.status===428&&data.code==='OWNER_CLIENT_UPDATE_REQUIRED';
+  const rawError=data.error||("Ошибка сервера HTTP "+response.status);
+  const publicError=!path.startsWith('/api/admin/')&&
+   /\b(?:Cloudflare|D1|CAS|Worker|ADMIN_SETUP_TOKEN|JSON)\b|\/api\//i.test(rawError)?
+   (lang==='en'?'Service temporarily unavailable. Try again later.':
+    'Сервис временно недоступен. Повтори попытку позже.'):rawError;
   const message=conflict?(lang==='en'?
    'This entry was changed in another window. Refresh the page before trying again.':
    'Эту запись уже изменили в другом окне. Обнови страницу и повтори правку.'):
    outdated?(lang==='en'?'This editor is out of date. Refresh the page before saving.':
     'Редактор устарел. Обнови страницу перед сохранением.'):
-   (data.error||("Ошибка сервера HTTP "+response.status));
+   publicError;
   const error=new Error(message);
   error.httpStatus=response.status;error.reason=data.reason||data.code||null;
   error.sourceDataset=data.sourceDataset||null;
@@ -8244,12 +8271,18 @@ async function apiRequest(path,body,token=adminToken) {
 function showAdmin(){const body=h('div');body.append(h('p',{class:'muted',text:adminToken?'Режим редактора подтверждён сервером. Изменения сохраняются в Cloudflare D1.':'Вход администратора защищён сервером Cloudflare Worker. Никаких паролей в GitHub Pages нет.'}));if(adminToken){body.append(h('button',{class:'button-action',text:'Игровой каталог',onclick:showCatalogImport}));body.append(h('button',{class:'button-action',text:'Очки за уровни',onclick:showOwnerLevelProgression}));body.append(h('button',{class:'button-action',text:'Копия правок в GitHub (необязательно)',onclick:showOwnerGitHubExport}));body.append(h('button',{class:'button-action primary',text:adminEditing?'Выключить редактирование':'Включить редактирование',onclick:()=>{adminEditing=!adminEditing;$('modalRoot').hidden=true;render();updateAdminHint()}}),h('button',{class:'button-action',text:'Выйти',onclick:async()=>{try{await apiRequest('/api/admin/logout',{})}catch{}adminToken='';adminEditing=false;ownerEdits.length=0;closeInlineEditor();$('modalRoot').hidden=true;render();updateAdminHint()}}));modal('Управление сайтом',body);return}
  const user=h('input',{value:'administrator',readOnly:true}),password=h('input',{type:'password',placeholder:'Пароль администратора',autocomplete:'current-password'}),setup=h('input',{type:'password',placeholder:'Одноразовый секрет первичной настройки (если ещё нет пароля)'}),feedback=h('div',{class:'error'}),go=h('button',{class:'button-action primary',text:'Войти'});go.onclick=async()=>{feedback.textContent='';try{if(!password.value||password.value.length<12)throw Error('Нужен пароль от 12 символов');const data=await apiRequest(setup.value?'/api/admin/setup':'/api/admin/login',setup.value?{username:'administrator',password:password.value,setupToken:setup.value}:{username:'administrator',password:password.value},'');adminToken=data.token;adminEditing=true;$('modalRoot').hidden=true;render();updateAdminHint()}catch(e){feedback.textContent=e.message}};body.append(h('label',{text:'Логин'}),user,h('label',{text:'Пароль'}),password,h('label',{text:'Первичная настройка (заполняется только один раз)'}),setup,go,feedback,h('p',{class:'muted',text:'Первичная настройка требует секрет ADMIN_SETUP_TOKEN, созданный владельцем в настройках Worker. Это защищает имя administrator от захвата посторонними.'}));const checkApi=h('button',{type:'button',class:'button-action',text:'Проверить Cloudflare API',onclick:async()=>{feedback.textContent='Проверяю сервер…';try{const result=await apiRequest('/api/health',null,'');feedback.textContent=result.status==='ok'?'Worker отвечает, D1 подключена.':'Ответ сервера: '+JSON.stringify(result)}catch(e){feedback.textContent=e.message}}});body.append(checkApi);modal('Служебный вход',body)}
 function updateAdminHint(){
- const indicator=$('authState');
- if(indicator){
-  indicator.hidden=!adminEditing;
-  indicator.textContent=adminEditing?'✎ Редактор':'';
+ const verifiedOwner=Boolean(adminEditing&&adminToken);
+ let indicator=$('authState');
+ if(verifiedOwner&&!indicator){
+  indicator=h('span',{id:'authState',class:'owner-session-state',role:'status'});
+  document.querySelector('.header-actions')?.prepend(indicator);
  }
- document.querySelectorAll('[data-edit-key]').forEach(el=>el.classList.toggle('admin-edit',adminEditing));
+ if(indicator){
+  if(!verifiedOwner)indicator.remove();
+  else {indicator.hidden=false;indicator.textContent='✎ Редактор';}
+ }
+ document.querySelectorAll('[data-edit-key]').forEach(el=>
+  el.classList.toggle('admin-edit',verifiedOwner));
  if(typeof bindStaticUICopyEditors==='function')bindStaticUICopyEditors();
  if(typeof bindAccountCopyEditors==='function'){
   bindAccountCopyEditors(document.getElementById('accountPanel'));

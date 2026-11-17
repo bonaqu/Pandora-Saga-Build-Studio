@@ -34,7 +34,9 @@ test('Soul-compatible tab stays visible at zero capacity while insertion remains
  assert.match(ui,/if\(hasSouls\)sections\.push/);
  assert.match(ui,/if\(!plan\.canSocket\(slot,record,cap\)\)/);
  assert.match(ui,/data-soul-unavailable/);
- assert.match(ui,/body\.append\(editable\(notice,key,ru,en\)\);\s*return/);
+ assert.match(ui,/row\.append\(editable\(notice,key,ru,en\)\)/);
+ assert.match(ui,/if\(api\.canEdit\)\{/);
+ assert.match(ui,/stage-soul-unavailable-pencil/);
  assert.match(app,/!record\|\|!window\.PandoraEquipmentPlan\.supportsSoulSlot\(key\)/);
  assert.match(app,/mode==='souls'&&\(!record\|\|!plan\.supportsSoulSlot\(key\)\)/);
  assert.match(app,/if\(!plan\.canSocket\(key,record,count\)\|\|count===null/);

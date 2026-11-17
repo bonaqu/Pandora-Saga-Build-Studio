@@ -122,3 +122,8 @@
  color:#d6ba94;margin:9px 4px 0;font:500 12px/1.55 Manrope,Arial,sans-serif;
  max-width:100%;overflow-wrap:anywhere
 }
+
+/* The editor action is absent for players; the status takes no extra width. */
+.stage-picker .stage-soul-unavailable-row{display:flex;align-items:flex-start;gap:6px;min-width:0;margin:8px 4px 0}
+.stage-picker .stage-soul-unavailable-row>.stage-soul-unavailable{flex:1 1 auto;min-width:0;margin:0}
+.stage-picker .stage-soul-unavailable-pencil{flex:0 0 auto}
