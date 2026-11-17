@@ -320,17 +320,39 @@ async function cloudLibraryRequest(payload){
  }
  return data;
 }
-function cloudStatusText(message){
- // A cloud-connected guest is not signed in to an account library.
- const label=!window.PandoraAccountUI?.isLoggedIn()&&
+function cloudStatusSource(message){
+ // Do not imply that a guest has an authenticated account library.
+ return !window.PandoraAccountUI?.isLoggedIn()&&
   message==='Облачная библиотека подключена'?
   'Гостевая облачная библиотека подключена':message;
+}
+function cloudStatusCopyKey(message){
+ // Whitelist source-authored lifecycle copy only. Generated counts, arbitrary
+ // server errors and player-entered content can never become D1 copy keys.
+ const key=window.PandoraUILocale?.literalKey?.(cloudStatusSource(message));
+ return key==='statusLibrarySignIn'||key?.startsWith('statusCloud')?key:null;
+}
+function cloudStatusText(message){
+ const label=cloudStatusSource(message);
  return window.PandoraUILocale?.ui(label,lang)||label;
+}
+function syncCloudStatusNode(node,message){
+ if(!node)return;
+ const key=cloudStatusCopyKey(message);
+ const adjacent=node.nextElementSibling;
+ if(adjacent?.dataset?.ownerCopyPencil&&adjacent.dataset.ownerCopyPencil!==key)
+  adjacent.remove();
+ if(adminEditing&&adminToken&&key)node.dataset.ownerCopyKey=key;
+ else node.removeAttribute('data-owner-copy-key');
+ // A late cloud status update must not destroy a draft in the inline editor.
+ if(!node.nextElementSibling?.classList?.contains('ui-content-edit-host'))
+  node.textContent=cloudStatusText(message);
+ if(adminEditing&&adminToken&&key&&node.parentElement)
+  bindAccountCopyEditors(node.parentElement);
 }
 function reportCloudStatus(message){
  cloudLibraryStatus=message;
- const node=document.querySelector('.cloud-library-status');
- if(node)node.textContent=cloudStatusText(message);
+ syncCloudStatusNode(document.querySelector('.cloud-library-status'),message);
 }
 async function putCloudBuild(entry){
  if(!window.PandoraAccountUI?.isLoggedIn())return false;
@@ -7455,8 +7477,11 @@ function renderBuilds(root){
   }}),
   h('button',{type:'button',class:'button-action','data-library-action-copy':'libraryRefresh',text:libraryText('libraryRefresh'),
    onclick:()=>{reportCloudStatus('Проверяем облако…');void loadCloudBuilds()}}));
- root.append(toolbar,choice,h('p',{class:'cloud-library-status',role:'status',
-  text:cloudStatusText(cloudLibraryStatus)}));
+ const cloudStatusRow=h('div',{class:'cloud-library-status-row'});
+ const cloudStatus=h('p',{class:'cloud-library-status',role:'status'});
+ cloudStatusRow.append(cloudStatus);
+ root.append(toolbar,choice,cloudStatusRow);
+ syncCloudStatusNode(cloudStatus,cloudLibraryStatus);
  // Owner-only inline editing of these five authored explanations. Keep the
  // four player action buttons intact; do not nest pencils in real actions.
  if(adminEditing&&adminToken){
@@ -8464,7 +8489,10 @@ function bindAccountCopyEditors(panel){
   }
   if(node.nextElementSibling?.classList?.contains('ui-content-edit-host'))continue;
   const edit=event=>{
-   if(!adminEditing||!adminToken)return;
+   // A cloud status element can change between requests without remounting.
+   // Use the current semantic key rather than the key captured at first bind.
+   const key=node.dataset.ownerCopyKey,id=locale.fieldKey(key);
+   if(!adminEditing||!adminToken||!id)return;
    event.preventDefault();event.stopPropagation();
    if(node.nextElementSibling?.classList?.contains('ui-content-edit-host'))return;
    // Snapshot the language at editor open, not at blur time. A language
@@ -8486,7 +8514,11 @@ function bindAccountCopyEditors(panel){
      node.textContent=editLang===lang?next:locale.text(key,lang);
      if(panel.id==='studioToast')refreshOpenAuthoredToast();
     },
-    onFinished:()=>{node.hidden=false;host.remove();if(pencil)pencil.hidden=false}
+    onFinished:()=>{
+     node.hidden=false;host.remove();if(pencil)pencil.hidden=false;
+     if(node.classList.contains('cloud-library-status'))
+      syncCloudStatusNode(node,cloudLibraryStatus);
+    }
    });
   };
   if(!node.dataset.ownerCopyBound){

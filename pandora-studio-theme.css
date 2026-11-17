@@ -1449,6 +1449,15 @@ textarea:focus-visible,select:focus-visible{
 .new-build-choice[hidden]{display:none}
 .new-build-choice-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
 .cloud-library-status{color:var(--muted);font-size:12px;margin:8px 0 15px}
+/* Keep the authenticated inline pencil at the far edge of the status row.
+   The owner tools are a fixed bottom-left drawer, so a left-aligned pencil
+   could otherwise become unreachable when that drawer is open. */
+.cloud-library-status-row{display:flex;align-items:center;gap:4px;min-width:0}
+.cloud-library-status-row>.cloud-library-status{min-width:0;flex:1 1 auto;
+ overflow-wrap:anywhere}
+.cloud-library-status-row>.account-copy-pencil{flex:0 0 auto;margin:0 3px 7px auto}
+.cloud-library-status-row>.account-copy-edit-host{flex:1 1 auto;
+ min-width:0;max-width:100%;margin-bottom:8px}
 @media(max-width:600px){.build-name-input,.new-build-choice input{max-width:none;width:100%}}
 
 /* Short-link creation and clipboard recovery appear inside the saved build card. */

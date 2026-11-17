@@ -13,6 +13,7 @@ export async function runUIContentInlineSmoke(browser,base){
   }));
  });
  const values={},writes=[],errors=[],nextConflicts=new Set(),slowWrites=new Set();
+ let slowLibraryNext=false;
  await context.route('**/*',async route=>{
   const req=route.request(),url=req.url(),method=req.method();
   if(url.startsWith(base+'/'))return route.continue();
@@ -33,7 +34,10 @@ export async function runUIContentInlineSmoke(browser,base){
     expires:Date.now()+7200000});
   }
   if(path==='/api/account/me')return reply({account:{username:'testingprofile'}});
-  if(path==='/api/library')return reply({records:[]});
+  if(path==='/api/library'){
+   if(slowLibraryNext){slowLibraryNext=false;await new Promise(resolve=>setTimeout(resolve,1200));}
+   return reply({records:[]});
+  }
   if(path==='/api/admin/login'){
    assert.equal(req.postDataJSON().password,'Correct admin password!');
    return reply({token:'a'.repeat(43),expires:Date.now()+600000});
@@ -425,6 +429,56 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(JSON.parse(values[libraryKey]).ru,'✧ Сохранить персонажа');
   assert.equal(JSON.parse(values[libraryKey]).en,undefined);
   await originalInput.dispose();
+
+  // Cloud library status has its own lifecycle: change the currently
+  // visible authored notice without editing a dynamic counter, saved build,
+  // network error, or another user's account.
+  const cloudLabel=page.locator('#detailContent .cloud-library-status');
+  await page.waitForFunction(()=>document.querySelector(
+   '#detailContent .cloud-library-status')?.dataset.ownerCopyKey==='statusCloudConnected',
+   null,{timeout:15000});
+  assert.equal(await cloudLabel.textContent(),'Cloud library connected');
+  await page.locator('#detailContent [data-owner-copy-pencil="statusCloudConnected"]').click();
+  const cloudEditor=page.locator('#detailContent .cloud-library-status + .account-copy-edit-host [contenteditable]');
+  await cloudEditor.fill('Cloud library checked and ready.');
+  await cloudEditor.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#detailContent .cloud-library-status')?.textContent==='Cloud library checked and ready.',
+   null,{timeout:15000});
+  const cloudKey='guideedit.book.ui.label.status-cloud-connected';
+  assert.equal(JSON.parse(values[cloudKey]).en,'Cloud library checked and ready.');
+  // The workbench is modal and intercepts pointer clicks on the header.
+  // The existing keyboard-accessible locale control must remain usable.
+  await page.locator('#locale [data-locale="ru"]').focus();
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(()=>document.documentElement.lang==='ru');
+  await page.waitForFunction(()=>document.querySelector(
+   '#detailContent .cloud-library-status')?.dataset.ownerCopyKey==='statusCloudConnected',
+   null,{timeout:15000});
+  await page.locator('#detailContent [data-owner-copy-pencil="statusCloudConnected"]').click();
+  await cloudEditor.fill('Облачная библиотека готова.');
+  await cloudEditor.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#detailContent .cloud-library-status')?.textContent==='Облачная библиотека готова.',
+   null,{timeout:15000});
+  assert.deepEqual(JSON.parse(values[cloudKey]),{
+   ru:'Облачная библиотека готова.',en:'Cloud library checked and ready.'
+  });
+  // Status transitions reuse the same paragraph; the pencil must update to
+  // the NEW D1 key, not keep the key captured on the first account binding.
+  slowLibraryNext=true;
+  await page.locator('#detailContent [data-library-action-copy="libraryRefresh"]').click();
+  await page.waitForFunction(()=>document.querySelector(
+   '#detailContent .cloud-library-status')?.dataset.ownerCopyKey==='statusCloudChecking',
+   null,{timeout:10000});
+  assert.equal(await page.locator('#detailContent [data-owner-copy-pencil="statusCloudChecking"]').count(),1);
+  assert.equal(await page.locator('#detailContent [data-owner-copy-pencil="statusCloudConnected"]').count(),0);
+  await page.waitForFunction(()=>document.querySelector(
+   '#detailContent .cloud-library-status')?.dataset.ownerCopyKey==='statusCloudConnected',
+   null,{timeout:15000});
+  assert.equal(await page.locator('#detailContent .cloud-library-status').textContent(),
+   'Облачная библиотека готова.');
+  console.log('Chromium cloud statuses: RU/EN D1 CAS, live key rebinding and no stale pencil');
 
   // Dynamic toast owner copy must follow locale switches even when a toast is
   // already open; runtime diagnostics must not become editable or be erased.

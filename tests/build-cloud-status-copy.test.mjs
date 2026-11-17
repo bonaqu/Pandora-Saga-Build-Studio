@@ -5,7 +5,7 @@ import vm from 'node:vm';
 const read=name=>readFileSync(new URL('../'+name,import.meta.url),'utf8');
 const app=read('pandora-studio-app.js'),locale={};
 vm.runInNewContext(read('pandora-studio-ui-locale.js'),{window:locale});
-const begin=app.indexOf('function cloudStatusText(message){');
+const begin=app.indexOf('function cloudStatusSource(message){');
 const end=app.indexOf('function reportCloudStatus(message){',begin);
 assert.ok(begin>=0&&end>begin,'Production cloud status formatter must be available');
 const source=app.slice(begin,end);
