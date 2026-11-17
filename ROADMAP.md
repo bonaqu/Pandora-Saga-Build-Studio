@@ -31,4 +31,5 @@ npm run release:check
 - [CHANGELOG](CHANGELOG.md) и [архив релизов](docs/changelog/README.md).
 - [Инструкция разработчика](docs/REPOSITORY_OPERATIONS_AND_FAST_DELIVERY.md) и [архитектура](docs/STUDIO_ARCHITECTURE.md).
 - [Проверки D1](docs/D1_LIVE_CATALOG_PARITY_2026-11-08.md).
+- [Реестр формул Remaked](docs/REMAKED_FORMULA_INVENTORY.md).
 - [Общие UX-принципы](docs/APPROVED_UI_UX_GUIDELINES.md).

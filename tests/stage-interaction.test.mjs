@@ -85,13 +85,18 @@ test('jewelry and cloak have no refinement or gemstone editor',()=>{
  }
 });
 
-test('belt sockets are available; empty belt never invents a Soul tab',()=>{
+test('belt always has a Soul tab; zero capacity explains why it cannot be used',()=>{
  const sample=makeApi('belt');
  sample.api.record.slot='belt';stage.PandoraStageItemUI.render(sample.box,sample.api);
  assert.ok(byText(sample.box,'Управление душами'));
  const empty=makeApi('belt');empty.api.record.soulslot=0;
  stage.PandoraStageItemUI.render(empty.box,empty.api);
- assert.equal(byText(empty.box,'Управление душами'),undefined);
+ assert.ok(byText(empty.box,'Управление душами'));
+ const inactive=makeApi('belt','souls');inactive.api.record.soulslot=0;
+ stage.PandoraStageItemUI.render(inactive.box,inactive.api);
+ const note=walk(inactive.box).find(x=>x.attributes['data-soul-unavailable']==='zero');
+ assert.match(note?.textContent||'',/этого пояса недоступно: 0 слотов/);
+ assert.equal(walk(inactive.box).filter(x=>x.attributes['data-socket-index']).length,0);
 });
 test('Soul socket controls are in Souls only, not under properties',()=>{
  const props=makeApi('weapon','details');stage.PandoraStageItemUI.render(props.box,props.api);
@@ -205,7 +210,7 @@ test('an individually upgraded zero-slot belt gains the Souls tab without editin
  base.api.record.slot='belt';base.api.record.soulslot=0;
  base.api.capacity=0;base.api.updateSocketCapacity=()=>{};
  stage.PandoraStageItemUI.render(base.box,base.api);
- assert.equal(byText(base.box,'Управление душами'),undefined);
+ assert.ok(byText(base.box,'Управление душами'),'zero-slot belt still has the Soul tab');
  assert.equal(byText(base.box,'0')?.className,'chosen');
  const selected=makeApi('belt','details');
  selected.api.record.slot='belt';selected.api.record.soulslot=0;

@@ -588,7 +588,8 @@ function render(root,api){
   }
   // Souls are managed exclusively in the existing dedicated "Души" tab.
  }else if(mode==='souls'){
-  if(!Number.isInteger(cap)||cap<=0){
+  // Use the same permission model as insertion; a visible tab is not a socket.
+  if(!plan.canSocket(slot,record,cap)){
    const zero=cap===0;
    const key=(zero?'soulUnavailableZero.':'soulUnavailableUnknown.')+slot;
    const ru=soulUnavailableCopy(slot,cap,false);

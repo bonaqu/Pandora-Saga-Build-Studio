@@ -5,7 +5,9 @@ import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 test('all eight Soul-compatible equipment slots have grammatical RU/EN zero states',()=>{
  const window={};
- vm.runInNewContext(read('pandora-studio-equipment-ui.js'),{window});
+ vm.runInNewContext(read('pandora-studio-equipment-ui.js'),{
+  window,document:{addEventListener(){}}
+ });
  const msg=window.PandoraStageItemUI.soulUnavailableCopy;
  const slots={
   weapon:['этого оружия','weapon'],shield:['этого щита','shield'],
@@ -30,7 +32,7 @@ test('Soul-compatible tab stays visible at zero capacity while insertion remains
  assert.match(plan,/SOUL_SLOTS=Object\.freeze\(new Set\(\['weapon','shield','head','body','gloves','legs','feet','belt'\]\)\)/);
  assert.match(ui,/const hasSouls=plan\.supportsSoulSlot\(slot\)/);
  assert.match(ui,/if\(hasSouls\)sections\.push/);
- assert.match(ui,/if\(!Number\.isInteger\(cap\)\|\|cap<=0\)/);
+ assert.match(ui,/if\(!plan\.canSocket\(slot,record,cap\)\)/);
  assert.match(ui,/data-soul-unavailable/);
  assert.match(ui,/body\.append\(editable\(notice,key,ru,en\)\);\s*return/);
  assert.match(app,/!record\|\|!window\.PandoraEquipmentPlan\.supportsSoulSlot\(key\)/);

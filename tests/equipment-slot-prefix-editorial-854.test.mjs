@@ -20,7 +20,8 @@ function makeFixture(language,editable){
   }
  };
  const window={PandoraEquipmentPlan:{
-  canRefine:()=>false,socketCapacity:()=>0,canSocket:()=>false
+  canRefine:()=>false,socketCapacity:()=>0,canSocket:()=>false,
+  supportsSoulSlot:slot=>['weapon','shield','head','body','gloves','legs','feet','belt'].includes(slot)
  }};
  runInNewContext(read('pandora-studio-equipment-ui.js'),{
   window,document,PandoraEquipmentPlan:window.PandoraEquipmentPlan,MouseEvent:class{}

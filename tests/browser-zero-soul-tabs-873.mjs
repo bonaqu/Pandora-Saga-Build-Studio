@@ -17,6 +17,7 @@ export async function runZeroSoulTabs873Smoke(browser,base){
    const equipment=Object.fromEntries(samples.map(x=>[x.index,{id:x.id,name:x.name}]));
    // The override models one copy with 0 sockets even when another has sockets.
    equipment[0]={id:1,name:'Спата'};
+   equipment[7]={id:18001,name:'Плащ мастерства'};
    localStorage.setItem('ps-build-lang',lang);
    localStorage.setItem('ps-build-studio.v1',JSON.stringify({
     race:1,gender:0,job:7,level:45,name:'Socket zero QA',
