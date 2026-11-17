@@ -38,7 +38,7 @@ export async function runEquipmentQuickMenuSmoke(browser,base){
   await right(emptyWeapon);
   await menu.waitFor({state:'visible'});
   assert.equal(await menu.locator('[role="menuitem"]').count(),1);
-  assert.equal((await action('choose').innerText()).trim(),'+\nВыбрать вещь');
+  assert.equal((await action('choose').innerText()).trim(),'⇄\nВыбрать вещь');
   await action('choose').click();
   assert.equal(await page.locator('#stagePicker .stage-picker-list').isVisible(),true);
   await page.locator('#stagePicker .stage-picker-head button[aria-label="Закрыть выбор"]').click();
@@ -47,15 +47,27 @@ export async function runEquipmentQuickMenuSmoke(browser,base){
   await menu.waitFor({state:'visible'});
   assert.equal(await menu.locator('[role="menuitem"]').count(),4);
   assert.deepEqual(await menu.locator('[role="menuitem"]').allTextContents(),
-   ['◇Свойства','○Управление душами','⇄Выбрать другую вещь','×Снять вещь']);
+   ['≡Свойства','○Управление душами','⇄Выбрать другую вещь','×Снять вещь']);
+  const icon=async id=>action(id).locator('.stage-gear-context-icon').innerText();
+  assert.equal(await icon('properties'),'≡');
+  assert.equal(await icon('souls'),'○');
+  assert.equal(await icon('replace'),'⇄');
   assert.equal(await action('souls').isEnabled(),true);
   const bounds=await menu.boundingBox();
   assert.ok(bounds.x>=7&&bounds.x+bounds.width<=1366-7,
    'Context menu overlaps right screen edge: '+JSON.stringify(bounds));
   assert.ok(bounds.y>=7&&bounds.y+bounds.height<=900-7,
    'Context menu overlaps bottom screen edge: '+JSON.stringify(bounds));
+  const contextPropertiesIcon=await icon('properties');
+  const contextSoulsIcon=await icon('souls');
   await action('properties').click();
   assert.equal(await menu.count(),0);
+  const tabIcon=async name=>page.locator('#stagePicker [data-stage-tab="'+name+'"]')
+   .locator('.stage-tab-symbol,.stage-action-glyph').innerText();
+  assert.equal(await tabIcon('details'),contextPropertiesIcon,
+   'Properties menu glyph must match Properties tab');
+  assert.equal(await tabIcon('souls'),contextSoulsIcon,
+   'Souls menu glyph must match Souls tab');
   assert.equal(await page.locator('#stagePicker [data-stage-tab="details"]')
    .getAttribute('aria-pressed'),'true');
   assert.equal(await page.locator('#stagePicker .stage-rich-fields dd[data-soul-fill]')
