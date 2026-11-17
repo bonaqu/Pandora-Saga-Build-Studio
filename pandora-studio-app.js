@@ -6507,6 +6507,7 @@ function renderWiki(root){
        ['gems','Самоцветы','Gems'],
        ['souls','Души','Souls'],
        ['utility','Полезные предметы','Utility items'],
+       ['festival','Праздничные предметы','Festive items'],
        ['materials','Материалы и рецепты','Materials and recipes'],
        ['containers','Другие сундуки','Other chests'],
        ['gold','Золото','Gold'],
@@ -6536,8 +6537,24 @@ function renderWiki(root){
       const slotChips=h('div',{class:'wiki-chest-slot-filters',
        role:'group','aria-label':wt('Типы экипировки','Equipment types')});
       if(facets.types.equipment){
-       slotChips.append(h('small',{class:'wiki-chest-slot-label',
-        text:wt('Тип экипировки','Equipment type')}));
+       // Stable author-only D1 text. Never edit a game item, slot ID or count.
+       const slotHeading=h('small',{class:'wiki-chest-slot-label',
+        text:ownerCopy('wiki.chest','slotHeading','Тип экипировки','Equipment type')});
+       ownerCopyLabel(slotHeading,'wiki.chest','slotHeading',
+        'Тип экипировки','Equipment type');
+       slotChips.append(slotHeading);
+       if(adminEditing&&adminToken){
+        slotChips.append(h('button',{type:'button',
+         class:'ui-content-pencil wiki-chest-slot-copy-pencil',
+         text:'✎',title:wt('Изменить подпись','Edit caption'),
+         'aria-label':wt('Изменить подпись типа экипировки',
+          'Edit equipment type caption'),
+         onclick:event=>{
+          event.preventDefault();event.stopPropagation();
+          slotHeading.dispatchEvent(new MouseEvent('dblclick',
+           {bubbles:true,cancelable:true}));
+         }}));
+       }
        for(const [key,ru,en] of [
         ['all','Вся экипировка','All equipment'],...slotLabels
        ]){
