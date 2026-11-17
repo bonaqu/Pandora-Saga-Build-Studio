@@ -8988,7 +8988,7 @@ function refreshVisibleUICopy(recordKey){
     ['librarySortLevel','level'],['librarySortClass','class']
    ]){
     if(id===locale.fieldKey(key)){
-     const option=[...sort.options].find(item=>item.value===value);
+     const option=[...sort.options].find(item=>item.getAttribute('value')===value);
      if(option)option.textContent=locale.text(key,lang);
     }
    }
