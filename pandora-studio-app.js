@@ -10357,7 +10357,7 @@ function renderWorkbenchHintEditors(){
   if(panel){panel.classList.add('workbench-hint-editor');target.after(panel)}
  }
 }
-function applyGameLocale({redraw=true}={}){
+function applyGameLocale({redraw=true,persistReconciled=true}={}){
  window.PandoraUILocale.setOverrides(override);
  window.PandoraUILocale.apply(lang);
  refreshOpenAuthoredToast();
@@ -10413,7 +10413,7 @@ function applyGameLocale({redraw=true}={}){
  catalog={meta,classes:translate(catalogSource.classes,en?.classes),skills:localizedSkills,
    equipment:translate(itemRecords,en?.items,true),souls:localizedSouls,racialPassives:catalogSource.racialPassives,live:true};
  // Remove stale Soul arrays left by older builds that reused equipment slots.
- if(window.PandoraEquipmentPlan.reconcileSoulOwnership(state,catalog.equipment,catalog.souls))persist();
+ if(window.PandoraEquipmentPlan.reconcileSoulOwnership(state,catalog.equipment,catalog.souls)&&persistReconciled)persist();
  jobs=jobKeys.map(id=>catalog.classes[id]?.name||id);
  branches=window.PandoraGameNavigation.groups.flatMap(g=>g.branches.map(id=>({id,name:meta.branchLabels[id]||id})));
  if(redraw)render();
@@ -10447,7 +10447,7 @@ async function ensureEnglishCatalog(){
  })().finally(()=>{englishCatalogPending=null});
  return englishCatalogPending;
 }
-async function loadCatalog({archive=false}={}){
+async function loadCatalog({archive=false,commit=true}={}){
  const version=++catalogLoadVersion;
  const names=['meta','classes','skills','items','souls','racialPassives',
   'unison','tables','itemForth'];
@@ -10514,15 +10514,17 @@ async function loadCatalog({archive=false}={}){
  if(version!==catalogLoadVersion)return;
  renderArchiveNotice();
  invalidateWikiCatalog({dropSnapshot:true});
- applyGameLocale();persist();
+ // Startup remains tentative until final D1/overrides coherence validation.
+ applyGameLocale({persistReconciled:commit});
+ if(commit)persist();
  return data;
 }
 let ownerWikiRefreshId=0;
-async function refreshOwnerCatalog(){
+async function refreshOwnerCatalog({persistReconciled=true}={}){
  applyPlannerOverride(override[window.PandoraLevelProgression.KEY]??null);
  const generation=++ownerWikiRefreshId;
  invalidateWikiCatalog();
- if(catalogSource)applyGameLocale({redraw:false});
+ if(catalogSource)applyGameLocale({redraw:false,persistReconciled});
  if(activeTab==='wiki'&&wikiRenderedRoot?.isConnected){
   try{
    await loadWiki();
@@ -10543,14 +10545,14 @@ function applyPlannerOverride(raw){
  if(cap)cap.textContent=String(model.maxLevel());
  return applied;
 }
-async function loadOverrides({strict=false}={}){try{
+async function loadOverrides({strict=false,commit=true}={}){try{
  const response=await apiRequest('/api/overrides',null,'');
  override=response.values||{};
  applyPlannerOverride(override[window.PandoraLevelProgression.KEY]??null);
  window.PandoraUILocale.setOverrides(override);
  window.PandoraUILocale.apply(lang);
  refreshVisibleWikiLabels();
- await refreshOwnerCatalog();
+ await refreshOwnerCatalog({persistReconciled:commit});
 }catch(error){
  if(strict)throw Error('Правки каталога D1 недоступны: '+error.message);
  console.warn('Owner overrides unavailable in explicitly selected archive mode',error);
@@ -11025,15 +11027,16 @@ document.addEventListener('visibilitychange',()=>{
 let startupAttempt=0;
 async function startStudio({archive=false}={}){
  const attempt=++startupAttempt;
+ const draftOwner=libraryScopeId(),originalDraft=structuredClone(state);
  startupMessage(
   archive?'Открываем сохранённую копию игры…':'Загружаем игровые данные…',
   archive?'Opening saved game data…':'Loading game data…');
  try{
-  const loaded=await loadCatalog({archive});
+  const loaded=await loadCatalog({archive,commit:false});
   if(attempt!==startupAttempt||!loaded)return;
   startupMessage('Проверяем игровые данные и переводы…','Validating game data and translations…');
   await skillLabelsReady;
-  if(!archive)await loadOverrides({strict:true});
+  if(!archive)await loadOverrides({strict:true,commit:false});
   if(attempt!==startupAttempt)return;
   if(activeTab==='wiki')await loadWiki();
   if(attempt!==startupAttempt)return;
@@ -11049,7 +11052,9 @@ async function startStudio({archive=false}={}){
    if(confirmed.status!=='ready')throw Error('Game data changed during startup');
   }
   if(attempt!==startupAttempt)return;
-  applyGameLocale();
+  // Only a fully verified boot may commit catalog migrations to local storage.
+  applyGameLocale({persistReconciled:false});
+  persist();
   studioLiveReady=!archive;
   clearOnlineRetry();
   liveGateReason=null;
@@ -11067,7 +11072,12 @@ async function startStudio({archive=false}={}){
    else setTimeout(warm,350);
   }
  }catch(error){
-  if(attempt===startupAttempt)startupError(error);
+  if(attempt===startupAttempt){
+   // A failed D1 attempt must not leave tentative equipment or skill changes
+   // in memory, even when the next retry uses a different catalog snapshot.
+   if(libraryScopeId()===draftOwner)state=originalDraft;
+   startupError(error);
+  }
  }
 }
 $('startupRetry').onclick=()=>{
