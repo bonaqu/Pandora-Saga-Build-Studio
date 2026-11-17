@@ -66,7 +66,7 @@
  border:1px solid #b38c57;background:#3a291b;color:#f1d2a1}
 .stage-picker-head .stage-picker-mode-link::before{content:"←";font-size:16px;line-height:1;color:#efc17a;
  display:inline-grid;place-items:center;width:16px;height:16px;transform:translateY(-1px)}
-.stage-rich-tabs button.return-to-properties::before{content:"←";font-size:16px}
+.stage-rich-tabs button[data-stage-tab="details"].return-to-properties::before{content:"←";font-size:16px}
 .stage-picker-head .stage-picker-mode-link:hover:not(:disabled),
 .stage-picker-head .stage-picker-mode-link:focus-visible{
  border-color:#f0c384;background:#604225;outline-offset:2px}
