@@ -6,7 +6,7 @@ const source=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'u
 test('all five dynamic equipment picker copy fragments have stable D1 keys',()=>{
  for(const key of ['pickerAvailableLabel','pickerAvailableAria','pickerMatchSuffix',
   'pickerShownSuffix','pickerMorePrefix']){
-  assert.match(source,new RegExp("'equipment','"+'"+key+"'"),
+  assert.ok(source.includes("'equipment','" + key + "'"),
    'missing ownerCopy binding '+key);
   assert.match(source,new RegExp("\\['"+key+"'"),
    'missing inline RU/EN editor '+key);
