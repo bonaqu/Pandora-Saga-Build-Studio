@@ -10898,13 +10898,17 @@ function showLiveGate(kind){
  startupOverlay.dataset.language=lang;
  startupOverlay.setAttribute('aria-label',lang==='en'?
   'Game data connection required':'Требуется подключение к игровым данным');
- const changed=kind==='changed';
- setBootCopy('startupTitle',changed?'Игровые данные обновились':'Соединение прервано',
+ const changed=kind==='changed',storage=kind==='storage';
+ setBootCopy('startupTitle',storage?'Не удалось сохранить изменения':
+  changed?'Игровые данные обновились':'Соединение прервано',
+  storage?'Could not save your changes':
   changed?'Game data has changed':'Connection interrupted');
  $('startupStatus').textContent=lang==='en'?
-  (changed?'A newer verified game catalog or site copy is available. Save your progress and reload before continuing.':
+  (storage?'Connection restored, but this browser could not save your current hero. Free some storage and retry without closing the tab.':
+   changed?'A newer verified game catalog or site copy is available. Save your progress and reload before continuing.':
    'Current game data is unavailable. Editing is paused until the connection is verified.'):
-  (changed?'Опубликованы новые игровые данные или тексты сайта. Сохрани прогресс и обнови страницу, чтобы продолжить.':
+  (storage?'Соединение восстановлено, но браузер не сохранил текущего героя. Освободи место и повтори сохранение, не закрывая вкладку.':
+   changed?'Опубликованы новые игровые данные или тексты сайта. Сохрани прогресс и обнови страницу, чтобы продолжить.':
    'Актуальные игровые данные временно недоступны. Работа приостановлена до восстановления соединения.');
  setBootCopy('startupMicro',liveLocalSaved?
   'Текущий герой сохранён в браузере. Облачное сохранение подтвердится отдельно.':
@@ -10912,12 +10916,20 @@ function showLiveGate(kind){
   liveLocalSaved?
   'Your current hero is saved in this browser. Cloud saves are confirmed separately.':
   'Could not save the local draft. Keep this tab open.');
- setBootCopy('startupRetry',changed?'Сохранить и перезагрузить':'Повторить подключение',
-  changed?'Save and reload':'Retry connection');
+ setBootCopy('startupRetry',storage?'Повторить сохранение':
+  changed?'Сохранить и перезагрузить':'Повторить подключение',
+  storage?'Retry saving':changed?'Save and reload':'Retry connection');
  document.body.classList.add('studio-live-blocked');
- if(!changed)scheduleOnlineRetry();
+ if(!changed&&!storage)scheduleOnlineRetry();
 }
 function leaveLiveGate(){
+ // Re-establish durability before removing the protection. If the browser
+ // storage quota is still exhausted, keep the recoverable in-memory hero
+ // open and let the user free space rather than silently losing the warning.
+ if(!liveLocalSaved){
+  liveLocalSaved=saveLiveDraft();
+  if(!liveLocalSaved){showLiveGate('storage');return}
+ }
  liveGateReason=null;liveLocalSaved=true;
  clearOnlineRetry();
  document.body.classList.remove('studio-live-blocked');
@@ -11056,6 +11068,7 @@ async function startStudio({archive=false}={}){
 }
 $('startupRetry').onclick=()=>{
  if(liveGateReason==='changed'){reloadVerifiedCatalog();return}
+ if(liveGateReason==='storage'){leaveLiveGate();return}
  if(liveGateReason==='offline'){void checkLiveConnection();return}
  void startStudio({archive:localCatalogHost});
 };
