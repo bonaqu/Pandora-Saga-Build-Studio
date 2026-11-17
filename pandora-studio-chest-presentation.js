@@ -81,8 +81,14 @@ const knownUtilityETC=new Set([
  '90080' // apprentice repair hammer
 ]);
 const knownPotionETC=new Set(['90038']); // universal status-curing potion
+// Nine source-confirmed celebratory TOY rewards from Ritual Utensils (51049).
+// TOY alone is NOT proof of a festival item: it also includes unopened
+// level-up boxes and other interactive objects. Do not infer from names.
+const knownFestivalTOY=new Set([
+ '50027','50028','50029','50030','50036','50038','50039','50040','50041'
+]);
 const categoryOrder=Object.freeze([
- 'equipment','potions','boosts','gems','souls','utility',
+ 'equipment','potions','boosts','gems','souls','utility','festival',
  'materials','containers','gold','other'
 ]);
 function rewardCategory(row,items={},souls={},chestIds=new Set()){
@@ -99,6 +105,7 @@ function rewardCategory(row,items={},souls={},chestIds=new Set()){
  if(kind==='RUNEGEM')return {type:'gems',slot:null};
  if(kind==='ETC'&&knownPotionETC.has(id))return {type:'potions',slot:null};
  if(kind==='ETC'&&knownUtilityETC.has(id))return {type:'utility',slot:null};
+ if(kind==='TOY'&&knownFestivalTOY.has(id))return {type:'festival',slot:null};
  if(kind==='ETC'||kind==='RECIPE')return {type:'materials',slot:null};
  return {type:'other',slot:null};
 }
