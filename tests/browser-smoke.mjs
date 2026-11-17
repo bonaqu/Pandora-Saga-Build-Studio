@@ -24,6 +24,7 @@ import {runEquippedSoulCapacitySmoke,runSavedSocketRecoverySmoke} from './browse
 import {runEquipmentQuickMenuSmoke} from './browser-equipment-quick-menu.mjs';
 import {runEquipmentPickerLiveCopy390Smoke} from './browser-equipment-picker-live-copy-390.mjs';
 import {runRefinementTooltipSmoke} from './browser-refinement-tooltip.mjs';
+import {runConditionalFire867Smoke} from './browser-conditional-fire-867.mjs';
 import {runItemHoverDelaySmoke} from './browser-item-hover-delay.mjs';
 import {runLegacySkillCapSmoke} from './browser-legacy-skill-cap.mjs';
 import {runTwoHandedSmoke} from './browser-two-handed.mjs';
@@ -103,6 +104,7 @@ const scenarios=[
   ['equipment-picker-live-copy-390',runEquipmentPickerLiveCopy390Smoke],
   ['saved-copy-socket-recovery',runSavedSocketRecoverySmoke],
   ['equipment-forge-bonuses',runRefinementTooltipSmoke],
+  ['conditional-fire-867',runConditionalFire867Smoke],
   ['item-preview-delay',runItemHoverDelaySmoke],
   ['legacy-class-cap',runLegacySkillCapSmoke],
   ['innate-l1-mastery',runInnateSkillMasterySmoke],
@@ -722,7 +724,7 @@ async function main(){
  // Execute at most three at once: this reduces wall time without risking
  // cross-test localStorage/account contamination or high 4K screenshot memory.
 
- const quickCases=new Set(['build-account-gate','modal-keyboard','shared-library-import','draft-persistence-warning','guest-draft-continuity','share-link','cloud-conflict','cloud-save-failure','cross-tab-account','account-feedback-race','equipment-locale','soul-search-852','gem-option-aria-853','per-item-soul-capacity','equipment-quick-menu','equipment-forge-bonuses','legacy-class-cap','innate-l1-mastery','hero-book-live-recalc','hero-book-monsters-785','origin-shared-snapshot',
+ const quickCases=new Set(['build-account-gate','modal-keyboard','shared-library-import','draft-persistence-warning','guest-draft-continuity','share-link','cloud-conflict','cloud-save-failure','cross-tab-account','account-feedback-race','equipment-locale','soul-search-852','gem-option-aria-853','per-item-soul-capacity','equipment-quick-menu','equipment-forge-bonuses','conditional-fire-867','legacy-class-cap','innate-l1-mastery','hero-book-live-recalc','hero-book-monsters-785','origin-shared-snapshot',
   'manual-saved-overwrite','account-late-bootstrap','empty-account-reconnect','account-isolation','inline-skill-milestones',
   'build-comparison','chest-reward-layout','wiki-skill-filters','wiki-skill-label-editor','ui-content-inline','owner-equipment-copy-width','wiki-owner-english-sync','wiki-spawn-replace','wiki-icons-offline']);
  const selected=quick?scenarios.filter(([name])=>quickCases.has(name)):scenarios;

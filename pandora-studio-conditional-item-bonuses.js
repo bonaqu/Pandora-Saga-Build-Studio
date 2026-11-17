@@ -4,8 +4,11 @@
 // Do not add these conditional effects to base EP effects or game calculations:
 // the OS source represents them as enchant-level rules, not unconditional stats.
 const parse=(item)=>{
- if(!item||item.slot!=='weapon'||!item.desc)return null;
- const desc=String(item.desc);
+ if(!item||item.slot!=='weapon')return null;
+ // English presentation must never erase source-backed conditional rules.
+ // applyGameLocale preserves the current RU catalog description as sourceDesc.
+ const desc=String(item.sourceDesc||item.desc||'');
+ if(!desc)return null;
  if(!/Закалка самоцветом огня[\s\S]{0,70}\+7/i.test(desc))return null;
  const enchant=desc.match(/Закалка самоцветом огня[^:]*\+7[^:]*:/i);
  if(!enchant)return null;
@@ -55,7 +58,7 @@ const phoenixExplanation=(p)=>{
   if(!item||item.slot!=='weapon')return null;
   if(elementalKinds.includes(item.elementalWeapon)&&
    item.elementalOriginVerified===true)return item.elementalWeapon;
-  const desc=String(item.desc||'');
+  const desc=String(item.sourceDesc||item.desc||'');
   if(/рожд[её]нн?[а-я]* в очистительном пламени/i.test(desc)&&
    /Закалка самоцветом огня[\s\S]{0,70}\+7/i.test(desc))return 'fire';
   return null;

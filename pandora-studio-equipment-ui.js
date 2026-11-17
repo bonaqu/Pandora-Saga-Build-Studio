@@ -63,6 +63,12 @@ function summary(record,icon,kind='item',context=null){
   globalThis.PandoraEnchantModel?.normalizeForSlot?.(context.slot||record.slot,context.gem):null;
  const gemElement=gem&&globalThis.PandoraEnchantModel?.elements?.find(e=>e.id===gem.element);
  const gemType=gem&&globalThis.PandoraEnchantModel?.types?.find(e=>e.id===gem.type);
+ // Conditional effects belong in Properties, not in an unexplained rail badge.
+ // A +7 grade alone never activates them without fire and valid equipment.
+ const phoenix=kind==='item'&&context?.equipped?
+  root.PandoraConditionalItemBonuses?.activeFor?.({
+   record,refinement:grade,gem,issue:context.issue||[]
+  })?.phoenix:null;
  // Physical weaponPlus is also the calculation's backward-compatible
  // default when an older saved build has a grade but no gemstone selected.
  // A magical gemstone instead selects only the magicPlus table.
@@ -101,6 +107,8 @@ function summary(record,icon,kind='item',context=null){
   if(gemElement)rows.push([tr('Стихия улучшения','Refinement element'),
    english?gemElement.en:gemElement.ru]);
  }
+ if(phoenix)rows.push([tr('Особый эффект','Special effect'),
+  tr('Пламя феникса','Phoenix Flame')]);
  // Keep per-row translation/editor keys aligned with dynamically inserted
  // magical refinements and hidden Soul slots. Index drift formerly assigned
  // Defense the "Slots" editor key on magically enhanced weapons.
@@ -117,6 +125,7 @@ function summary(record,icon,kind='item',context=null){
    fieldNames.push(['gemType','Тип самоцвета','Gemstone type']);
   if(gemElement)fieldNames.push(['element','Стихия улучшения','Refinement element']);
  }
+ if(phoenix)fieldNames.push(['specialEffect','Особый эффект','Special effect']);
  const dl=el('dl',{class:'stage-rich-fields'});
  rows.forEach(([key,value],index)=>{
   if(value===null||value===undefined||value==='')return;
@@ -433,7 +442,8 @@ function render(root,api){
  }
  const body=el('div',{class:'stage-rich-body'+(mode==='details'?' stage-rich-details':'')});root.append(body);
  if(mode==='details'){
-  body.append(summary(record,icons,'item',{slot,refinement,
+  body.append(summary(record,icons,'item',{slot,refinement,equipped:true,
+   issue:api.issue||[],
    gem:globalThis.PandoraEnchantModel?.normalizeForSlot?.(slot,gems),
    capacity:cap,socketedCount:plan.asSocketArray(souls).slice(0,Math.max(0,cap??0))
     .filter(Boolean).length,tables:gameTables,copyLabel:copy,editLabel:editable}));
