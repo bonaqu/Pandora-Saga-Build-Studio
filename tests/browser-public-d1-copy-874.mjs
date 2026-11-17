@@ -5,6 +5,7 @@ import {readFileSync} from 'node:fs';
 // never written; real client edit, CAS payload, reload and guest rendering run.
 export async function runPublicD1Copy874Smoke(browser,base){
  const api='https://ps-build-studio-cloud.bonaqu.workers.dev';
+ const publicOrigin='http://pandora-build-studio.test';
  const values={},writes=[],errors=[];
  const newContext=async()=>{
   const ctx=await browser.newContext({viewport:{width:1280,height:840}});
@@ -18,6 +19,13 @@ export async function runPublicD1Copy874Smoke(browser,base){
   });
   await ctx.route('**/*',async route=>{
    const req=route.request(),url=req.url(),method=req.method();
+   if(url.startsWith(publicOrigin+'/')){
+    const publicPath=url.slice(publicOrigin.length);
+    // A virtual public origin uses the actual local server's assets without
+    // depending on DNS; unlike localhost it boots through the live D1 path.
+    const response=await route.fetch({url:base+publicPath});
+    return route.fulfill({response});
+   }
    if(url.startsWith(base+'/'))return route.continue();
    if(!url.startsWith(api+'/'))return route.abort();
    const path=new URL(url).pathname;
@@ -130,11 +138,8 @@ export async function runPublicD1Copy874Smoke(browser,base){
  const guest=await newContext(),view=await guest.newPage();
  view.on('pageerror',error=>errors.push(error.message));
  try{
-  await view.goto(base+'/',{waitUntil:'domcontentloaded'});
+  await view.goto(publicOrigin+'/',{waitUntil:'domcontentloaded'});
   await view.locator('#startupOverlay').waitFor({state:'hidden',timeout:30000});
-  // The local smoke server deliberately boots in archive mode. Explicitly
-  // enter the mocked live-D1 path, which is what real GitHub Pages uses.
-  await view.evaluate(()=>startStudio({archive:false}));
   let picker=await openBelt(view);
   assert.equal((await picker.locator('.stage-soul-unavailable').innerText()).trim(),
    'У этого пояса нет слотов для душ.');
