@@ -327,6 +327,15 @@ function attachPreview(target,record,icon,kind='item',context=null){
  target.addEventListener('blur',()=>{focusPreviewToken++;remove()});
  target.addEventListener('click',remove);
 }
+// Shared icon mapping for equipment tabs and the character portrait context menu.
+// It also keeps localized admin labels independent of decorative glyphs.
+const actionIcons=Object.freeze({
+ choose:'⇄',replace:'⇄',details:'≡',properties:'≡',
+ souls:'○',remove:'×'
+});
+function actionIcon(action,{forward=false}={}){
+ return forward&&action==='details'?'→':actionIcons[action]||'';
+}
 function render(root,api){
  const {record,slot,mode,icons,refinement,souls,gems,gameTables}=api;
  const plan=globalThis.PandoraEquipmentPlan;
@@ -393,8 +402,8 @@ function render(root,api){
   pencil.addEventListener('click',start);
   pencil.addEventListener('focus',syncName);
   pencil.addEventListener('pointerenter',syncName);
-  button.replaceChildren(...(prefix?[el('span',{class:'stage-action-glyph',text:prefix})]:[]),
-   caption);
+  button.replaceChildren(...(prefix?[el('span',{class:'stage-action-glyph',
+   'aria-hidden':'true',text:prefix})]:[]),caption);
   const wrapper=el('span',{class:'stage-action-edit-wrap'});
   wrapper.append(button,pencil);
   return wrapper;
@@ -416,7 +425,8 @@ function render(root,api){
    souls:['Вставить, заменить или снять душу.','Insert, replace or remove a Soul.']
   };
   const returningToDetails=mode==='choose'&&key==='details'&&Boolean(record);
-  const button=el('button',{type:'button',text,
+  const glyph=actionIcon(key,{forward:returningToDetails});
+  const button=el('button',{type:'button',
    class:(mode===key?'chosen':'')+(returningToDetails?' return-to-properties':''),
    'aria-pressed':String(mode===key),
    'data-stage-tab':key,disabled:!record&&key!=='choose',
@@ -424,6 +434,8 @@ function render(root,api){
     if(event?.target?.closest?.('.stage-control-pencil,.wiki-inline-input'))return;
     api.changeMode(key);
    }});
+  button.append(el('span',{class:'stage-tab-symbol','aria-hidden':'true',text:glyph}),
+   document.createTextNode(text));
   if(returningToDetails){
    button.setAttribute('aria-label',tr('Перейти к свойствам','Go to properties'));
   }else{
@@ -432,7 +444,7 @@ function render(root,api){
    button.dataset.guideHint=actionHelp;
    root.PandoraGuideTooltip?.attach(button,actionHelp,{hoverDelay:300});
   }
-  tabs.append(labeledAction(button,'tab.'+key,ru,en));
+  tabs.append(labeledAction(button,'tab.'+key,ru,en,glyph));
  }
  root.append(tabs);
  if(!record){
@@ -607,5 +619,7 @@ function render(root,api){
   draw();
  }
 }
-root.PandoraStageItemUI=Object.freeze({render,summary,matchesSoulSearch,attachPreview,dismissPreview});
+root.PandoraStageItemUI=Object.freeze({
+ render,summary,matchesSoulSearch,attachPreview,dismissPreview,actionIcon
+});
 })(typeof window==='undefined'?globalThis:window);

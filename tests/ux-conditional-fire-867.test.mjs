@@ -32,12 +32,20 @@ test('Phoenix Flame is gated by actual fire weapon, gem, grade and eligibility',
   'weapon with fire bonuses but no Phoenix proc must never gain one');
 });
 
-test('equipment tab and context icons follow one understandable visual language',()=>{
+test('all item tabs and right-click menu actions reuse a single icon mapping',()=>{
  const css=read('pandora-studio-workbench-guidance.css');
- assert.match(css,/button\[data-stage-tab="choose"\]::before\{content:"⇄"/);
- assert.match(css,/button\[data-stage-tab="souls"\]::before\{content:"○"/);
- assert.match(source,/\['souls','○','Управление душами'/);
- assert.match(source,/\['replace','⇄','Выбрать другую вещь'/);
+ const uiWindow={};
+ vm.runInNewContext(equipment,{window:uiWindow,document:{addEventListener(){}}});
+ const icon=uiWindow.PandoraStageItemUI.actionIcon;
+ for(const [key,glyph] of Object.entries({
+  choose:'⇄',replace:'⇄',details:'≡',properties:'≡',souls:'○',remove:'×'
+ }))assert.equal(icon(key),glyph,key);
+ assert.equal(icon('details',{forward:true}),'→');
+ assert.equal(icon('unknown'),'');
+ assert.match(source,/PandoraStageItemUI\.actionIcon\(id\)/);
+ assert.match(equipment,/const glyph=actionIcon\(key,\{forward:returningToDetails\}\)/);
+ assert.match(css,/\.stage-rich-tabs \.stage-tab-symbol/);
+ assert.doesNotMatch(css,/button\[data-stage-tab="(?:choose|details|souls)"\]::before/);
 });
 
 test('equipment rail never adds a mystery Phoenix glyph; Properties keeps condition',()=>{
