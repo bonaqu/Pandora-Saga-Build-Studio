@@ -10,8 +10,8 @@ test('equipment rail, selection and details share one 14-slot RU/EN lookup',()=>
  assert.match(code,/slotLabel:\(lang==='en'\?'Slot: ':'Слот: '\)\+gearSlotName\(selectedSlot\)/);
 });
 test('equipment search, status and warnings are bilingual',()=>{
- for(const term of ['Close item picker','Search by name','Unequip item','Show more (',
-  'matching · ','Item inactive: ','Requires level $1']){
+ for(const term of ['Close item picker','Search by name','Unequip item','Show more',
+  'matching','shown','Item inactive: ','Requires level $1']){
   assert.ok(code.includes(term),term);
  }
  assert.match(code,/issue\.map\(gearIssueLabel\)\.join/);

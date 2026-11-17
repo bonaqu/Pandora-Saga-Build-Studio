@@ -158,7 +158,23 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   await equipInput.evaluate(node=>{window.__copyGearSearch=node});
   const equipPanel=picker.locator('.studio-owner-interface-editor');
   await equipPanel.locator('summary').click();
-  assert.equal(await equipPanel.locator('.studio-owner-interface-row').count(),10);
+  assert.equal(await equipPanel.locator('.studio-owner-interface-row').count(),15);
+  for(const key of ['pickerAvailableLabel','pickerAvailableAria','pickerMatchSuffix',
+   'pickerShownSuffix','pickerMorePrefix'])
+   assert.equal(await row('equipment',key).count(),1,
+    'New owner-editable label present: '+key);
+  const gearFilter=picker.locator('.stage-picker-only-available input');
+  const originalFilterState=await gearFilter.isChecked();
+  await edit('equipment','pickerAvailableLabel','Фильтр по уровню');
+  assert.equal((await picker.locator('.stage-picker-only-available span').innerText()).trim(),
+   'Фильтр по уровню');
+  assert.equal(await gearFilter.isChecked(),originalFilterState,
+   'D1 caption edit cannot toggle the filter');
+  await edit('equipment','pickerMatchSuffix','совпадений');
+  assert.equal((await picker.locator('.stage-picker-count').innerText()).trim(),
+   '0 совпадений · 0 показано',
+   'Owner edits only the words, never the live numeric counts');
+  assert.equal(await equipInput.inputValue(),'no item exists');
   await edit('equipment','pickerSearchPlaceholder','Найти снаряжение…');
   assert.equal(await equipInput.getAttribute('placeholder'),'Найти снаряжение…');
   assert.equal(await equipInput.inputValue(),'no item exists');
