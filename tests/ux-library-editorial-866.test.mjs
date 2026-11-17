@@ -60,3 +60,12 @@ test('the current saved build and compare selection remain distinct',()=>{
  assert.match(css,/\.build-grid>\.build-card\.is-current/);
  assert.match(app,/check\.checked=compareIds\.includes\(b\.id\)/);
 });
+
+test('inline D1 pencils never appear inside native option or compare controls',()=>{
+ const locale=read('pandora-studio-ui-locale.js');
+ assert.match(locale,/parent\.closest\('option, h3,/);
+ assert.match(locale,/\.build-card-compare'\)\)continue/);
+ const app=read('pandora-studio-app.js');
+ assert.match(app,/\['librarySortSaved','saved'\]/);
+ assert.match(app,/\[data-library-compare-copy\]/);
+});
