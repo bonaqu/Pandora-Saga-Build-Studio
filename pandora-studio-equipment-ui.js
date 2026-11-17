@@ -341,7 +341,7 @@ function render(root,api){
  // remains source-backed and cannot accidentally be saved as D1 copy.
  const fallbackSlotLabel=api.slotLabel||tr('Слот: ','Slot: ')+slot;
  const currentSlotName=api.slotName||
-  fallbackSlotLabel.replace(/^(?:Слот|Slot):\\s*/, '');
+  fallbackSlotLabel.replace(/^(?:Слот|Slot):\s*/, '');
  const titlePrefix=editable(el('span',{class:'stage-picker-slot-prefix',
   text:copy('pickerSlotHeading','Слот','Slot')}),
   'pickerSlotHeading','Слот','Slot');
