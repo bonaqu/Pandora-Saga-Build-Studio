@@ -1319,7 +1319,11 @@ function renderJobs(){
    'aria-current':i===depth?'step':null};
   if(available){
    attrs.type='button';
-   attrs.onclick=()=>{jobPathKey=stageTargets[i];renderJobs();saveView()};
+   attrs.onclick=event=>{
+    // The owner double-click editor must win on the caption itself.
+    if(adminEditing&&adminToken&&event.target?.closest?.('[data-origin-copy-key]'))return;
+    jobPathKey=stageTargets[i];renderJobs();saveView();
+   };
   }
   const step=h(available?'button':'span',attrs);
   step.append(h('span',{text:(i+1)+'. '}),originCopyLabel(h('span'),key,ru,en));
