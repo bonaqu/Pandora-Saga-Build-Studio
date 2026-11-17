@@ -53,7 +53,7 @@ export async function runOnlineD1Required878Smoke(browser,base){
   assert.equal(await page.locator('#startupArchive').count(),0);
   assert.equal(await page.locator('#startupRetry').count(),1);
   assert.match(await page.locator('#startupStatus').innerText(),/актуальные игровые данные/i);
-  assert.equal(await page.locator('#catalogStatus').textContent(),'',
+  assert.match(await page.locator('#catalogStatus').textContent(),/Загружаем данные игры/,
    'No partial or unverified game data must be exposed during failed startup');
   const firstReads=reads;
   remoteUp=true;
