@@ -7,7 +7,7 @@ export async function runOnlineD1Required878Smoke(browser,base){
  const api='https://ps-build-studio-cloud.bonaqu.workers.dev';
  const publicOrigin='http://pandora-online-required.test';
  const ctx=await browser.newContext({viewport:{width:1280,height:850}});
- let remoteUp=false,snapshot='snapshot-online-878-a',reads=0,apiWrites=0;
+ let remoteUp=false,snapshot='snapshot-online-878-a',reads=0,apiWrites=0,badProgression=false;
  const cors={'access-control-allow-origin':'*',
   'access-control-allow-headers':'Content-Type,Authorization',
   'access-control-allow-methods':'GET,POST,OPTIONS'};
@@ -33,7 +33,7 @@ export async function runOnlineD1Required878Smoke(browser,base){
     path.slice('/api/catalog/'.length,-5):null;
    const body=name?readFileSync(new URL('../data/os/'+
     (name==='stringsEn'?'strings.en':name)+'.json',import.meta.url),'utf8'):
-    JSON.stringify({values:{}});
+    JSON.stringify({values:badProgression?{'planner.progression.v1':'corrupt-not-json'}:{}});
    return route.fulfill({status:200,headers:{...cors,
     'access-control-expose-headers':'X-PS-Catalog-Snapshot,X-PS-Catalog',
     'x-ps-catalog':'d1','x-ps-catalog-snapshot':snapshot},
@@ -139,7 +139,43 @@ export async function runOnlineD1Required878Smoke(browser,base){
    'Safe update must preserve the active unsaved current hero');
   assert.equal(await page.locator('#level').inputValue(),'35');
   assert.equal(apiWrites,0);
+
+  // An invalid published D1 override must never mutate the stored hero.
+  // Catalog loader may normalize legacy branch keys in memory, but must not
+  // commit them until the final online checkpoint and overrides are accepted.
+  await page.evaluate(()=>{
+   const old=JSON.parse(localStorage.getItem('ps-build-studio.v1'));
+   old.level=32;
+   old.points={'1':5};
+   localStorage.setItem('ps-build-studio.v1',JSON.stringify(old));
+   const marker=localStorage.getItem('ps-build-owner-scope.v1');
+   if(marker){
+    const key='ps-build-scope-cache.v1:'+marker;
+    const backup=JSON.parse(localStorage.getItem(key)||'null');
+    if(Array.isArray(backup)){
+     backup[1]=JSON.stringify(old);
+     localStorage.setItem(key,JSON.stringify(backup));
+    }
+   }
+  });
+  badProgression=true;
+  await page.reload({waitUntil:'domcontentloaded'});
+  await blocked().waitFor({state:'visible',timeout:30000});
+  const unchanged=await page.evaluate(()=>JSON.parse(localStorage.getItem('ps-build-studio.v1')));
+  assert.equal(unchanged.level,32);
+  assert.equal(unchanged.points['1'],5,
+   'A rejected D1 boot must not persist tentative old-branch normalization');
+  assert.equal(unchanged.points.slash,undefined);
+  badProgression=false;
+  await page.locator('#startupRetry').click();
+  await waitReady();
+  const verified=await page.evaluate(()=>JSON.parse(localStorage.getItem('ps-build-studio.v1')));
+  assert.equal(verified.level,32);
+  assert.equal(verified.points.slash,5,
+   'After a fully confirmed catalog, legacy branch conversion may be committed');
+  assert.equal(apiWrites,0);
+
   assert.deepEqual(pageErrors,[]);
-  console.log('Chromium online gate: offline startup, D1 retry, draft preservation, live reconnect, catalog version reload passed');
+  console.log('Chromium online gate: offline startup, D1 retry, quota recovery, safe snapshot refresh and rejected D1 draft protection passed');
  }finally{await ctx.close()}
 }
