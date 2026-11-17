@@ -10283,7 +10283,17 @@ async function showCatalogImport(){
     [key,Number(state.stats?.[STATS[i]]||0)])),
    points:{...state.points}
   }:null,
-  afterPublish:async()=>{invalidateWikiCatalog({dropSnapshot:true});await loadCatalog()}
+  afterPublish:async()=>{
+   // Publishing new game records must not silently switch equipment/skills
+   // underneath the hero being edited. Require the same safe draft-preserving
+   // refresh as a catalog version detected by the online monitor.
+   if(!localCatalogHost&&studioLiveReady){
+    showLiveGate('changed');
+    return;
+   }
+   invalidateWikiCatalog({dropSnapshot:true});
+   await loadCatalog();
+  }
  });
 }
 
