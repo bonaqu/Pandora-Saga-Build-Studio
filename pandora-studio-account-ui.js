@@ -14,8 +14,10 @@ let pendingRecoveryCode=null;
 // Feedback survives same-account form remounts (bootstrap/locale) without
 // persisting passwords or messages in localStorage. It must never leak into
 // another account, another form mode, or a guest session.
-let feedbackSource=null,feedbackToken=null,feedbackMode=null;
-const resetFeedback=()=>{feedbackSource=null;feedbackToken=null;feedbackMode=null};
+let feedbackSource=null,feedbackToken=null,feedbackMode=null,feedbackAuthoredKey=null;
+const resetFeedback=()=>{
+ feedbackSource=null;feedbackToken=null;feedbackMode=null;feedbackAuthoredKey=null;
+};
 const TOKEN=/^[A-Za-z0-9_-]{43}$/;
 const USERNAME=/^[a-z][a-z0-9_]{2,19}$/;
 const validName=value=>typeof value==='string'&&USERNAME.test(value.toLowerCase())?
@@ -61,13 +63,30 @@ function field(placeholder,type='text',auto='off',max=128){
  input.setAttribute('aria-label',tr(placeholder));
  input.autocomplete=auto;return input;
 }
-function info(message){
+function paintFeedback(){
+ if(!errorLine||feedbackSource===null)return;
+ const previous=errorLine.dataset.ownerCopyKey||null;
+ // Never mistake a server-supplied error for a locally authored, editable
+ // status—even when its text happens to resemble a known localized phrase.
+ if(feedbackAuthoredKey)errorLine.dataset.ownerCopyKey=feedbackAuthoredKey;
+ else errorLine.removeAttribute('data-owner-copy-key');
+ if(previous&&previous!==feedbackAuthoredKey&&
+  errorLine.nextElementSibling?.dataset?.ownerCopyPencil===previous)
+  errorLine.nextElementSibling.remove();
+ errorLine.textContent=tr(feedbackSource);
+ errorLine.dataset.sourceMessage=feedbackSource;
+}
+function info(message,authored=false){
  feedbackSource=String(message);
  feedbackToken=session?.token||null;
  feedbackMode=mode;
+ feedbackAuthoredKey=authored?
+  (root.PandoraUILocale?.literalKey?.(feedbackSource)||null):null;
  if(errorLine){
-  errorLine.textContent=tr(feedbackSource);
-  errorLine.dataset.sourceMessage=feedbackSource;
+  paintFeedback();
+  // A status may appear after the profile was rendered. Reuse the normal
+  // inline D1 editor without remounting password, login or recovery fields.
+  options?.onCopyReady?.(panel);
  }
 }
 async function request(kind,data=null,auth=token()){
@@ -152,8 +171,7 @@ function render(){
  errorLine=node('p','account-feedback');errorLine.setAttribute('role','status');
  if(feedbackSource!==null&&feedbackToken===(session?.token||null)&&
   feedbackMode===mode){
-  errorLine.textContent=tr(feedbackSource);
-  errorLine.dataset.sourceMessage=feedbackSource;
+  paintFeedback();
  }else resetFeedback();
  if(session){
   const identity=node('div','account-identity');
@@ -175,11 +193,11 @@ function render(){
    const input=field('','text','off',43);
    input.value=code;input.readOnly=true;
    card.append(input,button('Скопировать код',async()=>{
-    try{await navigator.clipboard.writeText(code);info('Код скопирован')}
-    catch{input.focus();input.select();info('Скопируйте выделенный код')}
+    try{await navigator.clipboard.writeText(code);info('Код скопирован',true)}
+    catch{input.focus();input.select();info('Скопируйте выделенный код',true)}
    }));
    card.append(button('Я сохранил код',()=>{
-    pendingRecoveryCode=null;card.remove();info('Резервный код скрыт.');
+    pendingRecoveryCode=null;card.remove();info('Резервный код скрыт.',true);
     options?.onRecoveryAcknowledged?.();
    }));
    panel.append(card);

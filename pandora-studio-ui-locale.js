@@ -55,6 +55,11 @@ const accountCopy=Object.freeze({
  accountRecoveryExpiry:['Код доступен до обновления страницы или подтверждения сохранения.','The code remains visible until you refresh the page or confirm you saved it.'],
  accountCopyCode:['Скопировать код','Copy code'],
  accountSavedCode:['Я сохранил код','I have saved the code'],
+ // Only harmless, fixed, locally authored feedback is editable. Validation,
+ // server errors, account identity and security diagnostics stay untouched.
+ accountCodeCopied:['Код скопирован','Code copied'],
+ accountCopyCodeManually:['Скопируйте выделенный код','Copy the selected code'],
+ accountCodeHidden:['Резервный код скрыт.','Recovery code hidden.'],
  accountPasswordHeading:['Изменить пароль','Change password'],
  accountSignOut:['Выйти из аккаунта','Sign out of account'],
  accountSignIn:['Войти','Sign in'],

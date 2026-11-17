@@ -26,7 +26,7 @@ test('successful sign-in resumes shared URLs only after acknowledging recovery c
  assert.match(app,/onRecoveryAcknowledged:finishBuildAccountEntry/);
  assert.match(app,/hasRecoveryPending\?\.\(\)/);
  assert.match(app,/void restoreSharedHash\(\)/);
- assert.match(ui,/pendingRecoveryCode=null;card\.remove\(\);info\('Резервный код скрыт\.'\)/);
+ assert.match(ui,/pendingRecoveryCode=null;card\.remove\(\);info\('Резервный код скрыт\.',true\)/);
  assert.match(ui,/options\?\.onRecoveryAcknowledged\?\.\(\)/);
 });
 test('account survives inactivity but not explicit logout or confirmed revocation',()=>{
