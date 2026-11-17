@@ -50,7 +50,7 @@ jobs:
           test "$CLOUDFLARE_ACCOUNT_ID" = '57ac934cd0f0a7f5e8533177d612f893'
           test "$PS_D1_DATABASE_ID" = '0f8fbcd8-be06-414c-844b-a2091fdf6784'
           node --check scripts/publish-seven-item-levels-once.mjs
-          node --test tests/d1-seven-item-level-publication.test.mjs tests/d1-seven-item-level-50-selective.test.mjs
+          node --test tests/d1-seven-item-level-publication.test.mjs tests/catalog-seven-selective-publish-683.test.mjs
       - name: Require exactly seven known live item level mismatches (read-only)
         run: node scripts/publish-seven-item-levels-once.mjs --preflight
       - name: Stage exact D1 copy and publish only seven levels using snapshot CAS
