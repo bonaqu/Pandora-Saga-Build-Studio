@@ -48,8 +48,9 @@ test('skill gallery preserves scroll and focus after inspecting an icon',()=>{
 });
 test('numeric legacy mastery keys get migrated alongside invested branch points',()=>{
  const app=read('pandora-studio-app.js');
- assert.match(app,/state\.mastery=Object\.fromEntries\(Object\.entries\(state\.mastery\)/);
- assert.match(app,/oldToOS\[key\]\|\|key,val/);
+ assert.match(app,/state\.mastery=migrateLegacyBranches\(state\.mastery\)/);
+ assert.match(app,/state\.points=migrateLegacyBranches\(state\.points\)/);
+ assert.match(app,/Number\(modern\)===0&&Number\(original\)>0/);
 });
 
 test('milestone link always reveals the selected skill despite stale gallery filters',()=>{

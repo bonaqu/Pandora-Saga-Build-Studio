@@ -14,7 +14,7 @@ function scenario(){
  let serial=0;
  const run=Function('request','status','persisted',
   'let libraryChangeId=0,cloudLoadRequestId=0,builds=[],activeBuildId=null,activeTab="wiki",lang="ru";'+
-  'const queuedDeletes=()=>[];'+
+  'const cloudOperationsAllowed=()=>true,queuedDeletes=()=>[];'+
   'const cloudLibraryRequest=()=>request();'+
   'const acknowledgeDelete=()=>{};'+
   'const window={PandoraAccountUI:{isLoggedIn:()=>true},PandoraBuildLibraryMerge:{reconcile:({remote})=>({merged:remote.map(x=>x.entry),activeId:null,outgoing:[],copies:0,unavailable:0})}};'+

@@ -40,6 +40,13 @@
 .ps-boot-error-actions button{border:1px solid #a37e51;background:#3a291d;color:#f2d4a2;
  padding:9px 12px;border-radius:3px;font-size:12px}
 .ps-boot-error-actions button:hover{background:#5a3b26;border-color:#f0bd79}
+/* Keep in-progress owner-only inline text available for manual copy if a
+   newer catalog mandates a reload. The area exists only for an authenticated
+   owner with unsent content; it is never rendered in guest mode. */
+.ps-boot-owner-draft{display:block;box-sizing:border-box;width:100%;max-height:128px;
+ margin:14px 0 2px;padding:10px 12px;resize:vertical;border:1px solid #a37e51;
+ border-radius:4px;background:#15100e;color:#f2d4a2;font:12px/1.5 system-ui,sans-serif;
+ text-align:left;white-space:pre-wrap;overflow:auto}
 .ps-boot-overlay[data-state=error] .ps-boot-progress-line{animation:none;width:100%;background:#a75a3d}
 .ps-boot-overlay[data-state=error] #startupStatus{color:#efad92}
 @keyframes psBootRing{50%{transform:scale(1.09);opacity:.42}}

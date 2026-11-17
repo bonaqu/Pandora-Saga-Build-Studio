@@ -19,7 +19,7 @@ test('D1 remains authoritative and a conflicting offline edit becomes a browser-
  assert.equal(result.activeId,B);
  const app=read('pandora-studio-app.js');
  assert.match(app,/const reconciled=window\.PandoraBuildLibraryMerge\.reconcile/);
- assert.match(app,/if\(libraryChangeId!==generation\)break/);
+ assert.match(app,/if\(!cloudOperationsAllowed\(\)\|\|libraryChangeId!==generation\)break/);
  assert.match(app,/await putCloudBuild\(entry\)/);
 });
 test('monotonic timestamps and atomic SQLite compare prevent late or same-timestamp clobbers',()=>{

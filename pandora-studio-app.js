@@ -372,8 +372,14 @@ function reportCloudStatus(message){
  cloudLibraryStatus=message;
  syncCloudStatusNode(document.querySelector('.cloud-library-status'),message);
 }
+function cloudOperationsAllowed(){
+ // The code may be called from callbacks initiated BEFORE an outage. Every
+ // network continuation must re-check the verified D1 gate before touching
+ // the account's live library or dispatching a new write.
+ return localCatalogHost||studioLiveReady&&!liveGateReason;
+}
 async function putCloudBuild(entry){
- if(!window.PandoraAccountUI?.isLoggedIn())return false;
+ if(!cloudOperationsAllowed()||!window.PandoraAccountUI?.isLoggedIn())return false;
  // This guard also protects accidental call sites added in future changes.
  if(entry?.localOnly===true)return false;
  const owner=libraryScopeId(),generation=libraryChangeId;
@@ -402,10 +408,10 @@ async function putCloudBuild(entry){
 async function uploadSharedBuildBatch(entries,owner,generation){
  let confirmed=0;
  for(const entry of entries){
-  if(libraryScopeId()!==owner||libraryChangeId!==generation)return;
+  if(!cloudOperationsAllowed()||libraryScopeId()!==owner||libraryChangeId!==generation)return;
   if(await putCloudBuild(entry))confirmed++;
  }
- if(libraryScopeId()!==owner||libraryChangeId!==generation)return;
+ if(!cloudOperationsAllowed()||libraryScopeId()!==owner||libraryChangeId!==generation)return;
  reportCloudStatus(confirmed===entries.length?
   (lang==='en'?'All imported builds saved to cloud':'Все добавленные билды сохранены в облаке'):
   (lang==='en'?
@@ -415,7 +421,7 @@ async function uploadSharedBuildBatch(entries,owner,generation){
     '. Остальные пока только в браузере. Обнови библиотеку для повторной попытки.'));
 }
 async function deleteCloudBuild(id){
- if(!window.PandoraAccountUI?.isLoggedIn())return false;
+ if(!cloudOperationsAllowed()||!window.PandoraAccountUI?.isLoggedIn())return false;
  const owner=libraryScopeId();
  let queued=false;
  try{queueDelete(id);queued=true}
@@ -443,16 +449,16 @@ async function deleteCloudBuild(id){
  }
 }
 async function loadCloudBuilds(){
- if(!window.PandoraAccountUI?.isLoggedIn())return;
+ if(!cloudOperationsAllowed()||!window.PandoraAccountUI?.isLoggedIn())return;
  const generation=libraryChangeId,requestId=++cloudLoadRequestId;
  const latest=()=>requestId===cloudLoadRequestId;
  let pendingDeleteFailures=0;
  try{
   for(const id of queuedDeletes()){
-   if(libraryChangeId!==generation||!latest())return;
+   if(!cloudOperationsAllowed()||libraryChangeId!==generation||!latest())return;
    try{
     await cloudLibraryRequest({action:'delete',id});
-    if(libraryChangeId!==generation||!latest())return;
+    if(!cloudOperationsAllowed()||libraryChangeId!==generation||!latest())return;
     acknowledgeDelete(id);
    }catch(error){
     if(libraryChangeId!==generation||!latest())return;
@@ -462,7 +468,9 @@ async function loadCloudBuilds(){
     console.warn('Pending cloud deletion will be retried',error);
    }
   }
+  if(!cloudOperationsAllowed())return;
   const response=await cloudLibraryRequest();
+  if(!cloudOperationsAllowed())return;
   // A manual refresh can overtake an older request for the same owner:
   // only the newest GET is allowed to reconcile the visible library.
   if(!latest())return;
@@ -491,7 +499,7 @@ async function loadCloudBuilds(){
     'Облако подключено · локальные копии ещё не сохранены':
     'Облачная библиотека подключена');
   for(const entry of outgoing){
-   if(libraryChangeId!==generation)break;
+   if(!cloudOperationsAllowed()||libraryChangeId!==generation)break;
    if(!latest())break;
    const current=builds.find(x=>x.id===entry.id);
    if(!current||current.at!==entry.at||queuedDeletes().includes(entry.id))continue;
@@ -10275,7 +10283,17 @@ async function showCatalogImport(){
     [key,Number(state.stats?.[STATS[i]]||0)])),
    points:{...state.points}
   }:null,
-  afterPublish:async()=>{invalidateWikiCatalog({dropSnapshot:true});await loadCatalog()}
+  afterPublish:async()=>{
+   // Publishing new game records must not silently switch equipment/skills
+   // underneath the hero being edited. Require the same safe draft-preserving
+   // refresh as a catalog version detected by the online monitor.
+   if(!localCatalogHost&&studioLiveReady){
+    showLiveGate('changed');
+    return;
+   }
+   invalidateWikiCatalog({dropSnapshot:true});
+   await loadCatalog();
+  }
  });
 }
 
@@ -10357,7 +10375,7 @@ function renderWorkbenchHintEditors(){
   if(panel){panel.classList.add('workbench-hint-editor');target.after(panel)}
  }
 }
-function applyGameLocale({redraw=true}={}){
+function applyGameLocale({redraw=true,persistReconciled=true}={}){
  window.PandoraUILocale.setOverrides(override);
  window.PandoraUILocale.apply(lang);
  refreshOpenAuthoredToast();
@@ -10413,7 +10431,7 @@ function applyGameLocale({redraw=true}={}){
  catalog={meta,classes:translate(catalogSource.classes,en?.classes),skills:localizedSkills,
    equipment:translate(itemRecords,en?.items,true),souls:localizedSouls,racialPassives:catalogSource.racialPassives,live:true};
  // Remove stale Soul arrays left by older builds that reused equipment slots.
- if(window.PandoraEquipmentPlan.reconcileSoulOwnership(state,catalog.equipment,catalog.souls))persist();
+ if(window.PandoraEquipmentPlan.reconcileSoulOwnership(state,catalog.equipment,catalog.souls)&&persistReconciled)persist();
  jobs=jobKeys.map(id=>catalog.classes[id]?.name||id);
  branches=window.PandoraGameNavigation.groups.flatMap(g=>g.branches.map(id=>({id,name:meta.branchLabels[id]||id})));
  if(redraw)render();
@@ -10423,7 +10441,7 @@ function applyGameLocale({redraw=true}={}){
 // install the bundled copy. RU and EN use the same verified snapshot.
 let activeCatalogSnapshot=null,catalogLoadVersion=0;
 let englishCatalogPending=null,officialEnglishSnapshot=null;
-async function ensureEnglishCatalog(){
+async function ensureEnglishCatalog({persistReconciled=true}={}){
  if(!catalogSource)throw Error('Сначала требуется каталог игры');
  if(officialEnglish&&officialEnglishSnapshot===activeCatalogSnapshot)return officialEnglish;
  if(englishCatalogPending)return englishCatalogPending;
@@ -10442,12 +10460,12 @@ async function ensureEnglishCatalog(){
    throw Error('Английский каталог неполон или не совпадает с версией игры');
   if(snapshot!==activeCatalogSnapshot)return null;
   officialEnglish=data;officialEnglishSnapshot=snapshot;
-  if(lang==='en')applyGameLocale();
+  if(lang==='en')applyGameLocale({persistReconciled});
   return data;
  })().finally(()=>{englishCatalogPending=null});
  return englishCatalogPending;
 }
-async function loadCatalog({archive=false}={}){
+async function loadCatalog({archive=false,commit=true}={}){
  const version=++catalogLoadVersion;
  const names=['meta','classes','skills','items','souls','racialPassives',
   'unison','tables','itemForth'];
@@ -10497,10 +10515,25 @@ async function loadCatalog({archive=false}={}){
  },()=>lang);
  officialEnglish=null;officialEnglishSnapshot=null;
   const oldToOS={1:'slash',2:'thrust',3:'brush',4:'blow',5:'defense',7:'archery',8:'alchemy',9:'assassin',10:'trap',11:'warding',13:'benevolence',14:'blessing',15:'exorcism',16:'hymn',18:'element',19:'embody',20:'darkness',21:'charm',23:'race',24:'riding'};
-  state.points=Object.fromEntries(Object.entries(state.points).map(([key,val])=>[oldToOS[key]||key,val]));
+  // Legacy builds may contain numeric branch IDs alongside modern default
+  // keys (e.g. {1:5,slash:0}). Object.fromEntries would overwrite the
+  // invested 5 with the default 0 because the canonical key comes last.
+  // Keep a meaningful modern allocation when present; otherwise migrate the
+  // invested legacy value without discarding the original character points.
+  const migrateLegacyBranches=record=>{
+   const converted={...record};
+   for(const [legacy,canonical] of Object.entries(oldToOS)){
+    if(!Object.hasOwn(converted,legacy))continue;
+    const original=converted[legacy],modern=converted[canonical];
+    if(!Object.hasOwn(converted,canonical)||
+     Number(modern)===0&&Number(original)>0)converted[canonical]=original;
+    delete converted[legacy];
+   }
+   return converted;
+  };
+  state.points=migrateLegacyBranches(state.points);
   if(state.mastery&&typeof state.mastery==='object'&&!Array.isArray(state.mastery))
-   state.mastery=Object.fromEntries(Object.entries(state.mastery)
-    .map(([key,val])=>[oldToOS[key]||key,val]));
+   state.mastery=migrateLegacyBranches(state.mastery);
   if(typeof state.branch==='number')state.branch=oldToOS[state.branch]||'brush';
   if(!window.PandoraGameNavigation.all.has(state.branch)){state.branch='slash'}
   if(!pathGroupTouched)
@@ -10510,19 +10543,21 @@ async function loadCatalog({archive=false}={}){
  if(!window.PandoraGameNavigation.all.has(state.branch))state.branch='slash';
  if(!pathGroupTouched)
   selectedSkillGroup=window.PandoraGameNavigation.branchGroup(state.branch)?.id||'melee';
- if(lang==='en')await ensureEnglishCatalog();
+ if(lang==='en')await ensureEnglishCatalog({persistReconciled:commit});
  if(version!==catalogLoadVersion)return;
  renderArchiveNotice();
  invalidateWikiCatalog({dropSnapshot:true});
- applyGameLocale();persist();
+ // Startup remains tentative until final D1/overrides coherence validation.
+ applyGameLocale({persistReconciled:commit});
+ if(commit)persist();
  return data;
 }
 let ownerWikiRefreshId=0;
-async function refreshOwnerCatalog(){
+async function refreshOwnerCatalog({persistReconciled=true}={}){
  applyPlannerOverride(override[window.PandoraLevelProgression.KEY]??null);
  const generation=++ownerWikiRefreshId;
  invalidateWikiCatalog();
- if(catalogSource)applyGameLocale({redraw:false});
+ if(catalogSource)applyGameLocale({redraw:false,persistReconciled});
  if(activeTab==='wiki'&&wikiRenderedRoot?.isConnected){
   try{
    await loadWiki();
@@ -10543,14 +10578,14 @@ function applyPlannerOverride(raw){
  if(cap)cap.textContent=String(model.maxLevel());
  return applied;
 }
-async function loadOverrides({strict=false}={}){try{
+async function loadOverrides({strict=false,commit=true}={}){try{
  const response=await apiRequest('/api/overrides',null,'');
  override=response.values||{};
  applyPlannerOverride(override[window.PandoraLevelProgression.KEY]??null);
  window.PandoraUILocale.setOverrides(override);
  window.PandoraUILocale.apply(lang);
  refreshVisibleWikiLabels();
- await refreshOwnerCatalog();
+ await refreshOwnerCatalog({persistReconciled:commit});
 }catch(error){
  if(strict)throw Error('Правки каталога D1 недоступны: '+error.message);
  console.warn('Owner overrides unavailable in explicitly selected archive mode',error);
@@ -10598,23 +10633,37 @@ $('locale').onclick=async event=>{
  if(!button||button.dataset.locale===lang||switchingLocale)return;
  const requested=button.dataset.locale;
  switchingLocale=true;
- if(requested==='en'&&!officialEnglish)
+ const loadingEnglish=requested==='en'&&!officialEnglish;
+ if(loadingEnglish)
   startupMessage('Подготавливаем английские описания…',
    'Loading English names and descriptions…','en');
  try{
-  if(requested==='en'&&!officialEnglish){
+  if(loadingEnglish){
    const english=await ensureEnglishCatalog();
    if(!english)throw Error('Английский перевод не загружен');
   }
+  // A network outage or changed D1 snapshot may have opened the blocking
+  // screen while English was in flight. Do not mutate the active language
+  // and never let this handler dismiss the mandatory online gate.
+  if(!localCatalogHost&&(!studioLiveReady||liveGateReason))return;
   lang=requested;
   localStorage.setItem('ps-build-lang',lang);
   applyGameLocale();
  }catch(error){
   console.warn('Requested language is unavailable',error);
-  showStudioToast('Не удалось загрузить английские описания: '+error.message,'warning');
+  if(!localCatalogHost&&studioLiveReady){
+   await checkLiveConnection();
+   if(liveGateReason)return;
+  }
+  showStudioToast(lang==='en'?
+   'Could not load English descriptions. Please try again.':
+   'Не удалось загрузить английские описания. Попробуй ещё раз.','warning');
  }finally{
   switchingLocale=false;
-  if(!startupOverlay.hidden)startupDone();
+  // Other asynchronous operations may already have changed the overlay
+  // to a D1 error. Only close the specific English loading state.
+  if(loadingEnglish&&startupOverlay.dataset.state==='loading'&&!liveGateReason)
+   startupDone();
  }
 };document.addEventListener('click',event=>{if(!adminEditing||!event.target.closest||event.target.closest('#ownerDock, .inline-owner-editor, #modalRoot, #hero'))return;const editable=event.target.closest('[data-edit-key]');if(editable){if(/^(?:item|itemdesc|itemslots|skill|skilldesc)\./.test(editable.dataset.editKey))return;event.preventDefault();event.stopImmediatePropagation();editor(editable)}},true);
 document.addEventListener('keydown',event=>{
@@ -10888,8 +10937,43 @@ function saveLiveDraft(){
  const draft=persist(),library=persistBuilds();
  return draft===true&&library===true;
 }
+let inlineDraftCopyReady=false;
+function pendingOwnerInlineText(){
+ if(!adminToken||!adminEditing)return '';
+ return [...document.querySelectorAll('[contenteditable="true"],[contenteditable="plaintext-only"]')]
+  .filter(node=>!startupOverlay.contains(node)&&node.isConnected)
+  .map(node=>{
+   // Preserve whitespace and deliberate deletion of the entire field. A
+   // blank owner edit is still an unsent change, not "no editor open".
+   const value=typeof node.innerText==='string'?node.innerText:
+    node.textContent||'';
+   return value.length?value:(lang==='en'?
+    '(Empty unsent text)':'(Пустой несохранённый текст)');
+  }).join('\n\n');
+}
+function refreshOwnerDraftRecovery(){
+ let field=$('startupUnsentOwnerText');
+ const text=pendingOwnerInlineText();
+ if(!text){field?.remove();inlineDraftCopyReady=false;return}
+ if(!field){
+  field=document.createElement('textarea');
+  field.id='startupUnsentOwnerText';
+  field.className='ps-boot-owner-draft';
+  field.readOnly=true;
+  field.rows=4;
+  field.setAttribute('aria-label',lang==='en'?
+   'Unsubmitted owner text — copy before updating':
+   'Несохранённая текстовая правка — скопируй перед обновлением');
+  startupOverlay.querySelector('.ps-boot-card')?.append(field);
+ }
+ field.value=text;
+ inlineDraftCopyReady=false;
+}
 function showLiveGate(kind){
  if(localCatalogHost||!studioLiveReady)return;
+ // Once a newer published snapshot is detected, a later offline browser
+ // event must not downgrade the required explicit refresh to an old retry.
+ if(liveGateReason==='changed'&&kind!=='changed')return;
  if(!liveGateReason)liveLocalSaved=saveLiveDraft();
  liveGateReason=kind;
  startupOverlay.hidden=false;
@@ -10916,9 +11000,13 @@ function showLiveGate(kind){
   liveLocalSaved?
   'Your current hero is saved in this browser. Cloud saves are confirmed separately.':
   'Could not save the local draft. Keep this tab open.');
+ if(changed)refreshOwnerDraftRecovery();
+ else $('startupUnsentOwnerText')?.remove();
+ const needsCopy=changed&&Boolean($('startupUnsentOwnerText'));
  setBootCopy('startupRetry',storage?'Повторить сохранение':
-  changed?'Сохранить и перезагрузить':'Повторить подключение',
-  storage?'Retry saving':changed?'Save and reload':'Retry connection');
+  needsCopy?'Скопировать текст':'Сохранить и перезагрузить',
+  storage?'Retry saving':needsCopy?'Copy text':'Save and reload');
+ if(!changed&&!storage)setBootCopy('startupRetry','Повторить подключение','Retry connection');
  document.body.classList.add('studio-live-blocked');
  if(!changed&&!storage)scheduleOnlineRetry();
 }
@@ -10931,6 +11019,7 @@ function leaveLiveGate(){
   if(!liveLocalSaved){showLiveGate('storage');return}
  }
  liveGateReason=null;liveLocalSaved=true;
+ $('startupUnsentOwnerText')?.remove();inlineDraftCopyReady=false;
  clearOnlineRetry();
  document.body.classList.remove('studio-live-blocked');
  startupDone();
@@ -10982,8 +11071,23 @@ function reloadVerifiedCatalog(){
  const accountBusy=window.PandoraAccountUI?.updateGuard?.();
  if(accountBusy||ownerSaveInFlight()){
   $('startupStatus').textContent=lang==='en'?
-   'An account or editor action is still unfinished. Keep this tab open to protect your changes.':
-   'Действие в аккаунте или сохранение ещё не завершено. Не закрывай вкладку, чтобы не потерять изменения.';
+   'An account operation or D1 save is unfinished. Keep this tab open.':
+   'Действие аккаунта или сохранение D1 ещё не завершено. Не закрывай вкладку.';
+  return;
+ }
+ // An active inline editor can contain text that has NOT reached D1. Keep
+ // a selectable, read-only copy in the blocking dialog. Require an explicit
+ // second click after copying; never silently discard it on refresh.
+ const pendingCopy=$('startupUnsentOwnerText');
+ if(pendingCopy&&!inlineDraftCopyReady){
+  inlineDraftCopyReady=true;
+  pendingCopy.focus({preventScroll:true});
+  pendingCopy.select();
+  setBootCopy('startupRetry','Я скопировал — перезагрузить',
+   'I copied it — reload');
+  $('startupStatus').textContent=lang==='en'?
+   'Copy the selected unsent text (Ctrl+C), then confirm the reload.':
+   'Скопируй выделенный несохранённый текст (Ctrl+C), затем подтверди обновление.';
   return;
  }
  const okay=document.dispatchEvent(new Event('pandora:before-update',{cancelable:true}));
@@ -10997,13 +11101,23 @@ function reloadVerifiedCatalog(){
  url.searchParams.set('ps-revision',String(Date.now()));
  location.replace(url.toString());
 }
-document.addEventListener('keydown',event=>{
- if(!liveGateReason||startupOverlay.contains(event.target))return;
- // A modal overlay must actually block keyboard-triggered edits behind it,
- // without blurring and prematurely committing an in-progress D1 field.
- if(event.key==='Tab')$('startupRetry').focus({preventScroll:true});
- event.preventDefault();event.stopImmediatePropagation();
-},true);
+// A fixed overlay by itself does not stop keyboard shortcuts, programmatic
+// form submission or an already focused edit control behind it. Gate all
+// public user-input surfaces until the current D1 snapshot is verified.
+function blockUnverifiedInput(event){
+ if(localCatalogHost||startupOverlay.hidden||
+  startupOverlay.classList.contains('is-finished')||
+  studioLiveReady&&!liveGateReason||
+  startupOverlay.contains(event.target))return;
+ if(event.type==='keydown'&&event.key==='Tab')
+  $('startupRetry').focus({preventScroll:true});
+ event.preventDefault();
+ event.stopImmediatePropagation();
+}
+// Owner text editors often auto-save on blur. A recovery overlay must
+// never trigger a hidden blur commit before the owner copies the unsent text.
+for(const type of ['keydown','click','input','change','submit','blur','focusout'])
+ document.addEventListener(type,blockUnverifiedInput,true);
 window.addEventListener('offline',()=>{
  if(localCatalogHost)return;
  ++liveCheckpointId;liveCheckpointPromise=null;
@@ -11017,23 +11131,33 @@ window.addEventListener('online',()=>{
 setInterval(()=>{
  if(!localCatalogHost&&studioLiveReady&&liveGateReason!=='changed'&&
   document.visibilityState==='visible')void checkLiveConnection();
-},120000);
+},45000);
+window.addEventListener('focus',()=>{
+ if(!localCatalogHost&&studioLiveReady&&liveGateReason!=='changed')
+  void checkLiveConnection();
+});
 document.addEventListener('visibilitychange',()=>{
  if(!localCatalogHost&&studioLiveReady&&liveGateReason!=='changed'&&
   document.visibilityState==='visible')void checkLiveConnection();
 });
-let startupAttempt=0;
+let startupAttempt=0,startupRunning=false,startupQueuedLive=false;
 async function startStudio({archive=false}={}){
+ // Browser online events, manual retries and backoff may occur together.
+ // Only one attempted startup may own the globally installed catalog, hero
+ // draft and authorial overrides. A later click cannot race an in-flight boot.
+ if(startupRunning)return;
+ startupRunning=true;
  const attempt=++startupAttempt;
+ const draftOwner=libraryScopeId(),originalDraft=structuredClone(state);
  startupMessage(
   archive?'Открываем сохранённую копию игры…':'Загружаем игровые данные…',
   archive?'Opening saved game data…':'Loading game data…');
  try{
-  const loaded=await loadCatalog({archive});
+  const loaded=await loadCatalog({archive,commit:false});
   if(attempt!==startupAttempt||!loaded)return;
   startupMessage('Проверяем игровые данные и переводы…','Validating game data and translations…');
   await skillLabelsReady;
-  if(!archive)await loadOverrides({strict:true});
+  if(!archive)await loadOverrides({strict:true,commit:false});
   if(attempt!==startupAttempt)return;
   if(activeTab==='wiki')await loadWiki();
   if(attempt!==startupAttempt)return;
@@ -11049,7 +11173,9 @@ async function startStudio({archive=false}={}){
    if(confirmed.status!=='ready')throw Error('Game data changed during startup');
   }
   if(attempt!==startupAttempt)return;
-  applyGameLocale();
+  // Only a fully verified boot may commit catalog migrations to local storage.
+  applyGameLocale({persistReconciled:false});
+  persist();
   studioLiveReady=!archive;
   clearOnlineRetry();
   liveGateReason=null;
@@ -11067,7 +11193,20 @@ async function startStudio({archive=false}={}){
    else setTimeout(warm,350);
   }
  }catch(error){
-  if(attempt===startupAttempt)startupError(error);
+  if(attempt===startupAttempt){
+   // A failed D1 attempt must not leave tentative equipment or skill changes
+   // in memory, even when the next retry uses a different catalog snapshot.
+   if(libraryScopeId()===draftOwner)state=originalDraft;
+   startupError(error);
+  }
+ }finally{
+  startupRunning=false;
+  // A retry requested while local fixture or an earlier live request was
+  // loading must not be lost. Run exactly one deferred request, serialized.
+  if(startupQueuedLive){
+   startupQueuedLive=false;
+   void startStudio();
+  }
  }
 }
 $('startupRetry').onclick=()=>{
@@ -11076,7 +11215,9 @@ $('startupRetry').onclick=()=>{
  if(liveGateReason==='offline'){void checkLiveConnection();return}
  // An explicit Retry always requests D1, including local Chromium fixtures
  // that initially boot from bundled development data. No user-facing path
- // opens the archive on a published hostname.
+ // opens the archive on a published hostname. Do not drop a click just
+ // because an earlier (possibly local) startup is still finishing.
+ if(startupRunning){startupQueuedLive=true;return}
  void startStudio();
 };
 // Local fixture mode is never exposed as a player-facing fallback.
@@ -11094,7 +11235,9 @@ void window.PandoraAccountUI.init({
   activateLibraryScope();
   libraryChangeId++;
   reportCloudStatus('Подключаем облачную библиотеку…');
-  void loadCloudBuilds();
+  // A public account login must not start cloud reconciliation behind an
+  // unverified game-data gate. Startup/reconnect already retries it safely.
+  if(localCatalogHost||studioLiveReady&&!liveGateReason)void loadCloudBuilds();
   if(activeTab==='builds')renderDetails();
   finishBuildAccountEntry();
  },

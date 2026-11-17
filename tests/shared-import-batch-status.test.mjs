@@ -9,7 +9,7 @@ const code=app.slice(start,end);
 function fixture({put,initialOwner='account:alice_01'}){
  let owner=initialOwner;const status=[];
  const fn=Function('putCloudBuild','libraryScopeId','reportCloudStatus','lang','libraryChangeId',
-  code+'\nreturn uploadSharedBuildBatch')(
+  'const cloudOperationsAllowed=()=>true;\n'+code+'\nreturn uploadSharedBuildBatch')(
   put,()=>owner,message=>status.push(message),'ru',3);
  return {fn,status,setOwner:value=>{owner=value}};
 }
