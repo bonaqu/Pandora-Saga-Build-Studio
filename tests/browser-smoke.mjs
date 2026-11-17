@@ -38,6 +38,7 @@ import {runAccountLocalRecoveryFailureSmoke} from './browser-account-local-recov
 import {runAccountLateBootstrapSmoke} from './browser-account-late-bootstrap.mjs';
 import {runEmptyAccountCloudReconnectSmoke} from './browser-empty-account-reconnect.mjs';
 import {runAccountFeedbackRaceSmoke} from './browser-account-feedback-race.mjs';
+import {runAccountPublicErrorsSmoke} from './browser-account-public-errors.mjs';
 import {runAccountLibraryIsolationSmoke} from './browser-account-isolation.mjs';
 import {runCrossTabAccountIsolationSmoke} from './browser-cross-tab-account.mjs';
 import {runCrossTabGuestIsolationSmoke} from './browser-cross-tab-guest.mjs';
@@ -130,6 +131,7 @@ const scenarios=[
   ['account-late-bootstrap',runAccountLateBootstrapSmoke],
   ['empty-account-reconnect',runEmptyAccountCloudReconnectSmoke],
   ['account-feedback-race',runAccountFeedbackRaceSmoke],
+  ['account-public-errors',runAccountPublicErrorsSmoke],
   ['account-isolation',runAccountLibraryIsolationSmoke],
   ['cross-tab-account',runCrossTabAccountIsolationSmoke],
   ['cross-tab-guest',runCrossTabGuestIsolationSmoke],
