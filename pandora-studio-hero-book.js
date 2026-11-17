@@ -325,6 +325,13 @@ function make(tag,attrs={},children=[]){
 
  }
  for(const child of children)n.append(typeof child==='string'?document.createTextNode(bookText(child)):child);
+ // Book buttons and disclosure chevrons use the shared SVG source.
+ const symbol=tag==='button'?({'‹':'chevron-left','›':'chevron-right','✕':'close','✎':'edit'}[attrs.text]):
+  tag==='span'&&attrs.class==='stage-result-chevron'?'chevron-down':null;
+ if(symbol&&!children.length){
+  const icon=root.PandoraStudioIcons?.create(symbol);
+  if(icon)n.replaceChildren(icon);
+ }
  if(tag==='input'){
   if(attrs.type==='number')root.PandoraNumericField?.prepare(n);
   if(attrs.type==='search')root.PandoraSearchField?.prepare(n);

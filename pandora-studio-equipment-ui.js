@@ -18,6 +18,11 @@ const el=(tag,attrs={},children=[])=>{
   else if(v!==null&&v!==undefined)e.setAttribute(k,String(v));
  }
  for(const child of children)e.append(typeof child==='string'?document.createTextNode(child):child);
+ // Share compact SVG controls with the rest of the site without growing buttons.
+ if(tag==='button'&&!children.length&&['✎','×','✕'].includes(attrs.text)){
+  const icon=root.PandoraStudioIcons?.create(attrs.text==='✎'?'edit':'close');
+  if(icon)e.replaceChildren(icon);
+ }
  if(tag==='input'&&String(attrs.type||'').toLowerCase()==='search')
   root.PandoraSearchField?.prepare(e);
  return e;
