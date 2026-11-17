@@ -2039,7 +2039,10 @@ function renderStagePicker(focusSearch=false){
     ['pickerSoulSearchAria','Поиск души','Find Soul','Поиск душ','Soul search'],
     ['pickerSoulSlotAria','Слот души','Soul slot','Название слота','Soul slot name'],
     ['pickerSoulSlotCaption','Слот','Slot','Подпись слота','Slot caption'],
-    ['pickerEmptySoul','пусто','empty','Пустой слот','Empty slot']
+    ['pickerEmptySoul','пусто','empty','Пустой слот','Empty slot'],
+    ['hint.choose','Выбрать или сменить предмет в этом слоте.','Choose or replace gear in this slot.','Подсказка выбора','Choose help'],
+    ['hint.details','Посмотреть свойства, заточку и слоты душ.','View properties, refinement and Soul sockets.','Подсказка свойств','Properties help'],
+    ['hint.souls','Вставить, заменить или снять душу.','Insert, replace or remove a Soul.','Подсказка душ','Soul help']
    ],'Подписи свойств и душ','Item and Soul labels');
    if(panel)root.insertBefore(panel,root.querySelector('.stage-rich-body')||null);
   }
@@ -2056,12 +2059,20 @@ function renderStagePicker(focusSearch=false){
   }
   return;
  }
+ const detailsLink=bindOwnerInterfaceText(h('button',{type:'button',
+   class:'stage-picker-mode-link',disabled:!record,
+   onclick:()=>{stageSlotView='details';renderStagePicker()}}),
+   'equipment','pickerDetails','Свойства','Properties');
+ const detailsHelp=equipmentCopy('hint.details',
+  'Посмотреть свойства, заточку и слоты душ.','View properties, refinement and Soul sockets.');
+ bindOwnerInterfaceText(detailsLink,'equipment','hint.details',
+  'Посмотреть свойства, заточку и слоты душ.',
+  'View properties, refinement and Soul sockets.','aria-description');
+ window.PandoraGuideTooltip?.attach(detailsLink,detailsHelp,{hoverDelay:300});
  const top=h('div',{class:'stage-picker-head'},[
   bindOwnerInterfaceText(h('strong',{}),'equipment','pickerChoosePrefix',
    'Выбор:','Choose:','text',' '+gearSlotName(selectedSlot)),
-  bindOwnerInterfaceText(h('button',{type:'button',class:'stage-picker-mode-link',
-   disabled:!record,onclick:()=>{stageSlotView='details';renderStagePicker()}}),
-   'equipment','pickerDetails','Свойства','Properties'),
+  detailsLink,
   bindOwnerInterfaceText(h('button',{type:'button',text:'✕',
    onclick:()=>closeStagePicker()}),'equipment','pickerClose',
    'Закрыть выбор','Close item picker','aria-label')
