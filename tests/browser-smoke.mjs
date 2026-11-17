@@ -19,6 +19,7 @@ import {runEquipmentEligibilitySmoke} from './browser-equipment-eligibility.mjs'
 import {runEquipmentLocaleSmoke} from './browser-equipment-locale.mjs';
 import {runSoulSearch852Smoke} from './browser-soul-search-852.mjs';
 import {runGemOptionAria853Smoke} from './browser-gem-aria-853.mjs';
+import {runItemPropertiesArrow866Smoke} from './browser-item-properties-arrow-866.mjs';
 import {runEquippedSoulCapacitySmoke,runSavedSocketRecoverySmoke} from './browser-equipped-soul-capacity.mjs';
 import {runEquipmentQuickMenuSmoke} from './browser-equipment-quick-menu.mjs';
 import {runEquipmentPickerLiveCopy390Smoke} from './browser-equipment-picker-live-copy-390.mjs';
@@ -96,6 +97,7 @@ const scenarios=[
   ['equipment-locale',runEquipmentLocaleSmoke],
   ['soul-search-852',runSoulSearch852Smoke],
   ['gem-option-aria-853',runGemOptionAria853Smoke],
+  ['item-properties-arrow-866',runItemPropertiesArrow866Smoke],
   ['per-item-soul-capacity',runEquippedSoulCapacitySmoke],
   ['equipment-quick-menu',runEquipmentQuickMenuSmoke],
   ['equipment-picker-live-copy-390',runEquipmentPickerLiveCopy390Smoke],
