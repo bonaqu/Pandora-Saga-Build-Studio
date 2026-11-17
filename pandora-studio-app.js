@@ -1964,6 +1964,7 @@ function renderStagePicker(focusSearch=false){
    canEdit:Boolean(adminEditing&&adminToken),
    record,item:equipped,slot:key,capacity,
    slotLabel:(lang==='en'?'Slot: ':'Слот: ')+gearSlotName(selectedSlot),
+   slotName:gearSlotName(selectedSlot),
    slotIndex:selectedSlot,selectedSocket,mode:stageSlotView,
    icons:(entry,kind)=>itemIcon(entry,kind==='soul'?'souls':'items'),
    refinement:plan.refinementValue(state.refinements,selectedSlot,equipped),
