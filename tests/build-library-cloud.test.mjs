@@ -38,6 +38,8 @@ test('only signed-in cloud libraries retry after network recovery',()=>{
  // retains the direct reconnect path used by the isolated smoke fixtures.
  assert.match(app,/if\(!localCatalogHost&&\(!studioLiveReady\|\|liveGateReason\)\)return/);
  assert.match(app,/if\(localCatalogHost\)resumeCloudLibrary\(\)/);
+ assert.match(app,/if\(studioLiveReady\)resumeCloudLibrary\(\{force:true\}\)/);
+ assert.match(app,/resumeCloudLibrary\(\{force:true\}\)/);
  assert.match(app,/window\.addEventListener\('online',[\s\S]*?checkLiveConnection\(\)/);
  assert.match(app,/document\.addEventListener\('visibilitychange'/);
  assert.match(app,/if\(!window\.PandoraAccountUI\?\.isLoggedIn\(\)\)return/);
