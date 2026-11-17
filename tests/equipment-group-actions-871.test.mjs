@@ -17,7 +17,7 @@ test('gear action opens the independent picker, grouped Properties/Souls are vis
  assert.match(ui,/const chooseGroup=el\('div',\{class:'stage-rich-choose-group'\}\)/);
  assert.match(ui,/const settingsGroup=el\('div',\{class:'stage-rich-settings-group',role:'group'/);
  assert.match(ui,/key==='choose'\?chooseGroup:settingsGroup/);
- assert.match(css,/\.stage-rich-settings-group\{display:grid;grid-template-columns:repeat\(2/);
+ assert.match(css,/\.stage-rich-settings-group\{display:grid;grid-template-columns:minmax\(0,\.76fr\) minmax\(0,1\.24fr\)/);
  assert.match(css,/\.stage-rich-settings-group>:not\(:first-child\)\{border-left:1px solid/);
  assert.match(css,/\.stage-rich-choose-group\{display:flex/);
  assert.match(app,/stage-picker-unequip-symbol/);

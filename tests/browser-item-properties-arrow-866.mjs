@@ -36,6 +36,14 @@ export async function runItemPropertiesArrow866Smoke(browser,base){
     'Choose is visually separated from grouped item settings');
    assert.ok(Math.abs(chooseBox.y-settingsBox.y)<2,
     'Both groups share one compact row');
+   const settingsChildren=await settings.locator(':scope > *').count();
+   assert.equal(settingsChildren,2,'Sockets share one settings group with Properties');
+   const tabLine=await picker.locator('.stage-rich-tabs').boundingBox();
+   const bodyBox=await picker.locator('.stage-rich-body').boundingBox();
+   assert.ok(tabLine&&bodyBox);
+   assert.ok(Math.abs(tabLine.x-bodyBox.x)<1,'Settings and details begin at the same edge');
+   assert.ok(tabLine.width-bodyBox.width<=1,'Details never overflow past the tab row');
+   assert.ok(settingsBox.width>chooseBox.width,'Soul actions have room for the full localized label');
    const soulDivider=await settings.locator('[data-stage-tab="souls"]').evaluate(
     element=>getComputedStyle(element.closest('.stage-action-edit-wrap')||element).borderLeftWidth);
    assert.notEqual(soulDivider,'0px','Properties and Souls have a visible separator');
@@ -73,6 +81,25 @@ export async function runItemPropertiesArrow866Smoke(browser,base){
    await link.click();
    await properties.waitFor({state:'visible',timeout:15000});
    assert.equal(await picker.locator('.stage-picker-slot-title').count(),1);
+   // Cloak has no Soul-tab. Its two actions should share the row equally,
+   // unlike the Soul-capable armor three-action layout.
+   await page.locator('.equipment-slot[data-slot-index="7"]').click();
+   const cloakPicker=page.locator('#stagePicker');
+   const cloakChoices=cloakPicker.locator('[data-stage-choice]');
+   assert.ok(await cloakChoices.count()>0,'Current catalog must offer a cloak');
+   await cloakChoices.first().click();
+   const simpleTabs=cloakPicker.locator('.stage-rich-tabs.no-souls');
+   await simpleTabs.waitFor({state:'visible',timeout:10000});
+   assert.equal(await simpleTabs.locator('.stage-rich-settings-group [data-stage-tab]').count(),1);
+   const leftBox=await simpleTabs.locator('.stage-rich-choose-group').boundingBox();
+   const rightBox=await simpleTabs.locator('.stage-rich-settings-group').boundingBox();
+   assert.ok(Math.abs(leftBox.width-rightBox.width)<3,
+    'Without Souls, Choose and Properties occupy a balanced half each');
+   const titleTabs=await simpleTabs.boundingBox();
+   const detailsBody=await cloakPicker.locator('.stage-rich-body').boundingBox();
+   assert.ok(Math.abs(titleTabs.x-detailsBody.x)<1);
+   assert.ok(detailsBody.width<=titleTabs.width+1);
+
    assert.deepEqual(errors,[]);
   }finally{await context.close()}
  }
