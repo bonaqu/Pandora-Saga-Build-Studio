@@ -10954,7 +10954,15 @@ async function checkLiveConnection(){
  try{await job}finally{if(liveCheckpointPromise===job)liveCheckpointPromise=null}
 }
 function reloadVerifiedCatalog(){
- if(liveGateReason!=='changed'||!liveLocalSaved)return;
+ if(liveGateReason!=='changed')return;
+ // A full browser storage area may become writable again after the user
+ // clears space. Re-attempt BOTH local saves rather than permanently
+ // disabling the explicit safe-reload action after the first failed write.
+ if(!liveLocalSaved){
+  liveLocalSaved=saveLiveDraft();
+  if(!liveLocalSaved){showLiveGate('changed');return}
+  showLiveGate('changed');
+ }
  // Never destroy an unacknowledged one-time recovery secret, password form,
  // in-flight owner CAS write, or current library draft.
  const accountBusy=window.PandoraAccountUI?.updateGuard?.();
