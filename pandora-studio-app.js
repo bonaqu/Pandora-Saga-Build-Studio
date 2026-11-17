@@ -10600,23 +10600,37 @@ $('locale').onclick=async event=>{
  if(!button||button.dataset.locale===lang||switchingLocale)return;
  const requested=button.dataset.locale;
  switchingLocale=true;
- if(requested==='en'&&!officialEnglish)
+ const loadingEnglish=requested==='en'&&!officialEnglish;
+ if(loadingEnglish)
   startupMessage('Подготавливаем английские описания…',
    'Loading English names and descriptions…','en');
  try{
-  if(requested==='en'&&!officialEnglish){
+  if(loadingEnglish){
    const english=await ensureEnglishCatalog();
    if(!english)throw Error('Английский перевод не загружен');
   }
+  // A network outage or changed D1 snapshot may have opened the blocking
+  // screen while English was in flight. Do not mutate the active language
+  // and never let this handler dismiss the mandatory online gate.
+  if(!localCatalogHost&&(!studioLiveReady||liveGateReason))return;
   lang=requested;
   localStorage.setItem('ps-build-lang',lang);
   applyGameLocale();
  }catch(error){
   console.warn('Requested language is unavailable',error);
-  showStudioToast('Не удалось загрузить английские описания: '+error.message,'warning');
+  if(!localCatalogHost&&studioLiveReady){
+   await checkLiveConnection();
+   if(liveGateReason)return;
+  }
+  showStudioToast(lang==='en'?
+   'Could not load English descriptions. Please try again.':
+   'Не удалось загрузить английские описания. Попробуй ещё раз.','warning');
  }finally{
   switchingLocale=false;
-  if(!startupOverlay.hidden)startupDone();
+  // Other asynchronous operations may already have changed the overlay
+  // to a D1 error. Only close the specific English loading state.
+  if(loadingEnglish&&startupOverlay.dataset.state==='loading'&&!liveGateReason)
+   startupDone();
  }
 };document.addEventListener('click',event=>{if(!adminEditing||!event.target.closest||event.target.closest('#ownerDock, .inline-owner-editor, #modalRoot, #hero'))return;const editable=event.target.closest('[data-edit-key]');if(editable){if(/^(?:item|itemdesc|itemslots|skill|skilldesc)\./.test(editable.dataset.editKey))return;event.preventDefault();event.stopImmediatePropagation();editor(editable)}},true);
 document.addEventListener('keydown',event=>{
