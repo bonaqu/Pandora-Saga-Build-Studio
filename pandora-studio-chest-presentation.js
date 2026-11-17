@@ -68,8 +68,21 @@ const equipmentSlots=Object.freeze([
  'cloak','ring','neck','belt','ear'
 ]);
 const knownSlots=new Set(equipmentSlots);
+// Current published catalog contains ETC records with confirmed utility
+// descriptions. These are presentation labels only, not effect calculations.
+// Unrecognized future ETC records still remain in Materials/Recipes instead
+// of being guessed from translated names or unrelated item ID ranges.
+const knownUtilityETC=new Set([
+ '65004','65006', // return wings / PvP-training ticket
+ '90001','90004', // premium service tickets
+ '90037','90053', // revival doll / quick return wings
+ '90045','90046','90049','90050', // extra inventory tabs
+ '90057','90060', // extra storage tabs
+ '90080' // apprentice repair hammer
+]);
+const knownPotionETC=new Set(['90038']); // universal status-curing potion
 const categoryOrder=Object.freeze([
- 'equipment','potions','boosts','gems','souls',
+ 'equipment','potions','boosts','gems','souls','utility',
  'materials','containers','gold','other'
 ]);
 function rewardCategory(row,items={},souls={},chestIds=new Set()){
@@ -84,6 +97,8 @@ function rewardCategory(row,items={},souls={},chestIds=new Set()){
  if(kind==='POTION')return {type:'potions',slot:null};
  if(kind==='BALM')return {type:'boosts',slot:null};
  if(kind==='RUNEGEM')return {type:'gems',slot:null};
+ if(kind==='ETC'&&knownPotionETC.has(id))return {type:'potions',slot:null};
+ if(kind==='ETC'&&knownUtilityETC.has(id))return {type:'utility',slot:null};
  if(kind==='ETC'||kind==='RECIPE')return {type:'materials',slot:null};
  return {type:'other',slot:null};
 }
