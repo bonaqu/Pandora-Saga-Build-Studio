@@ -23,6 +23,7 @@ import {runItemPropertiesArrow866Smoke} from './browser-item-properties-arrow-86
 import {runZeroSoulTabs873Smoke} from './browser-zero-soul-tabs-873.mjs';
 import {runPublicD1Copy874Smoke} from './browser-public-d1-copy-874.mjs';
 import {runOnlineD1Required878Smoke} from './browser-online-d1-required-878.mjs';
+import {runOnlineOwnerDraft879Smoke} from './browser-online-owner-draft-879.mjs';
 import {runEquippedSoulCapacitySmoke,runSavedSocketRecoverySmoke} from './browser-equipped-soul-capacity.mjs';
 import {runEquipmentQuickMenuSmoke} from './browser-equipment-quick-menu.mjs';
 import {runEquipmentPickerLiveCopy390Smoke} from './browser-equipment-picker-live-copy-390.mjs';
@@ -106,6 +107,7 @@ const scenarios=[
   ['zero-soul-tabs-873',runZeroSoulTabs873Smoke],
   ['public-d1-copy-874',runPublicD1Copy874Smoke],
   ['online-d1-required-878',runOnlineD1Required878Smoke],
+  ['online-owner-draft-879',runOnlineOwnerDraft879Smoke],
   ['per-item-soul-capacity',runEquippedSoulCapacitySmoke],
   ['equipment-quick-menu',runEquipmentQuickMenuSmoke],
   ['equipment-picker-live-copy-390',runEquipmentPickerLiveCopy390Smoke],
