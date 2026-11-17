@@ -23,8 +23,8 @@ test('footer uses real loaded counts in both locales, not database jargon',()=>{
  assert.doesNotMatch(render('ru',data),/D1|Worker|база данных|HTTP/);
 });
 test('the same renderer runs on catalog refresh and locale switching',()=>{
- assert.match(app,/function applyGameLocale\(\{redraw=true\}=\{\}\)\{[\s\S]*?renderCatalogStatus\(\)/);
- assert.match(app,/applyGameLocale\(\);persist\(\)/);
+ assert.match(app,/function applyGameLocale\\(\\{redraw=true,persistReconciled=true\\}=\\{\\}\\)\\{[\s\S]*?renderCatalogStatus\(\)/);
+ assert.match(app,/applyGameLocale\(\{persistReconciled:commit\}\);\s*if\(commit\)persist\(\)/);
  assert.equal((app.match(/\$\('catalogStatus'\)\.textContent=/g)||[]).length,0);
  assert.match(html,/id="catalogStatus">Загружаем данные игры…<\/span>/);
 });
