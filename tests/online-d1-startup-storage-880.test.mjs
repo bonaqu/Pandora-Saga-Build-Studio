@@ -33,3 +33,32 @@ test('initial local storage failure is not retried invisibly or labeled as a sav
  assert.match(resume,/if\(!liveLocalSaved\)\{showLiveGate\('storage'\);return\}/);
  assert.match(resume,/resumeCloudLibrary\(\{force:true\}\)/);
 });
+
+test('a no-op storage readiness write preserves the original saved library order',()=>{
+ const source=section('function persistBuilds()', 'const CLOUD_TOKEN_KEY=');
+ const rows=[
+  {id:'a'.repeat(32),createdAt:100,data:{name:'One'}},
+  {id:'b'.repeat(32),createdAt:200,data:{name:'Two'}}
+ ];
+ const stored=JSON.stringify([...rows].reverse());
+ let value=stored,writes=0;
+ const libraryScopeId=()=> 'account:test';
+ const window={PandoraBuildScope:{
+  getOwned:()=>value,
+  setOwned:(_storage,_owner,key,next)=>{
+   assert.equal(key,'ps-build-library.v1');
+   value=next;writes++;return true;
+  }
+ }};
+ const orderByCreation=data=>[...data].sort((a,b)=>a.createdAt-b.createdAt);
+ const buildFunction=Function('window','localStorage','libraryScopeId','builds',
+  'safeStoredBuildRows',source+'\nreturn persistBuilds;');
+ const persistBuilds=buildFunction(window,{},libraryScopeId,rows,orderByCreation);
+ assert.equal(persistBuilds(),true);
+ assert.equal(value,stored,'Readiness must never reverse the saved serialized rows');
+ assert.equal(writes,1,'Still tests that localStorage accepts a real write');
+ rows[0]={...rows[0],data:{name:'Updated'}};
+ assert.equal(persistBuilds(),true);
+ assert.notEqual(value,stored,'An actual library change must be persisted');
+ assert.equal(JSON.parse(value)[0].data.name,'Updated');
+});
