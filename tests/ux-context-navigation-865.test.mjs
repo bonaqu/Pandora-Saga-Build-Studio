@@ -18,7 +18,9 @@ test('active build is highlighted independently from compare checkboxes',()=>{
 test('profession stage navigation supports revisiting prior and selected future stages',()=>{
  const app=read('pandora-studio-app.js'),css=read('pandora-studio-theme.css');
  assert.match(app,/const stageTargets=\[null,navigationPath\[0\]\?\.key\|\|null,navigationPath\[1\]\?\.key\|\|null\]/);
- assert.match(app,/attrs\.onclick=\(\)=>\{jobPathKey=stageTargets\[i\];renderJobs\(\);saveView\(\)\}/);
+ assert.match(app,/attrs\.onclick=event=>/);
+ assert.match(app,/if\(adminEditing&&adminToken&&event\.target\?\.closest\?\.\('\[data-origin-copy-key\]'\)\)return/);
+ assert.match(app,/jobPathKey=stageTargets\[i\];renderJobs\(\);saveView\(\)/);
  assert.match(app,/const onChosenRoute=!path\.length\|\|path\.every/);
  assert.match(css,/\.class-wizard-step:is\(button\):focus-visible/);
  assert.doesNotMatch(app,/Специализация выбрана\. Можно вернуться/);
