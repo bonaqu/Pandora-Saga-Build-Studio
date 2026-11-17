@@ -6526,7 +6526,11 @@ function renderWiki(root){
       for(const [key,ru,en] of categories){
        const count=key==='all'?facets.total:facets.types[key];
        if(!count)continue;
-       typeFilter.append(h('option',{value:key,text:wt(ru,en)+' · '+count}));
+       // Never save dynamic reward counts or option values in D1.
+       const option=h('option',{value:key});
+       bindOwnerInterfaceText(option,'wiki.chest.category',
+        key,ru,en,'text',' · '+count);
+       typeFilter.append(option);
       }
       if(![...typeFilter.options].some(option=>option.value===wikiChestRewardFilter.type))
        wikiChestRewardFilter.type='all';
@@ -6561,8 +6565,9 @@ function renderWiki(root){
         const amount=key==='all'?facets.types.equipment:facets.slots[key];
         if(!amount)continue;
         const chip=h('button',{type:'button',class:'wiki-chest-slot-option',
-         'data-chest-slot':key,'aria-pressed':'false',
-         text:wt(ru,en)+' · '+amount});
+         'data-chest-slot':key,'aria-pressed':'false'});
+        bindOwnerInterfaceText(chip,'wiki.chest.slot',key,ru,en,
+         'text',' · '+amount);
         chip.onclick=()=>{
          wikiChestRewardFilter.type='equipment';
          wikiChestRewardFilter.slot=key;
@@ -6581,6 +6586,19 @@ function renderWiki(root){
        role:'group','aria-label':wt('Фильтры наград сундука','Chest reward filters')},
        [typeFilter,count,...(facets.types.equipment?[slotChips]:[])]);
       gallery.before(toolbar);gallery.after(empty);
+      // Native <option> captions cannot contain an inline pencil. The
+      // existing compact editor is owner-only and collapsed by default.
+      // Its stable RU/EN keys change labels only, never filtering IDs,
+      // source odds, live reward counts or players' item descriptions.
+      if(adminEditing&&adminToken){
+       const categoryCopy=ownerInterfaceEditor('wiki.chest.category',
+        categories,'Названия категорий наград','Reward category labels');
+       const slotCopy=facets.types.equipment?ownerInterfaceEditor(
+        'wiki.chest.slot',
+        [['all','Вся экипировка','All equipment'],...slotLabels],
+        'Названия типов экипировки','Equipment slot labels'):null;
+       toolbar.after(...[categoryCopy,slotCopy].filter(Boolean));
+      }
       const applyRewardFilter=()=>{
        const type=wikiChestRewardFilter.type,slot=wikiChestRewardFilter.slot;
        gallery.dataset.filtered=type==='all'?'false':'true';
