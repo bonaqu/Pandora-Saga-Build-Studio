@@ -8973,6 +8973,44 @@ function refreshVisibleUICopy(recordKey){
    if(id===locale.fieldKey('librarySearchPlaceholder'))
     search.placeholder=locale.text('librarySearchPlaceholder',lang);
   }
+  // Owner-edited library captions refresh in place: no lost search, sorting,
+  // comparison state, cursor position or unsaved hero when D1 CAS completes.
+  for(const button of document.querySelectorAll('#detailContent [data-library-action-copy]')){
+   const key=button.dataset.libraryActionCopy;
+   if(locale.fieldKey(key)===id)button.textContent=locale.text(key,lang);
+  }
+  const sort=document.querySelector('#detailContent .build-library-sort-select');
+  if(sort){
+   if(id===locale.fieldKey('librarySortAria'))
+    sort.setAttribute('aria-label',locale.text('librarySortAria',lang));
+   for(const [key,value] of [
+    ['librarySortSaved','saved'],['librarySortName','name'],
+    ['librarySortLevel','level'],['librarySortClass','class']
+   ]){
+    if(id===locale.fieldKey(key)){
+     const option=[...sort.options].find(item=>item.value===value);
+     if(option)option.textContent=locale.text(key,lang);
+    }
+   }
+  }
+  if(id===locale.fieldKey('libraryBuildNameAria')){
+   const name=document.querySelector('#detailContent .build-name-input');
+   name?.setAttribute('aria-label',locale.text('libraryBuildNameAria',lang));
+  }
+  if(id===locale.fieldKey('libraryDraftNameAria')){
+   const draft=document.querySelector('#detailContent .new-build-choice input[type="text"]');
+   draft?.setAttribute('aria-label',locale.text('libraryDraftNameAria',lang));
+  }
+  if(id===locale.fieldKey('libraryCompare')){
+   const label=locale.text('libraryCompare',lang);
+   for(const row of document.querySelectorAll('#detailContent .build-card-compare')){
+    const caption=row.querySelector('[data-library-compare-copy]');
+    if(caption)caption.textContent=label;
+    const checkbox=row.querySelector('input[type="checkbox"]');
+    const name=row.closest('.build-card')?.querySelector('.build-card-title')?.textContent||'';
+    if(checkbox)checkbox.setAttribute('aria-label',label+' '+name);
+   }
+  }
   for(const state of document.querySelectorAll('#detailContent [data-build-library-state-copy]')){
    const key=state.dataset.buildLibraryStateCopy;
    if(locale.fieldKey(key)===id)state.textContent=locale.text(key,lang);
