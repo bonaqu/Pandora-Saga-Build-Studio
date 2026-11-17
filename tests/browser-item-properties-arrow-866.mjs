@@ -36,6 +36,14 @@ export async function runItemPropertiesArrow866Smoke(browser,base){
     'Choose is visually separated from grouped item settings');
    assert.ok(Math.abs(chooseBox.y-settingsBox.y)<2,
     'Both groups share one compact row');
+   const settingsChildren=await settings.locator(':scope > *').count();
+   assert.equal(settingsChildren,2,'Sockets share one settings group with Properties');
+   const tabLine=await picker.locator('.stage-rich-tabs').boundingBox();
+   const bodyBox=await picker.locator('.stage-rich-body').boundingBox();
+   assert.ok(tabLine&&bodyBox);
+   assert.ok(Math.abs(tabLine.x-bodyBox.x)<1,'Settings and details begin at the same edge');
+   assert.ok(tabLine.width-bodyBox.width<=1,'Details never overflow past the tab row');
+   assert.ok(settingsBox.width>chooseBox.width,'Soul actions have room for the full localized label');
    const soulDivider=await settings.locator('[data-stage-tab="souls"]').evaluate(
     element=>getComputedStyle(element.closest('.stage-action-edit-wrap')||element).borderLeftWidth);
    assert.notEqual(soulDivider,'0px','Properties and Souls have a visible separator');
