@@ -11140,7 +11140,7 @@ document.addEventListener('visibilitychange',()=>{
  if(!localCatalogHost&&studioLiveReady&&liveGateReason!=='changed'&&
   document.visibilityState==='visible')void checkLiveConnection();
 });
-let startupAttempt=0,startupRunning=false;
+let startupAttempt=0,startupRunning=false,startupQueuedLive=false;
 async function startStudio({archive=false}={}){
  // Browser online events, manual retries and backoff may occur together.
  // Only one attempted startup may own the globally installed catalog, hero
@@ -11199,7 +11199,15 @@ async function startStudio({archive=false}={}){
    if(libraryScopeId()===draftOwner)state=originalDraft;
    startupError(error);
   }
- }finally{startupRunning=false}
+ }finally{
+  startupRunning=false;
+  // A retry requested while local fixture or an earlier live request was
+  // loading must not be lost. Run exactly one deferred request, serialized.
+  if(startupQueuedLive){
+   startupQueuedLive=false;
+   void startStudio();
+  }
+ }
 }
 $('startupRetry').onclick=()=>{
  if(liveGateReason==='changed'){reloadVerifiedCatalog();return}
@@ -11207,7 +11215,9 @@ $('startupRetry').onclick=()=>{
  if(liveGateReason==='offline'){void checkLiveConnection();return}
  // An explicit Retry always requests D1, including local Chromium fixtures
  // that initially boot from bundled development data. No user-facing path
- // opens the archive on a published hostname.
+ // opens the archive on a published hostname. Do not drop a click just
+ // because an earlier (possibly local) startup is still finishing.
+ if(startupRunning){startupQueuedLive=true;return}
  void startStudio();
 };
 // Local fixture mode is never exposed as a player-facing fallback.
