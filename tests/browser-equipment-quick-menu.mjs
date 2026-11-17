@@ -47,7 +47,7 @@ export async function runEquipmentQuickMenuSmoke(browser,base){
   await menu.waitFor({state:'visible'});
   assert.equal(await menu.locator('[role="menuitem"]').count(),4);
   assert.deepEqual(await menu.locator('[role="menuitem"]').allTextContents(),
-   ['◇Свойства','◈Управление душами','⇄Выбрать другую вещь','×Снять вещь']);
+   ['◇Свойства','○Управление душами','⇄Выбрать другую вещь','×Снять вещь']);
   assert.equal(await action('souls').isEnabled(),true);
   const bounds=await menu.boundingBox();
   assert.ok(bounds.x>=7&&bounds.x+bounds.width<=1366-7,
