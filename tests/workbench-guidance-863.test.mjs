@@ -18,7 +18,7 @@ test('three onboarding steps and equipment tabs have bilingual help',()=>{
   assert.match(html,new RegExp('data-i18n="'+key+'"'));
   assert.match(locale,new RegExp(key+':\\['));
  }
- assert.match(equipment,/actionHelp=\{/);
- for(const id of ['choose','details','souls'])assert.match(equipment,new RegExp(id+':tr\\('));
- assert.match(equipment,/PandoraGuideTooltip\?\.attach\(button,actionHelp\[key\]/);
+ assert.match(equipment,/const hints=\{/);
+ for(const id of ['choose','details','souls'])assert.match(equipment,new RegExp(id+':\\['));
+ assert.match(equipment,/PandoraGuideTooltip\?\.attach\(button,actionHelp,/);
 });

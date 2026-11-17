@@ -13,10 +13,10 @@ const skill=(id,reqs=[],more={})=>({
 });
 const api=(skills=[],other={})=>{
  const branchCaps={archery:55,assassin:35,defense:0,
-  martial:0,slashing:45,piercing:45,blunt:45,heavy:45,guard:45};
+  martial:0,slash:40,thrust:40,brush:40,blow:40};
  return {lang:'ru',job:'ARCHER',state:{level:1,points:{}},innate:{archery:3},
   branchCaps,skillCatalog:skills,maxLevel:55,maxSkillPoints:104,
-  cap:key=>branchCaps[key]??0,...other};
+  cap:key=>branchCaps[key]??0,branchName:key=>key,...other};
 };
 test('future gallery includes skills locked now but reachable with valid branch training',()=>{
  const s=skill(1,[{branch:'archery',amount:45}],{charLevel:50});
