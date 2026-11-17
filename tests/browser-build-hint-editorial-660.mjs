@@ -139,8 +139,10 @@ export async function runOwnerBuildHints660Smoke(browser,base){
   assert.equal(await sort.locator('option[value="saved"]').innerText(),'Порядок создания');
   await edit('libraryCompare','Сопоставить');
   assert.equal(await card.locator('[data-library-compare-copy]').innerText(),'Сопоставить');
-  assert.match(await card.locator('.build-card-compare input').getAttribute('aria-label'),
-   /^Сопоставить QA preserved hero$/);
+  assert.equal(await card.locator('.build-card-compare input').getAttribute('aria-label'),
+   'Сопоставить '+await card.locator('h3').innerText(),
+   'Accessible compare label follows the current sorted card, not its old position');
+  await sort.selectOption('saved');
   await page.locator('#dockClose').click();
   await page.locator('#locale [data-locale="en"]').click();
   await page.locator('#nav [data-tab="builds"]').click();
