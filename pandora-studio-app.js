@@ -1689,13 +1689,9 @@ function renderSlotRails(){
     window.PandoraStageItemUI.attachPreview(button,source,
      (rec,kind)=>itemIcon(rec,kind==='soul'?'souls':'items'),
      'item',{slot:key,refinement:level,gem:equippedGem,souls:socketed,
-      capacity:cap,tables:gameTables});
-    const activeFire=window.PandoraConditionalItemBonuses?.activeFor?.({
-     record:source,refinement:level,gem:equippedGem,issue});
-    if(!shared&&activeFire?.phoenix)button.append(h('span',{
-     class:'stage-elemental-proc',text:'✦',
-     'aria-label':(lang==='en'?'Phoenix Flame: +':'Пламя феникса: +')+
-      activeFire.phoenix.chance+'%'}));
+      capacity:cap,tables:gameTables,equipped:true,issue});
+    // Conditional fire effects remain in Properties; the rail badge was
+    // redundant and looked like an unexplained enhancement/socket control.
    }
    if(!shared&&(report.excess>0||issue.length)){
     const reasons=[];
@@ -1981,6 +1977,7 @@ function renderStagePicker(focusSearch=false){
     bindOwnerInterfaceText(node,'equipment',key,ru,en,attribute,suffix),
    canEdit:Boolean(adminEditing&&adminToken),
    record,item:equipped,slot:key,capacity,
+   issue:record?equipmentIssue(record,selectedSlot):[],
    slotLabel:(lang==='en'?'Slot: ':'Слот: ')+gearSlotName(selectedSlot),
    slotName:gearSlotName(selectedSlot),
    slotIndex:selectedSlot,selectedSocket,mode:stageSlotView,
