@@ -6,7 +6,7 @@ test('switching saved builds preserves unsaved editor changes via an inline choi
  assert.match(source,/function openSavedBuild\(b\)/);
  assert.match(source,/if\(!unsavedBuild\(\)\)\{openSavedBuild\(b\);return\}/);
  assert.match(source,/class:'build-open-choice'/);
- assert.match(source,/if\(saveBuild\(\)\)openSavedBuild\(b\)/);
+ assert.match(source,/if\(saveBuild\(state\.name\|\|'Новый герой',activeBuildId\)\)openSavedBuild\(b\)/);
  assert.match(source,/onclick:\(\)=>openSavedBuild\(b\)/);
  assert.match(source,/openChoice\.hidden=true/);
  assert.match(source,/const latest=builds\.find\(record=>record\.id===b\.id\)\|\|b/);
