@@ -84,6 +84,20 @@ export async function runChestCategoryFiltersSmoke(browser,base){
   assert.equal(await verifyFacets('equipment'),sourceRows(51036).filter(row=>
    catalogItems[row.i]?.slot).length);
   assert.equal(await slots.locator('[data-chest-slot="all"]').getAttribute('aria-pressed'),'true');
+  // Test the wide set of equipment facets at phone width, not just gold boxes.
+  await page.setViewportSize({width:390,height:844});
+  const mobileFacets=await page.evaluate(()=>{
+   const box=document.querySelector('.wiki-chest-slot-filters')?.getBoundingClientRect();
+   return {overflow:Math.max(document.body.scrollWidth,
+    document.documentElement.scrollWidth)-document.documentElement.clientWidth,
+    chipsWidth:box?.width||0};
+  });
+  assert.ok(mobileFacets.overflow<=15,
+   'Ancient King equipment facet row must not overflow mobile: '+JSON.stringify(mobileFacets));
+  assert.ok(mobileFacets.chipsWidth<=390);
+  await slots.locator('[data-chest-slot="body"]').click();
+  assert.equal(await verifyFacets('equipment','body'),sourceSlot(51036,'body'));
+  await page.setViewportSize({width:1366,height:860});
 
   await openChest(52001); // NPC chest with Soul and Potion types
   const types=page.locator('.wiki-chest-filter-type');
