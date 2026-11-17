@@ -2068,14 +2068,30 @@ function renderStagePicker(focusSearch=false){
   'Поиск по названию','Search by name','placeholder');
  bindOwnerInterfaceText(search,'equipment','pickerSearchAria',
   'Поиск предмета для','Search equipment for','aria-label',' '+gearSlotName(selectedSlot));
- const count=h('small',{class:'stage-picker-count'});
+ // Source text is editable; the current filter and numeric counts are not.
+ const matchedCount=h('span',{class:'stage-picker-count-matched'});
+ const shownCount=h('span',{class:'stage-picker-count-shown'});
+ const count=h('small',{class:'stage-picker-count'},[
+  matchedCount,
+  bindOwnerInterfaceText(h('span',{}),'equipment','pickerMatchSuffix',
+   ' подходящих',' matching'),
+  h('span',{text:' · '}),shownCount,
+  bindOwnerInterfaceText(h('span',{}),'equipment','pickerShownSuffix',
+   ' показано',' shown')
+ ]);
  const onlyAvailable=h('label',{class:'stage-picker-only-available'},[
-  h('input',{type:'checkbox',checked:stagePickerOnlyAvailable,
-   'aria-label':lang==='en'?'Only items available at my level':'Только доступные на моём уровне'}),
-  h('span',{text:lang==='en'?'Available at my level':'Доступные на моём уровне'})
+  bindOwnerInterfaceText(h('input',{type:'checkbox',checked:stagePickerOnlyAvailable}),
+   'equipment','pickerAvailableAria',
+   'Только доступные на моём уровне','Only items available at my level','aria-label'),
+  bindOwnerInterfaceText(h('span',{}),'equipment','pickerAvailableLabel',
+   'Доступные на моём уровне','Available at my level')
  ]);
  const list=h('div',{class:'stage-picker-list',role:'list'});
- const more=h('button',{type:'button',class:'stage-picker-more'});
+ const moreCount=h('span',{class:'stage-picker-more-count'});
+ const more=h('button',{type:'button',class:'stage-picker-more'},[
+  bindOwnerInterfaceText(h('span',{}),'equipment','pickerMorePrefix',
+   'Показать ещё (','Show more ('),moreCount,h('span',{text:')'})
+ ]);
  const remove=bindOwnerInterfaceText(h('button',{type:'button',
   disabled:!equipped&&!(selectedSlot===5&&window.PandoraUIPlanner.occupiesBodyAndLegs(equippedRecord(3))),
   onclick:()=>{
@@ -2107,9 +2123,9 @@ function renderStagePicker(focusSearch=false){
    Number(rec.level||1)<=state.level).filter(rec=>searchWords([itemName(rec),
    catalogSource?.items?.[String(rec.id)]?.name,
    officialEnglish?.items?.[String(rec.id)]?.n].filter(Boolean).join(' '),stageSlotQuery));
-  count.textContent=lang==='en'?
-   matches.length+' matching · '+Math.min(matches.length,stageSlotShown)+' shown':
-   matches.length+' подходящих · '+Math.min(matches.length,stageSlotShown)+' показано';
+  // Do not replace the editable copy nodes during result refresh.
+  matchedCount.textContent=String(matches.length);
+  shownCount.textContent=String(Math.min(matches.length,stageSlotShown));
   if(!catalog.live)list.append(bindOwnerInterfaceText(h('p',{class:'muted'}),
    'equipment','pickerLoading','Каталог ещё не загружен.','The catalog is still loading.'));
   else if(!Number.isInteger(state.race)||!Number.isInteger(state.job))
@@ -2169,8 +2185,7 @@ function renderStagePicker(focusSearch=false){
      state.refinements,selectedSlot,equipped):0,tables:gameTables});
   }
   more.hidden=matches.length<=stageSlotShown;
-  more.textContent=(lang==='en'?'Show more (':'Показать ещё (')+
-   Math.max(0,matches.length-stageSlotShown)+')';
+  moreCount.textContent=String(Math.max(0,matches.length-stageSlotShown));
  };
  onlyAvailable.querySelector('input').addEventListener('change',event=>{
   stagePickerOnlyAvailable=event.target.checked;stageSlotShown=48;draw();
@@ -2188,6 +2203,13 @@ function renderStagePicker(focusSearch=false){
   ['pickerSearchPlaceholder','Поиск по названию','Search by name','Поле поиска','Search placeholder'],
   ['pickerSearchAria','Поиск предмета для','Search equipment for','Название поиска','Search accessible name'],
   ['pickerUnequip','Снять предмет','Unequip item','Снять предмет','Unequip action'],
+  ['pickerAvailableLabel','Доступные на моём уровне','Available at my level',
+   'Фильтр по уровню','Level filter'],
+  ['pickerAvailableAria','Только доступные на моём уровне','Only items available at my level',
+   'Доступное имя фильтра','Level filter accessible name'],
+  ['pickerMatchSuffix',' подходящих',' matching','Найдено предметов','Matching items'],
+  ['pickerShownSuffix',' показано',' shown','Отображено предметов','Shown items'],
+  ['pickerMorePrefix','Показать ещё (','Show more (','Загрузить ещё','Show more'],
   ['pickerOutfitNote','Платье занимает броню и штаны. Выбор штанов снимет его.',
    'Armor and pants are occupied by one outfit. Choosing pants removes it.',
    'Подсказка костюма','Outfit note'],
