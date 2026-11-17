@@ -152,3 +152,20 @@
 | Сводка очков в «Происхождении» | 2 | `book.stats-ui.remaining-prefix`, `spent-prefix` |
 
 Редактор показывает текст рядом с короткой подписью на *той же странице* в компактном owner-only `details` с карандашом. Пишутся только `ru/en` поля автора. Отредактированная строка применяется к существующему элементу `data-owner-interface-*` без потери запроса, открытого предмета, положения скролла и свойств героя. Число слота и имя души остаются не редактируемыми D1 данными суффикса. Сохранение и Undo используют одну функцию обновления DOM. Стартовые RU/EN значения остаются в файлах как offline fallback, их **физическая загрузка в D1 не выполняется**. Полный аудит оставшихся runtime-строк и безопасность в продакшн-админсеансе ещё не закрыты.
+
+
+## 17.11.2026 — dynamic equipment picker copy (Issue #390)
+
+Five additional stable RU/EN D1 labels are editable from the existing
+equipment-picker owner panel without creating a modal:
+`pickerAvailableLabel`, `pickerAvailableAria`, `pickerMatchSuffix`,
+`pickerShownSuffix`, `pickerMorePrefix`.
+
+The filter checkbox keeps its live checked state; visible numeric counts
+and the current search query are **not** D1 text. Results update only the
+small number nodes instead of overwriting mounted owner-editable captions,
+so CAS save / Undo do not replace the active search input or reset the picker.
+A separate full Chromium scenario checks RU→EN with a zero-results query
+and stable checkbox/query, plus Node contracts for all five D1 semantic keys.
+No gameplay data, formula, production D1 values or site version changed.
+Remaining specialized runtime copy is still tracked by #390.
