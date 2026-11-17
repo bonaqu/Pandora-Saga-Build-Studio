@@ -447,7 +447,10 @@ export async function runUIContentInlineSmoke(browser,base){
    null,{timeout:15000});
   const cloudKey='guideedit.book.ui.label.status-cloud-connected';
   assert.equal(JSON.parse(values[cloudKey]).en,'Cloud library checked and ready.');
-  await page.locator('#locale [data-locale="ru"]').click();
+  // The workbench is modal and intercepts pointer clicks on the header.
+  // The existing keyboard-accessible locale control must remain usable.
+  await page.locator('#locale [data-locale="ru"]').focus();
+  await page.keyboard.press('Enter');
   await page.waitForFunction(()=>document.documentElement.lang==='ru');
   await page.waitForFunction(()=>document.querySelector(
    '#detailContent .cloud-library-status')?.dataset.ownerCopyKey==='statusCloudConnected',
