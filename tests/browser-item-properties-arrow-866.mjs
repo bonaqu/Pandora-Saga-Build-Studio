@@ -11,6 +11,7 @@ export async function runItemPropertiesArrow866Smoke(browser,base){
     race:1,gender:0,job:7,level:45,name:'Arrow QA',
     stats:{},points:{},mastery:{},
     equipment:{5:{id:13041,name:'Железные поножи'}},
+    socketCapacities:{'5:13041':2},
     souls:{},refinements:{},gems:{}
    }));
   },{lang});
