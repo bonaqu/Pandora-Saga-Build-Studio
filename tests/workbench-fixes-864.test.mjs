@@ -72,8 +72,11 @@ test('D1 authoring covers all three workbench sections and per-tab help',()=>{
 test('slot indicators and chapter use unambiguous labels',()=>{
  const css=read('pandora-studio-workbench-guidance.css');
  const labels=read('pandora-studio-wiki-labels.js'),app=read('pandora-studio-app.js');
- assert.match(css,/data-stage-tab="choose"\]::before\{content:"⇄"/);
- assert.match(css,/data-stage-tab="souls"\]::before\{content:"○"/);
+ assert.match(css,/\.stage-rich-tabs \.stage-tab-symbol/);
+ assert.match(css,/\.stage-gear-context-icon/);
+ const equip=read('pandora-studio-equipment-ui.js');
+ assert.match(equip,/choose:'⇄',replace:'⇄',details:'≡',properties:'≡'/);
+ assert.match(equip,/souls:'○',remove:'×'/);
  assert.match(labels,/skill:\['Умения','Skills'\]/);
  assert.match(app,/text:Math\.min\(report\.count,cap\)\+'\/'\+cap/);
 });
