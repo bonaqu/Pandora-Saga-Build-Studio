@@ -106,7 +106,7 @@ function gearIssueLabel(message){
 function fresh(){return{race:null,gender:0,job:null,level:1,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),mastery:{},masteryFormat:2,masteryAuto:true,stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},soulOwners:{},socketCapacities:{},refinements:{},gems:{},vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},attributeBuffs:{guildAll:0,honorCuriosity:false,mounted:false,proelium:false,proeliumPotency:0,potionEffectsEnabled:false,guildLifeRecovery:0,guildManaRecovery:0,guildHealing:0,guildLevel:0,priestClass:'ENCHANTER',priestEnabled:true,priestSpi:134,priestBlessing:90,priestHymn:30,priestBenevolence:0,priestExorcism:26,allyPeaceSpi:134,allyPeaceHymn:30,allyNaturalLevel:45,allyHealingLevel:45,
  allyHealingSpi:134,allyHealingMastery:41,allyRegeneration:false,
  allyRestoration:false,combatFreeWind:false,nextMagicConcentration:false,priestGratia:false,priestLapisMedio:false,priestEncouragement:false,resistanceSkillIds:[],remakedSkillIds:[]},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
-let state=fresh(),activeTab=bootView.tab==='equipment'?'wiki':(['character','builds','wiki'].includes(bootView.tab)?bootView.tab:'character'),catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,approvedSkillIdNames=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,wikiShown=100,selectedSocket=0,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='',wikiItemType='equipment',wikiElementFilter='all',wikiEffectFilter='all',wikiSkillFilter=['player','racial','guild','special','variants','other','unknown','all'].includes(bootView.wikiSkillFilter)?bootView.wikiSkillFilter:'player',wikiItemLayout=bootView.wikiLayout==='grid'?'grid':'list',wikiItemEligibility='all';
+let state=fresh(),activeTab=bootView.tab==='equipment'?'wiki':(['character','builds','wiki'].includes(bootView.tab)?bootView.tab:'character'),catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,approvedSkillIdNames=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,wikiShown=100,selectedSocket=0,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiChestRewardFilter={id:null,type:'all',slot:'all'},wikiSearch='',wikiItemType='equipment',wikiElementFilter='all',wikiEffectFilter='all',wikiSkillFilter=['player','racial','guild','special','variants','other','unknown','all'].includes(bootView.wikiSkillFilter)?bootView.wikiSkillFilter:'player',wikiItemLayout=bootView.wikiLayout==='grid'?'grid':'list',wikiItemEligibility='all';
 // A damaged browser draft must not prevent the independent saved-build library
 // from loading. Keep the original storage untouched for manual recovery.
 function safeStoredBuildRows(value){
@@ -6329,6 +6329,10 @@ function renderWiki(root){
      linkFlow(namedPlaces.map(mapId=>wikiLink('◈ '+dataName('map',mapId),'map',mapId,id)))
     ]));
     const groups=rec.rolls||[];
+    // A new chest resets its filter; the same chest keeps its selection when
+    // the page redraws, including an RU/EN language switch.
+    if(wikiChestRewardFilter.id!==String(id))
+     wikiChestRewardFilter={id:String(id),type:'all',slot:'all'};
     const mapChest=rec.key!=null;
     if(mapChest){
      const notice=h('section',{class:'wiki-chest-opening',role:'note'});
@@ -6399,10 +6403,13 @@ function renderWiki(root){
      const options=h('div',{class:'wiki-chest-options'});
      for(const {index:rowIndex,row} of window.PandoraStudioChestPresentation.orderedRewards(group)){
       const nextChest=chestIds.has(String(row.i))&&String(row.i)!==String(id);
+      const facet=window.PandoraStudioChestPresentation.rewardCategory(
+       row,wikiData.items,wikiData.souls,chestIds);
       const option=h('div',{class:'wiki-chest-reward'+
        (nextChest?' wiki-chest-reward-nested':'')+
        (wikiSelection.highlight===String(row.i)?' highlighted':''),
-       'data-roll-group':String(i+1)});
+       'data-roll-group':String(i+1),'data-reward-type':facet.type,
+       'data-reward-slot':facet.slot||''});
       const goldReward=Array.isArray(row.gold);
       const rewardMain=h('div',{class:'wiki-chest-reward-main'},[
        row.i!=null?itemLink(row.i,dataName('item',row.i),id):
@@ -6480,6 +6487,93 @@ function renderWiki(root){
     }
     if(!adminEditing&&!adminToken&&chestView.listed100.length)gallery.prepend(certainBoard);
     detail.append(gallery);
+    // Level-up reward boxes retain their original layout; only ordinary
+    // chests use the catalogue-derived category/slot filters.
+    if(!wikiIndex.rewardChest(id)&&groups.length){
+     const chestPresentation=window.PandoraStudioChestPresentation;
+     const facets=chestPresentation.rewardFilters(
+      groups,wikiData.items,wikiData.souls,chestIds);
+     if(facets.total){
+      const categories=[
+       ['all','Все награды','All rewards'],
+       ['equipment','Экипировка','Equipment'],
+       ['potions','Зелья','Potions'],
+       ['boosts','Бальзамы и усиления','Balms and boosts'],
+       ['gems','Самоцветы','Gems'],
+       ['souls','Души','Souls'],
+       ['materials','Материалы и рецепты','Materials and recipes'],
+       ['containers','Другие сундуки','Other chests'],
+       ['gold','Золото','Gold'],
+       ['other','Прочее','Other']
+      ];
+      const slotLabels=[
+       ['weapon','Оружие','Weapons'],['shield','Щиты','Shields'],
+       ['head','Шлемы','Helmets'],['body','Броня','Armor'],
+       ['gloves','Перчатки','Gloves'],['legs','Штаны','Pants'],
+       ['feet','Обувь','Boots'],['cloak','Плащи','Cloaks'],
+       ['ring','Кольца','Rings'],['neck','Амулеты','Amulets'],
+       ['belt','Пояса','Belts'],['ear','Серьги','Earrings']
+      ];
+      const typeFilter=h('select',{class:'wiki-chest-filter-type',
+       'aria-label':wt('Тип награды в сундуке','Chest reward category')});
+      for(const [key,ru,en] of categories){
+       const count=key==='all'?facets.total:facets.types[key];
+       if(!count)continue;
+       typeFilter.append(h('option',{value:key,text:wt(ru,en)+' · '+count}));
+      }
+      if(![...typeFilter.options].some(option=>option.value===wikiChestRewardFilter.type))
+       wikiChestRewardFilter.type='all';
+      typeFilter.value=wikiChestRewardFilter.type;
+      const slotFilter=h('select',{class:'wiki-chest-filter-slot',
+       'aria-label':wt('Слот экипировки в сундуке','Chest equipment slot')});
+      slotFilter.append(h('option',{value:'all',
+       text:wt('Все слоты','All slots')+' · '+facets.types.equipment}));
+      for(const [key,ru,en] of slotLabels){
+       if(facets.slots[key]>0)slotFilter.append(h('option',{value:key,
+        text:wt(ru,en)+' · '+facets.slots[key]}));
+      }
+      if(![...slotFilter.options].some(option=>option.value===wikiChestRewardFilter.slot))
+       wikiChestRewardFilter.slot='all';
+      slotFilter.value=wikiChestRewardFilter.slot;
+      const count=h('small',{class:'wiki-chest-filter-count',role:'status'});
+      const empty=h('p',{class:'wiki-chest-filter-empty muted',hidden:true,
+       text:wt('В выбранной категории наград нет.',
+        'No rewards in this category.')});
+      const toolbar=h('div',{class:'wiki-chest-reward-filters',
+       role:'group','aria-label':wt('Фильтры наград сундука','Chest reward filters')},
+       [typeFilter,slotFilter,count]);
+      gallery.before(toolbar);gallery.after(empty);
+      const applyRewardFilter=()=>{
+       const type=wikiChestRewardFilter.type,slot=wikiChestRewardFilter.slot;
+       slotFilter.hidden=type!=='equipment';
+       let shown=0;
+       for(const card of gallery.querySelectorAll('.wiki-chest-reward')){
+        const visible=chestPresentation.rewardMatches({
+         type:card.dataset.rewardType,slot:card.dataset.rewardSlot||null
+        },type,slot);
+        card.hidden=!visible;if(visible)shown++;
+       }
+       for(const section of gallery.querySelectorAll('.wiki-chest-group'))
+        section.hidden=![...section.querySelectorAll('.wiki-chest-reward')]
+         .some(card=>!card.hidden);
+       const visibleCertain=[...certainItems.querySelectorAll('.wiki-chest-reward')]
+        .filter(card=>!card.hidden).length;
+       certainBoard.hidden=visibleCertain===0;
+       const certainBadge=certainBoard.querySelector('.wiki-chest-collection-head small');
+       if(certainBadge)certainBadge.textContent=wt('Наград: ','Rewards: ')+visibleCertain;
+       count.textContent=wt('Показано ','Showing ')+shown+' / '+facets.total;
+       empty.hidden=shown!==0;
+      };
+      typeFilter.onchange=()=>{
+       wikiChestRewardFilter.type=typeFilter.value;
+       wikiChestRewardFilter.slot='all';slotFilter.value='all';applyRewardFilter();
+      };
+      slotFilter.onchange=()=>{
+       wikiChestRewardFilter.slot=slotFilter.value;applyRewardFilter();
+      };
+      applyRewardFilter();
+     }
+    }
     if(adminEditing&&adminToken)detail.append(h('button',{type:'button',
      class:'wiki-owner-plus wiki-add-source',text:'+ Предмет',
      onclick:()=>wikiItemChoice(detail,itemId=>{
