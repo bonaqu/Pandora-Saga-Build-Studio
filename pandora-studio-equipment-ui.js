@@ -336,12 +336,39 @@ function render(root,api){
   else node.setAttribute(attribute,value);
   return node;
  };
+ const editable=(node,key,ru,en,options)=>{api.editLabel?.(node,key,ru,en,options);return node};
+ // The owner edits only the semantic caption; the real equipment slot name
+ // remains source-backed and cannot accidentally be saved as D1 copy.
+ const fallbackSlotLabel=api.slotLabel||tr('Слот: ','Slot: ')+slot;
+ const currentSlotName=api.slotName||
+  fallbackSlotLabel.replace(/^(?:Слот|Slot):\\s*/, '');
+ const titlePrefix=editable(el('span',{class:'stage-picker-slot-prefix',
+  text:copy('pickerSlotHeading','Слот','Slot')}),
+  'pickerSlotHeading','Слот','Slot');
+ const title=el('strong',{class:'stage-picker-slot-title'},[
+  titlePrefix,el('span',{text:': '+currentSlotName})
+ ]);
+ const titleWrap=el('div',{class:'stage-picker-slot-title-wrap'},[title]);
+ if(api.canEdit){
+  const pencil=el('button',{type:'button',
+   class:'stage-control-pencil stage-picker-slot-pencil',text:'✎',
+   'aria-label':tr('Изменить надпись: ','Edit caption: ')+titlePrefix.textContent});
+  const openEdit=event=>{
+   event.preventDefault();event.stopPropagation();
+   titlePrefix.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
+  };
+  const refreshPencil=()=>pencil.setAttribute('aria-label',
+   tr('Изменить надпись: ','Edit caption: ')+titlePrefix.textContent);
+  pencil.addEventListener('click',openEdit);
+  pencil.addEventListener('focus',refreshPencil);
+  pencil.addEventListener('pointerenter',refreshPencil);
+  titleWrap.append(pencil);
+ }
  const head=el('div',{class:'stage-picker-head'},[
-  el('strong',{text:api.slotLabel||tr('Слот: ','Slot: ')+slot}),
+  titleWrap,
   bind(el('button',{type:'button',text:'✕',onclick:api.close}),
    'pickerItemClose','Закрыть настройку','Close item settings','aria-label')
  ]);root.append(head);
- const editable=(node,key,ru,en,options)=>{api.editLabel?.(node,key,ru,en,options);return node};
  const labeledAction=(button,key,ru,en,prefix='')=>{
   if(!api.canEdit)return button;
   const caption=editable(el('span',{class:'stage-copy-caption',text:copy(key,ru,en)}),key,ru,en);
