@@ -20,6 +20,7 @@ import {runEquipmentLocaleSmoke} from './browser-equipment-locale.mjs';
 import {runSoulSearch852Smoke} from './browser-soul-search-852.mjs';
 import {runGemOptionAria853Smoke} from './browser-gem-aria-853.mjs';
 import {runItemPropertiesArrow866Smoke} from './browser-item-properties-arrow-866.mjs';
+import {runZeroSoulTabs873Smoke} from './browser-zero-soul-tabs-873.mjs';
 import {runEquippedSoulCapacitySmoke,runSavedSocketRecoverySmoke} from './browser-equipped-soul-capacity.mjs';
 import {runEquipmentQuickMenuSmoke} from './browser-equipment-quick-menu.mjs';
 import {runEquipmentPickerLiveCopy390Smoke} from './browser-equipment-picker-live-copy-390.mjs';
@@ -99,6 +100,7 @@ const scenarios=[
   ['soul-search-852',runSoulSearch852Smoke],
   ['gem-option-aria-853',runGemOptionAria853Smoke],
   ['item-properties-arrow-866',runItemPropertiesArrow866Smoke],
+  ['zero-soul-tabs-873',runZeroSoulTabs873Smoke],
   ['per-item-soul-capacity',runEquippedSoulCapacitySmoke],
   ['equipment-quick-menu',runEquipmentQuickMenuSmoke],
   ['equipment-picker-live-copy-390',runEquipmentPickerLiveCopy390Smoke],

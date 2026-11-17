@@ -366,13 +366,31 @@ function actionIcon(action,{forward=false}={}){
  }
  return svg;
 }
+// Genitive phrases keep the unavailable-state explanation natural in RU.
+const SOUL_SLOT_NOUNS=Object.freeze({
+ weapon:['этого оружия','weapon'],shield:['этого щита','shield'],
+ head:['этого шлема','helmet'],body:['этой брони','armor'],
+ gloves:['этих перчаток','gloves'],legs:['этих штанов','pants'],
+ feet:['этой обуви','boots'],belt:['этого пояса','belt']
+});
+function soulUnavailableCopy(slot,capacity,english=false){
+ const [ru,en]=SOUL_SLOT_NOUNS[slot]||['этого предмета','item'];
+ if(capacity===0)return english?
+  'Soul management for this '+en+' is unavailable: 0 Soul slots.':
+  'Управление душами '+ru+' недоступно: 0 слотов для душ.';
+ return english?
+  'Soul slot count for this '+en+' is unknown. Soul management is unavailable.':
+  'Количество слотов душ '+ru+' неизвестно. Управление душами недоступно.';
+}
 function render(root,api){
  const {record,slot,mode,icons,refinement,souls,gems,gameTables}=api;
  const plan=globalThis.PandoraEquipmentPlan;
  const refinable=plan.canRefine(slot);
  const cap=Number.isInteger(api.capacity)?api.capacity:plan.socketCapacity(record);
- const hasSouls=plan.canSocket(slot,record,cap);
- if(mode==='gems'||mode==='souls'&&!hasSouls){api.changeMode('details');return}
+ // Availability of the tab depends on the *slot type*, not socket count.
+ // Zero/unknown capacity is a readable state, never permission to insert Souls.
+ const hasSouls=plan.supportsSoulSlot(slot);
+ if(mode==='gems'||mode==='souls'&&(!hasSouls||!record)){api.changeMode('details');return}
  const english=document.documentElement?.lang==='en',tr=(ru,en)=>english?en:ru;
  const copy=(key,ru,en)=>api.copyLabel?.(key,ru,en)||tr(ru,en);
  // Bind only immutable user-facing prefixes; numeric slots, Soul names and
@@ -570,6 +588,17 @@ function render(root,api){
   }
   // Souls are managed exclusively in the existing dedicated "Души" tab.
  }else if(mode==='souls'){
+  if(!Number.isInteger(cap)||cap<=0){
+   const zero=cap===0;
+   const key=(zero?'soulUnavailableZero.':'soulUnavailableUnknown.')+slot;
+   const ru=soulUnavailableCopy(slot,cap,false);
+   const en=soulUnavailableCopy(slot,cap,true);
+   const notice=el('p',{class:'stage-soul-unavailable',
+    'role':'status','data-soul-unavailable':zero?'zero':'unknown',
+    'data-soul-slot-type':slot,text:copy(key,ru,en)});
+   body.append(editable(notice,key,ru,en));
+   return;
+  }
   const row=el('div',{class:'stage-rich-sockets'});
   for(let i=0;i<cap;i++){
    const value=souls[i],soul=value&&api.catalog.souls?.[String(value.id)],selected=i===api.selectedSocket;
@@ -657,6 +686,6 @@ function render(root,api){
  }
 }
 root.PandoraStageItemUI=Object.freeze({
- render,summary,matchesSoulSearch,attachPreview,dismissPreview,actionIcon
+ render,summary,matchesSoulSearch,attachPreview,dismissPreview,actionIcon,soulUnavailableCopy
 });
 })(typeof window==='undefined'?globalThis:window);

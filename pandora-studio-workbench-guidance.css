@@ -115,3 +115,10 @@
  min-width:0;scrollbar-width:thin;scrollbar-color:#95734c transparent;
 }
 .stage-picker .stage-rich-body>.stage-rich-summary{min-width:0;max-width:100%}
+
+/* Unsupported Soul capacity is a calm inline status, not a disabled tab or
+   another full-size card. The controls remain unchanged for positive capacity. */
+.stage-picker .stage-rich-body>.stage-soul-unavailable{
+ color:#d6ba94;margin:9px 4px 0;font:500 12px/1.55 Manrope,Arial,sans-serif;
+ max-width:100%;overflow-wrap:anywhere
+}
