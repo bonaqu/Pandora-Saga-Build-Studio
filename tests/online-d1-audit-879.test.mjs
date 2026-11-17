@@ -62,3 +62,14 @@ test('account library never reconnects before a verified D1 checkpoint',()=>{
  const reconnect=portion('function leaveLiveGate()', 'async function checkLiveConnection()');
  assert.match(reconnect,/resumeCloudLibrary\(\{force:true\}\)/);
 });
+
+test('English locale completion cannot override a later D1 offline/changed gate',()=>{
+ const handler=portion("$('locale').onclick=async event=>{",
+  "document.addEventListener('click',event=>{if(!adminEditing");
+ assert.match(handler,/if\(!localCatalogHost&&\(!studioLiveReady\|\|liveGateReason\)\)return/);
+ assert.match(handler,/await checkLiveConnection\(\)/);
+ assert.match(handler,/if\(liveGateReason\)return/);
+ assert.match(handler,/startupOverlay.dataset.state==='loading'&&!liveGateReason/);
+ assert.doesNotMatch(handler,/error\.message,'warning'/,
+  'Do not expose a raw Worker or D1 error to ordinary visitors');
+});
