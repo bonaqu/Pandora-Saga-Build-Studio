@@ -7384,7 +7384,7 @@ function renderBuilds(root){
   ]));
  toolbar.append(name,
   h('button',{type:'button',class:'button-action primary',
-   'data-library-action-copy':'librarySaveNew',text:libraryText('librarySaveNew'),
+   'data-owner-copy-key':'librarySaveNew','data-library-action-copy':'librarySaveNew',text:libraryText('librarySaveNew'),
    onclick:()=>saveBuild(name.value)}),
   ...(activeBuildId&&builds.some(b=>b.id===activeBuildId)?[
    h('button',{type:'button',class:'button-action','data-library-action-copy':'librarySaveCopy',text:libraryText('librarySaveCopy'),onclick:()=>{
