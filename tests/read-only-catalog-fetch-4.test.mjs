@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {readPublishedCatalog} from '../scripts/read-only-catalog-fetch.mjs';
 const url='https://ps-build-studio-cloud.bonaqu.workers.dev/api/catalog/items.json';
 const good=()=>new Response(JSON.stringify({1:{name:'source'}}),
@@ -80,4 +81,13 @@ test('exhaustion leaves a real failure and never hides a broken endpoint',async(
 test('never accepts unlimited retry budgets or insecure URL',async()=>{
  await assert.rejects(readPublishedCatalog(url,{maxAttempts:4}),/Invalid read-only/);
  await assert.rejects(readPublishedCatalog('http://insecure.local/api/catalog',{maxAttempts:1}),/Invalid read-only/);
+});
+
+test('live check wires the helper only for D1 dataset GETs, preserving other checks',()=>{
+ const script=readFileSync(new URL('../scripts/check-live-connections.mjs',import.meta.url),'utf8');
+ assert.match(script,/import \{readPublishedCatalog\} from '\.\/read-only-catalog-fetch\.mjs'/);
+ assert.match(script,/await readPublishedCatalog\(\s*worker\+'\/api\/catalog\/'\+name\+'\.json',\{origin\}\)/);
+ assert.match(script,/response\.headers\.get\('x-ps-catalog'\)==='d1'/);
+ assert.match(script,/response\.headers\.get\('access-control-allow-origin'\)===origin/);
+ assert.match(script,/method:'OPTIONS',cors:true/);
 });
