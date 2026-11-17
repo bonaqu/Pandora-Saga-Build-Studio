@@ -104,10 +104,10 @@ test('published ETC utility and potion rewards are not mislabeled as crafting ma
 
 test('guaranteed chest rewards use stable auto-fill tracks across screen widths',()=>{
  const css=read('pandora-studio-wiki-polish.css');
- assert.match(css,/\\.wiki-chest-assured-grid\\s*\\{[^}]*grid-template-columns:repeat\\(auto-fill,/s);
- assert.doesNotMatch(css,/\\.wiki-chest-assured-grid\\s*\\{[^}]*repeat\\(auto-fit,/s);
+ assert.match(css,/\.wiki-chest-assured-grid\s*\{[^}]*grid-template-columns:repeat\(auto-fill,/s);
+ assert.doesNotMatch(css,/\.wiki-chest-assured-grid\s*\{[^}]*repeat\(auto-fit,/s);
  const app=read('pandora-studio-app.js');
- assert.match(app,/\\['utility','Полезные предметы','Utility items'\\]/);
+ assert.match(app,/\['utility','Полезные предметы','Utility items'\]/);
 });
 
 test('future unknown types, missing IDs, and gold-only rows never fabricate game facts',()=>{
