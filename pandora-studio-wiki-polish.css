@@ -84,8 +84,10 @@
  padding:3px 8px;border:1px solid #6d5034;border-radius:999px;
  background:#211911;color:#d0b58c;font-size:11px;
 }
+/* Keep the columns reserved when a level chest lists fewer guaranteed
+   rewards than the available tracks; do not stretch the final reward cards. */
 .wiki-chest-assured-grid{
- display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,205px),1fr));
+ display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,205px),1fr));
  gap:8px;padding:11px;
 }
 .wiki-chest-board>.wiki-chest-group{
