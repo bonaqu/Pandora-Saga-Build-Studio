@@ -2072,12 +2072,12 @@ function renderStagePicker(focusSearch=false){
  const matchedCount=h('span',{class:'stage-picker-count-matched'});
  const shownCount=h('span',{class:'stage-picker-count-shown'});
  const count=h('small',{class:'stage-picker-count'},[
-  matchedCount,
+  matchedCount,h('span',{text:' '}),
   bindOwnerInterfaceText(h('span',{}),'equipment','pickerMatchSuffix',
-   ' подходящих',' matching'),
-  h('span',{text:' · '}),shownCount,
+   'подходящих','matching'),
+  h('span',{text:' · '}),shownCount,h('span',{text:' '}),
   bindOwnerInterfaceText(h('span',{}),'equipment','pickerShownSuffix',
-   ' показано',' shown')
+   'показано','shown')
  ]);
  const onlyAvailable=h('label',{class:'stage-picker-only-available'},[
   bindOwnerInterfaceText(h('input',{type:'checkbox',checked:stagePickerOnlyAvailable}),
@@ -2090,7 +2090,8 @@ function renderStagePicker(focusSearch=false){
  const moreCount=h('span',{class:'stage-picker-more-count'});
  const more=h('button',{type:'button',class:'stage-picker-more'},[
   bindOwnerInterfaceText(h('span',{}),'equipment','pickerMorePrefix',
-   'Показать ещё (','Show more ('),moreCount,h('span',{text:')'})
+   'Показать ещё','Show more'),h('span',{text:' ('}),moreCount,
+  h('span',{text:')'})
  ]);
  const remove=bindOwnerInterfaceText(h('button',{type:'button',
   disabled:!equipped&&!(selectedSlot===5&&window.PandoraUIPlanner.occupiesBodyAndLegs(equippedRecord(3))),
@@ -2207,9 +2208,9 @@ function renderStagePicker(focusSearch=false){
    'Фильтр по уровню','Level filter'],
   ['pickerAvailableAria','Только доступные на моём уровне','Only items available at my level',
    'Доступное имя фильтра','Level filter accessible name'],
-  ['pickerMatchSuffix',' подходящих',' matching','Найдено предметов','Matching items'],
-  ['pickerShownSuffix',' показано',' shown','Отображено предметов','Shown items'],
-  ['pickerMorePrefix','Показать ещё (','Show more (','Загрузить ещё','Show more'],
+  ['pickerMatchSuffix','подходящих','matching','Найдено предметов','Matching items'],
+  ['pickerShownSuffix','показано','shown','Отображено предметов','Shown items'],
+  ['pickerMorePrefix','Показать ещё','Show more','Загрузить ещё','Show more'],
   ['pickerOutfitNote','Платье занимает броню и штаны. Выбор штанов снимет его.',
    'Armor and pants are occupied by one outfit. Choosing pants removes it.',
    'Подсказка костюма','Outfit note'],
