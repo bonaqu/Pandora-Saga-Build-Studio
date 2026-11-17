@@ -7503,8 +7503,10 @@ function renderBuilds(root){
   'aria-label':libraryText('librarySearchInputLabel'),
   placeholder:libraryText('librarySearchPlaceholder'),value:buildSearchQuery}):null;
  const sort=builds.length>1?h('div',{class:'build-library-sort'},[
-  h('label',{for:'buildLibrarySort','data-owner-copy-key':'librarySortCaption',
-   text:libraryText('librarySortCaption')}),
+  h('div',{class:'build-library-sort-head'},[
+   h('label',{for:'buildLibrarySort','data-owner-copy-key':'librarySortCaption',
+    text:libraryText('librarySortCaption')})
+  ]),
   h('select',{id:'buildLibrarySort',class:'build-library-sort-select',
    'aria-label':libraryText('librarySortAria')},[
     h('option',{value:'saved',text:libraryText('librarySortSaved')}),
