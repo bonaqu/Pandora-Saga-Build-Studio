@@ -26,7 +26,15 @@ const stage={};
 Function('window','document',load('pandora-studio-equipment-ui.js'))(stage,document);
 stage.PandoraEquipmentPlan=host.PandoraEquipmentPlan;
 const walk=node=>[node,...(node.children||[]).flatMap(walk)];
-const byText=(node,text)=>walk(node).find(x=>x.tag==='button'&&x.textContent===text);
+// A decorative aria-hidden icon is not part of the button's accessible
+// caption; fake DOM nodes must reflect that instead of requiring bare text.
+const accessibleText=node=>{
+ if(node?.attributes?.['aria-hidden']==='true')return'';
+ return String(node?.textContent||'')+
+  (node?.children||[]).map(accessibleText).join('');
+};
+const byText=(node,text)=>walk(node).find(x=>
+ x.tag==='button'&&accessibleText(x)===text);
 
 function makeApi(slot,mode='details'){
  const calls={grade:[],mode:[],socket:[],soul:[],gem:[]};
