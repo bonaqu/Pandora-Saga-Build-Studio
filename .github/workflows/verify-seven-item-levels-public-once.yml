@@ -1,0 +1,38 @@
+name: Issue 683 post-publication D1 and Hero Book Chromium acceptance
+
+on:
+  push:
+    branches: [bonaqu_projects]
+    paths:
+      - '.github/workflows/verify-seven-item-levels-public-once.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser-verify:
+    if: github.repository == 'bonaqu/Pandora-Saga-Build-Studio' && github.ref == 'refs/heads/bonaqu_projects'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: bonaqu_projects
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Reuse Playwright Chromium
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: chromium-${{ runner.os }}-playwright-1.55.1
+      - name: Install pinned Chromium without production secrets
+        run: |
+          npm install --no-save --no-package-lock playwright@1.55.1
+          npx playwright install chromium
+          if ! node --input-type=module -e "import { chromium } from 'playwright'; const b = await chromium.launch(); await b.close();"; then
+            npx playwright install-deps chromium
+          fi
+      - name: Verify public D1 and level-49/50 Hero Book in real Chromium (read-only)
+        run: node tests/browser-public-seven-item-level-683.mjs
