@@ -46,6 +46,9 @@ export async function runConditionalFire867Smoke(browser,base){
   await panel.locator('[data-enchant-key="element"][data-enchant-value="fire"]').click();
   assert.equal(await activeEffect(),'Пламя феникса');
   await page.locator('#locale [data-locale="en"]').click();
+  await page.waitForFunction(()=>document.documentElement.lang==='en',null,{timeout:20000});
+  await page.waitForFunction(()=>[...document.querySelectorAll('#stagePicker .stage-rich-fields dd')]
+   .some(node=>node.textContent.trim()==='Phoenix Flame'),null,{timeout:20000});
   assert.equal(await activeEffect(),'Phoenix Flame','English item status has its own label');
   assert.equal(await page.locator('.stage-elemental-proc').count(),0);
   assert.deepEqual(errors,[],'Unexpected browser exceptions');
