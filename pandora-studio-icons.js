@@ -17,15 +17,16 @@ const PATHS=Object.freeze({
  lock:['M5 11h14v10H5z','M8 11V7a4 4 0 0 1 8 0v4'],
  book:['M4 19.5A2.5 2.5 0 0 1 6.5 17H20','M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z']
 });
-function create(name){
- if(!Object.hasOwn(PATHS,name))return null;
+function create(name,{paths=null,cssClass='ps-ui-icon',marker='data-ui-icon'}={}){
+ if(!Object.hasOwn(PATHS,name)&&!Array.isArray(paths))return null;
+ const shapes=Array.isArray(paths)?paths:PATHS[name];
  const svg=document.createElementNS(NS,'svg');
  for(const [key,value] of Object.entries({
-  class:'ps-ui-icon',viewBox:'0 0 24 24',fill:'none',
+   class:cssClass,viewBox:'0 0 24 24',fill:'none',
   stroke:'currentColor','stroke-width':'1.8','stroke-linecap':'round',
-  'stroke-linejoin':'round','aria-hidden':'true',focusable:'false','data-ui-icon':name
+  'stroke-linejoin':'round','aria-hidden':'true',focusable:'false',[marker]:name
  }))svg.setAttribute(key,value);
- for(const d of PATHS[name]){
+ for(const d of shapes){
   const path=document.createElementNS(NS,'path');
   path.setAttribute('d',d);svg.append(path);
  }

@@ -18,6 +18,13 @@ test('shared SVG icons are semantic, deterministic, and size-neutral',()=>{
   assert.ok(a.children.length);
   assert.equal(a.children[0].attributes.d,b.children[0].attributes.d);
  }
+ const gear=window.PandoraStudioIcons.create('souls',{
+  paths:['M4 11h16','M9 7l3 15 3-15'],
+  cssClass:'stage-action-svg',marker:'data-gear-icon'
+ });
+ assert.equal(gear.attributes['data-gear-icon'],'souls');
+ assert.equal(gear.attributes.class,'stage-action-svg');
+ assert.equal(gear.children.length,2);
  assert.equal(window.PandoraStudioIcons.create('invalid'),null);
  const css=read('pandora-studio-theme.css');
  assert.ok(css.includes('.ps-ui-icon{display:inline-block;flex:0 0 auto;width:1em;height:1em'));
@@ -33,5 +40,7 @@ test('site UI factories reuse central icon source without rewriting accessible c
  assert.ok(eq.includes("PandoraStudioIcons?.create(attrs.text==='✎'"));
  assert.ok(book.includes('PandoraStudioIcons?.create(symbol)'));
  assert.ok(eq.includes('function actionIcon(action,{forward=false}={})'));
+ assert.ok(eq.includes('paths:actionIconPaths[name]'));
+ assert.ok(read('pandora-studio-hero-path.js').includes('PandoraStudioIcons?.create(controlIcon)'));
  assert.ok(app.includes('PandoraStageItemUI.actionIcon(id)'));
 });

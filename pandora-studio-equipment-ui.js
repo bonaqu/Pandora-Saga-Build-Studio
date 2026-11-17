@@ -347,6 +347,12 @@ const actionIconPaths=Object.freeze({
 function actionIcon(action,{forward=false}={}){
  const name=forward&&action==='details'?'arrow-right':actionIconNames[action];
  if(!name)return null;
+ // The shared vector factory draws all live site icons; standalone test fixtures
+ // keep their isolated fallback without requiring the entire app bootstrap.
+ const shared=root.PandoraStudioIcons?.create(name,{
+  paths:actionIconPaths[name],cssClass:'stage-action-svg',marker:'data-gear-icon'
+ });
+ if(shared)return shared;
  const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
  for(const [key,value] of Object.entries({
   viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',
