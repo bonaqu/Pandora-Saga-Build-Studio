@@ -100,3 +100,12 @@ test('owner one-click catalog publication cannot silently replace live hero calc
  const direct=publish.indexOf('await loadCatalog()');
  assert.ok(pos>=0&&direct>pos,'only the localhost fixture may refresh without safe reload');
 });
+
+test('D1 retry requested during initial startup is queued once and never races installed data',()=>{
+ const boot=portion('let startupAttempt=0,startupRunning=false', 'void window.PandoraAccountUI.init');
+ assert.match(boot,/let startupAttempt=0,startupRunning=false,startupQueuedLive=false/);
+ assert.match(boot,/if\(startupRunning\)return/);
+ assert.match(boot,/finally\{\s*startupRunning=false/);
+ assert.match(boot,/if\(startupQueuedLive\)\{\s*startupQueuedLive=false;\s*void startStudio\(\)/);
+ assert.match(boot,/if\(startupRunning\)\{startupQueuedLive=true;return\}/);
+});
