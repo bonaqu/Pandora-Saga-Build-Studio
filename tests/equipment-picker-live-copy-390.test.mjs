@@ -30,9 +30,9 @@ test('counts and filter selection are runtime-only, never stored as D1 copy',()=
 test('English and Russian labels remain independently editable without identifiers',()=>{
  assert.match(source,/'pickerAvailableLabel',\s*'Доступные на моём уровне','Available at my level'/);
  assert.match(source,/'pickerAvailableAria',\s*'Только доступные на моём уровне','Only items available at my level','aria-label'/);
- assert.match(source,/'pickerMatchSuffix',\s*' подходящих',' matching'/);
- assert.match(source,/'pickerShownSuffix',\s*' показано',' shown'/);
- assert.match(source,/'pickerMorePrefix',\s*'Показать ещё \(','Show more \('/);
+ assert.match(source,/'pickerMatchSuffix',\s*'подходящих','matching'/);
+ assert.match(source,/'pickerShownSuffix',\s*'показано','shown'/);
+ assert.match(source,/'pickerMorePrefix',\s*'Показать ещё','Show more'/);
  const fragment=source.slice(source.indexOf(' const matchedCount=h('),
   source.indexOf(' const records=catalog.live',source.indexOf(' const matchedCount=h(')));
  assert.doesNotMatch(fragment,/record\.id|itemName\(rec\)|state\.level/);
