@@ -42,6 +42,38 @@ test('account copy has stable bilingual semantic keys and independent D1 values'
   'Your username and password give access to your saved cloud builds.');
 });
 
+test('only explicit harmless profile feedback is editable; diagnostics remain immutable',()=>{
+ for(const [key,ru,en] of [
+  ['accountCodeCopied','Код скопирован','Code copied'],
+  ['accountCopyCodeManually','Скопируйте выделенный код','Copy the selected code'],
+  ['accountCodeHidden','Резервный код скрыт.','Recovery code hidden.']
+ ]){
+  assert.equal(locale.literalKey(ru),key);
+  assert.equal(locale.text(key,'en'),en);
+  assert.equal(locale.ui(ru,'en'),en);
+  assert.ok(locale.fieldKey(key)?.startsWith('ui.label.account-'));
+  const field='guideedit.book.'+locale.fieldKey(key);
+  locale.setOverrides({[field]:JSON.stringify({ru:'Новая надпись',en:'Edited profile copy'})});
+  assert.equal(locale.ui(ru,'ru'),'Новая надпись');
+  assert.equal(locale.ui(ru,'en'),'Edited profile copy');
+  locale.setOverrides({});
+ }
+ for(const raw of ['Пароли не совпадают.','Некорректный ответ авторизации',
+  'Ошибка сервера','Cloud temporarily unavailable']){
+  assert.equal(locale.literalKey(raw),null,'Security/server error must never be owner editable');
+ }
+ const code=source('pandora-studio-account-ui.js');
+ const app=source('pandora-studio-app.js');
+ assert.match(code,/feedbackAuthoredKey=authored\?/);
+ assert.match(code,/if\(feedbackAuthoredKey\)errorLine\.dataset\.ownerCopyKey/);
+ assert.match(code,/else errorLine\.removeAttribute\('data-owner-copy-key'\)/);
+ assert.match(code,/info\('Код скопирован',true\)/);
+ assert.match(code,/info\('Скопируйте выделенный код',true\)/);
+ assert.match(code,/info\('Резервный код скрыт\.',true\)/);
+ assert.match(code,/info\(e\.message\)/,'Raw errors never opt into status editing');
+ assert.match(app,/node\.classList\.contains\('account-feedback'\)/);
+});
+
 test('account long RU/EN help text is editable without losing bundled defaults',()=>{
  const id=locale.fieldKey('accountStorageWarning');
  const before=locale.text('accountStorageWarning','ru');

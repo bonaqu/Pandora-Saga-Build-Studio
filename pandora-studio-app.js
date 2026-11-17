@@ -8299,7 +8299,8 @@ function bindAccountCopyEditors(panel){
   }
   // A small pencil keeps descriptions accessible to touch and keyboard;
   // existing account paragraphs remain compact with double-click editing.
-  if((isAction||isLibrary)&&!node.nextElementSibling?.dataset?.ownerCopyPencil){
+  if((isAction||isLibrary||node.classList.contains('account-feedback'))&&
+   !node.nextElementSibling?.dataset?.ownerCopyPencil){
    node.after(h('button',{type:'button',class:'ui-content-pencil account-copy-pencil',
     'data-owner-copy-pencil':key,text:'✎',
     title:lang==='en'?'Edit caption':'Изменить надпись',

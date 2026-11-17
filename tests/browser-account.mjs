@@ -145,6 +145,12 @@ export async function runAccountSmoke(browser,base){
   assert.equal(await page.locator('.account-recovery input').inputValue(),'r'.repeat(43));
   await page.getByRole('button',{name:'Я сохранил код'}).click();
   assert.equal(await page.locator('.account-recovery').count(),0);
+  const feedback=page.locator('#accountPanel .account-feedback');
+  assert.equal(await feedback.getAttribute('data-owner-copy-key'),'accountCodeHidden',
+   'Only the explicit authored recovery-code feedback may be edited');
+  assert.equal((await feedback.innerText()).trim(),'Резервный код скрыт.');
+  assert.equal(await page.locator('#accountPanel .account-copy-pencil').count(),0,
+   'Normal visitors must not see any owner-only editing pencil');
   assert.equal(calls.filter(x=>x.path==='/api/library'&&x.body).length,0,
    'Account creation may not auto-save an unsaved hero');
   // Delayed session bootstrap must not erase an already-open password form.
