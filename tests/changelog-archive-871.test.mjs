@@ -20,7 +20,7 @@ test('release history is preserved in individually readable archive segments',()
  assert.ok(content.every(row=>row.length<22000),'each archive can be fetched normally');
  const versions=[...current.matchAll(/^## (0\.\d+\.0) — /gm),
   ...content.flatMap(row=>[...row.matchAll(/^## (0\.\d+\.0) — /gm)])].map(m=>m[1]);
- assert.equal(versions.length,822,'retain all 822 existing release entries');
+ assert.equal(versions.length,823,'retain all 822 old releases plus the new 0.871.0 entry');
  assert.equal(new Set(versions).size,versions.length,'no duplicate archived releases');
  for(const name of names)assert.ok(index.includes('./'+name),'index missing '+name);
  assert.ok(existsSync(join(dir,'historical-checklist.md')));

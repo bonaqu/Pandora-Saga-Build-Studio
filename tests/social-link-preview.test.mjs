@@ -59,7 +59,8 @@ test('published preview is the same 1280×640 self-hosted PNG used on GitHub',()
 test('a simulated future release automatically refreshes both social descriptions and image cache keys',()=>{
  const folder=mkdtempSync(join(tmpdir(),'pandora-social-release-'));
  const inputs=['index.html','package.json','site-version.json','ROADMAP.md',
-  'CHANGELOG.md','pandora-studio-update-manager.js','scripts/release-version.mjs','assets/social-preview.png'];
+  'CHANGELOG.md','pandora-studio-update-manager.js','scripts/release-version.mjs',
+  'scripts/changelog-archive.mjs','assets/social-preview.png'];
  try{
   for(const file of inputs){
    const to=join(folder,file);mkdirSync(dirname(to),{recursive:true});
