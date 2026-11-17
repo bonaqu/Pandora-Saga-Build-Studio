@@ -7,7 +7,7 @@ export async function runOnlineD1Required878Smoke(browser,base){
  const api='https://ps-build-studio-cloud.bonaqu.workers.dev';
  const publicOrigin='http://pandora-online-required.test';
  const ctx=await browser.newContext({viewport:{width:1280,height:850}});
- let remoteUp=false,snapshot='snapshot-online-878-a',reads=0,apiWrites=0,badProgression=false;
+ let remoteUp=false,snapshot='snapshot-online-878-a',reads=0,apiWrites=0,badProgression=false,englishFails=true;
  const cors={'access-control-allow-origin':'*',
   'access-control-allow-headers':'Content-Type,Authorization',
   'access-control-allow-methods':'GET,POST,OPTIONS'};
@@ -31,6 +31,12 @@ export async function runOnlineD1Required878Smoke(browser,base){
    if(!remoteUp)return route.abort('failed');
    const name=path.startsWith('/api/catalog/')?
     path.slice('/api/catalog/'.length,-5):null;
+   if(name==='stringsEn'&&englishFails){
+    // Intentionally let the locale handler show its loading overlay first,
+    // then fail after the session has entered a blocking D1 outage.
+    await new Promise(resolve=>setTimeout(resolve,550));
+    return route.abort('failed');
+   }
    const body=name?readFileSync(new URL('../data/os/'+
     (name==='stringsEn'?'strings.en':name)+'.json',import.meta.url),'utf8'):
     JSON.stringify({values:badProgression?{'planner.progression.v1':'corrupt-not-json'}:{}});
@@ -60,6 +66,23 @@ export async function runOnlineD1Required878Smoke(browser,base){
   await page.locator('#startupRetry').click();
   await waitReady();
   assert.ok(reads>=firstReads+10,'Retry must verify all D1 datasets and authorial copy');
+
+  // A pending English translation must NOT dismiss the D1 recovery gate
+  // when it fails after the browser goes offline.
+  await page.locator('#locale [data-locale="en"]').click();
+  await page.waitForFunction(()=>document.querySelector('#startupOverlay')
+   ?.dataset.state==='loading',null,{timeout:10000});
+  remoteUp=false;
+  await page.evaluate(()=>window.dispatchEvent(new Event('offline')));
+  await blocked().waitFor({state:'visible',timeout:12000});
+  await page.waitForTimeout(850);
+  assert.equal(await page.locator('#startupOverlay').isVisible(),true,
+   'Late locale finally must not dismiss a D1 failure overlay');
+  assert.equal(await page.locator('#startupOverlay').getAttribute('data-state'),'error');
+  assert.equal(await page.locator('#locale [data-locale="ru"]').getAttribute('aria-pressed'),'true');
+  remoteUp=true;
+  await page.evaluate(()=>window.dispatchEvent(new Event('online')));
+  await waitReady();
 
   // Preserve an unsaved current character through a live network failure.
   await page.locator('#level').evaluate(input=>{
