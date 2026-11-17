@@ -11086,8 +11086,13 @@ document.addEventListener('visibilitychange',()=>{
  if(!localCatalogHost&&studioLiveReady&&liveGateReason!=='changed'&&
   document.visibilityState==='visible')void checkLiveConnection();
 });
-let startupAttempt=0;
+let startupAttempt=0,startupRunning=false;
 async function startStudio({archive=false}={}){
+ // Browser online events, manual retries and backoff may occur together.
+ // Only one attempted startup may own the globally installed catalog, hero
+ // draft and authorial overrides. A later click cannot race an in-flight boot.
+ if(startupRunning)return;
+ startupRunning=true;
  const attempt=++startupAttempt;
  const draftOwner=libraryScopeId(),originalDraft=structuredClone(state);
  startupMessage(
@@ -11140,7 +11145,7 @@ async function startStudio({archive=false}={}){
    if(libraryScopeId()===draftOwner)state=originalDraft;
    startupError(error);
   }
- }
+ }finally{startupRunning=false}
 }
 $('startupRetry').onclick=()=>{
  if(liveGateReason==='changed'){reloadVerifiedCatalog();return}
