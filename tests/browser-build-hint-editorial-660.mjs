@@ -14,6 +14,7 @@ export async function runOwnerBuildHints660Smoke(browser,base){
  const context=await browser.newContext({viewport:{width:1150,height:820}});
  await context.addInitScript(({playerToken,initial,activeId})=>{
   sessionStorage.setItem('ps-active-build-id.v1',activeId);
+  localStorage.setItem('ps-active-build-id.v1',activeId);
   localStorage.setItem('ps-build-library-secret.v1','f'.repeat(64));
   localStorage.setItem('ps-account-session.v1',JSON.stringify({
    token:playerToken,username:'hintqa',expires:Number.MAX_SAFE_INTEGER}));
