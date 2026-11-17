@@ -16,6 +16,7 @@ export async function runSavedBuildGridSmoke(browser,base){
   const context=await browser.newContext({viewport:{width,height:830}});
   await context.addInitScript(({token,library,activeId})=>{
    sessionStorage.setItem('ps-active-build-id.v1',activeId);
+   localStorage.setItem('ps-active-build-id.v1',activeId);
    localStorage.setItem('ps-build-library-secret.v1','f'.repeat(64));
    localStorage.setItem('ps-account-session.v1',
     JSON.stringify({token,username:'grid_qa',expires:Number.MAX_SAFE_INTEGER}));
