@@ -10993,18 +10993,18 @@ function showLiveGate(kind,{saved=null}={}){
   storage?'Could not save your changes':
   changed?'Game data has changed':'Connection interrupted');
  $('startupStatus').textContent=lang==='en'?
-  (storage?'Connection restored, but this browser could not save your current hero. Free some storage and retry without closing the tab.':
+  (storage?'This browser could not save the current hero or build library. Free some storage and retry without closing the tab.':
    changed?'A newer verified game catalog or site copy is available. Save your progress and reload before continuing.':
    'Current game data is unavailable. Editing is paused until the connection is verified.'):
-  (storage?'Соединение восстановлено, но браузер не сохранил текущего героя. Освободи место и повтори сохранение, не закрывая вкладку.':
+  (storage?'Браузер не сохранил текущего героя или библиотеку билдов. Освободи место и повтори сохранение, не закрывая вкладку.':
    changed?'Опубликованы новые игровые данные или тексты сайта. Сохрани прогресс и обнови страницу, чтобы продолжить.':
    'Актуальные игровые данные временно недоступны. Работа приостановлена до восстановления соединения.');
  setBootCopy('startupMicro',liveLocalSaved?
   'Текущий герой сохранён в браузере. Облачное сохранение подтвердится отдельно.':
-  'Не удалось сохранить черновик в браузере. Не закрывай вкладку.',
+  'Не удалось сохранить черновик или библиотеку билдов в браузере. Не закрывай вкладку.',
   liveLocalSaved?
   'Your current hero is saved in this browser. Cloud saves are confirmed separately.':
-  'Could not save the local draft. Keep this tab open.');
+  'Could not save the local draft or build library. Keep this tab open.');
  if(changed)refreshOwnerDraftRecovery();
  else $('startupUnsentOwnerText')?.remove();
  const needsCopy=changed&&Boolean($('startupUnsentOwnerText'));
