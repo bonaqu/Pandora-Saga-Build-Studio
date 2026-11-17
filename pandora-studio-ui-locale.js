@@ -104,6 +104,17 @@ const libraryCopy=Object.freeze({
  libraryShare:['🔗 Поделиться','🔗 Share'],
  libraryDelete:['Удалить','Delete'],
  libraryCompare:['Сравнить','Compare'],
+ // Build-library selection, sorting and accessible input captions are authored
+ // copy: no player names, IDs, state or secret values are stored in D1.
+ libraryCurrentBadge:['● Текущий билд','● Current build'],
+ librarySortCaption:['Сортировка','Sort'],
+ librarySortAria:['Сортировка билдов','Sort builds'],
+ librarySortSaved:['По порядку сохранения','Saved order'],
+ librarySortName:['По названию','Name'],
+ librarySortLevel:['По уровню','Level'],
+ librarySortClass:['По профессии','Class'],
+ libraryBuildNameAria:['Название билда','Build name'],
+ libraryDraftNameAria:['Название сохраняемого черновика','Draft build name'],
  // Card button captions contain no icon: icons are separate aria-hidden spans.
  // These keys are owner-editable without nesting the pencil in a button.
  libraryCardOpen:['Открыть','Open'],
