@@ -90,6 +90,36 @@ export async function runOnlineD1Required878Smoke(browser,base){
   assert.equal(await page.locator('#level').inputValue(),'35');
   assert.equal(apiWrites,0,'No offline retry should PUT a draft into D1');
 
+  // A storage quota failure must not be treated as a successful recovery.
+  // Keep the same hero in memory until a later explicit retry can persist it.
+  await page.evaluate(()=>{
+   window.__originalSaveForOnline878=Storage.prototype.setItem;
+   Storage.prototype.setItem=function(key,value){
+    if(key==='ps-build-studio.v1'||key==='ps-build-library.v1')
+     throw new DOMException('Simulated quota full','QuotaExceededError');
+    return window.__originalSaveForOnline878.call(this,key,value);
+   };
+  });
+  remoteUp=false;
+  await page.evaluate(()=>window.dispatchEvent(new Event('offline')));
+  await blocked().waitFor({state:'visible',timeout:12000});
+  assert.match(await page.locator('#startupMicro').innerText(),/Не удалось сохранить черновик/);
+  remoteUp=true;
+  await page.evaluate(()=>window.dispatchEvent(new Event('online')));
+  await page.waitForFunction(()=>document.querySelector('#startupTitle')
+   ?.textContent.includes('Не удалось сохранить изменения'),null,{timeout:15000});
+  assert.equal(await page.locator('#startupOverlay').isVisible(),true,
+   'Recovered D1 must not hide a failed local draft save');
+  assert.match(await page.locator('#startupRetry').innerText(),/Повторить сохранение/);
+  await page.evaluate(()=>{
+   Storage.prototype.setItem=window.__originalSaveForOnline878;
+   delete window.__originalSaveForOnline878;
+  });
+  await page.locator('#startupRetry').click();
+  await waitReady();
+  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem(
+   'ps-build-studio.v1')).level),35);
+
   // New D1 snapshot is not silently swapped underneath the active hero.
   snapshot='snapshot-online-878-b';
   await page.evaluate(()=>window.dispatchEvent(new Event('online')));
