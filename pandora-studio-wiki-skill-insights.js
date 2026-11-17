@@ -26,7 +26,7 @@ const cache=new WeakMap();
 function officialPatchNotes(skill,catalog){
  const id=Number(skill?.id),effects=skill?.funcs||[];
  const has=ep=>effects.some(x=>x.ep===ep);
- const note=(ru,en)=>[{ru,en}],none=[];
+ const note=(ru,en)=>[{ru,en,editorialKey:'osPatch'+id}],none=[];
  if([320006001,320006002].includes(id)&&skill.name==='Воодушевление'&&
     skill.skillType==='ALLY'&&has('EP_SKILL_DELAY_FIN'))
   return note('Умение можно применять и на самого персонажа.',
@@ -58,8 +58,8 @@ function officialPatchNotes(skill,catalog){
     skill.charLevel===50&&skill.prereq===420007001&&skill.cast===4&&
     effects.some(x=>x.ep==='EP_SKILL_EXEC'&&x.fv1?.[3]===420007102)&&
     catalog?.['420007102']?.funcs?.some(x=>x.ep==='EP_ELEMENT_DAMAGE'))
-  return note('На 50-м уровне Заклинателю доступна усиленная версия: время подготовки 4 с вместо 7 с и повышенный урон. Точный итоговый урон без проверки игровых коэффициентов не утверждается.',
-   'At level 50, Conjurer gains an improved version with a 4 s cast instead of 7 s and increased damage. Final damage is not asserted without verifying coefficients.');
+  return note('На 50-м уровне Заклинателю доступна усиленная версия: время подготовки 4 с вместо 7 с и повышенный урон.',
+   'At level 50, Conjurer gains an improved version with a 4 s cast instead of 7 s and increased damage.');
  return none;
 }
 
