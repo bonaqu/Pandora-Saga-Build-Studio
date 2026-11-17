@@ -95,10 +95,10 @@ test('English nested locale descriptions are classified without leaking translat
 test('bundled rich RU descriptions versus flattened D1 classify layout without hiding strict drift',()=>{
  const archive=JSON.parse(read('data/os/items.json'));
  const sample=Object.fromEntries(Object.entries(archive).filter(([,rec])=>
-  typeof rec.desc==='string'&&/<br\\s*\\/?>/i.test(rec.desc)).slice(0,30));
+  typeof rec.desc==='string'&&/<br\s*\/?>/i.test(rec.desc)).slice(0,30));
  assert.equal(Object.keys(sample).length,30);
  const flattened=Object.fromEntries(Object.entries(sample).map(([id,rec])=>
-  [id,{...rec,desc:rec.desc.replace(/<br\\s*\\/?>/gi,'')}]));
+  [id,{...rec,desc:rec.desc.replace(/<br\s*\/?>/gi,'')}]));
  const before=JSON.stringify([sample,flattened]);
  assert.deepEqual(describeDescriptionDrift(sample,flattened,'items'),{
   lineBreaks:30,inlineMarkup:0,itemReferences:0,otherText:0
