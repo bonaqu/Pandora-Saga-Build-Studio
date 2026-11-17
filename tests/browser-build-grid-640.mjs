@@ -11,15 +11,17 @@ export async function runSavedBuildGridSmoke(browser,base){
    equipment:{},souls:{},refinements:{},gems:{}}
  }));
  const original=JSON.stringify([...builds].reverse());
+ const activeId=builds[2].id;
  for(const width of [1680,390]){
   const context=await browser.newContext({viewport:{width,height:830}});
-  await context.addInitScript(({token,library})=>{
+  await context.addInitScript(({token,library,activeId})=>{
+   sessionStorage.setItem('ps-active-build-id.v1',activeId);
    localStorage.setItem('ps-build-library-secret.v1','f'.repeat(64));
    localStorage.setItem('ps-account-session.v1',
     JSON.stringify({token,username:'grid_qa',expires:Number.MAX_SAFE_INTEGER}));
    localStorage.setItem('ps-build-owner-scope.v1','account:grid_qa');
    localStorage.setItem('ps-build-library.v1',library);
-  },{token:'t'.repeat(43),library:original});
+  },{token:'t'.repeat(43),library:original,activeId});
   await context.route('**/*',route=>
    route.request().url().startsWith(base+'/')?route.continue():route.abort());
   const page=await context.newPage(),errors=[];
@@ -30,6 +32,11 @@ export async function runSavedBuildGridSmoke(browser,base){
    await page.locator('#nav [data-tab="builds"]').click();
    await page.locator('.build-card').first().waitFor({state:'visible'});
    const cards=page.locator('.build-card');
+   const current=page.locator('.build-card.is-current');
+   assert.equal(await current.count(),1,'Exactly one saved build is active');
+   assert.equal(await current.getAttribute('aria-current'),'true');
+   assert.equal(await current.locator('h3').innerText(),names[2]);
+   assert.equal(await current.locator('.build-card-current-label').innerText(),'● Текущий билд');
    assert.deepEqual(await cards.locator('h3').allInnerTexts(),names,
     'Creation order wins over reverse storage order and newer at revisions');
    // Sorting is a display preference only; card selection and storage survive.
@@ -40,6 +47,8 @@ export async function runSavedBuildGridSmoke(browser,base){
     'QA three four five','QA two three four five'
    ]);
    await sort.selectOption('saved');
+   assert.equal(await current.locator('h3').innerText(),names[2],
+    'Sorting does not reassign the active editor build');
    assert.deepEqual(await cards.locator('h3').allInnerTexts(),names);
    const buttons=cards.first().locator('.build-card-actions > button');
    assert.equal(await buttons.count(),4,'Every card has four actions');
@@ -120,6 +129,8 @@ export async function runSavedBuildGridSmoke(browser,base){
    await page.waitForFunction(()=>document.documentElement.lang==='en');
    await page.locator('#nav [data-tab="builds"]').click();
    await page.locator('.build-card').first().waitFor({state:'visible'});
+   assert.equal(await page.locator('.build-card.is-current .build-card-current-label').innerText(),
+    '● Current build');
    const enButtons=page.locator('.build-card').first().locator('.build-card-actions > button');
    assert.deepEqual(await enButtons.locator('.build-card-action-label').allInnerTexts(),
     ['Open','Overwrite','Share','Delete']);
@@ -140,6 +151,8 @@ export async function runSavedBuildGridSmoke(browser,base){
    assert.equal(await englishSearch.getAttribute('aria-label'),'Find a saved build');
    const englishSort=page.getByRole('combobox',{name:'Sort builds'});
    assert.equal(await englishSort.inputValue(),'saved');
+   assert.deepEqual(await englishSort.locator('option').allInnerTexts(),
+    ['Saved order','Name','Level','Class']);
    await englishSort.selectOption('class');
    assert.deepEqual(await cards.locator('h3').allInnerTexts(),names,
     'Equal classes must keep the original insertion order');
