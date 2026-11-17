@@ -2,6 +2,7 @@
 import {readFileSync,writeFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import {dirname,resolve} from 'node:path';
+import {rotateChangelog} from './changelog-archive.mjs';
 
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const path=name=>resolve(root,name);
@@ -70,6 +71,8 @@ function check(){
  if(!roadmap.includes('Latest source release:** '+expectedVersion+' ('+String.fromCharCode(96)+release+String.fromCharCode(96)+')'))
   mismatches.push('ROADMAP.md latest release');
  if(!log.includes('## '+expectedVersion+' — '+release))mismatches.push('CHANGELOG.md release entry');
+ if(log.length>22000||!log.includes('<!-- CHANGELOG_ARCHIVE -->'))
+  mismatches.push('root CHANGELOG archive/index integrity');
  if(mismatches.length)throw Error('Release '+release+' inconsistent: '+mismatches.join(', '));
  console.log('Release '+release+' is consistent across package, HTML, asset keys, manifest, roadmap, changelog ('+assetVersions.length+' assets).');
 }
@@ -112,6 +115,8 @@ function bump(next,note){
  write('index.html',html);
  write('ROADMAP.md',roadmap);
  write('CHANGELOG.md',logHeader+entry+log.slice(logHeader.length));
+ // Keep the active changelog readable through GitHub's normal file API.
+ rotateChangelog(root);
  // Publish the version manifest last, only after all other local files are staged.
  write('site-version.json',JSON.stringify({release:next,notes:note.trim()},null,2)+'\n');
  check();

@@ -105,6 +105,8 @@ export async function runEquipmentQuickMenuSmoke(browser,base){
   await right(pants);
   await action('replace').click();
   assert.equal(await page.locator('#stagePicker .stage-picker-list').isVisible(),true);
+  assert.equal(await page.locator('#stagePicker .stage-picker-unequip svg[data-gear-icon="remove"]').count(),1,
+   'Catalog picker unequip uses the same shared vector as the context menu');
   assert.equal(await page.locator('.equipment-slot[data-slot-index="5"].equipped').count(),1);
   await page.locator('#stagePicker .stage-picker-head button[aria-label="Закрыть выбор"]').click();
 
