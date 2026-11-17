@@ -11015,6 +11015,18 @@ async function startStudio({archive=false}={}){
   if(attempt!==startupAttempt)return;
   if(activeTab==='wiki')await loadWiki();
   if(attempt!==startupAttempt)return;
+  // A publication can happen between the character catalog and the later
+  // override/Wiki requests. Recheck their exact live state before unlocking
+  // the public editor, not only during subsequent reconnects.
+  if(!archive){
+   const confirmed=await window.PandoraStudioOnlineGate.inspect({
+    api:API,fetcher:fetch,expectedSnapshot:activeCatalogSnapshot,
+    expectedOverrides:override,expectedCounts:catalogSource?.meta?.counts,
+    signal:AbortSignal.timeout(12000)
+   });
+   if(confirmed.status!=='ready')throw Error('Game data changed during startup');
+  }
+  if(attempt!==startupAttempt)return;
   applyGameLocale();
   studioLiveReady=!archive;
   clearOnlineRetry();
