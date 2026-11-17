@@ -10875,7 +10875,8 @@ function scheduleOnlineRetry(){
  const delay=Math.min(30000,4000*2**Math.min(liveRetryFailures++,3));
  liveRetryTimer=setTimeout(()=>{
   liveRetryTimer=null;
-  if(!navigator.onLine){scheduleOnlineRetry();return}
+  // Navigator online/offline is merely advisory (VPNs and captive portals
+  // may misreport it). Retry the D1 endpoint itself, with bounded backoff.
   if(studioLiveReady){
    if(liveGateReason==='offline')void checkLiveConnection();
   }else if(startupOverlay.dataset.state==='error')void startStudio();
