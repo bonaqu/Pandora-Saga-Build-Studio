@@ -1,6 +1,11 @@
 name: Issue 683 post-publication D1 and Hero Book Chromium acceptance
 
 on:
+  pull_request:
+    branches: [bonaqu_projects]
+    paths:
+      - '.github/workflows/verify-seven-item-levels-public-once.yml'
+      - 'tests/browser-public-seven-item-level-683.mjs'
   push:
     branches: [bonaqu_projects]
     paths:
@@ -12,13 +17,13 @@ permissions:
 
 jobs:
   browser-verify:
-    if: github.repository == 'bonaqu/Pandora-Saga-Build-Studio' && github.ref == 'refs/heads/bonaqu_projects'
+    if: >-
+      github.repository == 'bonaqu/Pandora-Saga-Build-Studio' &&
+      (github.ref == 'refs/heads/bonaqu_projects' || github.event_name == 'pull_request')
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
-        with:
-          ref: bonaqu_projects
       - uses: actions/setup-node@v5
         with:
           node-version: '22'
