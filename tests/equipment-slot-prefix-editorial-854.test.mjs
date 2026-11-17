@@ -8,6 +8,7 @@ function makeFixture(language,editable){
  const document={
   documentElement:{lang:language},
   createTextNode(text){return {tag:'#text',textContent:String(text),children:[]}},
+  createElementNS(_namespace,tag){return this.createElement(tag)},
   createElement(tag){
    return {tag,children:[],className:'',dataset:{},attrs:{},textContent:'',
     append(...nodes){this.children.push(...nodes)},

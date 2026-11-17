@@ -1561,12 +1561,11 @@ function openStageGearMenu(index,sourceSlot,event,anchor){
   h('strong',{text:hasItem?itemName(equipped):tr('Пустой слот','Empty slot')})
  ]);
  menu.append(title);
- // Actions borrow the exact same glyphs as the equipment modal tabs.
- // Keeping icon identity in PandoraStageItemUI prevents menu/tab drift.
+ // Context order follows the primary workflow. Icons reuse the item-tab SVG factory.
  const actions=hasItem?[
+  ['replace','Выбрать другую вещь','Choose another item',false],
   ['properties','Свойства','Properties',false],
   ['souls','Управление душами','Manage Souls',!canManageSouls],
-  ['replace','Выбрать другую вещь','Choose another item',false],
   ['remove','Снять вещь','Unequip item',false]
  ]:[['choose','Выбрать вещь','Choose item',false]];
  for(const [id,ru,en,disabled] of actions){
@@ -1590,7 +1589,7 @@ function openStageGearMenu(index,sourceSlot,event,anchor){
     openStageEquipmentSlot(id==='replace'||id==='choose'?index:sourceSlot,
      id==='replace'||id==='choose'?'choose':id==='souls'?'souls':'details');
    }
-  },[h('span',{class:'stage-gear-context-icon','aria-hidden':'true',text:glyph}),label]);
+  },[h('span',{class:'stage-gear-context-icon','aria-hidden':'true'},[glyph]),label]);
   const wrap=h('div',{class:'stage-gear-context-row'},[button]);
   if(adminEditing&&adminToken){
    equipmentCopyLabel(label,'context.'+id,ru,en);
@@ -2074,13 +2073,16 @@ function renderStagePicker(focusSearch=false){
   }
   return;
  }
- const detailsLink=bindOwnerInterfaceText(h('button',{type:'button',
+ const detailsLink=h('button',{type:'button',
    class:'stage-picker-mode-link',disabled:!record,
-   'data-gear-action-icon':window.PandoraStageItemUI.actionIcon('details',{forward:true}),
    'aria-label':lang==='en'?'Go to properties':'Перейти к свойствам',
-   onclick:()=>{stageSlotView='details';renderStagePicker()}}),
-   'equipment','pickerDetails','Свойства','Properties');
-  // The back arrow and caption already explain this action; no popup.
+   onclick:()=>{stageSlotView='details';renderStagePicker()}},[
+   window.PandoraStageItemUI.actionIcon('details',{forward:true}),
+   // Updating the D1 caption never erases or replaces the shared SVG icon.
+   bindOwnerInterfaceText(h('span',{class:'stage-picker-mode-caption'}),
+    'equipment','pickerDetails','Свойства','Properties')
+  ]);
+  // Forward navigation is self-explanatory; no extra tooltip.
  const top=h('div',{class:'stage-picker-head'},[
   bindOwnerInterfaceText(h('strong',{}),'equipment','pickerChoosePrefix',
    'Выбор:','Choose:','text',' '+gearSlotName(selectedSlot)),
@@ -2225,7 +2227,7 @@ function renderStagePicker(focusSearch=false){
  root.append(search,onlyAvailable);
  if(adminEditing&&adminToken)root.append(ownerInterfaceEditor('equipment',[
   ['pickerChoosePrefix','Выбор:','Choose:','Заголовок слота','Slot heading'],
-  ['pickerDetails','Свойства →','Details →','Переход к свойствам','Open properties'],
+  ['pickerDetails','Свойства','Properties','Переход к свойствам','Open properties'],
   ['pickerClose','Закрыть выбор','Close item picker','Закрытие','Close picker'],
   ['pickerSearchPlaceholder','Поиск по названию','Search by name','Поле поиска','Search placeholder'],
   ['pickerSearchAria','Поиск предмета для','Search equipment for','Название поиска','Search accessible name'],

@@ -30,10 +30,12 @@ export async function runItemPropertiesArrow866Smoke(browser,base){
    await link.waitFor({state:'visible',timeout:15000});
    assert.equal(await link.getAttribute('aria-label'),
     lang==='en'?'Go to properties':'Перейти к свойствам');
-   assert.equal(await link.getAttribute('data-gear-action-icon'),'→',
-    'Forward shortcut must use the shared icon source');
-   const glyph=await link.evaluate(el=>getComputedStyle(el,'::before').content);
-   assert.ok(glyph.includes('→'),'Arrow must point right toward properties: '+glyph);
+   assert.equal(await link.locator('svg[data-gear-icon="arrow-right"]').count(),1,
+     'Forward shortcut must reuse the common right-facing SVG');
+    assert.equal((await link.locator('.stage-picker-mode-caption').innerText()).trim(),
+     lang==='en'?'Properties':'Свойства');
+    assert.equal(await link.locator('svg path').first().getAttribute('d'),'M5 12h14',
+     'Arrow shaft should point right');
    assert.equal(await link.getAttribute('title'),null,
     'No duplicate native tooltip on a self-explanatory arrow');
    await link.hover();

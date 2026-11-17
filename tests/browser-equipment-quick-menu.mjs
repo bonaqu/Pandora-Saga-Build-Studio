@@ -38,7 +38,8 @@ export async function runEquipmentQuickMenuSmoke(browser,base){
   await right(emptyWeapon);
   await menu.waitFor({state:'visible'});
   assert.equal(await menu.locator('[role="menuitem"]').count(),1);
-  assert.equal((await action('choose').innerText()).trim(),'⇄\nВыбрать вещь');
+  assert.equal((await action('choose').innerText()).trim(),'Выбрать вещь');
+   assert.equal(await action('choose').locator('svg[data-gear-icon="choose"]').count(),1);
   await action('choose').click();
   assert.equal(await page.locator('#stagePicker .stage-picker-list').isVisible(),true);
   await page.locator('#stagePicker .stage-picker-head button[aria-label="Закрыть выбор"]').click();
@@ -47,11 +48,11 @@ export async function runEquipmentQuickMenuSmoke(browser,base){
   await menu.waitFor({state:'visible'});
   assert.equal(await menu.locator('[role="menuitem"]').count(),4);
   assert.deepEqual(await menu.locator('[role="menuitem"]').allTextContents(),
-   ['≡Свойства','○Управление душами','⇄Выбрать другую вещь','×Снять вещь']);
-  const icon=async id=>action(id).locator('.stage-gear-context-icon').innerText();
-  assert.equal(await icon('properties'),'≡');
-  assert.equal(await icon('souls'),'○');
-  assert.equal(await icon('replace'),'⇄');
+   ['Выбрать другую вещь','Свойства','Управление душами','Снять вещь']);
+  const icon=async id=>action(id).locator('.stage-gear-context-icon svg').getAttribute('data-gear-icon');
+   assert.equal(await icon('properties'),'details');
+   assert.equal(await icon('souls'),'souls');
+   assert.equal(await icon('replace'),'choose');
   assert.equal(await action('souls').isEnabled(),true);
   const bounds=await menu.boundingBox();
   assert.ok(bounds.x>=7&&bounds.x+bounds.width<=1366-7,
@@ -63,11 +64,15 @@ export async function runEquipmentQuickMenuSmoke(browser,base){
   await action('properties').click();
   assert.equal(await menu.count(),0);
   const tabIcon=async name=>page.locator('#stagePicker [data-stage-tab="'+name+'"]')
-   .locator('.stage-tab-symbol,.stage-action-glyph').innerText();
+    .locator('.stage-tab-symbol svg,.stage-action-glyph svg').getAttribute('data-gear-icon');
   assert.equal(await tabIcon('details'),contextPropertiesIcon,
    'Properties menu glyph must match Properties tab');
   assert.equal(await tabIcon('souls'),contextSoulsIcon,
-   'Souls menu glyph must match Souls tab');
+    'Manage Souls SVG must match its context menu action');
+   assert.equal((await page.locator('#stagePicker [data-stage-tab="souls"]').innerText()).trim(),
+    'Управление душами');
+   assert.equal((await page.locator('#stagePicker [data-stage-tab="choose"]').innerText()).trim(),
+    'Выбор');
   assert.equal(await page.locator('#stagePicker [data-stage-tab="details"]')
    .getAttribute('aria-pressed'),'true');
   assert.equal(await page.locator('#stagePicker .stage-rich-fields dd[data-soul-fill]')
@@ -91,7 +96,7 @@ export async function runEquipmentQuickMenuSmoke(browser,base){
   await menu.waitFor({state:'visible'});
   await page.keyboard.press('ArrowDown');
   assert.equal(await page.evaluate(()=>document.activeElement?.dataset.gearContextAction),
-   'souls','Keyboard ArrowDown selects the next valid action');
+   'properties','Keyboard ArrowDown selects Properties after Choose item');
   await page.keyboard.press('Escape');
   assert.equal(await menu.count(),0);
   assert.equal(await pants.evaluate(el=>document.activeElement===el),true,
