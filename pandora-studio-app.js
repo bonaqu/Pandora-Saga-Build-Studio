@@ -10895,7 +10895,14 @@ function pendingOwnerInlineText(){
  if(!adminToken||!adminEditing)return '';
  return [...document.querySelectorAll('[contenteditable="true"],[contenteditable="plaintext-only"]')]
   .filter(node=>!startupOverlay.contains(node)&&node.isConnected)
-  .map(node=>node.textContent?.trim()||'').filter(Boolean).join('\n\n');
+  .map(node=>{
+   // Preserve whitespace and deliberate deletion of the entire field. A
+   // blank owner edit is still an unsent change, not "no editor open".
+   const value=typeof node.innerText==='string'?node.innerText:
+    node.textContent||'';
+   return value.length?value:(lang==='en'?
+    '(Empty unsent text)':'(Пустой несохранённый текст)');
+  }).join('\n\n');
 }
 function refreshOwnerDraftRecovery(){
  let field=$('startupUnsentOwnerText');
