@@ -49,13 +49,12 @@
 .wiki-chest-board>.wiki-chest-group[hidden],
 .wiki-chest-slot-filters[hidden],
 .wiki-chest-filter-empty[hidden]{display:none!important}
-/* Filtered lists stay compact instead of stretching a single reward across
-   the full chest width; source groups and their original chances remain. */
+/* Keep a stable column grid when the last row is incomplete.
+   Flex-grow stretched the final 1–3 rewards wider than all preceding rows.
+   auto-fill reserves the same tracks in each row, even for hidden rewards. */
 .wiki-chest-board[data-filtered="true"]>.wiki-chest-group .wiki-chest-options{
- display:flex;flex-wrap:wrap;align-items:stretch;gap:8px;
-}
-.wiki-chest-board[data-filtered="true"]>.wiki-chest-group .wiki-chest-reward{
- flex:1 1 210px;max-width:340px;
+ display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,210px),1fr));
+ align-items:stretch;gap:8px;
 }
 @media(max-width:520px){
  .wiki-chest-reward-filters{
@@ -67,9 +66,7 @@
  }
  .wiki-chest-slot-filters{padding-top:7px}
  .wiki-chest-slot-label{flex-basis:100%}
- .wiki-chest-board[data-filtered="true"]>.wiki-chest-group .wiki-chest-reward{
-  flex:1 1 180px;max-width:none;
- }
+
 }
 
 .wiki-chest-collection{
@@ -200,6 +197,9 @@
 }
 .wiki-equipment-view button:focus-visible{outline:2px solid #f2c884;outline-offset:2px}
 @media(max-width:670px){
+.wiki-chest-board[data-filtered="true"]>.wiki-chest-group .wiki-chest-options{
+  grid-template-columns:repeat(auto-fill,minmax(min(100%,185px),1fr));
+ }
 
 .wiki-chest-assured-grid,.wiki-chest-board>.wiki-chest-group .wiki-chest-options{
   grid-template-columns:repeat(auto-fill,minmax(min(100%,185px),1fr));
