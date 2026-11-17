@@ -6400,6 +6400,11 @@ function renderWiki(root){
        wt('Вариантов: ','Options: ')+group.length}),
       h('span',{class:'wiki-chest-chevron','aria-hidden':'true',text:'⌄'})
      ]);
+     const groupCount=heading.querySelector('small');
+     if(groupCount){
+      groupCount.classList.add('wiki-chest-group-count');
+      groupCount.dataset.unfiltered=groupCount.textContent;
+     }
      const options=h('div',{class:'wiki-chest-options'});
      for(const {index:rowIndex,row} of window.PandoraStudioChestPresentation.orderedRewards(group)){
       const nextChest=chestIds.has(String(row.i))&&String(row.i)!==String(id);
@@ -6524,28 +6529,47 @@ function renderWiki(root){
       if(![...typeFilter.options].some(option=>option.value===wikiChestRewardFilter.type))
        wikiChestRewardFilter.type='all';
       typeFilter.value=wikiChestRewardFilter.type;
-      const slotFilter=h('select',{class:'wiki-chest-filter-slot',
-       'aria-label':wt('Слот экипировки в сундуке','Chest equipment slot')});
-      slotFilter.append(h('option',{value:'all',
-       text:wt('Все слоты','All slots')+' · '+facets.types.equipment}));
-      for(const [key,ru,en] of slotLabels){
-       if(facets.slots[key]>0)slotFilter.append(h('option',{value:key,
-        text:wt(ru,en)+' · '+facets.slots[key]}));
+      // Gear facets are always discoverable from "All rewards".
+      // Clicking a slot automatically activates Equipment; no hidden
+      // second dropdown or prior category-selection step is required.
+      const slotChips=h('div',{class:'wiki-chest-slot-filters',
+       role:'group','aria-label':wt('Типы экипировки','Equipment types')});
+      if(facets.types.equipment){
+       slotChips.append(h('small',{class:'wiki-chest-slot-label',
+        text:wt('Тип экипировки','Equipment type')}));
+       for(const [key,ru,en] of [
+        ['all','Вся экипировка','All equipment'],...slotLabels
+       ]){
+        const amount=key==='all'?facets.types.equipment:facets.slots[key];
+        if(!amount)continue;
+        const chip=h('button',{type:'button',class:'wiki-chest-slot-option',
+         'data-chest-slot':key,'aria-pressed':'false',
+         text:wt(ru,en)+' · '+amount});
+        chip.onclick=()=>{
+         wikiChestRewardFilter.type='equipment';
+         wikiChestRewardFilter.slot=key;
+         typeFilter.value='equipment';
+         applyRewardFilter();
+        };
+        slotChips.append(chip);
+       }
       }
-      if(![...slotFilter.options].some(option=>option.value===wikiChestRewardFilter.slot))
-       wikiChestRewardFilter.slot='all';
-      slotFilter.value=wikiChestRewardFilter.slot;
-      const count=h('small',{class:'wiki-chest-filter-count',role:'status'});
+      const count=h('small',{class:'wiki-chest-filter-count',role:'status',
+       'aria-live':'polite'});
       const empty=h('p',{class:'wiki-chest-filter-empty muted',hidden:true,
        text:wt('В выбранной категории наград нет.',
         'No rewards in this category.')});
       const toolbar=h('div',{class:'wiki-chest-reward-filters',
        role:'group','aria-label':wt('Фильтры наград сундука','Chest reward filters')},
-       [typeFilter,slotFilter,count]);
+       [typeFilter,count,...(facets.types.equipment?[slotChips]:[])]);
       gallery.before(toolbar);gallery.after(empty);
       const applyRewardFilter=()=>{
        const type=wikiChestRewardFilter.type,slot=wikiChestRewardFilter.slot;
-       slotFilter.hidden=type!=='equipment';
+       gallery.dataset.filtered=type==='all'?'false':'true';
+       slotChips.hidden=type!=='all'&&type!=='equipment';
+       for(const chip of slotChips.querySelectorAll('[data-chest-slot]'))
+        chip.setAttribute('aria-pressed',String(type==='equipment'&&
+         chip.dataset.chestSlot===slot));
        let shown=0;
        for(const card of gallery.querySelectorAll('.wiki-chest-reward')){
         const visible=chestPresentation.rewardMatches({
@@ -6553,9 +6577,15 @@ function renderWiki(root){
         },type,slot);
         card.hidden=!visible;if(visible)shown++;
        }
-       for(const section of gallery.querySelectorAll('.wiki-chest-group'))
-        section.hidden=![...section.querySelectorAll('.wiki-chest-reward')]
-         .some(card=>!card.hidden);
+       for(const section of gallery.querySelectorAll('.wiki-chest-group')){
+        const groupCards=[...section.querySelectorAll('.wiki-chest-reward')];
+        const visible=groupCards.filter(card=>!card.hidden).length;
+        section.hidden=visible===0;
+        const groupCount=section.querySelector('.wiki-chest-group-count');
+        if(groupCount)groupCount.textContent=type==='all'?
+         groupCount.dataset.unfiltered:
+         wt('Показано: ','Showing: ')+visible+' / '+groupCards.length;
+       }
        const visibleCertain=[...certainItems.querySelectorAll('.wiki-chest-reward')]
         .filter(card=>!card.hidden).length;
        certainBoard.hidden=visibleCertain===0;
@@ -6566,10 +6596,8 @@ function renderWiki(root){
       };
       typeFilter.onchange=()=>{
        wikiChestRewardFilter.type=typeFilter.value;
-       wikiChestRewardFilter.slot='all';slotFilter.value='all';applyRewardFilter();
-      };
-      slotFilter.onchange=()=>{
-       wikiChestRewardFilter.slot=slotFilter.value;applyRewardFilter();
+       wikiChestRewardFilter.slot='all';
+       applyRewardFilter();
       };
       applyRewardFilter();
      }

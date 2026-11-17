@@ -118,7 +118,23 @@ test('the implementation excludes every source-backed level-up reward box',()=>{
   'Editor reward index must not be reindexed by category filtering');
  assert.match(app,/data-reward-slot/);
  assert.match(app,/gallery\.querySelectorAll\('\.wiki-chest-reward'\)/);
+ assert.match(app,/class:'wiki-chest-slot-filters'/,
+  'Equipment type chips must be visible without first choosing Equipment');
+ assert.match(app,/'data-chest-slot':key,'aria-pressed':'false'/,
+  'Every direct slot action must be accessible');
+ assert.match(app,/typeFilter\.value='equipment'/,
+  'Direct slot action must activate the equipment category');
+ assert.match(app,/groupCount\.dataset\.unfiltered/,
+  'Unfiltered source group counts must be preserved');
+ assert.match(app,/groupCount\.textContent=type==='all'/,
+  'Counts in each group must change with filtering');
+ assert.match(app,/gallery\.dataset\.filtered/,
+  'Filtered layouts must be distinguished from the full inventory');
+ assert.doesNotMatch(app,/class:'wiki-chest-filter-slot'/,
+  'Do not hide the slot choice behind an extra dropdown');
  const css=read('pandora-studio-wiki-polish.css');
  assert.match(css,/\.wiki-chest-board \.wiki-chest-reward\[hidden\]/);
  assert.match(css,/\.wiki-chest-reward-filters select:focus-visible/);
+ assert.match(css,/\.wiki-chest-slot-option\[aria-pressed="true"\]/);
+ assert.match(css,/\.wiki-chest-board\[data-filtered="true"\]/);
 });

@@ -2,32 +2,73 @@
    styled once in pandora-studio-wiki-history.css. */
 .wiki-chest-board{display:grid;gap:12px;margin:10px 0 16px}
 .wiki-chest-reward-filters{
- display:flex;flex-wrap:wrap;gap:7px 10px;align-items:center;
- margin:10px 0 3px;min-width:0;
+ display:grid;grid-template-columns:minmax(0,1fr) auto;
+ gap:8px 12px;align-items:center;
+ margin:10px 0 7px;min-width:0;
 }
 .wiki-chest-reward-filters select{
- box-sizing:border-box;min-height:36px;min-width:0;max-width:100%;
+ box-sizing:border-box;width:min(100%,310px);
+ min-height:36px;min-width:0;max-width:100%;
  padding:7px 28px 7px 10px;border-radius:6px;
  border:1px solid #85643e;background:#241a13;color:#efcc9d;
  font:500 12px Manrope,Arial,sans-serif;
 }
-.wiki-chest-reward-filters select:focus-visible{
+.wiki-chest-reward-filters select:focus-visible,
+.wiki-chest-slot-option:focus-visible{
  outline:2px solid #e7b878;outline-offset:2px;
 }
 .wiki-chest-reward-filters .wiki-chest-filter-count{
- margin-left:auto;color:#c6b395;font-size:11px;white-space:nowrap;
+ color:#c6b395;font-size:11px;white-space:nowrap;
  font-variant-numeric:tabular-nums;
+}
+.wiki-chest-slot-filters{
+ grid-column:1 / -1;display:flex;flex-wrap:wrap;
+ gap:6px;align-items:center;min-width:0;
+ padding:8px 0 0;border-top:1px solid #5b4430;
+}
+.wiki-chest-slot-label{
+ color:#bfa98a;font-size:11px;margin-right:4px;white-space:nowrap;
+}
+.wiki-chest-reward-filters .wiki-chest-slot-option{
+ box-sizing:border-box;display:inline-flex;align-items:center;
+ justify-content:center;min-height:30px;max-width:100%;
+ border:1px solid #71553a;border-radius:5px;
+ padding:5px 9px;background:#291d14;color:#d9c09d;
+ font:500 11px/1.3 Manrope,Arial,sans-serif;
+ cursor:pointer;white-space:normal;text-align:center;
+}
+.wiki-chest-reward-filters .wiki-chest-slot-option:hover{
+ border-color:#c49a65;color:#f5d4a4;background:#372719;
+}
+.wiki-chest-reward-filters .wiki-chest-slot-option[aria-pressed="true"]{
+ border-color:#dfb778;color:#ffe1af;background:#634025;
 }
 .wiki-chest-filter-empty{margin:8px 0;padding:8px 10px}
 .wiki-chest-board .wiki-chest-reward[hidden],
 .wiki-chest-board .wiki-chest-collection[hidden],
 .wiki-chest-board>.wiki-chest-group[hidden],
-.wiki-chest-reward-filters select[hidden],
+.wiki-chest-slot-filters[hidden],
 .wiki-chest-filter-empty[hidden]{display:none!important}
+/* Filtered lists stay compact instead of stretching a single reward across
+   the full chest width; source groups and their original chances remain. */
+.wiki-chest-board[data-filtered="true"]>.wiki-chest-group .wiki-chest-options{
+ display:flex;flex-wrap:wrap;align-items:stretch;gap:8px;
+}
+.wiki-chest-board[data-filtered="true"]>.wiki-chest-group .wiki-chest-reward{
+ flex:1 1 210px;max-width:340px;
+}
 @media(max-width:520px){
- .wiki-chest-reward-filters select{flex:1 1 145px}
+ .wiki-chest-reward-filters{
+  grid-template-columns:minmax(0,1fr);gap:7px;
+ }
+ .wiki-chest-reward-filters select{width:100%}
  .wiki-chest-reward-filters .wiki-chest-filter-count{
-  width:100%;margin:0;text-align:right;
+  text-align:left;white-space:normal;
+ }
+ .wiki-chest-slot-filters{padding-top:7px}
+ .wiki-chest-slot-label{flex-basis:100%}
+ .wiki-chest-board[data-filtered="true"]>.wiki-chest-group .wiki-chest-reward{
+  flex:1 1 180px;max-width:none;
  }
 }
 
