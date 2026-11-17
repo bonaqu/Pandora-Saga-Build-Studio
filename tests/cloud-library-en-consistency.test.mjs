@@ -78,6 +78,6 @@ test('cloud status is translated on updates and when reopening the Builds tab',(
   assert.equal(node.textContent,ui.ui(holder.source(),lang));
  }
  assert.match(app,/activeId:activeBuildId,newId,lang/);
- assert.match(app,/text:cloudStatusText\(cloudLibraryStatus\)/);
+ assert.match(app,/syncCloudStatusNode\(cloudStatus,cloudLibraryStatus\)/);
  assert.match(app,/window.PandoraUILocale\?\.ui\(label,lang\)/);
 });
