@@ -39,7 +39,7 @@ test('item selection offers an arrow back to properties without another tooltip'
  const css=read('pandora-studio-workbench-guidance.css');
  assert.match(gear,/returningToDetails=mode==='choose'&&key==='details'/);
  assert.match(gear,/button\.setAttribute\('aria-label',tr\('Вернуться к свойствам'/);
- assert.match(css,/button\.return-to-properties::before\{content:"←"/);
+ assert.match(css,/return-to-properties::before\{content:"←"/);
  assert.match(css,/stage-picker-mode-link::before\{content:"←"/);
  assert.match(css,/transform:translateY\(-1px\)/);
  assert.doesNotMatch(app,/PandoraGuideTooltip\?\.attach\(detailsLink/);
