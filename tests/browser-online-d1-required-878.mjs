@@ -11,7 +11,7 @@ export async function runOnlineD1Required878Smoke(browser,base){
  const cors={'access-control-allow-origin':'*',
   'access-control-allow-headers':'Content-Type,Authorization',
   'access-control-allow-methods':'GET,POST,OPTIONS'};
- await ctx.addInitScript(()=>{localStorage.setItem('ps-build-lang','ru')});
+ await ctx.addInitScript(()=>{if(!localStorage.getItem('ps-build-lang'))localStorage.setItem('ps-build-lang','ru')});
  await ctx.route('**/*',async route=>{
   const req=route.request(),url=req.url(),method=req.method();
   if(url.startsWith(publicOrigin+'/')){
@@ -171,6 +171,8 @@ export async function runOnlineD1Required878Smoke(browser,base){
    old.level=32;
    old.points={'1':5};
    localStorage.setItem('ps-build-studio.v1',JSON.stringify(old));
+   // EN startup also performs catalog reconciliation before D1 overrides.
+   localStorage.setItem('ps-build-lang','en');
    const marker=localStorage.getItem('ps-build-owner-scope.v1');
    if(marker){
     const key='ps-build-scope-cache.v1:'+marker;
@@ -182,6 +184,7 @@ export async function runOnlineD1Required878Smoke(browser,base){
    }
   });
   badProgression=true;
+  englishFails=false;
   await page.reload({waitUntil:'domcontentloaded'});
   await blocked().waitFor({state:'visible',timeout:30000});
   const unchanged=await page.evaluate(()=>JSON.parse(localStorage.getItem('ps-build-studio.v1')));
