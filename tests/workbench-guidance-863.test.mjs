@@ -7,7 +7,7 @@ test('shared build names are runtime-only and both actions explain their outcome
  assert.match(app,/class:'shared-current-name',text:currentName/);
  assert.match(app,/class:'shared-personal-name',text:incomingName/);
  assert.match(app,/class:'shared-build-replacement'/);
- assert.match(app,/if\(verifyViewer\(\)\)\{if\(saveBuild\(\)\)apply\(\)\}/);
+ assert.match(app,/saveBuild\(state\.name\|\|currentName,savedCurrent\?\.id\|\|null\)/);
  assert.match(app,/hintButton\(sharedText\('Открыть без сохранения'/);
  assert.doesNotMatch(app,/class:'shared-personal-name',\s*'data-owner-copy-key'/);
 });

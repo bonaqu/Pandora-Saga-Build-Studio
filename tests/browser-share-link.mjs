@@ -151,10 +151,11 @@ export async function runShareLinkSmoke(browser,base){
    assert.match(await dialog.locator('.shared-personal-name').innerText(),/Новый герой/);
    assert.equal(await dialog.locator('.shared-build-identity').count(),2);
    assert.match(await dialog.locator('.shared-build-replacement').innerText(),/заменит/);
-   const saveChoice=dialog.getByRole('button',{name:'Сохранить текущий и открыть'});
    const discardChoice=dialog.getByRole('button',{name:'Открыть без сохранения'});
-   assert.match(await saveChoice.getAttribute('data-guide-hint'),/новую копию билда/);
-   assert.match(await saveChoice.getAttribute('data-guide-hint'),/синхронизируется с облаком/);
+   assert.match(await dialog.getByRole('button',{name:'Сохранить новый и открыть'})
+    .getAttribute('data-guide-hint'),/создадим запись/i);
+   assert.match(await dialog.getByRole('button',{name:'Сохранить новый и открыть'})
+    .getAttribute('data-guide-hint'),/синхронизируются с облаком/i);
    assert.match(await discardChoice.getAttribute('data-guide-hint'),/Несохранённые изменения/);
    assert.match(await discardChoice.getAttribute('aria-description'),/Новый герой/);
    assert.equal(sharedGets,3,'one same-tab hashchange must issue exactly one shared GET');
@@ -182,8 +183,8 @@ export async function runShareLinkSmoke(browser,base){
    assert.equal(sharedGets,5,'EN navigation must issue one shared GET');
    assert.match(await englishDialog.innerText(),/unsaved changes will be lost/i);
    assert.equal(await englishDialog.locator('.shared-build-identity').count(),2);
-   assert.match(await englishDialog.getByRole('button',{name:'Save current and open'})
-    .getAttribute('data-guide-hint'),/synced to the cloud/i);
+   assert.match(await englishDialog.getByRole('button',{name:'Save new and open'})
+    .getAttribute('data-guide-hint'),/synchronized with the cloud separately/i);
    assert.equal(await englishDialog.locator('[data-owner-copy-key="librarySharedOpenNote"]').innerText(),
     'Existing saved builds will not be deleted.');
    await englishDialog.getByRole('button',{name:'Cancel'}).click();

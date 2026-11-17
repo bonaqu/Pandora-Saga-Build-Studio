@@ -267,8 +267,7 @@ function futureSkillReachable(skill,api,skillIndex=indexSkills(api.skillCatalog)
   chain.add(id);
   if(current.charLevel!==undefined&&(!validSourceLevel(current.charLevel)||
      Number(current.charLevel)>maxLevel))return false;
-  if(current.reqLevel!==undefined&&(!validSourceLevel(current.reqLevel)||
-     Number(current.reqLevel)>90))return false;
+  if(current.reqLevel!==undefined&&!validSourceLevel(current.reqLevel))return false;
   if(current.reqs!==undefined&&!Array.isArray(current.reqs))return false;
   const reqs=Array.isArray(current.reqs)?current.reqs:[];
   if(Number(current.reqLevel)>0&&!reqs.length)return false;
