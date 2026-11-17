@@ -2072,15 +2072,10 @@ function renderStagePicker(focusSearch=false){
  }
  const detailsLink=bindOwnerInterfaceText(h('button',{type:'button',
    class:'stage-picker-mode-link',disabled:!record,
+   'aria-label':lang==='en'?'Back to properties':'Вернуться к свойствам',
    onclick:()=>{stageSlotView='details';renderStagePicker()}}),
    'equipment','pickerDetails','Свойства','Properties');
- const detailsHelp=equipmentCopy('hint.details',
-  'Посмотреть свойства, заточку и слоты душ.','View properties, refinement and Soul sockets.');
- bindOwnerInterfaceText(detailsLink,'equipment','hint.details',
-  'Посмотреть свойства, заточку и слоты душ.',
-  'View properties, refinement and Soul sockets.','aria-description');
- detailsLink.dataset.guideHint=detailsHelp;
- window.PandoraGuideTooltip?.attach(detailsLink,detailsHelp,{hoverDelay:300});
+  // The back arrow and caption already explain this action; no popup.
  const top=h('div',{class:'stage-picker-head'},[
   bindOwnerInterfaceText(h('strong',{}),'equipment','pickerChoosePrefix',
    'Выбор:','Choose:','text',' '+gearSlotName(selectedSlot)),
