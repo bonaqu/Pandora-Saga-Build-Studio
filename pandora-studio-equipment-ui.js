@@ -597,7 +597,19 @@ function render(root,api){
    const notice=el('p',{class:'stage-soul-unavailable',
     'role':'status','data-soul-unavailable':zero?'zero':'unknown',
     'data-soul-slot-type':slot,text:copy(key,ru,en)});
-   body.append(editable(notice,key,ru,en));
+   const row=el('div',{class:'stage-soul-unavailable-row'});
+   row.append(editable(notice,key,ru,en));
+   if(api.canEdit){
+    const pencil=el('button',{type:'button',
+     class:'stage-control-pencil stage-soul-unavailable-pencil',text:'✎',
+     'aria-label':tr('Изменить пояснение','Edit explanation')});
+    pencil.addEventListener('click',event=>{
+     event.preventDefault();event.stopPropagation();
+     notice.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
+    });
+    row.append(pencil);
+   }
+   body.append(row);
    return;
   }
   const row=el('div',{class:'stage-rich-sockets'});
