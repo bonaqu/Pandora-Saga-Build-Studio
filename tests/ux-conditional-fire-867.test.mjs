@@ -43,6 +43,7 @@ test('all item tabs and right-click menu actions reuse a single icon mapping',()
  assert.equal(icon('details',{forward:true}),'→');
  assert.equal(icon('unknown'),'');
  assert.match(source,/PandoraStageItemUI\.actionIcon\(id\)/);
+ assert.match(source,/data-gear-action-icon':window\.PandoraStageItemUI\.actionIcon\('details',\{forward:true\}\)/);
  assert.match(equipment,/const glyph=actionIcon\(key,\{forward:returningToDetails\}\)/);
  assert.match(css,/\.stage-rich-tabs \.stage-tab-symbol/);
  assert.doesNotMatch(css,/button\[data-stage-tab="(?:choose|details|souls)"\]::before/);

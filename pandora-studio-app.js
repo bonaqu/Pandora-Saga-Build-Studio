@@ -2076,6 +2076,7 @@ function renderStagePicker(focusSearch=false){
  }
  const detailsLink=bindOwnerInterfaceText(h('button',{type:'button',
    class:'stage-picker-mode-link',disabled:!record,
+   'data-gear-action-icon':window.PandoraStageItemUI.actionIcon('details',{forward:true}),
    'aria-label':lang==='en'?'Go to properties':'Перейти к свойствам',
    onclick:()=>{stageSlotView='details';renderStagePicker()}}),
    'equipment','pickerDetails','Свойства','Properties');

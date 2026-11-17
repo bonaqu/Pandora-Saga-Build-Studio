@@ -43,7 +43,8 @@ test('item selection offers a forward arrow to properties without another toolti
  assert.match(gear,/button\.setAttribute\('aria-label',tr\('Перейти к свойствам'/);
  assert.match(gear,/actionIcon\(key,\{forward:returningToDetails\}\)/);
  assert.match(css,/return-to-properties :is\(\.stage-tab-symbol,\.stage-action-glyph\)/);
- assert.match(css,/stage-picker-mode-link::before\{content:"→"/);
+ assert.match(app,/PandoraStageItemUI\.actionIcon\('details',\{forward:true\}\)/);
+ assert.match(css,/stage-picker-mode-link::before\{content:attr\(data-gear-action-icon\)/);
  assert.match(css,/transform:translateY\(-1px\)/);
  assert.doesNotMatch(app,/PandoraGuideTooltip\?\.attach\(detailsLink/);
 });
