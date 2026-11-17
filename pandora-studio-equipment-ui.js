@@ -416,7 +416,7 @@ function render(root,api){
     api.changeMode(key);
    }});
   if(returningToDetails){
-   button.setAttribute('aria-label',tr('Вернуться к свойствам','Back to properties'));
+   button.setAttribute('aria-label',tr('Перейти к свойствам','Go to properties'));
   }else{
    const actionHelp=copy('hint.'+key,...hints[key]);
    bind(button,'hint.'+key,...hints[key],'aria-description');
