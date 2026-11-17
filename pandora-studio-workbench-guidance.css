@@ -89,6 +89,10 @@
 .stage-rich-tabs .stage-rich-settings-group button:not(.stage-control-pencil):hover{
  background:#50321d}
 .stage-rich-tabs .stage-rich-settings-group>.stage-action-edit-wrap{min-width:0}
+.stage-rich-tabs .stage-rich-settings-group>button:not(.stage-control-pencil):not(:first-child),
+.stage-rich-tabs .stage-rich-settings-group>.stage-action-edit-wrap:not(:first-child){
+ border-left:1px solid #896542}
+
 /* Removal in the catalog picker uses the same compact button vocabulary. */
 .stage-picker-foot .stage-picker-unequip{display:inline-flex;align-items:center;
  justify-content:center;gap:6px;min-height:31px;min-width:0;

@@ -55,7 +55,7 @@ export async function runItemPropertiesArrow866Smoke(browser,base){
    assert.ok(Math.abs(chooseBox.y-settingsBox.y)<2,
     'Both groups share one compact row');
    const soulDivider=await settings.locator('[data-stage-tab="souls"]').evaluate(
-    element=>getComputedStyle(element.parentElement).borderLeftWidth);
+    element=>getComputedStyle(element.closest('.stage-action-edit-wrap')||element).borderLeftWidth);
    assert.notEqual(soulDivider,'0px','Properties and Souls have a visible separator');
    const unequip=picker.locator('.stage-picker-unequip');
    assert.equal(await unequip.count(),1);
