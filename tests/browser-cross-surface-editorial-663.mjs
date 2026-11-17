@@ -126,11 +126,13 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
    await panel.locator('summary').click();
    const target=page.locator(selector);
    const original=await target.getAttribute('data-guide-hint');
-   assert.ok(original,'Initial action hint must be shown');
+   const redundant=section==='origin'||section==='path';
+   if(redundant)assert.equal(original,null,'Self-explanatory tabs must not have redundant hover help');
+   else assert.ok(original,'Useful action hints must remain visible');
    const beforeLevel=await page.locator('#levelOut').innerText();
    await edit(section,key,newCopy);
-   assert.equal(await target.getAttribute('data-guide-hint'),newCopy);
-   assert.equal(await target.getAttribute('aria-description'),newCopy);
+   assert.equal(await target.getAttribute('data-guide-hint'),redundant?null:newCopy);
+   assert.equal(await target.getAttribute('aria-description'),redundant?null:newCopy);
    assert.equal(await page.locator('#levelOut').innerText(),beforeLevel);
    await panel.locator('summary').click();
   }
