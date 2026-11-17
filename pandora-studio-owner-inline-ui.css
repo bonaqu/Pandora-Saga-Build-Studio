@@ -833,3 +833,24 @@
  .owner-manager-section,.owner-manager-session,.owner-manager .owner-manager-row{
   border:1px solid CanvasText}
 }
+
+/* Owner slot title: edit only "Slot", never the game-backed slot name. */
+.stage-picker-head .stage-picker-slot-title-wrap{
+ display:flex;align-items:center;gap:5px;min-width:0;max-width:100%
+}
+.stage-picker-head .stage-picker-slot-title{
+ min-width:0;overflow-wrap:anywhere
+}
+.stage-picker-head .stage-picker-slot-prefix{
+ display:inline;white-space:pre-wrap
+}
+.stage-picker-head .stage-picker-slot-pencil{
+ flex:0 0 auto;width:24px;min-width:24px;height:24px;min-height:24px;
+ padding:2px 3px;border-radius:4px;font:650 12px/1 Manrope,Arial,sans-serif
+}
+.stage-picker-head .stage-picker-slot-pencil:focus-visible{
+ outline:2px solid #f2c989;outline-offset:1px
+}
+.stage-picker-head .stage-picker-slot-prefix:has([data-owner-text-field]){
+ white-space:pre-wrap;overflow:visible
+}
