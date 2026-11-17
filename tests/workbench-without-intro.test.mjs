@@ -52,10 +52,11 @@ test('catalog footer is natural-language while archive warning stays separate',(
  assert.match(app,/Сохранённая копия игры может устареть/);
  assert.match(app,/Saved game data may be outdated/);
  assert.match(app,/notice\.hidden=!catalogArchived/);
- assert.match(app,/archive:\['127\.0\.0\.1','localhost'\]\.includes\(location\.hostname\)/);
+ assert.match(app,/const localCatalogHost=\['127\.0\.0\.1','localhost'\]\.includes\(location\.hostname\)/);
+ assert.match(app,/void startStudio\(\{archive:localCatalogHost\}\)/);
  assert.match(html,/id="startupOverlay"/);
  assert.match(html,/id="startupRetry"/);
- assert.match(html,/id="startupArchive"/);
+ assert.doesNotMatch(html,/id="startupArchive"/);
  assert.match(loadingCss,/\.ps-boot-overlay\{position:fixed/);
 });
 test('critical user controls and owner dock survive removal of intro',()=>{
