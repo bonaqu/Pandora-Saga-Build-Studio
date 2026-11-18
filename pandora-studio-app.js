@@ -8406,7 +8406,7 @@ function updateAdminHint(){
   bindAccountCopyEditors(document.getElementById('studio-update-banner'));
  }
  refreshOwnerUI();
- window.PandoraStudioUpdateBanner?.refresh?.();
+ globalThis.PandoraStudioUpdateBanner?.refresh?.();
 }
 
 // Stable UI labels are edited where they appear, never in an admin dialog.
