@@ -96,8 +96,8 @@ export async function runOnlineD1Required878Smoke(browser,base){
   assert.equal(await page.evaluate(()=>document.querySelector('header').inert),false);
   assert.equal(await page.evaluate(()=>document.querySelector('#onlineInertLateButton').inert),false,
    'A dynamically inserted control is restored after verified startup');
-  assert.equal(await page.evaluate(()=>document.querySelector('#legacyBuffControls').inert),true,
-   'Elements that were already inert remain inert after recovery');
+  assert.equal(await page.locator('#legacyBuffControls').count(),0,
+   'Retired buff controls must not reappear after verified D1 recovery');
   await page.evaluate(()=>document.querySelector('#onlineInertLateButton').remove());
   assert.ok(reads>=firstReads+10,'Retry must verify all D1 datasets and authorial copy');
 

@@ -141,6 +141,27 @@ export async function runHeroBookLiveRecalcSmoke(browser,base){
    ['buffs.setting.guildHp','Сила гильдии'],
    ['buffs.setting.guildAll','Магистр битвы']
   ])assert.equal(await authored(key).innerText(),text,'RU '+key);
+  // The old hidden Origin form is retired. The live Hero Book must remain
+  // the single interaction point for guild bonuses and local draft storage.
+  assert.equal(await page.locator('#legacyBuffControls').count(),0);
+  assert.equal(await page.locator('#originGuildHp').count(),0);
+  const guildHpField=page.locator('#stageBookPanel [data-book-setting="guildHp"]');
+  const hpBefore=Number(await page.locator('#originHp').innerText());
+  await guildHpField.selectOption('1');
+  await page.waitForFunction(()=>
+   JSON.parse(localStorage.getItem('ps-build-studio.v1')||'{}').vitalsBuffs?.guildHp===1,
+   null,{timeout:10000});
+  assert.equal(await page.locator('#stageBookPanel [data-book-setting="guildHp"]').inputValue(),'1',
+   'Book must retain the chosen manual guild buff');
+  const hpAfter=Number(await page.locator('#originHp').innerText());
+  assert.ok(hpAfter>hpBefore,
+   'The Hero Book buff must recalculate real HP without any ghost Origin controls');
+  await page.locator('#locale [data-locale="en"]').click();
+  await page.waitForFunction(()=>document.documentElement.lang==='en');
+  assert.equal(await page.locator('#stageBookPanel [data-book-setting="guildHp"]').inputValue(),'1',
+   'Language change must retain the buff selection');
+  assert.equal(await page.evaluate(()=>
+   JSON.parse(localStorage.getItem('ps-build-studio.v1')).vitalsBuffs.guildHp),1);
   assert.deepEqual(errors,[]);
   console.log('Chromium live Hero Book passed: DEX 9→10→20, green Tactics 85→65, auto and slider');
  }finally{await context.close()}
