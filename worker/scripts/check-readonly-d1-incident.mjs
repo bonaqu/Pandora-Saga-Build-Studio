@@ -24,7 +24,7 @@ const checks=[
 let errors=0;
 for(const [label,sql] of checks){
  // Even a future edit to this script must not create a write-capable probe.
- if(!/^(?:SELECT\\s|PRAGMA\\s+table_info\\()/i.test(sql)||sql.includes(';'))
+ if(!/^(?:SELECT\s|PRAGMA\s+table_info\()/i.test(sql)||sql.includes(';'))
   throw Error('Non-read-only D1 query refused: '+label);
  const result=spawnSync('npx',[
   '--yes','wrangler@4','d1','execute','ps-build-studio-db','--remote',
