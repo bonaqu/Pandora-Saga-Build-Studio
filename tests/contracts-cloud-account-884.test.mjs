@@ -196,8 +196,8 @@ test('account-only Worker deploy is verified on production without writing D1',(
 const app=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
 const locale=readFileSync(new URL('../pandora-studio-ui-locale.js',import.meta.url),'utf8');
 test('overwrite confirmation reports browser persistence, never unconfirmed cloud success',()=>{
- const start=app.indexOf('const overwriteChoice=');
- const end=app.indexOf('const deleteChoice=',start);
+ const start=app.indexOf("confirmButton('libraryConfirmOverwrite',()=>{");
+ const end=app.indexOf("confirmButton('libraryCancel'",start);
  assert.ok(start>0&&end>start);
  const part=app.slice(start,end);
  assert.match(part,/saveBuild\(activeBuildId===b\.id\?state\.name:b\.name,b\.id\)/);
@@ -250,9 +250,17 @@ test('English build cards use the localized race and keep user-provided names un
  assert.match(app,/text:b\.name/);
 });
 test('dynamic overwrite text has a direct translation and keeps the stored build name',()=>{
- assert.match(app,/Overwrite saved build “'\+b\.name\+'” with your current character/);
- assert.match(app,/Перезаписать сохранённый билд «'\+b\.name\+'» текущим персонажем/);
+ assert.match(app,/class:'build-confirm-dynamic-name',text:b\.name/);
+ assert.match(app,/'data-owner-copy-key':'libraryOverwriteBefore'/);
+ assert.match(app,/'data-owner-copy-key':'libraryOverwriteAfter'/);
  const root={};vm.runInNewContext(read('pandora-studio-ui-locale.js'),{window:root});
+ assert.equal(root.PandoraUILocale.baseText('libraryOverwriteBefore','en'),
+  'Overwrite saved build “');
+ assert.equal(root.PandoraUILocale.baseText('libraryOverwriteBefore','ru'),
+  'Перезаписать сохранённый билд «');
+ assert.match(root.PandoraUILocale.baseText('libraryOverwriteAfter','en'),
+  /with your current character/);
+ assert.equal(root.PandoraUILocale.literalKey('Игровой герой с необычным именем'),null);
  assert.equal(root.PandoraUILocale.ui('↻ Сохранить в этот билд','en'),'↻ Save to this build');
 });
 }

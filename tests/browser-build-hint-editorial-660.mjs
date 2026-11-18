@@ -44,7 +44,7 @@ export async function runOwnerBuildHints660Smoke(browser,base){
   if(path==='/api/admin/override'&&method==='POST'){
    assert.equal(req.headers().authorization,'Bearer '+ownerToken);
    const body=req.postDataJSON();
-   assert.match(body.key,/^guideedit\.book\.ui\.label\.library-(?:hint-|card-|sort-|compare|current-badge)/);
+   assert.match(body.key,/^guideedit\.book\.ui\.label\.library-(?:hint-|card-|sort-|compare|current-badge|overwrite-|confirm-overwrite|delete-ask)/);
    assert.equal(body.expectedValue,Object.hasOwn(values,body.key)?values[body.key]:null,
     'CAS keeps the previous version');
    values[body.key]=body.value;writes.push(body);
@@ -153,6 +153,50 @@ export async function runOwnerBuildHints660Smoke(browser,base){
    'Сопоставить '+await card.locator('h3').innerText(),
    'Accessible compare label follows the current sorted card, not its old position');
   await sort.selectOption('saved');
+  // The three confirmation forms are now lazy: two cards start with only
+  // empty shells. Check real D1 edits without executing overwrite/delete.
+  assert.equal(await page.locator('.build-overwrite-choice button').count(),0);
+  assert.equal(await page.locator('.build-delete-choice button').count(),0);
+  const originalName=await card.locator('h3').textContent();
+  const originalCard=await card.elementHandle();
+  await card.locator('[data-build-action-hint="libraryHintOverwrite"]').click();
+  const overwrite=card.locator('.build-overwrite-choice');
+  await overwrite.waitFor({state:'visible'});
+  assert.equal(await overwrite.locator('.build-confirm-dynamic-name').innerText(),originalName);
+  assert.equal(await overwrite.locator('[data-owner-copy-pencil="libraryOverwriteBefore"]').count(),1);
+  await overwrite.locator('[data-owner-copy-pencil="libraryOverwriteBefore"]').click();
+  const beforeInput=overwrite.locator('.account-copy-edit-host [contenteditable]');
+  await beforeInput.fill('Вместо этого билда «');
+  await beforeInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '.build-card .build-overwrite-choice [data-owner-copy-key="libraryOverwriteBefore"]')
+   ?.textContent==='Вместо этого билда «',null,{timeout:12000});
+  assert.equal(JSON.parse(values['guideedit.book.ui.label.library-overwrite-before']).ru,
+   'Вместо этого билда «');
+  assert.equal(await overwrite.locator('.build-confirm-dynamic-name').innerText(),originalName);
+  assert.equal(await originalCard.evaluate(node=>node.isConnected),true,
+   'D1 edit must not remount the active saved-build card');
+  await card.locator('[data-build-action-hint="libraryHintDelete"]').click();
+  assert.equal(await overwrite.locator('button').count(),0,
+   'Switching actions must release the previous hidden confirmation nodes');
+  const deletion=card.locator('.build-delete-choice');
+  await deletion.waitFor({state:'visible'});
+  await deletion.locator('[data-owner-copy-pencil="libraryDeleteAsk"]').click();
+  await deletion.locator('.account-copy-edit-host [contenteditable]')
+   .fill('Удалить сохранение и ссылки навсегда?');
+  await deletion.locator('.account-copy-edit-host [contenteditable]').press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '.build-card .build-delete-choice [data-owner-copy-key="libraryDeleteAsk"]')
+   ?.textContent==='Удалить сохранение и ссылки навсегда?',null,{timeout:12000});
+  assert.equal(JSON.parse(values['guideedit.book.ui.label.library-delete-ask']).ru,
+   'Удалить сохранение и ссылки навсегда?');
+  assert.equal(await card.locator('h3').textContent(),originalName);
+  assert.equal(await originalCard.evaluate(node=>node.isConnected),true);
+  await deletion.locator('[data-owner-copy-key="libraryCancel"]').click();
+  assert.equal(await deletion.locator('button').count(),0);
+  assert.equal(await page.locator('.build-card').count(),2);
+  assert.equal(await page.locator('.build-card h3').first().textContent(),name);
+  await originalCard.dispose();
   await page.locator('#dockClose').click();
   await page.locator('#locale [data-locale="en"]').click();
   await page.locator('#nav [data-tab="builds"]').click();
@@ -164,6 +208,24 @@ export async function runOwnerBuildHints660Smoke(browser,base){
   assert.deepEqual(JSON.parse(values[key]),{ru:russian,en:english});
   await edit('libraryCardOpen','View character');
   await editCurrent('● Editing now');
+  const editedCard=page.locator('.build-card').first();
+  await editedCard.locator('[data-build-action-hint="libraryHintOverwrite"]').click();
+  const enOverwrite=editedCard.locator('.build-overwrite-choice');
+  assert.ok((await enOverwrite.innerText()).includes('QA preserved hero'));
+  assert.ok((await enOverwrite.innerText()).includes('Overwrite saved build'));
+  await enOverwrite.locator('[data-owner-copy-pencil="libraryOverwriteAfter"]').click();
+  await enOverwrite.locator('.account-copy-edit-host [contenteditable]')
+   .fill('” with your current hero? This cannot be undone.');
+  await enOverwrite.locator('.account-copy-edit-host [contenteditable]').press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '.build-card .build-overwrite-choice [data-owner-copy-key="libraryOverwriteAfter"]')
+    ?.textContent==='” with your current hero? This cannot be undone.',
+   null,{timeout:12000});
+  assert.equal(JSON.parse(values['guideedit.book.ui.label.library-overwrite-after']).en,
+   '” with your current hero? This cannot be undone.');
+  assert.equal(await editedCard.locator('.build-confirm-dynamic-name').textContent(),name);
+  await enOverwrite.locator('[data-owner-copy-key="libraryCancel"]').click();
+  assert.equal(await page.locator('.build-overwrite-choice button').count(),0);
   assert.equal(await page.locator('.build-card.is-current .build-card-current-label').innerText(),
    '● Editing now');
   assert.deepEqual(JSON.parse(values[labelKey]),{

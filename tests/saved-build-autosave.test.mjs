@@ -23,7 +23,8 @@ test('ordinary autosave writes only the owner-scoped character draft, never name
 
 test('named builds are written only after explicit player save/overwrite intent',()=>{
  assert.match(app,/onclick:\(\)=>saveBuild\(name\.value\)/);
- assert.match(app,/text:tr\('Подтвердить перезапись','Confirm overwrite'\)/);
+ assert.match(app,/confirmButton\('libraryConfirmOverwrite',\(\)=>\{/);
+ assert.match(app,/text:libraryText\(key\),onclick:action/);
  assert.match(app,/if\(saveBuild\(activeBuildId===b\.id\?state\.name:b\.name,b\.id\)\)/);
  assert.match(app,/text:libraryText\('librarySaveAndCreate'\)/);
  assert.match(app,/if\(saveBuild\(draft\.value\)\)newBlankBuild\(\)/);

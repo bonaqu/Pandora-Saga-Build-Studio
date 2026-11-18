@@ -113,6 +113,11 @@ const libraryCopy=Object.freeze({
  libraryOverwrite:['↻ Перезаписать','↻ Overwrite'],
  librarySaveInto:['↻ Сохранить в этот билд','↻ Save to this build'],
  libraryConfirmOverwrite:['Подтвердить перезапись','Confirm overwrite'],
+ // Build names are dynamic nodes between these two editorial fragments.
+ // Never serialize a user-created build name into a D1 label override.
+ libraryOverwriteBefore:['Перезаписать сохранённый билд «','Overwrite saved build “'],
+ libraryOverwriteAfter:['» текущим персонажем? Предыдущую версию этого билда восстановить будет нельзя.',
+  '” with your current character? The previous version of this build cannot be restored.'],
  libraryShare:['🔗 Поделиться','🔗 Share'],
  libraryDelete:['Удалить','Delete'],
  libraryCompare:['Сравнить','Compare'],

@@ -7620,49 +7620,72 @@ function renderBuilds(root){
   const box=h('div',{class:'build-card'+(isCurrent?' is-current':'')});
   if(isCurrent)box.setAttribute('aria-current','true');
   const shareSlot=h('div',{class:'build-share-slot',role:'status'});
+  // Rendering 200 cards must not allocate 600 hidden confirmation forms.
+  // Mount each form only when opened, and discard it on close. Save/Undo
+  // patches only the open controls and never touches the player name.
   const openChoice=h('div',{class:'build-open-choice',hidden:true});
-  const check=h('input',{type:'checkbox','aria-label':libraryText('libraryCompare')+' '+b.name});
-  openChoice.append(h('p',{text:tr('Есть несохранённые изменения. Открыть другой билд?',
-    'You have unsaved changes. Open another build?')}),
-   h('button',{type:'button',class:'button-action primary',text:tr('Сохранить текущий и открыть','Save current and open'),
-    onclick:()=>{if(saveBuild(state.name||'Новый герой',activeBuildId))openSavedBuild(b)}}),
-   h('button',{type:'button',class:'button-action',text:tr('Открыть без сохранения','Open without saving'),
-    onclick:()=>openSavedBuild(b)}),
-   h('button',{type:'button',class:'button-action',text:tr('Отмена','Cancel'),
-    onclick:()=>{openChoice.hidden=true}}));
   const overwriteChoice=h('div',{class:'build-overwrite-choice',hidden:true});
-   overwriteChoice.append(h('p',{text:lang==='en'?
-    'Overwrite saved build “'+b.name+'” with your current character? The previous version of this build cannot be restored.':
-    'Перезаписать сохранённый билд «'+b.name+'» текущим персонажем? Предыдущую версию этого билда восстановить будет нельзя.'}),
-   h('button',{type:'button',class:'button-action primary',text:tr('Подтвердить перезапись','Confirm overwrite'),onclick:()=>{
-    if(saveBuild(activeBuildId===b.id?state.name:b.name,b.id))showStudioToast(tr('Сохранено в браузере. Проверяем запись в облаке…',
-     'Saved in browser. Checking cloud storage…'),'warning');
-   }}),
-   h('button',{type:'button',class:'button-action',text:tr('Отмена','Cancel'),onclick:()=>{overwriteChoice.hidden=true}}));
   const deleteChoice=h('div',{class:'build-delete-choice',hidden:true});
-  deleteChoice.append(h('p',{text:b.localOnly===true?
-   tr('Удалить локальную копию? Она ещё не сохранена в облаке.',
-    'Delete local copy? It has not been saved to the cloud yet.'):
-   tr('Удалить билд и отозвать все созданные ссылки?',
-    'Delete this build and revoke all shared links?')}),
-   h('button',{class:'button-action danger',type:'button',text:tr('Удалить билд','Delete build'),onclick:()=>{
-    const beforeDelete=builds;
-    builds=builds.filter(v=>v.id!==b.id);
-    if(!persistBuilds()){
-     builds=beforeDelete;
-     showStudioToast(tr('Не удалось удалить билд: браузер не сохранил изменения.',
-      'Could not delete the build: the browser failed to save the change.'),'error');
-     return;
-    }
-    compareIds=compareIds.filter(id=>id!==b.id);
-    if(activeBuildId===b.id)selectActiveBuild(null);
-    if(b.localOnly===true){
-     libraryChangeId++;
-     reportCloudStatus('Локальная копия удалена');
-    }else void deleteCloudBuild(b.id);
-    renderDetails();
-   }}),
-   h('button',{class:'button-action',type:'button',text:tr('Отмена','Cancel'),onclick:()=>{deleteChoice.hidden=true}}));
+  const check=h('input',{type:'checkbox','aria-label':libraryText('libraryCompare')+' '+b.name});
+  const confirmButton=(key,action,kind='')=>h('button',{
+   type:'button',class:'button-action'+kind,
+   'data-owner-copy-key':key,text:libraryText(key),onclick:action
+  });
+  const fillCardChoice=target=>{
+   if(target.childElementCount)return;
+   if(target===openChoice){
+    target.append(
+     h('p',{'data-owner-copy-key':'libraryUnsavedOpen',
+      text:libraryText('libraryUnsavedOpen')}),
+     confirmButton('librarySaveCurrentOpen',()=>{
+      if(saveBuild(state.name||'Новый герой',activeBuildId))openSavedBuild(b);
+     },' primary'),
+     confirmButton('libraryOpenWithoutSave',()=>openSavedBuild(b)),
+     confirmButton('libraryCancel',()=>{target.hidden=true;target.replaceChildren()})
+    );
+   }else if(target===overwriteChoice){
+    target.append(
+     // The build name is a distinct data node; it never enters the D1 copy.
+     h('p',{class:'build-overwrite-copy'},[
+      h('span',{'data-owner-copy-key':'libraryOverwriteBefore',
+       text:libraryText('libraryOverwriteBefore')}),
+      h('strong',{class:'build-confirm-dynamic-name',text:b.name}),
+      h('span',{'data-owner-copy-key':'libraryOverwriteAfter',
+       text:libraryText('libraryOverwriteAfter')})
+     ]),
+     confirmButton('libraryConfirmOverwrite',()=>{
+      if(saveBuild(activeBuildId===b.id?state.name:b.name,b.id))
+       showStudioToast(tr('Сохранено в браузере. Проверяем запись в облаке…',
+        'Saved in browser. Checking cloud storage…'),'warning');
+     },' primary'),
+     confirmButton('libraryCancel',()=>{target.hidden=true;target.replaceChildren()})
+    );
+   }else if(target===deleteChoice){
+    target.append(
+     h('p',{'data-owner-copy-key':b.localOnly===true?
+      'libraryDeleteLocalAsk':'libraryDeleteAsk',
+      text:libraryText(b.localOnly===true?'libraryDeleteLocalAsk':'libraryDeleteAsk')}),
+     confirmButton('libraryDeleteBuild',()=>{
+      const beforeDelete=builds;
+      builds=builds.filter(v=>v.id!==b.id);
+      if(!persistBuilds()){
+       builds=beforeDelete;
+       showStudioToast(tr('Не удалось удалить билд: браузер не сохранил изменения.',
+        'Could not delete the build: the browser failed to save the change.'),'error');
+       return;
+      }
+      compareIds=compareIds.filter(id=>id!==b.id);
+      if(activeBuildId===b.id)selectActiveBuild(null);
+      if(b.localOnly===true){
+       libraryChangeId++;
+       reportCloudStatus('Локальная копия удалена');
+      }else void deleteCloudBuild(b.id);
+      renderDetails();
+     },' danger'),
+     confirmButton('libraryCancel',()=>{target.hidden=true;target.replaceChildren()})
+    );
+   }
+  };
   check.checked=compareIds.includes(b.id);
   check.onchange=()=>{
    const chosen=compareIds.filter(Boolean);
@@ -7689,12 +7712,20 @@ function renderBuilds(root){
      text:libraryText('libraryCompare')})
    ])
   ]);
-  // A second confirmation replaces the first instead of stacking panels.
+  // Only one card confirmation stays active across the whole library.
+  // Release old DOM/editor controls when switching cards or cancelling.
   const toggleCardChoice=target=>{
    const opening=target.hidden;
-   for(const choice of [openChoice,overwriteChoice,deleteChoice])choice.hidden=true;
-   target.hidden=!opening;
-   if(opening)target.querySelector('button')?.focus({preventScroll:true});
+   for(const choice of root.querySelectorAll(
+    '.build-open-choice,.build-overwrite-choice,.build-delete-choice')){
+    choice.hidden=true;
+    choice.replaceChildren();
+   }
+   if(!opening)return;
+   fillCardChoice(target);
+   target.hidden=false;
+   if(adminEditing&&adminToken)bindAccountCopyEditors(target);
+   target.querySelector('button:not(.account-copy-pencil)')?.focus({preventScroll:true});
   };
   const cardActions=h('div',{class:'build-card-actions'},[
    cardAction('📂','libraryCardOpen','libraryHintOpen',()=>{
