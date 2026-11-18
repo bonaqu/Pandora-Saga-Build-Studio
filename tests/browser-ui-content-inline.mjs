@@ -748,6 +748,14 @@ export async function runUIContentInlineSmoke(browser,base){
   await summaryCaption.dblclick();
   await summaryCaption.locator('[contenteditable]').fill('Найдено:');
   await summaryCaption.locator('[contenteditable]').press('Tab');
+  await page.waitForTimeout(700);
+  console.log('Wiki result CAS diagnostics: '+JSON.stringify({
+   saved:values['guideedit.book.wiki-ui.results-shown']||null,
+   view:await page.locator('#detailContent .wiki-list>p.muted').textContent(),
+   caption:await summaryCaption.textContent(),
+   bindings:await page.locator('#detailContent .wiki-list>p.muted [data-owner-interface-bindings]')
+    .first().getAttribute('data-owner-interface-bindings')
+  }));
   await page.waitForFunction(()=>document.querySelector(
    '#detailContent .wiki-list>p.muted')?.textContent?.startsWith('Найдено: '),
    null,{timeout:15000});
