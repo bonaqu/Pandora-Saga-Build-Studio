@@ -87,7 +87,8 @@ test('Origin and hero stage do not show Remaked methodology notes to ordinary pl
  assert.doesNotMatch(html,/Числовые показатели скорости из Remaked/);
  assert.doesNotMatch(html,/из актуальной таблицы OS, а не старой версии Remaked/);
  assert.doesNotMatch(app,/Часть эффектов заточки, комплектов и умений пока не проверена/);
- assert.match(app,/info\.hidden=Boolean\(calculated\)/);
+ assert.match(app,/holder\.setAttribute\('aria-label',notice\)/);
+ assert.doesNotMatch(app,/renderVitalsEnhancements\(|renderPotionPreview\(/);
 });
 test('invalid saved character is caught by the per-card share handler',()=>{
  const app=read('pandora-studio-app.js');

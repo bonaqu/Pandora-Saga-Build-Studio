@@ -14,15 +14,15 @@ test('Origin labels show only ОЗ/ОМ, no icons or approximation marks',()=>{
 });
 test('HP/MP are calculated integers and coverage limitations remain transparent',()=>{
  const a=app.indexOf('function renderOriginVitals(calculated=undefined){');
- const b=app.indexOf('\nfunction renderVitalsEnhancements(calculated=undefined){',a);
+ const b=app.indexOf('\nfunction setVitalsEnhancement(key,value){',a);
  assert.ok(a>=0&&b>a);
  const code=app.slice(a,b),nodes={
   originHp:{textContent:''},originMp:{textContent:''},
   originVitals:{attributes:{},setAttribute(key,value){this.attributes[key]=value},title:'old'}
  };
  let calc={hp:2066,mp:543};
- const render=Function('$','previewBaseStats','renderPotionPreview','lang','refreshOpenHeroBook',code+'\nreturn renderOriginVitals;')(
-  k=>nodes[k],()=>calc,()=>{},'ru',()=>{});
+ const render=Function('$','previewBaseStats','lang','refreshOpenHeroBook',code+'\nreturn renderOriginVitals;')(
+  k=>nodes[k],()=>calc,'ru',()=>{});
  render();
  assert.equal(nodes.originHp.textContent,'2066');
  assert.equal(nodes.originMp.textContent,'543');

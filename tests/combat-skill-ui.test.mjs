@@ -2,12 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const get=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-test('collapsed player controls expose optional OS skill actives with exact rates',()=>{
- const html=get('index.html');
- for(const id of ['originCombatLunge','originCombatWarCry','originCombatRage',
-  'originCombatDefender','originGuildArouse'])assert.match(html,new RegExp('id="'+id+'"'));
- assert.match(html,/Яростная атака · \+30% атаки, −60% защиты/);
- assert.match(html,/Бастион · −20% атаки, \+40% защиты/);
+test('combat and guild actives live in the Hero Book without the retired form',()=>{
+ const html=get('index.html'),book=get('pandora-studio-hero-book.js');
+ assert.doesNotMatch(html,/id="legacyBuffControls"|id="originCombatLunge"|id="originGuildArouse"/);
+ for(const key of ['combatLunge','combatWarCry','combatRage','combatDefender','guildArouse'])
+  assert.ok(book.includes("'"+key+"'"),'Hero Book controls: '+key);
+ assert.match(book,/data-book-setting':key/);
+ assert.match(book,/onchange:event=>\(vital\?onVital:onBuff\)/);
 });
 test('shared builds safely validate and persist combat choices',()=>{
  const app=get('pandora-studio-app.js');

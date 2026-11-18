@@ -40,32 +40,20 @@ test('disabled preview does not calculate or invent unknown recovery',()=>{
  assert.equal(unavailable[1].value,null);
  assert.equal(unavailable[11].value,null);
 });
-test('player UI never labels historical slots as real current items',()=>{
- const a=app.indexOf('function renderPotionPreview(calculated){');
- const b=app.indexOf('\nfunction renderOriginVitals(calculated=undefined){',a);
- assert.ok(a>0&&b>a);
- const fragment=app.slice(a,b);
- const root={children:[],replaceChildren(){this.children=[]},append(x){this.children.push(x)}};
- const h=(tag,attrs={},kids=[])=>({tag,attrs,children:kids});
- const state={attributeBuffs:{potionEffectsEnabled:false}};
- const render=Function('$','window','state','h','lang',fragment+
-  '\nreturn renderPotionPreview;')(id=>id==='originPotionResults'?root:null,
-  {PandoraOSCalculator:calc},state,h,'ru');
- render({hp:3145,potion:{percent:104}});
- assert.equal(root.children.length,10);
- assert.ok(root.children.some(x=>x.children[0].attrs.text==='Подснежник'));
- assert.ok(root.children.every(x=>!/\bID\s*\d+/.test(x.children[0].attrs.text)));
- const before=root.children.find(x=>x.children[0].attrs.text==='Сильное исцеляющее зелье');
- assert.equal(before.children[1].attrs.text,'15%');
- state.attributeBuffs.potionEffectsEnabled=true;
- render({hp:3145,potion:{percent:104}});
- const after=root.children.find(x=>x.children[0].attrs.text==='Сильное исцеляющее зелье');
- assert.equal(after.children[1].attrs.text,'490');
+test('potion catalog differentiates current item identity from historical models',()=>{
+ const active=calc.potionPreview({enabled:false}).filter(x=>x.current);
+ assert.equal(active.length,10);
+ assert.ok(active.some(x=>x.ru==='Подснежник'));
+ assert.ok(active.every(x=>typeof x.ru==='string'&&!/\bID\s*\d+/.test(x.ru)));
+ const current=calc.potionPreview({enabled:true,potionRate:104,maxHp:3145})
+  .filter(x=>x.current);
+ assert.equal(current.length,10);
+ assert.equal(current.find(x=>x.ru==='Сильное исцеляющее зелье')?.value,'490');
 });
-test('view is collapsed by default and toggle is retained in validated build links',()=>{
- assert.match(html,/<details class="origin-potions">/);
- assert.match(html,/id="originUsePotionEffects"/);
- assert.match(html,/id="originPotionResults"/);
+test('Book-only potion toggle persists without restoring invisible Origin controls',()=>{
+ const book=read('pandora-studio-hero-book.js');
+ assert.doesNotMatch(html,/id="originPotionResults"|id="originUsePotionEffects"|class="origin-potions"/);
+ assert.match(book,/'data-book-setting':'potionEffectsEnabled'/);
+ assert.match(book,/onBuff\('potionEffectsEnabled',event\.target\.checked\)/);
  assert.match(app,/safe\.attributeBuffs\.potionEffectsEnabled=rawAttributes\.potionEffectsEnabled===true/);
- assert.match(app,/setAttributeBuff\(key,event\.target\.checked\)/);
 });

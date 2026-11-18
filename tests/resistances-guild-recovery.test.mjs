@@ -65,11 +65,11 @@ test('invalid guild indices cannot create fake recovery or contaminate shared bu
  assert.equal(make({guildManaRecovery:-1}),null);
  assert.equal(make({guildHealing:4}),null);
  assert.equal(make({guildHealing:'2'}),null);
- const app=read('pandora-studio-app.js'),html=read('index.html');
+ const app=read('pandora-studio-app.js'),book=read('pandora-studio-hero-book.js');
  for(const name of ['guildLifeRecovery','guildManaRecovery','guildHealing']){
   assert.ok(app.includes("safe.attributeBuffs[key]=level"));
   assert.ok(app.includes("'"+name+"'"));
-  assert.ok(html.includes('id="origin'+name[0].toUpperCase()+name.slice(1)+'"'));
+  assert.ok(book.includes("'"+name+"'"),'Available in Hero Book: '+name);
  }
  assert.match(app,/Number.isInteger\(level\)&&level>=0&&level<=limit/);
 });

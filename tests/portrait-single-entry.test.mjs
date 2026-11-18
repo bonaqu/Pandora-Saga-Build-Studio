@@ -10,14 +10,14 @@ test('hero itself opens book; no competing buttons or pointer hand',()=>{
  assert.match(app,/\$\('hero'\)\.addEventListener\('click',openHeroBook\)/);
  assert.match(css,/cursor:default!important/);
 });
-test('origin stats have only values, and all legacy boost control input nodes are invisible',()=>{
+test('Origin stat panel contains only values and no duplicate hidden buff editor',()=>{
  const html=src('index.html'),first=html.indexOf('id="originPanelStats"'),
   next=html.indexOf('<section class="stage panel"',first);
  assert.ok(first>0&&next>first);
- assert.doesNotMatch(html.slice(first,next),/Усиления ОЗ и ОМ/);
- assert.match(html,/id="legacyBuffControls" hidden inert aria-hidden="true"/);
- for(const key of ['originGuildHp','originHonorTitle','originCombatRage'])
-  assert.match(html,new RegExp('id="'+key+'"'));
+ assert.match(html.slice(first,next),/id="originVitals"/);
+ assert.doesNotMatch(html,/id="legacyBuffControls"|id="originGuildHp"|id="originCombatRage"|id="originHonorTitle"/);
+ const app=src('pandora-studio-app.js');
+ assert.match(app,/onVital:\(key,value\)=>setVitalsEnhancement\(key,value\)/);
 });
 test('book navigation prev/next/close shares one exact CSS box',()=>{
  const css=src('pandora-studio-theme.css');
