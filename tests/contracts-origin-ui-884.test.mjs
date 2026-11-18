@@ -100,7 +100,8 @@ test('invalid saved character is caught by the per-card share handler',()=>{
  assert.match(part,/catch\(error\)/);
  assert.match(part,/class:'share-editorial-row build-share-error'/);
  assert.match(part,/class:'share-runtime-detail'/);
- assert.match(part,/if\(host\.isConnected\)\{\s*host\.replaceChildren\(row\);/);
+ assert.match(part,/const target=currentHost\(\);\s*if\(target\)\{\s*target\.replaceChildren\(row\);/);
+ assert.match(part,/const visibleOwner=\(\)=>copy\.isConnected&&/);
 });
 }
 
