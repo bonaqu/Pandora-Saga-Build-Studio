@@ -9034,10 +9034,15 @@ function refreshOwnerUI(){
    // discoverable pencil after both successful save and Esc/cancel; otherwise
    // its accessible name keeps the old RU/EN text until a full UI refresh.
    let pencil;
-   const syncPencil=()=>pencil?.setAttribute('aria-label',
-    (lang==='en'?'Edit caption: ':'Изменить надпись: ')+ownerDockCopy(key));
+   // The committed value is authoritative for the visible accessible
+   // name. Re-reading locale fallbacks inside a save callback can retain the
+   // previous label until the broader owner panel refresh finishes.
+   const syncPencil=committed=>pencil?.setAttribute('aria-label',
+    (lang==='en'?'Edit caption: ':'Изменить надпись: ')+
+    (typeof committed==='string'&&committed?committed:ownerDockCopy(key)));
    ownerCopyLabel(label,'owner-dock',key,pair[0],pair[1],{
-    onCommitted:syncPencil,onFinished:syncPencil
+    onCommitted:visible=>syncPencil(visible),
+    onFinished:()=>syncPencil()
    });
    pencil=h('button',{type:'button',class:'owner-dock-group-pencil',
     'data-owner-group-edit-for':key,text:'✎',
