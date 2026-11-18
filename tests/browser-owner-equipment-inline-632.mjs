@@ -52,6 +52,8 @@ export async function runOwnerEquipmentInlineSmoke(browser,base){
  const recordKey='guideedit.book.equipment.field.slots';
  try{
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
+  // Wait until the mandatory D1 modal actually releases native inert.
+  await page.locator('#startupOverlay').waitFor({state:'hidden',timeout:30000});
   await page.waitForFunction(()=>
    document.querySelector('.equipment-slot[data-slot-index="5"].equipped')&&
    document.querySelector('#catalogStatus')?.textContent?.includes('предметов'),

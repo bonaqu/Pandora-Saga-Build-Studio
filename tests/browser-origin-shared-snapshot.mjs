@@ -17,6 +17,8 @@ export async function runOriginSharedSnapshotSmoke(browser,base){
  page.on('pageerror',error=>errors.push(error.message));
  try{
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
+  // Wait until the mandatory D1 modal actually releases native inert.
+  await page.locator('#startupOverlay').waitFor({state:'hidden',timeout:30000});
   await page.waitForFunction(()=>
    document.querySelector('#catalogStatus')?.textContent.includes('навыков')&&
    document.querySelector('#originHp')?.textContent!=='—',
