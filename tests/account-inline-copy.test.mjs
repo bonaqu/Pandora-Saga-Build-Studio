@@ -189,3 +189,43 @@ test('D1 UI save, Undo and reset patch live account and cloud status without rem
  assert.match(cloud,/ownerDockPatchText\(node,cloudStatusText\(message\)\)/);
  assert.match(cloud,/node\.nextElementSibling\?\.classList\?\.contains\('ui-content-edit-host'\)/);
 });
+
+test('compiled D1 UI text is parsed once, then invalidated on save, Undo and reset',()=>{
+ // This isolated sandbox counts actual JSON parses made by the production
+ // locale resolver, not textual references to the implementation.
+ let parses=0;
+ const sandbox={JSON:{parse(value){parses++;return JSON.parse(value)}}};
+ sandbox.window=sandbox;
+ runInNewContext(source('pandora-studio-ui-locale.js'),sandbox);
+ const ui=sandbox.PandoraUILocale;
+ const field='guideedit.book.'+ui.fieldKey('libraryShareCreated');
+ const overrides={[field]:JSON.stringify({ru:'Ссылка готова.',en:'Link is ready.'})};
+ ui.setOverrides(overrides);
+ for(let n=0;n<200;n++){
+  assert.equal(ui.text('libraryShareCreated','ru'),'Ссылка готова.');
+  assert.equal(ui.text('libraryShareCreated','en'),'Link is ready.');
+ }
+ assert.equal(parses,1,'Hundreds of UI redraws must not reparse identical D1 JSON');
+ assert.equal(ui.fieldKey('libraryShareCreated'),'ui.label.library-share-created');
+ assert.equal(ui.fieldKey('not-a-registered-label'),null);
+ // The real owner editor mutates the same overrides object on CAS. Calling
+ // setOverrides with that identity must still invalidate the parsed record.
+ overrides[field]=JSON.stringify({ru:'После правки.',en:'Edited after save.'});
+ ui.setOverrides(overrides);
+ assert.equal(ui.text('libraryShareCreated','en'),'Edited after save.');
+ assert.equal(parses,2);
+ overrides[field]=JSON.stringify({ru:'После Undo.',en:'After undo.'});
+ ui.setOverrides(overrides);
+ assert.equal(ui.text('libraryShareCreated','ru'),'После Undo.');
+ assert.equal(parses,3);
+ delete overrides[field];ui.setOverrides(overrides);
+ assert.equal(ui.text('libraryShareCreated','en'),'Build link created.');
+ assert.equal(parses,3,'Reset uses bundled fallback without parsing absent overrides');
+ overrides[field]='{invalid JSON';
+ ui.setOverrides(overrides);
+ assert.equal(ui.text('libraryShareCreated','ru'),'Ссылка на билд создана.');
+ assert.equal(ui.text('libraryShareCreated','en'),'Build link created.');
+ assert.equal(parses,4,'Malformed D1 JSON is rejected once per refresh');
+ assert.equal(ui.literalKey('Неверный пароль.'),null,
+  'Runtime security errors cannot become editor fields');
+});
