@@ -897,10 +897,14 @@ export async function runAdminEntrySmoke(browser,base){
       .slice(0,4).map(node=>node.textContent),
      ownerState:document.querySelector('[data-owner-save-state]')?.dataset.state,
      reviewVisible:!document.querySelector('.os-sync-review-steps')?.hidden,
-     currentLanguage:document.documentElement.lang
+     currentLanguage:document.documentElement.lang,
+     diagnosticHidden:document.querySelector('.os-sync-diagnostics')?.hidden,
+     diagnostic:document.querySelector('.os-sync-diagnostics>p')?.textContent
     }));
     throw Error('Owner catalog stage '+stage+': '+
-     JSON.stringify(diagnostics)+'; '+error.message);
+     JSON.stringify({...diagnostics,
+      sourceRequests:calls.filter(value=>value.startsWith('game-source:'))})+
+     '; '+error.message);
    }
   };
   assert.equal(await dialog.locator('.os-sync-review-steps button').filter({hasText:'Применить выбранные изменения'}).isDisabled(),true);
