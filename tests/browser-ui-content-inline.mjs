@@ -12,7 +12,8 @@ export async function runUIContentInlineSmoke(browser,base){
    equipment:{},souls:{},refinements:{},gems:{}
   }));
  });
- const values={},writes=[],errors=[],nextConflicts=new Set(),slowWrites=new Set();
+ const values={},writes=[],errors=[],nextConflicts=new Set(),
+  unconfirmedWrites=new Set(),slowWrites=new Set();
  let slowLibraryNext=false,offeredRelease=null;
  await context.route('**/*',async route=>{
   const req=route.request(),url=req.url(),method=req.method();
@@ -58,6 +59,8 @@ export async function runUIContentInlineSmoke(browser,base){
    if(slowWrites.delete(data.key))await new Promise(resolve=>setTimeout(resolve,850));
    if(nextConflicts.delete(data.key))
     return reply({code:'OWNER_EDIT_CONFLICT',error:'Mock concurrent edit'},409);
+   // Broken Worker adapter can return HTTP 200 without confirming persistence.
+   if(unconfirmedWrites.delete(data.key))return reply({ok:true});
    values[data.key]=data.value;writes.push(data);
    return reply({ok:true,key:data.key,value:data.value,conditional:true});
   }
@@ -137,6 +140,25 @@ export async function runUIContentInlineSmoke(browser,base){
   await page.waitForFunction(()=>document.querySelector('#stageHeading')?.textContent===
    'Облик героя',null,{timeout:15000});
   assert.equal(JSON.parse(values['guideedit.book.ui.label.appearance']).ru,'Облик героя');
+  // A 200 response missing the conditional write proof is NOT a successful
+  // owner save. Keep the exact draft and allow retry without a reload.
+  unconfirmedWrites.add('guideedit.book.ui.label.appearance');
+  await appearancePencil.click();
+  const unconfirmedInput=page.locator(
+   '.stage .panel-heading .ui-content-edit-host [contenteditable]');
+  await unconfirmedInput.fill('Черновик после неподтверждённой записи');
+  await unconfirmedInput.press('Tab');
+  await page.locator('.stage .panel-heading .ui-content-inline-error')
+   .waitFor({state:'visible',timeout:12000});
+  assert.equal(await unconfirmedInput.textContent(),
+   'Черновик после неподтверждённой записи');
+  assert.equal(JSON.parse(values['guideedit.book.ui.label.appearance']).ru,
+   'Облик героя','An unconfirmed HTTP 200 must not update D1 or the visible heading');
+  await unconfirmedInput.press('Enter');
+  await page.waitForFunction(()=>document.querySelector('#stageHeading')
+   ?.textContent==='Черновик после неподтверждённой записи',null,{timeout:15000});
+  assert.equal(JSON.parse(values['guideedit.book.ui.label.appearance']).ru,
+   'Черновик после неподтверждённой записи');
   // A long owner draft must remain fully measurable at a mobile viewport.
   // Escape discards the draft, preserving the real short heading.
   await page.setViewportSize({width:390,height:780});
@@ -158,7 +180,8 @@ export async function runUIContentInlineSmoke(browser,base){
    'Owner input cuts off the last entered line: '+JSON.stringify(visibleText));
   assert.notEqual(visibleText.overflowY,'hidden');
   await longField.press('Escape');
-  assert.equal(await page.locator('#stageHeading').innerText(),'Облик героя');
+  assert.equal(await page.locator('#stageHeading').innerText(),
+   'Черновик после неподтверждённой записи');
   await page.setViewportSize({width:1100,height:810});
   const pathTitlePencil=page.locator('.right .panel-heading [data-ui-content-for="path"]');
   await pathTitlePencil.waitFor({state:'visible'});
