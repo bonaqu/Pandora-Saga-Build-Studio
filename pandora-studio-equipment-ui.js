@@ -366,6 +366,15 @@ function actionIcon(action,{forward=false}={}){
  }
  return svg;
 }
+// Shared defaults for item settings and the context menu. The established
+// editorial keys stay stable so earlier D1 RU/EN customizations survive.
+const actionLabels=Object.freeze({
+ choose:Object.freeze(['Выбрать вещь','Choose item']),
+ replace:Object.freeze(['Выбрать другую вещь','Choose another item']),
+ properties:Object.freeze(['Свойства','Properties']),
+ souls:Object.freeze(['Управление душами','Manage Souls']),
+ remove:Object.freeze(['Снять вещь','Unequip item'])
+});
 // Genitive phrases keep the unavailable-state explanation natural in RU.
 const SOUL_SLOT_NOUNS=Object.freeze({
  weapon:['этого оружия','weapon'],shield:['этого щита','shield'],
@@ -464,15 +473,11 @@ function render(root,api){
  const settingsGroup=el('div',{class:'stage-rich-settings-group',role:'group',
   'aria-label':tr('Свойства предмета','Item properties')});
  tabs.append(chooseGroup,settingsGroup);
- const sections=[
-  ['choose',tr('Выбор','Choose')],
-  ['details',tr('Свойства','Properties')]
- ];
- if(hasSouls)sections.push(['souls',tr('Управление душами','Manage Souls')]);
- for(const [key,title]of sections){
-  const names={choose:['Выбор','Choose'],details:['Свойства','Properties'],
-   souls:['Управление душами','Manage Souls']};
-  const [ru,en]=names[key],text=copy('tab.'+key,ru,en);
+ const sections=['choose','details'];
+ if(hasSouls)sections.push('souls');
+ for(const key of sections){
+  const action=key==='choose'?'replace':key==='details'?'properties':'souls';
+  const [ru,en]=actionLabels[action],text=copy('tab.'+key,ru,en);
   const hints={
    choose:['Выбрать или сменить предмет в этом слоте.','Choose or replace gear in this slot.'],
    details:['Посмотреть свойства, заточку и слоты душ.','View properties, refinement and Soul sockets.'],
@@ -740,6 +745,6 @@ function render(root,api){
  }
 }
 root.PandoraStageItemUI=Object.freeze({
- render,summary,matchesSoulSearch,attachPreview,dismissPreview,actionIcon,soulUnavailableCopy
+ render,summary,matchesSoulSearch,attachPreview,dismissPreview,actionIcon,actionLabels,soulUnavailableCopy
 });
 })(typeof window==='undefined'?globalThis:window);

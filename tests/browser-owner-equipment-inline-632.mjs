@@ -232,6 +232,30 @@ export async function runOwnerEquipmentInlineSmoke(browser,base){
    document.querySelector('#stagePicker .stage-picker-slot-prefix')?.textContent==='Слот',
    null,{timeout:12000});
   assert.equal(Object.hasOwn(values,headingKey),false);
+  // Preserve the original D1 text key and its CAS/Undo contract on the longer label.
+  const replacementKey='guideedit.book.equipment.tab.choose';
+  const replacementCaption=page.locator('#stagePicker [data-stage-tab="choose"] .stage-copy-caption');
+  assert.equal((await replacementCaption.innerText()).trim(),'Выбрать другую вещь');
+  // Editing a caption nested in a real tab uses the adjacent pencil:
+  // direct double-clicking the tab would navigate away before editing starts.
+  if(!await page.locator('#ownerDock').evaluate(el=>
+   el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
+  await page.locator('#stagePicker .stage-rich-choose-group .stage-action-edit-wrap > .stage-control-pencil').click();
+  await replacementCaption.locator('[data-owner-text-field]').fill('Сменить экипировку');
+  await replacementCaption.locator('[data-owner-text-field]').press('Tab');
+  await page.waitForFunction(()=>
+   document.querySelector('#stagePicker [data-stage-tab="choose"] .stage-copy-caption')
+    ?.textContent==='Сменить экипировку',null,{timeout:12000});
+  assert.deepEqual(JSON.parse(values[replacementKey]),{ru:'Сменить экипировку'});
+  if(await page.locator('#ownerDock').evaluate(el=>
+   el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
+  await page.locator('#ownerDock [data-owner-undo]').click();
+  await page.waitForFunction(()=>
+   document.querySelector('#stagePicker [data-stage-tab="choose"] .stage-copy-caption')
+    ?.textContent==='Выбрать другую вещь',null,{timeout:12000});
+  assert.equal(Object.hasOwn(values,replacementKey),false);
   // A text-only history reset does not remount the item picker or change Souls.
   assert.deepEqual(errors,[]);
   console.log('Chromium owner equipment: RU/EN CAS, Undo and in-place history reset passed');

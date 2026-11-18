@@ -1595,10 +1595,9 @@ function openStageGearMenu(index,sourceSlot,event,anchor){
  closeStageGearMenu();hideStageRailWarning();
  window.PandoraStageItemUI.dismissPreview();
  const equipped=state.equipment[sourceSlot],record=equippedRecord(sourceSlot);
- const cap=window.PandoraEquipmentPlan.equippedSocketCapacity(
-  state,sourceSlot,equipped,record);
- const canManageSouls=Boolean(record&&window.PandoraEquipmentPlan.canSocket(
-  slotKeys[sourceSlot],record,cap));
+ // Zero socket capacity has a useful explanation in the Soul tab.
+ const canOpenSoulTab=Boolean(record&&window.PandoraEquipmentPlan.supportsSoulSlot(
+  slotKeys[sourceSlot]));
  const tr=(ru,en)=>lang==='en'?en:ru;
  const menu=h('div',{class:'stage-gear-context-menu',role:'menu',
   'aria-label':hasItem?tr('Действия с надетой вещью','Equipped item actions'):
@@ -1610,13 +1609,10 @@ function openStageGearMenu(index,sourceSlot,event,anchor){
  ]);
  menu.append(title);
  // Context order follows the primary workflow. Icons reuse the item-tab SVG factory.
- const actions=hasItem?[
-  ['replace','Выбрать другую вещь','Choose another item',false],
-  ['properties','Свойства','Properties',false],
-  ['souls','Управление душами','Manage Souls',!canManageSouls],
-  ['remove','Снять вещь','Unequip item',false]
- ]:[['choose','Выбрать вещь','Choose item',false]];
- for(const [id,ru,en,disabled] of actions){
+ const actions=hasItem?['replace','properties','souls','remove']:['choose'];
+ for(const id of actions){
+  const [ru,en]=window.PandoraStageItemUI.actionLabels[id];
+  const disabled=id==='souls'&&!canOpenSoulTab;
   const glyph=window.PandoraStageItemUI.actionIcon(id);
   const label=h('span',{class:'stage-gear-context-caption',
    text:equipmentCopy('context.'+id,ru,en)});
@@ -1624,8 +1620,9 @@ function openStageGearMenu(index,sourceSlot,event,anchor){
    class:'stage-gear-context-action'+(id==='remove'?' is-remove':''),
    'data-gear-context-action':id,'tabindex':'-1',
    disabled,
-   ...(disabled?{title:tr('У предмета нет доступных слотов душ. Добавить их можно в свойствах.',
-    'No available Soul slots. Configure them in Properties.')}:{ }),
+   ...(disabled?{title:record?
+    tr('Этот тип вещи не поддерживает слоты душ.','This item type has no Soul sockets.'):
+    tr('Сведения о предмете недоступны.','Item data unavailable.')}:{ }),
    onclick:e=>{
     if(e.target.closest?.('[data-owner-text-field]'))return;
     closeStageGearMenu();

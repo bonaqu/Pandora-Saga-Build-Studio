@@ -9,9 +9,10 @@ test('portrait item editor combines instant enchantment with Soul-specific socke
  assert.match(html,/pandora-studio-equipment-ui\.js\?v=/);
  assert.match(html,/id="stagePicker"/);
  assert.match(app,/window\.PandoraStageItemUI\.render\(/);
- assert.match(ui,/\['choose',tr\('Выбор','Choose'\)\]/);
- assert.match(ui,/\['details',tr\('Свойства','Properties'\)\]/);
- assert.match(ui,/\['souls',tr\('Управление душами','Manage Souls'\)\]/);
+ assert.match(ui,/const sections=\['choose','details'\]/);
+ assert.match(ui,/if\(hasSouls\)sections\.push\('souls'\)/);
+ assert.match(ui,/const \[ru,en\]=actionLabels\[action\]/);
+ assert.match(ui,/replace:Object\.freeze\(\['Выбрать другую вещь','Choose another item'\]\)/);
  assert.doesNotMatch(ui,/\['gems','Самоцветы'\]/);
  assert.match(ui,/for\(let n=0;n<=10;n\+\+\)/);
  assert.match(ui,/api\.assignGem\(/);
