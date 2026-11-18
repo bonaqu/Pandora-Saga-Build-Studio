@@ -43,8 +43,8 @@ test('all owner commands have localized action-specific hover/focus explanations
   'translations','testD1','githubExport','finish'])
   assert.match(app,new RegExp(' '+key+':\\['),'Missing help '+key);
  assert.match(app,/const ownerDockHints=Object\.freeze/);
- assert.match(app,/button\.dataset\.guideHint=ownerDockHints\[key\]/);
- assert.match(app,/pencil\.dataset\.guideHint=lang==='en'/);
+ assert.match(app,/ownerDockPatchData\(button,'guideHint',ownerDockHints\[key\]/);
+ assert.match(app,/ownerDockPatchData\(pencil,'guideHint',lang==='en'/);
  assert.match(app,/ownerDockHints\[key\]\[lang==='en'\?1:0\],\{hoverDelay:350\}/);
  assert.match(app,/Недоступно|Если правок нет/);
  assert.match(app,/Не сохраняет текущую правку и не меняет игровой каталог/);

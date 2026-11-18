@@ -58,7 +58,7 @@ test('every live status refresh and Undo preserves editor draft and updates grou
  // overwrite a contenteditable group caption while the request is pending.
  assert.match(refresh,/\[data-owner-group-copy\]/);
  assert.match(refresh,/if\(!node\.querySelector\('\.wiki-inline-input'\)\)/);
- assert.match(refresh,/node\.textContent=ownerDockCopy\(node\.dataset\.ownerGroupCopy\)/);
+ assert.match(refresh,/ownerDockPatchText\(node,ownerDockCopy\(node\.dataset\.ownerGroupCopy\)\)/);
  assert.match(refresh,/\[data-owner-group-edit-for\]/);
  const undo=take('function refreshVisibleOwnerCopy(recordKey){','function ');
  assert.match(undo,/if\(key\.startsWith\('owner-dock\.'\)\)\{refreshOwnerUI\(\);return\}/);
@@ -75,4 +75,23 @@ test('group copy remains separate from credentials, visible user UI and save dia
  assert.match(app,/if\(!adminEditing\|\|!adminToken\)return;/);
  assert.match(app,/const saveText=\(ownerSaveState===/);
  assert.doesNotMatch(block,/statusCloud|password|token\s*=/i);
+});
+
+test('owner drawer patch helpers do not mutate identical DOM text, ARIA or datasets',()=>{
+ const helpers=take('function ownerDockPatchText(node,value){','function refreshOwnerUI(){');
+ const {patchText,patchAttr,patchData}=Function(helpers+'\nreturn {patchText:ownerDockPatchText,patchAttr:ownerDockPatchAttr,patchData:ownerDockPatchData};')();
+ let textWrites=0,attrWrites=0,dataWrites=0;
+ const attrs=new Map([['aria-label','same']]);
+ const data=new Proxy({guideHint:'stable'},{set(obj,key,value){dataWrites++;obj[key]=value;return true}});
+ const node={_text:'unchanged',dataset:data,
+  get textContent(){return this._text},set textContent(value){textWrites++;this._text=value},
+  getAttribute:key=>attrs.get(key)??null,
+  setAttribute:(key,value)=>{attrWrites++;attrs.set(key,value)}};
+ patchText(node,'unchanged');patchAttr(node,'aria-label','same');patchData(node,'guideHint','stable');
+ assert.deepEqual([textWrites,attrWrites,dataWrites],[0,0,0]);
+ patchText(node,'changed');patchAttr(node,'aria-label','different');patchData(node,'guideHint','new');
+ assert.deepEqual([textWrites,attrWrites,dataWrites],[1,1,1]);
+ assert.equal(node.textContent,'changed');
+ assert.equal(node.getAttribute('aria-label'),'different');
+ assert.equal(node.dataset.guideHint,'new');
 });

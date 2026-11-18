@@ -25,8 +25,8 @@ test('owner commands are reorganized without rebuilding the action buttons',()=>
 });
 test('save status, pinned finish, and editable labels retain their safety behavior',()=>{
  assert.match(app,/visibleSaveState=\(ownerSaveState==='saving'/);
- assert.match(app,/state\.dataset\.state=visibleSaveState/);
- assert.match(app,/root\.dataset\.saveState=visibleSaveState/);
+ assert.match(app,/ownerDockPatchData\(state,'state',visibleSaveState\)/);
+ assert.match(app,/ownerDockPatchData\(root,'saveState',visibleSaveState\)/);
  assert.match(app,/if\(ownerSaveState==='error'\)/);
  assert.match(app,/if\(ownerSaveState==='saving'\|\|editIsSaving\|\|wikiLabelPendingWrites>0\|\|\s*wikiRecordWriteQueue\.size>0\)/);
  assert.match(app,/saveGuidePatch\('book\.'\+ownerCopyKey\('owner-dock',key\)/);
@@ -45,7 +45,7 @@ test('new visual design keeps meaningful responsive actions, visible editor pens
  assert.match(dock,/@media\(max-width:480px\)/);
  assert.match(dock,/prefers-reduced-motion:reduce/);
  assert.match(dock,/#ownerDock \.owner-dock-action-slot:hover>\.owner-dock-action-pencil/);
- assert.match(app,/root\.setAttribute\('aria-label',lang==='en'/);
+ assert.match(app,/ownerDockPatchAttr\(root,'aria-label',lang==='en'/);
 });
 test('manual edit history and all admin dialogs use the improved controls',()=>{
  assert.match(app,/class:'button-action owner-manager-search-clear'/);
