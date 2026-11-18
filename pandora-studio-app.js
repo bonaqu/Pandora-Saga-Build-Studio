@@ -8282,12 +8282,16 @@ async function apiRequest(path,body,token=adminToken) {
    'Cannot connect right now. Check your connection and try again.':
    'Не удалось подключиться. Проверь соединение и повтори попытку.');
  }
- const data=await response.json().catch(()=>({error:lang==='en'?
-  'Could not read the server response':'Не удалось обработать ответ сервера'}));
+ // Catalog sources and other read-only endpoints legitimately return
+ // JSON arrays. Do not coerce those into empty objects while validating
+ // the *separate* owner-write acknowledgment contract below.
+ const parsed=await response.json().catch(()=>null);
+ const data=parsed===null?{}:parsed;
  if(!response.ok){
   const conflict=response.status===409&&data.code==='OWNER_EDIT_CONFLICT';
   const outdated=response.status===428&&data.code==='OWNER_CLIENT_UPDATE_REQUIRED';
-  const rawError=data.error||("Ошибка сервера HTTP "+response.status);
+  const rawError=data.error||(lang==='en'?
+   'Server error HTTP ':'Ошибка сервера HTTP ')+response.status;
   const publicError=!path.startsWith('/api/admin/')&&
    /\b(?:Cloudflare|D1|CAS|Worker|ADMIN_SETUP_TOKEN|JSON)\b|\/api\//i.test(rawError)?
    (lang==='en'?'Service temporarily unavailable. Try again later.':
@@ -8309,6 +8313,24 @@ async function apiRequest(path,body,token=adminToken) {
    closeInlineEditor();updateAdminHint();
   }
   throw error;
+ }
+ if(editingWrite){
+  // The HTTP status alone does not prove that the conditional D1 write
+  // completed. A broken Worker adapter or partial JSON must fail closed:
+  // never update local overrides, history or the "Saved" indicator.
+  const valid=data.ok===true&&data.conditional===true&&
+   data.key===requestBody.key&&(
+    path==='/api/admin/reset'?data.deleted===true:
+    data.value===String(requestBody.value).trim()
+   );
+  if(!valid){
+   const error=new Error(lang==='en'?
+    'The server did not confirm the D1 save. Your edit is still here; try again.':
+    'Сервер не подтвердил сохранение в D1. Правка осталась в поле — повтори.');
+   error.reason='OWNER_WRITE_UNCONFIRMED';
+   finishOwnerWrite(error.message);
+   throw error;
+  }
  }
  finishOwnerWrite()
  return data;
@@ -8600,7 +8622,8 @@ function refreshVisibleWikiLabels(){
 // One gate for all cross-window D1 operations; never hide a queued write.
 function ownerSaveInFlight(){
  return editIsSaving||ownerWritePendingCount>0||wikiLabelPendingWrites>0||
-  wikiRecordWriteQueue.size>0||ownerSaveState==='saving';
+  ownerGuidePendingWrites>0||wikiRecordWriteQueue.size>0||
+  ownerSaveState==='saving';
 }
 function ownerCanStartAdminOperation(){
  if(ownerSaveInFlight()){
@@ -9338,7 +9361,7 @@ function refreshVisibleProfileCopy(){
  }
 }
 async function undoOwnerEdit(){
-  if(!adminToken||!ownerEdits.length||editIsSaving||wikiLabelPendingWrites>0||wikiRecordWriteQueue.size>0)return;
+  if(!adminToken||!ownerEdits.length||ownerSaveInFlight())return;
   const last=ownerEdits[ownerEdits.length-1];
   editIsSaving=true;refreshOwnerUI();
   try{
@@ -9748,22 +9771,27 @@ function editWikiValue(node,initial,{type='text',options=[],min=0,max=100000,int
  else if(type==='text')window.getSelection()?.selectAllChildren(control);
 }
 // Repeated blur saves of different labels must not race and overwrite each
-// other: construct each merged D1 patch only after the previous write finishes.
-let wikiLabelWriteQueue=Promise.resolve();
+// other: construct each merged RU/EN/hint D1 patch only after the previous
+// write to the SAME semantic key finishes. Other records remain independent.
+const ownerGuideWriteQueue=new Map();
+let ownerGuidePendingWrites=0;
 async function saveGuidePatch(key,fields){
- if(key==='wiki.labels'){
-  // Pending edits include jobs waiting in the queue, not just the current
-  // fetch. Undo/Finish/EN review must never run between two queued writes.
-  wikiLabelPendingWrites++;
-  refreshOwnerUI();
-  const write=wikiLabelWriteQueue.then(()=>saveGuidePatchNow(key,fields));
-  wikiLabelWriteQueue=write.catch(()=>{});
-  return write.finally(()=>{
+ if(!adminEditing||!adminToken)throw Error('Редактор справочника недоступен');
+ ownerGuidePendingWrites++;
+ if(key==='wiki.labels')wikiLabelPendingWrites++;
+ refreshOwnerUI();
+ const previous=ownerGuideWriteQueue.get(key);
+ const write=(previous?previous.catch(()=>{}):Promise.resolve())
+  .then(()=>saveGuidePatchNow(key,fields));
+ ownerGuideWriteQueue.set(key,write);
+ try{return await write}
+ finally{
+  if(ownerGuideWriteQueue.get(key)===write)ownerGuideWriteQueue.delete(key);
+  ownerGuidePendingWrites=Math.max(0,ownerGuidePendingWrites-1);
+  if(key==='wiki.labels')
    wikiLabelPendingWrites=Math.max(0,wikiLabelPendingWrites-1);
-   refreshOwnerUI();
-  });
+  refreshOwnerUI();
  }
- return saveGuidePatchNow(key,fields);
 }
 async function saveGuidePatchNow(key,fields){
  if(!adminEditing||!adminToken||!window.PandoraHonorGuide)

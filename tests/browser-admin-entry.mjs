@@ -86,13 +86,19 @@ export async function runAdminEntrySmoke(browser,base){
   if(path==='/api/admin/reset'&&method==='POST'){
    const data=route.request().postDataJSON();
    assert.equal(route.request().headers().authorization,'Bearer '+'a'.repeat(43));
-   const existed=townOverrides.delete(data.key);
-   return json({ok:true,key:data.key,deleted:existed});
+   const previous=townOverrides.has(data.key)?townOverrides.get(data.key):null;
+   if(previous===null||data.expectedValue!==previous)
+    return json({error:'Mock concurrent edit',code:'OWNER_EDIT_CONFLICT'},409);
+   townOverrides.delete(data.key);
+   return json({ok:true,key:data.key,deleted:true,conditional:true});
   }
   if(path==='/api/admin/override'&&method==='POST'){
    const data=route.request().postDataJSON();
-   townOverrides.set(data.key,data.value);
    assert.equal(route.request().headers().authorization,'Bearer '+'a'.repeat(43));
+   const previous=townOverrides.has(data.key)?townOverrides.get(data.key):null;
+   if(data.expectedValue!==previous)
+    return json({error:'Mock concurrent edit',code:'OWNER_EDIT_CONFLICT'},409);
+   townOverrides.set(data.key,data.value);
    if(data.key.startsWith('acquireedit.')){
     assert.ok(JSON.parse(data.value).some(row=>row.type==='npc'));
     calls.push('owner-acquire-edit');
@@ -109,7 +115,7 @@ export async function runAdminEntrySmoke(browser,base){
     if(Array.isArray(patch.effects))calls.push('owner-effect-edit');
     calls.push('owner-item-edit');
    }
-   return json({ok:true,key:data.key,value:data.value});
+   return json({ok:true,key:data.key,value:data.value.trim(),conditional:true});
   }
   if(path==='/api/library')return json({records:[]});
   if(path==='/api/overrides')return json({values:Object.fromEntries(townOverrides)});
@@ -879,12 +885,33 @@ export async function runAdminEntrySmoke(browser,base){
     .some(node=>node.textContent?.includes('Сохранение работает')));
   assert.deepEqual(calls.filter(x=>x==='d1-write-check'),['d1-write-check']);
 
+  // A failed owner comparison must expose the real visible error rather
+  // than hiding it behind a generic Playwright timeout. No test condition is
+  // relaxed: the exact same captions are still required for success.
+  const waitForCatalogResult=async(stage,condition)=>{
+   try{await page.waitForFunction(condition,null,{timeout:30000})}
+   catch(error){
+    const diagnostics=await page.evaluate(()=>({
+     status:document.querySelector('.os-sync-status')?.textContent,
+     messages:[...document.querySelectorAll('.os-sync [role="status"]')]
+      .slice(0,4).map(node=>node.textContent),
+     ownerState:document.querySelector('[data-owner-save-state]')?.dataset.state,
+     reviewVisible:!document.querySelector('.os-sync-review-steps')?.hidden,
+     currentLanguage:document.documentElement.lang,
+     diagnosticHidden:document.querySelector('.os-sync-diagnostics')?.hidden,
+     diagnostic:document.querySelector('.os-sync-diagnostics>p')?.textContent
+    }));
+    throw Error('Owner catalog stage '+stage+': '+
+     JSON.stringify({...diagnostics,
+      sourceRequests:calls.filter(value=>value.startsWith('game-source:'))})+
+     '; '+error.message);
+   }
+  };
   assert.equal(await dialog.locator('.os-sync-review-steps button').filter({hasText:'Применить выбранные изменения'}).isDisabled(),true);
   await dialog.locator('.os-sync-archive-choice>summary').click();
   await dialog.getByRole('button',{name:'Сверить с сохранённой копией'}).click();
-  await page.waitForFunction(()=>
-   document.querySelector('.os-sync [role=status]')?.textContent?.includes('Найдено изменений:'),
-   null,{timeout:30000});
+  await waitForCatalogResult('archive comparison',
+   () => document.querySelector('.os-sync [role=status]')?.textContent?.includes('Найдено изменений:'));
   // 0.612: reloading results may update checksum evidence but must not
   // erase the D1-editable explanation or the adjacent touch pencil.
   const checksumRow=dialog.locator(
@@ -1041,8 +1068,8 @@ export async function runAdminEntrySmoke(browser,base){
   assert.match(await dialog.locator('.os-sync [role=status]').last().innerText(),/GitHub не изменён/);
   // Exercise the authenticated game-data proxy as well as archive preview.
   await dialog.getByRole('button',{name:'Проверить изменения в текущей игре'}).click();
-  await page.waitForFunction(()=>document.querySelector('.os-sync [role=status]')?.textContent?.includes('Найдено изменений:'),
-    null,{timeout:30000});
+  await waitForCatalogResult('live source comparison',
+   () => document.querySelector('.os-sync [role=status]')?.textContent?.includes('Найдено изменений:'));
   assert.equal(calls.filter(x=>x==='game-source:meta').length,2,
     'meta must be fetched twice to detect mixed server revisions');
   assert.equal(calls.filter(x=>x.startsWith('game-source:')).length,18,
@@ -1135,8 +1162,9 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(await dialog.locator('.os-sync-review-steps').isHidden(),true,
     'a failed game-source check cannot leave publishing enabled');
   await dialog.getByRole('button',{name:'Сверить с сохранённой копией'}).click();
-  await page.waitForFunction(()=>document.querySelector('.os-sync-status')?.textContent
-    ?.includes('Сверка завершена.'),null,{timeout:30000});
+  await waitForCatalogResult('recovery after unavailable source',
+   () => document.querySelector('.os-sync-status')?.textContent
+    ?.includes('Сверка завершена.'));
   assert.equal(await dialog.locator('.os-sync-review-steps button')
     .filter({hasText:'Применить выбранные изменения'}).isDisabled(),true);
   // The new Honor smoke opened the Wiki workbench earlier in this same

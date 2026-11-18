@@ -42,7 +42,7 @@ export async function runOwnerEquipmentInlineSmoke(browser,base){
    assert.equal(data.expectedValue,values[data.key],'History reset must use current CAS value');
    if(!Object.hasOwn(values,data.key))return reply({code:'OWNER_EDIT_CONFLICT'},409);
    delete values[data.key];writes.push({key:data.key,reset:true});
-   return reply({ok:true,deleted:true,conditional:true});
+   return reply({ok:true,key:data.key,deleted:true,conditional:true});
   }
   return route.abort();
  });

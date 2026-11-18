@@ -41,8 +41,10 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
   if(path==='/api/admin/override'&&method==='POST'){
    assert.equal(req.headers().authorization,'Bearer '+'a'.repeat(43));
    const body=req.postDataJSON();
+   assert.equal(body.expectedValue,stored.has(body.key)?stored.get(body.key):null,
+    'A spawn replacement must not bypass Worker CAS');
    writes.push(body);stored.set(body.key,body.value);
-   return reply({ok:true});
+   return reply({ok:true,key:body.key,value:body.value.trim(),conditional:true});
   }
   return route.abort();
  });

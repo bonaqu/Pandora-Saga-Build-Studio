@@ -156,6 +156,7 @@ test('game-monster spawn location replacement publishes one atomic override',asy
 
 const itemWrite=extract('async function saveWikiItemField(','\nasync function saveWikiTradeRecipe(');
 const undoWrite=extract('async function undoOwnerEdit(','\nfunction showOverrideManager(');
+const ownerBusyGuard=extract('function ownerSaveInFlight(){','\nfunction ownerCanStartAdminOperation(');
 
 test('item save keeps its busy state until the new Wiki item index is ready',async()=>{
  const state=environment();
@@ -190,8 +191,8 @@ test('Undo cannot clear busy state until edited Wiki data has refreshed',async()
  const instance=Function('apiRequest','ownerEdits','override',
   'closeInlineEditor','refreshVisibleWikiLabels','refreshOwnerCatalog',
   'refreshOwnerUI','alert',
-  'const adminToken="test";let editIsSaving=false,wikiLabelPendingWrites=0;const wikiRecordWriteQueue=new Map();\n'+
-  undoWrite+'\nreturn {undo:undoOwnerEdit,isSaving:()=>editIsSaving};')(
+  'const adminToken="test";let editIsSaving=false,wikiLabelPendingWrites=0,ownerWritePendingCount=0,ownerGuidePendingWrites=0,ownerSaveState="ready";const wikiRecordWriteQueue=new Map();\n'+
+  ownerBusyGuard+'\n'+undoWrite+'\nreturn {undo:undoOwnerEdit,isSaving:()=>editIsSaving};')(
   state.apiRequest,state.ownerEdits,state.override,()=>{},()=>{},
   state.refreshOwnerCatalog,()=>state.refreshOwnerUI(),m=>alerts.push(m));
  let finished=false;
