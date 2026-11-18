@@ -3255,6 +3255,12 @@ function renderWiki(root){
  // Render native option values and editorial captions from one set of defaults.
  // The immutable filter ID drives search; author edits change only visible RU/EN copy.
  const wikiFilterCopyRows=[];
+ const filterFamilyNames=Object.freeze({
+  EquipmentType:['Вид предмета','Item type'],
+  HeroEligibility:['Совместимость','Compatibility'],
+  WeaponElement:['Стихия','Element'],
+  UtilityEffect:['Тип эффекта','Effect category']
+ });
  const filterCopyKey=(family,id)=>'filter'+family+id[0].toUpperCase()+id.slice(1);
  const addFilterOptions=(picker,family,rows,selected)=>{
   for(const [id,ru,en] of rows){
@@ -3263,8 +3269,11 @@ function renderWiki(root){
    option.selected=id===selected;
    bindOwnerInterfaceText(option,'wiki-ui',key,ru,en);
    picker.append(option);
-   if(adminEditing&&adminToken)
-    wikiFilterCopyRows.push([key,ru,en,family+' · '+id,family+' · '+id]);
+   if(adminEditing&&adminToken){
+    const familyNames=filterFamilyNames[family];
+    wikiFilterCopyRows.push([key,ru,en,
+     familyNames[0]+' · '+ru,familyNames[1]+' · '+en]);
+   }
   }
  };
  const addFilterName=(picker,key,ru,en)=>{
