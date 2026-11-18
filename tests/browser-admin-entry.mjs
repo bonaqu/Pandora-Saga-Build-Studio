@@ -444,6 +444,10 @@ export async function runAdminEntrySmoke(browser,base){
    '[data-owner-group-copy="groupEditingTitle"]')?.textContent==='Edits and history');
   assert.deepEqual(JSON.parse(townOverrides.get(editingKey)),
    {ru:'Правки и история',en:'Edits and history'});
+  await page.waitForFunction(()=>
+   document.querySelector('[data-owner-group-edit-for="groupEditingTitle"]')
+    ?.getAttribute('aria-label')==='Edit caption: Edits and history',
+   null,{timeout:10000});
   assert.match(await editingGroup.locator('[data-owner-group-edit-for="groupEditingTitle"]')
    .getAttribute('aria-label'),/^Edit caption: Edits and history/);
   await page.locator('#locale [data-locale="ru"]').click();

@@ -33,8 +33,8 @@ test('drawer pencil edits use the standard D1 CAS writer and cannot invoke an ac
  const block=take(" const group=(id,titleKey,hintKey,keys)=>{",
   " actions.replaceChildren(editGroup,gameGroup,toolsGroup);");
  assert.ok(block.includes("ownerCopyLabel(label,'owner-dock',key,pair[0],pair[1],{"));
- assert.match(block,/onCommitted:visible=>syncPencil\\(visible\\)/);
- assert.match(block,/onFinished:\\(\\)=>syncPencil\\(\\)/);
+ assert.ok(block.includes("onCommitted:visible=>syncPencil(visible)"));
+ assert.ok(block.includes("onFinished:()=>syncPencil()"));
  assert.match(block,/typeof committed==='string'&&committed/);
  assert.ok(block.includes("pencil?.setAttribute('aria-label'"));
  assert.match(block,/label\.dispatchEvent\(new MouseEvent\('dblclick'/);
