@@ -388,7 +388,7 @@ function productionOwnerSession(){
  const app=read('pandora-studio-app.js');
  const start=app.indexOf('function ownerSaveInFlight(){');
  const end=app.indexOf('function ownerCanStartAdminOperation(){',start);
- const declaration=app.match(/^window\\.PandoraStudioAdminActive=.*;$/m)?.[0];
+ const declaration=app.split('\n').find(line=>line.startsWith('window.PandoraStudioAdminActive='));
  assert.ok(start>=0&&end>start&&declaration,'Owner update contract missing');
  const state={window:{},adminToken:'a'.repeat(43),adminEditing:false,
   editIsSaving:false,ownerWritePendingCount:0,wikiLabelPendingWrites:0,
