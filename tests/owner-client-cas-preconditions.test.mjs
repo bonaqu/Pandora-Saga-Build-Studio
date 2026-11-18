@@ -271,6 +271,7 @@ function guideEnvironment(onRequest=async()=>{}){
   'saveView','renderStageAttributes',
   'const window={PandoraHonorGuide:{validOverride:()=>true}};'+
   'let editIsSaving=false,wikiLabelPendingWrites=0;'+
+  'function activeOverride(key){return Object.hasOwn(override,key)?override[key]:null};'+
   'const adminEditing=true,adminToken="test",activeTab="character",wikiSelection={type:null};'+
   guideSource+
   '\nreturn {save:saveGuidePatch,queued:()=>ownerGuidePendingWrites,'+
