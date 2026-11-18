@@ -319,6 +319,9 @@ export async function runAccountSmoke(browser,base){
    'Detached form events must not overwrite the visible feedback');
   await retiredButton.dispose();
   await retiredForm.dispose();
+  // A deliberate redraw closes <details>; the normal RU/EN patch doesn't.
+  // Reopen it before exercising the live form after the detached-form test.
+  await page.locator('.account-password-toggle').click();
   const change=page.locator('#accountPanel .account-form input');
   await change.nth(0).fill('An unusually long phrase for my builds');
   await change.nth(1).fill('A new long and secure passphrase 2026!');
