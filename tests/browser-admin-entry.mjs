@@ -885,12 +885,29 @@ export async function runAdminEntrySmoke(browser,base){
     .some(node=>node.textContent?.includes('Сохранение работает')));
   assert.deepEqual(calls.filter(x=>x==='d1-write-check'),['d1-write-check']);
 
+  // A failed owner comparison must expose the real visible error rather
+  // than hiding it behind a generic Playwright timeout. No test condition is
+  // relaxed: the exact same captions are still required for success.
+  const waitForCatalogResult=async(stage,condition)=>{
+   try{await page.waitForFunction(condition,null,{timeout:30000})}
+   catch(error){
+    const diagnostics=await page.evaluate(()=>({
+     status:document.querySelector('.os-sync-status')?.textContent,
+     messages:[...document.querySelectorAll('.os-sync [role="status"]')]
+      .slice(0,4).map(node=>node.textContent),
+     ownerState:document.querySelector('[data-owner-save-state]')?.dataset.state,
+     reviewVisible:!document.querySelector('.os-sync-review-steps')?.hidden,
+     currentLanguage:document.documentElement.lang
+    }));
+    throw Error('Owner catalog stage '+stage+': '+
+     JSON.stringify(diagnostics)+'; '+error.message);
+   }
+  };
   assert.equal(await dialog.locator('.os-sync-review-steps button').filter({hasText:'Применить выбранные изменения'}).isDisabled(),true);
   await dialog.locator('.os-sync-archive-choice>summary').click();
   await dialog.getByRole('button',{name:'Сверить с сохранённой копией'}).click();
-  await page.waitForFunction(()=>
-   document.querySelector('.os-sync [role=status]')?.textContent?.includes('Найдено изменений:'),
-   null,{timeout:30000});
+  await waitForCatalogResult('archive comparison',
+   () => document.querySelector('.os-sync [role=status]')?.textContent?.includes('Найдено изменений:'));
   // 0.612: reloading results may update checksum evidence but must not
   // erase the D1-editable explanation or the adjacent touch pencil.
   const checksumRow=dialog.locator(
@@ -1047,8 +1064,8 @@ export async function runAdminEntrySmoke(browser,base){
   assert.match(await dialog.locator('.os-sync [role=status]').last().innerText(),/GitHub не изменён/);
   // Exercise the authenticated game-data proxy as well as archive preview.
   await dialog.getByRole('button',{name:'Проверить изменения в текущей игре'}).click();
-  await page.waitForFunction(()=>document.querySelector('.os-sync [role=status]')?.textContent?.includes('Найдено изменений:'),
-    null,{timeout:30000});
+  await waitForCatalogResult('live source comparison',
+   () => document.querySelector('.os-sync [role=status]')?.textContent?.includes('Найдено изменений:'));
   assert.equal(calls.filter(x=>x==='game-source:meta').length,2,
     'meta must be fetched twice to detect mixed server revisions');
   assert.equal(calls.filter(x=>x.startsWith('game-source:')).length,18,
@@ -1141,8 +1158,9 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(await dialog.locator('.os-sync-review-steps').isHidden(),true,
     'a failed game-source check cannot leave publishing enabled');
   await dialog.getByRole('button',{name:'Сверить с сохранённой копией'}).click();
-  await page.waitForFunction(()=>document.querySelector('.os-sync-status')?.textContent
-    ?.includes('Сверка завершена.'),null,{timeout:30000});
+  await waitForCatalogResult('recovery after unavailable source',
+   () => document.querySelector('.os-sync-status')?.textContent
+    ?.includes('Сверка завершена.'));
   assert.equal(await dialog.locator('.os-sync-review-steps button')
     .filter({hasText:'Применить выбранные изменения'}).isDisabled(),true);
   // The new Honor smoke opened the Wiki workbench earlier in this same
