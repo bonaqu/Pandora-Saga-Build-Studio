@@ -12,7 +12,10 @@ function harness({kind='type',id='physical',lang='en'}={}){
   .find(row=>row.id===id);
  assert.ok(option);
  const changed=new Map(),attributes={},pencilAttributes={};
- const pencil={setAttribute:(key,value)=>pencilAttributes[key]=value};
+ const pencil={
+  getAttribute:key=>pencilAttributes[key]??null,
+  setAttribute:(key,value)=>pencilAttributes[key]=value
+ };
  const headingKey=kind==='type'?'gemTypeLabel':'gemElementLabel';
  const headline=kind==='type'?['Тип','Type']:['Стихия','Element'];
  const optionKey='gem.'+kind+'.'+id;
@@ -25,6 +28,7 @@ function harness({kind='type',id='physical',lang='en'}={}){
   dataset:{enchantKey:kind,enchantValue:id,ownerInterfaceBindings:JSON.stringify(bound)},
   parentElement:{querySelector:()=>pencil},
   querySelector(){return null},
+  getAttribute(key){return attributes[key]??null},
   setAttribute(key,value){attributes[key]=String(value)}
  };
  const document={querySelectorAll(selector){
@@ -40,7 +44,14 @@ function harness({kind='type',id='physical',lang='en'}={}){
  const section=app.slice(app.indexOf('function refreshVisibleOwnerCopy('),
   app.indexOf('function refreshVisibleProfileCopy('));
  assert.match(section,/bindings\['aria-label'\]\.suffix=suffix/);
- const context={document,window:enchantHost,lang,ownerCopyKey,ownerCopy};
+ // Extract the SAME idempotent helpers used by the production drawer.
+ // An isolated function test must include its dependencies, not copy stubs.
+ const helpers=app.slice(app.indexOf('function ownerDockPatchText(node,value){'),
+  app.indexOf('function refreshOwnerUI(){'));
+ assert.match(helpers,/function ownerDockPatchData\(node,key,value\)/);
+ const patches=runInNewContext(helpers+
+  '\n({ownerDockPatchText,ownerDockPatchAttr,ownerDockPatchData});',{});
+ const context={document,window:enchantHost,lang,ownerCopyKey,ownerCopy,...patches};
  const refresh=runInNewContext(section+'\nrefreshVisibleOwnerCopy;',context);
  return {button,attributes,pencilAttributes,changed,refresh,optionKey,headingKey,option,heading:headline};
 }
@@ -90,5 +101,5 @@ test('live default option aria derives from exactly the same owner-edited copy a
  assert.match(equipment,/const name=copy\(captionKey,option.ru,option.en\)/);
  assert.match(equipment,/bind\(button,editKey,baseRu,baseEn,'aria-label',': '\+name\)/);
  assert.match(app,/const suffix=': '\+ownerCopy\('equipment','gem.'\+kind\+'.'\+id,option.ru,option.en\)/);
- assert.match(app,/button\.dataset\.ownerInterfaceBindings=JSON\.stringify\(bindings\)/);
+ assert.match(app,/ownerDockPatchData\(button,'ownerInterfaceBindings',JSON\.stringify\(bindings\)\)/);
 });
