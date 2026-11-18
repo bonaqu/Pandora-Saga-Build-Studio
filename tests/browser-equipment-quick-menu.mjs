@@ -131,7 +131,13 @@ export async function runEquipmentQuickMenuSmoke(browser,base){
   await page.keyboard.press('Escape');
 
   await right(pants);
-  await action('remove').click();
+  await menu.waitFor({state:'visible'});
+  // Removal has a real accessible keyboard path; using End+Enter avoids
+  // Playwright's auto-scroll detaching this transient, viewport-fixed menu.
+  await page.keyboard.press('End');
+  assert.equal(await page.evaluate(()=>document.activeElement?.dataset.gearContextAction),
+   'remove');
+  await page.keyboard.press('Enter');
   await page.waitForFunction(()=>!document.querySelector(
    '.equipment-slot[data-slot-index="5"]')?.classList.contains('equipped'));
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('ps-build-studio.v1')));
@@ -183,7 +189,11 @@ export async function runEquipmentQuickMenuSmoke(browser,base){
    'Replacing projected pants still opens the pants catalog');
   await page.locator('#stagePicker .stage-picker-head button[aria-label="Закрыть выбор"]').click();
   await legs.click({button:'right'});
-  await menu.locator('[data-gear-context-action="remove"]').click();
+  await menu.waitFor({state:'visible'});
+  await page.keyboard.press('End');
+  assert.equal(await page.evaluate(()=>document.activeElement?.dataset.gearContextAction),
+   'remove','One-piece outfit menu must expose a keyboard accessible remove action');
+  await page.keyboard.press('Enter');
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('ps-build-studio.v1')));
   assert.equal(saved.equipment[3],undefined,'Removing projected garment removes real armor');
   assert.equal(saved.equipment[5],undefined,'No phantom pants are ever persisted');
