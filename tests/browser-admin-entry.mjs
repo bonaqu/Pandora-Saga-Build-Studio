@@ -412,6 +412,63 @@ export async function runAdminEntrySmoke(browser,base){
   assert.match(await ownerPanel.locator('.owner-workflow-copy-pencil').first().getAttribute('aria-label'),
    /^Изменить пояснение:/,'Help-pencil accessibility label should return to Russian');
   assert.match(await ownerPanel.locator('[data-owner-recent]').innerText(),/За этот сеанс: 2/);
+  // 0.883: grouped owner-drawer headings/hints are authored copy, not
+  // hardcoded labels. Edit RU/EN and a second group without invoking actions.
+  const editingGroup=ownerPanel.locator('[data-owner-group="editing"]');
+  assert.equal(await editingGroup.locator('.owner-dock-group-pencil').count(),2);
+  assert.equal(await ownerPanel.locator('.owner-dock-group-pencil').count(),6);
+  const editingKey='guideedit.book.owner-dock.group-editing-title';
+  const beforeGroupUrl=page.url(),d1ChecksBefore=calls.filter(x=>x==='d1-write-check').length;
+  await editingGroup.locator('[data-owner-group-edit-for="groupEditingTitle"]').click();
+  const captionRU=editingGroup.locator(
+   '[data-owner-group-copy="groupEditingTitle"] [contenteditable="plaintext-only"]');
+  await captionRU.waitFor({state:'visible'});
+  await captionRU.fill('Правки и история');
+  await captionRU.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '[data-owner-group-copy="groupEditingTitle"]')?.textContent==='Правки и история');
+  assert.equal(JSON.parse(townOverrides.get(editingKey)).ru,'Правки и история');
+  assert.equal(page.url(),beforeGroupUrl);
+  assert.equal(calls.filter(x=>x==='d1-write-check').length,d1ChecksBefore,
+   'Editing a heading must not trigger the Cloudflare diagnostic action');
+  await page.locator('#locale [data-locale="en"]').click();
+  await page.waitForFunction(()=>document.querySelector(
+   '[data-owner-group-copy="groupEditingTitle"]')?.textContent==='Editing');
+  await editingGroup.locator('[data-owner-group-edit-for="groupEditingTitle"]').click();
+  const captionEN=editingGroup.locator(
+   '[data-owner-group-copy="groupEditingTitle"] [contenteditable="plaintext-only"]');
+  await captionEN.waitFor({state:'visible'});
+  await captionEN.fill('Edits and history');
+  await captionEN.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '[data-owner-group-copy="groupEditingTitle"]')?.textContent==='Edits and history');
+  assert.deepEqual(JSON.parse(townOverrides.get(editingKey)),
+   {ru:'Правки и история',en:'Edits and history'});
+  assert.match(await editingGroup.locator('[data-owner-group-edit-for="groupEditingTitle"]')
+   .getAttribute('aria-label'),/^Edit caption: Edits and history/);
+  await page.locator('#locale [data-locale="ru"]').click();
+  await page.waitForFunction(()=>document.querySelector(
+   '[data-owner-group-copy="groupEditingTitle"]')?.textContent==='Правки и история');
+  const gameGroup=ownerPanel.locator('[data-owner-group="game"]');
+  assert.match(await gameGroup.locator('[data-owner-group-copy="groupGameHint"]')
+   .innerText(),/Каталог, очки и переводы/);
+  const hintKey='guideedit.book.owner-dock.group-game-hint';
+  await gameGroup.locator('[data-owner-group-edit-for="groupGameHint"]').click();
+  const hintEditor=gameGroup.locator(
+   '[data-owner-group-copy="groupGameHint"] [contenteditable="plaintext-only"]');
+  await hintEditor.waitFor({state:'visible'});
+  await hintEditor.fill('Каталог и перевод');
+  await hintEditor.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '[data-owner-group-copy="groupGameHint"]')?.textContent==='Каталог и перевод');
+  assert.equal(JSON.parse(townOverrides.get(hintKey)).ru,'Каталог и перевод');
+  // The ordinary Undo mechanism reverts just the latest D1 key in place.
+  await ownerPanel.locator('[data-owner-undo]').click();
+  await page.waitForFunction(()=>document.querySelector(
+   '[data-owner-group-copy="groupGameHint"]')?.textContent==='Каталог, очки и переводы');
+  assert.equal(townOverrides.has(hintKey),false);
+  assert.equal(JSON.parse(townOverrides.get(editingKey)).ru,'Правки и история');
+
   // Origin captions share the same authenticated inline D1 path as approved
   // encyclopedia editing: pencil -> focus/blur -> independent RU/EN fields.
   const raceCopy='guideedit.book.origin.race-choose';
