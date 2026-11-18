@@ -78,7 +78,7 @@
     next.searchParams.set('ps-revision', latest);
     location.replace(next.toString()); // new HTML + versioned CSS/JS without Ctrl+F5
   }
-  const updateCopy = () => document.documentElement.lang === 'en' ? {
+  const updateFallback = () => document.documentElement.lang === 'en' ? {
     notice: 'A new version is available. Your current build and page position will be saved before updating.',
     recovery: 'Save and acknowledge your one-time account recovery code before updating.',
     request: 'Finish the account request before updating.',
@@ -97,14 +97,54 @@
     finish: 'Сначала заверши текущее действие и закрой открытые окна.',
     apply: 'Обновить', later: 'Позже'
   };
+  // Safe editorial strings use the shared RU/EN D1 overrides; security
+  // guidance about recovery codes and account requests remains uneditable.
+  const editable = Object.freeze({
+    notice: 'siteUpdateNotice', connection: 'siteUpdateConnection',
+    editor: 'siteUpdateEditor', finish: 'siteUpdateFinish',
+    apply: 'siteUpdateApply', later: 'siteUpdateLater'
+  });
+  const updateCopy = () => {
+    const defaults = updateFallback();
+    const locale = window.PandoraUILocale;
+    const language = document.documentElement.lang === 'en' ? 'en' : 'ru';
+    return Object.fromEntries(Object.entries(defaults).map(([name, fallback]) =>
+      [name, editable[name] && locale?.fieldKey?.(editable[name]) ?
+        locale.text(editable[name], language) : fallback]));
+  };
+  // Keep direct references: owner pencils and editing hosts may become
+  // additional children between the message and the two real buttons.
+  let updateBannerNodes = null;
   function refreshUpdateLocale() {
     const banner = document.getElementById('studio-update-banner');
-    if (!banner) return;
+    if (!banner || !updateBannerNodes) return;
     const strings = updateCopy();
-    const [message, apply, later] = banner.children;
-    message.textContent = strings[blockedReason] || strings.notice;
-    apply.textContent = strings.apply;
-    later.textContent = strings.later;
+    const [message, apply, later] = updateBannerNodes;
+    const state = blockedReason || 'notice';
+    for (const [node, name, value] of [
+      [message, state, strings[state] || strings.notice],
+      [apply, 'apply', strings.apply],
+      [later, 'later', strings.later]
+    ]) {
+      if (node.nextElementSibling?.classList?.contains('ui-content-edit-host'))
+        continue; // Do not destroy an unsaved owner edit on locale change.
+      const key = editable[name] || '';
+      const previous = node.getAttribute?.('data-owner-copy-key') || '';
+      if (previous !== key) {
+        if (key) node.setAttribute('data-owner-copy-key', key);
+        else node.removeAttribute?.('data-owner-copy-key');
+        const pencil = node.nextElementSibling;
+        if (pencil?.dataset?.ownerCopyPencil &&
+            pencil.dataset.ownerCopyPencil !== key) pencil.remove();
+      }
+      if (node.textContent !== value) node.textContent = value;
+      const pencil = node.nextElementSibling;
+      if (pencil?.dataset?.ownerCopyPencil === key)
+        pencil.setAttribute('aria-label',
+          (document.documentElement.lang === 'en' ? 'Edit caption: ' :
+            'Изменить надпись: ') + value);
+    }
+    window.PandoraStudioBindUpdateCopyEditors?.();
   }
   if (typeof MutationObserver === 'function') {
     const observer = new MutationObserver(refreshUpdateLocale);
@@ -119,8 +159,10 @@
     banner.setAttribute('role', 'status');
     banner.setAttribute('aria-live', 'polite');
     const message = document.createElement('span');
+    message.setAttribute('data-update-role', 'message');
     message.textContent = updateCopy()[blockedReason] || updateCopy().notice;
     const apply = document.createElement('button');
+    apply.setAttribute('data-update-role', 'apply');
     apply.textContent = updateCopy().apply;
     apply.type = 'button';
     // If an inline edit is focused, a click must not blur and commit it
@@ -130,6 +172,7 @@
     });
     apply.addEventListener('click', applyUpdate);
     const later = document.createElement('button');
+    later.setAttribute('data-update-role', 'later');
     later.textContent = updateCopy().later;
     later.type = 'button';
     later.addEventListener('click', () => {
@@ -138,9 +181,12 @@
       dismissedRelease = latest;
       blockedReason = null;
       banner.remove();
+      updateBannerNodes = null;
     });
     banner.append(message, apply, later);
+    updateBannerNodes = [message, apply, later];
     document.body.appendChild(banner);
+    refreshUpdateLocale();
   }
   let versionCheckInFlight = false;
   async function checkVersion() {
@@ -180,4 +226,6 @@
     if (document.visibilityState === 'visible') checkVersion();
   });
   setTimeout(checkVersion, 3000);
+  // Only a view refresh, never a privileged operation or a reload.
+  window.PandoraStudioUpdateBanner = Object.freeze({ refresh: refreshUpdateLocale });
 })();
