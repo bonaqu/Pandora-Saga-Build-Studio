@@ -7398,26 +7398,26 @@ function finishBuildAccountEntry(){
   }
   window.PandoraAccountUI?.dismiss?.();
   const tr=(ru,en)=>lang==='en'?en:ru;
+  const copy=key=>window.PandoraUILocale.text(key,lang);
   const accountWasSaved=!unsavedBuild();
   const content=h('div',{class:'build-draft-conflict'});
-  content.append(h('p',{text:tr(
-   'В аккаунте и на этом устройстве есть два разных героя. Выбери, с кем продолжить.',
-   'You have two different characters: one in your account and one from this browser. Choose which to continue.')}));
+  content.append(h('p',{'data-owner-copy-key':'libraryConflictLead',
+   text:copy('libraryConflictLead')}));
   const guestName=String(guest.snapshot.name||tr('Гостевой герой','Guest character')).slice(0,70);
   const accountName=String(state.name||tr('Герой аккаунта','Account character')).slice(0,70);
   content.append(h('div',{class:'build-draft-choices'},[
    h('div',{class:'build-draft-choice'},[
-    h('span',{text:tr('До входа · только на этом устройстве','Before sign-in · on this device only')}),
+    h('span',{'data-owner-copy-key':'libraryConflictGuestBadge',
+     text:copy('libraryConflictGuestBadge')}),
     h('strong',{text:guestName})]),
    h('div',{class:'build-draft-choice'},[
-    h('span',{text:tr('Текущий черновик аккаунта','Current account draft')}),
+    h('span',{'data-owner-copy-key':'libraryConflictAccountBadge',
+     text:copy('libraryConflictAccountBadge')}),
     h('strong',{text:accountName})])
   ]));
-  content.append(h('p',{class:'muted',text:accountWasSaved?tr(
-   'Герой аккаунта уже сохранён. Гостевого можно продолжить без удаления сохранённого билда.',
-   'Your account character is already saved. Continue the guest without deleting the saved build.'):
-   tr('Если продолжишь гостевого героя, сначала сохраним героя аккаунта в «Мои билды». Облачная запись проверяется отдельно.',
-      'To continue the guest, your account draft will first be saved in My Builds. Cloud saving is checked separately.')}));
+  const conflictNote=accountWasSaved?'libraryConflictSavedNote':'libraryConflictSaveFirstNote';
+  content.append(h('p',{class:'muted','data-owner-copy-key':conflictNote,
+   text:copy(conflictNote)}));
   const close=()=>{$('modalRoot').hidden=true;$('modalRoot').replaceChildren()};
   const continueGuest=()=>{
    // Explicit choice is an explicit library save; never replace the
@@ -7430,14 +7430,18 @@ function finishBuildAccountEntry(){
   };
   content.append(h('div',{class:'build-signin-actions'},[
    h('button',{type:'button',class:'button-action primary',
-    text:accountWasSaved?tr('Продолжить гостевого героя','Continue guest character'):
-     tr('Сохранить героя аккаунта и продолжить гостевого','Save account character and continue guest'),
+    'data-owner-copy-key':accountWasSaved?'libraryConflictContinueGuest':'libraryConflictSaveContinue',
+    text:copy(accountWasSaved?'libraryConflictContinueGuest':'libraryConflictSaveContinue'),
     onclick:continueGuest}),
    h('button',{type:'button',class:'button-action',
-    text:tr('Оставить героя аккаунта','Keep account character'),
+    'data-owner-copy-key':'libraryConflictKeepAccount',
+    text:copy('libraryConflictKeepAccount'),
     onclick:()=>{close();if(shared)openIncoming();else if(returnToBuilds)changeTab('builds')}})
   ]));
-  modal(lang==='en'?'Continue your character?':'Продолжить персонажа?',content);
+  const dialog=modal(copy('libraryConflictTitle'),content);
+  const heading=dialog.querySelector('h2');
+  if(heading)heading.dataset.ownerCopyKey='libraryConflictTitle';
+  if(adminEditing&&adminToken)bindAccountCopyEditors(dialog);
  }else if(shared)openIncoming();
  else if(returnToBuilds){
   window.PandoraAccountUI?.dismiss?.();
@@ -7749,7 +7753,7 @@ function renderBuilds(root){
   box.append(overwriteChoice);
   box.append(shareSlot);
   grid.append(box);
-  searchable.push({box,build:b,check,searchText:[b.name,races[b.data?.race]?.[0],races[b.data?.race]?.[1],jobs[b.data?.job],
+  searchable.push({box,build:b,check,order:searchable.length,searchText:[b.name,races[b.data?.race]?.[0],races[b.data?.race]?.[1],jobs[b.data?.job],
    (lang==='en'?'Lv. ':'ур. ')+(b.data?.level??'')].filter(Boolean).join(' ').toLocaleLowerCase()});
  }
  setGridColumns(searchable.length);
@@ -7766,7 +7770,9 @@ function renderBuilds(root){
     result=(Number(b.build.data?.level)||0)-(Number(a.build.data?.level)||0);
    else if(buildSortMode==='class')
     result=collate(jobs[a.build.data?.job],jobs[b.build.data?.job]);
-   return result||searchable.indexOf(a)-searchable.indexOf(b);
+   // Cache initial card position once instead of scanning all entries
+   // within each comparison when large libraries have equal sort values.
+   return result||a.order-b.order;
   });
   for(const row of sorted)grid.append(row.box);
  };
