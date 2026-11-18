@@ -98,6 +98,7 @@ test('owner drawer patch helpers do not mutate identical DOM text, ARIA or datas
 
 test('drawer save/Undo/Finish share the actual queued-write guard and do not announce premature success',()=>{
  const block=take('function refreshOwnerUI(){','// Update only author-edited interface copy.');
+ const notifier=take('let lastOwnerUpdateReason;','function refreshOwnerUI(){');
  const helpers=take('function ownerDockPatchText(node,value){','function refreshOwnerUI(){');
  const patches=Function(helpers+
   '\nreturn {text:ownerDockPatchText,attr:ownerDockPatchAttr,data:ownerDockPatchData};')();
@@ -127,7 +128,7 @@ test('drawer save/Undo/Finish share the actual queued-write guard and do not ann
    'const ownerDockCollapsed=true,ownerSaveError="Конфликт D1";'+
    'let ownerSaveState=saveState;'+
    'const ownerDockCopy=key=>key,ownerRuRecordCount=()=> "запись";'+
-   block+'\nreturn refreshOwnerUI;')(
+   notifier+block+'\nreturn refreshOwnerUI;')(
     {getElementById:id=>id==='ownerDock'?root:null},mockWindow,
     ()=>saving,patches.text,patches.attr,patches.data,saveState);
   main();
