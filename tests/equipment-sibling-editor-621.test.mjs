@@ -15,8 +15,9 @@ test('equipment tab, forge and soul editor pencils are real sibling buttons',()=
  assert.match(equipment,/button\.replaceChildren\(\.\.\.\(prefix\?/);
  assert.doesNotMatch(equipment,/button\.append\(caption,pencil\)/);
  assert.doesNotMatch(equipment,/role:'button',tabindex:'0',\s*text:'✎'/);
- assert.match(equipment,/const wrapper=el\('div',\{class:'stage-rich-result-edit-wrap'\}\)/);
- assert.match(equipment,/list\.append\(wrapper\)/);
+ assert.match(equipment,/row=el\('div',\{class:'stage-rich-result-edit-wrap'\},\[button,pencil\]\)/);
+ assert.match(equipment,/if\(paging\.parentNode===list\)list\.insertBefore\(row,paging\)/);
+ assert.match(equipment,/else list\.append\(row\)/);
  assert.match(equipment,/attachPreview\(button,rec,icons,'soul'\)/);
  assert.match(ownerCss,/\.stage-rich-tabs \.stage-action-edit-wrap>\.stage-control-pencil/);
  assert.match(ownerCss,/\.stage-rich-body \.stage-enchant-options\.is-type-options>\.stage-action-edit-wrap/);

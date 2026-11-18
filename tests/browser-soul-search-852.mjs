@@ -58,7 +58,92 @@ export async function runSoulSearch852Smoke(browser,base){
   const original=await page.evaluate(()=>window.__soulSearch852Catalog.souls[101000]);
   assert.equal(original.name,"Marksman's Soul");
   assert.equal(original.sourceNameRu,'Душа стрелка');
+
+  // A future catalog can contain far more than 80 compatible Souls.
+  // Validate real DOM paging, incremental append, state restoration and
+  // keyboard access using synthetic records, not guessed game drops.
+  await page.evaluate(()=>{
+   const panel=document.createElement('section');
+   panel.id='soul-search-many';
+   panel.setAttribute('style','position:fixed;inset:70px 10px auto auto;z-index:99998;'+
+    'width:320px;height:480px;background:#211818;color:white;overflow:auto');
+   document.body.append(panel);
+   const souls={};
+   for(let n=1;n<=186;n++)souls[310000+n]={
+    id:310000+n,name:'Synthetic Soul '+String(n).padStart(3,'0'),
+    slots:['weapon'],sourceNameRu:'Тестовая душа '+n
+   };
+   for(let n=1;n<=4;n++)souls[400000+n]={
+    id:400000+n,name:'Belt only '+n,slots:['belt']
+   };
+   const state={shown:80,query:'',selected:null,counts:[],ownerEdits:[]};
+   window.__soulPagingState=state;
+   window.__renderSoulPaging=(owner=false)=>{
+    panel.replaceChildren();
+    window.PandoraStageItemUI.render(panel,{
+     record:{id:10,name:'Test weapon',slot:'weapon',soulslot:1},
+     slot:'weapon',mode:'souls',capacity:1,souls:[null],
+     selectedSocket:0,catalog:{souls},icons:()=>null,canEdit:owner,
+     soulQuery:state.query,soulShown:state.shown,
+     copyLabel:(key,ru,en)=>key==='soulShowMore'?
+      (document.documentElement.lang==='en'?'View more Souls':'Ещё совместимые души'):
+      document.documentElement.lang==='en'?en:ru,
+     editLabel:(node,key)=>{node.dataset.ownerEditKey=key;state.ownerEdits.push(key)},
+     onSoulQuery:value=>{state.query=value;state.shown=80},
+     onSoulShown:value=>{state.shown=value;state.counts.push(value)},
+     openSocket(){},assignSoul:record=>{
+      state.selected=record?.id||null;window.__renderSoulPaging(owner);
+     },
+     changeMode(){throw Error('Unexpected Soul mode switch')}
+    });
+   };
+   window.__renderSoulPaging();
+  });
+  const panel=page.locator('#soul-search-many');
+  const many=panel.locator('.stage-rich-result');
+  const more=panel.locator('[data-soul-more]');
+  assert.equal(await many.count(),80,'Initial render is bounded even with 186 Souls');
+  assert.equal(await panel.locator('.stage-rich-list').getAttribute('data-soul-total'),'186');
+  assert.equal(await more.count(),1,'The other 106 compatible Souls must be reachable');
+  await many.first().evaluate(el=>el.dataset.alreadyRendered='kept');
+  await more.click();
+  assert.equal(await many.count(),160);
+  assert.equal(await many.first().getAttribute('data-already-rendered'),'kept',
+   'Show more appends rows without destroying existing previews or owner editors');
+  assert.equal(await panel.locator('[data-soul-progress]').innerText(),'Душ: 160 из 186');
+  await more.focus();
+  await page.keyboard.press('Enter');
+  assert.equal(await many.count(),186,'Every compatible Soul can be reached');
+  assert.equal(await more.count(),0,'The More control disappears at the end');
+  assert.equal(await panel.evaluate(node=>document.activeElement?.classList.contains('stage-rich-result')),
+   true,'Keyboard focus moves to the newly revealed items after last page');
+  assert.deepEqual(await page.evaluate(()=>window.__soulPagingState.counts),[160,186]);
+  assert.equal(await many.last().innerText(),'Synthetic Soul 186',
+   'Original catalog order is preserved without resorting player data');
+  await many.last().click();
+  assert.equal(await many.count(),186,
+   'After choosing a Soul the previously expanded list is restored');
+  assert.equal(await page.evaluate(()=>window.__soulPagingState.selected),310186);
+  assert.equal(await panel.locator('.stage-rich-list').getAttribute('data-soul-visible'),'186');
+  await panel.locator('[data-soul-query]').fill('Synthetic Soul 185');
+  assert.equal(await many.count(),1,'Search intersects all records beyond the first page');
+  assert.equal(await more.count(),0);
+  assert.equal(await page.evaluate(()=>window.__soulPagingState.shown),80);
+  await panel.locator('[data-soul-query]').fill('');
+  assert.equal(await many.count(),80,'Changing the query resets disclosure to one page');
+  await page.evaluate(()=>{
+   document.documentElement.lang='en';
+   window.__renderSoulPaging();
+  });
+  assert.equal(await more.innerText(),'View more Souls');
+  assert.equal(await panel.locator('[data-soul-progress]').innerText(),'80 of 186 Souls');
+  await page.evaluate(()=>window.__renderSoulPaging(true));
+  assert.equal(await panel.locator('[data-owner-edit-key="soulShowMore"]').count(),1,
+   'The short RU/EN caption supports the existing owner inline editor');
+  assert.equal(await more.count(),1);
+  assert.equal(await many.count(),80,'Editing never renders or mutates the entire catalog');
+  assert.equal(await page.evaluate(()=>window.__soulPagingState.selected),310186);
   assert.deepEqual(errors,[]);
-  console.log('Chromium Soul 852: bilingual aliases, spaced keywords, source ID safety and slot gates passed');
+  console.log('Chromium Soul 852: bilingual aliases and 186-item progressive paging, keyboard, rerender and owner copy passed');
  }finally{await context.close()}
 }

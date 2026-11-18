@@ -2334,3 +2334,12 @@ footer .footer-version{margin-inline-start:auto;align-self:center;white-space:no
  vertical-align:-.125em;fill:none;stroke:currentColor;stroke-width:1.8;
  stroke-linecap:round;stroke-linejoin:round;pointer-events:none;user-select:none}
 .stage-book-arrow>.ps-ui-icon,.stage-book-close>.ps-ui-icon{display:block;margin:auto}
+
+/* Compatible Souls: compact incremental disclosure, no extra card frame. */
+.stage-soul-more-row{display:flex;align-items:center;justify-content:center;
+ gap:8px;flex-wrap:wrap;padding:5px 2px}
+.stage-soul-more{background:transparent;border:1px solid #866240;border-radius:3px;
+ color:var(--gold);padding:6px 12px;min-height:31px}
+.stage-soul-more:hover{border-color:#efc17a;background:#3a291d}
+.stage-soul-more-row .stage-action-edit-wrap{display:inline-flex;align-items:center}
+.stage-soul-progress{font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums}

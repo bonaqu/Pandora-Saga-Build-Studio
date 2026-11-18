@@ -42,6 +42,32 @@ test('runtime creates source aliases after owner D1 overrides and retains compat
  assert.match(app,/sourceNameRu:typeof raw\?\.name==='string'\?raw\.name:''/);
  assert.match(app,/sourceNameEn:raw\?\.nameEn\|\|officialEnglish\?\.souls\?\.\[id\]\?\.n\|\|''/);
  assert.match(app,/souls:localizedSouls,racialPassives/);
- assert.match(equipment,/plan\.validSoul\(rec,slot\)&&\s*matchesSoulSearch\(rec,needle\)/);
+ assert.match(equipment,/plan\.validSoul\(rec,slot\)&&matchesSoulSearch\(rec,query\.value\|\|''\)/);
  assert.doesNotMatch(equipment,/String\(rec\.name\|\|''\)\.toLocaleLowerCase\('ru'\)\.includes\(needle\)/);
+});
+
+test('Soul search can reveal every compatible record without remounting or stale selection',()=>{
+ const equipment=read('pandora-studio-equipment-ui.js');
+ const app=read('pandora-studio-app.js');
+ assert.match(equipment,/const pageSize=80/);
+ assert.match(equipment,/if\(paging\.parentNode===list\)list\.insertBefore\(row,paging\)/,
+  'Loading another page must not tear down previously mounted Soul editors');
+ assert.match(equipment,/if\(shown<results\.length\)/,
+  'The More button only appears when undisplayed Souls exist');
+ assert.match(equipment,/api\.onSoulShown\?\.\(shown\)/,
+  'The caller can restore expanded pages after equipping or removing a Soul');
+ assert.match(equipment,/draw\(\{resetPage:true\}\)/,
+  'New searches must not carry an old page position');
+ assert.match(equipment,/firstNew\?\.focus\(\{preventScroll:true\}\)/,
+  'Keyboard focus is preserved when the More button disappears');
+ assert.doesNotMatch(equipment,/results\.slice\(0,80\)/);
+ assert.doesNotMatch(equipment,/soulSearchLimit/);
+ for(const name of [
+  'soulQuery:stageSoulQuery,soulShown:stageSoulShown',
+  'onSoulShown:count=>{stageSoulShown=count;saveView()}',
+  'stageSoulQuery=value;stageSoulShown=80;stageSoulScrollTop=0',
+  "stageSoulQuery='';stageSoulShown=80;",
+  'soulQuery:stageSoulQuery,soulShown:stageSoulShown,wikiLayout:'
+ ])assert.ok(app.includes(name),name);
+ assert.match(app,/bootView\.soulShown>=80&&\s*bootView\.soulShown<=10000\?bootView\.soulShown:80/);
 });
