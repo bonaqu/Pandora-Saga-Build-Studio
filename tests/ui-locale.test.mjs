@@ -60,6 +60,63 @@ test('D1 edits update already mounted labels and accessibility attributes on loc
  locale.setOverrides({});
 });
 
+test('update banner copy has semantic D1 keys, independent languages and safe limits',()=>{
+ const keys=['siteUpdateNotice','siteUpdateConnection','siteUpdateEditor',
+  'siteUpdateFinish','siteUpdateApply','siteUpdateLater'];
+ for(const key of keys){
+  assert.ok(locale.keys().includes(key),key);
+  assert.match(locale.fieldKey(key),/^ui[.]label[.]site-update-/);
+ }
+ assert.equal(locale.copyLimit('siteUpdateNotice'),350);
+ assert.equal(locale.copyLimit('siteUpdateFinish'),350);
+ assert.equal(locale.copyLimit('siteUpdateApply'),90);
+ const code='guideedit.book.'+locale.fieldKey('siteUpdateNotice');
+ locale.setOverrides({[code]:JSON.stringify({
+  ru:'Новая версия, безопасно обновляем героя',
+  en:'New version, safe character update'
+ })});
+ assert.equal(locale.text('siteUpdateNotice','ru'),
+  'Новая версия, безопасно обновляем героя');
+ assert.equal(locale.text('siteUpdateNotice','en'),
+  'New version, safe character update');
+ assert.equal(locale.text('siteUpdateLater','ru'),'Позже');
+ locale.setOverrides({});
+});
+
+test('repeated locale application is a no-op and preserves living owner input',()=>{
+ const mutations=[];
+ const caption={dataset:{i18n:'heroLevel'},textContent:'Уровень героя',
+  matches(){return false},querySelector(){return null}};
+ const editing={dataset:{i18n:'appearance'},textContent:'Несохранённая правка',
+  matches(){return true},querySelector(){return null}};
+ const sibling={dataset:{i18n:'wiki'},textContent:'Текст до сохранения',
+  nextElementSibling:{classList:{contains:name=>name==='ui-content-edit-host'}}};
+ const aria={dataset:{i18nAriaLabel:'profileAccess'},
+  getAttribute:key=>key==='aria-label'?'Войти или зарегистрироваться':null,
+  setAttribute:(key,value)=>mutations.push([key,value])};
+ const doc={documentElement:{lang:'ru'},querySelectorAll(selector){
+  if(selector==='[data-i18n]')return [caption,editing,sibling];
+  if(selector==='[data-i18n-aria-label]')return [aria];
+  return [];
+ }};
+ const old=Object.getOwnPropertyDescriptor(caption,'textContent');
+ let writes=0,value=caption.textContent;
+ Object.defineProperty(caption,'textContent',{get:()=>value,set:v=>{writes++;value=v}});
+ locale.apply('ru',doc);
+ locale.apply('ru',doc);
+ assert.equal(writes,0);
+ assert.deepEqual(mutations,[]);
+ assert.equal(editing.textContent,'Несохранённая правка');
+ assert.equal(sibling.textContent,'Текст до сохранения');
+ locale.apply('en',doc);
+ assert.equal(caption.textContent,'Hero level');
+ assert.equal(writes,1);
+ assert.equal(editing.textContent,'Несохранённая правка');
+ assert.equal(sibling.textContent,'Текст до сохранения');
+ assert.deepEqual(mutations,[['aria-label','Sign in or register']]);
+ if(old)Object.defineProperty(caption,'textContent',old);
+});
+
 test('static locale attributes update without touching user input values',()=>{
  const element={dataset:{i18nPlaceholder:'findSkill',i18nAriaLabel:'profileAccess'},
   attrs:{value:'My personal character'},setAttribute(k,v){this.attrs[k]=v;}};
