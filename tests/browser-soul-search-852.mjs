@@ -11,6 +11,10 @@ export async function runSoulSearch852Smoke(browser,base){
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>Boolean(window.PandoraStageItemUI?.matchesSoulSearch&&
    window.PandoraEquipmentPlan?.canSocket),null,{timeout:20000});
+  // Module initialization and the first rendered controls precede the end
+  // of the mandatory startup dialog. Native inert blocks interaction until
+  // the overlay has actually disappeared.
+  await page.locator('#startupOverlay').waitFor({state:'hidden',timeout:30000});
   await page.evaluate(()=>{
    const panel=document.createElement('section');
    panel.id='soul-search-852';
