@@ -181,10 +181,15 @@ test('English equipment labels retain original source text solely for numeric fa
  assert.match(calc,/const description=record\?\.sourceDesc\?\?record\?\.desc/);
 });
 
-test('password editor validates clicks just like native form submission',()=>{
+test('password editor validates clicks while RU/EN patches the same mounted form',()=>{
  const account=readFileSync(new URL('../pandora-studio-account-ui.js',import.meta.url),'utf8');
  assert.match(account,/if\(!form\.reportValidity\(\)\)return/);
  assert.match(account,/fresh\.value!==confirmFresh\.value/);
  assert.match(account,/\.account-form input/);
- assert.match(account,/if\(message!==null\)info\(message\)/);
+ // The old info(message) after a locale remount erased the authored D1
+ // feedback key; the real Chromium scenario now checks the live identity.
+ assert.match(account,/data-account-placeholder-source/);
+ assert.match(account,/if\(errorLine&&feedbackSource!==null&&/);
+ assert.match(account,/paintFeedback\(\)/);
+ assert.doesNotMatch(account,/if\(message!==null\)info\(message\)/);
 });
