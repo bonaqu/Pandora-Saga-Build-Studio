@@ -48,7 +48,7 @@ test('owner label saves update active library controls without remounting the ca
  assert.match(app,/\[data-library-action-copy\]/);
  assert.match(app,/const sort=document\.querySelector\('#detailContent \.build-library-sort-select'\)/);
  assert.match(app,/if\(id===locale\.fieldKey\('libraryCompare'\)\)/);
- assert.match(app,/checkbox\.setAttribute\('aria-label',label\+' '\+name\)/);
+ assert.match(app,/ownerDockPatchAttr\(checkbox,'aria-label',label\+' '\+name\)/);
  assert.match(app,/\['librarySortSaved','saved'\]/);
  assert.match(app,/\['librarySortClass','class'\]/);
  assert.match(app,/\[data-owner-copy-key\]/);
