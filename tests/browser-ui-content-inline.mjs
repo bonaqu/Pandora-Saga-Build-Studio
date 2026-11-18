@@ -463,6 +463,14 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(await draftPassword.inputValue(),'unsent-login-password');
   assert.equal(JSON.parse(values['guideedit.book.ui.label.account-guest-lead']).en,undefined);
   await passwordNode.dispose();
+  // Clicking Undo outside an account popover intentionally closes it; reopening
+  // must reuse the SAME preserved form rather than creating another one.
+  await page.waitForFunction(()=>
+   !document.querySelector('#accountPanel')?.classList.contains('is-closing'),
+   null,{timeout:12000});
+  if(!(await page.locator('#accountPanel').isVisible()))
+   await page.locator('#profileTrigger').click();
+  assert.equal(await draftPassword.inputValue(),'unsent-login-password');
   // Two explicit locale saves plus the additional live-switch RU regression.
   assert.equal(writes.filter(x=>x.key==='guideedit.book.ui.label.wiki').length,3);
   assert.equal(writes.filter(x=>x.key==='guideedit.book.wiki.item-field.pen').length,2);
