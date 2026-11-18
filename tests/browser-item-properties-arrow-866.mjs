@@ -35,12 +35,17 @@ export async function runItemPropertiesArrow866Smoke(browser,base){
    assert.equal(await settings.locator('[data-stage-tab="details"]').count(),1);
    assert.equal(await settings.locator('[data-stage-tab="souls"]').count(),1);
    const chooseBox=await chooseGroup.boundingBox(),settingsBox=await settings.boundingBox();
-   assert.ok(chooseBox.x+chooseBox.width<=settingsBox.x-4,
-    'Choose is visually separated from grouped item settings');
-   if(width<=520)assert.ok(settingsBox.y>=chooseBox.y+chooseBox.height-1,
-    'Phone layout gives the long replacement caption its own row');
-   else assert.ok(Math.abs(chooseBox.y-settingsBox.y)<2,
-    'Desktop retains one compact action row');
+   if(width<=520){
+    assert.ok(settingsBox.y>=chooseBox.y+chooseBox.height-1,
+     'Phone layout gives the long replacement caption its own row');
+    assert.ok(Math.abs(chooseBox.x-settingsBox.x)<2,
+     'Both action rows align on phones');
+   }else{
+    assert.ok(chooseBox.x+chooseBox.width<=settingsBox.x-4,
+     'Replacement is visually separated from grouped item settings');
+    assert.ok(Math.abs(chooseBox.y-settingsBox.y)<2,
+     'Desktop retains one compact action row');
+   }
    assert.equal(await replacement.evaluate(node=>{
     const label=node.querySelector('.stage-copy-caption')||node;
     return label.scrollWidth<=label.clientWidth+1;
@@ -52,7 +57,8 @@ export async function runItemPropertiesArrow866Smoke(browser,base){
    assert.ok(tabLine&&bodyBox);
    assert.ok(Math.abs(tabLine.x-bodyBox.x)<1,'Settings and details begin at the same edge');
    assert.ok(tabLine.width-bodyBox.width<=1,'Details never overflow past the tab row');
-   assert.ok(settingsBox.width>chooseBox.width,'Soul actions have room for the full localized label');
+   if(width>520)assert.ok(settingsBox.width>chooseBox.width,
+    'Desktop settings have room for the full localized Soul label');
    const soulDivider=await settings.locator('[data-stage-tab="souls"]').evaluate(
     element=>getComputedStyle(element.closest('.stage-action-edit-wrap')||element).borderLeftWidth);
    assert.notEqual(soulDivider,'0px','Properties and Souls have a visible separator');

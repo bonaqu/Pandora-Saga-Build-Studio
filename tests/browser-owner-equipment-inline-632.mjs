@@ -236,7 +236,12 @@ export async function runOwnerEquipmentInlineSmoke(browser,base){
   const replacementKey='guideedit.book.equipment.tab.choose';
   const replacementCaption=page.locator('#stagePicker [data-stage-tab="choose"] .stage-copy-caption');
   assert.equal((await replacementCaption.innerText()).trim(),'Выбрать другую вещь');
-  await replacementCaption.dblclick();
+  // Editing a caption nested in a real tab uses the adjacent pencil:
+  // direct double-clicking the tab would navigate away before editing starts.
+  if(!await page.locator('#ownerDock').evaluate(el=>
+   el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
+  await page.locator('#stagePicker .stage-rich-choose-group .stage-action-edit-wrap > .stage-control-pencil').click();
   await replacementCaption.locator('[data-owner-text-field]').fill('Сменить экипировку');
   await replacementCaption.locator('[data-owner-text-field]').press('Tab');
   await page.waitForFunction(()=>
