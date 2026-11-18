@@ -746,10 +746,13 @@ async function main(){
  // shared Chromium CPU/network scheduler. Keep that stress scenario and
  // the long owner-admin editor serial, AFTER regular UI interactions.
  // This exercises all workflows while avoiding artificial tooltip/menu races.
- // An unavailable icon manifest rebuilds a large skill list. Run its
- // fallback without unrelated concurrent Wiki rendering on the same CPU.
+ // An unavailable icon manifest rebuilds a large skill list. Transient
+ // context menus, item-hover delays and soul-scroll positions are also
+ // sensitive to artificial renderer contention from unrelated scenarios.
+ // Keep their real assertions and run them independently, not disabled.
  const isolatedNames=new Set(['hidden-admin-entry','live-d1-retry-882',
-  'wiki-icons-offline']);
+  'wiki-icons-offline','equipment-quick-menu','item-preview-delay',
+  'one-piece-outfit-and-soul-scroll']);
  const isolated=selected.filter(([name])=>isolatedNames.has(name));
  const regular=selected.filter(([name])=>!isolatedNames.has(name));
  const report=[...await runIndependentSmokes(regular,browser,base,{concurrency}),
