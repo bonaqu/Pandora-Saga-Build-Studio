@@ -74,6 +74,17 @@ test('retry transport is read-only, obeys abort and never retries invalid succes
  assert.equal(count,1,'Invalid JSON is never retried as a network failure');
 });
 
+test('malformed fetch adapter responses fail immediately without multiplying D1 reads',async()=>{
+ const live=load();
+ for(const malformed of [null,{}, {ok:'yes',status:200}]){
+  let calls=0;
+  await assert.rejects(live.get('https://example.test/api/catalog/meta.json',{},
+   {fetcher:async()=>{calls++;return malformed},pause:instant}),
+   /Invalid public GET response/);
+  assert.equal(calls,1,'A broken response is not a transient network outage');
+ }
+});
+
 test('read-only batching does not exceed three in-flight datasets and preserves order',async()=>{
  const live=load();
  let active=0,peak=0;
