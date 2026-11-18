@@ -41,3 +41,13 @@ test('Soul-compatible tab stays visible at zero capacity while insertion remains
  assert.match(app,/mode==='souls'&&\(!record\|\|!plan\.supportsSoulSlot\(key\)\)/);
  assert.match(app,/if\(!plan\.canSocket\(key,record,count\)\|\|count===null/);
 });
+
+test('zero capacity keeps the Soul explanation instead of redirecting',()=>{
+ const app=read('pandora-studio-app.js');
+ const start=app.indexOf('updateSocketCapacity:n=>{'),end=app.indexOf('openSocket:i=>',start);
+ assert.ok(start>0&&end>start);
+ const code=app.slice(start,end);
+ assert.match(code,/if\(positions\.slice\(n\)\.some\(Boolean\)\)return/);
+ assert.doesNotMatch(code,/stageSlotView='details'/);
+ assert.match(code,/persist\(\);renderSlotRails\(\);renderStagePicker\(\)/);
+});

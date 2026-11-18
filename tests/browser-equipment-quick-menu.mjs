@@ -36,6 +36,13 @@ export async function runEquipmentQuickMenuSmoke(browser,base){
   const belt=page.locator('.equipment-slot[data-slot-index="11"]');
   const menu=page.locator('.stage-gear-context-menu[role="menu"]');
   const action=id=>menu.locator('[data-gear-context-action="'+id+'"]');
+  // A sibling previous/next slot navigation now precedes the close action.
+  // "button.first()" would navigate instead of actually closing the picker.
+  const closeSettings=async()=>{
+   await page.locator('#stagePicker .stage-picker-head > button').click();
+   assert.equal(await page.locator('#stagePicker').isHidden(),true,
+    'Closing an item view must not accidentally activate neighbouring-slot navigation');
+  };
   const right=async locator=>locator.click({button:'right'});
   const emptyWeapon=page.locator('.equipment-slot[data-slot-index="0"]');
   await right(emptyWeapon);
@@ -80,7 +87,31 @@ export async function runEquipmentQuickMenuSmoke(browser,base){
    .getAttribute('aria-pressed'),'true');
   assert.equal(await page.locator('#stagePicker .stage-rich-fields dd[data-soul-fill]')
    .innerText(),'1/2');
-  await page.locator('#stagePicker .stage-picker-head button').first().click();
+  // The original renderer accidentally attached the help popup to the DOM root.
+  const chooseTab=page.locator('#stagePicker [data-stage-tab="choose"]');
+  const soulsTab=page.locator('#stagePicker [data-stage-tab="souls"]');
+  const guide=page.locator('#stage-guide-tooltip');
+  assert.equal(await chooseTab.getAttribute('aria-description'),
+   'Выбрать или сменить предмет в этом слоте.');
+  assert.equal(await chooseTab.getAttribute('data-guide-hint'),
+   'Выбрать или сменить предмет в этом слоте.');
+  await page.mouse.move(2,2);
+  await chooseTab.hover();
+  await guide.waitFor({state:'visible',timeout:5000});
+  assert.equal((await guide.innerText()).trim(),'Выбрать или сменить предмет в этом слоте.');
+  assert.match(await chooseTab.getAttribute('aria-describedby'),/stage-guide-tooltip/);
+  await page.keyboard.press('Escape');
+  await guide.waitFor({state:'hidden'});
+  assert.equal(await chooseTab.getAttribute('aria-describedby'),null);
+  assert.equal(await page.locator('#stagePicker [data-stage-tab="details"]')
+   .getAttribute('aria-pressed'),'true','Escape must keep Properties open');
+  await page.mouse.move(2,2);
+  await soulsTab.hover();
+  await guide.waitFor({state:'visible',timeout:5000});
+  assert.equal((await guide.innerText()).trim(),'Вставить, заменить или снять душу.');
+  await page.mouse.move(2,2);
+  await guide.waitFor({state:'hidden'});
+  await closeSettings();
 
   await right(pants);
   await action('souls').click();
@@ -92,7 +123,7 @@ export async function runEquipmentQuickMenuSmoke(browser,base){
   assert.equal(await soulInput.getAttribute('data-lpignore'),'true');
   await soulInput.fill('bonaqu');
   assert.equal(await soulInput.inputValue(),'bonaqu','Ordinary Soul search remains editable');
-  await page.locator('#stagePicker .stage-picker-head button').first().click();
+  await closeSettings();
 
   await pants.focus();
   await pants.press('Shift+F10');
@@ -124,13 +155,28 @@ export async function runEquipmentQuickMenuSmoke(browser,base){
    .innerText(),/пояса.*0 слотов/i);
   assert.equal(await page.locator('#stagePicker [data-socket-index]').count(),0,
    'Zero sockets cannot insert Souls');
-  await page.locator('#stagePicker .stage-picker-head button').first().click();
+  await closeSettings();
   assert.equal(await menu.count(),0,'Soul-tab navigation closes the context menu');
 
   await page.locator('#locale [data-locale="en"]').click();
   await page.waitForFunction(()=>document.documentElement.lang==='en');
   await right(belt);
+  await menu.waitFor({state:'visible',timeout:5000});
   assert.match(await action('properties').innerText(),/Properties/);
+  const scrollState=await page.evaluate(()=>{
+   const anchor=document.querySelector('.equipment-slot[data-slot-index="11"]');
+   document.dispatchEvent(new Event('scroll'));
+   const retained=Boolean(document.querySelector('.stage-gear-context-menu'));
+   anchor.style.transform='translateY(4px)';
+   document.dispatchEvent(new Event('scroll'));
+   const dismissed=!document.querySelector('.stage-gear-context-menu');
+   anchor.style.transform='';
+   return {retained,dismissed};
+  });
+  assert.deepEqual(scrollState,{retained:true,dismissed:true},
+   'Unrelated scrolling retains context menu, moved anchor safely dismisses it');
+  await right(belt);
+  await menu.waitFor({state:'visible',timeout:5000});
   assert.match(await action('souls').innerText(),/Manage Souls/);
   assert.match(await action('replace').innerText(),/Choose another item/);
   assert.match(await action('remove').innerText(),/Unequip item/);
@@ -188,7 +234,8 @@ export async function runEquipmentQuickMenuSmoke(browser,base){
   await menu.waitFor({state:'visible'});
   await menu.locator('[data-gear-context-action="properties"]').click();
   assert.match(await page.locator('#stagePicker .stage-picker-head strong').innerText(),/Броня/);
-  await page.locator('#stagePicker .stage-picker-head button').first().click();
+  await page.locator('#stagePicker .stage-picker-head > button').click();
+  assert.equal(await page.locator('#stagePicker').isHidden(),true);
   await legs.click({button:'right'});
   await menu.locator('[data-gear-context-action="replace"]').click();
   assert.equal(await page.locator('#stagePicker .stage-picker-list').isVisible(),true,

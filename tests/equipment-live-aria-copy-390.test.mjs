@@ -32,3 +32,13 @@ test('shared admin binding recalculates accessible labels on save and undo witho
  assert.match(app,/refreshVisibleOwnerCopy\('guideedit\.'\+key\)/);
  assert.match(equipment,/'data-socket-capacity':String\(n\)/);
 });
+
+test('equipment action tips use the global guide with owner D1 values and Undo',()=>{
+ assert.match(equipment,/globalThis\.PandoraGuideTooltip\?\.attach\(button,actionHelp,\{hoverDelay:300\}\)/);
+ assert.doesNotMatch(equipment,/root\.PandoraGuideTooltip\?\.attach\(/);
+ for(const mode of ['choose','details','souls'])
+  assert.ok(app.includes("['hint."+mode+"'"),'D1 copy missing: '+mode);
+ assert.match(equipment,/bind\(button,'hint\.'\+key,\.\.\.hints\[key\],'aria-description'\)/);
+ assert.match(app,/if\(attr==='aria-description'&&node\.dataset\.guideHint!==undefined\)/);
+ assert.match(app,/ownerDockPatchData\(node,'guideHint',value\)/);
+});

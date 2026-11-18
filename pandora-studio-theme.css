@@ -2342,4 +2342,6 @@ footer .footer-version{margin-inline-start:auto;align-self:center;white-space:no
  color:var(--gold);padding:6px 12px;min-height:31px}
 .stage-soul-more:hover{border-color:#efc17a;background:#3a291d}
 .stage-soul-more-row .stage-action-edit-wrap{display:inline-flex;align-items:center}
+/* Author display rules must not override the hidden completed-page action. */
+.stage-soul-more-row>[hidden]{display:none!important}
 .stage-soul-progress{font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums}

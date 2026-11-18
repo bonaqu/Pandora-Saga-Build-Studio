@@ -35,6 +35,9 @@ test('context menu is accessible, localized, and dismissible without touching em
  assert.match(app,/event\.key==='Escape'/);
  assert.match(app,/closeStageGearMenu\(true\)/);
  assert.match(app,/document\.addEventListener\('pointerdown'/);
+ assert.match(app,/stageGearMenuPosition=\{left:box\.left,top:box\.top,right:box\.right,bottom:box\.bottom\}/);
+ assert.match(app,/Math\.abs\(current\[key\]-initial\[key\]\)>1/);
+ assert.doesNotMatch(app,/document\.addEventListener\('scroll',\(\)=>closeStageGearMenu\(\),true\)/);
  for(const id of ['properties','souls','replace','remove'])
   assert.match(app,new RegExp("equipmentCopy\\('context\\.'\\+id"));
  assert.match(app,/equipmentCopyLabel\(label,'context\.'\+id,ru,en\)/);
