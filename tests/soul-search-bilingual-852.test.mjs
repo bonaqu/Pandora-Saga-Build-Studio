@@ -52,8 +52,13 @@ test('Soul search can reveal every compatible record without remounting or stale
  assert.match(equipment,/const pageSize=80/);
  assert.match(equipment,/if\(paging\.parentNode===list\)list\.insertBefore\(row,paging\)/,
   'Loading another page must not tear down previously mounted Soul editors');
- assert.match(equipment,/if\(shown<results\.length\)/,
-  'The More button only appears when undisplayed Souls exist');
+ assert.match(equipment,/moreControl\.hidden=shown>=results\.length/,
+  'The More action is hidden only after the final Soul page');
+ assert.match(equipment,/if\(results\.length&&paging\.parentNode!==list\)list\.append\(paging\)/,
+  'Completed lists keep their progress summary mounted');
+ assert.match(read('pandora-studio-theme.css'),
+  /\.stage-soul-more-row>\[hidden\]\{display:none!important\}/,
+  'The owner action wrapper must really be hidden despite its display:flex styles');
  assert.match(equipment,/api\.onSoulShown\?\.\(shown\)/,
   'The caller can restore expanded pages after equipping or removing a Soul');
  assert.match(equipment,/draw\(\{resetPage:true\}\)/,
