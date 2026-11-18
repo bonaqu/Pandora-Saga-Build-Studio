@@ -10415,6 +10415,7 @@ function renderWorkbenchHintEditors(){
 function applyGameLocale({redraw=true,persistReconciled=true}={}){
  window.PandoraUILocale.setOverrides(override);
  window.PandoraUILocale.apply(lang);
+ window.PandoraStudioUpdateBanner?.refresh?.();
  refreshOpenAuthoredToast();
  refreshWorkbenchHints();
  renderWorkbenchHintEditors();
