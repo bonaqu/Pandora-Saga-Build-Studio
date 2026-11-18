@@ -7,7 +7,7 @@ export async function runAdminEntrySmoke(browser,base){
  // This browser regression must remain valid after every release bump.
  // Offer exactly the next revision after the HTML currently under test.
  const runningRelease=JSON.parse(readFileSync(new URL('../site-version.json',import.meta.url),'utf8')).release;
- const futureRelease=runningRelease.replace(/\\.\\d+$/,suffix=>'.'+(Number(suffix.slice(1))+1));
+ const futureRelease=runningRelease.replace(/\.\d+$/,suffix=>'.'+(Number(suffix.slice(1))+1));
  let sourceUnavailable=false,d1SourceSpoofed=false,offerNewSiteVersion=false;
  const context=await browser.newContext({viewport:{width:1280,height:860}});
  await context.route('**/*',async route=>{
