@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readFileSync,existsSync} from 'node:fs';
 import {IDS,EXPECTED_COUNT,DATASETS,validateItems,validateCounts,
  stageId,validateDifferenceRows} from '../scripts/publish-seven-item-levels-once.mjs';
 
@@ -80,11 +80,13 @@ test('production script requires explicit authorization and performs staged CAS 
  assert.match(script,/validateCounts\(await datasetCounts\(target\),expectedCounts\)/);
  assert.match(script,/validateItems\(source,await d1Items\(target\)\)/);
  assert.doesNotMatch(script,/DELETE FROM accounts|DELETE FROM sessions|DROP TABLE/i);
- const workflow=readFileSync(
-  new URL('../.github/workflows/publish-seven-item-levels-once.yml',import.meta.url),'utf8');
- assert.match(workflow,/github\.ref == 'refs\/heads\/bonaqu_projects'/);
- assert.match(workflow,/secrets\.CLOUDFLARE_API_TOKEN/);
- assert.match(workflow,/--preflight/);
- assert.match(workflow,/--publish-owner-authorized-seven-levels-20261117/);
- assert.match(workflow,/catalog:parity:live/);
+ // Past production D1 patches have been verified and closed. Retain the
+ // publisher's CAS contract as a historical regression, not an executable
+ // GitHub Actions entry that could be dispatched again by mistake.
+ for(const name of [
+  'publish-seven-item-levels-once.yml',
+  'publish-six-instance-ru-once.yml',
+  'verify-seven-item-levels-public-once.yml'
+ ])assert.equal(existsSync(new URL('../.github/workflows/'+name,import.meta.url)),
+  false,'One-off D1 workflow must remain retired: '+name);
 });
