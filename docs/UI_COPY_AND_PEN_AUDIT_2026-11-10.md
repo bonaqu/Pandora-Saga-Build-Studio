@@ -169,3 +169,8 @@ A separate full Chromium scenario checks RU→EN with a zero-results query
 and stable checkbox/query, plus Node contracts for all five D1 semantic keys.
 No gameplay data, formula, production D1 values or site version changed.
 Remaining specialized runtime copy is still tracked by #390.
+
+
+## 18.11.2026 — 0.883.0: названия и пояснения групп редактора (#390, #731)
+
+Шесть фиксированных RU/EN-текстов трёх групп панели владельца (Editing, Game data, More tools) получили самостоятельные `guideedit.book.owner-dock.group-*-title` и `group-*-hint` ключи. В режиме владельца редактируются прямо на месте с общей D1 CAS, Undo и переключением языков. Обычный пользователь не видит ни панель, ни карандаши. Числовые показатели, текущий статус записи, логины и технические ошибки не становятся авторским контентом. Это частичное исполнение #390, **не** окончательный охват всех пользовательских строк и не физическая загрузка стандартных текстов в D1.
