@@ -161,7 +161,8 @@ test('a successful owner write cannot erase a concurrent failed edit notificatio
  await assert.rejects(b,error=>error.httpStatus===409);
  assert.equal(editor.status().ownerSaveState,'saving',
   'Another field is still being saved');
- alice.resolve(respond({ok:true}));
+ alice.resolve(respond({ok:true,key:'itemdesc.1',
+  value:'First',conditional:true}));
  await a;
  assert.equal(editor.status().ownerSaveState,'error',
   'Successful completion must not erase the other field conflict');
@@ -172,18 +173,78 @@ test('concurrent owner writes report saving until the last response and recover 
  const fast=deferredResponse(),slow=deferredResponse();
  let mode='concurrent';
  const editor=instance(async(_url,opts)=>{
-  if(mode==='retry')return respond({ok:true});
+  if(mode==='retry'){
+   const body=JSON.parse(opts.body);
+   return respond({ok:true,key:body.key,value:body.value,conditional:true});
+  }
   return JSON.parse(opts.body).key==='itemdesc.10'?fast.promise:slow.promise;
  });
  const a=editor.request('/api/admin/override',{key:'itemdesc.10',value:'A'});
  const b=editor.request('/api/admin/override',{key:'itemdesc.11',value:'B'});
- fast.resolve(respond({ok:true}));await a;
+ fast.resolve(respond({ok:true,key:'itemdesc.10',value:'A',conditional:true}));await a;
  assert.equal(editor.status().ownerSaveState,'saving');
  slow.resolve(respond({code:'OWNER_EDIT_CONFLICT',error:'Stale write'},409));
  await assert.rejects(b,e=>e.httpStatus===409);
  assert.equal(editor.status().ownerSaveState,'error');
  mode='retry';
  await editor.request('/api/admin/override',{key:'itemdesc.12',value:'C'});
+ assert.equal(editor.status().ownerSaveState,'saved');
+ assert.equal(editor.status().ownerSaveError,'');
+});
+
+test('HTTP 200 is not proof of D1 persistence: malformed or incomplete CAS replies fail closed',async()=>{
+ const cases=[
+  ['broken JSON',new Response('{broken',{status:200})],
+  ['missing proof',respond({ok:true})],
+  ['wrong key',respond({ok:true,key:'itemdesc.999',value:'Saved',conditional:true})],
+  ['wrong value',respond({ok:true,key:'itemdesc.50',value:'Different',conditional:true})],
+  ['missing CAS',respond({ok:true,key:'itemdesc.50',value:'Saved'})],
+  ['explicit false',respond({ok:false,key:'itemdesc.50',value:'Saved',conditional:true})]
+ ];
+ for(const [caseName,response] of cases){
+  const editor=instance(async()=>response,{values:{'itemdesc.50':'Original'}});
+  await assert.rejects(
+   editor.request('/api/admin/override',{key:'itemdesc.50',value:'Saved'}),
+   error=>error.reason==='OWNER_WRITE_UNCONFIRMED'&&/не подтвердил/.test(error.message),
+   caseName
+  );
+  assert.equal(editor.status().ownerSaveState,'error',caseName);
+  assert.equal(editor.override['itemdesc.50'],'Original',caseName);
+ }
+});
+
+test('a reset reply must acknowledge deletion of exactly the conditional D1 key',async()=>{
+ for(const reply of [
+  {ok:true,key:'itemdesc.50',conditional:true},
+  {ok:true,key:'itemdesc.51',deleted:true,conditional:true},
+  {ok:true,key:'itemdesc.50',deleted:true,conditional:false}
+ ]){
+  const editor=instance(async()=>respond(reply),{
+   values:{'itemdesc.50':'Before'}
+  });
+  await assert.rejects(
+   editor.request('/api/admin/reset',{key:'itemdesc.50'}),
+   error=>error.reason==='OWNER_WRITE_UNCONFIRMED'
+  );
+  assert.equal(editor.status().ownerSaveState,'error');
+ }
+ const editor=instance(async()=>respond({
+  ok:true,key:'itemdesc.50',deleted:true,conditional:true
+ }),{values:{'itemdesc.50':'Before'}});
+ await editor.request('/api/admin/reset',{key:'itemdesc.50'});
+ assert.equal(editor.status().ownerSaveState,'saved');
+});
+
+test('a failed D1 acknowledgment preserves a retry, and a valid CAS reply clears the error',async()=>{
+ let response={ok:true,key:'itemdesc.50',value:'Submitted'};
+ const editor=instance(async()=>respond(response),{lang:'en'});
+ await assert.rejects(
+  editor.request('/api/admin/override',{key:'itemdesc.50',value:'Submitted'}),
+  error=>/did not confirm/i.test(error.message)
+ );
+ assert.equal(editor.status().ownerSaveState,'error');
+ response={...response,conditional:true};
+ await editor.request('/api/admin/override',{key:'itemdesc.50',value:'Submitted'});
  assert.equal(editor.status().ownerSaveState,'saved');
  assert.equal(editor.status().ownerSaveError,'');
 });
