@@ -8282,9 +8282,11 @@ async function apiRequest(path,body,token=adminToken) {
    'Cannot connect right now. Check your connection and try again.':
    'Не удалось подключиться. Проверь соединение и повтори попытку.');
  }
+ // Catalog sources and other read-only endpoints legitimately return
+ // JSON arrays. Do not coerce those into empty objects while validating
+ // the *separate* owner-write acknowledgment contract below.
  const parsed=await response.json().catch(()=>null);
- const data=parsed&&typeof parsed==='object'&&!Array.isArray(parsed)?
-  parsed:{};
+ const data=parsed===null?{}:parsed;
  if(!response.ok){
   const conflict=response.status===409&&data.code==='OWNER_EDIT_CONFLICT';
   const outdated=response.status===428&&data.code==='OWNER_CLIENT_UPDATE_REQUIRED';
