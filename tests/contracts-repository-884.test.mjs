@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import fs,{readFileSync,readdirSync} from 'node:fs';
 import vm from 'node:vm';
 import {spawnSync} from 'node:child_process';
+import {createHash} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 
 // Original: tests/roadmap-archive-873.test.mjs
@@ -100,3 +101,32 @@ test('table display previews are bounded',()=>{
  assert.ok(changes[0].after.length<170);
 });
 }
+
+
+// AGENTS is a current decision sheet. All historical agent instructions,
+// including superseded rules, must survive as a bit-exact, indexed archive.
+test('agent rules stay concise and archived guidance can be reconstructed byte-for-byte',()=>{
+ const base=new URL('../',import.meta.url);
+ const read=p=>readFileSync(new URL(p,base),'utf8');
+ const current=read('AGENTS.md'),index=read('docs/history/agents/README.md');
+ assert.ok(current.length<8000,'Working rules must not regrow into a 150 KB history');
+ assert.match(current,/docs\/history\/agents\/README\.md/);
+ const names=Array.from({length:11},(_,i)=>
+  'part-'+String(i+1).padStart(2,'0')+'.md');
+ const actual=readdirSync(new URL('../docs/history/agents/',import.meta.url))
+  .filter(x=>/^part-\d\d\.md$/.test(x)).sort();
+ assert.deepEqual(actual,names,'No agent history part may be silently omitted');
+ for(const name of names)assert.ok(index.includes(']('+name+')'));
+ const parts=names.map(name=>read('docs/history/agents/'+name));
+ assert.ok(parts.every(chunk=>chunk.length>0&&chunk.length<16000));
+ const original=parts.join('');
+ assert.equal(original.length,149883);
+ const bytes=Buffer.from(original,'utf8');
+ const reconstructed=createHash('sha1')
+  .update('blob '+bytes.length+'\0').update(bytes).digest('hex');
+ assert.equal(reconstructed,'cdf8fb772e8cad5bdda310c68620093951d47258',
+  'The exact historical AGENTS.md Git blob must be preserved');
+ assert.match(original,/0\.885\.0/);
+ assert.match(original,/0\.763\.0/);
+ assert.match(original,/0\.849\.0/);
+});
