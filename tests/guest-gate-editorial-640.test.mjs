@@ -37,3 +37,34 @@ test('guest gate edits refresh visible modal and library without remounting the 
  assert.match(locale,/statusLibrarySignIn:\[/);
  assert.match(locale,/function fieldKey\(key\)/);
 });
+
+test('guest/account draft decision supports D1 captions without editing player identities',()=>{
+ const locale=read('pandora-studio-ui-locale.js');
+ const app=read('pandora-studio-app.js');
+ const keys=['libraryConflictTitle','libraryConflictLead','libraryConflictGuestBadge',
+  'libraryConflictAccountBadge','libraryConflictSavedNote','libraryConflictSaveFirstNote',
+  'libraryConflictContinueGuest','libraryConflictSaveContinue','libraryConflictKeepAccount'];
+ for(const key of keys){
+  assert.ok(locale.includes(key+':['),key+' must have bilingual defaults');
+  assert.ok(app.includes("'"+key+"'"),key+' must appear in actual dialog');
+ }
+ const start=app.indexOf("  const content=h('div',{class:'build-draft-conflict'});");
+ const end=app.indexOf(' }else if(shared)openIncoming();',start);
+ const scope=app.slice(start,end);
+ assert.match(scope,/h\('strong',\{text:guestName\}\)/);
+ assert.match(scope,/h\('strong',\{text:accountName\}\)/);
+ assert.doesNotMatch(scope,/data-owner-copy-key[^\n]*guestName|data-owner-copy-key[^\n]*accountName/);
+ assert.match(scope,/if\(!accountWasSaved&&!saveBuild\(/);
+ assert.match(scope,/if\(!switchActiveDraft\(structuredClone\(guest\.snapshot\),null\)\)return/);
+ assert.match(scope,/if\(adminEditing&&adminToken\)bindAccountCopyEditors\(dialog\)/);
+ assert.match(scope,/heading\.dataset\.ownerCopyKey='libraryConflictTitle'/);
+});
+test('library sort uses one stable index per card, not repeated array searches',()=>{
+ const app=read('pandora-studio-app.js');
+ const start=app.indexOf('const applySort=()=>{'),end=app.indexOf('if(sort)sort.querySelector',start);
+ const sort=app.slice(start,end);
+ assert.match(app,/searchable\.push\(\{box,build:b,check,order:searchable\.length/);
+ assert.match(sort,/return result\|\|a\.order-b\.order/);
+ assert.doesNotMatch(sort,/searchable\.indexOf\(/);
+ assert.match(sort,/const sorted=\[\.\.\.searchable\]\.sort/);
+});

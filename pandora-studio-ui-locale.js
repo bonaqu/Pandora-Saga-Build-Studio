@@ -92,6 +92,17 @@ const libraryCopy=Object.freeze({
  // These are dialog headings and accessible names, not runtime account errors.
  libraryGuestDialogTitle:['Вход для сохранения билдов','Sign in to save builds'],
  librarySharedDialogTitle:['Вход для открытия билда','Sign in to open this build'],
+ // Two independent drafts: only fixed RU/EN captions are author-editable.
+ // Names, account scope, cloud responses and unsaved progress are never D1 copy.
+ libraryConflictTitle:['Продолжить персонажа?','Continue your character?'],
+ libraryConflictLead:['В аккаунте и на этом устройстве есть два разных героя. Выбери, с кем продолжить.','You have two different characters: one in your account and one from this browser. Choose which to continue.'],
+ libraryConflictGuestBadge:['До входа · только на этом устройстве','Before sign-in · on this device only'],
+ libraryConflictAccountBadge:['Текущий черновик аккаунта','Current account draft'],
+ libraryConflictSavedNote:['Герой аккаунта уже сохранён. Гостевого можно продолжить без удаления сохранённого билда.','Your account character is already saved. Continue the guest without deleting the saved build.'],
+ libraryConflictSaveFirstNote:['Если продолжишь гостевого героя, сначала сохраним героя аккаунта в «Мои билды». Облачная запись проверяется отдельно.','To continue the guest, your account draft will first be saved in My Builds. Cloud saving is checked separately.'],
+ libraryConflictContinueGuest:['Продолжить гостевого героя','Continue guest character'],
+ libraryConflictSaveContinue:['Сохранить героя аккаунта и продолжить гостевого','Save account character and continue guest'],
+ libraryConflictKeepAccount:['Оставить героя аккаунта','Keep account character'],
  libraryGuestLead:['Чтобы сохранять, открывать и сравнивать билды, нужен аккаунт. Персонажа можно создавать без входа.','Sign in to save, open or compare builds. You can still plan a character without an account.'],
  librarySharedGateLead:['Войди или зарегистрируйся, чтобы открыть билд по ссылке. Ссылка сохранится.','Sign in or register to open this build. Your link will stay here.'],
  libraryGuestStorageWarning:['Без аккаунта текущий герой хранится только в этом браузере. Очистка его данных удалит черновик.','Without an account, your current hero stays only in this browser. Clearing its data erases the draft.'],

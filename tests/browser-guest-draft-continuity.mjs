@@ -11,13 +11,14 @@ export async function runGuestDraftContinuitySmoke(browser,base){
   profile:{guild:'Guests'}};
  const account={race:1,gender:0,job:8,level:33,
   name:'Existing account draft',points:{archery:9}};
- async function check({register=false,accountDraft=false,viaBuilds=false,link=false,keepAccount=false,quotaFail=false,unnamedAccount=false}={}){
-  const scenario={register,accountDraft,viaBuilds,link,keepAccount,quotaFail,unnamedAccount};
+ async function check({register=false,accountDraft=false,viaBuilds=false,link=false,keepAccount=false,quotaFail=false,unnamedAccount=false,ownerEdit=false,ownerLang='ru'}={}){
+  const scenario={register,accountDraft,viaBuilds,link,keepAccount,quotaFail,unnamedAccount,ownerEdit,ownerLang};
   console.log('Guest draft acceptance case:',JSON.stringify(scenario));
   const currentAccount=unnamedAccount?{...account,name:''}:account;
   const savedAccountName=currentAccount.name||'Новый герой';
   const context=await browser.newContext({viewport:{width:1280,height:900}});
   const writes=[],errors=[],savedRecords=new Map();
+  const ownerToken='g'.repeat(43),ownerValues={},ownerWrites=[];
   await context.route('**/*',route=>{
    const req=route.request(),url=req.url();
    if(url.startsWith(base+'/'))return route.continue();
@@ -29,6 +30,18 @@ export async function runGuestDraftContinuitySmoke(browser,base){
    const send=(value,status=200)=>route.fulfill({
     status,headers,contentType:'application/json',body:JSON.stringify(value)});
    if(method==='OPTIONS')return route.fulfill({status:204,headers});
+   if(path==='/api/overrides')return send({values:{...ownerValues}});
+   if(path==='/api/admin/login'&&method==='POST')
+    return send({token:ownerToken,expires:Date.now()+600000});
+   if(path==='/api/admin/override'&&method==='POST'){
+    assert.equal(req.headers().authorization,'Bearer '+ownerToken);
+    const patch=req.postDataJSON();
+    assert.match(patch.key,/^guideedit\.book\.ui\.label\.library-conflict-/);
+    assert.equal(patch.expectedValue,ownerValues[patch.key]??null,
+     'Owner editor must not overwrite a concurrent D1 copy revision');
+    ownerValues[patch.key]=patch.value;ownerWrites.push(patch);
+    return send({ok:true,key:patch.key,value:patch.value,conditional:true});
+   }
    if(path==='/api/account/login'&&method==='POST')
     return send({account:{username},token,expires:Number.MAX_SAFE_INTEGER});
    if(path==='/api/account/register'&&method==='POST'){
@@ -78,6 +91,34 @@ export async function runGuestDraftContinuitySmoke(browser,base){
     document.querySelector('#raceGrid')?.children.length>0&&
     document.querySelector('#levelOut')?.textContent==='27',
     guestKey,{timeout:30000});
+   if(ownerEdit){
+    await page.locator('#startupOverlay').waitFor({state:'hidden',timeout:30000});
+    // Use the real hidden owner login with a mock Worker; production D1 is
+    // never touched, and all existing guest/account state remains untouched.
+    await page.keyboard.press('Control+Alt+Shift+P');
+    await page.getByRole('dialog',{name:'Служебный вход'})
+     .waitFor({state:'visible'});
+    await page.locator('input[placeholder="Пароль администратора"]')
+     .fill('Correct admin password!');
+    await page.locator('.modal').getByRole('button',{name:'Войти',exact:true}).click();
+    try{
+     await page.locator('#ownerDock').waitFor({state:'visible',timeout:12000});
+    }catch(error){
+     const diagnostic=await page.evaluate(()=>({
+      overlayHidden:document.getElementById('startupOverlay')?.hidden,
+      modalHidden:document.getElementById('modalRoot')?.hidden,
+      adminFeedback:document.querySelector('#modalRoot .modal .error')?.textContent,
+      hasOwnerDock:Boolean(document.getElementById('ownerDock')),
+      ownerState:document.getElementById('authState')?.textContent
+     }));
+     throw new Error('Owner-editor login diagnostic: '+
+      JSON.stringify({diagnostic,pageErrors:errors})+'; '+error.message);
+    }
+    if(ownerLang==='en'){
+     await page.locator('#locale [data-locale="en"]').click();
+     await page.waitForFunction(()=>document.documentElement.lang==='en');
+    }
+   }
    if(link){
     await page.evaluate(()=>{location.hash='#b/A1234567890'});
     const gate=page.getByRole('dialog',{name:'Вход для открытия билда'});
@@ -110,14 +151,46 @@ export async function runGuestDraftContinuitySmoke(browser,base){
    }
    if(accountDraft){
     // Both drafts differ: only a deliberate choice may replace account work.
-    const chooser=page.getByRole('dialog',{name:'Продолжить персонажа?'});
+    const chooser=page.locator('#modalRoot .modal[role="dialog"]');
     await chooser.waitFor({state:'visible'});
+    assert.equal(await chooser.getAttribute('aria-label'),
+     ownerLang==='en'?'Continue your character?':'Продолжить персонажа?');
     assert.equal(JSON.parse(await page.evaluate(()=>
      localStorage.getItem('ps-build-studio.v1'))).name,currentAccount.name);
-    assert.match(await chooser.innerText(),/Гостевой|гостевого|аккаунта/);
+    assert.match(await chooser.innerText(),ownerLang==='en'?
+     /Guest|guest|account/:/Гостевой|гостевого|аккаунта/);
     assert.match(await chooser.innerText(),/Guest progress/);
     if(!unnamedAccount)assert.match(await chooser.innerText(),/Existing account draft/);
     else assert.match(await chooser.innerText(),/Герой аккаунта/);
+    let updatedSaveCaption=null;
+    if(ownerEdit){
+     const edit=async(key,next)=>{
+      const selector='[data-owner-copy-key="'+key+'"]';
+      await chooser.locator('[data-owner-copy-pencil="'+key+'"]').click();
+      const input=chooser.locator('.account-copy-edit-host [contenteditable]').last();
+      await input.fill(next);await input.press('Tab');
+      await page.waitForFunction(({selector,next})=>
+       document.querySelector('#modalRoot '+selector)?.textContent===next,
+       {selector,next},{timeout:15000});
+      assert.equal(JSON.parse(ownerValues['guideedit.book.ui.label.'+
+       key.replace(/[A-Z]/g,x=>'-'+x.toLowerCase())])[ownerLang],next);
+     };
+     const title=ownerLang==='en'?'Choose which character to keep':'Выбери персонажа для продолжения';
+     updatedSaveCaption=ownerLang==='en'?'Save both drafts safely':
+      'Сохранить черновик и продолжить';
+     await edit('libraryConflictTitle',title);
+     assert.equal(await chooser.getAttribute('aria-label'),title,
+      'Title and accessible modal name must be updated together');
+     await edit('libraryConflictSaveContinue',updatedSaveCaption);
+     assert.equal(await chooser.locator('.build-draft-choice strong').first().innerText(),guest.name);
+     assert.equal(await chooser.locator('.build-draft-choice strong').last().innerText(),
+      currentAccount.name);
+     assert.deepEqual(writes,[],
+      'Editorial pencil must not save either player draft or fire a cloud write');
+     assert.equal(ownerWrites.length,2);
+     console.log('Guest draft owner RU/EN copy verified before choosing:',
+      ownerLang,ownerWrites.map(entry=>entry.key).join(', '));
+    }
     if(quotaFail){
      await page.evaluate(()=>{
       window.__restoreDraftSetItem=Storage.prototype.setItem;
@@ -128,12 +201,20 @@ export async function runGuestDraftContinuitySmoke(browser,base){
       };
      });
     }
+    // An earlier assertion can fail before the explicit choice. In that
+    // case closing the test context must not raise an *unhandled* response
+    // waiter that masks the actionable Chromium error.
     const savedResponse=accountDraft&&!keepAccount&&!quotaFail?
      page.waitForResponse(response=>response.url().endsWith('/api/library')&&
       response.request().method()==='POST'&&
-      response.request().postDataJSON()?.entry?.name===savedAccountName):null;
+      response.request().postDataJSON()?.entry?.name===savedAccountName)
+      .catch(error=>{if(page.isClosed())return null;throw error}):null;
+    // Owner pencils mention the same caption in their aria-label. Use an
+    // exact role/name match so confirming a choice cannot click its pencil.
     await chooser.getByRole('button',{name:keepAccount?
-     'Оставить героя аккаунта':'Сохранить героя аккаунта и продолжить гостевого'}).click();
+     'Оставить героя аккаунта':(updatedSaveCaption||
+      (ownerLang==='en'?'Save account character and continue guest':
+       'Сохранить героя аккаунта и продолжить гостевого')),exact:true}).click();
     if(quotaFail){
      const toast=page.locator('#studioToast');
      await toast.waitFor({state:'visible'});
@@ -150,6 +231,7 @@ export async function runGuestDraftContinuitySmoke(browser,base){
      await chooser.getByRole('button',{name:'Оставить героя аккаунта'}).click();
     }
     if(savedResponse)await savedResponse;
+    if(ownerEdit)console.log('Guest draft owner copy: explicit save acknowledged',ownerLang);
    }
    console.log('Guest draft acceptance: awaiting selected hero');
    await page.waitForFunction(({name,expected})=>{
@@ -244,5 +326,7 @@ export async function runGuestDraftContinuitySmoke(browser,base){
  await check({accountDraft:true,link:true,keepAccount:true}); // Choose account draft instead.
  await check({accountDraft:true,quotaFail:true}); // Full storage never replaces an unsaved account hero.
  await check({accountDraft:true,unnamedAccount:true}); // Unnamed account hero is saved with a readable default title.
- console.log('Chromium guest draft continuity: explicit save, quota failure, registration and shared links passed');
+ await check({accountDraft:true,ownerEdit:true}); // RU title/action CAS, draft names and explicit save.
+ await check({accountDraft:true,ownerEdit:true,ownerLang:'en'}); // EN title/action CAS, same safe behavior.
+ console.log('Chromium guest draft continuity: explicit saves, quota, RU/EN D1 editorial decisions and shared links passed');
 }

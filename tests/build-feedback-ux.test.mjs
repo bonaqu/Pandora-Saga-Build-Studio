@@ -22,7 +22,10 @@ test('conflicting drafts save existing account work before switching to guest',(
  assert.match(block,/if\(!accountWasSaved&&!saveBuild\(state\.name\|\|tr\('Новый герой','New hero'\)\)\)return/);
  assert.match(block,/if\(!switchActiveDraft\(structuredClone\(guest\.snapshot\),null\)\)return/);
  assert.match(block,/build-draft-choices/);
- assert.match(block,/Оставить героя аккаунта/);
+ assert.match(block,/'data-owner-copy-key':'libraryConflictKeepAccount'/);
+ assert.match(block,/onclick:\(\)=>\{close\(\);if\(shared\)openIncoming\(\)/);
+ assert.equal(root.PandoraUILocale.text('libraryConflictKeepAccount','ru'),
+  'Оставить героя аккаунта');
 });
 test('shared library import has an account guard, capacity limit and no browser alert',()=>{
  const block=app.slice(app.indexOf('function openSharedSnapshot(share){'),
