@@ -30,40 +30,31 @@
   document.addEventListener('pointerdown', onActivity, { passive: true });
   document.addEventListener('keydown', onActivity, { passive: true });
   document.addEventListener('input', onActivity, { passive: true });
-  const busy = () => {
+  // Share one ordered reason across manual and idle updates. A retained owner
+  // token is not the same as active editing or a pending D1 write.
+  const blockingReason = () => {
+    const accountReason = window.PandoraAccountUI?.updateGuard?.();
+    if (accountReason) return accountReason;
+    if (document.body.classList.contains('studio-live-blocked') ||
+        document.querySelector('#startupOverlay:not([hidden])')) return 'connection';
+    if (window.PandoraStudioAdminActive?.()) return 'editor';
     const el = document.activeElement;
-    // A forced update during a D1 outage could destroy the last live draft.
-    // The online gate owns recovery; update prompts must wait until it unlocks.
-    return document.visibilityState !== 'visible' ||
-      document.body.classList.contains('studio-live-blocked') ||
-      !!document.querySelector('#startupOverlay:not([hidden])') ||
-      !!document.querySelector('#modalRoot:not([hidden]), #detailPanel.is-open, #stagePicker:not([hidden]), #stageAttributes:not([hidden]), .inline-owner-editor, #accountPanel:not([hidden])') ||
-      !!window.PandoraAccountUI?.updateGuard?.() ||
-      // plaintext-only fields are contenteditable too; a focused child of
-      // any inline editor must veto both manual and idle navigation.
-      !!el?.closest?.('input, textarea, select, [contenteditable]') ||
-      !!window.PandoraStudioAdminActive?.();
+    // An open overlay or a focused plaintext-only editor must veto navigation.
+    if (document.visibilityState !== 'visible' ||
+        document.querySelector('#modalRoot:not([hidden]), #detailPanel.is-open, #stagePicker:not([hidden]), #stageAttributes:not([hidden]), .inline-owner-editor, #accountPanel:not([hidden])') ||
+        el?.closest?.('input, textarea, select, [contenteditable]')) return 'finish';
+    return null;
   };
+  const busy = () => Boolean(blockingReason());
   function applyUpdate() {
     if (applying || !valid(latest)) return;
     // The recovery code is shown only once. Do not destroy it through an
     // idle refresh or an explicit update, even if the profile is collapsed.
     // Likewise protect an in-flight password change or a filled sign-in form.
-    const accountReason = window.PandoraAccountUI?.updateGuard?.();
-    if (accountReason) {
-      blockedReason = accountReason;
-      blockedAutoUpdate = true;
-      refreshUpdateLocale();
-      return;
-    }
-    // A manual click must obey the same safety gate as idle auto-updates.
-    // In particular, it must never force a reload behind the D1 overlay or
-    // during an unsent owner edit / pending modal interaction.
-    if (busy()) {
-      blockedReason =
-        document.body.classList.contains('studio-live-blocked') ||
-        document.querySelector('#startupOverlay:not([hidden])') ? 'connection' :
-        window.PandoraStudioAdminActive?.() ? 'editor' : 'finish';
+    // An explicit click never bypasses the same gate used for idle updates.
+    const reason = blockingReason();
+    if (reason) {
+      blockedReason = reason;
       blockedAutoUpdate = true;
       refreshUpdateLocale();
       return;
@@ -122,6 +113,8 @@
     if (!banner || !updateBannerNodes) return;
     const strings = updateCopy();
     const [message, apply, later] = updateBannerNodes;
+    // A completed owner edit must not leave an obsolete warning displayed.
+    if (blockedReason) blockedReason = blockingReason();
     const state = blockedReason || 'notice';
     for (const [node, name, value] of [
       [message, state, strings[state] || strings.notice],

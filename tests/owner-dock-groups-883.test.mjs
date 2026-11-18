@@ -148,6 +148,9 @@ test('drawer save/Undo/Finish share the actual queued-write guard and do not ann
  const failed=draw(false,'error');
  assert.equal(failed.state.dataset.state,'error');
  assert.match(failed.footer.textContent,/исправь ошибку/);
- assert.match(app,/class:'owner-dock-finish'[\s\S]*?if\(ownerSaveInFlight\(\)\)/,
-  'Finish must use the exact same queue guard as the drawer and Undo');
+ assert.match(app,/class:'owner-dock-finish'[\s\S]*?if\(!ownerMayLeaveEditing\(\)\)return;/,
+  'Finish must use the shared guard before closing the drawer');
+ assert.match(app,/function ownerMayLeaveEditing\(\)\{[\s\S]*?if\(!ownerCanStartAdminOperation\(\)\)return false/);
+ assert.match(app,/function ownerCanStartAdminOperation\(\)\{[\s\S]*?if\(ownerSaveInFlight\(\)\)/,
+  'Shared owner operation guard still checks queued writes');
 });
