@@ -221,9 +221,17 @@ export async function runUIContentInlineSmoke(browser,base){
    return node?.getAttribute('aria-busy')==='true'&&
     node.querySelector('[data-owner-text-field]')?.getAttribute('contenteditable')==='false';
   },null,{timeout:6000});
+  // Owner status and the real Undo button must agree with the pending CAS.
+  await page.waitForFunction(()=>{
+   const state=document.querySelector('#ownerDock [data-owner-save-state]');
+   const undo=document.querySelector('#ownerDock [data-owner-undo]');
+   return state?.dataset.state==='saving'&&undo?.disabled===true;
+  },null,{timeout:6000});
   await page.waitForFunction(()=>
    !document.querySelector('#stageBookPanel .stage-result-section-head [contenteditable]'),
    null,{timeout:12000});
+  assert.equal(await page.locator('#ownerDock [data-owner-save-state]').getAttribute('data-state'),'saved');
+  assert.equal(await page.locator('#ownerDock [data-owner-undo]').isDisabled(),false);
   assert.equal(JSON.parse(values['guideedit.book.summary.group.0']).hintRu,
    'Очки здоровья и маны героя');
   assert.equal(await firstGroup.getAttribute('open'),'',
