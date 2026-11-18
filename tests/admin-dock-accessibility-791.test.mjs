@@ -14,9 +14,9 @@ test('collapsed editor launcher exposes saving and failure states',()=>{
  assert.match(app,/ownerDockPatchData\(state,'state',visibleSaveState\)/);
 });
 test('pending Wiki record writes block Finish, undo and D1 diagnostics',()=>{
- assert.match(app,/wikiRecordWriteQueue\.size>0\|\|ownerSaveState==='saving'/);
- assert.match(app,/if\(ownerSaveState==='saving'\|\|editIsSaving\|\|wikiLabelPendingWrites>0\|\|\s*wikiRecordWriteQueue\.size>0\)/);
- assert.match(app,/const visibleSaveState=\(ownerSaveState==='saving'\|\|editIsSaving/);
+ assert.match(app,/ownerGuidePendingWrites>0\|\|wikiRecordWriteQueue\.size>0/);
+ assert.match(app,/if\(ownerSaveInFlight\(\)\)/);
+ assert.match(app,/const visibleSaveState=saving\?'saving':ownerSaveState/);
 });
 test('editor keyboard navigation and contextual Escape are predictable',()=>{
  assert.match(app,/if\(opening\)panel\.querySelector\('\.owner-dock-primary'\)\?\.focus/);
