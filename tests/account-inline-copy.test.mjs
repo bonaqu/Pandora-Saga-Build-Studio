@@ -143,3 +143,49 @@ test('Worker book content validation supports long account paragraphs without ht
  assert.equal((await worker.fetch(req(JSON.stringify({ru:'x'.repeat(361)})),{DB})).status,400);
  assert.equal((await worker.fetch(req(JSON.stringify({script:'<script>alert(1)</script>'})),{DB})).status,400);
 });
+
+test('ambiguous library action captions never hijack another D1 label key',()=>{
+ const direct='guideedit.book.'+locale.fieldKey('libraryCardOpen');
+ const generic='guideedit.book.'+locale.fieldKey('libraryOpen');
+ const cardDelete='guideedit.book.'+locale.fieldKey('libraryCardDelete');
+ assert.notEqual(direct,generic);
+ assert.equal(locale.literalKey('Открыть'),null);
+ assert.equal(locale.literalKey('Удалить'),null);
+ assert.equal(locale.ui('Открыть','en'),'Open');
+ assert.equal(locale.ui('Удалить','en'),'Delete');
+ locale.setOverrides({
+  [direct]:JSON.stringify({ru:'Карточка: открыть',en:'Open card'}),
+  [generic]:JSON.stringify({ru:'Открыть из списка',en:'Open from list'}),
+  [cardDelete]:JSON.stringify({ru:'Карточка: удалить',en:'Delete card'})
+ });
+ assert.equal(locale.text('libraryCardOpen','ru'),'Карточка: открыть');
+ assert.equal(locale.text('libraryOpen','ru'),'Открыть из списка');
+ assert.equal(locale.text('libraryCardDelete','en'),'Delete card');
+ assert.equal(locale.ui('Открыть','ru'),'Открыть',
+  'Unkeyed generic copy must not accidentally use a card-only override');
+ assert.equal(locale.ui('Удалить','ru'),'Удалить');
+ locale.setOverrides({});
+});
+
+test('D1 UI save, Undo and reset patch live account and cloud status without remount',()=>{
+ const app=source('pandora-studio-app.js');
+ const refresh=app.slice(app.indexOf('function refreshVisibleUICopy('),
+  app.indexOf('// An Origin copy Undo',app.indexOf('function refreshVisibleUICopy(')));
+ assert.match(refresh,/const isAccount=recordKey\.startsWith\('guideedit\.book\.ui\.label\.account-'\)/);
+ assert.match(refresh,/#accountPanel \[data-owner-copy-key\]/);
+ assert.match(refresh,/if\(isStatus\)\{[\s\S]*?syncCloudStatusNode\(cloud,cloudLibraryStatus\)/);
+ assert.match(refresh,/ownerDockPatchText\(node,value\)/);
+ assert.doesNotMatch(refresh,/renderBuilds\(|PandoraAccountUI\?\.refresh/);
+ const undo=app.slice(app.indexOf('async function undoOwnerEdit()'),
+  app.indexOf('function showOverrideManager()'));
+ const reset=app.slice(app.indexOf("const resetButton=event.currentTarget;"),
+  app.indexOf('refreshOwnerUI();',app.indexOf('if(body.isConnected)draw();'))+20);
+ assert.match(undo,/refreshVisibleUICopy\(last\.key\)/);
+ assert.doesNotMatch(undo,/PandoraAccountUI\?\.refresh\?\.\(\)/);
+ assert.match(reset,/refreshVisibleUICopy\(record\.key\)/);
+ assert.doesNotMatch(reset,/PandoraAccountUI\?\.refresh\?\.\(\)/);
+ const cloud=app.slice(app.indexOf('function syncCloudStatusNode('),
+  app.indexOf('function reportCloudStatus('));
+ assert.match(cloud,/ownerDockPatchText\(node,cloudStatusText\(message\)\)/);
+ assert.match(cloud,/node\.nextElementSibling\?\.classList\?\.contains\('ui-content-edit-host'\)/);
+});

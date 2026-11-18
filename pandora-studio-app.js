@@ -419,11 +419,12 @@ function syncCloudStatusNode(node,message){
  const adjacent=node.nextElementSibling;
  if(adjacent?.dataset?.ownerCopyPencil&&adjacent.dataset.ownerCopyPencil!==key)
   adjacent.remove();
- if(adminEditing&&adminToken&&key)node.dataset.ownerCopyKey=key;
- else node.removeAttribute('data-owner-copy-key');
+ if(adminEditing&&adminToken&&key)ownerDockPatchData(node,'ownerCopyKey',key);
+ else if(node.hasAttribute('data-owner-copy-key'))node.removeAttribute('data-owner-copy-key');
  // A late cloud status update must not destroy a draft in the inline editor.
+ // Repeated identical polling statuses should also avoid needless DOM writes.
  if(!node.nextElementSibling?.classList?.contains('ui-content-edit-host'))
-  node.textContent=cloudStatusText(message);
+  ownerDockPatchText(node,cloudStatusText(message));
  if(adminEditing&&adminToken&&key&&node.parentElement)
   bindAccountCopyEditors(node.parentElement);
 }
@@ -9115,11 +9116,13 @@ function refreshVisibleUICopy(recordKey){
  const isLibrary=recordKey.startsWith('guideedit.book.ui.label.library-');
  const isStatus=recordKey.startsWith('guideedit.book.ui.label.status-');
  const isBook=recordKey.startsWith('guideedit.book.ui.label.book-');
- if(!isLibrary&&!isStatus&&!isBook)return;
+ const isAccount=recordKey.startsWith('guideedit.book.ui.label.account-');
+ if(!isLibrary&&!isStatus&&!isBook&&!isAccount)return;
  const id=recordKey.slice('guideedit.book.'.length);
  const selector=isLibrary?
   '#detailContent [data-owner-copy-key],#modalRoot [data-owner-copy-key]':
   isBook?'#stageAttributes [data-owner-copy-key]':
+  isAccount?'#accountPanel [data-owner-copy-key]':
   '#studioToast [data-owner-copy-key]';
  for(const node of document.querySelectorAll(selector)){
   const key=node.dataset.ownerCopyKey;
@@ -9130,6 +9133,19 @@ function refreshVisibleUICopy(recordKey){
   const pencil=node.nextElementSibling;
   if(pencil?.dataset?.ownerCopyPencil===key)
    ownerDockPatchAttr(pencil,'aria-label',(lang==='en'?'Edit caption: ':'Изменить надпись: ')+value);
+ }
+ // The cloud library has an independent status lifecycle outside the toast.
+ // A D1 save/reset/Undo must refresh its mounted copy without re-rendering
+ // the library, dropping the current search, or editing an older status key.
+ if(isStatus){
+  const cloud=document.querySelector('#detailContent .cloud-library-status');
+  if(cloud&&locale.fieldKey(cloud.dataset.ownerCopyKey)===id){
+   syncCloudStatusNode(cloud,cloudLibraryStatus);
+   const pencil=cloud.nextElementSibling;
+   if(pencil?.dataset?.ownerCopyPencil===cloud.dataset.ownerCopyKey)
+    ownerDockPatchAttr(pencil,'aria-label',
+     (lang==='en'?'Edit caption: ':'Изменить надпись: ')+cloud.textContent);
+  }
  }
  // The same routine handles save, Undo and owner reset. Do not replace
  // the card: update the live guide dataset from the committed RU/EN value.
@@ -9378,8 +9394,7 @@ async function undoOwnerEdit(){
      saveView();
     }else if(last.key.startsWith('guideedit.book.ui.label.')){
      refreshVisibleUICopy(last.key);
-     if(last.key.startsWith('guideedit.book.ui.label.account-'))
-      window.PandoraAccountUI?.refresh?.();
+     // Account copy is patched in place; rebuilding the form loses unsent values.
      // UI copy does not affect catalogs or builds; preserve active inputs.
      saveView();
     }else if(/^guideedit\.book\.(equipment|path|catalog-sync|honor-view|owner-dock|owner-history|owner-dialog|wiki-ui|skill-ui|stats-ui)\./.test(last.key)){
@@ -9507,8 +9522,7 @@ function showOverrideManager(){
         refreshVisibleProfileCopy();saveView();
        }else if(record.key.startsWith('guideedit.book.ui.label.')){
         refreshVisibleUICopy(record.key);
-        if(record.key.startsWith('guideedit.book.ui.label.account-'))
-         window.PandoraAccountUI?.refresh?.();
+        // A text reset never rebuilds the live login or password form.
         saveView();
        }else if(record.key.startsWith('guideedit.book.owner-dock.')||
         record.key.startsWith('guideedit.book.owner-history.')||

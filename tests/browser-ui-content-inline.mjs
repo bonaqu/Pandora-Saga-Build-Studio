@@ -448,6 +448,21 @@ export async function runUIContentInlineSmoke(browser,base){
    'Вход открывает облачные билды.',null,{timeout:12000});
   assert.deepEqual(errors,[]);
   assert.equal(writes.filter(x=>x.key==='guideedit.book.ui.label.account-guest-lead').length,2);
+  // Account copy Undo must NOT recreate the login form or discard credentials.
+  const draftPassword=page.locator('#accountPanel .account-form input[type="password"]').first();
+  await draftPassword.fill('unsent-login-password');
+  const passwordNode=await draftPassword.elementHandle();
+  if(await page.locator('#ownerDock').evaluate(el=>el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
+  await page.locator('#ownerDock [data-owner-undo]').click();
+  await page.waitForFunction(()=>document.querySelector(
+   '#accountPanel [data-owner-copy-key="accountGuestLead"]')?.textContent===
+   'Вход открывает облачные билды.',null,{timeout:12000});
+  assert.equal(await passwordNode.evaluate(node=>node.isConnected),true,
+   'Undo must not reconstruct the account form');
+  assert.equal(await draftPassword.inputValue(),'unsent-login-password');
+  assert.equal(JSON.parse(values['guideedit.book.ui.label.account-guest-lead']).en,undefined);
+  await passwordNode.dispose();
   // Two explicit locale saves plus the additional live-switch RU regression.
   assert.equal(writes.filter(x=>x.key==='guideedit.book.ui.label.wiki').length,3);
   assert.equal(writes.filter(x=>x.key==='guideedit.book.wiki.item-field.pen').length,2);
@@ -564,7 +579,21 @@ export async function runUIContentInlineSmoke(browser,base){
    null,{timeout:15000});
   assert.equal(await page.locator('#detailContent .cloud-library-status').textContent(),
    'Облачная библиотека готова.');
-  console.log('Chromium cloud statuses: RU/EN D1 CAS, live key rebinding and no stale pencil');
+  // Undo the latest RU cloud status while its label is still mounted.
+  const statusNode=await cloudLabel.elementHandle();
+  if(await page.locator('#ownerDock').evaluate(el=>el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
+  await page.locator('#ownerDock [data-owner-undo]').click();
+  await page.waitForFunction(()=>document.querySelector(
+   '#detailContent .cloud-library-status')?.textContent==='Облачная библиотека подключена',
+   null,{timeout:15000});
+  assert.equal(await statusNode.evaluate(node=>node.isConnected),true,
+   'Undo must patch, not reconstruct, the cloud library');
+  assert.equal(await cloudLabel.getAttribute('data-owner-copy-key'),'statusCloudConnected');
+  assert.equal(JSON.parse(values[cloudKey]).ru,undefined);
+  assert.equal(JSON.parse(values[cloudKey]).en,'Cloud library checked and ready.');
+  await statusNode.dispose();
+  console.log('Chromium cloud statuses: RU/EN D1 CAS, Undo, live key rebinding, no remount');
 
   // Dynamic toast owner copy must follow locale switches even when a toast is
   // already open; runtime diagnostics must not become editable or be erased.

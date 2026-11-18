@@ -220,9 +220,20 @@ const statusCopy=Object.freeze({
  statusOwnerPullRequestBlocked:['Сначала исправь ошибку сохранения. PR пока недоступен.','Resolve the save error before creating a pull request.'],
  statusLibraryCloudPending:['Сохранено в браузере. Проверяем запись в облаке…','Saved in this browser. Checking the cloud copy…']
 });
-const literalKeys=Object.freeze(Object.fromEntries(
- [...Object.entries(accountCopy),...Object.entries(libraryCopy),...Object.entries(statusCopy)]
-  .map(([key,pair])=>[pair[0],key])));
+// Multiple independent controls can legitimately say "Open" or "Delete".
+ // Never infer which D1 key owns an ambiguous literal: those controls bind
+ // their semantic key explicitly. Unique authored phrases remain editable.
+const literalKeys=Object.freeze((()=>{
+ const found=Object.create(null),ambiguous=new Set();
+ for(const [key,pair] of [...Object.entries(accountCopy),
+  ...Object.entries(libraryCopy),...Object.entries(statusCopy)]){
+  const value=pair[0];
+  if(Object.hasOwn(found,value)&&found[value]!==key)ambiguous.add(value);
+  else found[value]=key;
+ }
+ for(const value of ambiguous)delete found[value];
+ return found;
+})());
 // Some static notifications are authored in the selected EN language before
 // being passed to the toast. Match their exact English defaults too; never
 // fall back to a fuzzy match against runtime server messages.
