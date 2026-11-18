@@ -209,10 +209,12 @@ export async function runGuestDraftContinuitySmoke(browser,base){
       response.request().method()==='POST'&&
       response.request().postDataJSON()?.entry?.name===savedAccountName)
       .catch(error=>{if(page.isClosed())return null;throw error}):null;
+    // Owner pencils mention the same caption in their aria-label. Use an
+    // exact role/name match so confirming a choice cannot click its pencil.
     await chooser.getByRole('button',{name:keepAccount?
      'Оставить героя аккаунта':(updatedSaveCaption||
       (ownerLang==='en'?'Save account character and continue guest':
-       'Сохранить героя аккаунта и продолжить гостевого'))}).click();
+       'Сохранить героя аккаунта и продолжить гостевого')),exact:true}).click();
     if(quotaFail){
      const toast=page.locator('#studioToast');
      await toast.waitFor({state:'visible'});
