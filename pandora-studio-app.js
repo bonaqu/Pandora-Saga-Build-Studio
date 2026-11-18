@@ -8029,11 +8029,17 @@ async function createShared(build,host){
   const field=h('input',{type:'text',readOnly:true,value:url,'aria-label':'Ссылка на билд'});
   const copy=h('button',{type:'button',class:'button-action primary',text:'Скопировать ссылку',
    onclick:async()=>{
-    if(!currentRequest())return;
+    // After a verified GET, the request leaves pendingShareRequests. Copying
+    // is a separate user action: validate the LIVE button and its owner,
+    // not the already completed network request's single-flight lock.
+    const visibleOwner=()=>copy.isConnected&&
+     window.PandoraAccountUI?.token()===viewerToken&&
+     libraryScopeId()===viewerOwner;
+    if(!visibleOwner())return;
     try{await navigator.clipboard.writeText(url);
-     if(sameViewer())copy.textContent=window.PandoraUILocale?.ui('✓ Скопировано',lang)||'✓ Скопировано';
+     if(visibleOwner())copy.textContent=window.PandoraUILocale?.ui('✓ Скопировано',lang)||'✓ Скопировано';
     }catch{
-     if(!currentRequest())return;
+     if(!visibleOwner())return;
      field.focus();field.select();
      copy.textContent=window.PandoraUILocale?.ui(
       'Ссылка выделена — скопируй через меню или Ctrl+C',lang)||
