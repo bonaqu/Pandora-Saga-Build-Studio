@@ -40,7 +40,16 @@ const strings={
  resetPoints:['↺ Сбросить вложенные очки','↺ Reset allocated points'],
  findSkill:['Найти умение','Find a skill'],all:['Все','All'],
  known:['Доступные','Available'],locked:['Недоступные','Unavailable'],
- closeDock:['✕ Закрыть','✕ Close'],heroBook:['Открыть книгу результатов героя','Open hero results book']
+ closeDock:['✕ Закрыть','✕ Close'],heroBook:['Открыть книгу результатов героя','Open hero results book'],
+ // Read-only release polling uses the same D1 author-copy keys as other UI.
+ // Security-sensitive account recovery and in-flight request guidance remain
+ // fixed in the update manager, outside editable editorial content.
+ siteUpdateNotice:['Новая версия опубликована. Текущий билд и положение на странице будут сохранены перед обновлением.','A new version is available. Your current build and page position will be saved before updating.'],
+ siteUpdateConnection:['Сначала восстанови игровые данные. Текущий билд останется здесь.','Reconnect to the game data before updating. Your build will stay here.'],
+ siteUpdateEditor:['Заверши правки и выйди из режима владельца перед обновлением.','Finish your edits and leave owner mode before updating.'],
+ siteUpdateFinish:['Сначала заверши текущее действие и закрой открытые окна.','Finish the current action and close open panels before updating.'],
+ siteUpdateApply:['Обновить','Update'],
+ siteUpdateLater:['Позже','Later']
 };
 // Owner-editable account copy: stable semantic keys, not user-input or server errors.
 // Runtime username, password, recovery code and security checks remain untouched.
@@ -380,6 +389,7 @@ function baseText(key,lang='ru'){
 // shortened. Otherwise a previously accepted D1 override could silently
 // disappear and a newly typed explanation would be rejected at 90 chars.
 function copyLimit(key){return key==='accountStorageWarning'||
+ (key.startsWith('siteUpdate')&&key!=='siteUpdateApply'&&key!=='siteUpdateLater')||
  key==='book-only-one-resistance-spell-can-be-active-sel-a8cce804'||Object.hasOwn(statusCopy,key)?350:
  Object.hasOwn(libraryCopy,key)&&libraryCopy[key][0].length>90?250:
  Object.hasOwn(bookCopy,key)&&bookCopy[key][0].length>90?350:90}
@@ -405,11 +415,22 @@ function ui(value,lang='ru'){
 function apply(lang='ru',doc=typeof document==='undefined'?null:document){
  if(!doc)return;
  const locale=lang==='en'?'en':'ru';
- doc.documentElement.lang=locale;
- for(const node of doc.querySelectorAll('[data-i18n]'))node.textContent=text(node.dataset.i18n,locale);
+ if(doc.documentElement.lang!==locale)doc.documentElement.lang=locale;
+ for(const node of doc.querySelectorAll('[data-i18n]')){
+  // Do not replace a living inline owner editor or dynamically editable
+  // descendants when the locale or a D1 override is refreshed.
+  if(node.matches?.('[contenteditable]')||
+   node.querySelector?.('[contenteditable]')||
+   node.nextElementSibling?.classList?.contains('ui-content-edit-host'))continue;
+  const next=text(node.dataset.i18n,locale);
+  if(node.textContent!==next)node.textContent=next;
+ }
  for(const [attribute,dataKey] of [['placeholder','i18nPlaceholder'],['aria-label','i18nAriaLabel'],['title','i18nTitle']])
-  for(const node of doc.querySelectorAll('[data-'+dataKey.replace(/[A-Z]/g,letter=>'-'+letter.toLowerCase())+']'))
-   {if(typeof node.setAttribute==='function'&&node.dataset?.[dataKey])node.setAttribute(attribute,text(node.dataset[dataKey],locale));}
+  for(const node of doc.querySelectorAll('[data-'+dataKey.replace(/[A-Z]/g,letter=>'-'+letter.toLowerCase())+']')){
+   if(typeof node.setAttribute!=='function'||!node.dataset?.[dataKey])continue;
+   const next=text(node.dataset[dataKey],locale);
+   if(node.getAttribute?.(attribute)!==next)node.setAttribute(attribute,next);
+  }
 }
 // Only called for newly rendered saved-build controls; not used on the game catalog.
 function localize(root,lang='ru'){
