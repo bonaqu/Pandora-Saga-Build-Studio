@@ -50,7 +50,7 @@ test('Soul search can reveal every compatible record without remounting or stale
  const equipment=read('pandora-studio-equipment-ui.js');
  const app=read('pandora-studio-app.js');
  assert.match(equipment,/const pageSize=80/);
- assert.match(equipment,/list\.insertBefore\(row,paging\.parentNode===list\?paging:null\)/,
+ assert.match(equipment,/if\(paging\.parentNode===list\)list\.insertBefore\(row,paging\)/,
   'Loading another page must not tear down previously mounted Soul editors');
  assert.match(equipment,/if\(shown<results\.length\)/,
   'The More button only appears when undisplayed Souls exist');
