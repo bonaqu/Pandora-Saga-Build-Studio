@@ -984,26 +984,6 @@ main{padding-top:10px}
 
 /* 2026.10.31.83 — separate race selection from equipped hero on narrow layouts.
    Keep the portrait fully visible, but do not stretch the source image to a tall panel. */
-.origin-vitals-buffs{margin:-5px 0 12px;border:1px solid #664a30;background:#20170f}
-.origin-vitals-buffs>summary{
- padding:7px 10px;cursor:pointer;color:#dfbe8e;
- font:600 11px/1.35 Manrope,Arial,sans-serif;
-}
-.origin-vitals-buffs[open]>summary{border-bottom:1px solid #664a30}
-.origin-buffs-fields{display:grid;gap:8px;padding:10px}
-.origin-buffs-fields label{
- display:grid;gap:4px;min-width:0;
- font:600 11px/1.35 Manrope,Arial,sans-serif;color:#dfc19a;
-}
-.origin-buffs-fields select{
- width:100%;min-width:0;border:1px solid #8d6a42;
- background:#211710;color:#f3d9aa;padding:7px 9px;
-}
-.origin-buffs-fields label.origin-buffs-checkbox{
- display:flex;align-items:center;gap:8px;cursor:pointer;
-}
-.origin-buffs-checkbox input{width:16px;height:16px;accent-color:#b58d55}
-.origin-buffs-hint{color:#b7a489;font-size:10px;line-height:1.45;padding:0 10px 9px}
 .workspace>.stage .portrait-frame>img#hero{
  width:100%;height:100%;object-fit:contain;object-position:center;
 }
@@ -1053,64 +1033,10 @@ main{padding-top:10px}
  .workspace>.stage .panel-heading .hint{font-size:10px}
 }
 
-/* Remaked-source secondary attributes belong to the existing collapsed buffs area. */
-.origin-attribute-buffs{
- display:grid;gap:7px;min-width:0;
- border-top:1px solid #6b4b31;padding:0 0 5px;
-}
-.origin-attribute-buffs>summary{
- cursor:pointer;padding:8px 2px;color:#e5cb9e;
- font:600 11px Manrope,Arial,sans-serif;
-}
-.origin-attribute-buffs>label{
- display:grid;gap:5px;padding:0 4px;min-width:0;
-}
-.origin-attribute-buffs>label.origin-buffs-checkbox{
- display:flex;align-items:flex-start;gap:8px;
-}
-.origin-attribute-buffs input[type=number]{
- width:100%;max-width:100%;min-width:0;
- border:1px solid #8d6a42;background:#211710;
- color:#f3d9aa;padding:7px 9px;
-}
-.origin-attribute-buffs .origin-buffs-hint{padding:4px}
-/* Low-noise readout for potion effectiveness (not maximum HP/MP). */
-.origin-potion-effect{
- display:flex;align-items:center;justify-content:space-between;
- gap:8px;padding:7px 9px;background:#281b13;
- border:1px solid #705239;font:600 11px Manrope,Arial,sans-serif;
- color:#dbc29c;
-}
-.origin-potion-effect strong{color:#f2d39a;font-size:15px;font-variant-numeric:tabular-nums}
-
-/* Remaked Modern verified potion preview, opt-in without affecting equipment. */
-.origin-potions{padding-top:6px;border-top:1px solid #65482d;min-width:0}
-.origin-potions>summary{padding:6px 4px;cursor:pointer;font:600 11px Manrope,Arial,sans-serif;color:#e4c18a}
-.origin-potions>.origin-buffs-checkbox{display:flex;align-items:center;gap:8px;margin:8px 4px}
-.origin-potion-results{display:grid;gap:3px;margin-top:8px;max-height:280px;overflow-y:auto;overscroll-behavior:contain}
-.origin-potion-row{
- display:flex;align-items:center;justify-content:space-between;gap:8px;
- min-width:0;padding:6px 9px;border:1px solid #513b2a;background:#211812;
- color:#dfc5a1;font:500 10px/1.3 Manrope,Arial,sans-serif;
-}
-.origin-potion-row span{min-width:0;overflow-wrap:anywhere}
-.origin-potion-row strong{flex:none;color:#f5d59f;font-size:12px;font-variant-numeric:tabular-nums}
-@media(max-width:460px){.origin-potion-row{padding:6px 7px}.origin-potion-row strong{font-size:11px}}
-
-
 /* Results book occupies the existing portrait canvas; rails and dimensions stay untouched. */
 .workspace>.stage .portrait-frame>img#hero:not(.admin-edit){cursor:pointer}
 .workspace>.stage .portrait-frame>img#hero:focus-visible{outline:3px solid #f9ce85;outline-offset:-7px}
-.portrait-book-open{position:absolute;z-index:4;right:12px;bottom:12px;
- border:1px solid #d0a469;border-radius:6px;background:linear-gradient(120deg,#38241be8,#1a130fef);
- color:#ffe0a9;padding:8px 13px;font:650 11px Manrope,Arial,sans-serif;cursor:pointer;
- box-shadow:0 6px 22px #0009;transition:background .15s,transform .15s}
-.portrait-book-open:hover{background:#624025;transform:translateY(-2px)}
-.portrait-book-open:focus-visible,.stage-attributes button:focus-visible,
-.stage-attributes select:focus-visible{outline:2px solid #ffd99c;outline-offset:2px}
-.portrait-frame.attributes>.portrait-book-open,
-.portrait-frame.picking>.portrait-book-open,
-.portrait-book-open[hidden]{display:none!important}
+.stage-attributes button:focus-visible,.stage-attributes select:focus-visible{outline:2px solid #ffd99c;outline-offset:2px}
 .stage-attributes{gap:8px;padding:12px 13px 13px;
  background:radial-gradient(ellipse at 30% 0%,#4e3321 0,#241913 43%,#17110d 100%);
  box-shadow:inset 0 0 0 2px #9a7547,inset 0 0 25px #08060499}
@@ -1229,9 +1155,9 @@ main{padding-top:10px}
 .stage-book-check:has(input:disabled){opacity:.55;cursor:not-allowed}
 @media(max-width:600px){.stage-attributes{padding:10px 8px}
  .stage-result-tile{padding:7px}.stage-result-tile strong{font-size:21px}
- .portrait-book-open{right:10px;bottom:10px}}
+}
 @media(prefers-reduced-motion:reduce){.stage-book-page{animation:none}
- .portrait-book-open{transition:none}}
+}
 
 /* Historical healing spell calculator in the same recovery chapter. */
 .stage-healing-spells{display:grid;gap:8px}
@@ -1343,21 +1269,21 @@ main{padding-top:10px}
 .path-milestone-preview img{width:30px;height:30px;object-fit:contain;flex:none;border:1px solid #755635}
 .path-milestone-preview b{display:block;font:600 11px Manrope,Arial,sans-serif;color:#ffdfb0}
 .path-milestone-preview small{display:block;font:10px/1.4 Manrope,Arial,sans-serif;color:#c7b08f;max-height:70px;overflow:hidden}
-.stage-book-check input[type=checkbox],.origin-buffs-checkbox input[type=checkbox],.build-card input[type=checkbox]{
+.stage-book-check input[type=checkbox],.build-card input[type=checkbox]{
  appearance:none;-webkit-appearance:none;position:relative;display:inline-grid;place-items:center;
  flex:0 0 18px;width:18px;height:18px;margin:0;border:1px solid #ac824f;
  border-radius:4px;background:linear-gradient(#231810,#100c09);
  box-shadow:inset 0 1px 2px #0008;cursor:pointer;vertical-align:middle
 }
-.stage-book-check input[type=checkbox]::after,.origin-buffs-checkbox input[type=checkbox]::after,.build-card input[type=checkbox]::after{
+.stage-book-check input[type=checkbox]::after::after,.build-card input[type=checkbox]::after{
  content:'✓';font:800 13px/1 Manrope,Arial,sans-serif;color:#25170c;opacity:0
 }
-.stage-book-check input[type=checkbox]:checked,.origin-buffs-checkbox input[type=checkbox]:checked,.build-card input[type=checkbox]:checked{
+.stage-book-check input[type=checkbox]:checked:checked,.build-card input[type=checkbox]:checked{
  background:linear-gradient(#f5d69c,#c99d5d);border-color:#ffe5b5
 }
-.stage-book-check input[type=checkbox]:checked::after,.origin-buffs-checkbox input[type=checkbox]:checked::after,.build-card input[type=checkbox]:checked::after{opacity:1}
-.stage-book-check input[type=checkbox]:focus-visible,.origin-buffs-checkbox input[type=checkbox]:focus-visible,.build-card input[type=checkbox]:focus-visible{outline:2px solid #ffdc9f;outline-offset:3px}
-.stage-book-check input[type=checkbox]:disabled,.origin-buffs-checkbox input[type=checkbox]:disabled{opacity:.5;cursor:not-allowed}
+.stage-book-check input[type=checkbox]:checked::after:checked::after,.build-card input[type=checkbox]:checked::after{opacity:1}
+.stage-book-check input[type=checkbox]:focus-visible:focus-visible,.build-card input[type=checkbox]:focus-visible{outline:2px solid #ffdc9f;outline-offset:3px}
+.stage-book-check input[type=checkbox]:disabled:disabled{opacity:.5;cursor:not-allowed}
 @media(max-width:620px){.wiki-page{padding:12px}.wiki-map-monsters{grid-template-columns:1fr}.path-milestone-tooltip{width:min(220px,70vw)}}
 
 /* Hero Book potion values are directly linked to current calculated character stats. */

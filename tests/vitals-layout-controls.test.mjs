@@ -5,6 +5,17 @@ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const html=read('index.html'),css=read('pandora-studio-theme.css'),app=read('pandora-studio-app.js');
 const book=read('pandora-studio-hero-book.js');
 
+test('removed buff UI leaves no dead Origin or portrait-button CSS',()=>{
+ for(const token of ['origin-vitals-buffs','origin-buffs-fields',
+  'origin-buffs-checkbox','origin-buffs-hint','origin-attribute-buffs',
+  'origin-potions','origin-potion-row','origin-potion-results',
+  'origin-potion-effect','portrait-book-open'])
+  assert.ok(!css.includes(token),'retired CSS must stay removed: '+token);
+ assert.match(css,/\.stage-attributes button:focus-visible/);
+ assert.match(css,/\.stage-book-check input\[type=checkbox\]/);
+ assert.match(css,/\.build-card input\[type=checkbox\]/);
+ assert.match(css,/\.workspace>\.stage \.portrait-frame>img#hero/);
+});
 test('all guild and vital controls belong to the live Book, not a hidden duplicate',()=>{
  assert.doesNotMatch(html,/id="legacyBuffControls"|id="originGuildHp"|id="originGuildMp"|id="originLifeSign"|id="originVitalsCoverage"/);
  const origin=html.slice(html.indexOf('id="originPanelStats"'),html.indexOf('<section class="stage panel"'));
