@@ -9030,8 +9030,16 @@ function refreshOwnerUI(){
     class:title?'owner-dock-group-title':'owner-dock-group-description',
     [title?'data-owner-group-heading':'data-owner-group-hint']:id,
     'data-owner-group-copy':key,text:ownerDockCopy(key)});
-   ownerCopyLabel(label,'owner-dock',key,pair[0],pair[1]);
-   const pencil=h('button',{type:'button',class:'owner-dock-group-pencil',
+   // D1 is committed before the plain-text input is restored. Update the
+   // discoverable pencil after both successful save and Esc/cancel; otherwise
+   // its accessible name keeps the old RU/EN text until a full UI refresh.
+   let pencil;
+   const syncPencil=()=>pencil?.setAttribute('aria-label',
+    (lang==='en'?'Edit caption: ':'Изменить надпись: ')+ownerDockCopy(key));
+   ownerCopyLabel(label,'owner-dock',key,pair[0],pair[1],{
+    onCommitted:syncPencil,onFinished:syncPencil
+   });
+   pencil=h('button',{type:'button',class:'owner-dock-group-pencil',
     'data-owner-group-edit-for':key,text:'✎',
     'aria-label':(lang==='en'?'Edit caption: ':'Изменить надпись: ')+ownerDockCopy(key),
     onclick:event=>{
