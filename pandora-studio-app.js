@@ -8779,7 +8779,11 @@ function refreshOwnerUI(){
  const dock=document.getElementById('ownerDock');
  if(!adminEditing||!adminToken){closeInlineEditor();dock?.remove();return}
  const count=Object.keys(override).length;
- const saveText=(ownerSaveState==='saving'||editIsSaving||wikiLabelPendingWrites>0||wikiRecordWriteQueue.size>0)?
+ // One source of truth for active/queued owner writes, drawer state, and
+ // action guards. A queued RU/EN patch is not the same as "saved".
+ const saving=ownerSaveInFlight();
+ const visibleSaveState=saving?'saving':ownerSaveState;
+ const saveText=saving?
   (lang==='en'?'Saving to Cloudflare D1…':'Сохраняю в Cloudflare D1…'):
   ownerSaveState==='error'?(lang==='en'?'Not saved: ':'Не сохранено: ')+
    (ownerSaveError||(lang==='en'?'server error':'ошибка сервера')):
@@ -8797,8 +8801,7 @@ function refreshOwnerUI(){
    const changes=window.PandoraOwnerBilingual?.pending(override)||[];
    const count=changes.reduce((sum,item)=>sum+item.fields.length,0);
    translations.hidden=count===0;
-   translations.disabled=!count||editIsSaving||wikiLabelPendingWrites>0||
-    wikiRecordWriteQueue.size>0||ownerSaveState==='saving';
+   translations.disabled=!count||saving;
    ownerDockPatchText(translations,ownerDockCopy('translations')+' · '+count);
   }
   for(const slot of root.querySelectorAll('.owner-dock-action-slot[data-owner-dock-key]')){
@@ -8844,10 +8847,10 @@ function refreshOwnerUI(){
     (lang==='en'?'Edit caption: ':'Изменить надпись: ')+ownerDockCopy(key));
   }
   const note=root.querySelector('[data-owner-footer-note]');
-  ownerDockPatchText(note,ownerSaveState==='error'?
-   (lang==='en'?'Resolve the save error first':'Сначала исправь ошибку сохранения'):
-   (ownerSaveState==='saving'||editIsSaving||wikiLabelPendingWrites>0||wikiRecordWriteQueue.size>0)?
+  ownerDockPatchText(note,saving?
    (lang==='en'?'Wait until saving finishes':'Дождись сохранения изменений'):
+   ownerSaveState==='error'?
+   (lang==='en'?'Resolve the save error first':'Сначала исправь ошибку сохранения'):
    (lang==='en'?'Saved edits stay on the site':'Сохранённые правки останутся на сайте'));
   for(const node of root.querySelectorAll('[data-owner-dock-static]')){
    if(!node.querySelector('.wiki-inline-input'))
@@ -8862,15 +8865,12 @@ function refreshOwnerUI(){
   const guide=root.querySelector('.owner-workflow-guide>summary');
   ownerDockPatchText(guide,ownerDockCopy('guide'));
   const state=root.querySelector('[data-owner-save-state]');
-  const visibleSaveState=(ownerSaveState==='saving'||editIsSaving||wikiLabelPendingWrites>0||
-   wikiRecordWriteQueue.size>0)?'saving':ownerSaveState;
   // Do not re-announce unchanged saving status on every UI refresh.
   if(state){
    ownerDockPatchText(state,saveText);
    ownerDockPatchData(state,'state',visibleSaveState);
   }
-  root.querySelector('[data-owner-undo]').disabled=!ownerEdits.length||editIsSaving||
-   wikiLabelPendingWrites>0||wikiRecordWriteQueue.size>0||ownerSaveState==='saving';
+  root.querySelector('[data-owner-undo]').disabled=!ownerEdits.length||saving;
   ownerDockPatchAttr(root,'aria-label',lang==='en'?
    'Site editor · automatically saved changes':'Редактор сайта · автоматическое сохранение');
   root.classList.toggle('owner-dock-collapsed',ownerDockCollapsed);
@@ -8970,8 +8970,7 @@ function refreshOwnerUI(){
    title:'Необязательный экспорт уже сохранённых изменений в GitHub'}),
   h('button',{type:'button',class:'owner-dock-finish',text:'Завершить',
    onclick:()=>{
-    if(ownerSaveState==='saving'||editIsSaving||wikiLabelPendingWrites>0||
-     wikiRecordWriteQueue.size>0){
+    if(ownerSaveInFlight()){
      showStudioToast(lang==='en'?'Wait for Cloudflare D1 to finish saving':
       'Дождись окончания сохранения в Cloudflare D1','warning');return}
     if(ownerSaveState==='error'){
@@ -9126,38 +9125,40 @@ function refreshVisibleUICopy(recordKey){
   if(locale.fieldKey(key)!==id||node.hidden||
    node.nextElementSibling?.classList?.contains('ui-content-edit-host'))continue;
   const value=locale.text(key,lang);
-  node.textContent=value;
+  ownerDockPatchText(node,value);
   const pencil=node.nextElementSibling;
   if(pencil?.dataset?.ownerCopyPencil===key)
-   pencil.setAttribute('aria-label',(lang==='en'?'Edit caption: ':'Изменить надпись: ')+value);
+   ownerDockPatchAttr(pencil,'aria-label',(lang==='en'?'Edit caption: ':'Изменить надпись: ')+value);
  }
  // The same routine handles save, Undo and owner reset. Do not replace
  // the card: update the live guide dataset from the committed RU/EN value.
  if(isLibrary){
   for(const button of document.querySelectorAll('#detailContent [data-build-action-hint]')){
    if(locale.fieldKey(button.dataset.buildActionHint)===id)
-    button.dataset.guideHint=locale.text(button.dataset.buildActionHint,lang);
+    ownerDockPatchData(button,'guideHint',locale.text(button.dataset.buildActionHint,lang));
   }
   // Editable labels are sibling spans, never an owner pencil nested inside a
   // real button. Preserve each button and the current hero/draft on CAS/Undo.
   for(const caption of document.querySelectorAll('#detailContent [data-build-action-label]')){
    const key=caption.dataset.buildActionLabel;
-   if(locale.fieldKey(key)===id)caption.textContent=locale.text(key,lang);
+   if(locale.fieldKey(key)===id)ownerDockPatchText(caption,locale.text(key,lang));
   }
   // Owner copy changes must not replace the live search input: preserve
   // its query, focus, filtering, viewport scroll and the active character.
   const search=document.querySelector('#detailContent [data-build-library-search]');
   if(search){
    if(id===locale.fieldKey('librarySearchInputLabel'))
-    search.setAttribute('aria-label',locale.text('librarySearchInputLabel',lang));
-   if(id===locale.fieldKey('librarySearchPlaceholder'))
-    search.placeholder=locale.text('librarySearchPlaceholder',lang);
+    ownerDockPatchAttr(search,'aria-label',locale.text('librarySearchInputLabel',lang));
+   if(id===locale.fieldKey('librarySearchPlaceholder')){
+    const value=locale.text('librarySearchPlaceholder',lang);
+    if(search.placeholder!==value)search.placeholder=value;
+   }
   }
   // Owner-edited library captions refresh in place: no lost search, sorting,
   // comparison state, cursor position or unsaved hero when D1 CAS completes.
   for(const button of document.querySelectorAll('#detailContent [data-library-action-copy]')){
    const key=button.dataset.libraryActionCopy;
-   if(locale.fieldKey(key)===id)button.textContent=locale.text(key,lang);
+   if(locale.fieldKey(key)===id)ownerDockPatchText(button,locale.text(key,lang));
   }
   const sort=document.querySelector('#detailContent .build-library-sort-select');
   if(sort){
@@ -9169,31 +9170,31 @@ function refreshVisibleUICopy(recordKey){
    ]){
     if(id===locale.fieldKey(key)){
      const option=[...sort.options].find(item=>item.getAttribute('value')===value);
-     if(option)option.textContent=locale.text(key,lang);
+     if(option)ownerDockPatchText(option,locale.text(key,lang));
     }
    }
   }
   if(id===locale.fieldKey('libraryBuildNameAria')){
    const name=document.querySelector('#detailContent .build-name-input');
-   name?.setAttribute('aria-label',locale.text('libraryBuildNameAria',lang));
+   ownerDockPatchAttr(name,'aria-label',locale.text('libraryBuildNameAria',lang));
   }
   if(id===locale.fieldKey('libraryDraftNameAria')){
    const draft=document.querySelector('#detailContent .new-build-choice input[type="text"]');
-   draft?.setAttribute('aria-label',locale.text('libraryDraftNameAria',lang));
+   ownerDockPatchAttr(draft,'aria-label',locale.text('libraryDraftNameAria',lang));
   }
   if(id===locale.fieldKey('libraryCompare')){
    const label=locale.text('libraryCompare',lang);
    for(const row of document.querySelectorAll('#detailContent .build-card-compare')){
     const caption=row.querySelector('[data-library-compare-copy]');
-    if(caption)caption.textContent=label;
+    ownerDockPatchText(caption,label);
     const checkbox=row.querySelector('input[type="checkbox"]');
     const name=row.closest('.build-card')?.querySelector('.build-card-title')?.textContent||'';
-    if(checkbox)checkbox.setAttribute('aria-label',label+' '+name);
+    ownerDockPatchAttr(checkbox,'aria-label',label+' '+name);
    }
   }
   for(const state of document.querySelectorAll('#detailContent [data-build-library-state-copy]')){
    const key=state.dataset.buildLibraryStateCopy;
-   if(locale.fieldKey(key)===id)state.textContent=locale.text(key,lang);
+   if(locale.fieldKey(key)===id)ownerDockPatchText(state,locale.text(key,lang));
   }
  }
 }
@@ -9205,14 +9206,14 @@ function refreshVisibleOriginCopy(recordKey){
   const key=node.dataset.originCopyKey;
   if(originGuideKey(key)!==wanted||node.dataset.originEditing==='1'||
    node.querySelector?.('.wiki-inline-input,[data-owner-editor]'))continue;
-  node.textContent=originCopy(key,node.dataset.originCopyRu,node.dataset.originCopyEn);
+  ownerDockPatchText(node,originCopy(key,node.dataset.originCopyRu,node.dataset.originCopyEn));
  }
  for(const pencil of document.querySelectorAll('[data-origin-edit-for]')){
   const key=pencil.dataset.originEditFor;
   if(originGuideKey(key)!==wanted)continue;
   const caption=[...document.querySelectorAll('[data-origin-copy-key]')]
    .find(node=>node.dataset.originCopyKey===key);
-  if(caption)pencil.setAttribute('aria-label',
+  if(caption)ownerDockPatchAttr(pencil,'aria-label',
    (lang==='en'?'Edit caption: ':'Изменить надпись: ')+caption.textContent);
  }
 }
@@ -9226,7 +9227,7 @@ function refreshVisibleOwnerCopy(recordKey){
   const {ownerCopySection:section,ownerCopyId:id,ownerCopyRu:ru,ownerCopyEn:en}=node.dataset;
   if(ownerCopyKey(section,id)!==key||node.querySelector('.wiki-inline-input'))continue;
   const value=ownerCopy(section,id,ru,en);
-  node.textContent=value;
+  ownerDockPatchText(node,value);
   // Reset/Undo of an editorial hover hint must update the already-mounted
   // tooltip target rather than leaving the previous text in its dataset.
   if(section==='path'){
@@ -9248,17 +9249,17 @@ function refreshVisibleOwnerCopy(recordKey){
   }
   if(section==='owner-dialog'){
    const action=node.closest('.owner-dialog-action-editor')?.querySelector('.owner-dialog-action');
-   if(action)action.textContent=value;
+   ownerDockPatchText(action,value);
   }
   if(section==='honor-view'){
    const filterCaption=node.parentElement?.querySelector('.wiki-honor-filter-caption');
-   if(filterCaption)filterCaption.textContent=value;
+   ownerDockPatchText(filterCaption,value);
    const pencil=node.parentElement?.querySelector('.wiki-honor-copy-pencil');
    pencil?.setAttribute('aria-label',(lang==='en'?'Edit caption: ':'Изменить подпись: ')+value);
   }
   if(section==='catalog-sync'&&id.startsWith('hint'))
    for(const target of document.querySelectorAll('[data-guide-owner-key]'))
-    if(target.dataset.guideOwnerKey===id)target.dataset.guideHint=value;
+    if(target.dataset.guideOwnerKey===id)ownerDockPatchData(target,'guideHint',value);
  }
  // Attribute/text copy changes patch the existing mounted control only:
  // never replace an active search field, picker, selection or character.
@@ -9300,8 +9301,8 @@ function refreshVisibleOwnerCopy(recordKey){
    if(bindings['aria-label']?.key!==headingKey||
       bindings['aria-label']?.section!=='equipment')continue;
    bindings['aria-label'].suffix=suffix;
-   button.dataset.ownerInterfaceBindings=JSON.stringify(bindings);
-   button.setAttribute('aria-label',
+   ownerDockPatchData(button,'ownerInterfaceBindings',JSON.stringify(bindings));
+   ownerDockPatchAttr(button,'aria-label',
     ownerCopy('equipment',headingKey,titleRu,titleEn)+suffix);
    const pencil=button.parentElement?.querySelector('.stage-control-pencil');
    pencil?.setAttribute('aria-label',(lang==='en'?'Edit caption: ':'Изменить надпись: ')+
@@ -9314,14 +9315,14 @@ function refreshVisibleOwnerCopy(recordKey){
   for(const button of document.querySelectorAll('#stagePicker [data-soul-empty-slot]')){
    const number=button.dataset.soulEmptySlot;
    const suffix=' '+number+': '+ownerCopy('equipment','pickerEmptySoul','пусто','empty');
-   button.dataset.ownerInterfaceSuffix=suffix;
+   ownerDockPatchData(button,'ownerInterfaceSuffix',suffix);
    let bindings={};
    try{bindings=JSON.parse(button.dataset.ownerInterfaceBindings||'{}')}catch{}
    if(bindings['aria-label']){
     bindings['aria-label'].suffix=suffix;
-    button.dataset.ownerInterfaceBindings=JSON.stringify(bindings);
+    ownerDockPatchData(button,'ownerInterfaceBindings',JSON.stringify(bindings));
    }
-   button.setAttribute('aria-label',
+   ownerDockPatchAttr(button,'aria-label',
     ownerCopy('equipment','pickerSoulSlotAria','Слот души','Soul slot')+suffix);
   }
  }
@@ -9331,14 +9332,14 @@ function refreshVisibleOwnerCopy(recordKey){
    'Поиск совместимой души','Find a compatible Soul');
   for(const input of document.querySelectorAll(
    '#stagePicker [data-equipment-copy-placeholder="soulSearch"]'))
-   input.placeholder=placeholder;
+   if(input.placeholder!==placeholder)input.placeholder=placeholder;
  }
  if(key==='equipment.socket-overflow-hint'){
   const hint=ownerCopy('equipment','socketOverflowHint',
    'Сначала извлеките души из лишних слотов',
    'Remove Souls from extra sockets first');
   for(const button of document.querySelectorAll('#stagePicker [data-socket-capacity]'))
-   if(button.disabled)button.title=hint;
+   if(button.disabled&&button.title!==hint)button.title=hint;
  }
 }
 function refreshVisibleProfileCopy(){
@@ -9346,10 +9347,10 @@ function refreshVisibleProfileCopy(){
   if(node.querySelector('.wiki-inline-input'))continue;
   const key=node.dataset.profileCopyKey;
   const value=ownerCopy('profile',key,node.dataset.profileCopyRu,node.dataset.profileCopyEn);
-  node.textContent=value;
+  ownerDockPatchText(node,value);
   const pencil=node.nextElementSibling;
   if(pencil?.dataset.profileCopyPencil===key)
-   pencil.setAttribute('aria-label',(lang==='en'?'Rename: ':'Переименовать: ')+value);
+   ownerDockPatchAttr(pencil,'aria-label',(lang==='en'?'Rename: ':'Переименовать: ')+value);
   const id=key.startsWith('field-')?'ps-profile-field-'+key.slice(6):
    key==='bio-label'||key==='bio-placeholder'?'ps-profile-description':null;
   const input=id?document.getElementById(id):null;
