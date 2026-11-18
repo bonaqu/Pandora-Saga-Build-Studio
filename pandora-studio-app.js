@@ -123,6 +123,7 @@ function saveView(){try{sessionStorage.setItem(VIEW_KEY,JSON.stringify({
  tab:activeTab,open:!!document.getElementById('detailPanel')?.classList.contains('is-open'),
  page:Math.round(window.scrollY),inner:document.getElementById('detailContent')?.scrollTop||0,
  slot:selectedSlot,slotView:stageSlotView,slotOpen:stageSlotPickerOpen,attributes:stageAttributesPage,
+  slotQuery:stageSlotQuery,slotShown:stageSlotShown,slotOnlyAvailable:stagePickerOnlyAvailable,
  expandedClasses:[...expandedClassKeys],classTreeTouched,origin:originActive,jobPathKey,pathPage:heroPathPage,
  soulQuery:stageSoulQuery,soulShown:stageSoulShown,wikiLayout:wikiItemLayout,wikiSkillFilter,
  skillGroup:selectedSkillGroup,expandedBranch:inlineBranchId,groupTouched:pathGroupTouched,
@@ -219,7 +220,11 @@ function selectActiveBuild(id){
  try{if(id)sessionStorage.setItem(ACTIVE_BUILD_KEY,id);else sessionStorage.removeItem(ACTIVE_BUILD_KEY)}catch{}
  try{window.PandoraBuildScope.setOwned(localStorage,libraryScopeId(),ACTIVE_BUILD_KEY,id)}catch{}
 }
-let racePreviewIndex=selectedPortraitIndex(state.race,state.gender),stageSlotPickerOpen=false,stageSlotQuery='',stageSlotShown=48,stagePickerOnlyAvailable=false,
+let racePreviewIndex=selectedPortraitIndex(state.race,state.gender),stageSlotPickerOpen=false,
+ stageSlotQuery=typeof bootView.slotQuery==='string'?bootView.slotQuery.slice(0,120):'',
+ stageSlotShown=Number.isInteger(bootView.slotShown)&&bootView.slotShown>=48&&
+  bootView.slotShown<=10000?bootView.slotShown:48,
+ stagePickerOnlyAvailable=bootView.slotOnlyAvailable===true,
 inlineBranchId=bootView.groupTouched&&bootView.expandedBranch===''?'':(
  typeof bootView.expandedBranch==='string'&&window.PandoraGameNavigation.all.has(bootView.expandedBranch)?
  bootView.expandedBranch:null),
@@ -1570,7 +1575,7 @@ function openStageEquipmentSlot(index,view='auto'){
  stageSoulScrollTop=0;stageSlotShown=48;
  stageSlotView=view==='auto'?
   (shared||!state.equipment?.[index]?'choose':'details'):view;
- stageSlotPickerOpen=true;renderSlotRails();renderStagePicker(view==='choose');
+ stageSlotPickerOpen=true;renderSlotRails();renderStagePicker(view==='choose');saveView();
 }
 function unequipStageEquipmentSlot(index){
  const equipped=state.equipment?.[index],removed=equippedRecord(index);
@@ -1988,7 +1993,7 @@ function focusSelectedSlot(){
 }
 function closeStagePicker(focusSlot=true){
  if(!stageSlotPickerOpen)return;
- stageSlotPickerOpen=false;renderSlotRails();renderStagePicker();
+ stageSlotPickerOpen=false;renderSlotRails();renderStagePicker();saveView();
  if(focusSlot)focusSelectedSlot();
 }
 // A compact, shared way to fill neighbouring slots. It never equips anything:
@@ -2209,25 +2214,17 @@ function renderStagePicker(focusSearch=false){
    itemName(a).localeCompare(itemName(b),lang==='en'?'en':'ru');
  }):[];
  onlyAvailable.hidden=!records.some(rec=>Number(rec.level||1)>state.level);
- const draw=()=>{
-  list.replaceChildren();
-  const matches=records.filter(rec=>!stagePickerOnlyAvailable||
-   Number(rec.level||1)<=state.level).filter(rec=>searchWords([itemName(rec),
-   catalogSource?.items?.[String(rec.id)]?.name,
-   officialEnglish?.items?.[String(rec.id)]?.n].filter(Boolean).join(' '),stageSlotQuery));
-  // Do not replace the editable copy nodes during result refresh.
-  matchedCount.textContent=String(matches.length);
-  shownCount.textContent=String(Math.min(matches.length,stageSlotShown));
-  if(!catalog.live)list.append(bindOwnerInterfaceText(h('p',{class:'muted'}),
-   'equipment','pickerLoading','Каталог ещё не загружен.','The catalog is still loading.'));
-  else if(!Number.isInteger(state.race)||!Number.isInteger(state.job))
-   list.append(bindOwnerInterfaceText(h('p',{class:'muted'}),
-    'equipment','pickerOriginFirst','Сначала выберите расу и профессию.',
-    'Choose a race and class first.'));
-  else if(!matches.length)list.append(bindOwnerInterfaceText(h('p',{class:'muted'}),
-   'equipment','pickerNoMatches','Нет совместимых предметов. Измени поиск или слот.',
-   'No compatible items. Try another search or slot.'));
-  for(const rec of matches.slice(0,stageSlotShown)){
+ // Names and verified translations are stable for this picker instance.
+ // Cache one bilingual search string per record, not per input keystroke.
+ const searchText=new Map(records.map(rec=>[rec,[itemName(rec),
+  catalogSource?.items?.[String(rec.id)]?.name,
+  officialEnglish?.items?.[String(rec.id)]?.n].filter(Boolean).join(' ')]));
+ let matches=[],shown=0;
+ // Search/filter changes reset the results. More only APPENDS new buttons:
+ // old icons, hover previews and keyboard focus stay mounted.
+ const appendRows=(from,to)=>{
+  let firstNew=null;
+  for(const rec of matches.slice(from,to)){
    const selected=!isSharedPants&&String(equipped?.id)===String(rec.id);
    const future=Number(rec.level)>state.level;
    const btn=h('button',{type:'button','data-stage-choice':String(rec.id),
@@ -2275,15 +2272,53 @@ function renderStagePicker(focusSearch=false){
     (item,kind)=>itemIcon(item,kind==='soul'?'souls':'items'),
     'item',{slot:key,refinement:selected?window.PandoraEquipmentPlan.refinementValue(
      state.refinements,selectedSlot,equipped):0,tables:gameTables});
+   if(!firstNew)firstNew=btn;
   }
-  more.hidden=matches.length<=stageSlotShown;
-  moreCount.textContent=String(Math.max(0,matches.length-stageSlotShown));
+  return firstNew;
+ };
+ const updateCounts=()=>{
+  matchedCount.textContent=String(matches.length);
+  shownCount.textContent=String(shown);
+  more.hidden=shown>=matches.length;
+  moreCount.textContent=String(Math.max(0,matches.length-shown));
+ };
+ const draw=()=>{
+  list.replaceChildren();
+  matches=records.filter(rec=>!stagePickerOnlyAvailable||
+   Number(rec.level||1)<=state.level).filter(rec=>searchWords(
+    searchText.get(rec),stageSlotQuery));
+  shown=Math.min(matches.length,stageSlotShown);
+  if(!catalog.live)list.append(bindOwnerInterfaceText(h('p',{class:'muted'}),
+   'equipment','pickerLoading','Каталог ещё не загружен.','The catalog is still loading.'));
+  else if(!Number.isInteger(state.race)||!Number.isInteger(state.job))
+   list.append(bindOwnerInterfaceText(h('p',{class:'muted'}),
+    'equipment','pickerOriginFirst','Сначала выберите расу и профессию.',
+    'Choose a race and class first.'));
+  else if(!matches.length)list.append(bindOwnerInterfaceText(h('p',{class:'muted'}),
+   'equipment','pickerNoMatches','Нет совместимых предметов. Измени поиск или слот.',
+   'No compatible items. Try another search or slot.'));
+  appendRows(0,shown);
+  updateCounts();
  };
  onlyAvailable.querySelector('input').addEventListener('change',event=>{
-  stagePickerOnlyAvailable=event.target.checked;stageSlotShown=48;draw();
+  stagePickerOnlyAvailable=event.target.checked;stageSlotShown=48;draw();saveView();
  });
- search.addEventListener('input',()=>{stageSlotQuery=search.value;stageSlotShown=48;draw()});
- more.addEventListener('click',()=>{stageSlotShown+=48;draw()});
+ search.addEventListener('input',()=>{
+  stageSlotQuery=search.value.slice(0,120);stageSlotShown=48;draw();saveView();
+ });
+ more.addEventListener('click',()=>{
+  if(shown>=matches.length)return;
+  const focused=document.activeElement===more,previous=shown;
+  shown=Math.min(matches.length,shown+48);
+  stageSlotShown=shown;
+  const firstNew=appendRows(previous,shown);
+  updateCounts();saveView();
+  // Hidden More must hand focus to the new results, not to the page body.
+  if(focused&&more.hidden){
+   firstNew?.focus({preventScroll:true});
+   firstNew?.scrollIntoView({block:'nearest'});
+  }
+ });
  root.append(top);
  appendStageSlotNavigation(root);
  if(outfitNote)root.append(outfitNote);
@@ -10886,7 +10921,7 @@ $('originTabs').onclick=event=>{
 };
 $('nav').onclick=e=>{const b=e.target.closest('[data-tab]');if(b)changeTab(b.dataset.tab)};$('level').oninput=e=>{state.level=Math.max(1,Math.min(window.PandoraLevelProgression.maxLevel(),Number(e.target.value)||1));persist();render()};$('genderF').onclick=()=>{if(!window.PandoraUIPlanner.raceHasGender(races,state.race))return;state.gender=0;persist();render()};$('genderM').onclick=()=>{if(!window.PandoraUIPlanner.raceHasGender(races,state.race))return;state.gender=1;persist();render()};$('swapGender').onclick=()=>{if(!window.PandoraUIPlanner.raceHasGender(races,state.race))return;state.gender=1-state.gender;persist();render()};$('jumpEquipment').onclick=()=>{
  selectedSlot=0;stageSlotQuery='';stageSlotView=state.equipment?.[0]?'details':'choose';
- stageSlotPickerOpen=true;renderSlotRails();renderStagePicker(true);
+ stageSlotPickerOpen=true;renderSlotRails();renderStagePicker(true);saveView();
 };
 if($('stageAttributeToggle'))$('stageAttributeToggle').onclick=()=>{
  stageAttributesPage=stageAttributesPage?null:'summary';renderStageAttributes();saveView()
