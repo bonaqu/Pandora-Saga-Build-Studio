@@ -40,6 +40,20 @@ test('read-only live D1 checkpoint accepts only the current published snapshot a
  assert.equal(gate.digest({b:'2',a:'1'}),gate.digest({a:'1',b:'2'}));
 });
 
+test('nested JSON key order alone never claims a new D1 snapshot',async()=>{
+ const expected={...overrides,layout:{ru:{heading:'Герой',label:'Книга'},en:{label:'Book',heading:'Hero'}}};
+ const responseCopy={layout:{en:{heading:'Hero',label:'Book'},ru:{label:'Книга',heading:'Герой'}},...overrides};
+ assert.equal(gate.digest(expected),gate.digest(responseCopy));
+ const mock=source({copy:responseCopy});
+ const checked=await gate.inspect({api,fetcher:mock.fetcher,expectedSnapshot:'d1-1',
+  expectedOverrides:expected,expectedCounts:counts});
+ assert.equal(checked.status,'ready');
+ const changed=source({copy:{...responseCopy,layout:{...responseCopy.layout,
+  ru:{...responseCopy.layout.ru,heading:'Другой герой'}}}});
+ assert.equal((await gate.inspect({api,fetcher:changed.fetcher,expectedSnapshot:'d1-1',
+  expectedOverrides:expected,expectedCounts:counts})).status,'changed');
+});
+
 test('different published D1 snapshot or translated copy requires a safe reload',async()=>{
  assert.equal((await verify(source({snapshot:'d1-2'}))).status,'changed');
  assert.equal((await verify(source({copy:{...overrides,'guideedit.book.example':'new'}}))).status,'changed');
