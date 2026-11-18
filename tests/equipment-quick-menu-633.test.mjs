@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const app=read('pandora-studio-app.js');
+const ui=read('pandora-studio-equipment-ui.js');
 const css=read('pandora-studio-equipment-tooltip.css');
 
 test('worn gear context actions reuse picker and one shared unequip lifecycle',()=>{
@@ -11,17 +12,20 @@ test('worn gear context actions reuse picker and one shared unequip lifecycle',(
  for(const action of ['properties','souls','replace','remove'])
   assert.match(app,new RegExp("'"+action+"'"));
  assert.match(app,/oncontextmenu:event=>\{\s*event\.preventDefault\(\)/);
- assert.match(app,/\['choose','Выбрать вещь','Choose item',false\]/);
+ assert.match(ui,/choose:Object\.freeze\(\['Выбрать вещь','Choose item'\]\)/);
+ assert.match(ui,/replace:Object\.freeze\(\['Выбрать другую вещь','Choose another item'\]\)/);
+ assert.match(app,/PandoraStageItemUI\.actionLabels\[id\]/);
  assert.match(app,/PandoraStageItemUI\.actionIcon\(id\)/);
  assert.match(app,/const actions=hasItem\?/);
-  assert.match(app,/const actions=hasItem\?\[\s*\['replace'[\s\S]*?\['properties'[\s\S]*?\['souls'[\s\S]*?\['remove'/);
+ assert.match(app,/const actions=hasItem\?\['replace','properties','souls','remove'\]:\['choose'\]/);
  assert.match(app,/openStageGearMenu\(i,sourceSlot,event,button\)/);
  assert.match(app,/function unequipStageEquipmentSlot\(index\)/);
  assert.match(app,/clearChangedEquipmentSouls\(state,previousEquipment\)/);
  assert.match(app,/unequipStageEquipmentSlot\(sourceSlot\)/);
  assert.match(app,/else unequipStageEquipmentSlot\(selectedSlot\)/);
  assert.match(app,/id==='replace'\|\|id==='choose'\?index:sourceSlot/);
- assert.match(app,/canManageSouls=Boolean\(record&&window\.PandoraEquipmentPlan\.canSocket/);
+ assert.match(app,/canOpenSoulTab=Boolean\(record&&window\.PandoraEquipmentPlan\.supportsSoulSlot/);
+ assert.match(app,/const disabled=id==='souls'&&!canOpenSoulTab/);
 });
 test('context menu is accessible, localized, and dismissible without touching empty slots',()=>{
  assert.match(app,/role:'menu'/);

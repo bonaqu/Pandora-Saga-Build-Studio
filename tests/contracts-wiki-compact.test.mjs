@@ -196,9 +196,11 @@ test('README stays a compact project entry point, with historical notes preserve
 });
 test('responsive gear tabs keep no-soul and soul variants balanced',()=>{
  const css=read('pandora-studio-workbench-guidance.css');
- assert.match(css,/\.stage-rich-tabs\.no-souls\{grid-template-columns:repeat\(2/);
+ assert.match(css,/\.stage-rich-tabs\.no-souls\{grid-template-columns:minmax\(0,1\.45fr\) minmax\(0,1fr\)/);
  assert.match(css,/\.stage-rich-settings-group\{display:grid;grid-template-columns:minmax\(0,\.76fr\) minmax\(0,1\.24fr\)/);
  assert.match(css,/scrollbar-color:#95734c transparent/);
+ assert.match(css,/@media\(max-width:520px\)\{/);
+ assert.match(css,/\.stage-rich-tabs\.has-souls\{grid-template-columns:minmax\(0,1fr\);gap:5px\}/);
  assert.match(css,/\.stage-rich-tabs\{gap:8px;align-items:stretch;padding-inline-end:8px/);
  assert.doesNotMatch(css,/\.stage-rich-choose-group\{[^}]*border-right:1px/);
 });
