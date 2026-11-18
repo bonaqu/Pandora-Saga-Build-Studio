@@ -8,6 +8,9 @@ on:
       - Live Pages and Worker readiness (on release or manual)
       - Verified catalog fallback auto-merge
     types: [completed]
+    # Only published branch runs can initiate a trusted original-icon recovery.
+    branches:
+      - bonaqu_projects
   workflow_dispatch:
 
 permissions:
