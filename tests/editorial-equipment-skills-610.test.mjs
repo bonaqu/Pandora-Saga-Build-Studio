@@ -65,5 +65,5 @@ test('equipment and Path Undo only refresh copy without remounting user UI',()=>
  assert.match(app,/key\.startsWith\('book\.equipment\.'\)/);
  assert.match(app,/key\.startsWith\('book\.path\.'\)/);
  assert.match(app,/node\.querySelector\('\.wiki-inline-input'\)/);
- assert.match(app,/if\(button\.disabled\)button\.title=hint/);
+ assert.match(app,/if\(button\.disabled&&button\.title!==hint\)button\.title=hint/);
 });
