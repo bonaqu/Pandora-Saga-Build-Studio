@@ -19,19 +19,24 @@ async function get(url,options={},config={}){
  const parent=options?.signal||null;
  for(let attempt=1;attempt<=attempts;attempt++){
   if(parent?.aborted)throw parent.reason||Error('Request aborted');
+  // Each attempt owns its own deadline. The outer deadline takes priority.
+  const clock=AbortSignal.timeout(timeoutMs);
+  const signal=parent?AbortSignal.any([parent,clock]):clock;
+  let response;
   try{
-   // Each new attempt owns a fresh timeout; an outer startup/checkpoint
-   // deadline still takes priority and cannot be bypassed by retries.
-   const clock=AbortSignal.timeout(timeoutMs);
-   const signal=parent?AbortSignal.any([parent,clock]):clock;
-   const response=await fetcher(url,{...options,method:'GET',signal});
-   if(!response||typeof response.ok!=='boolean')
-    throw Error('Invalid public GET response');
-   if(response.ok||!transient.has(response.status)||attempt===attempts)
-    return response;
+   response=await fetcher(url,{...options,method:'GET',signal});
   }catch(error){
+   // Only a transport failure can be retried. Parent cancellation is final.
    if(parent?.aborted||attempt===attempts)throw error;
+   await pause(attempt*350);
+   continue;
   }
+  // A broken fetch adapter is a contract failure, not a transient HTTP error.
+  // Retrying it would conceal the defect and multiply unnecessary D1 reads.
+  if(!response||typeof response.ok!=='boolean')
+   throw Error('Invalid public GET response');
+  if(response.ok||!transient.has(response.status)||attempt===attempts)
+   return response;
   // Back off rather than multiplying short-lived 429/503 bursts after F5.
   // No owner/account writes are ever sent by this helper.
   await pause(attempt*350);
