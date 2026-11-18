@@ -1702,7 +1702,9 @@ export async function runInlineMilestonesSmoke(browser,base){
    const notch=editor.querySelector('.path-current-notch');
    const notchRect=notch.getBoundingClientRect();
    return {height:row.getBoundingClientRect().height,duplicatePoints,exactControls,
-    editorTop:editor.getBoundingClientRect().top,
+    // Browser scrolling changes the absolute viewport top, not the layout
+    // relationship between the row and the expanded track beneath it.
+    editorGap:editor.getBoundingClientRect().top-row.getBoundingClientRect().bottom,
     extraMasteryLine:row.querySelector('span')?.textContent||'',
     points:row.querySelector('.count')?.textContent||'',
     notchX:notchRect.left+notchRect.width/2,
@@ -1727,8 +1729,8 @@ export async function runInlineMilestonesSmoke(browser,base){
    'Blue branch level grows but the class limit remains 90');
   assert.ok(stable.every(x=>Math.abs(x.height-stable[0].height)<=1),
    'Mastery changes must NOT increase the branch row height: '+JSON.stringify(stable));
-  assert.ok(stable.every(x=>Math.abs(x.editorTop-stable[0].editorTop)<=1),
-   'The expanded mastery track must NOT jump vertically: '+JSON.stringify(stable));
+  assert.ok(stable.every(x=>Math.abs(x.editorGap-stable[0].editorGap)<=1),
+   'The expanded mastery track must NOT jump relative to its row: '+JSON.stringify(stable));
   assert.ok(stable.every(x=>x.extraMasteryLine===''),
    'Mastery lives in the green numeric field, not an inserted header row');
   assert.ok(stable.every(x=>Math.abs(x.notchX-x.expectedX)<=1.25),

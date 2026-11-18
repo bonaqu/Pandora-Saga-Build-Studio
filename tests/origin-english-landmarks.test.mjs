@@ -46,7 +46,7 @@ test('EN race image and portrait arrow descriptions follow the chosen race/gende
 
 test('calculated origin vitals use locale-specific HP/MP announcements',()=>{
  const from=app.indexOf('function renderOriginVitals(calculated=undefined){');
- const to=app.indexOf('\nfunction renderVitalsEnhancements(calculated=undefined){',from);
+ const to=app.indexOf('\nfunction setVitalsEnhancement(key,value){',from);
  assert.ok(from>=0&&to>from);
  const code=app.slice(from,to);
  assert.match(code,/lang==='en'\?'HP '\+calculated\.hp/);

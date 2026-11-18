@@ -43,14 +43,14 @@ test('guild and potion parameters reject out-of-range values',()=>{
  assert.ok(make({proelium:true,proeliumPotency:101}));
  assert.ok(make({proelium:true,proeliumPotency:-5}));
 });
-test('Origin contains optional nested controls without adding visible top-level clutter',()=>{
- for(const id of ['originGuildAll','originHonorTitle'])
-  assert.match(html,new RegExp('id="'+id+'"'));
- assert.doesNotMatch(html,/id="originProelium"|id="originProeliumPotency"/);
- assert.match(html,/<details class="origin-attribute-buffs">/);
+test('Guild and Honor parameters use source models, not retired Origin controls',()=>{
+ const book=get('pandora-studio-hero-book.js');
+ assert.doesNotMatch(html,/id="originGuildAll"|id="originHonorTitle"|class="origin-attribute-buffs"/);
+ for(const key of ['guildAll','guildHp','guildMp','guildHealing','honorTitle'])
+  assert.ok(book.includes("'"+key+"'"),'Book source: '+key);
+ assert.match(book,/guildChoice\(activeGroup,key,idx,id\)/);
  assert.match(source,/attributeBuffs:effectiveGuildBuffs\.attributes/);
  assert.match(source,/guildPassiveAtLevel\(guildLevel\)/);
  assert.match(source,/safe\.attributeBuffs\.honorCuriosity=rawAttributes\.honorCuriosity===true/);
  assert.match(source,/safe\.attributeBuffs\.proelium=rawAttributes\.proelium===true/);
 });
-

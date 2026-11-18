@@ -60,12 +60,13 @@ test('honor invalid input is rejected, never coerced from remote strings',()=>{
  assert.equal(fixture({honorTitle:'11'}),null);
  assert.equal(fixture({honorTitle:-1}),null);
 });
-test('UI exposes exclusive title and potion preview, no old Honor checkbox',()=>{
+test('Hero Book owns exclusive Honor, potion preview and scoped persisted selections',()=>{
  const html=read('index.html'),app=read('pandora-studio-app.js');
- assert.match(html,/id="originHonorTitle"/);
- assert.match(html,/id="originPotionRecovery"/);
- assert.doesNotMatch(html,/id="originRuneJoEun"/);
- assert.doesNotMatch(html,/id="originHonorCuriosity"/);
- assert.match(app,/setAttributeBuff\('honorTitle',event\.target\.value\)/);
+ const book=read('pandora-studio-hero-book.js');
+ assert.doesNotMatch(html,/id="originHonorTitle"|id="originPotionRecovery"|id="originRuneJoEun"|id="originHonorCuriosity"/);
+ assert.match(book,/data-book-setting="honorTitle"/);
+ assert.match(book,/'data-book-setting':'potionEffectsEnabled'/);
+ assert.match(book,/onBuff\('potionEffectsEnabled',event\.target\.checked\)/);
  assert.match(app,/safe\.attributeBuffs\.honorTitle=rawAttributes\.honorTitle/);
+ assert.match(app,/onBuff:\(key,value\)=>setAttributeBuff\(key,value\)/);
 });

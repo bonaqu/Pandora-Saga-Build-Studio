@@ -129,7 +129,6 @@ function saveView(){try{sessionStorage.setItem(VIEW_KEY,JSON.stringify({
  pathScroll:document.getElementById('skillBranches')?.scrollTop||0
  }))}catch{}}
 
-
 const API='https://ps-build-studio-cloud.bonaqu.workers.dev';
 const STATS=['Выносливость','Сила','Ловкость','Сноровка','Дух','Интеллект'];
 const portraitOptions=[{"race":0,"gender":1},{"race":0,"gender":0},{"race":1,"gender":1},{"race":1,"gender":0},{"race":2,"gender":0},{"race":3,"gender":0},{"race":4,"gender":0},{"race":5,"gender":0}];
@@ -848,22 +847,6 @@ function previewBaseStats(snap=state){
     exorcism:26},...masteries}
  });
 }
-function renderPotionPreview(calculated){
- const root=$('originPotionResults');if(!root)return;
- const rows=window.PandoraOSCalculator.potionPreview({
-  enabled:state.attributeBuffs?.potionEffectsEnabled===true,
-  potionRate:calculated?.potion?.percent??null,
-  maxHp:calculated?.hp??null
- });
- root.replaceChildren();
- for(const row of rows){
-  if(!row.current)continue; // Never label unverified historical slots as current items.
-  root.append(h('div',{class:'origin-potion-row'},[
-   h('span',{text:lang==='en'?row.en:row.ru}),
-   h('strong',{text:row.value??'—'})
-  ]));
- }
-}
 function renderOriginVitals(calculated=undefined){
  // The supported calculator returns rounded numeric totals. Parity with all server
  // buffs, sets and conditional effects is still unverified; don't imply otherwise.
@@ -873,7 +856,7 @@ function renderOriginVitals(calculated=undefined){
  const mpReady=calculated&&Number.isFinite(calculated.mp);
  if(hp)hp.textContent=hpReady?String(calculated.hp):'—';
  if(mp)mp.textContent=mpReady?String(calculated.mp):'—';
- renderPotionPreview(calculated);
+ 
  const holder=$('originVitals');
  if(holder){
   const notice=hpReady&&mpReady?
@@ -889,76 +872,6 @@ function renderOriginVitals(calculated=undefined){
  refreshOpenHeroBook(calculated);
 }
 
-function renderVitalsEnhancements(calculated=undefined){
- const guildLevel=Number(state.attributeBuffs?.guildLevel)||0;
- const guildAuto=guildLevel>0?
-  window.PandoraOSCalculator?.guildPassiveAtLevel?.(guildLevel):null;
- const guildNotice=guildAuto?(lang==='en'?
-  'Controlled by guild level in the Hero Book':
-  'Управляется уровнем гильдии в Книге героя'):'';
- for(const [id,key] of [['originGuildHp','guildHp'],['originGuildMp','guildMp']]){
-  const select=$(id);
-  if(select){
-   select.value=String(guildAuto?.[key]??state.vitalsBuffs?.[key]??0);
-   select.disabled=Boolean(guildAuto);
-   select.title=guildNotice;
-  }
- }
- const sign=$('originLifeSign');
- if(sign)sign.checked=state.vitalsBuffs?.lifeSign===true;
- for(const [id,key] of [['originGuildAll','guildAll'],['originGuildArouse','guildArouse'],
-  ['originGuildLifeRecovery','guildLifeRecovery'],['originGuildManaRecovery','guildManaRecovery'],
-  ['originGuildHealing','guildHealing']]){
-  const control=$(id);
-  if(control){
-   const autoRecovery=Boolean(guildAuto)&&
-    (key==='guildLifeRecovery'||key==='guildManaRecovery');
-   control.value=String(autoRecovery?guildAuto[key]:state.attributeBuffs?.[key]??0);
-   if(autoRecovery||key==='guildLifeRecovery'||key==='guildManaRecovery'){
-    control.disabled=autoRecovery;
-    control.title=autoRecovery?guildNotice:'';
-   }
-  }
- }
- for(const [id,key] of [['originUsePotionEffects','potionEffectsEnabled'],
-  ['originCombatLunge','combatLunge'],['originCombatWarCry','combatWarCry'],
-  ['originCombatRage','combatRage'],['originCombatDefender','combatDefender']]){
-  const control=$(id);
-  if(control)control.checked=state.attributeBuffs?.[key]===true;
- }
- const honor=$('originHonorTitle'),honorOptions=window.PandoraOSCalculator.honorTitles;
- if(honor){
-  if(honor.options.length!==honorOptions.length){
-   honor.replaceChildren();
-   for(const title of honorOptions){
-    const option=document.createElement('option');
-    option.value=String(title.id);
-    honor.append(option);
-   }
-  }
-  for(const title of honorOptions){
-   const option=honor.options[title.id];
-   if(option)option.textContent=lang==='en'?title.en:title.ru;
-  }
-  const preferred=state.attributeBuffs?.honorTitle;
-  honor.value=String(Number.isInteger(preferred)?preferred:
-   state.attributeBuffs?.honorCuriosity===true?1:0);
- }
- if(calculated===undefined)calculated=previewBaseStats();
- const potion=$('originPotionRecovery');
- renderPotionPreview(calculated);
- if(potion)potion.textContent=calculated?.potion?.percent==null?'—':
-  String(calculated.potion.percent)+'%';
- for(const [id,key] of [['originRegenHp','hp'],['originRegenMp','mp']]){
-  const node=$(id);if(node)node.textContent=calculated?.regeneration?.[key]?.total==null?
-   '—':String(calculated.regeneration[key].total);
- }
- const info=$('originVitalsCoverage');
- if(info){
-  info.textContent=calculated?'':'ОЗ и ОМ появятся после загрузки игровых данных.';
-  info.hidden=Boolean(calculated);
- }
-}
 function setVitalsEnhancement(key,value){
  if(!['guildHp','guildMp','lifeSign'].includes(key))return;
  if(key!=='lifeSign'&&Number(state.attributeBuffs?.guildLevel)>0)return;
@@ -971,7 +884,7 @@ function setVitalsEnhancement(key,value){
  }
  state.vitalsBuffs=current;persist();
  const calculated=previewBaseStats();
- renderOriginVitals(calculated);renderVitalsEnhancements(calculated);
+ renderOriginVitals(calculated);
  
 }
 function setAttributeBuff(key,value){
@@ -1115,8 +1028,7 @@ function setAttributeBuff(key,value){
  persist();
  const calculated=previewBaseStats();
  renderOriginStats(calculated);renderOriginVitals(calculated);
- renderVitalsEnhancements(calculated);
- 
+
 }
 function budgetSummary(){
  return window.PandoraSkillProgression.spending(gameTables?.abilityPoint,state.level,state.points);
@@ -3081,7 +2993,7 @@ $('jobTitle').textContent=hasJob?editableValue('job.'+state.job,jobs[state.job])
  const calculated=previewBaseStats();
  renderOriginStats(calculated);renderBranches();refreshBudgetLabel();
  renderPathPages();renderDetails();renderOriginVitals(calculated);
- renderVitalsEnhancements(calculated);renderOriginCopyLabels();renderWorkbenchHintEditors();
+ renderOriginCopyLabels();renderWorkbenchHintEditors();
  refreshWorkbenchHints();updateAdminHint()}
 // Cloud reconciliation replaces saved-build cards, but it must not erase a
 // title being typed or move the reader away from the filtered results.
@@ -10991,24 +10903,6 @@ window.addEventListener('resize',syncOriginPanelHeight,{passive:true});
 if(typeof ResizeObserver!=='undefined'){
  const portraitStage=document.querySelector('.workspace>.stage');
  if(portraitStage)new ResizeObserver(syncOriginPanelHeight).observe(portraitStage);
-}
-for(const [id,key] of [['originGuildHp','guildHp'],['originGuildMp','guildMp']]){
- const select=$(id);
- if(select)select.addEventListener('change',()=>setVitalsEnhancement(key,select.value));
-}
-$('originLifeSign')?.addEventListener('change',event=>
- setVitalsEnhancement('lifeSign',event.target.checked));
-$('originHonorTitle')?.addEventListener('change',event=>setAttributeBuff('honorTitle',event.target.value));
-for(const [id,key] of [['originGuildAll','guildAll'],['originGuildArouse','guildArouse'],
- ['originProeliumPotency','proeliumPotency'],
- ['originGuildLifeRecovery','guildLifeRecovery'],['originGuildManaRecovery','guildManaRecovery'],
- ['originGuildHealing','guildHealing']]){
- $(id)?.addEventListener('change',event=>setAttributeBuff(key,event.target.value));
-}
-for(const [id,key] of [['originUsePotionEffects','potionEffectsEnabled'],
- ['originCombatLunge','combatLunge'],['originCombatWarCry','combatWarCry'],
- ['originCombatRage','combatRage'],['originCombatDefender','combatDefender']]){
- $(id)?.addEventListener('change',event=>setAttributeBuff(key,event.target.checked));
 }
 render();
 const skillLabelsReady=window.PandoraStudioLiveRead.get(
