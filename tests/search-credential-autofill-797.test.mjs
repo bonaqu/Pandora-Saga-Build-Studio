@@ -4,17 +4,19 @@ import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
+const guard=read('pandora-studio-noncredential-guard.js');
 const source=read('pandora-studio-search-field.js');
 function createSandbox(agent){
  const document={activeElement:null,readyState:'complete',addEventListener(){}};
  const sandbox={window:{navigator:{userAgent:agent}},document};
+ vm.runInNewContext(guard,sandbox,{filename:'pandora-studio-noncredential-guard.js'});
  vm.runInNewContext(source,sandbox,{filename:'pandora-studio-search-field.js'});
  return {api:sandbox.window.PandoraSearchField,document};
 }
 function mockInput(type='search',value='',id=''){
  const attrs=new Map(),handlers=new Map();
  const el={
-  tagName:'INPUT',type,id,value,readOnly:false,disabled:false,
+  tagName:'INPUT',type,id,value,readOnly:false,disabled:false,ownerDocument:null,
   setAttribute(k,v){attrs.set(k,String(v))},
   getAttribute(k){return attrs.get(k)??null},
   addEventListener(name,handler){const all=handlers.get(name)||[];
@@ -32,6 +34,7 @@ function mockInput(type='search',value='',id=''){
 test('shared search policy guards Yandex idle inputs and preserves true user edits',()=>{
  const {api,document}=createSandbox('Mozilla/5.0 YaBrowser/26.11.0.0');
  const field=mockInput('search','гигантский огр','bookDamageTarget');
+ field.ownerDocument=document;
  assert.equal(api.prepare(field),field);
  assert.equal(field.getAttribute('autocomplete'),'none');
  assert.equal(field.getAttribute('data-lpignore'),'true');
@@ -105,6 +108,10 @@ test('real username, password, email and owner text editors are not changed',()=
 test('one common policy is loaded before all dynamic search constructors',()=>{
  const html=read('index.html');
  const app=read('pandora-studio-app.js');
+ assert.ok(html.indexOf('pandora-studio-noncredential-guard.js')>0);
+ assert.ok(html.indexOf('pandora-studio-noncredential-guard.js')<html.indexOf('pandora-studio-search-field.js'));
+ assert.ok(html.indexOf('pandora-studio-noncredential-guard.js')<html.indexOf('pandora-studio-numeric-field.js'));
+ assert.match(source,/PandoraNonCredentialGuard\.protect\(input\)/);
  const book=read('pandora-studio-hero-book.js');
  const equipment=read('pandora-studio-equipment-ui.js');
  assert.ok(html.indexOf('pandora-studio-search-field.js')>0);
@@ -118,7 +125,8 @@ test('one common policy is loaded before all dynamic search constructors',()=>{
  assert.match(app,/return window\.PandoraSearchField\?\.prepare\(input\)\|\|input;/);
  assert.match(source,/MutationObserver\(changes=>/);
  assert.match(source,/document\.addEventListener\('DOMContentLoaded',observe/);
- assert.match(source,/attributeFilter:\['type'\]/);
+ assert.match(source,/attributeFilter:['type']/);
+ assert.match(guard,/event.stopImmediatePropagation\?\.\(\)/);
 });
 
 test('remaining search surfaces preserve native searchbox while retired Book target search is absent',()=>{

@@ -21,26 +21,12 @@ const prepare=input=>{
  input.setAttribute('data-bwignore','true');
  input.setAttribute('data-form-type','other');
  input.setAttribute('data-game-numeric','true');
- // Yandex Browser has its own password/autofill overlay. Keep its inactive
- // number fields read-only until an explicit gesture, then restore read-only
- // when the user leaves. Chromium and other browsers retain normal editable
- // inputs, including programmatic .fill() and accessibility integrations.
- // No website can guarantee suppression of a browser-owned password popup.
- if(String(root.navigator?.userAgent||'').includes('YaBrowser/')){
+ // Reuse the trusted gesture gate from Search. Idle synthetic autofill is
+ // stopped before gameplay listeners persist an unexpected stat or level.
+ if(root.PandoraNonCredentialGuard?.protect)
+  root.PandoraNonCredentialGuard.protect(input);
+ else if(String(root.navigator?.userAgent||'').includes('YaBrowser/'))
   input.readOnly=true;
-  const enable=()=>{if(!input.disabled)input.readOnly=false};
-  // Unlock before number steppers receive their default pointer action.
-  // Reusing a control must never register duplicate listeners.
-  input.addEventListener('pointerdown',enable,{capture:true});
-  input.addEventListener('touchstart',enable,{capture:true,passive:true});
-  input.addEventListener('keydown',enable,{capture:true});
-  // IME and accessibility input can start without a physical keydown.
-  input.addEventListener('beforeinput',event=>{
-   if(event.isTrusted&&['insertText','insertCompositionText',
-    'deleteContentBackward','deleteContentForward'].includes(event.inputType))enable();
-  },{capture:true});
-  input.addEventListener('blur',()=>{input.readOnly=true});
- }
  return input;
 };
 root.PandoraNumericField=Object.freeze({prepare});
