@@ -742,13 +742,15 @@ async function main(){
   'manual-saved-overwrite','account-late-bootstrap','empty-account-reconnect','account-isolation','inline-skill-milestones',
   'build-comparison','chest-reward-layout','wiki-skill-filters','wiki-skill-label-editor','ui-content-inline','owner-equipment-copy-width','wiki-owner-english-sync','wiki-spawn-replace','wiki-icons-offline']);
  const selected=quick?scenarios.filter(([name])=>quickCases.has(name)):scenarios;
- // Isolate the long admin flow: its heavy editor/catalog re-renders were
- // contending with unrelated Chromium contexts and detaching input nodes.
- // All other scenarios retain parallelism and final full CI coverage.
- const admin=selected.filter(([name])=>name==='hidden-admin-entry');
- const regular=selected.filter(([name])=>name!=='hidden-admin-entry');
+ // A storm of intentionally aborted F5 requests also contends for the
+ // shared Chromium CPU/network scheduler. Keep that stress scenario and
+ // the long owner-admin editor serial, AFTER regular UI interactions.
+ // This exercises all workflows while avoiding artificial tooltip/menu races.
+ const isolatedNames=new Set(['hidden-admin-entry','live-d1-retry-882']);
+ const isolated=selected.filter(([name])=>isolatedNames.has(name));
+ const regular=selected.filter(([name])=>!isolatedNames.has(name));
  const report=[...await runIndependentSmokes(regular,browser,base,{concurrency}),
-  ...await runIndependentSmokes(admin,browser,base,{concurrency:1})];
+  ...await runIndependentSmokes(isolated,browser,base,{concurrency:1})];
  console.log('Chromium '+(quick?'quick':'full')+' suite: '+
   report.length+' isolated flows, concurrency '+concurrency+
   ', aggregate scenario time '+report.reduce((sum,row)=>sum+row.ms,0)+'ms');
