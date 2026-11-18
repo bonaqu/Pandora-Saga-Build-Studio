@@ -6,11 +6,11 @@ const host={navigator:{userAgent:'Mozilla/5.0 Chrome/154.0 YaBrowser/26.11.0.0'}
 Function('window',read('pandora-studio-numeric-field.js'))(host);
 
 class Input {
- constructor(type='number'){this.type=type;this.attributes={};this.listeners={};this.readOnly=false;this.disabled=false}
+ constructor(type='number'){this.type=type;this.attributes={};this.listeners={};this.registrations={};this.readOnly=false;this.disabled=false}
  setAttribute(key,value){this.attributes[key]=String(value)}
  getAttribute(key){return this.attributes[key]??null}
- addEventListener(key,fn){this.listeners[key]=fn}
- fire(event){this.listeners[event]?.({type:event})}
+ addEventListener(key,fn){this.listeners[key]=fn;this.registrations[key]=(this.registrations[key]||0)+1}
+ fire(event,props={}){this.listeners[event]?.({type:event,...props})}
 }
 test('number fields request Yandex no-autofill, gate idle edits, and restore manual focus/typing',()=>{
  const input=new Input('number');
@@ -30,6 +30,18 @@ test('number fields request Yandex no-autofill, gate idle edits, and restore man
  input.fire('blur');
  input.fire('pointerdown');
  assert.equal(input.readOnly,false,'pointer and press-hold controls stay usable');
+ input.fire('blur');
+ input.fire('touchstart');
+ assert.equal(input.readOnly,false,'touchscreen steppers stay usable');
+ input.fire('blur');
+ input.fire('beforeinput',{isTrusted:true,inputType:'insertCompositionText'});
+ assert.equal(input.readOnly,false,'IME input is a legitimate editing gesture');
+ input.fire('blur');
+ const registrations={...input.registrations};
+ host.PandoraNumericField.prepare(input);
+ assert.deepEqual(input.registrations,registrations,
+  'Repeated UI renders must not accumulate numeric field listeners');
+ assert.equal(input.readOnly,true,'Re-preparing must not unlock an idle control');
 });
 test('standard Chromium number fields stay editable for direct manual typing and browser tests',()=>{
  const chromium={navigator:{userAgent:'Mozilla/5.0 Chrome/154.0.0.0'}};
