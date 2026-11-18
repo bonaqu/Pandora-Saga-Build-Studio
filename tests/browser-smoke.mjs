@@ -25,6 +25,7 @@ import {runPublicD1Copy874Smoke} from './browser-public-d1-copy-874.mjs';
 import {runOnlineD1Required878Smoke} from './browser-online-d1-required-878.mjs';
 import {runOnlineOwnerDraft879Smoke} from './browser-online-owner-draft-879.mjs';
 import {runOnlineStartupStorage880Smoke} from './browser-online-startup-storage-880.mjs';
+import {runLiveD1Retry882Smoke} from './browser-live-d1-retry-882.mjs';
 import {runEquippedSoulCapacitySmoke,runSavedSocketRecoverySmoke} from './browser-equipped-soul-capacity.mjs';
 import {runEquipmentQuickMenuSmoke} from './browser-equipment-quick-menu.mjs';
 import {runEquipmentPickerLiveCopy390Smoke} from './browser-equipment-picker-live-copy-390.mjs';
@@ -110,6 +111,7 @@ const scenarios=[
   ['online-d1-required-878',runOnlineD1Required878Smoke],
   ['online-owner-draft-879',runOnlineOwnerDraft879Smoke],
   ['online-startup-storage-880',runOnlineStartupStorage880Smoke],
+  ['live-d1-retry-882',runLiveD1Retry882Smoke],
   ['per-item-soul-capacity',runEquippedSoulCapacitySmoke],
   ['equipment-quick-menu',runEquipmentQuickMenuSmoke],
   ['equipment-picker-live-copy-390',runEquipmentPickerLiveCopy390Smoke],
@@ -740,13 +742,15 @@ async function main(){
   'manual-saved-overwrite','account-late-bootstrap','empty-account-reconnect','account-isolation','inline-skill-milestones',
   'build-comparison','chest-reward-layout','wiki-skill-filters','wiki-skill-label-editor','ui-content-inline','owner-equipment-copy-width','wiki-owner-english-sync','wiki-spawn-replace','wiki-icons-offline']);
  const selected=quick?scenarios.filter(([name])=>quickCases.has(name)):scenarios;
- // Isolate the long admin flow: its heavy editor/catalog re-renders were
- // contending with unrelated Chromium contexts and detaching input nodes.
- // All other scenarios retain parallelism and final full CI coverage.
- const admin=selected.filter(([name])=>name==='hidden-admin-entry');
- const regular=selected.filter(([name])=>name!=='hidden-admin-entry');
+ // A storm of intentionally aborted F5 requests also contends for the
+ // shared Chromium CPU/network scheduler. Keep that stress scenario and
+ // the long owner-admin editor serial, AFTER regular UI interactions.
+ // This exercises all workflows while avoiding artificial tooltip/menu races.
+ const isolatedNames=new Set(['hidden-admin-entry','live-d1-retry-882']);
+ const isolated=selected.filter(([name])=>isolatedNames.has(name));
+ const regular=selected.filter(([name])=>!isolatedNames.has(name));
  const report=[...await runIndependentSmokes(regular,browser,base,{concurrency}),
-  ...await runIndependentSmokes(admin,browser,base,{concurrency:1})];
+  ...await runIndependentSmokes(isolated,browser,base,{concurrency:1})];
  console.log('Chromium '+(quick?'quick':'full')+' suite: '+
   report.length+' isolated flows, concurrency '+concurrency+
   ', aggregate scenario time '+report.reduce((sum,row)=>sum+row.ms,0)+'ms');

@@ -3134,7 +3134,8 @@ async function loadWiki(){
    // Never show an archive as a current Wiki snapshot. Archive mode is
   // available only after an explicit user choice on the startup screen.
    try{loaded=await window.PandoraWikiCatalog.load({
-    api:API,fetcher:fetch,strict:!catalogArchived,preferLocal:catalogArchived})}
+    api:API,fetcher:catalogArchived?fetch:window.PandoraStudioLiveRead.get,
+    timeout:30000,strict:!catalogArchived,preferLocal:catalogArchived})}
    catch(error){if(generation!==wikiLoadGeneration)return loadWiki();throw error}
    if(generation!==wikiLoadGeneration)return loadWiki();
    wikiBaseData=loaded.data;
@@ -8354,7 +8355,8 @@ async function apiRequest(path,body,token=adminToken) {
  }
  let response;
  try {
-  response=await fetch(API+path,{
+  const request=body||path!=='/api/overrides'?fetch:window.PandoraStudioLiveRead.get;
+  response=await request(API+path,{
    method:body?"POST":"GET",
    headers:{"Content-Type":"application/json",...(token?{"Authorization":"Bearer "+token}:{})},
    ...(requestBody?{body:JSON.stringify(requestBody)}:{})
@@ -10508,7 +10510,8 @@ async function ensureEnglishCatalog({persistReconciled=true}={}){
  const snapshot=activeCatalogSnapshot;
  const source=catalogArchived?'./data/os/strings.en.json':API+'/api/catalog/stringsEn.json';
  englishCatalogPending=(async()=>{
-  const response=await fetch(source,{cache:'no-cache',signal:AbortSignal.timeout(16000)});
+  const response=await (catalogArchived?fetch:window.PandoraStudioLiveRead.get)(source,
+   {cache:'no-cache',signal:AbortSignal.timeout(30000)});
   if(!response.ok)throw Error('Английский каталог: HTTP '+response.status);
   if(!catalogArchived&&response.headers.get('x-ps-catalog')!=='d1')
    throw Error('Английский каталог: источник D1 не подтверждён');
@@ -10531,9 +10534,10 @@ async function loadCatalog({archive=false,commit=true}={}){
   'unison','tables','itemForth'];
  const base=archive?'./data/os':API+'/api/catalog';
  const snapshots=new Set(),unknown=[];
- const entries=await Promise.all(names.map(async name=>{
-  const response=await fetch(base+'/'+name+'.json',{
-   cache:archive?'default':'no-cache',signal:AbortSignal.timeout(14000)});
+ const entries=await window.PandoraStudioLiveRead.mapLimit(names,3,async name=>{
+  const read=archive?fetch:window.PandoraStudioLiveRead.get;
+  const response=await read(base+'/'+name+'.json',{
+   cache:archive?'default':'no-cache',signal:AbortSignal.timeout(30000)});
   if(!response.ok)throw Error(name+' HTTP '+response.status);
   if(!archive){
    // Confirm both the published snapshot and its D1 origin for every
@@ -10544,7 +10548,7 @@ async function loadCatalog({archive=false,commit=true}={}){
    if(snapshot)snapshots.add(snapshot);else unknown.push(name);
   }
   return [name,await response.json()];
- }));
+ });
  if(version!==catalogLoadVersion)return;
  if(!archive&&(snapshots.size!==1||unknown.length))
   throw Error('В ходе загрузки изменилась версия каталога Cloudflare D1');
@@ -10959,8 +10963,9 @@ for(const [id,key] of [['originUsePotionEffects','potionEffectsEnabled'],
  $(id)?.addEventListener('change',event=>setAttributeBuff(key,event.target.checked));
 }
 render();
-const skillLabelsReady=fetch('./data/localization/remaked-skill-identity.v1.json',{
- cache:'default',signal:AbortSignal.timeout(14000)})
+const skillLabelsReady=window.PandoraStudioLiveRead.get(
+ './data/localization/remaked-skill-identity.v1.json',{
+ cache:'default',signal:AbortSignal.timeout(30000)})
  .then(response=>{
   if(!response.ok)throw Error('Перевод умений: HTTP '+response.status);
   return response.json();
@@ -11102,9 +11107,9 @@ async function checkLiveConnection(){
  const job=(async()=>{
   try{
    const result=await window.PandoraStudioOnlineGate.inspect({
-    api:API,fetcher:fetch,expectedSnapshot:activeCatalogSnapshot,
+    api:API,fetcher:window.PandoraStudioLiveRead.get,expectedSnapshot:activeCatalogSnapshot,
     expectedOverrides:override,expectedCounts:catalogSource?.meta?.counts,
-    signal:AbortSignal.timeout(12000)
+    signal:AbortSignal.timeout(22000)
    });
    if(revision!==liveCheckpointId||!studioLiveReady)return;
    // An owner edit in another outstanding request is never treated as a
@@ -11230,9 +11235,9 @@ async function startStudio({archive=false}={}){
   // the public editor, not only during subsequent reconnects.
   if(!archive){
    const confirmed=await window.PandoraStudioOnlineGate.inspect({
-    api:API,fetcher:fetch,expectedSnapshot:activeCatalogSnapshot,
+    api:API,fetcher:window.PandoraStudioLiveRead.get,expectedSnapshot:activeCatalogSnapshot,
     expectedOverrides:override,expectedCounts:catalogSource?.meta?.counts,
-    signal:AbortSignal.timeout(12000)
+    signal:AbortSignal.timeout(30000)
    });
    if(confirmed.status!=='ready')throw Error('Game data changed during startup');
   }

@@ -44,7 +44,7 @@ export async function runItemHoverDelaySmoke(browser,base){
    watch.observe(document.body,{childList:true,subtree:true});
   });
   await hover(locator,step);
-  await tooltip.waitFor({state:'visible',timeout:2500});
+  await tooltip.waitFor({state:'visible',timeout:5000});
   const elapsed=await page.evaluate(()=>{
    const probe=window.__itemHoverClock;
    return probe?.entered!=null&&probe?.shown!=null?
@@ -55,6 +55,8 @@ export async function runItemHoverDelaySmoke(browser,base){
  };
  try{
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
+  // Dynamic Wiki and tooltip work must start after initial D1/local boot.
+  await page.locator('#startupOverlay').waitFor({state:'hidden',timeout:30000});
   await page.waitForFunction(()=>/\d+ навыков · \d+ предметов · \d+ душ/.test(
    document.querySelector('#catalogStatus')?.textContent||''),null,{timeout:20000});
   await page.locator('#nav [data-tab="wiki"]').click();
@@ -103,7 +105,7 @@ export async function runItemHoverDelaySmoke(browser,base){
   await hover(another,'neighboring Spata recipe');
   await page.waitForTimeout(150);
   assert.equal(await tooltip.count(),0,'Switching items must not show a stale preview');
-  await tooltip.waitFor({state:'visible',timeout:2500});
+  await tooltip.waitFor({state:'visible',timeout:5000});
   assert.equal((await tooltip.locator('.stage-rich-head strong').innerText()).trim(),
    (await another.innerText()).trim(),'Only the currently hovered item may be previewed');
   assert.equal(await page.locator('#stage-gear-tooltip').count(),1);
@@ -166,6 +168,7 @@ export async function runItemHoverDelaySmoke(browser,base){
 
   // Same delay and cancellation policy in a different encyclopedia chapter.
   await page.goto(base+'/#wiki/monster/21103',{waitUntil:'domcontentloaded'});
+  await page.locator('#startupOverlay').waitFor({state:'hidden',timeout:30000});
   const loot=page.locator('.wiki-loot-chip a.wiki-link').first();
   await loot.waitFor({state:'visible',timeout:20000});
   await loot.scrollIntoViewIfNeeded();
@@ -175,6 +178,8 @@ export async function runItemHoverDelaySmoke(browser,base){
 
   // The cloak uses the same shared handler, not an immediate Honor-only copy.
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
+  // Dynamic Wiki and tooltip work must start after initial D1/local boot.
+  await page.locator('#startupOverlay').waitFor({state:'hidden',timeout:30000});
   await page.locator('#nav [data-tab="wiki"]').click();
   await page.locator('.wiki-categories [data-wiki-chapter="honor"]').click();
   const cloak=page.locator('.wiki-honor-cloak-link').first();
