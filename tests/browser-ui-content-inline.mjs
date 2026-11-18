@@ -674,6 +674,13 @@ export async function runUIContentInlineSmoke(browser,base){
   // real Close control before switching chapters.
   if(await page.locator('#dockClose').isVisible())
    await page.locator('#dockClose').click();
+  // The previous CAS-conflict test deliberately leaves the owner drawer open
+  // with an error. Collapse only its visual panel before normal navigation;
+  // neither suppress nor clear that failure or its D1 state.
+  const ownerDrawer=page.locator('#ownerDock');
+  if(await ownerDrawer.isVisible()&&
+     await ownerDrawer.locator('[data-owner-collapse]').getAttribute('aria-expanded')==='true')
+   await ownerDrawer.locator('[data-owner-collapse]').click();
   await page.locator('#nav [data-tab="wiki"]').click();
   await page.locator('[data-wiki-chapter="item"]').click();
   const gearFilter=page.locator('.wiki-equipment-type');
