@@ -746,7 +746,10 @@ async function main(){
  // shared Chromium CPU/network scheduler. Keep that stress scenario and
  // the long owner-admin editor serial, AFTER regular UI interactions.
  // This exercises all workflows while avoiding artificial tooltip/menu races.
- const isolatedNames=new Set(['hidden-admin-entry','live-d1-retry-882']);
+ // An unavailable icon manifest rebuilds a large skill list. Run its
+ // fallback without unrelated concurrent Wiki rendering on the same CPU.
+ const isolatedNames=new Set(['hidden-admin-entry','live-d1-retry-882',
+  'wiki-icons-offline']);
  const isolated=selected.filter(([name])=>isolatedNames.has(name));
  const regular=selected.filter(([name])=>!isolatedNames.has(name));
  const report=[...await runIndependentSmokes(regular,browser,base,{concurrency}),
