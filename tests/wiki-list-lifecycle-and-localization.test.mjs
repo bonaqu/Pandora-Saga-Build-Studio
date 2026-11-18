@@ -65,12 +65,12 @@ test('Wiki results and actions preserve live numbers beside independent owner-ed
   assert.ok(wiki.includes("'"+key+"'"),'Missing semantic UI key '+key);
   assert.ok(wiki.includes(ru)&&wiki.includes(en),'Missing RU/EN defaults '+key);
  }
- assert.match(wiki,/summary\\.append\\(/);
- assert.match(wiki,/String\\(visible\\.length\\)/);
- assert.match(wiki,/String\\(results\\.length\\)/);
- assert.match(wiki,/more\\.append\\(bindOwnerInterfaceText/);
- assert.match(wiki,/String\\(results\\.length-wikiShown\\)/);
- assert.match(wiki,/batch\\.append\\(bindOwnerInterfaceText\\(/);
- assert.match(app,/bindOwnerInterfaceText\\(button,'wiki-ui','backLabel'/);
- assert.doesNotMatch(wiki,/text:lang==='en'\\?'Showing '/);
+ assert.match(wiki,/summary\.append\(/);
+ assert.match(wiki,/String\(visible\.length\)/);
+ assert.match(wiki,/String\(results\.length\)/);
+ assert.match(wiki,/more\.append\(bindOwnerInterfaceText/);
+ assert.match(wiki,/String\(results\.length-wikiShown\)/);
+ assert.match(wiki,/batch\.append\(bindOwnerInterfaceText\(/);
+ assert.match(app,/bindOwnerInterfaceText\(button,'wiki-ui','backLabel'/);
+ assert.doesNotMatch(wiki,/text:lang==='en'\?'Showing '/);
 });
