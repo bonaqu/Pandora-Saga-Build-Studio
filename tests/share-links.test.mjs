@@ -35,14 +35,17 @@ test('share links display alongside saved builds with an inline copy fallback',(
  const src=read('pandora-studio-app.js'),css=read('pandora-studio-theme.css');
  assert.match(src,/class:'build-share-slot'/);
  assert.match(src,/createShared\(b,shareSlot\)/);
- assert.match(src,/if\(host\.isConnected\)\{\s*host\.replaceChildren\(message\);/);
+ assert.match(src,/const target=currentHost\(\);\s*if\(target\)\{\s*target\.replaceChildren\(message\);/);
  assert.match(src,/if\(adminEditing&&adminToken\)bindAccountCopyEditors\(message\)/,
   'Only an active administrator may bind share-result editorial controls');
  assert.match(src,/field\.focus\(\);field\.select\(\)/);
  assert.match(src,/isVerifiedSharedBuild\(check\?\.share,expectedData\)/);
- assert.match(src,/const pendingShareHosts=new WeakSet\(\)/);
- assert.match(src,/if\(!sameViewer\(\)\)return/);
- assert.match(src,/pendingShareHosts\.delete\(host\)/);
+ assert.match(src,/const pendingShareRequests=new Map\(\)/);
+ assert.match(src,/previous\.revision===build\.at/);
+ assert.match(src,/previous\.host=host/);
+ assert.match(src,/previous\.reconnect\?\.\(\)/);
+ assert.match(src,/if\(!currentRequest\(\)\)return/);
+ assert.match(src,/if\(pendingShareRequests\.get\(requestKey\)===operation\)/);
  assert.match(css,/\.build-share-slot/);
 });
 test('library maintains an offline cache and D1 sync without JSON import/export',()=>{
@@ -118,16 +121,18 @@ function shareHarness(){
  const window={PandoraAccountUI:{token:()=>token},PandoraUILocale:{
   localize(){},ui(value){return value}
  }};
- const host={isConnected:true,renders:[],replaceChildren(...nodes){
+ const makeHost=()=>({isConnected:true,renders:[],replaceChildren(...nodes){
   this.current=nodes[0];this.renders.push(this.current);
- }};
+ }});
+ const host=makeHost();
  const apiRequest=(path,body,auth)=>{
   calls.push({path,body,auth});
   const waiting=deferred();
   (path==='/api/shared'?postQueue:getQueue).push(waiting);
   return waiting.promise;
  };
- const build={id:'a'.repeat(32),name:'Snapshot',data:{race:0,job:0,level:45}};
+ const build={id:'a'.repeat(32),name:'Snapshot',at:1,
+  data:{race:0,job:0,level:45}};
  const createShared=Function('window','libraryScopeId','requireBuildAccount',
   'h','adminEditing','adminToken','bindAccountCopyEditors','sanitizeSharedState',
   'apiRequest','location','navigator','lang',
@@ -135,7 +140,7 @@ function shareHarness(){
    window,()=>owner,()=>true,h,false,'',()=>{},data=>data,apiRequest,
    {origin:'https://example.com',pathname:'/studio/'},
    {clipboard:{writeText:async text=>{clipboard.push(text)}}},'ru');
- return {createShared,host,build,calls,clipboard,postQueue,getQueue,
+ return {createShared,host,makeHost,build,calls,clipboard,postQueue,getQueue,
   setToken:value=>{token=value},setOwner:value=>{owner=value}};
 }
 const shareReadback=level=>({share:{schema:1,type:'build',
@@ -206,4 +211,62 @@ test('failed link verification is retryable, without duplicate pending network w
  s.getQueue[1].resolve(shareReadback(45));
  await retry;
  assert.equal(s.host.current.attrs.class,'share-result');
+});
+
+test('share proof follows the latest DOM card without another POST or GET',async()=>{
+ const s=shareHarness(),first=s.createShared(s.build,s.host);
+ s.postQueue[0].resolve({id:'A1234567890'});
+ await tick();
+ assert.equal(s.getQueue.length,1);
+ // Locale switches and library refreshes unmount the original saved card.
+ s.host.isConnected=false;
+ const latest=s.makeHost();
+ await s.createShared({...s.build},latest);
+ assert.equal(s.calls.length,2,'Rerender must not republish the same revision');
+ assert.match(latest.current.children[0].textContent,/^Создаём ссылку/);
+ s.getQueue[0].resolve(shareReadback(45));
+ await first;
+ assert.equal(latest.current.attrs.class,'share-result',
+  'Only the newly mounted card receives the already verified link');
+ assert.equal(s.host.renders.length,1,
+  'Detached cards cannot be updated by an older async request');
+});
+
+test('newly overwritten saved revision supersedes old proof without stale unlock',async()=>{
+ const s=shareHarness(),older=s.createShared(s.build,s.host);
+ s.postQueue[0].resolve({id:'A1234567890'});
+ await tick();
+ s.build.at=2;s.build.data.level=46;
+ const newerHost=s.makeHost(),newer=s.createShared(s.build,newerHost);
+ assert.equal(s.postQueue.length,2,'New saved revision can publish new snapshot');
+ s.getQueue[0].resolve(shareReadback(45));
+ await older;
+ // The old finally cannot delete the newer revision's in-flight map entry.
+ await s.createShared(s.build,newerHost);
+ assert.equal(s.postQueue.length,2,'Retired request cannot release newer lock');
+ s.postQueue[1].resolve({id:'B1234567890'});
+ await tick();
+ s.getQueue[1].resolve(shareReadback(46));
+ await newer;
+ assert.equal(newerHost.current.attrs.class,'share-result');
+ assert.equal(newerHost.current.children[1].attrs.value,
+  'https://example.com/studio/#b/B1234567890');
+ assert.notEqual(s.host.current.attrs.class,'share-result',
+  'Old card must not gain an obsolete URL after a newer revision wins');
+});
+
+test('new account session does not inherit a pending share from an expired token',async()=>{
+ const s=shareHarness(),older=s.createShared(s.build,s.host);
+ s.setToken('u'.repeat(43));
+ const newerHost=s.makeHost(),newer=s.createShared(s.build,newerHost);
+ assert.equal(s.postQueue.length,2,'Fresh session may share its own revision');
+ s.postQueue[0].resolve({id:'A1234567890'});
+ await older;
+ assert.equal(s.getQueue.length,0,'Old token must not verify under the new one');
+ s.postQueue[1].resolve({id:'C1234567890'});
+ await tick();
+ assert.equal(s.calls.at(-1).auth,'u'.repeat(43));
+ s.getQueue[0].resolve(shareReadback(45));
+ await newer;
+ assert.equal(newerHost.current.attrs.class,'share-result');
 });
