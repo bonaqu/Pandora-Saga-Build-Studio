@@ -8,15 +8,19 @@ const source=read('pandora-studio-update-manager.js');
 function boot(local,remote,href='https://bonaqu.github.io/Pandora-Saga-Build-Studio/',locale='ru'){
  let banner=null,check=null,normalized=null,navigated=null,saved=0,languageChanged=null;
  let currentRemote=remote,holdResponses=false,saveAllowed=true,lastEventCancelable=null;
- let guard=null,accountPanelOpen=false,heroBookOpen=false,onlineRecoveryOpen=false,now=Date.now();
+ let guard=null,accountPanelOpen=false,heroBookOpen=false,onlineRecoveryOpen=false,
+  ownerMode=false,inlineEditing=false,overlayVisible=false,now=Date.now();
  const intervals=[];
  class Clock extends Date{static now(){return now}}
- const heldRequests=[];
+ const heldRequests=[],heldBodies=[];
+ let holdBodies=false,requestCount=0;
  const document={
   documentElement:{lang:locale},
   querySelector:selector=>selector==='meta[name="ps-studio-release"]'?{content:local}:
    (selector.includes('#accountPanel:not([hidden])')&&accountPanelOpen||
-   selector.includes('#stageAttributes:not([hidden])')&&heroBookOpen)?{}:null,
+   selector.includes('#stageAttributes:not([hidden])')&&heroBookOpen||
+   selector.includes('#startupOverlay:not([hidden])')&&overlayVisible||
+   selector.includes('.inline-owner-editor')&&inlineEditing)?{}:null,
   addEventListener(){},dispatchEvent(event){saved++;lastEventCancelable=event.cancelable;return saveAllowed},getElementById(id){return id==='studio-update-banner'&&!banner?.removed?banner:null},
   createElement:tag=>({
    tag,children:[],listeners:{},setAttribute(){},
@@ -30,14 +34,17 @@ function boot(local,remote,href='https://bonaqu.github.io/Pandora-Saga-Build-Stu
  const location={href,replace:url=>{navigated=url}};
  const history={state:null,replaceState:(_state,_title,url)=>{normalized=url}};
  runInNewContext(source,{
-  window:{PandoraAccountUI:{updateGuard:()=>guard}},document,location,history,URL,AbortController,Date:Clock,
+  window:{PandoraAccountUI:{updateGuard:()=>guard},
+   PandoraStudioAdminActive:()=>ownerMode},document,location,history,URL,AbortController,Date:Clock,
   Event:class Event{constructor(_type,options){this.cancelable=!!options?.cancelable}},console,
   MutationObserver:class MutationObserver {
    constructor(fn){languageChanged=fn}observe(){}
   },
   fetch:async()=>{
+   requestCount++;
    if(holdResponses)return new Promise(resolve=>heldRequests.push(resolve));
-   return {ok:true,json:async()=>({release:currentRemote})};
+   return {ok:true,json:()=>holdBodies?
+    new Promise(resolve=>heldBodies.push(resolve)):Promise.resolve({release:currentRemote})};
   },
   setInterval:(fn,ms)=>{intervals.push({fn,ms});return intervals.length},
   setTimeout:(fn,delay)=>{if(delay===3000)check=fn;return 1},
@@ -51,6 +58,13 @@ function boot(local,remote,href='https://bonaqu.github.io/Pandora-Saga-Build-Stu
   setAccountPanelOpen:value=>{accountPanelOpen=value},
   setHeroBookOpen:value=>{heroBookOpen=value},
   setOnlineRecovery:value=>{onlineRecoveryOpen=value},
+  setOverlayVisible:value=>{overlayVisible=value},
+  setOwnerMode:value=>{ownerMode=value},
+  setInlineEditing:value=>{inlineEditing=value},
+  holdBodyReads:()=>{holdBodies=true},
+  heldBodyCount:()=>heldBodies.length,
+  resolveBody:(index,release)=>heldBodies[index]({release}),
+  get requestCount(){return requestCount},
   advance:ms=>{now+=ms},
   checkAuto:()=>intervals.find(x=>x.ms===15000)?.fn(),
   holdChecks:()=>{holdResponses=true},
@@ -138,19 +152,70 @@ test('Later dismisses the newest release even when the original banner is older'
  await page.check();
  assert.notEqual(page.banner,original,'A third publication still offers an update');
 });
-test('out-of-order version checks cannot downgrade the current update target',async()=>{
+test('single-flight version checks and later stale manifests cannot downgrade the update target',async()=>{
  const page=boot('2026.11.07.440','2026.11.07.441');
  page.holdChecks();
- const older=page.check(),newer=page.check();
- assert.equal(page.heldCount(),2);
- page.resolveCheck(1,'2026.11.07.443');
- await newer;
+ const first=page.check(),overlap=page.check();
+ assert.equal(page.heldCount(),1,'Overlapping polls must share one network request');
+ page.resolveCheck(0,'2026.11.07.443');
+ await Promise.all([first,overlap]);
  assert.ok(page.banner);
- page.resolveCheck(0,'2026.11.07.442');
- await older;
+ const stale=page.check();
+ assert.equal(page.heldCount(),2,'Future checks resume after the pending response');
+ page.resolveCheck(1,'2026.11.07.442');
+ await stale;
  page.banner.children[1].listeners.click();
  assert.match(page.navigated,/ps-revision=2026[.]11[.]07[.]443/,
-  'The most recently published release must remain the update target');
+  'A later, stale response cannot downgrade the offered release');
+ assert.equal(page.saved,1);
+});
+
+test('parallel version polls coalesce while the manifest body remains pending',async()=>{
+ const page=boot('2026.11.18.884','2026.11.18.885');
+ page.holdBodyReads();
+ const first=page.check();
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(page.heldBodyCount(),1,'The first response started reading JSON');
+ await page.check();
+ assert.equal(page.requestCount,1,'Body read remains part of the active request');
+ assert.equal(page.banner,null,'No update before complete JSON');
+ page.resolveBody(0,'2026.11.18.885');
+ await first;
+ assert.ok(page.banner,'A complete manifest offers the update');
+ await page.check();
+ assert.equal(page.requestCount,2,'A future poll is allowed after completion');
+});
+
+test('manual update respects D1 overlay, active owner edits and UI panels',async()=>{
+ const page=boot('2026.11.18.884','2026.11.18.885');
+ await page.check();
+ const click=()=>page.banner.children[1].listeners.click();
+ const pointer=()=>{let prevented=false;
+  page.banner.children[1].listeners.pointerdown({preventDefault(){prevented=true}});
+  return prevented;
+ };
+ page.setOverlayVisible(true);
+ assert.equal(pointer(),true,'Do not blur the last unsent owner edit behind overlay');
+ click();
+ assert.equal(page.navigated,null);
+ assert.equal(page.saved,0);
+ assert.match(page.banner.children[0].textContent,/восстанови игровые данные/i);
+ page.setOverlayVisible(false);
+ page.setOwnerMode(true);
+ assert.equal(pointer(),true);
+ click();
+ assert.equal(page.navigated,null);
+ assert.match(page.banner.children[0].textContent,/выйди из режима владельца/i);
+ page.setOwnerMode(false);
+ page.setInlineEditing(true);
+ assert.equal(pointer(),true);
+ click();
+ assert.equal(page.navigated,null);
+ assert.match(page.banner.children[0].textContent,/закрой открытые окна/i);
+ page.setInlineEditing(false);
+ assert.equal(pointer(),false);
+ click();
+ assert.match(page.navigated,/ps-revision=2026[.]11[.]18[.]885/);
  assert.equal(page.saved,1);
 });
 
