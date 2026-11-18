@@ -51,9 +51,12 @@ export async function runWikiOwnerEnglishSyncSmoke(browser,base){
   if(url.endsWith('/api/admin/override')){
    assert.equal(route.request().headers().authorization,'Bearer '+'a'.repeat(43));
    const data=route.request().postDataJSON();
+   assert.equal(data.expectedValue,
+    Object.hasOwn(values,data.key)?values[data.key]:null,
+    'The English-review fixture must require the same CAS precondition as Worker');
    writes.push(data);
    values[data.key]=data.value;
-   return json({ok:true});
+   return json({ok:true,key:data.key,value:data.value.trim(),conditional:true});
   }
   return route.abort();
  });
