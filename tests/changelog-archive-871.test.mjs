@@ -54,3 +54,27 @@ test('release rotation archives overflow safely and does not rewrite old files',
   assert.equal(readFileSync(join(tmp,'CHANGELOG.md'),'utf8'),now);
  }finally{rmSync(tmp,{recursive:true,force:true})}
 });
+
+test('the thirteenth release is archived immediately without losing an entry',()=>{
+ const tmp=mkdtempSync(join(tmpdir(),'ps-changelog-13-'));
+ try{
+  const archive=join(tmp,'docs','changelog');
+  mkdirSync(archive,{recursive:true});
+  writeFileSync(join(archive,'README.md'),'# Archive\n<!-- NEWEST ARCHIVES -->\n');
+  const entry=n=>'## 0.'+n+'.0 — 2026.11.18.'+n+' · Test\n\n- Safe release\n';
+  writeFileSync(join(tmp,'CHANGELOG.md'),
+   '# Pandora Saga Build Studio — CHANGELOG\n\n'+
+   Array.from({length:13},(_,i)=>entry(300-i)).join('\n')+
+   '\n---\n\nEarlier: [archive](docs/changelog/README.md)\n\n<!-- CHANGELOG_ARCHIVE -->\n');
+  rotateChangelog(tmp);
+  const rootLog=readFileSync(join(tmp,'CHANGELOG.md'),'utf8');
+  assert.equal([...rootLog.matchAll(/^## 0\.\d+\.0 — /gm)].length,12);
+  assert.match(rootLog,/## 0\.300\.0 — /);
+  assert.doesNotMatch(rootLog,/## 0\.288\.0 — /);
+  const older=readFileSync(join(archive,'release-0.288.0.md'),'utf8');
+  assert.match(older,/## 0\.288\.0 — /);
+  assert.match(readFileSync(join(archive,'README.md'),'utf8'),/release-0\.288\.0\.md/);
+  rotateChangelog(tmp);
+  assert.equal(readFileSync(join(tmp,'CHANGELOG.md'),'utf8'),rootLog);
+ }finally{rmSync(tmp,{recursive:true,force:true})}
+});
