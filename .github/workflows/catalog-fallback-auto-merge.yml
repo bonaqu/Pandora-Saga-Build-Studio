@@ -6,6 +6,9 @@ on:
       - Studio quality checks
       - Chromium browser smoke
     types: [completed]
+    # Prevent skipped job runs on ordinary feature PRs; retain defense-in-depth job guard.
+    branches:
+      - 'catalog/snapshot-ps-*'
 
 permissions:
   contents: write
