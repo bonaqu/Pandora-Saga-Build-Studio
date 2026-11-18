@@ -3252,6 +3252,25 @@ function renderWiki(root){
  const wt=(ru,en)=>lang==='en'?en:ru;
  const wikiTitle=(group,key,ru,en)=>
   window.PandoraWikiLabels?.value(override,group,key,lang)||wt(ru,en);
+ // Render native option values and editorial captions from one set of defaults.
+ // The immutable filter ID drives search; author edits change only visible RU/EN copy.
+ const wikiFilterCopyRows=[];
+ const filterCopyKey=(family,id)=>'filter'+family+id[0].toUpperCase()+id.slice(1);
+ const addFilterOptions=(picker,family,rows,selected)=>{
+  for(const [id,ru,en] of rows){
+   const key=filterCopyKey(family,id);
+   const option=h('option',{value:id});
+   option.selected=id===selected;
+   bindOwnerInterfaceText(option,'wiki-ui',key,ru,en);
+   picker.append(option);
+   if(adminEditing&&adminToken)
+    wikiFilterCopyRows.push([key,ru,en,family+' · '+id,family+' · '+id]);
+  }
+ };
+ const addFilterName=(picker,key,ru,en)=>{
+  bindOwnerInterfaceText(picker,'wiki-ui',key,ru,en,'aria-label');
+  if(adminEditing&&adminToken)wikiFilterCopyRows.push([key,ru,en,ru,en]);
+ };
  const outsidePickers=new Set();
  const cleanupOutsidePickers=()=>{
   for(const onOutside of outsidePickers)
@@ -3458,15 +3477,14 @@ function renderWiki(root){
   controls.append(create);
  }
  if(wikiSelection.type==='item'&&!['utility','all'].includes(wikiItemType)){
-  const equipmentTypes=[['equipment',wt('Экипировка','Equipment')],
-    ['elemental',wt('Стихийное оружие','Elemental weapons')],
-   ...[['weapon','Оружие','Weapons'],['shield','Щиты','Shields'],
+  const equipmentTypes=[['equipment','Экипировка','Equipment'],
+    ['elemental','Стихийное оружие','Elemental weapons'],
+    ['weapon','Оружие','Weapons'],['shield','Щиты','Shields'],
     ['head','Шлемы','Helmets'],['body','Броня','Armor'],
     ['gloves','Перчатки','Gloves'],['legs','Поножи','Leg armor'],
     ['feet','Обувь','Boots'],['cloak','Плащи','Cloaks'],
     ['ring','Кольца','Rings'],['neck','Амулеты','Amulets'],
-    ['belt','Пояса','Belts'],['ear','Серьги','Earrings']]
-    .map(([id,ru,en])=>[id,wt(ru,en)])];
+    ['belt','Пояса','Belts'],['ear','Серьги','Earrings']];
   const typeSelect=h('select',{class:'wiki-equipment-type',
    'aria-label':wt('Вид предметов','Item type'),onchange:event=>{
     wikiItemType=event.target.value;wikiShown=100;wikiSelection={...wikiSelection,id:null,highlight:null};
@@ -3474,39 +3492,34 @@ function renderWiki(root){
     else if(wikiIndex){for(const button of categories.querySelectorAll('[data-wiki-chapter]'))
      button.classList.toggle('chosen',button.dataset.wikiChapter==='item');draw()}
    }});
-  for(const [id,label]of equipmentTypes){
-   const option=h('option',{value:id,text:label});
-   if(id===wikiItemType)option.selected=true;
-   typeSelect.append(option);
-  }
+  addFilterOptions(typeSelect,'EquipmentType',equipmentTypes,wikiItemType);
+  addFilterName(typeSelect,'filterEquipmentTypeAria','Вид предметов','Item type');
   const compatibility=h('select',{class:'wiki-eligibility-filter',
    'aria-label':wt('Совместимость с героем','Hero compatibility'),
    onchange:event=>{
     wikiItemEligibility=event.target.value;wikiSelection={...wikiSelection,id:null,highlight:null};
     wikiShown=100;if(wikiIndex)draw()
    }});
-  for(const [id,ru,en]of [
+  addFilterOptions(compatibility,'HeroEligibility',[
    ['all','Все вещи','All gear'],
-   ['now','Можно надеть сейчас','Equippable now']]){
-   const option=h('option',{value:id,text:wt(ru,en)});
-   if(id===wikiItemEligibility)option.selected=true;
-   compatibility.append(option);
-  }
+   ['now','Можно надеть сейчас','Equippable now']
+  ],wikiItemEligibility);
+  addFilterName(compatibility,'filterHeroEligibilityAria',
+   'Совместимость с героем','Hero compatibility');
   const toolbar=h('div',{class:'wiki-equipment-toolbar'},[typeSelect,compatibility]);
   if(wikiItemType==='elemental'){
    const picker=h('select',{class:'wiki-elemental-type',
     'aria-label':wt('Стихия оружия','Weapon element'),
     onchange:event=>{wikiElementFilter=event.target.value;wikiShown=100;
      wikiSelection={...wikiSelection,id:null,highlight:null};draw()}});
-   for(const [id,ru,en] of [
+   addFilterOptions(picker,'WeaponElement',[
     ['all','Все стихии','All elements'],['fire','Огонь','Fire'],
     ['ice','Лёд','Ice'],['dark','Тьма','Darkness'],
     ['light','Свет','Light'],['lightning','Молния','Lightning'],
-    ['poison','Яд','Poison']]){
-    const opt=h('option',{value:id,text:wt(ru,en)});
-    if(id===wikiElementFilter)opt.selected=true;
-    picker.append(opt);
-   }
+    ['poison','Яд','Poison']
+   ],wikiElementFilter);
+   addFilterName(picker,'filterWeaponElementAria',
+    'Стихия оружия','Weapon element');
    toolbar.append(picker);
   }
   controls.append(toolbar);
@@ -3525,6 +3538,7 @@ function renderWiki(root){
      skillLabelToggle?.setAttribute('aria-expanded','false')}
     wikiResultsCache=null;draw();saveView();
    }});
+  addFilterName(filter,'filterSkillCategoryAria','Категория навыков','Skill category');
   for(const [id,labels] of Object.entries(filterNames)){
    const count=model?.counts?.[id];
    const name=localizedFilterLabel(id,labels);
@@ -3591,19 +3605,17 @@ function renderWiki(root){
    'aria-label':wt('Тип предметов эффектов','Effect item category'),
    onchange:event=>{wikiEffectFilter=event.target.value;
     wikiSelection={...wikiSelection,id:null,highlight:null};wikiShown=100;draw()}});
-  for(const [id,ru,en] of [
+  addFilterOptions(filter,'UtilityEffect',[
    ['all','Все предметы эффектов','All effect items'],
    ['buff','Дают положительные эффекты','Apply positive effects'],
    ['recovery','Восстанавливают ОЗ/ОМ','Restore HP/MP'],
    ['cure','Снимают негативные эффекты','Remove negative effects'],
    ['harmful','Дают отрицательные эффекты','Apply negative effects'],
    ['other','Прочие активируемые предметы','Other usable items'],
-   ['review','Прочие эффекты','Other effects']]){
-   if(id==='review'&&!hasReviewItems)continue;
-   const option=h('option',{value:id,text:wt(ru,en)});
-   if(wikiEffectFilter===id)option.selected=true;
-   filter.append(option);
-  }
+   ...(hasReviewItems?[['review','Прочие эффекты','Other effects']]:[])
+  ],wikiEffectFilter);
+  addFilterName(filter,'filterUtilityEffectAria',
+   'Тип предметов эффектов','Effect item category');
   controls.append(h('div',{class:'wiki-effect-toolbar'},[filter]));
  }
  const view=h('div',{class:'wiki-equipment-view',role:'group',
@@ -3638,6 +3650,12 @@ function renderWiki(root){
   ['viewList','☰ Список','☰ List','Режим списка','List mode'],
   ['viewGrid','▦ Сетка','▦ Grid','Режим сетки','Grid mode']
  ],'Подписи энциклопедии','Encyclopedia labels'));
+ if(wikiFilterCopyRows.length){
+  const filterEditor=ownerInterfaceEditor('wiki-ui',wikiFilterCopyRows,
+   'Подписи фильтров','Filter labels');
+  filterEditor.classList.add('wiki-filter-labels-editor');
+  controls.append(filterEditor);
+ }
  const layout=h('div',{class:'wiki-layout'});
  layout.append(listPanel,detail);root.append(controls,layout);
  if(wikiSelection.type==='honor'){
