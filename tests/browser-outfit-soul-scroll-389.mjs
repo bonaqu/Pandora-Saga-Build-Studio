@@ -21,6 +21,7 @@ async function contextFor(browser,base,equipment){
  await page.goto(base+'/',{waitUntil:'domcontentloaded'});
  await page.waitForFunction(()=>document.querySelector('#catalogStatus')?.textContent?.includes('предметов')&&
   document.querySelector('.equipment-slot[data-slot-index="5"]'),null,{timeout:25000});
+ await page.locator('#startupOverlay').waitFor({state:'hidden',timeout:30000});
  return {page,context,errors};
 }
 const scrollState=page=>page.locator('#stagePicker').evaluate(root=>({
@@ -233,6 +234,7 @@ export async function runOutfitSoulScrollSmoke(browser,base){
    saved.level=1;localStorage.setItem('ps-build-studio.v1',JSON.stringify(saved));
   });
   await page.reload({waitUntil:'domcontentloaded'});
+  await page.locator('#startupOverlay').waitFor({state:'hidden',timeout:30000});
   await page.locator('.equipment-slot[data-slot-index="0"] .stage-conflict').waitFor({state:'visible'});
   const issue=page.locator('.equipment-slot[data-slot-index="0"] .stage-conflict');
   assert.match(await issue.getAttribute('aria-label'),/Предмет не действует:/);
@@ -240,10 +242,12 @@ export async function runOutfitSoulScrollSmoke(browser,base){
   const popup=page.locator('.stage-rail-warning-popover');
   await popup.waitFor({state:'visible'});
   assert.match(await popup.innerText(),/Предмет не действует:/);
+  // Measure the popover while it is visible; a later pointer/layout move may
+  // legitimately dismiss it before the unrelated delayed-tooltip assertion.
+  const bounds=await popup.boundingBox();
   await page.waitForTimeout(850);
   assert.equal(await page.locator('#stage-gear-tooltip').count(),0,
    'Hovering the warning badge must NEVER open the full item description tooltip');
-  const bounds=await popup.boundingBox();
   assert.ok(bounds&&bounds.x>=0&&bounds.x+bounds.width<=1365,
    'Reason tooltip must not be clipped by the equipment icon or viewport');
   await page.locator('.equipment-slot[data-slot-index="0"] .equipped-icon').hover();
