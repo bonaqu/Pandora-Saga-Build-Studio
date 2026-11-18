@@ -784,6 +784,10 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(await resultStatus.textContent(),initialStatus);
   assert.equal(JSON.parse(values['guideedit.book.wiki-ui.results-shown']).ru,undefined);
   await mountedCounter.dispose();
+  // Restore the compact drawer before scrolling the long Wiki list: the
+  // expanded owner dock intentionally overlaps the left-side chapter UI.
+  if(!await page.locator('#ownerDock').evaluate(el=>el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
 
   const more=page.locator('#detailContent .wiki-list>.wiki-more');
   const moreLabel=await more.textContent();
