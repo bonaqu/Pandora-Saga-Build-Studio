@@ -37,7 +37,13 @@
     if (accountReason) return accountReason;
     if (document.body.classList.contains('studio-live-blocked') ||
         document.querySelector('#startupOverlay:not([hidden])')) return 'connection';
-    if (window.PandoraStudioAdminActive?.()) return 'editor';
+    // Being authenticated is not editing. A queued D1 save must not be
+    // mislabeled as owner mode when the editor has already been closed.
+    const owner = window.PandoraStudioOwnerUpdateState?.();
+    if (owner) {
+      if (owner.editing) return 'editor';
+      if (owner.saving) return 'saving';
+    } else if (window.PandoraStudioAdminActive?.()) return 'editor';
     const el = document.activeElement;
     // An open overlay or a focused plaintext-only editor must veto navigation.
     if (document.visibilityState !== 'visible' ||
@@ -78,6 +84,7 @@
     draft: 'Finish or clear the account password form before updating.',
     connection: 'Reconnect to the game data before updating. Your build will stay here.',
     editor: 'Finish your edits and leave owner mode before updating.',
+    saving: 'Wait for the current D1 change to finish saving before updating.',
     finish: 'Finish the current action and close open panels before updating.',
     apply: 'Update', later: 'Later'
   } : {
@@ -87,6 +94,7 @@
     draft: 'Сначала заверши или очисти поля пароля в форме аккаунта.',
     connection: 'Сначала восстанови игровые данные. Текущий билд останется здесь.',
     editor: 'Заверши правки и выйди из режима владельца перед обновлением.',
+    saving: 'Дождись завершения сохранения правок перед обновлением.',
     finish: 'Сначала заверши текущее действие и закрой открытые окна.',
     apply: 'Обновить', later: 'Позже'
   };
@@ -94,7 +102,8 @@
   // guidance about recovery codes and account requests remains uneditable.
   const editable = Object.freeze({
     notice: 'siteUpdateNotice', connection: 'siteUpdateConnection',
-    editor: 'siteUpdateEditor', finish: 'siteUpdateFinish',
+    editor: 'siteUpdateEditor', saving: 'siteUpdateSaving',
+    finish: 'siteUpdateFinish',
     apply: 'siteUpdateApply', later: 'siteUpdateLater'
   });
   const updateCopy = () => {
@@ -209,7 +218,12 @@
         showUpdate(latest);
       }
     } catch { /* Offline or CDN delay: keep the current working state. */ }
-    finally { versionCheckInFlight = false; }
+    finally {
+      versionCheckInFlight = false;
+      // A version poll refreshes an existing blocker without remounting it.
+      // Owner state transitions also trigger this immediately.
+      if (document.getElementById('studio-update-banner')) refreshUpdateLocale();
+    }
   }
   // Automatic reloading is limited to idle non-admin sessions without open forms.
   setInterval(() => {

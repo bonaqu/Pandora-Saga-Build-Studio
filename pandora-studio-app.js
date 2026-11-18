@@ -8892,7 +8892,17 @@ function ownerDockPatchAttr(node,name,value){
 function ownerDockPatchData(node,key,value){
  if(node&&node.dataset[key]!==value)node.dataset[key]=value;
 }
+// Refresh the public update notice only when the actual blocking state changes.
+// A D1 write can finish after a failed session, with no owner drawer visible.
+let lastOwnerUpdateReason;
+function notifyOwnerUpdateTransition(){
+ const reason=adminEditing&&adminToken?'editor':ownerSaveInFlight()?'saving':'';
+ if(reason===lastOwnerUpdateReason)return;
+ lastOwnerUpdateReason=reason;
+ window.PandoraStudioUpdateBanner?.refresh?.();
+}
 function refreshOwnerUI(){
+ notifyOwnerUpdateTransition();
  const dock=document.getElementById('ownerDock');
  if(!adminEditing||!adminToken){closeInlineEditor();dock?.remove();return}
  const count=Object.keys(override).length;
@@ -11001,7 +11011,8 @@ document.addEventListener('keydown',event=>{
 });
 
 // Retained owner authorization is safe to refresh; editing and pending D1 writes are not.
-window.PandoraStudioAdminActive=()=>Boolean(adminEditing&&adminToken)||ownerSaveInFlight();
+window.PandoraStudioOwnerUpdateState=()=>({editing:Boolean(adminEditing&&adminToken),saving:ownerSaveInFlight()});
+window.PandoraStudioAdminActive=()=>{const state=window.PandoraStudioOwnerUpdateState();return state.editing||state.saving;};
 function saveBeforeUpdate(event){
  const draftSaved=persist(),librarySaved=persistBuilds();
  if(draftSaved&&librarySaved)return;

@@ -47,6 +47,7 @@ const strings={
  siteUpdateNotice:['Новая версия опубликована. Текущий билд и положение на странице будут сохранены перед обновлением.','A new version is available. Your current build and page position will be saved before updating.'],
  siteUpdateConnection:['Сначала восстанови игровые данные. Текущий билд останется здесь.','Reconnect to the game data before updating. Your build will stay here.'],
  siteUpdateEditor:['Заверши правки и выйди из режима владельца перед обновлением.','Finish your edits and leave owner mode before updating.'],
+ siteUpdateSaving:['Дождись завершения сохранения правок перед обновлением.','Wait for the current D1 change to finish saving before updating.'],
  siteUpdateFinish:['Сначала заверши текущее действие и закрой открытые окна.','Finish the current action and close open panels before updating.'],
  siteUpdateApply:['Обновить','Update'],
  siteUpdateLater:['Позже','Later']
