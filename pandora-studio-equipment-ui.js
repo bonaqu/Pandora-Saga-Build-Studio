@@ -656,7 +656,7 @@ function render(root,api){
     progress.textContent=english?shown+' of '+results.length+' Souls':
      'Душ: '+shown+' из '+results.length;
     if(paging.parentNode!==list)list.append(paging);
-   }else paging.remove();
+   }else if(paging.parentNode===list)paging.remove();
   };
   const appendResults=start=>{
    let firstNew=null;
@@ -688,7 +688,9 @@ function render(root,api){
      button.append(caption);
      row=el('div',{class:'stage-rich-result-edit-wrap'},[button,pencil]);
     }else button.append(caption);
-    list.insertBefore(row,paging.parentNode===list?paging:null);
+    // No extra wrapper: keep the real list grid and the clicked More control.
+    if(paging.parentNode===list)list.insertBefore(row,paging);
+    else list.append(row);
     if(!firstNew)firstNew=button;
     attachPreview(button,rec,icons,'soul');
    }
