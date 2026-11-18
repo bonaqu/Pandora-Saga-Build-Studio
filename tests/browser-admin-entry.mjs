@@ -4,6 +4,10 @@ import {readFileSync} from 'node:fs';
 export async function runAdminEntrySmoke(browser,base){
  const api='https://ps-build-studio-cloud.bonaqu.workers.dev';
  const calls=[],townOverrides=new Map();
+ // This browser regression must remain valid after every release bump.
+ // Offer exactly the next revision after the HTML currently under test.
+ const runningRelease=JSON.parse(readFileSync(new URL('../site-version.json',import.meta.url),'utf8')).release;
+ const futureRelease=runningRelease.replace(/\\.\\d+$/,suffix=>'.'+(Number(suffix.slice(1))+1));
  let sourceUnavailable=false,d1SourceSpoofed=false,offerNewSiteVersion=false;
  const context=await browser.newContext({viewport:{width:1280,height:860}});
  await context.route('**/*',async route=>{
@@ -11,7 +15,7 @@ export async function runAdminEntrySmoke(browser,base){
   if(url.startsWith(base+'/')){
    if(offerNewSiteVersion&&url.includes('/site-version.json?check='))
     return route.fulfill({status:200,contentType:'application/json',
-     body:JSON.stringify({release:'2026.11.18.899'})});
+     body:JSON.stringify({release:futureRelease})});
    return route.continue();
   }
   if(!url.startsWith(api+'/'))return route.abort();
@@ -1675,7 +1679,7 @@ export async function runAdminEntrySmoke(browser,base){
    /Новая версия опубликована/i,
    'Owner Finish removes stale update blocker without page reload');
   const refreshRequest=page.waitForRequest(request=>request.isNavigationRequest()&&
-   new URL(request.url()).searchParams.get('ps-revision')==='2026.11.18.899');
+   new URL(request.url()).searchParams.get('ps-revision')===futureRelease);
   await updateButton.click();
   await refreshRequest;
   console.log('Chromium hidden admin entry passed: no public button, keyboard and five-logo gestures, independent authentication');
