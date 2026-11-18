@@ -117,9 +117,11 @@ export async function runSoulSearch852Smoke(browser,base){
   await more.focus();
   await page.keyboard.press('Enter');
   assert.equal(await many.count(),186,'Every compatible Soul can be reached');
-  assert.equal(await panel.locator('[data-soul-progress-count]').count(),0,
-   'The progress disappears with More when all results are shown');
-  assert.equal(await more.count(),0,'The More control disappears at the end');
+  assert.equal(await panel.locator('[data-soul-progress-count]').innerText(),': 186 из 186');
+  assert.equal(await panel.locator('[data-soul-progress-count]').getAttribute('data-stable'),'yes',
+   'The completed progress is the original live node');
+  assert.equal(await more.isHidden(),true,'Completed list hides only the More button');
+  assert.equal(await panel.locator('[data-soul-progress]').innerText(),'Душ: 186 из 186');
   assert.equal(await panel.evaluate(node=>document.activeElement?.classList.contains('stage-rich-result')),
    true,'Keyboard focus moves to the newly revealed items after last page');
   assert.deepEqual(await page.evaluate(()=>window.__soulPagingState.counts),[160,186]);
@@ -132,7 +134,8 @@ export async function runSoulSearch852Smoke(browser,base){
   assert.equal(await panel.locator('.stage-rich-list').getAttribute('data-soul-visible'),'186');
   await panel.locator('[data-soul-query]').fill('Synthetic Soul 185');
   assert.equal(await many.count(),1,'Search intersects all records beyond the first page');
-  assert.equal(await more.count(),0);
+  assert.equal(await more.isHidden(),true,'One result needs no More button');
+  assert.equal(await panel.locator('[data-soul-progress]').innerText(),'Душ: 1 из 1');
   assert.equal(await page.evaluate(()=>window.__soulPagingState.shown),80);
   await panel.locator('[data-soul-query]').fill('');
   assert.equal(await many.count(),80,'Changing the query resets disclosure to one page');
@@ -153,6 +156,15 @@ export async function runSoulSearch852Smoke(browser,base){
    'The short RU/EN caption supports the existing owner inline editor');
   assert.equal(await more.count(),1);
   assert.equal(await many.count(),80,'Editing never renders or mutates the entire catalog');
+  await page.evaluate(()=>window.__soulPagingState.shown=186);
+  await page.evaluate(()=>window.__renderSoulPaging(true));
+  assert.equal(await panel.locator('.stage-soul-progress .stage-control-pencil').count(),1);
+  assert.equal(await panel.locator('[data-soul-progress-count]').count(),1,
+   'Owner may edit the caption but never the numeric total');
+  assert.equal(await panel.locator('[data-soul-more]').isHidden(),true);
+  assert.equal(await panel.locator('[data-owner-edit-key="soulShowMore"]').isHidden(),true,
+   'Owner More action and its pencil hide together');
+  assert.equal(await panel.locator('[data-soul-progress]').innerText(),'186 of 186 Souls');
   assert.equal(await page.evaluate(()=>window.__soulPagingState.selected),310186);
   assert.deepEqual(errors,[]);
   console.log('Chromium Soul 852: bilingual aliases and 186-item progressive paging, keyboard, rerender and owner copy passed');

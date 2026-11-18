@@ -165,6 +165,40 @@ export async function runOwnerEquipmentInlineSmoke(browser,base){
    'History reset must not remount equipment');
   assert.equal((await value().innerText()).trim(),'0/2');
   await page.locator('#modalRoot .modal button.close').click();
+  // The owner edits the existing EN tab hint using the D1 CAS/Undo pipeline.
+  // The active equipment slot and DOM node must stay intact.
+  const hintKey='guideedit.book.equipment.hint.details';
+  if(!await page.locator('#ownerDock').evaluate(el=>
+   el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
+  const hintPanel=page.locator('#stagePicker .studio-owner-interface-editor');
+  await hintPanel.locator('summary').click();
+  const hintValue=hintPanel.locator('.studio-owner-interface-row')
+   .filter({hasText:'Properties help'}).locator('.studio-owner-interface-value');
+  await hintValue.dblclick();
+  await hintValue.locator('[data-owner-text-field]').fill('Edited equipment details hint');
+  await hintValue.locator('[data-owner-text-field]').press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#stagePicker [data-stage-tab="details"]')?.dataset.guideHint===
+   'Edited equipment details hint',null,{timeout:12000});
+  assert.deepEqual(JSON.parse(values[hintKey]),{en:'Edited equipment details hint'});
+  const detailsTab=page.locator('#stagePicker [data-stage-tab="details"]');
+  assert.equal(await detailsTab.getAttribute('aria-description'),'Edited equipment details hint');
+  assert.equal(await detailsTab.getAttribute('aria-pressed'),'true');
+  await page.evaluate(()=>{window.__equipmentHintTab=
+   document.querySelector('#stagePicker [data-stage-tab="details"]')});
+  if(await page.locator('#ownerDock').evaluate(el=>
+   el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
+  await page.locator('#ownerDock [data-owner-undo]').click();
+  await page.waitForFunction(()=>document.querySelector(
+   '#stagePicker [data-stage-tab="details"]')?.dataset.guideHint===
+   'View properties, refinement and Soul sockets.',null,{timeout:12000});
+  assert.equal(Object.hasOwn(values,hintKey),false);
+  assert.equal(await page.evaluate(()=>window.__equipmentHintTab===
+   document.querySelector('#stagePicker [data-stage-tab="details"]')),true);
+  assert.equal(await detailsTab.getAttribute('aria-description'),
+   'View properties, refinement and Soul sockets.');
   // A separate bilingual title-prefix edit never serializes the selected
   // item name and never remounts the picker. Test real CAS, Undo and language.
   const headingKey='guideedit.book.equipment.picker-slot-heading';

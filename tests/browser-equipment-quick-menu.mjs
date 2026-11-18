@@ -80,6 +80,30 @@ export async function runEquipmentQuickMenuSmoke(browser,base){
    .getAttribute('aria-pressed'),'true');
   assert.equal(await page.locator('#stagePicker .stage-rich-fields dd[data-soul-fill]')
    .innerText(),'1/2');
+  // The original renderer accidentally attached the help popup to the DOM root.
+  const chooseTab=page.locator('#stagePicker [data-stage-tab="choose"]');
+  const soulsTab=page.locator('#stagePicker [data-stage-tab="souls"]');
+  const guide=page.locator('#stage-guide-tooltip');
+  assert.equal(await chooseTab.getAttribute('aria-description'),
+   'Выбрать или сменить предмет в этом слоте.');
+  assert.equal(await chooseTab.getAttribute('data-guide-hint'),
+   'Выбрать или сменить предмет в этом слоте.');
+  await page.mouse.move(2,2);
+  await chooseTab.hover();
+  await guide.waitFor({state:'visible',timeout:5000});
+  assert.equal((await guide.innerText()).trim(),'Выбрать или сменить предмет в этом слоте.');
+  assert.match(await chooseTab.getAttribute('aria-describedby'),/stage-guide-tooltip/);
+  await page.keyboard.press('Escape');
+  await guide.waitFor({state:'hidden'});
+  assert.equal(await chooseTab.getAttribute('aria-describedby'),null);
+  assert.equal(await page.locator('#stagePicker [data-stage-tab="details"]')
+   .getAttribute('aria-pressed'),'true','Escape must keep Properties open');
+  await page.mouse.move(2,2);
+  await soulsTab.hover();
+  await guide.waitFor({state:'visible',timeout:5000});
+  assert.equal((await guide.innerText()).trim(),'Вставить, заменить или снять душу.');
+  await page.mouse.move(2,2);
+  await guide.waitFor({state:'hidden'});
   await page.locator('#stagePicker .stage-picker-head button').first().click();
 
   await right(pants);
