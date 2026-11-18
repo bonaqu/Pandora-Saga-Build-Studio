@@ -123,8 +123,10 @@ export async function runShareLinkSmoke(browser,base){
    try{return await navigator.clipboard.readText()===expected}
    catch{return false}
   },link,{timeout:6000});
+  await status.getByRole('button',{name:/Скопировано/})
+   .waitFor({state:'visible',timeout:6000});
   assert.match(await status.locator('button').innerText(),/Скопировано/,
-   'The user must see confirmation only after successful clipboard write');
+   'The user must see confirmation after successful clipboard write');
   mismatched=true;
   await page.locator('.build-card').first().getByRole('button',{name:'Поделиться',exact:true}).click();
   const error=page.locator('.build-card').first().locator('.build-share-error');
