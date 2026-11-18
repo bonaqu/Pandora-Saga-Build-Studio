@@ -57,6 +57,10 @@ To recheck metadata: `GET /repos/bonaqu/Pandora-Saga-Build-Studio` and `GET /rep
 - Existing case study: [development-process timing investigation, 2026-11-11](DEVELOPMENT_PROCESS_TIME_OPTIMIZATION_2026-11-11.md).
 
 
+## 18.11.2026 — удаление завершённых одноразовых Actions
+
+После подтверждённых публикаций [#284](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/284) (шесть RU-описаний) и [#683](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/683) (семь предметов 55→50) убраны три устаревших workflow: `publish-six-instance-ru-once.yml`, `publish-seven-item-levels-once.yml`, `verify-seven-item-levels-public-once.yml`. Они больше не нужны в меню **Run workflow** и не должны повторно публиковать исторические D1-изменения. Исторические CAS-проверки и узкие скрипты оставлены как доступное для аудита доказательство исходной приёмки. Для новых изменений — только общий проверяемый путь публикации D1 с новым явным scope и разрешением владельца; `quality.yml`, `browser-smoke.yml`, `live-readonly.yml` остаются неизменными.
+
 ## 0.884.0 — проверяемое сокращение тестовых модулей и DOM-шумов
 
 До очистки: 623 `tests/*.test.mjs`, 80 отдельных `tests/browser-*.mjs`. Избыточные короткие source-only контракты объединены в пять `tests/contracts-*-884.test.mjs`: 47 старых `.test.mjs` entrypoints удалены, новых пять, итог **581 Node-модуль**. **Оригинальные утверждения и тестовые случаи сохранены** и помещены в изолированные лексические блоки с комментарием `Original: tests/<old-name>.test.mjs` для поиска истории. Не путать сокращение процессов с удалением проверки — весь `npm test` и Chromium по-прежнему обязательны для каждой публикации. Скрипт `test:quick` указывает на новый пакет героя вместо удалённого `tests/os-calculator.test.mjs`.
