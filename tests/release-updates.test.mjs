@@ -10,7 +10,7 @@ function boot(local,remote,href='https://bonaqu.github.io/Pandora-Saga-Build-Stu
  let banner=null,check=null,normalized=null,navigated=null,saved=0,languageChanged=null;
  let currentRemote=remote,holdResponses=false,saveAllowed=true,lastEventCancelable=null;
  let guard=null,accountPanelOpen=false,heroBookOpen=false,onlineRecoveryOpen=false,
-  ownerMode=false,inlineEditing=false,overlayVisible=false,now=Date.now();
+  ownerMode=false,inlineEditing=false,overlayVisible=false,activeEditable=null,now=Date.now();
  const intervals=[];
  const localeContext={};localeContext.window=localeContext;
  runInNewContext(localeSource,localeContext);
@@ -20,6 +20,7 @@ function boot(local,remote,href='https://bonaqu.github.io/Pandora-Saga-Build-Stu
  let holdBodies=false,requestCount=0;
  const document={
   documentElement:{lang:locale},
+  get activeElement(){return activeEditable},
   querySelector:selector=>selector==='meta[name="ps-studio-release"]'?{content:local}:
    (selector.includes('#accountPanel:not([hidden])')&&accountPanelOpen||
    selector.includes('#stageAttributes:not([hidden])')&&heroBookOpen||
@@ -69,6 +70,9 @@ function boot(local,remote,href='https://bonaqu.github.io/Pandora-Saga-Build-Stu
   setOverlayVisible:value=>{overlayVisible=value},
   setOwnerMode:value=>{ownerMode=value},
   setInlineEditing:value=>{inlineEditing=value},
+  setActiveEditable:selector=>{activeEditable=selector?{
+   closest:query=>query.includes('[contenteditable]')?selector:null
+  }:null},
   holdBodyReads:()=>{holdBodies=true},
   heldBodyCount:()=>heldBodies.length,
   resolveBody:(index,release)=>heldBodies[index]({release}),
@@ -354,4 +358,24 @@ test('an active D1 recovery overlay blocks automatic site upgrades until reconne
  page.checkAuto();
  assert.match(page.navigated,/ps-revision=2026[.]11[.]18[.]878/);
  assert.equal(page.saved,1,'After reconnect the existing safe-save hook remains required');
+});
+
+test('manual and idle updates protect focused plaintext-only contenteditable drafts',async()=>{
+ const page=boot('2026.11.18.891','2026.11.18.892');
+ await page.check();
+ const apply=page.banner.children[1];
+ page.setActiveEditable({contentEditable:'plaintext-only'});
+ let blocked=false;
+ apply.listeners.pointerdown({preventDefault(){blocked=true}});
+ assert.equal(blocked,true,'Pointerdown cannot blur and auto-save a plaintext-only draft');
+ apply.listeners.click();
+ assert.equal(page.navigated,null,'Manual update must not discard the draft');
+ assert.equal(page.saved,0,'No before-update save may run while editing');
+ page.advance(121000);
+ page.checkAuto();
+ assert.equal(page.navigated,null,'Idle update must also respect focused contenteditable');
+ page.setActiveEditable(null);
+ apply.listeners.click();
+ assert.match(page.navigated,/ps-revision=2026[.]11[.]18[.]892/);
+ assert.equal(page.saved,1);
 });
