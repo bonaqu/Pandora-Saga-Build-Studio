@@ -54,7 +54,7 @@ test('D1 writes and Undo update a mounted caption, including the action label',(
  const refresh=app.slice(app.indexOf('function refreshVisibleOwnerCopy('),
   app.indexOf('function ',app.indexOf('function refreshVisibleOwnerCopy(')+20));
  assert.match(refresh,/owner-dialog/);
- assert.match(refresh,/action\.textContent=value/);
+ assert.match(refresh,/ownerDockPatchText\(action,value\)/);
  assert.match(app,/key\.startsWith\('book\.owner-dialog\.'\)/);
  assert.match(app,/owner-history\|owner-dialog/);
  assert.match(styles,/\.owner-dialog-editor>/);
