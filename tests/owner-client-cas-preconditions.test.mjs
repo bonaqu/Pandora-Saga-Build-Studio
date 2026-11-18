@@ -248,3 +248,119 @@ test('a failed D1 acknowledgment preserves a retry, and a valid CAS reply clears
  assert.equal(editor.status().ownerSaveState,'saved');
  assert.equal(editor.status().ownerSaveError,'');
 });
+
+const guideStart=app.indexOf('const ownerGuideWriteQueue=new Map();');
+const guideEnd=app.indexOf('\nasync function saveGuideList(',guideStart);
+assert.ok(guideStart>=0&&guideEnd>guideStart,
+ 'Test the complete real bilingual save queue, not a replicated algorithm');
+const guideSource=app.slice(guideStart,guideEnd);
+
+function guideEnvironment(onRequest=async()=>{}){
+ const writes=[],override={},history=[],remote={},uiStates=[];
+ const apiRequest=async(_path,body)=>{
+  writes.push({...body});
+  await onRequest(body,writes.length);
+  const stored=Object.hasOwn(remote,body.key)?remote[body.key]:null;
+  const expected=Object.hasOwn(override,body.key)?override[body.key]:null;
+  assert.equal(stored,expected,'CAS must use the latest accepted local snapshot');
+  remote[body.key]=body.value;
+  return {ok:true,key:body.key,value:body.value,conditional:true};
+ };
+ const factory=Function('apiRequest','override','ownerEdits','refreshOwnerUI',
+  'refreshVisibleWikiLabels','refreshVisibleUICopy','refreshVisibleOwnerCopy',
+  'saveView','renderStageAttributes',
+  'const window={PandoraHonorGuide:{validOverride:()=>true}};'+
+  'let editIsSaving=false,wikiLabelPendingWrites=0;'+
+  'const adminEditing=true,adminToken="test",activeTab="character",wikiSelection={type:null};'+
+  guideSource+
+  '\nreturn {save:saveGuidePatch,queued:()=>ownerGuidePendingWrites,'+
+  'queueSize:()=>ownerGuideWriteQueue.size,labelsPending:()=>wikiLabelPendingWrites};');
+ const handlers=factory(apiRequest,override,history,()=>uiStates.push('refresh'),
+  ()=>{},()=>{},()=>{},()=>{},()=>{});
+ return {...handlers,writes,override,history,remote,uiStates};
+}
+const tick=()=>new Promise(resolve=>setImmediate(resolve));
+
+test('concurrent RU and EN edits of ONE semantic key merge serially without losing either language',async()=>{
+ const gate=deferredResponse();
+ const env=guideEnvironment(async(_body,count)=>{
+  if(count===1)await gate.promise;
+ });
+ const name='book.ui.label.site-update-notice';
+ const a=env.save(name,{ru:'Обновление героя'});
+ const b=env.save(name,{en:'Character update'});
+ await tick();
+ assert.equal(env.writes.length,1,'Second write must wait for first CAS acknowledgment');
+ assert.equal(env.queued(),2);
+ assert.equal(env.queueSize(),1);
+ gate.resolve();
+ await Promise.all([a,b]);
+ assert.equal(env.writes.length,2);
+ const id='guideedit.'+name;
+ assert.deepEqual(JSON.parse(env.remote[id]),{
+  ru:'Обновление героя',en:'Character update'
+ });
+ assert.equal(env.writes[0].value,JSON.stringify({ru:'Обновление героя'}));
+ assert.equal(env.writes[1].value,JSON.stringify({
+  ru:'Обновление героя',en:'Character update'
+ }));
+ assert.equal(env.history.length,2,'Both accepted edits remain undoable');
+ assert.equal(env.queued(),0);
+ assert.equal(env.queueSize(),0);
+});
+
+test('independent D1 editorial keys still save in parallel',async()=>{
+ const gate=deferredResponse();
+ const env=guideEnvironment(async()=>gate.promise);
+ const a=env.save('book.ui.label.site-update-notice',{ru:'Обновление'});
+ const b=env.save('book.ui.label.site-update-apply',{en:'Apply'});
+ await tick();
+ assert.equal(env.writes.length,2,'Different keys do not share a global lock');
+ assert.equal(env.queueSize(),2);
+ gate.resolve();
+ await Promise.all([a,b]);
+ assert.equal(env.queueSize(),0);
+ assert.equal(env.history.length,2);
+});
+
+test('a rejected first guide edit does not poison a queued edit or create phantom history',async()=>{
+ let failed=false;
+ const env=guideEnvironment(async(_body,count)=>{
+  if(count===1&&!failed){failed=true;throw Error('Mock D1 CAS failure')}
+ });
+ const key='book.ui.label.wiki';
+ const a=env.save(key,{ru:'Несохранённое'});
+ const b=env.save(key,{en:'Saved in English'});
+ await assert.rejects(a,/Mock D1 CAS failure/);
+ await b;
+ assert.equal(env.writes.length,2);
+ assert.deepEqual(JSON.parse(env.remote['guideedit.'+key]),{
+  en:'Saved in English'
+ });
+ assert.equal(env.history.length,1);
+ assert.equal(env.queueSize(),0);
+ assert.equal(env.queued(),0);
+});
+
+test('Wiki chapter labels share the owner queue and preserve pending status',async()=>{
+ const gate=deferredResponse();
+ const env=guideEnvironment(async(_body,count)=>{if(count===1)await gate.promise});
+ const a=env.save('wiki.labels',{chapter_honor_ru:'Честь'});
+ const b=env.save('wiki.labels',{chapter_honor_en:'Honor'});
+ await tick();
+ assert.equal(env.labelsPending(),2);
+ assert.equal(env.queueSize(),1);
+ gate.resolve();
+ await Promise.all([a,b]);
+ assert.deepEqual(JSON.parse(env.remote['guideedit.wiki.labels']),{
+  chapter_honor_ru:'Честь',chapter_honor_en:'Honor'
+ });
+ assert.equal(env.labelsPending(),0);
+ assert.equal(env.queueSize(),0);
+});
+
+test('admin Finish/Undo gate sees queued bilingual edits, even before their network request starts',()=>{
+ assert.match(app,/function ownerSaveInFlight\(\)\{[\s\S]*ownerGuidePendingWrites>0/);
+ assert.match(app,/if\(!adminToken\|\|!ownerEdits.length\|\|ownerSaveInFlight\(\)\)return/);
+ assert.doesNotMatch(app,/let wikiLabelWriteQueue=Promise\.resolve\(\)/);
+});
