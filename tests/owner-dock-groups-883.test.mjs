@@ -79,7 +79,7 @@ test('group copy remains separate from credentials, visible user UI and save dia
 
 test('owner drawer patch helpers do not mutate identical DOM text, ARIA or datasets',()=>{
  const helpers=take('function ownerDockPatchText(node,value){','function refreshOwnerUI(){');
- const {patchText,patchAttr,patchData}=Function(helpers+\x60\nreturn {patchText:ownerDockPatchText,patchAttr:ownerDockPatchAttr,patchData:ownerDockPatchData};\x60)();
+ const {patchText,patchAttr,patchData}=Function(helpers+'\nreturn {patchText:ownerDockPatchText,patchAttr:ownerDockPatchAttr,patchData:ownerDockPatchData};')();
  let textWrites=0,attrWrites=0,dataWrites=0;
  const attrs=new Map([['aria-label','same']]);
  const data=new Proxy({guideHint:'stable'},{set(obj,key,value){dataWrites++;obj[key]=value;return true}});
