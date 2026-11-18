@@ -670,6 +670,10 @@ export async function runUIContentInlineSmoke(browser,base){
   // The Wiki filter's selected ID is gameplay/UI state, never an editable
   // caption. In-place RU/EN CAS edits must update options without rebuilding
   // the list, losing the selection or exposing D1 controls to guests.
+  // The top navigation is hidden behind an open builds workbench; use the
+  // real Close control before switching chapters.
+  if(await page.locator('#dockClose').isVisible())
+   await page.locator('#dockClose').click();
   await page.locator('#nav [data-tab="wiki"]').click();
   await page.locator('[data-wiki-chapter="item"]').click();
   const gearFilter=page.locator('.wiki-equipment-type');
