@@ -52,6 +52,13 @@ test('failed live release captures only read-only production D1 schema diagnosti
  assert.match(script,/PRAGMA table_info\(user_accounts\)/);
  assert.match(script,/PRAGMA table_info\(user_sessions\)/);
  assert.match(script,/--remote/);
+ assert.match(script,/free_daily_row_read_quota_exhausted/);
+ assert.match(script,/free_daily_row_write_quota_exhausted/);
+ assert.match(script,/\['basic_select','SELECT 1 AS reachable'\]/);
+ assert.match(script,/\['insights','ps-build-studio-db'/);
+ assert.match(script,/--sort-by=reads/);
+ assert.match(script,/queryClass:queryClass\(item.query\)/);
+ assert.doesNotMatch(script,/console\.(?:log|warn|error)\([^\n]*item\.query/);
  assert.match(script,/TARGET_ACCOUNT/);
  assert.match(script,/TARGET_DB/);
  assert.doesNotMatch(script,/\b(?:INSERT INTO|UPDATE\s+\w+|DELETE FROM|DROP TABLE|ALTER TABLE|REPLACE INTO)\b/i);
