@@ -248,3 +248,53 @@ test('shared build import caption and unsaved warning are isolated from dynamic 
   assert.equal(locale.literalKey(unknown),null);
  }
 });
+
+test('three saved-build confirmations mount lazily with stable D1 copy and never edit a build name',()=>{
+ const src=read('pandora-studio-app.js');
+ const block=src.slice(src.indexOf('  // Rendering 200 cards must not allocate'),
+  src.indexOf('  check.checked=compareIds.includes(b.id);'));
+ const toggle=src.slice(src.indexOf('  // Only one card confirmation stays active'),
+  src.indexOf('  const cardActions=',src.indexOf('  // Only one card confirmation stays active')));
+ assert.match(block,/const fillCardChoice=target=>\{/);
+ assert.match(block,/if\(target.childElementCount\)return/);
+ assert.match(block,/class:'build-confirm-dynamic-name',text:b\.name/);
+ assert.doesNotMatch(block,/data-owner-copy-key[^\n]*b\.name/);
+ const keys=['libraryUnsavedOpen','librarySaveCurrentOpen','libraryOpenWithoutSave',
+  'libraryCancel','libraryOverwriteBefore','libraryOverwriteAfter',
+  'libraryConfirmOverwrite','libraryDeleteAsk','libraryDeleteLocalAsk','libraryDeleteBuild'];
+ for(const key of keys){
+  assert.ok(block.includes("'"+key+"'"),key+' bound to the actual confirmation');
+  const id=locale.fieldKey(key);
+  assert.ok(id,'D1 key exists: '+key);
+  assert.equal(guide.validOverride('book.'+id,
+   JSON.stringify({ru:'Подтверждение',en:'Confirmation'})),true);
+ }
+ assert.match(toggle,/root\.querySelectorAll\(/);
+ assert.match(toggle,/choice\.replaceChildren\(\)/);
+ assert.match(toggle,/fillCardChoice\(target\)/);
+ assert.match(toggle,/bindAccountCopyEditors\(target\)/);
+ assert.match(toggle,/button:not\(\.account-copy-pencil\)/);
+ const msg=locale.text('libraryOverwriteBefore','ru')+'Мой секретный персонаж'+
+  locale.text('libraryOverwriteAfter','ru');
+ assert.match(msg,/Мой секретный персонаж/);
+ assert.equal(locale.literalKey('Мой секретный персонаж'),null);
+ assert.equal(locale.literalKey(msg),null,
+  'A combined user-created build confirmation is not an owner D1 string');
+});
+
+test('library overwrite confirmation fragments keep RU and EN separately',()=>{
+ const before='libraryOverwriteBefore',after='libraryOverwriteAfter';
+ assert.equal(locale.baseText(before,'ru'),'Перезаписать сохранённый билд «');
+ assert.ok(locale.baseText(after,'ru').includes('Предыдущую версию'));
+ assert.ok(locale.baseText(after,'en').includes('cannot be restored.'));
+ const bKey='guideedit.book.'+locale.fieldKey(before);
+ const aKey='guideedit.book.'+locale.fieldKey(after);
+ locale.setOverrides({
+  [bKey]:JSON.stringify({ru:'Заменить сохранённый билд «',en:'Replace saved build “'}),
+  [aKey]:JSON.stringify({ru:'» новым героем?',en:'” with another hero?'})
+ });
+ assert.equal(locale.text(before,'ru'),'Заменить сохранённый билд «');
+ assert.equal(locale.text(after,'en'),'” with another hero?');
+ assert.equal(locale.baseText(before,'en'),'Overwrite saved build “');
+ locale.setOverrides({});
+});
