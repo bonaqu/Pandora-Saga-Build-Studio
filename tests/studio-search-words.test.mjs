@@ -23,10 +23,11 @@ test('search matches reordered words, flexible whitespace, case and NFKC',()=>{
   'A saved build name with ё should match its bilingual race and level in any order');
 });
 test('all player and owner pickers reuse the exact same search semantics',()=>{
- const stage=source.slice(source.indexOf('const draw=()=>{',source.indexOf('function renderStagePicker')),
-  source.indexOf('count.textContent=lang===',source.indexOf('function renderStagePicker')));
- assert.ok(stage.includes('searchWords([itemName(rec),'),
-  'The equipped-item chooser must include both language names');
+ const stage=source.slice(source.indexOf('const searchText=new Map(',source.indexOf('function renderStagePicker')),
+  source.indexOf(' root.append(top);',source.indexOf('function renderStagePicker')));
+ assert.match(stage,/searchWords\(\s*searchText\.get\(rec\),stageSlotQuery\)/,
+  'The equipment picker must use the shared matcher with its cached bilingual names');
+ assert.match(stage,/const searchText=new Map\(records\.map\(/);
  assert.ok(stage.includes('catalogSource?.items?.[String(rec.id)]?.name'));
  assert.ok(stage.includes('officialEnglish?.items?.[String(rec.id)]?.n'));
  for(const candidate of [
