@@ -43,6 +43,7 @@ test('auto-merge requires trusted PR, original base and two exact SHA workflow d
 test('recover work only after live parity, with no cron and no need to mutate D1',()=>{
  const yml=read('.github/workflows/catalog-icon-reconcile.yml');
  assert.match(yml,/workflow_run:/);
+ assert.match(yml,/workflow_run:[\s\S]*?branches:\s*\n\s*- bonaqu_projects/);
  assert.match(yml,/Live Pages and Worker readiness/);
  assert.match(yml,/node scripts\/mirror-os-icons\.mjs --limit=90/);
  assert.match(yml,/node scripts\/mirror-os-icons\.mjs --retry-404/);
