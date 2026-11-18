@@ -117,7 +117,14 @@ export async function runShareLinkSmoke(browser,base){
   assert.equal(readbacks,1,'must verify public GET before displaying link');
   assert.equal(sharedGets,1,'sharing should issue one verification GET');
   await status.getByRole('button',{name:'Скопировать ссылку'}).click();
-  assert.equal(await page.evaluate(()=>navigator.clipboard.readText()),link);
+  // Clipboard writes are asynchronous. Playwright click only waits for the
+  // handler dispatch, not navigator.clipboard.writeText to settle.
+  await page.waitForFunction(async expected=>{
+   try{return await navigator.clipboard.readText()===expected}
+   catch{return false}
+  },link,{timeout:6000});
+  assert.match(await status.locator('button').innerText(),/Скопировано/,
+   'The user must see confirmation only after successful clipboard write');
   mismatched=true;
   await page.locator('.build-card').first().getByRole('button',{name:'Поделиться',exact:true}).click();
   const error=page.locator('.build-card').first().locator('.build-share-error');
