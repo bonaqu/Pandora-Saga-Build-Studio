@@ -7962,31 +7962,48 @@ function isVerifiedSharedBuild(share,expectedData){
 }
 // A repeated Share click must never start duplicate writes, consume another
 // daily short-link slot, or let a late response overwrite the current card.
-const pendingShareHosts=new WeakSet();
+// Build identity persists across UI rerenders. A new card must not bypass the
+// rate-limit-protecting single-flight guard of a pending share request.
+const pendingShareRequests=new Map();
 async function createShared(build,host){
- if(!build||!host||!host.isConnected||pendingShareHosts.has(host))return;
+ if(!build||!host||!host.isConnected)return;
  if(!requireBuildAccount())return;
  const viewerToken=window.PandoraAccountUI?.token(),viewerOwner=libraryScopeId();
  if(!viewerToken)return;
- // Capture the complete payload once. Local edits and cloud refreshes may
- // mutate the original build while the POST/GET verification is in flight.
- const buildId=build.id;
- const sameViewer=()=>host.isConnected&&
+ const buildId=build.id,requestKey=viewerOwner+'|'+buildId;
+ const previous=pendingShareRequests.get(requestKey);
+ if(previous?.token===viewerToken&&previous.revision===build.at){
+  if(previous.host!==host){
+   // The same saved revision was rendered in another DOM card. Transfer the
+   // pending result rather than starting a new POST or stranding the user.
+   previous.host=host;
+   previous.reconnect?.();
+  }
+  return;
+ }
+ // Same ID with a newer revision (or a different login token) is a new share.
+ // Retired operations cannot paint the current card or unlock its request.
+ const operation={token:viewerToken,revision:build.at,host,reconnect:null};
+ pendingShareRequests.set(requestKey,operation);
+ const currentHost=()=>operation.host?.isConnected?operation.host:null;
+ const sameViewer=()=>Boolean(currentHost()&&
   window.PandoraAccountUI?.token()===viewerToken&&
-  libraryScopeId()===viewerOwner;
- pendingShareHosts.add(host);
+  libraryScopeId()===viewerOwner);
+ const currentRequest=()=>sameViewer()&&pendingShareRequests.get(requestKey)===operation;
  // Render detached authored text before insertion. The generic library
  // translator annotates only standalone literal copy, never a link or name.
  const showShareCopy=(literal,kind='muted')=>{
-  if(!sameViewer())return;
+  if(!currentRequest())return;
   const row=h('div',{class:'share-editorial-row'},
    h('p',{class:kind,text:literal}));
   window.PandoraUILocale?.localize(row,lang);
-  if(host.isConnected){
-   host.replaceChildren(row);
+  const target=currentHost();
+  if(target){
+   target.replaceChildren(row);
    if(adminEditing&&adminToken)bindAccountCopyEditors(row);
   }
  };
+ operation.reconnect=()=>showShareCopy('Создаём ссылку из последней сохранённой облачной версии…');
  try{
   if(build.localOnly===true){
    showShareCopy('Сначала откройте эту локальную копию и явно сохраните её через «Перезаписать».',
@@ -8000,11 +8017,11 @@ async function createShared(build,host){
   showShareCopy('Создаём ссылку из последней сохранённой облачной версии…');
   const response=await apiRequest('/api/shared',{schema:1,type:'build',buildId},
    viewerToken);
-  if(!sameViewer())return;
+  if(!currentRequest())return;
   if(!/^[A-Za-z0-9_-]{11}$/.test(response.id||''))throw Error('Некорректная ссылка');
   // Read back using the same account, not a new token from an unrelated login.
   const check=await apiRequest('/api/shared/'+response.id,null,viewerToken);
-  if(!sameViewer())return;
+  if(!currentRequest())return;
   if(!isVerifiedSharedBuild(check?.share,expectedData))
    throw Error('Ссылка не подтвердила выбранный билд. Попробуйте ещё раз.');
   const url=location.origin+location.pathname+'#b/'+response.id;
@@ -8012,11 +8029,11 @@ async function createShared(build,host){
   const field=h('input',{type:'text',readOnly:true,value:url,'aria-label':'Ссылка на билд'});
   const copy=h('button',{type:'button',class:'button-action primary',text:'Скопировать ссылку',
    onclick:async()=>{
-    if(!sameViewer())return;
+    if(!currentRequest())return;
     try{await navigator.clipboard.writeText(url);
      if(sameViewer())copy.textContent=window.PandoraUILocale?.ui('✓ Скопировано',lang)||'✓ Скопировано';
     }catch{
-     if(!sameViewer())return;
+     if(!currentRequest())return;
      field.focus();field.select();
      copy.textContent=window.PandoraUILocale?.ui(
       'Ссылка выделена — скопируй через меню или Ctrl+C',lang)||
@@ -8030,26 +8047,30 @@ async function createShared(build,host){
    h('p',{class:'muted',text:'Ссылка хранит снимок на момент публикации. После удаления оригинального билда она перестанет работать.'}));
   message.append(titleCopy,field,copy,explanation);
   window.PandoraUILocale.localize(message,lang);
-  if(!sameViewer())return;
-  if(host.isConnected){
-   host.replaceChildren(message);
+  if(!currentRequest())return;
+  const target=currentHost();
+  if(target){
+   target.replaceChildren(message);
    if(adminEditing&&adminToken)bindAccountCopyEditors(message);
   }
  }catch(error){
   // Old owner responses are silently discarded even when the Worker rejects.
-  if(!sameViewer())return;
+  if(!currentRequest())return;
   // Server details are runtime data, not D1-editable authored copy.
   const prefix=h('span',{class:'share-error-intro',text:'Не удалось создать ссылку:'});
   window.PandoraUILocale?.localize(prefix,lang);
   const detail=h('span',{class:'share-runtime-detail',
    text:' '+(window.PandoraUILocale?.ui(error.message,lang)||error.message)});
   const row=h('div',{class:'share-editorial-row build-share-error'},[prefix,detail]);
-  if(host.isConnected){
-   host.replaceChildren(row);
+  const target=currentHost();
+  if(target){
+   target.replaceChildren(row);
    if(adminEditing&&adminToken)bindAccountCopyEditors(row);
   }
  }finally{
-  pendingShareHosts.delete(host);
+  // An old response must never release a replacement request for a new save.
+  if(pendingShareRequests.get(requestKey)===operation)
+   pendingShareRequests.delete(requestKey);
  }
 }
 function openSharedSnapshot(share){
