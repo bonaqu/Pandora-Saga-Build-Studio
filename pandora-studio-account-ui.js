@@ -579,12 +579,44 @@ async function init(config){
 // A header RU/EN switch re-renders the profile even if its popover was
 // closed by the outside-click handler. Keep edits in the current form and its
 // validation message in memory, but never carry them across account changes.
+// A language switch must not dispose an active inline D1 edit before its
+// blur/CAS/Undo lifecycle has finished. Render the selected language once the
+// shared owner editor removes its host; multiple toggles schedule one refresh.
+let deferredLocaleRefresh=null;
 function refresh(){
+ if(!panel)return;
+ if(panel.querySelector?.('.ui-content-edit-host')){
+  if(!deferredLocaleRefresh&&typeof MutationObserver==='function'){
+   const target=panel;
+   deferredLocaleRefresh=new MutationObserver(()=>{
+    if(target.querySelector?.('.ui-content-edit-host'))return;
+    deferredLocaleRefresh.disconnect();
+    deferredLocaleRefresh=null;
+    if(panel===target)refresh();
+   });
+   deferredLocaleRefresh.observe(target,{subtree:true,childList:true});
+  }
+  return;
+ }
  const identity=session?.token||null,formMode=mode;
- const inputs=Array.from(panel?.querySelectorAll?.('.account-form input')||[]);
+ const inputs=Array.from(panel.querySelectorAll?.('.account-form input')||[]);
  const values=inputs.map(input=>input.value);
- const expanded=panel?.querySelector?.('.account-password-details')?.open;
- const message=errorLine?.dataset?.sourceMessage??null;
+ const expanded=panel.querySelector?.('.account-password-details')?.open;
+ const scrollTop=panel.scrollTop;
+ // The account popover may be hidden by the header-language click, but a
+ // keyboard-driven locale update can happen with a live caret in a field.
+ // Recreated DOM must recover the same focus and selection, never submit.
+ const controls=Array.from(panel.querySelectorAll?.('input,button,summary')||[]);
+ const focused=panel.contains(document.activeElement)?document.activeElement:null;
+ const focusIndex=focused?controls.indexOf(focused):-1;
+ let selection=null;
+ if(focused&&typeof focused.setSelectionRange==='function'){
+  try{
+   if(typeof focused.selectionStart==='number')
+    selection={start:focused.selectionStart,end:focused.selectionEnd,
+     direction:focused.selectionDirection||'none'};
+  }catch{}
+ }
  render();
  if((session?.token||null)!==identity||mode!==formMode||!panel)return;
  const restored=Array.from(panel.querySelectorAll?.('.account-form input')||[]);
@@ -592,7 +624,19 @@ function refresh(){
  for(let i=0;i<restored.length;i++)restored[i].value=values[i];
  const details=panel.querySelector?.('.account-password-details');
  if(details&&expanded!==undefined)details.open=expanded;
- if(message!==null)info(message);
+ panel.scrollTop=scrollTop;
+ // render() already restores the matching feedbackSource and its authored
+ // D1 key. Calling info(message) here would clear feedbackAuthoredKey and
+ // misclassify editable recovery-code copy as a server validation error.
+ if(focusIndex>=0){
+  const next=panel.querySelectorAll('input,button,summary')[focusIndex];
+  if(next&&!next.disabled){
+   next.focus({preventScroll:true});
+   if(selection&&typeof next.setSelectionRange==='function'){
+    try{next.setSelectionRange(selection.start,selection.end,selection.direction)}catch{}
+   }
+  }
+ }
 }
 // The release manager must never discard the only recovery code or an
 // unfinished account request. Expose state, never the token or secret itself.
