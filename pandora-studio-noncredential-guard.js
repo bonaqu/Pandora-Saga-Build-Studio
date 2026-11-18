@@ -3,7 +3,7 @@
    overlays are outside page control; this blocks their idle input events. */
 (function(root){
 'use strict';
-const installed=new WeakSet();
+const states=new WeakMap();
 const accepted=new Set([
  'insertText','insertCompositionText','insertFromPaste','insertFromDrop',
  'insertFromDictation','deleteContentBackward','deleteContentForward',
@@ -12,19 +12,20 @@ const accepted=new Set([
 const yandex=()=>String(root.navigator?.userAgent||'').includes('YaBrowser/');
 function protect(input){
  if(!input||!['search','number'].includes(String(input.type||'').toLowerCase())||
-  installed.has(input)||!yandex())return input;
- installed.add(input);
- let lastValue=input.value,editing=false;
+  states.has(input)||!yandex())return input;
+ const state={lastValue:input.value,editing:false,programmatic:false};
+ states.set(input,state);
  input.readOnly=true;
  // A browser extension can write input.value directly without an InputEvent.
  // Reconcile it before focus, legitimate gestures, or a stray change/input.
  const restore=()=>{
-  if(!editing&&input.value!==lastValue)input.value=lastValue;
+  if(!state.editing&&input.value!==state.lastValue)
+   input.value=state.lastValue;
  };
  const unlock=event=>{
   if(!event?.isTrusted)return;
   restore();
-  if(!input.disabled){editing=true;input.readOnly=false}
+  if(!input.disabled){state.editing=true;input.readOnly=false}
  };
  input.addEventListener('pointerdown',unlock,{capture:true});
  input.addEventListener('touchstart',unlock,{capture:true,passive:true});
@@ -37,19 +38,36 @@ function protect(input){
  // Capture before the Origin/Hero Book listeners can persist an unexpected
  // value as character state. A trusted user gesture already unlocked editing.
  const onChange=event=>{
-  if(!editing){
+  if(!state.editing&&!state.programmatic){
    restore();
    event.stopImmediatePropagation?.();
-  }else lastValue=input.value;
+  }else state.lastValue=input.value;
  };
  input.addEventListener('input',onChange,{capture:true});
  input.addEventListener('change',onChange,{capture:true});
  input.addEventListener('blur',()=>{
-  if(editing)lastValue=input.value;
+  if(state.editing)state.lastValue=input.value;
   else restore();
-  editing=false;input.readOnly=true;
+  state.editing=false;input.readOnly=true;
  });
  return input;
 }
-root.PandoraNonCredentialGuard=Object.freeze({protect});
+// Explicit application-owned updates to existing controls are safe even
+// while unfocused. Never invoke from a browser autofill/input handler.
+function sync(input){
+ const state=states.get(input);
+ if(state)state.lastValue=input.value;
+ return input;
+}
+// Only internal encyclopedia benchmarks intentionally dispatch synthetic
+// search events; third-party input events remain blocked while idle.
+function emitInput(input,value){
+ input.value=String(value??'');
+ const state=states.get(input);
+ if(state){state.lastValue=input.value;state.programmatic=true}
+ try{input.dispatchEvent(new Event('input',{bubbles:true}))}
+ finally{if(state)state.programmatic=false}
+ return input;
+}
+root.PandoraNonCredentialGuard=Object.freeze({protect,sync,emitInput});
 })(typeof window==='undefined'?globalThis:window);

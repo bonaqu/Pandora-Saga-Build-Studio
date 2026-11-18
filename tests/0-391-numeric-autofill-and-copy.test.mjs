@@ -74,6 +74,12 @@ test('number fields request Yandex no-autofill, gate idle edits, and restore man
  input.value='909';
  assert.equal(input.fire('input',{isTrusted:false}).stopped,true);
  assert.equal(input.value,'32','Read-only value stays at the latest manual number');
+ input.value='40';
+ host.PandoraNonCredentialGuard.sync(input);
+ input.fire('focus');
+ assert.equal(input.value,'40','Authorized + / - controls update numeric preview');
+ input.value='808';input.fire('input',{isTrusted:false});
+ assert.equal(input.value,'40','Subsequent autofill cannot replace current game state');
 });
 test('standard Chromium number fields stay editable for direct manual typing and browser tests',()=>{
  const chromium={navigator:{userAgent:'Mozilla/5.0 Chrome/154.0.0.0'}};
@@ -106,6 +112,11 @@ test('numeric guard is shared by all Hero Path, Origin and Hero Book factories',
  assert.ok(html.indexOf('pandora-studio-noncredential-guard.js')<
   html.indexOf('pandora-studio-numeric-field.js'));
  assert.match(app,/const isLogin=String\(attrs\.type\|\|''\)/);
+ assert.match(app,/PandoraNonCredentialGuard\?\.sync\(row\.input\)/);
+ assert.match(app,/PandoraNonCredentialGuard\?\.sync\(v\.exact\)/);
+ assert.match(app,/PandoraNonCredentialGuard\?\.sync\(control\)/);
+ assert.match(path,/PandoraNonCredentialGuard\?\.sync\(numeric\)/);
+ assert.match(path,/PandoraNonCredentialGuard\?\.sync\(input\)/);
  assert.match(app,/autocomplete:'current-password'/);
 });
 test('milestone tooltip and two skill numeric descriptions are short, distinct and bilingual',()=>{

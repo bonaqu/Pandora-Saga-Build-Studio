@@ -122,7 +122,30 @@ export async function runGlobalSearchAutofill797Smoke(browser,base){
   });
   assert.deepEqual(numericAfter,{value:'35',calls:0},
    'An idle numeric field keeps the last authorized value after user edits');
+  // The real + / - control deliberately updates the numeric value without
+  // typing. That new authoritative value must survive future focus and blur.
+  await numeric.evaluate(input=>{
+   input.value='42';window.PandoraNonCredentialGuard.sync(input);
+  });
+  await numeric.click();
+  assert.equal(await numeric.inputValue(),'42');
+  await numeric.press('Tab');
+  const afterStep=await numeric.evaluate(input=>{
+   input.value='999';input.dispatchEvent(new Event('change',{bubbles:true}));
+   return input.value;
+  });
+  assert.equal(afterStep,'42','Idle autofill cannot revert a legitimate stat increment');
   await numeric.evaluate(el=>el.remove());
+  const ownedSearch=await page.evaluate(()=>{
+   const input=document.createElement('input');
+   input.type='search';input.value='before';document.body.append(input);
+   window.PandoraSearchField.prepare(input);
+   let seen=0;input.addEventListener('input',()=>seen++);
+   window.PandoraNonCredentialGuard.emitInput(input,'from-app');
+   const result={value:input.value,seen,locked:input.readOnly};
+   input.remove();return result;
+  });
+  assert.deepEqual(ownedSearch,{value:'from-app',seen:1,locked:true});
   const untouched=await page.evaluate(()=>{
    const auth=document.createElement('input');auth.type='password';
    auth.autocomplete='current-password';
