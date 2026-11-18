@@ -37,7 +37,8 @@ test('cloud status editor is owner-only and safely follows live state changes',(
  const source=read('pandora-studio-app.js');
  assert.match(source,/function cloudStatusCopyKey\(message\)/);
  assert.match(source,/key===\x27statusLibrarySignIn\x27\|\|key\?\.startsWith\(\x27statusCloud\x27\)/);
- assert.match(source,/if\(adminEditing&&adminToken&&key\)node\.dataset\.ownerCopyKey=key/);
+ assert.match(source,/if\(adminEditing&&adminToken&&key\)ownerDockPatchData\(node,'ownerCopyKey',key\)/);
+ assert.match(source,/ownerDockPatchText\(node,cloudStatusText\(message\)\)/);
  assert.match(source,/if\(adminEditing&&adminToken&&key&&node\.parentElement\)/);
  assert.match(source,/const key=node\.dataset\.ownerCopyKey,id=locale\.fieldKey\(key\)/);
  assert.match(source,/if\(!node\.nextElementSibling\?\.classList\?\.contains\(\x27ui-content-edit-host\x27\)\)/);

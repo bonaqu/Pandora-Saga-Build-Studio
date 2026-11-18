@@ -420,7 +420,7 @@ function syncCloudStatusNode(node,message){
  if(adjacent?.dataset?.ownerCopyPencil&&adjacent.dataset.ownerCopyPencil!==key)
   adjacent.remove();
  if(adminEditing&&adminToken&&key)ownerDockPatchData(node,'ownerCopyKey',key);
- else if(node.hasAttribute('data-owner-copy-key'))node.removeAttribute('data-owner-copy-key');
+ else node.removeAttribute('data-owner-copy-key');
  // A late cloud status update must not destroy a draft in the inline editor.
  // Repeated identical polling statuses should also avoid needless DOM writes.
  if(!node.nextElementSibling?.classList?.contains('ui-content-edit-host'))

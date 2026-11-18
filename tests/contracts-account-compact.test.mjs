@@ -116,7 +116,8 @@ test('UI-copy undo updates the visible label without remounting builds',()=>{
  assert.match(undo,/last\.key\.startsWith\('guideedit\.book\.ui\.label\.'\)/);
  assert.match(undo,/refreshVisibleUICopy\(last\.key\)/);
  assert.match(undo,/else await refreshOwnerCatalog\(\)/);
- assert.match(undo,/PandoraAccountUI\?\.refresh\?\.\(\)/);
+ assert.doesNotMatch(undo,/PandoraAccountUI\?\.refresh\?\.\(\)/,
+  'Undo must not reconstruct an active account form with unsent credentials');
 });
 
 test('saving and undoing UI labels use one update path, not catalog rerenders',()=>{
