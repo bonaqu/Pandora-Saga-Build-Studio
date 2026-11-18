@@ -577,7 +577,11 @@ async function load({api,fetcher,local='./data/os',timeout=12000,preferLocal=fal
  const remoteBase=String(api||'').replace(/\/$/,'');
  async function batch(remote){
   const snapshots=new Set(),missingSnapshot=[];
-  const records=await Promise.all(keys.map(async key=>{
+  // Request at most three published datasets at once. The independent
+  // D1 snapshot/provenance validations below remain mandatory.
+  const batcher=root.PandoraStudioLiveRead?.mapLimit||
+   ((entries,_limit,callback)=>Promise.all(entries.map(callback)));
+  const records=await batcher(keys,3,async key=>{
    const url=remote?remoteBase+'/api/catalog/'+key+'.json':
     local.replace(/\/$/,'')+'/'+key+'.json';
    const init={cache:'no-cache'};
@@ -593,7 +597,7 @@ async function load({api,fetcher,local='./data/os',timeout=12000,preferLocal=fal
     if(snapshot)snapshots.add(snapshot);else missingSnapshot.push(key);
    }
    return [key,await response.json()];
-  }));
+  });
   if(remote&&(snapshots.size!==1||missingSnapshot.length))
    throw Error('В ходе загрузки версия опубликованного каталога изменилась');
   return {data:validate(Object.fromEntries(records)),
