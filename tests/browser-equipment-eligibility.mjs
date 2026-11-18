@@ -16,6 +16,8 @@ export async function runEquipmentEligibilitySmoke(browser,base){
  page.on('pageerror',error=>errors.push(error.message));
  try{
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
+  // Wait until the mandatory D1 modal actually releases native inert.
+  await page.locator('#startupOverlay').waitFor({state:'hidden',timeout:30000});
   await page.waitForFunction(()=>{
    const hp=document.querySelector('#originHp')?.textContent;
    return hp&&hp!=='—'&&document.querySelector('.equipment-slot[data-slot-index="2"].unavailable');

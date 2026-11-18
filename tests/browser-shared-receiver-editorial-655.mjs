@@ -52,6 +52,10 @@ export async function runSharedReceiverEditorial655Smoke(browser,base){
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>document.querySelector('#raceGrid')?.children.length>0,
    null,{timeout:30000});
+  // Module initialization and the first rendered controls precede the end
+  // of the mandatory startup dialog. Native inert blocks interaction until
+  // the overlay has actually disappeared.
+  await page.locator('#startupOverlay').waitFor({state:'hidden',timeout:30000});
   await page.keyboard.press('Control+Alt+Shift+P');
   const login=page.getByRole('dialog',{name:'Служебный вход'});
   await login.waitFor({state:'visible'});

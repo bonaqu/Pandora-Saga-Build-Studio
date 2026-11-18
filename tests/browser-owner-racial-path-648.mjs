@@ -58,6 +58,8 @@ export async function runOwnerRacialPath648Smoke(browser,base){
  };
  try{
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
+  // Wait until the mandatory D1 modal actually releases native inert.
+  await page.locator('#startupOverlay').waitFor({state:'hidden',timeout:30000});
   await page.waitForFunction(()=>document.querySelector('.right [data-path-group="special"]')&&
    document.querySelector('#catalogStatus')?.textContent?.includes('предметов'),
    null,{timeout:25000});

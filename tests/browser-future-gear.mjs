@@ -14,6 +14,8 @@ export async function runFutureGearSmoke(browser,base){
  page.on('pageerror',e=>errors.push(e.message));
  try{
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
+  // Wait until the mandatory D1 modal actually releases native inert.
+  await page.locator('#startupOverlay').waitFor({state:'hidden',timeout:30000});
   await page.locator('.equipment-slot[data-slot-index="0"]').click();
   const search=page.locator('#stagePicker input[type="search"]');
   await search.waitFor({state:'visible',timeout:20000});

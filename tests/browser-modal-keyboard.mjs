@@ -31,6 +31,9 @@ export async function runModalKeyboardSmoke(browser,base){
    await page.waitForFunction(()=>
     document.querySelector('#catalogStatus')?.textContent?.includes('навыков'),
     null,{timeout:30000});
+   // Catalog counters are populated before the mandatory D1/local boot gate
+   // fully fades. The native inert overlay correctly owns focus until hidden.
+   await page.locator('#startupOverlay').waitFor({state:'hidden',timeout:30000});
    // Open from the normal editor, not from the separate My Builds backdrop:
    // a header control remains focusable while the link dialog is shown.
    const opener=page.locator('#profileTrigger');

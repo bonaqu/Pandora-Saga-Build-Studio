@@ -57,6 +57,23 @@ export async function runOnlineD1Required878Smoke(browser,base){
   await page.goto(publicOrigin+'/',{waitUntil:'domcontentloaded'});
   await blocked().waitFor({state:'visible',timeout:20000});
   assert.equal(await page.locator('#startupArchive').count(),0);
+  assert.equal(await page.locator('#startupOverlay').getAttribute('aria-modal'),'true');
+  assert.equal(await page.locator('#startupOverlay').getAttribute('role'),'dialog');
+  assert.equal(await page.evaluate(()=>document.querySelector('main').inert),true,
+   'The editor is natively inert during failed initial D1 verification');
+  assert.equal(await page.evaluate(()=>document.querySelector('header').inert),true);
+  assert.equal(await page.locator('#level').evaluate(input=>{
+   input.focus();return document.activeElement===input;
+  }),false,'Even programmatic focus cannot escape to an inert editor');
+  assert.equal(await page.evaluate(()=>document.activeElement?.id),'startupRetry',
+   'Error recovery should focus the available retry action');
+  await page.evaluate(()=>{
+   const button=document.createElement('button');
+   button.id='onlineInertLateButton';button.textContent='Late app control';
+   document.body.append(button);
+  });
+  await page.waitForFunction(()=>
+   document.querySelector('#onlineInertLateButton')?.inert===true,null,{timeout:4000});
   assert.equal(await page.locator('#startupRetry').count(),1);
   assert.match(await page.locator('#startupStatus').innerText(),/актуальные игровые данные/i);
   assert.match(await page.locator('#catalogStatus').textContent(),/Загружаем данные игры/,
@@ -64,7 +81,20 @@ export async function runOnlineD1Required878Smoke(browser,base){
   const firstReads=reads;
   remoteUp=true;
   await page.locator('#startupRetry').click();
+  await page.waitForFunction(()=>{
+   const overlay=document.querySelector('#startupOverlay');
+   return overlay.classList.contains('is-finished')&&!overlay.hidden;
+  },null,{timeout:30000});
+  assert.equal(await page.evaluate(()=>document.querySelector('main').inert),true,
+   'Fade-out must not unlock underlying controls before the overlay is hidden');
   await waitReady();
+  assert.equal(await page.evaluate(()=>document.querySelector('main').inert),false);
+  assert.equal(await page.evaluate(()=>document.querySelector('header').inert),false);
+  assert.equal(await page.evaluate(()=>document.querySelector('#onlineInertLateButton').inert),false,
+   'A dynamically inserted control is restored after verified startup');
+  assert.equal(await page.evaluate(()=>document.querySelector('#legacyBuffControls').inert),true,
+   'Elements that were already inert remain inert after recovery');
+  await page.evaluate(()=>document.querySelector('#onlineInertLateButton').remove());
   assert.ok(reads>=firstReads+10,'Retry must verify all D1 datasets and authorial copy');
 
   // A pending English translation must NOT dismiss the D1 recovery gate
@@ -93,6 +123,9 @@ export async function runOnlineD1Required878Smoke(browser,base){
   remoteUp=false;
   await page.evaluate(()=>window.dispatchEvent(new Event('offline')));
   await blocked().waitFor({state:'visible',timeout:12000});
+  assert.equal(await page.evaluate(()=>document.querySelector('main').inert),true,
+   'Network loss locks native focus as well as click/keydown handlers');
+  assert.equal(await page.evaluate(()=>document.activeElement?.id),'startupRetry');
   assert.match(await page.locator('#startupTitle').innerText(),/Соединение прервано/);
   assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('studio-live-blocked')),true);
   assert.match(await page.locator('#startupMicro').innerText(),/герой сохранён в браузере/);
@@ -107,6 +140,8 @@ export async function runOnlineD1Required878Smoke(browser,base){
   remoteUp=true;
   await page.evaluate(()=>window.dispatchEvent(new Event('online')));
   await waitReady();
+  assert.equal(await page.evaluate(()=>document.querySelector('main').inert),false,
+   'Recovered same D1 snapshot releases native background lock');
   assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('studio-live-blocked')),false);
   assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem(
    'ps-build-studio.v1')).level),35);

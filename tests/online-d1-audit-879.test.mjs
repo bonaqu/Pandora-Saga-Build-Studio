@@ -34,7 +34,11 @@ test('public keyboard, blur and form events are blocked behind an unverified gat
  const guard=portion('function blockUnverifiedInput(event)', "window.addEventListener('offline'");
  for(const kind of ['keydown','click','input','change','submit','blur','focusout'])
   assert.ok(guard.includes("'"+kind+"'"),'must gate '+kind);
- assert.match(guard,/if\(localCatalogHost\|\|startupOverlay.hidden/);
+ assert.match(guard,/if\(startupOverlay.hidden\|\|startupOverlay.contains\(event.target\)\)return/);
+ assert.doesNotMatch(guard,/startupOverlay.classList.contains\('is-finished'\)/,
+  'The fade remains modal until the overlay is truly hidden');
+ assert.doesNotMatch(guard,/studioLiveReady&&!liveGateReason/,
+  'The EN loading overlay is modal even for a D1-verified page');
  assert.match(guard,/startupOverlay.contains\(event.target\)\)return/);
  assert.match(guard,/event.stopImmediatePropagation\(\)/);
  assert.match(source,/setInterval\(\(\)=>\{[\s\S]*?checkLiveConnection\(\);\s*\},45000\)/);

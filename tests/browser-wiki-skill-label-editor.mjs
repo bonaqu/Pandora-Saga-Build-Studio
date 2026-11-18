@@ -43,6 +43,8 @@ export async function runWikiSkillLabelEditorSmoke(browser,base){
  page.on('pageerror',error=>errors.push(error.message));
  try{
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
+  // Wait until the mandatory D1 modal actually releases native inert.
+  await page.locator('#startupOverlay').waitFor({state:'hidden',timeout:30000});
   await page.locator('#nav [data-tab="wiki"]').click();
   await page.locator('[data-wiki-chapter="skill"]').click();
   await page.locator('.wiki-skill-type').waitFor({state:'visible',timeout:20000});

@@ -10,6 +10,8 @@ export async function runInnateSkillMasterySmoke(browser,base){
  page.on('pageerror',e=>errors.push(e.message));
  try{
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
+  // Wait until the mandatory D1 modal actually releases native inert.
+  await page.locator('#startupOverlay').waitFor({state:'hidden',timeout:30000});
   await page.waitForFunction(()=>document.querySelector('#catalogStatus')?.textContent?.includes('навыков')&&document.querySelector('#catalogStatus')?.textContent?.includes('предметов'),null,{timeout:25000});
 
   const skillSearch=page.locator('#pathSkillSearch');

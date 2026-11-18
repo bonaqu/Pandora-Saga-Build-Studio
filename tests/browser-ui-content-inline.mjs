@@ -62,6 +62,8 @@ export async function runUIContentInlineSmoke(browser,base){
  page.on('pageerror',error=>errors.push(error.message));
  try{
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
+  // Never invoke owner keyboard actions before the native startup modal releases.
+  await page.locator('#startupOverlay').waitFor({state:'hidden',timeout:30000});
   await page.locator('#nav [data-tab="wiki"]').waitFor({state:'visible'});
   assert.equal(await page.locator('#nav .ui-content-pencil').count(),0,
    'Guest does not see editing controls');

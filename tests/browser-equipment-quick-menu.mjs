@@ -15,6 +15,9 @@ async function fresh(browser,base,equipment,extras={}){
  await page.waitForFunction(()=>document.querySelector('#catalogStatus')?.textContent
   ?.includes('предметов')&&document.querySelectorAll('.equipment-slot').length===14,
   null,{timeout:25000});
+ // Gear rails are rendered before the mandatory startup dialog finishes.
+ // Do not open a transient context menu until the native inert lock ends.
+ await page.locator('#startupOverlay').waitFor({state:'hidden',timeout:30000});
  return {page,context,errors};
 }
 
