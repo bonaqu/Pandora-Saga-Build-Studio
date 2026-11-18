@@ -31,23 +31,26 @@ test('startup error hides raw backend exceptions and offers working UI actions',
  assert.doesNotMatch(html,/id="startupArchive"/);
  assert.match(html,/id="startupRetry"/);
 });
-test('archive notices change language without exposing storage internals',()=>{
- const start=app.indexOf('function renderArchiveNotice(){');
- const end=app.indexOf('function applyGameLocale(',start);
- assert.ok(start>=0&&end>start);
- const factory=Function('$','catalogArchived','lang',
-  app.slice(start,end)+'return renderArchiveNotice;');
+test('catalog footer remains bilingual, numeric and free of internal D1 diagnostics',()=>{
+ const start=app.indexOf('function renderCatalogStatus(){');
+ const end=app.indexOf('// Fixed action help',start);
+ assert.ok(start>=0&&end>start,'Catalog footer renderer must exist');
+ const factory=Function('$','catalogSource','lang',
+  app.slice(start,end)+'return renderCatalogStatus;');
+ const source={meta:{counts:{skills:569,items:1116,souls:112}}};
+ const expected={
+  ru:'В энциклопедии: 569 навыков · 1116 предметов · 112 душ',
+  en:'Encyclopedia: 569 skills · 1116 items · 112 souls'
+ };
  for(const lang of ['ru','en']){
-  const notice={hidden:true,textContent:''};
-  factory(()=>notice,true,lang)();
-  assert.equal(notice.hidden,false);
-  assert.match(notice.textContent,lang==='en'?/Saved game data may be outdated/:/Сохранённая копия игры может устареть/);
-  assert.doesNotMatch(notice.textContent,/D1|Worker|HTTP/);
+  const node={textContent:''};
+  factory(()=>node,source,lang)();
+  assert.equal(node.textContent,expected[lang]);
+  assert.doesNotMatch(node.textContent,/Worker|Cloudflare D1|HTTP/);
  }
- const empty={hidden:false,textContent:'old'};
- factory(()=>empty,false,'ru')();
- assert.equal(empty.hidden,true);assert.equal(empty.textContent,'');
- assert.match(app,/renderArchiveNotice\(\);\s*renderCatalogStatus\(\);\s*renderOriginCopyLabels\(\)/);
+ assert.doesNotThrow(()=>factory(()=>null,source,'ru')());
+ assert.doesNotMatch(app,/renderArchiveNotice/);
+ assert.doesNotMatch(html,/id="siteNotice"/);
 });
 test('loading overlay is bilingual even before scripts run and old quick comparison is removed',()=>{
  assert.match(html,/id="startupStatus"[^>]*><span data-boot-ru>/);
