@@ -8816,6 +8816,19 @@ function decorateOwnerDockActions(actions){
   };
  }
 }
+// Refreshing status in the owner drawer must not repeatedly mutate the same
+// text/attributes. Constant DOM writes trigger unnecessary reflow, tooltip
+// observers and screen-reader announcements while CAS saves are in progress.
+// Keep DOM nodes (including active plaintext editors) mounted.
+function ownerDockPatchText(node,value){
+ if(node&&node.textContent!==value)node.textContent=value;
+}
+function ownerDockPatchAttr(node,name,value){
+ if(node&&node.getAttribute(name)!==value)node.setAttribute(name,value);
+}
+function ownerDockPatchData(node,key,value){
+ if(node&&node.dataset[key]!==value)node.dataset[key]=value;
+}
 function refreshOwnerUI(){
  const dock=document.getElementById('ownerDock');
  if(!adminEditing||!adminToken){closeInlineEditor();dock?.remove();return}
@@ -8829,10 +8842,10 @@ function refreshOwnerUI(){
    '✓ Подключено к Cloudflare D1 · сохранение автоматическое');
  const update=root=>{
   const counter=root.querySelector('[data-owner-count]');
-  if(counter)counter.textContent=lang==='en'?count+' D1 edits':
-   count+' '+ownerRuRecordCount(count)+' в D1';
+  ownerDockPatchText(counter,lang==='en'?count+' D1 edits':
+   count+' '+ownerRuRecordCount(count)+' в D1');
   const recent=root.querySelector('[data-owner-recent]');
-  if(recent)recent.textContent=(lang==='en'?'This session: ':'За этот сеанс: ')+ownerEdits.length;
+  ownerDockPatchText(recent,(lang==='en'?'This session: ':'За этот сеанс: ')+ownerEdits.length);
   const translations=root.querySelector('[data-owner-en-sync]');
   if(translations){
    const changes=window.PandoraOwnerBilingual?.pending(override)||[];
@@ -8840,23 +8853,24 @@ function refreshOwnerUI(){
    translations.hidden=count===0;
    translations.disabled=!count||editIsSaving||wikiLabelPendingWrites>0||
     wikiRecordWriteQueue.size>0||ownerSaveState==='saving';
-   translations.textContent=ownerDockCopy('translations')+' · '+count;
+   ownerDockPatchText(translations,ownerDockCopy('translations')+' · '+count);
   }
   for(const slot of root.querySelectorAll('.owner-dock-action-slot[data-owner-dock-key]')){
    const key=slot.dataset.ownerDockKey,button=slot.querySelector('button:not(.owner-dock-action-pencil)');
-   if(button&&key!=='translations')button.textContent=ownerDockCopy(key);
+   if(button&&key!=='translations')ownerDockPatchText(button,ownerDockCopy(key));
    // Purely visual CSS glyphs must not become part of the spoken button name.
    if(button){
-    button.setAttribute('aria-label',button.textContent);
-    if(ownerDockHints[key])button.dataset.guideHint=ownerDockHints[key][lang==='en'?1:0];
+    ownerDockPatchAttr(button,'aria-label',button.textContent);
+    if(ownerDockHints[key])
+     ownerDockPatchData(button,'guideHint',ownerDockHints[key][lang==='en'?1:0]);
    }
    const pencil=slot.querySelector('.owner-dock-action-pencil');
    if(pencil){
-    pencil.setAttribute('aria-label',
+    ownerDockPatchAttr(pencil,'aria-label',
      (lang==='en'?'Edit label: ':'Изменить надпись: ')+ownerDockCopy(key));
-    pencil.dataset.guideHint=lang==='en'?
+    ownerDockPatchData(pencil,'guideHint',lang==='en'?
      'Edit the button label only. Does not execute the action.':
-     'Изменяет только название кнопки. Само действие не запускается.';
+     'Изменяет только название кнопки. Само действие не запускается.');
    }
   }
   // Two everyday game-data tools share a row; conditional English fills
@@ -8866,78 +8880,79 @@ function refreshOwnerUI(){
   const englishSlot=translations?.closest('.owner-dock-action-slot');
   if(englishSlot)englishSlot.classList.toggle('owner-dock-action-wide',!translations.hidden);
   const title=root.querySelector('.owner-dock-title');
-  if(title&&!title.querySelector('.wiki-inline-input'))title.textContent=ownerDockCopy('title');
+  if(title&&!title.querySelector('.wiki-inline-input'))
+   ownerDockPatchText(title,ownerDockCopy('title'));
   const online=root.querySelector('.owner-dock-online');
-  if(online)online.textContent=ownerDockCopy('online');
+  ownerDockPatchText(online,ownerDockCopy('online'));
   const extra=root.querySelector('.owner-dock-secondary-label');
-  if(extra)extra.textContent=ownerDockCopy('extra');
+  ownerDockPatchText(extra,ownerDockCopy('extra'));
   for(const node of root.querySelectorAll('[data-owner-group-copy]')){
    // The drawer is refreshed during CAS writes and locale changes. Never
    // destroy an active inline editor or swap its captured RU/EN language.
    if(!node.querySelector('.wiki-inline-input'))
-    node.textContent=ownerDockCopy(node.dataset.ownerGroupCopy);
+    ownerDockPatchText(node,ownerDockCopy(node.dataset.ownerGroupCopy));
   }
   for(const pencil of root.querySelectorAll('[data-owner-group-edit-for]')){
    const key=pencil.dataset.ownerGroupEditFor;
-   pencil.setAttribute('aria-label',
+   ownerDockPatchAttr(pencil,'aria-label',
     (lang==='en'?'Edit caption: ':'Изменить надпись: ')+ownerDockCopy(key));
   }
   const note=root.querySelector('[data-owner-footer-note]');
-  if(note)note.textContent=ownerSaveState==='error'?
+  ownerDockPatchText(note,ownerSaveState==='error'?
    (lang==='en'?'Resolve the save error first':'Сначала исправь ошибку сохранения'):
    (ownerSaveState==='saving'||editIsSaving||wikiLabelPendingWrites>0||wikiRecordWriteQueue.size>0)?
    (lang==='en'?'Wait until saving finishes':'Дождись сохранения изменений'):
-   (lang==='en'?'Saved edits stay on the site':'Сохранённые правки останутся на сайте');
+   (lang==='en'?'Saved edits stay on the site':'Сохранённые правки останутся на сайте'));
   for(const node of root.querySelectorAll('[data-owner-dock-static]')){
    if(!node.querySelector('.wiki-inline-input'))
-    node.textContent=ownerDockCopy(node.dataset.ownerDockStatic);
+    ownerDockPatchText(node,ownerDockCopy(node.dataset.ownerDockStatic));
   }
   // Refresh the accessible name of help edit buttons on RU/EN switch.
   for(const pencil of root.querySelectorAll('.owner-workflow-copy-pencil')){
    const key=pencil.previousElementSibling?.dataset.ownerDockStatic;
-   if(key)pencil.setAttribute('aria-label',
+   if(key)ownerDockPatchAttr(pencil,'aria-label',
     (lang==='en'?'Edit help: ':'Изменить пояснение: ')+ownerDockCopy(key));
   }
   const guide=root.querySelector('.owner-workflow-guide>summary');
-  if(guide)guide.textContent=ownerDockCopy('guide');
+  ownerDockPatchText(guide,ownerDockCopy('guide'));
   const state=root.querySelector('[data-owner-save-state]');
   const visibleSaveState=(ownerSaveState==='saving'||editIsSaving||wikiLabelPendingWrites>0||
    wikiRecordWriteQueue.size>0)?'saving':ownerSaveState;
   // Do not re-announce unchanged saving status on every UI refresh.
   if(state){
-   if(state.textContent!==saveText)state.textContent=saveText;
-   state.dataset.state=visibleSaveState;
+   ownerDockPatchText(state,saveText);
+   ownerDockPatchData(state,'state',visibleSaveState);
   }
   root.querySelector('[data-owner-undo]').disabled=!ownerEdits.length||editIsSaving||
    wikiLabelPendingWrites>0||wikiRecordWriteQueue.size>0||ownerSaveState==='saving';
-  root.setAttribute('aria-label',lang==='en'?
+  ownerDockPatchAttr(root,'aria-label',lang==='en'?
    'Site editor · automatically saved changes':'Редактор сайта · автоматическое сохранение');
   root.classList.toggle('owner-dock-collapsed',ownerDockCollapsed);
-  root.dataset.saveState=visibleSaveState;
+  ownerDockPatchData(root,'saveState',visibleSaveState);
   const panel=root.querySelector('.owner-dock-panel');
   if(panel){
-   panel.inert=ownerDockCollapsed;
-   panel.setAttribute('aria-hidden',String(ownerDockCollapsed));
+   if(panel.inert!==ownerDockCollapsed)panel.inert=ownerDockCollapsed;
+   ownerDockPatchAttr(panel,'aria-hidden',String(ownerDockCollapsed));
   }
   const toggle=root.querySelector('[data-owner-collapse]');
   if(toggle){
    // A collapsed editor still needs a visible save-status indicator.
-   toggle.textContent=ownerDockCollapsed&&visibleSaveState==='error'?
+   ownerDockPatchText(toggle,ownerDockCollapsed&&visibleSaveState==='error'?
     (lang==='en'?'✎ Save error':'✎ Ошибка'):
     ownerDockCollapsed&&visibleSaveState==='saving'?
     (lang==='en'?'✎ Saving…':'✎ Сохраняю…'):
-    ownerDockCopy(ownerDockCollapsed?'expand':'collapse');
-   toggle.setAttribute('aria-label',ownerDockCollapsed?
+    ownerDockCopy(ownerDockCollapsed?'expand':'collapse'));
+   ownerDockPatchAttr(toggle,'aria-label',ownerDockCollapsed?
     visibleSaveState==='error'?
      (lang==='en'?'Save failed. Open site editor to review':'Ошибка сохранения. Открой редактор и проверь правку'):
     visibleSaveState==='saving'?
      (lang==='en'?'Saving changes. Open site editor':'Изменения сохраняются. Открыть редактор'):
      (lang==='en'?'Open site editor drawer':'Открыть боковую панель редактора сайта'):
     (lang==='en'?'Hide site editor drawer':'Скрыть боковую панель редактора сайта'));
-   toggle.setAttribute('aria-expanded',String(!ownerDockCollapsed));
-   toggle.dataset.guideHint=lang==='en'?
+   ownerDockPatchAttr(toggle,'aria-expanded',String(!ownerDockCollapsed));
+   ownerDockPatchData(toggle,'guideHint',lang==='en'?
     'Show or hide the editor. Saved D1 edits are preserved.':
-    'Показать или скрыть редактор. Сохранённые правки D1 не пропадут.';
+    'Показать или скрыть редактор. Сохранённые правки D1 не пропадут.');
   }
  };
  if(dock){update(dock);return}
