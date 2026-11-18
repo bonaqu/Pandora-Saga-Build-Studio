@@ -8596,15 +8596,16 @@ function refreshVisibleWikiLabels(){
  const labels=window.PandoraWikiLabels,filters=window.PandoraWikiSkillFilters?.names;
  if(!labels)return;
  for(const node of document.querySelectorAll('.wiki-category-line [data-wiki-chapter]')){
+  if(node.querySelector('.wiki-inline-input,.ui-content-edit-host'))continue;
   const id=node.dataset.wikiChapter,caption=node.querySelector('.wiki-category-text');
-  if(caption)caption.textContent=labels.value(override,'chapter',id,lang);
+  ownerDockPatchText(caption,labels.value(override,'chapter',id,lang));
  }
  for(const option of document.querySelectorAll('.wiki-skill-type option')){
   const id=option.value;
   if(!filters||!Object.hasOwn(filters,id))continue;
   const name=labels.value(override,'skillFilter',id,lang);
   const count=option.dataset.labelCount;
-  option.textContent=name+(count?' · '+count:'');
+  ownerDockPatchText(option,name+(count?' · '+count:''));
  }
  for(const row of document.querySelectorAll('.wiki-skill-edit-list [data-skill-filter-label]')){
   if(row.querySelector('.wiki-skill-edit-host'))continue;
@@ -8613,8 +8614,8 @@ function refreshVisibleWikiLabels(){
   const name=labels.value(override,'skillFilter',id,lang);
   const caption=row.querySelector('.wiki-skill-label-caption');
   const edit=row.querySelector('.wiki-skill-label-edit');
-  if(caption)caption.textContent=name;
-  if(edit)edit.setAttribute('aria-label',(lang==='en'?'Edit: ':'Изменить: ')+name);
+  ownerDockPatchText(caption,name);
+  ownerDockPatchAttr(edit,'aria-label',(lang==='en'?'Edit: ':'Изменить: ')+name);
  }
 }
 // Admin toolbar captions use the same bilingual, CAS-protected guideedit.book
@@ -9237,14 +9238,14 @@ function refreshVisibleOwnerCopy(recordKey){
     node.nextElementSibling:null;
    const helpPencil=node.parentElement?.classList?.contains('path-owner-edit-row')?
     node.parentElement.querySelector('.path-owner-pencil'):null;
-   (tabPencil||inlinePencil||helpPencil)?.setAttribute('aria-label',
+   ownerDockPatchAttr(tabPencil||inlinePencil||helpPencil,'aria-label',
     (lang==='en'?'Edit caption: ':'Изменить надпись: ')+value);
   }
   if(section==='equipment'&&id==='pickerSlotHeading'){
    // The dynamic game slot beside this caption is never part of the D1 key.
    const pencil=node.closest('.stage-picker-slot-title-wrap')
     ?.querySelector('.stage-picker-slot-pencil');
-   pencil?.setAttribute('aria-label',
+   ownerDockPatchAttr(pencil,'aria-label',
     (lang==='en'?'Edit caption: ':'Изменить надпись: ')+value);
   }
   if(section==='owner-dialog'){
@@ -9255,7 +9256,7 @@ function refreshVisibleOwnerCopy(recordKey){
    const filterCaption=node.parentElement?.querySelector('.wiki-honor-filter-caption');
    ownerDockPatchText(filterCaption,value);
    const pencil=node.parentElement?.querySelector('.wiki-honor-copy-pencil');
-   pencil?.setAttribute('aria-label',(lang==='en'?'Edit caption: ':'Изменить подпись: ')+value);
+   ownerDockPatchAttr(pencil,'aria-label',(lang==='en'?'Edit caption: ':'Изменить подпись: ')+value);
   }
   if(section==='catalog-sync'&&id.startsWith('hint'))
    for(const target of document.querySelectorAll('[data-guide-owner-key]'))
@@ -9272,11 +9273,11 @@ function refreshVisibleOwnerCopy(recordKey){
     section:field.section,id:field.key,ru:field.ru,en:field.en,suffix:field.suffix};
    if(ownerCopyKey(section,id)!==key)continue;
    const value=ownerCopy(section,id,ru,en)+(suffix||'');
-   if(attr==='text')node.textContent=value;
+   if(attr==='text')ownerDockPatchText(node,value);
    else if(['placeholder','aria-label','title','aria-description'].includes(attr)){
-    node.setAttribute(attr,value);
+    ownerDockPatchAttr(node,attr,value);
     if(attr==='aria-description'&&node.dataset.guideHint!==undefined)
-     node.dataset.guideHint=value;
+     ownerDockPatchData(node,'guideHint',value);
    }
   }
  }
