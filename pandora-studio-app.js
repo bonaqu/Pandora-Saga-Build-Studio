@@ -124,7 +124,7 @@ function saveView(){try{sessionStorage.setItem(VIEW_KEY,JSON.stringify({
  page:Math.round(window.scrollY),inner:document.getElementById('detailContent')?.scrollTop||0,
  slot:selectedSlot,slotView:stageSlotView,slotOpen:stageSlotPickerOpen,attributes:stageAttributesPage,
  expandedClasses:[...expandedClassKeys],classTreeTouched,origin:originActive,jobPathKey,pathPage:heroPathPage,
- soulQuery:stageSoulQuery,wikiLayout:wikiItemLayout,wikiSkillFilter,
+ soulQuery:stageSoulQuery,soulShown:stageSoulShown,wikiLayout:wikiItemLayout,wikiSkillFilter,
  skillGroup:selectedSkillGroup,expandedBranch:inlineBranchId,groupTouched:pathGroupTouched,
  pathScroll:document.getElementById('skillBranches')?.scrollTop||0
  }))}catch{}}
@@ -226,6 +226,8 @@ inlineBranchId=bootView.groupTouched&&bootView.expandedBranch===''?'':(
 pathScrollRestored=false,
 stageSlotView=['choose','details','souls','gems'].includes(bootView.slotView)?bootView.slotView:'choose',
 stageSoulQuery=typeof bootView.soulQuery==='string'?bootView.soulQuery.slice(0,120):'',
+stageSoulShown=Number.isInteger(bootView.soulShown)&&bootView.soulShown>=80&&
+ bootView.soulShown<=10000?bootView.soulShown:80,
 stageSoulScrollTop=0,stageGemQuery='',gameTables=null,gameItemForth=null,
 stageAttributesPage=['summary','attack','defense','buffs','effects','recovery'].includes(bootView.attributes)?bootView.attributes:null;
 if(Number.isInteger(bootView.slot)&&bootView.slot>=0&&bootView.slot<slots.length)selectedSlot=bootView.slot;
@@ -1563,7 +1565,8 @@ function openStageEquipmentSlot(index,view='auto'){
  const shared=Boolean(visual.shared);
  selectedSlot=shared&&(view==='properties'||view==='souls')?visual.sourceSlot:index;
  selectedSocket=0;gearMode='equipment';
- stageSlotQuery='';stageSoulQuery='';stageSoulScrollTop=0;stageSlotShown=48;
+ stageSlotQuery='';stageSoulQuery='';stageSoulShown=80;
+ stageSoulScrollTop=0;stageSlotShown=48;
  stageSlotView=view==='auto'?
   (shared||!state.equipment?.[index]?'choose':'details'):view;
  stageSlotPickerOpen=true;renderSlotRails();renderStagePicker(view==='choose');
@@ -2031,7 +2034,9 @@ function renderStagePicker(focusSearch=false){
    icons:(entry,kind)=>itemIcon(entry,kind==='soul'?'souls':'items'),
    refinement:plan.refinementValue(state.refinements,selectedSlot,equipped),
    souls:plan.asSocketArray(state.souls?.[selectedSlot]),
-   soulQuery:stageSoulQuery,onSoulQuery:value=>{stageSoulQuery=value;stageSoulScrollTop=0;saveView()},
+   soulQuery:stageSoulQuery,soulShown:stageSoulShown,
+   onSoulQuery:value=>{stageSoulQuery=value;stageSoulShown=80;stageSoulScrollTop=0;saveView()},
+   onSoulShown:count=>{stageSoulShown=count;saveView()},
    gems:window.PandoraEnchantModel.normalizeForSlot(key,state.gems?.[plan.refinementKey(selectedSlot,equipped)]),
    catalog,gameTables,close:()=>closeStagePicker(),
    changeMode:mode=>{
