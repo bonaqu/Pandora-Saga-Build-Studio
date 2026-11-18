@@ -24,11 +24,11 @@ test('owner commands are reorganized without rebuilding the action buttons',()=>
  assert.doesNotMatch(app,/toolsGroup\.querySelector\('\.owner-dock-group-title'\)\.replaceWith\(extra\)/);
 });
 test('save status, pinned finish, and editable labels retain their safety behavior',()=>{
- assert.match(app,/visibleSaveState=\(ownerSaveState==='saving'/);
+ assert.match(app,/const visibleSaveState=saving\?'saving':ownerSaveState/);
  assert.match(app,/ownerDockPatchData\(state,'state',visibleSaveState\)/);
  assert.match(app,/ownerDockPatchData\(root,'saveState',visibleSaveState\)/);
  assert.match(app,/if\(ownerSaveState==='error'\)/);
- assert.match(app,/if\(ownerSaveState==='saving'\|\|editIsSaving\|\|wikiLabelPendingWrites>0\|\|\s*wikiRecordWriteQueue\.size>0\)/);
+ assert.match(app,/if\(ownerSaveInFlight\(\)\)/);
  assert.match(app,/saveGuidePatch\('book\.'\+ownerCopyKey\('owner-dock',key\)/);
  assert.match(app,/ownerDockCollapsed=true/);
  assert.match(dock,/#ownerDock \.owner-dock-footer\{/);

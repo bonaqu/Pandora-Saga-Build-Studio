@@ -46,7 +46,7 @@ test('owner in-place label editor uses existing CAS path and live UI refresh wit
  assert.match(render,/'Кнопки и подсказки','Buttons and hints'/);
  assert.match(render,/'data-owner-copy-key':key,text:libraryText\(key\)/);
  assert.match(app,/return saveGuidePatch\('book\.'\+id,\{\[editLang\]:next\}\)/);
- assert.match(app,/if\(locale\.fieldKey\(key\)===id\)caption\.textContent=locale\.text\(key,lang\)/);
+ assert.match(app,/if\(locale\.fieldKey\(key\)===id\)ownerDockPatchText\(caption,locale\.text\(key,lang\)\)/);
  assert.doesNotMatch(render.slice(render.indexOf('const cardAction='),render.indexOf('for(const b of builds)')),
   /'data-owner-copy-key':labelKey/,
   'Never put a user-admin pencil inside an interactive button');

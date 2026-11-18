@@ -34,10 +34,10 @@ test('live copy refresh changes text attributes only, not query or library state
  const update=app.slice(app.indexOf('function refreshVisibleUICopy(recordKey){'),
   app.indexOf('// An Origin copy Undo',app.indexOf('function refreshVisibleUICopy(recordKey){')));
  assert.match(update,/if\(id===locale\.fieldKey\('librarySearchInputLabel'\)\)/);
- assert.match(update,/search\.setAttribute\('aria-label',locale\.text\('librarySearchInputLabel',lang\)\)/);
+ assert.match(update,/ownerDockPatchAttr\(search,'aria-label',locale\.text\('librarySearchInputLabel',lang\)\)/);
  assert.match(update,/if\(id===locale\.fieldKey\('librarySearchPlaceholder'\)\)/);
- assert.match(update,/search\.placeholder=locale\.text\('librarySearchPlaceholder',lang\)/);
- assert.match(update,/state\.textContent=locale\.text\(key,lang\)/);
+ assert.match(update,/if\(search\.placeholder!==value\)search\.placeholder=value/);
+ assert.match(update,/ownerDockPatchText\(state,locale\.text\(key,lang\)\)/);
  assert.doesNotMatch(update,/\.value\s*=|renderBuilds\(|renderDetails\(|buildSearchQuery\s*=/,
   'Owner copy must not reset user query or rerender their saved cards');
  assert.match(app,/'data-build-library-search':''/);

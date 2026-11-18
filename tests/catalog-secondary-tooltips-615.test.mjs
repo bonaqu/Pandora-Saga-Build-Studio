@@ -35,5 +35,5 @@ test('independent secondary editor never replaces a native summary/input or exec
  assert.match(catalog,/if\(!target\.isConnected\)return/);
  assert.match(css,/\.os-sync-secondary-hint\{display:grid/);
  assert.match(css,/\.os-sync-secondary-host\{grid-column:1\/-1/);
- assert.match(app,/if\(target\.dataset\.guideOwnerKey===id\)target\.dataset\.guideHint=value/);
+ assert.match(app,/if\(target\.dataset\.guideOwnerKey===id\)ownerDockPatchData\(target,'guideHint',value\)/);
 });

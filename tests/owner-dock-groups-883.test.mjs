@@ -73,7 +73,7 @@ test('group copy remains separate from credentials, visible user UI and save dia
  assert.ok(!block.includes("document.body.append"));
  assert.ok(!block.includes("/api/admin/"));
  assert.match(app,/if\(!adminEditing\|\|!adminToken\)return;/);
- assert.match(app,/const saveText=\(ownerSaveState===/);
+ assert.match(app,/const saveText=saving\?/);
  assert.doesNotMatch(block,/statusCloud|password|token\s*=/i);
 });
 
@@ -94,4 +94,60 @@ test('owner drawer patch helpers do not mutate identical DOM text, ARIA or datas
  assert.equal(node.textContent,'changed');
  assert.equal(node.getAttribute('aria-label'),'different');
  assert.equal(node.dataset.guideHint,'new');
+});
+
+test('drawer save/Undo/Finish share the actual queued-write guard and do not announce premature success',()=>{
+ const block=take('function refreshOwnerUI(){','// Update only author-edited interface copy.');
+ const helpers=take('function ownerDockPatchText(node,value){','function refreshOwnerUI(){');
+ const patches=Function(helpers+
+  '\nreturn {text:ownerDockPatchText,attr:ownerDockPatchAttr,data:ownerDockPatchData};')();
+ const node=()=>({
+  textContent:'',dataset:{},disabled:false,hidden:false,
+  _attrs:new Map(),
+  getAttribute(name){return this._attrs.get(name)||null},
+  setAttribute(name,value){this._attrs.set(name,value)},
+  closest(){return null}
+ });
+ const draw=(saving,saveState='saved')=>{
+  const state=node(),footer=node(),undo=node(),translations=node();
+  const root={dataset:{},classList:{toggle(){}},
+   getAttribute(){return null},setAttribute(){},
+   querySelectorAll(){return []},
+   querySelector(selector){return ({
+    '[data-owner-save-state]':state,'[data-owner-footer-note]':footer,
+    '[data-owner-undo]':undo,'[data-owner-en-sync]':translations
+   })[selector]||null}
+  };
+  const mockWindow={PandoraOwnerBilingual:{pending:()=>[{fields:['nameEn']}]}};
+  const main=Function('document','window','ownerSaveInFlight',
+   'ownerDockPatchText','ownerDockPatchAttr','ownerDockPatchData',
+   'saveState',
+   'const adminEditing=true,adminToken="mock-owner",lang="ru";'+
+   'const override={},ownerEdits=[{key:"guideedit.book.wiki-ui.test"}];'+
+   'const ownerDockCollapsed=true,ownerSaveError="Конфликт D1";'+
+   'let ownerSaveState=saveState;'+
+   'const ownerDockCopy=key=>key,ownerRuRecordCount=()=> "запись";'+
+   block+'\nreturn refreshOwnerUI;')(
+    {getElementById:id=>id==='ownerDock'?root:null},mockWindow,
+    ()=>saving,patches.text,patches.attr,patches.data,saveState);
+  main();
+  return {state,footer,undo,translations,root};
+ };
+ const queued=draw(true,'saved');
+ assert.equal(queued.state.dataset.state,'saving',
+  'A queued bilingual guide edit cannot be announced as saved');
+ assert.match(queued.state.textContent,/Сохраняю в Cloudflare D1/);
+ assert.match(queued.footer.textContent,/Дождись сохранения/);
+ assert.equal(queued.undo.disabled,true);
+ assert.equal(queued.translations.disabled,true);
+ const saved=draw(false,'saved');
+ assert.equal(saved.state.dataset.state,'saved');
+ assert.match(saved.state.textContent,/Сохранено в Cloudflare D1/);
+ assert.equal(saved.undo.disabled,false);
+ assert.equal(saved.translations.disabled,false);
+ const failed=draw(false,'error');
+ assert.equal(failed.state.dataset.state,'error');
+ assert.match(failed.footer.textContent,/исправь ошибку/);
+ assert.match(app,/class:'owner-dock-finish'[\s\S]*?if\(ownerSaveInFlight\(\)\)/,
+  'Finish must use the exact same queue guard as the drawer and Undo');
 });

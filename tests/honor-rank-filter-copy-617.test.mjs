@@ -32,7 +32,7 @@ test('rank filter pencils stay outside actions and do not change filter state',(
  assert.match(view,/button\.hidden=true;pencil\.hidden=true;host\.hidden=false/);
  assert.match(view,/host\.dispatchEvent\(new MouseEvent\('dblclick'/);
  assert.match(view,/onFinished:restore/);
- assert.match(app,/if\(filterCaption\)filterCaption\.textContent=value/);
+ assert.match(app,/ownerDockPatchText\(filterCaption,value\)/);
  assert.match(css,/\.wiki-honor-filter-wrap\{/);
  assert.match(css,/\.wiki-honor-filter-edit-host\[hidden\]\{display:none!important\}/);
 });
