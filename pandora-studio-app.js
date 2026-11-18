@@ -12,6 +12,47 @@ const searchWords=(text,query)=>{
   .every(term=>searchable.includes(term));
 };
 const startupOverlay=$('startupOverlay');
+// Native inert keeps background controls out of pointer, keyboard and
+// accessibility navigation while the D1 gate is visible. Capture-phase
+// event guards below remain necessary to protect owner blur/autosave.
+const startupInertBefore=new Map();
+let startupPreviousFocus=null,startupInertWatching=false;
+const startupInertObserver=typeof MutationObserver==='function'?
+ new MutationObserver(()=>{
+  if(!startupOverlay.hidden)syncStartupBackgroundInert();
+ }):null;
+function syncStartupBackgroundInert(){
+ if(!startupOverlay.hidden){
+  if(startupInertBefore.size===0){
+   const focused=document.activeElement;
+   if(focused&&focused!==document.body&&focused!==startupOverlay&&
+    !startupOverlay.contains(focused))startupPreviousFocus=focused;
+  }
+  for(const child of document.body.children){
+   if(child===startupOverlay||child.tagName==='SCRIPT')continue;
+   if(!startupInertBefore.has(child))startupInertBefore.set(child,child.inert);
+   child.inert=true;
+  }
+  if(startupInertObserver&&!startupInertWatching){
+   startupInertObserver.observe(document.body,{childList:true});
+   startupInertWatching=true;
+  }
+  return;
+ }
+ startupInertObserver?.disconnect();
+ startupInertWatching=false;
+ for(const [child,wasInert] of startupInertBefore)
+  if(child.isConnected)child.inert=wasInert;
+ startupInertBefore.clear();
+ const focused=startupPreviousFocus;
+ startupPreviousFocus=null;
+ if(focused?.isConnected&&!focused.closest?.('[inert]'))
+  focused.focus?.({preventScroll:true});
+}
+function focusStartupRetry(){
+ syncStartupBackgroundInert();
+ $('startupRetry')?.focus({preventScroll:true});
+}
 let startupFinishId=0;
 function setBootCopy(id,ru,en){
  const node=$(id);
@@ -34,13 +75,17 @@ function startupMessage(ru,en,locale=lang){
  startupOverlay.dataset.language=locale;
  startupOverlay.setAttribute('aria-label',locale==='en'?'Loading game data':'Загрузка игровых данных');
  $('startupStatus').textContent=locale==='en'?en:ru;
+ syncStartupBackgroundInert();
+ startupOverlay.focus({preventScroll:true});
 }
 function startupDone(){
  const token=++startupFinishId;
  startupOverlay.classList.add('is-finished');
  setTimeout(()=>{
-  if(token===startupFinishId&&startupOverlay.classList.contains('is-finished'))
+  if(token===startupFinishId&&startupOverlay.classList.contains('is-finished')){
    startupOverlay.hidden=true;
+   syncStartupBackgroundInert();
+  }
  },420);
 }
 function startupError(error){
@@ -54,6 +99,7 @@ function startupError(error){
  $('startupStatus').textContent=lang==='en'?
   'Could not verify current game data. Check your connection and retry.':
   'Не удалось проверить актуальные игровые данные. Проверь соединение и повтори попытку.';
+ focusStartupRetry();
  scheduleOnlineRetry();
 }
 const VIEW_KEY='ps-studio-navigation.v2';
@@ -11027,6 +11073,7 @@ function showLiveGate(kind,{saved=null}={}){
   storage?'Retry saving':needsCopy?'Copy text':'Save and reload');
  if(!changed&&!storage)setBootCopy('startupRetry','Повторить подключение','Retry connection');
  document.body.classList.add('studio-live-blocked');
+ focusStartupRetry();
  if(!changed&&!storage)scheduleOnlineRetry();
 }
 function leaveLiveGate(){
@@ -11124,10 +11171,8 @@ function reloadVerifiedCatalog(){
 // form submission or an already focused edit control behind it. Gate all
 // public user-input surfaces until the current D1 snapshot is verified.
 function blockUnverifiedInput(event){
- if(localCatalogHost||startupOverlay.hidden||
-  startupOverlay.classList.contains('is-finished')||
-  studioLiveReady&&!liveGateReason||
-  startupOverlay.contains(event.target))return;
+ // A verified page loading EN text and the visible 420-ms fade are modal too.
+ if(startupOverlay.hidden||startupOverlay.contains(event.target))return;
  if(event.type==='keydown'&&event.key==='Tab')
   $('startupRetry').focus({preventScroll:true});
  event.preventDefault();
