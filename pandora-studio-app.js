@@ -2400,6 +2400,7 @@ function renderOriginStats(calculated=undefined){
    const base=snap?.base[row.i],spent=Number(state.stats[STATS[row.i]]||0);
    const allocated=base===undefined?null:base+spent;
    row.input.value=allocated===null?'':String(allocated);
+   globalThis.PandoraNonCredentialGuard?.sync(row.input);
    row.input.min=String(base??0);
    row.input.max=String(snap?.max[row.i]??99);
    row.input.disabled=!snap;
@@ -4165,7 +4166,9 @@ function renderWiki(root){
      wt('Справочная связь не изменяет таблицы добычи и обменов.',
       'Reference only; does not modify loot or trade tables.'):'';
    };
-   kind.onchange=()=>{search.value='';feedback.textContent='';refresh();search.focus()};
+   kind.onchange=()=>{search.value='';
+    globalThis.PandoraNonCredentialGuard?.sync(search);
+    feedback.textContent='';refresh();search.focus()};
    search.oninput=refresh;
    target.onchange=async()=>{
     if(!target.value||!kind.value)return;
@@ -4316,7 +4319,8 @@ function renderWiki(root){
   // the linked record opens in details but never appears in the browse list.
   if(wikiSearch&&wikiSelection.id!=null&&records?.[wikiSelection.id]&&
    !results.some(([id])=>id===wikiSelection.id)){
-   wikiSearch='';search.value='';draw(false);return;
+   wikiSearch='';search.value='';globalThis.PandoraNonCredentialGuard?.sync(search);
+   draw(false);return;
   }
   browse.classList.toggle('wiki-gear-grid',wikiItemLayout==='grid');
   const selectedIndex=wikiSelection.id==null?-1:results.findIndex(([id])=>id===wikiSelection.id);
@@ -5825,6 +5829,7 @@ function renderWiki(root){
         const n=Number(count.value);
         if(!Number.isSafeInteger(n)||n<1||n>9999){
          count.value=String(limitData.n);
+         globalThis.PandoraNonCredentialGuard?.sync(count);
          showStudioToast(wt('Введите число от 1 до 9999',
           'Enter a number from 1 to 9999'),'warning');return;
         }
@@ -6862,7 +6867,9 @@ function renderWiki(root){
     });
     observer.observe(browse,{subtree:true,childList:true});
     const timer=setTimeout(()=>finish(Error('Search did not finish')),3000);
-    search.value=term;search.dispatchEvent(new Event('input',{bubbles:true}));
+    if(globalThis.PandoraNonCredentialGuard?.emitInput)
+     globalThis.PandoraNonCredentialGuard.emitInput(search,term);
+    else{search.value=term;search.dispatchEvent(new Event('input',{bubbles:true}))}
    });
    try{
     wikiShown=100;draw();
@@ -6895,7 +6902,8 @@ function renderWiki(root){
    }finally{
     if(wikiSearchTimer!==null)clearTimeout(wikiSearchTimer);
     wikiSearchTimer=null;
-    search.value=oldValue;wikiSearch=oldValue;wikiShown=oldShown;
+    search.value=oldValue;globalThis.PandoraNonCredentialGuard?.sync(search);
+    wikiSearch=oldValue;wikiShown=oldShown;
     if(root.isConnected&&wikiIndex)draw();
     browse.scrollTop=oldScroll;
     speed.disabled=false;
@@ -7110,6 +7118,7 @@ function renderStats(root){
    const code=ORIGIN_STAT_LABELS[v.i].code;
    v.total.textContent=base===undefined?'—':String(estimate?.stats?.[code]??(base+invested));
    v.range.value=String((base??0)+invested);v.exact.value=String((base??0)+invested);
+   globalThis.PandoraNonCredentialGuard?.sync(v.exact);
    v.range.min=String(base??0);v.exact.min=String(base??0);
    v.range.max=String(s?.max[v.i]??99);v.exact.max=String(s?.max[v.i]??99);
    v.fill.style.width=s&&s.max[v.i]>0?Math.min(100,(base+invested)/s.max[v.i]*100)+'%':'0%';
@@ -9627,7 +9636,8 @@ function showOverrideManager(){
  const clearSearch=h('button',{type:'button',class:'button-action owner-manager-search-clear',
   text:tr('Очистить','Clear'),disabled:true,
   'aria-label':tr('Очистить поиск по правкам','Clear edits search'),
-  onclick:()=>{search.value='';draw();search.focus({preventScroll:true})}});
+  onclick:()=>{search.value='';globalThis.PandoraNonCredentialGuard?.sync(search);
+    draw();search.focus({preventScroll:true})}});
  window.PandoraGuideTooltip?.attach(clearSearch,
   tr('Очищает только поиск. Сохранённые правки D1 не меняются.',
    'Clear the search only. Saved D1 edits stay unchanged.'),{hoverDelay:350});
@@ -9787,7 +9797,8 @@ function editor(el){
    slotEdit?h('input',{type:'number',min:'0',max:'32',step:'1',value:original,'aria-label':'Число слотов душ'}):
     ownerPlainTextField({multiline:true,rows:key.startsWith('skilldesc.')?5:3,
    class:'owner-plain-multiline','aria-label':'Редактируемый текст'});
-  if(!visual)input.value=original;
+  if(!visual){input.value=original;
+   if(slotEdit)globalThis.PandoraNonCredentialGuard?.sync(input);}
   const feedback=h('div',{class:'owner-github-feedback',role:'status','aria-live':'polite'});
   root.append(bar);
   if(visual){
@@ -9908,7 +9919,9 @@ function editWikiValue(node,initial,{type='text',options=[],min=0,max=100000,int
    const el=h('option',{value:option.value,text:option.label});
    el.selected=option.value===before;control.append(el);
   }
- }else control.value=before;
+ }else{control.value=before;
+  if(type==='number')globalThis.PandoraNonCredentialGuard?.sync(control);
+ }
  if(type==='number')guardOwnerInput(control);
  const restore=()=>{if(node.isConnected){node.replaceChildren(...visibleNodes);
   node.classList.remove('wiki-inline-saving');node.removeAttribute('aria-busy')}

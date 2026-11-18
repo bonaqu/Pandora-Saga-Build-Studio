@@ -4,7 +4,7 @@
 // equipment, Honor and owner review. None of these fields are login inputs.
 // Browser/password-manager extensions can override website hints; this is a
 // defensive guard, not a claim of control over browser-owned suggestions.
-const installed=new WeakMap();
+const installed=new WeakSet();
 let nextId=0,observer=null;
 
 function isSearch(node){
@@ -32,49 +32,12 @@ function prepare(input){
   const id=String(input.id||'').replace(/[^a-zA-Z0-9_-]/g,'').slice(0,50);
   input.setAttribute('name','ps-filter-'+(id||String(++nextId)));
  }
- const state={lastValue:input.value,editing:!yandex()};
- installed.set(input,state);
- if(yandex()){
-  // Leave idle searches readonly. An actual pointer/keyboard gesture unlocks
-  // editing before the default browser action; losing focus locks again.
-  // Do not make text fields in account login readonly.
-  input.readOnly=true;
-  const restoreUnexpected=()=>{
-   if(!state.editing&&input.value!==state.lastValue)
-    input.value=state.lastValue;
-  };
-  const unlock=event=>{
-   // Only genuine browser gestures may unlock an idle Yandex search. A
-   // synthetic key/pointer event must not turn a password-manager fill into
-   // an apparently manual edit.
-   if(event&&!event.isTrusted)return;
-   restoreUnexpected();
-   if(!input.disabled){state.editing=true;input.readOnly=false}
-  };
-  input.addEventListener('pointerdown',unlock,{capture:true});
-  input.addEventListener('touchstart',unlock,{capture:true,passive:true});
-  input.addEventListener('keydown',unlock,{capture:true});
-  // IME/dictation may emit beforeinput without keydown. Do not interpret a
-  // credential-manager replacement as user-typed search content.
-  input.addEventListener('beforeinput',event=>{
-   if(event.isTrusted&&document.activeElement===input&&
-    ['insertText','insertCompositionText','insertFromPaste','insertFromDrop',
-     'insertFromDictation','deleteContentBackward','deleteContentForward',
-     'deleteByCut','historyUndo','historyRedo'].includes(event.inputType))unlock();
-  },{capture:true});
-  input.addEventListener('focus',restoreUnexpected);
-  input.addEventListener('input',event=>{
-   if(!state.editing){
-    restoreUnexpected();
-    event.stopImmediatePropagation();
-   }else state.lastValue=input.value;
-  },{capture:true});
-  input.addEventListener('blur',()=>{
-   if(state.editing)state.lastValue=input.value;
-   else restoreUnexpected();
-   state.editing=false;input.readOnly=true;
-  });
- }
+ installed.add(input);
+ // All non-credential browser guards use the same trusted-interaction logic.
+ // A missing shared script must not make an idle Yandex field writable.
+ if(root.PandoraNonCredentialGuard?.protect)
+  root.PandoraNonCredentialGuard.protect(input);
+ else if(yandex())input.readOnly=true;
  return input;
 }
 function prepareAll(scope){

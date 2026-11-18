@@ -42,7 +42,7 @@ test('deep-linked trade materials bypass an equipment-only filter without breaki
 test('cross-linked encyclopedia entries clear a stale search instead of disappearing',()=>{
  const app=get('pandora-studio-app.js');
  assert.ok(app.includes('if(wikiSearch&&wikiSelection.id!=null&&records?.[wikiSelection.id]&&'));
- assert.match(app,/wikiSearch='';search\.value='';draw\(false\);return/);
+ assert.match(app,/wikiSearch='';search\.value='';globalThis\.PandoraNonCredentialGuard\?\.sync\(search\);\s*draw\(false\);return/);
 });
 test('repeated wiki record click reuses same list and preserves its scroll position',()=>{
  const app=get('pandora-studio-app.js');

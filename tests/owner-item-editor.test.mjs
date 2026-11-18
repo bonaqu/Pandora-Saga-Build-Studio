@@ -128,9 +128,13 @@ test('visible owner entry points and read-only-until-focus search guards are pre
  assert.match(source,/function guardEncyclopediaSearch/);
  assert.match(source,/input\.readOnly=true/);
  const search=readFileSync(new URL('pandora-studio-search-field.js',root),'utf8');
+ const guard=readFileSync(new URL('pandora-studio-noncredential-guard.js',root),'utf8');
  assert.match(source,/PandoraSearchField\?\.prepare\(input\)/);
- assert.match(search,/input\.addEventListener\('focus'/);
- assert.match(search,/input\.addEventListener\('blur'/);
+ assert.match(search,/PandoraNonCredentialGuard\.protect\(input\)/);
+ assert.match(guard,/input\.addEventListener\('focus',restore\)/);
+ assert.match(guard,/input\.addEventListener\('blur'/);
+ assert.match(guard,/input\.addEventListener\('input',onChange/);
+ assert.match(guard,/input\.addEventListener\('change',onChange/);
 });
 
 test('in-page editor exposes every live item effect and no dead modal entry',()=>{

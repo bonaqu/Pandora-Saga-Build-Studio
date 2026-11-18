@@ -495,18 +495,21 @@ function viewGrowth(target,api){
     const restorePotential=()=>{
      const current=String(M.potential(state,key));
      range.value=String(M.branchPotential(state,key,innate,caps));numeric.value=current;
+     root.PandoraNonCredentialGuard?.sync(numeric);
     };
     const update=(requested,final)=>{
      if(!Number.isInteger(requested)||requested<0){restorePotential();return}
      const target=api.onAllocate(key,requested,final);
      if(!Number.isInteger(target)){restorePotential();return}
      range.value=String(M.branchPotential(state,key,innate,caps));numeric.value=String(target);
+     root.PandoraNonCredentialGuard?.sync(numeric);
      branchCount.textContent=cap>0?
       M.branchPotential(state,key,innate,caps)+' / '+cap:
       target>0?target+' / 0':'—';
 
      groupCount.textContent=groupSummary();
      input.value=String(M.branchMastery(state,key,innate,caps));
+     root.PandoraNonCredentialGuard?.sync(input);
      input.max=String(M.branchPotential(state,key,innate,caps));
      const potentialCaption=editor.querySelector('.path-track-limit-value');
      if(potentialCaption)potentialCaption.textContent=tr(api,'Лимит (оч.): ','Limit (pts): ')+cap;
@@ -638,6 +641,7 @@ function viewGrowth(target,api){
      if(!Number.isInteger(requested)||requested<0||
       !api.onMastery(key,requested))
       input.value=String(M.branchMastery(state,key,innate,caps));
+      root.PandoraNonCredentialGuard?.sync(input);
     });
     const controls=make('div',{class:'path-point-controls'});
     const stepPotential=delta=>{
@@ -651,6 +655,7 @@ function viewGrowth(target,api){
      if(next<0||next>M.branchPotential(state,key,innate,caps)||
       !api.onMastery(key,next,false))return false;
      input.value=String(M.branchMastery(state,key,innate,caps));
+     root.PandoraNonCredentialGuard?.sync(input);
      groupCount.textContent=groupSummary();paint();
      return M.branchMastery(state,key,innate,caps)!==before;
     };

@@ -92,6 +92,60 @@ export async function runGlobalSearchAutofill797Smoke(browser,base){
    protected:true,readonly:true,autocomplete:'none',name:observed.name
   },'Newly added native search must receive shared guard');
   assert.match(observed.name,/^ps-filter-/);
+  // Numerics share the identical capture guard. A login-looking value
+  // must never be delivered to stat listeners before a trusted gesture.
+  const numericIdle=await page.evaluate(()=>{
+   const input=document.createElement('input');
+   input.type='number';input.value='21';input.id='numeric-guard-907';
+   document.body.append(input);
+   window.PandoraNumericField.prepare(input);
+   let calls=0;input.addEventListener('input',()=>calls++);
+   input.value='444';
+   input.dispatchEvent(new Event('input',{bubbles:true}));
+   input.dispatchEvent(new KeyboardEvent('keydown',{key:'A',bubbles:true}));
+   return {value:input.value,locked:input.readOnly,calls};
+  });
+  assert.deepEqual(numericIdle,{value:'21',locked:true,calls:0},
+   'Synthetic numeric replacement cannot become Hero stats');
+  const numeric=page.locator('#numeric-guard-907');
+  await numeric.click();
+  await numeric.fill('35');
+  assert.equal(await numeric.inputValue(),'35','User can still edit the number');
+  await numeric.press('Tab');
+  assert.equal(await numeric.evaluate(el=>el.readOnly),true);
+  const numericAfter=await numeric.evaluate(input=>{
+   let calls=0;input.addEventListener('input',()=>calls++);
+   input.value='909';
+   input.dispatchEvent(new Event('input',{bubbles:true}));
+   input.dispatchEvent(new Event('change',{bubbles:true}));
+   return {value:input.value,calls};
+  });
+  assert.deepEqual(numericAfter,{value:'35',calls:0},
+   'An idle numeric field keeps the last authorized value after user edits');
+  // The real + / - control deliberately updates the numeric value without
+  // typing. That new authoritative value must survive future focus and blur.
+  await numeric.evaluate(input=>{
+   input.value='42';window.PandoraNonCredentialGuard.sync(input);
+  });
+  await numeric.click();
+  assert.equal(await numeric.inputValue(),'42');
+  await numeric.press('Tab');
+  const afterStep=await numeric.evaluate(input=>{
+   input.value='999';input.dispatchEvent(new Event('change',{bubbles:true}));
+   return input.value;
+  });
+  assert.equal(afterStep,'42','Idle autofill cannot revert a legitimate stat increment');
+  await numeric.evaluate(el=>el.remove());
+  const ownedSearch=await page.evaluate(()=>{
+   const input=document.createElement('input');
+   input.type='search';input.value='before';document.body.append(input);
+   window.PandoraSearchField.prepare(input);
+   let seen=0;input.addEventListener('input',()=>seen++);
+   window.PandoraNonCredentialGuard.emitInput(input,'from-app');
+   const result={value:input.value,seen,locked:input.readOnly};
+   input.remove();return result;
+  });
+  assert.deepEqual(ownedSearch,{value:'from-app',seen:1,locked:true});
   const untouched=await page.evaluate(()=>{
    const auth=document.createElement('input');auth.type='password';
    auth.autocomplete='current-password';
@@ -101,6 +155,6 @@ export async function runGlobalSearchAutofill797Smoke(browser,base){
   });
   assert.deepEqual(untouched,{autocomplete:'current-password',locked:false,guarded:false});
   assert.deepEqual(errors,[]);
-  console.log('Chromium autofill 797: YaBrowser marker, Book without retired target, native search, manual editing, auth isolation');
+  console.log('Chromium input safety 907: shared Yandex search/numeric protection, synthetic replacement, real typing, auth isolation');
  }finally{await context.close()}
 }
