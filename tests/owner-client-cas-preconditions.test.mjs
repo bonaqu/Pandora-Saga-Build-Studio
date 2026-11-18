@@ -106,6 +106,39 @@ test('stale update and Undo never erase a newer change from another browser',asy
  assert.equal(b.status().ownerSaveState,'error');
 });
 
+test('read-only game catalog API responses preserve JSON arrays and objects unchanged',async()=>{
+ const arrays=[
+  [{id:'npc-1',name:'Source record'},{id:'npc-2',name:'Second record'}],
+  [1,2,3],
+  []
+ ];
+ for(const dataset of arrays){
+  const editor=instance(async(_url,opts)=>{
+   assert.equal(opts.method,'GET');
+   assert.equal(opts.body,undefined);
+   return respond(dataset);
+  });
+  assert.deepEqual(await editor.request('/api/admin/catalog/source/instances.json',null),
+   dataset,'A D1 source list must stay a list, not be silently replaced by {}');
+  assert.equal(editor.status().ownerSaveState,'ready',
+   'Read-only catalog calls must not set a misleading D1 owner-write status');
+ }
+ const record={meta:{counts:{items:1}},records:['source-id']};
+ const editor=instance(async()=>respond(record));
+ assert.deepEqual(await editor.request('/api/admin/catalog/source/meta.json',null),record);
+});
+
+test('only conditional owner operations validate the D1 acknowledgment shape',async()=>{
+ const editor=instance(async(_url,opts)=>
+  opts.method==='GET'?respond([42]):respond([42]));
+ assert.deepEqual(await editor.request('/api/admin/catalog/source/skills.json',null),[42]);
+ await assert.rejects(
+  editor.request('/api/admin/override',{key:'itemdesc.44',value:'Copy'}),
+  error=>error.reason==='OWNER_WRITE_UNCONFIRMED',
+  'A JSON array is valid catalog data but not a valid owner CAS write acknowledgment');
+ assert.equal(editor.status().ownerSaveState,'error');
+});
+
 test('unrelated endpoint bodies do not gain private owner preconditions',async()=>{
  const calls=[];
  const request=async(url,opts={})=>{
