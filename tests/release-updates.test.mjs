@@ -182,8 +182,11 @@ test('parallel version polls coalesce while the manifest body remains pending',a
  page.resolveBody(0,'2026.11.18.885');
  await first;
  assert.ok(page.banner,'A complete manifest offers the update');
- await page.check();
+ const later=page.check();
+ await new Promise(resolve=>setImmediate(resolve));
  assert.equal(page.requestCount,2,'A future poll is allowed after completion');
+ page.resolveBody(1,'2026.11.18.885');
+ await later;
 });
 
 test('manual update respects D1 overlay, active owner edits and UI panels',async()=>{
