@@ -10,7 +10,8 @@ test('collapsed editor launcher exposes saving and failure states',()=>{
  assert.match(app,/ownerDockCollapsed&&visibleSaveState==='error'/);
  assert.match(app,/ownerDockCollapsed&&visibleSaveState==='saving'/);
  assert.match(app,/Ошибка сохранения\. Открой редактор/);
- assert.match(app,/if\(state\.textContent!==saveText\)state\.textContent=saveText/);
+ assert.match(app,/ownerDockPatchText\(state,saveText\)/);
+ assert.match(app,/ownerDockPatchData\(state,'state',visibleSaveState\)/);
 });
 test('pending Wiki record writes block Finish, undo and D1 diagnostics',()=>{
  assert.match(app,/wikiRecordWriteQueue\.size>0\|\|ownerSaveState==='saving'/);

@@ -25,8 +25,8 @@ test('owner commands are reorganized without rebuilding the action buttons',()=>
 });
 test('save status, pinned finish, and editable labels retain their safety behavior',()=>{
  assert.match(app,/visibleSaveState=\(ownerSaveState==='saving'/);
- assert.match(app,/state\.dataset\.state=visibleSaveState/);
- assert.match(app,/root\.dataset\.saveState=visibleSaveState/);
+ assert.match(app,/ownerDockPatchData\(state,'state',visibleSaveState\)/);
+ assert.match(app,/ownerDockPatchData\(root,'saveState',visibleSaveState\)/);
  assert.match(app,/if\(ownerSaveState==='error'\)/);
  assert.match(app,/if\(ownerSaveState==='saving'\|\|editIsSaving\|\|wikiLabelPendingWrites>0\|\|\s*wikiRecordWriteQueue\.size>0\)/);
  assert.match(app,/saveGuidePatch\('book\.'\+ownerCopyKey\('owner-dock',key\)/);
