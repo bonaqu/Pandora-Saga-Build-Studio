@@ -37,3 +37,23 @@ test('Pages dynamic deployments are monitored via the source branch push only',(
  assert.match(wait,/if\(current===expected\)/);
  assert.doesNotMatch(workflow,/wrangler d1|Authorization|catalog:review|--write/);
 });
+
+test('failed live release captures only read-only production D1 schema diagnostics',()=>{
+ const workflow=read('.github/workflows/live-readonly.yml');
+ const script=read('worker/scripts/check-readonly-d1-incident.mjs');
+ assert.match(workflow,/Diagnose failed production D1 catalog and account schema/);
+ assert.match(workflow,/if: failure\(\)/);
+ assert.match(workflow,/continue-on-error: true/);
+ assert.match(workflow,/secrets\.CLOUDFLARE_API_TOKEN/);
+ assert.match(workflow,/PS_D1_DATABASE_ID:/);
+ assert.match(workflow,/node scripts\/check-readonly-d1-incident\.mjs/);
+ assert.match(script,/SELECT name FROM sqlite_master/);
+ assert.match(script,/SELECT COUNT\(\*\) AS rows FROM catalog_current/);
+ assert.match(script,/PRAGMA table_info\(user_accounts\)/);
+ assert.match(script,/PRAGMA table_info\(user_sessions\)/);
+ assert.match(script,/--remote/);
+ assert.match(script,/TARGET_ACCOUNT/);
+ assert.match(script,/TARGET_DB/);
+ assert.doesNotMatch(script,/\b(?:INSERT INTO|UPDATE\s+\w+|DELETE FROM|DROP TABLE|ALTER TABLE|REPLACE INTO)\b/i);
+ assert.doesNotMatch(script,/console\.(?:log|warn)\([^\n]*result\.(?:stdout|stderr)/);
+});
