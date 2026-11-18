@@ -125,7 +125,7 @@ test('one common policy is loaded before all dynamic search constructors',()=>{
  assert.match(app,/return window\.PandoraSearchField\?\.prepare\(input\)\|\|input;/);
  assert.match(source,/MutationObserver\(changes=>/);
  assert.match(source,/document\.addEventListener\('DOMContentLoaded',observe/);
- assert.match(source,/attributeFilter:['type']/);
+ assert.match(source,/attributeFilter:\['type'\]/);
  assert.match(guard,/event.stopImmediatePropagation\?\.\(\)/);
 });
 
