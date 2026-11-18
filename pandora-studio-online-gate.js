@@ -3,9 +3,14 @@
    This file has no storage, account, admin, or mutation capabilities. */
 (function(root){
 'use strict';
+// JSON object member order is not semantic data. D1 / Workers may
+// serialize nested owner-copy maps in a different order after readback.
+const canonical=value=>Array.isArray(value)?value.map(canonical):
+ value&&typeof value==='object'?
+ Object.fromEntries(Object.keys(value).sort().map(key=>[key,canonical(value[key])])):value;
 const digest=value=>{
  if(!value||typeof value!=='object'||Array.isArray(value))return null;
- return JSON.stringify(Object.keys(value).sort().map(key=>[key,value[key]]));
+ return JSON.stringify(canonical(value));
 };
 const snapshotValue=response=>response?.headers?.get?.('x-ps-catalog-snapshot')||'';
 async function inspect({api,fetcher,expectedSnapshot,expectedOverrides,expectedCounts,signal}){
