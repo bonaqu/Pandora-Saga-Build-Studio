@@ -666,7 +666,71 @@ export async function runUIContentInlineSmoke(browser,base){
   await toastText.waitFor({state:'visible'});
   assert.equal(await toastText.textContent(),'Build removed and link revoked.');
   assert.equal(JSON.parse(values[statusKey]).en,'Build removed and link revoked.');
-  assert.deepEqual(errors,[]);
   console.log('Chromium UI content: RU/EN status toast edit, live translation, 409 and local draft preservation passed');
+  // The Wiki filter's selected ID is gameplay/UI state, never an editable
+  // caption. In-place RU/EN CAS edits must update options without rebuilding
+  // the list, losing the selection or exposing D1 controls to guests.
+  // The top navigation is hidden behind an open builds workbench; use the
+  // real Close control before switching chapters.
+  if(await page.locator('#dockClose').isVisible())
+   await page.locator('#dockClose').click();
+  // The previous CAS-conflict test deliberately leaves the owner drawer open
+  // with an error. Collapse only its visual panel before normal navigation;
+  // neither suppress nor clear that failure or its D1 state.
+  const ownerDrawer=page.locator('#ownerDock');
+  if(await ownerDrawer.isVisible()&&
+     await ownerDrawer.locator('[data-owner-collapse]').getAttribute('aria-expanded')==='true')
+   await ownerDrawer.locator('[data-owner-collapse]').click();
+  await page.locator('#nav [data-tab="wiki"]').click();
+  await page.locator('[data-wiki-chapter="item"]').click();
+  const gearFilter=page.locator('.wiki-equipment-type');
+  await gearFilter.waitFor({state:'visible',timeout:15000});
+  assert.equal(await gearFilter.inputValue(),'equipment');
+  assert.equal(await gearFilter.locator('option[value="weapon"]').textContent(),'Weapons');
+  const filterGroup=page.locator('.wiki-filter-labels-editor');
+  await filterGroup.locator('summary').click();
+  const weaponCopy=filterGroup.locator('[data-owner-copy-id="filterEquipmentTypeWeapon"]');
+  await weaponCopy.dblclick();
+  const filterInput=weaponCopy.locator('[contenteditable]');
+  await filterInput.fill('QA Weapons (EN)');
+  await filterInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '.wiki-equipment-type option[value="weapon"]')?.textContent==='QA Weapons (EN)',
+   null,{timeout:12000});
+  assert.equal(await gearFilter.inputValue(),'equipment');
+  const gearKey='guideedit.book.wiki-ui.filter-equipment-type-weapon';
+  assert.equal(JSON.parse(values[gearKey]).en,'QA Weapons (EN)');
+  // Wiki is a modal workbench. The language selector is intentionally behind
+  // it, so use the real Close action rather than forcing a click through it.
+  await page.locator('#dockClose').click();
+  await page.locator('#locale [data-locale="ru"]').click();
+  await page.waitForFunction(()=>document.documentElement.lang==='ru');
+  await page.locator('#nav [data-tab="wiki"]').click();
+  await page.locator('[data-wiki-chapter="item"]').click();
+  const gearRu=page.locator('.wiki-equipment-type');
+  assert.equal(await gearRu.locator('option[value="weapon"]').textContent(),'Оружие');
+  const ruGroup=page.locator('.wiki-filter-labels-editor');
+  await ruGroup.locator('summary').click();
+  const ruCaption=ruGroup.locator('[data-owner-copy-id="filterEquipmentTypeWeapon"]');
+  await ruCaption.dblclick();
+  await ruCaption.locator('[contenteditable]').fill('Оружие QA');
+  await ruCaption.locator('[contenteditable]').press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '.wiki-equipment-type option[value="weapon"]')?.textContent==='Оружие QA',
+   null,{timeout:12000});
+  assert.deepEqual(JSON.parse(values[gearKey]),{en:'QA Weapons (EN)',ru:'Оружие QA'});
+  await gearRu.selectOption('weapon');
+  assert.equal(await gearRu.inputValue(),'weapon',
+   'Editing an option label never changes the semantic filter value');
+  await page.locator('[data-wiki-chapter="utility"]').click();
+  assert.equal(await page.locator('.wiki-effect-type option[value="buff"]').textContent(),
+   'Дают положительные эффекты');
+  assert.ok(await page.locator('.wiki-filter-labels-editor [data-owner-copy-id="filterUtilityEffectBuff"]').count());
+  await page.locator('[data-wiki-chapter="item"]').click();
+  await page.locator('.wiki-equipment-type').selectOption('elemental');
+  assert.ok(await page.locator('.wiki-elemental-type option[value="lightning"]').count());
+  assert.ok(await page.locator('.wiki-filter-labels-editor [data-owner-copy-id="filterWeaponElementLightning"]').count());
+  assert.deepEqual(errors,[]);
+  console.log('Chromium Wiki filter D1 editorial: RU/EN CAS, ID invariants, utility and elemental choices passed');
  }finally{await context.close()}
 }

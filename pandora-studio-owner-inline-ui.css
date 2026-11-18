@@ -617,6 +617,15 @@
 .studio-owner-interface-value{min-width:0;white-space:normal;overflow-wrap:anywhere;
  color:#efdac0}
 .studio-owner-interface-pencil{margin:0;justify-self:end}
+/* Editable Wiki options live only in this compact owner-only accordion.
+   Long filter groups scroll locally without stretching the whole encyclopedia. */
+.wiki-filter-labels-editor .studio-owner-interface-fields{
+ max-height:min(340px,50vh);overflow-y:auto;overscroll-behavior:contain;
+ scrollbar-gutter:stable
+}
+.wiki-filter-labels-editor .studio-owner-interface-name{
+ font-size:10px;line-height:1.4
+}
 .studio-owner-interface-row:has([data-owner-text-field]){grid-template-columns:minmax(80px,100px) minmax(0,1fr) 24px;
  align-items:start}
 .studio-owner-interface-row [contenteditable]{max-width:100%;min-width:0;

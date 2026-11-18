@@ -90,7 +90,7 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   assert.equal(wikiBindings.placeholder.key,'searchPlaceholder');
   assert.equal(wikiBindings['aria-label'].key,'searchAria');
   await wikiInput.evaluate(node=>{window.__copyWikiSearch=node});
-  const wikiPanel=page.locator('#detailContent .studio-owner-interface-editor');
+  const wikiPanel=page.locator('#detailContent .studio-owner-interface-editor:not(.wiki-filter-labels-editor)');
   await wikiPanel.locator('summary').click();
   assert.equal(await wikiPanel.locator('.studio-owner-interface-row').count(),7);
   const wikiKey=await edit('wiki-ui','searchPlaceholder','Искать в справочнике…');
@@ -235,7 +235,7 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   await page.locator('#nav [data-tab="wiki"]').click();
   await wikiInput.waitFor({state:'visible'});
   assert.equal(await wikiInput.getAttribute('placeholder'),'Search by name');
-  await page.locator('#detailContent .studio-owner-interface-editor summary').click();
+  await page.locator('#detailContent .studio-owner-interface-editor:not(.wiki-filter-labels-editor) summary').click();
   // Set the English variant through the same real editor and CAS key.
   const enRow=row('wiki-ui','searchPlaceholder');
   await enRow.locator('.studio-owner-interface-pencil').click();
@@ -248,7 +248,7 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   assert.deepEqual(JSON.parse(values[wikiKey]),{
    ru:'Искать в справочнике…',en:'Find a record…'});
   await page.setViewportSize({width:390,height:800});
-  const overflow=await page.locator('#detailContent .studio-owner-interface-editor')
+  const overflow=await page.locator('#detailContent .studio-owner-interface-editor:not(.wiki-filter-labels-editor)')
    .evaluate(node=>node.scrollWidth-node.clientWidth);
   assert.ok(overflow<=5,'Compact owner editor must fit the 390px width');
   assert.deepEqual(errors,[]);
