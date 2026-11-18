@@ -92,6 +92,9 @@ function node(tag,cls='',text=''){
  if(cls)el.className=cls;
  if(text){
   el.textContent=tr(text);
+  // Preserve only the original presentation string for in-place RU/EN updates.
+  // Passwords, recovery-code values and session tokens never enter this path.
+  el.setAttribute('data-account-copy-source',text);
   // The owner edits authored interface copy, never credentials or account IDs.
   const key=root.PandoraUILocale?.literalKey?.(text);
   if(key)el.setAttribute?.('data-owner-copy-key',key);
@@ -106,6 +109,7 @@ function field(placeholder,type='text',auto='off',max=128){
  const input=node('input','account-input');
  input.type=type;input.placeholder=tr(placeholder);input.maxLength=max;
  input.setAttribute('aria-label',tr(placeholder));
+ input.setAttribute('data-account-placeholder-source',placeholder);
  input.autocomplete=auto;return input;
 }
 function paintFeedback(){
@@ -579,12 +583,14 @@ async function init(config){
 // A header RU/EN switch re-renders the profile even if its popover was
 // closed by the outside-click handler. Keep edits in the current form and its
 // validation message in memory, but never carry them across account changes.
-// A language switch must not dispose an active inline D1 edit before its
-// blur/CAS/Undo lifecycle has finished. Render the selected language once the
-// shared owner editor removes its host; multiple toggles schedule one refresh.
+// RU/EN and owner-copy updates patch the mounted account surface in place.
+// No detached forms, lost caret/selection, duplicate listeners or password
+// restoration required: the live input nodes are never replaced here.
 let deferredLocaleRefresh=null;
 function refresh(){
- if(!panel)return;
+ if(!panel||!trigger)return;
+ // An in-flight inline CAS/Undo editor owns its original content node. Do
+ // not clobber or detach it: defer the language patch until that host exits.
  if(panel.querySelector?.('.ui-content-edit-host')){
   if(!deferredLocaleRefresh&&typeof MutationObserver==='function'){
    const target=panel;
@@ -598,44 +604,27 @@ function refresh(){
   }
   return;
  }
- const identity=session?.token||null,formMode=mode;
- const inputs=Array.from(panel.querySelectorAll?.('.account-form input')||[]);
- const values=inputs.map(input=>input.value);
- const expanded=panel.querySelector?.('.account-password-details')?.open;
- const scrollTop=panel.scrollTop;
- // The account popover may be hidden by the header-language click, but a
- // keyboard-driven locale update can happen with a live caret in a field.
- // Recreated DOM must recover the same focus and selection, never submit.
- const controls=Array.from(panel.querySelectorAll?.('input,button,summary')||[]);
- const focused=panel.contains(document.activeElement)?document.activeElement:null;
- const focusIndex=focused?controls.indexOf(focused):-1;
- let selection=null;
- if(focused&&typeof focused.setSelectionRange==='function'){
-  try{
-   if(typeof focused.selectionStart==='number')
-    selection={start:focused.selectionStart,end:focused.selectionEnd,
-     direction:focused.selectionDirection||'none'};
-  }catch{}
+ trigger.title=session?tr('Профиль')+' · '+session.username:tr('Войти или зарегистрироваться');
+ trigger.setAttribute('aria-label',trigger.title);
+ for(const node of panel.querySelectorAll('[data-account-copy-source]')){
+  const value=tr(node.getAttribute('data-account-copy-source'));
+  if(node.textContent!==value)node.textContent=value;
  }
- render();
- if((session?.token||null)!==identity||mode!==formMode||!panel)return;
- const restored=Array.from(panel.querySelectorAll?.('.account-form input')||[]);
- if(restored.length!==values.length)return;
- for(let i=0;i<restored.length;i++)restored[i].value=values[i];
- const details=panel.querySelector?.('.account-password-details');
- if(details&&expanded!==undefined)details.open=expanded;
- panel.scrollTop=scrollTop;
- // render() already restores the matching feedbackSource and its authored
- // D1 key. Calling info(message) here would clear feedbackAuthoredKey and
- // misclassify editable recovery-code copy as a server validation error.
- if(focusIndex>=0){
-  const next=panel.querySelectorAll('input,button,summary')[focusIndex];
-  if(next&&!next.disabled){
-   next.focus({preventScroll:true});
-   if(selection&&typeof next.setSelectionRange==='function'){
-    try{next.setSelectionRange(selection.start,selection.end,selection.direction)}catch{}
-   }
-  }
+ for(const input of panel.querySelectorAll('[data-account-placeholder-source]')){
+  const value=tr(input.getAttribute('data-account-placeholder-source'));
+  if(input.placeholder!==value)input.placeholder=value;
+  if(input.getAttribute('aria-label')!==value)input.setAttribute('aria-label',value);
+ }
+ // paintFeedback preserves the authored D1 status of harmless recovery
+ // messages, while known Worker errors remain non-editable.
+ if(errorLine&&feedbackSource!==null&&
+  feedbackToken===(session?.token||null)&&feedbackMode===mode)
+  paintFeedback();
+ for(const pencil of panel.querySelectorAll('[data-owner-copy-pencil]')){
+  const caption=pencil.previousElementSibling;
+  if(caption?.dataset?.ownerCopyKey!==pencil.dataset.ownerCopyPencil)continue;
+  const label=(document.documentElement.lang==='en'?'Edit caption: ':'Изменить надпись: ')+caption.textContent;
+  if(pencil.getAttribute('aria-label')!==label)pencil.setAttribute('aria-label',label);
  }
 }
 // The release manager must never discard the only recovery code or an
