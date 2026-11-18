@@ -10730,7 +10730,8 @@ async function ensureEnglishCatalog({persistReconciled=true}={}){
 async function loadCatalog({archive=false,commit=true}={}){
  // A future caller cannot re-enable the retired public archive path even by
  // passing a truthy flag. Only isolated localhost fixtures may use it.
- if(archive&&!['localhost','127.0.0.1'].includes(location.hostname))
+ if(archive&&typeof location!=='undefined'&&
+    !['localhost','127.0.0.1'].includes(location.hostname))
   throw Error('Публичный каталог игры требует Cloudflare D1');
  const version=++catalogLoadVersion;
  const names=['meta','classes','skills','items','souls','racialPassives',
