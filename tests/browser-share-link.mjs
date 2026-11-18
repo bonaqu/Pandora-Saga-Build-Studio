@@ -6,6 +6,7 @@ export async function runShareLinkSmoke(browser,base){
  const shareId='A1234567890',stored=new Map(),token='t'.repeat(43),username='share_tester';
  let mismatched=false,revoked=false,created=0,readbacks=0,sharedGets=0,sharedSource=null;
  let holdNextSharedRead=false,releaseStaleRead=null,notifyStaleRead=null;
+ let holdShareProof=false,releaseShareProof=null,notifyShareProof=null;
  const context=await browser.newContext({viewport:{width:1365,height:850}});
  const seedSession=({token,username})=>localStorage.setItem('ps-account-session.v1',
   JSON.stringify({token,username,expires:Number.MAX_SAFE_INTEGER}));
@@ -55,6 +56,11 @@ export async function runShareLinkSmoke(browser,base){
    assert.equal(request.headers().authorization,'Bearer '+token,
     'Shared link reads must use an account session');
    sharedGets++;
+   if(holdShareProof){
+    holdShareProof=false;
+    notifyShareProof?.();
+    await new Promise(resolve=>{releaseShareProof=resolve});
+   }
    if(holdNextSharedRead){
     holdNextSharedRead=false;
     notifyStaleRead?.();
@@ -262,7 +268,25 @@ export async function runShareLinkSmoke(browser,base){
     'latest unsaved changes overwrite the original record before the external build opens');
    assert.deepEqual(incomingErrors,[]);
   }finally{await receiver.close()}
-  console.log('Chromium share link smoke passed: verified URL, clipboard, mismatch, receiver cancellation/import and revoked link');
+  // Double-clicking Share while GET verification is delayed must NOT queue
+  // another POST (the Worker would otherwise consume a rate-limit slot).
+  const proofStarted=new Promise(resolve=>{notifyShareProof=resolve});
+  holdShareProof=true;
+  const previousPosts=created,previousGets=sharedGets;
+  const shareAgain=page.locator('.build-card').first()
+   .getByRole('button',{name:'Поделиться',exact:true});
+  await shareAgain.click();
+  await proofStarted;
+  await shareAgain.click();
+  assert.equal(created,previousPosts+1,
+   'Repeated Share on the same card is single-flight until the readback finishes');
+  assert.equal(sharedGets,previousGets+1,
+   'A duplicate click must not issue a second GET verification');
+  releaseShareProof();
+  await page.locator('.build-card').first().locator('.share-result')
+   .waitFor({state:'visible',timeout:20000});
+  assert.deepEqual(errors,[]);
+  console.log('Chromium share link smoke passed: verified URL, clipboard, mismatch, receiver cancellation/import, revoked link and single-flight sharing');
  }finally{
   await context.close();
  }
