@@ -58,7 +58,9 @@ test('locale selection works before async catalog is available',()=>{
 test('saved build overwrite confirms inside a visible card, not a native dialog',()=>{
  const app=read('pandora-studio-app.js'),css=read('pandora-studio-theme.css');
  assert.match(app,/class:'build-overwrite-choice',hidden:true/);
- assert.match(app,/text:tr\('Подтвердить перезапись','Confirm overwrite'\)/);
+ assert.match(app,/confirmButton\('libraryConfirmOverwrite',\(\)=>\{/);
+ assert.match(app,/const toggleCardChoice=target=>\{/);
+ assert.match(app,/target\.hidden=false/);
  assert.doesNotMatch(app,/if\(!confirm\('Перезаписать сохранённый билд/);
  assert.match(css,/\.build-overwrite-choice\[hidden\]\{display:none\}/);
  assert.match(css,/\.build-overwrite-choice\{display:flex/);
