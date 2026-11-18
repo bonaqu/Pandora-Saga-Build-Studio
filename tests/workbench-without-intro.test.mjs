@@ -44,14 +44,13 @@ test('owner indicator mounts only with a verified editor session, never for gues
  assert.doesNotMatch(html,/id="authState"/);
  assert.match(css,/\.owner-session-state\[hidden\],\.notice\[hidden\]\{display:none!important\}/);
 });
-test('catalog footer is natural-language while archive warning stays separate',()=>{
+test('catalog footer is natural-language and retired archive notice stays absent',()=>{
  assert.match(app,/data\.meta\.counts\.skills/);
   assert.match(app,/В энциклопедии: /);
  assert.match(app,/Encyclopedia: /);
  assert.doesNotMatch(app,/Cloudflare D1 · актуальный опубликованный каталог/);
- assert.match(app,/Сохранённая копия игры может устареть/);
- assert.match(app,/Saved game data may be outdated/);
- assert.match(app,/notice\.hidden=!catalogArchived/);
+ assert.doesNotMatch(app,/renderArchiveNotice/);
+ assert.doesNotMatch(html,/id="siteNotice"/);
  assert.match(app,/const localCatalogHost=\['127\.0\.0\.1','localhost'\]\.includes\(location\.hostname\)/);
  assert.match(app,/void startStudio\(\{archive:localCatalogHost\}\)/);
  assert.match(html,/id="startupOverlay"/);
@@ -60,7 +59,7 @@ test('catalog footer is natural-language while archive warning stays separate',(
  assert.match(loadingCss,/\.ps-boot-overlay\{position:fixed/);
 });
 test('critical user controls and owner dock survive removal of intro',()=>{
- for(const id of ['nav','locale','siteNotice','workspace','originTabs','stagePicker','stageAttributes',
+ for(const id of ['nav','locale','workspace','originTabs','stagePicker','stageAttributes',
   'originStats','originHp','originMp','skillBranches','snapshot','modalRoot'])
   assert.match(html,new RegExp('id="'+id+'"'),id+' must exist');
  assert.match(app,/function refreshOwnerUI\(\)/);
