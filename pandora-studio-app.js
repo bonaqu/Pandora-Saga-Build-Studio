@@ -2057,7 +2057,8 @@ function renderStagePicker(focusSearch=false){
     if(n===plan.socketCapacity(record))delete state.socketCapacities[id];
     else state.socketCapacities[id]=n;
     selectedSocket=Math.min(selectedSocket,Math.max(0,n-1));
-    if(n===0&&stageSlotView==='souls')stageSlotView='details';
+    // Keep the Souls tab open if its sockets change to zero: the slot-specific
+     // explanation is available there, and no Soul can be inserted.
     persist();renderSlotRails();renderStagePicker();renderOriginStats();renderOriginVitals();
     root.querySelector('[data-socket-capacity="'+n+'"]')?.focus({preventScroll:true});
    },

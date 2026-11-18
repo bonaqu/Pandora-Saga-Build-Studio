@@ -500,8 +500,9 @@ function render(root,api){
   }else{
    const actionHelp=copy('hint.'+key,...hints[key]);
    bind(button,'hint.'+key,...hints[key],'aria-description');
-   button.dataset.guideHint=actionHelp;
-   root.PandoraGuideTooltip?.attach(button,actionHelp,{hoverDelay:300});
+   // render(root) receives a DOM node, not the global tooltip controller.
+   // Reuse the shared popup for pointer, keyboard and touch.
+   globalThis.PandoraGuideTooltip?.attach(button,actionHelp,{hoverDelay:300});
   }
   (key==='choose'?chooseGroup:settingsGroup).append(labeledAction(
    button,'tab.'+key,ru,en,actionIcon(key,{forward:returningToDetails})));
@@ -671,17 +672,18 @@ function render(root,api){
     tr('Изменить надпись: ','Edit caption: ')+progressLabel.textContent));
    progress.append(pencil);
   }
-  const paging=el('div',{class:'stage-soul-more-row'},[
-   labeledAction(more,'soulShowMore',moreRu,moreEn),progress
-  ]);
+  const moreControl=labeledAction(more,'soulShowMore',moreRu,moreEn);
+  const paging=el('div',{class:'stage-soul-more-row'},[moreControl,progress]);
   const updatePaging=()=>{
    list.dataset.soulVisible=String(shown);
    list.dataset.soulTotal=String(results.length);
-   if(shown<results.length){
-    progressCount.textContent=english?shown+' of '+results.length:
-     ': '+shown+' из '+results.length;
-    if(paging.parentNode!==list)list.append(paging);
-   }else if(paging.parentNode===list)paging.remove();
+   // The fully loaded list still needs its accurate count. Hide the More
+   // action (and its owner pencil) without discarding the status node.
+   progressCount.textContent=english?shown+' of '+results.length:
+    ': '+shown+' из '+results.length;
+   moreControl.hidden=shown>=results.length;
+   if(results.length&&paging.parentNode!==list)list.append(paging);
+   else if(!results.length&&paging.parentNode===list)paging.remove();
   };
   const appendResults=start=>{
    let firstNew=null;
