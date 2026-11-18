@@ -36,7 +36,7 @@
     // The online gate owns recovery; update prompts must wait until it unlocks.
     return document.visibilityState !== 'visible' ||
       document.body.classList.contains('studio-live-blocked') ||
-      !!document.querySelector('#startupOverlay:not([hidden]):not(.is-finished)') ||
+      !!document.querySelector('#startupOverlay:not([hidden])') ||
       !!document.querySelector('#modalRoot:not([hidden]), #detailPanel.is-open, #stagePicker:not([hidden]), #stageAttributes:not([hidden]), .inline-owner-editor, #accountPanel:not([hidden])') ||
       !!window.PandoraAccountUI?.updateGuard?.() ||
       !!(el && el.matches && el.matches('input, textarea, select, [contenteditable="true"]')) ||
@@ -50,6 +50,18 @@
     const accountReason = window.PandoraAccountUI?.updateGuard?.();
     if (accountReason) {
       blockedReason = accountReason;
+      blockedAutoUpdate = true;
+      refreshUpdateLocale();
+      return;
+    }
+    // A manual click must obey the same safety gate as idle auto-updates.
+    // In particular, it must never force a reload behind the D1 overlay or
+    // during an unsent owner edit / pending modal interaction.
+    if (busy()) {
+      blockedReason =
+        document.body.classList.contains('studio-live-blocked') ||
+        document.querySelector('#startupOverlay:not([hidden])') ? 'connection' :
+        window.PandoraStudioAdminActive?.() ? 'editor' : 'finish';
       blockedAutoUpdate = true;
       refreshUpdateLocale();
       return;
@@ -71,12 +83,18 @@
     recovery: 'Save and acknowledge your one-time account recovery code before updating.',
     request: 'Finish the account request before updating.',
     draft: 'Finish or clear the account password form before updating.',
+    connection: 'Reconnect to the game data before updating. Your build will stay here.',
+    editor: 'Finish your edits and leave owner mode before updating.',
+    finish: 'Finish the current action and close open panels before updating.',
     apply: 'Update', later: 'Later'
   } : {
     notice: 'Новая версия опубликована. Текущий билд и положение на странице будут сохранены перед обновлением.',
     recovery: 'Перед обновлением сохрани и подтверди резервный код аккаунта — повторно его не покажут.',
     request: 'Сначала дождись завершения запроса аккаунта.',
     draft: 'Сначала заверши или очисти поля пароля в форме аккаунта.',
+    connection: 'Сначала восстанови игровые данные. Текущий билд останется здесь.',
+    editor: 'Заверши правки и выйди из режима владельца перед обновлением.',
+    finish: 'Сначала заверши текущее действие и закрой открытые окна.',
     apply: 'Обновить', later: 'Позже'
   };
   function refreshUpdateLocale() {
@@ -105,6 +123,11 @@
     const apply = document.createElement('button');
     apply.textContent = updateCopy().apply;
     apply.type = 'button';
+    // If an inline edit is focused, a click must not blur and commit it
+    // before the update guard gets a chance to reject navigation.
+    apply.addEventListener('pointerdown', event => {
+      if (busy()) event.preventDefault();
+    });
     apply.addEventListener('click', applyUpdate);
     const later = document.createElement('button');
     later.textContent = updateCopy().later;
@@ -119,21 +142,25 @@
     banner.append(message, apply, later);
     document.body.appendChild(banner);
   }
+  let versionCheckInFlight = false;
   async function checkVersion() {
-    if (applying) return;
+    if (applying || versionCheckInFlight) return;
+    versionCheckInFlight = true;
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 6000);
-      let response;
+      let manifest;
       try {
-        response = await fetch('./site-version.json?check=' + Date.now(), {
+        const response = await fetch('./site-version.json?check=' + Date.now(), {
           cache: 'no-store', signal: controller.signal
         });
+        if (!response.ok) return;
+        // The deadline applies to the response body as well as the headers.
+        manifest = await response.json();
       } finally { clearTimeout(timeout); }
-      if (!response.ok) return;
-      const manifest = await response.json();
-      // Visibility and periodic checks may overlap and finish out of order.
-      // Never downgrade the offered release to an older cached response.
+      // Visibility and periodic checks may overlap. Do not start a second
+      // request while the first one is reading its response, or offer a
+      // version older than one that has already been seen or dismissed.
       if (newer(manifest?.release, version) &&
           (!latest || !newer(latest, manifest.release)) &&
           manifest.release !== dismissedRelease) {
@@ -141,6 +168,7 @@
         showUpdate(latest);
       }
     } catch { /* Offline or CDN delay: keep the current working state. */ }
+    finally { versionCheckInFlight = false; }
   }
   // Automatic reloading is limited to idle non-admin sessions without open forms.
   setInterval(() => {
