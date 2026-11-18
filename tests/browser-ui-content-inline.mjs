@@ -527,7 +527,10 @@ export async function runUIContentInlineSmoke(browser,base){
   const activeName=page.locator('#detailContent .build-name-input');
   await activeName.fill('Unsent character name');
   const originalInput=await activeName.elementHandle();
-  await page.locator('#ownerDock [data-owner-collapse]').click();
+  // Earlier account-copy Undo may leave the same owner dock expanded.
+  // Do not toggle it closed and then try to click the hidden Undo action.
+  if(await page.locator('#ownerDock').evaluate(el=>el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
   await page.locator('#ownerDock [data-owner-undo]').click();
   await page.waitForFunction(()=>document.querySelector(
    '#detailContent [data-owner-copy-key="librarySaveNew"]')?.textContent===
