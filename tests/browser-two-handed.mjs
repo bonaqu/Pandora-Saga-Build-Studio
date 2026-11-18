@@ -21,6 +21,9 @@ export async function runTwoHandedSmoke(browser,base){
   await page.waitForFunction(()=>
    document.querySelector('.equipment-slot[data-slot-index="1"].unavailable')&&
    document.querySelector('#levelOut')?.textContent==='40',null,{timeout:20000});
+  // Synthetic slider input is intentionally sent by the test, so wait until
+  // the mandatory native modal has fully released the background.
+  await page.locator('#startupOverlay').waitFor({state:'hidden',timeout:30000});
   assert.match(await shield.getAttribute('aria-label'),/Двуручное оружие занимает обе руки/);
   await page.locator('#level').evaluate(el=>{
    el.value='3';el.dispatchEvent(new Event('input',{bubbles:true}));
