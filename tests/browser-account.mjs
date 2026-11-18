@@ -149,6 +149,18 @@ export async function runAccountSmoke(browser,base){
   assert.equal(await feedback.getAttribute('data-owner-copy-key'),'accountCodeHidden',
    'Only the explicit authored recovery-code feedback may be edited');
   assert.equal((await feedback.innerText()).trim(),'Резервный код скрыт.');
+  // An authored D1-editable recovery message must remain authored after
+  // RU/EN switches; rendering the translated feedback is not a new error.
+  await page.locator('#locale [data-locale="en"]').click();
+  await page.locator('#profileTrigger').click();
+  await page.locator('#accountPanel').waitFor({state:'visible'});
+  assert.equal(await feedback.getAttribute('data-owner-copy-key'),'accountCodeHidden');
+  assert.equal((await feedback.innerText()).trim(),'Recovery code hidden.');
+  await page.locator('#locale [data-locale="ru"]').click();
+  await page.locator('#profileTrigger').click();
+  await page.locator('#accountPanel').waitFor({state:'visible'});
+  assert.equal(await feedback.getAttribute('data-owner-copy-key'),'accountCodeHidden');
+  assert.equal((await feedback.innerText()).trim(),'Резервный код скрыт.');
   assert.equal(await page.locator('#accountPanel .account-copy-pencil').count(),0,
    'Normal visitors must not see any owner-only editing pencil');
   assert.equal(calls.filter(x=>x.path==='/api/library'&&x.body).length,0,
@@ -171,6 +183,46 @@ export async function runAccountSmoke(browser,base){
   await page.locator('.account-password-details button.account-action.primary').click();
   assert.match(await page.locator('#accountPanel .account-feedback').innerText(),
    /Пароли не совпадают/);
+  // Refreshing a live form may remount its controls, but must restore
+  // focused input, exact caret selection, sensitive values and feedback.
+  await pendingChange.nth(1).focus();
+  await pendingChange.nth(1).evaluate(el=>el.setSelectionRange(4,13,'forward'));
+  await page.evaluate(()=>{
+   document.documentElement.lang='en';
+   window.PandoraAccountUI.refresh();
+  });
+  assert.equal(await pendingChange.nth(1).evaluate(el=>document.activeElement===el),true);
+  assert.deepEqual(await pendingChange.nth(1).evaluate(el=>[
+   el.selectionStart,el.selectionEnd,el.selectionDirection
+  ]),[4,13,'forward']);
+  assert.equal(await pendingChange.nth(1).inputValue(),'An example new password 2026');
+  assert.match(await page.locator('#accountPanel .account-feedback').innerText(),
+   /Passwords do not match/);
+  await page.evaluate(()=>{
+   document.documentElement.lang='ru';
+   window.PandoraAccountUI.refresh();
+  });
+  assert.equal(await pendingChange.nth(1).evaluate(el=>document.activeElement===el),true);
+  assert.equal(await pendingChange.nth(1).inputValue(),'An example new password 2026');
+  // An owner inline edit is still writing to D1 while the locale changes.
+  // Do not discard its host before CAS/Undo finishes.
+  const preservedHost=await page.evaluate(()=>{
+   const panel=document.getElementById('accountPanel');
+   const host=document.createElement('span');
+   host.className='ui-content-edit-host';
+   host.textContent='Uncommitted profile copy';
+   panel.append(host);
+   const before=panel.querySelector('.account-password-details input');
+   window.PandoraAccountUI.refresh();
+   const kept=host.isConnected&&
+    before===panel.querySelector('.account-password-details input');
+   host.remove();
+   return kept;
+  });
+  assert.equal(preservedHost,true,'RU/EN must defer a running D1 inline editor');
+  await page.waitForFunction(()=>!document.querySelector(
+   '#accountPanel .ui-content-edit-host'));
+  assert.equal(await pendingChange.nth(1).inputValue(),'An example new password 2026');
   const verifiedMe=page.waitForResponse(response=>
    response.url().endsWith('/api/account/me'));
   // Closing the popover while /me is still in flight must not discard the
