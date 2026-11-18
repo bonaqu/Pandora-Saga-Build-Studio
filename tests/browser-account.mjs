@@ -287,8 +287,7 @@ export async function runAccountSmoke(browser,base){
   assert.equal(await page.locator('.account-password-details').getAttribute('open'),null);
   assert.equal(await page.locator('.account-password-details input').first().isVisible(),false);
   await page.locator('.account-password-toggle').click();
-  // A queued click or Enter on an old form must not submit passwords after
-  // RU/EN has replaced the DOM. Test only with fake local API credentials.
+  // RU/EN retains the live form, but genuinely detached forms must be inert.
   const retiredForm=await page.locator('.account-password-details form').elementHandle();
   const retiredButton=await page.locator('.account-password-details button.account-action.primary').elementHandle();
   const retiredInputs=page.locator('.account-password-details input');
@@ -299,15 +298,25 @@ export async function runAccountSmoke(browser,base){
   await page.locator('#locale [data-locale="ru"]').click();
   await page.locator('#profileTrigger').click();
   await page.locator('#accountPanel').waitFor({state:'visible'});
+  assert.equal(await retiredForm.evaluate(form=>form.isConnected),true,
+   'The password form stays mounted through RU/EN updates');
+  assert.equal(await retiredInputs.nth(1).inputValue(),'Unused old password 2026!');
+  // This deliberate non-locale remount retires old listeners; late synthetic
+  // click/submit must not send fake credentials to the mocked account API.
+  await page.locator('#accountPanel').evaluate(panel=>panel.replaceChildren());
+  await page.locator('#profileTrigger').click();
+  await page.locator('#profileTrigger').click();
+  await page.locator('#accountPanel').waitFor({state:'visible'});
+  assert.equal(await retiredForm.evaluate(form=>form.isConnected),false);
   const callsBeforeRetired=calls.filter(c=>c.action==='password').length;
   await retiredButton.evaluate(button=>button.click());
   await retiredForm.evaluate(form=>form.dispatchEvent(
    new Event('submit',{bubbles:true,cancelable:true})));
   await page.waitForTimeout(100);
   assert.equal(calls.filter(c=>c.action==='password').length,callsBeforeRetired,
-   'Removed password controls must not submit after a locale remount');
+   'Disconnected password controls must not submit after an actual remount');
   assert.equal(await page.locator('#accountPanel .account-feedback').innerText(),'',
-   'Removed form events must not overwrite the visible account feedback');
+   'Detached form events must not overwrite the visible feedback');
   await retiredButton.dispose();
   await retiredForm.dispose();
   const change=page.locator('#accountPanel .account-form input');
@@ -325,8 +334,8 @@ export async function runAccountSmoke(browser,base){
   await page.waitForFunction(()=>document.querySelector('.account-feedback')?.textContent.includes('Пароль обновлён'));
   assert.equal(calls.filter(c=>c.action==='password').length,1);
   assert.equal(await page.locator('.account-password-details').getAttribute('open'),null);
-  // The pending change finishes after a RU -> EN locale rerender, which
-  // creates new password inputs. Its success must scrub the LIVE form.
+  // The pending change survives an in-place RU -> EN language update.
+  // Its success must clear the SAME still-mounted password controls.
   holdNextPassword=true;
   const localePasswordSent=new Promise(resolve=>{notifyHeldPassword=resolve});
   await page.locator('.account-password-toggle').click();
@@ -344,7 +353,7 @@ export async function runAccountSmoke(browser,base){
   assert.equal(await remounted.nth(1).inputValue(),'After account language change 2026!');
   const inFlightButton=page.locator('.account-password-details button.account-action.primary');
   assert.equal(await inFlightButton.isDisabled(),true,
-   'A remounted form cannot launch a second in-flight password change');
+   'An in-place localized form cannot launch a second password change');
   const localePasswordResponse=page.waitForResponse(response=>
    response.url().endsWith('/api/account/password'));
   releaseHeldPassword();
@@ -352,7 +361,7 @@ export async function runAccountSmoke(browser,base){
   await page.waitForFunction(()=>document.querySelector('.account-feedback')
    ?.textContent.includes('Password updated.'));
   assert.equal(await page.locator('.account-password-details').getAttribute('open'),null,
-   'Success must close the current remounted password form');
+   'Success must close the current live password form');
   assert.deepEqual(await remounted.evaluateAll(inputs=>inputs.map(x=>x.value)),['','',''],
    'Current password inputs must be cleared after the delayed success');
   assert.equal(await inFlightButton.isDisabled(),false);
