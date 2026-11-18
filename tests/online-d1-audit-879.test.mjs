@@ -116,7 +116,7 @@ test('D1 retry requested during initial startup is queued once and never races i
 
 test('published site keeps a single D1-only catalog boundary and no retired archive notice',()=>{
  const load=portion('async function loadCatalog(', 'let ownerWikiRefreshId=');
- assert.match(load,/if\(archive&&!\['localhost','127\.0\.0\.1'\]\.includes\(location\.hostname\)\)/);
+ assert.match(load,/if\(archive&&typeof location!=='undefined'&&\s*!\['localhost','127\.0\.0\.1'\]\.includes\(location\.hostname\)\)/);
  const wiki=read('pandora-studio-encyclopedia-catalog.js');
  assert.match(wiki,/const localFixtureHost=/);
  assert.match(wiki,/if\(preferLocal&&!localFixtureHost\(\)\)/);
