@@ -24,7 +24,7 @@ export async function runGuestGateEditorialSmoke(browser,base){
   if(path==='/api/admin/override'&&method==='POST'){
    assert.equal(req.headers().authorization,'Bearer '+authToken);
    const write=req.postDataJSON();
-   assert.match(write.key,/^guideedit\.book\.ui\.label\.library-(guest|shared)/);
+   assert.match(write.key,/^guideedit\.book\.ui\.label\.(?:library-(?:guest|shared)|account-(?:sign-in|register))/);
    assert.equal(write.expectedValue,
     Object.hasOwn(values,write.key)?values[write.key]:null);
    values[write.key]=write.value;writes.push(write);
@@ -69,6 +69,20 @@ export async function runGuestGateEditorialSmoke(browser,base){
   const key='guideedit.book.ui.label.library-guest-lead';
   assert.equal(JSON.parse(values[key]).ru,'Библиотека доступна после входа в аккаунт.');
   assert.equal(writes.length,1);
+  // Account CTA captions are independently owner-editable, but clicking the
+  // sibling pencil must never initiate authentication or mutate the hero.
+  const signInAction=gate.locator('[data-owner-copy-key="accountSignIn"]');
+  await gate.locator('[data-owner-copy-pencil="accountSignIn"]').click();
+  const loginCaptionInput=gate.locator('.account-copy-edit-host [contenteditable]');
+  await loginCaptionInput.fill('Войти в облачные билды');
+  await loginCaptionInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#detailContent .build-signin-actions [data-owner-copy-key="accountSignIn"]')
+    ?.textContent==='Войти в облачные билды',null,{timeout:12000});
+  assert.equal(await signInAction.textContent(),'Войти в облачные билды');
+  assert.equal(accountCalls.length,0);
+  assert.equal(JSON.parse(values['guideedit.book.ui.label.account-sign-in']).ru,
+   'Войти в облачные билды');
 
   // The guest is still not allowed into the actual library.
   assert.equal(await page.locator('.build-card').count(),0);
@@ -89,6 +103,15 @@ export async function runGuestGateEditorialSmoke(browser,base){
    en:'Your saved builds are available after signing in.'
   });
   assert.equal(await lead.innerText(),'Your saved builds are available after signing in.');
+  // The English registration caption uses the same D1 author flow.
+  await gate.locator('[data-owner-copy-pencil="accountRegister"]').click();
+  await gate.locator('.account-copy-edit-host [contenteditable]').fill('Create an account');
+  await gate.locator('.account-copy-edit-host [contenteditable]').press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#detailContent .build-signin-actions [data-owner-copy-key="accountRegister"]')
+    ?.textContent==='Create an account',null,{timeout:12000});
+  assert.equal(JSON.parse(values['guideedit.book.ui.label.account-register']).en,
+   'Create an account');
   assert.equal(accountCalls.length,0);
 
   // Opening a shared link while logged out must keep the original hash and
@@ -97,6 +120,20 @@ export async function runGuestGateEditorialSmoke(browser,base){
   const modal=page.locator('#modalRoot .build-signin-gate-dialog');
   await modal.waitFor({state:'visible',timeout:18000});
   assert.match(await modal.innerText(),/Sign in or register to open this build/);
+  const modalTitle=page.locator('#modalRoot .modal h2[data-owner-copy-key="librarySharedDialogTitle"]');
+  await modalTitle.waitFor({state:'visible'});
+  const dialog=page.locator('#modalRoot .modal[role="dialog"]');
+  assert.equal(await dialog.getAttribute('aria-label'),'Sign in to open this build');
+  await page.locator('#modalRoot [data-owner-copy-pencil="librarySharedDialogTitle"]').click();
+  await page.locator('#modalRoot .account-copy-edit-host [contenteditable]').last()
+   .fill('Open this shared build after sign-in');
+  await page.locator('#modalRoot .account-copy-edit-host [contenteditable]').last().press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#modalRoot .modal h2[data-owner-copy-key="librarySharedDialogTitle"]')
+    ?.textContent==='Open this shared build after sign-in',null,{timeout:12000});
+  assert.equal(await dialog.getAttribute('aria-label'),'Open this shared build after sign-in');
+  assert.equal(JSON.parse(values['guideedit.book.ui.label.library-shared-dialog-title']).en,
+   'Open this shared build after sign-in');
   assert.equal(await page.evaluate(()=>location.hash),'#b/A1234567890');
   assert.equal(accountCalls.length,0);
   assert.deepEqual(errors,[]);
