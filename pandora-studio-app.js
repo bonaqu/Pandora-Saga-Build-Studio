@@ -8709,6 +8709,13 @@ const ownerDockText=Object.freeze({
  githubExport:['Копия в GitHub','GitHub copy'],
  finish:['Завершить','Finish'],
  extra:['Дополнительно','Additional tools'],
+ // Editable fixed group headings and hints; runtime save states stay locked.
+ groupEditingTitle:['Редактирование','Editing'],
+ groupEditingHint:['Основные действия и история правок','Editing and change history'],
+ groupGameTitle:['Игровые данные','Game data'],
+ groupGameHint:['Каталог, очки и переводы','Catalog, points and translations'],
+ groupToolsTitle:['Дополнительно','More tools'],
+ groupToolsHint:['Проверка D1 и резервная копия','D1 testing and optional backup'],
  guide:['Как редактировать','How to edit'],
  step1:['Открой энциклопедию. Дважды нажми на подсвеченное значение или используй + для добавления.',
   'Open the encyclopedia. Double-click a highlighted value or use + to add an entry.'],
@@ -8864,14 +8871,16 @@ function refreshOwnerUI(){
   if(online)online.textContent=ownerDockCopy('online');
   const extra=root.querySelector('.owner-dock-secondary-label');
   if(extra)extra.textContent=ownerDockCopy('extra');
-  const labels={
-   editing:[['Редактирование','Editing'],['Основные действия и история правок','Editing and change history']],
-   game:[['Игровые данные','Game data'],['Каталог, очки и переводы','Catalog, points and translations']],
-   tools:[['Дополнительно','More tools'],['Проверка D1 и резервная копия','D1 testing and optional backup']]
-  };
-  for(const node of root.querySelectorAll('[data-owner-group-heading],[data-owner-group-hint]')){
-   const pair=labels[node.dataset.ownerGroupHeading||node.dataset.ownerGroupHint];
-   if(pair)node.textContent=pair[node.hasAttribute('data-owner-group-heading')?0:1][lang==='en'?1:0];
+  for(const node of root.querySelectorAll('[data-owner-group-copy]')){
+   // The drawer is refreshed during CAS writes and locale changes. Never
+   // destroy an active inline editor or swap its captured RU/EN language.
+   if(!node.querySelector('.wiki-inline-input'))
+    node.textContent=ownerDockCopy(node.dataset.ownerGroupCopy);
+  }
+  for(const pencil of root.querySelectorAll('[data-owner-group-edit-for]')){
+   const key=pencil.dataset.ownerGroupEditFor;
+   pencil.setAttribute('aria-label',
+    (lang==='en'?'Edit caption: ':'Изменить надпись: ')+ownerDockCopy(key));
   }
   const note=root.querySelector('[data-owner-footer-note]');
   if(note)note.textContent=ownerSaveState==='error'?
@@ -9014,26 +9023,37 @@ function refreshOwnerUI(){
  // Move existing button+editor pairs without recreating them or changing D1 semantics.
  const actionSlots=new Map([...actions.querySelectorAll('.owner-dock-action-slot')]
   .map(node=>[node.dataset.ownerDockKey,node]));
- const group=(id,ru,en,hintRu,hintEn,keys)=>{
-  const heading=h('strong',{class:'owner-dock-group-title','data-owner-group-heading':id,
-   text:lang==='en'?en:ru});
-  const help=h('small',{class:'owner-dock-group-description','data-owner-group-hint':id,
-   text:lang==='en'?hintEn:hintRu});
+ const group=(id,titleKey,hintKey,keys)=>{
+  const editorial=(key,kind)=>{
+   const pair=ownerDockText[key],title=kind==='title';
+   const label=h(title?'strong':'small',{
+    class:title?'owner-dock-group-title':'owner-dock-group-description',
+    [title?'data-owner-group-heading':'data-owner-group-hint']:id,
+    'data-owner-group-copy':key,text:ownerDockCopy(key)});
+   ownerCopyLabel(label,'owner-dock',key,pair[0],pair[1]);
+   const pencil=h('button',{type:'button',class:'owner-dock-group-pencil',
+    'data-owner-group-edit-for':key,text:'✎',
+    'aria-label':(lang==='en'?'Edit caption: ':'Изменить надпись: ')+ownerDockCopy(key),
+    onclick:event=>{
+     event.preventDefault();event.stopPropagation();
+     label.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
+    }});
+   return h('span',{class:'owner-dock-group-copy-wrap'},[label,pencil]);
+  };
   const grid=h('div',{class:'owner-dock-action-grid'});
   for(const key of keys){const slot=actionSlots.get(key);if(slot)grid.append(slot)}
   return h('section',{class:'owner-dock-action-group','data-owner-group':id},[
-   h('div',{class:'owner-dock-group-heading'},[heading,help]),grid]);
+   h('div',{class:'owner-dock-group-heading'},[
+    editorial(titleKey,'title'),editorial(hintKey,'hint')]),grid]);
  };
- const editGroup=group('editing','Редактирование','Editing',
-  'Основные действия и история правок','Editing and change history',
+ const editGroup=group('editing','groupEditingTitle','groupEditingHint',
   ['openWiki','undo','history']);
- const gameGroup=group('game','Игровые данные','Game data',
-  'Каталог, очки и переводы','Catalog, points and translations',['catalog','levels','translations']);
- const toolsGroup=group('tools','Дополнительно','More tools',
-  'Проверка D1 и резервная копия','D1 testing and optional backup',
+ const gameGroup=group('game','groupGameTitle','groupGameHint',
+  ['catalog','levels','translations']);
+ const toolsGroup=group('tools','groupToolsTitle','groupToolsHint',
   ['testD1','githubExport']);
- const extra=actions.querySelector('.owner-dock-secondary-label');
- if(extra)toolsGroup.querySelector('.owner-dock-group-title').replaceWith(extra);
+ // The legacy "Дополнительно" spacer was a duplicate of the group title.
+ // Keep a single D1-backed label without changing the action grid.
  actions.replaceChildren(editGroup,gameGroup,toolsGroup);
  const footer=h('div',{class:'owner-dock-footer'},[
   h('small',{class:'owner-dock-footer-note','data-owner-footer-note':'',
