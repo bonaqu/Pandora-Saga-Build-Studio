@@ -700,8 +700,13 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(await gearFilter.inputValue(),'equipment');
   const gearKey='guideedit.book.wiki-ui.filter-equipment-type-weapon';
   assert.equal(JSON.parse(values[gearKey]).en,'QA Weapons (EN)');
+  // Wiki is a modal workbench. The language selector is intentionally behind
+  // it, so use the real Close action rather than forcing a click through it.
+  await page.locator('#dockClose').click();
   await page.locator('#locale [data-locale="ru"]').click();
   await page.waitForFunction(()=>document.documentElement.lang==='ru');
+  await page.locator('#nav [data-tab="wiki"]').click();
+  await page.locator('[data-wiki-chapter="item"]').click();
   const gearRu=page.locator('.wiki-equipment-type');
   assert.equal(await gearRu.locator('option[value="weapon"]').textContent(),'Оружие');
   const ruGroup=page.locator('.wiki-filter-labels-editor');
