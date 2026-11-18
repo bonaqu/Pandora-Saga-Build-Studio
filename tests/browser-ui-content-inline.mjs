@@ -730,6 +730,73 @@ export async function runUIContentInlineSmoke(browser,base){
   await page.locator('.wiki-equipment-type').selectOption('elemental');
   assert.ok(await page.locator('.wiki-elemental-type option[value="lightning"]').count());
   assert.ok(await page.locator('.wiki-filter-labels-editor [data-owner-copy-id="filterWeaponElementLightning"]').count());
+
+  // Editable Wiki result copy must not own or overwrite live count nodes.
+  // Use a chapter with >100 records to exercise real "Show more" navigation.
+  await page.locator('.wiki-equipment-type').selectOption('equipment');
+  const resultStatus=page.locator('#detailContent .wiki-list>p.muted');
+  await resultStatus.waitFor({state:'visible'});
+  const initialStatus=await resultStatus.textContent();
+  const match=/^Показано (\\d+) из (\\d+) записей$/.exec(initialStatus);
+  assert.ok(match,'The live result counter keeps both numeric values');
+  assert.equal(Number(match[1]),100);
+  assert.ok(Number(match[2])>100);
+  const summaryEditor=page.locator(
+   '#detailContent .studio-owner-interface-editor:not(.wiki-filter-labels-editor)');
+  await summaryEditor.locator('summary').click();
+  const summaryCaption=summaryEditor.locator('[data-owner-copy-id="resultsShown"]');
+  await summaryCaption.dblclick();
+  await summaryCaption.locator('[contenteditable]').fill('Найдено:');
+  await summaryCaption.locator('[contenteditable]').press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#detailContent .wiki-list>p.muted')?.textContent?.startsWith('Найдено: '),
+   null,{timeout:15000});
+  assert.equal(await resultStatus.textContent(),
+   'Найдено: '+match[1]+' из '+match[2]+' записей');
+  assert.equal(JSON.parse(values['guideedit.book.wiki-ui.results-shown']).ru,'Найдено:');
+
+  // Real CAS conflict: do not overwrite the adjacent dynamic numbers, and
+  // retain an unsaved draft until Esc cancels it.
+  const resultMiddle=summaryEditor.locator('[data-owner-copy-id="resultsOf"]');
+  nextConflicts.add('guideedit.book.wiki-ui.results-of');
+  await resultMiddle.dblclick();
+  const middleDraft=resultMiddle.locator('[contenteditable]');
+  await middleDraft.fill('среди');
+  await middleDraft.press('Tab');
+  await resultMiddle.locator('.ui-content-inline-error')
+   .waitFor({state:'visible',timeout:15000});
+  assert.equal(await middleDraft.textContent(),'среди');
+  assert.ok(!Object.hasOwn(values,'guideedit.book.wiki-ui.results-of'));
+  await middleDraft.press('Escape');
+  assert.equal(await resultStatus.textContent(),
+   'Найдено: '+match[1]+' из '+match[2]+' записей');
+
+  // Undo patches mounted caption and counter separately; full Wiki remount
+  // would reset the scroll and search or disconnect this exact DOM node.
+  const mountedCounter=await resultStatus.elementHandle();
+  if(await page.locator('#ownerDock').evaluate(el=>el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
+  await page.locator('#ownerDock [data-owner-undo]').click();
+  await page.waitForFunction(()=>document.querySelector(
+   '#detailContent .wiki-list>p.muted')?.textContent?.startsWith('Показано '),
+   null,{timeout:15000});
+  assert.equal(await mountedCounter.evaluate(node=>node.isConnected),true);
+  assert.equal(await resultStatus.textContent(),initialStatus);
+  assert.equal(JSON.parse(values['guideedit.book.wiki-ui.results-shown']).ru,undefined);
+  await mountedCounter.dispose();
+
+  const more=page.locator('#detailContent .wiki-list>.wiki-more');
+  const moreLabel=await more.textContent();
+  assert.match(moreLabel,/^Показать ещё 100 \\/ \\d+$/);
+  await more.click();
+  assert.equal(await page.locator('#detailContent .wiki-list [data-wiki-record]').count(),200);
+  assert.match(await resultStatus.textContent(),
+   /^Показано 200 из \\d+ записей$/);
+  await page.locator('[data-wiki-chapter="map"]').click();
+  assert.ok(await page.locator('#detailContent .wiki-location-list-heading').count()>0);
+  assert.ok(await summaryEditor.locator('[data-owner-copy-id="placeCity"]').count());
+  assert.deepEqual(errors,[]);
+  console.log('Chromium Wiki results: RU D1 CAS, 409 draft, Undo, live counters, more and groups passed');
   assert.deepEqual(errors,[]);
   console.log('Chromium Wiki filter D1 editorial: RU/EN CAS, ID invariants, utility and elemental choices passed');
  }finally{await context.close()}
