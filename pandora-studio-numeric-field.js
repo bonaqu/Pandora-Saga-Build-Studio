@@ -5,9 +5,12 @@
 // inputs. Yandex's webmaster guidance documents the non-standard "none"
 // value as an additional hint, but explicitly does not guarantee enforcement.
 // Never use this on login/password inputs: users must retain credential filling.
+const installed=new WeakSet();
 const prepare=input=>{
  if(!input||String(input.type||input.getAttribute?.('type')||'').toLowerCase()!=='number')
   return input;
+ if(installed.has(input))return input;
+ installed.add(input);
  input.setAttribute('autocomplete','none');
  input.setAttribute('aria-autocomplete','none');
  input.setAttribute('autocorrect','off');
@@ -26,8 +29,16 @@ const prepare=input=>{
  if(String(root.navigator?.userAgent||'').includes('YaBrowser/')){
   input.readOnly=true;
   const enable=()=>{if(!input.disabled)input.readOnly=false};
-  input.addEventListener('pointerdown',enable);
-  input.addEventListener('keydown',enable);
+  // Unlock before number steppers receive their default pointer action.
+  // Reusing a control must never register duplicate listeners.
+  input.addEventListener('pointerdown',enable,{capture:true});
+  input.addEventListener('touchstart',enable,{capture:true,passive:true});
+  input.addEventListener('keydown',enable,{capture:true});
+  // IME and accessibility input can start without a physical keydown.
+  input.addEventListener('beforeinput',event=>{
+   if(event.isTrusted&&['insertText','insertCompositionText',
+    'deleteContentBackward','deleteContentForward'].includes(event.inputType))enable();
+  },{capture:true});
   input.addEventListener('blur',()=>{input.readOnly=true});
  }
  return input;
