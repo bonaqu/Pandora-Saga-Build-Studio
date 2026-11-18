@@ -97,7 +97,7 @@ test('owner drawer patch helpers do not mutate identical DOM text, ARIA or datas
 });
 
 test('drawer save/Undo/Finish share the actual queued-write guard and do not announce premature success',()=>{
- const block=take('function refreshOwnerUI(){','function ');
+ const block=take('function refreshOwnerUI(){','// Update only author-edited interface copy.');
  const helpers=take('function ownerDockPatchText(node,value){','function refreshOwnerUI(){');
  const patches=Function(helpers+
   '\nreturn {text:ownerDockPatchText,attr:ownerDockPatchAttr,data:ownerDockPatchData};')();
