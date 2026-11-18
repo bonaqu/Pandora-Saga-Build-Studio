@@ -13,14 +13,14 @@ root.window=root;
 runInNewContext(read('pandora-studio-honor-guide.js'),root);
 
 test('equipment empty states and Soul socket hint are safe RU/EN D1 content',()=>{
- for(const key of ['chooseItemEmpty','soulSearchEmpty','soulSearchLimit','socketOverflowHint']){
+ for(const key of ['chooseItemEmpty','soulSearchEmpty','soulShowMore','socketOverflowHint']){
   assert.ok(equipment.includes("'"+key+"'"),key);
   const dashed=key.replace(/[A-Z]/g,ch=>'-'+ch.toLowerCase());
   assert.equal(root.PandoraHonorGuide.validOverride('book.equipment.'+dashed,
    JSON.stringify({ru:'Тест редактора',en:'Editor test'})),true,dashed);
  }
  assert.doesNotMatch(equipment,/text:'Сначала выбери предмет\.'/);
- assert.doesNotMatch(equipment,/text:'Показано 80 душ\. Уточни поиск\.'/);
+ assert.doesNotMatch(equipment,/results\.slice\(0,80\)/);
  assert.doesNotMatch(equipment,/text:'Совместимых душ не найдено'/);
  assert.match(equipment,/api\.editLabel\?\.\(node,key,ru,en,options\)/);
  assert.match(equipment,/copy\('socketOverflowHint'/);
