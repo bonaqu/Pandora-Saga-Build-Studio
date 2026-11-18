@@ -113,7 +113,8 @@ function shareHarness(){
  const deferred=()=>{let resolve,reject;const promise=new Promise((yes,no)=>{
   resolve=yes;reject=no;});return {promise,resolve,reject};};
  const h=(tag,attrs={},children=[])=>({
-  tag,attrs,textContent:attrs.text||'',children:Array.isArray(children)?children:[children],
+  tag,attrs,isConnected:true,textContent:attrs.text||'',
+  children:Array.isArray(children)?children:[children],
   append(...nodes){this.children.push(...nodes)},
   replaceChildren(...nodes){this.children=nodes},
   focus(){},select(){}
@@ -165,9 +166,14 @@ test('one Share click per host publishes once and confirms the captured build sn
  assert.equal(s.calls.length,2);
  assert.equal(s.host.current.children[1].attrs.value,
   'https://example.com/studio/#b/A1234567890');
+ const copy=s.host.current.children[2];
+ await copy.attrs.onclick();
+ assert.deepEqual(s.clipboard,['https://example.com/studio/#b/A1234567890'],
+  'A confirmed link remains copyable after its network request releases the lock');
+ assert.equal(copy.textContent,'✓ Скопировано');
  s.setToken('u'.repeat(43));
- await s.host.current.children[2].attrs.onclick();
- assert.equal(s.clipboard.length,0,'A stale owner cannot copy another account share');
+ await copy.attrs.onclick();
+ assert.equal(s.clipboard.length,1,'A stale owner cannot copy another account share');
 });
 
 test('account switching before the POST resolves cancels GET and stale UI mutations',async()=>{
