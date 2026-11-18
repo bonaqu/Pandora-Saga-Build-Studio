@@ -59,7 +59,7 @@ test('approved joined forge bar and variant 5 element grid retain canonical choi
  assert.match(equipment,/api\.assignGem\(\{type:key==='type'/);
  assert.match(equipment,/aria-pressed/);
 });
-test('site shell has clean title/footer; counts remain grounded in loaded catalog and archive alert stays',()=>{
+test('site shell has clean title/footer, D1-grounded counters and no retired archive UI',()=>{
  assert.match(html,/BUILD STUDIO<small>CHARACTER PLANNER<\/small>/);
  assert.ok(!html.includes('VINTAGE · CHARACTER PLANNER'));
  assert.match(html,/<span id="iconStatus" hidden aria-hidden="true"><\/span>/);
@@ -69,8 +69,9 @@ test('site shell has clean title/footer; counts remain grounded in loaded catalo
  assert.match(app,/data\.meta\.counts\.items/);
  assert.match(app,/data\.meta\.counts\.souls/);
  assert.ok(!app.includes("'Cloudflare D1 · актуальный опубликованный каталог'"));
- assert.match(app,/function renderArchiveNotice\(\)/);
- assert.match(app,/notice\.hidden=!catalogArchived/);
+ assert.doesNotMatch(app,/function renderArchiveNotice/);
+ assert.doesNotMatch(html,/id="siteNotice"/);
+ assert.match(app,/if\(archive&&typeof location!=='undefined'/);
  assert.ok(html.includes(release));
 });
 
