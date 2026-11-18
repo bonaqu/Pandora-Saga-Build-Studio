@@ -88,5 +88,5 @@ test('disconnect saves both scoped local states and blocks editing, even on a fa
  assert.match(app,/if\(!localCatalogHost&&\(!studioLiveReady\|\|liveGateReason\)\)return/);
  const updater=read('pandora-studio-update-manager.js');
  assert.match(updater,/classList\.contains\('studio-live-blocked'\)/);
- assert.match(updater,/#startupOverlay:not\(\[hidden\]\):not\(\.is-finished\)/);
+ assert.match(updater,/#startupOverlay:not\(\[hidden\]\)/, 'The D1 fade remains modal until hidden');
 });
