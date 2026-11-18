@@ -12,7 +12,7 @@ export async function runUIContentInlineSmoke(browser,base){
    equipment:{},souls:{},refinements:{},gems:{}
   }));
  });
- const values={},writes=[],errors=[],nextConflicts=new Set(),
+ const values={},writes=[],resets=[],errors=[],nextConflicts=new Set(),
   unconfirmedWrites=new Set(),slowWrites=new Set();
  let slowLibraryNext=false,offeredRelease=null;
  await context.route('**/*',async route=>{
@@ -52,6 +52,19 @@ export async function runUIContentInlineSmoke(browser,base){
    ok:true,readback:true,cleaned:true,overrideReadback:true,
    overrideCleaned:true,activeCatalogUnchanged:true
   });
+  // Undo of a freshly created text override uses DELETE semantics (reset),
+  // not another override write. The mock must enforce the same CAS handshake
+  // as the real Worker, or it can hide a legitimate editor regression.
+  if(path==='/api/admin/reset'){
+   assert.equal(req.headers().authorization,'Bearer '+'a'.repeat(43));
+   const data=req.postDataJSON();
+   assert.equal(data.expectedValue,
+    Object.hasOwn(values,data.key)?values[data.key]:null);
+   if(nextConflicts.delete(data.key))
+    return reply({code:'OWNER_EDIT_CONFLICT',error:'Mock concurrent reset'},409);
+   delete values[data.key];resets.push(data);
+   return reply({ok:true,key:data.key,deleted:true,conditional:true});
+  }
   if(path==='/api/admin/override'){
    assert.equal(req.headers().authorization,'Bearer '+'a'.repeat(43));
    const data=req.postDataJSON();
@@ -748,14 +761,6 @@ export async function runUIContentInlineSmoke(browser,base){
   await summaryCaption.dblclick();
   await summaryCaption.locator('[contenteditable]').fill('Найдено:');
   await summaryCaption.locator('[contenteditable]').press('Tab');
-  await page.waitForTimeout(700);
-  console.log('Wiki result CAS diagnostics: '+JSON.stringify({
-   saved:values['guideedit.book.wiki-ui.results-shown']||null,
-   view:await page.locator('#detailContent .wiki-list>p.muted').textContent(),
-   caption:await summaryCaption.textContent(),
-   bindings:await page.locator('#detailContent .wiki-list>p.muted [data-owner-interface-bindings]')
-    .first().getAttribute('data-owner-interface-bindings')
-  }));
   await page.waitForFunction(()=>document.querySelector(
    '#detailContent .wiki-list>p.muted')?.textContent?.startsWith('Найдено: '),
    null,{timeout:15000});
@@ -790,7 +795,9 @@ export async function runUIContentInlineSmoke(browser,base){
    null,{timeout:15000});
   assert.equal(await mountedCounter.evaluate(node=>node.isConnected),true);
   assert.equal(await resultStatus.textContent(),initialStatus);
-  assert.equal(JSON.parse(values['guideedit.book.wiki-ui.results-shown']).ru,undefined);
+  assert.equal(Object.hasOwn(values,'guideedit.book.wiki-ui.results-shown'),false);
+  assert.equal(resets.at(-1)?.key,'guideedit.book.wiki-ui.results-shown',
+   'Undo of newly created Wiki caption must use guarded D1 reset');
   await mountedCounter.dispose();
   // Restore the compact drawer before scrolling the long Wiki list: the
   // expanded owner dock intentionally overlaps the left-side chapter UI.
