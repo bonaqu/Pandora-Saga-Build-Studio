@@ -312,3 +312,43 @@ test('skills expose hover preview, and book uses branded checkboxes and source-b
  assert.match(book,/function attackChapterGroups\(calc\)/);
  assert.match(css,/\.stage-book-check input\[type=checkbox\]/);
 });
+
+test('Wiki filter labels share one semantic D1 layer without modifying filter IDs or exposing editor controls to players',()=>{
+ const source=read('pandora-studio-app.js');
+ const start=source.indexOf(' const wikiFilterCopyRows=[];');
+ const end=source.indexOf(' const outsidePickers=new Set();',start);
+ assert.ok(start>=0&&end>start,'The shared Wiki filter renderer must exist');
+ const captured=new Map();
+ const h=(tag,props)=>({tag,...props,options:[],append(node){this.options.push(node)}});
+ const bindOwnerInterfaceText=(node,section,key,ru,en,attribute='text')=>{
+  assert.equal(section,'wiki-ui');
+  const override=key==='filterEquipmentTypeWeapon'?'Тестовое оружие':null;
+  captured.set(key,{section,attribute,ru,en});
+  if(attribute==='text')node.textContent=override||ru;
+  else node[attribute]=override||ru;
+ };
+ const boot=Function('adminEditing','adminToken','h','bindOwnerInterfaceText',
+  source.slice(start,end)+
+  '\\nreturn {addFilterOptions,addFilterName,wikiFilterCopyRows,filterCopyKey};');
+ const owner=boot(true,'mock-owner',h,bindOwnerInterfaceText);
+ const picker=h('select',{});
+ owner.addFilterOptions(picker,'EquipmentType',[
+  ['equipment','Экипировка','Equipment'],
+  ['weapon','Оружие','Weapons'],
+  ['shield','Щиты','Shields']
+ ],'weapon');
+ owner.addFilterName(picker,'filterEquipmentTypeAria','Вид предметов','Item type');
+ assert.deepEqual(picker.options.map(x=>x.value),['equipment','weapon','shield']);
+ assert.deepEqual(picker.options.map(x=>x.selected),[false,true,false]);
+ assert.equal(picker.options[1].textContent,'Тестовое оружие');
+ assert.equal(owner.filterCopyKey('WeaponElement','lightning'),'filterWeaponElementLightning');
+ assert.equal(owner.wikiFilterCopyRows.length,4);
+ assert.ok(owner.wikiFilterCopyRows.every(row=>row.length===5));
+ assert.equal(captured.get('filterEquipmentTypeWeapon').en,'Weapons');
+ const guest=boot(false,'',h,bindOwnerInterfaceText);
+ guest.addFilterOptions(h('select',{}),'EquipmentType',[['weapon','Оружие','Weapons']],'weapon');
+ assert.equal(guest.wikiFilterCopyRows.length,0,
+  'Guests see translated options but never get an editorial control');
+ assert.match(read('pandora-studio-owner-inline-ui.css'),
+  /\\.wiki-filter-labels-editor \\.studio-owner-interface-fields/);
+});
