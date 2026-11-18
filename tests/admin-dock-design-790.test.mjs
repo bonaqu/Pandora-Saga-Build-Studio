@@ -17,7 +17,11 @@ test('owner commands are reorganized without rebuilding the action buttons',()=>
  assert.match(app,/\[head,body,footer\]/);
  assert.match(app,/\[health,actions,guide\]/);
  assert.match(app,/decorateOwnerDockActions\(actions\)/);
- assert.match(app,/toolsGroup\.querySelector\('\.owner-dock-group-title'\)\.replaceWith\(extra\)/);
+ // The Tools heading is now one D1-backed editable node rather than
+ // replacing it with a duplicate hardcoded action spacer.
+ assert.match(app,/const toolsGroup=group\('tools','groupToolsTitle','groupToolsHint'/);
+ assert.match(app,/editorial\(titleKey,'title'\),editorial\(hintKey,'hint'\)/);
+ assert.doesNotMatch(app,/toolsGroup\.querySelector\('\.owner-dock-group-title'\)\.replaceWith\(extra\)/);
 });
 test('save status, pinned finish, and editable labels retain their safety behavior',()=>{
  assert.match(app,/visibleSaveState=\(ownerSaveState==='saving'/);
