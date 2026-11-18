@@ -122,3 +122,62 @@ test('D1 origin and matching snapshot are still checked after a successful retri
  }),/source is not verified/);
  assert.equal(calls,2,'Invalid D1 provenance cannot trigger another GET or unlock');
 });
+
+test('public D1 reads force no-store and ignore a successful response after cancellation',async()=>{
+ const live=load();
+ let observed=null;
+ const response=await live.get('https://example.test/api/catalog/meta.json',
+  {cache:'force-cache'},{fetcher:async(_url,options)=>{
+   observed=options;return {ok:true,status:200};
+  },pause:instant});
+ assert.equal(response.status,200);
+ assert.equal(observed.cache,'no-store','The live snapshot cannot use a stale HTTP cache');
+ assert.equal(observed.method,'GET');
+ const controller=new AbortController();
+ let fetches=0;
+ await assert.rejects(live.get('https://example.test/api/catalog/meta.json',
+  {signal:controller.signal},{fetcher:async()=>{
+   fetches++;
+   controller.abort(Error('New snapshot requested'));
+   // Simulate an adapter which returns despite cancellation.
+   return {ok:true,status:200};
+  },pause:instant}),/New snapshot requested/);
+ assert.equal(fetches,1,'A cancelled response is not retried or accepted');
+});
+
+test('429 and 503 respect bounded Retry-After without multiplying D1 requests',async()=>{
+ const live=load(),delays=[];
+ let fetches=0;
+ const answer=await live.get('https://example.test/api/catalog/items.json',{},
+  {fetcher:async()=>{
+   fetches++;
+   return fetches===1?
+    {ok:false,status:429,headers:{get:name=>name==='retry-after'?'2':null}}:
+    {ok:true,status:200};
+  },pause:async ms=>delays.push(ms)});
+ assert.equal(answer.status,200);
+ assert.deepEqual(delays,[2000]);
+ assert.equal(fetches,2);
+
+ const capped=[];
+ let count=0;
+ await live.get('https://example.test/api/catalog/skills.json',{},
+  {fetcher:async()=>{
+   count++;
+   return count===1?
+    {ok:false,status:503,headers:{get:()=> '999'}}:
+    {ok:true,status:200};
+  },pause:async ms=>capped.push(ms)});
+ assert.deepEqual(capped,[2500],'Long Retry-After must not freeze startup');
+
+ const fallback=[];
+ let seen=0;
+ await live.get('https://example.test/api/catalog/souls.json',{},
+  {fetcher:async()=>{
+   seen++;
+   return seen===1?
+    {ok:false,status:503,headers:{get:()=> 'malformed'}}:
+    {ok:true,status:200};
+  },pause:async ms=>fallback.push(ms)});
+ assert.deepEqual(fallback,[350]);
+});
