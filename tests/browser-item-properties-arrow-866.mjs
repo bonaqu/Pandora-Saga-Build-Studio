@@ -28,14 +28,23 @@ export async function runItemPropertiesArrow866Smoke(browser,base){
    await properties.waitFor({state:'visible',timeout:15000});
    const chooseGroup=picker.locator('.stage-rich-choose-group');
    const settings=picker.locator('.stage-rich-settings-group');
-   assert.equal(await chooseGroup.locator('[data-stage-tab="choose"]').count(),1);
+   const replacement=chooseGroup.locator('[data-stage-tab="choose"]');
+   assert.equal(await replacement.count(),1);
+   assert.equal((await replacement.innerText()).trim(),
+    lang==='en'?'Choose another item':'Выбрать другую вещь');
    assert.equal(await settings.locator('[data-stage-tab="details"]').count(),1);
    assert.equal(await settings.locator('[data-stage-tab="souls"]').count(),1);
    const chooseBox=await chooseGroup.boundingBox(),settingsBox=await settings.boundingBox();
    assert.ok(chooseBox.x+chooseBox.width<=settingsBox.x-4,
     'Choose is visually separated from grouped item settings');
-   assert.ok(Math.abs(chooseBox.y-settingsBox.y)<2,
-    'Both groups share one compact row');
+   if(width<=520)assert.ok(settingsBox.y>=chooseBox.y+chooseBox.height-1,
+    'Phone layout gives the long replacement caption its own row');
+   else assert.ok(Math.abs(chooseBox.y-settingsBox.y)<2,
+    'Desktop retains one compact action row');
+   assert.equal(await replacement.evaluate(node=>{
+    const label=node.querySelector('.stage-copy-caption')||node;
+    return label.scrollWidth<=label.clientWidth+1;
+   }),true,'Replacement caption must not be clipped horizontally');
    const settingsChildren=await settings.locator(':scope > *').count();
    assert.equal(settingsChildren,2,'Sockets share one settings group with Properties');
    const tabLine=await picker.locator('.stage-rich-tabs').boundingBox();
@@ -93,12 +102,18 @@ export async function runItemPropertiesArrow866Smoke(browser,base){
    assert.equal(await simpleTabs.locator('.stage-rich-settings-group [data-stage-tab]').count(),1);
    const leftBox=await simpleTabs.locator('.stage-rich-choose-group').boundingBox();
    const rightBox=await simpleTabs.locator('.stage-rich-settings-group').boundingBox();
-   assert.ok(Math.abs(leftBox.width-rightBox.width)<3,
-    'Without Souls, Choose and Properties occupy a balanced half each');
+   assert.ok(leftBox.width>rightBox.width*1.25,
+    'Without Souls, the longer replacement caption receives more width');
    const titleTabs=await simpleTabs.boundingBox();
    const detailsBody=await cloakPicker.locator('.stage-rich-body').boundingBox();
    assert.ok(Math.abs(titleTabs.x-detailsBody.x)<1);
    assert.ok(detailsBody.width<=titleTabs.width+1);
+   await page.locator('.equipment-slot[data-slot-index="7"]').click({button:'right'});
+   const cloakMenu=page.locator('.stage-gear-context-menu');
+   assert.equal(await cloakMenu.locator('[data-gear-context-action="souls"]').isDisabled(),true);
+   assert.match(await cloakMenu.locator('[data-gear-context-action="souls"]')
+    .getAttribute('title'),lang==='en'?/no Soul sockets/i:/не поддерживает слоты душ/i);
+   await page.keyboard.press('Escape');
 
    assert.deepEqual(errors,[]);
   }finally{await context.close()}

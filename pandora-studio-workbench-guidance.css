@@ -67,15 +67,24 @@
  border-color:#f0c384;background:#604225;outline-offset:2px}
 .stage-picker-head .stage-picker-mode-link:disabled{opacity:.55;cursor:not-allowed}
 
-/* Equipment UX: separate catalog picker from the one Properties/Souls panel.
-   Both groups fit the existing 31px rail; do not increase modal height. */
-.stage-rich-tabs.has-souls{grid-template-columns:minmax(0,.9fr) minmax(0,2.1fr)}
-.stage-rich-tabs.no-souls{grid-template-columns:repeat(2,minmax(0,1fr))}
+/* Replacement is a full action name, not an abbreviated "Choose" tab.
+   Give it width without trimming the adjacent Soul controls. */
+.stage-rich-tabs.has-souls{grid-template-columns:minmax(0,1.18fr) minmax(0,1.82fr)}
+.stage-rich-tabs.no-souls{grid-template-columns:minmax(0,1.45fr) minmax(0,1fr)}
 .stage-rich-tabs{gap:8px;align-items:stretch;padding-inline-end:8px}
 .stage-rich-choose-group{display:flex;align-items:stretch;min-width:0}
 .stage-rich-choose-group>button,.stage-rich-choose-group>.stage-action-edit-wrap{
  flex:1 1 auto;width:100%;min-width:0}
 .stage-rich-choose-group>button{background:#352417;border-radius:4px}
+.stage-rich-choose-group [data-stage-tab="choose"]{
+ min-height:34px;line-height:1.25;white-space:normal;overflow-wrap:break-word}
+.stage-rich-choose-group .stage-copy-caption{
+ white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:break-word}
+@media(max-width:520px){
+ /* On phones the full action sits above the two compact settings controls. */
+ .stage-rich-tabs.has-souls{grid-template-columns:minmax(0,1fr);gap:5px}
+ .stage-rich-tabs.has-souls .stage-rich-choose-group [data-stage-tab="choose"]{min-height:31px}
+}
 .stage-rich-settings-group{display:grid;grid-template-columns:minmax(0,.76fr) minmax(0,1.24fr);
  min-width:0;gap:0;overflow:hidden;border:1px solid #97704a;
  border-radius:4px;background:#271a12}

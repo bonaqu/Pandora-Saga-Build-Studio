@@ -75,7 +75,7 @@ export async function runEquipmentQuickMenuSmoke(browser,base){
    assert.equal((await page.locator('#stagePicker [data-stage-tab="souls"]').innerText()).trim(),
     'Управление душами');
    assert.equal((await page.locator('#stagePicker [data-stage-tab="choose"]').innerText()).trim(),
-    'Выбор');
+    'Выбрать другую вещь');
   assert.equal(await page.locator('#stagePicker [data-stage-tab="details"]')
    .getAttribute('aria-pressed'),'true');
   assert.equal(await page.locator('#stagePicker .stage-rich-fields dd[data-soul-fill]')
@@ -115,11 +115,17 @@ export async function runEquipmentQuickMenuSmoke(browser,base){
 
   await right(belt);
   await menu.waitFor({state:'visible'});
-  assert.equal(await action('souls').isDisabled(),true,
-   'No Soul sockets: menu explains why Manage Souls is unavailable');
-  assert.match(await action('souls').getAttribute('title'),/нет доступных слотов/i);
-  await page.mouse.click(5,5);
-  assert.equal(await menu.count(),0,'Outside click dismisses menu');
+  assert.equal(await action('souls').isEnabled(),true,
+   'Zero socket capacity must not block the Soul-tab explanation');
+  await action('souls').click();
+  assert.equal(await page.locator('#stagePicker [data-stage-tab="souls"]')
+   .getAttribute('aria-pressed'),'true');
+  assert.match(await page.locator('#stagePicker [data-soul-unavailable="zero"]')
+   .innerText(),/пояса.*0 слотов/i);
+  assert.equal(await page.locator('#stagePicker [data-socket-index]').count(),0,
+   'Zero sockets cannot insert Souls');
+  await page.locator('#stagePicker .stage-picker-head button').first().click();
+  assert.equal(await menu.count(),0,'Soul-tab navigation closes the context menu');
 
   await page.locator('#locale [data-locale="en"]').click();
   await page.waitForFunction(()=>document.documentElement.lang==='en');
