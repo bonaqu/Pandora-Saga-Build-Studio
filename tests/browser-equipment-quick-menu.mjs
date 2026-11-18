@@ -154,7 +154,22 @@ export async function runEquipmentQuickMenuSmoke(browser,base){
   await page.locator('#locale [data-locale="en"]').click();
   await page.waitForFunction(()=>document.documentElement.lang==='en');
   await right(belt);
+  await menu.waitFor({state:'visible',timeout:5000});
   assert.match(await action('properties').innerText(),/Properties/);
+  const scrollState=await page.evaluate(()=>{
+   const anchor=document.querySelector('.equipment-slot[data-slot-index="11"]');
+   document.dispatchEvent(new Event('scroll'));
+   const retained=Boolean(document.querySelector('.stage-gear-context-menu'));
+   anchor.style.transform='translateY(4px)';
+   document.dispatchEvent(new Event('scroll'));
+   const dismissed=!document.querySelector('.stage-gear-context-menu');
+   anchor.style.transform='';
+   return {retained,dismissed};
+  });
+  assert.deepEqual(scrollState,{retained:true,dismissed:true},
+   'Unrelated scrolling retains context menu, moved anchor safely dismisses it');
+  await right(belt);
+  await menu.waitFor({state:'visible',timeout:5000});
   assert.match(await action('souls').innerText(),/Manage Souls/);
   assert.match(await action('replace').innerText(),/Choose another item/);
   assert.match(await action('remove').innerText(),/Unequip item/);

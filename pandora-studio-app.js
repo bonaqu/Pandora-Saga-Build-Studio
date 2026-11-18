@@ -1547,10 +1547,11 @@ function showStageRailWarning(badge,message){
 }
 // One context menu for all 14 rail slots, mounted outside clipped portrait
 // artwork. A right click never mutates equipment until an action is chosen.
-let stageGearMenu=null,stageGearMenuAnchor=null;
+let stageGearMenu=null,stageGearMenuAnchor=null,stageGearMenuPosition=null;
 function closeStageGearMenu(restoreFocus=false){
  const anchor=stageGearMenuAnchor;
  stageGearMenu?.remove();stageGearMenu=null;stageGearMenuAnchor=null;
+ stageGearMenuPosition=null;
  if(restoreFocus&&anchor?.isConnected)anchor.focus({preventScroll:true});
 }
 function openStageEquipmentSlot(index,view='auto'){
@@ -1650,6 +1651,8 @@ function openStageGearMenu(index,sourceSlot,event,anchor){
  }
  document.body.append(menu);stageGearMenu=menu;stageGearMenuAnchor=anchor;
  const rect=menu.getBoundingClientRect(),box=anchor.getBoundingClientRect();
+  // Ignore scroll in unrelated panels if the anchored slot did not move.
+  stageGearMenuPosition={left:box.left,top:box.top,right:box.right,bottom:box.bottom};
  const x=Number.isFinite(event?.clientX)&&event.clientX>0?event.clientX:box.right;
  const y=Number.isFinite(event?.clientY)&&event.clientY>0?event.clientY:box.bottom;
  menu.style.left=Math.max(8,Math.min(x,window.innerWidth-rect.width-8))+'px';
@@ -1663,7 +1666,16 @@ document.addEventListener('contextmenu',event=>{
  if(stageGearMenu&&!event.target.closest?.('.equipment-slot.equipped')&&
   !stageGearMenu.contains(event.target))closeStageGearMenu();
 },true);
-document.addEventListener('scroll',()=>closeStageGearMenu(),true);
+document.addEventListener('scroll',()=>{
+  if(!stageGearMenu)return;
+  const anchor=stageGearMenuAnchor,initial=stageGearMenuPosition;
+  if(!anchor?.isConnected||!initial){closeStageGearMenu();return}
+  const current=anchor.getBoundingClientRect();
+  // The capture phase also receives scroll from unrelated lists and panels.
+  // Do not dismiss a menu without an actual positional change of its owner.
+  if(['left','top','right','bottom'].some(key=>
+   Math.abs(current[key]-initial[key])>1))closeStageGearMenu();
+ },true);
 window.addEventListener('resize',()=>closeStageGearMenu());
 window.addEventListener('blur',()=>closeStageGearMenu());
 document.addEventListener('keydown',event=>{
