@@ -43,7 +43,9 @@ test('equipment picker changes adjacent slots without equipping and retains leve
  assert.match(code,/openStageEquipmentSlot\(next,'choose'\)/);
  assert.match(code,/\(selectedSlot\+direction\+slots\.length\)%slots\.length/);
  assert.match(code,/appendStageSlotNavigation\(root\);/);
- assert.match(code,/stagePickerOnlyAvailable=false/);
+ assert.match(code,/stagePickerOnlyAvailable=bootView\.slotOnlyAvailable===true/);
+ assert.match(code,/stageSlotShown=Number\.isInteger\(bootView\.slotShown\)/,
+  'Session view restores a bounded number of disclosed items');
  assert.match(code,/records\.filter\(rec=>!stagePickerOnlyAvailable\|\|/);
  assert.match(code,/stagePickerOnlyAvailable=event\.target\.checked;stageSlotShown=48;draw\(\)/);
  assert.match(code,/onlyAvailable\.hidden=!records\.some/);
