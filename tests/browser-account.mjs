@@ -186,12 +186,16 @@ export async function runAccountSmoke(browser,base){
   // Refreshing a live form may remount its controls, but must restore
   // focused input, exact caret selection, sensitive values and feedback.
   await pendingChange.nth(1).focus();
+  const activePasswordHandle=await pendingChange.nth(1).elementHandle();
   await pendingChange.nth(1).evaluate(el=>el.setSelectionRange(4,13,'forward'));
   await page.evaluate(()=>{
    document.documentElement.lang='en';
    window.PandoraAccountUI.refresh();
   });
   assert.equal(await pendingChange.nth(1).evaluate(el=>document.activeElement===el),true);
+  assert.equal(await page.evaluate(old=>document.querySelectorAll(
+   '.account-password-details input')[1]===old,activePasswordHandle),true,
+   'A locale update must not recreate the mounted password input');
   assert.deepEqual(await pendingChange.nth(1).evaluate(el=>[
    el.selectionStart,el.selectionEnd,el.selectionDirection
   ]),[4,13,'forward']);
@@ -204,6 +208,9 @@ export async function runAccountSmoke(browser,base){
   });
   assert.equal(await pendingChange.nth(1).evaluate(el=>document.activeElement===el),true);
   assert.equal(await pendingChange.nth(1).inputValue(),'An example new password 2026');
+  assert.equal(await page.evaluate(old=>document.querySelectorAll(
+   '.account-password-details input')[1]===old,activePasswordHandle),true);
+  await activePasswordHandle.dispose();
   // An owner inline edit is still writing to D1 while the locale changes.
   // Do not discard its host before CAS/Undo finishes.
   const preservedHost=await page.evaluate(()=>{
