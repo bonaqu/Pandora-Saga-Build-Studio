@@ -14,7 +14,7 @@ export function rotateChangelog(root){
  const footerAt=raw.lastIndexOf('\n\n---\n\n',markerAt);
  const matches=[...raw.slice(0,footerAt).matchAll(entryHeading)];
  if(!matches.length||footerAt<0)throw Error('Changelog has no releases');
- if(matches.length<=16&&raw.length<=22000)return;
+ if(matches.length<=12&&raw.length<=22000)return;
  const entries=matches.map((m,i)=>({
   version:m[1],
   body:raw.slice(m.index,i+1<matches.length?matches[i+1].index:footerAt).trim()
