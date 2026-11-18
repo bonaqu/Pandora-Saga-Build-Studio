@@ -62,6 +62,9 @@ test('Soul search can reveal every compatible record without remounting or stale
   'Keyboard focus is preserved when the More button disappears');
  assert.doesNotMatch(equipment,/results\.slice\(0,80\)/);
  assert.doesNotMatch(equipment,/soulSearchLimit/);
+ assert.match(equipment,/copy\('soulProgressLabel',progressRu,progressEn\)/);
+ assert.match(equipment,/progressCount\.textContent=english\?/);
+ assert.doesNotMatch(equipment,/progress\.textContent=english\?/);
  for(const name of [
   'soulQuery:stageSoulQuery,soulShown:stageSoulShown',
   'onSoulShown:count=>{stageSoulShown=count;saveView()}',

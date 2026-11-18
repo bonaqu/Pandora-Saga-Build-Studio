@@ -29,6 +29,12 @@ export async function runGlobalSearchAutofill797Smoke(browser,base){
   });
   assert.deepEqual(idle,{value:'',called:0,locked:true},
    'Unexpected login fill must be discarded while native search is idle');
+  const synthetic=await staticSearch.evaluate(input=>{
+   input.dispatchEvent(new KeyboardEvent('keydown',{key:'a',bubbles:true}));
+   input.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true}));
+   return input.readOnly;
+  });
+  assert.equal(synthetic,true,'Untrusted JS events must not unlock an idle search');
   await page.locator('#pathSkillsTab').click();
   await staticSearch.click();
   assert.equal(await staticSearch.evaluate(input=>input.readOnly),false);

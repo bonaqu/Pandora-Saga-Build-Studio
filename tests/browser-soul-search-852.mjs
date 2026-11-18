@@ -111,9 +111,14 @@ export async function runSoulSearch852Smoke(browser,base){
   assert.equal(await many.first().getAttribute('data-already-rendered'),'kept',
    'Show more appends rows without destroying existing previews or owner editors');
   assert.equal(await panel.locator('[data-soul-progress]').innerText(),'Душ: 160 из 186');
+  assert.equal(await panel.locator('[data-soul-progress-label]').innerText(),'Душ');
+  assert.equal(await panel.locator('[data-soul-progress-count]').innerText(),': 160 из 186');
+  await panel.locator('[data-soul-progress-count]').evaluate(el=>el.dataset.stable='yes');
   await more.focus();
   await page.keyboard.press('Enter');
   assert.equal(await many.count(),186,'Every compatible Soul can be reached');
+  assert.equal(await panel.locator('[data-soul-progress-count]').count(),0,
+   'The progress disappears with More when all results are shown');
   assert.equal(await more.count(),0,'The More control disappears at the end');
   assert.equal(await panel.evaluate(node=>document.activeElement?.classList.contains('stage-rich-result')),
    true,'Keyboard focus moves to the newly revealed items after last page');
@@ -137,7 +142,13 @@ export async function runSoulSearch852Smoke(browser,base){
   });
   assert.equal(await more.innerText(),'View more Souls');
   assert.equal(await panel.locator('[data-soul-progress]').innerText(),'80 of 186 Souls');
+  assert.equal(await panel.locator('[data-soul-progress-label]').innerText(),'Souls');
+  assert.equal(await panel.locator('[data-soul-progress-count]').innerText(),'80 of 186');
   await page.evaluate(()=>window.__renderSoulPaging(true));
+  assert.equal(await panel.locator('[data-owner-edit-key="soulProgressLabel"]').count(),1,
+   'The progress caption is owner-editable but the numeric span is not');
+  assert.equal(await panel.locator('[data-soul-progress-count][data-owner-edit-key]').count(),0);
+  assert.equal(await panel.locator('.stage-soul-progress .stage-control-pencil').count(),1);
   assert.equal(await panel.locator('[data-owner-edit-key="soulShowMore"]').count(),1,
    'The short RU/EN caption supports the existing owner inline editor');
   assert.equal(await more.count(),1);
