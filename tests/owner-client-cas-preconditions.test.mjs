@@ -10,7 +10,8 @@ const source=app.slice(start,end);
 const validToken='a'.repeat(43);
 function instance(fetchImpl,{lang='ru',values={}}={}){
  const override={...values},logs=[],ownerEdits=[];
- const api=Function('fetch','override','ownerEdits','refreshOwnerUI',
+ const window={PandoraStudioLiveRead:{get:(url,opts)=>fetchImpl(url,opts)}};
+ const api=Function('window','fetch','override','ownerEdits','refreshOwnerUI',
   'closeInlineEditor','updateAdminHint','initialLang',
   'const API="https://ps-build-studio-cloud.bonaqu.workers.dev";'+
   'let adminToken='+JSON.stringify(validToken)+',adminEditing=true,'+
@@ -18,7 +19,7 @@ function instance(fetchImpl,{lang='ru',values={}}={}){
   'function activeOverride(key){return Object.hasOwn(override,key)?override[key]:null}\n'+
   source+'\nreturn {request:apiRequest,status:()=>({ownerSaveState,ownerSaveError}),'+
   'auth:()=>({adminToken,adminEditing})};')(
-  fetchImpl,override,ownerEdits,()=>logs.push('refresh'),()=>{},()=>{},lang);
+  window,fetchImpl,override,ownerEdits,()=>logs.push('refresh'),()=>{},()=>{},lang);
  return {...api,override,logs};
 }
 const respond=(data,status=200)=>new Response(JSON.stringify(data),{

@@ -31,8 +31,12 @@ function loader(source,requests){
    key==='x-ps-catalog-snapshot'?'test-snapshot':null},
    json:async()=>structuredClone(source[name])};
  };
+ const window={...host,PandoraStudioLiveRead:{
+  mapLimit:(items,_limit,mapper)=>Promise.all(items.map(mapper)),
+  get:(url,opts)=>fetcher(url,opts)
+ }};
  return Function('window','fetch','AbortSignal','API','catalogLoadVersion',
-  code+'\nreturn loadCatalog;')(host,fetcher,AbortSignal,'https://worker.invalid',0);
+  code+'\nreturn loadCatalog;')(window,fetcher,AbortSignal,'https://worker.invalid',0);
 }
 test('shared character source validator accepts independent complete fixtures',()=>{
  assert.equal(typeof host.PandoraWikiCatalog.validateCharacterCatalog,'function');

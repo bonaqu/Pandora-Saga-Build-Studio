@@ -14,19 +14,26 @@ const cut=(start,end)=>{
 const coreCode=cut('async function loadCatalog({archive=false,commit=true}={})',
  'let ownerWikiRefreshId=0;');
 function core(fetcher){
- return new Function('fetch','AbortSignal','API','catalogLoadVersion',
-  coreCode+'\nreturn loadCatalog;')(fetcher,AbortSignal,'https://worker.invalid',0);
+ // Isolated production-loader evaluation: emulate the registered GET transport
+ // without weakening the real browser's full retry and concurrency tests.
+ const window={PandoraStudioLiveRead:{
+  mapLimit:(items,_limit,mapper)=>Promise.all(items.map(mapper)),
+  get:(url,opts)=>fetcher(url,opts)
+ }};
+ return new Function('window','fetch','AbortSignal','API','catalogLoadVersion',
+  coreCode+'\nreturn loadCatalog;')(window,fetcher,AbortSignal,'https://worker.invalid',0);
 }
 const englishCode=cut('async function ensureEnglishCatalog({persistReconciled=true}={}){',
  'async function loadCatalog({archive=false,commit=true}={})');
 const locales=['items','skills','monsters','souls','classes'];
 function english(fetcher,archive=false){
  const catalog={meta:{localeCounts:{en:Object.fromEntries(locales.map(x=>[x,0]))}}};
- return new Function('fetch','AbortSignal','API','catalogSource',
+ const window={PandoraStudioLiveRead:{get:(url,opts)=>fetcher(url,opts)}};
+ return new Function('window','fetch','AbortSignal','API','catalogSource',
   'catalogArchived','officialEnglish','officialEnglishSnapshot',
   'activeCatalogSnapshot','englishCatalogPending','lang','applyGameLocale',
   englishCode+'\nreturn ensureEnglishCatalog;')(
-   fetcher,AbortSignal,'https://worker.invalid',catalog,archive,null,null,
+   window,fetcher,AbortSignal,'https://worker.invalid',catalog,archive,null,null,
    archive?null:'ps-test-snapshot',null,'ru',()=>{});
 }
 const response=({kind='d1',snapshot='ps-test-snapshot',data={}}={})=>({

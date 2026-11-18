@@ -10,6 +10,7 @@ assert.ok(begin>=0&&end>begin,'Wiki loader must be inspectable');
 function harness(){
  const calls=[],overrides={},selection={type:'item',id:null};
  const window={
+  PandoraStudioLiveRead:{get:()=>Promise.reject(Error('Unused network fixture'))},
   PandoraWikiCatalog:{load:()=>new Promise((resolve,reject)=>calls.push({resolve,reject}))},
   PandoraHistoricalMaps:{records:()=>({})},
   PandoraStudioTradeOwnerData:{apply:trades=>trades},
