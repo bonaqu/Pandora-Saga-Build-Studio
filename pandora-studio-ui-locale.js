@@ -396,21 +396,35 @@ for(const [key,[ru,en]] of Object.entries(bookCopy)){
 }
 function bookFieldKey(value){return typeof value==='string'?
  bookDefaults.get(value)||null:null}
-let contentOverrides={};
-function fieldKey(key){
- if(!Object.hasOwn(strings,key)&&!Object.hasOwn(accountCopy,key)&&
-  !Object.hasOwn(libraryCopy,key)&&!Object.hasOwn(statusCopy,key)&&
-  !Object.hasOwn(bookCopy,key))return null;
+// Author-written defaults and semantic field IDs are stable for the lifetime
+// of this document. Look them up directly instead of building a regex slug
+// and scanning five dictionaries for every rendered caption.
+const authoredDefaults=Object.freeze({
+ ...bookCopy,...statusCopy,...libraryCopy,...accountCopy,...strings
+});
+const authoredKeys=Object.freeze([...Object.keys(strings),...Object.keys(accountCopy),
+ ...Object.keys(libraryCopy),...Object.keys(statusCopy),...Object.keys(bookCopy)]);
+const authoredFieldIds=Object.create(null);
+for(const key of authoredKeys){
  const slug=key.replace(/[A-Z]/g,ch=>'-'+ch.toLowerCase());
- return /^[a-z][a-z0-9-]{0,75}$/.test(slug)?'ui.label.'+slug:null;
+ if(/^[a-z][a-z0-9-]{0,75}$/.test(slug))
+  authoredFieldIds[key]='ui.label.'+slug;
+}
+let contentOverrides={};
+const parsedCopyOverrides=new Map();
+function fieldKey(key){
+ return typeof key==='string'&&Object.hasOwn(authoredFieldIds,key)?
+  authoredFieldIds[key]:null;
 }
 function setOverrides(overrides){
  contentOverrides=overrides&&typeof overrides==='object'&&!Array.isArray(overrides)?
   overrides:{};
+ // A save, Undo, reset or locale refresh may mutate the SAME overrides
+ // object in place. Always invalidate even if its identity is unchanged.
+ parsedCopyOverrides.clear();
 }
 function baseText(key,lang='ru'){
- const defaults=strings[key]||accountCopy[key]||libraryCopy[key]||
-  statusCopy[key]||bookCopy[key];
+ const defaults=Object.hasOwn(authoredDefaults,key)?authoredDefaults[key]:null;
  return defaults?defaults[lang==='en'?1:0]:key;
 }
 // Compact actions and headings stay short; only the storage warning may
@@ -424,20 +438,22 @@ function copyLimit(key){return key==='accountStorageWarning'||
  Object.hasOwn(libraryCopy,key)&&libraryCopy[key][0].length>90?250:
  Object.hasOwn(bookCopy,key)&&bookCopy[key][0].length>90?350:90}
 function text(key,lang='ru'){
- const defaults=strings[key]||accountCopy[key]||libraryCopy[key]||
-  statusCopy[key]||bookCopy[key],id=fieldKey(key);
+ const defaults=Object.hasOwn(authoredDefaults,key)?authoredDefaults[key]:null;
+ const id=fieldKey(key);
  if(!defaults||!id)return key;
- let edit=null;
- try{
-  const value=contentOverrides['guideedit.book.'+id];
-  edit=typeof value==='string'?JSON.parse(value):null;
- }catch{}
- const field=lang==='en'?'en':'ru',saved=edit?.[field];
+ if(!parsedCopyOverrides.has(id)){
+  let edit=null;
+  try{
+   const raw=contentOverrides['guideedit.book.'+id];
+   edit=typeof raw==='string'?JSON.parse(raw):null;
+  }catch{} // Corrupt or incomplete D1 editor copy keeps the exact fallback.
+  parsedCopyOverrides.set(id,edit);
+ }
+ const field=lang==='en'?'en':'ru',saved=parsedCopyOverrides.get(id)?.[field];
  const max=copyLimit(key);
  return typeof saved==='string'&&saved.trim()&&saved.length<=max?saved:defaults[lang==='en'?1:0];
 }
-function keys(){return [...Object.keys(strings),...Object.keys(accountCopy),
- ...Object.keys(libraryCopy),...Object.keys(statusCopy),...Object.keys(bookCopy)]}
+function keys(){return authoredKeys.slice()}
 function ui(value,lang='ru'){
  const id=literalKey(value);
  return id?text(id,lang):lang==='en'?(english[value]||value):value;

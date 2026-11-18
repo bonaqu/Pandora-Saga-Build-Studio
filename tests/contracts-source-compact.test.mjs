@@ -262,7 +262,8 @@ test('a published link is verified by the Worker before showing the URL and copy
   assert.ok(probe>=0&&verify>probe&&announce>verify,
    'cannot claim link exists before successful GET verification');
   assert.match(share,/const viewerToken=window\.PandoraAccountUI\?\.token\(\),viewerOwner=libraryScopeId\(\)/);
-  assert.match(share,/if\(!sameViewer\(\)\)return;/);
+  assert.match(share,/const currentRequest=\(\)=>sameViewer\(\)&&pendingShareRequests\.get\(requestKey\)===operation/);
+  assert.match(share,/if\(!currentRequest\(\)\)return;/);
   assert.match(share,/const expectedData=JSON\.parse\(JSON\.stringify\(build\.data\)\)/);
   assert.match(share,/aria-label':'Ссылка на билд'/);
   assert.match(share,/navigator\.clipboard\.writeText\(url\)/);

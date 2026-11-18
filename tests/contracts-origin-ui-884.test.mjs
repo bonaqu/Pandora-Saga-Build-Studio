@@ -95,11 +95,13 @@ test('invalid saved character is caught by the per-card share handler',()=>{
  const part=app.slice(app.indexOf('async function createShared('),app.indexOf('function openSharedSnapshot('));
  assert.match(part,/try\{[\s\S]*?const expectedData=JSON\.parse\(JSON\.stringify\(build\.data\)\)/);
  assert.match(part,/sanitizeSharedState\(expectedData\)/);
- assert.match(part,/if\(!sameViewer\(\)\)return;/);
+ assert.match(part,/const currentRequest=\(\)=>sameViewer\(\)&&pendingShareRequests\.get\(requestKey\)===operation/);
+ assert.match(part,/if\(!currentRequest\(\)\)return;/);
  assert.match(part,/catch\(error\)/);
  assert.match(part,/class:'share-editorial-row build-share-error'/);
  assert.match(part,/class:'share-runtime-detail'/);
- assert.match(part,/if\(host\.isConnected\)\{\s*host\.replaceChildren\(row\);/);
+ assert.match(part,/const target=currentHost\(\);\s*if\(target\)\{\s*target\.replaceChildren\(row\);/);
+ assert.match(part,/const visibleOwner=\(\)=>copy\.isConnected&&/);
 });
 }
 

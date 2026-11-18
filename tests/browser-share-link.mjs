@@ -117,7 +117,16 @@ export async function runShareLinkSmoke(browser,base){
   assert.equal(readbacks,1,'must verify public GET before displaying link');
   assert.equal(sharedGets,1,'sharing should issue one verification GET');
   await status.getByRole('button',{name:'Скопировать ссылку'}).click();
-  assert.equal(await page.evaluate(()=>navigator.clipboard.readText()),link);
+  // Clipboard writes are asynchronous. Playwright click only waits for the
+  // handler dispatch, not navigator.clipboard.writeText to settle.
+  await page.waitForFunction(async expected=>{
+   try{return await navigator.clipboard.readText()===expected}
+   catch{return false}
+  },link,{timeout:6000});
+  await status.getByRole('button',{name:/Скопировано/})
+   .waitFor({state:'visible',timeout:6000});
+  assert.match(await status.locator('button').innerText(),/Скопировано/,
+   'The user must see confirmation after successful clipboard write');
   mismatched=true;
   await page.locator('.build-card').first().getByRole('button',{name:'Поделиться',exact:true}).click();
   const error=page.locator('.build-card').first().locator('.build-share-error');
@@ -282,11 +291,27 @@ export async function runShareLinkSmoke(browser,base){
    'Repeated Share on the same card is single-flight until the readback finishes');
   assert.equal(sharedGets,previousGets+1,
    'A duplicate click must not issue a second GET verification');
+  // Leaving My Builds via its visible Back control and reopening it creates a new card/host while GET is delayed.
+  // Re-entering the saved-build view and clicking Share must adopt the pending
+  // result, not call POST again or leave the user without a copy action.
+  await page.locator('#dockClose').click();
+  await page.locator('#nav [data-tab="builds"]').click();
+  await page.locator('.build-card').first().waitFor({state:'visible'});
+  await page.locator('.build-card').first()
+   .getByRole('button',{name:'Поделиться',exact:true}).click();
+  assert.equal(created,previousPosts+1,
+   'A newly rendered card is still locked by the logical saved-build revision');
+  assert.equal(sharedGets,previousGets+1);
+  assert.match(await page.locator('.build-card').first()
+   .locator('.build-share-slot').innerText(),/Создаём ссылку/);
   releaseShareProof();
-  await page.locator('.build-card').first().locator('.share-result')
-   .waitFor({state:'visible',timeout:20000});
+  const restoredResult=page.locator('.build-card').first().locator('.share-result');
+  await restoredResult.waitFor({state:'visible',timeout:20000});
+  assert.equal(await restoredResult.locator('input[aria-label="Ссылка на билд"]')
+   .inputValue(),base+'/#b/'+shareId,
+   'The validated URL appears on the live replacement card');
   assert.deepEqual(errors,[]);
-  console.log('Chromium share link smoke passed: verified URL, clipboard, mismatch, receiver cancellation/import, revoked link and single-flight sharing');
+  console.log('Chromium share link smoke passed: verified URL, clipboard, mismatch, receiver cancellation/import, revoked link, same-card and cross-rerender single-flight sharing');
  }finally{
   await context.close();
  }
