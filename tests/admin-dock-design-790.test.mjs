@@ -45,7 +45,7 @@ test('new visual design keeps meaningful responsive actions, visible editor pens
  assert.match(dock,/@media\(max-width:480px\)/);
  assert.match(dock,/prefers-reduced-motion:reduce/);
  assert.match(dock,/#ownerDock \.owner-dock-action-slot:hover>\.owner-dock-action-pencil/);
- assert.match(app,/root\.setAttribute\('aria-label',lang==='en'/);
+ assert.match(app,/ownerDockPatchAttr\(root,'aria-label',lang==='en'/);
 });
 test('manual edit history and all admin dialogs use the improved controls',()=>{
  assert.match(app,/class:'button-action owner-manager-search-clear'/);
