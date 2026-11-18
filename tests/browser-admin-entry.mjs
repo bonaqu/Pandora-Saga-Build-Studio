@@ -4,11 +4,16 @@ import {readFileSync} from 'node:fs';
 export async function runAdminEntrySmoke(browser,base){
  const api='https://ps-build-studio-cloud.bonaqu.workers.dev';
  const calls=[],townOverrides=new Map();
- let sourceUnavailable=false,d1SourceSpoofed=false;
+ let sourceUnavailable=false,d1SourceSpoofed=false,offerNewSiteVersion=false;
  const context=await browser.newContext({viewport:{width:1280,height:860}});
  await context.route('**/*',async route=>{
   const url=route.request().url();
-  if(url.startsWith(base+'/'))return route.continue();
+  if(url.startsWith(base+'/')){
+   if(offerNewSiteVersion&&url.includes('/site-version.json?check='))
+    return route.fulfill({status:200,contentType:'application/json',
+     body:JSON.stringify({release:'2026.11.18.899'})});
+   return route.continue();
+  }
   if(!url.startsWith(api+'/'))return route.abort();
   const path=new URL(url).pathname,method=route.request().method();
   const headers={'access-control-allow-origin':'*',
@@ -1841,6 +1846,29 @@ export async function runInlineMilestonesSmoke(browser,base){
   await page.locator('.path-skill-card').first().click();
   await page.locator('#pathSkillDetails').waitFor({state:'visible'});
   assert.match(await page.locator('#pathSkillDetails').innerText(),/Character level/);
+  // Regression 0.898: owner Finish ends editing while retaining credentials.
+  // Reproduce the broken update click with a mocked future release.
+  offerNewSiteVersion=true;
+  await page.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));
+  const updateBanner=page.locator('#studio-update-banner');
+  await updateBanner.waitFor({state:'visible',timeout:10000});
+  const updateButton=updateBanner.locator('[data-update-role="apply"]');
+  await updateButton.click();
+  assert.match(await updateBanner.locator('[data-update-role="message"]').innerText(),
+   /leave owner mode/i,'Active owner cannot refresh during editing');
+  const ownerLauncher=page.locator('#ownerDock [data-owner-collapse]');
+  if(await ownerLauncher.getAttribute('aria-expanded')!=='true')await ownerLauncher.click();
+  await page.locator('#ownerDock .owner-dock-finish').click();
+  await page.locator('#ownerDock').waitFor({state:'detached',timeout:12000});
+  assert.equal(await page.evaluate(()=>window.PandoraStudioAdminActive?.()),false,
+   'Finish ends owner editing even with retained authorization');
+  assert.match(await updateBanner.locator('[data-update-role="message"]').innerText(),
+   /new version is available/i,
+   'Owner Finish removes stale update blocker without page reload');
+  const refreshRequest=page.waitForRequest(request=>request.isNavigationRequest()&&
+   new URL(request.url()).searchParams.get('ps-revision')==='2026.11.18.899');
+  await updateButton.click();
+  await refreshRequest;
   assert.deepEqual(errors,[]);
   console.log('Chromium skill track passed: thin notches share one bar, slider takes input, pointer and keyboard tooltips work');
  }finally{await context.close()}
