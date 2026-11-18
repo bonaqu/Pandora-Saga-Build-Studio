@@ -188,6 +188,8 @@ export async function runGuestDraftContinuitySmoke(browser,base){
      assert.deepEqual(writes,[],
       'Editorial pencil must not save either player draft or fire a cloud write');
      assert.equal(ownerWrites.length,2);
+     console.log('Guest draft owner RU/EN copy verified before choosing:',
+      ownerLang,ownerWrites.map(entry=>entry.key).join(', '));
     }
     if(quotaFail){
      await page.evaluate(()=>{
@@ -199,10 +201,14 @@ export async function runGuestDraftContinuitySmoke(browser,base){
       };
      });
     }
+    // An earlier assertion can fail before the explicit choice. In that
+    // case closing the test context must not raise an *unhandled* response
+    // waiter that masks the actionable Chromium error.
     const savedResponse=accountDraft&&!keepAccount&&!quotaFail?
      page.waitForResponse(response=>response.url().endsWith('/api/library')&&
       response.request().method()==='POST'&&
-      response.request().postDataJSON()?.entry?.name===savedAccountName):null;
+      response.request().postDataJSON()?.entry?.name===savedAccountName)
+      .catch(error=>{if(page.isClosed())return null;throw error}):null;
     await chooser.getByRole('button',{name:keepAccount?
      'Оставить героя аккаунта':(updatedSaveCaption||
       (ownerLang==='en'?'Save account character and continue guest':
@@ -223,6 +229,7 @@ export async function runGuestDraftContinuitySmoke(browser,base){
      await chooser.getByRole('button',{name:'Оставить героя аккаунта'}).click();
     }
     if(savedResponse)await savedResponse;
+    if(ownerEdit)console.log('Guest draft owner copy: explicit save acknowledged',ownerLang);
    }
    console.log('Guest draft acceptance: awaiting selected hero');
    await page.waitForFunction(({name,expected})=>{
