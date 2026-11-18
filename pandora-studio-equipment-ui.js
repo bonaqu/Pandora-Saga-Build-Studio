@@ -636,11 +636,31 @@ function render(root,api){
     value:api.soulQuery||''});
   bind(query,'pickerSoulSearchAria','Поиск души','Find Soul','aria-label');
   const list=el('div',{class:'stage-rich-list'});
-  const draw=()=>{
-   list.replaceChildren();const needle=String(query.value||'');
-   const results=Object.values(api.catalog.souls||{}).filter(rec=>plan.validSoul(rec,slot)&&
-    matchesSoulSearch(rec,needle));
-   for(const rec of results.slice(0,80)){
+  // Render at most 80 compatible Souls initially, but never make the rest of
+  // the catalog inaccessible. Appending pages leaves existing rows, previews
+  // and owner editors mounted instead of rebuilding the whole list.
+  const pageSize=80;
+  let results=[],shown=0;
+  const moreRu='Показать ещё души',moreEn='Show more Souls';
+  const more=el('button',{type:'button',class:'stage-soul-more',
+   text:copy('soulShowMore',moreRu,moreEn),'data-soul-more':''});
+  const progress=el('small',{class:'stage-soul-progress','data-soul-progress':'',
+   role:'status','aria-live':'polite'});
+  const paging=el('div',{class:'stage-soul-more-row'},[
+   labeledAction(more,'soulShowMore',moreRu,moreEn),progress
+  ]);
+  const updatePaging=()=>{
+   list.dataset.soulVisible=String(shown);
+   list.dataset.soulTotal=String(results.length);
+   if(shown<results.length){
+    progress.textContent=english?shown+' of '+results.length+' Souls':
+     'Душ: '+shown+' из '+results.length;
+    if(paging.parentNode!==list)list.append(paging);
+   }else paging.remove();
+  };
+  const appendResults=start=>{
+   let firstNew=null;
+   for(const rec of results.slice(start,shown)){
     const button=el('button',{type:'button',class:'stage-rich-result',
      onclick:event=>{
       if(event?.target?.closest?.('.stage-control-pencil,.wiki-inline-input'))return;
@@ -652,6 +672,7 @@ function render(root,api){
      tr('Душа без названия','Unnamed Soul'),english?'en':'ru')||
      tr('Душа без названия','Unnamed Soul');
     const caption=el('span',{text:name,class:'stage-soul-result-caption'});
+    let row=button;
     if(api.canEdit){
      caption.setAttribute('data-owner-record','soul:'+rec.id);
      caption.setAttribute('data-owner-field',english?'nameEn':'name');
@@ -665,24 +686,42 @@ function render(root,api){
      pencil.addEventListener('focus',()=>pencil.setAttribute('aria-label',
       tr('Изменить душу: ','Edit Soul: ')+caption.textContent));
      button.append(caption);
-     const wrapper=el('div',{class:'stage-rich-result-edit-wrap'});
-     wrapper.append(button,pencil);
-     list.append(wrapper);
-    }else{button.append(caption);list.append(button)}
+     row=el('div',{class:'stage-rich-result-edit-wrap'},[button,pencil]);
+    }else button.append(caption);
+    list.insertBefore(row,paging.parentNode===list?paging:null);
+    if(!firstNew)firstNew=button;
     attachPreview(button,rec,icons,'soul');
    }
-   if(results.length>80){
-    const ru='Показано 80 душ. Уточни поиск.',en='Showing 80 Souls. Narrow your search.';
-    list.append(editable(el('p',{class:'muted',text:copy('soulSearchLimit',ru,en)}),
-     'soulSearchLimit',ru,en));
-   }
+   updatePaging();
+   return firstNew;
+  };
+  more.addEventListener('click',()=>{
+   if(shown>=results.length)return;
+   const focused=document.activeElement===more,previous=shown;
+   shown=Math.min(results.length,shown+pageSize);
+   api.onSoulShown?.(shown);
+   const firstNew=appendResults(previous);
+   // The last page removes the More control. Hand keyboard focus to its
+   // first newly available Soul instead of dropping it to the page body.
+   if(focused&&shown===results.length)firstNew?.focus({preventScroll:true});
+  });
+  const draw=({resetPage=false}={})=>{
+   list.replaceChildren();
+   results=Object.values(api.catalog.souls||{}).filter(rec=>
+    plan.validSoul(rec,slot)&&matchesSoulSearch(rec,query.value||''));
+   const restored=Number.isInteger(api.soulShown)&&api.soulShown>=pageSize?
+    api.soulShown:pageSize;
+   shown=Math.min(results.length,resetPage?pageSize:restored);
    if(!results.length){
+    updatePaging();
     const ru='Совместимых душ не найдено',en='No compatible Souls found';
     list.append(editable(el('p',{class:'muted',text:copy('soulSearchEmpty',ru,en)}),
      'soulSearchEmpty',ru,en));
+    return;
    }
+   appendResults(0);
   };
-  query.addEventListener('input',()=>{api.onSoulQuery?.(query.value);draw()});
+  query.addEventListener('input',()=>{api.onSoulQuery?.(query.value);draw({resetPage:true})});
   if(api.canEdit)body.append(editable(el('label',{
    class:'stage-soul-search-caption',text:copy('soulSearch',searchRu,searchEn)}),
    'soulSearch',searchRu,searchEn,{onCommitted:visible=>{query.placeholder=visible;}}));
