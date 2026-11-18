@@ -32,9 +32,9 @@ test('six stable owner-only group captions have independently editable RU/EN fal
 test('drawer pencil edits use the standard D1 CAS writer and cannot invoke an action',()=>{
  const block=take(" const group=(id,titleKey,hintKey,keys)=>{",
   " actions.replaceChildren(editGroup,gameGroup,toolsGroup);");
- assert.match(block,/ownerCopyLabel\\(label,'owner-dock',key,pair\\[0\\],pair\\[1\\],\\{/);
+ assert.ok(block.includes("ownerCopyLabel(label,'owner-dock',key,pair[0],pair[1],{"));
  assert.match(block,/onCommitted:syncPencil,onFinished:syncPencil/);
- assert.match(block,/pencil\\?\\.setAttribute\\('aria-label'/);
+ assert.ok(block.includes("pencil?.setAttribute('aria-label'"));
  assert.match(block,/label\.dispatchEvent\(new MouseEvent\('dblclick'/);
  assert.match(block,/event\.preventDefault\(\);event\.stopPropagation\(\)/);
  assert.match(block,/editorial\(titleKey,'title'\),editorial\(hintKey,'hint'\)/);

@@ -52,7 +52,11 @@ export async function runOnlineD1Required878Smoke(browser,base){
  const page=await ctx.newPage(),pageErrors=[];
  page.on('pageerror',error=>pageErrors.push(error.message));
  const blocked=()=>page.locator('#startupOverlay[data-state="error"]');
- const waitReady=async()=>page.locator('#startupOverlay').waitFor({state:'hidden',timeout:30000});
+ // The fade can reach visual opacity 0 before hidden=true, while native
+ // inert is still correctly active. Wait for the actual modal dismissal.
+ const waitReady=async()=>page.waitForFunction(()=>
+  document.querySelector('#startupOverlay')?.hidden===true,
+  null,{timeout:30000});
  try{
   await page.goto(publicOrigin+'/',{waitUntil:'domcontentloaded'});
   await blocked().waitFor({state:'visible',timeout:20000});
