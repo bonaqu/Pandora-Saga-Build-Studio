@@ -651,6 +651,26 @@ function render(root,api){
    text:copy('soulShowMore',moreRu,moreEn),'data-soul-more':''});
   const progress=el('small',{class:'stage-soul-progress','data-soul-progress':'',
    role:'status','aria-live':'polite'});
+  // Edit only the caption while keeping the live numbers and Soul IDs outside D1.
+  // These nodes stay mounted when another page of Souls is appended.
+  const progressRu='Душ',progressEn='Souls';
+  const progressLabel=editable(el('span',{'data-soul-progress-label':'',
+   text:copy('soulProgressLabel',progressRu,progressEn)}),
+   'soulProgressLabel',progressRu,progressEn);
+  const progressCount=el('span',{'data-soul-progress-count':''});
+  if(english)progress.append(progressCount,document.createTextNode(' '),progressLabel);
+  else progress.append(progressLabel,progressCount);
+  if(api.canEdit){
+   const pencil=el('button',{type:'button',class:'stage-control-pencil',text:'✎',
+    'aria-label':tr('Изменить надпись: ','Edit caption: ')+progressLabel.textContent});
+   pencil.addEventListener('click',event=>{
+    event.preventDefault();event.stopPropagation();
+    progressLabel.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
+   });
+   pencil.addEventListener('focus',()=>pencil.setAttribute('aria-label',
+    tr('Изменить надпись: ','Edit caption: ')+progressLabel.textContent));
+   progress.append(pencil);
+  }
   const paging=el('div',{class:'stage-soul-more-row'},[
    labeledAction(more,'soulShowMore',moreRu,moreEn),progress
   ]);
@@ -658,8 +678,8 @@ function render(root,api){
    list.dataset.soulVisible=String(shown);
    list.dataset.soulTotal=String(results.length);
    if(shown<results.length){
-    progress.textContent=english?shown+' of '+results.length+' Souls':
-     'Душ: '+shown+' из '+results.length;
+    progressCount.textContent=english?shown+' of '+results.length:
+     ': '+shown+' из '+results.length;
     if(paging.parentNode!==list)list.append(paging);
    }else if(paging.parentNode===list)paging.remove();
   };

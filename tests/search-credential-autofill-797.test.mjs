@@ -6,9 +6,10 @@ import vm from 'node:vm';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const source=read('pandora-studio-search-field.js');
 function createSandbox(agent){
- const sandbox={window:{navigator:{userAgent:agent}}};
+ const document={activeElement:null,readyState:'complete',addEventListener(){}};
+ const sandbox={window:{navigator:{userAgent:agent}},document};
  vm.runInNewContext(source,sandbox,{filename:'pandora-studio-search-field.js'});
- return sandbox.window.PandoraSearchField;
+ return {api:sandbox.window.PandoraSearchField,document};
 }
 function mockInput(type='search',value='',id=''){
  const attrs=new Map(),handlers=new Map();
@@ -29,7 +30,7 @@ function mockInput(type='search',value='',id=''){
 }
 
 test('shared search policy guards Yandex idle inputs and preserves true user edits',()=>{
- const api=createSandbox('Mozilla/5.0 YaBrowser/26.11.0.0');
+ const {api,document}=createSandbox('Mozilla/5.0 YaBrowser/26.11.0.0');
  const field=mockInput('search','гигантский огр','bookDamageTarget');
  assert.equal(api.prepare(field),field);
  assert.equal(field.getAttribute('autocomplete'),'none');
@@ -57,13 +58,28 @@ test('shared search policy guards Yandex idle inputs and preserves true user edi
  assert.equal(field.value,'Рыжий динго');
  field.fire('blur');
  assert.equal(field.readOnly,true);
+ // Synthetic gestures and automated replacement cannot unlock an idle input.
+ field.fire('keydown',{isTrusted:false});
+ field.fire('pointerdown',{isTrusted:false});
+ assert.equal(field.readOnly,true);
+ document.activeElement=field;
+ field.fire('beforeinput',{isTrusted:false,inputType:'insertFromPaste'});
+ field.fire('beforeinput',{inputType:'insertReplacementText'});
+ assert.equal(field.readOnly,true,'Synthetic paste and autofill replacement stay blocked');
+ field.fire('beforeinput',{inputType:'insertFromPaste'});
+ assert.equal(field.readOnly,false,'Focused user paste may unlock native search');
+ field.value='Душа из буфера';field.fire('input');field.fire('blur');
+ assert.equal(field.readOnly,true);
+ field.fire('beforeinput',{inputType:'insertFromDictation'});
+ assert.equal(field.readOnly,false,'Focused dictation remains accessible');
+ field.fire('blur');
  // Reinitializing a recycled input must not double-register handlers.
  api.prepare(field);
  assert.equal(field.readOnly,true);
 });
 
 test('non-Yandex Chromium retains native editable search, but never credential hints',()=>{
- const api=createSandbox('Mozilla/5.0 Chrome/154.0.0.0');
+ const {api,document}=createSandbox('Mozilla/5.0 Chrome/154.0.0.0');
  const field=mockInput('search','',null);
  api.prepare(field);
  assert.equal(field.readOnly,false);
@@ -73,7 +89,7 @@ test('non-Yandex Chromium retains native editable search, but never credential h
 });
 
 test('real username, password, email and owner text editors are not changed',()=>{
- const api=createSandbox('Mozilla/5.0 YaBrowser/26.11.0.0');
+ const {api,document}=createSandbox('Mozilla/5.0 YaBrowser/26.11.0.0');
  const types=['password','text','email','number'];
  for(const type of types){
   const field=mockInput(type,'administrator');

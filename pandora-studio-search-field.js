@@ -43,7 +43,11 @@ function prepare(input){
    if(!state.editing&&input.value!==state.lastValue)
     input.value=state.lastValue;
   };
-  const unlock=()=>{
+  const unlock=event=>{
+   // Only genuine browser gestures may unlock an idle Yandex search. A
+   // synthetic key/pointer event must not turn a password-manager fill into
+   // an apparently manual edit.
+   if(event&&!event.isTrusted)return;
    restoreUnexpected();
    if(!input.disabled){state.editing=true;input.readOnly=false}
   };
@@ -54,8 +58,9 @@ function prepare(input){
   // credential-manager replacement as user-typed search content.
   input.addEventListener('beforeinput',event=>{
    if(event.isTrusted&&document.activeElement===input&&
-    ['insertText','insertCompositionText','deleteContentBackward',
-     'deleteContentForward'].includes(event.inputType))unlock();
+    ['insertText','insertCompositionText','insertFromPaste','insertFromDrop',
+     'insertFromDictation','deleteContentBackward','deleteContentForward',
+     'deleteByCut','historyUndo','historyRedo'].includes(event.inputType))unlock();
   },{capture:true});
   input.addEventListener('focus',restoreUnexpected);
   input.addEventListener('input',event=>{
