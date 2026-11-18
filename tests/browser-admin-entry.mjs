@@ -86,13 +86,19 @@ export async function runAdminEntrySmoke(browser,base){
   if(path==='/api/admin/reset'&&method==='POST'){
    const data=route.request().postDataJSON();
    assert.equal(route.request().headers().authorization,'Bearer '+'a'.repeat(43));
-   const existed=townOverrides.delete(data.key);
-   return json({ok:true,key:data.key,deleted:existed});
+   const previous=townOverrides.has(data.key)?townOverrides.get(data.key):null;
+   if(previous===null||data.expectedValue!==previous)
+    return json({error:'Mock concurrent edit',code:'OWNER_EDIT_CONFLICT'},409);
+   townOverrides.delete(data.key);
+   return json({ok:true,key:data.key,deleted:true,conditional:true});
   }
   if(path==='/api/admin/override'&&method==='POST'){
    const data=route.request().postDataJSON();
-   townOverrides.set(data.key,data.value);
    assert.equal(route.request().headers().authorization,'Bearer '+'a'.repeat(43));
+   const previous=townOverrides.has(data.key)?townOverrides.get(data.key):null;
+   if(data.expectedValue!==previous)
+    return json({error:'Mock concurrent edit',code:'OWNER_EDIT_CONFLICT'},409);
+   townOverrides.set(data.key,data.value);
    if(data.key.startsWith('acquireedit.')){
     assert.ok(JSON.parse(data.value).some(row=>row.type==='npc'));
     calls.push('owner-acquire-edit');
@@ -109,7 +115,7 @@ export async function runAdminEntrySmoke(browser,base){
     if(Array.isArray(patch.effects))calls.push('owner-effect-edit');
     calls.push('owner-item-edit');
    }
-   return json({ok:true,key:data.key,value:data.value});
+   return json({ok:true,key:data.key,value:data.value.trim(),conditional:true});
   }
   if(path==='/api/library')return json({records:[]});
   if(path==='/api/overrides')return json({values:Object.fromEntries(townOverrides)});
