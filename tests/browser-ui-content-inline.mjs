@@ -737,7 +737,7 @@ export async function runUIContentInlineSmoke(browser,base){
   const resultStatus=page.locator('#detailContent .wiki-list>p.muted');
   await resultStatus.waitFor({state:'visible'});
   const initialStatus=await resultStatus.textContent();
-  const match=/^Показано (\\d+) из (\\d+) записей$/.exec(initialStatus);
+  const match=/^Показано (\d+) из (\d+) записей$/.exec(initialStatus);
   assert.ok(match,'The live result counter keeps both numeric values');
   assert.equal(Number(match[1]),100);
   assert.ok(Number(match[2])>100);
@@ -787,11 +787,11 @@ export async function runUIContentInlineSmoke(browser,base){
 
   const more=page.locator('#detailContent .wiki-list>.wiki-more');
   const moreLabel=await more.textContent();
-  assert.match(moreLabel,/^Показать ещё 100 \\/ \\d+$/);
+  assert.match(moreLabel,/^Показать ещё 100 \/ \d+$/);
   await more.click();
   assert.equal(await page.locator('#detailContent .wiki-list [data-wiki-record]').count(),200);
   assert.match(await resultStatus.textContent(),
-   /^Показано 200 из \\d+ записей$/);
+   /^Показано 200 из \d+ записей$/);
   await page.locator('[data-wiki-chapter="map"]').click();
   assert.ok(await page.locator('#detailContent .wiki-location-list-heading').count()>0);
   assert.ok(await summaryEditor.locator('[data-owner-copy-id="placeCity"]').count());
