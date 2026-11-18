@@ -36,6 +36,13 @@ export async function runEquipmentQuickMenuSmoke(browser,base){
   const belt=page.locator('.equipment-slot[data-slot-index="11"]');
   const menu=page.locator('.stage-gear-context-menu[role="menu"]');
   const action=id=>menu.locator('[data-gear-context-action="'+id+'"]');
+  // A sibling previous/next slot navigation now precedes the close action.
+  // "button.first()" would navigate instead of actually closing the picker.
+  const closeSettings=async()=>{
+   await page.locator('#stagePicker .stage-picker-head > button').click();
+   assert.equal(await page.locator('#stagePicker').isHidden(),true,
+    'Closing an item view must not accidentally activate neighbouring-slot navigation');
+  };
   const right=async locator=>locator.click({button:'right'});
   const emptyWeapon=page.locator('.equipment-slot[data-slot-index="0"]');
   await right(emptyWeapon);
@@ -104,7 +111,7 @@ export async function runEquipmentQuickMenuSmoke(browser,base){
   assert.equal((await guide.innerText()).trim(),'Вставить, заменить или снять душу.');
   await page.mouse.move(2,2);
   await guide.waitFor({state:'hidden'});
-  await page.locator('#stagePicker .stage-picker-head button').first().click();
+  await closeSettings();
 
   await right(pants);
   await action('souls').click();
@@ -116,7 +123,7 @@ export async function runEquipmentQuickMenuSmoke(browser,base){
   assert.equal(await soulInput.getAttribute('data-lpignore'),'true');
   await soulInput.fill('bonaqu');
   assert.equal(await soulInput.inputValue(),'bonaqu','Ordinary Soul search remains editable');
-  await page.locator('#stagePicker .stage-picker-head button').first().click();
+  await closeSettings();
 
   await pants.focus();
   await pants.press('Shift+F10');
@@ -148,7 +155,7 @@ export async function runEquipmentQuickMenuSmoke(browser,base){
    .innerText(),/пояса.*0 слотов/i);
   assert.equal(await page.locator('#stagePicker [data-socket-index]').count(),0,
    'Zero sockets cannot insert Souls');
-  await page.locator('#stagePicker .stage-picker-head button').first().click();
+  await closeSettings();
   assert.equal(await menu.count(),0,'Soul-tab navigation closes the context menu');
 
   await page.locator('#locale [data-locale="en"]').click();
@@ -227,7 +234,8 @@ export async function runEquipmentQuickMenuSmoke(browser,base){
   await menu.waitFor({state:'visible'});
   await menu.locator('[data-gear-context-action="properties"]').click();
   assert.match(await page.locator('#stagePicker .stage-picker-head strong').innerText(),/Броня/);
-  await page.locator('#stagePicker .stage-picker-head button').first().click();
+  await page.locator('#stagePicker .stage-picker-head > button').click();
+  assert.equal(await page.locator('#stagePicker').isHidden(),true);
   await legs.click({button:'right'});
   await menu.locator('[data-gear-context-action="replace"]').click();
   assert.equal(await page.locator('#stagePicker .stage-picker-list').isVisible(),true,
