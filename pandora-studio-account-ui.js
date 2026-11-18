@@ -606,11 +606,11 @@ function refresh(){
  }
  trigger.title=session?tr('Профиль')+' · '+session.username:tr('Войти или зарегистрироваться');
  trigger.setAttribute('aria-label',trigger.title);
- for(const node of panel.querySelectorAll('[data-account-copy-source]')){
+ for(const node of (panel.querySelectorAll?.('[data-account-copy-source]')||[])){
   const value=tr(node.getAttribute('data-account-copy-source'));
   if(node.textContent!==value)node.textContent=value;
  }
- for(const input of panel.querySelectorAll('[data-account-placeholder-source]')){
+ for(const input of (panel.querySelectorAll?.('[data-account-placeholder-source]')||[])){
   const value=tr(input.getAttribute('data-account-placeholder-source'));
   if(input.placeholder!==value)input.placeholder=value;
   if(input.getAttribute('aria-label')!==value)input.setAttribute('aria-label',value);
@@ -620,7 +620,7 @@ function refresh(){
  if(errorLine&&feedbackSource!==null&&
   feedbackToken===(session?.token||null)&&feedbackMode===mode)
   paintFeedback();
- for(const pencil of panel.querySelectorAll('[data-owner-copy-pencil]')){
+ for(const pencil of (panel.querySelectorAll?.('[data-owner-copy-pencil]')||[])){
   const caption=pencil.previousElementSibling;
   if(caption?.dataset?.ownerCopyKey!==pencil.dataset.ownerCopyPencil)continue;
   const label=(document.documentElement.lang==='en'?'Edit caption: ':'Изменить надпись: ')+caption.textContent;
