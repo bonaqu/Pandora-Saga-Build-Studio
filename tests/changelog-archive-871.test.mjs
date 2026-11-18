@@ -10,8 +10,21 @@ const read=p=>readFileSync(join(root,p),'utf8');
 test('release history is preserved in individually readable archive segments',()=>{
  const current=read('CHANGELOG.md'),index=read('docs/changelog/README.md');
  assert.ok(current.length<22000);
- assert.match(current,/## 0\.893\.0 — 2026\.11\.18\.893/);
- assert.match(read('docs/changelog/release-0.892.0.md'),/## 0\.892\.0 — 2026\.11\.18\.892/);
+ // This contract used to hard-code the oldest root release and failed on
+ // every legitimate rotation. Derive the boundary and confirm continuity.
+ const rootVersions=[...current.matchAll(/^## (0\.\d+\.0) — /gm)]
+  .map(match=>match[1]);
+ const published=JSON.parse(read('package.json')).version;
+ assert.equal(rootVersions[0],published);
+ assert.equal(rootVersions.length,12);
+ const oldest=Number(rootVersions.at(-1).split('.')[1]);
+ assert.ok(Number.isSafeInteger(oldest)&&oldest>0);
+ const expectedArchive='0.'+(oldest-1)+'.0';
+ assert.ok(index.includes('['+expectedArchive+']'),
+  'Newest archive must follow the 12th root release');
+ assert.ok(read('docs/changelog/release-'+expectedArchive+'.md')
+  .includes('## '+expectedArchive+' —'),
+  'Rotated release must remain readable');
  assert.match(read('docs/changelog/release-0.891.0.md'),/## 0\.891\.0 — 2026\.11\.18\.891/);
  assert.equal([...current.matchAll(/^## 0\.\d+\.0 — /gm)].length,12,
   'Keep only the newest 12 releases in the root CHANGELOG');

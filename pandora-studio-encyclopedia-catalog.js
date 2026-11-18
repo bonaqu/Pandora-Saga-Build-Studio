@@ -572,8 +572,17 @@ function validate(input){
  }
  return data;
 }
+// A future caller forgetting `strict:true` must NOT revive the retired
+// offline/archive mode on public Pages. Explicit test/local fixture use alone
+// may read bundled game records. This does not affect matched local RU prose.
+const localFixtureHost=()=>{
+ const hostname=root.location?.hostname;
+ return !hostname||hostname==='localhost'||hostname==='127.0.0.1';
+};
 async function load({api,fetcher,local='./data/os',timeout=12000,preferLocal=false,strict=false}={}){
  if(typeof fetcher!=='function')throw TypeError('fetcher required');
+ if(preferLocal&&!localFixtureHost())
+  throw Error('Публичный игровой каталог загружается только из D1');
  const remoteBase=String(api||'').replace(/\/$/,'');
  async function batch(remote){
   const snapshots=new Set(),missingSnapshot=[];
@@ -629,7 +638,9 @@ async function load({api,fetcher,local='./data/os',timeout=12000,preferLocal=fal
   return loaded;
  }
  catch(remoteError){
-  if(strict)throw remoteError;
+  // Historical fallback is retained only inside headless/localhost fixture
+  // tests; the published site always fails closed, even without strict:true.
+  if(strict||!localFixtureHost())throw remoteError;
   try{return await batch(false)}
   catch(localError){throw Error('Не удалось загрузить согласованный игровой каталог',{
    cause:{remote:remoteError,local:localError}

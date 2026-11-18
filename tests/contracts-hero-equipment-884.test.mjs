@@ -151,7 +151,10 @@ test('encyclopedia provides true counts and can progressively load all matches',
  assert.match(code,/wikiResultsCache\?\.index===wikiIndex/);
  assert.match(code,/const visible=selectedIndex>=wikiShown/);
  assert.match(code,/results\.slice\(0,wikiShown\)/);
- assert.match(code,/Показано '\+visible.length\+' из '\+results.length/);
+ assert.match(code,/String\(visible\.length\)/);
+ assert.match(code,/String\(results\.length\)/);
+ assert.match(code,/more\.append\(bindOwnerInterfaceText/);
+ assert.match(code,/resultsShown/);
  assert.match(code,/wikiShown\+=100;draw\(\)/);
  assert.match(code,/browse\.scrollTop=selectedIndex>=wikiShown\?0:previousScroll/);
 });

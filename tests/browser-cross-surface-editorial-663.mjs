@@ -92,7 +92,18 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   await wikiInput.evaluate(node=>{window.__copyWikiSearch=node});
   const wikiPanel=page.locator('#detailContent .studio-owner-interface-editor:not(.wiki-filter-labels-editor)');
   await wikiPanel.locator('summary').click();
-  assert.equal(await wikiPanel.locator('.studio-owner-interface-row').count(),7);
+  // The encyclopedia grows new editorial keys across releases. Require its
+  // original seven independent controls, verify newer dynamic keys and reject
+  // duplicates without pinning the total row count.
+  const wikiCopyKeys=await wikiPanel.locator('.studio-owner-interface-row [data-owner-copy-id]')
+   .evaluateAll(nodes=>nodes.map(node=>node.dataset.ownerCopyId));
+  for(const id of ['searchPlaceholder','searchAria','backTop','backTopAria',
+   'viewAria','viewList','viewGrid','resultsShown','resultsOf','resultsUnits',
+   'morePrefix','noMatches','selectPrompt']){
+   assert.ok(wikiCopyKeys.includes(id),'Missing editable Wiki label: '+id);
+  }
+  assert.equal(new Set(wikiCopyKeys).size,wikiCopyKeys.length,
+   'One owner editor per semantic Wiki label, never duplicates');
   const wikiKey=await edit('wiki-ui','searchPlaceholder','Искать в справочнике…');
   assert.equal(await wikiInput.getAttribute('placeholder'),'Искать в справочнике…');
   assert.equal(await wikiInput.inputValue(),'search that stays');

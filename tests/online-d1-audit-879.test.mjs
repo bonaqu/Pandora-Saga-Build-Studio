@@ -113,3 +113,17 @@ test('D1 retry requested during initial startup is queued once and never races i
  assert.match(boot,/if\(startupQueuedLive\)\{\s*startupQueuedLive=false;\s*void startStudio\(\)/);
  assert.match(boot,/if\(startupRunning\)\{startupQueuedLive=true;return\}/);
 });
+
+test('published site keeps a single D1-only catalog boundary and no retired archive notice',()=>{
+ const load=portion('async function loadCatalog(', 'let ownerWikiRefreshId=');
+ assert.match(load,/if\(archive&&typeof location!=='undefined'&&\s*!\['localhost','127\.0\.0\.1'\]\.includes\(location\.hostname\)\)/);
+ const wiki=read('pandora-studio-encyclopedia-catalog.js');
+ assert.match(wiki,/const localFixtureHost=/);
+ assert.match(wiki,/if\(preferLocal&&!localFixtureHost\(\)\)/);
+ assert.match(wiki,/if\(strict\|\|!localFixtureHost\(\)\)throw remoteError/);
+ assert.doesNotMatch(source,/renderArchiveNotice/);
+ assert.doesNotMatch(read('index.html'),/id="siteNotice"/);
+ const migration=portion('const migrateLegacyBranches=record=>{','if(lang===\'en\')await ensureEnglishCatalog');
+ assert.equal((migration.match(/selectedSkillGroup=window\.PandoraGameNavigation\.branchGroup/g)||[]).length,1,
+  'Legacy branch normalization should be a single preserving pass');
+});

@@ -47,3 +47,30 @@ test('verified English potion names are preserved in the checked-in OS localizat
  for(const [id,name] of verified)
   assert.equal(source.items[id]?.n,name,'current source ID '+id);
 });
+
+test('Wiki results and actions preserve live numbers beside independent owner-editable captions',()=>{
+ const expected=[
+  ['resultsShown','Показано','Showing'],
+  ['resultsOf','из','of'],
+  ['resultsUnits','записей','entries'],
+  ['morePrefix','Показать ещё','Show more'],
+  ['noMatches','Ничего не найдено.','No matching entries.'],
+  ['selectPrompt','Выбери запись','Select an entry'],
+  ['placeCity','Город Астир','Astir city'],
+  ['placeNation','Государства','Nations'],
+  ['placeOther','Другие локации','Other locations'],
+  ['backLabel','← Назад','← Back']
+ ];
+ for(const [key,ru,en] of expected){
+  assert.ok(wiki.includes("'"+key+"'"),'Missing semantic UI key '+key);
+  assert.ok(wiki.includes(ru)&&wiki.includes(en),'Missing RU/EN defaults '+key);
+ }
+ assert.match(wiki,/summary\.append\(/);
+ assert.match(wiki,/String\(visible\.length\)/);
+ assert.match(wiki,/String\(results\.length\)/);
+ assert.match(wiki,/more\.append\(bindOwnerInterfaceText/);
+ assert.match(wiki,/String\(results\.length-wikiShown\)/);
+ assert.match(wiki,/batch\.append\(bindOwnerInterfaceText\(/);
+ assert.match(app,/bindOwnerInterfaceText\(button,'wiki-ui','backLabel'/);
+ assert.doesNotMatch(wiki,/text:lang==='en'\?'Showing '/);
+});

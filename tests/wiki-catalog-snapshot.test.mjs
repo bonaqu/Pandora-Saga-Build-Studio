@@ -39,6 +39,33 @@ function mockFetch(remote,local,{broken=null,snapshots=null,fail=null,provenance
  };
  return {fetcher,paths};
 }
+
+test('published Wiki is D1-only even when a caller forgets strict and tries to force a local fixture',async()=>{
+ const publicHost={location:{hostname:'bonaqu.github.io'}};
+ Function('window',source)(publicHost);
+ const publicLoader=publicHost.PandoraWikiCatalog;
+ const mock=mockFetch(catalog('remote'),catalog('old backup'),{fail:'souls'});
+ await assert.rejects(publicLoader.load({
+  api:'https://worker.example',fetcher:mock.fetcher
+ }),/souls HTTP 503/);
+ assert.equal(mock.paths.filter(url=>url.startsWith('./data/os/')).length,0,
+  'Public live D1 errors must not read an archived game catalog');
+ const forbidden=mockFetch(catalog('remote'),catalog('old backup'));
+ await assert.rejects(publicLoader.load({
+  api:'https://worker.example',fetcher:forbidden.fetcher,preferLocal:true
+ }),/только из D1/);
+ assert.equal(forbidden.paths.length,0,'Public fixture override is rejected before any request');
+
+ const localHost={location:{hostname:'127.0.0.1'}};
+ Function('window',source)(localHost);
+ const localMock=mockFetch(catalog('remote'),catalog('isolated QA fixture'),{fail:'souls'});
+ const restored=await localHost.PandoraWikiCatalog.load({
+  api:'https://worker.example',fetcher:localMock.fetcher
+ });
+ assert.equal(restored.source,'local');
+ assert.equal(restored.data.items[1].name,'isolated QA fixture');
+});
+
 test('racial passive registry and skills must come from the same snapshot',async()=>{
  const remote=catalog('remote'),local=catalog('archive');
  const mock=mockFetch(remote,local);
