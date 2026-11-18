@@ -8384,7 +8384,7 @@ async function apiRequest(path,body,token=adminToken) {
  finishOwnerWrite()
  return data;
 }
-function showAdmin(){const body=h('div');body.append(h('p',{class:'muted',text:adminToken?'Режим редактора подтверждён сервером. Изменения сохраняются в Cloudflare D1.':'Вход администратора защищён сервером Cloudflare Worker. Никаких паролей в GitHub Pages нет.'}));if(adminToken){body.append(h('button',{class:'button-action',text:'Игровой каталог',onclick:showCatalogImport}));body.append(h('button',{class:'button-action',text:'Очки за уровни',onclick:showOwnerLevelProgression}));body.append(h('button',{class:'button-action',text:'Копия правок в GitHub (необязательно)',onclick:showOwnerGitHubExport}));body.append(h('button',{class:'button-action primary',text:adminEditing?'Выключить редактирование':'Включить редактирование',onclick:()=>{adminEditing=!adminEditing;$('modalRoot').hidden=true;render();updateAdminHint()}}),h('button',{class:'button-action',text:'Выйти',onclick:async()=>{try{await apiRequest('/api/admin/logout',{})}catch{}adminToken='';adminEditing=false;ownerEdits.length=0;closeInlineEditor();$('modalRoot').hidden=true;render();updateAdminHint()}}));modal('Управление сайтом',body);return}
+function showAdmin(){const body=h('div');body.append(h('p',{class:'muted',text:adminToken?'Режим редактора подтверждён сервером. Изменения сохраняются в Cloudflare D1.':'Вход администратора защищён сервером Cloudflare Worker. Никаких паролей в GitHub Pages нет.'}));if(adminToken){body.append(h('button',{class:'button-action',text:'Игровой каталог',onclick:showCatalogImport}));body.append(h('button',{class:'button-action',text:'Очки за уровни',onclick:showOwnerLevelProgression}));body.append(h('button',{class:'button-action',text:'Копия правок в GitHub (необязательно)',onclick:showOwnerGitHubExport}));body.append(h('button',{class:'button-action primary',text:adminEditing?'Выключить редактирование':'Включить редактирование',onclick:()=>{if(adminEditing&&!ownerMayLeaveEditing())return;adminEditing=!adminEditing;$('modalRoot').hidden=true;render();updateAdminHint()}}),h('button',{class:'button-action',text:'Выйти',onclick:async()=>{if(!ownerMayLeaveEditing())return;try{await apiRequest('/api/admin/logout',{})}catch{}adminToken='';adminEditing=false;ownerEdits.length=0;closeInlineEditor();$('modalRoot').hidden=true;render();updateAdminHint()}}));modal('Управление сайтом',body);return}
  const user=h('input',{value:'administrator',readOnly:true}),password=h('input',{type:'password',placeholder:'Пароль администратора',autocomplete:'current-password'}),setup=h('input',{type:'password',placeholder:'Одноразовый секрет первичной настройки (если ещё нет пароля)'}),feedback=h('div',{class:'error'}),go=h('button',{class:'button-action primary',text:'Войти'});go.onclick=async()=>{feedback.textContent='';try{if(!password.value||password.value.length<12)throw Error('Нужен пароль от 12 символов');const data=await apiRequest(setup.value?'/api/admin/setup':'/api/admin/login',setup.value?{username:'administrator',password:password.value,setupToken:setup.value}:{username:'administrator',password:password.value},'');adminToken=data.token;adminEditing=true;$('modalRoot').hidden=true;render();updateAdminHint()}catch(e){feedback.textContent=e.message}};body.append(h('label',{text:'Логин'}),user,h('label',{text:'Пароль'}),password,h('label',{text:'Первичная настройка (заполняется только один раз)'}),setup,go,feedback,h('p',{class:'muted',text:'Первичная настройка требует секрет ADMIN_SETUP_TOKEN, созданный владельцем в настройках Worker. Это защищает имя administrator от захвата посторонними.'}));const checkApi=h('button',{type:'button',class:'button-action',text:'Проверить Cloudflare API',onclick:async()=>{feedback.textContent='Проверяю сервер…';try{const result=await apiRequest('/api/health',null,'');feedback.textContent=result.status==='ok'?'Worker отвечает, D1 подключена.':'Ответ сервера: '+JSON.stringify(result)}catch(e){feedback.textContent=e.message}}});body.append(checkApi);modal('Служебный вход',body)}
 function updateAdminHint(){
  const verifiedOwner=Boolean(adminEditing&&adminToken);
@@ -8406,6 +8406,7 @@ function updateAdminHint(){
   bindAccountCopyEditors(document.getElementById('studio-update-banner'));
  }
  refreshOwnerUI();
+ window.PandoraStudioUpdateBanner?.refresh?.();
 }
 
 // Stable UI labels are edited where they appear, never in an admin dialog.
@@ -8678,6 +8679,17 @@ function ownerSaveInFlight(){
  return editIsSaving||ownerWritePendingCount>0||wikiLabelPendingWrites>0||
   ownerGuidePendingWrites>0||wikiRecordWriteQueue.size>0||
   ownerSaveState==='saving';
+}
+function ownerMayLeaveEditing(){
+ if(!ownerCanStartAdminOperation())return false;
+ // Closing an open inline editor would silently discard unsent text.
+ if(activeInlineEditor){
+  showStudioToast(lang==='en'?
+   'Save or cancel the open editor before leaving owner mode.':
+   'Сначала сохрани или закрой открытый редактор перед выходом из режима владельца.','warning');
+  return false;
+ }
+ return true;
 }
 function ownerCanStartAdminOperation(){
  if(ownerSaveInFlight()){
@@ -9024,12 +9036,7 @@ function refreshOwnerUI(){
    title:'Необязательный экспорт уже сохранённых изменений в GitHub'}),
   h('button',{type:'button',class:'owner-dock-finish',text:'Завершить',
    onclick:()=>{
-    if(ownerSaveInFlight()){
-     showStudioToast(lang==='en'?'Wait for Cloudflare D1 to finish saving':
-      'Дождись окончания сохранения в Cloudflare D1','warning');return}
-    if(ownerSaveState==='error'){
-     showStudioToast(lang==='en'?'A save failed. Review the field and retry.':
-      'Есть ошибка сохранения. Проверь поле и повтори изменение.','warning');return}
+    if(!ownerMayLeaveEditing())return;
     adminEditing=false;closeInlineEditor();render();updateAdminHint()
    }})
  ]);
@@ -10942,8 +10949,8 @@ document.addEventListener('keydown',event=>{
  }
 });
 
-// Save the exact current user state before any update, and never auto-reload during admin sessions.
-window.PandoraStudioAdminActive=()=>Boolean(adminToken);
+// Retained owner authorization is safe to refresh; editing and pending D1 writes are not.
+window.PandoraStudioAdminActive=()=>Boolean(adminEditing&&adminToken)||ownerSaveInFlight();
 function saveBeforeUpdate(event){
  const draftSaved=persist(),librarySaved=persistBuilds();
  if(draftSaved&&librarySaved)return;
