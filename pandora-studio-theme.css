@@ -22,9 +22,13 @@
 
 /* Announce version changes without interrupting active character editing. */
 .studio-update-banner{position:fixed;z-index:200;right:18px;bottom:18px;max-width:min(460px,calc(100vw - 32px));padding:15px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;color:#f4d6a7;background:#221a12;border:2px double #c69a5b;box-shadow:0 14px 45px #000c;font-size:12px}
-.studio-update-banner span{flex-basis:100%;line-height:1.5}
+.studio-update-banner>span[data-update-role="message"]{flex-basis:100%;line-height:1.5}
 .studio-update-banner button{background:#3c2a1b;border:1px solid #9d7545;color:#f4d6a7;padding:8px 15px}
 .studio-update-banner button:hover{background:#644222;border-color:#e2b675}
+/* Owner-only pencils must not turn the compact release notice into a row of
+   full-sized action buttons. Do not clip the in-place editing host on mobile. */
+.studio-update-banner>.account-copy-pencil{padding:3px 6px;flex:0 0 auto;min-width:0;min-height:24px;line-height:1}
+.studio-update-banner>.account-copy-edit-host{flex-basis:100%;min-width:0;max-width:100%;overflow-wrap:anywhere}
 @media(max-width:460px){.studio-update-banner{left:12px;right:12px;bottom:12px}}
 
 
