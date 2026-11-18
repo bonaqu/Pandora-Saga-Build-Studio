@@ -294,7 +294,7 @@ export async function runShareLinkSmoke(browser,base){
   // A real library rerender replaces the old card/host while GET is delayed.
   // Re-entering the saved-build view and clicking Share must adopt the pending
   // result, not call POST again or leave the user without a copy action.
-  await page.locator('#nav [data-tab="character"]').click();
+  await page.locator('#nav [data-tab="wiki"]').click();
   await page.locator('#nav [data-tab="builds"]').click();
   await page.locator('.build-card').first().waitFor({state:'visible'});
   await page.locator('.build-card').first()
