@@ -3191,12 +3191,15 @@ function openWikiChapterList(){
 // on the actual history entry, never on the currently displayed record type.
 function wikiBackButton(){
  const label=lang==='en'?'← Back':'← Назад';
- return h('button',{type:'button',class:'wiki-return-button',
+ const button=h('button',{type:'button',class:'wiki-return-button',
   text:label,'aria-label':label,onclick:()=>{
    if(location.hash.startsWith('#wiki/')&&history.state?.psWikiEntry===true)
     history.back();
    else openWikiChapterList();
   }});
+ bindOwnerInterfaceText(button,'wiki-ui','backLabel','← Назад','← Back');
+ bindOwnerInterfaceText(button,'wiki-ui','backLabel','← Назад','← Back','aria-label');
+ return button;
 }
 function wikiLink(text,type,id,highlight=null){
  // A skill ID identifies a specific version with potentially different
@@ -3657,7 +3660,18 @@ function renderWiki(root){
    'Scroll the encyclopedia list to the beginning','Описание перехода','Top-button description'],
   ['viewAria','Вид Энциклопедии','Encyclopedia view','Переключатель вида','View selector'],
   ['viewList','☰ Список','☰ List','Режим списка','List mode'],
-  ['viewGrid','▦ Сетка','▦ Grid','Режим сетки','Grid mode']
+  ['viewGrid','▦ Сетка','▦ Grid','Режим сетки','Grid mode'],
+  ['backLabel','← Назад','← Back','Возврат','Back'],
+  ['resultsShown','Показано','Showing','Результаты · до числа','Results · before count'],
+  ['resultsOf','из','of','Результаты · между числами','Results · between counts'],
+  ['resultsUnits','записей','entries','Результаты · после числа','Results · after count'],
+  ['morePrefix','Показать ещё','Show more','Загрузить ещё','Show more'],
+  ['noMatches','Ничего не найдено.','No matching entries.','Пустой поиск','No matches'],
+  ['selectPrompt','Выбери запись для просмотра характеристик и связанных источников.',
+   'Select an entry to view its details and sources.','При выборе','Selection prompt'],
+  ['placeCity','Город Астир · районы','Astir city · districts','Районы города','City districts'],
+  ['placeNation','Государства','Nations','Государства','Nations'],
+  ['placeOther','Другие локации','Other locations','Прочие локации','Other locations']
  ],'Подписи энциклопедии','Encyclopedia labels'));
  if(wikiFilterCopyRows.length){
   const filterEditor=ownerInterfaceEditor('wiki-ui',wikiFilterCopyRows,
@@ -4310,7 +4324,14 @@ function renderWiki(root){
    [results[selectedIndex],...results.slice(0,wikiShown)]:results.slice(0,wikiShown);
   if(!detailOnly){
    const batch=document.createDocumentFragment();
-   batch.append(h('p',{class:'muted',text:lang==='en'?'Showing '+visible.length+' of '+results.length+' entries':'Показано '+visible.length+' из '+results.length+' записей'}));
+   const summary=h('p',{class:'muted'});
+   summary.append(
+    bindOwnerInterfaceText(h('span'),'wiki-ui','resultsShown','Показано','Showing'),
+    ' ',String(visible.length),' ',
+    bindOwnerInterfaceText(h('span'),'wiki-ui','resultsOf','из','of'),
+    ' ',String(results.length),' ',
+    bindOwnerInterfaceText(h('span'),'wiki-ui','resultsUnits','записей','entries'));
+   batch.append(summary);
    let lastPlaceGroup=null,lastRacialGroup=null;
    for(const [id,rec]of visible){
     if(type==='skill'&&wikiSkillFilter==='racial'&&!wikiSearch){
@@ -4324,11 +4345,13 @@ function renderWiki(root){
      const geo=window.PandoraAstirLocations;
      const group=geo?.district(id)?'city':geo?.country(id)?'nation':'other';
      if(group!==lastPlaceGroup){
-      batch.append(h('h4',{class:'wiki-location-list-heading',text:{
-       city:wt('Город Астир · районы','Astir city · districts'),
-       nation:wt('Государства','Nations'),
-       other:wt('Другие локации','Other locations')
-      }[group]}));
+      const label={
+       city:['placeCity','Город Астир · районы','Astir city · districts'],
+       nation:['placeNation','Государства','Nations'],
+       other:['placeOther','Другие локации','Other locations']
+      }[group];
+      batch.append(bindOwnerInterfaceText(
+       h('h4',{class:'wiki-location-list-heading'}),'wiki-ui',...label));
       lastPlaceGroup=group;
      }
     }
@@ -4341,8 +4364,13 @@ function renderWiki(root){
     batch.append(row);
    }
    if(results.length>wikiShown){
-    batch.append(h('button',{type:'button',class:'wiki-more',text:(lang==='en'?'Show more ':'Показать ещё ')+Math.min(100,results.length-wikiShown)+' / '+(results.length-wikiShown),
-     onclick:()=>{wikiShown+=100;draw()}}));
+    const more=h('button',{type:'button',class:'wiki-more',
+     onclick:()=>{wikiShown+=100;draw()}});
+    more.append(bindOwnerInterfaceText(h('span'),'wiki-ui','morePrefix',
+     'Показать ещё','Show more'),' ',
+     String(Math.min(100,results.length-wikiShown)),' / ',
+     String(results.length-wikiShown));
+    batch.append(more);
    }
    browse.append(batch);
    browse.scrollTop=selectedIndex>=wikiShown?0:previousScroll;
@@ -4356,7 +4384,15 @@ function renderWiki(root){
    });
   }
   const id=wikiSelection.id,rec=id==null?null:records?.[id];
-  if(!rec){detail.append(h('p',{class:'muted',text:!results.length?(lang==='en'?'No matching entries.':'Ничего не найдено.'):(lang==='en'?'Select an entry to view its details and sources.':'Выбери запись для просмотра характеристик и связанных источников.')}));return}
+  if(!rec){
+   const empty=h('p',{class:'muted'});
+   if(!results.length)
+    bindOwnerInterfaceText(empty,'wiki-ui','noMatches','Ничего не найдено.','No matching entries.');
+   else bindOwnerInterfaceText(empty,'wiki-ui','selectPrompt',
+    'Выбери запись для просмотра характеристик и связанных источников.',
+    'Select an entry to view its details and sources.');
+   detail.append(empty);return;
+  }
   // The destination is the real origin, which may belong to another chapter.
   // A neutral label avoids falsely promising a category-specific destination.
   detail.append(wikiBackButton());
@@ -10536,14 +10572,6 @@ function syncLocaleControls(){
   button.setAttribute('aria-pressed',String(active));
  }
 }
-function renderArchiveNotice(){
- const notice=$('siteNotice');
- if(!notice)return;
- notice.hidden=!catalogArchived;
- notice.textContent=!catalogArchived?'':lang==='en'?
-  'Saved game data may be outdated. Reload the page to try the current game catalog again.':
-  'Сохранённая копия игры может устареть. Обнови страницу, чтобы снова попробовать загрузить актуальные данные.';
-}
 function renderCatalogStatus(){
  const target=$('catalogStatus'),data=catalogSource;
  if(!target||!data?.meta?.counts)return;
@@ -10614,7 +10642,7 @@ function applyGameLocale({redraw=true,persistReconciled=true}={}){
  refreshOpenAuthoredToast();
  refreshWorkbenchHints();
  renderWorkbenchHintEditors();
- renderArchiveNotice();
+
  renderCatalogStatus();
  renderOriginCopyLabels();
  bindStaticUICopyEditors();
@@ -10669,9 +10697,9 @@ function applyGameLocale({redraw=true,persistReconciled=true}={}){
  branches=window.PandoraGameNavigation.groups.flatMap(g=>g.branches.map(id=>({id,name:meta.branchLabels[id]||id})));
  if(redraw)render();
 }
-// The active D1 snapshot is authoritative. Never silently show a GitHub
-// archive as current game data; only the user's explicit offline choice may
-// install the bundled copy. RU and EN use the same verified snapshot.
+// The active D1 snapshot is authoritative. Bundled game records are used
+// only by isolated localhost/127.0.0.1 browser tests. Public Pages never
+// selects, displays, or falls back to an archived game catalog.
 let activeCatalogSnapshot=null,catalogLoadVersion=0;
 let englishCatalogPending=null,officialEnglishSnapshot=null;
 async function ensureEnglishCatalog({persistReconciled=true}={}){
@@ -10700,6 +10728,10 @@ async function ensureEnglishCatalog({persistReconciled=true}={}){
  return englishCatalogPending;
 }
 async function loadCatalog({archive=false,commit=true}={}){
+ // A future caller cannot re-enable the retired public archive path even by
+ // passing a truthy flag. Only isolated localhost fixtures may use it.
+ if(archive&&!['localhost','127.0.0.1'].includes(location.hostname))
+  throw Error('Публичный каталог игры требует Cloudflare D1');
  const version=++catalogLoadVersion;
  const names=['meta','classes','skills','items','souls','racialPassives',
   'unison','tables','itemForth'];
@@ -10770,17 +10802,12 @@ async function loadCatalog({archive=false,commit=true}={}){
   if(state.mastery&&typeof state.mastery==='object'&&!Array.isArray(state.mastery))
    state.mastery=migrateLegacyBranches(state.mastery);
   if(typeof state.branch==='number')state.branch=oldToOS[state.branch]||'brush';
-  if(!window.PandoraGameNavigation.all.has(state.branch)){state.branch='slash'}
+  if(!window.PandoraGameNavigation.all.has(state.branch))state.branch='slash';
   if(!pathGroupTouched)
    selectedSkillGroup=window.PandoraGameNavigation.branchGroup(state.branch)?.id||'melee';
-
- if(typeof state.branch==='number')state.branch='slash';
- if(!window.PandoraGameNavigation.all.has(state.branch))state.branch='slash';
- if(!pathGroupTouched)
-  selectedSkillGroup=window.PandoraGameNavigation.branchGroup(state.branch)?.id||'melee';
  if(lang==='en')await ensureEnglishCatalog({persistReconciled:commit});
  if(version!==catalogLoadVersion)return;
- renderArchiveNotice();
+
  invalidateWikiCatalog({dropSnapshot:true});
  // Startup remains tentative until final D1/overrides coherence validation.
  applyGameLocale({persistReconciled:commit});
@@ -10823,7 +10850,7 @@ async function loadOverrides({strict=false,commit=true}={}){try{
  await refreshOwnerCatalog({persistReconciled:commit});
 }catch(error){
  if(strict)throw Error('Правки каталога D1 недоступны: '+error.message);
- console.warn('Owner overrides unavailable in explicitly selected archive mode',error);
+ console.warn('Owner overrides unavailable in local test fixture',error);
 }}
 $('originTabs').onclick=event=>{
  const button=event.target.closest('[data-origin-tab]');
