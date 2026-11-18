@@ -131,7 +131,7 @@ function shareHarness(){
  const createShared=Function('window','libraryScopeId','requireBuildAccount',
   'h','adminEditing','adminToken','bindAccountCopyEditors','sanitizeSharedState',
   'apiRequest','location','navigator','lang',
-  source.slice(begin,end)+'\\nreturn createShared;')(
+  source.slice(begin,end)+'\nreturn createShared;')(
    window,()=>owner,()=>true,h,false,'',()=>{},data=>data,apiRequest,
    {origin:'https://example.com',pathname:'/studio/'},
    {clipboard:{writeText:async text=>{clipboard.push(text)}}},'ru');
