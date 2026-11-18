@@ -350,5 +350,5 @@ test('Wiki filter labels share one semantic D1 layer without modifying filter ID
  assert.equal(guest.wikiFilterCopyRows.length,0,
   'Guests see translated options but never get an editorial control');
  assert.match(read('pandora-studio-owner-inline-ui.css'),
-  /\\.wiki-filter-labels-editor \\.studio-owner-interface-fields/);
+  /\.wiki-filter-labels-editor \.studio-owner-interface-fields/);
 });
