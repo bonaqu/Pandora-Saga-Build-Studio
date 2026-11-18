@@ -7327,8 +7327,10 @@ function buildSignInCard({shared=false,inDialog=false}={}){
     text:caption('libraryGuestStorageWarning')})
   ]),h('div',{class:'build-signin-actions'},[
    h('button',{type:'button',class:'button-action primary',
+    'data-owner-copy-key':'accountSignIn',
     text:caption('accountSignIn'),onclick:()=>openBuildAccount('login')}),
    h('button',{type:'button',class:'button-action',
+    'data-owner-copy-key':'accountRegister',
     text:caption('accountRegister'),onclick:()=>openBuildAccount('register')})
   ]));
  // Guest player data and account actions are never stored in editorial D1 keys.
@@ -7347,9 +7349,18 @@ function openBuildAccount(mode){
 }
 function requireBuildAccount({shared=false}={}){
  if(window.PandoraAccountUI?.isLoggedIn())return true;
- modal(shared?(lang==='en'?'Sign in to open this build':'Вход для открытия билда'):
-  (lang==='en'?'Sign in to save builds':'Вход для сохранения билдов'),
-  buildSignInCard({shared,inDialog:true}));
+ const titleKey=shared?'librarySharedDialogTitle':'libraryGuestDialogTitle';
+ const title=window.PandoraUILocale?.text(titleKey,lang)||
+  (shared?(lang==='en'?'Sign in to open this build':'Вход для открытия билда'):
+   (lang==='en'?'Sign in to save builds':'Вход для сохранения билдов'));
+ const dialog=modal(title,buildSignInCard({shared,inDialog:true}));
+ const heading=dialog.querySelector('h2');
+ if(heading){
+  heading.dataset.ownerCopyKey=titleKey;
+  // Reuse the same CAS/Undo inline editor as the existing guest explanation.
+  // The dialog's accessible name is kept in sync with this authored heading.
+  if(adminEditing&&adminToken)bindAccountCopyEditors(dialog);
+ }
  return false;
 }
 function notifyGuestDraftUnsaved(){
@@ -8535,7 +8546,11 @@ function bindAccountCopyEditors(panel){
      return saveGuidePatch('book.'+id,{[editLang]:next});
     },
     onCommitted:next=>{
-     node.textContent=editLang===lang?next:locale.text(key,lang);
+     ownerDockPatchText(node,editLang===lang?next:locale.text(key,lang));
+     if(node.matches('h2'))
+      ownerDockPatchAttr(node.closest('.modal[role="dialog"]'),'aria-label',node.textContent);
+     if(pencil)ownerDockPatchAttr(pencil,'aria-label',
+      (lang==='en'?'Edit caption: ':'Изменить надпись: ')+node.textContent);
      if(panel.id==='studioToast')refreshOpenAuthoredToast();
      if(panel.id==='studio-update-banner')
       window.PandoraStudioUpdateBanner?.refresh?.();
@@ -9122,7 +9137,7 @@ function refreshVisibleUICopy(recordKey){
  const selector=isLibrary?
   '#detailContent [data-owner-copy-key],#modalRoot [data-owner-copy-key]':
   isBook?'#stageAttributes [data-owner-copy-key]':
-  isAccount?'#accountPanel [data-owner-copy-key]':
+  isAccount?'#accountPanel [data-owner-copy-key],#detailContent [data-owner-copy-key],#modalRoot [data-owner-copy-key]':
   '#studioToast [data-owner-copy-key]';
  for(const node of document.querySelectorAll(selector)){
   const key=node.dataset.ownerCopyKey;
@@ -9130,6 +9145,10 @@ function refreshVisibleUICopy(recordKey){
    node.nextElementSibling?.classList?.contains('ui-content-edit-host'))continue;
   const value=locale.text(key,lang);
   ownerDockPatchText(node,value);
+  // A modal title is also the dialog's accessible name. Keep both in sync
+  // after CAS, Undo and Restore Original without reconstructing the dialog.
+  if(node.matches('h2'))
+   ownerDockPatchAttr(node.closest('.modal[role="dialog"]'),'aria-label',value);
   const pencil=node.nextElementSibling;
   if(pencil?.dataset?.ownerCopyPencil===key)
    ownerDockPatchAttr(pencil,'aria-label',(lang==='en'?'Edit caption: ':'Изменить надпись: ')+value);

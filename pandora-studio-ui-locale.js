@@ -89,6 +89,9 @@ const libraryCopy=Object.freeze({
  libraryGateAria:['Вход для работы с билдами','Sign in to use builds'],
  libraryGuestTitle:['Мои билды — в аккаунте','Your builds belong to your account'],
  librarySharedGateTitle:['Билд доступен после входа','Sign in to open this build'],
+ // These are dialog headings and accessible names, not runtime account errors.
+ libraryGuestDialogTitle:['Вход для сохранения билдов','Sign in to save builds'],
+ librarySharedDialogTitle:['Вход для открытия билда','Sign in to open this build'],
  libraryGuestLead:['Чтобы сохранять, открывать и сравнивать билды, нужен аккаунт. Персонажа можно создавать без входа.','Sign in to save, open or compare builds. You can still plan a character without an account.'],
  librarySharedGateLead:['Войди или зарегистрируйся, чтобы открыть билд по ссылке. Ссылка сохранится.','Sign in or register to open this build. Your link will stay here.'],
  libraryGuestStorageWarning:['Без аккаунта текущий герой хранится только в этом браузере. Очистка его данных удалит черновик.','Without an account, your current hero stays only in this browser. Clearing its data erases the draft.'],

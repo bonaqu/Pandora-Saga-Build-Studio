@@ -22,6 +22,26 @@ test('guest saved-build library is gated and legacy import UI is retired',()=>{
  assert.match(app,/text:caption\('accountRegister'\)/);
  assert.match(app,/text:caption\('accountSignIn'\)/);
 });
+test('guest and shared entry actions use explicit D1 labels without losing their handlers',()=>{
+ const gate=app.slice(app.indexOf('function buildSignInCard('),
+  app.indexOf('function openBuildAccount('));
+ assert.match(gate,/'data-owner-copy-key':'accountSignIn'/);
+ assert.match(gate,/'data-owner-copy-key':'accountRegister'/);
+ assert.match(gate,/onclick:\(\)=>openBuildAccount\('login'\)/);
+ assert.match(gate,/onclick:\(\)=>openBuildAccount\('register'\)/);
+ const dialog=app.slice(app.indexOf('function requireBuildAccount('),
+  app.indexOf('function notifyGuestDraftUnsaved('));
+ assert.match(dialog,/librarySharedDialogTitle/);
+ assert.match(dialog,/libraryGuestDialogTitle/);
+ assert.match(dialog,/heading\.dataset\.ownerCopyKey=titleKey/);
+ assert.match(dialog,/if\(adminEditing&&adminToken\)bindAccountCopyEditors\(dialog\)/);
+ const refreshed=app.slice(app.indexOf('function refreshVisibleUICopy('),
+  app.indexOf('// An Origin copy Undo',app.indexOf('function refreshVisibleUICopy(')));
+ assert.match(refreshed,/#accountPanel \[data-owner-copy-key\],#detailContent \[data-owner-copy-key\],#modalRoot \[data-owner-copy-key\]/);
+ assert.match(refreshed,/node\.closest\('\.modal\[role="dialog"\]'\)/);
+ assert.doesNotMatch(refreshed,/renderDetails\(|renderBuilds\(/);
+});
+
 test('both registration and login preserve only working guest draft, not saved builds',()=>{
  assert.match(app,/if\(tabOwnerScope\?\.startsWith\('guest:'\)&&unsavedBuild\(\)\)/);
  assert.match(app,/pendingGuestDraft=\{snapshot:structuredClone\(state\),owner:tabOwnerScope\}/);
