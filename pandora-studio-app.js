@@ -7960,13 +7960,25 @@ function isVerifiedSharedBuild(share,expectedData){
  try{return JSON.stringify(share.data)===JSON.stringify(expectedData)}
  catch{return false}
 }
+// A repeated Share click must never start duplicate writes, consume another
+// daily short-link slot, or let a late response overwrite the current card.
+const pendingShareHosts=new WeakSet();
 async function createShared(build,host){
+ if(!build||!host||!host.isConnected||pendingShareHosts.has(host))return;
  if(!requireBuildAccount())return;
- if(!build||!host)return;
+ const viewerToken=window.PandoraAccountUI?.token(),viewerOwner=libraryScopeId();
+ if(!viewerToken)return;
+ // Capture the complete payload once. Local edits and cloud refreshes may
+ // mutate the original build while the POST/GET verification is in flight.
+ const buildId=build.id;
+ const sameViewer=()=>host.isConnected&&
+  window.PandoraAccountUI?.token()===viewerToken&&
+  libraryScopeId()===viewerOwner;
+ pendingShareHosts.add(host);
  // Render detached authored text before insertion. The generic library
- // translator only annotates standalone, literal copy; neither URLs nor
- // generated player data may become editorial targets.
+ // translator annotates only standalone literal copy, never a link or name.
  const showShareCopy=(literal,kind='muted')=>{
+  if(!sameViewer())return;
   const row=h('div',{class:'share-editorial-row'},
    h('p',{class:kind,text:literal}));
   window.PandoraUILocale?.localize(row,lang);
@@ -7975,50 +7987,58 @@ async function createShared(build,host){
    if(adminEditing&&adminToken)bindAccountCopyEditors(row);
   }
  };
- if(build.localOnly===true){
-  showShareCopy('Сначала откройте эту локальную копию и явно сохраните её через «Перезаписать».',
-   'build-share-error');
-  return;
- }
  try{
-  // Validation is synchronous, so avoid an imperceptible duplicate
-  // "Checking…" loading step before starting the real network request.
-  sanitizeSharedState(build.data);
+  if(build.localOnly===true){
+   showShareCopy('Сначала откройте эту локальную копию и явно сохраните её через «Перезаписать».',
+    'build-share-error');
+   return;
+  }
+  // The local copy must be immutable for the entire publication handshake.
+  // It is a JSON library record; invalid/cyclic data fail without network IO.
+  const expectedData=JSON.parse(JSON.stringify(build.data));
+  sanitizeSharedState(expectedData);
   showShareCopy('Создаём ссылку из последней сохранённой облачной версии…');
-  const response=await apiRequest('/api/shared',{schema:1,type:'build',buildId:build.id},
-   window.PandoraAccountUI.token());
+  const response=await apiRequest('/api/shared',{schema:1,type:'build',buildId},
+   viewerToken);
+  if(!sameViewer())return;
   if(!/^[A-Za-z0-9_-]{11}$/.test(response.id||''))throw Error('Некорректная ссылка');
-  // Confirm that the new public link is immediately readable before showing it.
-  const check=await apiRequest('/api/shared/'+response.id,null,window.PandoraAccountUI.token());
-  if(!isVerifiedSharedBuild(check?.share,build.data))
+  // Read back using the same account, not a new token from an unrelated login.
+  const check=await apiRequest('/api/shared/'+response.id,null,viewerToken);
+  if(!sameViewer())return;
+  if(!isVerifiedSharedBuild(check?.share,expectedData))
    throw Error('Ссылка не подтвердила выбранный билд. Попробуйте ещё раз.');
   const url=location.origin+location.pathname+'#b/'+response.id;
   const message=h('div',{class:'share-result'});
   const field=h('input',{type:'text',readOnly:true,value:url,'aria-label':'Ссылка на билд'});
   const copy=h('button',{type:'button',class:'button-action primary',text:'Скопировать ссылку',
    onclick:async()=>{
+    if(!sameViewer())return;
     try{await navigator.clipboard.writeText(url);
-     copy.textContent=window.PandoraUILocale?.ui('✓ Скопировано',lang)||'✓ Скопировано';
-    }catch{field.focus();field.select();
+     if(sameViewer())copy.textContent=window.PandoraUILocale?.ui('✓ Скопировано',lang)||'✓ Скопировано';
+    }catch{
+     if(!sameViewer())return;
+     field.focus();field.select();
      copy.textContent=window.PandoraUILocale?.ui(
       'Ссылка выделена — скопируй через меню или Ctrl+C',lang)||
-      'Ссылка выделена — скопируй через меню или Ctrl+C';}
+      'Ссылка выделена — скопируй через меню или Ctrl+C';
+    }
    }});
-  // Put static editorial copy in its own non-action row. This allows
-  // owner-only inline editing without re-running clipboard or share actions.
+  // Author-owned copy stays separate from account data and action controls.
   const titleCopy=h('div',{class:'share-result-copy-row'},
    h('p',{text:response.reused?'Ссылка на билд уже создана.':'Ссылка на билд создана.'}));
   const explanation=h('div',{class:'share-result-copy-row'},
    h('p',{class:'muted',text:'Ссылка хранит снимок на момент публикации. После удаления оригинального билда она перестанет работать.'}));
   message.append(titleCopy,field,copy,explanation);
   window.PandoraUILocale.localize(message,lang);
+  if(!sameViewer())return;
   if(host.isConnected){
    host.replaceChildren(message);
    if(adminEditing&&adminToken)bindAccountCopyEditors(message);
   }
  }catch(error){
-  // The server response is runtime data: keep it in its own non-editable
-  // span, not inside the D1-controlled introductory explanation.
+  // Old owner responses are silently discarded even when the Worker rejects.
+  if(!sameViewer())return;
+  // Server details are runtime data, not D1-editable authored copy.
   const prefix=h('span',{class:'share-error-intro',text:'Не удалось создать ссылку:'});
   window.PandoraUILocale?.localize(prefix,lang);
   const detail=h('span',{class:'share-runtime-detail',
@@ -8028,6 +8048,8 @@ async function createShared(build,host){
    host.replaceChildren(row);
    if(adminEditing&&adminToken)bindAccountCopyEditors(row);
   }
+ }finally{
+  pendingShareHosts.delete(host);
  }
 }
 function openSharedSnapshot(share){

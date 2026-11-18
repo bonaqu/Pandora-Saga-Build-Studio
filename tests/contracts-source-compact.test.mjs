@@ -256,10 +256,14 @@ test('a published link is verified by the Worker before showing the URL and copy
   const end=app.indexOf('function openSharedSnapshot(',start);
   assert.ok(start>=0&&end>start,'share function must remain inspectable');
   const share=app.slice(start,end);
-  const probe=share.indexOf("apiRequest('/api/shared/'+response.id,null,window.PandoraAccountUI.token())");
+  const probe=share.indexOf("apiRequest('/api/shared/'+response.id,null,viewerToken)");
+  const verify=share.indexOf('isVerifiedSharedBuild(check?.share,expectedData)');
   const announce=share.indexOf('Ссылка на билд создана.');
-  assert.ok(probe>=0&&announce>probe,'cannot claim link exists before successful GET verification');
-  assert.match(share,/isVerifiedSharedBuild\(check\?\.share,build\.data\)/);
+  assert.ok(probe>=0&&verify>probe&&announce>verify,
+   'cannot claim link exists before successful GET verification');
+  assert.match(share,/const viewerToken=window\.PandoraAccountUI\?\.token\(\),viewerOwner=libraryScopeId\(\)/);
+  assert.match(share,/if\(!sameViewer\(\)\)return;/);
+  assert.match(share,/const expectedData=JSON\.parse\(JSON\.stringify\(build\.data\)\)/);
   assert.match(share,/aria-label':'Ссылка на билд'/);
   assert.match(share,/navigator\.clipboard\.writeText\(url\)/);
   assert.match(share,/field\.focus\(\);field\.select\(\)/);

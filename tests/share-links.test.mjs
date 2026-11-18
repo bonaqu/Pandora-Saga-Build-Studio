@@ -39,7 +39,10 @@ test('share links display alongside saved builds with an inline copy fallback',(
  assert.match(src,/if\(adminEditing&&adminToken\)bindAccountCopyEditors\(message\)/,
   'Only an active administrator may bind share-result editorial controls');
  assert.match(src,/field\.focus\(\);field\.select\(\)/);
- assert.match(src,/isVerifiedSharedBuild\(check\?\.share,build\.data\)/);
+ assert.match(src,/isVerifiedSharedBuild\(check\?\.share,expectedData\)/);
+ assert.match(src,/const pendingShareHosts=new WeakSet\(\)/);
+ assert.match(src,/if\(!sameViewer\(\)\)return/);
+ assert.match(src,/pendingShareHosts\.delete\(host\)/);
  assert.match(css,/\.build-share-slot/);
 });
 test('library maintains an offline cache and D1 sync without JSON import/export',()=>{
@@ -92,4 +95,115 @@ test('public share preserves separate blue Potential and green Adeptness',()=>{
  // which is reflected in the compared outcomes without adding a skill row.
  assert.match(s,/PandoraSkillProgression\.combatMasteries\(snap,initialBranches,caps\)/);
  assert.match(s,/PandoraBuildComparison\.compactResults\(/);
+});
+
+
+function shareHarness(){
+ // Execute the real production share function with a deterministic in-memory
+ // DOM, mock account identity and delayed POST/GET. Never access production D1.
+ const source=read('pandora-studio-app.js');
+ const begin=source.indexOf('function isVerifiedSharedBuild(');
+ const end=source.indexOf('function openSharedSnapshot(share){',begin);
+ assert.ok(begin>0&&end>begin,'Production sharing function not found');
+ let token='t'.repeat(43),owner='account:alice_01';
+ const calls=[],clipboard=[],postQueue=[],getQueue=[];
+ const deferred=()=>{let resolve,reject;const promise=new Promise((yes,no)=>{
+  resolve=yes;reject=no;});return {promise,resolve,reject};};
+ const h=(tag,attrs={},children=[])=>({
+  tag,attrs,textContent:attrs.text||'',children:Array.isArray(children)?children:[children],
+  append(...nodes){this.children.push(...nodes)},
+  replaceChildren(...nodes){this.children=nodes},
+  focus(){},select(){}
+ });
+ const window={PandoraAccountUI:{token:()=>token},PandoraUILocale:{
+  localize(){},ui(value){return value}
+ }};
+ const host={isConnected:true,renders:[],replaceChildren(...nodes){
+  this.current=nodes[0];this.renders.push(this.current);
+ }};
+ const apiRequest=(path,body,auth)=>{
+  calls.push({path,body,auth});
+  const waiting=deferred();
+  (path==='/api/shared'?postQueue:getQueue).push(waiting);
+  return waiting.promise;
+ };
+ const build={id:'a'.repeat(32),name:'Snapshot',data:{race:0,job:0,level:45}};
+ const createShared=Function('window','libraryScopeId','requireBuildAccount',
+  'h','adminEditing','adminToken','bindAccountCopyEditors','sanitizeSharedState',
+  'apiRequest','location','navigator','lang',
+  source.slice(begin,end)+'\nreturn createShared;')(
+   window,()=>owner,()=>true,h,false,'',()=>{},data=>data,apiRequest,
+   {origin:'https://example.com',pathname:'/studio/'},
+   {clipboard:{writeText:async text=>{clipboard.push(text)}}},'ru');
+ return {createShared,host,build,calls,clipboard,postQueue,getQueue,
+  setToken:value=>{token=value},setOwner:value=>{owner=value}};
+}
+const shareReadback=level=>({share:{schema:1,type:'build',
+ data:{race:0,job:0,level}}});
+const tick=async()=>{await Promise.resolve();await Promise.resolve()};
+
+test('one Share click per host publishes once and confirms the captured build snapshot',async()=>{
+ const s=shareHarness();
+ const first=s.createShared(s.build,s.host);
+ const repeated=s.createShared(s.build,s.host);
+ assert.equal(s.calls.length,1,'Fast repeated clicks must not create duplicate POSTs');
+ assert.equal(s.postQueue.length,1);
+ s.build.data.level=56; // Editor changed while cloud publication is pending.
+ s.postQueue[0].resolve({id:'A1234567890'});
+ await tick();
+ assert.equal(s.getQueue.length,1);
+ assert.equal(s.calls[1].auth,'t'.repeat(43),'The readback uses the captured token');
+ s.getQueue[0].resolve(shareReadback(45));
+ await Promise.all([first,repeated]);
+ assert.equal(s.host.current.attrs.class,'share-result',
+  'A valid server snapshot is compared against the original saved record');
+ assert.equal(s.calls.length,2);
+ assert.equal(s.host.current.children[1].attrs.value,
+  'https://example.com/studio/#b/A1234567890');
+ s.setToken('u'.repeat(43));
+ await s.host.current.children[2].attrs.onclick();
+ assert.equal(s.clipboard.length,0,'A stale owner cannot copy another account share');
+});
+
+test('account switching before the POST resolves cancels GET and stale UI mutations',async()=>{
+ const s=shareHarness(),pending=s.createShared(s.build,s.host);
+ const original=s.host.current;
+ s.setToken('u'.repeat(43));s.setOwner('account:bob_02');
+ s.postQueue[0].resolve({id:'A1234567890'});
+ await pending;
+ assert.equal(s.calls.length,1,'No verification read is sent under the new account');
+ assert.equal(s.host.current,original,'An old owner reply cannot paint the new account UI');
+});
+
+test('late GET failure after logout is ignored and a detached card stays unchanged',async()=>{
+ const s=shareHarness(),pending=s.createShared(s.build,s.host);
+ s.postQueue[0].resolve({id:'A1234567890'});
+ await tick();
+ assert.equal(s.getQueue.length,1);
+ const prior=s.host.renders.length;
+ s.host.isConnected=false;
+ s.setToken(null);
+ s.getQueue[0].reject(Error('Revoked old session'));
+ await pending;
+ assert.equal(s.host.renders.length,prior,
+  'A deleted card cannot show a stale link or stale error');
+});
+
+test('failed link verification is retryable, without duplicate pending network writes',async()=>{
+ const s=shareHarness();
+ const one=s.createShared(s.build,s.host);
+ s.createShared(s.build,s.host);
+ s.postQueue[0].resolve({id:'A1234567890'});
+ await tick();
+ s.getQueue[0].resolve(shareReadback(1));
+ await one;
+ assert.equal(s.host.current.attrs.class,'share-editorial-row build-share-error');
+ assert.equal(s.calls.length,2);
+ const retry=s.createShared(s.build,s.host);
+ assert.equal(s.postQueue.length,2,'Finished failure clears the per-card lock');
+ s.postQueue[1].resolve({id:'A1234567890',reused:true});
+ await tick();
+ s.getQueue[1].resolve(shareReadback(45));
+ await retry;
+ assert.equal(s.host.current.attrs.class,'share-result');
 });
