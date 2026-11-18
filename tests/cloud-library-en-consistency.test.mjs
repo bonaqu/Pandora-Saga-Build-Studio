@@ -67,7 +67,11 @@ test('cloud status is translated on updates and when reopening the Builds tab',(
  assert.ok(from>=0&&to>from);
  const node={textContent:'',dataset:{},removeAttribute:()=>{}};
  const document={querySelector:()=>node};
- const code=app.slice(from,to);
+ // Exercise the actual production DOM no-op helpers along with the status
+ // functions, rather than duplicating their behavior in the test harness.
+ const helpers=app.slice(app.indexOf('function ownerDockPatchText('),
+  app.indexOf('function refreshOwnerUI('));
+ const code=helpers+app.slice(from,to);
  for(const lang of ['ru','en']){
   const holder=Function('window','document','lang',
    'let cloudLibraryStatus=null,adminEditing=false,adminToken=null;'+code+
