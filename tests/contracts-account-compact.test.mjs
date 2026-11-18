@@ -50,7 +50,8 @@ test('both registration and login preserve only working guest draft, not saved b
  assert.doesNotMatch(account,/legacyKey:options\.legacyKey/);
  assert.match(app,/guest\.owner\.startsWith\('guest:'\)/);
  assert.match(app,/if\(!builds\.length\)notifyGuestDraftUnsaved\(\)/);
- assert.match(app,/Оставить героя аккаунта/);
+ assert.match(app,/'data-owner-copy-key':'libraryConflictKeepAccount'/);
+ assert.match(app,/if\(!accountWasSaved&&!saveBuild\(/);
 });
 
 }

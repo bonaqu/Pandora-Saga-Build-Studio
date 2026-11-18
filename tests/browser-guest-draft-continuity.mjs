@@ -92,6 +92,7 @@ export async function runGuestDraftContinuitySmoke(browser,base){
     document.querySelector('#levelOut')?.textContent==='27',
     guestKey,{timeout:30000});
    if(ownerEdit){
+    await page.locator('#startupOverlay').waitFor({state:'hidden',timeout:30000});
     // Use the real hidden owner login with a mock Worker; production D1 is
     // never touched, and all existing guest/account state remains untouched.
     await page.keyboard.press('Control+Alt+Shift+P');
@@ -100,7 +101,19 @@ export async function runGuestDraftContinuitySmoke(browser,base){
     await page.locator('input[placeholder="Пароль администратора"]')
      .fill('Correct admin password!');
     await page.locator('.modal').getByRole('button',{name:'Войти',exact:true}).click();
-    await page.locator('#ownerDock').waitFor({state:'visible',timeout:15000});
+    try{
+     await page.locator('#ownerDock').waitFor({state:'visible',timeout:12000});
+    }catch(error){
+     const diagnostic=await page.evaluate(()=>({
+      overlayHidden:document.getElementById('startupOverlay')?.hidden,
+      modalHidden:document.getElementById('modalRoot')?.hidden,
+      adminFeedback:document.querySelector('#modalRoot .modal .error')?.textContent,
+      hasOwnerDock:Boolean(document.getElementById('ownerDock')),
+      ownerState:document.getElementById('authState')?.textContent
+     }));
+     throw new Error('Owner-editor login diagnostic: '+
+      JSON.stringify({diagnostic,pageErrors:errors})+'; '+error.message);
+    }
     if(ownerLang==='en'){
      await page.locator('#locale [data-locale="en"]').click();
      await page.waitForFunction(()=>document.documentElement.lang==='en');
