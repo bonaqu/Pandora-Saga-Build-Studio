@@ -666,6 +666,7 @@ export async function runUIContentInlineSmoke(browser,base){
   await toastText.waitFor({state:'visible'});
   assert.equal(await toastText.textContent(),'Build removed and link revoked.');
   assert.equal(JSON.parse(values[statusKey]).en,'Build removed and link revoked.');
+  console.log('Chromium UI content: RU/EN status toast edit, live translation, 409 and local draft preservation passed');
   // The Wiki filter's selected ID is gameplay/UI state, never an editable
   // caption. In-place RU/EN CAS edits must update options without rebuilding
   // the list, losing the selection or exposing D1 controls to guests.

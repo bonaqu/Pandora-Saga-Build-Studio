@@ -329,7 +329,7 @@ test('Wiki filter labels share one semantic D1 layer without modifying filter ID
  };
  const boot=Function('adminEditing','adminToken','h','bindOwnerInterfaceText',
   source.slice(start,end)+
-  '\\nreturn {addFilterOptions,addFilterName,wikiFilterCopyRows,filterCopyKey};');
+  '\nreturn {addFilterOptions,addFilterName,wikiFilterCopyRows,filterCopyKey};');
  const owner=boot(true,'mock-owner',h,bindOwnerInterfaceText);
  const picker=h('select',{});
  owner.addFilterOptions(picker,'EquipmentType',[

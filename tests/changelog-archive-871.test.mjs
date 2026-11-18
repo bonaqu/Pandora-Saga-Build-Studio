@@ -10,7 +10,8 @@ const read=p=>readFileSync(join(root,p),'utf8');
 test('release history is preserved in individually readable archive segments',()=>{
  const current=read('CHANGELOG.md'),index=read('docs/changelog/README.md');
  assert.ok(current.length<22000);
- assert.match(current,/## 0\.892\.0 — 2026\.11\.18\.892/);
+ assert.match(current,/## 0\.893\.0 — 2026\.11\.18\.893/);
+ assert.match(read('docs/changelog/release-0.892.0.md'),/## 0\.892\.0 — 2026\.11\.18\.892/);
  assert.match(read('docs/changelog/release-0.891.0.md'),/## 0\.891\.0 — 2026\.11\.18\.891/);
  assert.equal([...current.matchAll(/^## 0\.\d+\.0 — /gm)].length,12,
   'Keep only the newest 12 releases in the root CHANGELOG');
