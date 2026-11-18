@@ -1662,6 +1662,23 @@ export async function runAdminEntrySmoke(browser,base){
   if(await page.locator('#stageAttributes').isVisible())
    await page.locator('#stageAttributes .stage-book-close').click();
   offerNewSiteVersion=true;
+  // A separate client with no owner login must be able to update immediately.
+  // This is the real browser/runtime path, not a mocked admin predicate.
+  const freshPage=await context.newPage();
+  await freshPage.goto(base+'/',{waitUntil:'domcontentloaded'});
+  await freshPage.locator('#startupOverlay').waitFor({state:'hidden',timeout:30000});
+  await freshPage.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));
+  const freshBanner=freshPage.locator('#studio-update-banner');
+  await freshBanner.waitFor({state:'visible',timeout:10000});
+  assert.deepEqual(await freshPage.evaluate(()=>window.PandoraStudioOwnerUpdateState?.()),
+   {editing:false,saving:false});
+  assert.match(await freshBanner.locator('[data-update-role="message"]').innerText(),
+   /Новая версия опубликована|A new version is available/i);
+  const freshNavigation=freshPage.waitForRequest(request=>request.isNavigationRequest()&&
+   new URL(request.url()).searchParams.get('ps-revision')===futureRelease);
+  await freshBanner.locator('[data-update-role="apply"]').click();
+  await freshNavigation;
+  await freshPage.close();
   await page.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));
   const updateBanner=page.locator('#studio-update-banner');
   await updateBanner.waitFor({state:'visible',timeout:10000});

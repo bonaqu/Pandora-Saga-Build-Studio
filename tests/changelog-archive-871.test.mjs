@@ -10,7 +10,8 @@ const read=p=>readFileSync(join(root,p),'utf8');
 test('release history is preserved in individually readable archive segments',()=>{
  const current=read('CHANGELOG.md'),index=read('docs/changelog/README.md');
  assert.ok(current.length<22000);
- assert.match(current,/## 0\.891\.0 — 2026\.11\.18\.891/);
+ assert.match(current,/## 0\.892\.0 — 2026\.11\.18\.892/);
+ assert.match(read('docs/changelog/release-0.891.0.md'),/## 0\.891\.0 — 2026\.11\.18\.891/);
  assert.equal([...current.matchAll(/^## 0\.\d+\.0 — /gm)].length,12,
   'Keep only the newest 12 releases in the root CHANGELOG');
  assert.match(read('docs/changelog/releases-879-864.md'),
@@ -19,7 +20,7 @@ test('release history is preserved in individually readable archive segments',()
  assert.match(current,/CHANGELOG_ARCHIVE/);
  assert.match(index,/NEWEST ARCHIVES/);
  const dir=join(root,'docs','changelog');
- const names=readdirSync(dir).filter(n=>n.endsWith('.md')&&n.startsWith('releases-'));
+ const names=readdirSync(dir).filter(n=>n.endsWith('.md')&&/^releases?-/.test(n));
  assert.ok(names.length>=30,'history must be split without dropping releases');
  const content=names.map(name=>read('docs/changelog/'+name));
  assert.ok(content.every(row=>row.length<22000),'each archive can be fetched normally');

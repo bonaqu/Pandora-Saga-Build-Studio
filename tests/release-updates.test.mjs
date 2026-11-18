@@ -6,7 +6,7 @@ import {runInNewContext} from 'node:vm';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const source=read('pandora-studio-update-manager.js');
 const localeSource=read('pandora-studio-ui-locale.js');
-function boot(local,remote,href='https://bonaqu.github.io/Pandora-Saga-Build-Studio/',locale='ru',ownerGuard=null){
+function boot(local,remote,href='https://bonaqu.github.io/Pandora-Saga-Build-Studio/',locale='ru',ownerGuard=null,ownerState=null){
  let banner=null,check=null,normalized=null,navigated=null,saved=0,languageChanged=null;
  let currentRemote=remote,holdResponses=false,saveAllowed=true,lastEventCancelable=null;
  let guard=null,accountPanelOpen=false,heroBookOpen=false,onlineRecoveryOpen=false,
@@ -42,7 +42,8 @@ function boot(local,remote,href='https://bonaqu.github.io/Pandora-Saga-Build-Stu
  const location={href,replace:url=>{navigated=url}};
  const history={state:null,replaceState:(_state,_title,url)=>{normalized=url}};
  const appWindow={PandoraAccountUI:{updateGuard:()=>guard},
-  PandoraStudioAdminActive:ownerGuard||(()=>ownerMode),PandoraUILocale:uiLocale};
+  PandoraStudioAdminActive:ownerGuard||(()=>ownerMode),
+  PandoraStudioOwnerUpdateState:ownerState,PandoraUILocale:uiLocale};
  runInNewContext(source,{
   window:appWindow,document,location,history,URL,AbortController,Date:Clock,
   Event:class Event{constructor(_type,options){this.cancelable=!!options?.cancelable}},console,
@@ -389,17 +390,19 @@ function productionOwnerSession(){
  const start=app.indexOf('function ownerSaveInFlight(){');
  const end=app.indexOf('function ownerCanStartAdminOperation(){',start);
  const declaration=app.split('\n').find(line=>line.startsWith('window.PandoraStudioAdminActive='));
- assert.ok(start>=0&&end>start&&declaration,'Owner update contract missing');
+ const structured=app.split('\n').find(line=>line.startsWith('window.PandoraStudioOwnerUpdateState='));
+ assert.ok(start>=0&&end>start&&declaration&&structured,'Owner update contract missing');
  const state={window:{},adminToken:'a'.repeat(43),adminEditing:false,
   editIsSaving:false,ownerWritePendingCount:0,wikiLabelPendingWrites:0,
   ownerGuidePendingWrites:0,wikiRecordWriteQueue:new Map(),ownerSaveState:'ready'};
- runInNewContext(app.slice(start,end)+declaration,state);
+ runInNewContext(app.slice(start,end)+structured+'\n'+declaration,state);
  return state;
 }
 test('owner Finish releases update with a retained token while real D1 CAS writes block it',async()=>{
  const owner=productionOwnerSession();
  const page=boot('2026.11.18.897','2026.11.18.898',undefined,'ru',
-  ()=>owner.window.PandoraStudioAdminActive());
+  ()=>owner.window.PandoraStudioAdminActive(),
+  ()=>owner.window.PandoraStudioOwnerUpdateState());
  await page.check();
  const [message,apply]=page.banner.children;
  owner.adminEditing=true;
@@ -410,8 +413,9 @@ test('owner Finish releases update with a retained token while real D1 CAS write
  assert.ok(owner.adminToken);
  owner.ownerWritePendingCount=1;
  page.refreshBanner();
- assert.match(message.textContent,/выйди из режима владельца/i,
-  'D1 writes still prohibit a refresh after editing ends');
+ assert.match(message.textContent,/завершения сохранения правок/i,
+  'D1 writes have a distinct warning after editor Finish');
+ assert.equal(message.getAttribute('data-owner-copy-key'),'siteUpdateSaving');
  apply.listeners.click();
  assert.equal(page.navigated,null);
  owner.ownerWritePendingCount=0;
@@ -421,10 +425,28 @@ test('owner Finish releases update with a retained token while real D1 CAS write
  assert.match(page.navigated,/ps-revision=2026[.]11[.]18[.]898/);
  assert.equal(page.saved,1,'The current build/library save hook still runs');
 });
+test('a new release never claims editor mode for guests or retained inactive sessions',async()=>{
+ const guest=boot('2026.11.18.902','2026.11.18.903');
+ await guest.check();
+ assert.match(guest.banner.children[0].textContent,/Новая версия опубликована/i);
+ guest.banner.children[1].listeners.click();
+ assert.match(guest.navigated,/ps-revision=2026[.]11[.]18[.]903/);
+ const owner=productionOwnerSession();
+ const inactive=boot('2026.11.18.902','2026.11.18.903',undefined,'ru',
+  ()=>owner.window.PandoraStudioAdminActive(),
+  ()=>owner.window.PandoraStudioOwnerUpdateState());
+ await inactive.check();
+ assert.deepEqual(JSON.parse(JSON.stringify(owner.window.PandoraStudioOwnerUpdateState())),
+  {editing:false,saving:false});
+ assert.match(inactive.banner.children[0].textContent,/Новая версия опубликована/i);
+ inactive.banner.children[1].listeners.click();
+ assert.match(inactive.navigated,/ps-revision=2026[.]11[.]18[.]903/);
+});
 test('idle update works after Finish but waits for queued owner records',async()=>{
  const owner=productionOwnerSession();
  const page=boot('2026.11.18.897','2026.11.18.898',undefined,'ru',
-  ()=>owner.window.PandoraStudioAdminActive());
+  ()=>owner.window.PandoraStudioAdminActive(),
+  ()=>owner.window.PandoraStudioOwnerUpdateState());
  await page.check();
  page.advance(121000);
  owner.wikiRecordWriteQueue.set('npc:4',Promise.resolve());
