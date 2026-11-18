@@ -149,6 +149,18 @@ export async function runAccountSmoke(browser,base){
   assert.equal(await feedback.getAttribute('data-owner-copy-key'),'accountCodeHidden',
    'Only the explicit authored recovery-code feedback may be edited');
   assert.equal((await feedback.innerText()).trim(),'Резервный код скрыт.');
+  // An authored D1-editable recovery message must remain authored after
+  // RU/EN switches; rendering the translated feedback is not a new error.
+  await page.locator('#locale [data-locale="en"]').click();
+  await page.locator('#profileTrigger').click();
+  await page.locator('#accountPanel').waitFor({state:'visible'});
+  assert.equal(await feedback.getAttribute('data-owner-copy-key'),'accountCodeHidden');
+  assert.equal((await feedback.innerText()).trim(),'Recovery code hidden.');
+  await page.locator('#locale [data-locale="ru"]').click();
+  await page.locator('#profileTrigger').click();
+  await page.locator('#accountPanel').waitFor({state:'visible'});
+  assert.equal(await feedback.getAttribute('data-owner-copy-key'),'accountCodeHidden');
+  assert.equal((await feedback.innerText()).trim(),'Резервный код скрыт.');
   assert.equal(await page.locator('#accountPanel .account-copy-pencil').count(),0,
    'Normal visitors must not see any owner-only editing pencil');
   assert.equal(calls.filter(x=>x.path==='/api/library'&&x.body).length,0,
@@ -171,6 +183,53 @@ export async function runAccountSmoke(browser,base){
   await page.locator('.account-password-details button.account-action.primary').click();
   assert.match(await page.locator('#accountPanel .account-feedback').innerText(),
    /Пароли не совпадают/);
+  // Refreshing a live form may remount its controls, but must restore
+  // focused input, exact caret selection, sensitive values and feedback.
+  await pendingChange.nth(1).focus();
+  const activePasswordHandle=await pendingChange.nth(1).elementHandle();
+  await pendingChange.nth(1).evaluate(el=>el.setSelectionRange(4,13,'forward'));
+  await page.evaluate(()=>{
+   document.documentElement.lang='en';
+   window.PandoraAccountUI.refresh();
+  });
+  assert.equal(await pendingChange.nth(1).evaluate(el=>document.activeElement===el),true);
+  assert.equal(await page.evaluate(old=>document.querySelectorAll(
+   '.account-password-details input')[1]===old,activePasswordHandle),true,
+   'A locale update must not recreate the mounted password input');
+  assert.deepEqual(await pendingChange.nth(1).evaluate(el=>[
+   el.selectionStart,el.selectionEnd,el.selectionDirection
+  ]),[4,13,'forward']);
+  assert.equal(await pendingChange.nth(1).inputValue(),'An example new password 2026');
+  assert.match(await page.locator('#accountPanel .account-feedback').innerText(),
+   /Passwords do not match/);
+  await page.evaluate(()=>{
+   document.documentElement.lang='ru';
+   window.PandoraAccountUI.refresh();
+  });
+  assert.equal(await pendingChange.nth(1).evaluate(el=>document.activeElement===el),true);
+  assert.equal(await pendingChange.nth(1).inputValue(),'An example new password 2026');
+  assert.equal(await page.evaluate(old=>document.querySelectorAll(
+   '.account-password-details input')[1]===old,activePasswordHandle),true);
+  await activePasswordHandle.dispose();
+  // An owner inline edit is still writing to D1 while the locale changes.
+  // Do not discard its host before CAS/Undo finishes.
+  const preservedHost=await page.evaluate(()=>{
+   const panel=document.getElementById('accountPanel');
+   const host=document.createElement('span');
+   host.className='ui-content-edit-host';
+   host.textContent='Uncommitted profile copy';
+   panel.append(host);
+   const before=panel.querySelector('.account-password-details input');
+   window.PandoraAccountUI.refresh();
+   const kept=host.isConnected&&
+    before===panel.querySelector('.account-password-details input');
+   host.remove();
+   return kept;
+  });
+  assert.equal(preservedHost,true,'RU/EN must defer a running D1 inline editor');
+  await page.waitForFunction(()=>!document.querySelector(
+   '#accountPanel .ui-content-edit-host'));
+  assert.equal(await pendingChange.nth(1).inputValue(),'An example new password 2026');
   const verifiedMe=page.waitForResponse(response=>
    response.url().endsWith('/api/account/me'));
   // Closing the popover while /me is still in flight must not discard the
@@ -228,8 +287,7 @@ export async function runAccountSmoke(browser,base){
   assert.equal(await page.locator('.account-password-details').getAttribute('open'),null);
   assert.equal(await page.locator('.account-password-details input').first().isVisible(),false);
   await page.locator('.account-password-toggle').click();
-  // A queued click or Enter on an old form must not submit passwords after
-  // RU/EN has replaced the DOM. Test only with fake local API credentials.
+  // RU/EN retains the live form, but genuinely detached forms must be inert.
   const retiredForm=await page.locator('.account-password-details form').elementHandle();
   const retiredButton=await page.locator('.account-password-details button.account-action.primary').elementHandle();
   const retiredInputs=page.locator('.account-password-details input');
@@ -240,17 +298,30 @@ export async function runAccountSmoke(browser,base){
   await page.locator('#locale [data-locale="ru"]').click();
   await page.locator('#profileTrigger').click();
   await page.locator('#accountPanel').waitFor({state:'visible'});
+  assert.equal(await retiredForm.evaluate(form=>form.isConnected),true,
+   'The password form stays mounted through RU/EN updates');
+  assert.equal(await retiredInputs.nth(1).inputValue(),'Unused old password 2026!');
+  // This deliberate non-locale remount retires old listeners; late synthetic
+  // click/submit must not send fake credentials to the mocked account API.
+  await page.locator('#accountPanel').evaluate(panel=>panel.replaceChildren());
+  await page.locator('#profileTrigger').click();
+  await page.locator('#profileTrigger').click();
+  await page.locator('#accountPanel').waitFor({state:'visible'});
+  assert.equal(await retiredForm.evaluate(form=>form.isConnected),false);
   const callsBeforeRetired=calls.filter(c=>c.action==='password').length;
   await retiredButton.evaluate(button=>button.click());
   await retiredForm.evaluate(form=>form.dispatchEvent(
    new Event('submit',{bubbles:true,cancelable:true})));
   await page.waitForTimeout(100);
   assert.equal(calls.filter(c=>c.action==='password').length,callsBeforeRetired,
-   'Removed password controls must not submit after a locale remount');
+   'Disconnected password controls must not submit after an actual remount');
   assert.equal(await page.locator('#accountPanel .account-feedback').innerText(),'',
-   'Removed form events must not overwrite the visible account feedback');
+   'Detached form events must not overwrite the visible feedback');
   await retiredButton.dispose();
   await retiredForm.dispose();
+  // A deliberate redraw closes <details>; the normal RU/EN patch doesn't.
+  // Reopen it before exercising the live form after the detached-form test.
+  await page.locator('.account-password-toggle').click();
   const change=page.locator('#accountPanel .account-form input');
   await change.nth(0).fill('An unusually long phrase for my builds');
   await change.nth(1).fill('A new long and secure passphrase 2026!');
@@ -266,8 +337,8 @@ export async function runAccountSmoke(browser,base){
   await page.waitForFunction(()=>document.querySelector('.account-feedback')?.textContent.includes('Пароль обновлён'));
   assert.equal(calls.filter(c=>c.action==='password').length,1);
   assert.equal(await page.locator('.account-password-details').getAttribute('open'),null);
-  // The pending change finishes after a RU -> EN locale rerender, which
-  // creates new password inputs. Its success must scrub the LIVE form.
+  // The pending change survives an in-place RU -> EN language update.
+  // Its success must clear the SAME still-mounted password controls.
   holdNextPassword=true;
   const localePasswordSent=new Promise(resolve=>{notifyHeldPassword=resolve});
   await page.locator('.account-password-toggle').click();
@@ -285,7 +356,7 @@ export async function runAccountSmoke(browser,base){
   assert.equal(await remounted.nth(1).inputValue(),'After account language change 2026!');
   const inFlightButton=page.locator('.account-password-details button.account-action.primary');
   assert.equal(await inFlightButton.isDisabled(),true,
-   'A remounted form cannot launch a second in-flight password change');
+   'An in-place localized form cannot launch a second password change');
   const localePasswordResponse=page.waitForResponse(response=>
    response.url().endsWith('/api/account/password'));
   releaseHeldPassword();
@@ -293,7 +364,7 @@ export async function runAccountSmoke(browser,base){
   await page.waitForFunction(()=>document.querySelector('.account-feedback')
    ?.textContent.includes('Password updated.'));
   assert.equal(await page.locator('.account-password-details').getAttribute('open'),null,
-   'Success must close the current remounted password form');
+   'Success must close the current live password form');
   assert.deepEqual(await remounted.evaluateAll(inputs=>inputs.map(x=>x.value)),['','',''],
    'Current password inputs must be cleared after the delayed success');
   assert.equal(await inFlightButton.isDisabled(),false);
