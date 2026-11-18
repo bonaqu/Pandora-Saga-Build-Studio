@@ -5,12 +5,16 @@ import {runInNewContext} from 'node:vm';
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const source=read('pandora-studio-update-manager.js');
+const localeSource=read('pandora-studio-ui-locale.js');
 function boot(local,remote,href='https://bonaqu.github.io/Pandora-Saga-Build-Studio/',locale='ru'){
  let banner=null,check=null,normalized=null,navigated=null,saved=0,languageChanged=null;
  let currentRemote=remote,holdResponses=false,saveAllowed=true,lastEventCancelable=null;
  let guard=null,accountPanelOpen=false,heroBookOpen=false,onlineRecoveryOpen=false,
   ownerMode=false,inlineEditing=false,overlayVisible=false,now=Date.now();
  const intervals=[];
+ const localeContext={};localeContext.window=localeContext;
+ runInNewContext(localeSource,localeContext);
+ const uiLocale=localeContext.PandoraUILocale;
  class Clock extends Date{static now(){return now}}
  const heldRequests=[],heldBodies=[];
  let holdBodies=false,requestCount=0;
@@ -23,7 +27,10 @@ function boot(local,remote,href='https://bonaqu.github.io/Pandora-Saga-Build-Stu
    selector.includes('.inline-owner-editor')&&inlineEditing)?{}:null,
   addEventListener(){},dispatchEvent(event){saved++;lastEventCancelable=event.cancelable;return saveAllowed},getElementById(id){return id==='studio-update-banner'&&!banner?.removed?banner:null},
   createElement:tag=>({
-   tag,children:[],listeners:{},setAttribute(){},
+   tag,children:[],listeners:{},attrs:{},
+   setAttribute(key,value){this.attrs[key]=String(value)},
+   getAttribute(key){return this.attrs[key]??null},
+   removeAttribute(key){delete this.attrs[key]},
    addEventListener(name,fn){this.listeners[name]=fn},
    append(...items){this.children.push(...items)},
    remove(){this.removed=true}
@@ -35,7 +42,7 @@ function boot(local,remote,href='https://bonaqu.github.io/Pandora-Saga-Build-Stu
  const history={state:null,replaceState:(_state,_title,url)=>{normalized=url}};
  runInNewContext(source,{
   window:{PandoraAccountUI:{updateGuard:()=>guard},
-   PandoraStudioAdminActive:()=>ownerMode},document,location,history,URL,AbortController,Date:Clock,
+   PandoraStudioAdminActive:()=>ownerMode,PandoraUILocale:uiLocale},document,location,history,URL,AbortController,Date:Clock,
   Event:class Event{constructor(_type,options){this.cancelable=!!options?.cancelable}},console,
   MutationObserver:class MutationObserver {
    constructor(fn){languageChanged=fn}observe(){}
@@ -53,6 +60,7 @@ function boot(local,remote,href='https://bonaqu.github.io/Pandora-Saga-Build-Stu
  return{
   check:()=>check(),
   setRemote:release=>{currentRemote=release},
+  setOverrides:values=>uiLocale.setOverrides(values),
   setSaveAllowed:value=>{saveAllowed=value},
   setAccountGuard:value=>{guard=value},
   setAccountPanelOpen:value=>{accountPanelOpen=value},
@@ -105,6 +113,51 @@ test('release manifest and rendered HTML have the same version',()=>{
  assert.equal(html.match(/name="ps-studio-release" content="([^"]+)"/)?.[1],manifest.release);
  assert.equal(metadata.pandoraRelease,manifest.release);
  assert.equal(html.match(/pandora-studio-theme\.css\?v=([^"]+)"/)?.[1],manifest.release);
+});
+
+test('site update notice uses separate RU/EN D1 copy and security guards stay fixed',async()=>{
+ const page=boot('2026.11.18.889','2026.11.18.890');
+ page.setOverrides({
+  'guideedit.book.ui.label.site-update-notice':JSON.stringify({
+   ru:'Новое обновление из D1 без потери билда',
+   en:'Cloud-authored update without losing your build'
+  }),
+  'guideedit.book.ui.label.site-update-apply':JSON.stringify({
+   ru:'Обновить сейчас',en:'Apply update'
+  })
+ });
+ await page.check();
+ const [message,apply,later]=page.banner.children;
+ assert.equal(message.textContent,'Новое обновление из D1 без потери билда');
+ assert.equal(message.getAttribute('data-owner-copy-key'),'siteUpdateNotice');
+ assert.equal(apply.textContent,'Обновить сейчас');
+ assert.equal(apply.getAttribute('data-owner-copy-key'),'siteUpdateApply');
+ assert.equal(later.getAttribute('data-owner-copy-key'),'siteUpdateLater');
+ page.setLocale('en');
+ assert.equal(message.textContent,'Cloud-authored update without losing your build');
+ assert.equal(apply.textContent,'Apply update');
+ assert.equal(later.textContent,'Later');
+ page.setAccountGuard('recovery');
+ apply.listeners.click();
+ assert.equal(page.navigated,null);
+ assert.match(message.textContent,/recovery code/);
+ assert.equal(message.getAttribute('data-owner-copy-key'),null,
+  'A security-sensitive recovery warning is never an editorial D1 caption');
+});
+
+test('owner pencils inserted beside captions cannot reorder real update actions',async()=>{
+ const page=boot('2026.11.18.889','2026.11.18.890');
+ await page.check();
+ const banner=page.banner,[message,apply,later]=banner.children;
+ // Real owner mode inserts independent buttons between these three nodes.
+ banner.children.splice(1,0,{textContent:'✎'},apply,{textContent:'✎'});
+ // The original apply and later buttons must still be refreshed by reference.
+ page.setLocale('en');
+ assert.equal(message.textContent,'A new version is available. Your current build and page position will be saved before updating.');
+ assert.equal(apply.textContent,'Update');
+ assert.equal(later.textContent,'Later');
+ apply.listeners.click();
+ assert.match(page.navigated,/ps-revision=2026[.]11[.]18[.]890/);
 });
 
 test('Later dismisses the current release but not a newer publication',async()=>{
