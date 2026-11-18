@@ -7,8 +7,8 @@ const app=read('pandora-studio-app.js'),html=read('index.html');
 const prefix=app.slice(app.indexOf('const $=id=>'),app.indexOf('const VIEW_KEY='));
 function boot(lang){
  const overlay={hidden:true,dataset:{},classList:{remove(){},add(){},contains(){return false}},
-  setAttribute(name,value){this[name]=value}};
- const status={textContent:''},document={getElementById:id=>
+  setAttribute(name,value){this[name]=value},focus(){},contains(){return false}};
+ const status={textContent:''},document={body:{children:[]},getElementById:id=>
   id==='startupOverlay'?overlay:id==='startupStatus'?status:null};
  return Function('document','console','lang','scheduleOnlineRetry',prefix+
   'return {startupMessage,startupError,'+
