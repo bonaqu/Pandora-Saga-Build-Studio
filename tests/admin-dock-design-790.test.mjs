@@ -50,7 +50,7 @@ test('new visual design keeps meaningful responsive actions, visible editor pens
 test('manual edit history and all admin dialogs use the improved controls',()=>{
  assert.match(app,/class:'button-action owner-manager-search-clear'/);
  assert.match(app,/clearSearch\.disabled=!q/);
- assert.match(app,/search\.value='';draw\(\);search\.focus/);
+ assert.match(app,/search\.value='';globalThis\.PandoraNonCredentialGuard\?\.sync\(search\);\s*draw\(\);search\.focus/);
  assert.match(app,/class:'owner-manager-search-row'/);
  assert.match(editor,/\.modal:has\(\.owner-manager\)/);
  assert.match(editor,/\.owner-manager-search-row\{/);
