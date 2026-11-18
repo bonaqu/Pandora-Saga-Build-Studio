@@ -8332,6 +8332,7 @@ function updateAdminHint(){
  if(typeof bindAccountCopyEditors==='function'){
   bindAccountCopyEditors(document.getElementById('accountPanel'));
   if(activeTab==='builds')bindAccountCopyEditors(document.getElementById('detailContent'));
+  bindAccountCopyEditors(document.getElementById('studio-update-banner'));
  }
  refreshOwnerUI();
 }
@@ -8513,11 +8514,15 @@ function bindAccountCopyEditors(panel){
     onCommitted:next=>{
      node.textContent=editLang===lang?next:locale.text(key,lang);
      if(panel.id==='studioToast')refreshOpenAuthoredToast();
+     if(panel.id==='studio-update-banner')
+      window.PandoraStudioUpdateBanner?.refresh?.();
     },
     onFinished:()=>{
      node.hidden=false;host.remove();if(pencil)pencil.hidden=false;
      if(node.classList.contains('cloud-library-status'))
       syncCloudStatusNode(node,cloudLibraryStatus);
+     if(panel.id==='studio-update-banner')
+      window.PandoraStudioUpdateBanner?.refresh?.();
     }
    });
   };
@@ -8542,6 +8547,12 @@ function bindAccountCopyEditors(panel){
   }
  }
 }
+
+// Release notices are mounted asynchronously by the version checker, after
+// the original editor pass. This narrow bridge only binds vetted D1 captions;
+// it exposes no owner tokens or privileged mutations to the updater.
+window.PandoraStudioBindUpdateCopyEditors = () =>
+ bindAccountCopyEditors(document.getElementById('studio-update-banner'));
 
 /* Authenticated on-page editing; all write actions are checked again by the Worker. */
 const ownerEdits=[];
@@ -9074,6 +9085,10 @@ function refreshVisibleUICopy(recordKey){
  const locale=window.PandoraUILocale;
  locale.setOverrides(override);
  locale.apply(lang);
+ if(recordKey.startsWith('guideedit.book.ui.label.site-update-')){
+  window.PandoraStudioUpdateBanner?.refresh?.();
+  return; // No renderer or game-state mutation for release-banner copy.
+ }
  const isLibrary=recordKey.startsWith('guideedit.book.ui.label.library-');
  const isStatus=recordKey.startsWith('guideedit.book.ui.label.status-');
  const isBook=recordKey.startsWith('guideedit.book.ui.label.book-');
@@ -10400,6 +10415,7 @@ function renderWorkbenchHintEditors(){
 function applyGameLocale({redraw=true,persistReconciled=true}={}){
  window.PandoraUILocale.setOverrides(override);
  window.PandoraUILocale.apply(lang);
+ window.PandoraStudioUpdateBanner?.refresh?.();
  refreshOpenAuthoredToast();
  refreshWorkbenchHints();
  renderWorkbenchHintEditors();

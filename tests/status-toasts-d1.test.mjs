@@ -38,7 +38,10 @@ test('editing and locale switching never replace toast editor or lose D1 languag
  const css=read('pandora-studio-owner-inline-ui.css');
  const browser=read('tests/browser-ui-content-inline.mjs');
  assert.match(app,/function refreshOpenAuthoredToast\(\)/);
- assert.match(app,/window\.PandoraUILocale\.apply\(lang\);\s*refreshOpenAuthoredToast\(\);/);
+ // Locale refresh now updates the late-mounted release notice before the
+ // existing toast, without replacing either active editor's draft.
+ assert.match(app,/window\.PandoraUILocale\.apply\(lang\);\s*window\.PandoraStudioUpdateBanner\?\.refresh\?\.\(\);\s*refreshOpenAuthoredToast\(\);/);
+ assert.match(app,/window\.PandoraStudioBindUpdateCopyEditors = \(\) =>/);
  assert.match(app,/textNode\.nextElementSibling\?\.classList\?\.contains\('ui-content-edit-host'\)/);
  assert.match(app,/const editLang=lang,before=locale\.text\(key,editLang\)/);
  assert.match(app,/saveGuidePatch\('book\.'\+id,\{\[editLang\]:next\}\)/);

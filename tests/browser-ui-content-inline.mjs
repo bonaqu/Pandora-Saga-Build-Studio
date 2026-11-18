@@ -13,9 +13,14 @@ export async function runUIContentInlineSmoke(browser,base){
   }));
  });
  const values={},writes=[],errors=[],nextConflicts=new Set(),slowWrites=new Set();
- let slowLibraryNext=false;
+ let slowLibraryNext=false,offeredRelease=null;
  await context.route('**/*',async route=>{
   const req=route.request(),url=req.url(),method=req.method();
+  // Offer a synthetic newer release only for this mock browser context.
+  // Never touch GitHub Pages, real Worker or live D1.
+  if(offeredRelease&&url.startsWith(base+'/site-version.json?check='))
+   return route.fulfill({status:200,contentType:'application/json',
+    body:JSON.stringify({release:offeredRelease})});
   if(url.startsWith(base+'/'))return route.continue();
   if(!url.startsWith(api+'/'))return route.abort();
   const headers={'access-control-allow-origin':'*',
@@ -67,12 +72,60 @@ export async function runUIContentInlineSmoke(browser,base){
   await page.locator('#nav [data-tab="wiki"]').waitFor({state:'visible'});
   assert.equal(await page.locator('#nav .ui-content-pencil').count(),0,
    'Guest does not see editing controls');
+  const published=await page.locator('meta[name="ps-studio-release"]')
+   .getAttribute('content');
+  offeredRelease=published.replace(/[0-9]+$/,last=>String(Number(last)+1));
+  await page.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));
+  await page.locator('#studio-update-banner').waitFor({state:'visible',timeout:15000});
+  assert.equal(await page.locator('#studio-update-banner .account-copy-pencil').count(),0,
+   'Only the authenticated owner may edit the update notice');
   await page.keyboard.press('Control+Alt+Shift+P');
   await page.getByRole('dialog',{name:'Служебный вход'}).waitFor({state:'visible'});
   await page.locator('input[placeholder="Пароль администратора"]')
    .fill('Correct admin password!');
   await page.locator('.modal').getByRole('button',{name:'Войти',exact:true}).click();
   await page.locator('#ownerDock').waitFor({state:'visible',timeout:15000});
+  // The update manager mounts after the main app and creates its banner
+  // asynchronously. Its authorial text must join the SAME D1/CAS editor.
+  const updateBanner=page.locator('#studio-update-banner');
+  const updateNotice=updateBanner.locator('[data-update-role="message"]');
+  const updatePencil=updateBanner.locator('[data-owner-copy-pencil="siteUpdateNotice"]');
+  await updatePencil.waitFor({state:'visible',timeout:12000});
+  await updatePencil.click();
+  const updateInput=updateBanner.locator('.account-copy-edit-host [contenteditable]');
+  await updateInput.fill('Новая версия сохранит текущего героя');
+  await updateInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#studio-update-banner [data-update-role="message"]')?.textContent===
+   'Новая версия сохранит текущего героя',null,{timeout:15000});
+  assert.equal(JSON.parse(values['guideedit.book.ui.label.site-update-notice']).ru,
+   'Новая версия сохранит текущего героя');
+
+  // A competing D1 owner edit must keep the draft and present an error,
+  // not silently overwrite remote content or reload the current hero.
+  nextConflicts.add('guideedit.book.ui.label.site-update-notice');
+  await updatePencil.click();
+  const conflictInput=updateBanner.locator('.account-copy-edit-host [contenteditable]');
+  await conflictInput.fill('Черновик обновления после конфликта');
+  await conflictInput.press('Tab');
+  await updateBanner.locator('.ui-content-inline-error').waitFor({
+   state:'visible',timeout:15000});
+  assert.equal(await conflictInput.textContent(),
+   'Черновик обновления после конфликта');
+  assert.equal(JSON.parse(values['guideedit.book.ui.label.site-update-notice']).ru,
+   'Новая версия сохранит текущего героя');
+  await conflictInput.press('Escape');
+  assert.equal(await updateNotice.textContent(),
+   'Новая версия сохранит текущего героя');
+
+  // Button pencils add siblings; stable action references must survive.
+  await updateBanner.locator('[data-update-role="apply"]').click();
+  assert.match(await updateNotice.textContent(),/выйди из режима владельца/i);
+  assert.equal(await updateBanner.locator(
+   '[data-owner-copy-pencil="siteUpdateNotice"]').count(),0,
+   'The notice edit affordance must be removed when a different warning is shown');
+  await updateBanner.locator('[data-update-role="later"]').click();
+  assert.equal(await updateBanner.count(),0);
   // A real pencil must exist beside fixed headers on touchscreens. Renaming
   // the Hero Appearance heading is editorial copy, not a character change.
   const appearancePencil=page.locator('.stage .panel-heading [data-ui-content-for="appearance"]');
