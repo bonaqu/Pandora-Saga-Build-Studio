@@ -9768,9 +9768,9 @@ function editWikiValue(node,initial,{type='text',options=[],min=0,max=100000,int
  if(type==='number')control.select();
  else if(type==='text')window.getSelection()?.selectAllChildren(control);
 }
-// A queued write must merge RU/EN/hints against the LAST accepted local
-// snapshot, not the value that happened to exist when the editor blurred.
-// This applies to every bilingual guide key, not only Wiki chapter labels.
+// Repeated blur saves of different labels must not race and overwrite each
+// other: construct each merged RU/EN/hint D1 patch only after the previous
+// write to the SAME semantic key finishes. Other records remain independent.
 const ownerGuideWriteQueue=new Map();
 let ownerGuidePendingWrites=0;
 async function saveGuidePatch(key,fields){
