@@ -69,7 +69,11 @@ export async function runLiveD1Retry882Smoke(browser,base){
  const page=await ctx.newPage();
  page.on('pageerror',error=>errors.push(error.message));
  page.on('load',()=>{loads++});
- const ready=()=>page.locator('#startupOverlay').waitFor({state:'hidden',timeout:50000});
+ // The 420-ms close animation can become visually hidden before native
+ // inert is released. A ready editor requires the DOM's actual hidden flag.
+ const ready=()=>page.waitForFunction(()=>
+  document.querySelector('#startupOverlay')?.hidden===true,
+  null,{timeout:50000});
  try{
   await page.goto(publicOrigin+'/',{waitUntil:'domcontentloaded'});
   for(let i=0;i<4;i++)await page.reload({waitUntil:'domcontentloaded'});

@@ -316,6 +316,29 @@ body>#ownerDock{
 #ownerDock .owner-dock-group-description{
  color:#b9a78d;font-size:10px;line-height:1.4
 }
+/* Inline D1 editors for the three short group titles and descriptions.
+   The extra pencil never sits inside a real action button. */
+#ownerDock .owner-dock-group-copy-wrap{
+ display:inline-flex;align-items:baseline;gap:4px;min-width:0;max-width:100%
+}
+#ownerDock .owner-dock-group-copy-wrap>[data-owner-group-copy]{
+ min-width:0;overflow-wrap:anywhere
+}
+#ownerDock .owner-dock-actions button.owner-dock-group-pencil{
+ display:inline-flex;flex:0 0 16px;align-items:center;justify-content:center;
+ box-sizing:border-box;width:16px;min-width:16px;height:16px;min-height:16px;
+ padding:0;margin:0;border:1px solid #655039;border-radius:4px;
+ background:transparent;color:#b19a77;font-size:10px;line-height:1;
+ opacity:.7;vertical-align:middle
+}
+#ownerDock .owner-dock-actions button.owner-dock-group-pencil:hover,
+#ownerDock .owner-dock-actions button.owner-dock-group-pencil:focus-visible{
+ background:#4e3522;border-color:#d3a876;color:#ffe5b9;opacity:1
+}
+#ownerDock .owner-dock-group-copy-wrap .wiki-inline-input{
+ display:block;box-sizing:border-box;min-width:0;max-width:100%;
+ overflow-wrap:anywhere;white-space:pre-wrap
+}
 #ownerDock .owner-dock-action-grid{
  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
  gap:8px;min-width:0

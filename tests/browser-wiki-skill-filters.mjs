@@ -149,6 +149,8 @@ export async function runWikiIconManifestFallbackSmoke(browser,base){
    /\d+ навыков · \d+ предметов · \d+ душ/.test(
     document.querySelector('#catalogStatus')?.textContent||''),
    null,{timeout:30000});
+  // The catalog counter can update before native D1 modal unlocks the app.
+  await page.locator('#startupOverlay').waitFor({state:'hidden',timeout:30000});
   await page.locator('#nav [data-tab="wiki"]').click();
   await page.locator('[data-wiki-chapter="skill"]').click();
   const filter=page.locator('.wiki-skill-type');
