@@ -1653,6 +1653,31 @@ export async function runAdminEntrySmoke(browser,base){
   for(let i=0;i<5;i++)await other.locator('.brand').click();
   await other.getByRole('dialog',{name:'Служебный вход'}).waitFor({state:'visible'});
   await other.close();
+  // Regression 0.898: owner Finish ends editing while retaining credentials.
+  // Reproduce the broken update click with a mocked future release.
+  if(await page.locator('#stageAttributes').isVisible())
+   await page.locator('#stageAttributes .stage-book-close').click();
+  offerNewSiteVersion=true;
+  await page.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));
+  const updateBanner=page.locator('#studio-update-banner');
+  await updateBanner.waitFor({state:'visible',timeout:10000});
+  const updateButton=updateBanner.locator('[data-update-role="apply"]');
+  await updateButton.click();
+  assert.match(await updateBanner.locator('[data-update-role="message"]').innerText(),
+   /выйди из режима владельца/i,'Active owner cannot refresh during editing');
+  const ownerLauncher=page.locator('#ownerDock [data-owner-collapse]');
+  if(await ownerLauncher.getAttribute('aria-expanded')!=='true')await ownerLauncher.click();
+  await page.locator('#ownerDock .owner-dock-finish').click();
+  await page.locator('#ownerDock').waitFor({state:'detached',timeout:12000});
+  assert.equal(await page.evaluate(()=>window.PandoraStudioAdminActive?.()),false,
+   'Finish ends owner editing even with retained authorization');
+  assert.match(await updateBanner.locator('[data-update-role="message"]').innerText(),
+   /Новая версия опубликована/i,
+   'Owner Finish removes stale update blocker without page reload');
+  const refreshRequest=page.waitForRequest(request=>request.isNavigationRequest()&&
+   new URL(request.url()).searchParams.get('ps-revision')==='2026.11.18.899');
+  await updateButton.click();
+  await refreshRequest;
   console.log('Chromium hidden admin entry passed: no public button, keyboard and five-logo gestures, independent authentication');
  }finally{await context.close()}
 }
@@ -1846,29 +1871,6 @@ export async function runInlineMilestonesSmoke(browser,base){
   await page.locator('.path-skill-card').first().click();
   await page.locator('#pathSkillDetails').waitFor({state:'visible'});
   assert.match(await page.locator('#pathSkillDetails').innerText(),/Character level/);
-  // Regression 0.898: owner Finish ends editing while retaining credentials.
-  // Reproduce the broken update click with a mocked future release.
-  offerNewSiteVersion=true;
-  await page.evaluate(()=>document.dispatchEvent(new Event('visibilitychange')));
-  const updateBanner=page.locator('#studio-update-banner');
-  await updateBanner.waitFor({state:'visible',timeout:10000});
-  const updateButton=updateBanner.locator('[data-update-role="apply"]');
-  await updateButton.click();
-  assert.match(await updateBanner.locator('[data-update-role="message"]').innerText(),
-   /leave owner mode/i,'Active owner cannot refresh during editing');
-  const ownerLauncher=page.locator('#ownerDock [data-owner-collapse]');
-  if(await ownerLauncher.getAttribute('aria-expanded')!=='true')await ownerLauncher.click();
-  await page.locator('#ownerDock .owner-dock-finish').click();
-  await page.locator('#ownerDock').waitFor({state:'detached',timeout:12000});
-  assert.equal(await page.evaluate(()=>window.PandoraStudioAdminActive?.()),false,
-   'Finish ends owner editing even with retained authorization');
-  assert.match(await updateBanner.locator('[data-update-role="message"]').innerText(),
-   /new version is available/i,
-   'Owner Finish removes stale update blocker without page reload');
-  const refreshRequest=page.waitForRequest(request=>request.isNavigationRequest()&&
-   new URL(request.url()).searchParams.get('ps-revision')==='2026.11.18.899');
-  await updateButton.click();
-  await refreshRequest;
   assert.deepEqual(errors,[]);
   console.log('Chromium skill track passed: thin notches share one bar, slider takes input, pointer and keyboard tooltips work');
  }finally{await context.close()}
