@@ -55,3 +55,12 @@ To recheck metadata: `GET /repos/bonaqu/Pandora-Saga-Build-Studio` and `GET /rep
 - A GitHub merge queue could reduce reruns in a highly parallel project, but it has different event/plan requirements and requires explicit owner review and `merge_group` checks. **Do not enable it automatically.**
 - Avoid promising a speedup in minutes without measured end-to-end before/after. The confirmed CI speed improvement in this change is removing invalidly skipped required statuses (unblock docs-only PRs) and faster detection of version inconsistencies.
 - Existing case study: [development-process timing investigation, 2026-11-11](DEVELOPMENT_PROCESS_TIME_OPTIMIZATION_2026-11-11.md).
+
+
+## 0.884.0 — проверяемое сокращение тестовых модулей и DOM-шумов
+
+До очистки: 623 `tests/*.test.mjs`, 80 отдельных `tests/browser-*.mjs`. Избыточные короткие source-only контракты объединены в пять `tests/contracts-*-884.test.mjs`: 47 старых `.test.mjs` entrypoints удалены, новых пять, итог **581 Node-модуль**. **Оригинальные утверждения и тестовые случаи сохранены** и помещены в изолированные лексические блоки с комментарием `Original: tests/<old-name>.test.mjs` для поиска истории. Не путать сокращение процессов с удалением проверки — весь `npm test` и Chromium по-прежнему обязательны для каждой публикации. Скрипт `test:quick` указывает на новый пакет героя вместо удалённого `tests/os-calculator.test.mjs`.
+
+При новом регрессионном исправлении сперва добавляйте тест в существующий тематический модуль; не создавайте новый файл ради одного `assert.match`. Отдельные файлы оправданы только сложным собственным test fixture, изоляцией опасных побочных эффектов, большой функциональной моделью или реальным браузерным E2E. После консолидации укажите число запусков и длительность `Run full Node test suite` по GitHub Actions; это прежде всего оптимизация инфраструктуры, не доказанное заранее ускорение.
+
+`refreshOwnerUI()` теперь использует `ownerDockPatchText/Attr/Data` для неизменных надписей и подсказок: не создавайте повторные `textContent` записи на каждом обновлении статуса CAS. Сохраняйте живые `contenteditable`, Undo, RU/EN и ограничения доступа.
