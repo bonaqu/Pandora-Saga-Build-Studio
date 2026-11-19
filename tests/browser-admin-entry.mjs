@@ -1376,7 +1376,7 @@ export async function runAdminEntrySmoke(browser,base){
   await districtForm.locator('[data-owner-interface-key="npcCancel"]').click();
   assert.equal(await district.locator('.wiki-map-create-npc-form').count(),0,
    'Cancel removes the form without an owner D1 write');
-  assert.equal([...townOverrides.keys()].some(key=>/^wikiedit\\.npc\\.owner-npc-/.test(key)),
+  assert.equal([...townOverrides.keys()].some(key=>/^wikiedit\.npc\.owner-npc-/.test(key)),
    false);
   await district.locator('.wiki-map-create-npc').click();
   districtForm=district.locator('.wiki-map-create-npc-form');
@@ -1388,13 +1388,13 @@ export async function runAdminEntrySmoke(browser,base){
    .fill('Test fixture');
   const districtPost=page.waitForResponse(response=>{
    if(!response.url().endsWith('/api/admin/override'))return false;
-   try{return /^wikiedit\\.npc\\.owner-npc-/.test(response.request().postDataJSON().key)}
+   try{return /^wikiedit\.npc\.owner-npc-/.test(response.request().postDataJSON().key)}
    catch{return false}
   },{timeout:20000});
   await districtForm.locator('[data-owner-interface-key="npcSave"]').click();
   await districtPost;
   const districtKeys=[...townOverrides.keys()].filter(key=>
-   /^wikiedit\\.npc\\.owner-npc-/.test(key));
+   /^wikiedit\.npc\.owner-npc-/.test(key));
   assert.equal(districtKeys.length,1);
   const districtId=districtKeys[0].slice('wikiedit.npc.'.length);
   assert.deepEqual(JSON.parse(townOverrides.get(districtKeys[0])).maps,['astir-kingdom']);
