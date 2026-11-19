@@ -89,7 +89,7 @@ test('hidden tabs skip version traffic and abort late manifest banners',async()=
   }
  };
  runInNewContext(readFileSync(new URL('../pandora-studio-update-manager.js',import.meta.url),'utf8'),runtime);
- assert.match(label.textContent,/0\\.918\\.0/);
+ assert.ok(label.textContent.includes('0.918.0'));
  timeouts.find(t=>t.ms===3000).callback();
  await Promise.resolve();
  assert.equal(requests,0,'Initial version check does not run in a hidden tab');
