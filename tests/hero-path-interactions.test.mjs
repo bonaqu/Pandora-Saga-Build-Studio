@@ -788,3 +788,55 @@ test('Skill Path stays compact without a redundant future-mastery shortcut',()=>
  assert.equal(walk(gallery).filter(x=>x.className?.includes('path-skill-card')).length,1);
  assert.equal(api.state.level,45);
 });
+
+test('Path help and skill-navigation copy bind bilingual D1 fields without touching source game values',()=>{
+ const {target,api,state}=fixture('WARRIOR','melee','slash');
+ const bound=[];
+ api.copyLabel=(key,ru,en)=>api.lang==='en'?en:ru;
+ api.bindCopy=(node,key,ru,en,attribute='text',suffix='',prefix='')=>{
+  bound.push({key,attribute,suffix,prefix,node});
+  const value=prefix+(api.lang==='en'?en:ru)+suffix;
+  if(attribute==='text')node.textContent=value;
+  else node.setAttribute(attribute,value);
+ };
+ root.PandoraHeroPath.viewGrowth(target,api);
+ for(const key of ['branchPointHelp','greenMasteryHelp',
+  'branchTrackAria','innateBaselineAria'])
+  assert.ok(bound.some(entry=>entry.key===key),'Growth copy '+key+' is bound');
+ api.selectedGroup='special';api.expandedBranch='';
+ root.PandoraHeroPath.viewGrowth(target,api);
+ assert.ok(bound.some(entry=>entry.key==='racialUnavailableAria'),
+  'Disabled Racial branch accessibility copy is bound');
+ const pointHelp=bound.filter(entry=>entry.key==='branchPointHelp');
+ assert.deepEqual(pointHelp.map(row=>row.attribute),['data-help','aria-label']);
+ assert.ok(pointHelp.some(row=>row.prefix.includes('Вложено')),
+  'The edited help may not replace the fixed point-control label');
+ assert.ok(bound.filter(row=>row.key==='branchTrackAria')
+  .every(row=>row.suffix&&typeof row.suffix==='string'));
+ assert.deepEqual(state.points,{},'Label rendering does not allocate a point');
+
+ const source=[
+  {id:91001,name:'Original prerequisite',classes:{WARRIOR:1},
+   learnable:true,reqs:[]},
+  {id:91002,name:'Current skill',classes:{WARRIOR:1},
+   learnable:true,prereq:91001,rangeFromWeapon:true,reqs:[]},
+  {id:91003,name:'Original successor',classes:{WARRIOR:1},
+   learnable:true,prereq:91002,reqs:[]}
+ ];
+ const skillApi={...api,job:'WARRIOR',skillCatalog:source,catalogReady:true,
+  query:'',filter:'all',shown:24,selectedSkill:source[1],onInspect:()=>{}};
+ const gallery=new BrowserElement('root'),details=new BrowserElement('root');
+ root.PandoraHeroPath.viewSkills(gallery,details,skillApi);
+ for(const key of ['skillBrowseAria','skillWeaponRange','skillPreviousAria',
+  'skillLineageAria','skillNextAria','skillNextLink'])
+  assert.ok(bound.some(row=>row.key===key),'Skill copy '+key+' is bound');
+ const previous=bound.find(row=>row.key==='skillPreviousAria');
+ const next=bound.find(row=>row.key==='skillNextLink');
+ assert.equal(previous.suffix,' Original prerequisite');
+ assert.equal(next.suffix,' Original successor');
+ assert.equal(next.node.textContent,'Следующее → Original successor');
+ assert.equal(previous.node.textContent,'Original prerequisite');
+ assert.equal(source[0].name,'Original prerequisite');
+ assert.equal(source[2].name,'Original successor');
+ assert.deepEqual(state.points,{},'Edited UI copy must not change skill allocation');
+});

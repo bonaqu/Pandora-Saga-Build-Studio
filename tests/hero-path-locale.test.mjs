@@ -27,7 +27,9 @@ test('skill detail fields and workspace labels translate without rewriting game 
  const app=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
  assert.ok(source.includes("field('skillCharacterLevel','Уровень персонажа','Character level',skill.charLevel)"));
  assert.ok(source.includes("authored(api,'skillRequirementsHeading','Требования по веткам','Branch requirements'"));
- assert.ok(source.includes("stats.append(label,make('dd',{text:String(value)}))"));
+ assert.ok(source.includes("const dd=make('dd',{text:String(value)})"));
+  assert.ok(source.includes('stats.append(label,dd)'));
+  assert.ok(source.includes('if(valueCopy)bindPathCopy(api,dd,...valueCopy)'));
  assert.ok(source.includes("api.copyLabel?.(key,ru,en)||tr(api,ru,en)"));
  assert.ok(source.includes("const ru='Показать ещё',en='Show more',key='skillShowMore'"));
  assert.ok(source.includes("class:'path-more-count'"));

@@ -39,8 +39,10 @@ test('Path skill metadata labels are editable, numeric gameplay values are not',
   assert.equal(root.PandoraHonorGuide.validOverride('book.path.'+dashed,
    JSON.stringify({ru:'Подпись',en:'Caption'})),true,dashed);
  }
- assert.match(skills,/const field=\(key,ru,en,value\)=>/);
- assert.match(skills,/stats\.append\(label,make\('dd',\{text:String\(value\)\}\)\)/);
+ assert.match(skills,/const field=\(key,ru,en,value,valueCopy=null\)=>/);
+ assert.match(skills,/const dd=make\('dd',\{text:String\(value\)\}\)/);
+ assert.match(skills,/if\(valueCopy\)bindPathCopy\(api,dd,\.\.\.valueCopy\)/);
+ assert.match(skills,/stats\.append\(label,dd\)/);
  assert.match(skills,/api\.editLabel\(label,key,ru,en,\{onCommitted:sync\}\)/);
  assert.match(skills,/const before=skillIndex\.get\(String\(skill\.prereq\)\)/);
  assert.match(skills,/M\.branchPotential\(state,key,innate,caps\)/);

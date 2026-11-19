@@ -74,6 +74,18 @@ const authored=(api,key,ru,en,tag='p',cls='muted')=>{
  node.append(label,pencil);
  return node;
 };
+// Bind only author-written copy. Game levels and skill names are immutable
+// suffixes, never sent to the owner D1 string editor.
+const bindPathCopy=(api,node,key,ru,en,attribute='text',suffix='',prefix='')=>{
+ if(typeof api.bindCopy==='function')
+  api.bindCopy(node,key,ru,en,attribute,suffix,prefix);
+ else{
+  const value=prefix+(api.copyLabel?.(key,ru,en)||tr(api,ru,en))+suffix;
+  if(attribute==='text')node.textContent=value;
+  else node.setAttribute(attribute,value);
+ }
+ return node;
+};
 // Match the established Origin stat button behavior: one point per click,
 // continuous increments after holding 340 ms, repeat every 85 ms.
 // During a hold we update state in place; pointerup commits a single rerender.
@@ -388,6 +400,9 @@ function viewGrowth(target,api){
      class:'branch-row disabled-branch path-racial-unavailable',
      'data-path-branch':'race',
      'aria-label':tr(api,'Расовые навыки: не прокачиваются очками веток','Racial skills: no branch point allocation')});
+     bindPathCopy(api,race,'racialUnavailableAria',
+      'Расовые навыки: не прокачиваются очками веток',
+      'Racial skills: no branch point allocation','aria-label');
     const info=make('div');
     const ru='Расовые',en='Racial',key='racialBranch';
     const value=api.copyLabel?.(key,ru,en)||tr(api,ru,en);
@@ -437,6 +452,9 @@ function viewGrowth(target,api){
     const editor=make('div',{class:'inline-branch-editor'});
     const available=budget.total!==null&&api.allocationReady&&(cap>0||points>0);
     const track=make('div',{class:'inline-mastery-track path-integrated-track','aria-label':tr(api,'Единая полоса вложенных очков и освоенного мастерства ','Shared spent-points and trained-mastery bar: ')+api.branchName(key)});
+    bindPathCopy(api,track,'branchTrackAria',
+     'Единая полоса вложенных очков и освоенного мастерства',
+     'Shared spent-points and trained-mastery bar:','aria-label',' '+api.branchName(key));
     const visualMax=90; // fixed game-wide scale, never cap + budget
     const bed=make('div',{class:'inline-mastery-bed'}),gold=make('div',{class:'inline-mastery-fill'}),
           green=make('div',{class:'inline-mastery-green'}),
@@ -659,11 +677,14 @@ function viewGrowth(target,api){
      groupCount.textContent=groupSummary();paint();
      return M.branchMastery(state,key,innate,caps)!==before;
     };
-    const pointField=(name,help,field,mastery=false)=>{
+    const pointField=(name,helpKey,ruHelp,enHelp,field,mastery=false)=>{
      const group=make('div',{class:'path-point-group'+(mastery?' path-point-mastery':'')});
      field.id='path-'+key+(mastery?'-mastery':'-invested');
+     const help=api.copyLabel?.(helpKey,ruHelp,enHelp)||tr(api,ruHelp,enHelp);
      const title=make('label',{class:'path-point-name',for:field.id,text:name,
       tabindex:'0','data-help':help,'aria-label':name+'. '+help});
+     bindPathCopy(api,title,helpKey,ruHelp,enHelp,'data-help');
+     bindPathCopy(api,title,helpKey,ruHelp,enHelp,'aria-label','',name+'. ');
      const stepper=make('div',{class:'path-point-stepper'});
      const minus=make('button',{type:'button',class:'path-point-step path-point-decrement',
       text:'−',disabled:field.disabled,
@@ -684,18 +705,23 @@ function viewGrowth(target,api){
     };
     controls.append(
      pointField(root.PandoraUILocale?.text('exactPoints',api.lang)||tr(api,'Вложено','Spent'),
-      tr(api,'Очки умений, распределяемые при развитии персонажа.','Skill points allocated as the character develops.'),numeric),
+      'branchPointHelp','Очки умений, распределяемые при развитии персонажа.',
+      'Skill points allocated as the character develops.',numeric),
      pointField(root.PandoraUILocale?.text('greenMastery',api.lang)||tr(api,'Мастерство','Mastery'),
-      tr(api,'Растёт при использовании умений этой ветки, а также соответствующих типов атак или оружия.','Increases when using this branch’s skills or its corresponding attack or weapon types.'),input,true)
+      'greenMasteryHelp','Растёт при использовании умений этой ветки, а также соответствующих типов атак или оружия.',
+      'Increases when using this branch’s skills or its corresponding attack or weapon types.',input,true)
     );
+    const baseline=base>0?make('span',{class:'path-innate-baseline',
+     text:tr(api,'Начально (оч.): ','Initially (pts): ')+base,
+     'aria-label':tr(api,'Начальная прокачка класса: ','Starting branch points: ')+base}):null;
+    if(baseline)bindPathCopy(api,baseline,'innateBaselineAria',
+     'Начальная прокачка класса:','Starting branch points:','aria-label',' '+String(base));
     const legend=make('div',{class:'path-track-legend','aria-hidden':'true'},[
      make('span',{text:'0'}),
      make('span',{class:'path-track-limit'},[
       make('span',{class:'path-track-limit-value',text:api.lang==='en'?
        'Limit (pts): '+cap:'Лимит (оч.): '+cap}),
-      ...(base>0?[make('span',{class:'path-innate-baseline',
-       text:tr(api,'Начально (оч.): ','Initially (pts): ')+base,
-       'aria-label':tr(api,'Начальная прокачка класса: ','Starting branch points: ')+base})]:[])
+      ...(baseline?[baseline]:[])
      ]),
      make('span',{text:String(visualMax)})
     ]);
@@ -802,6 +828,8 @@ function viewSkills(target,details,api){
   if(listIndex>=0&&ordered.length>1&&typeof api.onInspect==='function'){
    const listNav=make('nav',{class:'path-skill-list-nav',
     'aria-label':tr(api,'Навигация по найденным умениям','Browse matching skills')});
+   bindPathCopy(api,listNav,'skillBrowseAria','Навигация по найденным умениям',
+    'Browse matching skills','aria-label');
    const move=(delta,icon,ru,en)=>{
     const next=ordered[listIndex+delta]?.skill;
     const label=tr(api,ru,en)+(next?' '+next.name:'');
@@ -825,10 +853,12 @@ function viewSkills(target,details,api){
      'p','path-skill-yes'):
     make('p',{class:'path-skill-no',text:'🔒 '+gate.problems.join(' · ')}));
   const stats=make('dl',{class:'path-skill-metadata'});
-  const field=(key,ru,en,value)=>{
+  const field=(key,ru,en,value,valueCopy=null)=>{
    if(value===null||value===undefined||value==='')return;
    const label=authored(api,key,ru,en,'dt','path-skill-meta-label');
-   stats.append(label,make('dd',{text:String(value)}));
+   const dd=make('dd',{text:String(value)});
+   if(valueCopy)bindPathCopy(api,dd,...valueCopy);
+   stats.append(label,dd);
   };
   // A verified zero means no character-level threshold, not an unknown one.
   // Branch thresholds remain visible separately below.
@@ -837,7 +867,9 @@ function viewSkills(target,details,api){
   field('skillMana','Мана / ОМ','Mana / MP',skill.mana);
   field('skillCast','Подготовка','Cast time',skill.cast);
   field('skillCooldown','Перезарядка','Cooldown',skill.cooldown);
-  field('skillRange','Дальность','Range',skill.rangeFromWeapon?tr(api,'Зависит от оружия','Depends on weapon'):skill.range);
+  field('skillRange','Дальность','Range',
+   skill.rangeFromWeapon?tr(api,'Зависит от оружия','Depends on weapon'):skill.range,
+   skill.rangeFromWeapon?['skillWeaponRange','Зависит от оружия','Depends on weapon']:null);
   field('skillElement','Стихия','Element',elementLabel(skill.element,api));
   if(skill.powerStat!==undefined&&skill.powerStat!==null&&skill.powerStat!=='')
    field('skillAttribute','Характеристика','Attribute',
@@ -917,6 +949,8 @@ function viewSkills(target,details,api){
       onclick:()=>navigate(before)}:{})}):
     authored(api,'skillPrerequisiteMissing','Умение отсутствует в каталоге',
      'Skill not in catalog','span','path-skill-previous-value');
+    if(canNavigate)bindPathCopy(api,current,'skillPreviousAria','Предыдущее умение:',
+     'Previous skill:','aria-label',' '+before.name);
    const row=make('p',{class:'path-skill-prereqs path-skill-previous-row'});
    row.append(title,make('span',{class:'path-skill-previous-separator',text:': '}),current);
    details.append(row);
@@ -927,14 +961,21 @@ function viewSkills(target,details,api){
   if(successors.length){
    const lineage=make('nav',{class:'path-skill-lineage',
     'aria-label':tr(api,'Продолжение умения','Skill upgrades')});
+   bindPathCopy(api,lineage,'skillLineageAria','Продолжение умения',
+    'Skill upgrades','aria-label');
    for(const related of successors){
     const label=related.name||tr(api,'Умение без названия','Unnamed skill');
-    lineage.append(make('button',{type:'button',
+    const button=make('button',{type:'button',
      class:'path-skill-lineage-link',
      'data-related-skill-id':String(related.id),
      'aria-label':tr(api,'Следующее умение: ','Next skill: ')+label,
      text:tr(api,'Следующее → ','Next → ')+label,
-     onclick:()=>navigate(related)}));
+     onclick:()=>navigate(related)});
+    bindPathCopy(api,button,'skillNextAria','Следующее умение:',
+     'Next skill:','aria-label',' '+label);
+    bindPathCopy(api,button,'skillNextLink','Следующее →',
+     'Next →','text',' '+label);
+    lineage.append(button);
    }
    details.append(lineage);
   }
