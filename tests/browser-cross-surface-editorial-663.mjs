@@ -33,7 +33,7 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   if(path==='/api/admin/override'&&req.method()==='POST'){
    assert.equal(req.headers().authorization,'Bearer '+token);
    const body=req.postDataJSON();
-   assert.match(body.key,/^guideedit\.book\.(?:origin|path|equipment|wiki-ui|wiki\.chest\.text|wiki\.item\.text|skill-ui|stats-ui)\./);
+   assert.match(body.key,/^guideedit\.book\.(?:origin|path|equipment|wiki-ui|wiki\.chest\.text|wiki\.item\.text|wiki\.npc\.trade|skill-ui|stats-ui)\./);
    assert.equal(body.expectedValue,Object.hasOwn(values,body.key)?values[body.key]:null,
     'All owner copy writes must use D1 expectedValue CAS');
    values[body.key]=body.value;writes.push(body);
@@ -185,6 +185,52 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
    'Editing a caption must not mutate the game item stats');
   assert.equal(JSON.parse(values['guideedit.book.wiki.item.text.obtain-heading']).ru,
    'Где добывается');
+
+  // NPC trades: the published recipes and prices must not change when a
+  // bilingual source label is edited through real D1 CAS.
+  await page.locator('#dockClose').click();
+  await page.locator('#nav [data-tab="wiki"]').click();
+  await page.locator('[data-wiki-chapter="npc"]').click();
+  const npcSearchWiki=page.locator('input[name="pandora-studio-encyclopedia-filter"]');
+  await npcSearchWiki.click();
+  await npcSearchWiki.fill('Огун VIII');
+  await page.locator('[data-wiki-record="131"]').click();
+  const npc=page.locator('#detailContent');
+  await npc.locator('.wiki-trade-card').first().waitFor({state:'visible'});
+  const npcPanel=npc.locator('.studio-owner-interface-editor')
+   .filter({has:page.locator('[data-owner-copy-section="wiki.npc.trade"]')});
+  await npcPanel.locator('summary').click();
+  const npcKeys=await npcPanel.locator('.studio-owner-interface-row [data-owner-copy-id]')
+   .evaluateAll(nodes=>nodes.map(node=>node.dataset.ownerCopyId));
+  assert.equal(npcKeys.length,36);
+  assert.equal(new Set(npcKeys).size,36);
+  const offersBefore=await npc.locator('.wiki-trade-card').count();
+  const searchNpcTrades=npc.locator('input.wiki-inline-search');
+  await searchNpcTrades.click();
+  await searchNpcTrades.fill('Несуществующий предмет');
+  assert.match(await npc.locator('.wiki-result-counter').innerText(),/^0 из \d+$/);
+  await edit('wiki.npc.trade','searchPlaceholder','Поиск по предложениям…');
+  assert.equal(await searchNpcTrades.getAttribute('placeholder'),'Поиск по предложениям…');
+  assert.equal(await searchNpcTrades.inputValue(),'Несуществующий предмет');
+  await edit('wiki.npc.trade','counterOf','среди');
+  assert.match(await npc.locator('.wiki-result-counter').innerText(),/^0 среди \d+$/);
+  assert.equal(await npc.locator('.wiki-trade-card').count(),offersBefore);
+  await searchNpcTrades.fill('');
+  const removeTrade=npc.locator('.wiki-trade-delete').first();
+  await edit('wiki.npc.trade','deleteConfirm','Подтвердить безвозвратное удаление');
+  await removeTrade.click();
+  assert.equal(await removeTrade.innerText(),'Подтвердить безвозвратное удаление');
+  assert.equal(await removeTrade.getAttribute('data-confirm'),'1');
+  await removeTrade.press('Escape');
+  assert.equal(await removeTrade.innerText(),'Удалить обмен');
+  assert.equal(await removeTrade.getAttribute('data-confirm'),null);
+  await removeTrade.click();
+  await searchNpcTrades.click();
+  assert.equal(await removeTrade.innerText(),'Удалить обмен',
+   'Leaving the delete button must discard pending confirmation');
+  assert.equal(writes.some(write=>write.key.startsWith('tradeedit.')),false);
+  assert.equal(await npc.locator('.wiki-trade-card').count(),offersBefore,
+   'Neither caption edits nor aborted confirmations delete NPC recipes');
 
   // Skills: work inside the real right-hand Hero Path instead of the
   // retired standalone skills workbench, which has no navigation tab.
