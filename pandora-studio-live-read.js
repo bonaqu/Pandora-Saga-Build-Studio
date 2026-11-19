@@ -17,42 +17,42 @@ const defaultPause=(ms,signal)=>new Promise((resolve,reject)=>{
  }
  signal?.addEventListener('abort',onAbort,{once:true});
 });
-// Test adapters may supply their own pause function. Make even a pause that
-// does not implement AbortSignal interruptible, without changing its API.
-function pauseRetry(ms,signal,pause){
- if(signal?.aborted)return Promise.reject(abortReason(signal));
- if(pause===defaultPause)return defaultPause(ms,signal);
- if(!signal)return Promise.resolve().then(()=>pause(ms));
+// A custom fetch or JSON adapter may ignore AbortSignal altogether.
+// Waiting for its promise would strand an online-only checkpoint forever.
+// Always release listeners after completion, rejection, or cancellation.
+function untilAbort(work,signal){
+ if(!signal)return Promise.resolve().then(work);
+ if(signal.aborted)return Promise.reject(abortReason(signal));
  return new Promise((resolve,reject)=>{
   let settled=false;
-  const settle=(fn,value)=>{
+  const finish=(callback,value)=>{
    if(settled)return;
    settled=true;
    signal.removeEventListener('abort',onAbort);
-   fn(value);
+   callback(value);
   };
-  const onAbort=()=>settle(reject,abortReason(signal));
+  const onAbort=()=>finish(reject,abortReason(signal));
   signal.addEventListener('abort',onAbort,{once:true});
   Promise.resolve().then(()=>{
    if(signal.aborted)throw abortReason(signal);
-   return pause(ms);
-  }).then(
-   ()=>signal.aborted?onAbort():settle(resolve),
-   error=>signal.aborted?onAbort():settle(reject,error)
-  );
+   return work();
+  }).then(value=>finish(resolve,value),error=>finish(reject,error));
  });
 }
+const pauseRetry=(ms,signal,pause)=>pause===defaultPause?
+ defaultPause(ms,signal):untilAbort(()=>pause(ms),signal);
 // Quota errors are confirmed by the Worker response body, not by HTTP 503
 // alone. Keep only a short, in-memory advisory cooldown: the user's manual
 // retry always bypasses it and success must revalidate D1 before unblocking.
 let quotaUntil=0;
 const quotaCooldownMs=()=>Math.max(0,quotaUntil-Date.now());
 function resetQuotaCooldown(){quotaUntil=0}
-async function observeQuotaFailure(response){
+async function observeQuotaFailure(response,signal){
  if(response?.status!==503||typeof response.clone!=='function')return false;
  try{
   const payload=await response.clone().json();
-  if(payload?.code!=='D1_DAILY_QUOTA_EXCEEDED')return false;
+  // Do not publish a stale cooldown after the cancelled request has ended.
+  if(signal?.aborted||payload?.code!=='D1_DAILY_QUOTA_EXCEEDED')return false;
   const raw=response.headers?.get?.('retry-after')||'';
   const seconds=/^[1-9][0-9]{0,4}$/.test(raw)?Number(raw):60;
   // 00:00 UTC is the theoretical reset, but short automatic probes still
@@ -96,7 +96,9 @@ async function get(url,options={},config={}){
   let response;
   try{
    // Never allow caller defaults or browser caches to serve a stale D1 GET.
-   response=await fetcher(url,{...options,method:'GET',cache:'no-store',signal});
+   response=await untilAbort(()=>fetcher(url,{
+    ...options,method:'GET',cache:'no-store',signal
+   }),signal);
   }catch(error){
    // Only a transport failure can be retried. Parent cancellation is final.
    if(parent?.aborted)throw abortReason(parent);
@@ -113,7 +115,9 @@ async function get(url,options={},config={}){
    throw Error('Invalid public GET response');
   // An explicitly exhausted D1 Free quota cannot recover during the
   // following 350ms/700ms retries. Preserve the original body for callers.
-  const quota=response.status===503&&await observeQuotaFailure(response);
+  const quota=response.status===503&&await untilAbort(
+   ()=>observeQuotaFailure(response,signal),signal
+  );
   if(signal.aborted)throw signal.reason||Error('Read-only request aborted');
   if(quota||response.ok||!transient.has(response.status)||attempt===attempts)
    return response;
@@ -130,17 +134,28 @@ async function get(url,options={},config={}){
 async function mapLimit(items,limit,mapper){
  if(!Array.isArray(items)||!Number.isInteger(limit)||limit<1||limit>8||
   typeof mapper!=='function')throw Error('Invalid read-only batch');
- const output=new Array(items.length);
- let next=0,stopped=false;
+ const output=new Array(items.length),controller=new AbortController();
+ let next=0,firstError=null;
  async function work(){
-  while(!stopped){
+  while(!controller.signal.aborted){
    const index=next++;
    if(index>=items.length)return;
-   try{output[index]=await mapper(items[index],index)}
-   catch(error){stopped=true;throw error}
+   try{
+    output[index]=await untilAbort(
+     ()=>mapper(items[index],index,controller.signal),controller.signal
+    );
+   }catch(error){
+    if(firstError===null){
+     firstError=error;
+     // Abort other in-flight D1 reads before the caller retries the catalog.
+     controller.abort(error);
+    }
+    return;
+   }
   }
  }
  await Promise.all(Array.from({length:Math.min(limit,items.length)},work));
+ if(firstError!==null)throw firstError;
  return output;
 }
 root.PandoraStudioLiveRead=Object.freeze({get,mapLimit,quotaCooldownMs,resetQuotaCooldown});

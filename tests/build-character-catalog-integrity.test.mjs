@@ -32,7 +32,12 @@ function loader(source,requests){
    json:async()=>structuredClone(source[name])};
  };
  const window={...host,PandoraStudioLiveRead:{
-  mapLimit:(items,_limit,mapper)=>Promise.all(items.map(mapper)),
+  mapLimit:(items,_limit,mapper)=>{
+   // Keep this synthetic source-integrity fixture exhaustive; the real
+   // aborting transport is exercised separately by live-d1-retry tests.
+   const signal=new AbortController().signal;
+   return Promise.all(items.map((item,index)=>mapper(item,index,signal)));
+  },
   get:(url,opts)=>fetcher(url,opts)
  }};
  return Function('window','fetch','AbortSignal','API','catalogLoadVersion',

@@ -5,7 +5,7 @@ import {runInNewContext} from 'node:vm';
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const load=()=>{
- const ctx={AbortSignal,setTimeout,clearTimeout,console};
+ const ctx={AbortSignal,AbortController,setTimeout,clearTimeout,console};
  ctx.globalThis=ctx;
  runInNewContext(read('pandora-studio-live-read.js'),ctx);
  return ctx.PandoraStudioLiveRead;
@@ -101,7 +101,7 @@ test('read-only batching does not exceed three in-flight datasets and preserves 
 });
 
 test('D1 origin and matching snapshot are still checked after a successful retried GET',async()=>{
- const ctx={AbortSignal,setTimeout,clearTimeout,console};
+ const ctx={AbortSignal,AbortController,setTimeout,clearTimeout,console};
  ctx.globalThis=ctx;
  runInNewContext(read('pandora-studio-live-read.js'),ctx);
  runInNewContext(read('pandora-studio-online-gate.js'),ctx);
@@ -261,4 +261,80 @@ test('read-only retries reject a cancellation occurring during a failed fetch',a
    },pause:instant
   }),/User left the page/);
  assert.equal(calls,1);
+});
+
+test('cancelled D1 GET rejects promptly even when an HTTP adapter ignores AbortSignal',async()=>{
+ const live=load(),controller=new AbortController();
+ let began;const started=new Promise(resolve=>{began=resolve});
+ let fetches=0;
+ const pending=live.get('https://example.test/api/catalog/items.json',
+  {signal:controller.signal},{
+   attempts:1,
+   fetcher:async()=>{fetches++;began();return new Promise(()=>{})}
+  });
+ await started;
+ controller.abort(Error('Catalog attempt superseded'));
+ await assert.rejects(pending,/Catalog attempt superseded/);
+ assert.equal(fetches,1);
+});
+
+test('a timed-out read-only fetch adapter is bounded without consuming extra D1 retries',async()=>{
+ const live=load();
+ let fetches=0;
+ // AbortSignal.timeout() deliberately does not keep Node's event loop alive;
+ // the test's own referenced timer does, and must always be cleared.
+ const keepAlive=setTimeout(()=>{},200);
+ try{
+  await assert.rejects(live.get('https://example.test/api/catalog/meta.json',
+   {},{attempts:1,timeoutMs:35,
+    fetcher:async()=>{fetches++;return new Promise(()=>{})}
+   }),/abort|timeou/i);
+  assert.equal(fetches,1);
+ }finally{clearTimeout(keepAlive)}
+});
+
+test('a stale quota JSON parse cannot extend the next checkpoint cooldown',async()=>{
+ const live=load(),controller=new AbortController();
+ let finishPayload,started;
+ const reading=new Promise(resolve=>{finishPayload=resolve});
+ const began=new Promise(resolve=>{started=resolve});
+ const response={ok:false,status:503,clone(){return {json:async()=>{
+  started();return reading;
+ }}}};
+ const pending=live.get('https://example.test/api/catalog/meta.json',
+  {signal:controller.signal},{fetcher:async()=>response});
+ await began;
+ controller.abort(Error('Quota reply obsolete'));
+ await assert.rejects(pending,/Quota reply obsolete/);
+ finishPayload({code:'D1_DAILY_QUOTA_EXCEEDED'});
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(live.quotaCooldownMs(),0);
+});
+
+test('one invalid D1 dataset aborts sibling requests and preserves the original failure',async()=>{
+ const live=load(),started=[],aborted=[];
+ const items=Array.from({length:10},(_,i)=>i);
+ const promise=live.mapLimit(items,3,async(id,_index,signal)=>{
+  started.push(id);
+  if(id===0)throw Error('Invalid skill snapshot');
+  return new Promise(resolve=>{
+   signal.addEventListener('abort',()=>{aborted.push(id);resolve('late')},{once:true});
+  });
+ });
+ await assert.rejects(promise,/Invalid skill snapshot/);
+ assert.ok(started.includes(0));
+ assert.ok(!started.some(id=>id>=3),'No further dataset GET may be launched');
+ assert.deepEqual(aborted.sort((a,b)=>a-b),started.filter(id=>id!==0).sort((a,b)=>a-b),
+  'All already started siblings must receive cancellation');
+});
+
+test('batch failures never change successful read ordering or client cache policy',async()=>{
+ const live=load();
+ const ids=[4,2,9,3,8];
+ const out=await live.mapLimit(ids,2,async(id,i,signal)=>{
+  assert.equal(signal.aborted,false);
+  await Promise.resolve();
+  return id+':'+i;
+ });
+ assert.deepEqual([...out],ids.map((id,i)=>id+':'+i));
 });

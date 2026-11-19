@@ -10891,11 +10891,14 @@ async function loadCatalog({archive=false,commit=true}={}){
  const names=['meta','classes','skills','items','souls','racialPassives',
   'unison','tables','itemForth'];
  const base=archive?'./data/os':API+'/api/catalog';
- const snapshots=new Set(),unknown=[];
- const entries=await window.PandoraStudioLiveRead.mapLimit(names,3,async name=>{
+ const snapshots=new Set();
+ const entries=await window.PandoraStudioLiveRead.mapLimit(names,3,async (name,_index,batchSignal)=>{
   const read=archive?fetch:window.PandoraStudioLiveRead.get;
+  // One broken/corrupt D1 dataset cancels its sibling downloads. Local
+  // fixtures retain their same isolated archive-only handling.
+  const signal=AbortSignal.any([batchSignal,AbortSignal.timeout(30000)]);
   const response=await read(base+'/'+name+'.json',{
-   cache:archive?'default':'no-cache',signal:AbortSignal.timeout(30000)});
+   cache:archive?'default':'no-cache',signal});
   if(!response.ok)throw Error(name+' HTTP '+response.status);
   if(!archive){
    // Confirm both the published snapshot and its D1 origin for every
@@ -10903,13 +10906,18 @@ async function loadCatalog({archive=false,commit=true}={}){
    if(response.headers.get('x-ps-catalog')!=='d1')
     throw Error('Игровой каталог '+name+': источник D1 не подтверждён');
    const snapshot=response.headers.get('x-ps-catalog-snapshot');
-   if(snapshot)snapshots.add(snapshot);else unknown.push(name);
+   if(!snapshot)throw Error('Игровой каталог '+name+': не подтверждена версия D1');
+   snapshots.add(snapshot);
+   if(snapshots.size!==1)
+    throw Error('В ходе загрузки изменилась версия каталога Cloudflare D1');
   }
-  return [name,await response.json()];
+  const payload=await response.json();
+  if(signal.aborted)throw signal.reason||Error('Загрузка каталога отменена');
+  return [name,payload];
  });
  if(version!==catalogLoadVersion)return;
- if(!archive&&(snapshots.size!==1||unknown.length))
-  throw Error('В ходе загрузки изменилась версия каталога Cloudflare D1');
+ if(!archive&&snapshots.size!==1)
+  throw Error('Не подтверждена единая версия каталога Cloudflare D1');
  const data=Object.fromEntries(entries);
  for(const name of names.filter(name=>!['meta','tables','itemForth'].includes(name))){
   const expected=Number(data.meta?.counts?.[name]);

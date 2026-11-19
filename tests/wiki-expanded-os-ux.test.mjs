@@ -134,7 +134,8 @@ test('wiki shows localized game class names and consistent source labels',()=>{
  assert.match(app,/Monster resistances|Resistances/);
  assert.match(app,/const currencies=\[\[wt\('Золото','Gold'\)/);
  assert.doesNotMatch(app,/id\.replaceAll\('_',' '\)/);
- assert.ok(app.includes("if(!archive&&(snapshots.size!==1||unknown.length))"));
+ // D1-snapshot fail-closed behavior belongs to the startup and loader tests,
+ // not to the independent Encyclopedia label/UX assertions.
 });
 test('encyclopedia CSS has one canonical image size, descriptions and monster grid',()=>{
  const css=read('pandora-studio-theme.css');

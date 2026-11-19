@@ -133,3 +133,17 @@ test('published site keeps a single D1-only catalog boundary and no retired arch
  assert.equal((migration.match(/selectedSkillGroup=window\.PandoraGameNavigation\.branchGroup/g)||[]).length,1,
   'Legacy branch normalization should be a single preserving pass');
 });
+
+test('character startup cancels sibling D1 reads on failure and rejects mixed snapshots before commit',()=>{
+ const loader=portion('async function loadCatalog(', 'let ownerWikiRefreshId=');
+ assert.match(loader,/mapLimit\(names,3,async \(name,_index,batchSignal\)=>/);
+ assert.match(loader,/AbortSignal\.any\(\[batchSignal,AbortSignal\.timeout\(30000\)\]\)/);
+ assert.match(loader,/if\(!snapshot\)throw Error/);
+ assert.match(loader,/snapshots\.add\(snapshot\);\s*if\(snapshots\.size!==1\)\s*throw Error/);
+ assert.ok(loader.indexOf('if(snapshots.size!==1)')<loader.indexOf('const payload=await response.json()'),
+  'Mixed snapshots must stop before parsing all remaining catalog datasets');
+ assert.match(loader,/if\(signal\.aborted\)throw signal\.reason/);
+ assert.ok(loader.indexOf('if(!archive&&snapshots.size!==1)')<
+   loader.indexOf('catalogSource=data'),
+  'Never commit an unverified catalog');
+});
