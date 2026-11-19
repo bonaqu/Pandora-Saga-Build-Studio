@@ -195,7 +195,24 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   await equipInput.evaluate(node=>{window.__copyGearSearch=node});
   const equipPanel=picker.locator('.studio-owner-interface-editor');
   await equipPanel.locator('summary').click();
-  assert.equal(await equipPanel.locator('.studio-owner-interface-row').count(),15);
+  // Keep the existing 15 author fields AND the 15 new game-safe captions.
+  // Assert stable key identity and uniqueness rather than freezing the count.
+  const equipmentKeys=await equipPanel.locator(
+   '.studio-owner-interface-row [data-owner-copy-id]')
+   .evaluateAll(nodes=>nodes.map(node=>node.dataset.ownerCopyId));
+  for(const key of [
+   'pickerChoosePrefix','pickerDetails','pickerClose','pickerSearchPlaceholder',
+   'pickerSearchAria','pickerUnequip','pickerAvailableLabel','pickerAvailableAria',
+   'pickerMatchSuffix','pickerShownSuffix','pickerMorePrefix','pickerOutfitNote',
+   'pickerLoading','pickerOriginFirst','pickerNoMatches',
+   'gearMenuEquippedAria','gearMenuEmptyAria','gearMenuEmptyTitle',
+   'gearMenuNoSoulSlots','gearMenuMissingItem','pickerNavGroup',
+   'pickerPreviousSlot','pickerNextSlot','pickerEquipAction','pickerPlanAction',
+   'pickerFutureLevel','pickerItemLevel','pickerItemSlots',
+   'pickerFutureBadgePrefix','pickerFutureBadgeSuffix'
+  ])assert.ok(equipmentKeys.includes(key),'Missing equipment D1 copy: '+key);
+  assert.equal(new Set(equipmentKeys).size,equipmentKeys.length,
+   'Each equipment caption must have exactly one editor');
   for(const key of ['pickerAvailableLabel','pickerAvailableAria','pickerMatchSuffix',
    'pickerShownSuffix','pickerMorePrefix'])
    assert.equal(await row('equipment',key).count(),1,
@@ -230,7 +247,21 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   await picker.locator('[data-stage-tab="details"]').waitFor({state:'visible'});
   const detailsPanel=picker.locator('.studio-owner-interface-editor');
   await detailsPanel.locator('summary').click();
-  assert.equal(await detailsPanel.locator('.studio-owner-interface-row').count(),9);
+  const detailsKeys=await detailsPanel.locator(
+   '.studio-owner-interface-row [data-owner-copy-id]')
+   .evaluateAll(nodes=>nodes.map(node=>node.dataset.ownerCopyId));
+  for(const key of [
+   'pickerItemClose','pickerItemSettings','pickerSoulSearchAria',
+   'pickerSoulSlotAria','pickerSoulSlotCaption','pickerEmptySoul',
+   'hint.choose','hint.details','hint.souls',
+   'gearMenuEquippedAria','gearMenuEmptyAria','gearMenuEmptyTitle',
+   'gearMenuNoSoulSlots','gearMenuMissingItem','pickerNavGroup',
+   'pickerPreviousSlot','pickerNextSlot','pickerEquipAction','pickerPlanAction',
+   'pickerFutureLevel','pickerItemLevel','pickerItemSlots',
+   'pickerFutureBadgePrefix','pickerFutureBadgeSuffix'
+  ])assert.ok(detailsKeys.includes(key),'Missing item-details D1 copy: '+key);
+  assert.equal(new Set(detailsKeys).size,detailsKeys.length,
+   'Details and Souls must not duplicate the same editor');
   await edit('equipment','pickerItemSettings','Параметры экипировки');
   await edit('equipment','hint.souls','Подсказка слотов душ');
   assert.equal(await picker.locator('[data-stage-tab="souls"]')
