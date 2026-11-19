@@ -20,10 +20,10 @@ test('NPC and section form placeholders and aria labels use shared bilingual tex
   "'aria-label':wt('Назначение нового NPC','New NPC service')",
   "field(wt('Имя NPC · RU','NPC name · RU'))",
   "field(wt('Имя NPC · EN','NPC name · EN'))",
-  "placeholder:wt('Название раздела · RU','Section title · RU')",
-  "placeholder:wt('Название раздела · EN','Section title · EN')",
-  "'aria-label':wt('Название раздела RU','Section title RU')",
-  "'aria-label':wt('Название раздела EN','Section title EN')"
+  "mapBind(ru,'sectionTitleRu','placeholder')",
+  "mapBind(en,'sectionTitleEn','placeholder')",
+  "mapBind(ru,'sectionTitleRu','aria-label')",
+  "mapBind(en,'sectionTitleEn','aria-label')"
  ])assert.ok(app.includes(snippet),'Not localized: '+snippet);
 });
 
