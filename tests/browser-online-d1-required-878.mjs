@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {relayLocalAsset} from './helpers/local-asset-relay.mjs';
 
 // Real browser, real public-only startup path and mocked read-only D1.
 // No requests are sent to production Worker or user accounts.
@@ -15,11 +16,7 @@ export async function runOnlineD1Required878Smoke(browser,base){
  await ctx.addInitScript(()=>{if(!localStorage.getItem('ps-build-lang'))localStorage.setItem('ps-build-lang','ru')});
  await ctx.route('**/*',async route=>{
   const req=route.request(),url=req.url(),method=req.method();
-  if(url.startsWith(publicOrigin+'/')){
-   const original=url.slice(publicOrigin.length);
-   const data=await route.fetch({url:base+original});
-   return route.fulfill({response:data});
-  }
+  if(url.startsWith(publicOrigin+'/'))return relayLocalAsset(route,base+url.slice(publicOrigin.length));
   if(url.startsWith(base+'/'))return route.continue();
   if(!url.startsWith(api+'/'))return route.abort();
   if(method==='OPTIONS')return route.fulfill({status:204,headers:cors});
