@@ -94,6 +94,7 @@ test('read-only capabilities disclose required catalog precondition',async()=>{
  assert.equal(flags.codeRelease,'0.361.0');
  assert.equal(flags.catalogPublishCASRequired,true);
  assert.equal(flags.catalogProvenanceCors,true);
+ assert.equal(flags.catalogSnapshotCache,true);
 });
 
 test('same published D1 snapshot avoids repeated large dataset SQL reads',async()=>{
@@ -205,4 +206,15 @@ test('admin batches may stage a NEW D1 snapshot but never edit the published one
  assert.equal(permitted.status,200);
  assert.equal((await permitted.json()).received,1);
  assert.equal(fresh.queries.filter(q=>q.startsWith('INSERT INTO catalog_entries')).length,1);
+ const sql=fresh.queries.find(q=>q.startsWith('INSERT INTO catalog_entries'));
+ assert.match(sql,/SELECT \?,\?,\?,\?,\?,\?,\?,\?/);
+ assert.match(sql,/WHERE NOT EXISTS \(SELECT 1 FROM catalog_current WHERE id=1 AND snapshot=\?\)/);
+ assert.match(sql,/ON CONFLICT\(snapshot,dataset,record_key\) DO UPDATE/);
+ // A concurrent publish after the preflight SELECT but before SQLite
+ // executes the guarded batch must produce 0 changes and HTTP 409.
+ const raced=mock(false);
+ raced.DB.batch=async()=>[{meta:{changes:0}}];
+ const rejected=await worker.fetch(request('ps-new-safe-snapshot'),{DB:raced.DB});
+ assert.equal(rejected.status,409);
+ assert.match((await rejected.json()).error,/Catalog published during batch/);
 });
