@@ -7,7 +7,7 @@ export async function runOnlineD1Required878Smoke(browser,base){
  const api='https://ps-build-studio-cloud.bonaqu.workers.dev';
  const publicOrigin='http://pandora-online-required.test';
  const ctx=await browser.newContext({viewport:{width:1280,height:850}});
- let remoteUp=false,snapshot='snapshot-online-878-a',reads=0,apiWrites=0,badProgression=false,englishFails=true,quotaMode=false;
+ let remoteUp=false,snapshot='snapshot-online-878-a',reads=0,apiWrites=0,badProgression=false,englishFails=true,quotaMode=false,quotaPaths=[];
  const cors={'access-control-allow-origin':'*',
   'access-control-expose-headers':'X-PS-Catalog-Snapshot,X-PS-Catalog,Retry-After',
   'access-control-allow-headers':'Content-Type,Authorization',
@@ -29,10 +29,13 @@ export async function runOnlineD1Required878Smoke(browser,base){
   const path=new URL(url).pathname;
   if(path.startsWith('/api/catalog/')||path==='/api/overrides'){
    reads++;
-   if(quotaMode)return route.fulfill({status:503,headers:{...cors,
+   if(quotaMode){
+    quotaPaths.push(path);
+    return route.fulfill({status:503,headers:{...cors,
     'retry-after':'3600'},contentType:'application/json',body:JSON.stringify({
      error:'Database temporarily unavailable',code:'D1_DAILY_QUOTA_EXCEEDED'
     })});
+   }
    if(!remoteUp)return route.abort('failed');
    const name=path.startsWith('/api/catalog/')?
     path.slice('/api/catalog/'.length,-5):null;
@@ -109,13 +112,14 @@ export async function runOnlineD1Required878Smoke(browser,base){
   // The actual Worker quota signal must not cause three immediate D1 reads
   // per failed request or repeated automatic checks on a focused tab.
   quotaMode=true;
-  const beforeQuota=reads;
+  const quotaCheckPaths=()=>quotaPaths.filter(p=>
+   p==='/api/catalog/meta.json'||p==='/api/overrides');
   await page.evaluate(()=>window.dispatchEvent(new Event('online')));
   await blocked().waitFor({state:'visible',timeout:12000});
   await page.waitForTimeout(450);
-  const afterQuota=reads;
-  assert.equal(afterQuota-beforeQuota,2,
-   'One meta and one override request, not a transient-retry flood');
+  assert.deepEqual([...quotaCheckPaths()].sort(),[
+   '/api/catalog/meta.json','/api/overrides'].sort(),
+   'One mandatory meta and one override request, no retry flood; parallel EN prefetch is independent');
   const remaining=await page.evaluate(()=>
    window.PandoraStudioLiveRead.quotaCooldownMs());
   assert.ok(remaining>240000&&remaining<=300000,
@@ -125,8 +129,9 @@ export async function runOnlineD1Required878Smoke(browser,base){
    document.dispatchEvent(new Event('visibilitychange'));
   });
   await page.waitForTimeout(450);
-  assert.equal(reads,afterQuota,
-   'Focus and visibility must not bypass the confirmed quota cooldown');
+  assert.deepEqual([...quotaCheckPaths()].sort(),[
+   '/api/catalog/meta.json','/api/overrides'].sort(),
+   'Focus and visibility must not repeat a blocked D1 checkpoint');
   quotaMode=false;
   await page.locator('#startupRetry').click();
   await waitReady();
