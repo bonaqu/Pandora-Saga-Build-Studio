@@ -10,8 +10,6 @@ test('Wiki owner common picker UI uses the shared RU/EN helper',()=>{
   ['Предметы не найдены','No items found'],
   ['Убрать класс ','Remove class '],['Добавить доступный класс','Add eligible class'],
   ['Выбери класс','Choose class'],
-  ['Поиск эффекта','Search effects'],['Выбери эффект','Choose effect'],
-  ['+ Добавить эффект','+ Add effect'],
   ['Поиск предыдущего умения…','Search prerequisite skill…'],
   ['Найти умение','Find skill'],
   ['Выбери предыдущее умение','Choose prerequisite skill'],
@@ -23,6 +21,16 @@ test('Wiki owner common picker UI uses the shared RU/EN helper',()=>{
   assert.ok(source.includes("wt('"+ru+"','"+en+"')"),
    'Every owner picker label must have both locales: '+ru);
  }
+ // These three labels now resolve through the authenticated D1 copy overlay,
+ // not literal wt() calls; validate the language defaults and semantic binding.
+ for(const [key,ru,en] of [
+  ['effectSearchAria','Поиск эффекта','Search effects'],
+  ['effectChoose','Выбери эффект','Choose an effect'],
+  ['effectAdd','+ Добавить эффект','+ Add effect']
+ ])assert.ok(source.includes(JSON.stringify([key,ru,en])),
+  'Owner picker D1 label lacks a bilingual default: '+key);
+ assert.match(source,/itemBind\(search,'effectSearchAria','aria-label'\)/);
+ assert.match(source,/itemBind\(h\('option',\{value:''\}\),\s*matches\.length\?'effectChoose':'effectMissing'/);
 });
 test('owner picker controls do not expose untranslated static Russian aria labels',()=>{
  for(const raw of [

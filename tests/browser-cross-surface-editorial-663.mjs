@@ -347,7 +347,7 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   // Encyclopedia and chest editors may coexist: target the exact Wiki
   // copy family instead of relying on there being only one details panel.
   const englishWikiEditor=page.locator('#detailContent .studio-owner-interface-editor')
-   .filter({has:page.locator('[data-owner-copy-section="wiki-ui"]')});
+   .filter({has:page.locator('[data-owner-copy-section="wiki-ui"][data-owner-copy-id="searchPlaceholder"]')});
   await englishWikiEditor.locator('summary').click();
   // Set the English variant through the same real editor and CAS key.
   const enRow=row('wiki-ui','searchPlaceholder');

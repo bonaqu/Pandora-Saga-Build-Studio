@@ -66,7 +66,7 @@ test('all category and slot labels are bound but runtime counts and identifiers 
 });
 
 test('chest contents render 35 D1-authored RU/EN captions with numeric data separate',()=>{
- const block=app.slice(app.indexOf('const wikiChestDisplayRows='),app.indexOf('const equipmentCopy='));
+ const block=app.slice(app.indexOf('const wikiChestDisplayRows='),app.indexOf('const wikiItemDisplayRows='));
  const found=[...block.matchAll(/^ \["([^"]+)","([^"]+)","([^"]+)"\],?$/gm)];
  assert.equal(found.length,35);
  assert.equal(new Set(found.map(row=>row[1])).size,35);
