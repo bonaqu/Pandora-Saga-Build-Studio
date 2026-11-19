@@ -23,7 +23,7 @@ test('choice metadata gates Soul slot count by equipment slot type',()=>{
  assert.match(app,/const socketCount=window\.PandoraEquipmentPlan\.supportsSoulSlot\(key\)\?/);
  assert.match(app,/if\(window\.PandoraEquipmentPlan\.supportsSoulSlot\(key\)\)metadata\.push\(/);
  assert.match(app,/bindOwnerInterfaceText\(h\('span',\{\}\),'equipment','pickerItemSlots'/);
- assert.match(app,/h\('span',\{text:socketCount===null\?'—':String\(socketCount\)\}\)/);
+ assert.match(app,/h\('span',\{text:' '\+\(socketCount===null\?'—':String\(socketCount\)\)\}\)/);
  assert.match(app,/h\('small',\{\},metadata\)/);
  assert.match(app,/masteryAuto:true/);
  assert.match(app,/copyLabel:equipmentCopy,editLabel:equipmentCopyLabel/);

@@ -87,8 +87,8 @@ test('equipment menu, card metadata and slot navigation use one shared 15-key D1
   source.indexOf('function attributeSnapshot(){'));
  assert.match(picker,/refreshEquipmentPickerItemAria\(btn\)/);
  assert.match(picker,/h\('small',\{\},metadata\)/);
- assert.match(picker,/h\('span',\{text:String\(rec\.level\)\}\)/);
- assert.match(picker,/h\('span',\{text:socketCount===null\?'—':String\(socketCount\)\}\)/);
+ assert.match(picker,/h\('span',\{text:' '\+String\(rec\.level\)\+' '\}\)/);
+ assert.match(picker,/h\('span',\{text:' '\+\(socketCount===null\?'—':String\(socketCount\)\)\}\)/);
  assert.doesNotMatch(picker,/data-owner-copy-id.*rec\.id|equipmentCopy\('item\.id'/);
  const renderer=source.slice(source.indexOf('function refreshEquipmentPickerItemAria('),
   source.indexOf('const equipmentPickerMetaCopyRows='));

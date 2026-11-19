@@ -315,13 +315,13 @@ export async function runOwnerEquipmentInlineSmoke(browser,base){
   const caption=row.locator('.studio-owner-interface-value');
   await caption.dblclick();
   const itemMetaInput=caption.locator('[data-owner-text-field]');
-  await itemMetaInput.fill('Ур. ');
+  await itemMetaInput.fill('Ур.');
   await itemMetaInput.press('Tab');
   await page.waitForFunction(()=>document.querySelector(
    '#stagePicker [data-stage-choice] .stage-picker-item-label small')
    ?.textContent.startsWith('Ур. '),null,{timeout:12000});
   const itemLevelKey='guideedit.book.equipment.picker-item-level';
-  assert.equal(JSON.parse(values[itemLevelKey]).ru,'Ур. ');
+  assert.equal(JSON.parse(values[itemLevelKey]).ru,'Ур.');
   assert.equal(await firstItem.getAttribute('data-owner-editor-stable'),'yes');
   assert.equal(await firstItem.getAttribute('data-stage-choice'),gameItemId);
   assert.equal(await firstItem.locator('.stage-picker-item-label>b').textContent(),originalName);
@@ -335,7 +335,7 @@ export async function runOwnerEquipmentInlineSmoke(browser,base){
   await itemMetaInput.press('Tab');
   await caption.locator('.ui-content-inline-error').waitFor({state:'visible',timeout:12000});
   assert.equal(await itemMetaInput.textContent(),'Неотправленная подпись');
-  assert.equal(JSON.parse(values[itemLevelKey]).ru,'Ур. ');
+  assert.equal(JSON.parse(values[itemLevelKey]).ru,'Ур.');
   await itemMetaInput.press('Escape');
   assert.equal((await meta.innerText()).startsWith('Ур. '),true);
   if(await page.locator('#ownerDock').evaluate(el=>
@@ -371,12 +371,12 @@ export async function runOwnerEquipmentInlineSmoke(browser,base){
    .filter({has:page.getByText('Item level',{exact:true})})
    .locator('.studio-owner-interface-value');
   await enLevel.dblclick();
-  await enLevel.locator('[data-owner-text-field]').fill('Lvl. ');
+  await enLevel.locator('[data-owner-text-field]').fill('Lvl.');
   await enLevel.locator('[data-owner-text-field]').press('Tab');
   await page.waitForFunction(()=>document.querySelector(
    '#stagePicker [data-stage-choice] .stage-picker-item-label small')
    ?.textContent.startsWith('Lvl. '),null,{timeout:12000});
-  assert.deepEqual(JSON.parse(values[itemLevelKey]),{en:'Lvl. '});
+  assert.deepEqual(JSON.parse(values[itemLevelKey]),{en:'Lvl.'});
   assert.equal(await enFirst.getAttribute('data-owner-editor-stable'),'en');
   assert.equal(await page.evaluate(()=>localStorage.getItem('ps-build-studio.v1')),beforeHero);
   if(await page.locator('#ownerDock').evaluate(el=>

@@ -1205,10 +1205,12 @@ function refreshEquipmentPickerItemAria(one=null){
   if(!sourceName)continue;
   const level=button.dataset.pickerFutureLevel;
   const value=level?
-   equipmentCopy('pickerFutureLevel','Будет доступен с ','Available from level ')+
-    level+equipmentCopy('pickerPlanAction',' уровня. Запланировать: ','. Plan: ')+sourceName:
-   equipmentCopy('pickerEquipAction','Экипировать ','Equip ')+sourceName;
+   equipmentCopy('pickerFutureLevel','Будет доступен с','Available from level')+
+    ' '+level+(lang==='en'?'':' ')+
+    equipmentCopy('pickerPlanAction','уровня. Запланировать:','. Plan:')+' '+sourceName:
+   equipmentCopy('pickerEquipAction','Экипировать','Equip')+' '+sourceName;
   ownerDockPatchAttr(button,'aria-label',value);
+  if(level)ownerDockPatchAttr(button,'title',value);
  }
 }
 const equipmentPickerMetaCopyRows=Object.freeze([
@@ -1218,15 +1220,15 @@ const equipmentPickerMetaCopyRows=Object.freeze([
  ['gearMenuNoSoulSlots','Этот тип вещи не поддерживает слоты душ.','This item type has no Soul sockets.','Недоступные души','Unavailable Souls'],
  ['gearMenuMissingItem','Сведения о предмете недоступны.','Item data unavailable.','Неизвестный предмет','Unknown item'],
  ['pickerNavGroup','Переход между слотами','Switch equipment slots','Переход по слотам','Slot navigation'],
- ['pickerPreviousSlot','Предыдущий слот: ','Previous slot: ','Предыдущий слот','Previous slot'],
- ['pickerNextSlot','Следующий слот: ','Next slot: ','Следующий слот','Next slot'],
- ['pickerEquipAction','Экипировать ','Equip ','Выбрать предмет','Equip item'],
- ['pickerPlanAction',' уровня. Запланировать: ','. Plan: ','Запланировать предмет','Plan item'],
- ['pickerFutureLevel','Будет доступен с ','Available from level ','Требуется уровень','Required level'],
- ['pickerItemLevel','Уровень ','Level ','Уровень предмета','Item level'],
- ['pickerItemSlots',' · Слоты: ',' · Slots: ','Слоты предмета','Item slots'],
- ['pickerFutureBadgePrefix','С ','From ','Метка уровня: начало','Level badge prefix'],
- ['pickerFutureBadgeSuffix',' ур.',' Lv.','Метка уровня: окончание','Level badge suffix']
+ ['pickerPreviousSlot','Предыдущий слот:','Previous slot:','Предыдущий слот','Previous slot'],
+ ['pickerNextSlot','Следующий слот:','Next slot:','Следующий слот','Next slot'],
+ ['pickerEquipAction','Экипировать','Equip','Выбрать предмет','Equip item'],
+ ['pickerPlanAction','уровня. Запланировать:','. Plan:','Запланировать предмет','Plan item'],
+ ['pickerFutureLevel','Будет доступен с','Available from level','Требуется уровень','Required level'],
+ ['pickerItemLevel','Уровень','Level','Уровень предмета','Item level'],
+ ['pickerItemSlots','Слоты:','Slots:','Слоты предмета','Item slots'],
+ ['pickerFutureBadgePrefix','С','From','Метка уровня: начало','Level badge prefix'],
+ ['pickerFutureBadgeSuffix','ур.','Lv.','Метка уровня: окончание','Level badge suffix']
 ]);
 // Source confidence stays visible, implementation details do not.
 function wikiSourceCopy(key,ru,en){
@@ -2052,13 +2054,13 @@ function appendStageSlotNavigation(root){
  for(const [direction,glyph] of [[-1,'‹'],[1,'›']]){
   const next=(selectedSlot+direction+slots.length)%slots.length;
   const key=direction<0?'pickerPreviousSlot':'pickerNextSlot';
-  const ru=direction<0?'Предыдущий слот: ':'Следующий слот: ';
-  const en=direction<0?'Previous slot: ':'Next slot: ';
+  const ru=direction<0?'Предыдущий слот:':'Следующий слот:';
+  const en=direction<0?'Previous slot:':'Next slot:';
   const button=h('button',{type:'button',class:'stage-picker-slot-nav',
    text:glyph,'data-stage-slot-nav':direction<0?'previous':'next',
    onclick:()=>openStageEquipmentSlot(next,'choose')});
-  bindOwnerInterfaceText(button,'equipment',key,ru,en,'aria-label',gearSlotName(next));
-  bindOwnerInterfaceText(button,'equipment',key,ru,en,'title',gearSlotName(next));
+  bindOwnerInterfaceText(button,'equipment',key,ru,en,'aria-label',' '+gearSlotName(next));
+  bindOwnerInterfaceText(button,'equipment',key,ru,en,'title',' '+gearSlotName(next));
   nav.append(button);
  }
  head.insertBefore(nav,head.lastElementChild);
@@ -2299,11 +2301,7 @@ function renderStagePicker(focusSearch=false){
    // Both edited portions keep the historical full accessibility sentence:
    // "Available from level 53. Plan: [exact original game item name]".
    // Level and item name are runtime facts, never submitted to D1.
-   if(future){
-    btn.dataset.pickerFutureLevel=String(rec.level);
-    bindOwnerInterfaceText(btn,'equipment','pickerFutureLevel',
-     'Будет доступен с ','Available from level ','title',String(rec.level));
-   }
+   if(future)btn.dataset.pickerFutureLevel=String(rec.level);
    const src=itemIcon(rec);
    if(src){const img=h('img',{src,alt:'',loading:'lazy'});img.onerror=()=>img.replaceWith(h('span',{class:'item-glyph',text:'⚔'}));btn.append(img)}
    else btn.append(h('span',{class:'item-glyph',text:'⚔'}));
@@ -2312,13 +2310,14 @@ function renderStagePicker(focusSearch=false){
     window.PandoraEquipmentPlan.socketCapacity(rec):null;
    const metadata=[
     bindOwnerInterfaceText(h('span',{}),'equipment','pickerItemLevel',
-     'Уровень ','Level '),
-    h('span',{text:Number.isFinite(itemLevel)&&itemLevel>=1?String(itemLevel):'—'})
+     'Уровень','Level'),
+    h('span',{text:' '+(Number.isFinite(itemLevel)&&itemLevel>=1?String(itemLevel):'—')})
    ];
    if(window.PandoraEquipmentPlan.supportsSoulSlot(key))metadata.push(
+    h('span',{text:' · '}),
     bindOwnerInterfaceText(h('span',{}),'equipment','pickerItemSlots',
-     ' · Слоты: ',' · Slots: '),
-    h('span',{text:socketCount===null?'—':String(socketCount)}));
+     'Слоты:','Slots:'),
+    h('span',{text:' '+(socketCount===null?'—':String(socketCount))}));
    btn.append(h('span',{class:'stage-picker-item-label'},[h('b',{text:itemName(rec)}),
     h('small',{},metadata)]));
    // The game name is now in the card; update aria with the exact current
@@ -2326,10 +2325,10 @@ function renderStagePicker(focusSearch=false){
    refreshEquipmentPickerItemAria(btn);
    if(future)btn.append(h('span',{class:'stage-picker-future'},[
     bindOwnerInterfaceText(h('span',{}),'equipment','pickerFutureBadgePrefix',
-     'С ','From '),
-    h('span',{text:String(rec.level)}),
+     'С','From'),
+    h('span',{text:' '+String(rec.level)+' '}),
     bindOwnerInterfaceText(h('span',{}),'equipment','pickerFutureBadgeSuffix',
-     ' ур.',' Lv.')
+     'ур.','Lv.')
    ]));
    if(selected)btn.append(h('span',{class:'stage-picker-check',text:'✓'}));
    list.append(btn);
