@@ -73,3 +73,55 @@ test('account transport normalizes status codes and connection failures without 
  await assert.rejects(offline('login',{username:'tester',password:'not-real'},null),
   error=>error.httpStatus===0&&/Не удалось подключиться/.test(error.message));
 });
+
+test('account GET and POST do not hang on stalled HTTP headers or JSON bodies',async()=>{
+ const from=source.indexOf('async function request(kind,data=null,auth=token()){');
+ const to=source.indexOf('\nfunction setSession(',from);
+ assert.ok(from>=0&&to>from);
+ const script=source.slice(from,to);
+ const deadlines={timeout:ms=>{
+  assert.ok(ms===12000||ms===20000,'Account timeout must remain bounded');
+  return AbortSignal.timeout(35);
+ }};
+ const create=fetcher=>Function('options','token','fetch','AbortSignal','publicAccountError',
+  script+'\nreturn request;')({baseUrl:'https://example.test'},()=>null,
+  fetcher,deadlines,localize('ru'));
+ for(const kind of ['me','login','register','password']){
+  for(const stage of ['headers','json']){
+   let attempts=0;
+   const send=create(async(_url,options)=>{
+    attempts++;
+    assert.equal(options.method,kind==='me'?'GET':'POST');
+    assert.ok(options.signal,'AbortSignal must reach both GET and POST');
+    if(stage==='headers')return new Promise(()=>{});
+    return {ok:true,status:200,json:()=>new Promise(()=>{})};
+   });
+   const keepAlive=setTimeout(()=>{},200);
+   try{
+    await assert.rejects(send(kind,kind==='me'?null:{username:'tester'},null),
+     error=>error.httpStatus===0&&/Не удалось подключиться/.test(error.message),
+     kind+':'+stage);
+    assert.equal(attempts,1,
+     'A timed-out account write must not be retried when its server outcome is unknown');
+   }finally{clearTimeout(keepAlive)}
+  }
+ }
+});
+
+test('account password change needs a verified Worker acknowledgment, not HTTP 200 alone',async()=>{
+ const start=source.indexOf('async function request(kind,data=null,auth=token()){');
+ const end=source.indexOf('\nfunction setSession(',start);
+ const code=source.slice(start,end);
+ const make=fetcher=>Function('options','token','fetch','AbortSignal','publicAccountError',
+  code+'\nreturn request;')({baseUrl:'https://example.test'},()=>null,
+  fetcher,AbortSignal,localize('en'));
+ for(const payload of [{},null,{ok:false},{token:'not a password proof'}]){
+  const run=make(async()=>({ok:true,status:200,json:async()=>payload}));
+  await assert.rejects(run('password',{currentPassword:'old',password:'new'},null),
+   error=>error.httpStatus===0&&/Cannot connect/.test(error.message));
+ }
+ const valid=make(async()=>({ok:true,status:200,json:async()=>({ok:true})}));
+ assert.equal((await valid('password',{currentPassword:'old',password:'new'},null)).ok,true);
+ const invalidTransport=make(async()=>null);
+ await assert.rejects(invalidTransport('me',null,null),error=>error.httpStatus===0);
+});

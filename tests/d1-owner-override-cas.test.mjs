@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import worker from '../worker/index.js';
+import {readFileSync} from 'node:fs';
 
 const token='x'.repeat(43);
 const domain='https://ps-build-studio-cloud.bonaqu.workers.dev';
@@ -191,4 +192,65 @@ test('wrong-owner credentials cannot reset even an unrelated valid override',asy
  assert.equal(lock.values.get(key),'Private description');
  assert.equal((await reset(cloud,'Private description')).status,200);
  assert.equal(lock.values.size,0);
+});
+
+test('real owner CAS client releases saving state after hung headers/JSON without replay',async()=>{
+ const app=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
+ const start=app.indexOf('async function apiRequest(path,body,token=adminToken) {');
+ const end=app.indexOf('\nfunction showAdmin()',start);
+ assert.ok(start>=0&&end>start,'Owner request must stay independently testable');
+ const gateHost={};
+ Function('window',readFileSync(new URL('../pandora-studio-online-gate.js',
+  import.meta.url),'utf8'))(gateHost);
+ const create=fetcher=>Function('window','fetch','API','AbortSignal','activeOverride',
+  'refreshOwnerUI','closeInlineEditor','updateAdminHint','lang',
+  `let ownerWritePendingCount=0,ownerSaveError='',ownerSaveState='idle';
+   let adminToken='bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',adminEditing=true,ownerEdits=[];
+   `+app.slice(start,end)+`
+   return {request:apiRequest,status:()=>({
+    pending:ownerWritePendingCount,saveState:ownerSaveState,error:ownerSaveError})};`
+ )( {PandoraStudioOnlineGate:gateHost.PandoraStudioOnlineGate},fetcher,
+  'https://example.test',{timeout:ms=>{
+   assert.ok(ms===30000||ms===22000,'One deadline covers owner request and JSON');
+   return AbortSignal.timeout(35);
+  }},()=>null,()=>{},()=>{},()=>{},'ru');
+ const key='guideedit.book.summary.0',value='{"ru":"Здоровье"}';
+ const positive=()=>({ok:true,status:200,json:async()=>({
+  ok:true,conditional:true,key,value
+ })});
+ for(const stage of ['headers','json']){
+  let calls=0,finishLate;
+  const read=async (_url,init)=>{
+   calls++;
+   assert.equal(init.method,'POST');
+   assert.equal(JSON.parse(init.body).expectedValue,null);
+   assert.ok(init.signal);
+   if(stage==='headers')return new Promise(resolve=>{finishLate=()=>resolve(positive())});
+   return {ok:true,status:200,json:()=>new Promise(resolve=>{
+    finishLate=()=>resolve({ok:true,conditional:true,key,value})
+   })};
+  };
+  const client=create(read),keepAlive=setTimeout(()=>{},200);
+  try{
+   await assert.rejects(client.request('/api/admin/override',{key,value}),
+    /Нет соединения с Cloudflare Worker/);
+   assert.equal(calls,1,'An unconfirmed D1 owner POST must not retry');
+   assert.equal(client.status().pending,0,'Saving spinner must end on timeout');
+   assert.equal(client.status().saveState,'error');
+   assert.match(client.status().error,/недоступен/);
+   finishLate?.();
+   await new Promise(resolve=>setImmediate(resolve));
+   assert.equal(client.status().saveState,'error',
+    'A late successful JSON response cannot turn an uncertain CAS into Saved');
+  }finally{clearTimeout(keepAlive)}
+ }
+ const good=create(async()=>positive());
+ assert.equal((await good.request('/api/admin/override',{key,value})).conditional,true);
+ assert.deepEqual(good.status(),{pending:0,saveState:'saved',error:''});
+ const malformed=create(async()=>null);
+ await assert.rejects(malformed.request('/api/admin/override',{key,value}),
+  /Нет соединения с Cloudflare Worker/);
+ assert.equal(malformed.status().pending,0);
+ assert.equal(malformed.status().saveState,'error',
+  'A malformed Worker adapter must not leave a pending owner write forever');
 });

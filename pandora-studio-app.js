@@ -393,14 +393,27 @@ async function cloudLibraryRequest(payload){
  // An unreachable Worker must not leave "Checking cloud" spinning forever.
  const signal=typeof AbortSignal!=='undefined'&&
   typeof AbortSignal.timeout==='function'?AbortSignal.timeout(payload?25000:20000):null;
- const response=await fetch(API+'/api/library',{method:payload?'POST':'GET',
+ // One deadline for response headers AND JSON. A timed-out cloud write may
+ // already have reached D1; never resubmit it implicitly from this transport.
+ const untilAbort=window.PandoraStudioOnlineGate.untilAbort;
+ const response=await untilAbort(()=>fetch(API+'/api/library',{method:payload?'POST':'GET',
   headers:{'Content-Type':'application/json',Authorization:'Bearer '+bearer},
   ...(signal?{signal}:{}),
-  ...(payload?{body:JSON.stringify(payload)}:{})});
- let data;try{data=await response.json()}catch{throw Error('Нет ответа облачного сервера')}
+  ...(payload?{body:JSON.stringify(payload)}:{})}),signal);
+ let data;
+ try{data=await untilAbort(()=>response.json(),signal)}
+ catch{throw Error('Нет ответа облачного сервера')}
  if(!response.ok){
   const error=new Error(data?.error||'Облачный сервер недоступен');
   error.httpStatus=response.status;error.reason=data?.reason||null;throw error;
+ }
+ // A successful HTTP status without the Worker contract must never erase
+ // local differences or mark a build saved. GET must contain the actual list;
+ // account-only mutations require an explicit positive acknowledgment.
+ const verified=payload?data?.ok===true:Array.isArray(data?.records);
+ if(!verified){
+  const error=new Error('Облако не подтвердило результат. Изменения остались в браузере.');
+  error.reason='unconfirmed';throw error;
  }
  return data;
 }
@@ -8628,14 +8641,26 @@ async function apiRequest(path,body,token=adminToken) {
   ownerWritePendingCount++;
   ownerSaveState='saving';refreshOwnerUI();
  }
- let response;
+ // Owner CAS / admin actions must never remain indefinitely "saving" when
+ // Worker headers arrive but its JSON body stalls. GETs and POSTs share one
+ // request-wide deadline; an uncertain POST is NEVER automatically retried.
+ const signal=AbortSignal.timeout(body?30000:22000);
+ const untilAbort=window.PandoraStudioOnlineGate.untilAbort;
+ let response,parsed=null;
  try {
   const request=body||path!=='/api/overrides'?fetch:window.PandoraStudioLiveRead.get;
-  response=await request(API+path,{
+  response=await untilAbort(()=>request(API+path,{
    method:body?"POST":"GET",
    headers:{"Content-Type":"application/json",...(token?{"Authorization":"Bearer "+token}:{})},
-   ...(requestBody?{body:JSON.stringify(requestBody)}:{})
-  });
+   ...(requestBody?{body:JSON.stringify(requestBody)}:{}),signal
+  }),signal);
+  if(!response||typeof response.ok!=='boolean')
+   throw Error('Invalid Worker response');
+  // A syntactically malformed reply still follows the existing invalid-ack
+  // path. Cancellation is different: it cannot be reported as a successful
+  // empty acknowledgment or leave ownerWritePendingCount above zero.
+  try{parsed=await untilAbort(()=>response.json(),signal)}
+  catch(error){if(signal.aborted)throw error}
  } catch {
   if(path.startsWith('/api/admin/')){
    finishOwnerWrite('Cloudflare Worker недоступен');
@@ -8648,7 +8673,6 @@ async function apiRequest(path,body,token=adminToken) {
  // Catalog sources and other read-only endpoints legitimately return
  // JSON arrays. Do not coerce those into empty objects while validating
  // the *separate* owner-write acknowledgment contract below.
- const parsed=await response.json().catch(()=>null);
  const data=parsed===null?{}:parsed;
  if(!response.ok){
   const conflict=response.status===409&&data.code==='OWNER_EDIT_CONFLICT';

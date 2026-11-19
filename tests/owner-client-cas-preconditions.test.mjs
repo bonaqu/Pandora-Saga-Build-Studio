@@ -8,9 +8,13 @@ const end=app.indexOf('\nfunction showAdmin(',start);
 assert.ok(start>=0&&end>start,'Exercise the exact shared production API helper');
 const source=app.slice(start,end);
 const validToken='a'.repeat(43);
+const onlineGateHost={};
+Function('window',readFileSync(new URL('../pandora-studio-online-gate.js',
+ import.meta.url),'utf8'))(onlineGateHost);
 function instance(fetchImpl,{lang='ru',values={}}={}){
  const override={...values},logs=[],ownerEdits=[];
- const window={PandoraStudioLiveRead:{get:(url,opts)=>fetchImpl(url,opts)}};
+ const window={PandoraStudioLiveRead:{get:(url,opts)=>fetchImpl(url,opts)},
+  PandoraStudioOnlineGate:onlineGateHost.PandoraStudioOnlineGate};
  const api=Function('window','fetch','override','ownerEdits','refreshOwnerUI',
   'closeInlineEditor','updateAdminHint','initialLang',
   'const API="https://ps-build-studio-cloud.bonaqu.workers.dev";'+
