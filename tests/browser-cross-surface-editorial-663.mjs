@@ -216,8 +216,17 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   await edit('wiki.npc.trade','counterOf','среди');
   assert.match(await npc.locator('.wiki-result-counter').innerText(),/^0 среди \d+$/);
   assert.equal(await npc.locator('.wiki-trade-card').count(),offersBefore);
-  await searchNpcTrades.fill('');
-  const removeTrade=npc.locator('.wiki-trade-delete').first();
+  // This is a contenteditable textbox: clear it through real keyboard input,
+  // then assert that the list is unfiltered before choosing a delete action.
+  await searchNpcTrades.click();
+  await searchNpcTrades.press('ControlOrMeta+A');
+  await searchNpcTrades.press('Backspace');
+  await page.waitForFunction(()=>[...document.querySelectorAll(
+   '#detailContent .wiki-trade-card')].some(card=>!card.hidden),null,{timeout:10000});
+  const unfilteredCount=await npc.locator('.wiki-result-counter').innerText();
+  assert.match(unfilteredCount,/^\\d+ среди \\d+$/);
+  assert.equal(await searchNpcTrades.innerText(),'');
+  const removeTrade=npc.locator('.wiki-trade-card:not([hidden]) .wiki-trade-delete').first();
   await edit('wiki.npc.trade','deleteConfirm','Подтвердить безвозвратное удаление');
   await removeTrade.click();
   assert.equal(await removeTrade.innerText(),'Подтвердить безвозвратное удаление');
