@@ -2,6 +2,8 @@
 'use strict';
 // Read-only game-style tooltips; never evaluate server-provided text as HTML.
 let popup=null,current=null,pending=null,removalObserver=null;
+// D1/locale rerenders may attach to the same DOM node repeatedly.
+const attached=new WeakMap();
 // Keep other screen-reader descriptions when a transient tooltip opens/closes.
 function linkDescription(node,id){
  if(!node||!id)return;
@@ -67,18 +69,44 @@ function scheduleHover(node,show,delay){
  pending={node,timer,show,delay};
 }
 function attach(node,text,{hoverDelay=0}={}){
- if(!node||typeof text!=='string'||!text.trim())return node;
- // Keep existing keyboard-focus behavior prompt; delay only cursor hover.
+ if(!node||typeof text!=='string')return node;
+ let state=attached.get(node);
+ if(!text.trim()){
+  // Clearing an authored explanation must not leave a stale popup or timer.
+  if(state){
+   state.enabled=false;
+   if(current===node||pending?.node===node)dismiss();
+   delete node.dataset.guideHint;
+   node.classList.remove?.('stage-guide-label');
+   if(state.ownsTabindex)node.removeAttribute('tabindex');
+  }
+  return node;
+ }
  const delay=Number.isFinite(hoverDelay)?Math.max(0,Math.min(3000,hoverDelay)):0;
- node.setAttribute('tabindex',node.getAttribute('tabindex')||'0');
- node.classList.add('stage-guide-label');
  node.dataset.guideHint=text;
+ node.classList.add('stage-guide-label');
+ if(state){
+  state.enabled=true;
+  state.delay=delay;
+  if(state.ownsTabindex&&node.getAttribute('tabindex')===null)
+   node.setAttribute('tabindex','0');
+  // Update current D1 copy and delayed hover without stacking listeners.
+  if(current===node&&popup&&!popup.hidden){
+   popup.textContent=text;
+   position(node);
+  }
+  if(pending?.node===node)scheduleHover(node,state.show,delay);
+  return node;
+ }
+ const ownsTabindex=node.getAttribute('tabindex')===null;
+ if(ownsTabindex)node.setAttribute('tabindex','0');
+ state={enabled:true,delay,ownsTabindex,touchAt:0,show:null};
+ attached.set(node,state);
  const show=()=>{
-  if(!node.isConnected||node.closest('#ownerDock.owner-dock-collapsed .owner-dock-panel'))return;
+  if(!state.enabled||!node.isConnected||
+     node.closest('#ownerDock.owner-dock-collapsed .owner-dock-panel'))return;
   dismiss();ensure();
-  // Owner D1 copy may change while the original hover target stays mounted.
-  // Read its current plain text at show time; never treat it as HTML.
-  current=node;popup.textContent=node.dataset.guideHint||text;popup.hidden=false;
+  current=node;popup.textContent=node.dataset.guideHint||'';popup.hidden=false;
   linkDescription(node,popup.id);
   position(node);
   if(typeof MutationObserver==='function'&&document.body){
@@ -88,29 +116,42 @@ function attach(node,text,{hoverDelay=0}={}){
    removalObserver.observe(document.body,{childList:true,subtree:true});
   }
  };
+ state.show=show;
  node.addEventListener('pointerenter',event=>{
-  if(event.pointerType==='touch')return;
+  if(!state.enabled||event.pointerType==='touch')return;
   dismiss();
-  if(!delay){show();return}
-  scheduleHover(node,show,delay);
+  if(!state.delay){show();return}
+  scheduleHover(node,show,state.delay);
  });
- node.addEventListener('pointerleave',()=>{
+ node.addEventListener('pointerleave',event=>{
+  // Touch pointerleave follows finger-up. Keep the first tap readable.
+  if(event?.pointerType==='touch')return;
   if(pending?.node===node||current===node)dismiss();
  });
  node.addEventListener('focus',()=>{
-  // Pointer focus should not bypass the hover delay. Keyboard focus should
-  // remain immediate for accessibility.
-  if(node.matches(':focus-visible'))show();
+  if(state.enabled&&node.matches(':focus-visible'))show();
  });
  node.addEventListener('blur',()=>{
   if(pending?.node===node||current===node)dismiss();
  });
  node.addEventListener('pointerdown',event=>{
+  if(!state.enabled)return;
   if(event.pointerType==='touch'){
+   state.touchAt=Date.now();
    if(current===node)dismiss();else show();
-  }else dismiss();
+  }else{
+   state.touchAt=0;
+   dismiss();
+  }
  });
- node.addEventListener('click',dismiss);
+ node.addEventListener('click',()=>{
+  const recentTouch=state.touchAt&&Date.now()-state.touchAt<1000;
+  state.touchAt=0;
+  // Preserve a newly tapped explanation on non-actionable labels only.
+  if(recentTouch&&!node.closest('a,button,[role="button"],input,select,textarea'))
+   return;
+  dismiss();
+ });
  return node;
 }
 if(typeof document!=='undefined'){
