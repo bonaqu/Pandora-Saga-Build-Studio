@@ -17,7 +17,7 @@ async function sha(bytes){return b64(await crypto.subtle.digest('SHA-256',typeof
 async function passwordHash(password,salt){const key=await crypto.subtle.importKey('raw',enc.encode(password),'PBKDF2',false,['deriveBits']);return b64(await crypto.subtle.deriveBits({name:'PBKDF2',salt:enc.encode(salt),iterations:100000,hash:'SHA-256'},key,256))}
 function same(a,b){a=String(a||'');b=String(b||'');let d=a.length^b.length;for(let i=0;i<Math.max(a.length,b.length);i++)d|=(a.charCodeAt(i)||0)^(b.charCodeAt(i)||0);return d===0}
 function json(body,status=200,headers={}){return new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json;charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff',...headers}})}
-function originHeaders(request){const o=request.headers.get('Origin');return o===ORIGIN||o==='http://localhost:8788'?{'Access-Control-Allow-Origin':o,'Access-Control-Allow-Headers':'Authorization, Content-Type','Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Expose-Headers':'X-PS-Catalog-Snapshot, X-PS-Catalog','Vary':'Origin'}:{}}
+function originHeaders(request){const o=request.headers.get('Origin');return o===ORIGIN||o==='http://localhost:8788'?{'Access-Control-Allow-Origin':o,'Access-Control-Allow-Headers':'Authorization, Content-Type','Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Expose-Headers':'X-PS-Catalog-Snapshot, X-PS-Catalog, Retry-After','Vary':'Origin'}:{}}
 function no(message,status=400){return json({error:message},status)}
 // Bound untrusted JSON by actual UTF-8 bytes, even when a caller omits or
 // understates Content-Length. The old request.json()/request.text() paths
@@ -758,7 +758,7 @@ if(path==='/api/runtime-capabilities'&&method==='GET')
  return json({codeRelease:'0.361.0',ownerEditors:[
   'itemedit','tradeedit','acquireedit','wikiedit','dropedit','chestedit','spawnedit',
    'virtual-town-wiki','bilingual-item-text','historical-map-wiki','owner-map-create','owner-map-sections','owner-monster-create','future-map-roster','owner-npc-create','admin-save-feedback','owner-record-delete','bilingual-wiki','guideedit','honor-lists','honor-extended-edit','wiki-label-edit'],
-  githubOwnerExport:true,honorExtendedEditing:true,wikiLabelEditing:true,ownerProgressionD1:true,ownerOverrideCAS:true,ownerOverrideCASRequired:true,catalogPublishCASRequired:true,catalogProvenanceCors:true,catalogSnapshotCache:true,catalogCacheSingleFlight:true,catalogSnapshotCacheTTLSeconds:86400,adminD1WriteCheck:'catalog-and-overrides',catalogSourceFailover:true,sourceEgressProbe:true,sourceProbeDetail:true,sourceInstancesArray:true,sourceFullProbe:true,
+  githubOwnerExport:true,honorExtendedEditing:true,wikiLabelEditing:true,ownerProgressionD1:true,ownerOverrideCAS:true,ownerOverrideCASRequired:true,catalogPublishCASRequired:true,catalogProvenanceCors:true,catalogSnapshotCache:true,catalogCacheSingleFlight:true,catalogSnapshotCacheTTLSeconds:86400,corsQuotaRetryAfter:true,adminD1WriteCheck:'catalog-and-overrides',catalogSourceFailover:true,sourceEgressProbe:true,sourceProbeDetail:true,sourceInstancesArray:true,sourceFullProbe:true,
   buildLibraryRequiresAccount:true,sharedPreviewRequiresAccount:true,
   legacyAccountImportPreview:true});
 if(path==='/api/health'&&method==='GET'){

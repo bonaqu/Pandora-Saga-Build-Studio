@@ -61,12 +61,18 @@ test('a remote catalog update is monotonic and preserves unsent owner inline cop
   'Owner must acknowledge pending text before any reload/save hook');
 });
 
+test('a quota cooldown never postpones the first lock of an active online-only editor',()=>{
+ const section=portion('async function checkLiveConnection(', 'function reloadVerifiedCatalog()');
+ assert.match(section,/!force&&liveGateReason==='offline'&&quotaCooldown\(\)>0/);
+ assert.match(section,/showLiveGate\('offline'\)/);
+});
+
 test('account library never reconnects before a verified D1 checkpoint',()=>{
  const login=portion('onLogin:({register})=>{', 'onRecoveryAcknowledged:');
  assert.match(login,/if\(localCatalogHost\|\|studioLiveReady&&!liveGateReason\)void loadCloudBuilds\(\)/);
  const resume=portion('function resumeCloudLibrary(', 'requestAnimationFrame(syncOriginPanelHeight)');
  assert.match(resume,/if\(!localCatalogHost&&\(!studioLiveReady\|\|liveGateReason\)\)return/);
- const reconnect=portion('function leaveLiveGate()', 'async function checkLiveConnection()');
+ const reconnect=portion('function leaveLiveGate()', 'async function checkLiveConnection(');
  assert.match(reconnect,/resumeCloudLibrary\(\{force:true\}\)/);
 });
 

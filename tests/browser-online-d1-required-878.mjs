@@ -7,8 +7,9 @@ export async function runOnlineD1Required878Smoke(browser,base){
  const api='https://ps-build-studio-cloud.bonaqu.workers.dev';
  const publicOrigin='http://pandora-online-required.test';
  const ctx=await browser.newContext({viewport:{width:1280,height:850}});
- let remoteUp=false,snapshot='snapshot-online-878-a',reads=0,apiWrites=0,badProgression=false,englishFails=true;
+ let remoteUp=false,snapshot='snapshot-online-878-a',reads=0,apiWrites=0,badProgression=false,englishFails=true,quotaMode=false,quotaPaths=[];
  const cors={'access-control-allow-origin':'*',
+  'access-control-expose-headers':'X-PS-Catalog-Snapshot,X-PS-Catalog,Retry-After',
   'access-control-allow-headers':'Content-Type,Authorization',
   'access-control-allow-methods':'GET,POST,OPTIONS'};
  await ctx.addInitScript(()=>{if(!localStorage.getItem('ps-build-lang'))localStorage.setItem('ps-build-lang','ru')});
@@ -28,6 +29,13 @@ export async function runOnlineD1Required878Smoke(browser,base){
   const path=new URL(url).pathname;
   if(path.startsWith('/api/catalog/')||path==='/api/overrides'){
    reads++;
+   if(quotaMode){
+    quotaPaths.push(path);
+    return route.fulfill({status:503,headers:{...cors,
+    'retry-after':'3600'},contentType:'application/json',body:JSON.stringify({
+     error:'Database temporarily unavailable',code:'D1_DAILY_QUOTA_EXCEEDED'
+    })});
+   }
    if(!remoteUp)return route.abort('failed');
    const name=path.startsWith('/api/catalog/')?
     path.slice('/api/catalog/'.length,-5):null;
@@ -100,6 +108,53 @@ export async function runOnlineD1Required878Smoke(browser,base){
    'Retired buff controls must not reappear after verified D1 recovery');
   await page.evaluate(()=>document.querySelector('#onlineInertLateButton').remove());
   assert.ok(reads>=firstReads+10,'Retry must verify all D1 datasets and authorial copy');
+
+  // The actual Worker quota signal must not cause three immediate D1 reads
+  // per failed request or repeated automatic checks on a focused tab.
+  quotaMode=true;
+  const quotaCheckPaths=()=>quotaPaths.filter(p=>
+   p==='/api/catalog/meta.json'||p==='/api/overrides');
+  await page.evaluate(()=>window.dispatchEvent(new Event('online')));
+  await blocked().waitFor({state:'visible',timeout:12000});
+  await page.waitForTimeout(450);
+  assert.deepEqual([...quotaCheckPaths()].sort(),[
+   '/api/catalog/meta.json','/api/overrides'].sort(),
+   'One mandatory meta and one override request, no retry flood; parallel EN prefetch is independent');
+  const remaining=await page.evaluate(()=>
+   window.PandoraStudioLiveRead.quotaCooldownMs());
+  assert.ok(remaining>240000&&remaining<=300000,
+   'The detected daily quota caps automatic polling to at most five minutes');
+  await page.evaluate(()=>{
+   window.dispatchEvent(new Event('focus'));
+   document.dispatchEvent(new Event('visibilitychange'));
+  });
+  await page.waitForTimeout(450);
+  assert.deepEqual([...quotaCheckPaths()].sort(),[
+   '/api/catalog/meta.json','/api/overrides'].sort(),
+   'Focus and visibility must not repeat a blocked D1 checkpoint');
+  quotaMode=false;
+  await page.locator('#startupRetry').click();
+  await waitReady();
+  assert.equal(await page.evaluate(()=>
+   window.PandoraStudioLiveRead.quotaCooldownMs()),0,
+   'Manual verified recovery clears the advisory limit immediately');
+  assert.equal(apiWrites,0);
+
+  // A quota discovered by another API GET while the editor is still active
+  // must not postpone the next heartbeat and leave old gameplay unlocked.
+  quotaMode=true;
+  await page.evaluate(()=>window.PandoraStudioLiveRead.get(
+   'https://ps-build-studio-cloud.bonaqu.workers.dev/api/catalog/meta.json'));
+  assert.ok(await page.evaluate(()=>
+   window.PandoraStudioLiveRead.quotaCooldownMs())>0);
+  await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
+  await blocked().waitFor({state:'visible',timeout:12000});
+  assert.equal(await page.evaluate(()=>document.querySelector('main').inert),true);
+  quotaMode=false;
+  await page.locator('#startupRetry').click();
+  await waitReady();
+  assert.equal(await page.evaluate(()=>
+   window.PandoraStudioLiveRead.quotaCooldownMs()),0);
 
   // A pending English translation must NOT dismiss the D1 recovery gate
   // when it fails after the browser goes offline.

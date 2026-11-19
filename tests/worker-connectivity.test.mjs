@@ -23,6 +23,8 @@ test('health reports own D1, published catalog and sharing readiness with CORS',
  const data=await response.json();
  assert.equal(response.status,200);
  assert.equal(response.headers.get('access-control-allow-origin'),ORIGIN);
+ assert.match(response.headers.get('access-control-expose-headers')||'',/Retry-After/i,
+  'The actual cross-origin browser must be allowed to read quota recovery time');
  assert.equal(data.storage,'d1');
  assert.equal(data.status,'ok');
  assert.deepEqual(data.features,{sharing:true,catalog:true,library:true,accounts:false});

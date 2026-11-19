@@ -11223,15 +11223,22 @@ const localCatalogHost=['127.0.0.1','localhost'].includes(location.hostname);
 let studioLiveReady=false,liveGateReason=null,liveCheckpointId=0,
  liveCheckpointPromise=null,liveRetryTimer=null,liveRetryFailures=0,
  liveLocalSaved=true;
+const quotaCooldown=()=>Math.max(0,
+ Number(window.PandoraStudioLiveRead?.quotaCooldownMs?.())||0);
 function clearOnlineRetry(){
  if(liveRetryTimer!==null){clearTimeout(liveRetryTimer);liveRetryTimer=null;}
  liveRetryFailures=0;
+ window.PandoraStudioLiveRead?.resetQuotaCooldown?.();
 }
 function scheduleOnlineRetry(){
  if(localCatalogHost||liveRetryTimer!==null||liveGateReason==='changed')return;
- const delay=Math.min(30000,4000*2**Math.min(liveRetryFailures++,3));
+ const delay=Math.max(Math.min(30000,4000*2**Math.min(liveRetryFailures++,3)),
+  quotaCooldown());
  liveRetryTimer=setTimeout(()=>{
   liveRetryTimer=null;
+  // Avoid background-tab polling when the tab cannot be used. A visible
+  // page resumes automatically; manual reconnect remains available.
+  if(document.visibilityState==='hidden')return;
   // Navigator online/offline is merely advisory (VPNs and captive portals
   // may misreport it). Retry the D1 endpoint itself, with bounded backoff.
   if(studioLiveReady){
@@ -11342,8 +11349,12 @@ function leaveLiveGate(){
  // This never uploads an unsaved current hero.
  resumeCloudLibrary({force:true});
 }
-async function checkLiveConnection(){
+async function checkLiveConnection({force=false}={}){
  if(localCatalogHost||!studioLiveReady||liveGateReason==='changed')return;
+ // Do not suppress the regular live heartbeat on an ACTIVE editor. If
+ // another API request first detects a D1 quota error, the next checkpoint
+ // still has to block stale editing. Only a blocked recovery may cool down.
+ if(!force&&liveGateReason==='offline'&&quotaCooldown()>0)return;
  if(liveCheckpointPromise)return liveCheckpointPromise;
  if(adminToken&&ownerSaveInFlight())return;
  const revision=++liveCheckpointId,copyAtStart=window.PandoraStudioOnlineGate.digest(override);
@@ -11361,9 +11372,15 @@ async function checkLiveConnection(){
     window.PandoraStudioOnlineGate.digest(override)!==copyAtStart))return;
    if(result.status==='changed'){showLiveGate('changed');return}
    if(liveGateReason==='offline')leaveLiveGate();
+   else window.PandoraStudioLiveRead?.resetQuotaCooldown?.();
   }catch(error){
    if(revision!==liveCheckpointId||!studioLiveReady)return;
    console.warn('Live game data checkpoint failed',error);
+   // A timer queued for a generic outage must not bypass a newly
+   // confirmed D1 quota cooldown and continue hammering SQL.
+   if(quotaCooldown()>0&&liveRetryTimer!==null){
+    clearTimeout(liveRetryTimer);liveRetryTimer=null;
+   }
    showLiveGate('offline');
   }
  })();
@@ -11437,7 +11454,7 @@ window.addEventListener('offline',()=>{
 });
 window.addEventListener('online',()=>{
  if(localCatalogHost)return;
- if(studioLiveReady){if(liveGateReason!=='changed')void checkLiveConnection();}
+ if(studioLiveReady){if(liveGateReason!=='changed')void checkLiveConnection({force:true});}
  else if(startupOverlay.dataset.state==='error')void startStudio();
 });
 setInterval(()=>{
@@ -11449,8 +11466,20 @@ window.addEventListener('focus',()=>{
   void checkLiveConnection();
 });
 document.addEventListener('visibilitychange',()=>{
- if(!localCatalogHost&&studioLiveReady&&liveGateReason!=='changed'&&
-  document.visibilityState==='visible')void checkLiveConnection();
+ if(localCatalogHost||document.visibilityState!=='visible'||
+  liveGateReason==='changed')return;
+ // A hidden failed initial boot has no live checkpoint yet. Restart it
+ // when visible; an explicit daily-quota cooldown delays only automatic work.
+ if(!studioLiveReady){
+  if(startupOverlay.dataset.state==='error'&&!startupRunning){
+   if(quotaCooldown()>0)scheduleOnlineRetry();
+   else void startStudio();
+  }
+  return;
+ }
+ if(quotaCooldown()>0){
+  if(liveGateReason==='offline')scheduleOnlineRetry();
+ }else void checkLiveConnection();
 });
 let startupAttempt=0,startupRunning=false,startupQueuedLive=false;
 async function startStudio({archive=false}={}){
@@ -11529,7 +11558,7 @@ async function startStudio({archive=false}={}){
 $('startupRetry').onclick=()=>{
  if(liveGateReason==='changed'){reloadVerifiedCatalog();return}
  if(liveGateReason==='storage'){leaveLiveGate();return}
- if(liveGateReason==='offline'){void checkLiveConnection();return}
+ if(liveGateReason==='offline'){void checkLiveConnection({force:true});return}
  // An explicit Retry always requests D1, including local Chromium fixtures
  // that initially boot from bundled development data. No user-facing path
  // opens the archive on a published hostname. Do not drop a click just

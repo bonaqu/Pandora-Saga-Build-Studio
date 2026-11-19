@@ -181,3 +181,40 @@ test('429 and 503 respect bounded Retry-After without multiplying D1 requests',a
   },pause:async ms=>fallback.push(ms)});
  assert.deepEqual(fallback,[350]);
 });
+
+test('a confirmed D1 Free row quota stops immediate retries and preserves its HTTP body',async()=>{
+ const live=load(),url='https://example.test/api/catalog/meta.json';
+ let calls=0;
+ const exhausted=()=>new Response(JSON.stringify({
+  error:'Database temporarily unavailable',code:'D1_DAILY_QUOTA_EXCEEDED'
+ }),{status:503,headers:{'retry-after':'6000','content-type':'application/json'}});
+ const reply=await live.get(url,{},{
+  fetcher:async()=>{calls++;return exhausted()},pause:instant
+ });
+ assert.equal(calls,1,'Daily row quota must not cause three identical D1 attempts');
+ assert.equal(reply.status,503);
+ assert.equal((await reply.json()).code,'D1_DAILY_QUOTA_EXCEEDED',
+  'The source response body is not consumed by the quota detector');
+ assert.ok(live.quotaCooldownMs()>240000&&live.quotaCooldownMs()<=300000,
+  'The advisory cooldown is bounded, not the whole 24-hour window');
+ live.resetQuotaCooldown();
+ assert.equal(live.quotaCooldownMs(),0);
+});
+test('generic 503 and malformed quota payload still use bounded transient retries',async()=>{
+ const live=load();
+ for(const content of [
+  {error:'Ordinary service maintenance'},
+  {error:'Database temporarily unavailable',code:'TYPO'},
+  'not-json'
+ ]){
+  let calls=0;
+  const status=await live.get('https://example.test/api/overrides',{},{
+   fetcher:async()=>{calls++;return new Response(
+    typeof content==='string'?content:JSON.stringify(content),
+    {status:503,headers:{'retry-after':'300'}})},pause:instant
+  });
+  assert.equal(status.status,503);
+  assert.equal(calls,3,'Unverified quota signal must not be treated as a confirmed daily cap');
+  assert.equal(live.quotaCooldownMs(),0);
+ }
+});
