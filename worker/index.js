@@ -748,7 +748,7 @@ if(path==='/api/runtime-capabilities'&&method==='GET')
  return json({codeRelease:'0.361.0',ownerEditors:[
   'itemedit','tradeedit','acquireedit','wikiedit','dropedit','chestedit','spawnedit',
    'virtual-town-wiki','bilingual-item-text','historical-map-wiki','owner-map-create','owner-map-sections','owner-monster-create','future-map-roster','owner-npc-create','admin-save-feedback','owner-record-delete','bilingual-wiki','guideedit','honor-lists','honor-extended-edit','wiki-label-edit'],
-  githubOwnerExport:true,honorExtendedEditing:true,wikiLabelEditing:true,ownerProgressionD1:true,ownerOverrideCAS:true,ownerOverrideCASRequired:true,catalogPublishCASRequired:true,catalogProvenanceCors:true,catalogSnapshotCache:true,adminD1WriteCheck:'catalog-and-overrides',catalogSourceFailover:true,sourceEgressProbe:true,sourceProbeDetail:true,sourceInstancesArray:true,sourceFullProbe:true,
+  githubOwnerExport:true,honorExtendedEditing:true,wikiLabelEditing:true,ownerProgressionD1:true,ownerOverrideCAS:true,ownerOverrideCASRequired:true,catalogPublishCASRequired:true,catalogProvenanceCors:true,catalogSnapshotCache:true,catalogCacheSingleFlight:true,catalogSnapshotCacheTTLSeconds:86400,adminD1WriteCheck:'catalog-and-overrides',catalogSourceFailover:true,sourceEgressProbe:true,sourceProbeDetail:true,sourceInstancesArray:true,sourceFullProbe:true,
   buildLibraryRequiresAccount:true,sharedPreviewRequiresAccount:true,
   legacyAccountImportPreview:true});
 if(path==='/api/health'&&method==='GET'){

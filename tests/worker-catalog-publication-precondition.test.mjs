@@ -97,6 +97,8 @@ test('read-only capabilities disclose required catalog precondition',async()=>{
  assert.equal(flags.catalogPublishCASRequired,true);
  assert.equal(flags.catalogProvenanceCors,true);
  assert.equal(flags.catalogSnapshotCache,true);
+ assert.equal(flags.catalogCacheSingleFlight,true);
+ assert.equal(flags.catalogSnapshotCacheTTLSeconds,86400);
 });
 
 test('same published D1 snapshot avoids repeated large dataset SQL reads',async()=>{
@@ -123,7 +125,8 @@ test('same published D1 snapshot avoids repeated large dataset SQL reads',async(
  assert.equal((await again.json()).loads,1);
  assert.equal(loads,1,'D1 payload rows must only be read once for a cached snapshot');
  assert.equal(writes.length,1);
- assert.equal(store.get(writes[0]).headers.get('cache-control'),'public, max-age=3600',
+ assert.match(writes[0],/\/__snapshot_catalog_cache\/v2\//);
+ assert.equal(store.get(writes[0]).headers.get('cache-control'),'public, max-age=86400',
   'Only the internal synthetic Cache API response may have a TTL');
  const latest='ps-snapshot-b';
  const changed=await readPublishedCatalog({snapshot:latest,dataset,cache,load:load(latest)});
@@ -228,3 +231,46 @@ test('admin batches may stage a NEW D1 snapshot but never edit the published one
  assert.equal(rejected.status,409);
  assert.match((await rejected.json()).error,/Catalog published during batch/);
 });
+
+test('parallel cache misses share only one immutable D1 dataset read per Worker isolate',async()=>{
+ let started=0,matched=0,resolveMatches,stored=0;
+ const allMatches=new Promise(resolve=>{resolveMatches=resolve});
+ const cache={
+  match:async()=>{if(++matched===3)resolveMatches();await allMatches;return null},
+  put:async()=>{stored++}
+ };
+ const snapshot='ps-one-snapshot',dataset='items';
+ const load=async()=>{
+  started++;
+  return new Response(JSON.stringify({snapshot,started}),{
+   headers:{'cache-control':'no-store','x-ps-catalog':'d1',
+    'x-ps-catalog-snapshot':snapshot}
+  });
+ };
+ const requests=Array.from({length:3},()=>readPublishedCatalog({snapshot,dataset,cache,load}));
+ const responses=await Promise.all(requests);
+ assert.equal(started,1,'Three near-simultaneous cache misses must not scan D1 three times');
+ assert.equal(stored,1,'Shared load must publish one internal cache entry');
+ for(const response of responses){
+  assert.equal(response.headers.get('cache-control'),'no-store');
+  assert.deepEqual(await response.json(),{snapshot,started:1},
+   'Every request receives its own readable body, not a consumed shared stream');
+ }
+});
+
+test('simultaneous D1 failures coalesce but never persist or mask 503',async()=>{
+ let matched=0,release,loads=0;
+ const both=new Promise(resolve=>{release=resolve});
+ const cache={match:async()=>{if(++matched===2)release();await both;return null},
+  put:async()=>{throw Error('503 may never be cached')}};
+ const snapshot='ps-failure-one';
+ const load=async()=>{loads++;return new Response('D1 unavailable',{status:503})};
+ const [a,b]=await Promise.all([readPublishedCatalog({snapshot,dataset:'items',cache,load}),
+  readPublishedCatalog({snapshot,dataset:'items',cache,load})]);
+ assert.equal(a.status,503);assert.equal(b.status,503);
+ assert.equal(loads,1,'Overlapping failures share a single D1 attempt');
+ const next=await readPublishedCatalog({snapshot,dataset:'items',cache,load});
+ assert.equal(next.status,503);
+ assert.equal(loads,2,'A later request must retry D1, never serve a cached failure');
+});
+
