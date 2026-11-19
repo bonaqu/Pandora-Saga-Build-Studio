@@ -159,6 +159,6 @@ test('41 monster labels are bilingual D1 overlays with isolated OS stats and loo
  assert.match(app,/ownerInterfaceEditor\(\s*'wiki\.monster\.text',wikiMonsterRows/);
  assert.match(app,/monsterBind\(list\.querySelector\('h4'\),kind==='map'\?'spawnMaps':'spawnDungeons'\)/);
  assert.match(app,/remove\.addEventListener\('blur',resetRemove\)/);
- assert.match(app,/e\.key==='Escape'\)\{e\.preventDefault\(\);resetRemove\(\)\}/);
+ assert.match(app,/e\.key==='Escape'\)\{e\.preventDefault\(\);e\.stopPropagation\(\);resetRemove\(\)\}/);
  assert.match(app,/remove\.disabled=true;\s*const all=dropRows\(\)/);
 });

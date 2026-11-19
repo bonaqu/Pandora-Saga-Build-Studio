@@ -6109,7 +6109,7 @@ function renderWiki(root){
         monsterBind(remove,'removeLoot','aria-label',' '+dataName('item',row.itemId));
         remove.addEventListener('blur',resetRemove);
         remove.addEventListener('keydown',e=>{
-         if(e.key==='Escape'){e.preventDefault();resetRemove()}
+         if(e.key==='Escape'){e.preventDefault();e.stopPropagation();resetRemove()}
         });
         remove.onclick=()=>{
          if(remove.disabled)return;
