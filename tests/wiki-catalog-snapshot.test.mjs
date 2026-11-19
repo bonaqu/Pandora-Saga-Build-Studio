@@ -946,3 +946,30 @@ test('public Wiki rejects conflicting D1 snapshot headers before parsing unrelat
  assert.ok(cancelled.length>=1,
   'Any other already-started Wiki dataset must receive cancellation');
 });
+
+test('superseding an in-flight public Wiki load aborts its GETs without archived fallback',async()=>{
+ const liveSource=readFileSync(new URL('../pandora-studio-live-read.js',import.meta.url),'utf8');
+ const publicRoot={location:{hostname:'bonaqu.github.io'}};
+ Function('window',liveSource)(publicRoot);
+ Function('window',source)(publicRoot);
+ const controller=new AbortController(),started=[],cancelled=[];
+ let allThree;
+ const three=new Promise(resolve=>{allThree=resolve});
+ const job=publicRoot.PandoraWikiCatalog.load({
+  api:'https://worker.example',strict:true,signal:controller.signal,
+  fetcher:async(url,{signal})=>{
+   started.push(url);
+   if(started.length===3)allThree();
+   return new Promise(resolve=>signal.addEventListener('abort',()=>{
+    cancelled.push(url);resolve({ok:false,status:503});
+   },{once:true}));
+  }
+ });
+ await three;
+ controller.abort(Error('New Wiki generation published'));
+ await assert.rejects(job,/New Wiki generation published/);
+ assert.equal(started.length,3,'No fourth request from stale Wiki generation');
+ assert.equal(cancelled.length,3,'All active D1 reads receive cancellation');
+ assert.ok(started.every(url=>url.includes('/api/catalog/')),
+  'Cancellation must never turn on local fallback for public users');
+});
