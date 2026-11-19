@@ -4,13 +4,7 @@
 const $=id=>document.getElementById(id);
 // One matching rule for the equipment picker and owner encyclopedia pickers.
 // Terms may be reordered or separated by extra whitespace; ё/е match, too.
-const searchWords=(text,query)=>{
- const normalize=value=>String(value??'').normalize('NFKC')
-  .toLocaleLowerCase('ru').replace(/ё/g,'е').replace(/\s+/g,' ').trim();
- const searchable=normalize(text);
- return normalize(query).split(' ').filter(Boolean)
-  .every(term=>searchable.includes(term));
-};
+const searchWords=(text,query)=>window.PandoraSearchField.matches(text,query);
 const startupOverlay=$('startupOverlay');
 // Native inert keeps background controls out of pointer, keyboard and
 // accessibility navigation while the D1 gate is visible. Capture-phase
