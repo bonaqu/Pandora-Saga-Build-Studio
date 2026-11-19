@@ -45,6 +45,9 @@ test('manual deployment verifies new Worker marker and existing D1 after publish
  assert.match(workflow,/catalogSnapshotCache:true/);
  assert.match(workflow,/catalogCacheSingleFlight:true/);
  assert.match(workflow,/catalogSnapshotCacheTTLSeconds:86400/);
+ assert.match(workflow,/corsQuotaRetryAfter:true/);
+ assert.match(workflow,/corsQuotaRetryAfter===true/);
+ assert.match(workflow,/Retry-After/);
  assert.match(workflow,/caps\?\.catalogCacheSingleFlight===true/);
  assert.match(workflow,/caps\?\.catalogSnapshotCacheTTLSeconds===86400/);
  assert.match(workflow,/access-control-expose-headers/);

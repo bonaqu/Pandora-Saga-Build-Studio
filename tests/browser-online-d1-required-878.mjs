@@ -9,6 +9,7 @@ export async function runOnlineD1Required878Smoke(browser,base){
  const ctx=await browser.newContext({viewport:{width:1280,height:850}});
  let remoteUp=false,snapshot='snapshot-online-878-a',reads=0,apiWrites=0,badProgression=false,englishFails=true,quotaMode=false;
  const cors={'access-control-allow-origin':'*',
+  'access-control-expose-headers':'X-PS-Catalog-Snapshot,X-PS-Catalog,Retry-After',
   'access-control-allow-headers':'Content-Type,Authorization',
   'access-control-allow-methods':'GET,POST,OPTIONS'};
  await ctx.addInitScript(()=>{if(!localStorage.getItem('ps-build-lang'))localStorage.setItem('ps-build-lang','ru')});

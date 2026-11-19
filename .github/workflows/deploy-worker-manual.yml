@@ -54,7 +54,7 @@ jobs:
             const code=readFileSync("index.js","utf8");
             for(const marker of ["codeRelease:\x270.361.0\x27",
               "\x27bilingual-item-text\x27", "adminD1WriteCheck:\x27catalog-and-overrides\x27", "catalogSourceFailover:true", "sourceEgressProbe:true", "sourceInstancesArray:true", "sourceFullProbe:true",
-              "buildLibraryRequiresAccount:true", "sharedPreviewRequiresAccount:true", "legacyAccountImportPreview:true", "catalogPublishCASRequired:true", "catalogProvenanceCors:true", "catalogSnapshotCache:true", "catalogCacheSingleFlight:true", "catalogSnapshotCacheTTLSeconds:86400", "key===\x27nameEn\x27", "key===\x27descEn\x27", "honorExtendedEditing:true", "wikiLabelEditing:true"])
+              "buildLibraryRequiresAccount:true", "sharedPreviewRequiresAccount:true", "legacyAccountImportPreview:true", "catalogPublishCASRequired:true", "catalogProvenanceCors:true", "catalogSnapshotCache:true", "catalogCacheSingleFlight:true", "catalogSnapshotCacheTTLSeconds:86400", "corsQuotaRetryAfter:true", "key===\x27nameEn\x27", "key===\x27descEn\x27", "honorExtendedEditing:true", "wikiLabelEditing:true"])
               if(!code.includes(marker))throw Error("Missing expected reviewed Worker code: "+marker);
           '
       - name: Generate exact existing D1 config without secrets
@@ -104,7 +104,8 @@ jobs:
                 signal:AbortSignal.timeout(15000)});
               const exposed=provenance.headers.get("access-control-expose-headers")||"";
               const provenanceOK=provenance.ok&&provenance.headers.get("x-ps-catalog")==="d1"&&
-                /(?:^|,)\s*X-PS-Catalog\s*(?:,|$)/i.test(exposed);
+                /(?:^|,)\s*X-PS-Catalog\s*(?:,|$)/i.test(exposed)&&
+                /(?:^|,)\s*Retry-After\s*(?:,|$)/i.test(exposed);
               if(provenanceOK&&response.ok&&caps?.codeRelease==="0.361.0"&&
                 caps?.ownerEditors?.includes("bilingual-item-text")&&
                 caps?.adminD1WriteCheck==="catalog-and-overrides"&&
@@ -112,7 +113,7 @@ jobs:
                 caps?.sourceInstancesArray===true&&caps?.sourceFullProbe===true&&
                 caps?.catalogPublishCASRequired===true&&caps?.catalogProvenanceCors===true&&
                 caps?.catalogSnapshotCache===true&&caps?.catalogCacheSingleFlight===true&&
-                caps?.catalogSnapshotCacheTTLSeconds===86400&&
+                caps?.catalogSnapshotCacheTTLSeconds===86400&&caps?.corsQuotaRetryAfter===true&&
                 caps?.buildLibraryRequiresAccount===true&&
                 caps?.sharedPreviewRequiresAccount===true&&
                 caps?.legacyAccountImportPreview===true&&
