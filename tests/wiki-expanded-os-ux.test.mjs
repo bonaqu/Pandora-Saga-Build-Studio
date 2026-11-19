@@ -132,7 +132,9 @@ test('wiki shows localized game class names and consistent source labels',()=>{
  assert.match(app,/const name=classLabel\(key\)/);
  assert.match(app,/const monsterStats=/);
  assert.match(app,/Monster resistances|Resistances/);
- assert.match(app,/const currencies=\[\[wt\('Золото','Gold'\)/);
+ assert.match(app,/const currencies=\\[\\['gold',trade\\.gold,'gold'\\]/);
+ assert.match(app,/chip\\.append\\(npcTradeBind\\(h\\('span'\\),name,'text',': '\\)\\)/);
+ assert.match(app,/ownerInterfaceEditor\\(\\s*'wiki\\.npc\\.trade',wikiNpcTradeRows/);
  assert.doesNotMatch(app,/id\.replaceAll\('_',' '\)/);
  // D1-snapshot fail-closed behavior belongs to the startup and loader tests,
  // not to the independent Encyclopedia label/UX assertions.
