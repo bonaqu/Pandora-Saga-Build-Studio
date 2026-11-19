@@ -77,7 +77,7 @@ test('chest contents render 35 D1-authored RU/EN captions with numeric data sepa
   ['addItem','+ Предмет','+ Item']
  ]){
   const id='wiki.chest.text.'+key.replace(/[A-Z]/g,ch=>'-'+ch.toLowerCase());
-  const values={'guideedit.book.'+id:JSON.stringify({ru:'Редакторский текст',en:'Edited text'})};
+  const values={['guideedit.book.'+id]:JSON.stringify({ru:'Редакторский текст',en:'Edited text'})};
   assert.equal(guide.field(values,id,ru,en).ru,'Редакторский текст');
   assert.equal(guide.field(values,id,ru,en).en,'Edited text');
   assert.equal(guide.field({},id,ru,en).ru,ru);

@@ -158,10 +158,14 @@ test('the implementation excludes every source-backed level-up reward box',()=>{
   'Every direct slot action must be accessible');
  assert.match(app,/typeFilter\.value='equipment'/,
   'Direct slot action must activate the equipment category');
- assert.match(app,/groupCount\.dataset\.unfiltered/,
-  'Unfiltered source group counts must be preserved');
- assert.match(app,/groupCount\.textContent=type==='all'/,
-  'Counts in each group must change with filtering');
+ assert.match(app,/groupCount\.dataset\.chestCountKey=unfilteredKey/,
+  'Unfiltered group labels and values must be kept separately');
+ assert.match(app,/groupCount\.dataset\.chestCountSuffix=/,
+  'Source totals must remain stable when a caption changes');
+ assert.match(app,/chestBind\(groupCount,'groupShowing','text'/,
+  'Filtered groups use current D1 labels without changing game counts');
+ assert.match(app,/const key=groupCount\.dataset\.chestCountKey/,
+  'Removing a filter must restore the latest D1 caption');
  assert.match(app,/gallery\.dataset\.filtered/,
   'Filtered layouts must be distinguished from the full inventory');
  assert.doesNotMatch(app,/class:'wiki-chest-filter-slot'/,
