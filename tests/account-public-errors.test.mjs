@@ -107,3 +107,21 @@ test('account GET and POST do not hang on stalled HTTP headers or JSON bodies',a
   }
  }
 });
+
+test('account password change needs a verified Worker acknowledgment, not HTTP 200 alone',async()=>{
+ const start=source.indexOf('async function request(kind,data=null,auth=token()){');
+ const end=source.indexOf('\nfunction setSession(',start);
+ const code=source.slice(start,end);
+ const make=fetcher=>Function('options','token','fetch','AbortSignal','publicAccountError',
+  code+'\nreturn request;')({baseUrl:'https://example.test'},()=>null,
+  fetcher,AbortSignal,localize('en'));
+ for(const payload of [{},null,{ok:false},{token:'not a password proof'}]){
+  const run=make(async()=>({ok:true,status:200,json:async()=>payload}));
+  await assert.rejects(run('password',{currentPassword:'old',password:'new'},null),
+   error=>error.httpStatus===0&&/Cannot connect/.test(error.message));
+ }
+ const valid=make(async()=>({ok:true,status:200,json:async()=>({ok:true})}));
+ assert.equal((await valid('password',{currentPassword:'old',password:'new'},null)).ok,true);
+ const invalidTransport=make(async()=>null);
+ await assert.rejects(invalidTransport('me',null,null),error=>error.httpStatus===0);
+});
