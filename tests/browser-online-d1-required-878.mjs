@@ -7,7 +7,7 @@ export async function runOnlineD1Required878Smoke(browser,base){
  const api='https://ps-build-studio-cloud.bonaqu.workers.dev';
  const publicOrigin='http://pandora-online-required.test';
  const ctx=await browser.newContext({viewport:{width:1280,height:850}});
- let remoteUp=false,snapshot='snapshot-online-878-a',reads=0,apiWrites=0,badProgression=false,englishFails=true,quotaMode=false,quotaPaths=[];
+ let remoteUp=false,snapshot='snapshot-online-878-a',reads=0,apiWrites=0,badProgression=false,englishFails=true,quotaMode=false,quotaPaths=[],catalogPaths=[];
  const cors={'access-control-allow-origin':'*',
   'access-control-expose-headers':'X-PS-Catalog-Snapshot,X-PS-Catalog,Retry-After',
   'access-control-allow-headers':'Content-Type,Authorization',
@@ -29,6 +29,7 @@ export async function runOnlineD1Required878Smoke(browser,base){
   const path=new URL(url).pathname;
   if(path.startsWith('/api/catalog/')||path==='/api/overrides'){
    reads++;
+   if(path.startsWith('/api/catalog/'))catalogPaths.push(path);
    if(quotaMode){
     quotaPaths.push(path);
     return route.fulfill({status:503,headers:{...cors,
@@ -108,6 +109,21 @@ export async function runOnlineD1Required878Smoke(browser,base){
    'Retired buff controls must not reappear after verified D1 recovery');
   await page.evaluate(()=>document.querySelector('#onlineInertLateButton').remove());
   assert.ok(reads>=firstReads+10,'Retry must verify all D1 datasets and authorial copy');
+
+  // A normal Wiki visit must not download its six Hero-validated datasets a
+  // second time. The remaining six must still come from the SAME D1 snapshot.
+  const beforeWiki=catalogPaths.length;
+  await page.locator('#nav [data-tab="wiki"]').click();
+  await page.locator('#detailContent .wiki-list [data-wiki-record]').first()
+   .waitFor({state:'visible',timeout:30000});
+  const wikiRequests=catalogPaths.slice(beforeWiki)
+   .filter(path=>!path.endsWith('/stringsEn.json'))
+   .map(path=>path.split('/').at(-1)).sort();
+  assert.deepEqual(wikiRequests,
+   ['monsters.json','maps.json','instances.json','drops.json','trades.json','chests.json'].sort(),
+   'Six verified base datasets must be reused without sacrificing six D1 Wiki requests');
+  // Character is the main workbench, not a #nav tab: dismiss the Wiki dock.
+  await page.locator('#dockClose').click();
 
   // The actual Worker quota signal must not cause three immediate D1 reads
   // per failed request or repeated automatic checks on a focused tab.

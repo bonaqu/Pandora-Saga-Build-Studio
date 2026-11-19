@@ -150,7 +150,9 @@ test('character startup cancels sibling D1 reads on failure and rejects mixed sn
 
 test('Wiki and character loaders both reject split D1 snapshots before all JSON parses',()=>{
  const wiki=read('pandora-studio-encyclopedia-catalog.js');
- assert.match(wiki,/batcher\(keys,3,async \(key,_index,batchSignal\)=>/);
+ assert.match(wiki,/const missing=remote&&seed\?keys\.filter/);
+ assert.match(wiki,/batcher\(missing,3,async \(key,_index,batchSignal\)=>/);
+ assert.match(wiki,/const snapshots=new Set\(remote&&seedSnapshot\?\[seedSnapshot\]:\[\]\)/);
  assert.match(wiki,/AbortSignal\.any\(\[groupSignal,deadline\]\)/);
  assert.match(wiki,/typeof batchSignal\.aborted==='boolean'/);
  assert.match(wiki,/typeof batchSignal\.addEventListener==='function'/);

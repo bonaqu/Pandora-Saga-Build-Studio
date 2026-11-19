@@ -3188,6 +3188,13 @@ function invalidateWikiCatalog({dropSnapshot=false}={}){
  wikiIndex=null;wikiData=null;wikiPending=null;
  if(dropSnapshot)wikiBaseData=null;
 }
+function handleWikiSnapshotConflict(error){
+ // A newly published Wiki snapshot is incompatible with active Hero data.
+ // Lock on discovery rather than waiting for a later periodic D1 checkpoint.
+ if(catalogArchived||!studioLiveReady||liveGateReason==='changed')return;
+ if(error?.message==='В ходе загрузки версия опубликованного каталога изменилась')
+  showLiveGate('changed');
+}
 async function loadWiki(){
  if(wikiIndex)return wikiIndex;
  if(wikiPending)return wikiPending;
@@ -3203,8 +3210,17 @@ async function loadWiki(){
    try{loaded=await window.PandoraWikiCatalog.load({
     api:API,fetcher:catalogArchived?fetch:window.PandoraStudioLiveRead.get,
     timeout:30000,strict:!catalogArchived,preferLocal:catalogArchived,
-    signal:controller.signal})}
-   catch(error){if(generation!==wikiLoadGeneration)return loadWiki();throw error}
+    signal:controller.signal,
+    // The active Hero catalog has already passed D1 provenance and integrity
+    // gates for six Wiki datasets. The Wiki validates the other six against
+    // this exact published snapshot; no archive or cross-version mix is allowed.
+    verified:!catalogArchived&&activeCatalogSnapshot&&catalogSource&&
+     !liveGateReason?{snapshot:activeCatalogSnapshot,data:catalogSource}:null})}
+   catch(error){
+    if(generation!==wikiLoadGeneration)return loadWiki();
+    handleWikiSnapshotConflict(error);
+    throw error;
+   }
    if(generation!==wikiLoadGeneration)return loadWiki();
    wikiBaseData=loaded.data;
   }
