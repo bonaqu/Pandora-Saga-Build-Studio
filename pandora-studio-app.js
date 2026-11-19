@@ -407,6 +407,14 @@ async function cloudLibraryRequest(payload){
   const error=new Error(data?.error||'Облачный сервер недоступен');
   error.httpStatus=response.status;error.reason=data?.reason||null;throw error;
  }
+ // A successful HTTP status without the Worker contract must never erase
+ // local differences or mark a build saved. GET must contain the actual list;
+ // account-only mutations require an explicit positive acknowledgment.
+ const verified=payload?data?.ok===true:Array.isArray(data?.records);
+ if(!verified){
+  const error=new Error('Облако не подтвердило результат. Изменения остались в браузере.');
+  error.reason='unconfirmed';throw error;
+ }
  return data;
 }
 function cloudStatusSource(message){
