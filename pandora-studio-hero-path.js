@@ -453,8 +453,8 @@ function viewGrowth(target,api){
     const available=budget.total!==null&&api.allocationReady&&(cap>0||points>0);
     const track=make('div',{class:'inline-mastery-track path-integrated-track','aria-label':tr(api,'Единая полоса вложенных очков и освоенного мастерства ','Shared spent-points and trained-mastery bar: ')+api.branchName(key)});
     bindPathCopy(api,track,'branchTrackAria',
-     'Единая полоса вложенных очков и освоенного мастерства ',
-     'Shared spent-points and trained-mastery bar: ','aria-label',api.branchName(key));
+     'Единая полоса вложенных очков и освоенного мастерства',
+     'Shared spent-points and trained-mastery bar:','aria-label',' '+api.branchName(key));
     const visualMax=90; // fixed game-wide scale, never cap + budget
     const bed=make('div',{class:'inline-mastery-bed'}),gold=make('div',{class:'inline-mastery-fill'}),
           green=make('div',{class:'inline-mastery-green'}),
@@ -715,7 +715,7 @@ function viewGrowth(target,api){
      text:tr(api,'Начально (оч.): ','Initially (pts): ')+base,
      'aria-label':tr(api,'Начальная прокачка класса: ','Starting branch points: ')+base}):null;
     if(baseline)bindPathCopy(api,baseline,'innateBaselineAria',
-     'Начальная прокачка класса: ','Starting branch points: ','aria-label',String(base));
+     'Начальная прокачка класса:','Starting branch points:','aria-label',' '+String(base));
     const legend=make('div',{class:'path-track-legend','aria-hidden':'true'},[
      make('span',{text:'0'}),
      make('span',{class:'path-track-limit'},[
@@ -949,8 +949,8 @@ function viewSkills(target,details,api){
       onclick:()=>navigate(before)}:{})}):
     authored(api,'skillPrerequisiteMissing','Умение отсутствует в каталоге',
      'Skill not in catalog','span','path-skill-previous-value');
-    if(canNavigate)bindPathCopy(api,current,'skillPreviousAria','Предыдущее умение: ',
-     'Previous skill: ','aria-label',before.name);
+    if(canNavigate)bindPathCopy(api,current,'skillPreviousAria','Предыдущее умение:',
+     'Previous skill:','aria-label',' '+before.name);
    const row=make('p',{class:'path-skill-prereqs path-skill-previous-row'});
    row.append(title,make('span',{class:'path-skill-previous-separator',text:': '}),current);
    details.append(row);
@@ -971,10 +971,10 @@ function viewSkills(target,details,api){
      'aria-label':tr(api,'Следующее умение: ','Next skill: ')+label,
      text:tr(api,'Следующее → ','Next → ')+label,
      onclick:()=>navigate(related)});
-    bindPathCopy(api,button,'skillNextAria','Следующее умение: ',
-     'Next skill: ','aria-label',label);
-    bindPathCopy(api,button,'skillNextLink','Следующее → ',
-     'Next → ','text',label);
+    bindPathCopy(api,button,'skillNextAria','Следующее умение:',
+     'Next skill:','aria-label',' '+label);
+    bindPathCopy(api,button,'skillNextLink','Следующее →',
+     'Next →','text',' '+label);
     lineage.append(button);
    }
    details.append(lineage);
