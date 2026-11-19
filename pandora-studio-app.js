@@ -1248,6 +1248,51 @@ function ownerInterfaceEditor(section,rows,headingRu='Подписи интер�
   return bindOwnerInterfaceText(node,'wiki.chest.text',key,
    row[1],row[2],attribute,suffix,prefix);
  }
+// D1-editable RU/EN labels only. IDs, values, source odds and item effects
+// remain source data outside this owner-copy map.
+const wikiItemDisplayRows=Object.freeze([
+ ["onUse","При использовании:","On use:"],
+ ["relatedSkill","Похожее умение:","Related skill:"],
+ ["poisonRemedy","Средство против яда:","Poison remedy:"],
+ ["extraActions","Дополнительные действия","Additional actions"],
+ ["craftedWith","Создаётся умением:","Crafted with:"],
+ ["consumedBy","Расходуется умением:","Consumed by skill:"],
+ ["ingredients","Материалы:","Ingredients:"],
+ ["produces","Результат:","Produces:"],
+ ["otherIngredients","Другие материалы:","Other ingredients:"],
+ ["sourceNoteHeading","Комментарий об источнике","Source note"],
+ ["sourceNoteEmpty","Двойной клик — добавить комментарий","Double-click to add a note"],
+ ["grip","Хват","Grip"],
+ ["twoHanded","Двуручное","Two-handed"],
+ ["wearableBy","Для персонажей","Wearable by"],
+ ["obtainHeading","Где получить","How to obtain"],
+ ["levelRewardAbove","Награда за достижение уровня указана выше.","The level reward is shown above."],
+ ["sourcesMissing","Источники получения не указаны.","No acquisition sources listed."],
+ ["usedInNpcTrades","Используется в обмене NPC · ","Used in NPC trades · "],
+ ["showMore","Показать ещё ","Show more "],
+ ["itemEffects","Действие предмета","Item effects"],
+ ["itemBonuses","Бонусы предмета","Item bonuses"],
+ ["effectSearch","Найти игровой эффект…","Search game effects…"],
+ ["effectSearchAria","Поиск эффекта","Search effects"],
+ ["effectChoose","Выбери эффект","Choose an effect"],
+ ["effectMissing","Эффекты не найдены","No effects found"],
+ ["effectAdd","+ Добавить эффект","+ Add effect"],
+ ["effectDirection","Применение","Applied to"],
+ ["effectCaster","К применяющему","Caster"],
+ ["effectTarget","К цели","Target"],
+]);
+const wikiItemDisplayByKey=new Map(wikiItemDisplayRows.map(row=>[row[0],row]));
+function itemCopy(key){
+ const row=wikiItemDisplayByKey.get(key);
+ if(!row)throw Error('Unknown item label');
+ return ownerCopy('wiki.item.text',key,row[1],row[2]);
+}
+function itemBind(node,key,attribute='text',suffix='',prefix=''){
+ const row=wikiItemDisplayByKey.get(key);
+ if(!row)throw Error('Unknown item binding');
+ return bindOwnerInterfaceText(node,'wiki.item.text',key,
+  row[1],row[2],attribute,suffix,prefix);
+}
 const equipmentCopy=(key,ru,en)=>ownerCopy('equipment',key,ru,en);
 const equipmentCopyLabel=(node,key,ru,en,options)=>
  ownerCopyLabel(node,'equipment',key,ru,en,options);
@@ -4777,14 +4822,16 @@ function renderWiki(root){
    detail.append(description);
   }
   if(type==='item'){
+   if(adminEditing&&adminToken)detail.append(ownerInterfaceEditor(
+    'wiki.item.text',wikiItemDisplayRows,
+    'Подписи карточки предмета','Item card captions'));
    const kinds=utilityCategories(rec),effects=Array.isArray(rec.effects)?rec.effects:[];
    const activated=[...new Set(effects.filter(effect=>
     effect?.dir==='TARGET'&&/^EP_SKILL_EXEC(?:_|$)/.test(effect.func||'')&&
     wikiData.skills?.[String(effect.a)]).map(effect=>String(effect.a)))];
    if(activated.length){
     const used=h('div',{class:'wiki-effect-usage'});
-    used.append(h('small',{text:wt('При использовании:',
-     'On use:')}));
+    used.append(itemBind(h('small'),'onUse'));
     for(const skillId of activated)used.append(wikiLink(
      dataName('skill',skillId),'skill',skillId));
     detail.append(used);
@@ -4807,7 +4854,7 @@ function renderWiki(root){
     if(poisonHit?.learnable&&
      poisonHit.funcs?.some(effect=>effect.ep==='EP_CAUSE_POISON')){
      const related=h('div',{class:'wiki-effect-usage'});
-     related.append(h('small',{text:wt('Похожее умение:','Related skill:')}),
+     related.append(itemBind(h('small'),'relatedSkill'),
       wikiLink(dataName('skill','430052001'),'skill','430052001'));
      detail.append(related);
     }
@@ -4816,7 +4863,7 @@ function renderWiki(root){
       effect.dir==='TARGET')).slice(0,8);
     if(antidotes.length){
      const clean=h('div',{class:'wiki-effect-usage'});
-     clean.append(h('small',{text:wt('Средство против яда:','Poison remedy:')}));
+     clean.append(itemBind(h('small'),'poisonRemedy'));
      for(const [cureId]of antidotes)
       clean.append(wikiLink(dataName('item',cureId),'item',cureId));
      detail.append(clean);
@@ -4835,17 +4882,14 @@ function renderWiki(root){
     const usage=h(folded?'details':'div',{
      class:'wiki-effect-usage'+(folded?' wiki-special-skill-uses':'')
     });
-    if(folded)usage.append(h('summary',{
-     text:wt('Дополнительные действия','Additional actions')+' ('+group.length+')'
-    }));
+    if(folded)usage.append(itemBind(h('summary'),'extraActions','text',' ('+group.length+')'));
     for(const relation of group){
      const created=relation.produces.includes(Number(id));
      const line=h('div',{class:'wiki-effect-usage-row'});
-     line.append(h('small',{text:created?wt('Создаётся умением:','Crafted with:'):
-      wt('Расходуется умением:','Consumed by skill:')}),
+     line.append(itemBind(h('small'),created?'craftedWith':'consumedBy'),
       wikiLink(dataName('skill',relation.id),'skill',relation.id));
      if(created&&relation.consumes.length){
-      line.append(h('small',{text:wt('Материалы:','Ingredients:')}));
+      line.append(itemBind(h('small'),'ingredients'));
       for(const itemId of relation.consumes)
        if(wikiData.items?.[String(itemId)]){
         line.append(wikiLink(dataName('item',String(itemId)),'item',String(itemId)));
@@ -4855,7 +4899,7 @@ function renderWiki(root){
        }
      }
      if(!created&&relation.produces.length){
-      line.append(h('small',{text:wt('Результат:','Produces:')}));
+      line.append(itemBind(h('small'),'produces'));
       for(const itemId of relation.produces)
        if(wikiData.items?.[String(itemId)]){
         line.append(wikiLink(dataName('item',String(itemId)),'item',String(itemId)));
@@ -4865,7 +4909,7 @@ function renderWiki(root){
        }
      }
      if(!created&&relation.consumes.length>1){
-      line.append(h('small',{text:wt('Другие материалы:','Other ingredients:')}));
+      line.append(itemBind(h('small'),'otherIngredients'));
       for(const itemId of relation.consumes)
        if(itemId!==Number(id)&&wikiData.items?.[String(itemId)]){
         line.append(wikiLink(dataName('item',String(itemId)),'item',String(itemId)));
@@ -4941,24 +4985,28 @@ function renderWiki(root){
   const moreSources=(rows,group='sources')=>{
    const shown=group==='usage'?wikiUsageShown:wikiSourceShown;
    if(rows.length<=shown)return;
-   detail.append(h('button',{type:'button',class:'wiki-more',text:wt('Показать ещё ','Show more ')+
-    Math.min(80,rows.length-shown)+' / '+(rows.length-shown),
+   const more=h('button',{type:'button',class:'wiki-more',
     onclick:()=>{
      if(group==='usage')wikiUsageShown+=80;
      else wikiSourceShown+=80;
      draw(true);
-    }}));
+    }});
+   const counters=Math.min(80,rows.length-shown)+' / '+(rows.length-shown);
+   if(type==='item')itemBind(more,'showMore','text',counters);
+   else more.textContent=wt('Показать ещё ','Show more ')+counters;
+   detail.append(more);
   };
   if(type==='item'){
     if(adminEditing&&adminToken&&lang==='ru'){
      const sourceNote=String(rec.sourceNote||'');
      const note=h('p',{class:sourceNote?'':'wiki-description-placeholder',
-      text:sourceNote||wt('Двойной клик — добавить комментарий','Double-click to add a note'),
+      text:sourceNote||itemCopy('sourceNoteEmpty'),
       ...(adminEditing&&adminToken&&lang==='ru'?{
        'data-owner-record':'item:'+id,'data-owner-field':'sourceNote',
        ...(!sourceNote?{'data-owner-empty':'true'}:{})}:{})});
+     if(!sourceNote)itemBind(note,'sourceNoteEmpty');
      detail.append(h('section',{class:'wiki-owner-note'},[
-      h('strong',{text:wt('Комментарий об источнике','Source note')}),note]));
+      itemBind(h('strong'),'sourceNoteHeading'),note]));
     }
     const dl=h('dl',{class:'item-fields'});
     const itemFields=[
@@ -5059,8 +5107,8 @@ function renderWiki(root){
      }
      dl.append(dt,dd);
     }
-    if(rec.twoHanded===true)dl.append(h('dt',{text:wt('Хват','Grip')}),
-     h('dd',{text:wt('Двуручное','Two-handed')}));
+    if(rec.twoHanded===true)dl.append(itemBind(h('dt'),'grip'),
+     itemBind(h('dd'),'twoHanded'));
     detail.append(dl);
     if(adminEditing&&adminToken){
      const missing=itemFields.filter(([,value,key])=>value==null&&key!=='kind');
@@ -5091,9 +5139,7 @@ function renderWiki(root){
      const update=(index,patch)=>saveWikiItemField(id,'effects',
       effectRows.map((effect,i)=>i===index?{...effect,...patch}:effect));
      const list=h('div',{class:'wiki-owner-effects'});
-     list.append(h('h4',{text:rec.slot==null?
-      wt('Действие предмета','Item effects'):
-      wt('Бонусы предмета','Item bonuses')}));
+     list.append(itemBind(h('h4'),rec.slot==null?'itemEffects':'itemBonuses'));
      for(const [index,effect] of effectRows.entries()){
       const row=h('div',{class:'wiki-owner-effect'});
       const effectName=h('span',{class:'wiki-owner-effect-name',text:labelFor(effect.func),
@@ -5146,15 +5192,16 @@ function renderWiki(root){
       }
       if(adminEditing&&adminToken){
        const dir=h('span',{class:'wiki-owner-effect-value'});
-       dir.append(h('small',{text:'Применение'}));
-       const indicator=h('strong',{class:'wiki-edit-value',
-        text:effect.dir==='CASTER'?'К применяющему':'К цели',
-        title:'Двойной клик — выбрать применение'});
+       dir.append(itemBind(h('small'),'effectDirection'));
+       const indicator=itemBind(h('strong',{class:'wiki-edit-value',
+        title:wt('Двойной клик — выбрать применение',
+         'Double-click to choose recipient')}),
+        effect.dir==='CASTER'?'effectCaster':'effectTarget');
        indicator.ondblclick=e=>{
         e.preventDefault();e.stopPropagation();
         editWikiValue(indicator,effect.dir,{type:'select',options:[
-         {value:'TARGET',label:'К цели'},
-         {value:'CASTER',label:'К применяющему'}],
+         {value:'TARGET',label:itemCopy('effectTarget')},
+         {value:'CASTER',label:itemCopy('effectCaster')}],
          onCommit:next=>update(index,{dir:next})});
        };
        dir.append(indicator);row.append(dir);
@@ -5166,26 +5213,30 @@ function renderWiki(root){
       list.append(row);
      }
      if(adminEditing&&adminToken){
-      const plus=h('button',{type:'button',class:'wiki-owner-plus',text:wt('+ Добавить эффект','+ Add effect')});
+      const plus=itemBind(h('button',{type:'button',class:'wiki-owner-plus'}),'effectAdd');
       plus.onclick=()=>{
        if(list.querySelector('.wiki-owner-effect-picker'))return;
        const panel=h('div',{class:'wiki-owner-source-picker wiki-owner-effect-picker'});
-       const search=ownerPlainTextField({class:'wiki-inline-input wiki-owner-search',
-        'aria-label':wt('Поиск эффекта','Search effects'),placeholder:'Найти игровой эффект…'});
+       const search=ownerPlainTextField({class:'wiki-inline-input wiki-owner-search'});
+       itemBind(search,'effectSearch','placeholder');
+       itemBind(search,'effectSearchAria','aria-label');
        
-       const chooser=h('select',{class:'wiki-inline-select','aria-label':wt('Выбери эффект','Choose effect')});
+       const chooser=itemBind(h('select',{class:'wiki-inline-select'}),
+        'effectChoose','aria-label');
        const error=h('small',{class:'inline-owner-error',role:'status'});
        const fill=()=>{
         const q=wikiIndex.normalize(search.value);
         const matches=effectOptions.filter(row=>!q||
          searchWords(row.label+' '+row.value,q));
-        chooser.replaceChildren(h('option',{value:'',text:matches.length?'Выбери эффект':'Эффекты не найдены'}));
+        chooser.replaceChildren(itemBind(h('option',{value:''}),
+         matches.length?'effectChoose':'effectMissing'));
         for(const row of matches)chooser.append(h('option',{value:row.value,text:row.label}));
        };
        search.oninput=fill;
        chooser.onchange=async()=>{
         if(!chooser.value)return;
-        if(effectRows.length>=32){error.textContent='Можно добавить не более 32 эффектов';return}
+        if(effectRows.length>=32){error.textContent=wt(
+         'Можно добавить не более 32 эффектов','You can add at most 32 effects');return}
         chooser.disabled=true;
         try{await saveWikiItemField(id,'effects',[
          ...effectRows,{func:chooser.value,dir:'TARGET',exclusive:null,a:0,b:null}])}
@@ -5232,21 +5283,20 @@ function renderWiki(root){
     if(!wikiIndex.rewardChest(id))renderClassEligibility(Object.keys(rec.classes||{}).filter(key=>rec.classes[key]),true);
     const wearers=window.PandoraUIPlanner.outfitWearers(rec,lang);
     if(wearers?.length)detail.append(h('div',{class:'wiki-item-wearers'},[
-     h('small',{text:wt('Для персонажей','Wearable by')}),
+     itemBind(h('small'),'wearableBy'),
      h('div',{class:'wiki-wearer-tags'},wearers.map(name=>
       h('span',{class:'wiki-wearer-tag',text:'✧ '+name})))
     ]));
-    detail.append(h('h4',{text:wt('Где получить','How to obtain')}));
+    detail.append(itemBind(h('h4'),'obtainHeading'));
     const found=wikiIndex.sources(id);
-    if(!found.length)detail.append(h('p',{class:'muted',text:wikiIndex.rewardChest(id)?
-     wt('Награда за достижение уровня указана выше.','The level reward is shown above.'):
-     wt('Источники получения не указаны.','No acquisition sources listed.')}));
+    if(!found.length)detail.append(itemBind(h('p',{class:'muted'}),
+     wikiIndex.rewardChest(id)?'levelRewardAbove':'sourcesMissing'));
     if(found.length)appendSourceFlow(found,id);
     moreSources(found);
     appendAcquisitionEditor(id);
     const usedIn=wikiIndex.materialUses(id);
     if(usedIn.length){
-     detail.append(h('h4',{text:(lang==='en'?'Used in NPC trades · ':'Используется в обмене NPC · ')+usedIn.length}));
+     detail.append(itemBind(h('h4'),'usedInNpcTrades','text',String(usedIn.length)));
      const recipes=h('div',{class:'wiki-recipe-uses'});
      for(const trade of usedIn.slice(0,wikiUsageShown)){
       const entry=h('div',{class:'wiki-recipe-use'+
