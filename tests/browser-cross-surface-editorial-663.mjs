@@ -225,7 +225,7 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
    '#detailContent .wiki-trade-card')].some(card=>!card.hidden),null,{timeout:10000});
   const unfilteredCount=await npc.locator('.wiki-result-counter').innerText();
   assert.equal(unfilteredCount,offersBefore+' среди '+offersBefore);
-  assert.equal(await searchNpcTrades.innerText(),'');
+  assert.equal((await searchNpcTrades.textContent()).trim(),'');
   const removeTrade=npc.locator('.wiki-trade-card:not([hidden]) .wiki-trade-delete').first();
   await edit('wiki.npc.trade','deleteConfirm','Подтвердить безвозвратное удаление');
   await removeTrade.click();

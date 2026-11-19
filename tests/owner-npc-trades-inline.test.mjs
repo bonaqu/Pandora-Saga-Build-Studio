@@ -92,7 +92,7 @@ test('36 NPC trade copy captions use stable D1 RU/EN and preserve real limits',(
  assert.match(app,/npcTradeBind\(recipeSearch,'searchAria','aria-label'\)/);
  assert.match(app,/node\.dataset\.placeholder=value/);
  assert.match(app,/remove\.addEventListener\('blur',resetDelete\)/);
- assert.match(app,/if\(event\.key==='Escape'\)\{event\.preventDefault\(\);resetDelete\(\)\}/);
+ assert.match(app,/event\.preventDefault\(\);event\.stopPropagation\(\);resetDelete\(\)/);
  assert.doesNotMatch(app,/remove\.textContent='Повторить, чтобы удалить'/);
  const src={npcs:{7:{}},trades:[{id:1,i:11,npc:[7],mats:[{i:10,n:3}],gold:55,
   honor:2,exp:0,limit:{n:3,period:'weekly'}}]};

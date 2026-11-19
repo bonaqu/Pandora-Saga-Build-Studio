@@ -6309,7 +6309,9 @@ function renderWiki(root){
        };
        remove.addEventListener('blur',resetDelete);
        remove.addEventListener('keydown',event=>{
-        if(event.key==='Escape'){event.preventDefault();resetDelete()}
+        if(event.key==='Escape'){
+         event.preventDefault();event.stopPropagation();resetDelete();
+        }
        });
        remove.onclick=()=>{
         if(remove.disabled)return;
