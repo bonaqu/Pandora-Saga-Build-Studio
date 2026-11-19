@@ -17,7 +17,12 @@ function core(fetcher){
  // Isolated production-loader evaluation: emulate the registered GET transport
  // without weakening the real browser's full retry and concurrency tests.
  const window={PandoraStudioLiveRead:{
-  mapLimit:(items,_limit,mapper)=>Promise.all(items.map(mapper)),
+  mapLimit:(items,_limit,mapper)=>{
+   // Keep this synthetic source-integrity fixture exhaustive; the real
+   // aborting transport is exercised separately by live-d1-retry tests.
+   const signal=new AbortController().signal;
+   return Promise.all(items.map((item,index)=>mapper(item,index,signal)));
+  },
   get:(url,opts)=>fetcher(url,opts)
  }};
  return new Function('window','fetch','AbortSignal','API','catalogLoadVersion',

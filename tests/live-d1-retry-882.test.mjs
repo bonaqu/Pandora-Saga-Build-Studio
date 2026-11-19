@@ -281,11 +281,16 @@ test('cancelled D1 GET rejects promptly even when an HTTP adapter ignores AbortS
 test('a timed-out read-only fetch adapter is bounded without consuming extra D1 retries',async()=>{
  const live=load();
  let fetches=0;
- await assert.rejects(live.get('https://example.test/api/catalog/meta.json',
-  {},{attempts:1,timeoutMs:35,
-   fetcher:async()=>{fetches++;return new Promise(()=>{})}
-  }),/abort|timeou/i);
- assert.equal(fetches,1);
+ // AbortSignal.timeout() deliberately does not keep Node's event loop alive;
+ // the test's own referenced timer does, and must always be cleared.
+ const keepAlive=setTimeout(()=>{},200);
+ try{
+  await assert.rejects(live.get('https://example.test/api/catalog/meta.json',
+   {},{attempts:1,timeoutMs:35,
+    fetcher:async()=>{fetches++;return new Promise(()=>{})}
+   }),/abort|timeou/i);
+  assert.equal(fetches,1);
+ }finally{clearTimeout(keepAlive)}
 });
 
 test('a stale quota JSON parse cannot extend the next checkpoint cooldown',async()=>{

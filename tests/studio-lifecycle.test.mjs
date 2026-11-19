@@ -76,7 +76,9 @@ test('current D1 class caps guard skill spending and the archive requires explic
  const app=read('pandora-studio-app.js'),hero=read('pandora-studio-hero-path.js');
  assert.ok(app.includes("const base=archive?'./data/os':API+'/api/catalog'"));
  assert.ok(app.includes("catalogSource=data;gameTables=data.tables;gameItemForth=data.itemForth"));
- assert.ok(app.includes("if(!archive&&(snapshots.size!==1||unknown.length))"));
+ assert.ok(app.includes("if(!archive&&snapshots.size!==1)"));
+ assert.ok(app.includes("if(!snapshot)throw Error"));
+ assert.ok(app.includes("if(snapshots.size!==1)"));
  assert.ok(app.includes("catalogArchived=archive"));
  assert.match(app,/branchCap\(catalog\.classes,jobKeys\[state\.job\],branch\)/);
  assert.match(hero,/api\.allocationReady/);
