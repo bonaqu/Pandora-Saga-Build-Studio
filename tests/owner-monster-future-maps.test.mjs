@@ -170,7 +170,7 @@ test('map and dungeon captions use the shared bilingual D1 owner editor',()=>{
  assert.equal(captions.length,20);
  assert.equal(new Set(captions.map(row=>row[1])).size,20);
  const win={};Function('window',read('pandora-studio-honor-guide.js'))(win);
- for(const [key,ru,en]of captions){
+ for(const [,key,ru,en]of captions){
   const path='wiki.map.text.'+key.replace(/[A-Z]/g,x=>'-'+x.toLowerCase());
   const patch={['guideedit.book.'+path]:JSON.stringify({ru:'Новое',en:'Updated'})};
   assert.equal(win.PandoraHonorGuide.field(patch,path,ru,en).ru,'Новое');
