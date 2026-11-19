@@ -598,8 +598,12 @@ async function load({api,fetcher,local='./data/os',timeout=12000,preferLocal=fal
    // hero editor. Isolated legacy fixtures without this helper remain valid.
    const deadline=typeof AbortSignal!=='undefined'&&
     typeof AbortSignal.timeout==='function'?AbortSignal.timeout(timeout):null;
-   const signal=batchSignal&&deadline&&typeof AbortSignal.any==='function'?
-    AbortSignal.any([batchSignal,deadline]):batchSignal||deadline;
+   // Array.map() supplies its source array as the third callback argument.
+   // Only our real mapLimit supplies a cancellable AbortSignal there.
+   const groupSignal=batchSignal&&typeof batchSignal.aborted==='boolean'&&
+    typeof batchSignal.addEventListener==='function'?batchSignal:null;
+   const signal=groupSignal&&deadline&&typeof AbortSignal.any==='function'?
+    AbortSignal.any([groupSignal,deadline]):groupSignal||deadline;
    if(signal)init.signal=signal;
    const response=await fetcher(url,init);
    if(!response?.ok)throw Error(key+' HTTP '+(response?.status??'network'));
