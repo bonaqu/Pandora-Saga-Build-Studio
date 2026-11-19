@@ -1355,6 +1355,71 @@ export async function runAdminEntrySmoke(browser,base){
    null,{timeout:15000});
   assert.equal(JSON.parse(townOverrides.get('wikiedit.npc.astir-npc-kingdom-claris')).nameEn,
    'Claris Test');
+  // Astir districts previously used a separate, non-cancellable NPC form.
+  // Verify the shared bilingual D1 editor, cancellation, creation, visibility,
+  // and removal of a newly created NPC; no game client or production writes.
+  await page.locator('.wiki-categories [data-wiki-chapter="map"]').click();
+  const districtFilter=page.locator('input[name="pandora-studio-encyclopedia-filter"]');
+  await districtFilter.fill('Kingdom District');
+  await page.locator('.wiki-list [data-wiki-record="astir-kingdom"]')
+   .waitFor({state:'visible',timeout:15000});
+  await page.locator('.wiki-list [data-wiki-record="astir-kingdom"]').click();
+  const district=page.locator('.wiki-page');
+  await district.locator('.wiki-map-create-npc').waitFor({state:'visible',timeout:15000});
+  await district.locator('.wiki-map-create-npc').click();
+  let districtForm=district.locator('.wiki-map-create-npc-form');
+  await districtForm.locator('[data-owner-interface-key="npcNameRu"]')
+   .fill('Тестовый житель Астира');
+  await districtForm.locator('[data-owner-interface-key="npcSave"]').click();
+  assert.match(await districtForm.locator('.inline-owner-error').innerText(),
+   /both RU and EN names/i,'District requires bilingual names');
+  await districtForm.locator('[data-owner-interface-key="npcCancel"]').click();
+  assert.equal(await district.locator('.wiki-map-create-npc-form').count(),0,
+   'Cancel removes the form without an owner D1 write');
+  assert.equal([...townOverrides.keys()].some(key=>/^wikiedit\\.npc\\.owner-npc-/.test(key)),
+   false);
+  await district.locator('.wiki-map-create-npc').click();
+  districtForm=district.locator('.wiki-map-create-npc-form');
+  await districtForm.locator('[data-owner-interface-key="npcNameRu"]')
+   .fill('Тестовый житель Астира');
+  await districtForm.locator('[data-owner-interface-key="npcNameEn"]')
+   .fill('Astir QA Resident');
+  await districtForm.locator('[data-owner-interface-key="npcService"]')
+   .fill('Test fixture');
+  const districtPost=page.waitForResponse(response=>{
+   if(!response.url().endsWith('/api/admin/override'))return false;
+   try{return /^wikiedit\\.npc\\.owner-npc-/.test(response.request().postDataJSON().key)}
+   catch{return false}
+  },{timeout:20000});
+  await districtForm.locator('[data-owner-interface-key="npcSave"]').click();
+  await districtPost;
+  const districtKeys=[...townOverrides.keys()].filter(key=>
+   /^wikiedit\\.npc\\.owner-npc-/.test(key));
+  assert.equal(districtKeys.length,1);
+  const districtId=districtKeys[0].slice('wikiedit.npc.'.length);
+  assert.deepEqual(JSON.parse(townOverrides.get(districtKeys[0])).maps,['astir-kingdom']);
+  assert.equal(JSON.parse(townOverrides.get(districtKeys[0])).nameEn,'Astir QA Resident');
+  const districtNpcLink=district.locator('.wiki-map-npc a[href="#wiki/npc/'+districtId+'"]');
+  await districtNpcLink.waitFor({state:'visible',timeout:15000});
+  await districtNpcLink.click();
+  const deleteNpc=page.locator('.wiki-page .wiki-owner-delete-record');
+  await deleteNpc.waitFor({state:'visible',timeout:15000});
+  page.once('dialog',dialog=>void dialog.dismiss());
+  await deleteNpc.click();
+  assert.equal(townOverrides.has(districtKeys[0]),true,
+   'Rejecting confirmation must preserve the D1 NPC');
+  page.once('dialog',dialog=>void dialog.accept());
+  const deletedDistrictNpc=page.waitForResponse(response=>{
+   if(!response.url().endsWith('/api/admin/reset'))return false;
+   try{return response.request().postDataJSON().key===districtKeys[0]}
+   catch{return false}
+  },{timeout:15000});
+  await deleteNpc.click();
+  await deletedDistrictNpc;
+  assert.equal(townOverrides.has(districtKeys[0]),false,
+   'Confirmed delete removes only the owner-created NPC');
+  console.log('Chromium Astir district owner NPC D1: bilingual, validation, cancel, save, read-back and delete passed');
+
   // Create an entirely new D1 location, then edit its sections and tags in place.
   await page.locator('.wiki-categories [data-wiki-chapter="map"]').click();
   await page.locator('.wiki-map-create').waitFor({state:'visible'});
@@ -1455,9 +1520,9 @@ export async function runAdminEntrySmoke(browser,base){
   // Create a genuine administrator-owned NPC from the same confirmed map.
   await elBeht.locator('.wiki-map-create-npc').click();
   const npcForm=elBeht.locator('.wiki-map-create-npc-form');
-  await npcForm.locator('[aria-label="New NPC name RU"]').fill('Мастер арены Алиса');
-  await npcForm.locator('[aria-label="New NPC name EN"]').fill('Arena Master Alice');
-  await npcForm.locator('[aria-label="New NPC service"]').fill('Управляет ареной');
+  await npcForm.locator('[data-owner-interface-key="npcNameRu"]').fill('Мастер арены Алиса');
+  await npcForm.locator('[data-owner-interface-key="npcNameEn"]').fill('Arena Master Alice');
+  await npcForm.locator('[data-owner-interface-key="npcService"]').fill('Управляет ареной');
   const savedNpc=page.waitForResponse(response=>{
    if(!response.url().endsWith('/api/admin/override'))return false;
    try{return /^wikiedit\.npc\.owner-npc-/.test(response.request().postDataJSON().key)}
