@@ -161,3 +161,46 @@ test('Wiki and character loaders both reject split D1 snapshots before all JSON 
   'Wiki must halt incompatible D1 sources before downloading more content');
  assert.match(wiki,/if\(signal\?\.aborted\)throw signal\.reason/);
 });
+
+test('stale Wiki generations and inactive D1 heartbeats cancel pending GETs',async()=>{
+ const wiki=portion('let wikiLoadGeneration=0', '// Every navigation entry owns');
+ assert.match(wiki,/wikiLoadController\?\.abort/);
+ assert.match(wiki,/signal:controller\.signal/);
+ assert.match(wiki,/if\(wikiLoadController===controller\)wikiLoadController=null/);
+ const heartbeat=portion('function cancelLiveCheckpoint()', 'function reloadVerifiedCatalog()');
+ assert.match(heartbeat,/liveCheckpointController\?\.abort/);
+ assert.match(heartbeat,/AbortSignal\.any\(\[controller\.signal,AbortSignal\.timeout\(22000\)\]\)/);
+ const events=portion("window.addEventListener('offline'", 'let startupAttempt=');
+ assert.match(events,/cancelLiveCheckpoint\(\)/);
+ assert.match(events,/document\.visibilityState==='hidden'/);
+ const calls=[],gates=[];
+ // Execute the real production checkpoint function, not a reimplementation.
+ // The mock ignores AbortSignal to reproduce the dangerous late response.
+ const runtime=Function('window','AbortController','AbortSignal',String.raw`
+ let studioLiveReady=true,liveGateReason=null,liveCheckpointId=0,
+     liveCheckpointPromise=null,liveCheckpointController=null,liveRetryTimer=null;
+ const localCatalogHost=false,adminToken='',API='https://worker.invalid';
+ const ownerSaveInFlight=()=>false,quotaCooldown=()=>0,override={},
+       activeCatalogSnapshot='snapshot-1',catalogSource={meta:{counts:{items:1}}};
+ const showLiveGate=value=>window.__gates.push(value),leaveLiveGate=()=>window.__gates.push('ready');
+ const clearTimeout=()=>{};
+ `+heartbeat+String.raw`
+ return {checkLiveConnection,cancelLiveCheckpoint};
+ `)({
+  __gates:gates,PandoraStudioOnlineGate:{
+   digest:()=>'',inspect:({signal})=>new Promise(resolve=>calls.push({signal,resolve}))
+  },PandoraStudioLiveRead:{get:()=>{},resetQuotaCooldown:()=>{}}
+ },AbortController,AbortSignal);
+ const first=runtime.checkLiveConnection();
+ assert.equal(calls.length,1);
+ runtime.cancelLiveCheckpoint();
+ assert.equal(calls[0].signal.aborted,true,'Old D1 reads must receive abort');
+ const second=runtime.checkLiveConnection();
+ assert.equal(calls.length,2,'New check must not wait for obsolete request');
+ calls[0].resolve({status:'changed'});
+ await first;
+ assert.deepEqual(gates,[],'Late old response must not block a new checkpoint');
+ calls[1].resolve({status:'ready'});
+ await second;
+ assert.deepEqual(gates,[]);
+});
