@@ -143,19 +143,47 @@ async function request(kind,data=null,auth=token()){
  const signal=typeof AbortSignal!=='undefined'&&
   typeof AbortSignal.timeout==='function'?
   AbortSignal.timeout(kind==='me'?12000:20000):null;
- let response;
+ // AbortSignal on its own is insufficient for adapters that stall after
+ // headers. Both stages share one deadline, and a timed-out account mutation
+ // is never replayed: its outcome on the server may be unknown.
+ const bounded=work=>{
+  if(!signal)return Promise.resolve().then(work);
+  const reason=()=>signal.reason||Error('Account request cancelled');
+  if(signal.aborted)return Promise.reject(reason());
+  return new Promise((resolve,reject)=>{
+   let settled=false;
+   const finish=(done,value)=>{
+    if(settled)return;
+    settled=true;
+    signal.removeEventListener('abort',onAbort);
+    done(value);
+   };
+   const onAbort=()=>finish(reject,reason());
+   signal.addEventListener('abort',onAbort,{once:true});
+   Promise.resolve().then(()=>{
+    if(signal.aborted)throw reason();
+    return work();
+   }).then(value=>finish(resolve,value),error=>finish(reject,error));
+  });
+ };
+ let response,result;
  try{
-  response=await fetch(options.baseUrl+'/api/account/'+kind,{
+  response=await bounded(()=>fetch(options.baseUrl+'/api/account/'+kind,{
    ...(signal?{signal}:{}),
    method:data===null?'GET':'POST',
    headers:{'Content-Type':'application/json',...(auth?{Authorization:'Bearer '+auth}:{})},
    ...(data===null?{}:{body:JSON.stringify(data)})
-  });
+  }));
+  try{result=await bounded(()=>response.json())}
+  catch(error){
+   if(signal?.aborted)throw error;
+   // Malformed replies must not authenticate or overwrite an account session.
+   result={};
+  }
  }catch{
-  // A browser-level failure is not an account revocation or a useful trace.
+  // Network/body failure is not evidence of account revocation or a useful trace.
   const error=new Error(publicAccountError('',0));error.httpStatus=0;throw error;
  }
- const result=await response.json().catch(()=>({}));
  if(!response.ok){
   const error=new Error(publicAccountError(result.error,response.status));
   error.httpStatus=response.status;throw error;
