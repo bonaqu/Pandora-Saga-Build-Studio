@@ -3078,7 +3078,15 @@ function renderPathCopyControls(){
  // Static RU/EN defaults are editable; game numbers and skill names stay out.
  let pathHelp=$('ownerPathHelpCopy');
  if(!editing)pathHelp?.remove();
- else if(!pathHelp){
+ else{
+  // Keep a live inline editor intact; replace only a finished panel when
+  // the owner changes RU/EN so its caption and defaults cannot go stale.
+  if(pathHelp&&pathHelp.dataset.pathHelpLocale!==lang&&
+     !pathHelp.querySelector('.wiki-inline-input')){
+   pathHelp.remove();pathHelp=null;
+  }
+ }
+ if(editing&&!pathHelp){
   pathHelp=ownerInterfaceEditor('path',[
    ['branchPointHelp','Очки умений, распределяемые при развитии персонажа.','Skill points allocated as the character develops.','Вложенные очки','Invested points help'],
    ['greenMasteryHelp','Растёт при использовании умений этой ветки, а также соответствующих типов атак или оружия.','Increases when using this branch’s skills or its corresponding attack or weapon types.','Зелёное мастерство','Green mastery help'],
@@ -3094,6 +3102,7 @@ function renderPathCopyControls(){
   ],'Подсказки Пути героя','Hero Path hints');
   if(pathHelp){
    pathHelp.id='ownerPathHelpCopy';
+   pathHelp.dataset.pathHelpLocale=lang;
    document.querySelector('.path-sections')?.after(pathHelp);
   }
  }
