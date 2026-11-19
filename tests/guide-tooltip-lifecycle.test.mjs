@@ -27,13 +27,13 @@ function mount({observer=true}={}){
   ...(observer?{MutationObserver:Watcher}:{})};
  vm.runInNewContext(source,ctx);
  const node=()=>{
-  const attrs=new Map(),events={};
-  const item={isConnected:true,dataset:{},events,
-   classList:{add(){}},closest:()=>null,
+  const attrs=new Map(),events={},counts={};
+  const item={isConnected:true,dataset:{},events,counts,
+   classList:{add(){},remove(){}},closest:()=>null,
    getAttribute:key=>attrs.get(key)||null,
    setAttribute:(key,value)=>attrs.set(key,String(value)),
    removeAttribute:key=>attrs.delete(key),
-   addEventListener:(name,fn)=>{events[name]=fn},
+   addEventListener:(name,fn)=>{counts[name]=(counts[name]||0)+1;events[name]=fn},
    matches:()=>true,contains:target=>target===item,
    getBoundingClientRect:()=>({left:50,right:150,top:100,bottom:120}),
    attribute:key=>attrs.get(key)||null};
@@ -189,5 +189,56 @@ test('shared tooltip ARIA cleanup removes only its own last ID',()=>{
  assert.equal(item.attribute('aria-describedby'),null,
   'An absent original description must stay absent after the hint closes');
  x.api.unlinkDescription(item,'stage-gear-tooltip');
+ assert.equal(item.attribute('aria-describedby'),null);
+});
+
+test('repeated D1 and locale binds update live help and do not stack events',async()=>{
+ const x=mount(),item=x.node();
+ x.api.attach(item,'Old hint',{hoverDelay:40});
+ item.events.pointerenter({pointerType:'mouse'});
+ x.api.attach(item,'New hint',{hoverDelay:5});
+ await new Promise(resolve=>setTimeout(resolve,20));
+ assert.equal(x.popup.hidden,false);
+ assert.equal(x.popup.textContent,'New hint');
+ x.api.attach(item,'Saved D1 hint');
+ assert.equal(x.popup.textContent,'Saved D1 hint');
+ assert.equal(x.watchers.filter(w=>w.active).length,1);
+ for(const name of ['pointerenter','pointerleave','focus','blur','pointerdown','click'])
+  assert.equal(item.counts[name],1,'Only one '+name+' handler allowed');
+ x.api.dismiss();
+ assert.equal(item.attribute('aria-describedby'),null);
+});
+
+test('blank copy closes existing or pending hint, reversible without rebinding',()=>{
+ const x=mount(),item=x.node();
+ display(x,item);
+ x.api.attach(item,'');
+ assert.equal(x.popup.hidden,true);
+ assert.equal(item.dataset.guideHint,undefined);
+ assert.equal(item.attribute('tabindex'),null);
+ item.events.pointerenter({pointerType:'mouse'});
+ assert.equal(x.popup.hidden,true);
+ x.api.attach(item,'Restored hint');
+ item.events.pointerenter({pointerType:'mouse'});
+ assert.equal(x.popup.hidden,false);
+ assert.equal(x.popup.textContent,'Restored hint');
+ assert.equal(item.counts.pointerenter,1);
+});
+
+test('touch help survives synthetic click; second tap and outside tap dismiss',()=>{
+ const x=mount(),item=x.node();
+ x.api.attach(item,'Tap for help');
+ item.events.pointerdown({pointerType:'touch'});
+ item.events.pointerleave({pointerType:'touch'});
+ item.events.click();
+ assert.equal(x.popup.hidden,false);
+ assert.equal(item.attribute('aria-describedby'),'stage-guide-tooltip');
+ item.events.pointerdown({pointerType:'touch'});
+ item.events.click();
+ assert.equal(x.popup.hidden,true);
+ item.events.pointerdown({pointerType:'touch'});
+ item.events.click();
+ x.docEvents.pointerdown({target:{}});
+ assert.equal(x.popup.hidden,true);
  assert.equal(item.attribute('aria-describedby'),null);
 });

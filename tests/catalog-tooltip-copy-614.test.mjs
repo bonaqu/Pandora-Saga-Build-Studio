@@ -32,7 +32,6 @@ test('nine catalog action hover hints have safe independent RU/EN D1 keys',()=>{
 
 test('hover presentation reads up-to-date plain text from original target',()=>{
  assert.match(tooltip,/node\.dataset\.guideHint=text/);
- assert.match(tooltip,/popup\.textContent=node\.dataset\.guideHint\|\|text/);
  assert.match(tooltip,/popup\.setAttribute\('role','tooltip'\)/);
  assert.match(tooltip,/node\.addEventListener\('pointerenter'/);
  assert.match(tooltip,/node\.addEventListener\('focus'/);
