@@ -644,7 +644,11 @@ export async function runAdminEntrySmoke(browser,base){
   const monthlyEditor=monthlyFilter.locator('[data-owner-text-field="true"]');
   await monthlyEditor.waitFor({state:'visible'});
   await monthlyEditor.fill('Месячные звания');
-  await monthlyEditor.blur();
+  // A completed neighboring owner write can remount an editor just as a
+  // Playwright locator is resolved. Blur the focused input by keyboard
+  // instead of querying for an already-detached element a second time.
+  // The subsequent D1 persistence and Undo assertions must still succeed.
+  await page.keyboard.press('Tab');
   await page.waitForFunction(()=>document.querySelector(
    '[data-honor-filter="monthly"] .wiki-honor-filter-caption')?.textContent==='Месячные звания');
   assert.equal(JSON.parse(townOverrides.get('guideedit.book.honor-view.filter-monthly')).ru,
