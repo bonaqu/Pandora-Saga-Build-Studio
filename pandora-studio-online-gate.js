@@ -13,9 +13,15 @@ const digest=value=>{
  return JSON.stringify(canonical(value));
 };
 const snapshotValue=response=>response?.headers?.get?.('x-ps-catalog-snapshot')||'';
+// A custom fetcher or JSON adapter may ignore AbortSignal. An abandoned
+// checkpoint must never authorize editing from its late success response.
+function requireActive(signal){
+ if(signal?.aborted)throw signal.reason||Error('Online checkpoint aborted');
+}
 async function inspect({api,fetcher,expectedSnapshot,expectedOverrides,expectedCounts,signal}){
  if(typeof api!=='string'||!api.startsWith('https://')||
   typeof fetcher!=='function'||!expectedSnapshot)throw Error('Invalid online checkpoint');
+ requireActive(signal);
  const options={cache:'no-store',...(signal?{signal}:{})};
  // Both the authorial override layer and published game records must be live.
  // One healthy endpoint is not proof that the entire site is up to date.
@@ -23,6 +29,7 @@ async function inspect({api,fetcher,expectedSnapshot,expectedOverrides,expectedC
   fetcher(api+'/api/catalog/meta.json',options),
   fetcher(api+'/api/overrides',options)
  ]);
+ requireActive(signal);
  if(!catalogResponse?.ok||!copyResponse?.ok)
   throw Error('Game data connection unavailable');
  if(catalogResponse.headers?.get('x-ps-catalog')!=='d1'||
@@ -31,6 +38,7 @@ async function inspect({api,fetcher,expectedSnapshot,expectedOverrides,expectedC
  const [meta,copy]=await Promise.all([
   catalogResponse.json(),copyResponse.json()
  ]);
+ requireActive(signal);
  const counts=meta?.counts,overrides=copy?.values;
  if(!counts||!Number.isSafeInteger(counts.items)||counts.items<1||
   !Number.isSafeInteger(counts.skills)||counts.skills<1||

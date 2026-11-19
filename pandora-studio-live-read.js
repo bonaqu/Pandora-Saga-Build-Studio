@@ -4,7 +4,44 @@
 (function(root){
 'use strict';
 const transient=new Set([408,429,500,502,503,504]);
-const defaultPause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+// A cancelled checkpoint must not keep a queued retry alive. Default timer
+// cleanup also avoids waking an abandoned tab solely to attempt another GET.
+const abortReason=signal=>signal?.reason||Error('Request aborted');
+const defaultPause=(ms,signal)=>new Promise((resolve,reject)=>{
+ if(signal?.aborted){reject(abortReason(signal));return}
+ const timer=setTimeout(()=>{signal?.removeEventListener('abort',onAbort);resolve()},ms);
+ function onAbort(){
+  clearTimeout(timer);
+  signal.removeEventListener('abort',onAbort);
+  reject(abortReason(signal));
+ }
+ signal?.addEventListener('abort',onAbort,{once:true});
+});
+// Test adapters may supply their own pause function. Make even a pause that
+// does not implement AbortSignal interruptible, without changing its API.
+function pauseRetry(ms,signal,pause){
+ if(signal?.aborted)return Promise.reject(abortReason(signal));
+ if(pause===defaultPause)return defaultPause(ms,signal);
+ if(!signal)return Promise.resolve().then(()=>pause(ms));
+ return new Promise((resolve,reject)=>{
+  let settled=false;
+  const settle=(fn,value)=>{
+   if(settled)return;
+   settled=true;
+   signal.removeEventListener('abort',onAbort);
+   fn(value);
+  };
+  const onAbort=()=>settle(reject,abortReason(signal));
+  signal.addEventListener('abort',onAbort,{once:true});
+  Promise.resolve().then(()=>{
+   if(signal.aborted)throw abortReason(signal);
+   return pause(ms);
+  }).then(
+   ()=>signal.aborted?onAbort():settle(resolve),
+   error=>signal.aborted?onAbort():settle(reject,error)
+  );
+ });
+}
 // Quota errors are confirmed by the Worker response body, not by HTTP 503
 // alone. Keep only a short, in-memory advisory cooldown: the user's manual
 // retry always bypasses it and success must revalidate D1 before unblocking.
@@ -52,7 +89,7 @@ async function get(url,options={},config={}){
   throw Error('Invalid read-only request');
  const parent=options?.signal||null;
  for(let attempt=1;attempt<=attempts;attempt++){
-  if(parent?.aborted)throw parent.reason||Error('Request aborted');
+  if(parent?.aborted)throw abortReason(parent);
   // Each attempt owns its own deadline. The outer deadline takes priority.
   const clock=AbortSignal.timeout(timeoutMs);
   const signal=parent?AbortSignal.any([parent,clock]):clock;
@@ -62,8 +99,9 @@ async function get(url,options={},config={}){
    response=await fetcher(url,{...options,method:'GET',cache:'no-store',signal});
   }catch(error){
    // Only a transport failure can be retried. Parent cancellation is final.
-   if(parent?.aborted||attempt===attempts)throw error;
-   await pause(attempt*350);
+   if(parent?.aborted)throw abortReason(parent);
+   if(attempt===attempts)throw error;
+   await pauseRetry(attempt*350,parent,pause);
    continue;
   }
   // Even an adapter that ignores AbortSignal cannot turn a cancelled or
@@ -81,7 +119,7 @@ async function get(url,options={},config={}){
    return response;
   // Back off rather than multiplying short-lived 429/503 bursts after F5.
   // No owner/account writes are ever sent by this helper.
-  await pause(retryDelay(attempt,response));
+  await pauseRetry(retryDelay(attempt,response),parent,pause);
  }
  throw Error('Unexpected read-only retry state');
 }

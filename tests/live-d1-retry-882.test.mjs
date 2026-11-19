@@ -218,3 +218,47 @@ test('generic 503 and malformed quota payload still use bounded transient retrie
   assert.equal(live.quotaCooldownMs(),0);
  }
 });
+
+test('parent abort interrupts transient HTTP backoff without another D1 request',async()=>{
+ const live=load(),controller=new AbortController();
+ let calls=0,started;
+ const waiting=new Promise(resolve=>{started=resolve});
+ const request=live.get('https://example.test/api/catalog/meta.json',
+  {signal:controller.signal},{
+   fetcher:async()=>{calls++;return response(429)},
+   pause:async()=>{started();await new Promise(()=>{})}
+  });
+ await waiting;
+ controller.abort(Error('Catalog connection superseded'));
+ await assert.rejects(request,/Catalog connection superseded/);
+ assert.equal(calls,1,'No follow-up HTTP request after the cancelled backoff');
+});
+
+test('transport failure backoff is cancelled before retrying a stale checkpoint',async()=>{
+ const live=load(),controller=new AbortController();
+ let calls=0,started;
+ const waiting=new Promise(resolve=>{started=resolve});
+ const request=live.get('https://example.test/api/overrides',
+  {signal:controller.signal},{
+   fetcher:async()=>{calls++;throw Error('Connection dropped')},
+   pause:async()=>{started();await new Promise(()=>{})}
+  });
+ await waiting;
+ controller.abort(Error('Checkpoint replaced'));
+ await assert.rejects(request,/Checkpoint replaced/);
+ assert.equal(calls,1,'Cancelled transport retry must not re-enter fetch');
+});
+
+test('read-only retries reject a cancellation occurring during a failed fetch',async()=>{
+ const live=load(),controller=new AbortController();
+ let calls=0;
+ await assert.rejects(live.get('https://example.test/api/catalog/items.json',
+  {signal:controller.signal},{
+   fetcher:async()=>{
+    calls++;
+    controller.abort(Error('User left the page'));
+    throw Error('Offline');
+   },pause:instant
+  }),/User left the page/);
+ assert.equal(calls,1);
+});
