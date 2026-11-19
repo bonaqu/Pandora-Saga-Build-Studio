@@ -121,8 +121,8 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
   await page.locator('[data-wiki-chapter="monster"]').click();
   await page.locator('.wiki-monster-create').click();
   const monsterForm=page.locator('.wiki-owner-monster-form');
-  await monsterForm.locator('input[aria-label="Название монстра RU"]').fill('Тестовый монстр');
-  await monsterForm.locator('input[aria-label="Название монстра EN"]').fill('Test monster');
+  await monsterForm.locator('[role="textbox"][aria-label="Название монстра RU"]').fill('Тестовый монстр');
+  await monsterForm.locator('[role="textbox"][aria-label="Название монстра EN"]').fill('Test monster');
   await monsterForm.locator('input[type="number"]').fill('27');
   const monsterSave=monsterForm.getByRole('button',{name:'Сохранить монстра'});
   await monsterSave.click();
@@ -137,8 +137,8 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
   await page.locator('[data-wiki-chapter="map"]').click();
   await page.locator('.wiki-map-create').click();
   const mapForm=page.locator('.wiki-map-create-form');
-  await mapForm.locator('input[aria-label="Название локации на русском"]').fill('Тестовая локация');
-  await mapForm.locator('input[aria-label="Название локации на английском"]').fill('Test location');
+  await mapForm.locator('[role="textbox"][aria-label="Название локации на русском"]').fill('Тестовая локация');
+  await mapForm.locator('[role="textbox"][aria-label="Название локации на английском"]').fill('Test location');
   const mapSave=mapForm.getByRole('button',{name:'Создать',exact:true});
   await mapSave.click();
   await mapForm.locator('.inline-owner-error').getByText('Temporary creation failure').waitFor();
@@ -150,8 +150,8 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
 
   await page.locator('.wiki-map-create-npc').click();
   const npcForm=page.locator('.wiki-map-create-npc-form');
-  await npcForm.locator('input').nth(0).fill('Тестовый торговец');
-  await npcForm.locator('input').nth(1).fill('Test merchant');
+  await npcForm.locator('[role="textbox"]').nth(0).fill('Тестовый торговец');
+  await npcForm.locator('[role="textbox"]').nth(1).fill('Test merchant');
   const npcSave=npcForm.getByRole('button',{name:'Сохранить NPC'});
   await npcSave.click();
   await npcForm.locator('.inline-owner-error').getByText('Temporary creation failure').waitFor();
