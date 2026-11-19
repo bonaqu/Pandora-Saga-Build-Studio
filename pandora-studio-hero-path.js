@@ -74,6 +74,18 @@ const authored=(api,key,ru,en,tag='p',cls='muted')=>{
  node.append(label,pencil);
  return node;
 };
+// Bind only author-written copy. Game levels and skill names are immutable
+// suffixes, never sent to the owner D1 string editor.
+const bindPathCopy=(api,node,key,ru,en,attribute='text',suffix='',prefix='')=>{
+ if(typeof api.bindCopy==='function')
+  api.bindCopy(node,key,ru,en,attribute,suffix,prefix);
+ else{
+  const value=prefix+(api.copyLabel?.(key,ru,en)||tr(api,ru,en))+suffix;
+  if(attribute==='text')node.textContent=value;
+  else node.setAttribute(attribute,value);
+ }
+ return node;
+};
 // Match the established Origin stat button behavior: one point per click,
 // continuous increments after holding 340 ms, repeat every 85 ms.
 // During a hold we update state in place; pointerup commits a single rerender.
@@ -388,6 +400,9 @@ function viewGrowth(target,api){
      class:'branch-row disabled-branch path-racial-unavailable',
      'data-path-branch':'race',
      'aria-label':tr(api,'Расовые навыки: не прокачиваются очками веток','Racial skills: no branch point allocation')});
+     bindPathCopy(api,race,'racialUnavailableAria',
+      'Расовые навыки: не прокачиваются очками веток',
+      'Racial skills: no branch point allocation','aria-label');
     const info=make('div');
     const ru='Расовые',en='Racial',key='racialBranch';
     const value=api.copyLabel?.(key,ru,en)||tr(api,ru,en);
@@ -437,6 +452,9 @@ function viewGrowth(target,api){
     const editor=make('div',{class:'inline-branch-editor'});
     const available=budget.total!==null&&api.allocationReady&&(cap>0||points>0);
     const track=make('div',{class:'inline-mastery-track path-integrated-track','aria-label':tr(api,'Единая полоса вложенных очков и освоенного мастерства ','Shared spent-points and trained-mastery bar: ')+api.branchName(key)});
+    bindPathCopy(api,track,'branchTrackAria',
+     'Единая полоса вложенных очков и освоенного мастерства ',
+     'Shared spent-points and trained-mastery bar: ','aria-label',api.branchName(key));
     const visualMax=90; // fixed game-wide scale, never cap + budget
     const bed=make('div',{class:'inline-mastery-bed'}),gold=make('div',{class:'inline-mastery-fill'}),
           green=make('div',{class:'inline-mastery-green'}),
@@ -659,11 +677,14 @@ function viewGrowth(target,api){
      groupCount.textContent=groupSummary();paint();
      return M.branchMastery(state,key,innate,caps)!==before;
     };
-    const pointField=(name,help,field,mastery=false)=>{
+    const pointField=(name,helpKey,ruHelp,enHelp,field,mastery=false)=>{
      const group=make('div',{class:'path-point-group'+(mastery?' path-point-mastery':'')});
      field.id='path-'+key+(mastery?'-mastery':'-invested');
+     const help=api.copyLabel?.(helpKey,ruHelp,enHelp)||tr(api,ruHelp,enHelp);
      const title=make('label',{class:'path-point-name',for:field.id,text:name,
       tabindex:'0','data-help':help,'aria-label':name+'. '+help});
+     bindPathCopy(api,title,helpKey,ruHelp,enHelp,'data-help');
+     bindPathCopy(api,title,helpKey,ruHelp,enHelp,'aria-label','',name+'. ');
      const stepper=make('div',{class:'path-point-stepper'});
      const minus=make('button',{type:'button',class:'path-point-step path-point-decrement',
       text:'−',disabled:field.disabled,
@@ -684,18 +705,23 @@ function viewGrowth(target,api){
     };
     controls.append(
      pointField(root.PandoraUILocale?.text('exactPoints',api.lang)||tr(api,'Вложено','Spent'),
-      tr(api,'Очки умений, распределяемые при развитии персонажа.','Skill points allocated as the character develops.'),numeric),
+      'branchPointHelp','Очки умений, распределяемые при развитии персонажа.',
+      'Skill points allocated as the character develops.',numeric),
      pointField(root.PandoraUILocale?.text('greenMastery',api.lang)||tr(api,'Мастерство','Mastery'),
-      tr(api,'Растёт при использовании умений этой ветки, а также соответствующих типов атак или оружия.','Increases when using this branch’s skills or its corresponding attack or weapon types.'),input,true)
+      'greenMasteryHelp','Растёт при использовании умений этой ветки, а также соответствующих типов атак или оружия.',
+      'Increases when using this branch’s skills or its corresponding attack or weapon types.',input,true)
     );
+    const baseline=base>0?make('span',{class:'path-innate-baseline',
+     text:tr(api,'Начально (оч.): ','Initially (pts): ')+base,
+     'aria-label':tr(api,'Начальная прокачка класса: ','Starting branch points: ')+base}):null;
+    if(baseline)bindPathCopy(api,baseline,'innateBaselineAria',
+     'Начальная прокачка класса: ','Starting branch points: ','aria-label',String(base));
     const legend=make('div',{class:'path-track-legend','aria-hidden':'true'},[
      make('span',{text:'0'}),
      make('span',{class:'path-track-limit'},[
       make('span',{class:'path-track-limit-value',text:api.lang==='en'?
        'Limit (pts): '+cap:'Лимит (оч.): '+cap}),
-      ...(base>0?[make('span',{class:'path-innate-baseline',
-       text:tr(api,'Начально (оч.): ','Initially (pts): ')+base,
-       'aria-label':tr(api,'Начальная прокачка класса: ','Starting branch points: ')+base})]:[])
+      ...(baseline?[baseline]:[])
      ]),
      make('span',{text:String(visualMax)})
     ]);
