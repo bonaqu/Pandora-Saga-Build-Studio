@@ -101,6 +101,8 @@ test('read-only D1 Insights runs after green parity and skips all direct SQL pro
  const source=read('worker/scripts/check-readonly-d1-incident.mjs');
  assert.match(workflow,/if: success\(\)/);
  assert.match(workflow,/node scripts\/check-readonly-d1-incident\.mjs --insights-only/);
+ assert.match(workflow,/--period=1h/);
+ assert.match(source,/const insightsPeriod=process\.argv\.includes\('--period=1h'\)/);
  assert.match(source,/const insightsOnly=process\.argv\.includes\('--insights-only'\)/);
  assert.match(source,/if\(!insightsOnly\)\{\s*for\(const \[label,sql\] of checks\)/);
  assert.match(source,/D1 Analytics-only inspection complete; no D1 SQL probes executed/);

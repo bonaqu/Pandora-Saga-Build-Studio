@@ -46,7 +46,7 @@ jobs:
           PS_D1_DATABASE_ID: 0f8fbcd8-be06-414c-844b-a2091fdf6784
         run: |
           node scripts/prepare-config.mjs
-          node scripts/check-readonly-d1-incident.mjs --insights-only
+          node scripts/check-readonly-d1-incident.mjs --insights-only --period=1h
       # Failed live releases need schema evidence, not automatic catalog
       # restoration or any production D1 mutation. Secrets stay in this step.
       - name: Diagnose failed production D1 catalog and account schema (read-only)

@@ -89,7 +89,8 @@ for(const [label,sql] of checks){
 // Query insights use Cloudflare's analytics API, not an SQL SELECT on D1.
 // This allows examining daily read volume even when free SQL rows are exhausted.
 // Account Analytics Read permission may be absent; do not fail the incident job.
-const insights=invoke(['insights','ps-build-studio-db','--time-period=1d',
+const insightsPeriod=process.argv.includes('--period=1h')?'1h':'1d';
+const insights=invoke(['insights','ps-build-studio-db','--time-period='+insightsPeriod,
  '--sort-by=reads','--sort-type=sum','--limit=20','--json']);
 if(insights.status===0){
  try{
@@ -126,7 +127,7 @@ if(insights.status===0){
   if(!entries.length)console.log('D1 insights: no metrics supplied');
   else console.log('D1 insights: top 20 query-class aggregates (not account totals): '+
    JSON.stringify(Object.fromEntries(byClass)));
-  console.log('D1 Analytics report: trailing 1d; no SQL probes');
+  console.log('D1 Analytics report: trailing '+insightsPeriod+'; no SQL probes');
  }catch{console.warn('D1 insights: response unavailable or format changed')}
 }else console.warn('D1 insights: unavailable (check Account Analytics Read); raw error withheld');
 

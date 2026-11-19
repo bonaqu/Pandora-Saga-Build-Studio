@@ -43,6 +43,10 @@ test('manual deployment verifies new Worker marker and existing D1 after publish
  assert.match(workflow,/catalogProvenanceCors===true/);
  assert.match(workflow,/caps\?\.catalogSnapshotCache===true/);
  assert.match(workflow,/catalogSnapshotCache:true/);
+ assert.match(workflow,/catalogCacheSingleFlight:true/);
+ assert.match(workflow,/catalogSnapshotCacheTTLSeconds:86400/);
+ assert.match(workflow,/caps\?\.catalogCacheSingleFlight===true/);
+ assert.match(workflow,/caps\?\.catalogSnapshotCacheTTLSeconds===86400/);
  assert.match(workflow,/access-control-expose-headers/);
  assert.match(read('scripts/check-live-connections.mjs'),/Live English item editing in D1/);
 });
