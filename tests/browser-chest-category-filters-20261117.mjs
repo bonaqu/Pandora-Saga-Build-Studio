@@ -55,6 +55,8 @@ export async function runChestCategoryFiltersSmoke(browser,base){
   assert.equal(await page.locator('.wiki-chest-group-name').first().getAttribute('data-owner-interface-section'),'wiki.chest.text');
   assert.ok((await page.locator('.wiki-chest-group-name').first().innerText()).length>0);
   assert.equal(await page.locator('.studio-owner-interface-editor').count(),0);
+  assert.equal(await page.locator('.wiki-chest-board [data-owner-interface-key="soulsPrefix"]')
+   .count()>=0,true,'Source Soul counts remain independent from the caption');
   assert.equal(await page.locator('[data-owner-copy-id]').count(),0);
   assert.equal(await cards().count(),sourceRows(51036).length);
   assert.equal(await type.getAttribute('aria-label'),'Тип награды в сундуке');

@@ -85,6 +85,9 @@ test('chest contents render 35 D1-authored RU/EN captions with numeric data sepa
  assert.match(app,/ownerInterfaceEditor\(\s*'wiki\.chest\.text',wikiChestDisplayRows/);
  assert.match(app,/chestBind\(groupCount,'groupShowing'/);
  assert.match(app,/chestBind\(count,'showing'/);
+ assert.match(app,/chestBind\(\s*h\('small',\{class:'wiki-reward-enhance'\}\),'soulsPrefix'/);
+ assert.match(app,/groupCount\.removeAttribute\('data-owner-interface-bindings'\)/,
+  'Switching a guaranteed 100% group back to all must detach obsolete text binding');
  assert.match(app,/chestBind\(quantity,'quantityHint','aria-description'\)/);
  assert.equal(JSON.stringify([all,items]),sourceSnapshot);
 });

@@ -6849,8 +6849,8 @@ function renderWiki(root){
        text:'×'+row.n}));
       if(row.plus!=null&&row.plus>0)rewardMeta.append(h('small',{class:'wiki-reward-enhance',
        text:'+'+row.plus}));
-      if(row.soul!=null&&row.soul>0)rewardMeta.append(h('small',{class:'wiki-reward-enhance',
-       text:chestCopy('soulsPrefix')+row.soul}));
+      if(row.soul!=null&&row.soul>0)rewardMeta.append(chestBind(
+       h('small',{class:'wiki-reward-enhance'}),'soulsPrefix','text',String(row.soul)));
       if(adminEditing&&adminToken){
        const chance=h('small',{class:'wiki-reward-percent wiki-edit-value',
         text:window.PandoraStudioChestPresentation.chance(row.p,lang)});
@@ -7026,7 +7026,12 @@ function renderWiki(root){
           const key=groupCount.dataset.chestCountKey;
           if(key)chestBind(groupCount,key,'text',
            groupCount.dataset.chestCountSuffix||'');
-          else groupCount.textContent='100%';
+          else{
+           // Guaranteed 100% is game data, not an editable caption. A prior
+           // filtered groupShowing binding must not overwrite it on D1 save.
+           groupCount.removeAttribute('data-owner-interface-bindings');
+           groupCount.textContent='100%';
+          }
          }else chestBind(groupCount,'groupShowing','text',
           visible+' / '+groupCards.length);
         }
