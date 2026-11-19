@@ -585,17 +585,22 @@ async function load({api,fetcher,local='./data/os',timeout=12000,preferLocal=fal
   throw Error('Публичный игровой каталог загружается только из D1');
  const remoteBase=String(api||'').replace(/\/$/,'');
  async function batch(remote){
-  const snapshots=new Set(),missingSnapshot=[];
+  const snapshots=new Set();
   // Request at most three published datasets at once. The independent
   // D1 snapshot/provenance validations below remain mandatory.
   const batcher=root.PandoraStudioLiveRead?.mapLimit||
    ((entries,_limit,callback)=>Promise.all(entries.map(callback)));
-  const records=await batcher(keys,3,async key=>{
+  const records=await batcher(keys,3,async (key,_index,batchSignal)=>{
    const url=remote?remoteBase+'/api/catalog/'+key+'.json':
     local.replace(/\/$/,'')+'/'+key+'.json';
    const init={cache:'no-cache'};
-   if(typeof AbortSignal!=='undefined'&&typeof AbortSignal.timeout==='function')
-    init.signal=AbortSignal.timeout(timeout);
+   // The public loader shares the same bounded batch cancellation as the
+   // hero editor. Isolated legacy fixtures without this helper remain valid.
+   const deadline=typeof AbortSignal!=='undefined'&&
+    typeof AbortSignal.timeout==='function'?AbortSignal.timeout(timeout):null;
+   const signal=batchSignal&&deadline&&typeof AbortSignal.any==='function'?
+    AbortSignal.any([batchSignal,deadline]):batchSignal||deadline;
+   if(signal)init.signal=signal;
    const response=await fetcher(url,init);
    if(!response?.ok)throw Error(key+' HTTP '+(response?.status??'network'));
    if(remote){
@@ -603,12 +608,17 @@ async function load({api,fetcher,local='./data/os',timeout=12000,preferLocal=fal
     if(response.headers?.get?.('x-ps-catalog')!=='d1')
      throw Error('Игровой каталог не подтвердил источник D1: '+key);
     const snapshot=response.headers?.get?.('x-ps-catalog-snapshot')||null;
-    if(snapshot)snapshots.add(snapshot);else missingSnapshot.push(key);
+    if(!snapshot)throw Error('Игровой каталог не подтвердил версию D1: '+key);
+    snapshots.add(snapshot);
+    if(snapshots.size!==1)
+     throw Error('В ходе загрузки версия опубликованного каталога изменилась');
    }
-   return [key,await response.json()];
+   const payload=await response.json();
+   if(signal?.aborted)throw signal.reason||Error('Загрузка Энциклопедии отменена');
+   return [key,payload];
   });
-  if(remote&&(snapshots.size!==1||missingSnapshot.length))
-   throw Error('В ходе загрузки версия опубликованного каталога изменилась');
+  if(remote&&snapshots.size!==1)
+   throw Error('Не подтверждена единая версия опубликованного каталога D1');
   return {data:validate(Object.fromEntries(records)),
    source:remote?'d1':'local',snapshot:remote?[...snapshots][0]||null:null};
  }

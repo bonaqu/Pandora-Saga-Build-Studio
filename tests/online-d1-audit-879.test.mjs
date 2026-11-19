@@ -147,3 +147,15 @@ test('character startup cancels sibling D1 reads on failure and rejects mixed sn
    loader.indexOf('catalogSource=data'),
   'Never commit an unverified catalog');
 });
+
+test('Wiki and character loaders both reject split D1 snapshots before all JSON parses',()=>{
+ const wiki=read('pandora-studio-encyclopedia-catalog.js');
+ assert.match(wiki,/batcher\(keys,3,async \(key,_index,batchSignal\)=>/);
+ assert.match(wiki,/AbortSignal\.any\(\[batchSignal,deadline\]\)/);
+ assert.match(wiki,/if\(!snapshot\)throw Error/);
+ assert.match(wiki,/snapshots\.add\(snapshot\);\s*if\(snapshots\.size!==1\)\s*throw Error/);
+ assert.ok(wiki.indexOf('if(snapshots.size!==1)')<
+  wiki.indexOf('const payload=await response.json()'),
+  'Wiki must halt incompatible D1 sources before downloading more content');
+ assert.match(wiki,/if\(signal\?\.aborted\)throw signal\.reason/);
+});

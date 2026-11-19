@@ -890,3 +890,59 @@ test('missing optional legacy equipment fields do not get invented on validation
  assert.equal(Object.hasOwn(data.items[1],'AC'),false);
  assert.equal(Object.hasOwn(data.items[1],'effects'),false);
 });
+
+test('public Wiki cancels sibling catalog GETs as soon as one source fails',async()=>{
+ const liveSource=readFileSync(new URL('../pandora-studio-live-read.js',import.meta.url),'utf8');
+ const publicRoot={location:{hostname:'bonaqu.github.io'}};
+ Function('window',liveSource)(publicRoot);
+ Function('window',source)(publicRoot);
+ const started=[],cancelled=[];
+ const fetcher=async(url,{signal})=>{
+  const key=url.split('/').at(-1).replace('.json','');
+  started.push(key);
+  if(key==='meta')return {ok:true,status:200,headers:{get:name=>
+   name==='x-ps-catalog'?'archive':name==='x-ps-catalog-snapshot'?'snapshot-a':null},
+   json:async()=>{throw Error('Untrusted JSON must not be parsed')}};
+  return new Promise((resolve,reject)=>{
+   signal.addEventListener('abort',()=>{
+    cancelled.push(key);reject(signal.reason||Error('Cancelled'));
+   },{once:true});
+  });
+ };
+ await assert.rejects(publicRoot.PandoraWikiCatalog.load({
+  api:'https://worker.example',fetcher,strict:true
+ }),/не подтвердил источник D1: meta/);
+ assert.deepEqual(started,loader.keys.slice(0,3),
+  'A broken dataset must not cause a fourth D1 request');
+ assert.deepEqual(cancelled.sort(),['items','monsters']);
+});
+
+test('public Wiki rejects conflicting D1 snapshot headers before parsing unrelated records',async()=>{
+ const liveSource=readFileSync(new URL('../pandora-studio-live-read.js',import.meta.url),'utf8');
+ const publicRoot={location:{hostname:'bonaqu.github.io'}};
+ Function('window',liveSource)(publicRoot);
+ Function('window',source)(publicRoot);
+ const started=[],cancelled=[];
+ const fetcher=async(url,{signal})=>{
+  const key=url.split('/').at(-1).replace('.json','');
+  started.push(key);
+  if(key==='meta'||key==='items')return {
+   ok:true,status:200,
+   headers:{get:name=>name==='x-ps-catalog'?'d1':
+    name==='x-ps-catalog-snapshot'?(key==='meta'?'snapshot-a':'snapshot-b'):null},
+   json:async()=>catalog('source')[key]
+  };
+  return new Promise((resolve,reject)=>{
+   signal.addEventListener('abort',()=>{
+    cancelled.push(key);reject(signal.reason||Error('Cancelled'));
+   },{once:true});
+  });
+ };
+ await assert.rejects(publicRoot.PandoraWikiCatalog.load({
+  api:'https://worker.example',fetcher,strict:true
+ }),/версия опубликованного каталога изменилась/);
+ assert.ok(started.length<loader.keys.length,
+  'Mismatched D1 versions must stop the remainder of the catalog');
+ assert.ok(cancelled.length>=1,
+  'Any other already-started Wiki dataset must receive cancellation');
+});
