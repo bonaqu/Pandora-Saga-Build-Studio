@@ -180,7 +180,18 @@ const libraryCopy=Object.freeze({
  // Editorial labels in received shared-build dialogs. The incoming record
  // count and another player's build name are generated, never D1 strings.
  librarySharedImportCountLabel:['Билдов по ссылке:','Builds in link:'],
- librarySharedUnsavedWarning:['Если открыть без сохранения, последние несохранённые изменения текущего билда будут потеряны.','If you open without saving, your current build’s latest unsaved changes will be lost.']
+ librarySharedUnsavedWarning:['Если открыть без сохранения, последние несохранённые изменения текущего билда будут потеряны.','If you open without saving, your current build’s latest unsaved changes will be lost.'],
+ // Compare panel copy is editorial; the player A/B choices, saved-build
+ // names, stat identities and computed values must never become D1 overrides.
+ compareTitle:['Сравнение билдов','Build comparison'],
+ compareExpand:['Развернуть сравнение','Expand'],
+ compareCollapse:['Скрыть сравнение','Collapse'],
+ compareNeedTwo:['Сохрани хотя бы два билда для сравнения.','Save at least two builds to compare them.'],
+ compareChooseTwo:['Выбери два разных сохранённых билда.','Select two different saved builds.'],
+ compareAwaitData:['Итоговые характеристики появятся после загрузки игровых данных.','Calculated stats will appear once game data have loaded.'],
+ compareCalculationFailed:['Не удалось рассчитать один из билдов. Сохранения не изменены.','One of the builds could not be calculated. Saved builds were not changed.'],
+ compareNoDifferences:['Среди рассчитанных характеристик отличий нет.','No differences in the calculated stats.'],
+ compareDifferencePrefix:['Отличий:','Differences:']
 });
 // Fixed toast notifications are safe authored copy. Exclude runtime details,
  // player build names, network errors and security diagnostics.

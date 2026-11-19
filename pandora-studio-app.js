@@ -7211,22 +7211,38 @@ function renderBuildComparison(host,onSelection=()=>{}){
  host.className='build-compare-panel';
  host.setAttribute('data-build-compare','');
  const translate=(ru,en)=>lang==='en'?en:ru;
+ const copy=key=>window.PandoraUILocale.text(key,lang);
+ // Only the authored label changes; editor state, IDs and derived numbers
+ // never become author-editable. Keep a pending inline CAS draft in the DOM.
+ const syncCompareCopy=(node,key)=>{
+  if(node.nextElementSibling?.classList?.contains('ui-content-edit-host'))
+   return false;
+  if(node.dataset.ownerCopyKey!==key){
+   const pencil=node.nextElementSibling;
+   if(pencil?.dataset?.ownerCopyPencil)pencil.remove();
+   node.dataset.ownerCopyKey=key;
+  }
+  ownerDockPatchText(node,copy(key));
+  return true;
+ };
  const header=h('div',{class:'build-compare-header'});
  const title=h('h3',{class:'build-compare-title',
-  text:translate('Сравнение билдов','Build comparison')});
+  'data-owner-copy-key':'compareTitle',text:copy('compareTitle')});
+ const titleGroup=h('div',{class:'build-compare-title-group'},[title]);
  const content=h('div',{class:'build-compare-content',hidden:!comparisonOpen});
  const collapse=h('button',{type:'button',class:'build-compare-expand',
+  'data-owner-copy-key':comparisonOpen?'compareCollapse':'compareExpand',
   'aria-expanded':String(comparisonOpen),
-  text:comparisonOpen?translate('Скрыть сравнение','Collapse'):
-   translate('Развернуть сравнение','Expand'),
+  text:copy(comparisonOpen?'compareCollapse':'compareExpand'),
   onclick:()=>{
    comparisonOpen=!comparisonOpen;
    content.hidden=!comparisonOpen;
    collapse.setAttribute('aria-expanded',String(comparisonOpen));
-   collapse.textContent=comparisonOpen?translate('Скрыть сравнение','Collapse'):
-    translate('Развернуть сравнение','Expand');
+   syncCompareCopy(collapse,comparisonOpen?'compareCollapse':'compareExpand');
+   if(adminEditing&&adminToken)bindAccountCopyEditors(header);
   }});
- header.append(title,collapse);
+ const actionGroup=h('div',{class:'build-compare-action-group'},[collapse]);
+ header.append(titleGroup,actionGroup);
  const controls=h('div',{class:'build-compare-controls'});
  const pick=(letter,index)=>{
   const select=h('select',{class:'build-compare-select',
@@ -7260,7 +7276,16 @@ function renderBuildComparison(host,onSelection=()=>{}){
   onclick:()=>{compareIds=[compareIds[1]||'',compareIds[0]||''];
    onSelection();update()}});
  controls.append(A.field,swap,B.field);
- const summary=h('p',{class:'build-compare-summary',role:'status','aria-live':'polite'});
+ const summaryText=h('span',{'data-owner-copy-key':'compareNeedTwo',
+  text:copy('compareNeedTwo')});
+ const summaryCount=h('span',{'data-compare-count':'',text:''});
+ const summary=h('p',{class:'build-compare-summary',role:'status','aria-live':'polite'},
+  [summaryText,summaryCount]);
+ const setSummary=(key,count=null)=>{
+  if(!syncCompareCopy(summaryText,key))return; // Wait for owner CAS/Undo.
+  ownerDockPatchText(summaryCount,count===null?'':' '+String(count));
+  if(adminEditing&&adminToken)bindAccountCopyEditors(summary);
+ };
  const wrap=h('div',{class:'build-compare-table-wrap'});
  const table=h('table',{class:'build-compare-table','aria-label':translate(
   'Различающиеся итоговые характеристики билдов','Different calculated stats of saved builds')});
@@ -7277,32 +7302,29 @@ function renderBuildComparison(host,onSelection=()=>{}){
  const tbody=h('tbody');table.append(head,tbody);wrap.append(table);
  content.append(controls,summary,wrap);
  host.append(header,content);
+ host.addEventListener('pandora:comparison-copy-finished',()=>{
+  syncCompareCopy(collapse,comparisonOpen?'compareCollapse':'compareExpand');
+  update();
+ });
+ if(adminEditing&&adminToken)bindAccountCopyEditors(header);
  function update(){
   A.options();B.options();tbody.replaceChildren();
   const [a,b]=compareIds.map(id=>builds.find(x=>x.id===id));
   if(!a||!b||a.id===b.id){
-   summary.textContent=builds.length<2?
-    translate('Сохрани хотя бы два билда для сравнения.',
-     'Save at least two builds to compare them.'):
-    translate('Выбери два разных сохранённых билда.',
-     'Select two different saved builds.');
+   setSummary(builds.length<2?'compareNeedTwo':'compareChooseTwo');
    wrap.hidden=true;
    return;
   }
   // Loading the validated D1 snapshot is not a broken saved build.
   if(!catalog.live||!gameTables){
-   summary.textContent=translate(
-    'Итоговые характеристики появятся после загрузки игровых данных.',
-    'Calculated stats will appear once game data have loaded.');
+   setSummary('compareAwaitData');
    wrap.hidden=true;
    return;
   }
   const [calcA,calcB]=window.PandoraBuildComparison.calculatePair(
    a.data,b.data,snap=>previewBaseStats(prepareSavedBuildSnapshot(snap)));
   if(!calcA||!calcB){
-   summary.textContent=translate(
-    'Не удалось рассчитать один из билдов. Сохранения не изменены.',
-    'One of the builds could not be calculated. Saved builds were not changed.');
+   setSummary('compareCalculationFailed');
    wrap.hidden=true;
    return;
   }
@@ -7310,10 +7332,8 @@ function renderBuildComparison(host,onSelection=()=>{}){
   const rows=window.PandoraBuildComparison.compactResults(
    window.PandoraStageAttributes.summaryRows(calcA),
    window.PandoraStageAttributes.summaryRows(calcB),{lang});
-  summary.textContent=rows.length?
-   translate('Отличий: ','Differences: ')+rows.length:
-   translate('Среди рассчитанных характеристик отличий нет.',
-    'No differences in the calculated stats.');
+  setSummary(rows.length?'compareDifferencePrefix':'compareNoDifferences',
+   rows.length?rows.length:null);
   wrap.hidden=!rows.length;
   // Every metric has exactly one A/B pair, even when an odd number of
   // differences leaves the last cell group empty. Only favorable values
@@ -8766,6 +8786,9 @@ function bindAccountCopyEditors(panel){
     },
     onFinished:()=>{
      node.hidden=false;host.remove();if(pencil)pencil.hidden=false;
+     if(node.closest('[data-build-compare]'))
+      node.closest('[data-build-compare]').dispatchEvent(
+       new Event('pandora:comparison-copy-finished'));
      if(node.classList.contains('cloud-library-status'))
       syncCloudStatusNode(node,cloudLibraryStatus);
      if(panel.id==='studio-update-banner')
@@ -9353,7 +9376,8 @@ function refreshVisibleUICopy(recordKey){
   window.PandoraStudioUpdateBanner?.refresh?.();
   return; // No renderer or game-state mutation for release-banner copy.
  }
- const isLibrary=recordKey.startsWith('guideedit.book.ui.label.library-');
+ const isLibrary=recordKey.startsWith('guideedit.book.ui.label.library-')||
+  recordKey.startsWith('guideedit.book.ui.label.compare-');
  const isStatus=recordKey.startsWith('guideedit.book.ui.label.status-');
  const isBook=recordKey.startsWith('guideedit.book.ui.label.book-');
  const isAccount=recordKey.startsWith('guideedit.book.ui.label.account-');
