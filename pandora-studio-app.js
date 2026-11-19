@@ -8654,6 +8654,8 @@ async function apiRequest(path,body,token=adminToken) {
    headers:{"Content-Type":"application/json",...(token?{"Authorization":"Bearer "+token}:{})},
    ...(requestBody?{body:JSON.stringify(requestBody)}:{}),signal
   }),signal);
+  if(!response||typeof response.ok!=='boolean')
+   throw Error('Invalid Worker response');
   // A syntactically malformed reply still follows the existing invalid-ack
   // path. Cancellation is different: it cannot be reported as a successful
   // empty acknowledgment or leave ownerWritePendingCount above zero.
