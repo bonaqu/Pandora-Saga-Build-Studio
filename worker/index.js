@@ -131,7 +131,9 @@ async function serveCatalog(env,dataset,ctx){
     const additional=extras?JSON.parse(extras.payload):{npcs:{},mapNames:{},limitMeta:{}};
     obj={trades:rows.map(r=>JSON.parse(r.payload)),...additional};
    }
-   return json(obj,200,{'cache-control':'public, max-age=60','x-ps-catalog':'d1','x-ps-catalog-snapshot':active.snapshot});
+   // Outgoing public catalog HTTP responses must not bypass Worker fetch().
+   // Only the synthetic response stored inside Cache API has a 60s TTL.
+   return json(obj,200,{'cache-control':'no-store','x-ps-catalog':'d1','x-ps-catalog-snapshot':active.snapshot});
   }
  });
 }
