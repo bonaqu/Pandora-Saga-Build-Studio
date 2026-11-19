@@ -1373,17 +1373,17 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(customMap.nameEn,'Smoke location');
   assert.ok(await page.locator('.wiki-map-section-switches button').count()>=4);
   await page.locator('.wiki-map-tag-section .wiki-owner-plus').click();
-  await page.locator('.wiki-map-tag-form [aria-label="Тег на русском"]').fill('Государство');
-  await page.locator('.wiki-map-tag-form [aria-label="Tag in English"]').fill('Nation');
+  await page.locator('.wiki-map-tag-form [data-owner-interface-key="tagRu"]').fill('Государство');
+  await page.locator('.wiki-map-tag-form [data-owner-interface-key="tagEn"]').fill('Nation');
   await page.locator('.wiki-map-tag-form .wiki-owner-plus').click();
   await page.locator('.wiki-map-tag-label').filter({hasText:'Nation'})
    .waitFor({state:'visible',timeout:20000});
   assert.deepEqual(JSON.parse(townOverrides.get(customMapKeys[0])).tags,
    [{ru:'Государство',en:'Nation'}]);
   await page.locator('.wiki-map-add-section').click();
-  await page.locator('.wiki-map-custom-form [aria-label="Section title RU"]')
+  await page.locator('.wiki-map-custom-form [data-owner-interface-key="sectionTitleRu"]')
    .fill('История');
-  await page.locator('.wiki-map-custom-form [aria-label="Section title EN"]')
+  await page.locator('.wiki-map-custom-form [data-owner-interface-key="sectionTitleEn"]')
    .fill('History');
   await page.locator('.wiki-map-custom-form .wiki-owner-plus').click();
   await page.locator('.wiki-map-extra-section').filter({hasText:'History'})
