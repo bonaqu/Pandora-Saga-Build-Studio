@@ -11,20 +11,28 @@ test('monster and location create forms localize all RU/EN text inputs',()=>{
  assert.match(app,/placeholder:wt\('Название · EN','Name · EN'\),\s*'aria-label':wt\('Название локации на английском','Location name in English'\)/);
 });
 
-test('NPC and section form placeholders and aria labels use shared bilingual text',()=>{
+test('NPC creation on Astir and custom maps uses a single D1-bound bilingual form',()=>{
  for(const snippet of [
-  "placeholder:wt('Название NPC · RU','NPC name · RU')",
-  "placeholder:wt('Название NPC · EN','NPC name · EN')",
-  "'aria-label':wt('Название нового NPC RU','New NPC name RU')",
-  "'aria-label':wt('Название нового NPC EN','New NPC name EN')",
-  "'aria-label':wt('Назначение нового NPC','New NPC service')",
-  "field(wt('Имя NPC · RU','NPC name · RU'))",
-  "field(wt('Имя NPC · EN','NPC name · EN'))",
+  "[ru,'npcNameRu','npcNameRuAria']",
+  "[en,'npcNameEn','npcNameEnAria']",
+  "[role,'npcService','npcServiceAria']",
+  "mapBind(field,placeholder,'placeholder')",
+  "mapBind(field,aria,'aria-label')",
+  "mapBind(h('button',{type:'button',class:'wiki-owner-remove'}),'npcCancel')",
+  "mapCopy('npcRequired')",
+  "mapCopy('npcCreateFailure')",
+  "if(ownerMap&&rec.virtual)",
+  "id,'extraSections',custom",
   "mapBind(ru,'sectionTitleRu','placeholder')",
   "mapBind(en,'sectionTitleEn','placeholder')",
   "mapBind(ru,'sectionTitleRu','aria-label')",
   "mapBind(en,'sectionTitleEn','aria-label')"
- ])assert.ok(app.includes(snippet),'Not localized: '+snippet);
+ ])assert.ok(app.includes(snippet),'Missing bilingual owner copy binding: '+snippet);
+ assert.doesNotMatch(app,/wiki-town-npc-create|astir-npc-'\+city\+'-custom-/);
+ const block=app.slice(app.indexOf('const wikiMapRows='),app.indexOf('const wikiMapByKey='));
+ for(const key of ['createNpc','npcNameRu','npcNameEn','npcService',
+  'npcSave','npcCancel','npcRequired','npcCreateFailure'])
+  assert.ok(block.includes('["'+key+'"'),'Missing owner D1 key '+key);
 });
 
 test('wiki editor error copy does not expose internal IDs and translates source failures',()=>{
