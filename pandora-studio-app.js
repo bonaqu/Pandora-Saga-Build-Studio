@@ -3091,14 +3091,14 @@ function renderPathCopyControls(){
    ['branchPointHelp','Очки умений, распределяемые при развитии персонажа.','Skill points allocated as the character develops.','Вложенные очки','Invested points help'],
    ['greenMasteryHelp','Растёт при использовании умений этой ветки, а также соответствующих типов атак или оружия.','Increases when using this branch’s skills or its corresponding attack or weapon types.','Зелёное мастерство','Green mastery help'],
    ['racialUnavailableAria','Расовые навыки: не прокачиваются очками веток','Racial skills: no branch point allocation','Расовая ветка','Racial branch'],
-   ['branchTrackAria','Единая полоса вложенных очков и освоенного мастерства ','Shared spent-points and trained-mastery bar: ','Полоса прокачки','Mastery track'],
-   ['innateBaselineAria','Начальная прокачка класса: ','Starting branch points: ','Очки при создании','Innate points'],
+   ['branchTrackAria','Единая полоса вложенных очков и освоенного мастерства','Shared spent-points and trained-mastery bar:','Полоса прокачки','Mastery track'],
+   ['innateBaselineAria','Начальная прокачка класса:','Starting branch points:','Очки при создании','Innate points'],
    ['skillBrowseAria','Навигация по найденным умениям','Browse matching skills','Список умений','Skill navigation'],
    ['skillWeaponRange','Зависит от оружия','Depends on weapon','Зависимость дальности','Weapon range'],
-   ['skillPreviousAria','Предыдущее умение: ','Previous skill: ','Предыдущее умение','Previous skill'],
+   ['skillPreviousAria','Предыдущее умение:','Previous skill:','Предыдущее умение','Previous skill'],
    ['skillLineageAria','Продолжение умения','Skill upgrades','Развитие умения','Skill lineage'],
-   ['skillNextAria','Следующее умение: ','Next skill: ','Следующее умение','Next skill'],
-   ['skillNextLink','Следующее → ','Next → ','Ссылка к следующему','Next skill link']
+   ['skillNextAria','Следующее умение:','Next skill:','Следующее умение','Next skill'],
+   ['skillNextLink','Следующее →','Next →','Ссылка к следующему','Next skill link']
   ],'Подсказки Пути героя','Hero Path hints');
   if(pathHelp){
    pathHelp.id='ownerPathHelpCopy';
