@@ -280,8 +280,14 @@ function apply(data,overrides){
    const original=next.maps?.[mapId]?.mobs||source.mobs||[];
    const was=original.some(ref=>String(ref)===String(mob)),want=wanted.has('map:'+mapId);
    if(was===want)continue;
-   const maps=mut('maps');
-   maps[mapId]={...maps[mapId],mobs:want?[...original,mob]:original.filter(ref=>String(ref)!==String(mob))};
+   const maps=mut('maps'),entry=maps[mapId],roster=entry?.roster;
+   maps[mapId]={...entry,
+    mobs:want?[...original,mob]:original.filter(ref=>String(ref)!==String(mob)),
+    // Keep a curator's reported row but unlink the monster if a canonical
+    // spawn is explicitly removed. Otherwise it points at a missing mob.
+    ...(was&&!want&&Array.isArray(roster)?{roster:roster.map(row=>
+     String(row.monsterId)===String(mob)?{...row,monsterId:null}:row)}:{})
+   };
   }
   for(const original of data.instances||[]){
    const entry=(next.instances||[]).find(x=>String(x.id)===String(original.id))||original;

@@ -35,12 +35,12 @@ function setup({apiRequest,initial}={}){
    if(current)visible.set(id,JSON.parse(current));
   }
  };
- const factory=Function('wikiData','wikiIndex','window','activeOverride',
+ const factory=Function('wikiData','wikiIndex','wikiBaseData','window','activeOverride',
   'apiRequest','override','ownerEdits','refreshOwnerCatalog','refreshOwnerUI',
   'wikiRecordWriteQueue',
   'const adminToken="test",adminEditing=true;let editIsSaving=false;\n'+code+
   '\nreturn {save:saveWikiSpawns,busy:()=>editIsSaving};');
- const handler=factory(catalog,wikiIndex,window,
+ const handler=factory(catalog,wikiIndex,catalog,window,
   key=>Object.hasOwn(overrides,key)?overrides[key]:null,write,
   overrides,edits,refresh,()=>{},queue);
  return {...handler,catalog,original,overrides,edits,queue,writes,visible};
@@ -116,13 +116,69 @@ test('separate monsters are not globally serialized',async()=>{
 });
 test('anonymous spawn editing is rejected before any write or catalog mutation',async()=>{
  const x=setup();
- const blocked=Function('wikiData','wikiIndex','window','activeOverride',
+ const blocked=Function('wikiData','wikiIndex','wikiBaseData','window','activeOverride',
   'apiRequest','override','ownerEdits','refreshOwnerCatalog','refreshOwnerUI',
   'wikiRecordWriteQueue',
   'const adminToken=null,adminEditing=false;let editIsSaving=false;\n'+code+
   '\nreturn saveWikiSpawns;')(
-   x.catalog,{locations:()=>[{type:'map',id:'100'}]},window,
+   x.catalog,{locations:()=>[{type:'map',id:'100'}]},x.catalog,window,
    ()=>null,async()=>{throw Error('Should not be reached')},{},[],async()=>{},()=>{},
    new Map());
  await assert.rejects(blocked(600,'map','101',true),/Недостаточно прав/);
+});
+
+test('canonical spawn writes ignore owner-curated and virtual numeric locations',async()=>{
+ const x=setup({initial:[
+  {type:'map',id:'100'}, {type:'map',id:'custom-forest01'},
+  {type:'map',id:'1001004'}, {type:'instance',id:'200'}
+ ]});
+ await x.save(600,'map','101',true);
+ assert.equal(x.writes.length,1);
+ assert.deepEqual(JSON.parse(x.writes[0].payload.value),[
+  {type:'map',id:'100'}, {type:'instance',id:'200'}, {type:'map',id:'101'}
+ ],'Only source-backed numeric locations belong in a spawnedit override');
+ assert.equal(JSON.stringify(x.catalog),x.original);
+});
+test('virtual monster IDs cannot create ignored successful spawnedit writes',async()=>{
+ const x=setup();
+ await assert.rejects(x.save('owner-monster-abcdefabcdef','instance','200',true),
+  /Для созданного монстра/);
+ assert.equal(x.writes.length,0);
+ assert.equal(x.edits.length,0);
+ assert.equal(x.queue.size,0);
+});
+test('dungeon monster picker routes changed custom IDs to the actual instance record',async()=>{
+ const owner='owner-monster-abcdefabcdef';
+ // Verify the exact onChange branch for the real UI, then exercise the writer.
+ const onChange=source.slice(source.indexOf("const monsterRelations=wikiOwnerEntityList({"),
+  source.indexOf("mapBind(monsterRelations.querySelector('h4')"));
+ assert.match(onChange,/if\(type==='instance'&&ownerChange\)/);
+ assert.match(onChange,/saveWikiRecordList\('instance',id,'mobs',mobs,/);
+ const patchStart=source.indexOf('async function saveWikiRecordPatch(');
+ const patchEnd=source.indexOf('\nasync function saveWikiSpawns(',patchStart);
+ assert.ok(patchStart>=0&&patchEnd>patchStart);
+ const original={maps:{100:{mobs:[600]}},instances:[{id:200,mobs:[600]}],
+  monsters:{600:{name:'Source monster'}}};
+ const before=JSON.stringify(original),overrides={},writes=[],edits=[],queue=new Map();
+ let rebuilt=window.PandoraWikiOwnerData.apply(original,overrides);
+ const index={records(type){
+  if(type==='instance')return Object.fromEntries(rebuilt.instances.map(x=>[String(x.id),x]));
+  return {};
+ }};
+ const factory=Function('wikiData','wikiIndex','window','activeOverride','apiRequest',
+  'override','ownerEdits','refreshOwnerCatalog','refreshOwnerUI','wikiRecordWriteQueue','wt',
+  'const adminToken="test",adminEditing=true;let editIsSaving=false;\n'+
+  source.slice(patchStart,patchEnd)+'\nreturn saveWikiRecordList;');
+ const save=factory(rebuilt,index,window,key=>overrides[key]??null,
+  async (path,payload)=>writes.push({path,payload}),overrides,edits,
+  async()=>{rebuilt=window.PandoraWikiOwnerData.apply(original,overrides)},
+  ()=>{},queue,(ru,en)=>ru);
+ await save('instance',200,'mobs',[600],[600,owner]);
+ assert.equal(writes.length,1,'A single instance override, not ignored spawnedit');
+ assert.equal(writes[0].payload.key,'wikiedit.instance.200');
+ assert.deepEqual(JSON.parse(JSON.stringify(rebuilt.instances[0].mobs)),[600,owner]);
+ await assert.rejects(save('instance',200,'mobs',[600],[600]),
+  /Список уже изменён/,'An old editor cannot undo the custom monster link');
+ assert.equal(writes.length,1);
+ assert.equal(JSON.stringify(original),before);
 });

@@ -157,3 +157,29 @@ test('real Chromium suite exercises the single-write spawn replacement picker',(
  assert.match(smoke,/writes\.length,1/);
  assert.match(smoke,/2003301/);
 });
+
+test('canonical spawn removal preserves curated map links and unlinks only the matching report',()=>{
+ const base=fixtures(),owner='owner-monster-abcdefabcdef',custom='custom-forest01';
+ const before=JSON.stringify(base);
+ base.maps[100].roster=[
+  {id:'spawn-forest-a',name:'Квеллис',level:15,monsterId:600},
+  {id:'spawn-forest-b',name:'Неизвестный',level:10,monsterId:null}
+ ];
+ const source=JSON.stringify(base);
+ const changed=edits.apply(base,{
+  ['wikiedit.map.'+custom]:JSON.stringify({
+   name:'Авторский лес',nameEn:'Curated forest',mobs:[600,owner]
+  }),
+  ['wikiedit.monster.'+owner]:JSON.stringify({
+   name:'Монстр',nameEn:'Custom monster',level:15
+  }),
+  'spawnedit.600':JSON.stringify([{type:'map',id:'200'}])
+ });
+ assert.deepEqual(clean(changed.maps[100].mobs),[]);
+ assert.equal(changed.maps[100].roster[0].monsterId,null);
+ assert.equal(changed.maps[100].roster[1].monsterId,null);
+ assert.deepEqual(clean(changed.maps[custom].mobs),[600,owner],
+  'The original-source spawn writer does not erase an independent curated map');
+ assert.deepEqual(clean(changed.maps[200].mobs),[600]);
+ assert.equal(JSON.stringify(base),source,'No source D1 game catalog mutations');
+});
