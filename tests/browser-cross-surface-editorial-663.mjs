@@ -33,7 +33,7 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   if(path==='/api/admin/override'&&req.method()==='POST'){
    assert.equal(req.headers().authorization,'Bearer '+token);
    const body=req.postDataJSON();
-   assert.match(body.key,/^guideedit\.book\.(?:origin|path|equipment|wiki-ui|wiki\.chest\.text|skill-ui|stats-ui)\./);
+   assert.match(body.key,/^guideedit\.book\.(?:origin|path|equipment|wiki-ui|wiki\.chest\.text|wiki\.item\.text|skill-ui|stats-ui)\./);
    assert.equal(body.expectedValue,Object.hasOwn(values,body.key)?values[body.key]:null,
     'All owner copy writes must use D1 expectedValue CAS');
    values[body.key]=body.value;writes.push(body);
@@ -158,6 +158,33 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
    'Writing display copy cannot remove or alter reward records');
   assert.equal(await chestFilter.inputValue(),'equipment');
   assert.equal(JSON.parse(values['guideedit.book.wiki.chest.text.group-showing']).ru,'Найдено:');
+
+  // Item captions are CAS-edited in the real owner Wiki without changing
+  // the source item values, record selection or game calculations.
+  await page.locator('#dockClose').click();
+  await page.locator('#nav [data-tab="wiki"]').click();
+  await page.locator('[data-wiki-chapter="item"]').click();
+  const itemSearch=page.locator('input[name="pandora-studio-encyclopedia-filter"]');
+  await itemSearch.click();
+  await itemSearch.fill('Железные поножи');
+  await page.locator('[data-wiki-record="13041"]').click();
+  const item=page.locator('#detailContent');
+  await item.locator('.item-fields').waitFor({state:'visible'});
+  const itemPanel=item.locator('.studio-owner-interface-editor')
+   .filter({has:page.locator('[data-owner-copy-section="wiki.item.text"]')});
+  await itemPanel.locator('summary').click();
+  const itemCopyKeys=await itemPanel.locator('.studio-owner-interface-row [data-owner-copy-id]')
+   .evaluateAll(nodes=>nodes.map(node=>node.dataset.ownerCopyId));
+  assert.equal(itemCopyKeys.length,29);
+  assert.equal(new Set(itemCopyKeys).size,29);
+  const originalItemValues=await item.locator('.item-fields').innerText();
+  await edit('wiki.item.text','obtainHeading','Где добывается');
+  assert.equal(await item.locator('[data-owner-interface-key="obtainHeading"]')
+   .innerText(),'Где добывается');
+  assert.equal(await item.locator('.item-fields').innerText(),originalItemValues,
+   'Editing a caption must not mutate the game item stats');
+  assert.equal(JSON.parse(values['guideedit.book.wiki.item.text.obtain-heading']).ru,
+   'Где добывается');
 
   // Skills: work inside the real right-hand Hero Path instead of the
   // retired standalone skills workbench, which has no navigation tab.
