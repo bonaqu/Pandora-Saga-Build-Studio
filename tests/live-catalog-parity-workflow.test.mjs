@@ -7,7 +7,7 @@ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 test('live readiness runs parity only after the published release and Worker checks',()=>{
  const workflow=read('.github/workflows/live-readonly.yml');
  const wait=workflow.indexOf('run: node scripts/wait-live-release.mjs');
- const health=workflow.indexOf('run: npm run connection:check:full');
+ const health=workflow.indexOf('run: npm run connection:check:release');
  const parity=workflow.indexOf('run: npm run catalog:parity:live');
  assert.ok(wait>=0&&health>wait&&parity>health,
   'Read-only parity must check only after expected publication and health');
@@ -71,10 +71,40 @@ test('failed live release captures only read-only production D1 schema diagnosti
  assert.match(script,/\['basic_select','SELECT 1 AS reachable'\]/);
  assert.match(script,/\['insights','ps-build-studio-db'/);
  assert.match(script,/--sort-by=reads/);
- assert.match(script,/queryClass:queryClass\(item.query\)/);
+ assert.match(script,/const queryClassName=queryClass\(item.query\)/);
+ assert.match(script,/queryClass:queryClassName/);
  assert.doesNotMatch(script,/console\.(?:log|warn|error)\([^\n]*item\.query/);
  assert.match(script,/TARGET_ACCOUNT/);
  assert.match(script,/TARGET_DB/);
  assert.doesNotMatch(script,/\b(?:INSERT INTO|UPDATE\s+\w+|DELETE FROM|DROP TABLE|ALTER TABLE|REPLACE INTO)\b/i);
  assert.doesNotMatch(script,/console\.(?:log|warn)\([^\n]*result\.(?:stdout|stderr)/);
 });
+
+test('single full D1 parity pass retains 19 dataset coverage and manual deep checks',()=>{
+ const pkg=JSON.parse(read('package.json'));
+ const workflow=read('.github/workflows/live-readonly.yml');
+ const checker=read('scripts/check-live-connections.mjs');
+ const audit=read('scripts/audit-live-catalog-parity.mjs');
+ assert.equal(pkg.scripts['connection:check:release'],'node scripts/check-live-connections.mjs --release');
+ assert.equal(pkg.scripts['connection:check:full'],'node scripts/check-live-connections.mjs --full');
+ assert.match(checker,/release\?\['meta','tradeMeta','legacyLocale'\]/);
+ const names=audit.match(/export const DATASETS=Object\.freeze\(\[([\s\S]*?)\]\);/);
+ assert.ok(names,'Expect a stable, literal list of audited gameplay datasets');
+ const parityNames=[...names[1].matchAll(/'([A-Za-z]+)'/g)].map(m=>m[1]);
+ assert.equal(parityNames.length,16);
+ assert.equal(new Set([...parityNames,'meta','tradeMeta','legacyLocale']).size,19);
+ assert.match(workflow,/run: npm run connection:check:release/);
+ assert.match(workflow,/run: npm run catalog:parity:live/);
+});
+test('read-only D1 Insights runs after green parity and skips all direct SQL probes',()=>{
+ const workflow=read('.github/workflows/live-readonly.yml');
+ const source=read('worker/scripts/check-readonly-d1-incident.mjs');
+ assert.match(workflow,/if: success\(\)/);
+ assert.match(workflow,/node scripts\/check-readonly-d1-incident\.mjs --insights-only/);
+ assert.match(source,/const insightsOnly=process\.argv\.includes\('--insights-only'\)/);
+ assert.match(source,/if\(!insightsOnly\)\{\s*for\(const \[label,sql\] of checks\)/);
+ assert.match(source,/D1 Analytics-only inspection complete; no D1 SQL probes executed/);
+ assert.match(source,/top 20 query-class aggregates \(not account totals\)/);
+ assert.doesNotMatch(source,/console\.(?:log|warn|error)\([^\n]*item\.query/);
+});
+

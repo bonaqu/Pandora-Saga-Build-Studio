@@ -41,7 +41,7 @@ test('PR is tested once before merge; postmerge live Pages/Worker acceptance rem
   'Node-only regression PRs must still trigger quality CI');
  const live=read('.github/workflows/live-readonly.yml');
  assert.match(live,/^\s*push:\s*$/m);
- assert.match(live,/run: npm run connection:check:full/);
+ assert.match(live,/run: npm run connection:check:release/);
  assert.match(live,/run: npm run catalog:parity:live/);
 });
 test('manual browser run keeps full coverage, while PR failures of classifier fail closed',()=>{

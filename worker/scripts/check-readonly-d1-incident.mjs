@@ -48,7 +48,9 @@ const checks=[
  ['account_columns','PRAGMA table_info(user_accounts)'],
  ['session_columns','PRAGMA table_info(user_sessions)']
 ];
+const insightsOnly=process.argv.includes('--insights-only');
 let failures=0;
+if(!insightsOnly){
 for(const [label,sql] of checks){
  // Defense in depth: never allow a D1 mutation from this diagnostics script.
  if(!/^(?:SELECT\s|PRAGMA\s+table_info\()/i.test(sql)||sql.includes(';'))
@@ -83,11 +85,12 @@ for(const [label,sql] of checks){
   console.warn('D1 probe '+label+': invalid response shape; raw output withheld');
  }
 }
+}
 // Query insights use Cloudflare's analytics API, not an SQL SELECT on D1.
 // This allows examining daily read volume even when free SQL rows are exhausted.
 // Account Analytics Read permission may be absent; do not fail the incident job.
 const insights=invoke(['insights','ps-build-studio-db','--time-period=1d',
- '--sort-by=reads','--sort-type=sum','--limit=12','--json']);
+ '--sort-by=reads','--sort-type=sum','--limit=20','--json']);
 if(insights.status===0){
  try{
   const data=JSON.parse(insights.stdout||'null');
@@ -97,25 +100,39 @@ if(insights.status===0){
    if(/catalog_entries/i.test(sql))return 'catalog_entries';
    if(/catalog_current/i.test(sql))return 'catalog_current';
    if(/user_sessions|user_accounts/i.test(sql))return 'account_sessions';
+   if(/private_builds/i.test(sql))return 'private_build_library';
+   if(/shared_builds|shared_build_sources/i.test(sql))return 'shared_build_previews';
+   if(/login_attempts|user_registration_limits|shared_build_limits/i.test(sql))return 'security_limits';
    if(/(?:^|\W)overrides(?:\W|$)/i.test(sql))return 'ui_overrides';
    if(/(?:sqlite_master|pragma_table)/i.test(sql))return 'schema_lookup';
    if(/catalog_backup_jobs/i.test(sql))return 'catalog_backup_outbox';
    return 'other_query';
   };
-  for(const [i,item] of entries.slice(0,12).entries()){
+  const byClass=new Map();
+  for(const [i,item] of entries.slice(0,20).entries()){
    const number=value=>{
     const v=Number(value);return Number.isFinite(v)&&v>=0?Math.round(v):null;
    };
+   const queryClassName=queryClass(item.query),rowsRead=number(item.totalRowsRead),
+    rowsWritten=number(item.totalRowsWritten),executions=number(item.numberOfTimesRun);
+   const previous=byClass.get(queryClassName)||{rowsRead:0,rowsWritten:0,executions:0};
+   byClass.set(queryClassName,{rowsRead:previous.rowsRead+(rowsRead||0),
+    rowsWritten:previous.rowsWritten+(rowsWritten||0),
+    executions:previous.executions+(executions||0)});
    console.log('D1 insight '+(i+1)+': '+JSON.stringify({
-    queryClass:queryClass(item.query),rowsRead:number(item.totalRowsRead),
-    rowsWritten:number(item.totalRowsWritten),executions:number(item.numberOfTimesRun)
+    queryClass:queryClassName,rowsRead,rowsWritten,executions,avgRowsRead:number(item.avgRowsRead)
    }));
   }
   if(!entries.length)console.log('D1 insights: no metrics supplied');
+  else console.log('D1 insights: top 20 query-class aggregates (not account totals): '+
+   JSON.stringify(Object.fromEntries(byClass)));
+  console.log('D1 Analytics report: trailing 1d; no SQL probes');
  }catch{console.warn('D1 insights: response unavailable or format changed')}
 }else console.warn('D1 insights: unavailable (check Account Analytics Read); raw error withheld');
 
-if(failures){
+if(insightsOnly){
+ console.log('D1 Analytics-only inspection complete; no D1 SQL probes executed.');
+}else if(failures){
  console.error('Read-only D1 triage: '+failures+' of '+checks.length+
   ' SQL probes unavailable. No writes attempted.');
  process.exitCode=1;
