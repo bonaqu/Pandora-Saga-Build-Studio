@@ -555,6 +555,81 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(JSON.parse(values[libraryKey]).en,undefined);
   await originalInput.dispose();
 
+  // The saved-build A/B panel must reuse the SAME author D1/CAS pipeline.
+  // Neither comparison selections, generated counts, nor current user draft
+  // are part of an owner-editable caption. No production API is touched.
+  console.log('Chromium comparison D1 editorial copy: EN, CAS, 409, Undo, key switching');
+  // The owner drawer was deliberately opened for the preceding Undo, and its
+  // body overlaps the compact comparison heading. Use the real collapse
+  // control rather than a force-click through the overlay.
+  const compareOwnerDock=page.locator('#ownerDock');
+  if(await compareOwnerDock.locator('[data-owner-collapse]')
+   .getAttribute('aria-expanded')==='true')
+   await compareOwnerDock.locator('[data-owner-collapse]').click();
+  const compare=page.locator('#detailContent [data-build-compare]');
+  const comparePanel=await compare.elementHandle();
+  const compareTitle=compare.locator('[data-owner-copy-key="compareTitle"]');
+  const comparisonName=await activeName.inputValue();
+  await compare.locator('[data-owner-copy-pencil="compareTitle"]').click();
+  const compareTitleEdit=compare.locator('.build-compare-title-group .account-copy-edit-host [contenteditable]');
+  await compareTitleEdit.fill('Build comparison QA');
+  await compareTitleEdit.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#detailContent [data-owner-copy-key="compareTitle"]')?.textContent==='Build comparison QA',
+   null,{timeout:12000});
+  assert.equal(JSON.parse(values['guideedit.book.ui.label.compare-title']).en,'Build comparison QA');
+  assert.equal(await activeName.inputValue(),comparisonName);
+  assert.equal(await comparePanel.evaluate(node=>node.isConnected),true);
+  await compare.locator('[data-owner-copy-key="compareExpand"]').click();
+  await compare.locator('[data-owner-copy-pencil="compareCollapse"]').waitFor({state:'visible'});
+  assert.equal(await compare.locator('[data-owner-copy-pencil="compareExpand"]').count(),0);
+  assert.equal(await compare.locator('.build-compare-expand').getAttribute('aria-expanded'),'true');
+  const compareStatus=compare.locator('[data-owner-copy-key="compareNeedTwo"]');
+  await compareStatus.waitFor({state:'visible'});
+  await compare.locator('[data-owner-copy-pencil="compareNeedTwo"]').click();
+  const comparisonEdit=compare.locator('.build-compare-summary .account-copy-edit-host [contenteditable]');
+  await comparisonEdit.fill('Save a pair of builds to compare.');
+  await comparisonEdit.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#detailContent [data-owner-copy-key="compareNeedTwo"]')?.textContent==='Save a pair of builds to compare.',
+   null,{timeout:12000});
+  const compareKey='guideedit.book.ui.label.compare-need-two';
+  assert.equal(JSON.parse(values[compareKey]).en,'Save a pair of builds to compare.');
+  // The update keeps its native status node and never replaces the A/B panel.
+  assert.equal(await comparePanel.evaluate(node=>node.isConnected),true);
+  assert.equal(await activeName.inputValue(),comparisonName);
+  nextConflicts.add(compareKey);
+  await compare.locator('[data-owner-copy-pencil="compareNeedTwo"]').click();
+  await comparisonEdit.fill('A compare caption that must survive HTTP 409');
+  await comparisonEdit.press('Tab');
+  await compare.locator('.build-compare-summary .ui-content-inline-error')
+   .waitFor({state:'visible',timeout:12000});
+  assert.equal(await comparisonEdit.textContent(),
+   'A compare caption that must survive HTTP 409');
+  assert.equal(JSON.parse(values[compareKey]).en,'Save a pair of builds to compare.');
+  await comparisonEdit.press('Escape');
+  await page.waitForFunction(()=>document.querySelector(
+   '#detailContent [data-owner-copy-key="compareNeedTwo"]')?.textContent==='Save a pair of builds to compare.',
+   null,{timeout:12000});
+  // Undo is scoped to the saved comparison caption; neither the open panel
+  // nor an unsaved name belonging to the active hero may be remounted.
+  if(await page.locator('#ownerDock').evaluate(el=>el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
+  await page.locator('#ownerDock [data-owner-undo]').click();
+  await page.waitForFunction(()=>document.querySelector(
+   '#detailContent [data-owner-copy-key="compareNeedTwo"]')?.textContent==='Save at least two builds to compare them.',
+   null,{timeout:12000});
+  assert.equal(await compare.locator('.build-compare-expand').getAttribute('aria-expanded'),'true');
+  assert.equal(await activeName.inputValue(),comparisonName);
+  assert.equal(await comparePanel.evaluate(node=>node.isConnected),true);
+  assert.equal(JSON.parse(values['guideedit.book.ui.label.compare-title']).en,'Build comparison QA');
+  assert.equal(Object.hasOwn(values,compareKey),false,
+   'Undo removes the new comparison caption instead of inventing an empty JSON record');
+  if(await compareOwnerDock.locator('[data-owner-collapse]')
+   .getAttribute('aria-expanded')==='true')
+   await compareOwnerDock.locator('[data-owner-collapse]').click();
+  await comparePanel.dispose();
+
   // Cloud library status has its own lifecycle: change the currently
   // visible authored notice without editing a dynamic counter, saved build,
   // network error, or another user's account.

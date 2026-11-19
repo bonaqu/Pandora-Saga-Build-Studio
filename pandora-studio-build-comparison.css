@@ -4,6 +4,11 @@
  border:1px solid #896641;border-radius:9px;background:#241a12}
 .build-compare-header{display:flex;align-items:center;justify-content:space-between;
  gap:9px;padding:9px 12px}
+.build-compare-title-group,.build-compare-action-group{display:flex;align-items:center;gap:4px;min-width:0}
+.build-compare-title-group{flex:1 1 auto}
+.build-compare-action-group{flex:0 0 auto}
+.build-compare-header .account-copy-pencil{flex:0 0 auto}
+.build-compare-summary .account-copy-pencil{vertical-align:middle;margin-left:4px}
 .build-compare-title{margin:0;color:#f8ddaf;
  font:700 20px/1.15 'Cormorant Garamond',Georgia,serif}
 .build-compare-expand,.build-compare-swap{min-height:34px;

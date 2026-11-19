@@ -55,7 +55,7 @@ test('A/B matrix uses verified English items and souls while preserving Russian 
 test('compact result comparison uses translated Hero Book outcomes',()=>{
  const app=read('pandora-studio-app.js');
  const start=app.indexOf('PandoraBuildComparison.compactResults(');
- const end=app.indexOf('summary.textContent=rows.length',start);
+ const end=app.indexOf("setSummary(rows.length?'compareDifferencePrefix':'compareNoDifferences'",start);
  assert.ok(start>=0&&end>start,'Active compact renderer');
  const snippet=app.slice(start,end);
  assert.match(snippet,/PandoraStageAttributes\.summaryRows\(calcA\)/);
