@@ -131,7 +131,8 @@ test('42 monster labels are bilingual D1 overlays with isolated OS stats and loo
  const block=app.slice(app.indexOf('const wikiMonsterRows='),app.indexOf('const wikiNpcTradeRows='));
  const entries=[...block.matchAll(/^ \["([^"]+)","([^"]+)","([^"]+)"\],?$/gm)];
  assert.equal(entries.length,42);
- assert.equal(new Set(entries.map(row=>row[1])).size,41);
+ assert.equal(new Set(entries.map(row=>row[1])).size,entries.length,
+  'Every owner-editable label has a distinct semantic key');
  const langEnv={window:{}};
  Function('window',read('pandora-studio-honor-guide.js'))(langEnv.window);
  for(const [key,ru,en]of [
