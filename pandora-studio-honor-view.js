@@ -26,6 +26,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  // Search the actual RU/EN authored Honor content, not an OS 'honor'
  // catalog category. Use the same Unicode/ё normalization as Wiki.
  const matchesText=root.PandoraSearchField.compile(searchQuery);
+ const hasSearch=Boolean(root.PandoraSearchField.normalize(searchQuery));
  const matches=node=>matchesText(typeof node==='string'?node:node?.textContent||'');
  const oldBrowseScroll=browse.scrollTop,oldDetailScroll=detail.scrollTop;
  const oldSection=detail.querySelector('.wiki-honor-nav-link.selected')?.dataset.honorSection||
@@ -109,7 +110,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
     en?article.overview.gainEn:article.overview.gainRu));
   }else detail.append(editorial('h3','wiki-honor-title','warNotFound',
    'Война не найдена','War not found'));
-  if(terms.length){
+  if(hasSearch){
    let visible=0;
    for(const entry of browse.querySelectorAll('.wiki-honor-war-link')){
     entry.hidden=!matches(entry);
@@ -491,7 +492,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
     for(const card of rankGrid.children)
      card.hidden=(key==='standard'?card.dataset.rankType!=='standard':
       key==='monthly'?card.dataset.rankType!=='monthly':false)||
-      (terms.length>0&&card.dataset.honorSearchMatch==='false');
+      (hasSearch>0&&card.dataset.honorSearchMatch==='false');
    }});
   const caption=node('span','wiki-honor-filter-caption',label);
   button.append(caption,node('span','wiki-honor-filter-count',' · '+count));
@@ -637,7 +638,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  // Search in Honor has no wikiIndex.search('honor') records. Filter the actual
  // four article sections, link rows, rank cards and monthly rewards instead.
  // The existing rank type filter is retained; searching never changes it.
- if(terms.length){
+ if(hasSearch){
   const sections=[...detail.querySelectorAll('.wiki-honor-section')];
   for(const block of sections){
    const head=block.querySelector('.wiki-honor-heading-row');
