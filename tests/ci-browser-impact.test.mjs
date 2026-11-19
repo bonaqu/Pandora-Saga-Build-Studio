@@ -12,11 +12,19 @@ test('CI still runs a full browser suite on gameplay, persistence, Worker and un
  }
  assert.equal(selectBrowserSuite([]),'full','Unknown diff must fail closed');
 });
-test('CI uses quick browser for copy-only, layout CSS and release housekeeping',()=>{
+test('CI reserves quick for copy-only and gives CSS a real desktop/mobile layout audit',()=>{
  assert.equal(selectBrowserSuite([
-  'pandora-studio-ui-locale.js','pandora-studio-owner-inline-ui.css','docs/NOTES.md',
+  'pandora-studio-ui-locale.js','docs/NOTES.md',
   'CHANGELOG.md','tests/honor-guide-ux.test.mjs'
  ]),'quick');
+ for(const paths of [
+  ['pandora-studio-theme.css'],
+  ['pandora-studio-owner-inline-ui.css','docs/NOTES.md','tests/honor-guide-ux.test.mjs'],
+  ['pandora-studio-theme.css','index.html']
+ ]){
+  const releaseOnlyFiles=paths.includes('index.html')?['index.html']:[];
+  assert.equal(selectBrowserSuite(paths,{releaseOnlyFiles}),'layout',paths.join(', '));
+ }
  assert.equal(selectBrowserSuite(['pandora-studio-theme.css','worker/index.js']),'full');
  assert.equal(selectBrowserSuite(['index.html'],{releaseOnlyFiles:['index.html']}),'quick');
 });
@@ -49,6 +57,8 @@ test('manual browser run keeps full coverage, while PR failures of classifier fa
  assert.match(wf,/mode=full/);
  assert.match(wf,/node scripts\/select-browser-suite\.mjs/);
  assert.match(wf,/node tests\/browser-smoke\.mjs --quick/);
+ assert.match(wf,/node tests\/browser-smoke\.mjs --layout/);
+ assert.match(read('tests/browser-smoke.mjs'),/if\(!quick\)await runLayoutAudit\(browser,base\)/);
  assert.match(wf,/node tests\/browser-smoke\.mjs\s*$/m);
  const runner=read('tests/browser-smoke.mjs');
  for(const scenario of ['cloud-conflict','cloud-save-failure','cross-tab-account','account-feedback-race'])
