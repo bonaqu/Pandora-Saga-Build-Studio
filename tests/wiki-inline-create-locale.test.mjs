@@ -28,6 +28,8 @@ test('NPC creation on Astir and custom maps uses a single D1-bound bilingual for
   "mapBind(ru,'sectionTitleRu','aria-label')",
   "mapBind(en,'sectionTitleEn','aria-label')"
  ])assert.ok(app.includes(snippet),'Missing bilingual owner copy binding: '+snippet);
+ assert.match(app,/mapBind\(field,aria,'aria-label'\);\s*mapBind\(field,placeholder,'placeholder'\)/,
+  'Last field binding must retain its stable semantic placeholder key');
  assert.doesNotMatch(app,/wiki-town-npc-create|astir-npc-'\+city\+'-custom-/);
  const block=app.slice(app.indexOf('const wikiMapRows='),app.indexOf('const wikiMapByKey='));
  for(const key of ['createNpc','npcNameRu','npcNameEn','npcService',
