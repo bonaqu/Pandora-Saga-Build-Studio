@@ -579,19 +579,43 @@ const localFixtureHost=()=>{
  const hostname=root.location?.hostname;
  return !hostname||hostname==='localhost'||hostname==='127.0.0.1';
 };
-async function load({api,fetcher,local='./data/os',timeout=12000,preferLocal=false,strict=false,signal=null}={}){
+async function load({api,fetcher,local='./data/os',timeout=12000,preferLocal=false,strict=false,signal=null,verified=null}={}){
  if(typeof fetcher!=='function')throw TypeError('fetcher required');
  if(signal?.aborted)throw signal.reason||Error('Загрузка Энциклопедии отменена');
  if(preferLocal&&!localFixtureHost())
   throw Error('Публичный игровой каталог загружается только из D1');
+ // The current hero has already parsed and validated these six D1 datasets.
+ // Reuse only an explicitly snapshot-bound, structurally verified in-memory
+ // source; never accept an offline/archive copy as a published Wiki seed.
+ const seedKeys=['meta','items','skills','souls','racialPassives','tables'];
+ let seed=null,seedSnapshot=null;
+ if(verified!=null){
+  if(preferLocal||!isRecord(verified)||typeof verified.snapshot!=='string'||
+    !verified.snapshot.trim()||!isRecord(verified.data)||
+    seedKeys.some(key=>!Object.hasOwn(verified.data,key)))
+   throw Error('Не подтверждён снимок каталога D1 для Энциклопедии');
+  if(!isRecord(verified.data.meta?.counts))
+   throw Error('Не подтверждены размеры каталога D1 для Энциклопедии');
+  for(const key of ['items','skills','souls','racialPassives']){
+   const count=Number(verified.data.meta.counts[key]);
+   if(!Number.isSafeInteger(count)||count<1||
+    !isRecord(verified.data[key])||Object.keys(verified.data[key]).length<count)
+    throw Error('Неполный ранее проверенный набор D1: '+key);
+  }
+  validateCharacterCatalog(verified.data);
+  validateCharacterTables(verified.data.tables);
+  seed=Object.fromEntries(seedKeys.map(key=>[key,verified.data[key]]));
+  seedSnapshot=verified.snapshot;
+ }
  const remoteBase=String(api||'').replace(/\/$/,'');
  async function batch(remote){
-  const snapshots=new Set();
+  const snapshots=new Set(remote&&seedSnapshot?[seedSnapshot]:[]);
+  const missing=remote&&seed?keys.filter(key=>!Object.hasOwn(seed,key)):keys;
   // Request at most three published datasets at once. The independent
   // D1 snapshot/provenance validations below remain mandatory.
   const batcher=root.PandoraStudioLiveRead?.mapLimit||
    ((entries,_limit,callback)=>Promise.all(entries.map(callback)));
-  const records=await batcher(keys,3,async (key,_index,batchSignal)=>{
+  const records=await batcher(missing,3,async (key,_index,batchSignal)=>{
    const url=remote?remoteBase+'/api/catalog/'+key+'.json':
     local.replace(/\/$/,'')+'/'+key+'.json';
    const init={cache:'no-cache'};
@@ -625,7 +649,10 @@ async function load({api,fetcher,local='./data/os',timeout=12000,preferLocal=fal
   if(signal?.aborted)throw signal.reason||Error('Загрузка Энциклопедии отменена');
   if(remote&&snapshots.size!==1)
    throw Error('Не подтверждена единая версия опубликованного каталога D1');
-  return {data:validate(Object.fromEntries(records)),
+  // Re-validate the complete Wiki dataset, including cross-record links.
+  // A seed never skips provenance checks for the six freshly fetched sources.
+  const complete={...(remote&&seed?seed:{}),...Object.fromEntries(records)};
+  return {data:validate(complete),
    source:remote?'d1':'local',snapshot:remote?[...snapshots][0]||null:null};
  }
  if(preferLocal)return batch(false);
