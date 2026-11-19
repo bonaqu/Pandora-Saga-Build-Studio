@@ -6806,7 +6806,7 @@ function renderWiki(root){
       if(ownerMap&&rec.virtual&&rec.placeType!=='astir-district'){
        const npcRelations=wikiOwnerEntityList({label:mapCopy('npcs'),
         kind:'npc',existing:rec.npcs||[],limit:120,
-        onChange:next=>saveWikiRecordField('map',id,'npcs',
+        onChange:next=>saveWikiMapList(id,'npcs',rec.npcs||[],
          next.map(x=>/^\d+$/.test(String(x))?Number(x):String(x)))});
        mapBind(npcRelations.querySelector('h4'),'npcs');
        detail.append(npcRelations);
@@ -6936,7 +6936,7 @@ function renderWiki(root){
      if(ownerMap){
       const lootRelations=wikiOwnerEntityList({label:mapCopy('loot'),
        kind:'item',existing:loot,limit:120,
-       onChange:next=>saveWikiRecordField('map',id,'loot',next.map(Number))});
+       onChange:next=>saveWikiMapList(id,'loot',loot,next.map(Number))});
       mapBind(lootRelations.querySelector('h4'),'loot');
       detail.append(lootRelations);
      }else if(loot.length){
@@ -6972,7 +6972,7 @@ function renderWiki(root){
        head.classList.add('wiki-honor-editable');head.tabIndex=0;
        const key=lang==='en'?'titleEn':'titleRu';
        const start=()=>editWikiValue(head,group[key],{type:'text',onCommit:value=>
-        saveWikiRecordField('map',id,'extraSections',custom.map((entry,i)=>
+        saveWikiMapList(id,'extraSections',custom,custom.map((entry,i)=>
          i===index?{...entry,[key]:value}:entry))});
        head.addEventListener('dblclick',start);
        head.addEventListener('keydown',e=>{if(e.key==='F2'){e.preventDefault();start()}});
@@ -6983,7 +6983,7 @@ function renderWiki(root){
          text:mapCopy('removeSection')}),{
          label:mapCopy('removeSection')+': '+(lang==='en'?group.titleEn:group.titleRu),
          confirm:mapCopy('confirmSection'),
-         action:()=>saveWikiRecordField('map',id,'extraSections',
+         action:()=>saveWikiMapList(id,'extraSections',custom,
           custom.filter((_,i)=>i!==index))
         }));
       if(group.kind==='text'){
@@ -6994,7 +6994,7 @@ function renderWiki(root){
        if(ownerMap){
         text.classList.add('wiki-honor-editable');text.tabIndex=0;
         const start=()=>editWikiValue(text,note,{type:'textarea',onCommit:value=>
-         saveWikiRecordField('map',id,'extraSections',custom.map((entry,i)=>
+         saveWikiMapList(id,'extraSections',custom,custom.map((entry,i)=>
           i===index?{...entry,[key]:value}:entry))});
         text.addEventListener('dblclick',start);
         text.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();start()}});
@@ -7004,7 +7004,7 @@ function renderWiki(root){
        const kind=group.kind==='item'?'item':group.kind;
        if(ownerMap)panel.append(wikiOwnerEntityList({
         label:'',kind,existing:group.entries||[],limit:60,
-        onChange:next=>saveWikiRecordField('map',id,'extraSections',
+        onChange:next=>saveWikiMapList(id,'extraSections',custom,
          custom.map((entry,i)=>i===index?{...entry,entries:next.map(x=>
           /^\d+$/.test(String(x))?Number(x):String(x))}:entry))
        }));
@@ -7044,7 +7044,7 @@ function renderWiki(root){
           .map(x=>x.toString(16).padStart(2,'0')).join('');
          const row={id:nextId,titleRu,titleEn,kind:kind.value,entries:[]};
          submit.disabled=true;
-         try{await saveWikiRecordField('map',id,'extraSections',[...custom,row])}
+         try{await saveWikiMapList(id,'extraSections',custom,[...custom,row])}
          catch(e){error.textContent=e.message;submit.disabled=false}
         }});
        const cancel=h('button',{type:'button',class:'wiki-owner-remove',
