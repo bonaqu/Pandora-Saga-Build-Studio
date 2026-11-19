@@ -44,6 +44,7 @@ class BrowserElement {
 const doc={createElement:tag=>new BrowserElement(tag),createTextNode:text=>({tag:'#text',textContent:text})};
 const walk=node=>[node,...(node.children||[]).flatMap(x=>x.tag==='#text'?[x]:walk(x))];
 const root={};
+Function('window',read('pandora-studio-search-field.js'))(root);
 for(const path of ['pandora-studio-skill-progression.js','pandora-studio-navigation.js'])Function('window',sources[path])(root);
 Function('window','document',sources['pandora-studio-hero-path.js'])(root,doc);
 const points=root.PandoraSkillProgression;
