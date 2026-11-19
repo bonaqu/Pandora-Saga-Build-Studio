@@ -109,7 +109,7 @@ test('same published D1 snapshot avoids repeated large dataset SQL reads',async(
  const load=snapshot=>async()=>{
   loads++;
   return new Response(JSON.stringify({items:['d1-'+snapshot],loads}),{
-   headers:{'cache-control':'public, max-age=3600','x-ps-catalog':'d1',
+   headers:{'cache-control':'no-store','x-ps-catalog':'d1',
     'x-ps-catalog-snapshot':snapshot}
   });
  };
@@ -123,7 +123,7 @@ test('same published D1 snapshot avoids repeated large dataset SQL reads',async(
  assert.equal((await again.json()).loads,1);
  assert.equal(loads,1,'D1 payload rows must only be read once for a cached snapshot');
  assert.equal(writes.length,1);
- assert.equal(store.get(writes[0]).headers.get('cache-control'),'public, max-age=60',
+ assert.equal(store.get(writes[0]).headers.get('cache-control'),'public, max-age=3600',
   'Only the internal synthetic Cache API response may have a TTL');
  const latest='ps-snapshot-b';
  const changed=await readPublishedCatalog({snapshot:latest,dataset,cache,load:load(latest)});
@@ -138,7 +138,7 @@ test('untrusted cache, failed storage and temporary cache failure never weaken D
  let reads=0;
  const valid=()=>{reads++;
   return new Response(JSON.stringify({from:'d1'}),{
-   headers:{'cache-control':'public, max-age=60','x-ps-catalog':'d1',
+   headers:{'cache-control':'no-store','x-ps-catalog':'d1',
     'x-ps-catalog-snapshot':snapshot}
   });
  };
