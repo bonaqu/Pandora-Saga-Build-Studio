@@ -24,7 +24,7 @@ function setup({owner=accountOwner,liveOwner=owner,token=()=>account}={}){
   'tabOwnerScope',requestSource+'\nreturn cloudLibraryRequest;')(
   ui,async(url,options)=>{
    sent.push({url,authorization:options.headers.Authorization});
-   return {ok:true,json:async()=>({records:[]})};
+   return {ok:true,json:async()=>({ok:true,revision:100})};
   },'https://example.invalid',guest,()=>currentOwner,owner);
  return {send:()=>request({action:'put',entry:{id:'f'.repeat(32)}}),
   sent,owner:()=>currentOwner};
@@ -103,4 +103,23 @@ test('account cloud library GET and POST stop stalled headers/JSON with no dupli
    assert.equal(usedSignal,true);
   }finally{clearTimeout(keepAlive)}
  }
+});
+
+test('HTTP 200 without a valid cloud acknowledgment never means saved or empty library',async()=>{
+ const root={PandoraAccountUI:{isLoggedIn:()=>true,token:()=>account},
+  PandoraStudioOnlineGate:gateHost.PandoraStudioOnlineGate};
+ const run=(payload,answer)=>Function('window','fetch','API','tabGuestSecret',
+  'libraryScopeId','tabOwnerScope',requestSource+'\nreturn cloudLibraryRequest;')(
+  root,async()=>({ok:true,status:200,json:async()=>answer}),
+  'https://example.invalid',guest,()=>accountOwner,accountOwner)(payload);
+ for(const invalid of [null,{}, {ok:false},{records:[]}]){
+  await assert.rejects(run({action:'put',entry:{id:'f'.repeat(32)}},invalid),
+   error=>error.reason==='unconfirmed',JSON.stringify(invalid));
+ }
+ for(const invalid of [null,{}, {ok:true}, {records:'broken'}]){
+  await assert.rejects(run(null,invalid),
+   error=>error.reason==='unconfirmed',JSON.stringify(invalid));
+ }
+ assert.equal((await run({action:'delete',id:'f'.repeat(32)},{ok:true})).ok,true);
+ assert.deepEqual((await run(null,{records:[]})).records,[]);
 });
