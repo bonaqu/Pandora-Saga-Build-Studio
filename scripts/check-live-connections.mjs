@@ -112,6 +112,12 @@ try{
  console.log((itemTextReady?'OK  ':'WARN')+' Live English item editing in D1 — '+
   (itemTextReady?'Worker 0.351.0+ supports EN text overrides':
    'deploy the reviewed Worker source to enable English item edits'));
+ const snapshotCacheReady=deployed&&payload?.catalogSnapshotCache===true;
+ console.log((snapshotCacheReady?'OK  ':'WARN')+
+  ' Snapshot-bound D1 public catalog cache — '+
+  (snapshotCacheReady?'confirmed on deployed Worker':
+   'Worker catalog cache capability not yet deployed or not confirmed'));
+
  const adminD1Ready=deployed&&Number(release?.[1]||0)>=354&&
   payload?.adminD1WriteCheck==='catalog-and-overrides';
  console.log((adminD1Ready?'OK  ':'WARN')+' Admin D1 write-check capability — '+

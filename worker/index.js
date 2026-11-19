@@ -1,4 +1,5 @@
 import {accountApi,principal as accountPrincipal} from './pandora-studio-account-api.js';
+import {readPublishedCatalog} from './pandora-studio-catalog-cache.js';
 import {createCatalogPullRequest,githubCatalogEnabled,githubCatalogReadiness,previewOwnerOverrides,createOwnerOverridesPullRequest} from './pandora-studio-github-catalog-pr.js';
 import {BACKUP_OUTBOX_SCHEMA,queueBackupStatement,getBackupJob,completeBackupJob,deliverCatalogBackupJob} from './pandora-studio-catalog-backup-outbox.js';
 // Cloudflare Worker backend for Pandora Saga Build Studio.
@@ -109,22 +110,32 @@ async function activeCatalog(env){
 async function catalogBackupTableReady(env){
  return Boolean(await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='catalog_backup_jobs'").first());
 }
-async function serveCatalog(env,dataset){
+async function serveCatalog(env,dataset,ctx){
+ // Always resolve the current D1 pointer FIRST. Cache cannot supply a
+ // stale catalog during an outage or after an owner publishes a new snapshot.
  const active=await activeCatalog(env);
  if(!active)return no('Catalog not published in D1 yet',503);
- const q=await env.DB.prepare('SELECT record_key,payload FROM catalog_entries WHERE snapshot=? AND dataset=? ORDER BY record_key').bind(active.snapshot,dataset).all();
- const rows=q.results||[];
- if(!rows.length)return no('Dataset missing from published catalog',503);
- let obj=dataset==='meta'?JSON.parse(rows[0].payload):
-  SERIALIZED_DATASETS.includes(dataset)?JSON.parse(rows.map(r=>JSON.parse(r.payload).data).join('')):
-  dataset==='instances'?rows.map(r=>JSON.parse(r.payload)):
-  Object.fromEntries(rows.map(r=>[r.record_key,JSON.parse(r.payload)]));
- if(dataset==='trades'){
-  const extras=await env.DB.prepare("SELECT payload FROM catalog_entries WHERE snapshot=? AND dataset='tradeMeta' AND record_key='all'").bind(active.snapshot).first();
-  const additional=extras?JSON.parse(extras.payload):{npcs:{},mapNames:{},limitMeta:{}};
-  obj={trades:rows.map(r=>JSON.parse(r.payload)),...additional};
- }
- return json(obj,200,{'cache-control':'public, max-age=60','x-ps-catalog':'d1','x-ps-catalog-snapshot':active.snapshot});
+ return readPublishedCatalog({
+  snapshot:active.snapshot,dataset,cache:globalThis.caches?.default,
+  waitUntil:ctx?.waitUntil?.bind(ctx),
+  load:async()=>{
+   const q=await env.DB.prepare('SELECT record_key,payload FROM catalog_entries WHERE snapshot=? AND dataset=? ORDER BY record_key').bind(active.snapshot,dataset).all();
+   const rows=q.results||[];
+   if(!rows.length)return no('Dataset missing from published catalog',503);
+   let obj=dataset==='meta'?JSON.parse(rows[0].payload):
+    SERIALIZED_DATASETS.includes(dataset)?JSON.parse(rows.map(r=>JSON.parse(r.payload).data).join('')):
+    dataset==='instances'?rows.map(r=>JSON.parse(r.payload)):
+    Object.fromEntries(rows.map(r=>[r.record_key,JSON.parse(r.payload)]));
+   if(dataset==='trades'){
+    const extras=await env.DB.prepare("SELECT payload FROM catalog_entries WHERE snapshot=? AND dataset='tradeMeta' AND record_key='all'").bind(active.snapshot).first();
+    const additional=extras?JSON.parse(extras.payload):{npcs:{},mapNames:{},limitMeta:{}};
+    obj={trades:rows.map(r=>JSON.parse(r.payload)),...additional};
+   }
+   // Outgoing public catalog HTTP responses must not bypass Worker fetch().
+   // Only the synthetic response stored inside Cache API has a 60s TTL.
+   return json(obj,200,{'cache-control':'no-store','x-ps-catalog':'d1','x-ps-catalog-snapshot':active.snapshot});
+  }
+ });
 }
 async function adminCatalog(request,env,path){
  if(!await auth(request,env))return no('Unauthorized',401);
@@ -250,6 +261,13 @@ async function adminCatalog(request,env,path){
  if(!/^[a-z0-9-]{8,64}$/.test(data.snapshot||''))return no('Invalid snapshot identifier',400);
  if(path==='/api/admin/catalog/batch'){
   if(!DATASETS.includes(data.dataset)||!Array.isArray(data.records)||data.records.length>35||!data.records.length)return no('Invalid dataset/batch',400);
+  // Published D1 snapshots are immutable. Apart from preventing accidental
+  // in-place corruption, this guarantees the cached public snapshot cannot
+  // silently change behind an unchanged catalog_current pointer.
+  const alreadyPublished=await env.DB.prepare(
+   'SELECT id FROM catalog_current WHERE id=1 AND snapshot=?'
+  ).bind(data.snapshot).first();
+  if(alreadyPublished)return no('Published catalog snapshot is immutable',409);
   const commands=[];
   for(const entry of data.records){
    const key=String(entry?.key??''),value=entry?.value;
@@ -258,10 +276,24 @@ async function adminCatalog(request,env,path){
    if(payload.length>12000)return no('Record too large',400);
    const kind=data.dataset==='items'?String(value.kind||''):'';
    const costume=data.dataset==='items'&&isCostumeKind(kind)?1:0;
-   commands.push(env.DB.prepare('INSERT INTO catalog_entries(snapshot,dataset,record_key,name,kind,slot,is_costume_overlay,payload) VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(snapshot,dataset,record_key) DO UPDATE SET name=excluded.name,kind=excluded.kind,slot=excluded.slot,is_costume_overlay=excluded.is_costume_overlay,payload=excluded.payload').bind(
-    data.snapshot,data.dataset,key,String(value.name||'').slice(0,240),kind.slice(0,60),String(value.slot||'').slice(0,40),costume,payload));
+   // The preflight SELECT alone is not sufficient: publication could win the
+   // race before this D1 batch starts. The INSERT and UPSERT are each guarded
+   // by an atomic NOT EXISTS predicate checked in SQLite at write time.
+   commands.push(env.DB.prepare(
+    'INSERT INTO catalog_entries(snapshot,dataset,record_key,name,kind,slot,is_costume_overlay,payload) '+
+    'SELECT ?,?,?,?,?,?,?,? WHERE NOT EXISTS (SELECT 1 FROM catalog_current WHERE id=1 AND snapshot=?) '+
+    'ON CONFLICT(snapshot,dataset,record_key) DO UPDATE SET '+
+    'name=excluded.name,kind=excluded.kind,slot=excluded.slot,'+
+    'is_costume_overlay=excluded.is_costume_overlay,payload=excluded.payload '+
+    'WHERE NOT EXISTS (SELECT 1 FROM catalog_current WHERE id=1 AND snapshot=?)'
+   ).bind(data.snapshot,data.dataset,key,String(value.name||'').slice(0,240),
+    kind.slice(0,60),String(value.slot||'').slice(0,40),costume,payload,
+    data.snapshot,data.snapshot));
   }
-  await env.DB.batch(commands);
+  const changes=await env.DB.batch(commands);
+  if(!Array.isArray(changes)||changes.length!==commands.length||
+     changes.some(result=>Number(result?.meta?.changes)!==1))
+   return no('Catalog published during batch; retry with a new snapshot',409);
   return json({ok:true,received:data.records.length,dataset:data.dataset});
  }
  if(path==='/api/admin/catalog/publish'){
@@ -615,7 +647,7 @@ async function probeAllGameData(){
 }
 // One fixed public probe, cached per isolate, to diagnose Worker egress.
 let sourceProbeCache=null,sourceProbeUntil=0;
-async function handle(request,env){const url=new URL(request.url),path=url.pathname;const method=request.method;const ip=request.headers.get('CF-Connecting-IP')||'unknown';
+async function handle(request,env,ctx){const url=new URL(request.url),path=url.pathname;const method=request.method;const ip=request.headers.get('CF-Connecting-IP')||'unknown';
 // Regular player views read D1 or bundled data. Only an authenticated admin may explicitly check the allowlisted external game-data source.
  if(!env.DB)return no('Database not configured',503);
  if(path.startsWith('/api/account/')){
@@ -626,7 +658,7 @@ async function handle(request,env){const url=new URL(request.url),path=url.pathn
  if(path==='/api/library/legacy-preview')return legacyBuildPreview(request,env);
  if(path==='/api/library')return libraryApi(request,env);
  if(path==='/api/shared'||/^\/api\/shared\/[A-Za-z0-9_-]{11}$/.test(path))return shareApi(request,env,path,ip);
-if(method==='GET'&&/^\/api\/catalog\/(meta|classes|skills|items|souls|monsters|drops|maps|instances|racialPassives|itemForth|unison|trades|tradeMeta|legacyLocale|tables|expertise|chests|stringsEn)\.json$/.test(path))return serveCatalog(env,path.split('/').pop().replace('.json',''));
+if(method==='GET'&&/^\/api\/catalog\/(meta|classes|skills|items|souls|monsters|drops|maps|instances|racialPassives|itemForth|unison|trades|tradeMeta|legacyLocale|tables|expertise|chests|stringsEn)\.json$/.test(path))return serveCatalog(env,path.split('/').pop().replace('.json',''),ctx);
 // Restricted authenticated data refresh endpoint: fixed source host and 17 known names.
 // A preview does NOT change D1. The owner must explicitly confirm version publication.
 if(path==='/api/admin/catalog/github-status'&&method==='GET'){
@@ -716,7 +748,7 @@ if(path==='/api/runtime-capabilities'&&method==='GET')
  return json({codeRelease:'0.361.0',ownerEditors:[
   'itemedit','tradeedit','acquireedit','wikiedit','dropedit','chestedit','spawnedit',
    'virtual-town-wiki','bilingual-item-text','historical-map-wiki','owner-map-create','owner-map-sections','owner-monster-create','future-map-roster','owner-npc-create','admin-save-feedback','owner-record-delete','bilingual-wiki','guideedit','honor-lists','honor-extended-edit','wiki-label-edit'],
-  githubOwnerExport:true,honorExtendedEditing:true,wikiLabelEditing:true,ownerProgressionD1:true,ownerOverrideCAS:true,ownerOverrideCASRequired:true,catalogPublishCASRequired:true,catalogProvenanceCors:true,adminD1WriteCheck:'catalog-and-overrides',catalogSourceFailover:true,sourceEgressProbe:true,sourceProbeDetail:true,sourceInstancesArray:true,sourceFullProbe:true,
+  githubOwnerExport:true,honorExtendedEditing:true,wikiLabelEditing:true,ownerProgressionD1:true,ownerOverrideCAS:true,ownerOverrideCASRequired:true,catalogPublishCASRequired:true,catalogProvenanceCors:true,catalogSnapshotCache:true,adminD1WriteCheck:'catalog-and-overrides',catalogSourceFailover:true,sourceEgressProbe:true,sourceProbeDetail:true,sourceInstancesArray:true,sourceFullProbe:true,
   buildLibraryRequiresAccount:true,sharedPreviewRequiresAccount:true,
   legacyAccountImportPreview:true});
 if(path==='/api/health'&&method==='GET'){
@@ -1112,7 +1144,7 @@ if(path==='/api/admin/reset'&&method==='POST'){
 }
 return no('Not found',404)
 }
-export default{async fetch(request,env){const cors=originHeaders(request);if(request.method==='OPTIONS')return new Response(null,{status:204,headers:cors});try{const result=await handle(request,env);for(const[k,v]of Object.entries(cors))result.headers.set(k,v);return result}catch(e){console.error('Request failed',e);const result=no('Server error',500);for(const[k,v]of Object.entries(cors))result.headers.set(k,v);return result}},async scheduled(_event,env,ctx){
+export default{async fetch(request,env,ctx){const cors=originHeaders(request);if(request.method==='OPTIONS')return new Response(null,{status:204,headers:cors});try{const result=await handle(request,env,ctx);for(const[k,v]of Object.entries(cors))result.headers.set(k,v);return result}catch(e){console.error('Request failed',e);const result=no('Server error',500);for(const[k,v]of Object.entries(cors))result.headers.set(k,v);return result}},async scheduled(_event,env,ctx){
   if(!env?.DB)return;
   const job=(async()=>{
    // Before the first 0.809 owner import, production D1 has no outbox table.
