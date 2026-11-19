@@ -104,3 +104,34 @@ test('disconnect saves both scoped local states and blocks editing, even on a fa
  assert.match(updater,/classList\.contains\('studio-live-blocked'\)/);
  assert.match(updater,/#startupOverlay:not\(\[hidden\]\)/, 'The D1 fade remains modal until hidden');
 });
+
+test('late custom fetch/JSON adapters cannot mark an aborted D1 checkpoint ready',async()=>{
+ const controller=new AbortController();
+ const slow=source();
+ const fetcher=async(url,options)=>{
+  const reply=await slow.fetcher(url,options);
+  controller.abort(Error('Old D1 checkpoint discarded'));
+  return reply; // Simulates a fetch implementation ignoring signal.
+ };
+ await assert.rejects(gate.inspect({
+  api,fetcher,signal:controller.signal,expectedSnapshot:'d1-1',
+  expectedOverrides:overrides,expectedCounts:counts
+ }),/Old D1 checkpoint discarded/);
+
+ const duringJson=new AbortController();
+ const lateFetcher=async(url)=>{
+  const catalog=url.endsWith('/meta.json');
+  const data=catalog?{counts}:{values:overrides};
+  return {
+   ...response(data),
+   json:async()=>{
+    if(catalog)duringJson.abort(Error('Snapshot changed during parse'));
+    return data;
+   }
+  };
+ };
+ await assert.rejects(gate.inspect({
+  api,fetcher:lateFetcher,signal:duringJson.signal,
+  expectedSnapshot:'d1-1',expectedOverrides:overrides,expectedCounts:counts
+ }),/Snapshot changed during parse/);
+});

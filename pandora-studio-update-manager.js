@@ -192,12 +192,15 @@
     document.body.appendChild(banner);
     refreshUpdateLocale();
   }
-  let versionCheckInFlight = false;
+  let versionCheckInFlight = false, versionController = null;
   async function checkVersion() {
-    if (applying || versionCheckInFlight) return;
+    // The visible-tab event already triggers a fresh read. Avoid pointless
+    // manifest traffic and stale banners from background/suspended tabs.
+    if (applying || versionCheckInFlight || document.visibilityState === 'hidden') return;
     versionCheckInFlight = true;
+    const controller = new AbortController();
+    versionController = controller;
     try {
-      const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 6000);
       let manifest;
       try {
@@ -211,6 +214,7 @@
       // Visibility and periodic checks may overlap. Do not start a second
       // request while the first one is reading its response, or offer a
       // version older than one that has already been seen or dismissed.
+      if (controller.signal.aborted || document.visibilityState === 'hidden') return;
       if (newer(manifest?.release, version) &&
           (!latest || !newer(latest, manifest.release)) &&
           manifest.release !== dismissedRelease) {
@@ -219,6 +223,7 @@
       }
     } catch { /* Offline or CDN delay: keep the current working state. */ }
     finally {
+      if (versionController === controller) versionController = null;
       versionCheckInFlight = false;
       // A version poll refreshes an existing blocker without remounting it.
       // Owner state transitions also trigger this immediately.
@@ -232,7 +237,8 @@
   }, 15000);
   setInterval(checkVersion, 60000);
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') checkVersion();
+    if (document.visibilityState === 'hidden') versionController?.abort();
+    else if (document.visibilityState === 'visible') checkVersion();
   });
   setTimeout(checkVersion, 3000);
   // Only a view refresh, never a privileged operation or a reload.
