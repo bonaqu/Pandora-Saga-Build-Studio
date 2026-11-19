@@ -55,8 +55,19 @@ export async function runChestCategoryFiltersSmoke(browser,base){
   assert.equal(await page.locator('.wiki-chest-group-name').first().getAttribute('data-owner-interface-section'),'wiki.chest.text');
   assert.ok((await page.locator('.wiki-chest-group-name').first().innerText()).length>0);
   assert.equal(await page.locator('.studio-owner-interface-editor').count(),0);
-  assert.equal(await page.locator('.wiki-chest-board [data-owner-interface-key="soulsPrefix"]')
-   .count()>=0,true,'Source Soul counts remain independent from the caption');
+  const sourceSoulCount=sourceRows(51036).filter(row=>row.soul>0).length;
+  assert.ok(sourceSoulCount>0,'This source chest must exercise socket-count labels');
+  const soulCountLabels=page.locator(
+   '.wiki-chest-board .wiki-reward-enhance[data-owner-interface-key="soulsPrefix"]');
+  assert.equal(await soulCountLabels.count(),sourceSoulCount,
+   'Every listed socket amount uses the D1 caption without dropping any rewards');
+  const sourceSoulCounts=sourceRows(51036).filter(row=>row.soul>0)
+   .map(row=>row.soul).sort((a,b)=>a-b);
+  const renderedSoulCounts=await soulCountLabels.evaluateAll(nodes=>nodes
+   .map(node=>Number(node.textContent.match(/\\d+$/)?.[0]))
+   .sort((a,b)=>a-b));
+  assert.deepEqual(renderedSoulCounts,sourceSoulCounts,
+   'Owner-editable caption cannot alter the original numeric Soul amounts');
   assert.equal(await page.locator('[data-owner-copy-id]').count(),0);
   assert.equal(await cards().count(),sourceRows(51036).length);
   assert.equal(await type.getAttribute('aria-label'),'Тип награды в сундуке');
