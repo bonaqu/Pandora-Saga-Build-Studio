@@ -6542,7 +6542,7 @@ function renderWiki(root){
         label.classList.add('wiki-honor-editable');label.tabIndex=0;
         const field=lang==='en'?'en':'ru';
         const start=()=>editWikiValue(label,tag[field],{type:'text',onCommit:value=>
-         saveWikiRecordField('map',id,'tags',tags.map((x,n)=>n===i?{...x,[field]:value}:x))});
+         saveWikiMapList(id,'tags',tags,tags.map((x,n)=>n===i?{...x,[field]:value}:x))});
         label.addEventListener('dblclick',start);
         label.addEventListener('keydown',e=>{if(e.key==='F2'){e.preventDefault();start()}});
        }
@@ -6551,35 +6551,42 @@ function renderWiki(root){
         h('button',{type:'button',class:'wiki-owner-remove',text:'×'}),{
          label:mapCopy('removeTag')+' '+(lang==='en'?tag.en:tag.ru),
          confirm:mapCopy('confirmTag'),
-         action:()=>saveWikiRecordField('map',id,'tags',tags.filter((_,n)=>n!==i))
+         action:()=>saveWikiMapList(id,'tags',tags,tags.filter((_,n)=>n!==i))
         }));
        chips.append(chip);
       }
       tagSection.append(chips);
-      if(ownerMap){
+      if(ownerMap&&tags.length<16){
        const add=mapBind(h('button',{type:'button',class:'wiki-owner-plus'}),'addTag');
        add.onclick=()=>{
         if(tagSection.querySelector('.wiki-map-tag-form'))return;
         const form=h('div',{class:'wiki-map-tag-form wiki-owner-source-picker'});
-        const ru=ownerPlainTextField({class:'wiki-inline-input',
-         placeholder:'Тег · RU','aria-label':'Тег на русском'});
-        const en=ownerPlainTextField({class:'wiki-inline-input',
-         placeholder:'Tag · EN','aria-label':'Tag in English'});
-        const message=h('small',{class:'inline-owner-error'});
-        const submit=h('button',{type:'button',class:'wiki-owner-plus',
-         text:wt('Добавить','Add'),onclick:async()=>{
-          const tag={ru:ru.value.trim(),en:en.value.trim()};
-          if(!tag.ru||!tag.en||tag.ru.length>70||tag.en.length>70){
-           message.textContent=wt('Введи RU и EN','Enter RU and EN');return}
-          try{await saveWikiRecordField('map',id,'tags',[...tags,tag])}
-          catch(e){message.textContent=e.message}
-         }});
-        form.append(ru,en,submit,h('button',{type:'button',class:'wiki-owner-remove',
-         text:wt('Отмена','Cancel'),onclick:()=>form.remove()}),message);
-        add.after(form);ru.focus();
+        const ru=ownerPlainTextField({class:'wiki-inline-input'});
+       const en=ownerPlainTextField({class:'wiki-inline-input'});
+       mapBind(ru,'tagRu','placeholder');mapBind(ru,'tagRu','aria-label');
+       mapBind(en,'tagEn','placeholder');mapBind(en,'tagEn','aria-label');
+       const message=h('small',{class:'inline-owner-error',role:'alert'});
+       const submit=mapBind(h('button',{type:'button',class:'wiki-owner-plus'}),'tagAdd');
+       submit.onclick=async()=>{
+        if(submit.disabled)return;
+        const tag={ru:ru.value.trim(),en:en.value.trim()};
+        if(!tag.ru||!tag.en||tag.ru.length>70||tag.en.length>70){
+         message.textContent=mapCopy('tagRequired');return;
+        }
+        const duplicate=row=>wikiIndex.normalize(row.ru)===wikiIndex.normalize(tag.ru)&&
+         wikiIndex.normalize(row.en)===wikiIndex.normalize(tag.en);
+        if(tags.some(duplicate)){message.textContent=mapCopy('tagDuplicate');return}
+        submit.disabled=true;message.textContent='';
+        try{await saveWikiMapList(id,'tags',tags,[...tags,tag])}
+        catch(e){message.textContent=String(e.message||e);submit.disabled=false}
        };
-       tagSection.append(add);
-      }
+       const cancel=mapBind(h('button',{type:'button',class:'wiki-owner-remove'}),'tagCancel');
+       cancel.onclick=()=>form.remove();
+       form.append(ru,en,submit,cancel,message);add.after(form);ru.focus();
+      };
+      tagSection.append(add);
+     }else if(ownerMap)tagSection.append(mapBind(
+      h('small',{class:'wiki-map-limit',role:'status'}),'tagLimit'));
       detail.append(tagSection);
      }
      if(ownerMap){
@@ -6595,7 +6602,8 @@ function renderWiki(root){
        const on=enabled.includes(key);
        buttons.append(h('button',{type:'button',class:on?'chosen':'',
         'aria-pressed':String(on),text:(on?'✓ ':'+ ')+label,
-        onclick:()=>void saveWikiRecordField('map',id,'sections',
+        onclick:()=>void saveWikiMapList(id,'sections',
+         Array.isArray(rec.sections)?rec.sections:[],
          on?enabled.filter(x=>x!==key):[...enabled,key])
          .catch(e=>showStudioToast(e.message,'warning'))}));
       }
