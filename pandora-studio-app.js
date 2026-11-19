@@ -5706,13 +5706,13 @@ function renderWiki(root){
       target.ondblclick=e=>{
        e.preventDefault();e.stopPropagation();
        editWikiValue(target,required,{type:'number',min:0,max:1000,integer:true,
-        onCommit:amount=>saveWikiRecordField('skill',id,'reqs',
-         rec.reqs.map((x,i)=>i===index?{...x,amount}:x))});
+        onCommit:amount=>saveWikiRecordList('skill',id,'reqs',
+         rec.reqs||[],rec.reqs.map((x,i)=>i===index?{...x,amount}:x))});
       };
       chip.append(h('button',{type:'button',class:'wiki-owner-remove',text:'×',
        'aria-label':wt('Удалить требование ','Remove requirement ')+branchLabel(req.branch),
-       onclick:()=>void saveWikiRecordField('skill',id,'reqs',
-        rec.reqs.filter((_,i)=>i!==index)).catch(e=>showStudioToast(e.message,'warning'))}));
+       onclick:()=>void saveWikiRecordList('skill',id,'reqs',
+        rec.reqs||[],rec.reqs.filter((_,i)=>i!==index)).catch(e=>showStudioToast(e.message,'warning'))}));
      }
      reqs.append(chip);
     }
@@ -5725,8 +5725,8 @@ function renderWiki(root){
        for(const branch of branches.filter(x=>!(rec.reqs||[]).some(req=>req.branch===x.id)))
         select.append(h('option',{value:branch.id,text:branchLabel(branch.id)}));
        add.replaceWith(select);
-       select.onchange=()=>{if(select.value)void saveWikiRecordField('skill',id,'reqs',
-        [...(rec.reqs||[]),{branch:select.value,amount:1}])
+       select.onchange=()=>{if(select.value)void saveWikiRecordList('skill',id,'reqs',
+       rec.reqs||[],[...(rec.reqs||[]),{branch:select.value,amount:1}])
         .catch(e=>showStudioToast(e.message,'warning'))};
        select.onblur=()=>{if(select.isConnected)select.replaceWith(add)};
        select.focus();
@@ -5951,7 +5951,8 @@ function renderWiki(root){
      const chip=h('span',{class:'wiki-owner-mat',text:slotLabel(slot)});
      if(adminEditing&&adminToken)chip.append(h('button',{type:'button',
       class:'wiki-owner-remove',text:'×','aria-label':wt('Убрать слот ','Remove slot ')+slotLabel(slot),
-      onclick:()=>void saveWikiRecordField('soul',id,'slots',rec.slots.filter(x=>x!==slot))
+      onclick:()=>void saveWikiRecordList('soul',id,'slots',
+       rec.slots||[],rec.slots.filter(x=>x!==slot))
        .catch(error=>showStudioToast(error.message,'warning'))}));
      slots.append(chip);
     }
@@ -5964,8 +5965,8 @@ function renderWiki(root){
       select.append(h('option',{value:'',text:wt('Выбери слот','Choose slot')}));
       for(const slot of choices)select.append(h('option',{value:slot,text:slotLabel(slot)}));
       add.replaceWith(select);
-      select.onchange=()=>{if(select.value)void saveWikiRecordField('soul',id,'slots',
-       [...(rec.slots||[]),select.value]).catch(error=>showStudioToast(error.message,'warning'))};
+      select.onchange=()=>{if(select.value)void saveWikiRecordList('soul',id,'slots',
+       rec.slots||[],[...(rec.slots||[]),select.value]).catch(error=>showStudioToast(error.message,'warning'))};
       select.onblur=()=>{if(select.isConnected)select.replaceWith(add)};
       select.focus();
      };
@@ -6144,7 +6145,8 @@ function renderWiki(root){
        entries.length?' · '+entries.length:''));
      if(adminEditing&&adminToken)
       detail.append(wikiOwnerEntityList({kind:'item',existing:entries,limit:120,
-       onChange:next=>saveWikiRecordField('monster',id,'loot',next.map(Number))}));
+       onChange:next=>saveWikiRecordList('monster',id,'loot',
+        rec.loot||[],next.map(Number))}));
      else if(entries.length)detail.append(linkFlow(entries.map(itemId=>
       itemLink(itemId,dataName('item',itemId),id))));
      else detail.append(h('p',{class:'wiki-empty-value',text:'—'}));
@@ -6279,14 +6281,15 @@ function renderWiki(root){
        const option=h('option',{value:mapId,text:dataName('map',mapId)});
        option.selected=locations.includes(mapId);selector.append(option);
       }
-      selector.onchange=()=>void saveWikiRecordField('npc',id,'maps',[selector.value]);
+      selector.onchange=()=>void saveWikiRecordList('npc',id,'maps',
+       rec.maps||[],[selector.value]).catch(error=>showStudioToast(error.message,'warning'));
       detail.append(h('div',{class:'wiki-owner-town-location'},[
        npcTradeBind(h('small'),'locationChange'),selector]));
      }
     }
     if(adminEditing&&adminToken&&!rec.virtual){
       const list=wikiOwnerEntityList({kind:'map',existing:locations,
-       onChange:next=>saveWikiRecordField('npc',id,'maps',next)});
+       onChange:next=>saveWikiRecordList('npc',id,'maps',rec.maps||[],next)});
       list.prepend(npcTradeBind(h('h4'),'where'));
       detail.append(list);
      }
@@ -6727,8 +6730,8 @@ function renderWiki(root){
         h('span',{class:'wiki-map-monster-name',text:name});
        entry.append(label);
        if(reported&&adminEditing&&adminToken){
-        const updateRow=(field,value)=>saveWikiRecordField('map',id,'roster',
-         reports.map(row=>row.id===reported.id?{...row,[field]:value}:row));
+        const updateRow=(field,value)=>saveWikiRecordList('map',id,'roster',
+         reports,reports.map(row=>row.id===reported.id?{...row,[field]:value}:row));
         const editableName=h('span',{class:'wiki-map-reported-name wiki-edit-value',
          text:wt('✎ Название','✎ Name'),title:wt('Двойной клик — исправить название монстра',
           'Double-click to correct monster name')});
@@ -6754,8 +6757,8 @@ function renderWiki(root){
          meta.title=wt('Двойной клик — изменить уровень','Double-click to edit level');
          meta.ondblclick=event=>{event.preventDefault();event.stopPropagation();
           editWikiValue(meta,reported.level,{type:'number',integer:true,min:1,max:255,
-           onCommit:value=>saveWikiRecordField('map',id,'roster',
-            reports.map(row=>row.id===reported.id?{...row,level:value}:row))})};
+           onCommit:value=>saveWikiRecordList('map',id,'roster',
+            reports,reports.map(row=>row.id===reported.id?{...row,level:value}:row))})};
         }
         entry.append(meta);
        }
