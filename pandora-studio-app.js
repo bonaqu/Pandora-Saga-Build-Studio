@@ -1199,7 +1199,58 @@ function ownerInterfaceEditor(section,rows,headingRu='Подписи интер�
 
  // Chest captions share the existing D1 CAS/Undo owner editor without ever
  // editing source chances, IDs, reward records or dynamic numeric counts.
- const wikiChestDisplayRows=Object.freeze([
+ // NPC trade captions are safe authorial RU/EN copy, not recipe or character data.
+const wikiNpcTradeRows=Object.freeze([
+ ["service","Назначение","Service"],
+ ["coordinates","Координаты","Coordinates"],
+ ["fieldEmpty","Двойной клик — добавить","Double-click to add"],
+ ["locationChange","Изменить местонахождение","Change location"],
+ ["where","Где находится","Where to find"],
+ ["stock","Можно получить","Items available"],
+ ["trades","Обмен","Trades"],
+ ["searchPlaceholder","Найти предмет или материал…","Find an item or material…"],
+ ["searchAria","Поиск среди обменов NPC","Search NPC trades"],
+ ["counterOf","из","of"],
+ ["receive","Получить","Receive"],
+ ["changeReward","Изменить предмет обмена","Change trade reward"],
+ ["tradeLimit","Лимит обмена","Trade limit"],
+ ["periodAria","Изменить период ограничения обмена","Change trade limit period"],
+ ["countAria","Максимум обменов за период","Maximum trades per period"],
+ ["materials","Необходимые материалы","Required materials"],
+ ["materialQuantityHint","Двойной клик — изменить количество","Double-click to edit quantity"],
+ ["removeMaterial","Убрать материал","Remove material"],
+ ["addMaterial","+ Материал","+ Material"],
+ ["gold","Золото","Gold"],
+ ["honor","Честь","Honor"],
+ ["experience","Опыт","Experience"],
+ ["costHint","Двойной клик — изменить стоимость","Double-click to edit cost"],
+ ["sellers","NPC обмена","Trade NPCs"],
+ ["removeSeller","Убрать NPC","Remove NPC"],
+ ["addSeller","+ NPC","+ NPC"],
+ ["sellerSearchPlaceholder","Найти NPC по имени…","Find NPC by name…"],
+ ["sellerSearchAria","Поиск NPC для обмена","Search NPC for trade"],
+ ["sellerSelectAria","Добавить NPC","Add NPC"],
+ ["sellerChoose","Выбери NPC","Choose NPC"],
+ ["sellerMissing","NPC не найден","No NPC found"],
+ ["deleteTrade","Удалить обмен","Delete trade"],
+ ["deleteAria","Удалить обмен NPC","Delete NPC trade"],
+ ["deleteConfirm","Подтвердить удаление","Confirm deletion"],
+ ["newTrade","+ Добавить обмен","+ Add trade"],
+ ["newTradeTitle","Создать новый обмен у этого NPC","Create a new trade with this NPC"],
+]);
+const wikiNpcTradeByKey=new Map(wikiNpcTradeRows.map(row=>[row[0],row]));
+function npcTradeCopy(key){
+ const row=wikiNpcTradeByKey.get(key);
+ if(!row)throw Error('Unknown NPC trade caption');
+ return ownerCopy('wiki.npc.trade',key,row[1],row[2]);
+}
+function npcTradeBind(node,key,attribute='text',suffix='',prefix=''){
+ const row=wikiNpcTradeByKey.get(key);
+ if(!row)throw Error('Unknown NPC trade binding');
+ return bindOwnerInterfaceText(node,'wiki.npc.trade',key,
+  row[1],row[2],attribute,suffix,prefix);
+}
+const wikiChestDisplayRows=Object.freeze([
  ["openHeading","Как открыть сундук","How to open this chest"],
  ["requiredKey","Необходимый ключ","Required key"],
  ["keyUnlisted","Не указан","Not listed"],
@@ -6010,20 +6061,24 @@ function renderWiki(root){
      }
     }
    }else if(type==='npc'){
+    if(adminEditing&&adminToken)detail.append(ownerInterfaceEditor(
+     'wiki.npc.trade',wikiNpcTradeRows,
+     'Подписи NPC и обменов','NPC & trade labels'));
     const locations=rec.maps||[];
     {
      const fields=h('dl',{class:'item-fields'});
      const makeField=(label,field,value)=>{
-      const dd=h('dd',{text:value||wt('Двойной клик — добавить','Double-click to add'),
+      const dd=h('dd',{text:value||npcTradeCopy('fieldEmpty'),
        ...(adminEditing&&adminToken?{'data-owner-record':'npc:'+id,
         'data-owner-field':field,
         ...(!value?{'data-owner-empty':'true'}:{})}:{})});
-      fields.append(h('dt',{text:label}),dd);
+      if(!value)npcTradeBind(dd,'fieldEmpty');
+      fields.append(npcTradeBind(h('dt'),label),dd);
      };
-     makeField(wt('Назначение','Service'),lang==='en'?'serviceEn':'service',
+     makeField('service',lang==='en'?'serviceEn':'service',
       (lang==='en'?rec.serviceEn||rec.service:rec.service)||'');
      if(rec.grid||adminEditing&&adminToken)
-      makeField(wt('Координаты','Coordinates'),'grid',rec.grid||'');
+      makeField('coordinates','grid',rec.grid||'');
      detail.append(fields);
      if(rec.virtual&&adminEditing&&adminToken){
       const geo=window.PandoraAstirLocations;
@@ -6039,26 +6094,29 @@ function renderWiki(root){
       }
       selector.onchange=()=>void saveWikiRecordField('npc',id,'maps',[selector.value]);
       detail.append(h('div',{class:'wiki-owner-town-location'},[
-       h('small',{text:wt('Изменить местонахождение','Change location')}),selector]));
+       npcTradeBind(h('small'),'locationChange'),selector]));
      }
     }
-    if(adminEditing&&adminToken&&!rec.virtual)detail.append(wikiOwnerEntityList({
-     label:wt('Где находится','Where to find'),kind:'map',existing:locations,
-     onChange:next=>saveWikiRecordField('npc',id,'maps',next)}));
+    if(adminEditing&&adminToken&&!rec.virtual){
+      const list=wikiOwnerEntityList({kind:'map',existing:locations,
+       onChange:next=>saveWikiRecordField('npc',id,'maps',next)});
+      list.prepend(npcTradeBind(h('h4'),'where'));
+      detail.append(list);
+     }
     else detail.append(linkFlow(locations.filter(mapId=>knownMaps[mapId]).map(mapId=>
      wikiLink('◈ '+dataName('map',mapId),'map',mapId,rec.virtual?null:id))));
     if(!rec.virtual){
     const ownerStock=wikiIndex.ownerNpcItems(id);
     if(ownerStock.length){
-     detail.append(h('h4',{text:wt('Можно получить','Items available')}));
+     detail.append(npcTradeBind(h('h4'),'stock'));
      detail.append(linkFlow(ownerStock.map(row=>
       itemLink(row.itemId,dataName('item',row.itemId),id))));
     }
     const recipes=wikiIndex.trades(id);
-    detail.append(h('h4',{text:wt('Обмен · ','Trades · ')+recipes.length}));
-    const recipeSearch=ownerPlainTextField({class:'wiki-inline-search wiki-owner-search',
-     placeholder:wt('Найти предмет или материал…','Find an item or material…'),
-     'aria-label':wt('Поиск среди обменов NPC','Search NPC trades')});
+    detail.append(npcTradeBind(h('h4'),'trades','text',' · '+recipes.length));
+    const recipeSearch=ownerPlainTextField({class:'wiki-inline-search wiki-owner-search'});
+     npcTradeBind(recipeSearch,'searchPlaceholder','placeholder');
+     npcTradeBind(recipeSearch,'searchAria','aria-label');
     const counter=h('small',{class:'wiki-result-counter'});
     const recipesBox=h('div',{class:'wiki-trade-list'}),cards=[];
     for(const trade of recipes){
@@ -6067,11 +6125,11 @@ function renderWiki(root){
      const editing=adminEditing&&Boolean(adminToken);
      const amend=patch=>saveWikiTradeRecipe({...trade,...patch});
      const output=h('div',{class:'wiki-trade-output'});
-      output.append(h('small',{text:wt('Получить','Receive')}));
+      output.append(npcTradeBind(h('small'),'receive'));
       const product=h('span',{class:'wiki-trade-product-inline'});
       product.append(itemLink(trade.i,dataName('item',trade.i),id));
       if(editing)product.append(h('button',{type:'button',class:'wiki-owner-plus',
-       text:'✎','aria-label':'Изменить предмет обмена',
+       text:'✎','aria-label':npcTradeCopy('changeReward'),
        onclick:()=>wikiItemChoice(output,i=>amend({i}))}));
       output.append(product);
      entry.append(output);
@@ -6079,13 +6137,12 @@ function renderWiki(root){
      // the merchant. Preserve D1's explicit daily/weekly/lifetime rules.
      const limitData=trade.limit;
      const limitRow=h('div',{class:'wiki-trade-limit'+(limitData?' is-limited':'')});
-     limitRow.append(h('small',{text:wt('Лимит обмена','Trade limit')}),
+     limitRow.append(npcTradeBind(h('small'),'tradeLimit'),
       h('span',{class:'wiki-trade-limit-value',text:
        window.PandoraStudioTradeOwnerData.limitLabel(limitData,lang)}));
      if(editing){
       const period=h('select',{class:'wiki-inline-select wiki-trade-limit-select',
-       'aria-label':wt('Изменить период ограничения обмена',
-        'Change trade limit period')});
+       'aria-label':npcTradeCopy('periodAria')});
       for(const [value,ru,en] of [
        ['none','Без ограничений','No limit'],
        ['daily','В день','Daily'],
@@ -6104,7 +6161,7 @@ function renderWiki(root){
        const count=h('input',{type:'number',min:1,max:9999,step:1,
         class:'wiki-inline-input wiki-trade-limit-count',
         value:String(limitData.n),
-        'aria-label':wt('Максимум обменов за период','Maximum trades per period')});
+        'aria-label':npcTradeCopy('countAria')});
        count.onchange=()=>{
         const n=Number(count.value);
         if(!Number.isSafeInteger(n)||n<1||n>9999){
@@ -6122,12 +6179,12 @@ function renderWiki(root){
      entry.append(limitRow);
      if(trade.mats?.length||editing){
       const mats=h('div',{class:'wiki-recipe-mats'});
-      mats.append(h('small',{text:wt('Необходимые материалы','Required materials')}));
+      mats.append(npcTradeBind(h('small'),'materials'));
       for(const [index,material] of (trade.mats||[]).entries()){
        const row=h('span',{class:'wiki-owner-mat'});
        row.append(itemLink(material.i,dataName('item',material.i),trade.i));
        const quantity=h('span',{class:editing?'wiki-edit-value':'',
-        text:' ×'+(material.n??1),title:editing?'Двойной клик — изменить количество':''});
+        text:' ×'+(material.n??1),title:editing?npcTradeCopy('materialQuantityHint'):''});
        if(editing)quantity.ondblclick=e=>{
         e.preventDefault();
         editWikiValue(quantity,material.n,{type:'number',max:999999,integer:true,
@@ -6138,13 +6195,13 @@ function renderWiki(root){
        };
        row.append(quantity);
        if(editing)row.append(h('button',{type:'button',class:'wiki-owner-remove',
-        text:'×','aria-label':'Убрать материал '+dataName('item',material.i),
+        text:'×','aria-label':npcTradeCopy('removeMaterial')+' '+dataName('item',material.i),
         onclick:()=>void amend({mats:trade.mats.filter((_,j)=>j!==index)})
          .catch(e=>showStudioToast(e.message,'warning'))}));
        mats.append(row);
       }
       if(editing)mats.append(h('button',{type:'button',class:'wiki-owner-plus',
-       text:wt('+ Материал','+ Material'),onclick:()=>wikiItemChoice(mats,i=>{
+       text:npcTradeCopy('addMaterial'),onclick:()=>wikiItemChoice(mats,i=>{
         if((trade.mats||[]).length>=20)
          throw Error(wt('Можно добавить не более 20 материалов','Maximum 20 materials'));
         if((trade.mats||[]).some(row=>String(row.i)===String(i)))
@@ -6153,18 +6210,18 @@ function renderWiki(root){
        })}));
       entry.append(mats);
      }
-     const currencies=[[wt('Золото','Gold'),trade.gold,'gold'],
-      [wt('Честь','Honor'),trade.honor,'honor'],[wt('Опыт','Experience'),trade.exp,'exp']]
+     const currencies=[['gold',trade.gold,'gold'],
+       ['honor',trade.honor,'honor'],['experience',trade.exp,'exp']]
       .filter(([,value])=>editing||Number(value)>0);
      if(currencies.length){
       const costs=h('div',{class:'wiki-trade-cost'});
       for(const [name,value,key] of currencies){
        const chip=h('span',{class:'wiki-trade-currency'});
-       chip.append(h('span',{text:name+': '}));
+       chip.append(npcTradeBind(h('span'),name,'text',': '));
        const figure=h('strong',{text:Number(value||0).toLocaleString('ru-RU'),
         class:editing?'wiki-edit-value':''});
        if(editing){
-        figure.title='Двойной клик — изменить стоимость';
+        figure.title=npcTradeCopy('costHint');
         figure.ondblclick=e=>{
          e.preventDefault();
          editWikiValue(figure,Number(value||0),{type:'number',integer:true,max:999999999,
@@ -6177,28 +6234,28 @@ function renderWiki(root){
      }
      if(editing){
       const owner=h('div',{class:'wiki-trade-sellers'});
-      owner.append(h('small',{text:'NPC обмена'}));
+      owner.append(npcTradeBind(h('small'),'sellers'));
       for(const npcId of trade.npc||[]){
        const chip=h('span',{class:'wiki-owner-mat'},[
         wikiLink(dataName('npc',npcId),'npc',npcId,trade.i)]);
        if(trade.npc.length>1)chip.append(h('button',{type:'button',
         class:'wiki-owner-remove',text:'×',
-        'aria-label':'Убрать NPC '+dataName('npc',npcId),
+        'aria-label':npcTradeCopy('removeSeller')+' '+dataName('npc',npcId),
         onclick:()=>void amend({npc:trade.npc.filter(n=>n!==npcId)})
          .catch(e=>showStudioToast(e.message,'warning'))}));
        owner.append(chip);
       }
       const plus=h('button',{type:'button',class:'wiki-owner-plus',
-       text:wt('+ NPC','+ NPC')});
+       text:npcTradeCopy('addSeller')});
       plus.onclick=()=>{
        const previous=owner.querySelector('.wiki-owner-trade-npc-picker');
        if(previous){previous.remove();return}
        const panel=h('div',{class:'wiki-owner-source-picker wiki-owner-trade-npc-picker'});
-       const search=ownerPlainTextField({class:'wiki-inline-input wiki-owner-search',
-        placeholder:wt('Найти NPC по имени…','Find NPC by name…'),
-        autocomplete:'off','aria-label':wt('Поиск NPC для обмена','Search NPC for trade')});
+       const search=ownerPlainTextField({class:'wiki-inline-input wiki-owner-search',autocomplete:'off'});
+        npcTradeBind(search,'sellerSearchPlaceholder','placeholder');
+        npcTradeBind(search,'sellerSearchAria','aria-label');
        const pick=h('select',{class:'wiki-inline-select',
-        'aria-label':wt('Добавить NPC','Add NPC')});
+        'aria-label':npcTradeCopy('sellerSelectAria')});
        const feedback=h('small',{class:'inline-owner-error',role:'status'});
        const fill=()=>{
         const q=wikiIndex.normalize(search.value);
@@ -6206,8 +6263,8 @@ function renderWiki(root){
          .filter(([key])=>!(trade.npc||[]).map(String).includes(key)&&
           (!q||searchWords(searchTerms('npc',key),q))).slice(0,80);
         pick.replaceChildren(h('option',{value:'',
-         text:candidates.length?wt('Выбери NPC','Choose NPC'):
-          wt('NPC не найден','No NPC found')}));
+         text:candidates.length?npcTradeCopy('sellerChoose'):
+           npcTradeCopy('sellerMissing')}));
         for(const [key] of candidates)pick.append(h('option',
          {value:key,text:dataName('npc',key)}));
         pick.disabled=!candidates.length;
@@ -6230,15 +6287,31 @@ function renderWiki(root){
        fill();search.focus();
       };
       if(trade.npc.length<24)owner.append(plus);
-      const remove=h('button',{type:'button',class:'wiki-trade-delete',
-       text:'Удалить обмен','aria-label':'Удалить обмен NPC'});
-      remove.onclick=()=>{
-       if(remove.dataset.confirm!=='1'){
-        remove.dataset.confirm='1';remove.textContent='Повторить, чтобы удалить';return;
-       }
-       void saveWikiTradeRecipe(trade,{deleted:true})
-        .catch(e=>showStudioToast(e.message,'warning'));
-      };
+      const remove=npcTradeBind(h('button',{type:'button',class:'wiki-trade-delete'}),'deleteTrade');
+       npcTradeBind(remove,'deleteAria','aria-label');
+       const resetDelete=()=>{
+        if(remove.dataset.confirm!=='1')return;
+        delete remove.dataset.confirm;
+        npcTradeBind(remove,'deleteTrade');
+        npcTradeBind(remove,'deleteAria','aria-label');
+       };
+       remove.addEventListener('blur',resetDelete);
+       remove.addEventListener('keydown',event=>{
+        if(event.key==='Escape'){event.preventDefault();resetDelete()}
+       });
+       remove.onclick=()=>{
+        if(remove.disabled)return;
+        if(remove.dataset.confirm!=='1'){
+         remove.dataset.confirm='1';
+         npcTradeBind(remove,'deleteConfirm');
+         npcTradeBind(remove,'deleteConfirm','aria-label');
+         return;
+        }
+        remove.disabled=true;
+        void saveWikiTradeRecipe(trade,{deleted:true})
+         .catch(e=>{resetDelete();remove.disabled=false;
+          showStudioToast(e.message,'warning')});
+       };
       owner.append(remove);entry.append(owner);
      }
      const searchText=wikiIndex.normalize([dataName('item',trade.i),
@@ -6251,14 +6324,14 @@ function renderWiki(root){
       card.entry.hidden=!matchesWords(card.searchText,recipeSearch.value);
       if(!card.entry.hidden)visible++;
      }
-     counter.textContent=lang==='en'?visible+' of '+cards.length:visible+' из '+cards.length;
+     npcTradeBind(counter,'counterOf','text',' '+cards.length,visible+' ');
     };
     guardEncyclopediaSearch(recipeSearch);
     recipeSearch.addEventListener('input',filterRecipes);
     detail.append(recipeSearch,counter,recipesBox);filterRecipes();
     if(adminEditing&&adminToken){
-     const newTrade=h('button',{type:'button',class:'wiki-owner-plus wiki-add-source',
-      text:'+ Добавить обмен',title:'Создать новый обмен у этого NPC'});
+     const newTrade=npcTradeBind(h('button',{type:'button',class:'wiki-owner-plus wiki-add-source',
+       title:npcTradeCopy('newTradeTitle')}),'newTrade');
      newTrade.onclick=()=>wikiItemChoice(detail,i=>{
       let next=null;
       for(let attempt=0;attempt<30;attempt++){
