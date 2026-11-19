@@ -259,6 +259,13 @@ async function adminCatalog(request,env,path){
  if(!/^[a-z0-9-]{8,64}$/.test(data.snapshot||''))return no('Invalid snapshot identifier',400);
  if(path==='/api/admin/catalog/batch'){
   if(!DATASETS.includes(data.dataset)||!Array.isArray(data.records)||data.records.length>35||!data.records.length)return no('Invalid dataset/batch',400);
+  // Published D1 snapshots are immutable. Apart from preventing accidental
+  // in-place corruption, this guarantees the cached public snapshot cannot
+  // silently change behind an unchanged catalog_current pointer.
+  const alreadyPublished=await env.DB.prepare(
+   'SELECT id FROM catalog_current WHERE id=1 AND snapshot=?'
+  ).bind(data.snapshot).first();
+  if(alreadyPublished)return no('Published catalog snapshot is immutable',409);
   const commands=[];
   for(const entry of data.records){
    const key=String(entry?.key??''),value=entry?.value;
