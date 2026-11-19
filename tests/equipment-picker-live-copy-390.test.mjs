@@ -61,3 +61,48 @@ test('equipment picker appends additional pages and safely restores search state
  assert.match(source,/stageSlotQuery=typeof bootView\.slotQuery==='string'\?bootView\.slotQuery\.slice\(0,120\):''/);
  assert.match(source,/stagePickerOnlyAvailable=bootView\.slotOnlyAvailable===true/);
 });
+
+test('equipment menu, card metadata and slot navigation use one shared 15-key D1 editorial registry',async()=>{
+ const {runInNewContext}=await import('node:vm');
+ const root={};root.window=root;
+ runInNewContext(readFileSync(new URL('../pandora-studio-honor-guide.js',import.meta.url),'utf8'),root);
+ const honors=root.PandoraHonorGuide;
+ const registry=source.match(/const equipmentPickerMetaCopyRows=Object\.freeze\(\[([\s\S]*?)\n\]\);/);
+ assert.ok(registry,'Canonical equipment metadata registry must exist');
+ const rows=[...registry[1].matchAll(/\['([a-zA-Z]+)','([^']*)','([^']*)'/g)];
+ assert.equal(rows.length,15,'All 15 context/card/navigation captions share one D1 registry');
+ const required=['gearMenuEquippedAria','gearMenuEmptyAria','gearMenuEmptyTitle',
+  'gearMenuNoSoulSlots','gearMenuMissingItem','pickerNavGroup',
+  'pickerPreviousSlot','pickerNextSlot','pickerEquipAction','pickerPlanAction',
+  'pickerFutureLevel','pickerItemLevel','pickerItemSlots',
+  'pickerFutureBadgePrefix','pickerFutureBadgeSuffix'];
+ assert.deepEqual(rows.map(row=>row[1]),required);
+ for(const row of rows){
+  const [key,ru,en]=row.slice(1);
+  assert.ok(ru&&en,'Bilingual source copy: '+key);
+  assert.equal(honors.validOverride('book.equipment.'+key.replace(/[A-Z]/g,ch=>'-'+ch.toLowerCase()),
+   JSON.stringify({ru:'Изменено',en:'Edited'})),true,key);
+ }
+ const picker=source.slice(source.indexOf('function appendStageSlotNavigation('),
+  source.indexOf('function attributeSnapshot(){'));
+ assert.match(picker,/refreshEquipmentPickerItemAria\(btn\)/);
+ assert.match(picker,/h\('small',\{\},metadata\)/);
+ assert.match(picker,/h\('span',\{text:' '\+String\(rec\.level\)\+' '\}\)/);
+ assert.match(picker,/h\('span',\{text:' '\+\(socketCount===null\?'—':String\(socketCount\)\)\}\)/);
+ assert.doesNotMatch(picker,/data-owner-copy-id.*rec\.id|equipmentCopy\('item\.id'/);
+ const renderer=source.slice(source.indexOf('function refreshEquipmentPickerItemAria('),
+  source.indexOf('const equipmentPickerMetaCopyRows='));
+ assert.match(renderer,/sourceName=button\.querySelector/);
+ assert.match(renderer,/const level=button\.dataset\.pickerFutureLevel/);
+ assert.match(renderer,/equipmentCopy\('pickerFutureLevel'/);
+ assert.match(renderer,/equipmentCopy\('pickerPlanAction'/);
+ assert.match(renderer,/ownerDockPatchAttr\(button,'aria-label',value\)/);
+ assert.match(source,/refreshEquipmentPickerItemAria\(\);/);
+ assert.match(source,/\.\.\.equipmentPickerMetaCopyRows,/);
+ const menu=source.slice(source.indexOf('function openStageGearMenu('),
+  source.indexOf("document.addEventListener('contextmenu'",source.indexOf('function openStageGearMenu(')));
+ assert.match(menu,/bindOwnerInterfaceText\(menu,'equipment',menuKey/);
+ assert.match(menu,/if\(!hasItem\)bindOwnerInterfaceText\(emptyCaption/);
+ assert.match(menu,/if\(disabled\)\{/);
+ assert.doesNotMatch(menu,/itemName\(equipped\).*data-owner-copy/);
+});
