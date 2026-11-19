@@ -73,6 +73,9 @@ jobs:
             node tests/browser-smoke.mjs "--only=$BROWSER_SCENARIO"
           elif [[ "${{ steps.suite.outputs.mode }}" == 'quick' ]]; then
             node tests/browser-smoke.mjs --quick
+          elif [[ "${{ steps.suite.outputs.mode }}" == 'layout' ]]; then
+            # CSS-only changes still exercise desktop/mobile layout and captures.
+            node tests/browser-smoke.mjs --layout
           else
             node tests/browser-smoke.mjs
           fi
