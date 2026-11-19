@@ -1159,6 +1159,8 @@ function applyOwnerInterfaceEditedValue(section,key,visible){
    }
   }
  }
+ if(section==='equipment'&&['pickerFutureLevel','pickerPlanAction','pickerEquipAction'].includes(key))
+  refreshEquipmentPickerItemAria();
 }
 // Compact non-modal owner-only copy editor reused by Equipment, Wiki, Skills.
 // It is absent for players and never wraps a real interactive action button.
@@ -1193,6 +1195,22 @@ const equipmentCopyLabel=(node,key,ru,en,options)=>
 // One registry for player-facing equipment actions / item-card metadata.
 // Reuse it inside both already-existing compact owner editor sections,
 // instead of introducing a third modal or two drifting dictionaries.
+// Patch only item accessible names: preserve level, game ID, item name,
+// mounted search/filter state and every existing result button on D1 Save/Undo.
+function refreshEquipmentPickerItemAria(one=null){
+ const buttons=one?[one]:[...document.querySelectorAll(
+  '#stagePicker .stage-picker-item[data-stage-choice]')];
+ for(const button of buttons){
+  const sourceName=button.querySelector('.stage-picker-item-label>b')?.textContent;
+  if(!sourceName)continue;
+  const level=button.dataset.pickerFutureLevel;
+  const value=level?
+   equipmentCopy('pickerFutureLevel','Будет доступен с ','Available from level ')+
+    level+equipmentCopy('pickerPlanAction',' уровня. Запланировать: ','. Plan: ')+sourceName:
+   equipmentCopy('pickerEquipAction','Экипировать ','Equip ')+sourceName;
+  ownerDockPatchAttr(button,'aria-label',value);
+ }
+}
 const equipmentPickerMetaCopyRows=Object.freeze([
  ['gearMenuEquippedAria','Действия с надетой вещью','Equipped item actions','Меню с вещью','Equipped menu'],
  ['gearMenuEmptyAria','Действия с пустым слотом','Empty equipment slot actions','Меню пустого слота','Empty slot menu'],
@@ -1203,8 +1221,8 @@ const equipmentPickerMetaCopyRows=Object.freeze([
  ['pickerPreviousSlot','Предыдущий слот: ','Previous slot: ','Предыдущий слот','Previous slot'],
  ['pickerNextSlot','Следующий слот: ','Next slot: ','Следующий слот','Next slot'],
  ['pickerEquipAction','Экипировать ','Equip ','Выбрать предмет','Equip item'],
- ['pickerPlanAction','Запланировать ','Plan ','Запланировать предмет','Plan item'],
- ['pickerFutureLevel','Будет доступен с уровня ','Available from level ','Требуется уровень','Required level'],
+ ['pickerPlanAction',' уровня. Запланировать: ','. Plan: ','Запланировать предмет','Plan item'],
+ ['pickerFutureLevel','Будет доступен с ','Available from level ','Требуется уровень','Required level'],
  ['pickerItemLevel','Уровень ','Level ','Уровень предмета','Item level'],
  ['pickerItemSlots',' · Слоты: ',' · Slots: ','Слоты предмета','Item slots'],
  ['pickerFutureBadgePrefix','С ','From ','Метка уровня: начало','Level badge prefix'],
@@ -1628,8 +1646,9 @@ function openStageGearMenu(index,sourceSlot,event,anchor){
  const menu=h('div',{class:'stage-gear-context-menu',role:'menu',
   'data-gear-context-slot':String(index)});
  const menuKey=hasItem?'gearMenuEquippedAria':'gearMenuEmptyAria';
- const menuPair=hasItem?equipmentPickerMetaCopyRows[0]:equipmentPickerMetaCopyRows[1];
- bindOwnerInterfaceText(menu,'equipment',menuKey,menuPair[1],menuPair[2],'aria-label');
+ bindOwnerInterfaceText(menu,'equipment',menuKey,
+  hasItem?'Действия с надетой вещью':'Действия с пустым слотом',
+  hasItem?'Equipped item actions':'Empty equipment slot actions','aria-label');
  const emptyCaption=h('strong',{text:hasItem?itemName(equipped):''});
  if(!hasItem)bindOwnerInterfaceText(emptyCaption,'equipment','gearMenuEmptyTitle',
   'Пустой слот','Empty slot');
@@ -2277,13 +2296,14 @@ function renderStagePicker(focusSearch=false){
      window.PandoraEquipmentPlan.clearChangedEquipmentSouls(state,previousEquipment);
      stageSlotView='details';persist();render();renderStagePicker();
     }});
-   // Action and required level are readable independently. A saved D1 label
-   // changes immediately without mutating the selected item or its identity.
-   bindOwnerInterfaceText(btn,'equipment',future?'pickerPlanAction':'pickerEquipAction',
-    future?'Запланировать ':'Экипировать ',
-    future?'Plan ':'Equip ','aria-label',itemName(rec));
-   if(future)bindOwnerInterfaceText(btn,'equipment','pickerFutureLevel',
-    'Будет доступен с уровня ','Available from level ','title',String(rec.level));
+   // Both edited portions keep the historical full accessibility sentence:
+   // "Available from level 53. Plan: [exact original game item name]".
+   // Level and item name are runtime facts, never submitted to D1.
+   if(future){
+    btn.dataset.pickerFutureLevel=String(rec.level);
+    bindOwnerInterfaceText(btn,'equipment','pickerFutureLevel',
+     'Будет доступен с ','Available from level ','title',String(rec.level));
+   }
    const src=itemIcon(rec);
    if(src){const img=h('img',{src,alt:'',loading:'lazy'});img.onerror=()=>img.replaceWith(h('span',{class:'item-glyph',text:'⚔'}));btn.append(img)}
    else btn.append(h('span',{class:'item-glyph',text:'⚔'}));
@@ -2301,6 +2321,9 @@ function renderStagePicker(focusSearch=false){
     h('span',{text:socketCount===null?'—':String(socketCount)}));
    btn.append(h('span',{class:'stage-picker-item-label'},[h('b',{text:itemName(rec)}),
     h('small',{},metadata)]));
+   // The game name is now in the card; update aria with the exact current
+   // source-backed name, not any editable owner caption.
+   refreshEquipmentPickerItemAria(btn);
    if(future)btn.append(h('span',{class:'stage-picker-future'},[
     bindOwnerInterfaceText(h('span',{}),'equipment','pickerFutureBadgePrefix',
      'С ','From '),
@@ -9608,6 +9631,10 @@ function refreshVisibleOwnerCopy(recordKey){
    }
   }
  }
+ // Exact equipment item aria sentences contain game level and name, which
+ // are recomposed from the untouched source record on Undo/reset.
+ if(['equipment.picker-future-level','equipment.picker-plan-action',
+     'equipment.picker-equip-action'].includes(key))refreshEquipmentPickerItemAria();
  // Gemstone option names and group headings are independently editable.
  // Refresh the composite accessible name after either D1 save or Undo,
  // without remounting the forge or changing the selected enhancement.
