@@ -338,3 +338,28 @@ test('batch failures never change successful read ordering or client cache polic
  });
  assert.deepEqual([...out],ids.map((id,i)=>id+':'+i));
 });
+
+test('external batch invalidation immediately aborts all active D1 reads and blocks new GETs',async()=>{
+ const live=load(),controller=new AbortController(),started=[],cancelled=[];
+ let allThree;
+ const three=new Promise(resolve=>{allThree=resolve});
+ const batch=live.mapLimit(Array.from({length:9},(_,i)=>i),3,
+  async(id,_index,signal)=>{
+   started.push(id);
+   if(started.length===3)allThree();
+   return new Promise(resolve=>signal.addEventListener('abort',()=>{
+    cancelled.push(id);resolve('obsolete');
+   },{once:true}));
+  },{signal:controller.signal});
+ await three;
+ controller.abort(Error('Superseded D1 catalog generation'));
+ await assert.rejects(batch,/Superseded D1 catalog generation/);
+ assert.deepEqual(started,[0,1,2]);
+ assert.deepEqual(cancelled.sort((a,b)=>a-b),[0,1,2]);
+ let invoked=0;
+ const alreadyAborted=new AbortController();
+ alreadyAborted.abort(Error('Already obsolete'));
+ await assert.rejects(live.mapLimit([1,2],2,async()=>invoked++,
+  {signal:alreadyAborted.signal}),/Already obsolete/);
+ assert.equal(invoked,0,'No fetches from a batch cancelled before startup');
+});
