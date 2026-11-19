@@ -128,8 +128,9 @@ test('owner interface offers in-place bilingual editing, NPC creation and editab
  const exportSource=read('worker/pandora-studio-github-catalog-pr.js');
  assert.match(app,/data-owner-field':lang==='en'\?'nameEn':'name'/);
  assert.match(app,/data-owner-field':lang==='en'\?'descEn'/);
- assert.match(app,/wiki-town-npc-create/);
- assert.match(app,/saveWikiRecordPatch\('npc',identifier,patch\)/);
+ assert.match(app,/if\(ownerMap&&rec\.virtual\)/);
+ assert.doesNotMatch(app,/wiki-town-npc-create/);
+ assert.match(app,/saveWikiRecordPatch\('npc',npcId,\{name,nameEn,service,maps:\[String\(id\)\]\}\)/);
  assert.match(app,/saveWikiRecordField\('npc',id,'maps',\[selector.value\]\)/);
  assert.match(app,/await apiRequest\('\/api\/admin\/override',\{key,value:after\}\)/);
  assert.match(workerSource,/validTownWikiPatch/);
