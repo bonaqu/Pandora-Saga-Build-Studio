@@ -214,3 +214,10 @@ Remaining specialized runtime copy is still tracked by #390.
 - Добавлены 10 RU/EN D1-полей `book.wiki-ui.*`: `back-label`, `results-shown`, `results-of`, `results-units`, `more-prefix`, `no-matches`, `select-prompt`, `place-city`, `place-nation`, `place-other`. Редактирование через текущую компактную секцию «Подписи энциклопедии», D1 CAS, Undo и независимые языки.
 - Числа видимых/всех элементов, следующей порции и оставшихся не являются частью D1-подписи. Подписи меняются без замены счётчиков, списка и фильтра; динамические значения вставляются только текстом.
 - Массовая запись стандартных RU/EN-текстов в D1 не проводилась. Остальные авторские тексты ещё не охвачены полностью; [#390](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/390) остаётся открытой.
+
+
+## 19.11.2026 · Comparison editorial-copy gap closed in 0.917.0
+
+The compact "My Builds" A/B comparison had hardcoded RU/EN headings, collapsed/expanded controls and status messages. Nine stable `guideedit.book.ui.label.compare-*` keys now reuse the existing bilingual owner inline editor, D1 CAS and Undo. The dynamic count in "Differences: N" remains a separate text node and is never editable. Calculated statistics, saved-build names, selection IDs, cloud errors and player-entered character names are not editorial content.
+
+State transitions replace the current authored key without leaving stale pencils; in-flight owner text stays mounted through CAS errors, cancellation and language changes. Successful saves, conflicts and Undo patch the current comparison UI without resetting the user’s input, sort/search state or A/B choices. The title and toggle use compact sibling editors so editing never activates the comparison action. Real Chromium covers EN save, a 409 conflict with preserved unsent input, different expandable control keys and Undo. No game data, D1 schema, credentials or combat formulas changed. This completes **only the comparison family**, not all of issue #390.

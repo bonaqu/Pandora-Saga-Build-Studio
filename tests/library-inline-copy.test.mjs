@@ -298,3 +298,54 @@ test('library overwrite confirmation fragments keep RU and EN separately',()=>{
  assert.equal(locale.baseText(before,'en'),'Overwrite saved build “');
  locale.setOverrides({});
 });
+
+test('build comparison authored RU/EN and dynamic states obey D1 CAS copy boundaries',()=>{
+ const pairs={
+  compareTitle:['Сравнение билдов','Build comparison'],
+  compareExpand:['Развернуть сравнение','Expand'],
+  compareCollapse:['Скрыть сравнение','Collapse'],
+  compareNeedTwo:['Сохрани хотя бы два билда для сравнения.','Save at least two builds to compare them.'],
+  compareChooseTwo:['Выбери два разных сохранённых билда.','Select two different saved builds.'],
+  compareAwaitData:['Итоговые характеристики появятся после загрузки игровых данных.','Calculated stats will appear once game data have loaded.'],
+  compareCalculationFailed:['Не удалось рассчитать один из билдов. Сохранения не изменены.','One of the builds could not be calculated. Saved builds were not changed.'],
+  compareNoDifferences:['Среди рассчитанных характеристик отличий нет.','No differences in the calculated stats.'],
+  compareDifferencePrefix:['Отличий:','Differences:']
+ };
+ for(const [key,[ru,en]] of Object.entries(pairs)){
+  const id=locale.fieldKey(key);
+  assert.equal(id,'ui.label.'+key.replace(/[A-Z]/g,ch=>'-'+ch.toLowerCase()));
+  assert.equal(locale.text(key,'ru'),ru);
+  assert.equal(locale.text(key,'en'),en);
+  assert.equal(locale.literalKey(ru),key);
+  assert.ok(guide.validOverride('book.'+id,JSON.stringify({
+   ru:'Проверенная подпись',en:'Verified caption'
+  })),key);
+  locale.setOverrides({['guideedit.book.'+id]:
+   JSON.stringify({ru:'Проверенная подпись',en:'Verified caption'})});
+  assert.equal(locale.text(key,'ru'),'Проверенная подпись');
+  assert.equal(locale.text(key,'en'),'Verified caption');
+  locale.setOverrides({});
+ }
+ for(const generated of ['Отличий: 8','Differences: 8',
+  'My private build','Build A from friend','2,300 HP','Ошибка D1: 503'])
+  assert.equal(locale.literalKey(generated),null,
+   'Neither live counts nor player names / diagnostics are editorial copy');
+});
+test('comparison labels bind to live owner UI without making inputs or stat results editable',()=>{
+ const app=read('pandora-studio-app.js');
+ const block=app.slice(app.indexOf('function renderBuildComparison(host,'),
+  app.indexOf('function restoreLoadedBuildUI()',app.indexOf('function renderBuildComparison(host,')));
+ assert.match(block,/data-owner-copy-key':'compareTitle'/);
+ assert.match(block,/data-owner-copy-key':comparisonOpen\?'compareCollapse':'compareExpand'/);
+ assert.match(block,/const summaryText=h\('span',\{'data-owner-copy-key':'compareNeedTwo'/);
+ assert.match(block,/const summaryCount=h\('span',\{'data-compare-count':''/);
+ assert.match(block,/setSummary\(rows.length\?'compareDifferencePrefix':'compareNoDifferences'/);
+ assert.match(block,/if\(adminEditing&&adminToken\)bindAccountCopyEditors\(summary\)/);
+ assert.match(block,/pandora:comparison-copy-finished/);
+ assert.match(block,/'data-compare-a':item\.key/);
+ assert.doesNotMatch(block,/\['data-owner-copy-key':(?:item\.key|build\.name)/);
+ assert.doesNotMatch(block,/summary\.textContent=rows\.length/);
+ const refresh=app.slice(app.indexOf('function refreshVisibleUICopy('),
+  app.indexOf('function refreshVisibleOriginCopy('));
+ assert.match(refresh,/recordKey\.startsWith\('guideedit\.book\.ui\.label\.compare-'\)/);
+});
