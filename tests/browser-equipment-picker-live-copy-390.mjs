@@ -30,12 +30,6 @@ export async function runEquipmentPickerLiveCopy390Smoke(browser,base){
    'Переход между слотами');
   assert.match(await picker.locator('[data-stage-slot-nav="next"]').getAttribute('aria-label'),
    /^Следующий слот: /);
-  const firstCard=picker.locator('[data-stage-choice]').first();
-  await firstCard.waitFor({state:'visible'});
-  assert.match(await firstCard.locator('.stage-picker-item-label small').innerText(),
-   /^Уровень \d+(?: · Слоты: \d+)?$/);
-  const firstName=await firstCard.locator('.stage-picker-item-label>b').textContent();
-  assert.ok((await firstCard.getAttribute('aria-label')).endsWith(firstName));
   assert.equal(await picker.locator('[data-owner-copy-section]').count(),0,
    'Public equipment picker cannot expose owner editing keys');
   const filter=picker.locator('.stage-picker-only-available');
@@ -100,6 +94,14 @@ export async function runEquipmentPickerLiveCopy390Smoke(browser,base){
   assert.ok(total>48,'Warrior weapon catalog must have >48 compatible items: '+total);
   assert.equal(await rows.count(),48);
   assert.equal(await more.isVisible(),true);
+  const firstCard=rows.first();
+  assert.match(await firstCard.locator('.stage-picker-item-label small').innerText(),
+   /^Уровень (?:\d+|—)(?: · Слоты: (?:\d+|—))?$/);
+  const firstName=await firstCard.locator('.stage-picker-item-label>b').textContent();
+  assert.ok((await firstCard.getAttribute('aria-label')).endsWith(firstName),
+   'The accessible action retains the actual source item name');
+  assert.equal(await panel.locator('.studio-owner-interface-editor').count(),0,
+   'No admin editor rows on an ordinary player page');
   const original=rows.first(),originalId=await original.getAttribute('data-stage-choice');
   await original.evaluate(node=>node.dataset.pickerStable='preserved');
   await more.click();

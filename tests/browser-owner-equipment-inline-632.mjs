@@ -360,6 +360,7 @@ export async function runOwnerEquipmentInlineSmoke(browser,base){
   await page.waitForFunction(()=>document.documentElement.lang==='en');
   await page.locator('.equipment-slot[data-slot-index="5"]').click();
   const chooser=page.locator('#stagePicker');
+  await chooser.locator('[data-stage-tab="choose"]').click();
   await chooser.locator('[data-stage-choice]').first().waitFor({state:'visible',timeout:12000});
   const enFirst=chooser.locator('[data-stage-choice]').first();
   assert.match(await enFirst.locator('.stage-picker-item-label small').innerText(),/^Level /);
