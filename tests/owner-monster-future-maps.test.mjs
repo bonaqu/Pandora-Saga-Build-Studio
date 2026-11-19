@@ -287,5 +287,16 @@ test('new Astir NPCs and future-map NPCs share canonical bilingual owner IDs wit
  const legacy=owner.apply(original,{'wikiedit.npc.'+legacyId:
   JSON.stringify({name:'Исторический',maps:['astir-kingdom']})});
  assert.equal(legacy.townNpcs[legacyId].name,'Исторический');
- assert.equal(legacy.townNpcs[legacyId].ownerCreated,false);
+ assert.equal(legacy.townNpcs[legacyId].ownerCreated,true);
+ assert.equal(owner.curatedNpcId(legacyId),true);
+ assert.equal(owner.curatedNpcId(npcId),true);
+ assert.equal(owner.curatedNpcId('astir-npc-kingdom-claris'),false);
+ assert.equal(owner.curatedNpcId('astir-npc-kingdom-custom-x'),false);
+ assert.equal(owner.curatedNpcId('astir-npc-empire-other'),false);
+ const verified=owner.apply({maps:{},townNpcs:{
+  'astir-npc-kingdom-claris':{name:'Кларис',maps:['astir-kingdom']}
+ },trades:{npcs:{}}},{'wikiedit.npc.astir-npc-kingdom-claris':
+  JSON.stringify({name:'Кларис',maps:['astir-kingdom']})});
+ assert.equal(verified.townNpcs['astir-npc-kingdom-claris'].ownerCreated,false,
+  'Known catalog NPC must never become owner deletable');
 });
