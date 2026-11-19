@@ -616,7 +616,8 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(await activeName.inputValue(),comparisonName);
   assert.equal(await comparePanel.evaluate(node=>node.isConnected),true);
   assert.equal(JSON.parse(values['guideedit.book.ui.label.compare-title']).en,'Build comparison QA');
-  assert.equal(JSON.parse(values[compareKey])?.en,undefined);
+  assert.equal(Object.hasOwn(values,compareKey),false,
+   'Undo removes the new comparison caption instead of inventing an empty JSON record');
   await comparePanel.dispose();
 
   // Cloud library status has its own lifecycle: change the currently
