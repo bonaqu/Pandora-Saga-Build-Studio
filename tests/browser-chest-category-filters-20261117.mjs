@@ -64,7 +64,7 @@ export async function runChestCategoryFiltersSmoke(browser,base){
   const sourceSoulCounts=sourceRows(51036).filter(row=>row.soul>0)
    .map(row=>row.soul).sort((a,b)=>a-b);
   const renderedSoulCounts=await soulCountLabels.evaluateAll(nodes=>nodes
-   .map(node=>Number(node.textContent.match(/\\d+$/)?.[0]))
+   .map(node=>Number(node.textContent.match(/[0-9]+$/)?.[0]))
    .sort((a,b)=>a-b));
   assert.deepEqual(renderedSoulCounts,sourceSoulCounts,
    'Owner-editable caption cannot alter the original numeric Soul amounts');
