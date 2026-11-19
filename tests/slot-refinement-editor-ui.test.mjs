@@ -20,8 +20,11 @@ test('Soul slots exist only on supported equipment categories',()=>{
 
 test('choice metadata gates Soul slot count by equipment slot type',()=>{
  const app=source('pandora-studio-app.js');
- assert.match(app,/const meta=window\.PandoraEquipmentPlan\.supportsSoulSlot\(key\)\?/);
- assert.match(app,/levelText\+\(lang==='en'\?' · Slots: ':' · Слоты: '\)/);
+ assert.match(app,/const socketCount=window\.PandoraEquipmentPlan\.supportsSoulSlot\(key\)\?/);
+ assert.match(app,/if\(window\.PandoraEquipmentPlan\.supportsSoulSlot\(key\)\)metadata\.push\(/);
+ assert.match(app,/bindOwnerInterfaceText\(h\('span',\{\}\),'equipment','pickerItemSlots'/);
+ assert.match(app,/h\('span',\{text:socketCount===null\?'—':String\(socketCount\)\}\)/);
+ assert.match(app,/h\('small',\{\},metadata\)/);
  assert.match(app,/masteryAuto:true/);
  assert.match(app,/copyLabel:equipmentCopy,editLabel:equipmentCopyLabel/);
  assert.match(app,/saveGuidePatch\('book\.'\+ownerCopyKey\(section,key\)/);

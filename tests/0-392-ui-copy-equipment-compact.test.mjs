@@ -37,7 +37,9 @@ test('outfit mirrored pants has a lock but stays an interactive, nonduplicated s
 });
 test('only compatible equipment rows show source-backed Soul slot counts',()=>{
  assert.match(app,/const socketCount=window\.PandoraEquipmentPlan\.supportsSoulSlot\(key\)\?/);
- assert.match(app,/const meta=window\.PandoraEquipmentPlan\.supportsSoulSlot\(key\)\?/);
+ assert.match(app,/if\(window\.PandoraEquipmentPlan\.supportsSoulSlot\(key\)\)metadata\.push\(/);
+ assert.match(app,/h\('span',\{text:socketCount===null\?'—':String\(socketCount\)\}\)/);
+ assert.match(app,/h\('small',\{\},metadata\)/);
  assert.match(app,/ · Слоты: /);
  assert.match(app,/ · Slots: /);
  assert.match(app,/class:'stage-picker-item-label'/);
