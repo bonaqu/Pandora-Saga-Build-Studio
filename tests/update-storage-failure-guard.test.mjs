@@ -64,7 +64,7 @@ test('successful draft and library writes permit update',()=>{
 
 test('hidden tabs skip version traffic and abort late manifest banners',async()=>{
  const listeners={},intervals=[],timeouts=[];
- let requests=0,nextFetch=null;
+ let requests=0,nextFetch=null,bannerCreates=0;
  const release='2026.11.19.918';
  const label={textContent:''};
  const document={
@@ -73,6 +73,7 @@ test('hidden tabs skip version traffic and abort late manifest banners',async()=
   body:{classList:{contains:()=>false}},
   querySelector:selector=>selector==='meta[name="ps-studio-release"' + ']'?{content:release}:null,
   getElementById:id=>id==='siteVersion'?label:null,
+  createElement:()=>{bannerCreates++;throw Error('Stale banner attempted');},
   addEventListener:(name,callback)=>{listeners[name]=callback}
  };
  const runtime={
@@ -113,6 +114,6 @@ test('hidden tabs skip version traffic and abort late manifest banners',async()=
  listeners.visibilitychange();
  releaseResponse({ok:true,json:async()=>({release:'2026.11.19.920'})});
  await new Promise(resolve=>setImmediate(resolve));
- assert.equal(document.getElementById('studio-update-banner'),null);
+ assert.equal(bannerCreates,0,'A stale hidden-tab result never creates an update banner');
  assert.equal(requests,2);
 });
