@@ -31,5 +31,7 @@ test('D1 editing never replaces source-backed skill values or invalid requiremen
  assert.match(hero,/skill\.desc\?make\('p',\{text:skill\.desc\}\):/);
  assert.match(hero,/gate\.learned\?\s*authored\(api,'skillReady'/);
  assert.match(hero,/make\('p',\{class:'path-skill-no',text:'🔒 '\+gate\.problems\.join\(' · '\)\}\)/);
- assert.match(hero,/stats\.append\(label,make\('dd',\{text:String\(value\)\}\)\)/);
+ assert.match(hero,/const dd=make\('dd',\{text:String\(value\)\}\)/);
+ assert.match(hero,/if\(valueCopy\)bindPathCopy\(api,dd,\.\.\.valueCopy\)/);
+ assert.match(hero,/stats\.append\(label,dd\)/);
 });

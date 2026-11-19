@@ -92,7 +92,7 @@ test('search terms, actual item stats, skill packets, and character state remain
  assert.match(app,/bindOwnerInterfaceText\(search,'equipment','pickerSearchPlaceholder'/);
  assert.match(app,/const search=h\('input',\{type:'search',value:stageSlotQuery\}\)/);
  assert.match(app,/const search=h\('input',\{type:'search',value:wikiSearch,/);
- assert.match(app,/const value=ownerCopy\(section,id,ru,en\)\+\(suffix\|\|''\)/);
+ assert.match(app,/const value=\(prefix\|\|''\)\+ownerCopy\(section,id,ru,en\)\+\(suffix\|\|''\)/);
  assert.match(itemUI,/bind\(button,'pickerSoulSlotAria'/);
  assert.match(itemUI,/if\(!soul\)button\.dataset\.soulEmptySlot=String\(i\+1\)/);
  assert.match(app,/if\(key==='equipment\.picker-empty-soul'\)/);
