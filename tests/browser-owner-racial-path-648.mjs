@@ -90,8 +90,9 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   await helpEdit.press('Tab');
   await savedOverride('guideedit.book.path.racial-unavailable-aria',
    {ru:'Расовую ветку нельзя прокачать QA'});
-  assert.equal(await page.locator('.right button.path-racial-unavailable')
-   .getAttribute('aria-label'),'Расовую ветку нельзя прокачать QA');
+  await page.waitForFunction(()=>document.querySelector('.right button.path-racial-unavailable')
+   ?.getAttribute('aria-label')==='Расовую ветку нельзя прокачать QA',
+   null,{timeout:12000});
   const racial=page.locator('.right .path-racial-owner-row');
   assert.equal(await racial.locator('button.path-racial-unavailable').isDisabled(),true);
   assert.equal(await racial.locator('button.path-racial-pencil').count(),1);
@@ -132,8 +133,9 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   await enHelpEdit.press('Tab');
   await savedOverride('guideedit.book.path.racial-unavailable-aria',
    {ru:'Расовую ветку нельзя прокачать QA',en:'Racial mastery cannot be allocated QA'});
-  assert.equal(await page.locator('.right button.path-racial-unavailable')
-   .getAttribute('aria-label'),'Racial mastery cannot be allocated QA');
+  await page.waitForFunction(()=>document.querySelector('.right button.path-racial-unavailable')
+   ?.getAttribute('aria-label')==='Racial mastery cannot be allocated QA',
+   null,{timeout:12000});
   const en=page.locator('.right .path-racial-owner-row');
   assert.equal((await en.locator('strong').innerText()).trim(),'Racial');
   await en.locator('button.path-racial-pencil').click();
