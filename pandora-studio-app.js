@@ -6989,8 +6989,9 @@ function renderWiki(root){
       if(group.kind==='text'){
        const key=lang==='en'?'textEn':'textRu';
        const note=group[key]||'';
+       if(note||ownerMap){
        const text=h('p',{class:'wiki-description'+(!note?' wiki-description-placeholder':''),
-        text:note||wt('Двойной клик — добавить текст','Double-click to add text')});
+        text:note||mapCopy('sectionEmpty')});
        if(ownerMap){
         text.classList.add('wiki-honor-editable');text.tabIndex=0;
         const start=()=>editWikiValue(text,note,{type:'textarea',onCommit:value=>
@@ -6999,7 +7000,9 @@ function renderWiki(root){
         text.addEventListener('dblclick',start);
         text.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();start()}});
        }
+       if(!note)mapBind(text,'sectionEmpty');
        panel.append(text);
+       }
       }else{
        const kind=group.kind==='item'?'item':group.kind;
        if(ownerMap)panel.append(wikiOwnerEntityList({
@@ -7017,17 +7020,14 @@ function renderWiki(root){
       detail.append(panel);
      }
      if(ownerMap&&custom.length<12){
-      const add=h('button',{type:'button',class:'wiki-owner-plus wiki-map-add-section',
-       text:wt('+ Добавить раздел','+ Add section')});
+      const add=mapBind(h('button',{type:'button',class:'wiki-owner-plus wiki-map-add-section'}),'sectionAdd');
       add.onclick=()=>{
        if(detail.querySelector('.wiki-map-custom-form'))return;
        const form=h('div',{class:'wiki-map-custom-form wiki-owner-source-picker'});
-       const ru=ownerPlainTextField({class:'wiki-inline-input',
-        placeholder:wt('Название раздела · RU','Section title · RU'),
-         'aria-label':wt('Название раздела RU','Section title RU')});
-       const en=ownerPlainTextField({class:'wiki-inline-input',
-        placeholder:wt('Название раздела · EN','Section title · EN'),
-         'aria-label':wt('Название раздела EN','Section title EN')});
+       const ru=ownerPlainTextField({class:'wiki-inline-input'});
+       const en=ownerPlainTextField({class:'wiki-inline-input'});
+       mapBind(ru,'sectionTitleRu','placeholder');mapBind(ru,'sectionTitleRu','aria-label');
+       mapBind(en,'sectionTitleEn','placeholder');mapBind(en,'sectionTitleEn','aria-label');
        const kind=h('select',{class:'wiki-inline-select','aria-label':wt('Содержимое раздела','Section content')});
        for(const [value,label]of [
         ['text',wt('Описание','Text')],
@@ -7039,7 +7039,7 @@ function renderWiki(root){
         text:wt('Добавить','Add'),onclick:async()=>{
          const titleRu=ru.value.trim(),titleEn=en.value.trim();
          if(!titleRu||!titleEn||titleRu.length>100||titleEn.length>100){
-          error.textContent=wt('Укажи названия RU и EN','Enter RU and EN titles');return}
+          error.textContent=mapCopy('sectionRequired');return}
          const nextId='section-'+[...crypto.getRandomValues(new Uint8Array(6))]
           .map(x=>x.toString(16).padStart(2,'0')).join('');
          const row={id:nextId,titleRu,titleEn,kind:kind.value,entries:[]};
@@ -7047,12 +7047,13 @@ function renderWiki(root){
          try{await saveWikiMapList(id,'extraSections',custom,[...custom,row])}
          catch(e){error.textContent=e.message;submit.disabled=false}
         }});
-       const cancel=h('button',{type:'button',class:'wiki-owner-remove',
-        text:wt('Отмена','Cancel'),onclick:()=>form.remove()});
+       const cancel=mapBind(h('button',{type:'button',class:'wiki-owner-remove'}),'sectionCancel');
+       cancel.onclick=()=>form.remove();
        form.append(ru,en,kind,submit,cancel,error);add.after(form);ru.focus();
       };
       detail.append(add);
-     }
+     }else if(ownerMap)detail.append(mapBind(
+      h('small',{class:'wiki-map-limit',role:'status'}),'sectionLimit'));
     }
   }else{
     const namedPlaces=wikiIndex.chestPlaces(id);
