@@ -1208,6 +1208,63 @@ function ownerInterfaceEditor(section,rows,headingRu='Подписи интер�
  // Chest captions share the existing D1 CAS/Undo owner editor without ever
  // editing source chances, IDs, reward records or dynamic numeric counts.
  // NPC trade captions are safe authorial RU/EN copy, not recipe or character data.
+// Source-independent bilingual monster captions. Game stat values,
+// resistance keys, drop chances and item IDs are not authorial copy.
+const wikiMonsterRows=Object.freeze([
+ ["statLevel","Уровень","Level"],
+ ["statHp","ОЗ","HP"],
+ ["statDefense","Защита","Defense"],
+ ["statMagicDefense","Маг. защита","Magic defense"],
+ ["statWarding","Защитный показатель","Warding"],
+ ["statStrength","Сила","Strength"],
+ ["statVitality","Выносливость","Vitality"],
+ ["statAgility","Ловкость","Agility"],
+ ["statDexterity","Проворство","Dexterity"],
+ ["statSpirit","Дух","Spirit"],
+ ["statIntelligence","Интеллект","Intelligence"],
+ ["addStat","+ Характеристика","+ Add stat"],
+ ["addStatAria","Добавить характеристику монстра","Add monster stat"],
+ ["chooseStat","Выбери характеристику","Choose a stat"],
+ ["resists","Сопротивления","Resistances"],
+ ["resistPhysical","Физическое","Physical"],
+ ["resistFire","Огонь","Fire"],
+ ["resistCold","Лёд","Ice"],
+ ["resistLightning","Молния","Lightning"],
+ ["resistPoison","Яд","Poison"],
+ ["resistCharm","Чары","Charm"],
+ ["resistMagic","Магия","Magic"],
+ ["resistHoly","Свет","Holy"],
+ ["resistDark","Тьма","Dark"],
+ ["addResistance","+ Сопротивление","+ Resistance"],
+ ["addResistanceAria","Добавить сопротивление","Add resistance"],
+ ["chooseResistance","Выбери тип","Choose type"],
+ ["spawns","Места появления","Spawn locations"],
+ ["spawnMaps","Локации","Locations"],
+ ["spawnDungeons","Подземелья","Dungeons"],
+ ["loot","Выпадающие предметы","Dropped items"],
+ ["quantityHint","Двойной клик — изменить количество","Double-click to edit quantity"],
+ ["chanceMissing","Шанс не указан","Chance not listed"],
+ ["chanceHint","Двойной клик — указать шанс выпадения","Double-click to enter drop chance"],
+ ["removeLoot","Удалить добычу","Remove dropped item"],
+ ["confirmRemove","Подтвердить удаление","Confirm removal"],
+ ["conditional","Особый","Conditional"],
+ ["slotsPrefix","Слоты +","Slots +"],
+ ["addNormal","+ Обычная добыча","+ Normal loot"],
+ ["addSpecial","+ Особая добыча","+ Conditional loot"],
+ ["limitReached","Превышен лимит записей добычи","Loot record limit reached"],
+]);
+const wikiMonsterByKey=new Map(wikiMonsterRows.map(row=>[row[0],row]));
+function monsterCopy(key){
+ const row=wikiMonsterByKey.get(key);
+ if(!row)throw Error('Unknown monster caption: '+key);
+ return ownerCopy('wiki.monster.text',key,row[1],row[2]);
+}
+function monsterBind(node,key,attribute='text',suffix='',prefix=''){
+ const row=wikiMonsterByKey.get(key);
+ if(!row)throw Error('Unknown monster binding: '+key);
+ return bindOwnerInterfaceText(node,'wiki.monster.text',key,
+  row[1],row[2],attribute,suffix,prefix);
+}
 const wikiNpcTradeRows=Object.freeze([
  ["service","Назначение","Service"],
  ["coordinates","Координаты","Coordinates"],
@@ -5851,28 +5908,31 @@ function renderWiki(root){
     moreSources(found);
     appendAcquisitionEditor(id);
   }else if(type==='monster'){
-    const monsterStats=[[wt('Уровень','Level'),rec.level,'level'],[wt('ОЗ','HP'),rec.life,'life'],
-     [wt('Защита','Defense'),rec.ac,'ac'],[wt('Маг. защита','Magic defense'),rec.magicProtection,'magicProtection'],
-     [wt('Защитный показатель','Warding'),rec.warding,'warding'],[wt('Сила','Strength'),rec.str,'str'],
-     [wt('Выносливость','Vitality'),rec.vit,'vit'],[wt('Ловкость','Agility'),rec.agi,'agi'],
-     [wt('Проворство','Dexterity'),rec.dex,'dex'],[wt('Дух','Spirit'),rec.spi,'spi'],
-     [wt('Интеллект','Intelligence'),rec.int,'int']];
+     if(adminEditing&&adminToken)detail.append(ownerInterfaceEditor(
+      'wiki.monster.text',wikiMonsterRows,
+      'Подписи монстров и добычи','Monster and loot captions'));
+     const monsterStats=[['statLevel',rec.level,'level'],['statHp',rec.life,'life'],
+     ['statDefense',rec.ac,'ac'],['statMagicDefense',rec.magicProtection,'magicProtection'],
+     ['statWarding',rec.warding,'warding'],['statStrength',rec.str,'str'],
+     ['statVitality',rec.vit,'vit'],['statAgility',rec.agi,'agi'],
+     ['statDexterity',rec.dex,'dex'],['statSpirit',rec.spi,'spi'],
+     ['statIntelligence',rec.int,'int']];
     detail.append(h('div',{class:'wiki-monster-stats'},
      monsterStats.filter(([,value])=>Number.isFinite(value)).map(([label,value,key])=>
       h('div',{class:'wiki-monster-stat'},[
-       h('small',{text:label}),wikiOwnerNumeric(
+       monsterBind(h('small'),label),wikiOwnerNumeric(
         h('strong',{text:Number(value).toLocaleString('ru-RU')}),
         value,'monster',id,key,{integer:true})]))));
     if(adminEditing&&adminToken){
      const absent=monsterStats.filter(([,value])=>!Number.isFinite(value));
      if(absent.length){
       const add=h('button',{type:'button',class:'wiki-owner-plus',
-       text:wt('+ Характеристика','+ Add stat')});
+       text:monsterCopy('addStat')});
       add.onclick=()=>{
        const select=h('select',{class:'wiki-inline-select',
-        'aria-label':wt('Добавить характеристику монстра','Add monster stat')});
-       select.append(h('option',{value:'',text:wt('Выбери характеристику','Choose a stat')}));
-       for(const [label,,key]of absent)select.append(h('option',{value:key,text:label}));
+        'aria-label':monsterCopy('addStatAria')});
+       select.append(monsterBind(h('option',{value:''}),'chooseStat'));
+       for(const [label,,key]of absent)select.append(monsterBind(h('option',{value:key}),label));
        add.replaceWith(select);
        select.onchange=()=>{if(select.value)void saveWikiRecordField('monster',id,select.value,0)
         .catch(error=>showStudioToast(error.message,'warning'))};
@@ -5883,25 +5943,22 @@ function renderWiki(root){
      }
     }
     if(rec.resists&&Object.keys(rec.resists).length){
-     const names=lang==='en'?{physical:'Physical',fire:'Fire',cold:'Ice',
-      lightning:'Lightning',poison:'Poison',charm:'Charm',magic:'Magic',
-      holy:'Holy',dark:'Dark'}:
-      {physical:'Физическое',fire:'Огонь',cold:'Лёд',
-       lightning:'Молния',poison:'Яд',charm:'Чары',
-       magic:'Магия',holy:'Свет',dark:'Тьма'};
      const symbols={physical:'⚔',fire:'♨',cold:'❄',lightning:'ϟ',poison:'☣',
       charm:'✧',magic:'✦',holy:'☼',dark:'☾'};
      const entries=Object.entries(rec.resists).filter(([,value])=>
       Number.isFinite(Number(value)));
      if(entries.length){
-      detail.append(h('h4',{text:wt('Сопротивления','Resistances')}));
+      detail.append(monsterBind(h('h4'),'resists'));
       const grid=h('div',{class:'wiki-monster-resists',role:'list'});
       for(const [key,value]of entries){
        const numeric=Number(value);
        grid.append(h('div',{class:'wiki-monster-resist'+(numeric<0?' negative':''),
         role:'listitem'},[
         h('span',{class:'wiki-resist-glyph','aria-hidden':'true',text:symbols[key]||'✧'}),
-        h('span',{class:'wiki-resist-name',text:names[key]||key}),
+        wikiMonsterByKey.has('resist'+key[0].toUpperCase()+key.slice(1))?
+          monsterBind(h('span',{class:'wiki-resist-name'}),
+           'resist'+key[0].toUpperCase()+key.slice(1)):
+          h('span',{class:'wiki-resist-name',text:key}),
         wikiOwnerNumeric(h('strong',{text:String(numeric)}),numeric,
          'monster',id,'resists.'+key,{min:-100,max:100})
        ]));
@@ -5911,20 +5968,20 @@ function renderWiki(root){
     }
     if(adminEditing&&adminToken){
      const resistKeys=[
-      ['physical',wt('Физическое','Physical')],['fire',wt('Огонь','Fire')],
-      ['cold',wt('Лёд','Ice')],['lightning',wt('Молния','Lightning')],
-      ['poison',wt('Яд','Poison')],['charm',wt('Чары','Charm')],
-      ['magic',wt('Магия','Magic')],['holy',wt('Свет','Holy')],
-      ['dark',wt('Тьма','Dark')]];
+      ['physical','resistPhysical'],['fire','resistFire'],
+      ['cold','resistCold'],['lightning','resistLightning'],
+      ['poison','resistPoison'],['charm','resistCharm'],
+      ['magic','resistMagic'],['holy','resistHoly'],
+      ['dark','resistDark']];
      const missing=resistKeys.filter(([key])=>!Object.hasOwn(rec.resists||{},key));
      if(missing.length){
       const add=h('button',{type:'button',class:'wiki-owner-plus wiki-add-resistance',
-       text:wt('+ Сопротивление','+ Resistance')});
+       text:monsterCopy('addResistance')});
       add.onclick=()=>{
        const select=h('select',{class:'wiki-inline-select',
-        'aria-label':wt('Добавить сопротивление','Add resistance')});
-       select.append(h('option',{value:'',text:wt('Выбери тип','Choose type')}));
-       for(const [key,label] of missing)select.append(h('option',{value:key,text:label}));
+        'aria-label':monsterCopy('addResistanceAria')});
+       select.append(monsterBind(h('option',{value:''}),'chooseResistance'));
+       for(const [key,label] of missing)select.append(monsterBind(h('option',{value:key}),label));
        add.replaceWith(select);
        select.onchange=()=>{if(select.value)void saveWikiRecordField('monster',id,
         'resists.'+select.value,0).catch(e=>showStudioToast(e.message,'warning'))};
@@ -5934,14 +5991,14 @@ function renderWiki(root){
       detail.append(add);
      }
     }
-    detail.append(h('h4',{text:wt('Места появления','Spawn locations')}));
+    detail.append(monsterBind(h('h4'),'spawns'));
     const places=wikiIndex.locations(id);
     if(adminEditing&&adminToken){
      for(const kind of ['map','instance']){
       const chosen=places.filter(x=>x.type===kind).map(x=>String(x.id));
-      detail.append(wikiOwnerEntityList({label:kind==='map'?
-       wt('Локации','Locations'):wt('Подземелья','Dungeons'),
-       kind,existing:chosen,
+      const list=wikiOwnerEntityList({label:kind==='map'?
+        monsterCopy('spawnMaps'):monsterCopy('spawnDungeons'),
+        kind,existing:chosen,
        // Source monsters on canonical game maps can replace one relation with
        // a single spawnedit write. Virtual/custom maps still use add/remove.
        replaceable:!rec.ownerCreated&&chosen.every(placeId=>
@@ -5977,16 +6034,18 @@ function renderWiki(root){
           String(row.monsterId)===String(id)?{...row,monsterId:null}:row);
          await saveWikiRecordPatch(kind,locationId,patch);
         }else if(added)await saveWikiSpawns(id,kind,added,true);
-        else await saveWikiSpawns(id,kind,removed,false);
-       }}));
+         else await saveWikiSpawns(id,kind,removed,false);
+        }});
+       monsterBind(list.querySelector('h4'),kind==='map'?'spawnMaps':'spawnDungeons');
+       detail.append(list);
      }
     }else if(places.length)detail.append(linkFlow(places.map(loc=>
      wikiLink('◈ '+dataName(loc.type,loc.id),loc.type,loc.id,id))));
     else detail.append(h('p',{class:'wiki-empty-value',text:'—'}));
     if(rec.ownerCreated){
      const entries=(rec.loot||[]).filter(x=>wikiData.items?.[String(x)]);
-     detail.append(h('h4',{text:wt('Выпадающие предметы','Dropped items')+
-      (entries.length?' · '+entries.length:'')}));
+     detail.append(monsterBind(h('h4'),'loot','text',
+       entries.length?' · '+entries.length:''));
      if(adminEditing&&adminToken)
       detail.append(wikiOwnerEntityList({kind:'item',existing:entries,limit:120,
        onChange:next=>saveWikiRecordField('monster',id,'loot',next.map(Number))}));
@@ -6010,8 +6069,8 @@ function renderWiki(root){
       itemId:String(x.i),quantity:x.n??1,percent:x.p??null,kind:'conditional',
       slotAdd:x.slotAdd||0,group:'s',sourceIndex:ix}))
     ]:wikiIndex.drops(id);
-    detail.append(h('h4',{text:wt('Выпадающие предметы','Dropped items')+
-     (loot.length?' · '+loot.length:'')}));
+    detail.append(monsterBind(h('h4'),'loot','text',
+       loot.length?' · '+loot.length:''));
     if(loot.length){
      const flow=h('div',{class:'wiki-loot-flow'});
      for(const row of loot){
@@ -6026,41 +6085,67 @@ function renderWiki(root){
       entry.append(itemLink(row.itemId,dataName('item',row.itemId),id));
       if(adminEditing&&adminToken){
        const quantity=h('small',{class:'wiki-loot-quantity wiki-edit-value',
-        text:'×'+row.quantity,title:'Двойной клик — изменить количество'});
-       quantity.ondblclick=e=>{e.preventDefault();editWikiValue(quantity,row.quantity,
+        text:'×'+row.quantity});
+       monsterBind(quantity,'quantityHint','title');
+        quantity.ondblclick=e=>{e.preventDefault();editWikiValue(quantity,row.quantity,
         {type:'number',integer:true,min:1,max:999999,
          onCommit:n=>update('n',n)})};
        entry.append(quantity);
       }else if(row.quantity>1)entry.append(h('small',{class:'wiki-loot-quantity',text:'×'+row.quantity}));
       if(adminEditing&&adminToken){
        const chance=h('small',{class:'wiki-loot-chance wiki-edit-value',
-        text:row.percent==null?'Шанс не указан':row.percent+'%',
-        title:'Двойной клик — указать шанс выпадения'});
-       chance.ondblclick=e=>{e.preventDefault();editWikiValue(chance,row.percent??0,
+        text:row.percent==null?monsterCopy('chanceMissing'):row.percent+'%'});
+       if(row.percent==null)monsterBind(chance,'chanceMissing');
+        monsterBind(chance,'chanceHint','title');
+        chance.ondblclick=e=>{e.preventDefault();editWikiValue(chance,row.percent??0,
         {type:'number',min:0,max:100,
          onCommit:n=>update('p',n)})};
        entry.append(chance);
-       entry.append(h('button',{type:'button',class:'wiki-owner-remove',
-        text:'×','aria-label':'Удалить добычу '+dataName('item',row.itemId),
-        onclick:()=>void saveWikiRelationRows('drop',id,{
-         ...dropRows(),[row.group]:dropRows()[row.group].filter((_,ix)=>ix!==row.sourceIndex)})
-         .catch(e=>showStudioToast(e.message,'warning'))}));
+       const remove=h('button',{type:'button',class:'wiki-owner-remove wiki-loot-delete',
+          text:'×'});
+        const resetRemove=()=>{
+         if(remove.dataset.confirm!=='1')return;
+         delete remove.dataset.confirm;
+         remove.textContent='×';
+         monsterBind(remove,'removeLoot','aria-label',' '+dataName('item',row.itemId));
+        };
+        monsterBind(remove,'removeLoot','aria-label',' '+dataName('item',row.itemId));
+        remove.addEventListener('blur',resetRemove);
+        remove.addEventListener('keydown',e=>{
+         if(e.key==='Escape'){e.preventDefault();resetRemove()}
+        });
+        remove.onclick=()=>{
+         if(remove.disabled)return;
+         if(remove.dataset.confirm!=='1'){
+          remove.dataset.confirm='1';
+          remove.textContent=monsterCopy('confirmRemove');
+          monsterBind(remove,'confirmRemove','aria-label');
+          return;
+         }
+         remove.disabled=true;
+         const all=dropRows();
+         void saveWikiRelationRows('drop',id,{
+          ...all,[row.group]:all[row.group].filter((_,ix)=>ix!==row.sourceIndex)})
+          .catch(e=>{remove.disabled=false;resetRemove();
+           showStudioToast(e.message,'warning')});
+        };
+        entry.append(remove);
       }else if(row.percent!=null)entry.append(h('small',{class:'wiki-loot-chance',text:row.percent+'%'}));
       if(row.kind==='conditional')entry.append(h('small',{class:'wiki-loot-conditional',
-       text:wt('Особый','Conditional')}));
+       text:monsterCopy('conditional')}));
       if(row.slotAdd>0)entry.append(h('small',{class:'wiki-loot-sockets',
-       text:wt('Слоты +','Slots +')+row.slotAdd}));
+       text:monsterCopy('slotsPrefix')+row.slotAdd}));
       flow.append(entry);
      }
      detail.append(flow);
     }else detail.append(h('p',{class:'wiki-empty-value',text:'—'}));
     if(adminEditing&&adminToken){
       const actions=h('div',{class:'wiki-owner-drop-actions'});
-      for(const [group,label] of [['d','+ Обычная добыча'],['s','+ Особая добыча']]){
+      for(const [group,label] of [['d','addNormal'],['s','addSpecial']]){
        actions.append(h('button',{type:'button',class:'wiki-owner-plus wiki-add-source',
-        text:label,onclick:()=>wikiItemChoice(actions,i=>{
+        text:monsterCopy(label),onclick:()=>wikiItemChoice(actions,i=>{
          const next=dropRows();
-         if(next[group].length>=200)throw Error('Превышен лимит записей добычи');
+         if(next[group].length>=200)throw Error(monsterCopy('limitReached'));
          next[group].push({i,n:1,p:null});
          return saveWikiRelationRows('drop',id,next);
         })}));
