@@ -4,6 +4,19 @@
 // equipment, Honor and owner review. None of these fields are login inputs.
 // Browser/password-manager extensions can override website hints; this is a
 // defensive guard, not a claim of control over browser-owned suggestions.
+// Match game names without altering their original catalog identity.
+const normalize=value=>String(value??'').normalize('NFKC')
+ .toLocaleLowerCase('ru').replace(/ё/g,'е').replace(/\s+/g,' ').trim();
+// Compile once per filter refresh, not for every skill, Soul or location.
+function compile(query){
+ const words=normalize(query).split(' ').filter(Boolean);
+ if(!words.length)return ()=>true;
+ return text=>{
+  const candidate=normalize(text);
+  return words.every(word=>candidate.includes(word));
+ };
+}
+const matches=(text,query)=>compile(query)(text);
 const installed=new WeakSet();
 let nextId=0,observer=null;
 
@@ -70,5 +83,5 @@ if(typeof document!=='undefined'){
  if(document.readyState==='loading')
   document.addEventListener('DOMContentLoaded',observe,{once:true});
 }
-root.PandoraSearchField=Object.freeze({prepare,prepareAll});
+root.PandoraSearchField=Object.freeze({prepare,prepareAll,normalize,compile,matches});
 })(typeof window==='undefined'?globalThis:window);
