@@ -1040,3 +1040,57 @@ test('Wiki rejects cross-snapshot results or invalid seeds without mixing archiv
  }),/Не подтверждён снимок каталога D1/);
  assert.equal(calls,0,'An archived fixture may not masquerade as verified D1');
 });
+
+test('public D1 Wiki rejects stalled fetch and JSON adapters within the dataset deadline',async()=>{
+ const publicHost={location:{hostname:'bonaqu.github.io'}};
+ Function('window',source)(publicHost);
+ const wiki=publicHost.PandoraWikiCatalog;
+ for(const stalled of ['fetch','json']){
+  const normal=mockFetch(catalog('online'),catalog('archive'));
+  const visited=[];
+  const fetcher=async(url,options)=>{
+   visited.push(url);
+   if(url.endsWith('/meta.json')){
+    if(stalled==='fetch')return new Promise(()=>{});
+    const response=await normal.fetcher(url,options);
+    return {...response,json:()=>new Promise(()=>{})};
+   }
+   return normal.fetcher(url,options);
+  };
+  // AbortSignal.timeout timers are unref'ed by Node: keep the test alive.
+  const keepAlive=setTimeout(()=>{},200);
+  try{
+   await assert.rejects(wiki.load({api:'https://worker.example',fetcher,
+    timeout:35}),/timeout|abort/i,stalled);
+   assert.equal(visited.filter(url=>url.startsWith('./data/os/')).length,0,
+    'A stalled D1 read must never unlock the public archive');
+  }finally{clearTimeout(keepAlive)}
+ }
+});
+
+test('optional RU translation bridge cannot stall an otherwise verified D1 Wiki',async()=>{
+ const remote=catalog('online'),local=catalog('archive');
+ remote.instances[0].blurb='English description from active D1';
+ for(const stalled of ['fetch','json']){
+  const normal=mockFetch(remote,local),visited=[];
+  const fetcher=async(url,options)=>{
+   visited.push(url);
+   if(url.startsWith('./data/os/instances.json')){
+    if(stalled==='fetch')return new Promise(()=>{});
+    return {ok:true,json:()=>new Promise(()=>{})};
+   }
+   return normal.fetcher(url,options);
+  };
+  const keepAlive=setTimeout(()=>{},200);
+  try{
+   const result=await loader.load({api:'https://worker.example',
+    fetcher,strict:true,timeout:35});
+   assert.equal(result.source,'d1');
+   assert.equal(result.data.items[1].name,'online');
+   assert.equal(result.data.instances[0].blurb,remote.instances[0].blurb);
+   assert.equal(result.data.instances[0].blurbRu,undefined,
+    'An unavailable optional translation must not introduce older copy');
+   assert.equal(visited.filter(url=>url.startsWith('./data/os/')).length,1);
+  }finally{clearTimeout(keepAlive)}
+ }
+});
