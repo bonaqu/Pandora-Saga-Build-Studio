@@ -575,6 +575,28 @@ function validate(input){
 // A future caller forgetting `strict:true` must NOT revive the retired
 // offline/archive mode on public Pages. Explicit test/local fixture use alone
 // may read bundled game records. This does not affect matched local RU prose.
+// A custom fetcher or JSON body reader may ignore AbortSignal. Cancellation
+// must still release the online-only Wiki loader and discard a late response.
+function untilCancelled(work,signal){
+ if(!signal)return Promise.resolve().then(work);
+ const reason=()=>signal.reason||Error('Загрузка Энциклопедии отменена');
+ if(signal.aborted)return Promise.reject(reason());
+ return new Promise((resolve,reject)=>{
+  let settled=false;
+  const finish=(done,value)=>{
+   if(settled)return;
+   settled=true;
+   signal.removeEventListener('abort',onAbort);
+   done(value);
+  };
+  const onAbort=()=>finish(reject,reason());
+  signal.addEventListener('abort',onAbort,{once:true});
+  Promise.resolve().then(()=>{
+   if(signal.aborted)throw reason();
+   return work();
+  }).then(value=>finish(resolve,value),error=>finish(reject,error));
+ });
+}
 const localFixtureHost=()=>{
  const hostname=root.location?.hostname;
  return !hostname||hostname==='localhost'||hostname==='127.0.0.1';
@@ -630,7 +652,7 @@ async function load({api,fetcher,local='./data/os',timeout=12000,preferLocal=fal
    const signal=groupSignal&&deadline&&typeof AbortSignal.any==='function'?
     AbortSignal.any([groupSignal,deadline]):groupSignal||deadline;
    if(signal)init.signal=signal;
-   const response=await fetcher(url,init);
+   const response=await untilCancelled(()=>fetcher(url,init),signal);
    if(!response?.ok)throw Error(key+' HTTP '+(response?.status??'network'));
    if(remote){
     // A backup JSON with plausible headers must not impersonate D1.
@@ -642,7 +664,7 @@ async function load({api,fetcher,local='./data/os',timeout=12000,preferLocal=fal
     if(snapshots.size!==1)
      throw Error('В ходе загрузки версия опубликованного каталога изменилась');
    }
-   const payload=await response.json();
+   const payload=await untilCancelled(()=>response.json(),signal);
    if(signal?.aborted)throw signal.reason||Error('Загрузка Энциклопедии отменена');
    return [key,payload];
   },{signal});
@@ -662,9 +684,17 @@ async function load({api,fetcher,local='./data/os',timeout=12000,preferLocal=fal
   // replace remotely updated instance gameplay fields or changed descriptions.
   // Skip the extra request when this catalog has no descriptions to translate.
   if(loaded.data.instances.some(row=>row.blurb&&!row.blurbRu))try{
-   const response=await fetcher(local.replace(/\/$/,'')+'/instances.json',{cache:'no-cache',...(signal?{signal}:{})});
+   // Optional source-matched RU copy must not hold a verified D1 Wiki
+   // hostage if a local file stalls while fetching or parsing JSON.
+   const bridgeDeadline=typeof AbortSignal!=='undefined'&&
+    typeof AbortSignal.timeout==='function'?AbortSignal.timeout(timeout):null;
+   const bridgeSignal=signal&&bridgeDeadline&&typeof AbortSignal.any==='function'?
+    AbortSignal.any([signal,bridgeDeadline]):signal||bridgeDeadline;
+   const response=await untilCancelled(
+    ()=>fetcher(local.replace(/\/$/,'')+'/instances.json',
+     {cache:'no-cache',...(bridgeSignal?{signal:bridgeSignal}:{})}),bridgeSignal);
    if(response?.ok){
-    const rows=await response.json();
+    const rows=await untilCancelled(()=>response.json(),bridgeSignal);
     const localRows=new Map((Array.isArray(rows)?rows:Object.values(rows))
      .map(row=>[String(row.id),row]));
     loaded.data.instances=loaded.data.instances.map(instance=>{
