@@ -122,7 +122,8 @@ export async function runOnlineD1Required878Smoke(browser,base){
   assert.deepEqual(wikiRequests,
    ['monsters.json','maps.json','instances.json','drops.json','trades.json','chests.json'].sort(),
    'Six verified base datasets must be reused without sacrificing six D1 Wiki requests');
-  await page.locator('#nav [data-tab="character"]').click();
+  // Character is the main workbench, not a #nav tab: dismiss the Wiki dock.
+  await page.locator('#dockClose').click();
 
   // The actual Worker quota signal must not cause three immediate D1 reads
   // per failed request or repeated automatic checks on a focused tab.
