@@ -34,11 +34,11 @@ test('single-key monster spawn write stays pending until encyclopedia refresh re
  const state=environment();
  const data={monsters:{600:{}},maps:{100:{mobs:[600]},101:{mobs:[]}},instances:[]};
  const current=[{type:'map',id:'100'}];
- const save=Function('wikiData','wikiIndex','window','activeOverride',
+ const save=Function('wikiData','wikiIndex','wikiBaseData','window','activeOverride',
   'apiRequest','override','ownerEdits','refreshOwnerCatalog','refreshOwnerUI',
   'const adminToken="test",adminEditing=true;let editIsSaving=false;const wikiRecordWriteQueue=new Map();const wt=(ru,en)=>ru;\n'+spawns+
   '\nreturn {save:saveWikiSpawns,isSaving:()=>editIsSaving};')(
-  data,{locations:()=>current},{PandoraWikiOwnerData:{validSpawns:rows=>
+  data,{locations:()=>current},data,{PandoraWikiOwnerData:{validSpawns:rows=>
    rows.every(row=>['map','instance'].includes(row.type)&&Boolean(row.id))}},
   ()=>null,state.apiRequest,state.override,state.ownerEdits,
   state.refreshOwnerCatalog,()=>state.refreshOwnerUI());
@@ -127,11 +127,11 @@ test('game-monster spawn location replacement publishes one atomic override',asy
   100:{id:100,mobs:[600]},200:{id:200,mobs:[]}
  },instances:[{id:300,mobs:[600]}]};
  const places=[{type:'map',id:100},{type:'instance',id:300}];
- const factory=Function('wikiData','wikiIndex','window','activeOverride',
+ const factory=Function('wikiData','wikiIndex','wikiBaseData','window','activeOverride',
   'apiRequest','override','ownerEdits','refreshOwnerCatalog','refreshOwnerUI',
   'const adminToken="test",adminEditing=true;let editIsSaving=false;const wikiRecordWriteQueue=new Map();const wt=(ru,en)=>ru;\n'+spawns+
   '\nreturn saveWikiSpawns;');
- const save=factory(source,{locations:()=>places},host,
+ const save=factory(source,{locations:()=>places},source,host,
   ()=>null,state.apiRequest,state.override,state.ownerEdits,
   state.refreshOwnerCatalog,()=>state.refreshOwnerUI());
  const op=save(600,'map','200',true,'100');

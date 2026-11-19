@@ -38,7 +38,7 @@ function setup({apiRequest,initial}={}){
  const factory=Function('wikiData','wikiIndex','wikiBaseData','window','activeOverride',
   'apiRequest','override','ownerEdits','refreshOwnerCatalog','refreshOwnerUI',
   'wikiRecordWriteQueue',
-  'const adminToken="test",adminEditing=true;let editIsSaving=false;\n'+code+
+  'const adminToken="test",adminEditing=true;let editIsSaving=false;const wt=(ru,en)=>ru;\n'+code+
   '\nreturn {save:saveWikiSpawns,busy:()=>editIsSaving};');
  const handler=factory(catalog,wikiIndex,catalog,window,
   key=>Object.hasOwn(overrides,key)?overrides[key]:null,write,
