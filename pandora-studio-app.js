@@ -6128,9 +6128,12 @@ function renderWiki(root){
       output.append(npcTradeBind(h('small'),'receive'));
       const product=h('span',{class:'wiki-trade-product-inline'});
       product.append(itemLink(trade.i,dataName('item',trade.i),id));
-      if(editing)product.append(h('button',{type:'button',class:'wiki-owner-plus',
-       text:'✎','aria-label':npcTradeCopy('changeReward'),
-       onclick:()=>wikiItemChoice(output,i=>amend({i}))}));
+      if(editing){
+        const editReward=h('button',{type:'button',class:'wiki-owner-plus',
+         text:'✎',onclick:()=>wikiItemChoice(output,i=>amend({i}))});
+        npcTradeBind(editReward,'changeReward','aria-label');
+        product.append(editReward);
+       }
       output.append(product);
      entry.append(output);
      // Limit belongs to the individual recipe, never to every offer of
@@ -6142,7 +6145,8 @@ function renderWiki(root){
        window.PandoraStudioTradeOwnerData.limitLabel(limitData,lang)}));
      if(editing){
       const period=h('select',{class:'wiki-inline-select wiki-trade-limit-select',
-       'aria-label':npcTradeCopy('periodAria')});
+       });
+       npcTradeBind(period,'periodAria','aria-label');
       for(const [value,ru,en] of [
        ['none','Без ограничений','No limit'],
        ['daily','В день','Daily'],
@@ -6161,7 +6165,8 @@ function renderWiki(root){
        const count=h('input',{type:'number',min:1,max:9999,step:1,
         class:'wiki-inline-input wiki-trade-limit-count',
         value:String(limitData.n),
-        'aria-label':npcTradeCopy('countAria')});
+        });
+        npcTradeBind(count,'countAria','aria-label');
        count.onchange=()=>{
         const n=Number(count.value);
         if(!Number.isSafeInteger(n)||n<1||n>9999){
@@ -6184,7 +6189,8 @@ function renderWiki(root){
        const row=h('span',{class:'wiki-owner-mat'});
        row.append(itemLink(material.i,dataName('item',material.i),trade.i));
        const quantity=h('span',{class:editing?'wiki-edit-value':'',
-        text:' ×'+(material.n??1),title:editing?npcTradeCopy('materialQuantityHint'):''});
+        text:' ×'+(material.n??1)});
+       if(editing)npcTradeBind(quantity,'materialQuantityHint','title');
        if(editing)quantity.ondblclick=e=>{
         e.preventDefault();
         editWikiValue(quantity,material.n,{type:'number',max:999999,integer:true,
@@ -6194,20 +6200,21 @@ function renderWiki(root){
          }});
        };
        row.append(quantity);
-       if(editing)row.append(h('button',{type:'button',class:'wiki-owner-remove',
-        text:'×','aria-label':npcTradeCopy('removeMaterial')+' '+dataName('item',material.i),
+       if(editing)row.append(npcTradeBind(h('button',{type:'button',
+        class:'wiki-owner-remove',text:'×',
         onclick:()=>void amend({mats:trade.mats.filter((_,j)=>j!==index)})
-         .catch(e=>showStudioToast(e.message,'warning'))}));
+         .catch(e=>showStudioToast(e.message,'warning'))}),
+        'removeMaterial','aria-label',' '+dataName('item',material.i)));
        mats.append(row);
       }
-      if(editing)mats.append(h('button',{type:'button',class:'wiki-owner-plus',
-       text:npcTradeCopy('addMaterial'),onclick:()=>wikiItemChoice(mats,i=>{
+      if(editing)mats.append(npcTradeBind(h('button',{type:'button',
+        class:'wiki-owner-plus',onclick:()=>wikiItemChoice(mats,i=>{
         if((trade.mats||[]).length>=20)
          throw Error(wt('Можно добавить не более 20 материалов','Maximum 20 materials'));
         if((trade.mats||[]).some(row=>String(row.i)===String(i)))
          throw Error(wt('Этот материал уже есть в обмене','Material already listed'));
         return amend({mats:[...(trade.mats||[]),{i,n:1}]});
-       })}));
+        })}),'addMaterial'));
       entry.append(mats);
      }
      const currencies=[['gold',trade.gold,'gold'],
@@ -6221,7 +6228,7 @@ function renderWiki(root){
        const figure=h('strong',{text:Number(value||0).toLocaleString('ru-RU'),
         class:editing?'wiki-edit-value':''});
        if(editing){
-        figure.title=npcTradeCopy('costHint');
+        npcTradeBind(figure,'costHint','title');
         figure.ondblclick=e=>{
          e.preventDefault();
          editWikiValue(figure,Number(value||0),{type:'number',integer:true,max:999999999,
@@ -6238,15 +6245,14 @@ function renderWiki(root){
       for(const npcId of trade.npc||[]){
        const chip=h('span',{class:'wiki-owner-mat'},[
         wikiLink(dataName('npc',npcId),'npc',npcId,trade.i)]);
-       if(trade.npc.length>1)chip.append(h('button',{type:'button',
+       if(trade.npc.length>1)chip.append(npcTradeBind(h('button',{type:'button',
         class:'wiki-owner-remove',text:'×',
-        'aria-label':npcTradeCopy('removeSeller')+' '+dataName('npc',npcId),
         onclick:()=>void amend({npc:trade.npc.filter(n=>n!==npcId)})
-         .catch(e=>showStudioToast(e.message,'warning'))}));
+         .catch(e=>showStudioToast(e.message,'warning'))}),
+         'removeSeller','aria-label',' '+dataName('npc',npcId)));
        owner.append(chip);
       }
-      const plus=h('button',{type:'button',class:'wiki-owner-plus',
-       text:npcTradeCopy('addSeller')});
+      const plus=npcTradeBind(h('button',{type:'button',class:'wiki-owner-plus'}),'addSeller');
       plus.onclick=()=>{
        const previous=owner.querySelector('.wiki-owner-trade-npc-picker');
        if(previous){previous.remove();return}
@@ -6254,17 +6260,15 @@ function renderWiki(root){
        const search=ownerPlainTextField({class:'wiki-inline-input wiki-owner-search',autocomplete:'off'});
         npcTradeBind(search,'sellerSearchPlaceholder','placeholder');
         npcTradeBind(search,'sellerSearchAria','aria-label');
-       const pick=h('select',{class:'wiki-inline-select',
-        'aria-label':npcTradeCopy('sellerSelectAria')});
+       const pick=npcTradeBind(h('select',{class:'wiki-inline-select'}),'sellerSelectAria','aria-label');
        const feedback=h('small',{class:'inline-owner-error',role:'status'});
        const fill=()=>{
         const q=wikiIndex.normalize(search.value);
         const candidates=Object.entries(wikiData.trades?.npcs||{})
          .filter(([key])=>!(trade.npc||[]).map(String).includes(key)&&
           (!q||searchWords(searchTerms('npc',key),q))).slice(0,80);
-        pick.replaceChildren(h('option',{value:'',
-         text:candidates.length?npcTradeCopy('sellerChoose'):
-           npcTradeCopy('sellerMissing')}));
+        pick.replaceChildren(npcTradeBind(h('option',{value:''}),
+           candidates.length?'sellerChoose':'sellerMissing'));
         for(const [key] of candidates)pick.append(h('option',
          {value:key,text:dataName('npc',key)}));
         pick.disabled=!candidates.length;
@@ -6330,8 +6334,9 @@ function renderWiki(root){
     recipeSearch.addEventListener('input',filterRecipes);
     detail.append(recipeSearch,counter,recipesBox);filterRecipes();
     if(adminEditing&&adminToken){
-     const newTrade=npcTradeBind(h('button',{type:'button',class:'wiki-owner-plus wiki-add-source',
-       title:npcTradeCopy('newTradeTitle')}),'newTrade');
+     const newTrade=npcTradeBind(h('button',{type:'button',
+       class:'wiki-owner-plus wiki-add-source'}),'newTrade');
+      npcTradeBind(newTrade,'newTradeTitle','title');
      newTrade.onclick=()=>wikiItemChoice(detail,i=>{
       let next=null;
       for(let attempt=0;attempt<30;attempt++){
