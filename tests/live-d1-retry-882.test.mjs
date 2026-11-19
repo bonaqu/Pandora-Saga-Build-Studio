@@ -5,7 +5,7 @@ import {runInNewContext} from 'node:vm';
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const load=()=>{
- const ctx={AbortSignal,setTimeout,clearTimeout,console};
+ const ctx={AbortSignal,AbortController,setTimeout,clearTimeout,console};
  ctx.globalThis=ctx;
  runInNewContext(read('pandora-studio-live-read.js'),ctx);
  return ctx.PandoraStudioLiveRead;
@@ -101,7 +101,7 @@ test('read-only batching does not exceed three in-flight datasets and preserves 
 });
 
 test('D1 origin and matching snapshot are still checked after a successful retried GET',async()=>{
- const ctx={AbortSignal,setTimeout,clearTimeout,console};
+ const ctx={AbortSignal,AbortController,setTimeout,clearTimeout,console};
  ctx.globalThis=ctx;
  runInNewContext(read('pandora-studio-live-read.js'),ctx);
  runInNewContext(read('pandora-studio-online-gate.js'),ctx);
