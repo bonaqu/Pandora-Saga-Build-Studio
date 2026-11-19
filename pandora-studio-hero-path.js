@@ -17,13 +17,8 @@ const elementLabel=(element,api)=>{
 };
 // Hero skill search follows the same word-order-independent convention as
 // equipment and encyclopedia pickers, without changing catalog identities.
-const matchesSkillSearch=(label,query)=>{
- const normalize=value=>String(value??'').normalize('NFKC')
-  .toLocaleLowerCase('ru').replace(/ё/g,'е').replace(/\s+/g,' ').trim();
- const searchable=normalize(label);
- return normalize(query).split(' ').filter(Boolean)
-  .every(term=>searchable.includes(term));
-};
+const matchesSkillSearch=(label,query)=>
+ root.PandoraSearchField.matches(label,query);
 function make(tag,attr={},children=[]){
  const e=document.createElement(tag);
  for(const [key,val]of Object.entries(attr)){

@@ -4,6 +4,9 @@ import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const host={};
+runInNewContext(read('pandora-studio-search-field.js'),{
+ window:host,document:{addEventListener(){}}
+});
 runInNewContext(read('pandora-studio-equipment-ui.js'),{
  window:host,document:{addEventListener(){}}
 });

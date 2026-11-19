@@ -25,13 +25,9 @@ function render({browse,detail,make,lang='ru',article,editable=false,
   fmt=new Intl.NumberFormat(en?'en-US':'ru-RU');
  // Search the actual RU/EN authored Honor content, not an OS 'honor'
  // catalog category. Use the same Unicode/ё normalization as Wiki.
- const terms=String(searchQuery||'').normalize('NFKC').toLocaleLowerCase()
-  .replace(/ё/g,'е').trim().split(/\s+/u).filter(Boolean);
- const matches=node=>{
-  const text=String(typeof node==='string'?node:node?.textContent||'')
-   .normalize('NFKC').toLocaleLowerCase().replace(/ё/g,'е');
-  return terms.every(term=>text.includes(term));
- };
+ const matchesText=root.PandoraSearchField.compile(searchQuery);
+ const hasSearch=Boolean(root.PandoraSearchField.normalize(searchQuery));
+ const matches=node=>matchesText(typeof node==='string'?node:node?.textContent||'');
  const oldBrowseScroll=browse.scrollTop,oldDetailScroll=detail.scrollTop;
  const oldSection=detail.querySelector('.wiki-honor-nav-link.selected')?.dataset.honorSection||
   browse.querySelector('.wiki-honor-nav-link.selected')?.dataset.honorSection||'overview';
@@ -114,7 +110,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
     en?article.overview.gainEn:article.overview.gainRu));
   }else detail.append(editorial('h3','wiki-honor-title','warNotFound',
    'Война не найдена','War not found'));
-  if(terms.length){
+  if(hasSearch){
    let visible=0;
    for(const entry of browse.querySelectorAll('.wiki-honor-war-link')){
     entry.hidden=!matches(entry);
@@ -354,11 +350,12 @@ function render({browse,detail,make,lang='ru',article,editable=false,
       const select=make('select',{class:'wiki-honor-location-select',
        'aria-label':tr('Выбери существующую локацию','Choose an existing location')});
       const fill=()=>{
-       const q=search.value.trim().toLocaleLowerCase();
+       const matchesLocation=root.PandoraSearchField.compile(search.value);
+       const selected=new Set(items.map(item=>item.mapId));
        const found=mapOptions.filter(option=>
-        !items.some(item=>item.mapId===option.id)&&
-        (!q||[option.nameRu,option.nameEn].some(name=>
-         name.toLocaleLowerCase().includes(q)))).slice(0,100);
+        !selected.has(option.id)&&
+        matchesLocation([option.nameRu,option.nameEn].filter(Boolean).join(' ')))
+        .slice(0,100);
        select.replaceChildren(make('option',{value:'',text:found.length?
         tr('Выбери локацию','Choose location'):
         tr('Локации не найдены','No locations found')}));
@@ -495,7 +492,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
     for(const card of rankGrid.children)
      card.hidden=(key==='standard'?card.dataset.rankType!=='standard':
       key==='monthly'?card.dataset.rankType!=='monthly':false)||
-      (terms.length>0&&card.dataset.honorSearchMatch==='false');
+      (hasSearch>0&&card.dataset.honorSearchMatch==='false');
    }});
   const caption=node('span','wiki-honor-filter-caption',label);
   button.append(caption,node('span','wiki-honor-filter-count',' · '+count));
@@ -641,7 +638,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  // Search in Honor has no wikiIndex.search('honor') records. Filter the actual
  // four article sections, link rows, rank cards and monthly rewards instead.
  // The existing rank type filter is retained; searching never changes it.
- if(terms.length){
+ if(hasSearch){
   const sections=[...detail.querySelectorAll('.wiki-honor-section')];
   for(const block of sections){
    const head=block.querySelector('.wiki-honor-heading-row');

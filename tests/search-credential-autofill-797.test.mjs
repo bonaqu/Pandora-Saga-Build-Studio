@@ -144,3 +144,21 @@ test('remaining search surfaces preserve native searchbox while retired Book tar
  assert.match(catalog,/class:'os-sync-search'/);
  assert.match(read('index.html'),/id="pathSkillSearch" type="search"/);
 });
+
+test('shared compiled search matches RU/EN, Unicode and reordered words without mutating source',()=>{
+ const {api}=createSandbox('Mozilla/5.0 Chrome/154.0.0.0');
+ for(const text of ['Душа Ёжика · Hedgehog Soul','Ёжик 45','Two-Handed Sword']){
+  assert.equal(api.matches(text,''),true);
+ }
+ for(const [candidate,query] of [
+  ['Душа Ёжика · Hedgehog Soul','hedgehog душа'],
+  ['Душа Ёжика','ежика ДУША'],
+  ['Two-Handed Sword','ＳＷＯＲＤ two-handed']
+ ])assert.equal(api.compile(query)(candidate),true,query);
+ const record={ru:'Ёжик',en:'Hedgehog'};
+ const original=JSON.stringify(record);
+ assert.equal(api.compile('hedgehog Ёжик')([record.ru,record.en].join(' ')),true);
+ assert.equal(JSON.stringify(record),original);
+ const noResult=api.compile('совершенно другое');
+ assert.equal(noResult('Ёжик Hedgehog'),false);
+});

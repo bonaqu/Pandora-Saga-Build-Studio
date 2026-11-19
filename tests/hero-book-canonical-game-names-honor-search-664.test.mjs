@@ -76,7 +76,7 @@ test('Honor gets a dedicated input handler before the article-only early return'
   appHonor.indexOf('  return;\n }'),'Input handler must not be behind return');
  const honor=read('pandora-studio-honor-view.js');
  const css=read('pandora-studio-honor.css');
- assert.match(honor,/String\(searchQuery\|\|''\)\.normalize\('NFKC'\)/);
+ assert.match(honor,/PandoraSearchField\.compile\(searchQuery\)/);
  assert.match(honor,/wiki-honor-monthly-card/);
  assert.match(honor,/wiki-honor-rank/);
  assert.match(honor,/wiki-honor-list-row/);

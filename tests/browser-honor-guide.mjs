@@ -71,6 +71,12 @@ export async function runHonorGuideSmoke(browser,base){
   assert.ok(locationMatches.length>0,'Honor search must find at least one PvP location');
   assert.ok(locationMatches.every(text=>/Эль Ведд/u.test(text)),
    'Only matching Honor entries may remain visible: '+locationMatches.join(' | '));
+  // Search should accept split/reordered words instead of only adjacent text.
+  await honorSearch.fill('Ведд эль');
+  await page.waitForFunction(()=>
+   document.querySelector('.wiki-page')?.dataset.honorSearchQuery==='Ведд эль');
+  assert.ok(await panel.locator('.wiki-honor-list-row:not([hidden])').count()>0);
+
   const navVisible=await page.locator('.wiki-honor-nav-link:not([hidden])').count();
   const matchingSections=await panel.locator('.wiki-honor-section:not([hidden])').allInnerTexts();
   assert.equal(navVisible,matchingSections.length,

@@ -6,7 +6,11 @@ const source=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'u
 const start=source.indexOf('const searchWords=');
 const end=source.indexOf('const startupOverlay=',start);
 assert.ok(start>=0&&end>start,'Shared search helper must be available before rendering');
-const matches=Function(source.slice(start,end)+'; return searchWords;')();
+const helper={};
+Function('window',readFileSync(new URL('../pandora-studio-search-field.js',
+ import.meta.url),'utf8'))(helper);
+const matches=Function('window',source.slice(start,end)+'; return searchWords;')
+ ({PandoraSearchField:helper.PandoraSearchField});
 
 test('search matches reordered words, flexible whitespace, case and NFKC',()=>{
  assert.equal(matches('Рычащий меч','меч Рычащий'),true);
