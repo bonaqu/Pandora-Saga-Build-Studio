@@ -135,6 +135,22 @@ export async function runOnlineD1Required878Smoke(browser,base){
    'Manual verified recovery clears the advisory limit immediately');
   assert.equal(apiWrites,0);
 
+  // A quota discovered by another API GET while the editor is still active
+  // must not postpone the next heartbeat and leave old gameplay unlocked.
+  quotaMode=true;
+  await page.evaluate(()=>window.PandoraStudioLiveRead.get(
+   'https://ps-build-studio-cloud.bonaqu.workers.dev/api/catalog/meta.json'));
+  assert.ok(await page.evaluate(()=>
+   window.PandoraStudioLiveRead.quotaCooldownMs())>0);
+  await page.evaluate(()=>window.dispatchEvent(new Event('focus')));
+  await blocked().waitFor({state:'visible',timeout:12000});
+  assert.equal(await page.evaluate(()=>document.querySelector('main').inert),true);
+  quotaMode=false;
+  await page.locator('#startupRetry').click();
+  await waitReady();
+  assert.equal(await page.evaluate(()=>
+   window.PandoraStudioLiveRead.quotaCooldownMs()),0);
+
   // A pending English translation must NOT dismiss the D1 recovery gate
   // when it fails after the browser goes offline.
   await page.locator('#locale [data-locale="en"]').click();

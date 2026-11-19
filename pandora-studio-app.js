@@ -11351,7 +11351,10 @@ function leaveLiveGate(){
 }
 async function checkLiveConnection({force=false}={}){
  if(localCatalogHost||!studioLiveReady||liveGateReason==='changed')return;
- if(!force&&quotaCooldown()>0)return;
+ // Do not suppress the regular live heartbeat on an ACTIVE editor. If
+ // another API request first detects a D1 quota error, the next checkpoint
+ // still has to block stale editing. Only a blocked recovery may cool down.
+ if(!force&&liveGateReason==='offline'&&quotaCooldown()>0)return;
  if(liveCheckpointPromise)return liveCheckpointPromise;
  if(adminToken&&ownerSaveInFlight())return;
  const revision=++liveCheckpointId,copyAtStart=window.PandoraStudioOnlineGate.digest(override);
