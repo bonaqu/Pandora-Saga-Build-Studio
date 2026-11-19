@@ -5921,16 +5921,14 @@ function renderWiki(root){
      monsterStats.filter(([,value])=>Number.isFinite(value)).map(([label,value,key])=>
       h('div',{class:'wiki-monster-stat'},[
        monsterBind(h('small'),label),wikiOwnerNumeric(
-        h('strong',{text:Number(value).toLocaleString('ru-RU')}),
+        h('strong',{text:Number(value).toLocaleString(lang==='en'?'en-US':'ru-RU')}),
         value,'monster',id,key,{integer:true})]))));
     if(adminEditing&&adminToken){
      const absent=monsterStats.filter(([,value])=>!Number.isFinite(value));
      if(absent.length){
-      const add=h('button',{type:'button',class:'wiki-owner-plus',
-       text:monsterCopy('addStat')});
+      const add=monsterBind(h('button',{type:'button',class:'wiki-owner-plus'}),'addStat');
       add.onclick=()=>{
-       const select=h('select',{class:'wiki-inline-select',
-        'aria-label':monsterCopy('addStatAria')});
+       const select=monsterBind(h('select',{class:'wiki-inline-select'}),'addStatAria','aria-label');
        select.append(monsterBind(h('option',{value:''}),'chooseStat'));
        for(const [label,,key]of absent)select.append(monsterBind(h('option',{value:key}),label));
        add.replaceWith(select);
@@ -5975,11 +5973,10 @@ function renderWiki(root){
       ['dark','resistDark']];
      const missing=resistKeys.filter(([key])=>!Object.hasOwn(rec.resists||{},key));
      if(missing.length){
-      const add=h('button',{type:'button',class:'wiki-owner-plus wiki-add-resistance',
-       text:monsterCopy('addResistance')});
+      const add=monsterBind(h('button',{type:'button',
+        class:'wiki-owner-plus wiki-add-resistance'}),'addResistance');
       add.onclick=()=>{
-       const select=h('select',{class:'wiki-inline-select',
-        'aria-label':monsterCopy('addResistanceAria')});
+       const select=monsterBind(h('select',{class:'wiki-inline-select'}),'addResistanceAria','aria-label');
        select.append(monsterBind(h('option',{value:''}),'chooseResistance'));
        for(const [key,label] of missing)select.append(monsterBind(h('option',{value:key}),label));
        add.replaceWith(select);
@@ -6131,10 +6128,8 @@ function renderWiki(root){
         };
         entry.append(remove);
       }else if(row.percent!=null)entry.append(h('small',{class:'wiki-loot-chance',text:row.percent+'%'}));
-      if(row.kind==='conditional')entry.append(h('small',{class:'wiki-loot-conditional',
-       text:monsterCopy('conditional')}));
-      if(row.slotAdd>0)entry.append(h('small',{class:'wiki-loot-sockets',
-       text:monsterCopy('slotsPrefix')+row.slotAdd}));
+      if(row.kind==='conditional')entry.append(monsterBind(h('small',{class:'wiki-loot-conditional'}),'conditional'));
+      if(row.slotAdd>0)entry.append(monsterBind(h('small',{class:'wiki-loot-sockets'}),'slotsPrefix','text',String(row.slotAdd)));
       flow.append(entry);
      }
      detail.append(flow);
@@ -6142,13 +6137,13 @@ function renderWiki(root){
     if(adminEditing&&adminToken){
       const actions=h('div',{class:'wiki-owner-drop-actions'});
       for(const [group,label] of [['d','addNormal'],['s','addSpecial']]){
-       actions.append(h('button',{type:'button',class:'wiki-owner-plus wiki-add-source',
-        text:monsterCopy(label),onclick:()=>wikiItemChoice(actions,i=>{
+       actions.append(monsterBind(h('button',{type:'button',class:'wiki-owner-plus wiki-add-source',
+         onclick:()=>wikiItemChoice(actions,i=>{
          const next=dropRows();
          if(next[group].length>=200)throw Error(monsterCopy('limitReached'));
          next[group].push({i,n:1,p:null});
          return saveWikiRelationRows('drop',id,next);
-        })}));
+         })}),label));
       }
       detail.append(actions);
      }
