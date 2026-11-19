@@ -6,7 +6,7 @@ const SNAPSHOT=/^[a-z0-9-]{8,64}$/;
 const DATASET=/^[A-Za-z][A-Za-z0-9]{1,30}$/;
 // Cloudflare can cache a Worker's outgoing HTTP response before executing the
 // Worker on a later request. Always return no-store to clients; only the
-// internal, synthetic Cache API entry is public/max-age=60.
+// internal, synthetic Cache API entry is public/max-age=3600.
 function nonCacheableResponse(response){
  if(!(response instanceof Response))return response;
  const outgoing=new Response(response.body,response);
@@ -32,7 +32,7 @@ export async function readPublishedCatalog({snapshot,dataset,cache,load,waitUnti
   response.headers?.get('x-ps-catalog-snapshot')===snapshot){
   try{
    const toCache=response.clone();
-   toCache.headers.set('cache-control','public, max-age=60');
+   toCache.headers.set('cache-control','public, max-age=3600');
    const write=Promise.resolve().then(()=>cache.put(key,toCache)).catch(()=>{});
    if(typeof waitUntil==='function')waitUntil(write);
    else await write;
