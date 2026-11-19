@@ -68,18 +68,20 @@ test('Cloudflare D1 daily limits return safe 503 with Retry-After rather than 50
    "Your account has exceeded D1's free tier daily row "+direction+
    ' limit. Upgrade to a paid plan or wait until tomorrow (midnight UTC) to continue.'
   )});
-  const response=await worker.fetch(request('/api/account/me',{
-   headers:{Authorization:token}
-  }),{DB:{prepare(){throw wrapped}}});
-  assert.equal(response.status,503,direction);
-  const payload=await response.json();
-  assert.equal(payload.code,'D1_DAILY_QUOTA_EXCEEDED');
-  assert.equal(payload.error,'Database temporarily unavailable');
-  assert.ok(Number(response.headers.get('retry-after'))>=1);
-  assert.ok(Number(response.headers.get('retry-after'))<=86400);
-  assert.equal(response.headers.get('cache-control'),'no-store');
-  assert.equal(response.headers.get('access-control-allow-origin'),ORIGIN);
-  assert.doesNotMatch(JSON.stringify(payload),/sql|free tier|password|account_id/i);
+  for(const path of ['/api/account/me','/api/catalog/meta.json','/api/overrides']){
+   const response=await worker.fetch(request(path,{
+    headers:{Authorization:token}
+   }),{DB:{prepare(){throw wrapped}}});
+   assert.equal(response.status,503,direction+' '+path);
+   const payload=await response.json();
+   assert.equal(payload.code,'D1_DAILY_QUOTA_EXCEEDED');
+   assert.equal(payload.error,'Database temporarily unavailable');
+   assert.ok(Number(response.headers.get('retry-after'))>=1);
+   assert.ok(Number(response.headers.get('retry-after'))<=86400);
+   assert.equal(response.headers.get('cache-control'),'no-store');
+   assert.equal(response.headers.get('access-control-allow-origin'),ORIGIN);
+   assert.doesNotMatch(JSON.stringify(payload),/sql|free tier|password|account_id/i);
+  }
  }
  const other=await worker.fetch(request('/api/account/me',{
   headers:{Authorization:token}

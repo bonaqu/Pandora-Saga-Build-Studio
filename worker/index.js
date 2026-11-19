@@ -105,7 +105,13 @@ async function catalogBody(request){
 function isCostumeKind(kind){return typeof kind==='string'&&kind.startsWith('DECO_')}
 async function activeCatalog(env){
  try{return await env.DB.prepare('SELECT snapshot,published_at,expected_counts FROM catalog_current WHERE id=1').first()}
- catch{return null}
+ catch(error){
+  // A temporarily exhausted D1 daily budget is not an absent catalog.
+  // Propagate only the verified quota error so the public GET returns a
+  // safe 503/Retry-After without falling back to any stale snapshot.
+  if(isD1DailyQuotaError(error))throw error;
+  return null;
+ }
 }
 async function catalogBackupTableReady(env){
  return Boolean(await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='catalog_backup_jobs'").first());
@@ -1156,13 +1162,14 @@ function isD1DailyQuotaError(error){
   if(/exceeded D1.s free tier daily row (?:read|write) limit/i.test(String(cause.message||'')))return true;
  return false;
 }
+let dailyQuotaWarningEmitted=false;
 function d1DailyQuotaResponse(now=Date.now()){
  // Free D1 quota resets at 00:00 UTC; online retry backoff remains client-owned.
  const seconds=Math.max(1,Math.ceil((86400000-now%86400000)/1000));
  return json({error:'Database temporarily unavailable',code:'D1_DAILY_QUOTA_EXCEEDED'},
   503,{'retry-after':String(seconds)});
 }
-export default{async fetch(request,env,ctx){const cors=originHeaders(request);if(request.method==='OPTIONS')return new Response(null,{status:204,headers:cors});try{const result=await handle(request,env,ctx);for(const[k,v]of Object.entries(cors))result.headers.set(k,v);return result}catch(e){console.error('Request failed',e);const result=isD1DailyQuotaError(e)?d1DailyQuotaResponse():no('Server error',500);for(const[k,v]of Object.entries(cors))result.headers.set(k,v);return result}},async scheduled(_event,env,ctx){
+export default{async fetch(request,env,ctx){const cors=originHeaders(request);if(request.method==='OPTIONS')return new Response(null,{status:204,headers:cors});try{const result=await handle(request,env,ctx);for(const[k,v]of Object.entries(cors))result.headers.set(k,v);return result}catch(e){const quota=isD1DailyQuotaError(e);if(quota){if(!dailyQuotaWarningEmitted){dailyQuotaWarningEmitted=true;console.warn('D1 daily row quota reached; public responses use 503')}}else console.error('Request failed',e);const result=quota?d1DailyQuotaResponse():no('Server error',500);for(const[k,v]of Object.entries(cors))result.headers.set(k,v);return result}},async scheduled(_event,env,ctx){
   if(!env?.DB)return;
   const job=(async()=>{
    // Before the first 0.809 owner import, production D1 has no outbox table.
