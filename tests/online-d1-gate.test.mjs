@@ -135,3 +135,50 @@ test('late custom fetch/JSON adapters cannot mark an aborted D1 checkpoint ready
   expectedSnapshot:'d1-1',expectedOverrides:overrides,expectedCounts:counts
  }),/Snapshot changed during parse/);
 });
+
+test('stalled D1 checkpoint headers and JSON bodies settle when their deadline expires',async()=>{
+ for(const endpoint of ['meta.json','overrides']){
+  for(const stage of ['headers','json']){
+   const keepAlive=setTimeout(()=>{},200);
+   let reads=0;
+   const fetcher=async url=>{
+    reads++;
+    const isMeta=url.endsWith('meta.json'),target=url.endsWith(endpoint);
+    if(target&&stage==='headers')return new Promise(()=>{});
+    const payload=isMeta?{counts}:{values:overrides};
+    return {
+     ...response(payload),
+     json:target&&stage==='json'?async()=>new Promise(()=>{}):async()=>payload
+    };
+   };
+   try{
+    await assert.rejects(gate.inspect({
+     api,fetcher,signal:AbortSignal.timeout(35),expectedSnapshot:'d1-1',
+     expectedOverrides:overrides,expectedCounts:counts
+    }),/abort|timeout/i,endpoint+' '+stage);
+    assert.equal(reads,2,
+     'A stalled checkpoint must not issue extra network retries or unlock the editor');
+   }finally{clearTimeout(keepAlive)}
+  }
+ }
+});
+
+test('an explicit checkpoint cancellation rejects hung custom fetch and JSON promises',async()=>{
+ for(const stage of ['headers','json']){
+  const controller=new AbortController();
+  let began;
+  const started=new Promise(resolve=>{began=resolve});
+  const fetcher=async url=>{
+   if(url.endsWith('meta.json')){
+    if(stage==='headers'){began();return new Promise(()=>{})}
+    return {...response({counts}),json:async()=>{began();return new Promise(()=>{})}};
+   }
+   return response({values:overrides});
+  };
+  const pending=gate.inspect({api,fetcher,signal:controller.signal,
+   expectedSnapshot:'d1-1',expectedOverrides:overrides,expectedCounts:counts});
+  await started;
+  controller.abort(Error('D1 checkpoint superseded'));
+  await assert.rejects(pending,/D1 checkpoint superseded/);
+ }
+});
