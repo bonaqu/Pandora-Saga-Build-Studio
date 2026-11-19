@@ -7,9 +7,9 @@ const begin=app.indexOf('let catalogArchived=false;');
 const end=app.indexOf('function openWiki(type,id,highlight=null)',begin);
 assert.ok(begin>=0&&end>begin,'Wiki loader must be inspectable');
 
-function harness(){
- const calls=[],overrides={},selection={type:'item',id:null};
- const window={
+function harness({online=false}={}){
+ const calls=[],overrides={},selection={type:'item',id:null},gates=[];
+ const window={__gates:gates,
   PandoraStudioLiveRead:{get:()=>Promise.reject(Error('Unused network fixture'))},
   PandoraWikiCatalog:{load:()=>new Promise((resolve,reject)=>calls.push({resolve,reject}))},
   PandoraHistoricalMaps:{records:()=>({})},
@@ -19,9 +19,12 @@ function harness(){
   PandoraWikiData:{build:source=>({source,canonical:(_type,id)=>id})}
  };
  const module=Function('window','API','fetch','override','wikiSelection',
-  'let wikiIndex=null,wikiPending=null,wikiData=null;\n'+app.slice(begin,end)+
+  'let wikiIndex=null,wikiPending=null,wikiData=null;'+
+  'const activeCatalogSnapshot=null,catalogSource=null,liveGateReason=null;'+
+  'const studioLiveReady='+String(online)+';'+
+  'const showLiveGate=value=>window.__gates.push(value);\n'+app.slice(begin,end)+
   '\nreturn {loadWiki,invalidateWikiCatalog,read:()=>({wikiIndex,wikiData,wikiPending,wikiBaseData,wikiLoadGeneration})};');
- return {...module(window,'https://example.test',()=>{},overrides,selection),calls,overrides};
+ return {...module(window,'https://example.test',()=>{},overrides,selection),calls,overrides,gates};
 }
 const source=tag=>({data:{meta:{tag},skills:{},items:{},maps:{},
  trades:{npcs:{},mapNames:{},trades:[]}}});
@@ -76,4 +79,18 @@ test('Wiki search batches keystrokes and cancels outdated DOM work on navigation
  assert.match(wiki,/if\(root\.isConnected&&activeTab==='wiki'&&wikiIndex\)draw\(\)/);
  assert.match(wiki,/\},100\)/);
  assert.match(wiki,/wikiOutsideCleanup=\(\)=>\{[\s\S]*?clearTimeout\(wikiSearchTimer\)/);
+});
+
+test('changed D1 snapshot immediately protects the active Hero instead of waiting for heartbeat',async()=>{
+ const app=harness({online:true}),load=app.loadWiki();
+ assert.equal(app.calls.length,1);
+ app.calls[0].reject(Error('В ходе загрузки версия опубликованного каталога изменилась'));
+ await assert.rejects(load,/версия опубликованного каталога изменилась/);
+ assert.deepEqual(app.gates,['changed'],
+  'An incompatible Wiki source must immediately block stale Hero calculations');
+ const unrelated=harness({online:true}),load2=unrelated.loadWiki();
+ unrelated.calls[0].reject(Error('One missing Wiki record'));
+ await assert.rejects(load2,/One missing Wiki record/);
+ assert.deepEqual(unrelated.gates,[],
+  'Ordinary record/network failure is not proof of a different published snapshot');
 });
