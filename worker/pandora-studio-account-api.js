@@ -94,6 +94,18 @@ export async function parseAccountJson(request){
  finally{reader.releaseLock()}
 }
 const KINDS=new Set(['register','login','me','logout','password','recover']);
+// Only authenticated account operations need schema introspection in D1.
+// Route validation shares the same allowed kind list as accountApi.
+export function accountNeedsD1(request,path){
+ const kind=path.slice('/api/account/'.length);
+ if(!KINDS.has(kind))return false;
+ if(kind==='me'||kind==='logout'){
+  if(request.method!==(kind==='me'?'GET':'POST'))return false;
+  const token=(request.headers.get('authorization')||'').replace(/^Bearer /,'');
+  return SESSION.test(token);
+ }
+ return request.method==='POST';
+}
 export async function accountApi(request,env,path,{ip='unknown',throttle,recordFailed,clearFailed}={}){
  const kind=path.slice('/api/account/'.length);
  if(!KINDS.has(kind))return error('Not found',404);
