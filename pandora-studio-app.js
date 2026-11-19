@@ -6880,8 +6880,10 @@ function renderWiki(root){
          [en,'npcNameEn','npcNameEnAria'],
          [role,'npcService','npcServiceAria']
         ]){
-         mapBind(field,placeholder,'placeholder');
+         // Keep the stable field key as the primary UI identity while
+         // both attributes remain independently D1-editable.
          mapBind(field,aria,'aria-label');
+         mapBind(field,placeholder,'placeholder');
         }
         const err=h('small',{class:'inline-owner-error',role:'alert'});
         const submit=mapBind(h('button',{type:'button',class:'wiki-owner-plus'}),'npcSave');
