@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import worker from '../worker/index.js';
+import {readPublishedCatalog} from '../worker/pandora-studio-catalog-cache.js';
 
 // A stale authenticated editor must not publish a catalog over a newer D1
 // snapshot. Rejections occur before touching catalog tables.
@@ -92,4 +94,79 @@ test('read-only capabilities disclose required catalog precondition',async()=>{
  assert.equal(flags.codeRelease,'0.361.0');
  assert.equal(flags.catalogPublishCASRequired,true);
  assert.equal(flags.catalogProvenanceCors,true);
+});
+
+test('same published D1 snapshot avoids repeated large dataset SQL reads',async()=>{
+ const store=new Map(),writes=[];
+ const cache={
+  match:async key=>store.get(key.url)?.clone(),
+  put:async(key,response)=>{writes.push(key.url);store.set(key.url,response.clone())}
+ };
+ let loads=0;
+ const load=snapshot=>async()=>{
+  loads++;
+  return new Response(JSON.stringify({items:['d1-'+snapshot],loads}),{
+   headers:{'cache-control':'public, max-age=60','x-ps-catalog':'d1',
+    'x-ps-catalog-snapshot':snapshot}
+  });
+ };
+ const snapshot='ps-snapshot-a',dataset='items';
+ const first=await readPublishedCatalog({snapshot,dataset,cache,load:load(snapshot)});
+ assert.equal((await first.json()).loads,1);
+ const again=await readPublishedCatalog({snapshot,dataset,cache,load:load(snapshot)});
+ assert.equal((await again.json()).loads,1);
+ assert.equal(loads,1,'D1 payload rows must only be read once for a cached snapshot');
+ assert.equal(writes.length,1);
+ const latest='ps-snapshot-b';
+ const changed=await readPublishedCatalog({snapshot:latest,dataset,cache,load:load(latest)});
+ assert.equal((await changed.json()).loads,2);
+ assert.equal(loads,2,'A newly published D1 pointer must use a fresh cache key');
+ assert.notEqual(writes[0],writes[1]);
+});
+
+test('untrusted cache, failed storage and temporary cache failure never weaken D1 provenance',async()=>{
+ const snapshot='ps-snapshot-c',dataset='meta';
+ let reads=0;
+ const valid=()=>{reads++;
+  return new Response(JSON.stringify({from:'d1'}),{
+   headers:{'cache-control':'public, max-age=60','x-ps-catalog':'d1',
+    'x-ps-catalog-snapshot':snapshot}
+  });
+ };
+ const cache={
+  match:async()=>new Response('untrusted',{headers:{
+   'x-ps-catalog':'archive','x-ps-catalog-snapshot':snapshot}}),
+  put:async()=>{throw Error('Cache storage offline')}
+ };
+ const response=await readPublishedCatalog({snapshot,dataset,cache,load:valid});
+ assert.equal((await response.json()).from,'d1');
+ assert.equal(reads,1,'An archive-shaped cache result must not be served');
+ const unavailableCache={match:async()=>{throw Error('Cache down')},put:async()=>{}};
+ const again=await readPublishedCatalog({snapshot,dataset,cache:unavailableCache,load:valid});
+ assert.equal((await again.json()).from,'d1');
+ assert.equal(reads,2);
+ const bad=await readPublishedCatalog({snapshot,dataset,
+  cache:{match:async()=>null,put:async()=>{throw Error('Must not cache a 503')}},
+  load:async()=>new Response('D1 unavailable',{status:503})});
+ assert.equal(bad.status,503,'D1 outage may never be replaced by archived or stale JSON');
+});
+
+test('live Worker requires a readable D1 pointer before any catalog cache lookup',async()=>{
+ const source=readFileSync(new URL('../worker/index.js',import.meta.url),'utf8');
+ const section=source.slice(source.indexOf('async function serveCatalog('),
+  source.indexOf('async function adminCatalog('));
+ assert.match(section,/const active=await activeCatalog\(env\)/);
+ assert.ok(section.indexOf('const active=await activeCatalog(env)')<
+  section.indexOf('return readPublishedCatalog('));
+ assert.match(section,/cache:globalThis\.caches\?\.default/);
+ assert.match(section,/if\(!active\)return no\('Catalog not published in D1 yet',503\)/);
+ let pointerReads=0;
+ const DB={prepare(sql){
+  assert.match(sql,/FROM catalog_current/);
+  pointerReads++;
+  return {first:async()=>null};
+ }};
+ const response=await worker.fetch(new Request(API+'/api/catalog/items.json'),{DB});
+ assert.equal(response.status,503);
+ assert.equal(pointerReads,1);
 });
