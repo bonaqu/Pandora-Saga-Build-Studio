@@ -78,6 +78,20 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   await page.locator('#ownerDock').waitFor({state:'visible'});
   await page.locator('#ownerDock [data-owner-collapse]').click();
   await openSpecial();
+  // Author edits a hint through the ONE compact owner panel. The disabled
+  // Racial branch and current hero remain mounted; no per-card pencil.
+  const pathHelp=page.locator('#ownerPathHelpCopy');
+  await pathHelp.locator('summary').click();
+  const racialHelp=pathHelp.locator('.studio-owner-interface-row').filter({hasText:'Расовая ветка'});
+  await racialHelp.locator('.studio-owner-interface-pencil').click();
+  const helpEdit=racialHelp.locator('[data-owner-text-field]');
+  await helpEdit.waitFor({state:'visible'});
+  await helpEdit.fill('Расовую ветку нельзя прокачать QA');
+  await helpEdit.press('Tab');
+  await savedOverride('guideedit.book.path.racial-unavailable-aria',
+   {ru:'Расовую ветку нельзя прокачать QA'});
+  assert.equal(await page.locator('.right button.path-racial-unavailable')
+   .getAttribute('aria-label'),'Расовую ветку нельзя прокачать QA');
   const racial=page.locator('.right .path-racial-owner-row');
   assert.equal(await racial.locator('button.path-racial-unavailable').isDisabled(),true);
   assert.equal(await racial.locator('button.path-racial-pencil').count(),1);
@@ -108,6 +122,18 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   await page.locator('#locale [data-locale="en"]').click();
   await page.waitForFunction(()=>document.documentElement.lang==='en');
   await openSpecial();
+  const pathEnHelp=page.locator('#ownerPathHelpCopy');
+  await pathEnHelp.locator('summary').click();
+  const enRacialHelp=pathEnHelp.locator('.studio-owner-interface-row').filter({hasText:'Racial branch'});
+  await enRacialHelp.locator('.studio-owner-interface-pencil').click();
+  const enHelpEdit=enRacialHelp.locator('[data-owner-text-field]');
+  await enHelpEdit.waitFor({state:'visible'});
+  await enHelpEdit.fill('Racial mastery cannot be allocated QA');
+  await enHelpEdit.press('Tab');
+  await savedOverride('guideedit.book.path.racial-unavailable-aria',
+   {ru:'Расовую ветку нельзя прокачать QA',en:'Racial mastery cannot be allocated QA'});
+  assert.equal(await page.locator('.right button.path-racial-unavailable')
+   .getAttribute('aria-label'),'Racial mastery cannot be allocated QA');
   const en=page.locator('.right .path-racial-owner-row');
   assert.equal((await en.locator('strong').innerText()).trim(),'Racial');
   await en.locator('button.path-racial-pencil').click();
