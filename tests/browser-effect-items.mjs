@@ -103,6 +103,19 @@ export async function runEffectItemsSmoke(browser,base){
    Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-
    document.documentElement.clientWidth);
   assert.ok(overflow<=15,'Effect items overflow viewport: '+overflow);
+  // Real NPC recipe cards: player copy is localized but no owner controls,
+  // copy pencils or dangerous delete confirmations are exposed.
+  await page.goto(base+'/#wiki/npc/131',{waitUntil:'domcontentloaded'});
+  await page.locator('.wiki-trade-card').first().waitFor({state:'visible',timeout:20000});
+  const publicNpc=page.locator('#detailContent');
+  assert.equal(await publicNpc.locator('.studio-owner-interface-editor').count(),0);
+  assert.equal(await publicNpc.locator('.wiki-trade-delete').count(),0);
+  assert.equal(await publicNpc.locator('.wiki-trade-card').count(),52);
+  const activeLanguage=await page.locator('html').getAttribute('lang');
+  assert.equal(await publicNpc.locator('.wiki-trade-output small').first().innerText(),
+   activeLanguage==='en'?'Receive':'Получить');
+  assert.equal(await publicNpc.locator('.wiki-inline-search[role="textbox"]').getAttribute('data-placeholder'),
+   activeLanguage==='en'?'Find an item or material…':'Найти предмет или материал…');
   assert.deepEqual(errors,[]);
   console.log('Chromium effect items passed: negative/cure/positive/recovery/other, crafting, RU/EN and responsive');
  }finally{await context.close()}

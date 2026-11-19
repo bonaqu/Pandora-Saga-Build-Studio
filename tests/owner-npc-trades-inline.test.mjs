@@ -63,3 +63,43 @@ test('NPC save normalization preserves a live limit even when another field is e
  const source=readFileSync(new URL('pandora-studio-app.js',root),'utf8');
  assert.match(source,/recipe\.limit!=null\?\{limit:\{n:Number\(recipe\.limit\.n\),period:recipe\.limit\.period\}\}/);
 });
+
+test('36 NPC trade copy captions use stable D1 RU/EN and preserve real limits',()=>{
+ const app=readFileSync(new URL('pandora-studio-app.js',root),'utf8');
+ const body=app.slice(app.indexOf('const wikiNpcTradeRows='),app.indexOf('const wikiChestDisplayRows='));
+ const rows=[...body.matchAll(/^ \["([^"]+)","([^"]+)","([^"]+)"\],?$/gm)];
+ assert.equal(rows.length,36);
+ assert.equal(new Set(rows.map(x=>x[1])).size,36);
+ const env={window:{}};
+ vm.runInNewContext(readFileSync(new URL('pandora-studio-honor-guide.js',root),'utf8'),env);
+ const guide=env.window.PandoraHonorGuide;
+ for(const [key,ru,en] of [
+  ['searchPlaceholder','Найти предмет или материал…','Find an item or material…'],
+  ['deleteTrade','Удалить обмен','Delete trade'],
+  ['deleteConfirm','Подтвердить удаление','Confirm deletion'],
+  ['counterOf','из','of'],
+  ['tradeLimit','Лимит обмена','Trade limit']
+ ]){
+  const id='wiki.npc.trade.'+key.replace(/[A-Z]/g,ch=>'-'+ch.toLowerCase());
+  const overrides={['guideedit.book.'+id]:JSON.stringify({ru:'Изменено',en:'Edited'})};
+  assert.equal(guide.field(overrides,id,ru,en).ru,'Изменено');
+  assert.equal(guide.field(overrides,id,ru,en).en,'Edited');
+  assert.equal(guide.field({},id,ru,en).ru,ru);
+ }
+ assert.match(app,/ownerInterfaceEditor\(\s*'wiki\.npc\.trade',wikiNpcTradeRows/);
+ assert.match(app,/npcTradeBind\(counter,'counterOf','text',' '\+cards\.length,visible\+' '\)/);
+ assert.match(app,/npcTradeBind\(recipeSearch,'searchPlaceholder','placeholder'\)/);
+ assert.match(app,/npcTradeBind\(recipeSearch,'searchAria','aria-label'\)/);
+ assert.match(app,/node\.dataset\.placeholder=value/);
+ assert.match(app,/remove\.addEventListener\('blur',resetDelete\)/);
+ assert.match(app,/event\.preventDefault\(\);event\.stopPropagation\(\);resetDelete\(\)/);
+ assert.doesNotMatch(app,/remove\.textContent='Повторить, чтобы удалить'/);
+ const src={npcs:{7:{}},trades:[{id:1,i:11,npc:[7],mats:[{i:10,n:3}],gold:55,
+  honor:2,exp:0,limit:{n:3,period:'weekly'}}]};
+ const before=JSON.stringify(src);
+ const noTradeChanges=overlay.apply(src,{10:{},11:{}},{
+  'guideedit.book.wiki.npc.trade.delete-trade':JSON.stringify({ru:'Изменено'})
+ });
+ assert.equal(JSON.stringify(noTradeChanges),before,
+  'Editing a UI label cannot alter NPC recipes or their quota');
+});
