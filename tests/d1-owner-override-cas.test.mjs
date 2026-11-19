@@ -247,4 +247,10 @@ test('real owner CAS client releases saving state after hung headers/JSON withou
  const good=create(async()=>positive());
  assert.equal((await good.request('/api/admin/override',{key,value})).conditional,true);
  assert.deepEqual(good.status(),{pending:0,saveState:'saved',error:''});
+ const malformed=create(async()=>null);
+ await assert.rejects(malformed.request('/api/admin/override',{key,value}),
+  /Нет соединения с Cloudflare Worker/);
+ assert.equal(malformed.status().pending,0);
+ assert.equal(malformed.status().saveState,'error',
+  'A malformed Worker adapter must not leave a pending owner write forever');
 });
