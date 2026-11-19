@@ -167,8 +167,8 @@ test('map and dungeon captions use the shared bilingual D1 owner editor',()=>{
  const app=read('pandora-studio-app.js');
  const block=app.slice(app.indexOf('const wikiMapRows='),app.indexOf('const wikiMonsterRows='));
  const captions=[...block.matchAll(/^ \["([^"]+)","([^"]+)","([^"]+)"\],?$/gm)];
- assert.equal(captions.length,20);
- assert.equal(new Set(captions.map(row=>row[1])).size,20);
+ assert.equal(captions.length,34);
+ assert.equal(new Set(captions.map(row=>row[1])).size,34);
  const win={};Function('window',read('pandora-studio-honor-guide.js'))(win);
  for(const [,key,ru,en]of captions){
   const path='wiki.map.text.'+key.replace(/[A-Z]/g,x=>'-'+x.toLowerCase());
@@ -217,4 +217,49 @@ test('tag and section deletion needs explicit second click, Escape cancels, CAS 
  assert.equal(section.disabled,false);
  assert.deepEqual(warnings,[['CAS conflict','warning']]);
  assert.match(app,/wiki-map-section-delete/);
+});
+
+test('map list snapshots reject stale owner writes and preserve canonical field values',()=>{
+ const app=read('pandora-studio-app.js');
+ const begin=app.indexOf('function wikiMapListEqual(');
+ const end=app.indexOf('async function saveWikiRecordField(',begin);
+ assert.ok(begin>=0&&end>begin);
+ const snippet=app.slice(begin,end);
+ const record={tags:[{ru:'Старый',en:'Old'}],sections:['monsters']};
+ const edits=[];
+ const helpers=Function('wikiIndex','saveWikiRecordPatch','wt',snippet+
+  ';return {same:wikiMapListEqual,save:saveWikiMapList}')(
+  {records:()=>({somewhere:record})},
+  (type,id,build)=>{assert.equal(type,'map');edits.push(build({}));return Promise.resolve()},
+  (ru,en)=>ru);
+ assert.equal(helpers.same([{ru:'A',en:'B'}],[{en:'B',ru:'A'}]),true);
+ assert.equal(helpers.same(['a','b'],['b','a']),false);
+ assert.equal(helpers.same([{ru:'A'}],[{ru:'B'}]),false);
+ const before=[{ru:'Старый',en:'Old'}];
+ helpers.save('somewhere','tags',before,[...before,{ru:'Новый',en:'New'}]);
+ assert.deepEqual(edits[0].tags.at(-1),{ru:'Новый',en:'New'});
+ record.tags=[...before,{ru:'Из другой формы',en:'Another form'}];
+ assert.throws(()=>helpers.save('somewhere','tags',before,[]),/Список уже изменён/);
+ assert.equal(edits.length,1,'Stale form never starts another D1 write');
+ assert.throws(()=>helpers.save('somewhere','unsupported',[],[]),/Unsupported map list/);
+ helpers.save('somewhere','sections',['monsters'],['monsters','notes']);
+ assert.deepEqual(edits.at(-1),{sections:['monsters','notes']});
+});
+test('map editor supports bounded tags/sections and hides empty owner prompt from guests',()=>{
+ const app=read('pandora-studio-app.js');
+ assert.match(app,/if\(ownerMap&&tags\.length<16\)/);
+ assert.match(app,/tags\.some\(duplicate\)/);
+ assert.match(app,/submit\.disabled=true;message\.textContent=''/);
+ assert.match(app,/if\(note\|\|ownerMap\)/);
+ assert.match(app,/if\(!note\)mapBind\(text,'sectionEmpty'\)/);
+ assert.match(app,/mapBind\(h\('small',\{class:'wiki-map-limit',role:'status'\}\),'tagLimit'\)/);
+ assert.match(app,/if\(ownerMap&&custom\.length<12\)/);
+ assert.match(app,/saveWikiMapList\(id,'extraSections',custom/);
+ assert.match(app,/saveWikiMapList\(id,'loot',loot/);
+ assert.match(app,/saveWikiMapList\(id,'npcs',rec\.npcs\|\|\[\]/);
+ assert.equal(owner.validMapExtra('tags',Array.from({length:16},(_,i)=>({ru:'Тег'+i,en:'Tag'+i}))),true);
+ assert.equal(owner.validMapExtra('tags',Array.from({length:17},(_,i)=>({ru:'Тег'+i,en:'Tag'+i}))),false);
+ assert.equal(owner.validMapExtra('extraSections',Array.from({length:13},(_,i)=>({
+  id:'section-'+i,titleRu:'Раздел '+i,titleEn:'Section '+i,kind:'text',entries:[]
+ }))),false);
 });
