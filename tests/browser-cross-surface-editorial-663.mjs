@@ -33,7 +33,7 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   if(path==='/api/admin/override'&&req.method()==='POST'){
    assert.equal(req.headers().authorization,'Bearer '+token);
    const body=req.postDataJSON();
-   assert.match(body.key,/^guideedit\.book\.(?:origin|path|equipment|wiki-ui|wiki\.chest\.text|wiki\.item\.text|wiki\.npc\.trade|wiki\.monster\.text|skill-ui|stats-ui)\./);
+   assert.match(body.key,/^guideedit\.book\.(?:origin|path|equipment|wiki-ui|wiki\.chest\.text|wiki\.item\.text|wiki\.npc\.trade|wiki\.monster\.text|wiki\.map\.text|skill-ui|stats-ui)\./);
    assert.equal(body.expectedValue,Object.hasOwn(values,body.key)?values[body.key]:null,
     'All owner copy writes must use D1 expectedValue CAS');
    values[body.key]=body.value;writes.push(body);
@@ -289,6 +289,28 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
    'Leaving an armed loot delete must discard confirmation');
   assert.equal(await monster.locator('.wiki-loot-chip').count(),monsterLootCount);
   assert.equal(writes.some(write=>write.key.startsWith('dropedit.')),false);
+
+  // Real atlas owner copy must update the visible map without rewriting its
+  // curated monster roster, and without granting privileges to guests.
+  await page.locator('#dockClose').click();
+  await page.locator('#nav [data-tab="wiki"]').click();
+  await page.locator('[data-wiki-chapter="map"]').click();
+  await page.locator('[data-wiki-record="el-beht"]').click();
+  const atlas=page.locator('#detailContent');
+  const atlasPanel=atlas.locator('.studio-owner-interface-editor')
+   .filter({has:page.locator('[data-owner-copy-section="wiki.map.text"]')});
+  await atlasPanel.locator('summary').click();
+  assert.equal(await atlasPanel.locator('[data-owner-copy-id]').count(),34);
+  const atlasCount=await atlas.locator('.wiki-map-monsters .wiki-entry').count();
+  assert.ok(atlasCount>0);
+  await edit('wiki.map.text','monsters','Обитатели локации');
+  assert.match(await atlas.locator('[data-owner-interface-key="monsters"]').innerText(),
+   /^Обитатели локации · \d+/);
+  await edit('wiki.map.text','tags','Метки локации');
+  assert.equal(await atlas.locator('.wiki-map-tag-section h4').innerText(),'Метки локации');
+  assert.equal(await atlas.locator('.wiki-map-monsters .wiki-entry').count(),atlasCount);
+  assert.equal(writes.some(write=>write.key.startsWith('wikiedit.map.')),false,
+   'Editing static atlas captions must never modify map data');
 
   // Skills: work inside the real right-hand Hero Path instead of the
   // retired standalone skills workbench, which has no navigation tab.

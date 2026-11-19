@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {runIndependentSmokes} from './browser-runner.mjs';
+import {relayLocalAsset} from './helpers/local-asset-relay.mjs';
 
 test('limited concurrent runner keeps independent scenarios and original result order',async()=>{
  const gates=[],visited=[],cases=Array.from({length:7},(_,i)=>['case-'+i,
@@ -32,4 +33,33 @@ test('scenario failures retain label and reject only after independent in-flight
  assert.ok(!runs.includes('wrong'));
  assert.deepEqual(runs,['finished']);
  await assert.rejects(runIndependentSmokes([],null,null,{concurrency:0}),/Invalid smoke concurrency/);
+});
+
+test('local asset relay handles a cancelled image without hiding real routing errors',async()=>{
+ const original={status:200};
+ let fulfilled=null,aborted=0;
+ await relayLocalAsset({
+  fetch:async()=>original,fulfill:async({response})=>{fulfilled=response},
+  abort:async()=>{aborted++}
+ },'http://127.0.0.1:4173/logo.webp');
+ assert.equal(fulfilled,original);
+ assert.equal(aborted,0);
+ for(const message of ['read ECONNRESET','connect ECONNREFUSED 127.0.0.1',
+  'Target page, context or browser has been closed']){
+  const record=[];
+  await relayLocalAsset({
+   fetch:async()=>{throw Error(message)},
+   fulfill:async()=>{throw Error('should not fulfill')},
+   abort:async(reason)=>{record.push(reason)}
+  },'http://127.0.0.1:4173/icon.webp');
+  assert.deepEqual(record,['failed']);
+ }
+ await relayLocalAsset({
+  fetch:async()=>{throw Error('read ECONNRESET')},
+  abort:async()=>{throw Error('Route already handled')}
+ },'http://127.0.0.1:4173/logo.webp');
+ await assert.rejects(relayLocalAsset({
+  fetch:async()=>{throw Error('unexpected application response')},
+  abort:async()=>{throw Error('must not abort')}
+ },'http://127.0.0.1:4173/logo.webp'),/unexpected application response/);
 });

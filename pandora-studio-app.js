@@ -1231,7 +1231,21 @@ const wikiMapRows=Object.freeze([
  ["quest","Сценарий задания","Quest scenario"],
  ["descriptionHint","Двойной клик — добавить описание","Double-click to add a description"],
  ["removeSection","Удалить раздел","Remove section"],
- ["confirmSection","Подтвердить удаление раздела","Confirm section removal"]
+ ["confirmSection","Подтвердить удаление раздела","Confirm section removal"],
+ ["tagRu","Тег · RU","Tag · RU"],
+ ["tagEn","Тег · EN","Tag · EN"],
+ ["tagAdd","Добавить","Add"],
+ ["tagCancel","Отмена","Cancel"],
+ ["tagLimit","Достигнут предел: 16 тегов.","Limit reached: 16 tags."],
+ ["tagDuplicate","Такой тег уже добавлен.","This tag already exists."],
+ ["tagRequired","Укажи RU и EN (до 70 символов).","Enter both names (up to 70 characters)."],
+ ["sectionEmpty","Двойной клик — добавить текст","Double-click to add text"],
+ ["sectionAdd","+ Добавить раздел","+ Add section"],
+ ["sectionCancel","Отмена","Cancel"],
+ ["sectionLimit","Максимум 12 разделов.","Maximum 12 sections."],
+ ["sectionRequired","Укажи названия RU и EN (до 100 символов).","Enter both titles (up to 100 characters)."],
+ ["sectionTitleRu","Название раздела · RU","Section title · RU"],
+ ["sectionTitleEn","Название раздела · EN","Section title · EN"],
 ]);
 const wikiMapByKey=new Map(wikiMapRows.map(row=>[row[0],row]));
 function mapCopy(key){
@@ -6528,7 +6542,7 @@ function renderWiki(root){
         label.classList.add('wiki-honor-editable');label.tabIndex=0;
         const field=lang==='en'?'en':'ru';
         const start=()=>editWikiValue(label,tag[field],{type:'text',onCommit:value=>
-         saveWikiRecordField('map',id,'tags',tags.map((x,n)=>n===i?{...x,[field]:value}:x))});
+         saveWikiMapList(id,'tags',tags,tags.map((x,n)=>n===i?{...x,[field]:value}:x))});
         label.addEventListener('dblclick',start);
         label.addEventListener('keydown',e=>{if(e.key==='F2'){e.preventDefault();start()}});
        }
@@ -6537,35 +6551,42 @@ function renderWiki(root){
         h('button',{type:'button',class:'wiki-owner-remove',text:'×'}),{
          label:mapCopy('removeTag')+' '+(lang==='en'?tag.en:tag.ru),
          confirm:mapCopy('confirmTag'),
-         action:()=>saveWikiRecordField('map',id,'tags',tags.filter((_,n)=>n!==i))
+         action:()=>saveWikiMapList(id,'tags',tags,tags.filter((_,n)=>n!==i))
         }));
        chips.append(chip);
       }
       tagSection.append(chips);
-      if(ownerMap){
+      if(ownerMap&&tags.length<16){
        const add=mapBind(h('button',{type:'button',class:'wiki-owner-plus'}),'addTag');
        add.onclick=()=>{
         if(tagSection.querySelector('.wiki-map-tag-form'))return;
         const form=h('div',{class:'wiki-map-tag-form wiki-owner-source-picker'});
-        const ru=ownerPlainTextField({class:'wiki-inline-input',
-         placeholder:'Тег · RU','aria-label':'Тег на русском'});
-        const en=ownerPlainTextField({class:'wiki-inline-input',
-         placeholder:'Tag · EN','aria-label':'Tag in English'});
-        const message=h('small',{class:'inline-owner-error'});
-        const submit=h('button',{type:'button',class:'wiki-owner-plus',
-         text:wt('Добавить','Add'),onclick:async()=>{
-          const tag={ru:ru.value.trim(),en:en.value.trim()};
-          if(!tag.ru||!tag.en||tag.ru.length>70||tag.en.length>70){
-           message.textContent=wt('Введи RU и EN','Enter RU and EN');return}
-          try{await saveWikiRecordField('map',id,'tags',[...tags,tag])}
-          catch(e){message.textContent=e.message}
-         }});
-        form.append(ru,en,submit,h('button',{type:'button',class:'wiki-owner-remove',
-         text:wt('Отмена','Cancel'),onclick:()=>form.remove()}),message);
-        add.after(form);ru.focus();
+        const ru=ownerPlainTextField({class:'wiki-inline-input'});
+       const en=ownerPlainTextField({class:'wiki-inline-input'});
+       mapBind(ru,'tagRu','placeholder');mapBind(ru,'tagRu','aria-label');
+       mapBind(en,'tagEn','placeholder');mapBind(en,'tagEn','aria-label');
+       const message=h('small',{class:'inline-owner-error',role:'alert'});
+       const submit=mapBind(h('button',{type:'button',class:'wiki-owner-plus'}),'tagAdd');
+       submit.onclick=async()=>{
+        if(submit.disabled)return;
+        const tag={ru:ru.value.trim(),en:en.value.trim()};
+        if(!tag.ru||!tag.en||tag.ru.length>70||tag.en.length>70){
+         message.textContent=mapCopy('tagRequired');return;
+        }
+        const duplicate=row=>wikiIndex.normalize(row.ru)===wikiIndex.normalize(tag.ru)&&
+         wikiIndex.normalize(row.en)===wikiIndex.normalize(tag.en);
+        if(tags.some(duplicate)){message.textContent=mapCopy('tagDuplicate');return}
+        submit.disabled=true;message.textContent='';
+        try{await saveWikiMapList(id,'tags',tags,[...tags,tag])}
+        catch(e){message.textContent=String(e.message||e);submit.disabled=false}
        };
-       tagSection.append(add);
-      }
+       const cancel=mapBind(h('button',{type:'button',class:'wiki-owner-remove'}),'tagCancel');
+       cancel.onclick=()=>form.remove();
+       form.append(ru,en,submit,cancel,message);add.after(form);ru.focus();
+      };
+      tagSection.append(add);
+     }else if(ownerMap)tagSection.append(mapBind(
+      h('small',{class:'wiki-map-limit',role:'status'}),'tagLimit'));
       detail.append(tagSection);
      }
      if(ownerMap){
@@ -6581,7 +6602,8 @@ function renderWiki(root){
        const on=enabled.includes(key);
        buttons.append(h('button',{type:'button',class:on?'chosen':'',
         'aria-pressed':String(on),text:(on?'✓ ':'+ ')+label,
-        onclick:()=>void saveWikiRecordField('map',id,'sections',
+        onclick:()=>void saveWikiMapList(id,'sections',
+         Array.isArray(rec.sections)?rec.sections:[],
          on?enabled.filter(x=>x!==key):[...enabled,key])
          .catch(e=>showStudioToast(e.message,'warning'))}));
       }
@@ -6784,7 +6806,7 @@ function renderWiki(root){
       if(ownerMap&&rec.virtual&&rec.placeType!=='astir-district'){
        const npcRelations=wikiOwnerEntityList({label:mapCopy('npcs'),
         kind:'npc',existing:rec.npcs||[],limit:120,
-        onChange:next=>saveWikiRecordField('map',id,'npcs',
+        onChange:next=>saveWikiMapList(id,'npcs',rec.npcs||[],
          next.map(x=>/^\d+$/.test(String(x))?Number(x):String(x)))});
        mapBind(npcRelations.querySelector('h4'),'npcs');
        detail.append(npcRelations);
@@ -6914,7 +6936,7 @@ function renderWiki(root){
      if(ownerMap){
       const lootRelations=wikiOwnerEntityList({label:mapCopy('loot'),
        kind:'item',existing:loot,limit:120,
-       onChange:next=>saveWikiRecordField('map',id,'loot',next.map(Number))});
+       onChange:next=>saveWikiMapList(id,'loot',loot,next.map(Number))});
       mapBind(lootRelations.querySelector('h4'),'loot');
       detail.append(lootRelations);
      }else if(loot.length){
@@ -6950,7 +6972,7 @@ function renderWiki(root){
        head.classList.add('wiki-honor-editable');head.tabIndex=0;
        const key=lang==='en'?'titleEn':'titleRu';
        const start=()=>editWikiValue(head,group[key],{type:'text',onCommit:value=>
-        saveWikiRecordField('map',id,'extraSections',custom.map((entry,i)=>
+        saveWikiMapList(id,'extraSections',custom,custom.map((entry,i)=>
          i===index?{...entry,[key]:value}:entry))});
        head.addEventListener('dblclick',start);
        head.addEventListener('keydown',e=>{if(e.key==='F2'){e.preventDefault();start()}});
@@ -6961,28 +6983,31 @@ function renderWiki(root){
          text:mapCopy('removeSection')}),{
          label:mapCopy('removeSection')+': '+(lang==='en'?group.titleEn:group.titleRu),
          confirm:mapCopy('confirmSection'),
-         action:()=>saveWikiRecordField('map',id,'extraSections',
+         action:()=>saveWikiMapList(id,'extraSections',custom,
           custom.filter((_,i)=>i!==index))
         }));
       if(group.kind==='text'){
        const key=lang==='en'?'textEn':'textRu';
        const note=group[key]||'';
+       if(note||ownerMap){
        const text=h('p',{class:'wiki-description'+(!note?' wiki-description-placeholder':''),
-        text:note||wt('Двойной клик — добавить текст','Double-click to add text')});
+        text:note||mapCopy('sectionEmpty')});
        if(ownerMap){
         text.classList.add('wiki-honor-editable');text.tabIndex=0;
         const start=()=>editWikiValue(text,note,{type:'textarea',onCommit:value=>
-         saveWikiRecordField('map',id,'extraSections',custom.map((entry,i)=>
+         saveWikiMapList(id,'extraSections',custom,custom.map((entry,i)=>
           i===index?{...entry,[key]:value}:entry))});
         text.addEventListener('dblclick',start);
         text.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();start()}});
        }
+       if(!note)mapBind(text,'sectionEmpty');
        panel.append(text);
+       }
       }else{
        const kind=group.kind==='item'?'item':group.kind;
        if(ownerMap)panel.append(wikiOwnerEntityList({
         label:'',kind,existing:group.entries||[],limit:60,
-        onChange:next=>saveWikiRecordField('map',id,'extraSections',
+        onChange:next=>saveWikiMapList(id,'extraSections',custom,
          custom.map((entry,i)=>i===index?{...entry,entries:next.map(x=>
           /^\d+$/.test(String(x))?Number(x):String(x))}:entry))
        }));
@@ -6995,17 +7020,14 @@ function renderWiki(root){
       detail.append(panel);
      }
      if(ownerMap&&custom.length<12){
-      const add=h('button',{type:'button',class:'wiki-owner-plus wiki-map-add-section',
-       text:wt('+ Добавить раздел','+ Add section')});
+      const add=mapBind(h('button',{type:'button',class:'wiki-owner-plus wiki-map-add-section'}),'sectionAdd');
       add.onclick=()=>{
        if(detail.querySelector('.wiki-map-custom-form'))return;
        const form=h('div',{class:'wiki-map-custom-form wiki-owner-source-picker'});
-       const ru=ownerPlainTextField({class:'wiki-inline-input',
-        placeholder:wt('Название раздела · RU','Section title · RU'),
-         'aria-label':wt('Название раздела RU','Section title RU')});
-       const en=ownerPlainTextField({class:'wiki-inline-input',
-        placeholder:wt('Название раздела · EN','Section title · EN'),
-         'aria-label':wt('Название раздела EN','Section title EN')});
+       const ru=ownerPlainTextField({class:'wiki-inline-input'});
+       const en=ownerPlainTextField({class:'wiki-inline-input'});
+       mapBind(ru,'sectionTitleRu','placeholder');mapBind(ru,'sectionTitleRu','aria-label');
+       mapBind(en,'sectionTitleEn','placeholder');mapBind(en,'sectionTitleEn','aria-label');
        const kind=h('select',{class:'wiki-inline-select','aria-label':wt('Содержимое раздела','Section content')});
        for(const [value,label]of [
         ['text',wt('Описание','Text')],
@@ -7017,20 +7039,21 @@ function renderWiki(root){
         text:wt('Добавить','Add'),onclick:async()=>{
          const titleRu=ru.value.trim(),titleEn=en.value.trim();
          if(!titleRu||!titleEn||titleRu.length>100||titleEn.length>100){
-          error.textContent=wt('Укажи названия RU и EN','Enter RU and EN titles');return}
+          error.textContent=mapCopy('sectionRequired');return}
          const nextId='section-'+[...crypto.getRandomValues(new Uint8Array(6))]
           .map(x=>x.toString(16).padStart(2,'0')).join('');
          const row={id:nextId,titleRu,titleEn,kind:kind.value,entries:[]};
          submit.disabled=true;
-         try{await saveWikiRecordField('map',id,'extraSections',[...custom,row])}
+         try{await saveWikiMapList(id,'extraSections',custom,[...custom,row])}
          catch(e){error.textContent=e.message;submit.disabled=false}
         }});
-       const cancel=h('button',{type:'button',class:'wiki-owner-remove',
-        text:wt('Отмена','Cancel'),onclick:()=>form.remove()});
+       const cancel=mapBind(h('button',{type:'button',class:'wiki-owner-remove'}),'sectionCancel');
+       cancel.onclick=()=>form.remove();
        form.append(ru,en,kind,submit,cancel,error);add.after(form);ru.focus();
       };
       detail.append(add);
-     }
+     }else if(ownerMap)detail.append(mapBind(
+      h('small',{class:'wiki-map-limit',role:'status'}),'sectionLimit'));
     }
   }else{
     const namedPlaces=wikiIndex.chestPlaces(id);
@@ -10690,6 +10713,29 @@ async function saveWikiRecordPatch(type,id,updates){
   if(!wikiRecordWriteQueue.size)editIsSaving=false;
   refreshOwnerUI();
  }
+}
+// Map list changes must not silently overwrite a later owner edit from
+// another control. Queue serialization alone cannot detect stale UI snapshots.
+// Keep array order semantic and object key order irrelevant.
+function wikiMapListEqual(a,b){
+ const stable=value=>Array.isArray(value)?value.map(stable):
+  value&&typeof value==='object'?
+  Object.fromEntries(Object.keys(value).sort().map(k=>[k,stable(value[k])])):value;
+ return JSON.stringify(stable(Array.isArray(a)?a:[]))===
+  JSON.stringify(stable(Array.isArray(b)?b:[]));
+}
+function saveWikiMapList(id,field,expected,next){
+ if(!['tags','sections','extraSections','npcs','loot'].includes(field))
+  throw Error('Unsupported map list');
+ return saveWikiRecordPatch('map',id,()=>{
+  const current=wikiIndex.records('map')?.[String(id)];
+  if(!current)throw Error(wt('Локация больше не доступна.',
+   'The location is no longer available.'));
+  if(!wikiMapListEqual(expected,current[field]))
+   throw Error(wt('Список уже изменён. Обнови карточку и повтори действие.',
+    'This list has changed. Refresh the record and try again.'));
+  return {[field]:next};
+ });
 }
 async function saveWikiRecordField(type,id,field,value){
  if(field.startsWith('resists.'))

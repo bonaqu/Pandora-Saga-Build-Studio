@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — план разработки
 
-**Updated:** 2026-11-19 · **Latest source release:** 0.934.0 (`2026.11.19.934`)
+**Updated:** 2026-11-19 · **Latest source release:** 0.935.0 (`2026.11.19.935`)
 
 **Действующие правила:** без cron; на каждый PR обязательны Node + Chromium на точном SHA, после публикации — read-only GitHub Pages, Worker и D1.
 

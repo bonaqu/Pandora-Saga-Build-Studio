@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {relayLocalAsset} from './helpers/local-asset-relay.mjs';
 
 // Published-host Chromium path. D1 is mocked read-only and storage fails
 // only AFTER the catalog and override validation, at the first local commit.
@@ -18,10 +19,7 @@ export async function runOnlineStartupStorage880Smoke(browser,base){
   await ctx.addInitScript(()=>localStorage.setItem('ps-build-lang','ru'));
   await ctx.route('**/*',async route=>{
    const request=route.request(),url=request.url(),method=request.method();
-   if(url.startsWith(publicOrigin+'/')){
-    const response=await route.fetch({url:base+url.slice(publicOrigin.length)});
-    return route.fulfill({response});
-   }
+   if(url.startsWith(publicOrigin+'/'))return relayLocalAsset(route,base+url.slice(publicOrigin.length));
    if(url.startsWith(base+'/'))return route.continue();
    if(!url.startsWith(api+'/'))return route.abort();
    if(method==='OPTIONS')return route.fulfill({status:204,headers:cors});
