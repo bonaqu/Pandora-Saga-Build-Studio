@@ -126,8 +126,11 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   await page.locator('[data-wiki-record="51036"]').click();
   const chest=page.locator('#detailContent');
   await chest.locator('.wiki-chest-board').waitFor({state:'visible'});
+  // Playwright's "has" locator is evaluated relative to each candidate;
+  // prefixing it with #detailContent would incorrectly require a nested
+  // #detailContent inside the editor and time out, despite valid UI.
   const chestPanel=chest.locator('.studio-owner-interface-editor')
-   .filter({has:chest.locator('[data-owner-copy-section="wiki.chest.text"]')});
+   .filter({has:page.locator('[data-owner-copy-section="wiki.chest.text"]')});
   await chestPanel.locator('summary').click();
   const chestKeys=await chestPanel.locator('[data-owner-copy-id]').evaluateAll(
    nodes=>nodes.map(node=>node.dataset.ownerCopyId));
