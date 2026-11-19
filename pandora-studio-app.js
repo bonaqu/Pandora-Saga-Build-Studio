@@ -6121,15 +6121,12 @@ function renderWiki(root){
          return;
         }
         if(rec.ownerCreated||ownerLocation){
-         const current=(loc.mobs||[]).map(String);
+         const existing=loc.mobs||[],current=existing.map(String);
          const desired=added?[...new Set([...current,String(id)])]:
           current.filter(x=>x!==String(id));
-         // A reported spawn row linked to this card must be unlinked as well.
-         const reports=kind==='map'?mapRoster(loc):[];
-         const patch={mobs:desired.map(x=>/^[1-9][0-9]{0,14}$/.test(x)?Number(x):x)};
-         if(reports.length&&removed)patch.roster=reports.map(row=>
-          String(row.monsterId)===String(id)?{...row,monsterId:null}:row);
-         await saveWikiRecordPatch(kind,locationId,patch);
+         const nextMobs=desired.map(x=>/^[1-9][0-9]{0,14}$/.test(x)?Number(x):x);
+         if(kind==='map')await saveWikiMapMonsterList(locationId,existing,nextMobs);
+         else await saveWikiRecordList(kind,locationId,'mobs',existing,nextMobs);
         }else if(added)await saveWikiSpawns(id,kind,added,true);
          else await saveWikiSpawns(id,kind,removed,false);
         }});
@@ -6681,11 +6678,8 @@ function renderWiki(root){
        const hasOwner=next.some(x=>window.PandoraWikiOwnerData.ownerMonsterId(x))||
         before.some(x=>window.PandoraWikiOwnerData.ownerMonsterId(x));
        if(type==='map'&&(rec.virtual||!Object.hasOwn(wikiData.maps||{},id)||hasOwner)){
-        const patch={mobs:next.map(x=>typeof x==='string'?x:Number(x))};
-        const reports=mapRoster(rec);
-        if(reports.length)patch.roster=reports.map(row=>row.monsterId!=null&&
-         !after.includes(String(row.monsterId))?{...row,monsterId:null}:row);
-        await saveWikiRecordPatch('map',id,patch);return;
+        await saveWikiMapMonsterList(id,mobs,
+         next.map(x=>typeof x==='string'?x:Number(x)));return;
        }
        const added=after.find(x=>!before.includes(x));
        const removed=before.find(x=>!after.includes(x));
@@ -6842,9 +6836,11 @@ function renderWiki(root){
          if(!npcId)return;
          const current=wikiData.trades?.npcs?.[npcId];
          if(!current)throw Error(wt('NPC не найден в каталоге','NPC not found in catalog'));
-         const maps=(current.maps||[]).map(String);
-         const updated=added?[...new Set([...maps,String(id)])]:maps.filter(x=>x!==String(id));
-         await saveWikiRecordField('npc',npcId,'maps',updated.map(Number));
+         const maps=current.maps||[],beforeMaps=maps.map(String);
+         const updated=added?[...new Set([...beforeMaps,String(id)])]:
+          beforeMaps.filter(x=>x!==String(id));
+         await saveWikiRecordList('npc',npcId,'maps',maps,
+          updated.map(x=>/^[1-9][0-9]{0,14}$/.test(x)?Number(x):x));
         }});
        mapBind(npcRelations.querySelector('h4'),'npcs');
        detail.append(npcRelations);
