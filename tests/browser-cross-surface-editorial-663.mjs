@@ -33,7 +33,7 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   if(path==='/api/admin/override'&&req.method()==='POST'){
    assert.equal(req.headers().authorization,'Bearer '+token);
    const body=req.postDataJSON();
-   assert.match(body.key,/^guideedit\.book\.(?:origin|path|equipment|wiki-ui|wiki\.chest\.text|wiki\.item\.text|wiki\.npc\.trade|skill-ui|stats-ui)\./);
+   assert.match(body.key,/^guideedit\.book\.(?:origin|path|equipment|wiki-ui|wiki\.chest\.text|wiki\.item\.text|wiki\.npc\.trade|wiki\.monster\.text|skill-ui|stats-ui)\./);
    assert.equal(body.expectedValue,Object.hasOwn(values,body.key)?values[body.key]:null,
     'All owner copy writes must use D1 expectedValue CAS');
    values[body.key]=body.value;writes.push(body);
@@ -241,6 +241,54 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   assert.equal(writes.some(write=>write.key.startsWith('tradeedit.')),false);
   assert.equal(await npc.locator('.wiki-trade-card').count(),offersBefore,
    'Neither caption edits nor aborted confirmations delete NPC recipes');
+
+  // Owner Wiki monster: authorial D1 copy must not mutate the current OS
+  // numeric stats, resistances, or source loot. Cancelling an armed delete
+  // never issues a game data write, including on focus change.
+  await page.locator('#dockClose').click();
+  await page.locator('#nav [data-tab="wiki"]').click();
+  await page.locator('[data-wiki-chapter="monster"]').click();
+  const monsterSearch=page.locator('input[name="pandora-studio-encyclopedia-filter"]');
+  await monsterSearch.click();
+  await monsterSearch.fill('Койот');
+  await page.locator('[data-wiki-record="11101"]').click();
+  const monster=page.locator('#detailContent');
+  await monster.locator('.wiki-monster-stats').waitFor({state:'visible'});
+  const monsterPanel=monster.locator('.studio-owner-interface-editor')
+   .filter({has:page.locator('[data-owner-copy-section="wiki.monster.text"]')});
+  await monsterPanel.locator('summary').click();
+  const monsterKeys=await monsterPanel.locator('[data-owner-copy-id]')
+   .evaluateAll(nodes=>nodes.map(node=>node.dataset.ownerCopyId));
+  assert.equal(monsterKeys.length,41);
+  assert.equal(new Set(monsterKeys).size,41);
+  const monsterStatsBefore=await monster.locator('.wiki-monster-stat strong').allInnerTexts();
+  const monsterResistsBefore=await monster.locator('.wiki-monster-resist strong').allInnerTexts();
+  const monsterLootCount=await monster.locator('.wiki-loot-chip').count();
+  assert.ok(monsterLootCount>0,'The verified OS Coyote has source loot');
+  await edit('wiki.monster.text','loot','Трофеи монстра');
+  assert.match(await monster.locator('[data-owner-interface-key="loot"]').innerText(),
+   /^Трофеи монстра · \d+$/);
+  await edit('wiki.monster.text','statLevel','Уровень противника');
+  assert.equal(await monster.locator('.wiki-monster-stat small').first().innerText(),
+   'Уровень противника');
+  assert.deepEqual(await monster.locator('.wiki-monster-stat strong').allInnerTexts(),
+   monsterStatsBefore);
+  assert.deepEqual(await monster.locator('.wiki-monster-resist strong').allInnerTexts(),
+   monsterResistsBefore);
+  await edit('wiki.monster.text','confirmRemove','Подтвердить трофей');
+  const dropRemove=monster.locator('.wiki-loot-delete').first();
+  await dropRemove.click();
+  assert.equal(await dropRemove.innerText(),'Подтвердить трофей');
+  assert.equal(await dropRemove.getAttribute('data-confirm'),'1');
+  await dropRemove.press('Escape');
+  assert.equal(await dropRemove.innerText(),'×');
+  assert.equal(await dropRemove.getAttribute('data-confirm'),null);
+  await dropRemove.click();
+  await monsterPanel.locator('summary').click();
+  assert.equal(await dropRemove.getAttribute('data-confirm'),null,
+   'Leaving an armed loot delete must discard confirmation');
+  assert.equal(await monster.locator('.wiki-loot-chip').count(),monsterLootCount);
+  assert.equal(writes.some(write=>write.key.startsWith('dropedit.')),false);
 
   // Skills: work inside the real right-hand Hero Path instead of the
   // retired standalone skills workbench, which has no navigation tab.

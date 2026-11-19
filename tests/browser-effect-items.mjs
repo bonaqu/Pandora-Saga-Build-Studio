@@ -116,6 +116,20 @@ export async function runEffectItemsSmoke(browser,base){
    activeLanguage==='en'?'Receive':'Получить');
   assert.equal(await publicNpc.locator('.wiki-inline-search[role="textbox"]').getAttribute('data-placeholder'),
    activeLanguage==='en'?'Find an item or material…':'Найти предмет или материал…');
+  // Player-side monster information stays numeric and localized, without
+  // owner pencils, dangerous loot deletion, or a D1/editor hint.
+  await page.goto(base+'/#wiki/monster/11101',{waitUntil:'domcontentloaded'});
+  await page.locator('#detailContent .wiki-monster-stats').waitFor({state:'visible',timeout:20000});
+  const publicMonster=page.locator('#detailContent');
+  assert.equal(await publicMonster.locator('.studio-owner-interface-editor').count(),0);
+  assert.equal(await publicMonster.locator('.wiki-loot-delete').count(),0);
+  assert.ok(await publicMonster.locator('.wiki-loot-chip').count()>0);
+  const monsterLang=await page.locator('html').getAttribute('lang');
+  assert.equal(await publicMonster.locator('.wiki-monster-stat small').first().innerText(),
+   monsterLang==='en'?'Level':'Уровень');
+  assert.equal(await publicMonster.locator('[data-owner-interface-key="loot"]').first().innerText(),
+   (monsterLang==='en'?'Dropped items':'Выпадающие предметы')+' · '+
+    await publicMonster.locator('.wiki-loot-chip').count());
   assert.deepEqual(errors,[]);
   console.log('Chromium effect items passed: negative/cure/positive/recovery/other, crafting, RU/EN and responsive');
  }finally{await context.close()}

@@ -125,3 +125,40 @@ test('future zone UI shares the native monster grid and offers in-place linked-c
  assert.match(app,/wiki-monster-create/);
  assert.match(app,/wiki-add-resistance/);
 });
+
+test('41 monster labels are bilingual D1 overlays with isolated OS stats and loot',()=>{
+ const app=read('pandora-studio-app.js');
+ const block=app.slice(app.indexOf('const wikiMonsterRows='),app.indexOf('const wikiNpcTradeRows='));
+ const entries=[...block.matchAll(/^ \["([^"]+)","([^"]+)","([^"]+)"\],?$/gm)];
+ assert.equal(entries.length,41);
+ assert.equal(new Set(entries.map(row=>row[1])).size,41);
+ const langEnv={window:{}};
+ Function('window',read('pandora-studio-honor-guide.js'))(langEnv.window);
+ for(const [key,ru,en]of [
+  ['statLevel','Уровень','Level'],['resistCold','Лёд','Ice'],
+  ['loot','Выпадающие предметы','Dropped items'],
+  ['confirmRemove','Подтвердить удаление','Confirm removal']
+ ]){
+  const canonical='wiki.monster.text.'+key.replace(/[A-Z]/g,ch=>'-'+ch.toLowerCase());
+  const stored={['guideedit.book.'+canonical]:JSON.stringify({ru:'Авторская подпись',en:'Custom label'})};
+  const guide=langEnv.window.PandoraHonorGuide;
+  assert.equal(guide.field(stored,canonical,ru,en).ru,'Авторская подпись');
+  assert.equal(guide.field(stored,canonical,ru,en).en,'Custom label');
+  assert.equal(guide.field({},canonical,ru,en).ru,ru);
+ }
+ const drops=JSON.parse(read('data/os/drops.json'))['11101'];
+ assert.equal(drops.d.length,8);
+ const saved=JSON.stringify(drops);
+ const edits={'guideedit.book.wiki.monster.text.loot':JSON.stringify({ru:'Трофеи',en:'Loot'})};
+ const unchanged=win.PandoraWikiOwnerData.apply({
+  monsters:{'11101':{id:11101,name:'Койот'}},drops:{'11101':drops},
+  items:{},maps:{},instances:[],tables:{},trades:{npcs:{},trades:[]},
+  chests:{},souls:{},skills:{}
+ },edits);
+ assert.equal(JSON.stringify(unchanged.drops['11101']),saved);
+ assert.match(app,/ownerInterfaceEditor\(\s*'wiki\.monster\.text',wikiMonsterRows/);
+ assert.match(app,/monsterBind\(list\.querySelector\('h4'\),kind==='map'\?'spawnMaps':'spawnDungeons'\)/);
+ assert.match(app,/remove\.addEventListener\('blur',resetRemove\)/);
+ assert.match(app,/e\.key==='Escape'\)\{e\.preventDefault\(\);e\.stopPropagation\(\);resetRemove\(\)\}/);
+ assert.match(app,/remove\.disabled=true;\s*const all=dropRows\(\)/);
+});
