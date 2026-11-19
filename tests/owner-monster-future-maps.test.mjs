@@ -277,14 +277,14 @@ test('new Astir NPCs and future-map NPCs share canonical bilingual owner IDs wit
  assert.equal(owner.validTownPatch('npc',npcId,{...row,maps:['astir-kingdom','el-beht']}),false);
  assert.equal(owner.validTownPatch('npc',npcId,{...row,maps:['1003001']}),false);
  const original={maps:{},townNpcs:{},trades:{npcs:{}}};
- const merged=owner.apply(original,{'wikiedit.npc.'+npcId:JSON.stringify(row)});
+ const merged=owner.apply(original,{['wikiedit.npc.'+npcId]:JSON.stringify(row)});
  assert.equal(original.townNpcs[npcId],undefined);
  assert.equal(merged.townNpcs[npcId].nameEn,'Test vendor');
  assert.deepEqual(merged.townNpcs[npcId].maps,['astir-kingdom']);
  assert.equal(merged.townNpcs[npcId].ownerCreated,true);
  const legacyId='astir-npc-kingdom-custom-1';
  assert.equal(owner.validTownPatch('npc',legacyId,{name:'Исторический',maps:['astir-kingdom']}),true);
- const legacy=owner.apply(original,{'wikiedit.npc.'+legacyId:
+ const legacy=owner.apply(original,{['wikiedit.npc.'+legacyId]:
   JSON.stringify({name:'Исторический',maps:['astir-kingdom']})});
  assert.equal(legacy.townNpcs[legacyId].name,'Исторический');
  assert.equal(legacy.townNpcs[legacyId].ownerCreated,true);
