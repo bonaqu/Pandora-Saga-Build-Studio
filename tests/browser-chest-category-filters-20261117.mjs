@@ -68,7 +68,9 @@ export async function runChestCategoryFiltersSmoke(browser,base){
    .sort((a,b)=>a-b));
   assert.deepEqual(renderedSoulCounts,sourceSoulCounts,
    'Owner-editable caption cannot alter the original numeric Soul amounts');
-  assert.equal(await page.locator('[data-owner-copy-id]').count(),0);
+  assert.equal(await page.locator(
+   '#detailContent [data-owner-copy-section="wiki.chest.text"]').count(),0,
+   'No chest D1 inline editor may appear in a guest session');
   assert.equal(await cards().count(),sourceRows(51036).length);
   assert.equal(await type.getAttribute('aria-label'),'Тип награды в сундуке');
   assert.equal(await slots.isVisible(),true,
