@@ -5,6 +5,7 @@ import {readFile,writeFile,mkdir,rename} from 'node:fs/promises';
 import {join,dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {safeIconStem,isWebP,originalIconUrl} from './icon-utils.mjs';
+import {catalogIconRows} from './icon-catalog-identities.mjs';
 import {buildSkillDisplayAliases} from './skill-icon-display-aliases.mjs';
 const root=join(dirname(fileURLToPath(import.meta.url)),'..');
 const dry=process.argv.includes('--dry-run');
@@ -15,14 +16,7 @@ const limit=limitArg?Number(limitArg.slice(8)):Infinity;
 if(limitArg&&(!Number.isInteger(limit)||limit<1))throw Error('--limit must be a positive integer');
 const readCatalog=async name=>JSON.parse(await readFile(join(root,'data/os',name+'.json'),'utf8'));
 const [skills,items,souls]=await Promise.all(['skills','items','souls'].map(readCatalog));
-const rows=[];
-for(const entry of Object.values(skills))
- if(entry.iconId)rows.push({kind:'skills',stem:'skill_'+safeIconStem(entry.iconId)});
-for(const entry of Object.values(items))
- if(entry.icon)rows.push({kind:'items',stem:safeIconStem(entry.icon)});
-for(const entry of Object.values(souls))
- if(entry.icon)rows.push({kind:'souls',stem:safeIconStem(entry.icon)});
-const unique=[...new Map(rows.map(row=>[row.kind+'/'+row.stem,row])).values()];
+const unique=catalogIconRows({skills,items,souls});
 const key=row=>row.kind+'/'+row.stem;
 const fileOf=row=>'assets/'+row.kind+'/icons/'+row.stem+'.webp';
 const manifestPath=join(root,'assets','os-icon-manifest.json');

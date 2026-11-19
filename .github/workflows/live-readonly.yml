@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: read
+  actions: write # Only the trusted main readiness job can dispatch a mirror.
 
 concurrency:
   # New releases supersede obsolete version waits for this single live site.
@@ -35,6 +36,20 @@ jobs:
         run: node scripts/check-build-account-only-live.mjs
       - name: Compare 16 published gameplay datasets against the same D1 snapshot (read-only)
         run: npm run catalog:parity:live
+      # This inexpensive local identity check avoids spawning an entire
+      # mirror workflow after every UI release with the same known 404 files.
+      # A failed preflight errs toward running the trusted mirror, not losing
+      # the opportunity to import a newly published original.
+      - name: Check for unprobed original game icons (no network)
+        id: icons
+        continue-on-error: true
+        run: node scripts/should-recover-original-icons.mjs --github-output
+      - name: Dispatch verified original-only mirror when needed
+        if: steps.icons.outputs.needed == 'true' || steps.icons.outcome == 'failure'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run catalog-icon-reconcile.yml --ref bonaqu_projects -f mode=new
       # Query metrics come from Analytics, never SQL reads or D1 mutations.
       - name: Report D1 query row costs (Analytics only, no D1 SQL)
         if: success()

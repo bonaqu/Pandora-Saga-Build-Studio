@@ -44,9 +44,25 @@ test('recover work only after live parity, with no cron and no need to mutate D1
  const yml=read('.github/workflows/catalog-icon-reconcile.yml');
  assert.match(yml,/workflow_run:/);
  assert.match(yml,/workflow_run:[\s\S]*?branches:\s*\n\s*- bonaqu_projects/);
- assert.match(yml,/Live Pages and Worker readiness/);
+ assert.doesNotMatch(yml,/^\s*- Live Pages and Worker readiness/m,
+  'Routine UI releases must not start a separate icon recovery runner');
+ assert.match(yml,/workflow_dispatch:/);
+ assert.match(yml,/mode:/);
+ assert.match(yml,/inputs\.mode == 'new'/);
+ assert.match(yml,/inputs\.mode != 'new'/);
+ const readiness=read('.github/workflows/live-readonly.yml');
+ const parity=readiness.indexOf('run: npm run catalog:parity:live');
+ const inspect=readiness.indexOf('run: node scripts/should-recover-original-icons.mjs');
+ const trigger=readiness.indexOf('gh workflow run catalog-icon-reconcile.yml');
+ assert.ok(parity>=0&&inspect>parity&&trigger>inspect,
+  'Only fully verified catalog publication may dispatch the asset mirror');
+ assert.match(readiness,/steps\.icons\.outputs\.needed == 'true'/);
+ assert.match(readiness,/steps\.icons\.outcome == 'failure'/);
+ assert.match(readiness,/actions: write/);
+ assert.match(readiness,/-f mode=new/);
  assert.match(yml,/node scripts\/mirror-os-icons\.mjs --limit=90/);
  assert.match(yml,/node scripts\/mirror-os-icons\.mjs --retry-404/);
+ assert.match(yml,/Manually recheck historical HTTP 404 originals/);
  assert.match(yml,/Verified catalog fallback auto-merge/);
  const ci=read('scripts/catalog-icon-reconcile-ci.mjs');
  assert.match(ci,/for\(let page=1;page<=6;page\+\+\)/);
