@@ -109,7 +109,7 @@ test('same published D1 snapshot avoids repeated large dataset SQL reads',async(
  const load=snapshot=>async()=>{
   loads++;
   return new Response(JSON.stringify({items:['d1-'+snapshot],loads}),{
-   headers:{'cache-control':'public, max-age=60','x-ps-catalog':'d1',
+   headers:{'cache-control':'public, max-age=3600','x-ps-catalog':'d1',
     'x-ps-catalog-snapshot':snapshot}
   });
  };
