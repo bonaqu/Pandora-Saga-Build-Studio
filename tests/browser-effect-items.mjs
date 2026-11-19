@@ -88,6 +88,12 @@ export async function runEffectItemsSmoke(browser,base){
   await page.locator('.wiki-controls input[type="search"]').fill('Howling Sword');
   await page.locator('[data-wiki-record="422"]').click();
   const equipmentEffectText=await page.locator('.wiki-owner-effects').innerText();
+  assert.equal(await page.locator('#detailContent .studio-owner-interface-editor').count(),0,
+   'A normal visitor never sees the item caption editor');
+  assert.equal(await page.locator('#detailContent [data-owner-copy-section="wiki.item.text"]').count(),0,
+   'A public item has no owner-only inline edits');
+  assert.equal(await page.locator('[data-owner-interface-key="obtainHeading"]').innerText(),
+   'How to obtain');
   assert.match(equipmentEffectText,/Skill on hit/);
   assert.match(equipmentEffectText,/Tripped/);
   assert.doesNotMatch(equipmentEffectText,/500000015/);

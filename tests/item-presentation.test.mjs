@@ -112,3 +112,29 @@ test('actual RU/EN game source keeps terminal breaks from items and souls',()=>{
  assert.match(en.items['2841'].d,/<br><br>$/);
  assert.equal(p.description(en.items['2841'].d).endsWith('\n\n'),true);
 });
+
+test('29 Wiki item presentation captions reuse D1 bilingual CAS without editing data',()=>{
+ const app=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
+ const scope=app.slice(app.indexOf('const wikiItemDisplayRows='),app.indexOf('const equipmentCopy='));
+ const rows=[...scope.matchAll(/^ \["([^"]+)","([^"]+)","([^"]+)"\],?$/gm)];
+ assert.equal(rows.length,29);
+ assert.equal(new Set(rows.map(row=>row[1])).size,29);
+ const sandbox={window:{}};
+ vm.runInNewContext(readFileSync(new URL('../pandora-studio-honor-guide.js',import.meta.url),'utf8'),sandbox);
+ for(const [key,ru,en] of [
+  ['obtainHeading','Где получить','How to obtain'],
+  ['usedInNpcTrades','Используется в обмене NPC · ','Used in NPC trades · '],
+  ['effectSearch','Найти игровой эффект…','Search game effects…']
+ ]){
+  const canonical='wiki.item.text.'+key.replace(/[A-Z]/g,ch=>'-'+ch.toLowerCase());
+  const d1={['guideedit.book.'+canonical]:JSON.stringify({ru:'Своя подпись',en:'Own caption'})};
+  assert.equal(sandbox.window.PandoraHonorGuide.field(d1,canonical,ru,en).ru,'Своя подпись');
+  assert.equal(sandbox.window.PandoraHonorGuide.field(d1,canonical,ru,en).en,'Own caption');
+  assert.equal(sandbox.window.PandoraHonorGuide.field({},canonical,ru,en).en,en);
+ }
+ assert.match(app,/ownerInterfaceEditor\(\s*'wiki\.item\.text',wikiItemDisplayRows/);
+ assert.match(app,/itemBind\(h\('h4'\),'usedInNpcTrades','text',String\(usedIn\.length\)\)/);
+ assert.match(app,/itemBind\(more,'showMore','text',counters\)/);
+ assert.match(app,/itemBind\(search,'effectSearch','placeholder'\)/);
+ assert.match(app,/itemBind\(search,'effectSearchAria','aria-label'\)/);
+});
