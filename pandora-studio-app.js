@@ -1210,6 +1210,72 @@ function ownerInterfaceEditor(section,rows,headingRu='Подписи интер�
  // NPC trade captions are safe authorial RU/EN copy, not recipe or character data.
 // Source-independent bilingual monster captions. Game stat values,
 // resistance keys, drop chances and item IDs are not authorial copy.
+// Safe authorial map/dungeon captions, separate from source game records.
+const wikiMapRows=Object.freeze([
+ ["tags","Теги локации","Location tags"],
+ ["addTag","+ Тег","+ Tag"],
+ ["removeTag","Удалить тег","Remove tag"],
+ ["confirmTag","Подтвердить удаление тега","Confirm tag removal"],
+ ["notes","Заметки о локации","Location notes"],
+ ["noteHint","Двойной клик — добавить заметку","Double-click to add a note"],
+ ["sections","Разделы локации","Location sections"],
+ ["monsters","Монстры","Monsters"],
+ ["monstersLocation","Монстры в локации","Monsters in location"],
+ ["monstersDungeon","Монстры в подземелье","Monsters in dungeon"],
+ ["searchMonsters","Поиск монстра…","Search monsters…"],
+ ["searchMonstersAria","Поиск монстра в локации","Search monsters in location"],
+ ["npcs","NPC в локации","NPCs in this location"],
+ ["loot","Добыча в локации","Location loot"],
+ ["chance","Шанс группы добычи:","Loot group chance:"],
+ ["chanceUnknown","Шанс отдельной вещи не указан.","Individual item chance not listed."],
+ ["quest","Сценарий задания","Quest scenario"],
+ ["descriptionHint","Двойной клик — добавить описание","Double-click to add a description"],
+ ["removeSection","Удалить раздел","Remove section"],
+ ["confirmSection","Подтвердить удаление раздела","Confirm section removal"]
+]);
+const wikiMapByKey=new Map(wikiMapRows.map(row=>[row[0],row]));
+function mapCopy(key){
+ const row=wikiMapByKey.get(key);
+ if(!row)throw Error('Unknown map caption: '+key);
+ return ownerCopy('wiki.map.text',key,row[1],row[2]);
+}
+function mapBind(node,key,attribute='text',suffix='',prefix=''){
+ const row=wikiMapByKey.get(key);
+ if(!row)throw Error('Unknown map binding: '+key);
+ return bindOwnerInterfaceText(node,'wiki.map.text',key,
+  row[1],row[2],attribute,suffix,prefix);
+}
+// A failed CAS, Escape or blur disarms an inline delete button.
+function confirmWikiOwnerRemoval(button,{label,confirm,action}){
+ const original=button.textContent;
+ button.setAttribute('aria-label',label);
+ const reset=()=>{
+  if(button.dataset.confirm!=='1')return;
+  delete button.dataset.confirm;
+  button.textContent=original;
+  button.setAttribute('aria-label',label);
+ };
+ button.addEventListener('blur',reset);
+ button.addEventListener('keydown',event=>{
+  if(event.key==='Escape'&&button.dataset.confirm==='1'){
+   event.preventDefault();event.stopPropagation();reset();
+  }
+ });
+ button.onclick=()=>{
+  if(button.disabled)return;
+  if(button.dataset.confirm!=='1'){
+   button.dataset.confirm='1';
+   button.textContent=confirm;
+   button.setAttribute('aria-label',confirm);
+   return;
+  }
+  button.disabled=true;
+  void Promise.resolve().then(action).catch(error=>{
+   showStudioToast(error?.message||String(error),'warning');
+  }).finally(()=>{button.disabled=false;reset()});
+ };
+ return button;
+}
 const wikiMonsterRows=Object.freeze([
  ["statLevel","Уровень","Level"],
  ["statHp","ОЗ","HP"],
@@ -6442,6 +6508,9 @@ function renderWiki(root){
     }
     } // Non-server NPCs do not have trade recipes or editable server IDs.
   }else if(type==='map'||type==='instance'){
+    if(adminEditing&&adminToken)detail.append(ownerInterfaceEditor(
+     'wiki.map.text',wikiMapRows,'Подписи локаций и подземелий',
+     'Location and dungeon captions'));
     const mapSections=type==='map'&&Array.isArray(rec.sections)?rec.sections:null;
     const showMapSection=key=>type!=='map'||!mapSections||mapSections.includes(key);
     const ownerMap=type==='map'&&adminEditing&&Boolean(adminToken)&&
@@ -6450,7 +6519,7 @@ function renderWiki(root){
      const tags=Array.isArray(rec.tags)?rec.tags:[];
      if(showMapSection('tags')&&(tags.length||ownerMap)){
       const tagSection=h('section',{class:'wiki-map-section wiki-map-tag-section'});
-      tagSection.append(h('h4',{text:wt('Теги локации','Location tags')}));
+      tagSection.append(mapBind(h('h4'),'tags'));
       const chips=h('div',{class:'wiki-map-tags'});
       for(const [i,tag]of tags.entries()){
        const chip=h('span',{class:'wiki-map-kind wiki-map-tag'});
@@ -6464,16 +6533,18 @@ function renderWiki(root){
         label.addEventListener('keydown',e=>{if(e.key==='F2'){e.preventDefault();start()}});
        }
        chip.append(label);
-       if(ownerMap)chip.append(h('button',{type:'button',class:'wiki-owner-remove',
-        text:'×','aria-label':wt('Удалить тег','Remove tag')+' '+tag.ru,
-        onclick:()=>void saveWikiRecordField('map',id,'tags',tags.filter((_,n)=>n!==i))
-         .catch(e=>showStudioToast(e.message,'warning'))}));
+       if(ownerMap)chip.append(confirmWikiOwnerRemoval(
+        h('button',{type:'button',class:'wiki-owner-remove',text:'×'}),{
+         label:mapCopy('removeTag')+' '+(lang==='en'?tag.en:tag.ru),
+         confirm:mapCopy('confirmTag'),
+         action:()=>saveWikiRecordField('map',id,'tags',tags.filter((_,n)=>n!==i))
+        }));
        chips.append(chip);
       }
       tagSection.append(chips);
       if(ownerMap){
        const add=h('button',{type:'button',class:'wiki-owner-plus',
-        text:wt('+ Тег','+ Tag')});
+        text:mapCopy('addTag')});
        add.onclick=()=>{
         if(tagSection.querySelector('.wiki-map-tag-form'))return;
         const form=h('div',{class:'wiki-map-tag-form wiki-owner-source-picker'});
@@ -6505,7 +6576,7 @@ function renderWiki(root){
        ['notes',wt('Заметки','Notes')],['custom',wt('Свои разделы','Custom sections')]];
       const enabled=Array.isArray(rec.sections)?rec.sections:sectionDefs.map(x=>x[0]);
       const manage=h('div',{class:'wiki-map-section-controls'});
-      manage.append(h('small',{text:wt('Разделы локации','Location sections')}));
+      manage.append(mapBind(h('small'),'sections'));
       const buttons=h('div',{class:'wiki-map-section-switches'});
       for(const [key,label]of sectionDefs){
        const on=enabled.includes(key);
@@ -6523,9 +6594,9 @@ function renderWiki(root){
      const copy=String(rec[key]||'');
      if(copy||ownerMap){
       const section=h('section',{class:'wiki-map-section wiki-map-notes'});
-      section.append(h('h4',{text:wt('Заметки о локации','Location notes')}));
+      section.append(mapBind(h('h4'),'notes'));
       const text=h('p',{class:'wiki-description'+(!copy?' wiki-description-placeholder':''),
-       text:copy||wt('Двойной клик — добавить заметку','Double-click to add a note')});
+       text:copy||mapCopy('noteHint')});
       if(ownerMap){
        text.classList.add('wiki-honor-editable');text.tabIndex=0;
        const open=()=>editWikiValue(text,copy,{type:'textarea',
@@ -6535,11 +6606,12 @@ function renderWiki(root){
         if(event.key==='F2'){event.preventDefault();open()}
        });
       }
-      section.append(text);detail.append(section);
+      if(!copy)mapBind(text,'noteHint');
+       section.append(text);detail.append(section);
      }
     }
     if(type==='instance'&&rec.kind==='quest')detail.append(h('span',{
-     class:'wiki-instance-kind',text:wt('Сценарий задания','Quest scenario')
+     class:'wiki-instance-kind',text:mapCopy('quest')
     }));
     const description=type==='instance'&&lang!=='en'?
      (rec.blurbRu||null):rec.blurb;
@@ -6547,7 +6619,7 @@ function renderWiki(root){
      const editable=type==='instance'&&adminEditing&&adminToken;
      detail.append(h('p',{
       class:'wiki-description'+(!description?' wiki-description-placeholder':''),
-      text:description||'Двойной клик — добавить описание',
+      text:description||mapCopy('descriptionHint'),
       ...(editable?{'data-owner-record':'instance:'+id,
        'data-owner-field':lang==='en'?'blurb':'blurbRu',
        ...(!description?{'data-owner-empty':'true'}:{})}:{})
@@ -6559,7 +6631,7 @@ function renderWiki(root){
       detail.append(h('p',{class:'wiki-owner-map-note',text:
        wt('Здесь пока нельзя добавить монстров.','Monster editing is not available for this location.')}));
      if(showMapSection('monsters')&&adminEditing&&adminToken&&(type==='instance'||ownerMap)){
-      detail.append(wikiOwnerEntityList({label:'Монстры в '+(type==='instance'?'подземелье':'локации'),
+      detail.append(wikiOwnerEntityList({label:mapCopy(type==='instance'?'monstersDungeon':'monstersLocation'),
       kind:'monster',existing:mobs,replaceable:false,onChange:async next=>{
        const before=mobs.map(String),after=next.map(String);
        const hasOwner=next.some(x=>window.PandoraWikiOwnerData.ownerMonsterId(x))||
@@ -6591,14 +6663,16 @@ function renderWiki(root){
       const levels=roster.map(row=>row.reported?.level??row.mon?.level).filter(Number.isFinite);
       const levelRange=levels.length?' · '+wt('ур. ','Lv. ')+Math.min(...levels)+
        (Math.max(...levels)!==Math.min(...levels)?'–'+Math.max(...levels):''):'';
-      detail.append(h('h4',{text:wt('Монстры · ','Monsters · ')+roster.length+levelRange}));
+      detail.append(mapBind(h('h4'),'monsters','text',' · '+roster.length+levelRange));
        const search=ownerPlainTextField({class:'wiki-inline-search wiki-owner-search',
-       placeholder:wt('Поиск монстра…','Search monsters…'),
-       'aria-label':wt('Поиск монстра в локации','Search monsters in location'),
+       placeholder:mapCopy('searchMonsters'),
+        'aria-label':mapCopy('searchMonstersAria'),
        name:'monster-roster-filter',autocomplete:'off','data-lpignore':'true',
        'data-1p-ignore':'true'});
-      guardEncyclopediaSearch(search);
-      const list=h('div',{class:'wiki-map-monsters'}),rows=[];
+      mapBind(search,'searchMonsters','placeholder');
+       mapBind(search,'searchMonstersAria','aria-label');
+       guardEncyclopediaSearch(search);
+       const list=h('div',{class:'wiki-map-monsters'}),rows=[];
       for(const {id:mob,mon,reported} of roster.sort((a,b)=>
        (a.reported?.level??a.mon?.level??999)-(b.reported?.level??b.mon?.level??999))){
        const name=lang==='en'&&reported?.nameEn?reported.nameEn:
@@ -6705,12 +6779,12 @@ function renderWiki(root){
     if(type==='map'&&showMapSection('npcs')){
       const residents=wikiIndex.residents(id);
       if(ownerMap&&rec.virtual&&rec.placeType!=='astir-district'){
-       detail.append(wikiOwnerEntityList({label:wt('NPC в локации','NPCs in this location'),
+       detail.append(wikiOwnerEntityList({label:mapCopy('npcs'),
         kind:'npc',existing:rec.npcs||[],limit:120,
         onChange:next=>saveWikiRecordField('map',id,'npcs',
          next.map(x=>/^\d+$/.test(String(x))?Number(x):String(x)))}));
       }else if(adminEditing&&adminToken&&!rec.virtual){
-       detail.append(wikiOwnerEntityList({label:wt('NPC в локации','NPCs in this location'),
+       detail.append(wikiOwnerEntityList({label:mapCopy('npcs'),
         kind:'npc',existing:residents.map(([npcId])=>String(npcId)),replaceable:false,onChange:async next=>{
          const before=residents.map(([npcId])=>String(npcId)),after=next.map(String);
          const added=after.find(n=>!before.includes(n));
@@ -6724,7 +6798,7 @@ function renderWiki(root){
          await saveWikiRecordField('npc',npcId,'maps',updated.map(Number));
         }}));
       }else if(residents.length){
-       detail.append(h('h4',{text:wt('NPC в локации','NPCs in this location')+' · '+residents.length}));
+       detail.append(h('h4',{text:mapCopy('npcs')+' · '+residents.length}));
        const list=h('div',{class:'wiki-map-npcs'});
        for(const [npcId,npc] of residents){
         const entry=h('div',{class:'wiki-map-npc'});
@@ -6831,24 +6905,26 @@ function renderWiki(root){
     if(type==='map'&&showMapSection('loot')){
      const loot=Array.isArray(rec.loot)?rec.loot:[];
      if(ownerMap){
-      detail.append(wikiOwnerEntityList({label:wt('Добыча в локации','Location loot'),
+      detail.append(wikiOwnerEntityList({label:mapCopy('loot'),
        kind:'item',existing:loot,limit:120,
        onChange:next=>saveWikiRecordField('map',id,'loot',next.map(Number))}));
      }else if(loot.length){
-      detail.append(h('h4',{text:wt('Добыча в локации','Location loot')}));
+      detail.append(h('h4',{text:mapCopy('loot')}));
       detail.append(linkFlow(loot.filter(x=>wikiData.items?.[String(x)]).map(x=>
        itemLink(x,dataName('item',x),id))));
      }
      const dropZones=wikiIndex.zones(id);
      if(dropZones.length){
       if(!ownerMap&&!loot.length)
-       detail.append(h('h4',{text:wt('Добыча в локации','Location loot')}));
+       detail.append(h('h4',{text:mapCopy('loot')}));
       for(const zone of dropZones)for(const group of zone.rows||[]){
        const block=h('section',{class:'wiki-zone-group'});
        if(group.mob!=null&&wikiData.monsters?.[group.mob])
         block.append(wikiLink(dataName('monster',group.mob),'monster',group.mob));
-       if(group.base!=null)block.append(h('small',{text:
-        'Шанс группы добычи: '+group.base+'%. Шанс отдельной вещи не указан.'}));
+       if(group.base!=null)block.append(h('small',{},[
+        mapBind(h('span'),'chance'),' '+group.base+'%. ',
+        mapBind(h('span'),'chanceUnknown')
+       ]));
        for(const reward of group.items||[])
         if(reward.i!=null)block.append(itemLink(reward.i,
          dataName('item',reward.i)+(reward.n&&reward.n!==1?' ×'+reward.n:''),id));
@@ -6871,10 +6947,14 @@ function renderWiki(root){
        head.addEventListener('keydown',e=>{if(e.key==='F2'){e.preventDefault();start()}});
       }
       panel.append(head);
-      if(ownerMap)panel.append(h('button',{type:'button',class:'wiki-owner-remove wiki-map-section-delete',
-       text:wt('Удалить раздел','Remove section'),
-       onclick:()=>void saveWikiRecordField('map',id,'extraSections',
-        custom.filter((_,i)=>i!==index)).catch(e=>showStudioToast(e.message,'warning'))}));
+      if(ownerMap)panel.append(confirmWikiOwnerRemoval(
+        h('button',{type:'button',class:'wiki-owner-remove wiki-map-section-delete',
+         text:mapCopy('removeSection')}),{
+         label:mapCopy('removeSection')+': '+(lang==='en'?group.titleEn:group.titleRu),
+         confirm:mapCopy('confirmSection'),
+         action:()=>saveWikiRecordField('map',id,'extraSections',
+          custom.filter((_,i)=>i!==index))
+        }));
       if(group.kind==='text'){
        const key=lang==='en'?'textEn':'textRu';
        const note=group[key]||'';

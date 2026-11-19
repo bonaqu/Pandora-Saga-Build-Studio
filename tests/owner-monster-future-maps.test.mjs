@@ -162,3 +162,55 @@ test('41 monster labels are bilingual D1 overlays with isolated OS stats and loo
  assert.match(app,/e\.key==='Escape'\)\{e\.preventDefault\(\);e\.stopPropagation\(\);resetRemove\(\)\}/);
  assert.match(app,/remove\.disabled=true;\s*const all=dropRows\(\)/);
 });
+
+test('map and dungeon captions use the shared bilingual D1 owner editor',()=>{
+ const app=read('pandora-studio-app.js');
+ const block=app.slice(app.indexOf('const wikiMapRows='),app.indexOf('const wikiMonsterRows='));
+ const captions=[...block.matchAll(/^ \["([^"]+)","([^"]+)","([^"]+)"\],?$/gm)];
+ assert.equal(captions.length,20);
+ assert.equal(new Set(captions.map(row=>row[1])).size,20);
+ const win={};Function('window',read('pandora-studio-honor-guide.js'))(win);
+ for(const [key,ru,en]of captions){
+  const path='wiki.map.text.'+key.replace(/[A-Z]/g,x=>'-'+x.toLowerCase());
+  const patch={['guideedit.book.'+path]:JSON.stringify({ru:'Новое',en:'Updated'})};
+  assert.equal(win.PandoraHonorGuide.field(patch,path,ru,en).ru,'Новое');
+  assert.equal(win.PandoraHonorGuide.field(patch,path,ru,en).en,'Updated');
+ }
+ assert.match(app,/ownerInterfaceEditor\(\s*'wiki\.map\.text',wikiMapRows/);
+ assert.match(app,/mapBind\(h\('span'\),'chanceUnknown'\)/);
+ assert.match(app,/text:description\|\|mapCopy\('descriptionHint'\)/);
+});
+test('tag and section deletion needs explicit second click, Escape cancels, CAS failure disarms',async()=>{
+ const app=read('pandora-studio-app.js');
+ const body=app.slice(app.indexOf('function confirmWikiOwnerRemoval('),app.indexOf('const wikiMonsterRows='));
+ const warnings=[];
+ const attach=Function('showStudioToast',body+'return confirmWikiOwnerRemoval;')(
+  (...values)=>warnings.push(values));
+ function button(){
+  const attrs={},listeners={};
+  return {dataset:{},disabled:false,textContent:'×',listeners,
+   addEventListener(type,fn){listeners[type]=fn},
+   setAttribute(name,value){attrs[name]=value},
+   getAttribute(name){return attrs[name]}
+  };
+ }
+ let count=0;
+ const tag=button();
+ attach(tag,{label:'Delete tag',confirm:'Confirm',action:()=>{count++}});
+ tag.onclick();assert.equal(count,0);
+ tag.listeners.blur();assert.equal(tag.dataset.confirm,undefined);
+ tag.onclick();
+ const escape={key:'Escape',stop:false,preventDefault(){},stopPropagation(){this.stop=true}};
+ tag.listeners.keydown(escape);assert.equal(escape.stop,true);
+ tag.onclick();tag.onclick();
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(count,1);assert.equal(tag.disabled,false);
+ const section=button();
+ attach(section,{label:'Remove',confirm:'Confirm',action:()=>Promise.reject(Error('CAS conflict'))});
+ section.onclick();section.onclick();
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(section.dataset.confirm,undefined);
+ assert.equal(section.disabled,false);
+ assert.deepEqual(warnings,[['CAS conflict','warning']]);
+ assert.match(app,/wiki-map-section-delete/);
+});
