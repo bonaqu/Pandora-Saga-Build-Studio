@@ -182,3 +182,33 @@ test('an explicit checkpoint cancellation rejects hung custom fetch and JSON pro
   await assert.rejects(pending,/D1 checkpoint superseded/);
  }
 });
+
+test('live account-only guard retries network timeouts, never non-401 HTTP responses',async()=>{
+ const script=read('scripts/check-build-account-only-live.mjs');
+ const start=script.indexOf('async function get(path,token=null){');
+ const end=script.indexOf('\nlet capabilities=',start);
+ assert.ok(start>=0&&end>start);
+ const make=(fetcher,delays)=>Function('fetch','pause','AbortSignal','worker','origin',
+  script.slice(start,end)+'\nreturn get;')(fetcher,ms=>{delays.push(ms)},
+   AbortSignal,'https://worker.example','https://bonaqu.github.io');
+ const delays=[],requests=[];
+ let calls=0;
+ const fetcher=async(_url,options)=>{
+  requests.push(options);
+  if(++calls===1)throw Error('Temporary routing failure');
+  return {status:401};
+ };
+ const get=make(fetcher,delays);
+ assert.equal((await get('/api/library')).status,401);
+ assert.equal(calls,2);
+ assert.deepEqual(delays,[500]);
+ assert.ok(requests.every(options=>options.method==='GET'&&
+  options.cache==='no-store'&&options.headers.Origin==='https://bonaqu.github.io'));
+ let badCalls=0;
+ assert.equal((await make(async()=>{badCalls++;return {status:500}},[] )('/api/library')).status,500);
+ assert.equal(badCalls,1,'A non-401 Worker response must not be silently retried as success');
+ let failures=0;
+ await assert.rejects(make(async()=>{failures++;throw Error('Offline')},[])('/api/shared/A1234567890'),
+  /Read-only Worker check failed/);
+ assert.equal(failures,3,'Network retry attempts are capped');
+});
