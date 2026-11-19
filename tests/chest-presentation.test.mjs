@@ -119,7 +119,9 @@ test('missing or malformed gold range is not presented as a fabricated item or a
  const body=app.slice(first,second);
  assert.match(body,/row\.i!=null\?itemLink/);
  assert.match(body,/goldLabel\(row,lang\)/);
- assert.match(body,/Награда не указана/);
+ assert.match(body,/goldReward\?'goldMissing':'rewardMissing'/);
+ assert.match(app,/\["rewardMissing","Награда не указана","Reward not listed"\]/);
+ assert.match(app,/\["goldMissing","Золото · сумма не указана","Gold · amount not listed"\]/);
  assert.match(app,/if\(adminEditing&&adminToken&&row\.i!=null\)/,
   'A gold-only reward has no editable item quantity');
 });

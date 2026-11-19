@@ -1196,6 +1196,58 @@ function ownerInterfaceEditor(section,rows,headingRu='Подписи интер�
  box.append(items);
  return box;
 }
+
+ // Chest captions share the existing D1 CAS/Undo owner editor without ever
+ // editing source chances, IDs, reward records or dynamic numeric counts.
+ const wikiChestDisplayRows=Object.freeze([
+ ["openHeading","Как открыть сундук","How to open this chest"],
+ ["requiredKey","Необходимый ключ","Required key"],
+ ["keyUnlisted","Не указан","Not listed"],
+ ["chestMaster","Мастер сундуков","Chest master"],
+ ["contentsHeading","Содержимое сундука","Chest contents"],
+ ["categoryPrefix","Категория наград: ","Reward category: "],
+ ["contentsMissing","Сведения о содержимом отсутствуют.","Contents are not listed."],
+ ["contentsUnlisted","Содержимое сундука не указано.","Chest contents are not listed."],
+ ["certainHeading","Награды с шансом 100%","Rewards listed at 100%"],
+ ["rewardsPrefix","Наград: ","Rewards: "],
+ ["groupOptionsPrefix","Варианты · группа ","Options · group "],
+ ["groupRollPrefix","Розыгрыш ","Roll "],
+ ["groupOptions","Возможные награды","Possible rewards"],
+ ["groupReward","Награда","Reward"],
+ ["oneGold","1 награда","1 reward"],
+ ["oneItem","1 предмет","1 item"],
+ ["variantsPrefix","Вариантов: ","Options: "],
+ ["nested","↳ Следующая шкатулка","↳ Next chest"],
+ ["goldMissing","Золото · сумма не указана","Gold · amount not listed"],
+ ["rewardMissing","Награда не указана","Reward not listed"],
+ ["quantityAria","Количество. Двойной клик — изменить","Quantity. Double-click to edit"],
+ ["quantityHint","Двойной клик — изменить количество","Double-click to edit quantity"],
+ ["chanceAria","Шанс внутри группы. Двойной клик — изменить","Chance within this roll. Double-click to edit"],
+ ["chanceHint","Двойной клик — изменить шанс внутри группы","Double-click to edit the chance within this group"],
+ ["chanceWithinPrefix","Шанс внутри группы: ","Chance within group: "],
+ ["soulsPrefix","Душ: ","Souls: "],
+ ["removeReward","Удалить награду из сундука","Remove chest reward"],
+ ["addItem","+ Предмет","+ Item"],
+ ["deleteGroup","Удалить группу","Delete group"],
+ ["filterCategory","Тип награды в сундуке","Chest reward category"],
+ ["filterEquipment","Типы экипировки","Equipment types"],
+ ["filterEmpty","В выбранной категории наград нет.","No rewards in this category."],
+ ["filterToolbar","Фильтры наград сундука","Chest reward filters"],
+ ["groupShowing","Показано: ","Showing: "],
+ ["showing","Показано ","Showing "],
+ ]);
+ const wikiChestDisplayByKey=new Map(wikiChestDisplayRows.map(row=>[row[0],row]));
+ function chestCopy(key){
+  const row=wikiChestDisplayByKey.get(key);
+  if(!row)throw Error('Unknown chest display key');
+  return ownerCopy('wiki.chest.text',key,row[1],row[2]);
+ }
+ function chestBind(node,key,attribute='text',suffix='',prefix=''){
+  const row=wikiChestDisplayByKey.get(key);
+  if(!row)throw Error('Unknown chest binding');
+  return bindOwnerInterfaceText(node,'wiki.chest.text',key,
+   row[1],row[2],attribute,suffix,prefix);
+ }
 const equipmentCopy=(key,ru,en)=>ownerCopy('equipment',key,ru,en);
 const equipmentCopyLabel=(node,key,ru,en,options)=>
  ownerCopyLabel(node,'equipment',key,ru,en,options);
@@ -6687,15 +6739,15 @@ function renderWiki(root){
     const mapChest=rec.key!=null;
     if(mapChest){
      const notice=h('section',{class:'wiki-chest-opening',role:'note'});
-     notice.append(h('strong',{text:wt('Как открыть сундук','How to open this chest')}));
+     notice.append(chestBind(h('strong'),'openHeading'));
      const info=h('div',{class:'wiki-chest-opening-fields'});
      const required=h('div',{class:'wiki-chest-opening-field'},[
-      h('small',{text:wt('Необходимый ключ','Required key')})
+      chestBind(h('small'),'requiredKey')
      ]);
      if(wikiData.items?.[rec.key])required.append(itemLink(rec.key,dataName('item',rec.key),id));
-     else required.append(h('span',{text:wt('Не указан','Not listed')}));
+     else required.append(chestBind(h('span'),'keyUnlisted'));
      const master=h('div',{class:'wiki-chest-opening-field'},[
-      h('small',{text:wt('Мастер сундуков','Chest master')})
+      chestBind(h('small'),'chestMaster')
      ]);
      const masterNpcId='astir-npc-kingdom-claris';
      const line=h('div',{class:'wiki-chest-master-row'});
@@ -6706,7 +6758,10 @@ function renderWiki(root){
      detail.append(notice);
     }
     const changeChest=next=>saveWikiRelationRows('chest',id,next);
-    detail.append(h('h4',{text:wt('Содержимое сундука','Chest contents')}));
+    detail.append(chestBind(h('h4'),'contentsHeading'));
+    if(adminEditing&&adminToken)detail.append(ownerInterfaceEditor(
+     'wiki.chest.text',wikiChestDisplayRows,
+     'Подписи содержимого сундука','Chest contents captions'));
     if(!groups.length){
      const colored={
       '51038':wt('Оружие и доспехи','Weapons and armor'),
@@ -6715,22 +6770,18 @@ function renderWiki(root){
      };
      const category=colored[String(id)];
      if(category)detail.append(h('div',{class:'wiki-chest-unverified'},[
-      h('strong',{text:wt('Категория наград: ','Reward category: ')+category}),
-      h('p',{text:wt('Сведения о содержимом отсутствуют.',
-       'Contents are not listed.')})
+      chestBind(h('strong'),'categoryPrefix','text',category),
+      chestBind(h('p'),'contentsMissing')
      ]));
-     else detail.append(h('p',{class:'muted',text:wt(
-      'Содержимое сундука не указано.',
-      'Chest contents are not listed.'
-     )}));
+     else detail.append(chestBind(h('p',{class:'muted'}),'contentsUnlisted'));
     }
     const chestIds=new Set(Object.keys(wikiIndex.records('chest')||{}));
     const chestView=window.PandoraStudioChestPresentation.analyze(groups,chestIds);
     const gallery=h('div',{class:'wiki-chest-groups wiki-chest-board'});
     const certainBoard=h('section',{class:'wiki-chest-collection wiki-chest-listed-100'});
     certainBoard.append(h('div',{class:'wiki-chest-collection-head'},[
-     h('strong',{text:wt('Награды с шансом 100%','Rewards listed at 100%')}),
-     h('small',{text:wt('Наград: ','Rewards: ')+chestView.listed100.length})
+     chestBind(h('strong'),'certainHeading'),
+     chestBind(h('small'),'rewardsPrefix','text',String(chestView.listed100.length))
     ]));
     const certainItems=h('div',{class:'wiki-chest-assured-grid'});
     certainBoard.append(certainItems);
@@ -6739,22 +6790,24 @@ function renderWiki(root){
      const heading=h('summary',{class:'wiki-chest-group-summary'},[
       ...(adminEditing&&adminToken?[h('span',{class:'wiki-chest-group-mark',
        'aria-hidden':'true',text:String(i+1)})]:[]),
-      h('span',{class:'wiki-chest-group-name',
-       text:adminEditing&&adminToken?
-        (group.length>1?wt('Варианты · группа ','Options · group ')+(i+1):
-         wt('Розыгрыш ','Roll ')+(i+1)):
-        (group.length>1?wt('Возможные награды','Possible rewards'):
-         wt('Награда','Reward'))}),
-      h('small',{text:group.length===1?(listedSingle?
-       '100%':group[0]?.gold?wt('1 награда','1 reward'):
-        wt('1 предмет','1 item')):
-       wt('Вариантов: ','Options: ')+group.length}),
+      h('span',{class:'wiki-chest-group-name'}),
+      h('small',{text:listedSingle?'100%':''}),
       h('span',{class:'wiki-chest-chevron','aria-hidden':'true',text:'⌄'})
      ]);
+     const groupNameKey=adminEditing&&adminToken?
+      (group.length>1?'groupOptionsPrefix':'groupRollPrefix'):
+      (group.length>1?'groupOptions':'groupReward');
+     chestBind(heading.querySelector('.wiki-chest-group-name'),groupNameKey,
+      'text',adminEditing&&adminToken?String(i+1):'');
      const groupCount=heading.querySelector('small');
      if(groupCount){
       groupCount.classList.add('wiki-chest-group-count');
-      groupCount.dataset.unfiltered=groupCount.textContent;
+      const unfilteredKey=group.length>1?'variantsPrefix':
+       listedSingle?'':group[0]?.gold?'oneGold':'oneItem';
+      groupCount.dataset.chestCountKey=unfilteredKey;
+      groupCount.dataset.chestCountSuffix=group.length>1?String(group.length):'';
+      if(unfilteredKey)chestBind(groupCount,unfilteredKey,'text',
+       groupCount.dataset.chestCountSuffix);
      }
      const options=h('div',{class:'wiki-chest-options'});
      for(const {index:rowIndex,row} of window.PandoraStudioChestPresentation.orderedRewards(group)){
@@ -6769,23 +6822,22 @@ function renderWiki(root){
       const goldReward=Array.isArray(row.gold);
       const rewardMain=h('div',{class:'wiki-chest-reward-main'},[
        row.i!=null?itemLink(row.i,dataName('item',row.i),id):
-        h('span',{class:goldReward?'wiki-chest-gold-reward':'wiki-chest-unlisted-reward',
-         text:goldReward?
-          (window.PandoraStudioChestPresentation.goldLabel(row,lang)||
-           wt('Золото · сумма не указана','Gold · amount not listed')):
-          wt('Награда не указана','Reward not listed')})
+        (goldReward&&window.PandoraStudioChestPresentation.goldLabel(row,lang)?
+         h('span',{class:'wiki-chest-gold-reward',
+          text:window.PandoraStudioChestPresentation.goldLabel(row,lang)}):
+         chestBind(h('span',{class:goldReward?
+          'wiki-chest-gold-reward':'wiki-chest-unlisted-reward'}),
+          goldReward?'goldMissing':'rewardMissing'))
       ]);
-      if(nextChest)rewardMain.append(h('small',{class:'wiki-chest-nested-note',
-       text:wt('↳ Следующая шкатулка','↳ Next chest')}));
+      if(nextChest)rewardMain.append(chestBind(h('small',{class:'wiki-chest-nested-note'}),'nested'));
       option.append(rewardMain);
       const rewardMeta=h('div',{class:'wiki-chest-reward-meta'});
       if(adminEditing&&adminToken&&row.i!=null){
        const quantity=h('span',{class:'wiki-reward-quantity wiki-edit-value',
-        text:'×'+(row.n??1),
-        'aria-label':wt('Количество. Двойной клик — изменить',
-         'Quantity. Double-click to edit')});
-       window.PandoraGuideTooltip?.attach(quantity,
-        wt('Двойной клик — изменить количество','Double-click to edit quantity'),
+        text:'×'+(row.n??1)});
+       chestBind(quantity,'quantityAria','aria-label');
+       chestBind(quantity,'quantityHint','aria-description');
+       window.PandoraGuideTooltip?.attach(quantity,chestCopy('quantityHint'),
         {hoverDelay:1000});
        quantity.ondblclick=e=>{e.preventDefault();
         editWikiValue(quantity,row.n??1,{type:'number',min:1,max:999999,integer:true,
@@ -6797,43 +6849,44 @@ function renderWiki(root){
        text:'×'+row.n}));
       if(row.plus!=null&&row.plus>0)rewardMeta.append(h('small',{class:'wiki-reward-enhance',
        text:'+'+row.plus}));
-      if(row.soul!=null&&row.soul>0)rewardMeta.append(h('small',{class:'wiki-reward-enhance',
-       text:wt('Душ: ','Souls: ')+row.soul}));
+      if(row.soul!=null&&row.soul>0)rewardMeta.append(chestBind(
+       h('small',{class:'wiki-reward-enhance'}),'soulsPrefix','text',String(row.soul)));
       if(adminEditing&&adminToken){
        const chance=h('small',{class:'wiki-reward-percent wiki-edit-value',
-        text:window.PandoraStudioChestPresentation.chance(row.p,lang),
-        'aria-label':wt('Шанс внутри группы. Двойной клик — изменить',
-         'Chance within this roll. Double-click to edit')});
-       window.PandoraGuideTooltip?.attach(chance,
-        wt('Двойной клик — изменить шанс внутри группы',
-         'Double-click to edit the chance within this group'),{hoverDelay:1000});
+        text:window.PandoraStudioChestPresentation.chance(row.p,lang)});
+       chestBind(chance,'chanceAria','aria-label');
+       chestBind(chance,'chanceHint','aria-description');
+       window.PandoraGuideTooltip?.attach(chance,chestCopy('chanceHint'),
+        {hoverDelay:1000});
        chance.ondblclick=e=>{e.preventDefault();
         editWikiValue(chance,row.p,{type:'number',min:0,max:100,
          onCommit:n=>changeChest(groups.map((g,gi)=>gi!==i?g:
           g.map((r,ri)=>ri===rowIndex?{...r,p:n}:r)))});
        };
        rewardMeta.append(chance);
-       rewardMeta.append(h('button',{type:'button',class:'wiki-owner-remove',
-        text:'×','aria-label':wt('Удалить награду из сундука',
-         'Remove chest reward'),
+       rewardMeta.append(chestBind(h('button',{type:'button',class:'wiki-owner-remove',
+        text:'×',
         onclick:()=>void changeChest(groups.map((g,gi)=>gi!==i?g:
          g.filter((_,ri)=>ri!==rowIndex)))
-         .catch(e=>showStudioToast(e.message,'warning'))}));
-      }else rewardMeta.append(h('small',{class:'wiki-reward-percent'+
-       (row.p===100?' certain':'')+(row.p==null?' unknown':''),
-       'aria-label':wt('Шанс внутри группы: ','Chance within group: ')+
-        window.PandoraStudioChestPresentation.chance(row.p,lang),
-       text:window.PandoraStudioChestPresentation.chance(row.p,lang)}));
+         .catch(e=>showStudioToast(e.message,'warning'))}),'removeReward','aria-label'));
+      }else{
+       const percent=h('small',{class:'wiki-reward-percent'+
+        (row.p===100?' certain':'')+(row.p==null?' unknown':''),
+        text:window.PandoraStudioChestPresentation.chance(row.p,lang)});
+       chestBind(percent,'chanceWithinPrefix','aria-label',
+        window.PandoraStudioChestPresentation.chance(row.p,lang));
+       rewardMeta.append(percent);
+      }
       option.append(rewardMeta);
       options.append(option);
      }
      if(adminEditing&&adminToken){
-      options.append(h('button',{type:'button',class:'wiki-owner-plus',
-       text:'+ Предмет',onclick:()=>wikiItemChoice(options,itemId=>
-        changeChest(groups.map((g,gi)=>gi!==i?g:[...g,{i:itemId,n:1,p:null}])))}));
-      options.append(h('button',{type:'button',class:'wiki-trade-delete',
-       text:'Удалить группу',onclick:()=>void changeChest(groups.filter((_,gi)=>gi!==i))
-        .catch(e=>showStudioToast(e.message,'warning'))}));
+      options.append(chestBind(h('button',{type:'button',class:'wiki-owner-plus',
+       onclick:()=>wikiItemChoice(options,itemId=>
+        changeChest(groups.map((g,gi)=>gi!==i?g:[...g,{i:itemId,n:1,p:null}])))}),'addItem'));
+      options.append(chestBind(h('button',{type:'button',class:'wiki-trade-delete',
+       onclick:()=>void changeChest(groups.filter((_,gi)=>gi!==i))
+        .catch(e=>showStudioToast(e.message,'warning'))}),'deleteGroup'));
      }
      const section=h('details',{class:'wiki-chest-group'+
       (group.length>1?' wiki-chest-alternatives':'')},[heading,options]);
@@ -6872,8 +6925,8 @@ function renderWiki(root){
        ['ring','Кольца','Rings'],['neck','Амулеты','Amulets'],
        ['belt','Пояса','Belts'],['ear','Серьги','Earrings']
       ];
-      const typeFilter=h('select',{class:'wiki-chest-filter-type',
-       'aria-label':wt('Тип награды в сундуке','Chest reward category')});
+      const typeFilter=chestBind(h('select',{class:'wiki-chest-filter-type'}),
+       'filterCategory','aria-label');
       for(const [key,ru,en] of categories){
        const count=key==='all'?facets.total:facets.types[key];
        if(!count)continue;
@@ -6889,8 +6942,8 @@ function renderWiki(root){
       // Gear facets are always discoverable from "All rewards".
       // Clicking a slot automatically activates Equipment; no hidden
       // second dropdown or prior category-selection step is required.
-      const slotChips=h('div',{class:'wiki-chest-slot-filters',
-       role:'group','aria-label':wt('Типы экипировки','Equipment types')});
+      const slotChips=chestBind(h('div',{class:'wiki-chest-slot-filters',
+       role:'group'}),'filterEquipment','aria-label');
       if(facets.types.equipment){
        // Stable author-only D1 text. Never edit a game item, slot ID or count.
        const slotHeading=h('small',{class:'wiki-chest-slot-label',
@@ -6930,12 +6983,11 @@ function renderWiki(root){
       }
       const count=h('small',{class:'wiki-chest-filter-count',role:'status',
        'aria-live':'polite'});
-      const empty=h('p',{class:'wiki-chest-filter-empty muted',hidden:true,
-       text:wt('В выбранной категории наград нет.',
-        'No rewards in this category.')});
-      const toolbar=h('div',{class:'wiki-chest-reward-filters',
-       role:'group','aria-label':wt('Фильтры наград сундука','Chest reward filters')},
-       [typeFilter,count,...(facets.types.equipment?[slotChips]:[])]);
+      const empty=chestBind(h('p',{class:'wiki-chest-filter-empty muted',hidden:true}),
+       'filterEmpty');
+      const toolbar=chestBind(h('div',{class:'wiki-chest-reward-filters',
+       role:'group'},[typeFilter,count,...(facets.types.equipment?[slotChips]:[])]),
+       'filterToolbar','aria-label');
       gallery.before(toolbar);gallery.after(empty);
       // Native <option> captions cannot contain an inline pencil. The
       // existing compact editor is owner-only and collapsed by default.
@@ -6969,16 +7021,28 @@ function renderWiki(root){
         const visible=groupCards.filter(card=>!card.hidden).length;
         section.hidden=visible===0;
         const groupCount=section.querySelector('.wiki-chest-group-count');
-        if(groupCount)groupCount.textContent=type==='all'?
-         groupCount.dataset.unfiltered:
-         wt('Показано: ','Showing: ')+visible+' / '+groupCards.length;
+        if(groupCount){
+         if(type==='all'){
+          const key=groupCount.dataset.chestCountKey;
+          if(key)chestBind(groupCount,key,'text',
+           groupCount.dataset.chestCountSuffix||'');
+          else{
+           // Guaranteed 100% is game data, not an editable caption. A prior
+           // filtered groupShowing binding must not overwrite it on D1 save.
+           groupCount.removeAttribute('data-owner-interface-bindings');
+           groupCount.textContent='100%';
+          }
+         }else chestBind(groupCount,'groupShowing','text',
+          visible+' / '+groupCards.length);
+        }
        }
        const visibleCertain=[...certainItems.querySelectorAll('.wiki-chest-reward')]
         .filter(card=>!card.hidden).length;
        certainBoard.hidden=visibleCertain===0;
        const certainBadge=certainBoard.querySelector('.wiki-chest-collection-head small');
-       if(certainBadge)certainBadge.textContent=wt('Наград: ','Rewards: ')+visibleCertain;
-       count.textContent=wt('Показано ','Showing ')+shown+' / '+facets.total;
+       if(certainBadge)chestBind(certainBadge,'rewardsPrefix','text',
+        String(visibleCertain));
+       chestBind(count,'showing','text',shown+' / '+facets.total);
        empty.hidden=shown!==0;
       };
       typeFilter.onchange=()=>{
@@ -6989,14 +7053,14 @@ function renderWiki(root){
       applyRewardFilter();
      }
     }
-    if(adminEditing&&adminToken)detail.append(h('button',{type:'button',
-     class:'wiki-owner-plus wiki-add-source',text:'+ Предмет',
+    if(adminEditing&&adminToken)detail.append(chestBind(h('button',{type:'button',
+     class:'wiki-owner-plus wiki-add-source',
      onclick:()=>wikiItemChoice(detail,itemId=>{
       const row={i:itemId,n:1,p:null};
        if(!groups.length)return changeChest([[row]]);
        if(groups[0].length>=100)throw Error('Первый розыгрыш заполнен');
        return changeChest(groups.map((group,index)=>index===0?[...group,row]:group));
-     })}));
+     })}),'addItem'));
   }
   if(detailOnly)detail.scrollTop=previousDetailScroll;
  };

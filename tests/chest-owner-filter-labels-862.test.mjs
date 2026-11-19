@@ -64,3 +64,30 @@ test('all category and slot labels are bound but runtime counts and identifiers 
  assert.match(app,/const amount=key==='all'\?facets\.types\.equipment:facets\.slots\[key\]/);
  assert.match(app,/wikiChestRewardFilter\.type=typeFilter\.value/);
 });
+
+test('chest contents render 35 D1-authored RU/EN captions with numeric data separate',()=>{
+ const block=app.slice(app.indexOf('const wikiChestDisplayRows='),app.indexOf('const equipmentCopy='));
+ const found=[...block.matchAll(/^ \["([^"]+)","([^"]+)","([^"]+)"\],?$/gm)];
+ assert.equal(found.length,35);
+ assert.equal(new Set(found.map(row=>row[1])).size,35);
+ for(const [key,ru,en] of [
+  ['contentsHeading','Содержимое сундука','Chest contents'],
+  ['groupShowing','Показано: ','Showing: '],
+  ['removeReward','Удалить награду из сундука','Remove chest reward'],
+  ['addItem','+ Предмет','+ Item']
+ ]){
+  const id='wiki.chest.text.'+key.replace(/[A-Z]/g,ch=>'-'+ch.toLowerCase());
+  const values={['guideedit.book.'+id]:JSON.stringify({ru:'Редакторский текст',en:'Edited text'})};
+  assert.equal(guide.field(values,id,ru,en).ru,'Редакторский текст');
+  assert.equal(guide.field(values,id,ru,en).en,'Edited text');
+  assert.equal(guide.field({},id,ru,en).ru,ru);
+ }
+ assert.match(app,/ownerInterfaceEditor\(\s*'wiki\.chest\.text',wikiChestDisplayRows/);
+ assert.match(app,/chestBind\(groupCount,'groupShowing'/);
+ assert.match(app,/chestBind\(count,'showing'/);
+ assert.match(app,/chestBind\(\s*h\('small',\{class:'wiki-reward-enhance'\}\),'soulsPrefix'/);
+ assert.match(app,/groupCount\.removeAttribute\('data-owner-interface-bindings'\)/,
+  'Switching a guaranteed 100% group back to all must detach obsolete text binding');
+ assert.match(app,/chestBind\(quantity,'quantityHint','aria-description'\)/);
+ assert.equal(JSON.stringify([all,items]),sourceSnapshot);
+});
