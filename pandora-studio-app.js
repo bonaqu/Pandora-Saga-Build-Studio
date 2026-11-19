@@ -3145,16 +3145,20 @@ function renderDetails(){wikiOutsideCleanup?.();wikiOutsideCleanup=null;const ti
 
 let catalogArchived=false;
 let wikiRenderSelected=null,wikiRenderedRoot=null,wikiBaseData=null;
-let wikiLoadGeneration=0;
+let wikiLoadGeneration=0,wikiLoadController=null;
 function invalidateWikiCatalog({dropSnapshot=false}={}){
  wikiLoadGeneration++;
+ // Superseded D1 downloads are no longer useful after new owner/canonical data.
+ wikiLoadController?.abort(Error('Устаревшая загрузка Энциклопедии'));
+ wikiLoadController=null;
  wikiIndex=null;wikiData=null;wikiPending=null;
  if(dropSnapshot)wikiBaseData=null;
 }
 async function loadWiki(){
  if(wikiIndex)return wikiIndex;
  if(wikiPending)return wikiPending;
- const generation=wikiLoadGeneration;
+ const generation=wikiLoadGeneration,controller=new AbortController();
+ wikiLoadController=controller;
  const pending=(async()=>{
   // Owner edits rebuild from the already validated snapshot: no redundant
   // round-trip of all 11 D1 datasets for each double-click edit.
@@ -3164,7 +3168,8 @@ async function loadWiki(){
   // available only after an explicit user choice on the startup screen.
    try{loaded=await window.PandoraWikiCatalog.load({
     api:API,fetcher:catalogArchived?fetch:window.PandoraStudioLiveRead.get,
-    timeout:30000,strict:!catalogArchived,preferLocal:catalogArchived})}
+    timeout:30000,strict:!catalogArchived,preferLocal:catalogArchived,
+    signal:controller.signal})}
    catch(error){if(generation!==wikiLoadGeneration)return loadWiki();throw error}
    if(generation!==wikiLoadGeneration)return loadWiki();
    wikiBaseData=loaded.data;
@@ -3207,7 +3212,10 @@ async function loadWiki(){
  })();
  wikiPending=pending;
  try{return await pending}
- finally{if(wikiPending===pending)wikiPending=null}
+ finally{
+  if(wikiPending===pending)wikiPending=null;
+  if(wikiLoadController===controller)wikiLoadController=null;
+ }
 }
 // Every navigation entry owns its own source position. Honor, linked items,
 // maps, NPCs and PvP wars all restore through the SAME history mechanism.
@@ -11322,8 +11330,8 @@ const skillLabelsReady=window.PandoraStudioLiveRead.get(
 // Localhost keeps its fixture catalog solely for development and Chromium CI.
 const localCatalogHost=['127.0.0.1','localhost'].includes(location.hostname);
 let studioLiveReady=false,liveGateReason=null,liveCheckpointId=0,
- liveCheckpointPromise=null,liveRetryTimer=null,liveRetryFailures=0,
- liveLocalSaved=true;
+ liveCheckpointPromise=null,liveCheckpointController=null,
+ liveRetryTimer=null,liveRetryFailures=0,liveLocalSaved=true;
 const quotaCooldown=()=>Math.max(0,
  Number(window.PandoraStudioLiveRead?.quotaCooldownMs?.())||0);
 function clearOnlineRetry(){
@@ -11450,6 +11458,14 @@ function leaveLiveGate(){
  // This never uploads an unsaved current hero.
  resumeCloudLibrary({force:true});
 }
+// Stop obsolete read-only checkpoints instead of letting their HTTP backoff
+// continue to touch D1 after offline, tab suspension or a replacement check.
+function cancelLiveCheckpoint(){
+ ++liveCheckpointId;
+ liveCheckpointController?.abort(Error('Устаревшая проверка D1'));
+ liveCheckpointController=null;
+ liveCheckpointPromise=null;
+}
 async function checkLiveConnection({force=false}={}){
  if(localCatalogHost||!studioLiveReady||liveGateReason==='changed')return;
  // Do not suppress the regular live heartbeat on an ACTIVE editor. If
@@ -11459,12 +11475,14 @@ async function checkLiveConnection({force=false}={}){
  if(liveCheckpointPromise)return liveCheckpointPromise;
  if(adminToken&&ownerSaveInFlight())return;
  const revision=++liveCheckpointId,copyAtStart=window.PandoraStudioOnlineGate.digest(override);
+ const controller=new AbortController();
+ liveCheckpointController=controller;
  const job=(async()=>{
   try{
    const result=await window.PandoraStudioOnlineGate.inspect({
     api:API,fetcher:window.PandoraStudioLiveRead.get,expectedSnapshot:activeCatalogSnapshot,
     expectedOverrides:override,expectedCounts:catalogSource?.meta?.counts,
-    signal:AbortSignal.timeout(22000)
+    signal:AbortSignal.any([controller.signal,AbortSignal.timeout(22000)])
    });
    if(revision!==liveCheckpointId||!studioLiveReady)return;
    // An owner edit in another outstanding request is never treated as a
@@ -11486,7 +11504,10 @@ async function checkLiveConnection({force=false}={}){
   }
  })();
  liveCheckpointPromise=job;
- try{await job}finally{if(liveCheckpointPromise===job)liveCheckpointPromise=null}
+ try{await job}finally{
+  if(liveCheckpointPromise===job)liveCheckpointPromise=null;
+  if(liveCheckpointController===controller)liveCheckpointController=null;
+ }
 }
 function reloadVerifiedCatalog(){
  if(liveGateReason!=='changed')return;
@@ -11550,11 +11571,12 @@ for(const type of ['keydown','click','input','change','submit','blur','focusout'
  document.addEventListener(type,blockUnverifiedInput,true);
 window.addEventListener('offline',()=>{
  if(localCatalogHost)return;
- ++liveCheckpointId;liveCheckpointPromise=null;
+ cancelLiveCheckpoint();
  if(studioLiveReady)showLiveGate('offline');
 });
 window.addEventListener('online',()=>{
- if(localCatalogHost)return;
+ if(localCatalogHost||document.visibilityState==='hidden')return;
+ // A hidden tab is rechecked by visibilitychange, never by a late online ping.
  if(studioLiveReady){if(liveGateReason!=='changed')void checkLiveConnection({force:true});}
  else if(startupOverlay.dataset.state==='error')void startStudio();
 });
@@ -11563,12 +11585,15 @@ setInterval(()=>{
   document.visibilityState==='visible')void checkLiveConnection();
 },45000);
 window.addEventListener('focus',()=>{
- if(!localCatalogHost&&studioLiveReady&&liveGateReason!=='changed')
-  void checkLiveConnection();
+ if(!localCatalogHost&&studioLiveReady&&liveGateReason!=='changed'&&
+  document.visibilityState==='visible')void checkLiveConnection();
 });
 document.addEventListener('visibilitychange',()=>{
- if(localCatalogHost||document.visibilityState!=='visible'||
-  liveGateReason==='changed')return;
+ if(localCatalogHost)return;
+ if(document.visibilityState==='hidden'){
+  cancelLiveCheckpoint();return;
+ }
+ if(liveGateReason==='changed')return;
  // A hidden failed initial boot has no live checkpoint yet. Restart it
  // when visible; an explicit daily-quota cooldown delays only automatic work.
  if(!studioLiveReady){

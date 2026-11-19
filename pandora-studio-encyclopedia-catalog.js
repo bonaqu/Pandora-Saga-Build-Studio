@@ -579,8 +579,9 @@ const localFixtureHost=()=>{
  const hostname=root.location?.hostname;
  return !hostname||hostname==='localhost'||hostname==='127.0.0.1';
 };
-async function load({api,fetcher,local='./data/os',timeout=12000,preferLocal=false,strict=false}={}){
+async function load({api,fetcher,local='./data/os',timeout=12000,preferLocal=false,strict=false,signal=null}={}){
  if(typeof fetcher!=='function')throw TypeError('fetcher required');
+ if(signal?.aborted)throw signal.reason||Error('Загрузка Энциклопедии отменена');
  if(preferLocal&&!localFixtureHost())
   throw Error('Публичный игровой каталог загружается только из D1');
  const remoteBase=String(api||'').replace(/\/$/,'');
@@ -620,7 +621,8 @@ async function load({api,fetcher,local='./data/os',timeout=12000,preferLocal=fal
    const payload=await response.json();
    if(signal?.aborted)throw signal.reason||Error('Загрузка Энциклопедии отменена');
    return [key,payload];
-  });
+  },{signal});
+  if(signal?.aborted)throw signal.reason||Error('Загрузка Энциклопедии отменена');
   if(remote&&snapshots.size!==1)
    throw Error('Не подтверждена единая версия опубликованного каталога D1');
   return {data:validate(Object.fromEntries(records)),
@@ -633,7 +635,7 @@ async function load({api,fetcher,local='./data/os',timeout=12000,preferLocal=fal
   // replace remotely updated instance gameplay fields or changed descriptions.
   // Skip the extra request when this catalog has no descriptions to translate.
   if(loaded.data.instances.some(row=>row.blurb&&!row.blurbRu))try{
-   const response=await fetcher(local.replace(/\/$/,'')+'/instances.json',{cache:'no-cache'});
+   const response=await fetcher(local.replace(/\/$/,'')+'/instances.json',{cache:'no-cache',...(signal?{signal}:{})});
    if(response?.ok){
     const rows=await response.json();
     const localRows=new Map((Array.isArray(rows)?rows:Object.values(rows))
@@ -649,9 +651,12 @@ async function load({api,fetcher,local='./data/os',timeout=12000,preferLocal=fal
   // complement is source-matched RU instance copy above: never substitute
   // historical monster stats or loot for a validated D1 snapshot.
 
+  if(signal?.aborted)throw signal.reason||Error('Загрузка Энциклопедии отменена');
   return loaded;
  }
  catch(remoteError){
+  // Cancellation never activates an archived fixture fallback.
+  if(signal?.aborted)throw signal.reason||remoteError;
   // Historical fallback is retained only inside headless/localhost fixture
   // tests; the published site always fails closed, even without strict:true.
   if(strict||!localFixtureHost())throw remoteError;
