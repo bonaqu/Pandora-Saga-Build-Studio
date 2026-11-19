@@ -131,7 +131,7 @@ test('owner interface offers in-place bilingual editing, NPC creation and editab
  assert.match(app,/if\(ownerMap&&rec\.virtual\)/);
  assert.doesNotMatch(app,/wiki-town-npc-create/);
  assert.match(app,/saveWikiRecordPatch\('npc',npcId,\{name,nameEn,service,maps:\[String\(id\)\]\}\)/);
- assert.match(app,/saveWikiRecordField\('npc',id,'maps',\[selector.value\]\)/);
+ assert.match(app,/saveWikiRecordList\('npc',id,'maps',\s*rec\.maps\|\|\[\],\[selector.value\]\)/);
  assert.match(app,/await apiRequest\('\/api\/admin\/override',\{key,value:after\}\)/);
  assert.match(workerSource,/validTownWikiPatch/);
  assert.match(exportSource,/npc\\\.\(\?:astir-npc/);
