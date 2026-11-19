@@ -832,8 +832,8 @@ test('Path help and skill-navigation copy bind bilingual D1 fields without touch
   assert.ok(bound.some(row=>row.key===key),'Skill copy '+key+' is bound');
  const previous=bound.find(row=>row.key==='skillPreviousAria');
  const next=bound.find(row=>row.key==='skillNextLink');
- assert.equal(previous.suffix,'Original prerequisite');
- assert.equal(next.suffix,'Original successor');
+ assert.equal(previous.suffix,' Original prerequisite');
+ assert.equal(next.suffix,' Original successor');
  assert.equal(next.node.textContent,'Следующее → Original successor');
  assert.equal(previous.node.textContent,'Original prerequisite');
  assert.equal(source[0].name,'Original prerequisite');
