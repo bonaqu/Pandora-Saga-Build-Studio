@@ -16,6 +16,9 @@ test('readonly readiness probe uses current Worker owner editor capability marke
  assert.ok(worker.includes('sourceFullProbe:true'));
  assert.ok(worker.includes('catalogPublishCASRequired:true'));
  assert.ok(worker.includes('catalogProvenanceCors:true'));
+ assert.ok(worker.includes('catalogSnapshotCache:true'));
+ assert.ok(client.includes('payload?.catalogSnapshotCache===true'));
+ assert.match(client,/Snapshot-bound D1 public catalog cache/);
  assert.ok(client.includes('catalogSourceFailover'));
  assert.ok(client.includes("'bilingual-item-text'"));
  assert.ok(client.includes("'catalog-and-overrides'"));
