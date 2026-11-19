@@ -174,6 +174,8 @@ async function request(kind,data=null,auth=token()){
    headers:{'Content-Type':'application/json',...(auth?{Authorization:'Bearer '+auth}:{})},
    ...(data===null?{}:{body:JSON.stringify(data)})
   }));
+  if(!response||typeof response.ok!=='boolean')
+   throw Error('Invalid account response');
   try{result=await bounded(()=>response.json())}
   catch(error){
    if(signal?.aborted)throw error;
@@ -187,6 +189,11 @@ async function request(kind,data=null,auth=token()){
  if(!response.ok){
   const error=new Error(publicAccountError(result.error,response.status));
   error.httpStatus=response.status;throw error;
+ }
+ // Worker confirms password changes with {ok:true}. A malformed HTTP 200
+ // cannot claim credentials were updated when the JSON acknowledgment is gone.
+ if(kind==='password'&&result?.ok!==true){
+  const error=new Error(publicAccountError('',0));error.httpStatus=0;throw error;
  }
  return result;
 }
