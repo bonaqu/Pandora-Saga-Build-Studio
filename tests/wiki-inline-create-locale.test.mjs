@@ -38,7 +38,7 @@ test('NPC creation on Astir and custom maps uses a single D1-bound bilingual for
 test('wiki editor error copy does not expose internal IDs and translates source failures',()=>{
  assert.doesNotMatch(app,/Не удалось создать уникальный ID|No unique ID available|Конфликт ID, попробуй ещё раз|ID collision, please retry/);
  assert.ok(app.includes("wt('Не удалось создать монстра. Повтори попытку.','Could not create monster. Try again.')"));
- assert.ok(app.includes("wt('Не удалось создать NPC. Повтори попытку.','Could not create NPC. Try again.')"));
+ assert.ok(app.includes("mapCopy('npcCreateFailure')"));
  assert.ok(app.includes("wt('NPC не найден в каталоге','NPC not found in catalog')"));
  assert.ok(app.includes("wt('Проверь названия и связи списка','Check list names and links')"));
 });
