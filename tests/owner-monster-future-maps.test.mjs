@@ -252,7 +252,7 @@ test('map editor supports bounded tags/sections and hides empty owner prompt fro
  assert.match(app,/submit\.disabled=true;message\.textContent=''/);
  assert.match(app,/if\(note\|\|ownerMap\)/);
  assert.match(app,/if\(!note\)mapBind\(text,'sectionEmpty'\)/);
- assert.match(app,/mapBind\(h\('small',\{class:'wiki-map-limit',role:'status'\}\),'tagLimit'\)/);
+ assert.match(app,/mapBind\(\s*h\('small',\{class:'wiki-map-limit',role:'status'\}\),'tagLimit'\)/);
  assert.match(app,/if\(ownerMap&&custom\.length<12\)/);
  assert.match(app,/saveWikiMapList\(id,'extraSections',custom/);
  assert.match(app,/saveWikiMapList\(id,'loot',loot/);
