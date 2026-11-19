@@ -131,11 +131,18 @@ async function get(url,options={},config={}){
 // Unlike Promise.all over the entire D1 catalog, this starts only a small
 // number of simultaneous downloads, retaining the source order and snapshot
 // integrity checks performed by the caller.
-async function mapLimit(items,limit,mapper){
+async function mapLimit(items,limit,mapper,{signal:parent}={}){
  if(!Array.isArray(items)||!Number.isInteger(limit)||limit<1||limit>8||
   typeof mapper!=='function')throw Error('Invalid read-only batch');
+ if(parent!=null&&(typeof parent.aborted!=='boolean'||
+  typeof parent.addEventListener!=='function'||
+  typeof parent.removeEventListener!=='function'))
+  throw Error('Invalid batch cancellation signal');
+ if(parent?.aborted)throw abortReason(parent);
  const output=new Array(items.length),controller=new AbortController();
  let next=0,firstError=null;
+ const onParentAbort=()=>controller.abort(abortReason(parent));
+ parent?.addEventListener('abort',onParentAbort,{once:true});
  async function work(){
   while(!controller.signal.aborted){
    const index=next++;
@@ -147,16 +154,21 @@ async function mapLimit(items,limit,mapper){
    }catch(error){
     if(firstError===null){
      firstError=error;
-     // Abort other in-flight D1 reads before the caller retries the catalog.
+     // Preserve the original failure, aborting already-started siblings.
      controller.abort(error);
     }
     return;
    }
   }
  }
- await Promise.all(Array.from({length:Math.min(limit,items.length)},work));
- if(firstError!==null)throw firstError;
- return output;
+ try{
+  // Abort can race the initial preflight before any mapper runs.
+  if(parent?.aborted)throw abortReason(parent);
+  await Promise.all(Array.from({length:Math.min(limit,items.length)},work));
+  if(firstError!==null)throw firstError;
+  if(controller.signal.aborted)throw abortReason(controller.signal);
+  return output;
+ }finally{parent?.removeEventListener('abort',onParentAbort)}
 }
 root.PandoraStudioLiveRead=Object.freeze({get,mapLimit,quotaCooldownMs,resetQuotaCooldown});
 })(typeof window==='undefined'?globalThis:window);
