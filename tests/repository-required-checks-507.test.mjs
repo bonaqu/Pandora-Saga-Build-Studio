@@ -34,7 +34,8 @@ test('fail-fast release guard comes before the complete Node suite',()=>{
 test('real Chromium quick mode is only for demonstrably harmless PR diffs',()=>{
  assert.equal(selectBrowserSuite(['AGENTS.md','README.md','docs/procedure.md']),'quick');
  assert.equal(selectBrowserSuite(['tests/social-preview.test.mjs']),'quick');
- assert.equal(selectBrowserSuite(['assets/icon.css','AGENTS.md']),'quick');
+ assert.equal(selectBrowserSuite(['assets/icon.css','AGENTS.md']),'layout',
+  'CSS changes retain the responsive Chromium audit');
  for(const paths of [['pandora-os-character-calculator.js'],
   ['data/os/skills.json'],['scripts/select-browser-suite.mjs'],
   ['.github/workflows/browser-smoke.yml'],['index.html']]){
