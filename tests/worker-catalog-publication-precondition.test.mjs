@@ -170,3 +170,39 @@ test('live Worker requires a readable D1 pointer before any catalog cache lookup
  assert.equal(response.status,503);
  assert.equal(pointerReads,1);
 });
+
+test('admin batches may stage a NEW D1 snapshot but never edit the published one in place',async()=>{
+ const records=[{key:'example',value:{name:'Valid staged item'}}];
+ const request=snapshot=>new Request(API+'/api/admin/catalog/batch',{
+  method:'POST',headers:{Origin:ORIGIN,Authorization:AUTH,
+   'Content-Type':'application/json'},
+  body:JSON.stringify({snapshot,dataset:'items',records})
+ });
+ const mock=active=>{
+  const queries=[],DB={
+   prepare(sql){
+    queries.push(sql);
+    if(sql.includes('SELECT id FROM sessions WHERE token_hash'))
+     return {bind(){return this},first:async()=>({id:1})};
+    if(sql.includes('SELECT id FROM catalog_current WHERE id=1 AND snapshot=?'))
+     return {bind(){return this},first:async()=>active?{id:1}:null};
+    if(sql.startsWith('INSERT INTO catalog_entries'))
+     return {bind(){return this}};
+    throw Error('Unexpected SQL '+sql);
+   },
+   batch:async statements=>statements.map(()=>({meta:{changes:1}}))
+  };
+  return {DB,queries};
+ };
+ const published=mock(true);
+ const denied=await worker.fetch(request('ps-published-immutable'),{DB:published.DB});
+ assert.equal(denied.status,409);
+ assert.match((await denied.json()).error,/Published catalog snapshot is immutable/);
+ assert.equal(published.queries.filter(q=>q.startsWith('INSERT INTO catalog_entries')).length,0,
+  'Even an admin cannot change an already live D1 dataset without publishing a new pointer');
+ const fresh=mock(false);
+ const permitted=await worker.fetch(request('ps-new-safe-snapshot'),{DB:fresh.DB});
+ assert.equal(permitted.status,200);
+ assert.equal((await permitted.json()).received,1);
+ assert.equal(fresh.queries.filter(q=>q.startsWith('INSERT INTO catalog_entries')).length,1);
+});
