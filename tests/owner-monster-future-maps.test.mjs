@@ -126,18 +126,19 @@ test('future zone UI shares the native monster grid and offers in-place linked-c
  assert.match(app,/wiki-add-resistance/);
 });
 
-test('41 monster labels are bilingual D1 overlays with isolated OS stats and loot',()=>{
+test('42 monster labels are bilingual D1 overlays with isolated OS stats and loot',()=>{
  const app=read('pandora-studio-app.js');
  const block=app.slice(app.indexOf('const wikiMonsterRows='),app.indexOf('const wikiNpcTradeRows='));
  const entries=[...block.matchAll(/^ \["([^"]+)","([^"]+)","([^"]+)"\],?$/gm)];
- assert.equal(entries.length,41);
+ assert.equal(entries.length,42);
  assert.equal(new Set(entries.map(row=>row[1])).size,41);
  const langEnv={window:{}};
  Function('window',read('pandora-studio-honor-guide.js'))(langEnv.window);
  for(const [key,ru,en]of [
   ['statLevel','Уровень','Level'],['resistCold','Лёд','Ice'],
   ['loot','Выпадающие предметы','Dropped items'],
-  ['confirmRemove','Подтвердить удаление','Confirm removal']
+  ['confirmRemove','Подтвердить удаление','Confirm removal'],
+  ['createLinkFailure','Монстр создан, но связь с локацией не сохранилась. Открой локацию и выбери существующую карточку монстра.','Monster card created, but its location link was not saved. Open the location and select the existing monster card.']
  ]){
   const canonical='wiki.monster.text.'+key.replace(/[A-Z]/g,ch=>'-'+ch.toLowerCase());
   const stored={['guideedit.book.'+canonical]:JSON.stringify({ru:'Авторская подпись',en:'Custom label'})};
@@ -389,4 +390,66 @@ test('new Astir NPCs and future-map NPCs share canonical bilingual owner IDs wit
   JSON.stringify({name:'Кларис',maps:['astir-kingdom']})});
  assert.equal(verified.townNpcs['astir-npc-kingdom-claris'].ownerCreated,false,
   'Known catalog NPC must never become owner deletable');
+});
+
+test('shared owner identity reservation checks collisions before issuing D1 saves',()=>{
+ const app=read('pandora-studio-app.js');
+ const begin=app.indexOf('const reserveWikiOwnerId=type=>');
+ const end=app.indexOf('\n const mapRoster=',begin);
+ assert.ok(begin>=0&&end>begin);
+ let calls=0;
+ const reserve=Function('crypto','wikiIndex','override',
+  app.slice(begin,end)+'\nreturn reserveWikiOwnerId;')(
+  {getRandomValues:bytes=>{
+   bytes.fill(0);bytes[7]=++calls===1?1:calls;return bytes;
+  }},
+  {records:type=>type==='monster'?{'owner-monster-0000000000000001':{}}:{}},
+  {});
+ assert.equal(reserve('monster'),'owner-monster-0000000000000002',
+  'An already-existing monster identity must not be claimed');
+ assert.match(reserve('map'),/^custom-[a-f0-9]{16}$/);
+ assert.match(reserve('npc'),/^owner-npc-[a-f0-9]{16}$/);
+ assert.equal(reserve('unsupported'),null);
+});
+test('a failed create POST reuses its ID; a failed follow-up link reveals the already saved card',async()=>{
+ const app=read('pandora-studio-app.js');
+ const start=app.indexOf(' const createOwnerMonster=(');
+ const end=app.indexOf(" if(adminEditing&&adminToken&&wikiSelection.type==='monster')",start);
+ assert.ok(start>0&&end>start);
+ const buttons=[],fields=[],posts=[],links=[],visited=[],notices=[];
+ const h=(tag,attrs={})=>{
+  const node={tag,...attrs,disabled:false,
+   append(){},remove(){this.removed=true}};
+  if(tag==='button')buttons.push(node);
+  return node;
+ };
+ const field=attrs=>{const node={...attrs,value:attrs.value||'',focus(){}};fields.push(node);return node};
+ let failFirst=true;
+ const factory=Function('h','ownerPlainTextField','saveWikiRecordPatch',
+  'persistRosterLink','openWiki','showStudioToast','reserveWikiOwnerId',
+  'monsterCopy','wt','const adminToken="token",adminEditing=true;\n'+
+  app.slice(start,end)+'\nreturn createOwnerMonster;');
+ const create=factory(h,field,async(type,id,patch)=>{
+  posts.push({type,id,patch});
+  if(failFirst){failFirst=false;throw Error('Temporary D1 failure')}
+ },async(...args)=>{links.push(args);throw Error('Map CAS 409')},
+ (...args)=>visited.push(args),(...args)=>notices.push(args),
+ ()=> 'owner-monster-0000000000000001',()=> 'Saved without a location link',
+ (ru,en)=>ru);
+ const trigger={parentElement:{querySelector:()=>null},after(form){this.form=form}};
+ create(trigger,{mapId:'el-beht',spawnId:'spawn-a',name:'Солдат',level:33});
+ fields.find(f=>f['aria-label']==='Название монстра EN').value='Soldier';
+ const save=buttons.find(b=>b.text==='Сохранить монстра');
+ assert.ok(save);
+ await save.onclick();
+ assert.equal(save.disabled,false,'An initial failed POST must remain retryable');
+ await save.onclick();
+ assert.equal(posts.length,2);
+ assert.equal(posts[0].id,posts[1].id,'Retry uses the original D1 key');
+ assert.equal(links.length,1,'Map linkage only starts after creation is acknowledged');
+ assert.deepEqual(visited,[['monster','owner-monster-0000000000000001']],
+  'The saved card remains accessible even after the second write fails');
+ assert.deepEqual(notices,[['Saved without a location link','warning']]);
+ await save.onclick();
+ assert.equal(posts.length,2,'A completed-but-detached form cannot submit duplicates');
 });

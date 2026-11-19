@@ -44,3 +44,12 @@ test('wiki editor error copy does not expose internal IDs and translates source 
  assert.ok(app.includes("wt('NPC не найден в каталоге','NPC not found in catalog')"));
  assert.ok(app.includes("wt('Проверь названия и связи списка','Check list names and links')"));
 });
+
+test('all three creation forms use one reserved ID on retry and guard deleted parent map',()=>{
+ const app=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
+ for(const type of ['monster','map','npc'])
+  assert.ok(app.includes("reservedId||(reservedId=reserveWikiOwnerId('"+type+"'))"));
+ assert.match(app,/if\(!wikiIndex\.records\('map'\)\?\.\[String\(id\)\]\)/);
+ assert.ok(app.includes("monsterCopy('createLinkFailure')"),
+  'A partial success must be surfaced rather than creating a second monster');
+});
