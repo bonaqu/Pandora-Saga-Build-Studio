@@ -3,6 +3,9 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 const source=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
+// Execute the real online checkpoint helper with this isolated loader.
+const gateHost={};
+Function('window',readFileSync(new URL('../pandora-studio-online-gate.js',import.meta.url),'utf8'))(gateHost);
 const cut=(start,end)=>{
  const a=source.indexOf(start),b=source.indexOf(end,a+start.length);
  assert.ok(a>=0&&b>a,'Unable to isolate source-backed catalog loader');
@@ -16,7 +19,8 @@ const coreCode=cut('async function loadCatalog({archive=false,commit=true}={})',
 function core(fetcher){
  // Isolated production-loader evaluation: emulate the registered GET transport
  // without weakening the real browser's full retry and concurrency tests.
- const window={PandoraStudioLiveRead:{
+ const window={PandoraStudioOnlineGate:gateHost.PandoraStudioOnlineGate,
+  PandoraStudioLiveRead:{
   mapLimit:(items,_limit,mapper)=>{
    // Keep this synthetic source-integrity fixture exhaustive; the real
    // aborting transport is exercised separately by live-d1-retry tests.
