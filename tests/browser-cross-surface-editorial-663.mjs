@@ -317,7 +317,11 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   await page.locator('#nav [data-tab="wiki"]').click();
   await wikiInput.waitFor({state:'visible'});
   assert.equal(await wikiInput.getAttribute('placeholder'),'Search by name');
-  await page.locator('#detailContent .studio-owner-interface-editor:not(.wiki-filter-labels-editor) summary').click();
+  // Encyclopedia and chest editors may coexist: target the exact Wiki
+  // copy family instead of relying on there being only one details panel.
+  const englishWikiEditor=page.locator('#detailContent .studio-owner-interface-editor')
+   .filter({has:page.locator('[data-owner-copy-section="wiki-ui"]')});
+  await englishWikiEditor.locator('summary').click();
   // Set the English variant through the same real editor and CAS key.
   const enRow=row('wiki-ui','searchPlaceholder');
   await enRow.locator('.studio-owner-interface-pencil').click();
@@ -330,7 +334,7 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   assert.deepEqual(JSON.parse(values[wikiKey]),{
    ru:'Искать в справочнике…',en:'Find a record…'});
   await page.setViewportSize({width:390,height:800});
-  const overflow=await page.locator('#detailContent .studio-owner-interface-editor:not(.wiki-filter-labels-editor)')
+  const overflow=await englishWikiEditor
    .evaluate(node=>node.scrollWidth-node.clientWidth);
   assert.ok(overflow<=5,'Compact owner editor must fit the 390px width');
   assert.deepEqual(errors,[]);
