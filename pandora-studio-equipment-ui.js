@@ -30,14 +30,9 @@ const el=(tag,attrs={},children=[])=>{
 // Search only source-backed Soul names. No fuzzy translation or item-ID
 // matching: the UI's chosen locale and verified RU/EN aliases are searchable.
 function matchesSoulSearch(record,query){
- const normalize=value=>String(value??'').normalize('NFKC')
-  .toLocaleLowerCase('ru').replace(/ё/g,'е').replace(/\s+/g,' ').trim();
- const terms=normalize(query).split(' ').filter(Boolean);
- if(!terms.length)return true;
  const names=[record?.name,record?.nameEn,record?.sourceNameRu,record?.sourceNameEn]
   .filter(value=>typeof value==='string').join(' ');
- const haystack=normalize(names);
- return terms.every(term=>haystack.includes(term));
+ return root.PandoraSearchField.matches(names,query);
 }
 function summary(record,icon,kind='item',context=null){
  if(!record)return el('p',{class:'muted',text:document.documentElement?.lang==='en'?
