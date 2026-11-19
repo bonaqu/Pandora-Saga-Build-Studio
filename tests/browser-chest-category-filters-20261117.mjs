@@ -51,6 +51,11 @@ export async function runChestCategoryFiltersSmoke(browser,base){
   const type=toolbar.locator('.wiki-chest-filter-type');
   const slots=toolbar.locator('.wiki-chest-slot-filters');
   assert.equal(await toolbar.count(),1);
+  assert.equal(await toolbar.getAttribute('data-owner-interface-section'),'wiki.chest.text');
+  assert.equal(await page.locator('.wiki-chest-group-name').first().getAttribute('data-owner-interface-section'),'wiki.chest.text');
+  assert.ok((await page.locator('.wiki-chest-group-name').first().innerText()).length>0);
+  assert.equal(await page.locator('.studio-owner-interface-editor').count(),0);
+  assert.equal(await page.locator('[data-owner-copy-id]').count(),0);
   assert.equal(await cards().count(),sourceRows(51036).length);
   assert.equal(await type.getAttribute('aria-label'),'Тип награды в сундуке');
   assert.equal(await slots.isVisible(),true,
