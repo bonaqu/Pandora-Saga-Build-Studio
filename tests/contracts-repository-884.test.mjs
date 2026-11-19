@@ -52,7 +52,8 @@ test('publication checks are retained and can be requested manually, with no red
  assert.match(yaml,/^  workflow_dispatch:\s*$/m);
  assert.doesNotMatch(yaml,/^  workflow_run:\s*$/m);
  assert.match(yaml,/run: npm run catalog:parity:live/);
- assert.match(yaml,/run: npm run connection:check:full/);
+ assert.match(yaml,/run: npm run connection:check:release/);
+ assert.match(yaml,/--insights-only/);
  assert.match(yaml,/run: node scripts\/wait-live-release\.mjs/);
 });
 }
