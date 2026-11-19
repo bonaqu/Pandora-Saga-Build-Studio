@@ -1190,6 +1190,26 @@ function ownerInterfaceEditor(section,rows,headingRu='Подписи интер�
 const equipmentCopy=(key,ru,en)=>ownerCopy('equipment',key,ru,en);
 const equipmentCopyLabel=(node,key,ru,en,options)=>
  ownerCopyLabel(node,'equipment',key,ru,en,options);
+// One registry for player-facing equipment actions / item-card metadata.
+// Reuse it inside both already-existing compact owner editor sections,
+// instead of introducing a third modal or two drifting dictionaries.
+const equipmentPickerMetaCopyRows=Object.freeze([
+ ['gearMenuEquippedAria','Действия с надетой вещью','Equipped item actions','Меню с вещью','Equipped menu'],
+ ['gearMenuEmptyAria','Действия с пустым слотом','Empty equipment slot actions','Меню пустого слота','Empty slot menu'],
+ ['gearMenuEmptyTitle','Пустой слот','Empty slot','Пустой слот','Empty heading'],
+ ['gearMenuNoSoulSlots','Этот тип вещи не поддерживает слоты душ.','This item type has no Soul sockets.','Недоступные души','Unavailable Souls'],
+ ['gearMenuMissingItem','Сведения о предмете недоступны.','Item data unavailable.','Неизвестный предмет','Unknown item'],
+ ['pickerNavGroup','Переход между слотами','Switch equipment slots','Переход по слотам','Slot navigation'],
+ ['pickerPreviousSlot','Предыдущий слот: ','Previous slot: ','Предыдущий слот','Previous slot'],
+ ['pickerNextSlot','Следующий слот: ','Next slot: ','Следующий слот','Next slot'],
+ ['pickerEquipAction','Экипировать ','Equip ','Выбрать предмет','Equip item'],
+ ['pickerPlanAction','Запланировать ','Plan ','Запланировать предмет','Plan item'],
+ ['pickerFutureLevel','Будет доступен с уровня ','Available from level ','Требуется уровень','Required level'],
+ ['pickerItemLevel','Уровень ','Level ','Уровень предмета','Item level'],
+ ['pickerItemSlots',' · Слоты: ',' · Slots: ','Слоты предмета','Item slots'],
+ ['pickerFutureBadgePrefix','С ','From ','Метка уровня: начало','Level badge prefix'],
+ ['pickerFutureBadgeSuffix',' ур.',' Lv.','Метка уровня: окончание','Level badge suffix']
+]);
 // Source confidence stays visible, implementation details do not.
 function wikiSourceCopy(key,ru,en){
  const label=h('small',{class:'wiki-source-meta',
@@ -1606,12 +1626,15 @@ function openStageGearMenu(index,sourceSlot,event,anchor){
   slotKeys[sourceSlot]));
  const tr=(ru,en)=>lang==='en'?en:ru;
  const menu=h('div',{class:'stage-gear-context-menu',role:'menu',
-  'aria-label':hasItem?tr('Действия с надетой вещью','Equipped item actions'):
-   tr('Действия с пустым слотом','Empty equipment slot actions'),
   'data-gear-context-slot':String(index)});
+ const menuKey=hasItem?'gearMenuEquippedAria':'gearMenuEmptyAria';
+ const menuPair=hasItem?equipmentPickerMetaCopyRows[0]:equipmentPickerMetaCopyRows[1];
+ bindOwnerInterfaceText(menu,'equipment',menuKey,menuPair[1],menuPair[2],'aria-label');
+ const emptyCaption=h('strong',{text:hasItem?itemName(equipped):''});
+ if(!hasItem)bindOwnerInterfaceText(emptyCaption,'equipment','gearMenuEmptyTitle',
+  'Пустой слот','Empty slot');
  const title=h('div',{class:'stage-gear-context-heading'},[
-  h('small',{text:gearSlotName(index)}),
-  h('strong',{text:hasItem?itemName(equipped):tr('Пустой слот','Empty slot')})
+  h('small',{text:gearSlotName(index)}),emptyCaption
  ]);
  menu.append(title);
  // Context order follows the primary workflow. Icons reuse the item-tab SVG factory.
@@ -1626,9 +1649,6 @@ function openStageGearMenu(index,sourceSlot,event,anchor){
    class:'stage-gear-context-action'+(id==='remove'?' is-remove':''),
    'data-gear-context-action':id,'tabindex':'-1',
    disabled,
-   ...(disabled?{title:record?
-    tr('Этот тип вещи не поддерживает слоты душ.','This item type has no Soul sockets.'):
-    tr('Сведения о предмете недоступны.','Item data unavailable.')}:{ }),
    onclick:e=>{
     if(e.target.closest?.('[data-owner-text-field]'))return;
     closeStageGearMenu();
@@ -1641,6 +1661,12 @@ function openStageGearMenu(index,sourceSlot,event,anchor){
      id==='replace'||id==='choose'?'choose':id==='souls'?'souls':'details');
    }
   },[h('span',{class:'stage-gear-context-icon','aria-hidden':'true'},[glyph]),label]);
+  if(disabled){
+   const textKey=record?'gearMenuNoSoulSlots':'gearMenuMissingItem';
+   bindOwnerInterfaceText(button,'equipment',textKey,
+    record?'Этот тип вещи не поддерживает слоты душ.':'Сведения о предмете недоступны.',
+    record?'This item type has no Soul sockets.':'Item data unavailable.','title');
+  }
   const wrap=h('div',{class:'stage-gear-context-row'},[button]);
   if(adminEditing&&adminToken){
    equipmentCopyLabel(label,'context.'+id,ru,en);
@@ -2001,17 +2027,19 @@ function closeStagePicker(focusSlot=true){
 function appendStageSlotNavigation(root){
  const head=root.querySelector('.stage-picker-head');
  if(!head)return;
- const tr=(ru,en)=>lang==='en'?en:ru;
- const nav=h('div',{class:'stage-picker-slot-navigation',role:'group',
-  'aria-label':tr('Переход между слотами','Switch equipment slots')});
+ const nav=h('div',{class:'stage-picker-slot-navigation',role:'group'});
+ bindOwnerInterfaceText(nav,'equipment','pickerNavGroup',
+  'Переход между слотами','Switch equipment slots','aria-label');
  for(const [direction,glyph] of [[-1,'‹'],[1,'›']]){
   const next=(selectedSlot+direction+slots.length)%slots.length;
-  const label=tr(direction<0?'Предыдущий слот: ':'Следующий слот: ',
-   direction<0?'Previous slot: ':'Next slot: ')+gearSlotName(next);
+  const key=direction<0?'pickerPreviousSlot':'pickerNextSlot';
+  const ru=direction<0?'Предыдущий слот: ':'Следующий слот: ';
+  const en=direction<0?'Previous slot: ':'Next slot: ';
   const button=h('button',{type:'button',class:'stage-picker-slot-nav',
-   text:glyph,'aria-label':label,title:label,
-   'data-stage-slot-nav':direction<0?'previous':'next',
+   text:glyph,'data-stage-slot-nav':direction<0?'previous':'next',
    onclick:()=>openStageEquipmentSlot(next,'choose')});
+  bindOwnerInterfaceText(button,'equipment',key,ru,en,'aria-label',gearSlotName(next));
+  bindOwnerInterfaceText(button,'equipment',key,ru,en,'title',gearSlotName(next));
   nav.append(button);
  }
  head.insertBefore(nav,head.lastElementChild);
@@ -2113,6 +2141,7 @@ function renderStagePicker(focusSearch=false){
   appendStageSlotNavigation(root);
   if(adminEditing&&adminToken){
    const panel=ownerInterfaceEditor('equipment',[
+    ...equipmentPickerMetaCopyRows,
     ['pickerItemClose','Закрыть настройку','Close item settings','Закрытие настроек','Close settings'],
     ['pickerItemSettings','Настройка предмета','Item settings','Название вкладок','Tabs accessible name'],
     ['pickerSoulSearchAria','Поиск души','Find Soul','Поиск душ','Soul search'],
@@ -2229,10 +2258,7 @@ function renderStagePicker(focusSearch=false){
    const future=Number(rec.level)>state.level;
    const btn=h('button',{type:'button','data-stage-choice':String(rec.id),
     class:'stage-picker-item'+(selected?' selected':'')+(future?' future':''),
-    'aria-label':(future?
-     (lang==='en'?'Available from level '+rec.level+'. Plan: ':
-      'Будет доступен с '+rec.level+' уровня. Запланировать: '):
-     (lang==='en'?'Equip ':'Экипировать '))+itemName(rec),onclick:()=>{
+    onclick:()=>{
      const ui=window.PandoraUIPlanner,oldDress=ui.occupiesBodyAndLegs(equippedRecord(3));
      const previousEquipment={...state.equipment};
      if(selectedSlot===5&&oldDress){
@@ -2251,21 +2277,37 @@ function renderStagePicker(focusSearch=false){
      window.PandoraEquipmentPlan.clearChangedEquipmentSouls(state,previousEquipment);
      stageSlotView='details';persist();render();renderStagePicker();
     }});
+   // Action and required level are readable independently. A saved D1 label
+   // changes immediately without mutating the selected item or its identity.
+   bindOwnerInterfaceText(btn,'equipment',future?'pickerPlanAction':'pickerEquipAction',
+    future?'Запланировать ':'Экипировать ',
+    future?'Plan ':'Equip ','aria-label',itemName(rec));
+   if(future)bindOwnerInterfaceText(btn,'equipment','pickerFutureLevel',
+    'Будет доступен с уровня ','Available from level ','title',String(rec.level));
    const src=itemIcon(rec);
    if(src){const img=h('img',{src,alt:'',loading:'lazy'});img.onerror=()=>img.replaceWith(h('span',{class:'item-glyph',text:'⚔'}));btn.append(img)}
    else btn.append(h('span',{class:'item-glyph',text:'⚔'}));
    const itemLevel=Number(rec.level);
-   const levelText=(lang==='en'?'Level ':'Уровень ')+
-    (Number.isFinite(itemLevel)&&itemLevel>=1?itemLevel:'—');
    const socketCount=window.PandoraEquipmentPlan.supportsSoulSlot(key)?
     window.PandoraEquipmentPlan.socketCapacity(rec):null;
-   const meta=window.PandoraEquipmentPlan.supportsSoulSlot(key)?
-    levelText+(lang==='en'?' · Slots: ':' · Слоты: ')+
-     (socketCount===null?'—':String(socketCount)):levelText;
+   const metadata=[
+    bindOwnerInterfaceText(h('span',{}),'equipment','pickerItemLevel',
+     'Уровень ','Level '),
+    h('span',{text:Number.isFinite(itemLevel)&&itemLevel>=1?String(itemLevel):'—'})
+   ];
+   if(window.PandoraEquipmentPlan.supportsSoulSlot(key))metadata.push(
+    bindOwnerInterfaceText(h('span',{}),'equipment','pickerItemSlots',
+     ' · Слоты: ',' · Slots: '),
+    h('span',{text:socketCount===null?'—':String(socketCount)}));
    btn.append(h('span',{class:'stage-picker-item-label'},[h('b',{text:itemName(rec)}),
-    h('small',{text:meta})]));
-   if(future)btn.append(h('span',{class:'stage-picker-future',
-    text:lang==='en'?'From '+rec.level+' Lv.':'С '+rec.level+' ур.'}));
+    h('small',{},metadata)]));
+   if(future)btn.append(h('span',{class:'stage-picker-future'},[
+    bindOwnerInterfaceText(h('span',{}),'equipment','pickerFutureBadgePrefix',
+     'С ','From '),
+    h('span',{text:String(rec.level)}),
+    bindOwnerInterfaceText(h('span',{}),'equipment','pickerFutureBadgeSuffix',
+     ' ур.',' Lv.')
+   ]));
    if(selected)btn.append(h('span',{class:'stage-picker-check',text:'✓'}));
    list.append(btn);
    window.PandoraStageItemUI.attachPreview(btn,rec,
@@ -2324,6 +2366,7 @@ function renderStagePicker(focusSearch=false){
  if(outfitNote)root.append(outfitNote);
  root.append(search,onlyAvailable);
  if(adminEditing&&adminToken)root.append(ownerInterfaceEditor('equipment',[
+  ...equipmentPickerMetaCopyRows,
   ['pickerChoosePrefix','Выбор:','Choose:','Заголовок слота','Slot heading'],
   ['pickerDetails','Свойства','Properties','Переход к свойствам','Open properties'],
   ['pickerClose','Закрыть выбор','Close item picker','Закрытие','Close picker'],
