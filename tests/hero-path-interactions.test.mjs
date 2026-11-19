@@ -790,7 +790,7 @@ test('Skill Path stays compact without a redundant future-mastery shortcut',()=>
 });
 
 test('Path help and skill-navigation copy bind bilingual D1 fields without touching source game values',()=>{
- const {target,api,state}=fixture('WARRIOR','special','slash');
+ const {target,api,state}=fixture('WARRIOR','melee','slash');
  const bound=[];
  api.copyLabel=(key,ru,en)=>api.lang==='en'?en:ru;
  api.bindCopy=(node,key,ru,en,attribute='text',suffix='',prefix='')=>{
@@ -800,9 +800,13 @@ test('Path help and skill-navigation copy bind bilingual D1 fields without touch
   else node.setAttribute(attribute,value);
  };
  root.PandoraHeroPath.viewGrowth(target,api);
- for(const key of ['branchPointHelp','greenMasteryHelp','racialUnavailableAria',
+ for(const key of ['branchPointHelp','greenMasteryHelp',
   'branchTrackAria','innateBaselineAria'])
   assert.ok(bound.some(entry=>entry.key===key),'Growth copy '+key+' is bound');
+ api.selectedGroup='special';api.expandedBranch='';
+ root.PandoraHeroPath.viewGrowth(target,api);
+ assert.ok(bound.some(entry=>entry.key==='racialUnavailableAria'),
+  'Disabled Racial branch accessibility copy is bound');
  const pointHelp=bound.filter(entry=>entry.key==='branchPointHelp');
  assert.deepEqual(pointHelp.map(row=>row.attribute),['data-help','aria-label']);
  assert.ok(pointHelp.some(row=>row.prefix.includes('Вложено')),
