@@ -6675,14 +6675,27 @@ function renderWiki(root){
       const monsterRelations=wikiOwnerEntityList({label:mapCopy(type==='instance'?'monstersDungeon':'monstersLocation'),
       kind:'monster',existing:mobs,replaceable:false,onChange:async next=>{
        const before=mobs.map(String),after=next.map(String);
-       const hasOwner=next.some(x=>window.PandoraWikiOwnerData.ownerMonsterId(x))||
-        before.some(x=>window.PandoraWikiOwnerData.ownerMonsterId(x));
-       if(type==='map'&&(rec.virtual||!Object.hasOwn(wikiData.maps||{},id)||hasOwner)){
-        await saveWikiMapMonsterList(id,mobs,
-         next.map(x=>typeof x==='string'?x:Number(x)));return;
-       }
+       // Dispatch by the changed identity, not by whether the list contains
+       // any owner-created monster. A numeric OS monster owns a spawnedit row;
+       // an owner-created monster lives in the location/dungeon record.
        const added=after.find(x=>!before.includes(x));
        const removed=before.find(x=>!after.includes(x));
+       const ownerChange=[added,removed].some(x=>x!=null&&
+        window.PandoraWikiOwnerData.ownerMonsterId(x));
+       if(added&&removed)throw Error(wt(
+        'Измени одну связь за раз. Обнови карточку и повтори.',
+        'Change one link at a time. Refresh the entry and retry.'));
+       if(type==='map'&&(rec.virtual||
+        !Object.hasOwn(wikiBaseData?.maps||{},String(id))||ownerChange)){
+        await saveWikiMapMonsterList(id,mobs,
+         next.map(x=>/^[1-9][0-9]{0,14}$/.test(String(x))?Number(x):x));
+        return;
+       }
+       if(type==='instance'&&ownerChange){
+        await saveWikiRecordList('instance',id,'mobs',mobs,
+         next.map(x=>/^[1-9][0-9]{0,14}$/.test(String(x))?Number(x):x));
+        return;
+       }
        if(added)await saveWikiSpawns(added,type,id,true);
        else if(removed)await saveWikiSpawns(removed,type,id,false);
       }});
@@ -10766,12 +10779,27 @@ async function saveWikiSpawns(monsterId,type,placeId,include,replacesId=null){
  // One monster owns one authoritative spawn override. Each operation must
  // read the refreshed relation index AFTER the earlier save has finished.
  const writing=(previous?previous.catch(()=>{}):Promise.resolve()).then(async()=>{
-  if(type==='map'&&!Object.hasOwn(wikiData?.maps||{},String(placeId)))
+  // The legacy spawnedit key is only replayed for original numeric OS monster
+  // IDs and original maps/dungeons. Do not acknowledge an owner-only key
+  // that the published overlay reader would silently ignore.
+  if(!/^[1-9][0-9]{0,14}$/.test(String(monsterId))||
+   !Object.hasOwn(wikiBaseData?.monsters||{},String(monsterId)))
+   throw Error(wt('Для созданного монстра изменяй список локации или подземелья.',
+    'Edit the location or dungeon list for a custom monster.'));
+  if(type==='map'&&!Object.hasOwn(wikiBaseData?.maps||{},String(placeId)))
    throw Error('Нельзя разместить монстра: карта отсутствует в игровом каталоге.');
-  if(type==='instance'&&!(wikiData?.instances||[]).some(x=>String(x.id)===String(placeId)))
+  if(type==='instance'&&!(wikiBaseData?.instances||[]).some(x=>String(x.id)===String(placeId)))
    throw Error('Подземелье отсутствует в игровом каталоге.');
   if(!wikiData?.monsters?.[monsterId])throw Error('Монстр не найден в каталоге.');
-  const current=wikiIndex.locations(monsterId).map(x=>({type:x.type,id:String(x.id)}));
+  // Curated locations live in their own wikiedit.map records. They must not
+  // be smuggled into this numeric-only D1 spawn snapshot: editing an official
+  // location must leave all curated links in place.
+  const current=wikiIndex.locations(monsterId)
+   .filter(x=>x.type==='map'?
+    Object.hasOwn(wikiBaseData?.maps||{},String(x.id)):
+    x.type==='instance'&&(wikiBaseData?.instances||[])
+     .some(entry=>String(entry.id)===String(x.id)))
+   .map(x=>({type:x.type,id:String(x.id)}));
   const wanted=new Map(current.map(x=>[x.type+':'+x.id,x]));
   const key=type+':'+placeId;
   if(replacesId!=null){
