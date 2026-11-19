@@ -3188,6 +3188,13 @@ function invalidateWikiCatalog({dropSnapshot=false}={}){
  wikiIndex=null;wikiData=null;wikiPending=null;
  if(dropSnapshot)wikiBaseData=null;
 }
+function handleWikiSnapshotConflict(error){
+ // A newly published Wiki snapshot is incompatible with active Hero data.
+ // Lock on discovery rather than waiting for a later periodic D1 checkpoint.
+ if(catalogArchived||!studioLiveReady||liveGateReason==='changed')return;
+ if(error?.message==='В ходе загрузки версия опубликованного каталога изменилась')
+  showLiveGate('changed');
+}
 async function loadWiki(){
  if(wikiIndex)return wikiIndex;
  if(wikiPending)return wikiPending;
@@ -3209,7 +3216,11 @@ async function loadWiki(){
     // this exact published snapshot; no archive or cross-version mix is allowed.
     verified:!catalogArchived&&activeCatalogSnapshot&&catalogSource&&
      !liveGateReason?{snapshot:activeCatalogSnapshot,data:catalogSource}:null})}
-   catch(error){if(generation!==wikiLoadGeneration)return loadWiki();throw error}
+   catch(error){
+    if(generation!==wikiLoadGeneration)return loadWiki();
+    handleWikiSnapshotConflict(error);
+    throw error;
+   }
    if(generation!==wikiLoadGeneration)return loadWiki();
    wikiBaseData=loaded.data;
   }
