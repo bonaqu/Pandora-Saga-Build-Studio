@@ -828,6 +828,8 @@ function viewSkills(target,details,api){
   if(listIndex>=0&&ordered.length>1&&typeof api.onInspect==='function'){
    const listNav=make('nav',{class:'path-skill-list-nav',
     'aria-label':tr(api,'Навигация по найденным умениям','Browse matching skills')});
+   bindPathCopy(api,listNav,'skillBrowseAria','Навигация по найденным умениям',
+    'Browse matching skills','aria-label');
    const move=(delta,icon,ru,en)=>{
     const next=ordered[listIndex+delta]?.skill;
     const label=tr(api,ru,en)+(next?' '+next.name:'');
@@ -851,10 +853,12 @@ function viewSkills(target,details,api){
      'p','path-skill-yes'):
     make('p',{class:'path-skill-no',text:'🔒 '+gate.problems.join(' · ')}));
   const stats=make('dl',{class:'path-skill-metadata'});
-  const field=(key,ru,en,value)=>{
+  const field=(key,ru,en,value,valueCopy=null)=>{
    if(value===null||value===undefined||value==='')return;
    const label=authored(api,key,ru,en,'dt','path-skill-meta-label');
-   stats.append(label,make('dd',{text:String(value)}));
+   const dd=make('dd',{text:String(value)});
+   if(valueCopy)bindPathCopy(api,dd,...valueCopy);
+   stats.append(label,dd);
   };
   // A verified zero means no character-level threshold, not an unknown one.
   // Branch thresholds remain visible separately below.
@@ -863,7 +867,9 @@ function viewSkills(target,details,api){
   field('skillMana','Мана / ОМ','Mana / MP',skill.mana);
   field('skillCast','Подготовка','Cast time',skill.cast);
   field('skillCooldown','Перезарядка','Cooldown',skill.cooldown);
-  field('skillRange','Дальность','Range',skill.rangeFromWeapon?tr(api,'Зависит от оружия','Depends on weapon'):skill.range);
+  field('skillRange','Дальность','Range',
+   skill.rangeFromWeapon?tr(api,'Зависит от оружия','Depends on weapon'):skill.range,
+   skill.rangeFromWeapon?['skillWeaponRange','Зависит от оружия','Depends on weapon']:null);
   field('skillElement','Стихия','Element',elementLabel(skill.element,api));
   if(skill.powerStat!==undefined&&skill.powerStat!==null&&skill.powerStat!=='')
    field('skillAttribute','Характеристика','Attribute',
@@ -943,6 +949,8 @@ function viewSkills(target,details,api){
       onclick:()=>navigate(before)}:{})}):
     authored(api,'skillPrerequisiteMissing','Умение отсутствует в каталоге',
      'Skill not in catalog','span','path-skill-previous-value');
+    if(canNavigate)bindPathCopy(api,current,'skillPreviousAria','Предыдущее умение: ',
+     'Previous skill: ','aria-label',before.name);
    const row=make('p',{class:'path-skill-prereqs path-skill-previous-row'});
    row.append(title,make('span',{class:'path-skill-previous-separator',text:': '}),current);
    details.append(row);
@@ -953,14 +961,21 @@ function viewSkills(target,details,api){
   if(successors.length){
    const lineage=make('nav',{class:'path-skill-lineage',
     'aria-label':tr(api,'Продолжение умения','Skill upgrades')});
+   bindPathCopy(api,lineage,'skillLineageAria','Продолжение умения',
+    'Skill upgrades','aria-label');
    for(const related of successors){
     const label=related.name||tr(api,'Умение без названия','Unnamed skill');
-    lineage.append(make('button',{type:'button',
+    const button=make('button',{type:'button',
      class:'path-skill-lineage-link',
      'data-related-skill-id':String(related.id),
      'aria-label':tr(api,'Следующее умение: ','Next skill: ')+label,
      text:tr(api,'Следующее → ','Next → ')+label,
-     onclick:()=>navigate(related)}));
+     onclick:()=>navigate(related)});
+    bindPathCopy(api,button,'skillNextAria','Следующее умение: ',
+     'Next skill: ','aria-label',label);
+    bindPathCopy(api,button,'skillNextLink','Следующее → ',
+     'Next → ','text',label);
+    lineage.append(button);
    }
    details.append(lineage);
   }
