@@ -559,6 +559,13 @@ export async function runUIContentInlineSmoke(browser,base){
   // Neither comparison selections, generated counts, nor current user draft
   // are part of an owner-editable caption. No production API is touched.
   console.log('Chromium comparison D1 editorial copy: EN, CAS, 409, Undo, key switching');
+  // The owner drawer was deliberately opened for the preceding Undo, and its
+  // body overlaps the compact comparison heading. Use the real collapse
+  // control rather than a force-click through the overlay.
+  const compareOwnerDock=page.locator('#ownerDock');
+  if(await compareOwnerDock.locator('[data-owner-collapse]')
+   .getAttribute('aria-expanded')==='true')
+   await compareOwnerDock.locator('[data-owner-collapse]').click();
   const compare=page.locator('#detailContent [data-build-compare]');
   const comparePanel=await compare.elementHandle();
   const compareTitle=compare.locator('[data-owner-copy-key="compareTitle"]');
@@ -618,6 +625,9 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(JSON.parse(values['guideedit.book.ui.label.compare-title']).en,'Build comparison QA');
   assert.equal(Object.hasOwn(values,compareKey),false,
    'Undo removes the new comparison caption instead of inventing an empty JSON record');
+  if(await compareOwnerDock.locator('[data-owner-collapse]')
+   .getAttribute('aria-expanded')==='true')
+   await compareOwnerDock.locator('[data-owner-collapse]').click();
   await comparePanel.dispose();
 
   // Cloud library status has its own lifecycle: change the currently
