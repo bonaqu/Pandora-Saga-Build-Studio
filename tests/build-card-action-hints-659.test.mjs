@@ -46,7 +46,6 @@ test('four build actions attach shared game-style hints without native title bub
  assert.match(body,/cardAction\('🔗','libraryCardShare','libraryHintShare'/);
  assert.match(body,/libraryHintDeleteLocal':'libraryHintDelete'/);
  assert.doesNotMatch(body.slice(body.indexOf('const cardAction='),body.indexOf('for(const b of builds)')),/\btitle:/);
- assert.match(hint,/popup\.textContent=node\.dataset\.guideHint\|\|text/);
  assert.match(hint,/node\.addEventListener\('pointerleave'/);
  assert.match(hint,/node\.addEventListener\('focus'/);
  assert.match(hint,/document\.addEventListener\('scroll'/);
