@@ -245,6 +245,96 @@ test('map list snapshots reject stale owner writes and preserve canonical field 
  helpers.save('somewhere','sections',['monsters'],['monsters','notes']);
  assert.deepEqual(edits.at(-1),{sections:['monsters','notes']});
 });
+test('skill requirements, Soul slots, curated loot and NPC locations reject stale list writes',()=>{
+ const app=read('pandora-studio-app.js');
+ const start=app.indexOf('function wikiMapListEqual(');
+ const end=app.indexOf('async function saveWikiRecordField(',start);
+ const snippet=app.slice(start,end);
+ const current={
+  skill:{somewhere:{reqs:[{branch:'martial',amount:5}]}},
+  soul:{somewhere:{slots:['weapon']}},
+  monster:{somewhere:{loot:[100]}},
+  npc:{somewhere:{maps:[1001004]}},
+  instance:{somewhere:{mobs:[110]}},
+  map:{somewhere:{reportedSpawns:[{id:'spawn1',monsterId:110}],mobs:[110]}}
+ };
+ const writes=[];
+ const actions=Function('wikiIndex','saveWikiRecordPatch','wt',snippet+
+  ';return {save:saveWikiRecordList,mobs:saveWikiMapMonsterList}')(
+  {records:type=>current[type]},
+  (type,id,build)=>{
+   const patch=build({});writes.push({type,patch});
+   Object.assign(current[type][id],patch);return Promise.resolve();
+  },(ru,en)=>ru);
+ const fields=[['skill','reqs',[{branch:'martial',amount:5}],
+  [{branch:'martial',amount:6}]],
+  ['soul','slots',['weapon'],['weapon','head']],
+  ['monster','loot',[100],[100,200]],
+  ['npc','maps',[1001004],[1001004,'astir-kingdom']],
+  ['instance','mobs',[110],[110,111]]];
+ for(const [type,field,expected,next] of fields){
+  actions.save(type,'somewhere',field,expected,next);
+  assert.deepEqual(current[type].somewhere[field],next,type+'.'+field);
+  assert.throws(()=>actions.save(type,'somewhere',field,expected,[]),
+   /Список уже изменён/,type+'.'+field+' must reject a stale field');
+ }
+ assert.deepEqual(current.npc.somewhere.maps,[1001004,'astir-kingdom'],
+  'Curated location IDs stay strings, real game map IDs stay numeric');
+ actions.save('map','somewhere','roster',[{id:'spawn1',monsterId:110}],
+  [{id:'spawn1',monsterId:null}]);
+ assert.equal(current.map.somewhere.roster[0].monsterId,null);
+ assert.throws(()=>actions.save('map','somewhere','roster',
+  [{id:'spawn1',monsterId:110}],[]),/Список уже изменён/);
+ assert.throws(()=>actions.save('skill','somewhere','desc',[],[]),/Unsupported owner list/);
+ current.map.somewhere.roster=[{id:'spawn1',monsterId:110}];
+ actions.mobs('somewhere',[110],[]);
+ assert.deepEqual(current.map.somewhere.mobs,[]);
+ assert.equal(current.map.somewhere.roster[0].monsterId,null,
+  'One D1 patch must unlink removed monster in curator roster');
+ const writesBefore=writes.length;
+ assert.throws(()=>actions.mobs('somewhere',[110],[110,111]),/Список уже изменён/);
+ assert.equal(writes.length,writesBefore);
+ assert.match(app,/saveWikiRecordList\('skill',id,'reqs'/);
+ assert.match(app,/saveWikiRecordList\('soul',id,'slots'/);
+ assert.match(app,/saveWikiRecordList\('monster',id,'loot'/);
+ assert.match(app,/saveWikiRecordList\('npc',id,'maps'/);
+ assert.match(app,/saveWikiMapMonsterList\(locationId,existing,nextMobs\)/);
+});
+
+test('reported monster links rebase independent rows but reject stale edits to the same row',async()=>{
+ const app=read('pandora-studio-app.js');
+ const begin=app.indexOf('const persistRosterLink=async(');
+ const end=app.indexOf('const createOwnerMonster=',begin);
+ assert.ok(begin>=0&&end>begin);
+ const body=app.slice(begin,end);
+ const record={roster:[{id:'one',monsterId:null},{id:'two',monsterId:null}],
+  mobs:[]};
+ const records={map:{'el-beht':record},monster:{m1:{},m2:{},m3:{}}};
+ let chain=Promise.resolve(),writes=0;
+ const persist=Function('wikiIndex','mapRoster','wt','saveWikiRecordPatch',body+
+  ';return persistRosterLink;')(
+  {records:type=>records[type]},rec=>rec.roster??rec.reportedSpawns??[],
+  (ru,en)=>ru,(type,id,make)=>{
+   assert.equal(type,'map');assert.equal(id,'el-beht');
+   const writing=chain.catch(()=>{}).then(()=>{
+    const patch=make({});Object.assign(record,patch);writes++;
+   });
+   chain=writing;return writing;
+  });
+ await Promise.all([persist('el-beht','one','m1'),persist('el-beht','two','m2')]);
+ assert.deepEqual(record.roster.map(row=>row.monsterId),['m1','m2']);
+ assert.deepEqual(record.mobs,['m1','m2']);
+ assert.equal(writes,2);
+ const [first,second]=await Promise.allSettled([
+  persist('el-beht','one',null),persist('el-beht','one','m3')
+ ]);
+ assert.equal(first.status,'fulfilled');
+ assert.equal(second.status,'rejected');
+ assert.match(second.reason.message,/Связь уже изменена/);
+ assert.equal(record.roster[0].monsterId,null);
+ assert.deepEqual(record.mobs,['m2'],'Another row stays linked');
+});
+
 test('map editor supports bounded tags/sections and hides empty owner prompt from guests',()=>{
  const app=read('pandora-studio-app.js');
  assert.match(app,/if\(ownerMap&&tags\.length<16\)/);
