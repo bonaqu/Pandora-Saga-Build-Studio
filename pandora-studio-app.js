@@ -1231,7 +1231,21 @@ const wikiMapRows=Object.freeze([
  ["quest","Сценарий задания","Quest scenario"],
  ["descriptionHint","Двойной клик — добавить описание","Double-click to add a description"],
  ["removeSection","Удалить раздел","Remove section"],
- ["confirmSection","Подтвердить удаление раздела","Confirm section removal"]
+ ["confirmSection","Подтвердить удаление раздела","Confirm section removal"],
+ ["tagRu","Тег · RU","Tag · RU"],
+ ["tagEn","Тег · EN","Tag · EN"],
+ ["tagAdd","Добавить","Add"],
+ ["tagCancel","Отмена","Cancel"],
+ ["tagLimit","Достигнут предел: 16 тегов.","Limit reached: 16 tags."],
+ ["tagDuplicate","Такой тег уже добавлен.","This tag already exists."],
+ ["tagRequired","Укажи RU и EN (до 70 символов).","Enter both names (up to 70 characters)."],
+ ["sectionEmpty","Двойной клик — добавить текст","Double-click to add text"],
+ ["sectionAdd","+ Добавить раздел","+ Add section"],
+ ["sectionCancel","Отмена","Cancel"],
+ ["sectionLimit","Максимум 12 разделов.","Maximum 12 sections."],
+ ["sectionRequired","Укажи названия RU и EN (до 100 символов).","Enter both titles (up to 100 characters)."],
+ ["sectionTitleRu","Название раздела · RU","Section title · RU"],
+ ["sectionTitleEn","Название раздела · EN","Section title · EN"],
 ]);
 const wikiMapByKey=new Map(wikiMapRows.map(row=>[row[0],row]));
 function mapCopy(key){
@@ -10690,6 +10704,29 @@ async function saveWikiRecordPatch(type,id,updates){
   if(!wikiRecordWriteQueue.size)editIsSaving=false;
   refreshOwnerUI();
  }
+}
+// Map list changes must not silently overwrite a later owner edit from
+// another control. Queue serialization alone cannot detect stale UI snapshots.
+// Keep array order semantic and object key order irrelevant.
+function wikiMapListEqual(a,b){
+ const stable=value=>Array.isArray(value)?value.map(stable):
+  value&&typeof value==='object'?
+  Object.fromEntries(Object.keys(value).sort().map(k=>[k,stable(value[k])])):value;
+ return JSON.stringify(stable(Array.isArray(a)?a:[]))===
+  JSON.stringify(stable(Array.isArray(b)?b:[]));
+}
+function saveWikiMapList(id,field,expected,next){
+ if(!['tags','sections','extraSections','npcs','loot'].includes(field))
+  throw Error('Unsupported map list');
+ return saveWikiRecordPatch('map',id,()=>{
+  const current=wikiIndex.records('map')?.[String(id)];
+  if(!current)throw Error(wt('Локация больше не доступна.',
+   'The location is no longer available.'));
+  if(!wikiMapListEqual(expected,current[field]))
+   throw Error(wt('Список уже изменён. Обнови карточку и повтори действие.',
+    'This list has changed. Refresh the record and try again.'));
+  return {[field]:next};
+ });
 }
 async function saveWikiRecordField(type,id,field,value){
  if(field.startsWith('resists.'))
