@@ -205,13 +205,14 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   assert.equal(npcKeys.length,36);
   assert.equal(new Set(npcKeys).size,36);
   const offersBefore=await npc.locator('.wiki-trade-card').count();
-  const searchNpcTrades=npc.locator('input.wiki-inline-search');
+  const searchNpcTrades=npc.locator('.wiki-inline-search[role="textbox"]');
   await searchNpcTrades.click();
   await searchNpcTrades.fill('Несуществующий предмет');
   assert.match(await npc.locator('.wiki-result-counter').innerText(),/^0 из \d+$/);
   await edit('wiki.npc.trade','searchPlaceholder','Поиск по предложениям…');
   assert.equal(await searchNpcTrades.getAttribute('placeholder'),'Поиск по предложениям…');
-  assert.equal(await searchNpcTrades.inputValue(),'Несуществующий предмет');
+  assert.equal(await searchNpcTrades.innerText(),'Несуществующий предмет');
+  assert.equal(await searchNpcTrades.getAttribute('data-placeholder'),'Поиск по предложениям…');
   await edit('wiki.npc.trade','counterOf','среди');
   assert.match(await npc.locator('.wiki-result-counter').innerText(),/^0 среди \d+$/);
   assert.equal(await npc.locator('.wiki-trade-card').count(),offersBefore);

@@ -114,7 +114,7 @@ export async function runEffectItemsSmoke(browser,base){
   const activeLanguage=await page.locator('html').getAttribute('lang');
   assert.equal(await publicNpc.locator('.wiki-trade-output small').first().innerText(),
    activeLanguage==='en'?'Receive':'Получить');
-  assert.equal(await publicNpc.locator('input.wiki-inline-search').getAttribute('placeholder'),
+  assert.equal(await publicNpc.locator('.wiki-inline-search[role="textbox"]').getAttribute('data-placeholder'),
    activeLanguage==='en'?'Find an item or material…':'Найти предмет или материал…');
   assert.deepEqual(errors,[]);
   console.log('Chromium effect items passed: negative/cure/positive/recovery/other, crafting, RU/EN and responsive');

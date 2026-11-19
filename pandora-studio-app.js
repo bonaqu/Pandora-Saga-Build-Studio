@@ -1144,7 +1144,13 @@ function bindOwnerInterfaceText(node,section,key,ru,en,attribute='text',suffix='
  node.dataset.ownerInterfaceSuffix=suffix;
  const value=prefix+ownerCopy(section,key,ru,en)+suffix;
  if(attribute==='text')node.textContent=value;
- else node.setAttribute(attribute,value);
+ else{
+  node.setAttribute(attribute,value);
+  // ownerPlainTextField uses a contenteditable span, not an input. Its
+  // visible placeholder depends on data-placeholder; do not clear its text.
+  if(attribute==='placeholder'&&node.getAttribute?.('contenteditable'))
+   node.dataset.placeholder=value;
+ }
  return node;
 }
 // Commit-time update uses the exact successful inline edit value; this
@@ -1161,6 +1167,8 @@ function applyOwnerInterfaceEditedValue(section,key,visible){
    if(attr==='text')node.textContent=value;
    else if(['placeholder','aria-label','title','aria-description','data-help'].includes(attr)){
     node.setAttribute(attr,value);
+    if(attr==='placeholder'&&node.getAttribute?.('contenteditable'))
+     node.dataset.placeholder=value;
     if(attr==='aria-description'&&node.dataset.guideHint!==undefined)
      node.dataset.guideHint=value;
    }

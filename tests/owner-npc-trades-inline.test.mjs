@@ -90,6 +90,7 @@ test('36 NPC trade copy captions use stable D1 RU/EN and preserve real limits',(
  assert.match(app,/npcTradeBind\(counter,'counterOf','text',' '\+cards\.length,visible\+' '\)/);
  assert.match(app,/npcTradeBind\(recipeSearch,'searchPlaceholder','placeholder'\)/);
  assert.match(app,/npcTradeBind\(recipeSearch,'searchAria','aria-label'\)/);
+ assert.match(app,/node\.dataset\.placeholder=value/);
  assert.match(app,/remove\.addEventListener\('blur',resetDelete\)/);
  assert.match(app,/if\(event\.key==='Escape'\)\{event\.preventDefault\(\);resetDelete\(\)\}/);
  assert.doesNotMatch(app,/remove\.textContent='Повторить, чтобы удалить'/);
