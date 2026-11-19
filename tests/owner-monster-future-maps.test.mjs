@@ -179,6 +179,10 @@ test('map and dungeon captions use the shared bilingual D1 owner editor',()=>{
  assert.match(app,/ownerInterfaceEditor\(\s*'wiki\.map\.text',wikiMapRows/);
  assert.match(app,/mapBind\(h\('span'\),'chanceUnknown'\)/);
  assert.match(app,/text:description\|\|mapCopy\('descriptionHint'\)/);
+ assert.match(app,/mapBind\(paragraph,'descriptionHint'\)/);
+ assert.match(app,/mapBind\(monsterRelations\.querySelector\('h4'\)/);
+ assert.match(app,/mapBind\(npcRelations\.querySelector\('h4'\),'npcs'\)/);
+ assert.match(app,/mapBind\(lootRelations\.querySelector\('h4'\),'loot'\)/);
 });
 test('tag and section deletion needs explicit second click, Escape cancels, CAS failure disarms',async()=>{
  const app=read('pandora-studio-app.js');

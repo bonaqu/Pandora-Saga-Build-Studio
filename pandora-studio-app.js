@@ -6543,8 +6543,7 @@ function renderWiki(root){
       }
       tagSection.append(chips);
       if(ownerMap){
-       const add=h('button',{type:'button',class:'wiki-owner-plus',
-        text:mapCopy('addTag')});
+       const add=mapBind(h('button',{type:'button',class:'wiki-owner-plus'}),'addTag');
        add.onclick=()=>{
         if(tagSection.querySelector('.wiki-map-tag-form'))return;
         const form=h('div',{class:'wiki-map-tag-form wiki-owner-source-picker'});
@@ -6610,20 +6609,21 @@ function renderWiki(root){
        section.append(text);detail.append(section);
      }
     }
-    if(type==='instance'&&rec.kind==='quest')detail.append(h('span',{
-     class:'wiki-instance-kind',text:mapCopy('quest')
-    }));
+    if(type==='instance'&&rec.kind==='quest')detail.append(
+     mapBind(h('span',{class:'wiki-instance-kind'}),'quest'));
     const description=type==='instance'&&lang!=='en'?
      (rec.blurbRu||null):rec.blurb;
     if(description||(type==='instance'&&adminEditing&&adminToken)){
      const editable=type==='instance'&&adminEditing&&adminToken;
-     detail.append(h('p',{
+     const paragraph=h('p',{
       class:'wiki-description'+(!description?' wiki-description-placeholder':''),
       text:description||mapCopy('descriptionHint'),
       ...(editable?{'data-owner-record':'instance:'+id,
        'data-owner-field':lang==='en'?'blurb':'blurbRu',
        ...(!description?{'data-owner-empty':'true'}:{})}:{})
-     }));
+     });
+     if(!description)mapBind(paragraph,'descriptionHint');
+     detail.append(paragraph);
     }
     const mobs=rec.mobs||[];
      if(type==='map'&&adminEditing&&adminToken&&!rec.virtual&&
@@ -6631,7 +6631,7 @@ function renderWiki(root){
       detail.append(h('p',{class:'wiki-owner-map-note',text:
        wt('Здесь пока нельзя добавить монстров.','Monster editing is not available for this location.')}));
      if(showMapSection('monsters')&&adminEditing&&adminToken&&(type==='instance'||ownerMap)){
-      detail.append(wikiOwnerEntityList({label:mapCopy(type==='instance'?'monstersDungeon':'monstersLocation'),
+      const monsterRelations=wikiOwnerEntityList({label:mapCopy(type==='instance'?'monstersDungeon':'monstersLocation'),
       kind:'monster',existing:mobs,replaceable:false,onChange:async next=>{
        const before=mobs.map(String),after=next.map(String);
        const hasOwner=next.some(x=>window.PandoraWikiOwnerData.ownerMonsterId(x))||
@@ -6647,7 +6647,10 @@ function renderWiki(root){
        const removed=before.find(x=>!after.includes(x));
        if(added)await saveWikiSpawns(added,type,id,true);
        else if(removed)await saveWikiSpawns(removed,type,id,false);
-      }}));
+      }});
+      mapBind(monsterRelations.querySelector('h4'),
+       type==='instance'?'monstersDungeon':'monstersLocation');
+      detail.append(monsterRelations);
     }
     // Planned maps share the identical searchable monster grid. Owner reports
     // preserve names/levels even when no server-catalog cross-reference exists.
@@ -6779,12 +6782,14 @@ function renderWiki(root){
     if(type==='map'&&showMapSection('npcs')){
       const residents=wikiIndex.residents(id);
       if(ownerMap&&rec.virtual&&rec.placeType!=='astir-district'){
-       detail.append(wikiOwnerEntityList({label:mapCopy('npcs'),
+       const npcRelations=wikiOwnerEntityList({label:mapCopy('npcs'),
         kind:'npc',existing:rec.npcs||[],limit:120,
         onChange:next=>saveWikiRecordField('map',id,'npcs',
-         next.map(x=>/^\d+$/.test(String(x))?Number(x):String(x)))}));
+         next.map(x=>/^\d+$/.test(String(x))?Number(x):String(x)))});
+       mapBind(npcRelations.querySelector('h4'),'npcs');
+       detail.append(npcRelations);
       }else if(adminEditing&&adminToken&&!rec.virtual){
-       detail.append(wikiOwnerEntityList({label:mapCopy('npcs'),
+       const npcRelations=wikiOwnerEntityList({label:mapCopy('npcs'),
         kind:'npc',existing:residents.map(([npcId])=>String(npcId)),replaceable:false,onChange:async next=>{
          const before=residents.map(([npcId])=>String(npcId)),after=next.map(String);
          const added=after.find(n=>!before.includes(n));
@@ -6796,9 +6801,11 @@ function renderWiki(root){
          const maps=(current.maps||[]).map(String);
          const updated=added?[...new Set([...maps,String(id)])]:maps.filter(x=>x!==String(id));
          await saveWikiRecordField('npc',npcId,'maps',updated.map(Number));
-        }}));
+        }});
+       mapBind(npcRelations.querySelector('h4'),'npcs');
+       detail.append(npcRelations);
       }else if(residents.length){
-       detail.append(h('h4',{text:mapCopy('npcs')+' · '+residents.length}));
+       detail.append(mapBind(h('h4'),'npcs','text',' · '+residents.length));
        const list=h('div',{class:'wiki-map-npcs'});
        for(const [npcId,npc] of residents){
         const entry=h('div',{class:'wiki-map-npc'});
@@ -6905,18 +6912,20 @@ function renderWiki(root){
     if(type==='map'&&showMapSection('loot')){
      const loot=Array.isArray(rec.loot)?rec.loot:[];
      if(ownerMap){
-      detail.append(wikiOwnerEntityList({label:mapCopy('loot'),
+      const lootRelations=wikiOwnerEntityList({label:mapCopy('loot'),
        kind:'item',existing:loot,limit:120,
-       onChange:next=>saveWikiRecordField('map',id,'loot',next.map(Number))}));
+       onChange:next=>saveWikiRecordField('map',id,'loot',next.map(Number))});
+      mapBind(lootRelations.querySelector('h4'),'loot');
+      detail.append(lootRelations);
      }else if(loot.length){
-      detail.append(h('h4',{text:mapCopy('loot')}));
+      detail.append(mapBind(h('h4'),'loot'));
       detail.append(linkFlow(loot.filter(x=>wikiData.items?.[String(x)]).map(x=>
        itemLink(x,dataName('item',x),id))));
      }
      const dropZones=wikiIndex.zones(id);
      if(dropZones.length){
       if(!ownerMap&&!loot.length)
-       detail.append(h('h4',{text:mapCopy('loot')}));
+       detail.append(mapBind(h('h4'),'loot'));
       for(const zone of dropZones)for(const group of zone.rows||[]){
        const block=h('section',{class:'wiki-zone-group'});
        if(group.mob!=null&&wikiData.monsters?.[group.mob])
