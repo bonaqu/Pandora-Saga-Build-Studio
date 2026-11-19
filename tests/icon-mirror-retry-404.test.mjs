@@ -52,7 +52,41 @@ test('explicit source recheck is bounded and never downloads during dry-run',()=
 test('partial runs preserve prior HTTP 404 evidence and stop retries on new 404',()=>{
  const source=readFileSync(new URL('scripts/mirror-os-icons.mjs',root),'utf8');
  assert.match(source,/const known404=new Set/);
+ assert.match(source,/catalogIconRows\(\{skills,items,souls\}\)/);
  assert.match(source,/known404\.has\(key\(row\)\)&&!retry404/);
  assert.match(source,/failures\.get\(id\)==='HTTP 404'\|\|known404\.has\(id\)/);
  assert.match(source,/if\(response\.status===404\)\{failures\.set\(key\(row\),'HTTP 404'\);return\}/);
+});
+
+test('mirror preflight reuses the canonical identities and skips known 404 originals',async()=>{
+ const {originalIconRecoveryPlan}=await import('../scripts/should-recover-original-icons.mjs');
+ const data={skills:{a:{iconId:'fire'},b:{iconId:'fire'}},
+  items:{x:{icon:'A_12'}},souls:{x:{icon:'A_12'}}};
+ const manifest={icons:{skills:{skill_fire:'assets/skills/icons/skill_fire.webp'},
+  items:{A_12:'assets/items/icons/A_12.webp'},souls:{}},
+  missing:[{kind:'souls',stem:'A_12',error:'HTTP 404'}]};
+ const same=originalIconRecoveryPlan(data,manifest);
+ assert.equal(same.needed,false);
+ assert.equal(same.expected,3,'Shared identities must be deduplicated without merging categories');
+ assert.equal(same.known404,1);
+ const missingFile=originalIconRecoveryPlan(data,manifest,{
+  exists:path=>path!=='assets/skills/icons/skill_fire.webp'});
+ assert.equal(missingFile.needed,true);
+ assert.deepEqual([...missingFile.pending],['skills/skill_fire']);
+ const unknown=originalIconRecoveryPlan(
+  {...data,skills:{...data.skills,new:{iconId:'ice'}}},manifest);
+ assert.equal(unknown.needed,true);
+ assert.deepEqual([...unknown.pending],['skills/skill_ice']);
+ assert.throws(()=>originalIconRecoveryPlan(data,{}),/icon manifest/);
+});
+test('read-only release preflight does not create needless icon workflow for verified catalog',()=>{
+ const task=spawnSync(process.execPath,[
+  fileURLToPath(new URL('scripts/should-recover-original-icons.mjs',root))
+ ],{encoding:'utf8',timeout:30000});
+ assert.equal(task.status,0,task.stderr);
+ const result=JSON.parse(task.stdout.trim().split('\n').at(-1));
+ const current=JSON.parse(manifest());
+ assert.equal(result.expected,current.count.expected);
+ assert.equal(result.pending,current.count.unverified);
+ assert.equal(result.needed,result.pending>0);
 });

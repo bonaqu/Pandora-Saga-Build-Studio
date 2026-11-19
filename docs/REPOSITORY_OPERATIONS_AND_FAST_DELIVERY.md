@@ -74,3 +74,14 @@ To recheck metadata: `GET /repos/bonaqu/Pandora-Saga-Build-Studio` and `GET /rep
 После успешного 0.893.0 на проверенной основной ветке из **32** маленьких Node source-contract тестов сформированы **4** тематических модуля: contracts-account-compact, contracts-interface-compact, contracts-wiki-compact и contracts-source-compact. Исходные **84 тестовых случая** и утверждения сохранены без сокращения; каждый старый файл помечен Original: tests/<name>.test.mjs внутри собственного лексического блока. Удаление дублирующихся точек входа сокращает **581 → 553** Node-модуля, а не набор проверяемых сценариев.
 
 Новый пограничный сценарий отдельно проверяет немедленную ротацию 13-й записи CHANGELOG. Безопасность D1, билды, оригинальная графика, реальные Node/Chromium и браузерные сценарии сохранены. Это изменения только тестов и документации, версия UI не повышается; для цифр ускорения требуется сравнение реальных GitHub Actions после CI.
+
+
+## 19.11.2026 — demand-driven mirror of original artwork
+
+Previously every successful ordinary Pages/Worker readiness run (even text-only or Worker-only changes) queued a separate `catalog-icon-reconcile` workflow. The 0.916.0 release ran it with **0 downloads and 265 already-confirmed HTTP 404s**, as shown in the GitHub Actions mirror log. A separate privileged runner on each unrelated release was wasted.
+
+The main-branch read-only readiness workflow now runs `scripts/should-recover-original-icons.mjs` **after** its 16-dataset parity check, using only locally committed `skills/items/souls` JSON, the canonical image manifest, and on-disk file existence. The identity builder is shared with the real mirror, avoiding drift. If every expected original is already present or explicitly known HTTP 404, no new asset workflow is dispatched. New identities, absent originals, unexpected manifest entries, or preflight errors conservatively launch the trusted mirror with `mode=new`; no SQL read, HTTP request, D1 mutation, or catalog republish is done by the preflight.
+
+The trusted `Verified catalog fallback auto-merge` workflow completion **still automatically triggers** original-only recovery for token-merged catalogs, even when GitHub suppresses new push workflows. Manual `workflow_dispatch` defaults to `retry-404`, preserving the ability to recheck all previously unavailable original images. The automatic path never requests 265 known 404s after every UI release. Original RIFF/WebP validation, exact ID/source URLs, bounded batches, standalone Node/Chromium checks for generated PRs and postmerge Pages/read-only acceptance remain mandatory.
+
+As with any change in GitHub Actions dispatch, only the actual GitHub Actions logs can confirm the new workflow path. If the dispatch permission is missing, the step records the error without falsely claiming the source catalog is unverified; rerun the manual trusted workflow after fixing permissions. Do not infer a minute-by-minute speedup from a single run.

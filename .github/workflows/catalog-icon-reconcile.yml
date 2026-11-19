@@ -1,17 +1,24 @@
 name: Recover original game icons after a verified catalog release
 
 on:
-  # No cron and no extra admin click. A source release that passed full live
-  # verification initiates one bounded original-only mirror attempt.
+  # The catalog auto-merge is made with GITHUB_TOKEN and may not trigger
+  # push workflows, so keep its trusted completion event. Ordinary releases
+  # dispatch ONLY if a post-parity preflight finds unprobed source icons.
   workflow_run:
     workflows:
-      - Live Pages and Worker readiness (on release or manual)
       - Verified catalog fallback auto-merge
     types: [completed]
-    # Only published branch runs can initiate a trusted original-icon recovery.
     branches:
       - bonaqu_projects
   workflow_dispatch:
+    inputs:
+      mode:
+        description: 'new: only unprobed identities; retry-404: also recheck original source 404s'
+        type: choice
+        options:
+          - retry-404
+          - new
+        default: retry-404
 
 permissions:
   contents: write
@@ -42,15 +49,13 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: '22'
-      - name: Mirror new source icons after ordinary verified release
+      - name: Mirror only unprobed game icon identities
         if: >-
-          github.event_name != 'workflow_dispatch' &&
-          github.event.workflow_run.name != 'Verified catalog fallback auto-merge'
+          github.event_name == 'workflow_run' || inputs.mode == 'new'
         run: node scripts/mirror-os-icons.mjs --limit=90
-      - name: Recheck all missing originals after game catalog refresh
+      - name: Manually recheck historical HTTP 404 originals
         if: >-
-          github.event_name == 'workflow_dispatch' ||
-          github.event.workflow_run.name == 'Verified catalog fallback auto-merge'
+          github.event_name == 'workflow_dispatch' && inputs.mode != 'new'
         run: node scripts/mirror-os-icons.mjs --retry-404
       - name: Recover exact PvP event screenshot where available
         run: node scripts/mirror-honor-victories.mjs
