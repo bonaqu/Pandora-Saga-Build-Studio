@@ -3870,19 +3870,27 @@ function renderWiki(root){
  const ownerMonsterIds=()=>new Set(Object.keys(wikiIndex?.records('monster')||{}));
  const mapRoster=rec=>rec.roster||rec.reportedSpawns||[];
  const persistRosterLink=async(mapId,entryId,monsterId)=>{
-  const rec=wikiIndex.records('map')?.[String(mapId)];
-  if(!rec)throw Error(wt('Локация не найдена','Location not found'));
-  const previous=mapRoster(rec);
-  if(!previous.some(row=>row.id===entryId))
-   throw Error(wt('Строка монстра не найдена','Monster entry not found'));
-  if(monsterId!=null&&!wikiIndex.records('monster')?.[String(monsterId)])
-   throw Error(wt('Карточка монстра отсутствует','Monster card not found'));
-  const next=previous.map(row=>row.id===entryId?{...row,monsterId}:row);
-  const referencedBefore=new Set(previous.map(row=>String(row.monsterId)).filter(x=>x!=='null'));
-  const extra=(rec.mobs||[]).filter(x=>!referencedBefore.has(String(x)));
-  const mobs=[...new Map([...extra,...next.map(row=>row.monsterId).filter(x=>x!=null)]
-   .map(x=>[String(x),x])).values()];
-  await saveWikiRecordPatch('map',mapId,{roster:next,mobs});
+  const snap=wikiIndex.records('map')?.[String(mapId)];
+  if(!snap)throw Error(wt('Локация не найдена','Location not found'));
+  const expected=mapRoster(snap).find(row=>row.id===entryId);
+  if(!expected)throw Error(wt('Строка монстра не найдена','Monster entry not found'));
+  await saveWikiRecordPatch('map',mapId,()=>{
+   const rec=wikiIndex.records('map')?.[String(mapId)];
+   const previous=rec?mapRoster(rec):[];
+   const row=previous.find(x=>x.id===entryId);
+   if(!row)throw Error(wt('Строка монстра больше не найдена','Monster entry no longer found'));
+   if(String(row.monsterId??'')!==String(expected.monsterId??''))
+    throw Error(wt('Связь уже изменена. Обнови карточку.',
+     'This link has changed. Refresh the record.'));
+   if(monsterId!=null&&!wikiIndex.records('monster')?.[String(monsterId)])
+    throw Error(wt('Карточка монстра отсутствует','Monster card not found'));
+   const next=previous.map(x=>x.id===entryId?{...x,monsterId}:x);
+   const linked=new Set(previous.map(x=>String(x.monsterId)).filter(x=>x!=='null'));
+   const extra=(rec.mobs||[]).filter(x=>!linked.has(String(x)));
+   const mobs=[...new Map([...extra,...next.map(x=>x.monsterId).filter(x=>x!=null)]
+    .map(x=>[String(x),x])).values()];
+   return {roster:next,mobs};
+  });
  };
  const createOwnerMonster=(button,{mapId=null,spawnId=null,name='',level=1}={})=>{
   if(!adminEditing||!adminToken)return;
@@ -10705,17 +10713,43 @@ function wikiMapListEqual(a,b){
  return JSON.stringify(stable(Array.isArray(a)?a:[]))===
   JSON.stringify(stable(Array.isArray(b)?b:[]));
 }
-function saveWikiMapList(id,field,expected,next){
- if(!['tags','sections','extraSections','npcs','loot'].includes(field))
-  throw Error('Unsupported map list');
- return saveWikiRecordPatch('map',id,()=>{
-  const current=wikiIndex.records('map')?.[String(id)];
-  if(!current)throw Error(wt('Локация больше не доступна.',
-   'The location is no longer available.'));
-  if(!wikiMapListEqual(expected,current[field]))
+// A queued D1 CAS is not enough when a control submits an old whole-list
+// snapshot. Resolve the latest record after earlier writes and reject stale
+// input instead of silently overwriting a second edit.
+function saveWikiRecordList(type,id,field,expected,next){
+ const allowed={map:['tags','sections','extraSections','npcs','loot','roster','mobs'],
+  skill:['reqs'],soul:['slots'],monster:['loot'],npc:['maps'],instance:['mobs']};
+ if(!allowed[type]?.includes(field))throw Error('Unsupported owner list');
+ return saveWikiRecordPatch(type,id,()=>{
+  const record=wikiIndex.records(type)?.[String(id)];
+  if(!record)throw Error(wt('Запись больше не доступна.','The record is no longer available.'));
+  const current=type==='map'&&field==='roster'?
+   record.roster??record.reportedSpawns??[]:record[field];
+  if(!wikiMapListEqual(expected,current))
    throw Error(wt('Список уже изменён. Обнови карточку и повтори действие.',
     'This list has changed. Refresh the record and try again.'));
   return {[field]:next};
+ });
+}
+function saveWikiMapList(id,field,expected,next){
+ if(!['tags','sections','extraSections','npcs','loot'].includes(field))
+  throw Error('Unsupported map list');
+ return saveWikiRecordList('map',id,field,expected,next);
+}
+// The map's monster IDs and the matching curator roster form one D1 write.
+// Removing a linked monster also clears its reported row without stale data.
+function saveWikiMapMonsterList(id,expected,next){
+ return saveWikiRecordPatch('map',id,()=>{
+  const rec=wikiIndex.records('map')?.[String(id)];
+  if(!rec)throw Error(wt('Локация больше не доступна.','The location is no longer available.'));
+  if(!wikiMapListEqual(expected,rec.mobs))
+   throw Error(wt('Список уже изменён. Обнови карточку и повтори действие.',
+    'This list has changed. Refresh the record and try again.'));
+  const reports=rec.roster??rec.reportedSpawns;
+  if(!Array.isArray(reports)||!reports.length)return {mobs:next};
+  const present=new Set(next.map(String));
+  return {mobs:next,roster:reports.map(row=>row.monsterId!=null&&
+   !present.has(String(row.monsterId))?{...row,monsterId:null}:row)};
  });
 }
 async function saveWikiRecordField(type,id,field,value){
