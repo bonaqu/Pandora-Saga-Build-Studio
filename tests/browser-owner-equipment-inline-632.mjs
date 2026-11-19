@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 export async function runOwnerEquipmentInlineSmoke(browser,base){
  const api='https://ps-build-studio-cloud.bonaqu.workers.dev';
  const context=await browser.newContext({viewport:{width:390,height:800}});
- const values={},writes=[],errors=[];
+ const values={},writes=[],errors=[],nextConflicts=new Set();
  await context.addInitScript(()=>{
   localStorage.setItem('ps-build-studio.v1',JSON.stringify({
    race:1,gender:0,job:7,level:45,name:'Owner equipment QA',
@@ -34,6 +34,8 @@ export async function runOwnerEquipmentInlineSmoke(browser,base){
    const data=req.postDataJSON();
    assert.equal(req.headers().authorization,'Bearer '+'a'.repeat(43));
    assert.equal(data.expectedValue,Object.hasOwn(values,data.key)?values[data.key]:null);
+   if(nextConflicts.delete(data.key))
+    return reply({code:'OWNER_EDIT_CONFLICT',error:'Concurrent copy edit'},409);
    values[data.key]=data.value;writes.push(data);
    return reply({ok:true,key:data.key,value:data.value,conditional:true});
   }
@@ -290,8 +292,103 @@ export async function runOwnerEquipmentInlineSmoke(browser,base){
    document.querySelector('#stagePicker [data-stage-tab="choose"] .stage-copy-caption')
     ?.textContent==='Выбрать другую вещь',null,{timeout:12000});
   assert.equal(Object.hasOwn(values,replacementKey),false);
+  // Additional author copy is edited in the existing inline equipment editor,
+  // not a new modal. Game levels and original names remain read-only.
+  if(!await page.locator('#ownerDock').evaluate(el=>
+   el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
+  await page.locator('#stagePicker [data-stage-tab="choose"]').click();
+  const picker=page.locator('#stagePicker');
+  const firstItem=picker.locator('[data-stage-choice]').first();
+  await firstItem.waitFor({state:'visible',timeout:12000});
+  const gameItemId=await firstItem.getAttribute('data-stage-choice');
+  const originalName=await firstItem.locator('.stage-picker-item-label>b').textContent();
+  const originalAria=await firstItem.getAttribute('aria-label');
+  const beforeHero=await page.evaluate(()=>localStorage.getItem('ps-build-studio.v1'));
+  await firstItem.evaluate(el=>el.dataset.ownerEditorStable='yes');
+  const meta=firstItem.locator('.stage-picker-item-label small');
+  assert.match(await meta.innerText(),/^Уровень /);
+  const editPanel=picker.locator('.studio-owner-interface-editor');
+  await editPanel.locator('summary').click();
+  const row=editPanel.locator('.studio-owner-interface-row')
+   .filter({has:page.getByText('Уровень предмета',{exact:true})});
+  const caption=row.locator('.studio-owner-interface-value');
+  await caption.dblclick();
+  const input=caption.locator('[data-owner-text-field]');
+  await input.fill('Ур. ');
+  await input.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#stagePicker [data-stage-choice] .stage-picker-item-label small')
+   ?.textContent.startsWith('Ур. '),null,{timeout:12000});
+  const itemLevelKey='guideedit.book.equipment.picker-item-level';
+  assert.equal(JSON.parse(values[itemLevelKey]).ru,'Ур. ');
+  assert.equal(await firstItem.getAttribute('data-owner-editor-stable'),'yes');
+  assert.equal(await firstItem.getAttribute('data-stage-choice'),gameItemId);
+  assert.equal(await firstItem.locator('.stage-picker-item-label>b').textContent(),originalName);
+  assert.equal(await firstItem.getAttribute('aria-label'),originalAria);
+  assert.equal(await page.evaluate(()=>localStorage.getItem('ps-build-studio.v1')),beforeHero);
+  // HTTP 409 preserves the exact unsent text; neither the selected item nor
+  // the previously confirmed D1 record may be silently overwritten.
+  nextConflicts.add(itemLevelKey);
+  await caption.dblclick();
+  await input.fill('Неотправленная подпись');
+  await input.press('Tab');
+  await caption.locator('.ui-content-inline-error').waitFor({state:'visible',timeout:12000});
+  assert.equal(await input.textContent(),'Неотправленная подпись');
+  assert.equal(JSON.parse(values[itemLevelKey]).ru,'Ур. ');
+  await input.press('Escape');
+  assert.equal((await meta.innerText()).startsWith('Ур. '),true);
+  if(await page.locator('#ownerDock').evaluate(el=>
+   el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
+  await page.locator('#ownerDock [data-owner-undo]').click();
+  await page.waitForFunction(()=>document.querySelector(
+   '#stagePicker [data-stage-choice] .stage-picker-item-label small')
+   ?.textContent.startsWith('Уровень '),null,{timeout:12000});
+  assert.equal(Object.hasOwn(values,itemLevelKey),false);
+  assert.equal(await firstItem.getAttribute('data-owner-editor-stable'),'yes');
+  assert.equal(await firstItem.getAttribute('aria-label'),originalAria);
+  assert.equal(await page.evaluate(()=>localStorage.getItem('ps-build-studio.v1')),beforeHero);
+
+  // A second case edits the game-item action accessibility prefix in English.
+  // The original source name must stay attached and no result row may remount.
+  if(!await page.locator('#ownerDock').evaluate(el=>
+   el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
+  await page.locator('#stagePicker .stage-picker-head>button[aria-label="Закрыть выбор"]').click();
+  await page.locator('#locale [data-locale="en"]').click();
+  await page.waitForFunction(()=>document.documentElement.lang==='en');
+  await page.locator('.equipment-slot[data-slot-index="5"]').click();
+  const chooser=page.locator('#stagePicker');
+  await chooser.locator('[data-stage-choice]').first().waitFor({state:'visible',timeout:12000});
+  const enFirst=chooser.locator('[data-stage-choice]').first();
+  assert.match(await enFirst.locator('.stage-picker-item-label small').innerText(),/^Level /);
+  await enFirst.evaluate(el=>el.dataset.ownerEditorStable='en');
+  const enPanel=chooser.locator('.studio-owner-interface-editor');
+  await enPanel.locator('summary').click();
+  const enLevel=enPanel.locator('.studio-owner-interface-row')
+   .filter({has:page.getByText('Item level',{exact:true})})
+   .locator('.studio-owner-interface-value');
+  await enLevel.dblclick();
+  await enLevel.locator('[data-owner-text-field]').fill('Lvl. ');
+  await enLevel.locator('[data-owner-text-field]').press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#stagePicker [data-stage-choice] .stage-picker-item-label small')
+   ?.textContent.startsWith('Lvl. '),null,{timeout:12000});
+  assert.deepEqual(JSON.parse(values[itemLevelKey]),{en:'Lvl. '});
+  assert.equal(await enFirst.getAttribute('data-owner-editor-stable'),'en');
+  assert.equal(await page.evaluate(()=>localStorage.getItem('ps-build-studio.v1')),beforeHero);
+  if(await page.locator('#ownerDock').evaluate(el=>
+   el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
+  await page.locator('#ownerDock [data-owner-undo]').click();
+  await page.waitForFunction(()=>document.querySelector(
+   '#stagePicker [data-stage-choice] .stage-picker-item-label small')
+   ?.textContent.startsWith('Level '),null,{timeout:12000});
+  assert.equal(Object.hasOwn(values,itemLevelKey),false);
+  assert.equal(await enFirst.getAttribute('data-owner-editor-stable'),'en');
   // A text-only history reset does not remount the item picker or change Souls.
   assert.deepEqual(errors,[]);
-  console.log('Chromium owner equipment: RU/EN CAS, Undo and in-place history reset passed');
+  console.log('Chromium owner equipment: RU/EN CAS, 409, Undo and same-DOM item metadata passed');
  }finally{await context.close()}
 }
