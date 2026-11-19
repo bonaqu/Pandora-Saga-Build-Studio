@@ -274,10 +274,24 @@ async function adminCatalog(request,env,path){
    if(payload.length>12000)return no('Record too large',400);
    const kind=data.dataset==='items'?String(value.kind||''):'';
    const costume=data.dataset==='items'&&isCostumeKind(kind)?1:0;
-   commands.push(env.DB.prepare('INSERT INTO catalog_entries(snapshot,dataset,record_key,name,kind,slot,is_costume_overlay,payload) VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(snapshot,dataset,record_key) DO UPDATE SET name=excluded.name,kind=excluded.kind,slot=excluded.slot,is_costume_overlay=excluded.is_costume_overlay,payload=excluded.payload').bind(
-    data.snapshot,data.dataset,key,String(value.name||'').slice(0,240),kind.slice(0,60),String(value.slot||'').slice(0,40),costume,payload));
+   // The preflight SELECT alone is not sufficient: publication could win the
+   // race before this D1 batch starts. The INSERT and UPSERT are each guarded
+   // by an atomic NOT EXISTS predicate checked in SQLite at write time.
+   commands.push(env.DB.prepare(
+    'INSERT INTO catalog_entries(snapshot,dataset,record_key,name,kind,slot,is_costume_overlay,payload) '+
+    'SELECT ?,?,?,?,?,?,?,? WHERE NOT EXISTS (SELECT 1 FROM catalog_current WHERE id=1 AND snapshot=?) '+
+    'ON CONFLICT(snapshot,dataset,record_key) DO UPDATE SET '+
+    'name=excluded.name,kind=excluded.kind,slot=excluded.slot,'+
+    'is_costume_overlay=excluded.is_costume_overlay,payload=excluded.payload '+
+    'WHERE NOT EXISTS (SELECT 1 FROM catalog_current WHERE id=1 AND snapshot=?)'
+   ).bind(data.snapshot,data.dataset,key,String(value.name||'').slice(0,240),
+    kind.slice(0,60),String(value.slot||'').slice(0,40),costume,payload,
+    data.snapshot,data.snapshot));
   }
-  await env.DB.batch(commands);
+  const changes=await env.DB.batch(commands);
+  if(!Array.isArray(changes)||changes.length!==commands.length||
+     changes.some(result=>Number(result?.meta?.changes)!==1))
+   return no('Catalog published during batch; retry with a new snapshot',409);
   return json({ok:true,received:data.records.length,dataset:data.dataset});
  }
  if(path==='/api/admin/catalog/publish'){
@@ -732,7 +746,7 @@ if(path==='/api/runtime-capabilities'&&method==='GET')
  return json({codeRelease:'0.361.0',ownerEditors:[
   'itemedit','tradeedit','acquireedit','wikiedit','dropedit','chestedit','spawnedit',
    'virtual-town-wiki','bilingual-item-text','historical-map-wiki','owner-map-create','owner-map-sections','owner-monster-create','future-map-roster','owner-npc-create','admin-save-feedback','owner-record-delete','bilingual-wiki','guideedit','honor-lists','honor-extended-edit','wiki-label-edit'],
-  githubOwnerExport:true,honorExtendedEditing:true,wikiLabelEditing:true,ownerProgressionD1:true,ownerOverrideCAS:true,ownerOverrideCASRequired:true,catalogPublishCASRequired:true,catalogProvenanceCors:true,adminD1WriteCheck:'catalog-and-overrides',catalogSourceFailover:true,sourceEgressProbe:true,sourceProbeDetail:true,sourceInstancesArray:true,sourceFullProbe:true,
+  githubOwnerExport:true,honorExtendedEditing:true,wikiLabelEditing:true,ownerProgressionD1:true,ownerOverrideCAS:true,ownerOverrideCASRequired:true,catalogPublishCASRequired:true,catalogProvenanceCors:true,catalogSnapshotCache:true,adminD1WriteCheck:'catalog-and-overrides',catalogSourceFailover:true,sourceEgressProbe:true,sourceProbeDetail:true,sourceInstancesArray:true,sourceFullProbe:true,
   buildLibraryRequiresAccount:true,sharedPreviewRequiresAccount:true,
   legacyAccountImportPreview:true});
 if(path==='/api/health'&&method==='GET'){
