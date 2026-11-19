@@ -24,8 +24,8 @@ export function normalizeForReleaseOnly(path,contents){
 
 // Styling changes get actual desktop/mobile layout assertions without the
 // entire gameplay matrix. Unknown runtime changes still run full Chromium.
-const harmless=/^(?:docs\\/|artifacts\\/)|(?:^|\\/)[^/]+\\.md$|^pandora-studio-ui-locale\\.js$|^tests\\/[^/]+\\.test\\.mjs$/;
-const layoutSensitive=/\\.css$/;
+const harmless=/^(?:docs\/|artifacts\/)|(?:^|\/)[^/]+\.md$|^pandora-studio-ui-locale\.js$|^tests\/[^/]+\.test\.mjs$/;
+const layoutSensitive=/\.css$/;
 
 export function selectBrowserSuite(changedPaths,{releaseOnlyFiles=[]}={}){
  if(!Array.isArray(changedPaths)||!changedPaths.length)return 'full';
