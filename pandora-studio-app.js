@@ -3203,7 +3203,12 @@ async function loadWiki(){
    try{loaded=await window.PandoraWikiCatalog.load({
     api:API,fetcher:catalogArchived?fetch:window.PandoraStudioLiveRead.get,
     timeout:30000,strict:!catalogArchived,preferLocal:catalogArchived,
-    signal:controller.signal})}
+    signal:controller.signal,
+    // The active Hero catalog has already passed D1 provenance and integrity
+    // gates for six Wiki datasets. The Wiki validates the other six against
+    // this exact published snapshot; no archive or cross-version mix is allowed.
+    verified:!catalogArchived&&activeCatalogSnapshot&&catalogSource&&
+     !liveGateReason?{snapshot:activeCatalogSnapshot,data:catalogSource}:null})}
    catch(error){if(generation!==wikiLoadGeneration)return loadWiki();throw error}
    if(generation!==wikiLoadGeneration)return loadWiki();
    wikiBaseData=loaded.data;
