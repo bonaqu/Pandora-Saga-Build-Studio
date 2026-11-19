@@ -173,6 +173,7 @@ test('stale Wiki generations and inactive D1 heartbeats cancel pending GETs',asy
  const events=portion("window.addEventListener('offline'", 'let startupAttempt=');
  assert.match(events,/cancelLiveCheckpoint\(\)/);
  assert.match(events,/document\.visibilityState==='hidden'/);
+ assert.match(events,/if\(localCatalogHost\|\|document\.visibilityState==='hidden'\)return/);
  const calls=[],gates=[];
  // Execute the real production checkpoint function, not a reimplementation.
  // The mock ignores AbortSignal to reproduce the dangerous late response.

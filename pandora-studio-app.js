@@ -11575,7 +11575,8 @@ window.addEventListener('offline',()=>{
  if(studioLiveReady)showLiveGate('offline');
 });
 window.addEventListener('online',()=>{
- if(localCatalogHost)return;
+ if(localCatalogHost||document.visibilityState==='hidden')return;
+ // A hidden tab is rechecked by visibilitychange, never by a late online ping.
  if(studioLiveReady){if(liveGateReason!=='changed')void checkLiveConnection({force:true});}
  else if(startupOverlay.dataset.state==='error')void startStudio();
 });
