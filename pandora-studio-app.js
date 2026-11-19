@@ -4950,7 +4950,7 @@ function renderWiki(root){
      }
     }
    }
-   if(type==='npc'&&rec.ownerCreated&&window.PandoraWikiOwnerData.ownerNpcId(id)&&
+   if(type==='npc'&&rec.ownerCreated&&window.PandoraWikiOwnerData.curatedNpcId(id)&&
      adminEditing&&adminToken){
     const button=h('button',{type:'button',class:'wiki-owner-remove wiki-owner-delete-record',
      text:wt('Удалить созданного NPC','Delete created NPC')});
