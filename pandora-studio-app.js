@@ -1343,6 +1343,7 @@ const wikiMonsterRows=Object.freeze([
  ["addNormal","+ Обычная добыча","+ Normal loot"],
  ["addSpecial","+ Особая добыча","+ Conditional loot"],
  ["limitReached","Превышен лимит записей добычи","Loot record limit reached"],
+ ["createLinkFailure","Монстр создан, но связь с локацией не сохранилась. Открой локацию и выбери существующую карточку монстра.","Monster card created, but its location link was not saved. Open the location and select the existing monster card."],
 ]);
 const wikiMonsterByKey=new Map(wikiMonsterRows.map(row=>[row[0],row]));
 function monsterCopy(key){
@@ -3867,7 +3868,19 @@ function renderWiki(root){
  controls.append(categories,search);
  // Add owner-authored monster cards without asserting a nonexistent OS numeric ID.
  // Future-map reports can be linked to existing OR newly created encyclopedia cards.
- const ownerMonsterIds=()=>new Set(Object.keys(wikiIndex?.records('monster')||{}));
+ // Keep one candidate per active form; retrying uncertain D1 writes must
+ // never invent new monster, map or NPC identities.
+ const reserveWikiOwnerId=type=>{
+  const prefix={monster:'owner-monster-',map:'custom-',npc:'owner-npc-'}[type];
+  if(!prefix)return null;
+  for(let attempt=0;attempt<8;attempt++){
+   const id=prefix+[...crypto.getRandomValues(new Uint8Array(8))]
+    .map(x=>x.toString(16).padStart(2,'0')).join('');
+   if(!wikiIndex?.records(type)?.[id]&&
+    !Object.hasOwn(override,'wikiedit.'+type+'.'+id))return id;
+  }
+  return null;
+ };
  const mapRoster=rec=>rec.roster||rec.reportedSpawns||[];
  const persistRosterLink=async(mapId,entryId,monsterId)=>{
   const snap=wikiIndex.records('map')?.[String(mapId)];
@@ -3907,31 +3920,37 @@ function renderWiki(root){
    value:String(level),'aria-label':wt('Уровень монстра','Monster level'),
    class:'wiki-inline-input wiki-owner-monster-level'});
   const error=h('small',{class:'inline-owner-error',role:'status'});
+  let reservedId=null,created=false;
   const submit=h('button',{type:'button',class:'wiki-owner-plus',
    text:wt('Сохранить монстра','Save monster'),onclick:async()=>{
+    if(submit.disabled)return;
     const label=ru.value.trim(),english=en.value.trim(),num=Number(lvl.value);
     if(!label||!english||label.length>240||english.length>240||
       !Number.isInteger(num)||num<1||num>255){
      error.textContent=wt('Нужны названия RU/EN и уровень 1–255',
       'Both names and a level 1–255 are required');return;
     }
-    let monsterId=null;
-    for(let attempt=0;attempt<8;attempt++){
-     const candidate='owner-monster-'+[...crypto.getRandomValues(new Uint8Array(8))]
-      .map(x=>x.toString(16).padStart(2,'0')).join('');
-     if(!ownerMonsterIds().has(candidate)&&
-       !Object.hasOwn(override,'wikiedit.monster.'+candidate)){
-      monsterId=candidate;break;
-     }
-    }
+    const monsterId=reservedId||(reservedId=reserveWikiOwnerId('monster'));
     if(!monsterId){error.textContent=wt('Не удалось создать монстра. Повтори попытку.','Could not create monster. Try again.');return}
-    submit.disabled=true;
+    submit.disabled=true;error.textContent='';
     try{
-     await saveWikiRecordPatch('monster',monsterId,{
-      name:label,nameEn:english,desc:'',descEn:'',level:num});
+     if(!created){
+      await saveWikiRecordPatch('monster',monsterId,{
+       name:label,nameEn:english,desc:'',descEn:'',level:num});
+      created=true;
+     }
      if(mapId&&spawnId)await persistRosterLink(mapId,spawnId,monsterId);
      openWiki(mapId?'map':'monster',mapId||monsterId);
-    }catch(e){error.textContent=String(e.message||e);submit.disabled=false}
+    }catch(e){
+     if(created){
+      // Creating the card succeeded, linking the map did not. Do not post
+      // another card. Reveal this saved card and offer recovery via the map.
+      openWiki('monster',monsterId);
+      showStudioToast(monsterCopy('createLinkFailure'),'warning');
+      return;
+     }
+     error.textContent=String(e.message||e);submit.disabled=false
+    }
    }});
   const cancel=h('button',{type:'button',class:'wiki-owner-remove',
    text:wt('Отмена','Cancel'),onclick:()=>form.remove()});
@@ -3949,6 +3968,7 @@ function renderWiki(root){
   create.onclick=()=>{
    if(controls.querySelector('.wiki-map-create-form'))return;
    const form=h('div',{class:'wiki-map-create-form wiki-owner-source-picker'});
+   let reservedId=null;
    const ru=ownerPlainTextField({class:'wiki-inline-input',
     placeholder:wt('Название · RU','Name · RU'),
     'aria-label':wt('Название локации на русском','Location name in Russian')});
@@ -3958,14 +3978,15 @@ function renderWiki(root){
    const error=h('small',{class:'inline-owner-error',role:'status'});
    const submit=h('button',{type:'button',class:'wiki-owner-plus',
     text:wt('Создать','Create'),onclick:async()=>{
+     if(submit.disabled)return;
      const name=ru.value.trim(),nameEn=en.value.trim();
      if(!name||!nameEn||name.length>240||nameEn.length>240){
       error.textContent=wt('Укажи названия RU и EN','Enter both RU and EN names');return;
      }
-     const random=[...crypto.getRandomValues(new Uint8Array(8))]
-      .map(x=>x.toString(16).padStart(2,'0')).join('');
-     const id='custom-'+random;
-     submit.disabled=true;
+     const id=reservedId||(reservedId=reserveWikiOwnerId('map'));
+     if(!id){error.textContent=wt('Не удалось создать локацию. Повтори попытку.',
+      'Could not create location. Try again.');return}
+     submit.disabled=true;error.textContent='';
      try{
       await saveWikiRecordPatch('map',id,{name,nameEn,desc:'',descEn:'',
        mobs:[],npcs:[],loot:[],tags:[],
@@ -6906,6 +6927,7 @@ function renderWiki(root){
          mapBind(field,placeholder,'placeholder');
         }
         const err=h('small',{class:'inline-owner-error',role:'alert'});
+        let reservedId=null;
         const submit=mapBind(h('button',{type:'button',class:'wiki-owner-plus'}),'npcSave');
         submit.onclick=async()=>{
          if(submit.disabled)return;
@@ -6913,12 +6935,11 @@ function renderWiki(root){
          if(!name||!nameEn||name.length>240||nameEn.length>240||service.length>240){
           err.textContent=mapCopy('npcRequired');return;
          }
-         const npcId='owner-npc-'+[...crypto.getRandomValues(new Uint8Array(8))]
-          .map(x=>x.toString(16).padStart(2,'0')).join('');
-         if(wikiIndex.records('npc')?.[npcId]||
-          Object.hasOwn(override,'wikiedit.npc.'+npcId)){
+         if(!wikiIndex.records('map')?.[String(id)]){
           err.textContent=mapCopy('npcCreateFailure');return;
          }
+         const npcId=reservedId||(reservedId=reserveWikiOwnerId('npc'));
+         if(!npcId){err.textContent=mapCopy('npcCreateFailure');return}
          submit.disabled=true;err.textContent='';
          try{
           await saveWikiRecordPatch('npc',npcId,{name,nameEn,service,maps:[String(id)]});

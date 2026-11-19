@@ -259,8 +259,8 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   await monsterPanel.locator('summary').click();
   const monsterKeys=await monsterPanel.locator('[data-owner-copy-id]')
    .evaluateAll(nodes=>nodes.map(node=>node.dataset.ownerCopyId));
-  assert.equal(monsterKeys.length,41);
-  assert.equal(new Set(monsterKeys).size,41);
+  assert.equal(monsterKeys.length,42);
+  assert.equal(new Set(monsterKeys).size,monsterKeys.length);
   const monsterStatsBefore=await monster.locator('.wiki-monster-stat strong').allInnerTexts();
   const monsterResistsBefore=await monster.locator('.wiki-monster-resist strong').allInnerTexts();
   const monsterLootCount=await monster.locator('.wiki-loot-chip').count();
