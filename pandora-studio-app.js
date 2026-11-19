@@ -10956,8 +10956,11 @@ async function loadCatalog({archive=false,commit=true}={}){
   // One broken/corrupt D1 dataset cancels its sibling downloads. Local
   // fixtures retain their same isolated archive-only handling.
   const signal=AbortSignal.any([batchSignal,AbortSignal.timeout(30000)]);
-  const response=await read(base+'/'+name+'.json',{
-   cache:archive?'default':'no-cache',signal});
+  // The same cancel/timeout contract covers response headers and the JSON
+  // body even if a custom fetch adapter ignores its AbortSignal.
+  const response=await window.PandoraStudioOnlineGate.untilAbort(
+   ()=>read(base+'/'+name+'.json',{
+    cache:archive?'default':'no-cache',signal}),signal);
   if(!response.ok)throw Error(name+' HTTP '+response.status);
   if(!archive){
    // Confirm both the published snapshot and its D1 origin for every
@@ -10970,7 +10973,8 @@ async function loadCatalog({archive=false,commit=true}={}){
    if(snapshots.size!==1)
     throw Error('В ходе загрузки изменилась версия каталога Cloudflare D1');
   }
-  const payload=await response.json();
+  const payload=await window.PandoraStudioOnlineGate.untilAbort(
+   ()=>response.json(),signal);
   if(signal.aborted)throw signal.reason||Error('Загрузка каталога отменена');
   return [name,payload];
  });
