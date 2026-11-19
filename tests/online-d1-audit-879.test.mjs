@@ -158,9 +158,11 @@ test('Wiki and character loaders both reject split D1 snapshots before all JSON 
  assert.match(wiki,/typeof batchSignal\.addEventListener==='function'/);
  assert.match(wiki,/if\(!snapshot\)throw Error/);
  assert.match(wiki,/snapshots\.add\(snapshot\);\s*if\(snapshots\.size!==1\)\s*throw Error/);
- assert.ok(wiki.indexOf('if(snapshots.size!==1)')<
-  wiki.indexOf('const payload=await response.json()'),
-  'Wiki must halt incompatible D1 sources before downloading more content');
+ const parse=wiki.indexOf('const payload=await untilCancelled(()=>response.json(),signal)');
+ assert.ok(parse>=0&&wiki.indexOf('if(snapshots.size!==1)')<parse,
+  'Wiki must reject mixed D1 snapshots before its bounded JSON body parsing');
+ assert.match(wiki,/const response=await untilCancelled\(\(\)=>fetcher\(url,init\),signal\)/,
+  'Both D1 fetch and JSON body reader must obey cancellation');
  assert.match(wiki,/if\(signal\?\.aborted\)throw signal\.reason/);
 });
 
