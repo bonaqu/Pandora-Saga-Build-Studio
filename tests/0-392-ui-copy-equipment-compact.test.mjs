@@ -40,8 +40,12 @@ test('only compatible equipment rows show source-backed Soul slot counts',()=>{
  assert.match(app,/if\(window\.PandoraEquipmentPlan\.supportsSoulSlot\(key\)\)metadata\.push\(/);
  assert.match(app,/h\('span',\{text:' '\+\(socketCount===null\?'—':String\(socketCount\)\)\}\)/);
  assert.match(app,/h\('small',\{\},metadata\)/);
- assert.match(app,/ · Слоты: /);
- assert.match(app,/ · Slots: /);
+ assert.match(app,/h\('span',\{text:' · '\}\)/,
+  'The item-metadata separator is not owner editable');
+ assert.match(app,/'Слоты:','Slots:'/,
+  'The Soul socket heading uses independently translated D1 copy');
+ assert.match(app,/text:' '\+\(socketCount===null\?'—':String\(socketCount\)\)/,
+  'The socket capacity is always numeric/source-backed, not D1 authored');
  assert.match(app,/class:'stage-picker-item-label'/);
 });
 test('approved joined forge bar and variant 5 element grid retain canonical choices',()=>{

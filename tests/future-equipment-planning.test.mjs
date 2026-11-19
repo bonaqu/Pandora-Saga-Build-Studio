@@ -26,7 +26,13 @@ test('future selection is distinct from actual equipment eligibility and persist
  const app=read('pandora-studio-app.js');
  assert.match(app,/PandoraUIPlanner\.planningEquippable/);
  assert.match(app,/future=Number\(rec\.level\)>state\.level/);
- assert.match(app,/Будет доступен с /);
+ assert.match(app,/equipmentCopy\('pickerFutureLevel','Будет доступен с','Available from level'\)/);
+ assert.match(app,/equipmentCopy\('pickerPlanAction','уровня\. Запланировать:','\. Plan:'\)/);
+ assert.match(app,/const level=button\.dataset\.pickerFutureLevel/);
+ assert.match(app,/ownerDockPatchAttr\(button,'aria-label',value\)/);
+ assert.match(app,/if\(level\)ownerDockPatchAttr\(button,'title',value\)/);
+ assert.match(app,/h\('span',\{text:' '\+String\(rec\.level\)\+' '\}\)/,
+  'Future level number remains a separate game-derived DOM node');
  assert.match(app,/stage-picker-future/);
  assert.match(app,/state\.equipment\[selectedSlot\]=\{id:rec\.id/);
  assert.match(app,/if\(!item\|\|equipmentIssue\(item,Number\(slot\),snap\)\.length\)continue/);
