@@ -314,9 +314,9 @@ export async function runOwnerEquipmentInlineSmoke(browser,base){
    .filter({has:page.getByText('Уровень предмета',{exact:true})});
   const caption=row.locator('.studio-owner-interface-value');
   await caption.dblclick();
-  const input=caption.locator('[data-owner-text-field]');
-  await input.fill('Ур. ');
-  await input.press('Tab');
+  const itemMetaInput=caption.locator('[data-owner-text-field]');
+  await itemMetaInput.fill('Ур. ');
+  await itemMetaInput.press('Tab');
   await page.waitForFunction(()=>document.querySelector(
    '#stagePicker [data-stage-choice] .stage-picker-item-label small')
    ?.textContent.startsWith('Ур. '),null,{timeout:12000});
@@ -331,12 +331,12 @@ export async function runOwnerEquipmentInlineSmoke(browser,base){
   // the previously confirmed D1 record may be silently overwritten.
   nextConflicts.add(itemLevelKey);
   await caption.dblclick();
-  await input.fill('Неотправленная подпись');
-  await input.press('Tab');
+  await itemMetaInput.fill('Неотправленная подпись');
+  await itemMetaInput.press('Tab');
   await caption.locator('.ui-content-inline-error').waitFor({state:'visible',timeout:12000});
-  assert.equal(await input.textContent(),'Неотправленная подпись');
+  assert.equal(await itemMetaInput.textContent(),'Неотправленная подпись');
   assert.equal(JSON.parse(values[itemLevelKey]).ru,'Ур. ');
-  await input.press('Escape');
+  await itemMetaInput.press('Escape');
   assert.equal((await meta.innerText()).startsWith('Ур. '),true);
   if(await page.locator('#ownerDock').evaluate(el=>
    el.classList.contains('owner-dock-collapsed')))
