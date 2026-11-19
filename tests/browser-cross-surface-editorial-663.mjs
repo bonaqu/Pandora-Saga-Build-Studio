@@ -33,7 +33,7 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   if(path==='/api/admin/override'&&req.method()==='POST'){
    assert.equal(req.headers().authorization,'Bearer '+token);
    const body=req.postDataJSON();
-   assert.match(body.key,/^guideedit\.book\.(?:origin|path|equipment|wiki-ui|skill-ui|stats-ui)\./);
+   assert.match(body.key,/^guideedit\.book\.(?:origin|path|equipment|wiki-ui|wiki\.chest\.text|skill-ui|stats-ui)\./);
    assert.equal(body.expectedValue,Object.hasOwn(values,body.key)?values[body.key]:null,
     'All owner copy writes must use D1 expectedValue CAS');
    values[body.key]=body.value;writes.push(body);
@@ -118,6 +118,43 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   await cancel.fill('Не сохранять');
   await cancel.press('Escape');
   assert.equal(writes.length,2);
+
+  // Chest copy uses the same D1/CAS editor and must preserve real reward
+  // categories, source counts, select state and group counts during edits.
+  await wikiInput.fill('');
+  await page.locator('[data-wiki-chapter="chest"]').click();
+  await page.locator('[data-wiki-record="51036"]').click();
+  const chest=page.locator('#detailContent');
+  await chest.locator('.wiki-chest-board').waitFor({state:'visible'});
+  const chestPanel=chest.locator('.studio-owner-interface-editor')
+   .filter({has:chest.locator('[data-owner-copy-section="wiki.chest.text"]')});
+  await chestPanel.locator('summary').click();
+  const chestKeys=await chestPanel.locator('[data-owner-copy-id]').evaluateAll(
+   nodes=>nodes.map(node=>node.dataset.ownerCopyId));
+  assert.equal(chestKeys.length,35,'All chest captions belong to one owner panel');
+  assert.equal(new Set(chestKeys).size,35,'No duplicate chest editor rows');
+  const chestFilter=chest.locator('.wiki-chest-filter-type');
+  const totalBefore=await chest.locator('.wiki-chest-filter-count').innerText();
+  const countBefore=await chest.locator('.wiki-chest-reward').count();
+  await edit('wiki.chest.text','filterCategory','Категория добычи');
+  assert.equal(await chestFilter.getAttribute('aria-label'),'Категория добычи');
+  assert.equal(await chestFilter.inputValue(),'all');
+  assert.equal(await chest.locator('.wiki-chest-filter-count').innerText(),totalBefore);
+  await chestFilter.selectOption('equipment');
+  await edit('wiki.chest.text','groupShowing','Найдено:');
+  const visibleCount=chest.locator('.wiki-chest-group:not([hidden]) .wiki-chest-group-count').first();
+  assert.match(await visibleCount.innerText(),/^Найдено:\d+ \/ \d+$/);
+  await chestFilter.selectOption('all');
+  await chestFilter.selectOption('equipment');
+  assert.match(await visibleCount.innerText(),/^Найдено:\d+ \/ \d+$/,
+   'Filtering must not bring back the obsolete hardcoded caption');
+  await edit('wiki.chest.text','filterEmpty','Награды в этой категории не найдены.');
+  assert.equal(await chest.locator('.wiki-chest-filter-empty').textContent(),
+   'Награды в этой категории не найдены.');
+  assert.equal(await chest.locator('.wiki-chest-reward').count(),countBefore,
+   'Writing display copy cannot remove or alter reward records');
+  assert.equal(await chestFilter.inputValue(),'equipment');
+  assert.equal(JSON.parse(values['guideedit.book.wiki.chest.text.group-showing']).ru,'Найдено:');
 
   // Skills: work inside the real right-hand Hero Path instead of the
   // retired standalone skills workbench, which has no navigation tab.
