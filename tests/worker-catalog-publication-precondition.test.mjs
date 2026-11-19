@@ -78,6 +78,8 @@ test('approved Pages origin can read both D1 provenance and snapshot headers',as
  assert.equal(response.status,200);
  assert.equal(response.headers.get('x-ps-catalog'),'d1');
  assert.equal(response.headers.get('x-ps-catalog-snapshot'),'ps-published-example');
+ assert.equal(response.headers.get('cache-control'),'no-store',
+  'Browser/outer CDN must never bypass D1 pointer validation on future requests');
  const exposed=response.headers.get('access-control-expose-headers')||'';
  assert.match(exposed,/X-PS-Catalog-Snapshot/i);
  assert.match(exposed,/(?:^|,)\s*X-PS-Catalog\s*(?:,|$)/i);
@@ -113,13 +115,19 @@ test('same published D1 snapshot avoids repeated large dataset SQL reads',async(
  };
  const snapshot='ps-snapshot-a',dataset='items';
  const first=await readPublishedCatalog({snapshot,dataset,cache,load:load(snapshot)});
+ assert.equal(first.headers.get('cache-control'),'no-store');
  assert.equal((await first.json()).loads,1);
  const again=await readPublishedCatalog({snapshot,dataset,cache,load:load(snapshot)});
+ assert.equal(again.headers.get('cache-control'),'no-store',
+  'Even a Cache API hit must not let Cloudflare skip the Worker on the next GET');
  assert.equal((await again.json()).loads,1);
  assert.equal(loads,1,'D1 payload rows must only be read once for a cached snapshot');
  assert.equal(writes.length,1);
+ assert.equal(store.get(writes[0]).headers.get('cache-control'),'public, max-age=60',
+  'Only the internal synthetic Cache API response may have a TTL');
  const latest='ps-snapshot-b';
  const changed=await readPublishedCatalog({snapshot:latest,dataset,cache,load:load(latest)});
+ assert.equal(changed.headers.get('cache-control'),'no-store');
  assert.equal((await changed.json()).loads,2);
  assert.equal(loads,2,'A newly published D1 pointer must use a fresh cache key');
  assert.notEqual(writes[0],writes[1]);
@@ -140,6 +148,7 @@ test('untrusted cache, failed storage and temporary cache failure never weaken D
   put:async()=>{throw Error('Cache storage offline')}
  };
  const response=await readPublishedCatalog({snapshot,dataset,cache,load:valid});
+ assert.equal(response.headers.get('cache-control'),'no-store');
  assert.equal((await response.json()).from,'d1');
  assert.equal(reads,1,'An archive-shaped cache result must not be served');
  const unavailableCache={match:async()=>{throw Error('Cache down')},put:async()=>{}};
@@ -160,6 +169,7 @@ test('live Worker requires a readable D1 pointer before any catalog cache lookup
  assert.ok(section.indexOf('const active=await activeCatalog(env)')<
   section.indexOf('return readPublishedCatalog('));
  assert.match(section,/cache:globalThis\.caches\?\.default/);
+ assert.match(section,/'cache-control':'no-store'/);
  assert.match(section,/if\(!active\)return no\('Catalog not published in D1 yet',503\)/);
  let pointerReads=0;
  const DB={prepare(sql){
