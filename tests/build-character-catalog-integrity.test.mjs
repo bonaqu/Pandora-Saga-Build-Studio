@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const host={};Function('window',read('pandora-studio-encyclopedia-catalog.js'))(host);
+const host={};
+Function('window',read('pandora-studio-encyclopedia-catalog.js'))(host);
+Function('window',read('pandora-studio-online-gate.js'))(host);
 const app=read('pandora-studio-app.js'),a=app.indexOf('async function loadCatalog({archive=false,commit=true}={})'),
  b=app.indexOf('let ownerWikiRefreshId=0;',a);
 assert.ok(a>=0&&b>a,'Character catalog loader must remain inspectable');
