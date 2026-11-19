@@ -1120,14 +1120,14 @@ function ownerCopyLabel(node,section,key,ru,en,{onCommitted,onFinished}={}){
 // Shared, explicit copy binding for labels, buttons and search attributes.
 // Each field has a static RU/EN source and a stable D1 key. Variable game
 // data (item names, active slot, levels, search queries) are never edited.
-function bindOwnerInterfaceText(node,section,key,ru,en,attribute='text',suffix=''){
+function bindOwnerInterfaceText(node,section,key,ru,en,attribute='text',suffix='',prefix=''){
  if(!node)return node;
  // A search field has independently editable placeholder AND aria-label.
  // Store one descriptor per attribute: binding the second must not erase
  // the first. Never serialize its live value or user-entered search query.
  let bindings={};
  try{bindings=JSON.parse(node.dataset.ownerInterfaceBindings||'{}')}catch{}
- bindings[attribute]={section,key,ru,en,suffix};
+ bindings[attribute]={section,key,ru,en,suffix,prefix};
  node.dataset.ownerInterfaceBindings=JSON.stringify(bindings);
  node.dataset.ownerInterfaceSection=section;
  node.dataset.ownerInterfaceKey=key;
@@ -1135,7 +1135,7 @@ function bindOwnerInterfaceText(node,section,key,ru,en,attribute='text',suffix='
  node.dataset.ownerInterfaceEn=en;
  node.dataset.ownerInterfaceAttribute=attribute;
  node.dataset.ownerInterfaceSuffix=suffix;
- const value=ownerCopy(section,key,ru,en)+suffix;
+ const value=prefix+ownerCopy(section,key,ru,en)+suffix;
  if(attribute==='text')node.textContent=value;
  else node.setAttribute(attribute,value);
  return node;
@@ -1150,9 +1150,9 @@ function applyOwnerInterfaceEditedValue(section,key,visible){
   try{bindings=JSON.parse(node.dataset.ownerInterfaceBindings||'{}')}catch{}
   for(const [attr,field] of Object.entries(bindings)){
    if(field.section!==section||field.key!==key)continue;
-   const value=visible+(field.suffix||'');
+   const value=(field.prefix||'')+visible+(field.suffix||'');
    if(attr==='text')node.textContent=value;
-   else if(['placeholder','aria-label','title','aria-description'].includes(attr)){
+   else if(['placeholder','aria-label','title','aria-description','data-help'].includes(attr)){
     node.setAttribute(attr,value);
     if(attr==='aria-description'&&node.dataset.guideHint!==undefined)
      node.dataset.guideHint=value;
@@ -2818,6 +2818,8 @@ function heroPathApi(){
   canEdit:Boolean(adminEditing&&adminToken),
   copyLabel:(key,ru,en)=>ownerCopy('path',key,ru,en),
   editLabel:(node,key,ru,en,callbacks)=>ownerCopyLabel(node,'path',key,ru,en,callbacks),
+  bindCopy:(node,key,ru,en,attribute='text',suffix='',prefix='')=>
+   bindOwnerInterfaceText(node,'path',key,ru,en,attribute,suffix,prefix),
   branchName:key=>editableValue('branch.'+key,catalog.meta?.branchLabels?.[key]||key),
   icon:(key,skill)=>skillIcon(key,skill?.id,skill),
   hover:(node,skill)=>skillHover(node,skill),
@@ -3070,6 +3072,29 @@ function renderPathCopyControls(){
   if(owner){
    owner.id='ownerSkillSearchCopy';
    document.querySelector('#pathSkillsPage .path-skills-filter')?.after(owner);
+  }
+ }
+ // One collapsed owner-only editor for the actual Path hints and ARIA copy.
+ // Static RU/EN defaults are editable; game numbers and skill names stay out.
+ let pathHelp=$('ownerPathHelpCopy');
+ if(!editing)pathHelp?.remove();
+ else if(!pathHelp){
+  pathHelp=ownerInterfaceEditor('path',[
+   ['branchPointHelp','Очки умений, распределяемые при развитии персонажа.','Skill points allocated as the character develops.','Вложенные очки','Invested points help'],
+   ['greenMasteryHelp','Растёт при использовании умений этой ветки, а также соответствующих типов атак или оружия.','Increases when using this branch’s skills or its corresponding attack or weapon types.','Зелёное мастерство','Green mastery help'],
+   ['racialUnavailableAria','Расовые навыки: не прокачиваются очками веток','Racial skills: no branch point allocation','Расовая ветка','Racial branch'],
+   ['branchTrackAria','Единая полоса вложенных очков и освоенного мастерства ','Shared spent-points and trained-mastery bar: ','Полоса прокачки','Mastery track'],
+   ['innateBaselineAria','Начальная прокачка класса: ','Starting branch points: ','Очки при создании','Innate points'],
+   ['skillBrowseAria','Навигация по найденным умениям','Browse matching skills','Список умений','Skill navigation'],
+   ['skillWeaponRange','Зависит от оружия','Depends on weapon','Зависимость дальности','Weapon range'],
+   ['skillPreviousAria','Предыдущее умение: ','Previous skill: ','Предыдущее умение','Previous skill'],
+   ['skillLineageAria','Продолжение умения','Skill upgrades','Развитие умения','Skill lineage'],
+   ['skillNextAria','Следующее умение: ','Next skill: ','Следующее умение','Next skill'],
+   ['skillNextLink','Следующее → ','Next → ','Ссылка к следующему','Next skill link']
+  ],'Подсказки Пути героя','Hero Path hints');
+  if(pathHelp){
+   pathHelp.id='ownerPathHelpCopy';
+   document.querySelector('.path-sections')?.after(pathHelp);
   }
  }
 }
@@ -9626,12 +9651,13 @@ function refreshVisibleOwnerCopy(recordKey){
   let bindings={};
   try{bindings=JSON.parse(node.dataset.ownerInterfaceBindings||'{}')}catch{}
   for(const [attr,field] of Object.entries(bindings)){
-   const {section,id,ru,en,suffix}={
-    section:field.section,id:field.key,ru:field.ru,en:field.en,suffix:field.suffix};
+   const {section,id,ru,en,suffix,prefix}={
+    section:field.section,id:field.key,ru:field.ru,en:field.en,
+    suffix:field.suffix,prefix:field.prefix};
    if(ownerCopyKey(section,id)!==key)continue;
-   const value=ownerCopy(section,id,ru,en)+(suffix||'');
+   const value=(prefix||'')+ownerCopy(section,id,ru,en)+(suffix||'');
    if(attr==='text')ownerDockPatchText(node,value);
-   else if(['placeholder','aria-label','title','aria-description'].includes(attr)){
+   else if(['placeholder','aria-label','title','aria-description','data-help'].includes(attr)){
     ownerDockPatchAttr(node,attr,value);
     if(attr==='aria-description'&&node.dataset.guideHint!==undefined)
      ownerDockPatchData(node,'guideHint',value);
