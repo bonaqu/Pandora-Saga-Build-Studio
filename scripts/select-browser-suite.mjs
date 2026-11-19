@@ -22,12 +22,17 @@ export function normalizeForReleaseOnly(path,contents){
  return contents;
 }
 
-const harmless=/^(?:docs\/|artifacts\/)|(?:^|\/)[^/]+\.md$|\.css$|^pandora-studio-ui-locale\.js$|^tests\/[^/]+\.test\.mjs$/;
+// Styling changes get actual desktop/mobile layout assertions without the
+// entire gameplay matrix. Unknown runtime changes still run full Chromium.
+const harmless=/^(?:docs\/|artifacts\/)|(?:^|\/)[^/]+\.md$|^pandora-studio-ui-locale\.js$|^tests\/[^/]+\.test\.mjs$/;
+const layoutSensitive=/\.css$/;
 
 export function selectBrowserSuite(changedPaths,{releaseOnlyFiles=[]}={}){
  if(!Array.isArray(changedPaths)||!changedPaths.length)return 'full';
  const releaseOnly=new Set(releaseOnlyFiles);
- return changedPaths.every(p=>harmless.test(p)||releaseOnly.has(p))?'quick':'full';
+ if(!changedPaths.every(p=>harmless.test(p)||layoutSensitive.test(p)||releaseOnly.has(p)))
+  return 'full';
+ return changedPaths.some(p=>layoutSensitive.test(p))?'layout':'quick';
 }
 
 function runGit(args){
