@@ -6,11 +6,20 @@ const required=['buildLibraryRequiresAccount','sharedPreviewRequiresAccount',
  'legacyAccountImportPreview'];
 const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function get(path,token=null){
- const response=await fetch(worker+path,{
-  headers:{Origin:origin,...(token?{Authorization:'Bearer '+token}:{})},
-  cache:'no-store',signal:AbortSignal.timeout(15000)
- });
- return response;
+ // A transient 15s read timeout is not proof that the Worker allows guests.
+ // Retry transport failures only; never convert a 403/500/405 into HTTP 401.
+ for(let retry=0;retry<3;retry++){
+  try{
+   return await fetch(worker+path,{
+    method:'GET',
+    headers:{Origin:origin,...(token?{Authorization:'Bearer '+token}:{})},
+    cache:'no-store',signal:AbortSignal.timeout(15000)
+   });
+  }catch(error){
+   if(retry===2)throw Error('Read-only Worker check failed: '+path,{cause:error});
+   await pause(500*(retry+1));
+  }
+ }
 }
 let capabilities=null;
 for(let attempt=0;attempt<30;attempt++){

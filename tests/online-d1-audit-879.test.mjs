@@ -140,8 +140,11 @@ test('character startup cancels sibling D1 reads on failure and rejects mixed sn
  assert.match(loader,/AbortSignal\.any\(\[batchSignal,AbortSignal\.timeout\(30000\)\]\)/);
  assert.match(loader,/if\(!snapshot\)throw Error/);
  assert.match(loader,/snapshots\.add\(snapshot\);\s*if\(snapshots\.size!==1\)\s*throw Error/);
- assert.ok(loader.indexOf('if(snapshots.size!==1)')<loader.indexOf('const payload=await response.json()'),
-  'Mixed snapshots must stop before parsing all remaining catalog datasets');
+ const boundedBody=loader.indexOf('const payload=await window.PandoraStudioOnlineGate.untilAbort(');
+ assert.ok(boundedBody>=0&&loader.indexOf('if(snapshots.size!==1)')<boundedBody,
+  'Mixed D1 snapshots must stop before bounded JSON parsing');
+ assert.match(loader,/const response=await window\.PandoraStudioOnlineGate\.untilAbort\(/,
+  'Character fetch adapters must obey the same checkpoint deadline');
  assert.match(loader,/if\(signal\.aborted\)throw signal\.reason/);
  assert.ok(loader.indexOf('if(!archive&&snapshots.size!==1)')<
    loader.indexOf('catalogSource=data'),

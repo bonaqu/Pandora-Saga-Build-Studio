@@ -135,3 +135,80 @@ test('late custom fetch/JSON adapters cannot mark an aborted D1 checkpoint ready
   expectedSnapshot:'d1-1',expectedOverrides:overrides,expectedCounts:counts
  }),/Snapshot changed during parse/);
 });
+
+test('stalled D1 checkpoint headers and JSON bodies settle when their deadline expires',async()=>{
+ for(const endpoint of ['meta.json','overrides']){
+  for(const stage of ['headers','json']){
+   const keepAlive=setTimeout(()=>{},200);
+   let reads=0;
+   const fetcher=async url=>{
+    reads++;
+    const isMeta=url.endsWith('meta.json'),target=url.endsWith(endpoint);
+    if(target&&stage==='headers')return new Promise(()=>{});
+    const payload=isMeta?{counts}:{values:overrides};
+    return {
+     ...response(payload),
+     json:target&&stage==='json'?async()=>new Promise(()=>{}):async()=>payload
+    };
+   };
+   try{
+    await assert.rejects(gate.inspect({
+     api,fetcher,signal:AbortSignal.timeout(35),expectedSnapshot:'d1-1',
+     expectedOverrides:overrides,expectedCounts:counts
+    }),/abort|timeout/i,endpoint+' '+stage);
+    assert.equal(reads,2,
+     'A stalled checkpoint must not issue extra network retries or unlock the editor');
+   }finally{clearTimeout(keepAlive)}
+  }
+ }
+});
+
+test('an explicit checkpoint cancellation rejects hung custom fetch and JSON promises',async()=>{
+ for(const stage of ['headers','json']){
+  const controller=new AbortController();
+  let began;
+  const started=new Promise(resolve=>{began=resolve});
+  const fetcher=async url=>{
+   if(url.endsWith('meta.json')){
+    if(stage==='headers'){began();return new Promise(()=>{})}
+    return {...response({counts}),json:async()=>{began();return new Promise(()=>{})}};
+   }
+   return response({values:overrides});
+  };
+  const pending=gate.inspect({api,fetcher,signal:controller.signal,
+   expectedSnapshot:'d1-1',expectedOverrides:overrides,expectedCounts:counts});
+  await started;
+  controller.abort(Error('D1 checkpoint superseded'));
+  await assert.rejects(pending,/D1 checkpoint superseded/);
+ }
+});
+
+test('live account-only guard retries network timeouts, never non-401 HTTP responses',async()=>{
+ const script=read('scripts/check-build-account-only-live.mjs');
+ const start=script.indexOf('async function get(path,token=null){');
+ const end=script.indexOf('\nlet capabilities=',start);
+ assert.ok(start>=0&&end>start);
+ const make=(fetcher,delays)=>Function('fetch','pause','AbortSignal','worker','origin',
+  script.slice(start,end)+'\nreturn get;')(fetcher,ms=>{delays.push(ms)},
+   AbortSignal,'https://worker.example','https://bonaqu.github.io');
+ const delays=[],requests=[];
+ let calls=0;
+ const fetcher=async(_url,options)=>{
+  requests.push(options);
+  if(++calls===1)throw Error('Temporary routing failure');
+  return {status:401};
+ };
+ const get=make(fetcher,delays);
+ assert.equal((await get('/api/library')).status,401);
+ assert.equal(calls,2);
+ assert.deepEqual(delays,[500]);
+ assert.ok(requests.every(options=>options.method==='GET'&&
+  options.cache==='no-store'&&options.headers.Origin==='https://bonaqu.github.io'));
+ let badCalls=0;
+ assert.equal((await make(async()=>{badCalls++;return {status:500}},[] )('/api/library')).status,500);
+ assert.equal(badCalls,1,'A non-401 Worker response must not be silently retried as success');
+ let failures=0;
+ await assert.rejects(make(async()=>{failures++;throw Error('Offline')},[])('/api/shared/A1234567890'),
+  /Read-only Worker check failed/);
+ assert.equal(failures,3,'Network retry attempts are capped');
+});

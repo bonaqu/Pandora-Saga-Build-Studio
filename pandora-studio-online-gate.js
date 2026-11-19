@@ -18,6 +18,29 @@ const snapshotValue=response=>response?.headers?.get?.('x-ps-catalog-snapshot')|
 function requireActive(signal){
  if(signal?.aborted)throw signal.reason||Error('Online checkpoint aborted');
 }
+// Fetch and JSON body adapters may ignore AbortSignal. Both startup and
+// periodic D1 checks must settle at the checkpoint deadline, without ever
+// accepting a late success from a discarded catalog generation.
+function untilAbort(work,signal){
+ if(typeof work!=='function')throw TypeError('Checkpoint operation required');
+ if(!signal)return Promise.resolve().then(work);
+ requireActive(signal);
+ return new Promise((resolve,reject)=>{
+  let finished=false;
+  const finish=(callback,value)=>{
+   if(finished)return;
+   finished=true;
+   signal.removeEventListener('abort',onAbort);
+   callback(value);
+  };
+  const onAbort=()=>finish(reject,signal.reason||Error('Online checkpoint aborted'));
+  signal.addEventListener('abort',onAbort,{once:true});
+  Promise.resolve().then(()=>{
+   requireActive(signal);
+   return work();
+  }).then(value=>finish(resolve,value),error=>finish(reject,error));
+ });
+}
 async function inspect({api,fetcher,expectedSnapshot,expectedOverrides,expectedCounts,signal}){
  if(typeof api!=='string'||!api.startsWith('https://')||
   typeof fetcher!=='function'||!expectedSnapshot)throw Error('Invalid online checkpoint');
@@ -26,8 +49,8 @@ async function inspect({api,fetcher,expectedSnapshot,expectedOverrides,expectedC
  // Both the authorial override layer and published game records must be live.
  // One healthy endpoint is not proof that the entire site is up to date.
  const [catalogResponse,copyResponse]=await Promise.all([
-  fetcher(api+'/api/catalog/meta.json',options),
-  fetcher(api+'/api/overrides',options)
+  untilAbort(()=>fetcher(api+'/api/catalog/meta.json',options),signal),
+  untilAbort(()=>fetcher(api+'/api/overrides',options),signal)
  ]);
  requireActive(signal);
  if(!catalogResponse?.ok||!copyResponse?.ok)
@@ -36,7 +59,8 @@ async function inspect({api,fetcher,expectedSnapshot,expectedOverrides,expectedC
   !snapshotValue(catalogResponse))
   throw Error('Game data source is not verified');
  const [meta,copy]=await Promise.all([
-  catalogResponse.json(),copyResponse.json()
+  untilAbort(()=>catalogResponse.json(),signal),
+  untilAbort(()=>copyResponse.json(),signal)
  ]);
  requireActive(signal);
  const counts=meta?.counts,overrides=copy?.values;
@@ -50,5 +74,5 @@ async function inspect({api,fetcher,expectedSnapshot,expectedOverrides,expectedC
   (expectedCounts&&digest(counts)!==digest(expectedCounts));
  return Object.freeze({status:changed?'changed':'ready',snapshot});
 }
-root.PandoraStudioOnlineGate=Object.freeze({inspect,digest});
+root.PandoraStudioOnlineGate=Object.freeze({inspect,digest,untilAbort});
 })(typeof window==='undefined'?globalThis:window);
