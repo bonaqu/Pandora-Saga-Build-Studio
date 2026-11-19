@@ -66,7 +66,7 @@ test('account library never reconnects before a verified D1 checkpoint',()=>{
  assert.match(login,/if\(localCatalogHost\|\|studioLiveReady&&!liveGateReason\)void loadCloudBuilds\(\)/);
  const resume=portion('function resumeCloudLibrary(', 'requestAnimationFrame(syncOriginPanelHeight)');
  assert.match(resume,/if\(!localCatalogHost&&\(!studioLiveReady\|\|liveGateReason\)\)return/);
- const reconnect=portion('function leaveLiveGate()', 'async function checkLiveConnection()');
+ const reconnect=portion('function leaveLiveGate()', 'async function checkLiveConnection(');
  assert.match(reconnect,/resumeCloudLibrary\(\{force:true\}\)/);
 });
 

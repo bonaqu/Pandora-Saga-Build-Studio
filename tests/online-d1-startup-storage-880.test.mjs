@@ -28,7 +28,7 @@ test('initial local storage failure is not retried invisibly or labeled as a sav
  assert.match(gate,/Не удалось сохранить черновик или библиотеку билдов/);
  const retry=section("$('startupRetry').onclick=", '// Local fixture mode');
  assert.match(retry,/if\(liveGateReason==='storage'\)\{leaveLiveGate\(\);return\}/);
- const resume=section('function leaveLiveGate()', 'async function checkLiveConnection()');
+ const resume=section('function leaveLiveGate()', 'async function checkLiveConnection(');
  assert.match(resume,/liveLocalSaved=saveLiveDraft\(\)/);
  assert.match(resume,/if\(!liveLocalSaved\)\{showLiveGate\('storage'\);return\}/);
  assert.match(resume,/resumeCloudLibrary\(\{force:true\}\)/);
