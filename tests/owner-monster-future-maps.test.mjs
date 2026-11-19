@@ -167,8 +167,8 @@ test('map and dungeon captions use the shared bilingual D1 owner editor',()=>{
  const app=read('pandora-studio-app.js');
  const block=app.slice(app.indexOf('const wikiMapRows='),app.indexOf('const wikiMonsterRows='));
  const captions=[...block.matchAll(/^ \["([^"]+)","([^"]+)","([^"]+)"\],?$/gm)];
- assert.equal(captions.length,34);
- assert.equal(new Set(captions.map(row=>row[1])).size,34);
+ assert.equal(captions.length,45);
+ assert.equal(new Set(captions.map(row=>row[1])).size,45);
  const win={};Function('window',read('pandora-studio-honor-guide.js'))(win);
  for(const [,key,ru,en]of captions){
   const path='wiki.map.text.'+key.replace(/[A-Z]/g,x=>'-'+x.toLowerCase());
@@ -262,4 +262,41 @@ test('map editor supports bounded tags/sections and hides empty owner prompt fro
  assert.equal(owner.validMapExtra('extraSections',Array.from({length:13},(_,i)=>({
   id:'section-'+i,titleRu:'Раздел '+i,titleEn:'Section '+i,kind:'text',entries:[]
  }))),false);
+});
+
+test('new Astir NPCs and future-map NPCs share canonical bilingual owner IDs without rewriting legacy town NPCs',()=>{
+ const npcId='owner-npc-0011223344556677';
+ const row={name:'Тестовый торговец',nameEn:'Test vendor',
+  service:'Проверка',maps:['astir-kingdom']};
+ for(const place of ['astir-kingdom','astir-union','astir-empire','el-beht','custom-example1']){
+  assert.equal(owner.virtualMapId(place),true);
+  assert.equal(owner.validTownPatch('npc',npcId,{...row,maps:[place]}),true);
+ }
+ assert.equal(owner.validTownPatch('npc',npcId,{...row,nameEn:''}),false);
+ assert.equal(owner.validTownPatch('npc',npcId,{...row,maps:[]}),false);
+ assert.equal(owner.validTownPatch('npc',npcId,{...row,maps:['astir-kingdom','el-beht']}),false);
+ assert.equal(owner.validTownPatch('npc',npcId,{...row,maps:['1003001']}),false);
+ const original={maps:{},townNpcs:{},trades:{npcs:{}}};
+ const merged=owner.apply(original,{['wikiedit.npc.'+npcId]:JSON.stringify(row)});
+ assert.equal(original.townNpcs[npcId],undefined);
+ assert.equal(merged.townNpcs[npcId].nameEn,'Test vendor');
+ assert.deepEqual(merged.townNpcs[npcId].maps,['astir-kingdom']);
+ assert.equal(merged.townNpcs[npcId].ownerCreated,true);
+ const legacyId='astir-npc-kingdom-custom-1';
+ assert.equal(owner.validTownPatch('npc',legacyId,{name:'Исторический',maps:['astir-kingdom']}),true);
+ const legacy=owner.apply(original,{['wikiedit.npc.'+legacyId]:
+  JSON.stringify({name:'Исторический',maps:['astir-kingdom']})});
+ assert.equal(legacy.townNpcs[legacyId].name,'Исторический');
+ assert.equal(legacy.townNpcs[legacyId].ownerCreated,true);
+ assert.equal(owner.curatedNpcId(legacyId),true);
+ assert.equal(owner.curatedNpcId(npcId),true);
+ assert.equal(owner.curatedNpcId('astir-npc-kingdom-claris'),false);
+ assert.equal(owner.curatedNpcId('astir-npc-kingdom-custom-x'),false);
+ assert.equal(owner.curatedNpcId('astir-npc-empire-other'),false);
+ const verified=owner.apply({maps:{},townNpcs:{
+  'astir-npc-kingdom-claris':{name:'Кларис',maps:['astir-kingdom']}
+ },trades:{npcs:{}}},{'wikiedit.npc.astir-npc-kingdom-claris':
+  JSON.stringify({name:'Кларис',maps:['astir-kingdom']})});
+ assert.equal(verified.townNpcs['astir-npc-kingdom-claris'].ownerCreated,false,
+  'Known catalog NPC must never become owner deletable');
 });

@@ -1246,6 +1246,17 @@ const wikiMapRows=Object.freeze([
  ["sectionRequired","Укажи названия RU и EN (до 100 символов).","Enter both titles (up to 100 characters)."],
  ["sectionTitleRu","Название раздела · RU","Section title · RU"],
  ["sectionTitleEn","Название раздела · EN","Section title · EN"],
+ ["createNpc","+ Создать NPC в локации","+ Create NPC in location"],
+ ["npcNameRu","Название NPC · RU","NPC name · RU"],
+ ["npcNameEn","Название NPC · EN","NPC name · EN"],
+ ["npcNameRuAria","Название нового NPC RU","New NPC name RU"],
+ ["npcNameEnAria","Название нового NPC EN","New NPC name EN"],
+ ["npcService","Назначение (необязательно)","Service (optional)"],
+ ["npcServiceAria","Назначение нового NPC","New NPC service"],
+ ["npcSave","Сохранить NPC","Save NPC"],
+ ["npcCancel","Отмена","Cancel"],
+ ["npcRequired","Укажи оба названия (RU/EN) до 240 символов","Provide both RU and EN names up to 240 characters"],
+ ["npcCreateFailure","Не удалось создать NPC. Повтори попытку.","Could not create NPC. Try again."],
 ]);
 const wikiMapByKey=new Map(wikiMapRows.map(row=>[row[0],row]));
 function mapCopy(key){
@@ -4939,7 +4950,7 @@ function renderWiki(root){
      }
     }
    }
-   if(type==='npc'&&rec.ownerCreated&&window.PandoraWikiOwnerData.ownerNpcId(id)&&
+   if(type==='npc'&&rec.ownerCreated&&window.PandoraWikiOwnerData.curatedNpcId(id)&&
      adminEditing&&adminToken){
     const button=h('button',{type:'button',class:'wiki-owner-remove wiki-owner-delete-record',
      text:wt('Удалить созданного NPC','Delete created NPC')});
@@ -6851,84 +6862,54 @@ function renderWiki(root){
          wikiLink('♙ '+dataName('npc',npcId),'npc',npcId))));
         detail.append(linked);
        }
-       const create=h('button',{type:'button',class:'wiki-owner-plus wiki-map-create-npc',
-        text:wt('+ Создать NPC в локации','+ Create NPC in location')});
+      }
+      // User-curated places, including Astir districts, share one bilingual
+      // owner NPC workflow. Historic astir-npc-* records remain readable;
+      // newly created identities always use the canonical owner-npc-* form.
+      if(ownerMap&&rec.virtual){
+       const create=mapBind(h('button',{type:'button',
+        class:'wiki-owner-plus wiki-map-create-npc'}),'createNpc');
        create.onclick=()=>{
         if(detail.querySelector('.wiki-map-create-npc-form'))return;
         const form=h('div',{class:'wiki-owner-source-picker wiki-map-create-npc-form'});
-        const ru=ownerPlainTextField({class:'wiki-inline-input',
-         placeholder:wt('Название NPC · RU','NPC name · RU'),
-         'aria-label':wt('Название нового NPC RU','New NPC name RU')});
-        const en=ownerPlainTextField({class:'wiki-inline-input',
-         placeholder:wt('Название NPC · EN','NPC name · EN'),
-         'aria-label':wt('Название нового NPC EN','New NPC name EN')});
-        const role=ownerPlainTextField({class:'wiki-inline-input',
-         placeholder:wt('Назначение (необязательно)','Service (optional)'),
-         'aria-label':wt('Назначение нового NPC','New NPC service')});
-        const err=h('small',{class:'inline-owner-error',role:'status'});
-        const submit=h('button',{type:'button',class:'wiki-owner-plus',
-         text:wt('Сохранить NPC','Save NPC')});
+        const ru=ownerPlainTextField({class:'wiki-inline-input'});
+        const en=ownerPlainTextField({class:'wiki-inline-input'});
+        const role=ownerPlainTextField({class:'wiki-inline-input'});
+        for(const [field,placeholder,aria]of [
+         [ru,'npcNameRu','npcNameRuAria'],
+         [en,'npcNameEn','npcNameEnAria'],
+         [role,'npcService','npcServiceAria']
+        ]){
+         // Keep the stable field key as the primary UI identity while
+         // both attributes remain independently D1-editable.
+         mapBind(field,aria,'aria-label');
+         mapBind(field,placeholder,'placeholder');
+        }
+        const err=h('small',{class:'inline-owner-error',role:'alert'});
+        const submit=mapBind(h('button',{type:'button',class:'wiki-owner-plus'}),'npcSave');
         submit.onclick=async()=>{
+         if(submit.disabled)return;
          const name=ru.value.trim(),nameEn=en.value.trim(),service=role.value.trim();
          if(!name||!nameEn||name.length>240||nameEn.length>240||service.length>240){
-          err.textContent=wt('Укажи оба названия (RU/EN) до 240 символов',
-           'Provide both RU and EN names up to 240 characters');return;
+          err.textContent=mapCopy('npcRequired');return;
          }
          const npcId='owner-npc-'+[...crypto.getRandomValues(new Uint8Array(8))]
           .map(x=>x.toString(16).padStart(2,'0')).join('');
-         if(wikiIndex.records('npc')?.[npcId]){
-          err.textContent=wt('Не удалось создать NPC. Повтори попытку.','Could not create NPC. Try again.');return}
-         submit.disabled=true;
+         if(wikiIndex.records('npc')?.[npcId]||
+          Object.hasOwn(override,'wikiedit.npc.'+npcId)){
+          err.textContent=mapCopy('npcCreateFailure');return;
+         }
+         submit.disabled=true;err.textContent='';
          try{
           await saveWikiRecordPatch('npc',npcId,{name,nameEn,service,maps:[String(id)]});
           openWiki('map',id);
-         }catch(e){err.textContent=String(e.message||e);submit.disabled=false}
+         }catch(error){err.textContent=String(error?.message||error);submit.disabled=false}
         };
-        const cancel=h('button',{type:'button',class:'wiki-owner-remove',
-         text:wt('Отмена','Cancel'),onclick:()=>form.remove()});
+        const cancel=mapBind(h('button',{type:'button',class:'wiki-owner-remove'}),'npcCancel');
+        cancel.onclick=()=>form.remove();
         form.append(ru,en,role,submit,cancel,err);create.after(form);ru.focus();
        };
        detail.append(create);
-      }
-      if(rec.placeType==='astir-district'&&rec.virtual&&adminEditing&&adminToken){
-       const add=h('button',{type:'button',class:'wiki-owner-plus',
-        text:wt('+ Добавить NPC','+ Add NPC')});
-       add.onclick=()=>{
-        const controls=h('div',{class:'wiki-town-npc-create'});
-        const field=(label,max=240)=>{
-         const input=ownerPlainTextField({class:'wiki-inline-input',
-          'aria-label':label,placeholder:label});
-         input.setAttribute('data-max',String(max));
-         const row=h('label',{},[h('small',{text:label}),input]);controls.append(row);return input;
-        };
-        const ru=field(wt('Имя NPC · RU','NPC name · RU')),
-         en=field(wt('Имя NPC · EN','NPC name · EN')),
-         role=field(wt('Назначение','Service'));
-        const error=h('small',{class:'inline-owner-error',role:'status'});
-        const save=h('button',{type:'button',class:'wiki-owner-plus',
-         text:wt('Сохранить NPC','Save NPC')});
-        save.onclick=async()=>{
-         const name=ru.value.trim(),english=en.value.trim(),service=role.value.trim();
-         if(!name||name.length>240||english.length>240||service.length>240){
-          error.textContent='Укажи корректное имя NPC';return;
-         }
-         const city=String(id).slice(6);
-         let index=1,identifier;
-         do{
-          identifier='astir-npc-'+city+'-custom-'+index++;
-         }while(wikiIndex.records('npc')[identifier]||
-          Object.hasOwn(override,'wikiedit.npc.'+identifier));
-         const patch={name,maps:[String(id)]};
-         if(english)patch.nameEn=english;
-         if(service)patch.service=service;
-         save.disabled=true;
-         try{await saveWikiRecordPatch('npc',identifier,patch)}
-         catch(e){error.textContent=String(e.message||e);save.disabled=false}
-        };
-        controls.append(error,save);
-        add.replaceWith(controls);
-       };
-       detail.append(add);
       }
     }
     if(type==='map'&&showMapSection('loot')){

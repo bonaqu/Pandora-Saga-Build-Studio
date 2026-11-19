@@ -18,6 +18,11 @@ const checkList=(x,max=1000,predicate=id)=>Array.isArray(x)&&x.length<=max&&
  new Set(x.map(String)).size===x.length&&x.every(predicate);
 const ownerMonsterId=x=>/^owner-monster-[a-z0-9]{12,24}$/.test(String(x));
 const ownerNpcId=x=>/^owner-npc-[a-f0-9]{16}$/.test(String(x));
+// Preserve previous D1-created Astir NPC identities. Only numbered custom
+// records are owner-owned; the verified Claris card and future game NPCs
+// must never inherit deletion privileges from an ID prefix alone.
+const legacyOwnerNpcId=x=>/^astir-npc-(?:union|empire|kingdom)-custom-[1-9][0-9]*$/.test(String(x));
+const curatedNpcId=x=>ownerNpcId(x)||legacyOwnerNpcId(x);
 const monsterRef=x=>id(x)||ownerMonsterId(x);
 const checkMonsterList=(v,max=120)=>checkList(v,max,monsterRef);
 const validRoster=rows=>Array.isArray(rows)&&rows.length<=120&&
@@ -205,7 +210,7 @@ function apply(data,overrides){
     if(!existing&&!patch.name)continue;
     next.townNpcs[idValue]={...(existing||{id:idValue,name:patch.name,maps:ownerNpcId(idValue)?patch.maps:[homeFromId(idValue)],
      source:'owner',virtual:true}),...patch,virtual:true,
-     ownerCreated:ownerNpcId(idValue)};
+     ownerCreated:curatedNpcId(idValue)};
    }
    continue;
   }
@@ -290,5 +295,5 @@ function apply(data,overrides){
  }
  return next;
 }
-root.PandoraWikiOwnerData=Object.freeze({apply,validPatch,validTownPatch,virtualMapId,customMapId,ownerMonsterId,ownerNpcId,monsterRef,validMapExtra,validRoster,virtualNpcId,validDrops,validChest,validSpawns,fields,resistKeys});
+root.PandoraWikiOwnerData=Object.freeze({apply,validPatch,validTownPatch,virtualMapId,customMapId,ownerMonsterId,ownerNpcId,legacyOwnerNpcId,curatedNpcId,monsterRef,validMapExtra,validRoster,virtualNpcId,validDrops,validChest,validSpawns,fields,resistKeys});
 })(typeof window==='undefined'?globalThis:window);
