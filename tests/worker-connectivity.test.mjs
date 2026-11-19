@@ -45,3 +45,45 @@ test('CORS preflight requires no D1 and does not change state',async()=>{
  assert.equal(response.headers.get('access-control-allow-origin'),ORIGIN);
  assert.match(response.headers.get('access-control-allow-methods'),/GET/);
 });
+
+test('anonymous account checks and unsupported routes do not spend D1 reads',async()=>{
+ const DB={prepare(){throw Error('Unexpected D1 query from an anonymous request')}};
+ for(const [path,method,status] of [
+  ['/api/account/me','GET',401],['/api/account/me','PUT',405],
+  ['/api/account/login','GET',405],['/api/account/unknown','GET',404]
+ ]){
+  const response=await worker.fetch(request(path,{method}),{DB});
+  assert.equal(response.status,status,path+' '+method);
+  assert.equal(response.headers.get('access-control-allow-origin'),ORIGIN);
+ }
+ const malformed=await worker.fetch(request('/api/account/me',{
+  headers:{Authorization:'Bearer malformed'}
+ }),{DB});
+ assert.equal(malformed.status,401);
+});
+test('Cloudflare D1 daily limits return safe 503 with Retry-After rather than 500',async()=>{
+ const token='Bearer '+'t'.repeat(43);
+ for(const direction of ['read','write']){
+  const wrapped=new Error('D1 query failed',{cause:new Error(
+   "Your account has exceeded D1's free tier daily row "+direction+
+   ' limit. Upgrade to a paid plan or wait until tomorrow (midnight UTC) to continue.'
+  )});
+  const response=await worker.fetch(request('/api/account/me',{
+   headers:{Authorization:token}
+  }),{DB:{prepare(){throw wrapped}}});
+  assert.equal(response.status,503,direction);
+  const payload=await response.json();
+  assert.equal(payload.code,'D1_DAILY_QUOTA_EXCEEDED');
+  assert.equal(payload.error,'Database temporarily unavailable');
+  assert.ok(Number(response.headers.get('retry-after'))>=1);
+  assert.ok(Number(response.headers.get('retry-after'))<=86400);
+  assert.equal(response.headers.get('cache-control'),'no-store');
+  assert.equal(response.headers.get('access-control-allow-origin'),ORIGIN);
+  assert.doesNotMatch(JSON.stringify(payload),/sql|free tier|password|account_id/i);
+ }
+ const other=await worker.fetch(request('/api/account/me',{
+  headers:{Authorization:token}
+ }),{DB:{prepare(){throw Error('Unexpected unrelated D1 schema issue')}}});
+ assert.equal(other.status,500);
+ assert.deepEqual(await other.json(),{error:'Server error'});
+});

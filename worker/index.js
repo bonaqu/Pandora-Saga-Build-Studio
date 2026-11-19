@@ -1,4 +1,4 @@
-import {accountApi,principal as accountPrincipal} from './pandora-studio-account-api.js';
+import {accountApi,accountNeedsD1,principal as accountPrincipal} from './pandora-studio-account-api.js';
 import {readPublishedCatalog} from './pandora-studio-catalog-cache.js';
 import {createCatalogPullRequest,githubCatalogEnabled,githubCatalogReadiness,previewOwnerOverrides,createOwnerOverridesPullRequest} from './pandora-studio-github-catalog-pr.js';
 import {BACKUP_OUTBOX_SCHEMA,queueBackupStatement,getBackupJob,completeBackupJob,deliverCatalogBackupJob} from './pandora-studio-catalog-backup-outbox.js';
@@ -651,9 +651,13 @@ async function handle(request,env,ctx){const url=new URL(request.url),path=url.p
 // Regular player views read D1 or bundled data. Only an authenticated admin may explicitly check the allowlisted external game-data source.
  if(!env.DB)return no('Database not configured',503);
  if(path.startsWith('/api/account/')){
+  const deps={ip,throttle,recordFailed,clearFailed};
+  // Anonymous /me and unsupported methods/routes require no D1 SQL.
+  // An exhausted daily quota must not turn a normal guest 401 into 500.
+  if(!accountNeedsD1(request,path))return accountApi(request,env,path,deps);
   const rows=await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('user_accounts','user_sessions','user_registration_limits')").all();
   if((rows.results||[]).length!==3)return no('Аккаунты ещё не активированы в D1: требуется миграция 0005',503);
-  return accountApi(request,env,path,{ip,throttle,recordFailed,clearFailed});
+  return accountApi(request,env,path,deps);
  }
  if(path==='/api/library/legacy-preview')return legacyBuildPreview(request,env);
  if(path==='/api/library')return libraryApi(request,env);
@@ -1144,7 +1148,21 @@ if(path==='/api/admin/reset'&&method==='POST'){
 }
 return no('Not found',404)
 }
-export default{async fetch(request,env,ctx){const cors=originHeaders(request);if(request.method==='OPTIONS')return new Response(null,{status:204,headers:cors});try{const result=await handle(request,env,ctx);for(const[k,v]of Object.entries(cors))result.headers.set(k,v);return result}catch(e){console.error('Request failed',e);const result=no('Server error',500);for(const[k,v]of Object.entries(cors))result.headers.set(k,v);return result}},async scheduled(_event,env,ctx){
+// Classify exact Cloudflare D1 Free daily read/write quota errors, including
+// wrapped causes. Never echo the upstream SQL message to public clients.
+function isD1DailyQuotaError(error){
+ let cause=error;
+ for(let depth=0;depth<4&&cause;depth++,cause=cause.cause)
+  if(/exceeded D1.s free tier daily row (?:read|write) limit/i.test(String(cause.message||'')))return true;
+ return false;
+}
+function d1DailyQuotaResponse(now=Date.now()){
+ // Free D1 quota resets at 00:00 UTC; online retry backoff remains client-owned.
+ const seconds=Math.max(1,Math.ceil((86400000-now%86400000)/1000));
+ return json({error:'Database temporarily unavailable',code:'D1_DAILY_QUOTA_EXCEEDED'},
+  503,{'retry-after':String(seconds)});
+}
+export default{async fetch(request,env,ctx){const cors=originHeaders(request);if(request.method==='OPTIONS')return new Response(null,{status:204,headers:cors});try{const result=await handle(request,env,ctx);for(const[k,v]of Object.entries(cors))result.headers.set(k,v);return result}catch(e){console.error('Request failed',e);const result=isD1DailyQuotaError(e)?d1DailyQuotaResponse():no('Server error',500);for(const[k,v]of Object.entries(cors))result.headers.set(k,v);return result}},async scheduled(_event,env,ctx){
   if(!env?.DB)return;
   const job=(async()=>{
    // Before the first 0.809 owner import, production D1 has no outbox table.
