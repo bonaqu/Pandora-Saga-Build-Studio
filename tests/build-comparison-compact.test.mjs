@@ -122,9 +122,19 @@ test('waiting for game data is distinct from a malformed saved build',()=>{
  const check=ui.indexOf('if(!catalog.live||!gameTables)');
  const calculation=ui.indexOf('PandoraBuildComparison.calculatePair(');
  assert.ok(check>=0&&calculation>check);
- assert.match(ui,/Итоговые характеристики появятся после загрузки игровых данных/);
- assert.match(ui,/Calculated stats will appear once game data have loaded/);
- assert.match(ui,/Не удалось рассчитать один из билдов\. Сохранения не изменены/);
+ assert.match(ui,/setSummary\('compareAwaitData'\)/);
+ assert.match(ui,/setSummary\('compareCalculationFailed'\)/);
+ const localeRoot={};
+ Function('window',read('pandora-studio-ui-locale.js'))(localeRoot);
+ const locale=localeRoot.PandoraUILocale;
+ assert.equal(locale.text('compareAwaitData','ru'),
+  'Итоговые характеристики появятся после загрузки игровых данных.');
+ assert.equal(locale.text('compareAwaitData','en'),
+  'Calculated stats will appear once game data have loaded.');
+ assert.equal(locale.text('compareCalculationFailed','ru'),
+  'Не удалось рассчитать один из билдов. Сохранения не изменены.');
+ assert.equal(locale.text('compareCalculationFailed','en'),
+  'One of the builds could not be calculated. Saved builds were not changed.');
 });
 
 
