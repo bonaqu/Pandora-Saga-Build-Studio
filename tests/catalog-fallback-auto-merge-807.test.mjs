@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {ALLOWED_FILES,REPO,BASE,REQUIRED_WORKFLOWS,
  assessCatalogPullRequest,autoMergeFromEvent,verifyPublishedCatalogBeforeMerge} from '../scripts/catalog-fallback-auto-merge.mjs';
 const snapshot='ps-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
@@ -152,4 +153,11 @@ test('even two green CI suites may never merge a PR whose D1 parity failed',asyn
   catalogVerifier:async()=>({ok:false,reason:'GitHub fallback differs from active D1'})});
  assert.equal(result.ok,false);
  assert.ok(!methods.includes('PUT'));
+});
+
+test('only catalog snapshot branches enqueue fallback workflow runs',()=>{
+ const yml=readFileSync(new URL('../.github/workflows/catalog-fallback-auto-merge.yml',import.meta.url),'utf8');
+ assert.match(yml,/workflow_run:[\s\S]*?branches:\s*\n\s*- 'catalog\/snapshot-ps-\*'/);
+ assert.match(yml,/startsWith\(github\.event\.workflow_run\.head_branch, 'catalog\/snapshot-ps-'\)/);
+ assert.doesNotMatch(yml,/schedule:|cron:/);
 });

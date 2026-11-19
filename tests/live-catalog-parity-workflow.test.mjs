@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {runInNewContext} from 'node:vm';
 
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 test('live readiness runs parity only after the published release and Worker checks',()=>{
@@ -52,6 +53,26 @@ test('failed live release captures only read-only production D1 schema diagnosti
  assert.match(script,/PRAGMA table_info\(user_accounts\)/);
  assert.match(script,/PRAGMA table_info\(user_sessions\)/);
  assert.match(script,/--remote/);
+ assert.match(script,/free_daily_row_read_quota_exhausted/);
+ assert.match(script,/free_daily_row_write_quota_exhausted/);
+ // Execute the exact pure classifier without importing/executing the
+ // credential-scoped Wrangler script or making any network requests.
+ const start=script.indexOf('function category(raw){');
+ const end=script.indexOf('\nconst checks=',start);
+ assert.ok(start>=0&&end>start);
+ const classify=runInNewContext(script.slice(start,end)+'\ncategory');
+ assert.equal(classify("Your account has exceeded D1's free tier daily row read limit."),
+  'free_daily_row_read_quota_exhausted');
+ assert.equal(classify("Your account has exceeded D1's free tier daily row write limit."),
+  'free_daily_row_write_quota_exhausted');
+ assert.equal(classify("D1 DB is overloaded. Requests queued for too long."),
+  'database_overloaded');
+ assert.equal(classify('no such table: catalog_current'),'missing_table');
+ assert.match(script,/\['basic_select','SELECT 1 AS reachable'\]/);
+ assert.match(script,/\['insights','ps-build-studio-db'/);
+ assert.match(script,/--sort-by=reads/);
+ assert.match(script,/queryClass:queryClass\(item.query\)/);
+ assert.doesNotMatch(script,/console\.(?:log|warn|error)\([^\n]*item\.query/);
  assert.match(script,/TARGET_ACCOUNT/);
  assert.match(script,/TARGET_DB/);
  assert.doesNotMatch(script,/\b(?:INSERT INTO|UPDATE\s+\w+|DELETE FROM|DROP TABLE|ALTER TABLE|REPLACE INTO)\b/i);
