@@ -25,13 +25,8 @@ function render({browse,detail,make,lang='ru',article,editable=false,
   fmt=new Intl.NumberFormat(en?'en-US':'ru-RU');
  // Search the actual RU/EN authored Honor content, not an OS 'honor'
  // catalog category. Use the same Unicode/ё normalization as Wiki.
- const terms=String(searchQuery||'').normalize('NFKC').toLocaleLowerCase()
-  .replace(/ё/g,'е').trim().split(/\s+/u).filter(Boolean);
- const matches=node=>{
-  const text=String(typeof node==='string'?node:node?.textContent||'')
-   .normalize('NFKC').toLocaleLowerCase().replace(/ё/g,'е');
-  return terms.every(term=>text.includes(term));
- };
+ const matchesText=root.PandoraSearchField.compile(searchQuery);
+ const matches=node=>matchesText(typeof node==='string'?node:node?.textContent||'');
  const oldBrowseScroll=browse.scrollTop,oldDetailScroll=detail.scrollTop;
  const oldSection=detail.querySelector('.wiki-honor-nav-link.selected')?.dataset.honorSection||
   browse.querySelector('.wiki-honor-nav-link.selected')?.dataset.honorSection||'overview';
@@ -354,11 +349,12 @@ function render({browse,detail,make,lang='ru',article,editable=false,
       const select=make('select',{class:'wiki-honor-location-select',
        'aria-label':tr('Выбери существующую локацию','Choose an existing location')});
       const fill=()=>{
-       const q=search.value.trim().toLocaleLowerCase();
+       const matchesLocation=root.PandoraSearchField.compile(search.value);
+       const selected=new Set(items.map(item=>item.mapId));
        const found=mapOptions.filter(option=>
-        !items.some(item=>item.mapId===option.id)&&
-        (!q||[option.nameRu,option.nameEn].some(name=>
-         name.toLocaleLowerCase().includes(q)))).slice(0,100);
+        !selected.has(option.id)&&
+        matchesLocation([option.nameRu,option.nameEn].filter(Boolean).join(' ')))
+        .slice(0,100);
        select.replaceChildren(make('option',{value:'',text:found.length?
         tr('Выбери локацию','Choose location'):
         tr('Локации не найдены','No locations found')}));
