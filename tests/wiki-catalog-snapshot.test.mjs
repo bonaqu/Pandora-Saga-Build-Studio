@@ -977,7 +977,10 @@ test('superseding an in-flight public Wiki load aborts its GETs without archived
 test('Wiki reuses six previously validated D1 datasets and checks the six missing ones',async()=>{
  const remote=catalog('active hero snapshot'),local=catalog('old archive');
  // The initial Hero has already validated the canonical combat/source tables.
- remote.tables=JSON.parse(readFileSync(new URL('../data/os/tables.json',import.meta.url),'utf8'));
+ remote.tables={...JSON.parse(readFileSync(
+  new URL('../data/os/tables.json',import.meta.url),'utf8')),zoneDrops:[]};
+ // The tiny fixture has one map; retain real progression/refinement tables
+ // without importing unrelated full-game map/monster drop references.
  const seedKeys=['meta','items','skills','souls','racialPassives','tables'];
  const verified={snapshot:'snapshot-a',data:Object.fromEntries(
   seedKeys.map(key=>[key,remote[key]]))};
@@ -1000,7 +1003,10 @@ test('Wiki reuses six previously validated D1 datasets and checks the six missin
 
 test('Wiki rejects cross-snapshot results or invalid seeds without mixing archive records',async()=>{
  const remote=catalog('hero data'),local=catalog('old archive');
- remote.tables=JSON.parse(readFileSync(new URL('../data/os/tables.json',import.meta.url),'utf8'));
+ remote.tables={...JSON.parse(readFileSync(
+  new URL('../data/os/tables.json',import.meta.url),'utf8')),zoneDrops:[]};
+ // The tiny fixture has one map; retain real progression/refinement tables
+ // without importing unrelated full-game map/monster drop references.
  const seedKeys=['meta','items','skills','souls','racialPassives','tables'];
  const makeSeed=()=>({snapshot:'snapshot-a',data:Object.fromEntries(
   seedKeys.map(key=>[key,remote[key]]))});
