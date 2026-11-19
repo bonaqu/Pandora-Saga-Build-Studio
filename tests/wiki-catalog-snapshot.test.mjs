@@ -973,3 +973,64 @@ test('superseding an in-flight public Wiki load aborts its GETs without archived
  assert.ok(started.every(url=>url.includes('/api/catalog/')),
   'Cancellation must never turn on local fallback for public users');
 });
+
+test('Wiki reuses six previously validated D1 datasets and checks the six missing ones',async()=>{
+ const remote=catalog('active hero snapshot'),local=catalog('old archive');
+ // The initial Hero has already validated the canonical combat/source tables.
+ remote.tables=JSON.parse(readFileSync(new URL('../data/os/tables.json',import.meta.url),'utf8'));
+ const seedKeys=['meta','items','skills','souls','racialPassives','tables'];
+ const verified={snapshot:'snapshot-a',data:Object.fromEntries(
+  seedKeys.map(key=>[key,remote[key]]))};
+ const mock=mockFetch(remote,local);
+ const loaded=await loader.load({
+  api:'https://worker.example',fetcher:mock.fetcher,strict:true,verified
+ });
+ assert.equal(loaded.source,'d1');
+ assert.equal(loaded.snapshot,'snapshot-a');
+ assert.deepEqual(loaded.data.items,remote.items);
+ assert.deepEqual(loaded.data.skills,remote.skills);
+ assert.deepEqual(mock.paths.map(url=>url.split('/').at(-1)).sort(),
+  loader.keys.filter(key=>!seedKeys.includes(key))
+   .map(key=>key+'.json').sort(),
+  'Opening the Wiki must only fetch datasets absent from the verified Hero');
+ // A render/index operation must not alter the base Hero records in place.
+ assert.equal(verified.data.items,remote.items);
+ assert.equal(remote.items[1].name,'active hero snapshot');
+});
+
+test('Wiki rejects cross-snapshot results or invalid seeds without mixing archive records',async()=>{
+ const remote=catalog('hero data'),local=catalog('old archive');
+ remote.tables=JSON.parse(readFileSync(new URL('../data/os/tables.json',import.meta.url),'utf8'));
+ const seedKeys=['meta','items','skills','souls','racialPassives','tables'];
+ const makeSeed=()=>({snapshot:'snapshot-a',data:Object.fromEntries(
+  seedKeys.map(key=>[key,remote[key]]))});
+ const mismatch=mockFetch(remote,local,{
+  snapshots:{monsters:'snapshot-b'}
+ });
+ await assert.rejects(loader.load({api:'https://worker.example',
+  fetcher:mismatch.fetcher,strict:true,verified:makeSeed()}),
+  /версия опубликованного каталога изменилась/);
+ assert.ok(mismatch.paths.length<=6,
+  'A mismatch cannot start downloads for all 12 datasets');
+
+ const malformed=makeSeed();delete malformed.data.items;
+ let calls=0;
+ await assert.rejects(loader.load({api:'https://worker.example',
+  fetcher:async()=>{calls++;throw Error('Unexpected network')},
+  strict:true,verified:malformed}),/Не подтверждён снимок каталога D1/);
+ assert.equal(calls,0,'Malformed seed must fail before any new GET');
+
+ const incomplete=makeSeed();incomplete.data.meta={...incomplete.data.meta,
+  counts:{...incomplete.data.meta.counts,items:1000}};
+ await assert.rejects(loader.load({api:'https://worker.example',
+  fetcher:async()=>{calls++;throw Error('Unexpected network')},
+  strict:true,verified:incomplete}),/Неполный ранее проверенный набор D1: items/);
+ assert.equal(calls,0,'Incomplete seed must not be accepted as an active Hero snapshot');
+
+ const forbidden=makeSeed();
+ await assert.rejects(loader.load({api:'https://worker.example',
+  fetcher:async()=>{calls++;throw Error('Unexpected network')},
+  strict:true,preferLocal:true,verified:forbidden
+ }),/Не подтверждён снимок каталога D1/);
+ assert.equal(calls,0,'An archived fixture may not masquerade as verified D1');
+});
