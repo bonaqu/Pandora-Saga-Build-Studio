@@ -83,6 +83,19 @@ export async function runUIContentInlineSmoke(browser,base){
  });
  const page=await context.newPage();
  page.on('pageerror',error=>errors.push(error.message));
+ // Caption buttons intentionally defer owner-mode single clicks to distinguish
+ // them from direct-text double clicks. Wait for the actual chosen chapter
+ // and for that pending action to finish before typing into its search box.
+ const chooseWikiChapter=async key=>{
+  const selector='[data-wiki-chapter="'+key+'"]';
+  await page.locator(selector).click();
+  await page.waitForFunction(chapterKey=>{
+   const tab=document.querySelector('[data-wiki-chapter="'+chapterKey+'"]');
+   return Boolean(tab?.classList.contains('chosen')&&
+    tab.dataset.ownerCaptionPending!=='1');
+  },key,{timeout:15000});
+ };
+
  try{
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
   // Never invoke owner keyboard actions before the native startup modal releases.
@@ -352,7 +365,7 @@ export async function runUIContentInlineSmoke(browser,base){
 
   await wiki.click();
   const category=page.locator('[data-wiki-chapter="item"]');
-  if(await category.count())await category.click();
+  if(await category.count())await chooseWikiChapter('item');
   const search=page.locator('input[name="pandora-studio-encyclopedia-filter"]');
   // The UI intentionally guards this search against password-manager autofill.
   // Real pointer focus unlocks readonly before typing.
@@ -394,7 +407,7 @@ export async function runUIContentInlineSmoke(browser,base){
   if(await page.locator('#detailPanel.is-open').count())
    await page.locator('#dockClose').click();
   await wiki.click();
-  await page.locator('[data-wiki-chapter="skill"]').click();
+  await chooseWikiChapter('skill');
   await search.click();
   await search.fill('Песчаная буря');
   const sandstorm=page.locator('[data-wiki-record="420007101"]');
@@ -793,7 +806,7 @@ export async function runUIContentInlineSmoke(browser,base){
      await ownerDrawer.locator('[data-owner-collapse]').getAttribute('aria-expanded')==='true')
    await ownerDrawer.locator('[data-owner-collapse]').click();
   await page.locator('#nav [data-tab="wiki"]').click();
-  await page.locator('[data-wiki-chapter="item"]').click();
+  await chooseWikiChapter('item');
   const gearFilter=page.locator('.wiki-equipment-type');
   await gearFilter.waitFor({state:'visible',timeout:15000});
   assert.equal(await gearFilter.inputValue(),'equipment');
@@ -817,7 +830,7 @@ export async function runUIContentInlineSmoke(browser,base){
   await page.locator('#locale [data-locale="ru"]').click();
   await page.waitForFunction(()=>document.documentElement.lang==='ru');
   await page.locator('#nav [data-tab="wiki"]').click();
-  await page.locator('[data-wiki-chapter="item"]').click();
+  await chooseWikiChapter('item');
   const gearRu=page.locator('.wiki-equipment-type');
   assert.equal(await gearRu.locator('option[value="weapon"]').textContent(),'Оружие');
   const ruGroup=page.locator('.wiki-filter-labels-editor');
@@ -833,11 +846,11 @@ export async function runUIContentInlineSmoke(browser,base){
   await gearRu.selectOption('weapon');
   assert.equal(await gearRu.inputValue(),'weapon',
    'Editing an option label never changes the semantic filter value');
-  await page.locator('[data-wiki-chapter="utility"]').click();
+  await chooseWikiChapter('utility');
   assert.equal(await page.locator('.wiki-effect-type option[value="buff"]').textContent(),
    'Дают положительные эффекты');
   assert.ok(await page.locator('.wiki-filter-labels-editor [data-owner-copy-id="filterUtilityEffectBuff"]').count());
-  await page.locator('[data-wiki-chapter="item"]').click();
+  await chooseWikiChapter('item');
   await page.locator('.wiki-equipment-type').selectOption('elemental');
   assert.ok(await page.locator('.wiki-elemental-type option[value="lightning"]').count());
   assert.ok(await page.locator('.wiki-filter-labels-editor [data-owner-copy-id="filterWeaponElementLightning"]').count());
@@ -909,7 +922,7 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(await page.locator('#detailContent .wiki-list [data-wiki-record]').count(),200);
   assert.match(await resultStatus.textContent(),
    /^Показано 200 из \d+ записей$/);
-  await page.locator('[data-wiki-chapter="map"]').click();
+  await chooseWikiChapter('map');
   assert.ok(await page.locator('#detailContent .wiki-location-list-heading').count()>0);
   assert.ok(await summaryEditor.locator('[data-owner-copy-id="placeCity"]').count());
   assert.deepEqual(errors,[]);

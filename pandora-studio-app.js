@@ -9213,9 +9213,18 @@ function ownerCaptionActionGuard(button,caption){
   }
   if(event.target.closest?.('input,textarea,select'))return;
   event.preventDefault();event.stopImmediatePropagation();
-  if(pending){clearTimeout(pending);pending=null;return}
+  if(pending){
+   clearTimeout(pending);pending=null;
+   delete button.dataset.ownerCaptionPending;
+   return;
+  }
+  // The visible pending state lets follow-up interactions wait for chapter
+  // navigation before typing into a search box. Do not expose a delayed
+  // action as completed while a double-click may still follow.
+  button.dataset.ownerCaptionPending='1';
   pending=setTimeout(()=>{
    pending=null;
+   delete button.dataset.ownerCaptionPending;
    if(button.isConnected&&!button.disabled&&adminEditing&&adminToken&&
     !caption.hidden)button.click();
   },500);

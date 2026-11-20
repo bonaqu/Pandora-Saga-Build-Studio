@@ -43,6 +43,19 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
  });
  const page=await ctx.newPage();
  page.on('pageerror',error=>errors.push(error.message));
+ // Caption buttons intentionally defer owner-mode single clicks to distinguish
+ // them from direct-text double clicks. Wait for the actual chosen chapter
+ // and for that pending action to finish before typing into its search box.
+ const chooseWikiChapter=async key=>{
+  const selector='[data-wiki-chapter="'+key+'"]';
+  await page.locator(selector).click();
+  await page.waitForFunction(chapterKey=>{
+   const tab=document.querySelector('[data-wiki-chapter="'+chapterKey+'"]');
+   return Boolean(tab?.classList.contains('chosen')&&
+    tab.dataset.ownerCaptionPending!=='1');
+  },key,{timeout:15000});
+ };
+
  const row=(section,key)=>page.locator('.studio-owner-interface-row')
   .filter({has:page.locator('[data-owner-copy-section="'+section+
    '"][data-owner-copy-id="'+key+'"]')});
@@ -125,7 +138,7 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   // Chest copy uses the same D1/CAS editor and must preserve real reward
   // categories, source counts, select state and group counts during edits.
   await wikiInput.fill('');
-  await page.locator('[data-wiki-chapter="chest"]').click();
+  await chooseWikiChapter('chest');
   await page.locator('[data-wiki-record="51036"]').click();
   const chest=page.locator('#detailContent');
   await chest.locator('.wiki-chest-board').waitFor({state:'visible'});
@@ -166,7 +179,7 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   // the source item values, record selection or game calculations.
   await page.locator('#dockClose').click();
   await page.locator('#nav [data-tab="wiki"]').click();
-  await page.locator('[data-wiki-chapter="item"]').click();
+  await chooseWikiChapter('item');
   const itemSearch=page.locator('input[name="pandora-studio-encyclopedia-filter"]');
   await itemSearch.click();
   await itemSearch.fill('Железные поножи');
@@ -193,7 +206,7 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   // bilingual source label is edited through real D1 CAS.
   await page.locator('#dockClose').click();
   await page.locator('#nav [data-tab="wiki"]').click();
-  await page.locator('[data-wiki-chapter="npc"]').click();
+  await chooseWikiChapter('npc');
   const npcSearchWiki=page.locator('input[name="pandora-studio-encyclopedia-filter"]');
   await npcSearchWiki.click();
   await npcSearchWiki.fill('Огун VIII');
@@ -250,7 +263,7 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   // never issues a game data write, including on focus change.
   await page.locator('#dockClose').click();
   await page.locator('#nav [data-tab="wiki"]').click();
-  await page.locator('[data-wiki-chapter="monster"]').click();
+  await chooseWikiChapter('monster');
   const monsterSearch=page.locator('input[name="pandora-studio-encyclopedia-filter"]');
   await monsterSearch.click();
   await monsterSearch.fill('Койот');
@@ -297,7 +310,7 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   // curated monster roster, and without granting privileges to guests.
   await page.locator('#dockClose').click();
   await page.locator('#nav [data-tab="wiki"]').click();
-  await page.locator('[data-wiki-chapter="map"]').click();
+  await chooseWikiChapter('map');
   await page.locator('[data-wiki-record="el-beht"]').click();
   const atlas=page.locator('#detailContent');
   const atlasPanel=atlas.locator('.studio-owner-interface-editor')
