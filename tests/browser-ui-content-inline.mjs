@@ -136,6 +136,12 @@ export async function runUIContentInlineSmoke(browser,base){
 
   // Direct editing does not insert pencils or replace stable action references.
   await updateBanner.locator('[data-update-role="apply"]').click();
+  // Owner action captions distinguish a double-click from a single click.
+  // Wait for the actual updater warning after its bounded click delay.
+  await page.waitForFunction(()=>
+   /выйди из режима владельца/i.test(document.querySelector(
+    '#studio-update-banner [data-update-role="message"]')?.textContent||''),
+   null,{timeout:3000});
   assert.match(await updateNotice.textContent(),/выйди из режима владельца/i);
   assert.equal(await updateBanner.locator(
    '[data-owner-copy-pencil="siteUpdateNotice"]').count(),0,

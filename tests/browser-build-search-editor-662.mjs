@@ -82,7 +82,10 @@ export async function runOwnerBuildSearch662Smoke(browser,base){
   assert.equal(await panel.locator('.build-hint-owner-row').count(),21);
 
   const edit=async(key,value)=>{
-   await panel.locator('[data-owner-copy-pencil="'+key+'"]').click();
+   const caption=panel.locator('[data-owner-copy-key="'+key+'"]');
+   assert.equal(await panel.locator('[data-owner-copy-pencil="'+key+'"]').count(),0,
+    'Caption edits should not create duplicate pencils: '+key);
+   await caption.dblclick();
    const field=panel.locator('.account-copy-edit-host [contenteditable]');
    await field.fill(value);
    await field.press('Tab');

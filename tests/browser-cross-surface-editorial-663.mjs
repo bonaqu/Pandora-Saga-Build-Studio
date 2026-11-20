@@ -48,7 +48,9 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
    '"][data-owner-copy-id="'+key+'"]')});
  const edit=async(section,key,value)=>{
   const item=row(section,key);
-  await item.locator('.studio-owner-interface-pencil').click();
+  assert.equal(await item.locator('.studio-owner-interface-pencil').count(),0,
+   'No caption-edit pencil should exist beside direct-editable text');
+  await item.locator('[data-owner-copy-id="'+key+'"]').dblclick();
   const input=item.locator('[data-owner-text-field]');
   await input.waitFor({state:'visible',timeout:10000});
   await input.fill(value);
@@ -113,7 +115,8 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   assert.equal(await wikiInput.getAttribute('placeholder'),'Искать в справочнике…',
    'The aria edit must not overwrite the separately edited placeholder');
   // Escape cancels without another D1 write, on the same live page.
-  await row('wiki-ui','searchAria').locator('.studio-owner-interface-pencil').click();
+  await row('wiki-ui','searchAria')
+   .locator('[data-owner-copy-id="searchAria"]').dblclick();
   const cancel=row('wiki-ui','searchAria').locator('[data-owner-text-field]');
   await cancel.fill('Не сохранять');
   await cancel.press('Escape');
@@ -477,7 +480,7 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   await englishWikiEditor.locator('summary').click();
   // Set the English variant through the same real editor and CAS key.
   const enRow=row('wiki-ui','searchPlaceholder');
-  await enRow.locator('.studio-owner-interface-pencil').click();
+  await enRow.locator('[data-owner-copy-id="searchPlaceholder"]').dblclick();
   const enEdit=enRow.locator('[data-owner-text-field]');
   await enEdit.fill('Find a record…');
   await enEdit.press('Tab');
