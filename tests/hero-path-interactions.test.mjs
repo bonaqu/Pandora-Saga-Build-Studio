@@ -841,3 +841,71 @@ test('Path help and skill-navigation copy bind bilingual D1 fields without touch
  assert.equal(source[2].name,'Original successor');
  assert.deepEqual(state.points,{},'Edited UI copy must not change skill allocation');
 });
+
+test('Hero Path editor plural captions keep counts and RU/EN word forms separate',()=>{
+ const {api}=fixture();
+ api.catalogReady=true;api.onInspect=()=>{};api.filter='all';api.query='';
+ api.canEdit=true;let keys=[];
+ api.copyLabel=(key,ru,en)=>api.lang==='en'?en:ru;
+ api.editLabel=(node,key)=>{keys.push(key)};
+ for(const [count,language,word,key]of [
+  [0,'ru','умений','skillCountMany'],
+  [1,'ru','умение','skillCountOne'],
+  [2,'ru','умения','skillCountFew'],
+  [5,'ru','умений','skillCountMany'],
+  [1,'en','skill','skillCountOne'],
+  [2,'en','skills','skillCountMany']
+ ]){
+  api.lang=language;keys=[];
+  api.skillCatalog=Array.from({length:count},(_,i)=>({
+   id:800000+i,name:'Test '+i,branch:'benevolence',
+   classes:{CLERIC:true},learnable:true,reqs:[]
+  }));
+  const list=new BrowserElement('root'),details=new BrowserElement('detail');
+  root.PandoraHeroPath.viewSkills(list,details,api);
+  const caption=walk(list).find(node=>node.className==='path-skill-count-caption');
+  assert.ok(caption);
+  assert.equal(walk(caption).find(node=>node.className==='path-owner-copy-text')?.textContent,word);
+  assert.equal(walk(list).find(node=>node.className==='path-skill-count-value')?.textContent,String(count)+' ');
+  assert.equal(keys.filter(item=>item===key).length,1);
+  assert.equal(keys.some(item=>item.includes(String(count))),false);
+ }
+});
+test('upgrade owner copy never includes game level 50 or cast timings',()=>{
+ const {api}=fixture();
+ api.catalogReady=true;api.onInspect=()=>{};api.filter='all';api.query='';
+ api.canEdit=true;api.copyLabel=(key,ru,en)=>api.lang==='en'?en:ru;
+ const keys=[];api.editLabel=(node,key)=>keys.push(key);
+ api.skillCatalog=[
+  {id:900001,name:'Test skill',branch:'benevolence',
+   classes:{CLERIC:true},learnable:true,charLevel:1,reqs:[],cast:2},
+  {id:900002,name:'Test skill',branch:'benevolence',
+   classes:{CLERIC:true},learnable:true,charLevel:50,prereq:900001,
+   reqs:[],cast:1}
+ ];
+ api.selectedSkill=api.skillCatalog[0];
+ const list=new BrowserElement('root'),details=new BrowserElement('detail');
+ root.PandoraHeroPath.viewSkills(list,details,api);
+ const note=walk(details).find(node=>node.className==='path-skill-version-note');
+ assert.ok(note);
+ assert.equal(walk(note).find(node=>node.className==='path-version-level')?.textContent,'50');
+ assert.equal(walk(note).find(node=>node.className==='path-version-timing')?.textContent,'2 → 1');
+ for(const key of ['skillUpgradeFutureBefore','skillUpgradeFutureAfter',
+  'skillUpgradeCastBefore','skillUpgradeCastAfter'])assert.ok(keys.includes(key),key);
+ assert.ok(!walk(note).some(node=>node.className==='path-owner-copy-text'&&
+  (node.textContent==='50'||node.textContent==='2 → 1')));
+});
+test('click and hold controls bind authorial aria texts without editing point counts',()=>{
+ const {api}=fixture(),seen=[];
+ api.bindCopy=(node,key,ru,en,attribute,suffix,prefix)=>{
+  seen.push({key,attribute,suffix,prefix});
+  node.setAttribute(attribute,(prefix||'')+(api.lang==='en'?en:ru)+(suffix||''));
+ };
+ root.PandoraHeroPath.viewGrowth(new BrowserElement('root'),api);
+ for(const key of ['pathHoldRepeatAria','pathDecreaseAria','pathIncreaseAria'])
+  assert.ok(seen.some(item=>item.key===key),key);
+ assert.ok(seen.filter(item=>item.key==='pathDecreaseAria').every(item=>
+  item.attribute==='aria-label'&&item.suffix.endsWith(' на один')));
+ assert.ok(seen.filter(item=>item.key==='pathHoldRepeatAria').every(item=>
+  item.attribute==='aria-description'));
+});

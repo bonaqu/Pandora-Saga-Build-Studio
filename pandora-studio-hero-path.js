@@ -122,9 +122,9 @@ function bindPathHoldStep(button,step,commit,api){
   run();finish();
  });
  button.addEventListener('keydown',event=>{if(event.key==='Escape')finish()});
- button.setAttribute('aria-description',tr(api,
+ bindPathCopy(api,button,'pathHoldRepeatAria',
   'Нажмите, чтобы изменить на 1; удерживайте для повторения.',
-  'Click to change by 1; hold to repeat.'));
+  'Click to change by 1; hold to repeat.','aria-description');
 }
 // First matching ID wins, matching the original Array.find semantics.
 function indexSkills(skills){
@@ -689,7 +689,12 @@ function viewGrowth(target,api){
       text:'+',disabled:field.disabled,
       'aria-label':tr(api,'Увеличить ','Increase ')+name+
        tr(api,' на один',' by one')});
-     const step=mastery?stepMastery:stepPotential;
+     // Only authorial action copy is D1-editable; preserve live field labels.
+    bindPathCopy(api,minus,'pathDecreaseAria','Уменьшить ','Decrease ',
+     'aria-label',name+tr(api,' на один',' by one'));
+    bindPathCopy(api,plus,'pathIncreaseAria','Увеличить ','Increase ',
+     'aria-label',name+tr(api,' на один',' by one'));
+    const step=mastery?stepMastery:stepPotential;
      const commit=mastery?
       ()=>api.onMastery(key,M.branchMastery(state,key,innate,caps),true):
       ()=>update(M.potential(state,key),true);
@@ -764,7 +769,16 @@ function viewSkills(target,details,api){
  const rows=[...ordered];
  rows.sort((a,b)=>Number(String(b.skill.id)===selectedId)-
   Number(String(a.skill.id)===selectedId));
- target.append(make('p',{class:'path-skill-count',text:skillCountLabel(rows.length,api.lang)}));
+ // Runtime count is never submitted to owner D1 copy.
+  const countForm=api.lang==='en'?(rows.length===1?'one':'many'):
+   new Intl.PluralRules('ru').select(rows.length);
+  const countCopy=countForm==='one'?['skillCountOne','умение','skill']:
+   countForm==='few'?['skillCountFew','умения','skills']:
+   ['skillCountMany','умений','skills'];
+  target.append(make('p',{class:'path-skill-count'},[
+   make('span',{class:'path-skill-count-value',text:String(rows.length)+' '}),
+   authored(api,...countCopy,'span','path-skill-count-caption')
+  ]));
  const grid=make('div',{class:'path-skill-grid'});
  for(const {skill,gate}of rows.slice(0,api.shown||24)){
   const item=make('button',{type:'button',class:'path-skill-card'+(gate.learned?' learned':' locked')+
@@ -828,11 +842,14 @@ function viewSkills(target,details,api){
    const move=(delta,icon,ru,en)=>{
     const next=ordered[listIndex+delta]?.skill;
     const label=tr(api,ru,en)+(next?' '+next.name:'');
-    return make('button',{type:'button',class:'path-skill-list-step',
-     'data-skill-list-direction':delta<0?'previous':'next',
-     'aria-label':label,title:next?.name||null,
-     disabled:!next,text:icon,
-     onclick:()=>{if(next)api.onInspect(next,{pagerDirection:delta<0?'previous':'next'})}});
+    const button=make('button',{type:'button',class:'path-skill-list-step',
+      'data-skill-list-direction':delta<0?'previous':'next',
+      'aria-label':label,title:next?.name||null,
+      disabled:!next,text:icon,
+      onclick:()=>{if(next)api.onInspect(next,{pagerDirection:delta<0?'previous':'next'})}});
+     // Skill names are current catalog data, not owner-edited descriptions.
+     return bindPathCopy(api,button,delta<0?'skillListPreviousAria':'skillListNextAria',
+      ru,en,'aria-label',next?' '+next.name:'');
    };
    listNav.append(move(-1,'←','Предыдущее в списке:','Previous in list:'),
     make('span',{class:'path-skill-list-position',text:
@@ -883,17 +900,24 @@ function viewSkills(target,details,api){
    const oldCast=Number(oldSkill?.cast),newCast=Number(newSkill?.cast);
    const hasTiming=Number.isFinite(oldCast)&&Number.isFinite(newCast)&&
     oldCast!==newCast;
-   const timing=hasTiming?tr(api,
-    ' Подготовка: '+oldCast+' → '+newCast+' с.',
-    ' Cast time: '+oldCast+' → '+newCast+' s.'):'';
-   details.append(make('p',{class:'path-skill-version-note',text:
-    (isUpgrade?tr(api,
-      'Улучшенная версия с 50-го уровня для подходящей профессии.',
-      'Improved version from level 50 for an eligible class.'):
-      tr(api,
-       'С 50-го уровня для подходящей профессии доступна улучшенная версия.',
-       'An improved version becomes available from level 50 for an eligible class.'))+
-    timing}));
+   // Verified levels and cast values are separate immutable nodes.
+    const before=isUpgrade?
+     ['skillUpgradeCurrentBefore','Улучшенная версия с ','Improved version from level ']:
+     ['skillUpgradeFutureBefore','С ','An improved version becomes available from level '];
+    const after=isUpgrade?
+     ['skillUpgradeCurrentAfter','-го уровня для подходящей профессии.',' for an eligible class.']:
+     ['skillUpgradeFutureAfter','-го уровня для подходящей профессии доступна улучшенная версия.',' for an eligible class.'];
+    const note=make('p',{class:'path-skill-version-note'},[
+     authored(api,...before,'span','path-version-copy'),
+     make('span',{class:'path-version-level',text:'50'}),
+     authored(api,...after,'span','path-version-copy')
+    ]);
+    if(hasTiming)note.append(
+     authored(api,'skillUpgradeCastBefore',' Подготовка: ',' Cast time: ','span','path-version-copy'),
+     make('span',{class:'path-version-timing',text:String(oldCast)+' → '+String(newCast)}),
+     authored(api,'skillUpgradeCastAfter',' с.',' s.','span','path-version-copy')
+    );
+    details.append(note);
   }
   const requirements=Array.isArray(skill.reqs)?skill.reqs:[];
   if(requirements.length){

@@ -25,6 +25,9 @@ export async function runPathSkillNavigation761Smoke(browser,base){
   await gallery.locator('[data-skill-id="110101001"]').waitFor();
   await gallery.locator('[data-skill-id="110101001"]').click();
   assert.match(await details.locator('h3').innerText(),/Двойной удар/);
+  const countRu=await gallery.locator('.path-skill-count').innerText();
+  assert.match(countRu,/^\d+ (умение|умения|умений)$/);
+  assert.equal(await gallery.locator('.path-skill-count-value').count(),1);
   const upgrade=details.locator('[data-related-skill-id="110101002"]');
   assert.equal(await upgrade.count(),1);
   assert.match(await upgrade.innerText(),/Следующее/);
@@ -48,6 +51,7 @@ export async function runPathSkillNavigation761Smoke(browser,base){
   await gallery.locator('[data-skill-id="110101001"]').waitFor();
   await gallery.locator('[data-skill-id="110101001"]').click();
   assert.match(await details.locator('h3').innerText(),/Slice/);
+  assert.match(await gallery.locator('.path-skill-count').innerText(),/^\d+ skills?$/);
   const nextEn=details.locator('[data-related-skill-id="110101002"]');
   assert.match(await nextEn.getAttribute('aria-label'),/Next/);
   await nextEn.click();
