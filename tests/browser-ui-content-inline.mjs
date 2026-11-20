@@ -479,6 +479,15 @@ export async function runUIContentInlineSmoke(browser,base){
   if(await page.locator('#ownerDock').evaluate(el=>el.classList.contains('owner-dock-collapsed')))
    await page.locator('#ownerDock [data-owner-collapse]').click();
   await page.locator('#ownerDock [data-owner-undo]').click();
+  // The owner action arbiter defers one physical click to separate it from
+  // a double-click on the action caption. Observe the completed CAS undo.
+  let enReverted=false;
+  for(let attempt=0;attempt<120;attempt++){
+   const value=values['guideedit.book.ui.label.account-guest-lead'];
+   if(value&&JSON.parse(value).en===undefined){enReverted=true;break}
+   await page.waitForTimeout(50);
+  }
+  assert.ok(enReverted,'The undo action must revert the saved English label');
   await page.waitForFunction(()=>document.querySelector(
    '#accountPanel [data-owner-copy-key="accountGuestLead"]')?.textContent===
    'Вход открывает облачные билды.',null,{timeout:12000});

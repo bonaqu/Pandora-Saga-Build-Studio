@@ -83,7 +83,8 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   const pathHelp=page.locator('#ownerPathHelpCopy');
   await pathHelp.locator('summary').click();
   const racialHelp=pathHelp.locator('.studio-owner-interface-row').filter({hasText:'Расовая ветка'});
-  await racialHelp.locator('.studio-owner-interface-pencil').click();
+  assert.equal(await racialHelp.locator('.studio-owner-interface-pencil').count(),0);
+  await racialHelp.locator('.studio-owner-interface-value').dblclick();
   const helpEdit=racialHelp.locator('[data-owner-text-field]');
   await helpEdit.waitFor({state:'visible'});
   await helpEdit.fill('Расовую ветку нельзя прокачать QA');
@@ -95,9 +96,10 @@ export async function runOwnerRacialPath648Smoke(browser,base){
    null,{timeout:12000});
   const racial=page.locator('.right .path-racial-owner-row');
   assert.equal(await racial.locator('button.path-racial-unavailable').isDisabled(),true);
-  assert.equal(await racial.locator('button.path-racial-pencil').count(),1);
+  assert.equal(await racial.locator('button.path-racial-pencil').count(),0,
+   'Racial caption does not need a rename pencil');
   assert.equal(await racial.locator('button.path-racial-unavailable button').count(),0);
-  await racial.locator('button.path-racial-pencil').click();
+  await racial.locator('strong').dblclick();
   const edit=racial.locator('strong [data-owner-text-field]');
   await edit.waitFor({state:'visible'});
   await edit.fill('Расовые умения QA');
@@ -110,7 +112,8 @@ export async function runOwnerRacialPath648Smoke(browser,base){
    {ru:'Расовые умения QA'});
   const group=page.locator('.right .game-tree-head-row').filter({
    has:page.locator('[data-path-group="special"]')});
-  await group.locator('button.path-group-pencil').click();
+  assert.equal(await group.locator('button.path-group-pencil').count(),0);
+  await group.locator('.game-tree-head strong').dblclick();
   const groupEdit=group.locator('.game-tree-head strong [data-owner-text-field]');
   await groupEdit.waitFor({state:'visible'});
   await groupEdit.fill('Особое QA');
@@ -119,7 +122,7 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   await page.waitForFunction(()=>document.querySelector(
    '.right [data-path-group="special"] strong')?.textContent==='Особое QA',
    null,{timeout:12000});
-  assert.match(await group.locator('button.path-group-pencil').getAttribute('aria-label'),/Особое QA/);
+  assert.equal(await group.locator('button.path-group-pencil').count(),0);
   await page.locator('#locale [data-locale="en"]').click();
   await page.waitForFunction(()=>document.documentElement.lang==='en');
   await openSpecial();
@@ -130,7 +133,8 @@ export async function runOwnerRacialPath648Smoke(browser,base){
    await pathEnHelp.locator('summary').click();
   assert.equal(await pathEnHelp.evaluate(el=>el.open),true);
   const enRacialHelp=pathEnHelp.locator('.studio-owner-interface-row').filter({hasText:'Racial branch'});
-  await enRacialHelp.locator('.studio-owner-interface-pencil').click();
+  assert.equal(await enRacialHelp.locator('.studio-owner-interface-pencil').count(),0);
+  await enRacialHelp.locator('.studio-owner-interface-value').dblclick();
   const enHelpEdit=enRacialHelp.locator('[data-owner-text-field]');
   await enHelpEdit.waitFor({state:'visible'});
   await enHelpEdit.fill('Racial mastery cannot be allocated QA');
@@ -142,7 +146,7 @@ export async function runOwnerRacialPath648Smoke(browser,base){
    null,{timeout:12000});
   const en=page.locator('.right .path-racial-owner-row');
   assert.equal((await en.locator('strong').innerText()).trim(),'Racial');
-  await en.locator('button.path-racial-pencil').click();
+  await en.locator('strong').dblclick();
   const enEditor=en.locator('strong [data-owner-text-field]');
   await enEditor.fill('Race traits QA');await enEditor.press('Tab');
   console.log('Racial 648: EN submitted');
@@ -158,7 +162,8 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   await more.waitFor({state:'visible',timeout:15000});
   const before=Number((await more.locator('.path-more-count').innerText()).match(/[0-9]+/)?.[0]);
   assert.ok(before>0,'Fixture must have more than the initial 24 future-learnable skills');
-  await more.locator('button.path-more-pencil').click();
+  assert.equal(await more.locator('button.path-more-pencil').count(),0);
+  await more.locator('.path-more-copy').dblclick();
   const moreEditor=more.locator('.path-more-copy [data-owner-text-field]');
   await moreEditor.waitFor({state:'visible'});
   await moreEditor.fill('More skills QA');await moreEditor.press('Tab');
@@ -167,8 +172,7 @@ export async function runOwnerRacialPath648Smoke(browser,base){
    null,{timeout:12000});
   await savedOverride('guideedit.book.path.skill-show-more',
    {en:'More skills QA'});
-  assert.match(await more.locator('button.path-more-pencil').getAttribute('aria-label'),
-   /More skills QA/);
+  assert.equal(await more.locator('button.path-more-pencil').count(),0);
   assert.equal(Number((await more.locator('.path-more-count').innerText()).match(/[0-9]+/)?.[0]),before);
   await more.locator('button.path-show-more').click();
   const remaining=page.locator('#pathSkillGallery .path-more-count');
@@ -194,7 +198,8 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   assert.ok(requiredName.trim(),'The source prerequisite name must remain visible');
   assert.equal((await prereq.locator('.path-owner-copy-text').innerText()).trim(),
    'Previous skill');
-  await prereq.locator('.path-owner-pencil').click();
+  assert.equal(await prereq.locator('.path-owner-pencil').count(),0);
+  await prereq.locator('.path-owner-copy-text').dblclick();
   const prereqEdit=prereq.locator('[data-owner-text-field]');
   await prereqEdit.waitFor({state:'visible'});
   await prereqEdit.fill('Prerequisite QA');await prereqEdit.press('Tab');
@@ -211,6 +216,6 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   assert.ok(Object.values(saved.points||{}).every(value=>Number(value)===0),
    'Editing RU/EN site text must not allocate any character skill points');
   assert.deepEqual(errors,[]);
-  console.log('Chromium 0.648 Racial RU/EN D1, independent pencil, unchanged points passed');
+  console.log('Chromium 0.648 Racial RU/EN D1, direct caption editing, unchanged points passed');
  }finally{await context.close()}
 }
