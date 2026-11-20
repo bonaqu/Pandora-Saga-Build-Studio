@@ -155,6 +155,9 @@ export async function runOwnerBuildHints660Smoke(browser,base){
   await sort.selectOption('saved');
   // The three confirmation forms are now lazy: two cards start with only
   // empty shells. Check real D1 edits without executing overwrite/delete.
+  await page.waitForFunction(()=>
+   document.querySelector('.build-overwrite-choice')?.querySelectorAll('button').length===0,
+   null,{timeout:2500});
   assert.equal(await page.locator('.build-overwrite-choice button').count(),0);
   assert.equal(await page.locator('.build-delete-choice button').count(),0);
   const originalName=await card.locator('h3').textContent();
