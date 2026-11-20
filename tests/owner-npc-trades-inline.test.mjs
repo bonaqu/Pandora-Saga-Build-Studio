@@ -64,12 +64,12 @@ test('NPC save normalization preserves a live limit even when another field is e
  assert.match(source,/recipe\.limit!=null\?\{limit:\{n:Number\(recipe\.limit\.n\),period:recipe\.limit\.period\}\}/);
 });
 
-test('36 NPC trade copy captions use stable D1 RU/EN and preserve real limits',()=>{
+test('40 NPC trade copy captions use stable D1 RU/EN and preserve real limits',()=>{
  const app=readFileSync(new URL('pandora-studio-app.js',root),'utf8');
  const body=app.slice(app.indexOf('const wikiNpcTradeRows='),app.indexOf('const wikiChestDisplayRows='));
  const rows=[...body.matchAll(/^ \["([^"]+)","([^"]+)","([^"]+)"\],?$/gm)];
- assert.equal(rows.length,36);
- assert.equal(new Set(rows.map(x=>x[1])).size,36);
+ assert.equal(rows.length,40);
+ assert.equal(new Set(rows.map(x=>x[1])).size,rows.length);
  const env={window:{}};
  vm.runInNewContext(readFileSync(new URL('pandora-studio-honor-guide.js',root),'utf8'),env);
  const guide=env.window.PandoraHonorGuide;
@@ -102,4 +102,14 @@ test('36 NPC trade copy captions use stable D1 RU/EN and preserve real limits',(
  });
  assert.equal(JSON.stringify(noTradeChanges),before,
   'Editing a UI label cannot alter NPC recipes or their quota');
+});
+
+test('created-entity deletion copy uses four distinct safe RU/EN keys',()=>{
+ const app=readFileSync(new URL('pandora-studio-app.js',root),'utf8');
+ const begin=app.indexOf('const wikiNpcTradeRows=');
+ const end=app.indexOf('const wikiNpcTradeByKey=',begin);
+ const block=app.slice(begin,end);
+ for(const key of ['deleteRecordButton','deleteRecordLinked','deleteRecordConfirm','deleteRecordFailure'])
+  assert.ok(block.includes('['+JSON.stringify(key)+','),'Missing editable deletion copy '+key);
+ assert.ok(app.includes("verifyUncertain:true"));
 });
