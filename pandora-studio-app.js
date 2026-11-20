@@ -3874,6 +3874,11 @@ function renderWiki(root){
    label.setAttribute('aria-keyshortcuts','F2');
    label.addEventListener('dblclick',startEdit);
    label.addEventListener('keydown',event=>{if(event.key==='F2')startEdit(event)});
+   // The chapter title is inside a real navigation button. Suppress its
+   // first mouse click until a possible second click can open the inline
+   // editor; otherwise a Wiki re-render destroys the dblclick target.
+   // Ordinary one-click navigation and keyboard activation stay functional.
+   ownerCaptionActionGuard(chapter,label);
   }
   categories.append(line);
  }
