@@ -217,6 +217,8 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
   await page.locator('#detailPanel').waitFor({state:'hidden',timeout:10000});
   await page.locator('#locale [data-locale="en"]').click();
   await page.waitForFunction(()=>document.documentElement.lang==='en');
+  await page.locator('#nav [data-tab="wiki"]').click();
+  await page.locator('#detailPanel.is-open').waitFor({state:'visible',timeout:10000});
   await page.locator('[data-wiki-chapter="map"]').click();
   await page.locator('.wiki-map-create').click();
   const englishForm=page.locator('.wiki-map-create-form');
