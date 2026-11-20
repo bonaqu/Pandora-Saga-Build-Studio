@@ -147,6 +147,9 @@ export async function runUIContentInlineSmoke(browser,base){
    '[data-owner-copy-pencil="siteUpdateNotice"]').count(),0,
    'The notice edit affordance must be removed when a different warning is shown');
   await updateBanner.locator('[data-update-role="later"]').click();
+  // This button also owns editable text. Wait for its real single-click
+  // action to finish after double-click disambiguation.
+  await updateBanner.waitFor({state:'detached',timeout:3000});
   assert.equal(await updateBanner.count(),0);
   // A fixed heading is itself the direct-edit target; no sibling pencil.
   const appearanceHeading=page.locator('#stageHeading');
