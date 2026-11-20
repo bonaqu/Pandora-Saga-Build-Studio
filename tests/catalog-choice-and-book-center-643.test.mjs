@@ -8,24 +8,26 @@ const catalogCSS=file('pandora-os-catalog-workbench.css');
 const bookCSS=file('pandora-studio-owner-inline-ui.css');
 const visual=file('tests/browser-visual-coverage.mjs');
 
-test('catalog checkbox captions have sibling D1 pencils and isolated live counters',()=>{
+test('catalog checkbox captions edit directly without changing native input behavior',()=>{
  assert.match(catalog,/const choiceEditor=\(caption,key,ru,en\)=>/);
  assert.match(catalog,/editLabel\(caption,key,ru,en\)/);
- assert.match(catalog,/caption\.dispatchEvent\(new MouseEvent\('dblclick'/);
- for(const name of ['formatting','russian']){
-  const control=name==='formatting'?'formatting':'russian';
-  assert.match(catalog,new RegExp('const '+control+'CountLabel=h\\(\\\'small\\\',\\{class:\\\'os-sync-choice-count\\\'\\}\\)'));
-  assert.match(catalog,new RegExp('const '+control+'Choice=h\\(\\\'div\\\',\\{class:\\\'os-sync-choice-editor\\\'\\},\\['+control+'Option\\]\\)'));
-  assert.match(catalog,new RegExp(control+'Choice\\.append\\('+control+'Pencil\\)'));
-  assert.match(catalog,new RegExp(control+'CountLabel\\.textContent='));
+ assert.match(catalog,/caption\.addEventListener\('click'/);
+ assert.match(catalog,/if\(pending\)\{clearTimeout\(pending\);pending=null;return\}/);
+ assert.match(catalog,/box\.click\(\)/);
+ for(const type of ['formatting','russian']){
+  assert.ok(catalog.includes("const "+type+"CountLabel=h('small',{class:'os-sync-choice-count'})"));
+  assert.ok(catalog.includes("const "+type+"Choice=h('div',{class:'os-sync-choice-editor'},["+type+"Option])"));
+  assert.ok(catalog.includes("choiceEditor("+type+"Label,"));
+  assert.ok(catalog.includes(type+"CountLabel.textContent="));
  }
  assert.match(catalog,/\[formattingToggle,formattingLabel,formattingCountLabel\]/);
  assert.match(catalog,/\[russianToggle,russianLabel,russianCountLabel\]/);
  assert.doesNotMatch(catalog,/formattingLabel\.textContent=copy\('formattingLabel'/);
  assert.doesNotMatch(catalog,/russianLabel\.textContent=copy\('russianDescriptionsLabel'/);
+ assert.doesNotMatch(catalog,/os-sync-choice-pencil/);
+ assert.doesNotMatch(catalogCSS,/os-sync-choice-pencil/);
  assert.match(catalogCSS,/\.os-sync-choice-editor\{display:flex/);
- assert.match(catalogCSS,/\.os-sync-choice-pencil\{display:inline-grid/);
- assert.match(catalogCSS,/\.os-sync-choice-count\{margin-left:auto/);
+ assert.match(catalogCSS,/\.os-sync-choice-editor \.os-sync-choice-count\{margin-left:auto/);
 });
 
 test('Book eyebrow and chapter title share balanced screen center on mobile and desktop',()=>{

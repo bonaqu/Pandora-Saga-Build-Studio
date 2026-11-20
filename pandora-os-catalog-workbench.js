@@ -316,8 +316,7 @@
     const formattingOption=h('label',{class:'os-sync-formatting-option'},
       [formattingToggle,formattingLabel,formattingCountLabel]);
     const formattingChoice=h('div',{class:'os-sync-choice-editor'},[formattingOption]);
-    const formattingPencil=choiceEditor(formattingLabel,'formattingLabel',formattingRu,formattingEn);
-    if(formattingPencil)formattingChoice.append(formattingPencil);
+    choiceEditor(formattingLabel,'formattingLabel',formattingRu,formattingEn);
     const formattingReview=h('div',{class:'os-sync-formatting-review',hidden:true},
       [formattingChoice,formattingInfo]);
     reviewSteps.append(formattingReview);
@@ -340,8 +339,7 @@
     const russianOption=h('label',{class:'os-sync-formatting-option'},
       [russianToggle,russianLabel,russianCountLabel]);
     const russianChoice=h('div',{class:'os-sync-choice-editor'},[russianOption]);
-    const russianPencil=choiceEditor(russianLabel,'russianDescriptionsLabel',russianRu,russianEn);
-    if(russianPencil)russianChoice.append(russianPencil);
+    choiceEditor(russianLabel,'russianDescriptionsLabel',russianRu,russianEn);
     const russianReview=h('div',{class:'os-sync-formatting-review',hidden:true},
       [russianChoice,russianInfo,russianDetails]);
     reviewSteps.append(russianReview);
