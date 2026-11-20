@@ -15,7 +15,7 @@ test('Honor unavailable-war message reuses normal inline RU/EN D1 editor',()=>{
  assert.match(view,/editorial\('h3','wiki-honor-title','warNotFound'/);
  assert.equal(root.PandoraHonorGuide.validOverride('book.honor-view.war-not-found',
   JSON.stringify({ru:'Война пока недоступна',en:'War unavailable'})),true);
- assert.match(view,/if\(!editable\)return element/);
+ assert.match(view,/if\(editable\)editCopy\(element,key,ru,english\)/);
 });
 test('Honor create-war form localizes both input names without confusing their actual language',()=>{
  assert.match(view,/placeholder:tr\('Название на русском','Russian name'\)/);

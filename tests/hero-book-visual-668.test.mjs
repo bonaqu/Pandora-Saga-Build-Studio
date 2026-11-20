@@ -41,9 +41,9 @@ test('the Buffs tab opens on controls, with no boilerplate and no permanent Moun
  assert.doesNotMatch(attack,/stage-mounted-note/);
 });
 
-test('admin controls have separate fixed cells and defend against header button padding',()=>{
- assert.match(owner,/#stageAttributes \.stage-guide-actions>.stage-guide-edit-name/);
- assert.match(owner,/grid-template-columns:repeat\(2,22px\)!important/);
+test('real Hero Book hover hint editor uses a single compact cell',()=>{
+ assert.match(owner,/#stageAttributes \.stage-guide-actions>.stage-guide-edit-hint/);
+ assert.match(owner,/grid-template-columns:22px!important/);
  assert.match(owner,/padding:0!important/);
  assert.match(owner,/position:static!important/);
  assert.match(read('tests/browser-ui-content-inline.mjs'),/Hero Book owner buttons must not overlap/);

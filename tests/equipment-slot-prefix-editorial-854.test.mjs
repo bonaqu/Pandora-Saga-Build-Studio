@@ -57,13 +57,14 @@ test('owner edits just one fixed prefix; source-backed slot cannot be saved',()=
  assert.equal(prefix.textContent,'Ячейка');
  assert.equal(data.nodes.find(n=>n.className==='stage-picker-slot-title')
   ?.children[1].textContent,': Штаны');
- assert.ok(data.nodes.some(n=>n.className?.includes('stage-picker-slot-pencil')));
+ assert.equal(data.nodes.some(n=>n.className?.includes('stage-picker-slot-pencil')),false,
+  'The owner edits the actual prefix, not a duplicate pencil');
  const host={};host.window=host;
  runInNewContext(read('pandora-studio-honor-guide.js'),host);
  assert.equal(host.PandoraHonorGuide.validOverride(
   'book.equipment.picker-slot-heading',JSON.stringify({ru:'Ячейка',en:'Socket position'})),true);
 });
-test('app passes localized game slot independently and refreshes owner pencil after Undo',()=>{
+test('app passes localized game slot separately and refreshes authorial copy after Undo',()=>{
  const app=read('pandora-studio-app.js');
  const equip=read('pandora-studio-equipment-ui.js');
  assert.match(app,/slotName:gearSlotName\(selectedSlot\)/);
@@ -71,6 +72,6 @@ test('app passes localized game slot independently and refreshes owner pencil af
  assert.match(equip,/const titlePrefix=editable\(el\('span'/);
  assert.match(equip,/'pickerSlotHeading','Слот','Slot'\)/);
  assert.match(app,/section==='equipment'&&id==='pickerSlotHeading'/);
- assert.match(app,/querySelector\('\.stage-picker-slot-pencil'\)/);
+ assert.doesNotMatch(equip,/class:'stage-control-pencil stage-picker-slot-pencil'/);
  assert.doesNotMatch(equip,/data-edit-key=['"]slotName/);
 });

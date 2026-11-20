@@ -89,7 +89,8 @@ test('the real library view binds edit controls after rendering without touching
  assert.match(view,/PandoraUILocale\.localize\(root,lang\);\s*\/\/[^\n]*\n[^\n]*\n bindAccountCopyEditors\(root\);/);
  assert.match(app,/function bindAccountCopyEditors\(panel\)/);
  assert.match(app,/node\.addEventListener\('keydown',event=>/);
- assert.match(app,/node\.after\(h\('button',\{type:'button',class:'ui-content-pencil account-copy-pencil'/);
+ assert.match(app,/node\.addEventListener\('dblclick',edit\)/);
+ assert.doesNotMatch(app,/class:'ui-content-pencil account-copy-pencil'/);
  assert.match(app,/saveGuidePatch\('book\.'\+id,\{\[editLang\]:next\}\)/);
  assert.doesNotMatch(view,/\bsecret\b|data-owner-copy-key.*b\.name/i);
 });

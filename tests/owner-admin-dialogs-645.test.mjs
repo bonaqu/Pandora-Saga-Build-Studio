@@ -23,10 +23,11 @@ test('admin translation and GitHub modals use independent RU/EN owner D1 keys',(
  assert.match(app,/function ownerDialogHelp\(key,ru,en\)/);
  assert.match(app,/ownerCopy\('owner-dialog',key,ru,en\)/);
  assert.match(app,/ownerCopyLabel\(caption,'owner-dialog',key,ru,en\)/);
- assert.match(app,/caption\.dispatchEvent\(new MouseEvent\('dblclick'/);
+ assert.doesNotMatch(app,/class:'owner-dialog-pencil'/);
+ assert.match(app,/ownerCaptionActionGuard\(button,button\)/);
  assert.match(app,/function ownerDialogAction\(button,key,ru,en\)/);
  assert.match(app,/ownerCopyLabel\(host,'owner-dialog',key,ru,en/);
- assert.match(app,/button\.hidden=true;pencil\.hidden=true;host\.hidden=false/);
+ assert.match(app,/button\.hidden=true;host\.hidden=false/);
  assert.doesNotMatch(app,/button\.dispatchEvent\(new MouseEvent\('dblclick'/);
 });
 

@@ -166,7 +166,7 @@ export async function runGuestDraftContinuitySmoke(browser,base){
     if(ownerEdit){
      const edit=async(key,next)=>{
       const selector='[data-owner-copy-key="'+key+'"]';
-      await chooser.locator('[data-owner-copy-pencil="'+key+'"]').click();
+      await chooser.locator('[data-owner-copy-key="'+key+'"]').dblclick();
       const input=chooser.locator('.account-copy-edit-host [contenteditable]').last();
       await input.fill(next);await input.press('Tab');
       await page.waitForFunction(({selector,next})=>
@@ -186,7 +186,7 @@ export async function runGuestDraftContinuitySmoke(browser,base){
      assert.equal(await chooser.locator('.build-draft-choice strong').last().innerText(),
       currentAccount.name);
      assert.deepEqual(writes,[],
-      'Editorial pencil must not save either player draft or fire a cloud write');
+      'Editor label must not save either player draft or fire a cloud write');
      assert.equal(ownerWrites.length,2);
      console.log('Guest draft owner RU/EN copy verified before choosing:',
       ownerLang,ownerWrites.map(entry=>entry.key).join(', '));

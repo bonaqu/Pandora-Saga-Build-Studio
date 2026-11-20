@@ -29,16 +29,11 @@ test('six stable owner-only group captions have independently editable RU/EN fal
  assert.equal(new Set(Object.keys(expected)).size,6);
 });
 
-test('drawer pencil edits use the standard D1 CAS writer and cannot invoke an action',()=>{
+test('drawer group labels edit directly using standard D1 CAS',()=>{
  const block=take(" const group=(id,titleKey,hintKey,keys)=>{",
   " actions.replaceChildren(editGroup,gameGroup,toolsGroup);");
- assert.ok(block.includes("ownerCopyLabel(label,'owner-dock',key,pair[0],pair[1],{"));
- assert.ok(block.includes("onCommitted:visible=>syncPencil(visible)"));
- assert.ok(block.includes("onFinished:()=>syncPencil()"));
- assert.match(block,/typeof committed==='string'&&committed/);
- assert.ok(block.includes("pencil?.setAttribute('aria-label'"));
- assert.match(block,/label\.dispatchEvent\(new MouseEvent\('dblclick'/);
- assert.match(block,/event\.preventDefault\(\);event\.stopPropagation\(\)/);
+ assert.ok(block.includes("ownerCopyLabel(label,'owner-dock',key,pair[0],pair[1])"));
+ assert.doesNotMatch(block,/owner-dock-group-pencil/);
  assert.match(block,/editorial\(titleKey,'title'\),editorial\(hintKey,'hint'\)/);
  for(const key of ['groupEditingTitle','groupEditingHint','groupGameTitle',
   'groupGameHint','groupToolsTitle','groupToolsHint'])
@@ -59,11 +54,11 @@ test('every live status refresh and Undo preserves editor draft and updates grou
  assert.match(refresh,/\[data-owner-group-copy\]/);
  assert.match(refresh,/if\(!node\.querySelector\('\.wiki-inline-input'\)\)/);
  assert.match(refresh,/ownerDockPatchText\(node,ownerDockCopy\(node\.dataset\.ownerGroupCopy\)\)/);
- assert.match(refresh,/\[data-owner-group-edit-for\]/);
+ assert.match(refresh,/\[data-owner-group-copy\]/);
  const undo=take('function refreshVisibleOwnerCopy(recordKey){','function ');
  assert.match(undo,/if\(key\.startsWith\('owner-dock\.'\)\)\{refreshOwnerUI\(\);return\}/);
  assert.match(css,/#ownerDock \.owner-dock-group-copy-wrap/);
- assert.match(css,/#ownerDock \.owner-dock-actions button\.owner-dock-group-pencil/);
+ assert.match(css,/#ownerDock \.owner-dock-group-copy-wrap/);
  assert.doesNotMatch(refresh,/ownerEdits\.length\s*=\s*0/);
 });
 

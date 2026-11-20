@@ -24,12 +24,13 @@ test('rank filter captions use separate bilingual D1 keys, rank counts stay live
  assert.doesNotMatch(view,/tr\('Все · 12','All · 12'\)/);
 });
 
-test('rank filter pencils stay outside actions and do not change filter state',()=>{
+test('rank filters separate single-click navigation from direct caption editing',()=>{
  assert.match(view,/class:'wiki-honor-filter-wrap'/);
  assert.match(view,/wrap\.append\(button\)/);
- assert.match(view,/wrap\.append\(pencil,host\)/);
+ assert.match(view,/wrap\.append\(host\)/);
  assert.match(view,/rankFilters\.querySelectorAll\('button\[data-honor-filter\]'\)/);
- assert.match(view,/button\.hidden=true;pencil\.hidden=true;host\.hidden=false/);
+ assert.match(view,/button\.hidden=true;host\.hidden=false/);
+ assert.match(view,/root\.PandoraStudioCaptionActionGuard\?\.\(button,caption\)/);
  assert.match(view,/host\.dispatchEvent\(new MouseEvent\('dblclick'/);
  assert.match(view,/onFinished:restore/);
  assert.match(app,/ownerDockPatchText\(filterCaption,value\)/);

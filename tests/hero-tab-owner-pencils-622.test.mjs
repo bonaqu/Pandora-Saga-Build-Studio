@@ -6,15 +6,13 @@ const book=read('pandora-studio-hero-book.js');
 const app=read('pandora-studio-app.js');
 const styles=read('pandora-studio-owner-inline-ui.css');
 
-test('Hero Book owner tab pencils are native sibling actions, not nested in tabs',()=>{
- assert.match(book,/const pencil=make\('button',\{type:'button',class:'stage-book-tab-pencil'/);
- assert.match(book,/const wrapper=make\('span',\{class:'stage-book-tab-owner',role:'presentation'\}\)/);
+test('Book owner tabs expose direct caption editing without sibling buttons',()=>{
+ assert.match(book,/caption\.addEventListener\('dblclick',edit\)/);
  assert.match(book,/button\.replaceChildren\(caption\)/);
- assert.match(book,/wrapper\.append\(button,pencil\)/);
- assert.match(book,/nav\.append\(wrapper\)/);
- assert.match(book,/else nav\.append\(button\)/);
- assert.doesNotMatch(book,/button\.replaceChildren\(caption,pencil\)/);
- assert.match(styles,/\.stage-attribute-tabs>\.stage-book-tab-owner>\.stage-book-tab-pencil/);
+ assert.match(book,/root\.PandoraStudioCaptionActionGuard\?\.\(button,caption\)/);
+ assert.match(book,/nav\.append\(button\)/);
+ assert.doesNotMatch(book,/class:'stage-book-tab-pencil'/);
+ assert.doesNotMatch(styles,/\.stage-attribute-tabs>\.stage-book-tab-owner>\.stage-book-tab-pencil/);
 });
 test('Path owner tabs retain original IDs and capture locale of D1 edit',()=>{
  assert.match(app,/const button=\$\(id\);if\(!button\)continue/);
@@ -27,9 +25,8 @@ test('Path owner tabs retain original IDs and capture locale of D1 edit',()=>{
  assert.match(app,/onCommit:next=>saveGuidePatch\('book\.'\+ownerCopyKey\('path',key\),\{\[editLang\]:next\}\)/);
  assert.match(app,/if\(button\.querySelector\('\.wiki-inline-input'\)\)continue/);
  assert.match(app,/if\(wrapper\)\{wrapper\.before\(button\);wrapper\.remove\(\)\}/);
- assert.match(app,/wrapper=h\('span',\{class:'path-tab-owner-wrap',role:'presentation'\}\)/);
- assert.match(app,/button\.before\(wrapper\);wrapper\.append\(button\)/);
- assert.match(app,/wrapper\.append\(pencil\)/);
- assert.doesNotMatch(app,/button\.replaceChildren\(h\('span',\{text:symbol\}\),caption,pencil\)/);
- assert.match(styles,/\.path-sections>\.path-tab-owner-wrap>\.path-tab-pencil/);
+ assert.match(app,/ownerCaptionActionGuard\(button,caption\)/);
+ assert.match(app,/button\.replaceChildren\(h\('span',\{text:symbol\}\),caption\)/);
+ assert.doesNotMatch(app,/wrapper=h\('span',\{class:'path-tab-owner-wrap'/);
+ assert.doesNotMatch(styles,/\.path-sections>\.path-tab-owner-wrap>\.path-tab-pencil/);
 });

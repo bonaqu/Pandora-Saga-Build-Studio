@@ -3,7 +3,7 @@
 'use strict';
 const $=id=>document.getElementById(id);
 // Shared owner-only gesture guard for captions of game action controls.
-window.PandoraStudioCaptionActionGuard=ownerCaptionActionGuard;
+if(typeof window!=='undefined')window.PandoraStudioCaptionActionGuard=ownerCaptionActionGuard;
 // One matching rule for the equipment picker and owner encyclopedia pickers.
 // Terms may be reordered or separated by extra whitespace; ё/е match, too.
 const searchWords=(text,query)=>window.PandoraSearchField.matches(text,query);

@@ -66,8 +66,8 @@ test('27 static RU/EN D1 editor strings span equipment, wiki, skills and stats',
 test('shared owner editor reuses CAS, blur and Escape without wrapping buttons',()=>{
  assert.match(app,/function ownerInterfaceEditor\(section,rows,/);
  assert.match(app,/if\(!adminEditing\|\|!adminToken\)return null;/);
- assert.match(app,/ownerCopyLabel\(label,section,key,ru,en,\{/);
- assert.match(app,/label\.dispatchEvent\(new MouseEvent\('dblclick'/);
+ assert.match(app,/ownerCopyLabel\(label,section,key,ru,en\)/);
+ assert.doesNotMatch(app,/class:'ui-content-pencil studio-owner-interface-pencil'/);
  assert.match(app,/node\.dataset\.ownerInterfaceSuffix=suffix/);
  assert.match(app,/function bindOwnerInterfaceText\(node,section,key,ru,en,attribute='text'/);
  assert.match(app,/node\.dataset\.ownerInterfaceKey=key/);
