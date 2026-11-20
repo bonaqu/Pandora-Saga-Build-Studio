@@ -39,9 +39,9 @@ test('fixed notices have safe RU/EN D1 copy keys, with no server/user inputs',()
 
 test('authoring pencil is visible for origin and main stage headings',()=>{
  const app=read('pandora-studio-app.js');
- assert.match(app,/node\?\.matches\?\.\('h2'\)/);
- assert.match(app,/originCopyLabel\(node,key,ru,en,\{pencilHost\}\)/);
- assert.match(app,/button\|\|node\.matches\('h2,h3'\)/);
+ assert.match(app,/function originCopyLabel\(node,key,ru,en\)/);
+ assert.match(app,/originCopyLabel\(node,key,ru,en\)/);
+ assert.doesNotMatch(app,/class:'origin-copy-pencil'/);
  assert.match(app,/node\.dataset\.pathCopyBound==='1'/);
  assert.match(app,/bindAccountCopyEditors\(root\)/);
  assert.match(app,/const authoredKey=statusKey\?\.startsWith\('status'\)/);
@@ -52,11 +52,11 @@ test('authoring pencil is visible for origin and main stage headings',()=>{
 test('hero-book editor offers distinct stat caption and hint actions',()=>{
  const book=read('pandora-studio-hero-book.js');
  const css=read('pandora-studio-owner-inline-ui.css');
- assert.match(book,/class:'stage-guide-edit-name'/);
+ assert.doesNotMatch(book,/class:'stage-guide-edit-name'/);
  assert.match(book,/class:'stage-guide-edit-hint'/);
- assert.match(book,/onclick:editName/);
+ assert.match(book,/node\.addEventListener\('dblclick',editName\)/);
  assert.match(book,/english\?'hintEn':'hintRu'/);
- assert.match(book,/text:'\?'/);
+ assert.match(book,/meaningfulGuideHint\(hint\)/);
  assert.match(book,/class:'stage-guide-actions'/);
  assert.match(css,/\.stage-result-tile>\.stage-guide-actions/);
  assert.match(css,/\.stage-chapter-label/);

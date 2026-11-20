@@ -278,12 +278,17 @@ function render({browse,detail,make,lang='ru',article,editable=false,
      names.append(anchor);
     }else names.append(editableListText(name,value,key,items,index,field));
     if(editable&&anchor){
-     // Clicking a war name navigates; editing remains a separate owner action.
-     const edit=make('button',{type:'button',class:'wiki-honor-war-rename',
-      text:'✎','aria-label':tr('Изменить название войны','Edit war name')+': '+value,
-      onclick:()=>editText(edit,value,false,next=>saveList(key,
-       items.map((row,i)=>i===index?{...row,[field]:next}:row)))});
-     names.append(edit);
+     // Double-click edits this actual war name without navigating first.
+     // Single click still follows the existing page link.
+     const edit=event=>{
+      event?.preventDefault?.();event?.stopPropagation?.();
+      editText(anchor,value,false,next=>saveList(key,
+       items.map((row,i)=>i===index?{...row,[field]:next}:row)));
+     };
+     anchor.setAttribute('aria-keyshortcuts','F2');
+     anchor.addEventListener('dblclick',edit);
+     anchor.addEventListener('keydown',event=>{if(event.key==='F2')edit(event)});
+     guardHonorAction(anchor,anchor);
     }
    }
    row.append(names);

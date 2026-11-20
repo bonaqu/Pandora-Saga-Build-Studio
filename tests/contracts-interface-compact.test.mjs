@@ -170,20 +170,13 @@ const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const view=read('pandora-studio-honor-view.js');
 const styles=read('pandora-studio-honor.css');
 
-test('Honor touch edit controls are independent of headings, navigation, and game data',()=>{
- assert.match(view,/const directPencil=\(action,caption\)=>/);
- assert.match(view,/class:'wiki-honor-copy-pencil wiki-honor-direct-pencil'/);
- assert.match(view,/pencil\.addEventListener\('click',event=>/);
- assert.match(view,/event\.preventDefault\(\);event\.stopPropagation\(\);action\(\)/);
+test('Honor captions use a direct double-click rather than action pencils',()=>{
+ assert.match(view,/const guardHonorAction=\(button,caption\)=>/);
  assert.match(view,/headingRow\.append\(heading\)/);
- assert.match(view,/headingRow\.append\(directPencil\(change,name\)\)/);
- assert.match(view,/titleRow\.append\(directPencil\(change,honorTitle\)\)/);
- assert.match(view,/titleRow\.append\(directPencil\(edit,name\)\)/);
- assert.match(view,/contentRow\.append\(directPencil\(startEdit,name\)\)/);
- assert.match(view,/if\(!editable\)return target/);
- assert.doesNotMatch(view,/button\.append\(directPencil/);
+ assert.match(view,/heading\.addEventListener\('dblclick',change\)/);
+ assert.match(view,/wrap\.append\(target\)/);
+ assert.doesNotMatch(view,/directPencil\(/);
  assert.match(styles,/\.wiki-honor-heading-row\{display:flex/);
- assert.match(styles,/\.wiki-honor-cloak-edit-row\{display:flex/);
 });
 
 test('Honor F2 opens multiline and list text editing without replacing Enter semantics',()=>{
@@ -202,24 +195,22 @@ const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const view=read('pandora-studio-honor-view.js');
 const css=read('pandora-studio-honor.css');
 
-test('owner Honor rank fields have a compact touch pencil without changing player markup',()=>{
+test('Honor rank description editing stays separate from actual numeric game records',()=>{
  assert.match(view,/if\(!editable\)return target/);
  assert.match(view,/const wrap=make\('div',\{class:'wiki-honor-field-edit-row'/);
- assert.match(view,/wrap\.append\(target,directPencil\(start,kind\)\)/);
+ assert.match(view,/wrap\.append\(target\)/);
  assert.match(view,/isRequirement\?' is-rank-requirement'/);
  assert.match(view,/isBenefit\?' is-rank-benefit'/);
- assert.match(css,/\.wiki-honor-field-edit-row\{display:flex/);
- assert.match(css,/\.wiki-honor-rank>\.wiki-honor-field-edit-row\.is-rank-requirement\{/);
- assert.match(css,/\.wiki-honor-rank>\.wiki-honor-field-edit-row\.is-rank-benefit\{/);
+ assert.doesNotMatch(view,/class:'wiki-honor-copy-pencil'/);
  assert.match(css,/@media\(hover:hover\) and \(pointer:fine\)/);
 });
 
-test('owner save refreshes accessible captions of existing pencils in-place',()=>{
- assert.match(view,/editCopy\(target,key,ru,english,\{/);
- assert.match(view,/onCommitted:next=>pencil\.setAttribute\('aria-label'/);
- assert.match(view,/onCommitted:visible=>\{\s*caption\.textContent=visible;\s*pencil\.setAttribute\('aria-label'/);
+test('Honor localized filter captions save in place without a second edit button',()=>{
+ assert.match(view,/editCopy\(target,key,ru,english\)/);
+ assert.match(view,/onCommitted:visible=>\{caption\.textContent=visible\}/);
  assert.match(view,/onFinished:restore/);
- assert.match(view,/button\.hidden=true;pencil\.hidden=true;host\.hidden=false/);
+ assert.match(view,/button\.hidden=true;host\.hidden=false/);
+ assert.match(view,/host\.dispatchEvent\(new MouseEvent\('dblclick'/);
 });
 
 }

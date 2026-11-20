@@ -75,31 +75,21 @@ function fixture(job='CLERIC',section='prayer',branch='benevolence'){
  const range=walk(target).find(x=>x.tag==='input'&&x.attributes.type==='range');
  return {state,api,target,range,budget};
 }
-test('Hero Path owner group edit pencil is a sibling BUTTON, not nested in disclosure',()=>{
- const {target,api}=fixture();
- api.canEdit=true;
- api.copyLabel=(key,ru,en)=>ru;
- api.editLabel=()=>{};
+test('Hero Path group caption is directly editable without another button',()=>{
+ const {target,api}=fixture();api.canEdit=true;api.copyLabel=(_key,ru)=>ru;
+ const edits=[];api.editLabel=(node,key)=>edits.push({node,key});
  root.PandoraHeroPath.viewGrowth(target,api);
  const headers=walk(target).filter(x=>x.className==='game-tree-head-row');
  assert.ok(headers.length>0);
  for(const header of headers){
   const buttons=header.children.filter(x=>x.tag==='button');
-  assert.equal(buttons.length,2,'one independent expand and one edit action');
-  const [disclosure,pencil]=buttons;
-  assert.match(disclosure.className,/game-tree-head/);
-  assert.equal(pencil.className,'path-group-pencil');
-  assert.equal(pencil.attributes.type,'button');
-  assert.equal(disclosure.attributes['data-path-group']?.length>0,true);
-  assert.equal(pencil.attributes.role,undefined);
-  assert.equal(pencil.attributes.tabindex,undefined);
-  assert.ok(!walk(disclosure).some(x=>x.className==='path-group-pencil'));
-  assert.equal(typeof disclosure.listeners.click,'function');
-  assert.equal(typeof pencil.listeners.click,'function');
+  assert.equal(buttons.length,1,'only the real disclosure action remains');
+  assert.match(buttons[0].className,/game-tree-head/);
+  const caption=buttons[0].children.find(x=>x.tag==='strong');
+  assert.ok(edits.some(edit=>edit.node===caption));
+  assert.equal(buttons[0].attributes['data-path-group']?.length>0,true);
  }
- const normal=fixture();
- assert.ok(walk(normal.target).filter(x=>x.className==='game-tree-head-row')
-  .every(header=>header.children.filter(x=>x.tag==='button').length===1));
+ assert.equal(walk(target).filter(x=>x.className==='path-group-pencil').length,0);
 });
 
 test('45-level Cleric with 104 available points has actually ENABLED skill range',()=>{
@@ -606,116 +596,83 @@ test('point-stepper hold instructions follow RU/EN Hero Path language',()=>{
  assert.ok(descriptions().every(v=>v==='Click to change by 1; hold to repeat.'));
 });
 
-test('Racial path remains disabled with an independent owner-copy pencil',()=>{
+test('Racial path stays disabled while its separate visible caption is directly editable',()=>{
  const f=fixture('CLERIC','special','riding');f.api.canEdit=true;
  const edits=[];f.api.copyLabel=(key,ru)=>key==='racialBranch'?'Редакция':ru;
  f.api.editLabel=(node,key,ru,en)=>edits.push({key,ru,en,node});
  root.PandoraHeroPath.viewGrowth(f.target,f.api);
- const ownerRows=walk(f.target).filter(x=>x.className==='path-racial-owner-row');
- assert.equal(ownerRows.length,1);
- const [race,label,pencil]=ownerRows[0].children;
+ const rows=walk(f.target).filter(x=>x.className==='path-racial-owner-row');
+ assert.equal(rows.length,1);
+ const [race,label]=rows[0].children;
+ assert.equal(rows[0].children.length,2);
  assert.equal(race.disabled,true);
  assert.equal(race.attributes['data-path-branch'],'race');
- assert.equal(pencil.tag,'button');
- assert.equal(pencil.attributes.type,'button');
- assert.equal(pencil.className,'path-racial-pencil');
- assert.equal(typeof pencil.listeners.click,'function');
  assert.equal(walk(label).find(x=>x.tag==='strong').textContent,'Редакция');
- assert.equal(walk(race).find(x=>x.tag==='strong'),undefined,
-  'Editors must never be children of a disabled button');
- assert.ok(!walk(race).some(x=>x.className==='path-racial-pencil'));
+ assert.equal(walk(race).find(x=>x.tag==='strong'),undefined);
  assert.equal(edits.find(x=>x.key==='racialBranch')?.ru,'Расовые');
  assert.equal(edits.find(x=>x.key==='racialBranch')?.en,'Racial');
  assert.equal(f.budget().remaining,104);
- const guest=fixture('CLERIC','special','riding');
- assert.equal(walk(guest.target).filter(x=>String(x.className).includes('path-racial-unavailable')).length,1);
- assert.equal(walk(guest.target).filter(x=>x.className==='path-racial-pencil').length,0);
+ assert.equal(walk(f.target).filter(x=>x.className==='path-racial-pencil').length,0);
 });
-test('Path group pencil accessible name tracks saved localized caption',()=>{
+test('Path group inline caption remains D1-bound without a second editor control',()=>{
  const f=fixture();f.api.canEdit=true;
- const edits=[];f.api.copyLabel=(key,ru)=>ru;
- f.api.editLabel=(node,key,ru,en,callbacks)=>edits.push({node,callbacks});
+ const edits=[];f.api.copyLabel=(_key,ru)=>ru;
+ f.api.editLabel=(node,key)=>edits.push({node,key});
  root.PandoraHeroPath.viewGrowth(f.target,f.api);
- const row=walk(f.target).find(x=>x.className==='game-tree-head-row');
- const pencil=row.children.find(x=>x.className==='path-group-pencil');
- const caption=row.children[0].children.find(x=>x.tag==='strong');
- assert.ok(pencil.attributes['aria-label'].includes(caption.textContent));
- caption.textContent='Новая подпись';
- edits.find(x=>x.node===caption).callbacks.onCommitted();
- assert.ok(pencil.attributes['aria-label'].includes('Новая подпись'));
+ const header=walk(f.target).find(x=>x.className==='game-tree-head-row');
+ const caption=header.children[0].children.find(x=>x.tag==='strong');
+ assert.ok(edits.some(edit=>edit.node===caption&&edit.key.startsWith('group.')));
+ assert.equal(header.children.some(x=>x.className==='path-group-pencil'),false);
 });
 
 
-test('Path Show More owner label is editable independently of live skill count',()=>{
+test('Path Show More caption is editable without changing its numeric skill count',()=>{
  const f=fixture('CLERIC','special','riding');
  f.api.catalogReady=true;f.api.filter='all';f.api.query='';f.api.shown=24;
  f.api.skillCatalog=Array.from({length:26},(_,i)=>({
   id:i+1,name:'Test '+i,classes:{CLERIC:true},learnable:true,reqs:[]
  }));
- let calls=0;f.api.onMoreSkills=()=>calls++;f.api.onInspect=()=>{};
- f.api.canEdit=true;
- const edits=[];
- f.api.copyLabel=(key,ru)=>key==='skillShowMore'?'Другие навыки':ru;
- f.api.editLabel=(node,key,ru,en,callbacks)=>edits.push({node,key,ru,en,callbacks});
+ f.api.onMoreSkills=()=>{};f.api.onInspect=()=>{};f.api.canEdit=true;
+ const edits=[];f.api.copyLabel=(key,ru)=>key==='skillShowMore'?'Другие навыки':ru;
+ f.api.editLabel=(node,key,ru,en)=>edits.push({node,key,ru,en});
  const gallery=new BrowserElement('div'),details=new BrowserElement('div');
  root.PandoraHeroPath.viewSkills(gallery,details,f.api);
  const row=walk(gallery).find(x=>x.className==='path-more-owner-row');
  assert.ok(row);
- const [button,pencil]=row.children;
- assert.equal(button.tag,'button');
+ assert.equal(row.children.length,1);
+ const button=row.children[0];
  assert.equal(button.className,'path-show-more');
- assert.equal(pencil.className,'path-more-pencil');
  assert.equal(button.children[0].textContent,'Другие навыки');
  assert.equal(button.children[1].textContent,' (2)');
  assert.equal(edits.find(x=>x.key==='skillShowMore')?.ru,'Показать ещё');
  assert.equal(edits.find(x=>x.key==='skillShowMore')?.en,'Show more');
- assert.ok(!walk(button).some(x=>x.className==='path-more-pencil'));
- button.listeners.click({target:{closest:()=>null}});
- assert.equal(calls,1);
- button.children[0].textContent='Ещё';
- edits.find(x=>x.key==='skillShowMore').callbacks.onCommitted();
- assert.match(pencil.attributes['aria-label'],/Ещё/);
- assert.equal(button.children[1].textContent,' (2)');
- const plain=new BrowserElement('div');f.api.canEdit=false;
- root.PandoraHeroPath.viewSkills(plain,new BrowserElement('div'),f.api);
- assert.equal(walk(plain).filter(x=>x.className==='path-more-owner-row').length,0);
- assert.equal(walk(plain).filter(x=>x.className==='path-show-more').length,1);
- assert.equal(f.budget().remaining,104);
+ assert.equal(walk(row).filter(x=>x.className==='path-more-pencil').length,0);
 });
 
 
-test('previous-skill caption has separate RU/EN D1 editor and preserves source skill name',()=>{
- const skill={id:91003,name:'Текущий навык',desc:'',classes:{WARRIOR:1},learnable:true,
-  prereq:91002,reqs:[]};
- const previous={id:91002,name:'Проверенный предшественник',classes:{WARRIOR:1},learnable:true,reqs:[]};
+test('Path prior-skill D1 caption changes language without editing source skill names',()=>{
+ const skill={id:91003,name:'Текущий навык',desc:'',classes:{WARRIOR:1},
+  learnable:true,prereq:91002,reqs:[]};
+ const prev={id:91002,name:'Проверенный предшественник',
+  classes:{WARRIOR:1},learnable:true,reqs:[]};
  const api={state:{level:45,points:{}},job:'WARRIOR',lang:'ru',
-  skillCatalog:[skill,previous],catalogReady:true,query:'',filter:'all',shown:24,
+  skillCatalog:[skill,prev],catalogReady:true,query:'',filter:'all',shown:24,
   selectedSkill:skill,icon:()=>null,hover:()=>{},onInspect:()=>{},canEdit:true};
- const calls=[];
- api.copyLabel=(key,ru,en)=>key==='skillPreviousLabel'?'Ранее изученное':ru;
- api.editLabel=(node,key,ru,en,callbacks)=>calls.push({node,key,ru,en,callbacks});
+ const edits=[];api.copyLabel=(key,ru)=>key==='skillPreviousLabel'?'Ранее изученное':ru;
+ api.editLabel=(node,key,ru,en)=>edits.push({node,key,ru,en});
  const gallery=new BrowserElement('root'),details=new BrowserElement('root');
  const render=()=>root.PandoraHeroPath.viewSkills(gallery,details,api);
  render();
  let row=walk(details).find(x=>String(x.className).includes('path-skill-previous-row'));
- assert.ok(row,'Previous skill requirement is visible');
- const caption=walk(row).find(x=>x.className==='path-owner-copy-text');
- const value=walk(row).find(x=>x.className==='path-skill-previous-value');
- const pencil=walk(row).find(x=>x.className==='path-owner-pencil');
- assert.equal(caption.textContent,'Ранее изученное');
- assert.equal(value.textContent,'Проверенный предшественник');
- assert.equal(pencil.tag,'button');
- assert.ok(!walk(value).some(x=>x.className==='path-owner-pencil'));
- assert.equal(calls.find(x=>x.key==='skillPreviousLabel')?.ru,'Предыдущее умение');
- assert.equal(calls.find(x=>x.key==='skillPreviousLabel')?.en,'Previous skill');
- api.lang='en';api.copyLabel=(key,ru,en)=>en;render();
+ assert.ok(row);
+ assert.equal(walk(row).find(x=>x.className==='path-owner-copy-text').textContent,'Ранее изученное');
+ assert.equal(walk(row).find(x=>x.className==='path-skill-previous-value').textContent,'Проверенный предшественник');
+ assert.equal(walk(row).filter(x=>x.className==='path-owner-pencil').length,0);
+ assert.equal(edits.find(x=>x.key==='skillPreviousLabel')?.en,'Previous skill');
+ api.lang='en';api.copyLabel=(_key,_ru,en)=>en;render();
  row=walk(details).find(x=>String(x.className).includes('path-skill-previous-row'));
  assert.equal(walk(row).find(x=>x.className==='path-owner-copy-text').textContent,'Previous skill');
- assert.equal(walk(row).find(x=>x.className==='path-skill-previous-value').textContent,
-  'Проверенный предшественник','English UI copy must not change catalog skill names');
- api.canEdit=false;render();
- assert.equal(walk(details).filter(x=>x.className==='path-owner-pencil').length,0);
- assert.equal(skill.prereq,91002);
+ assert.equal(walk(row).find(x=>x.className==='path-skill-previous-value').textContent,'Проверенный предшественник');
 });
 
 test('missing predecessor is hidden from Hero Path but preserved in the source catalog',()=>{

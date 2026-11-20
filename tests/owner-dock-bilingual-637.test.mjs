@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const get=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 
-test('admin actions have bilingual D1 guide keys, isolated pencil and no double-click action side effects',()=>{
+test('admin actions keep D1 labels and safe native button activation with double-click editing',()=>{
  const app=get('pandora-studio-app.js');
  const from=app.indexOf('const ownerDockText=Object.freeze({');
  const end=app.indexOf('function refreshOwnerUI(){',from);
@@ -14,14 +14,12 @@ test('admin actions have bilingual D1 guide keys, isolated pencil and no double-
   assert.match(source,new RegExp('\\b'+key+':\\['));
  assert.match(source,/ownerCopy\('owner-dock',key,pair\[0\],pair\[1\]\)/);
  assert.match(source,/function decorateOwnerDockActions\(actions\)/);
- assert.match(source,/button\.before\(slot\);slot\.append\(button,pencil,host\)/);
- assert.match(source,/pencil\.onclick=event=>\{/);
- assert.match(source,/event\.preventDefault\(\);event\.stopPropagation\(\)/);
+ assert.match(source,/button\.before\(slot\);slot\.append\(button,host\)/);
+ assert.match(source,/button\.addEventListener\('dblclick',edit\)/);
+ assert.match(source,/ownerCaptionActionGuard\(button,button\)/);
  assert.match(source,/const editLang=lang,before=ownerDockCopy\(key\)/);
- assert.match(source,/editWikiValue\(host,before,\{/);
  assert.match(source,/saveGuidePatch\('book\.'\+ownerCopyKey\('owner-dock',key\),\{\[editLang\]:next\}\)/);
- assert.match(source,/onFinished:\(\)=>\{/);
- assert.doesNotMatch(source,/button\.ondblclick|button\.addEventListener\('dblclick'/);
+ assert.doesNotMatch(source,/owner-dock-action-pencil/);
 });
 
 test('editor pencils stay in the button grid cell while the input expands',()=>{

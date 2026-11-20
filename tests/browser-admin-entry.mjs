@@ -223,7 +223,7 @@ export async function runAdminEntrySmoke(browser,base){
   await page.locator('#stageAttributes').waitFor({state:'visible'});
   await page.locator('#stageAttributes .stage-book-close').click();
   assert.equal(await page.locator('.path-sections .path-tab-owner-wrap>[role="tab"]').count(),2);
-  assert.equal(await page.locator('.path-sections .path-tab-owner-wrap>.path-tab-pencil').count(),2);
+  assert.equal(await page.locator('.path-sections .path-tab-owner-wrap>.path-tab-pencil').count(),0);
   assert.equal(await page.locator('.path-sections [role="tab"] .path-tab-pencil').count(),0);
   await page.locator('#pathSkillsTab').click();
   // A live owner search/skill-label edit must survive a repeated Path render.

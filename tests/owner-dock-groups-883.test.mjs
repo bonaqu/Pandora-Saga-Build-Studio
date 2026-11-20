@@ -29,16 +29,12 @@ test('six stable owner-only group captions have independently editable RU/EN fal
  assert.equal(new Set(Object.keys(expected)).size,6);
 });
 
-test('drawer pencil edits use the standard D1 CAS writer and cannot invoke an action',()=>{
+test('owner drawer group captions edit in place and preserve D1 CAS/Undo writer',()=>{
  const block=take(" const group=(id,titleKey,hintKey,keys)=>{",
   " actions.replaceChildren(editGroup,gameGroup,toolsGroup);");
- assert.ok(block.includes("ownerCopyLabel(label,'owner-dock',key,pair[0],pair[1],{"));
- assert.ok(block.includes("onCommitted:visible=>syncPencil(visible)"));
- assert.ok(block.includes("onFinished:()=>syncPencil()"));
- assert.match(block,/typeof committed==='string'&&committed/);
- assert.ok(block.includes("pencil?.setAttribute('aria-label'"));
- assert.match(block,/label\.dispatchEvent\(new MouseEvent\('dblclick'/);
- assert.match(block,/event\.preventDefault\(\);event\.stopPropagation\(\)/);
+ assert.ok(block.includes("ownerCopyLabel(label,'owner-dock',key,pair[0],pair[1])"));
+ assert.ok(block.includes("return h('span',{class:'owner-dock-group-copy-wrap'},[label])"));
+ assert.doesNotMatch(block,/owner-dock-group-pencil/);
  assert.match(block,/editorial\(titleKey,'title'\),editorial\(hintKey,'hint'\)/);
  for(const key of ['groupEditingTitle','groupEditingHint','groupGameTitle',
   'groupGameHint','groupToolsTitle','groupToolsHint'])
@@ -46,7 +42,6 @@ test('drawer pencil edits use the standard D1 CAS writer and cannot invoke an ac
  const common=take('function ownerCopyLabel(', '// Shared, explicit copy binding');
  assert.match(common,/const editLang=lang/);
  assert.match(common,/saveGuidePatch\('book\.'\+ownerCopyKey\(section,key\),\{\[editLang\]:next\}\)/);
- assert.match(common,/event\.key==='F2'\|\|event\.key==='Enter'/);
  const save=take('async function saveGuidePatchNow(', 'async function saveGuideList(');
  assert.match(save,/await apiRequest\('\/api\/admin\/override',\{key:overrideKey,value:serialized\}\)/);
  assert.match(save,/ownerEdits\.push/);

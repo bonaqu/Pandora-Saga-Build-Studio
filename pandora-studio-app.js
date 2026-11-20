@@ -2008,7 +2008,10 @@ function openStageGearMenu(index,sourceSlot,event,anchor){
     record?'This item type has no Soul sockets.':'Item data unavailable.','title');
   }
   const wrap=h('div',{class:'stage-gear-context-row'},[button]);
-  if(adminEditing&&adminToken)equipmentCopyLabel(label,'context.'+id,ru,en);
+  if(adminEditing&&adminToken){
+   equipmentCopyLabel(label,'context.'+id,ru,en);
+   ownerCaptionActionGuard(button,label);
+  }
   menu.append(wrap);
  }
  document.body.append(menu);stageGearMenu=menu;stageGearMenuAnchor=anchor;
@@ -3343,6 +3346,7 @@ function renderPathCopyControls(){
     }});
   };
   caption.addEventListener('dblclick',edit);
+  ownerCaptionActionGuard(button,caption);
   caption.tabIndex=0;caption.setAttribute('aria-keyshortcuts','F2');
   caption.addEventListener('keydown',event=>{if(event.key==='F2')edit(event)});
   button.replaceChildren(h('span',{text:symbol}),caption);
@@ -3867,6 +3871,7 @@ function renderWiki(root){
    label.setAttribute('aria-keyshortcuts','F2');
    label.addEventListener('dblclick',startEdit);
    label.addEventListener('keydown',event=>{if(event.key==='F2')startEdit(event)});
+   ownerCaptionActionGuard(chapter,label);
   }
   categories.append(line);
  }

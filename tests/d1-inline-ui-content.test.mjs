@@ -70,7 +70,7 @@ test('real Worker D1 override path authenticates, CAS checks, and serves saved U
 test('UI editing uses tiny in-place controls, blur save and no extra modal route',()=>{
  const app=read('pandora-studio-app.js'),css=read('pandora-studio-wiki-polish.css');
  assert.match(app,/caption\.addEventListener\('dblclick',editLabel\)/);
- assert.match(app,/class:'wiki-label-pencil'/);
+ assert.doesNotMatch(app,/class:'wiki-label-pencil'/);
  assert.match(app,/class:'wiki-item-field-inline-editor wiki-label-inline-edit'/);
  assert.match(app,/class:'wiki-hint-pencil'/);
  assert.match(app,/class:'wiki-item-field-inline-editor wiki-hint-inline-edit'/);

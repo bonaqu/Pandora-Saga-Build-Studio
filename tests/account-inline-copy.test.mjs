@@ -71,7 +71,7 @@ test('only explicit harmless profile feedback is editable; diagnostics remain im
  assert.match(code,/info\('Скопируйте выделенный код',true\)/);
  assert.match(code,/info\('Резервный код скрыт\.',true\)/);
  assert.match(code,/info\(e\.message\)/,'Raw errors never opt into status editing');
- assert.match(app,/node\.classList\.contains\('account-feedback'\)/);
+ assert.match(app,/node\.addEventListener\('dblclick',edit\)/);
 });
 
 test('account long RU/EN help text is editable without losing bundled defaults',()=>{

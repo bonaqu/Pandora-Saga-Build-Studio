@@ -27,14 +27,11 @@ test('Honor UI captions have five stable, independent D1 RU/EN keys',()=>{
  assert.match(view,/editorial\('small','','rewardsHeading'/);
 });
 
-test('Honor pencils edit only adjacent text: never trigger PvP navigation or rank filter',()=>{
+test('Honor authored captions edit directly without inserting an extra action button',()=>{
  assert.match(view,/if\(!editable\)return element/);
- assert.match(view,/element\.replaceChildren\(target,pencil\)/);
- assert.match(view,/pencil\.addEventListener\('click',event=>/);
- assert.match(view,/event\.preventDefault\(\);event\.stopPropagation\(\)/);
- assert.match(view,/target\.dispatchEvent\(new MouseEvent\('dblclick'/);
- assert.doesNotMatch(view,/pencil\.dispatchEvent\(new MouseEvent\('click'/);
- assert.match(view,/editCopy\(target,key,ru,english,\{/);
- assert.match(css,/\.wiki-honor-copy-pencil\{/);
+ assert.match(view,/element\.replaceChildren\(target\)/);
+ assert.match(view,/editCopy\(target,key,ru,english\)/);
+ assert.match(view,/guardHonorAction\(button,caption\)/);
+ assert.doesNotMatch(view,/wiki-honor-copy-pencil/);
  assert.match(css,/\.wiki-honor-copy-owner-label:focus-visible/);
 });

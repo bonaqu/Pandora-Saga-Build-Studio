@@ -8,20 +8,13 @@ const ownerCss=read('pandora-studio-owner-inline-ui.css');
 const forgeCss=read('pandora-studio-forge-controls.css');
 const path=read('pandora-studio-hero-path.js');
 
-test('equipment tab, forge and soul editor pencils are real sibling buttons',()=>{
- assert.match(equipment,/const pencil=el\('button',\{type:'button',class:'stage-control-pencil'/);
- assert.match(equipment,/const wrapper=el\('span',\{class:'stage-action-edit-wrap'\}\)/);
- assert.match(equipment,/wrapper\.append\(button,pencil\)/);
+test('equipment and souls edit captions directly without duplicate pencil buttons',()=>{
+ assert.match(equipment,/const guardCaption=\(button,caption\)=>/);
+ assert.match(equipment,/guardCaption\(button,caption\)/);
  assert.match(equipment,/button\.replaceChildren\(\.\.\.\(prefix\?/);
- assert.doesNotMatch(equipment,/button\.append\(caption,pencil\)/);
- assert.doesNotMatch(equipment,/role:'button',tabindex:'0',\s*text:'✎'/);
- assert.match(equipment,/row=el\('div',\{class:'stage-rich-result-edit-wrap'\},\[button,pencil\]\)/);
+ assert.doesNotMatch(equipment,/class:'stage-control-pencil'/);
  assert.match(equipment,/if\(paging\.parentNode===list\)list\.insertBefore\(row,paging\)/);
- assert.match(equipment,/else list\.append\(row\)/);
  assert.match(equipment,/attachPreview\(button,rec,icons,'soul'\)/);
- assert.match(ownerCss,/\.stage-rich-tabs \.stage-action-edit-wrap>\.stage-control-pencil/);
- assert.match(ownerCss,/\.stage-rich-body \.stage-enchant-options\.is-type-options>\.stage-action-edit-wrap/);
- assert.match(forgeCss,/\.stage-rich-body \.stage-enchant-options\.is-element-options>\.stage-action-edit-wrap:nth-child\(7\)/);
  assert.match(equipment,/pickerItemClose','Закрыть настройку','Close item settings'/);
  assert.match(equipment,/tr\('Слот: ','Slot: '\)/);
 });

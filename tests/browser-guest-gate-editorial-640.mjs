@@ -57,9 +57,9 @@ export async function runGuestGateEditorialSmoke(browser,base){
   await page.locator('.modal').getByRole('button',{name:'Войти',exact:true}).click();
   await page.locator('#ownerDock').waitFor({state:'visible'});
   const lead=gate.locator('[data-owner-copy-key="libraryGuestLead"]');
-  const pencil=gate.locator('[data-owner-copy-pencil="libraryGuestLead"]');
-  await pencil.waitFor({state:'visible'});
-  await pencil.click();
+  const caption=gate.locator('[data-owner-copy-key="libraryGuestLead"]');
+  await caption.waitFor({state:'visible'});
+  await caption.dblclick();
   const editor=gate.locator('.account-copy-edit-host [contenteditable]');
   await editor.fill('Библиотека доступна после входа в аккаунт.');
   await editor.press('Tab');
@@ -70,9 +70,9 @@ export async function runGuestGateEditorialSmoke(browser,base){
   assert.equal(JSON.parse(values[key]).ru,'Библиотека доступна после входа в аккаунт.');
   assert.equal(writes.length,1);
   // Account CTA captions are independently owner-editable, but clicking the
-  // sibling pencil must never initiate authentication or mutate the hero.
+  // direct double-click must never initiate authentication or mutate the hero.
   const signInAction=gate.locator('[data-owner-copy-key="accountSignIn"]');
-  await gate.locator('[data-owner-copy-pencil="accountSignIn"]').click();
+  await gate.locator('[data-owner-copy-key="accountSignIn"]').dblclick();
   const loginCaptionInput=gate.locator('.account-copy-edit-host [contenteditable]');
   await loginCaptionInput.fill('Войти в облачные билды');
   await loginCaptionInput.press('Tab');
@@ -104,7 +104,7 @@ export async function runGuestGateEditorialSmoke(browser,base){
   });
   assert.equal(await lead.innerText(),'Your saved builds are available after signing in.');
   // The English registration caption uses the same D1 author flow.
-  await gate.locator('[data-owner-copy-pencil="accountRegister"]').click();
+  await gate.locator('[data-owner-copy-key="accountRegister"]').dblclick();
   await gate.locator('.account-copy-edit-host [contenteditable]').fill('Create an account');
   await gate.locator('.account-copy-edit-host [contenteditable]').press('Tab');
   await page.waitForFunction(()=>document.querySelector(

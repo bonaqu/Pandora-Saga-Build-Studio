@@ -69,11 +69,11 @@ test('guest receives approved custom caption but no editor pencil or editing aff
  });
  const makeHost=()=>({children:[],querySelectorAll(){return this.children},
   append(child){this.children.push(child)}});
- const make=(authenticated)=>Function('window','lang','override','adminEditing','adminToken','h',
+ const make=(authenticated)=>Function('window','lang','override','adminEditing','adminToken','h','ownerCaptionActionGuard',
   source+'\nreturn originCopyLabel;')(
   {PandoraHonorGuide:guide},'ru',overrides,authenticated,authenticated?'token':'',
   (_tag,attrs)=>({dataset:{originEditFor:attrs['data-origin-edit-for']},
-   ...attrs,remove(){}}));
+   ...attrs,remove(){}}),()=>{});
  const guest=makeNode(),guestHost=makeHost();
  make(false)(guest,'raceChoose','Выбрать эту расу','Choose this race',{pencilHost:guestHost});
  assert.equal(guest.textContent,'Выбрать расу');
@@ -82,6 +82,6 @@ test('guest receives approved custom caption but no editor pencil or editing aff
  const admin=makeNode(),adminHost=makeHost();
  make(true)(admin,'raceChoose','Выбрать эту расу','Choose this race',{pencilHost:adminHost});
  assert.equal(admin.textContent,'Выбрать расу');
- assert.equal(adminHost.children.length,1);
+ assert.equal(adminHost.children.length,0,'No companion caption pencil');
  assert.equal(admin.classList.state,true);
 });

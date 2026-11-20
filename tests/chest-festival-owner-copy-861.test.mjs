@@ -58,7 +58,7 @@ test('chest labels remain accessible without exposing owner D1 controls to guest
  assert.match(app,/\['festival','Праздничные предметы','Festive items'\]/);
  assert.match(app,/ownerCopy\('wiki\.chest','slotHeading','Тип экипировки','Equipment type'\)/);
  assert.match(app,/ownerCopyLabel\(slotHeading,'wiki\.chest','slotHeading'/);
- assert.match(app,/if\(adminEditing&&adminToken\)\{\s*slotChips\.append\(h\('button'/);
- assert.match(app,/slotHeading\.dispatchEvent\(new MouseEvent\('dblclick'/);
+ assert.doesNotMatch(app,/wiki-chest-slot-copy-pencil/);
+ assert.match(app,/ownerCopyLabel\(slotHeading,'wiki\.chest','slotHeading'/);
  assert.match(app,/const type=wikiChestRewardFilter\.type,slot=wikiChestRewardFilter\.slot/);
 });
