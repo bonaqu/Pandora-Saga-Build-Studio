@@ -300,7 +300,7 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   const atlasPanel=atlas.locator('.studio-owner-interface-editor')
    .filter({has:page.locator('[data-owner-copy-section="wiki.map.text"]')});
   await atlasPanel.locator('summary').click();
-  assert.equal(await atlasPanel.locator('[data-owner-copy-id]').count(),45);
+  assert.equal(await atlasPanel.locator('[data-owner-copy-id]').count(),54);
   const atlasCount=await atlas.locator('.wiki-map-monsters .wiki-entry').count();
   assert.ok(atlasCount>0);
   await edit('wiki.map.text','monsters','Обитатели локации');
