@@ -193,5 +193,18 @@ test('a stalled Pages response ignores its signal but the recovery job still set
   expected:'2026.11.20.945',repository:'bonaqu/Pandora-Saga-Build-Studio',
   token:'test-temp-token',timeoutMs:20,
   fetcher:async()=>new Promise(()=>{})
- }),/TimeoutError|timed out|aborted/i);
+ }),/deadline exceeded|TimeoutError|timed out|aborted/i);
+});
+
+test('Pages recovery also bounds a stalled JSON body and never requests a rebuild',async()=>{
+ let posts=0;
+ await assert.rejects(()=>recoverStalePages({
+  expected:'2026.11.20.945',repository:'bonaqu/Pandora-Saga-Build-Studio',
+  token:'test-temp-token',timeoutMs:20,
+  fetcher:async(_url,options)=>{
+   if(options.method==='POST')posts++;
+   return {ok:true,json:async()=>new Promise(()=>{})};
+  }
+ }),/deadline exceeded/);
+ assert.equal(posts,0,'A JSON decoder stall must never trigger Pages or D1 writes');
 });

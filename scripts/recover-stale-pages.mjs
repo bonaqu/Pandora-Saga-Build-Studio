@@ -37,34 +37,45 @@ async function boundedOperation(operation,signal){
  });
 }
 
+// AbortSignal.timeout() uses an unref'd Node timer: with a fully stalled
+// adapter the process may exit before our rejection handler runs. Keep the
+// real deadline alive while it is needed, then release the handle promptly.
+async function withDeadline(operation,timeoutMs){
+ const controller=new AbortController();
+ const deadline=setTimeout(()=>controller.abort(
+  new Error('Pages network deadline exceeded')),timeoutMs);
+ try{return await operation(controller.signal)}
+ finally{clearTimeout(deadline)}
+}
+
 export async function recoverStalePages({
  expected,repository,token,fetcher=fetch,clock=Date.now,timeoutMs=12000
 }={}){
  if(typeof expected!=='string'||!RELEASE.test(expected)||
   typeof repository!=='string'||!REPO.test(repository)||
   typeof fetcher!=='function')throw Error('Invalid Pages release recovery inputs');
- const signal=AbortSignal.timeout(timeoutMs);
- const versionResponse=await boundedOperation(()=>fetcher(
-  SITE+'?recovery='+clock(),{cache:'no-store',signal}),signal);
- if(!versionResponse?.ok)throw Error('Public Pages version is unavailable; no rebuild requested');
- const manifest=await boundedOperation(()=>versionResponse.json(),signal);
- const live=manifest?.release;
+ const live=await withDeadline(async signal=>{
+  const response=await boundedOperation(()=>fetcher(
+   SITE+'?recovery='+clock(),{cache:'no-store',signal}),signal);
+  if(!response?.ok)throw Error('Public Pages version is unavailable; no rebuild requested');
+  const manifest=await boundedOperation(()=>response.json(),signal);
+  return manifest?.release;
+ },timeoutMs);
  if(typeof live!=='string'||!RELEASE.test(live))
   throw Error('Malformed public release manifest; no rebuild requested');
  if(compareRelease(live,expected)>=0)return {status:'current',live,expected};
  // Untrusted public text never enters an API URL, filename, shell, or Git ref.
  if(typeof token!=='string'||!token)
   throw Error('Pages rebuild permissions unavailable');
- const requestSignal=AbortSignal.timeout(timeoutMs);
  const endpoint='https://api.github.com/repos/'+repository+'/pages/builds';
- const buildResponse=await boundedOperation(()=>fetcher(endpoint,{
-  method:'POST',signal:requestSignal,
+ const buildResponse=await withDeadline(signal=>boundedOperation(()=>fetcher(endpoint,{
+  method:'POST',signal,
   headers:{
    Accept:'application/vnd.github+json',
    'X-GitHub-Api-Version':'2026-03-10',
    Authorization:'Bearer '+token
   }
- }),requestSignal);
+ }),signal),timeoutMs);
  if(buildResponse?.status!==201)
   throw Error('GitHub Pages rebuild rejected (HTTP '+String(buildResponse?.status||0)+')');
  return {status:'requested',live,expected};
