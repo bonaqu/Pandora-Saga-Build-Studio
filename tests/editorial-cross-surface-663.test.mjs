@@ -83,7 +83,9 @@ test('shared owner editor reuses CAS, blur and Escape without wrapping buttons',
  assert.match(app,/function refreshVisibleOwnerCopy\(recordKey\)/);
  assert.match(app,/\$\('pathSkillStatus'\)/);
  assert.match(app,/\$\('pathSkillSearch'\)/);
- assert.match(app,/ownerInterfaceEditor\('skill-ui'/);
+ assert.match(app,/reconcilePanel\('ownerSkillSearchCopy','skill-ui'/);
+ assert.match(app,/panel=ownerInterfaceEditor\(section,rows,headingRu,headingEn\)/);
+ assert.doesNotMatch(app,/\$\('ownerSkillSearchCopy'\)\?\.remove\(\)/);
  assert.match(app,/ownerInterfaceEditor\('stats-ui'/);
 });
 

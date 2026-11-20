@@ -82,8 +82,11 @@ test('skill details include source-backed mana, cast, cooldown and exact branch 
   'skill.element','skill.powerStat'])
   assert.ok(ui.includes(field),field);
  assert.match(ui,/Требования по веткам/);
- assert.match(ui,/tr\(api,' · доступно ',' · potential '\)\+value/);
- assert.match(ui,/tr\(api,' · освоено ',' · trained '\)\+green/);
+ assert.match(ui,/reqList\.append\(requirementRow\(api,api\.branchName\(req\.branch\)/);
+ assert.match(ui,/'pathReqPotential','доступно','potential',value/);
+ assert.match(ui,/'pathReqTrained','освоено','trained',green/);
+ assert.match(ui,/path-requirement-value',text:String\(value\)/,
+  'The number remains a separate, source-derived DOM node');
  assert.match(app,/skillWiki:skill=>wikiLink/);
  assert.match(ui,/api\.skillWiki\(skill\)/);
 });
@@ -126,10 +129,12 @@ test('red locked region shows OS skills beyond the class skill cap',()=>{
 });
 test('branch count, green mastery and group totals update on input, without a new header row',()=>{
  const ui=read('pandora-studio-hero-path.js');
- for(const part of ['groupCount.textContent=groupSummary()',
+ for(const part of ['refreshGroupSummary();',
   "branchCount.textContent=cap>0?",
   'input.value=String(M.branchMastery(state,key,innate,caps))'])
   assert.ok(ui.includes(part),part);
+ assert.doesNotMatch(ui,/groupCount\.textContent=groupSummary\(\)/,
+  'Live D1 captions must survive changing a branch allocation');
 });
 
 test('milestones are bounded vertical ticks in one shared bar with hover descriptions',()=>{

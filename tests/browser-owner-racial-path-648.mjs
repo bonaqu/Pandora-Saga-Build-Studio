@@ -124,7 +124,11 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   await page.waitForFunction(()=>document.documentElement.lang==='en');
   await openSpecial();
   const pathEnHelp=page.locator('#ownerPathHelpCopy');
-  await pathEnHelp.locator('summary').click();
+  // Locale changes preserve the expanded owner panel; clicking Summary
+  // unconditionally would collapse an already-open panel.
+  if(!await pathEnHelp.evaluate(el=>el.open))
+   await pathEnHelp.locator('summary').click();
+  assert.equal(await pathEnHelp.evaluate(el=>el.open),true);
   const enRacialHelp=pathEnHelp.locator('.studio-owner-interface-row').filter({hasText:'Racial branch'});
   await enRacialHelp.locator('.studio-owner-interface-pencil').click();
   const enHelpEdit=enRacialHelp.locator('[data-owner-text-field]');

@@ -226,6 +226,29 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(await page.locator('.path-sections .path-tab-owner-wrap>.path-tab-pencil').count(),2);
   assert.equal(await page.locator('.path-sections [role="tab"] .path-tab-pencil').count(),0);
   await page.locator('#pathSkillsTab').click();
+  // A live owner search/skill-label edit must survive a repeated Path render.
+  // No D1 mutation is needed: Escape must restore the unsaved draft safely.
+  const searchCopy=page.locator('#ownerSkillSearchCopy');
+  await searchCopy.waitFor({state:'visible'});
+  await searchCopy.locator('summary').click();
+  const caption=searchCopy.locator('.studio-owner-interface-value').first();
+  await caption.dblclick();
+  const draft=searchCopy.locator('[data-owner-text-field]').first();
+  await draft.waitFor({state:'visible'});
+  await draft.fill('Тест незавершённого текста');
+  await page.evaluate(()=>document.getElementById('pathSkillsTab').click());
+  assert.equal(await draft.innerText(),'Тест незавершённого текста',
+   'Path re-render must not destroy an active owner copy editor');
+  await draft.press('Escape');
+  await page.locator('#pathGrowthTab').click();
+  assert.equal(await searchCopy.count(),1,
+   'The hidden Skills owner panel remains mounted when Growth is open');
+  await page.locator('#pathSkillsTab').click();
+  assert.equal(await searchCopy.count(),1);
+  assert.equal(await searchCopy.evaluate(node=>node.open),true,
+   'The compact owner panel keeps its expanded state across Path navigation');
+  assert.equal(await page.locator('#ownerPathMetricsCopy').count(),1,
+   '18 source-independent metric captions share a collapsed editor');
   const authoredPencil=page.locator('#pathSkillGallery .path-owner-pencil').first();
   await authoredPencil.waitFor({state:'visible'});
   assert.equal(await authoredPencil.getAttribute('type'),'button');

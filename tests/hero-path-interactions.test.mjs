@@ -293,13 +293,15 @@ test('class-limited skills keep individual numbers in the separate details list'
  const ticks=walk(f.target).filter(x=>String(x.className).includes('path-unlock-notch'));
  assert.deepEqual(ticks.map(x=>x.attributes['data-milestone-points']),['8','12']);
  const details=walk(f.target).find(x=>x.className==='path-unlock-details');
- const captions=walk(details).filter(x=>x.tag==='small').map(x=>x.textContent);
+ const captions=walk(details).filter(x=>x.tag==='small').map(x=>
+  walk(x).map(child=>child.textContent||'').join(''));
  assert.ok(captions.some(x=>x.includes('8 оч.')));
  assert.ok(captions.some(x=>x.includes('12 оч.')&&x.includes('выше лимита')));
  const options=walk(details).filter(x=>x.tag==='button');
  options[1].listeners.click();assert.equal(selected.id,981);
  const heading=walk(f.target).find(x=>String(x.className).includes('game-tree-head active'));
- assert.ok(walk(heading).some(x=>x.tag==='small'&&x.textContent.includes('освоено')));
+ assert.ok(walk(heading).some(x=>x.tag==='small'&&
+  walk(x).some(child=>String(child.textContent).includes('освоено'))));
 });
 
 test('requirements above 90 are visible only in the accessible list, never off the fixed track',()=>{
@@ -458,7 +460,8 @@ test('Tactics shows 44 trained / 44 learned / 29 invested, then 0 trained but 44
   root.PandoraHeroPath.viewGrowth(f.target,f.api);
   const head=walk(f.target).find(el=>el.attributes?.['data-path-group']==='tactics');
   assert.ok(head,'Tactics header must exist');
-  return head.children.find(el=>el.tag==='small')?.textContent;
+  const summary=head.children.find(el=>el.tag==='small');
+  return walk(summary).map(el=>el.textContent||'').join('');
  };
  assert.equal(count(),'освоено 44 · изучено 44 · вложено 29');
  f.state.masteryAuto=false;
@@ -908,4 +911,71 @@ test('click and hold controls bind authorial aria texts without editing point co
   item.attribute==='aria-label'&&item.suffix.endsWith(' на один')));
  assert.ok(seen.filter(item=>item.key==='pathHoldRepeatAria').every(item=>
   item.attribute==='aria-description'));
+});
+
+test('group totals update only numeric spans without deleting edited D1 captions',()=>{
+ const {api,target,state}=fixture('CLERIC','prayer','benevolence');
+ const copied=[];
+ api.bindCopy=(node,key,ru,en,attr='text',suffix='',prefix='')=>{
+  copied.push({node,key,attr,suffix,prefix});
+  const customized=key.startsWith('pathGroup')?'CUSTOM_'+key:ru;
+  if(attr==='text')node.textContent=prefix+customized+suffix;
+  else node.setAttribute(attr,prefix+customized+suffix);
+ };
+ root.PandoraHeroPath.viewGrowth(target,api);
+ const group=walk(target).find(el=>el.attributes?.['data-path-group']==='prayer');
+ const summary=walk(group).find(el=>el.className==='path-group-summary');
+ assert.ok(summary);
+ const labels=summary.children.filter(el=>el.className==='path-group-summary-copy');
+ const values=summary.children.filter(el=>el.className==='path-group-summary-value');
+ assert.deepEqual(labels.map(el=>el.textContent),[
+  'CUSTOM_pathGroupTrained ',' · CUSTOM_pathGroupLearned ',' · CUSTOM_pathGroupInvested '
+ ]);
+ assert.equal(values.length,3);
+ const originals=[...labels];const startCount=values.map(el=>el.textContent);
+ const range=walk(target).find(el=>el.attributes?.['data-branch-control']==='benevolence:potential-range');
+ assert.ok(range);
+ range.value=String(Number(range.value)+10);
+ range.listeners.input();
+ assert.equal(Number(state.points.benevolence),10);
+ assert.ok(values.some((el,i)=>el.textContent!==startCount[i]),
+  'At least one current group value must respond to a real investment');
+ assert.ok(labels.every((el,i)=>el===originals[i]&&el.textContent.includes('CUSTOM_')),
+  'Owner copy must remain bound and mounted after the slider updates');
+ assert.equal(copied.filter(c=>c.key.startsWith('pathGroup')).length,15,
+  'Each of five group summaries binds exactly three authorial captions');
+});
+
+test('requirements use bilingual editable fragments while source numbers and branches are immutable',()=>{
+ const {api}=fixture('CLERIC','prayer','benevolence');
+ const bound=[];
+ api.bindCopy=(node,key,ru,en,attr='text',suffix='',prefix='')=>{
+  bound.push({node,key,attr,prefix,suffix});
+  if(attr==='text')node.textContent=prefix+(api.lang==='en'?en:ru)+suffix;
+  else node.setAttribute(attr,prefix+(api.lang==='en'?en:ru)+suffix);
+ };
+ api.catalogReady=true;api.filter='all';api.query='';
+ api.icon=()=>null;api.hover=()=>{};api.onInspect=()=>{};
+ const skill={id:901235,name:'Check requirement',classes:{CLERIC:true},
+  branch:'benevolence',learnable:true,reqs:[{branch:'benevolence',amount:10}]};
+ api.skillCatalog=[skill];api.selectedSkill=skill;
+ const gallery=new BrowserElement('root'),details=new BrowserElement('details');
+ root.PandoraHeroPath.viewSkills(gallery,details,api);
+ const line=walk(details).find(node=>node.className==='path-skill-requirement-row');
+ assert.ok(line);
+ const names=line.children.filter(el=>el.className==='path-requirement-name');
+ const numbers=line.children.filter(el=>el.className==='path-requirement-value');
+ assert.equal(names.length,1);
+ assert.equal(names[0].textContent,'benevolence');
+ assert.deepEqual(numbers.map(el=>el.textContent),[
+  '10',String(points.branchBase(api.innate,'benevolence')),
+  String(points.branchPotential(api.state,'benevolence',api.innate,api.branchCaps)),
+  String(points.branchMastery(api.state,'benevolence',api.innate,api.branchCaps))
+ ]);
+ assert.deepEqual(line.children.filter(el=>el.className==='path-requirement-caption')
+  .map(el=>el.textContent),[' · порог ',' · старт ',' · доступно ',' · освоено ']);
+ assert.deepEqual(bound.filter(x=>x.key.startsWith('pathReq')).map(x=>x.key),[
+  'pathReqThreshold','pathReqInnate','pathReqPotential','pathReqTrained'
+ ]);
+ assert.ok(!bound.some(x=>x.key.includes('901235')||x.key.includes('benevolence')));
 });

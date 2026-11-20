@@ -167,7 +167,7 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
    'Тестовый монстр','Editing a caption must not erase an entered monster name');
   assert.equal(await monsterForm.locator('[role="textbox"][aria-label="Название монстра EN"]').textContent(),
    'Test monster');
-  const monsterSave=monsterForm.getByRole('button',{name:'Добавить монстра в энциклопедию'});
+  const monsterSave=monsterForm.getByRole('button',{name:'Добавить монстра в энциклопедию',exact:true});
   await monsterSave.click();
   await page.waitForFunction(()=>document.querySelector('.wiki-page')
     ?.textContent.includes('Тестовый монстр'),null,{timeout:18000});

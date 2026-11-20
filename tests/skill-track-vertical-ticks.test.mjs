@@ -26,9 +26,10 @@ test('unlock thresholds are narrow vertical ticks, never permanent diamonds',()=
 test('source-backed tooltip includes ability name, description, required points and MP cost only when known',()=>{
  for(const fragment of ["text:threshold+tr(api,' оч. ветки',' branch pts')",
   "text:skill.name||tr(api,'Умение','Skill')",
-  "text:skill.desc||tr(api,'Описание отсутствует.','No description available.')",
+  "if(skill.desc)info.append(make('small',{text:skill.desc}))",
+  "bindPathCopy(api,absent,'pathMilestoneNoDesc'",
   'Number.isFinite(skill.mana)&&skill.mana>=0',
-  "tr(api,'Затрат ОМ: ','MP cost: ')+skill.mana"])
+  "bindPathCopy(api,label,'pathMilestoneMana','Затрат ОМ:','MP cost:','text',' ')"])
   assert.ok(ui.includes(fragment),fragment);
  assert.match(ui,/if\(!Number\.isFinite\(threshold\)\|\|threshold<0\|\|threshold>visualMax\)continue/);
  assert.match(ui,/pointermove/);

@@ -81,6 +81,16 @@ const bindPathCopy=(api,node,key,ru,en,attribute='text',suffix='',prefix='')=>{
  }
  return node;
 };
+function requirementRow(api,name,metrics){
+ const row=make('p',{class:'path-skill-requirement-row'});
+ row.append(make('span',{class:'path-requirement-name',text:name}));
+ for(const [key,ru,en,value] of metrics){
+  const caption=make('span',{class:'path-requirement-caption'});
+  bindPathCopy(api,caption,key,ru,en,'text',' ',' · ');
+  row.append(caption,make('span',{class:'path-requirement-value',text:String(value)}));
+ }
+ return row;
+}
 // Match the established Origin stat button behavior: one point per click,
 // continuous increments after holding 340 ms, repeat every 85 ms.
 // During a hold we update state in place; pointerup commits a single rerender.
@@ -352,16 +362,26 @@ function viewGrowth(target,api){
   const groupButton=make('button',{type:'button',class:'game-tree-head'+(selectedGroup===group.id?' active':''),
    'aria-expanded':String(selectedGroup===group.id),'data-path-group':group.id,
    onclick:()=>api.onGroup(group.id)});
-  const groupSummary=()=>{
-   const spent=branchKeys.reduce((sum,key)=>sum+M.potential(state,key),0);
-   const mastered=branchKeys.reduce((sum,key)=>sum+M.branchMastery(state,key,innate,caps),0);
-   const learned=branchKeys.reduce((sum,key)=>sum+M.branchPotential(state,key,innate,caps),0);
-   // Green trained, total learned branch points and extra spent points differ.
-   return tr(api,'освоено ','trained ')+mastered+
-    tr(api,' · изучено ',' · learned ')+learned+
-    tr(api,' · вложено ',' · invested ')+spent;
+  // Game totals are immutable spans; never overwrite live D1 captions when
+  // a slider or mastery control changes only its numerical values.
+  const groupCount=make('small',{class:'path-group-summary'}),groupValues=[];
+  for(const [copyKey,ru,en] of [
+   ['pathGroupTrained','освоено','trained'],
+   ['pathGroupLearned','изучено','learned'],
+   ['pathGroupInvested','вложено','invested']
+  ]){
+   const caption=make('span',{class:'path-group-summary-copy'});
+   bindPathCopy(api,caption,copyKey,ru,en,'text',' ',
+    groupValues.length?' · ':'');
+   const value=make('span',{class:'path-group-summary-value'});
+   groupCount.append(caption,value);groupValues.push(value);
+  }
+  const refreshGroupSummary=()=>{
+   groupValues[0].textContent=String(branchKeys.reduce((total,key)=>total+M.branchMastery(state,key,innate,caps),0));
+   groupValues[1].textContent=String(branchKeys.reduce((total,key)=>total+M.branchPotential(state,key,innate,caps),0));
+   groupValues[2].textContent=String(branchKeys.reduce((total,key)=>total+M.potential(state,key),0));
   };
-  const groupCount=make('small',{text:groupSummary()});
+  refreshGroupSummary();
   const captionKey='group.'+group.id;
   const name=api.copyLabel?.(captionKey,group.ru,group.en)||
    (api.lang==='en'?group.en:group.ru);
@@ -499,12 +519,16 @@ function viewGrowth(target,api){
      value:String(level),disabled:!available,
      'aria-label':tr(api,'Прокачка ветки ','Allocated branch level: ')+api.branchName(key),
      'data-branch-control':key+':potential-range'});
+    bindPathCopy(api,range,'pathRangeAria','Прокачка ветки',
+     'Allocated branch level:','aria-label',' '+api.branchName(key));
     track.append(range);paint();
     const numeric=make('input',{type:'number',min:'0',
      max:String(Math.max(points,Math.max(0,cap-base))),step:'1',
      value:String(points),class:'path-potential-number',disabled:!available,
      'aria-label':tr(api,'Точное количество вложенных очков ','Exact branch points: ')+api.branchName(key),
      'data-branch-control':key+':potential-number'});
+    bindPathCopy(api,numeric,'pathExactAria','Точное количество вложенных очков',
+     'Exact branch points:','aria-label',' '+api.branchName(key));
     const restorePotential=()=>{
      const current=String(M.potential(state,key));
      range.value=String(M.branchPotential(state,key,innate,caps));numeric.value=current;
@@ -520,12 +544,11 @@ function viewGrowth(target,api){
       M.branchPotential(state,key,innate,caps)+' / '+cap:
       target>0?target+' / 0':'—';
 
-     groupCount.textContent=groupSummary();
+     refreshGroupSummary();
      input.value=String(M.branchMastery(state,key,innate,caps));
      root.PandoraNonCredentialGuard?.sync(input);
      input.max=String(M.branchPotential(state,key,innate,caps));
-     const potentialCaption=editor.querySelector('.path-track-limit-value');
-     if(potentialCaption)potentialCaption.textContent=tr(api,'Лимит (оч.): ','Limit (pts): ')+cap;
+     // The class limit is constant while dragging; preserve its D1 caption.
      paint();
      // Committing rebuilds the UI so all branch totals stay synchronized.
     };
@@ -582,11 +605,19 @@ function viewGrowth(target,api){
         row.append(img);
        }
        const info=make('div',{class:'path-milestone-copy'});
-       info.append(make('b',{text:skill.name||tr(api,'Умение','Skill')}),
-        make('small',{text:skill.desc||tr(api,'Описание отсутствует.','No description available.')}));
-       if(Number.isFinite(skill.mana)&&skill.mana>=0)
-        info.append(make('small',{class:'path-milestone-cost',
-         text:tr(api,'Затрат ОМ: ','MP cost: ')+skill.mana}));
+       info.append(make('b',{text:skill.name||tr(api,'Умение','Skill')}));
+       if(skill.desc)info.append(make('small',{text:skill.desc}));
+       else{
+        const absent=make('small');
+        bindPathCopy(api,absent,'pathMilestoneNoDesc','Описание отсутствует.','No description available.');
+        info.append(absent);
+       }
+       if(Number.isFinite(skill.mana)&&skill.mana>=0){
+        const cost=make('small',{class:'path-milestone-cost'}),label=make('span');
+        bindPathCopy(api,label,'pathMilestoneMana','Затрат ОМ:','MP cost:','text',' ');
+        cost.append(label,make('span',{text:String(skill.mana)}));
+        info.append(cost);
+       }
        row.append(info);
        preview.append(row);
       }
@@ -627,8 +658,9 @@ function viewGrowth(target,api){
        const gate=readiness(skill,api,new Set(),skillIndex);
        const button=make('button',{type:'button',class:'path-unlock-skill'+
         (mark.locked?' unreachable':gate.learned?' reached':''),
-        'aria-label':(skill.name||tr(api,'Умение','Skill'))+', '+mark.threshold+tr(api,' оч.',' pts'),
         onclick:()=>api.onSkill(skill)});
+       bindPathCopy(api,button,'pathUnlockPoints','оч.','pts','aria-label','',
+        (skill.name||tr(api,'Умение','Skill'))+', '+mark.threshold+' ');
        const icon=api.icon(skill.branch,skill);
        if(icon){
         const img=make('img',{src:icon,alt:''});
@@ -636,9 +668,19 @@ function viewGrowth(target,api){
         button.append(img);
        }
        const copy=make('span',{class:'path-unlock-copy'});
-       copy.append(make('strong',{text:skill.name||tr(api,'Умение','Skill')}),
-        make('small',{text:mark.threshold+tr(api,' оч.',' pts')+
-         (mark.locked?tr(api,' · выше лимита',' · above limit'):gate.learned?tr(api,' · доступно',' · available'):'')}));
+       const status=make('small',{class:'path-unlock-status'});
+       status.append(make('span',{text:String(mark.threshold)}));
+       const unit=make('span');
+       bindPathCopy(api,unit,'pathUnlockPoints','оч.','pts','text','',' ');
+       status.append(unit);
+       if(mark.locked||gate.learned){
+        const word=make('span');
+        bindPathCopy(api,word,mark.locked?'pathUnlockOverCap':'pathUnlockReady',
+         mark.locked?'выше лимита':'доступно',
+         mark.locked?'above limit':'available','text','',' · ');
+        status.append(word);
+       }
+       copy.append(make('strong',{text:skill.name||tr(api,'Умение','Skill')}),status);
        button.append(copy);list.append(button);
       }
      }
@@ -649,6 +691,8 @@ function viewGrowth(target,api){
      value:String(trained),disabled:auto||!available,
      'aria-label':tr(api,'Мастерство ','Mastery: ')+api.branchName(key),
      'data-branch-control':key+':mastery-number'});
+    bindPathCopy(api,input,'pathMasteryAria','Мастерство',
+     'Mastery:','aria-label',' '+api.branchName(key));
     input.addEventListener('change',()=>{
      const raw=input.value.trim(),requested=raw===''?0:Number(raw);
      if(!Number.isInteger(requested)||requested<0||
@@ -669,7 +713,7 @@ function viewGrowth(target,api){
       !api.onMastery(key,next,false))return false;
      input.value=String(M.branchMastery(state,key,innate,caps));
      root.PandoraNonCredentialGuard?.sync(input);
-     groupCount.textContent=groupSummary();paint();
+     refreshGroupSummary();paint();
      return M.branchMastery(state,key,innate,caps)!==before;
     };
     const pointField=(name,helpKey,ruHelp,enHelp,field,mastery=false)=>{
@@ -716,13 +760,12 @@ function viewGrowth(target,api){
      'aria-label':tr(api,'Начальная прокачка класса: ','Starting branch points: ')+base}):null;
     if(baseline)bindPathCopy(api,baseline,'innateBaselineAria',
      'Начальная прокачка класса:','Starting branch points:','aria-label',' '+String(base));
+    const limitCaption=make('span',{class:'path-track-limit-value'});
+    bindPathCopy(api,limitCaption,'pathLimitPoints','Лимит (оч.):',
+     'Limit (pts):','text',' '+String(cap));
     const legend=make('div',{class:'path-track-legend','aria-hidden':'true'},[
      make('span',{text:'0'}),
-     make('span',{class:'path-track-limit'},[
-      make('span',{class:'path-track-limit-value',text:api.lang==='en'?
-       'Limit (pts): '+cap:'Лимит (оч.): '+cap}),
-      ...(baseline?[baseline]:[])
-     ]),
+     make('span',{class:'path-track-limit'},[limitCaption,...(baseline?[baseline]:[])]),
      make('span',{text:String(visualMax)})
     ]);
     editor.append(track,legend);
@@ -930,20 +973,23 @@ function viewSkills(target,details,api){
      const available=M.MELEE.reduce((sum,key)=>sum+
       M.branchPotential(api.state,key,api.innate,api.branchCaps),0);
      const mastered=M.meleeGroupTrained(api.state,api.innate,api.branchCaps);
-     reqList.append(make('p',{text:api.branchName('melee')+
-      tr(api,' · порог ',' · threshold ')+req.amount+
-      tr(api,' · предел ',' · class cap ')+cap+
-      tr(api,' · изучено ',' · allocated ')+available+
-      tr(api,' · освоено ',' · trained ')+mastered}));
+     reqList.append(requirementRow(api,api.branchName('melee'),[
+      ['pathReqThreshold','порог','threshold',req.amount],
+      ['pathReqClassCap','предел','class cap',cap],
+      ['pathReqAllocated','изучено','allocated',available],
+      ['pathReqTrained','освоено','trained',mastered]
+     ]));
      continue;
     }
     const base=M.branchBase(api.innate,req.branch);
     const value=M.branchPotential(api.state,req.branch,api.innate,api.branchCaps);
     const green=M.branchMastery(api.state,req.branch,api.innate,api.branchCaps);
-    reqList.append(make('p',{text:api.branchName(req.branch)+tr(api,' · порог ',' · threshold ')+req.amount+
-     tr(api,' · старт ',' · innate ')+base+
-     tr(api,' · доступно ',' · potential ')+value+
-     tr(api,' · освоено ',' · trained ')+green}));
+    reqList.append(requirementRow(api,api.branchName(req.branch),[
+      ['pathReqThreshold','порог','threshold',req.amount],
+      ['pathReqInnate','старт','innate',base],
+      ['pathReqPotential','доступно','potential',value],
+      ['pathReqTrained','освоено','trained',green]
+     ]));
    }
    details.append(reqList);
   }
