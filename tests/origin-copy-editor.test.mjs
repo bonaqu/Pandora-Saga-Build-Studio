@@ -38,6 +38,9 @@ test('Origin tabs and section titles have stable copy edit targets',()=>{
  assert.match(app,/originCopyLabel\(select,chosen\?'raceChosen':'raceChoose'/);
  assert.doesNotMatch(app,/data-origin-edit-for/);
  assert.match(css,/\.origin-copy-editable:not\(button\)/);
+ assert.doesNotMatch(css,/\.origin-copy-editable:not\(button\)::after/,
+  'The shared owner-editable class must not paint a pencil after plain text');
+ assert.doesNotMatch(css,/\.origin-copy-pencil\{/);
  assert.match(css,/\.origin-copy-input-slot\{/);
 });
 
