@@ -105,7 +105,7 @@ test('40 NPC trade copy captions use stable D1 RU/EN and preserve real limits',(
 });
 
 test('created-entity deletion copy uses four distinct safe RU/EN keys',()=>{
- const app=read('pandora-studio-app.js');
+ const app=readFileSync(new URL('pandora-studio-app.js',root),'utf8');
  const begin=app.indexOf('const wikiNpcTradeRows=');
  const end=app.indexOf('const wikiNpcTradeByKey=',begin);
  const block=app.slice(begin,end);
