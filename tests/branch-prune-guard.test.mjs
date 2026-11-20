@@ -17,7 +17,10 @@ test('stale-branch cleanup has a closed, audited SHA allowlist and never targets
  const yml=read('.github/workflows/prune-audited-branches.yml');
  assert.match(yml,/contents: write/);
  assert.match(yml,/refs\/heads\/bonaqu_projects/);
- assert.match(yml,/paths:\s*\n\s*- \.github\/workflows\/prune-audited-branches\.yml/);
+ assert.match(yml,/workflow_dispatch:/);
+ assert.match(yml,/inputs\.confirm == 'DELETE_AUDITED_BRANCHES'/);
+ assert.doesNotMatch(yml,/^\s*push:/m);
+ assert.doesNotMatch(yml,/^\s*pull_request:/m);
  assert.doesNotMatch(yml,/^\s*schedule:/m);
  assert.doesNotMatch(yml,/CLOUDFLARE|wrangler|D1_DATABASE|--force/);
 });

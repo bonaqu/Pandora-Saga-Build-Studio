@@ -1,12 +1,14 @@
 name: Prune audited stale branches (one-time or manual)
 
 on:
-  # Only once on installation into the protected main branch.
-  push:
-    branches: [bonaqu_projects]
-    paths:
-      - .github/workflows/prune-audited-branches.yml
+  # Manual only. Old #615 experiments must not be deleted as a side effect
+  # of an unrelated editorial release or a failed CI retry.
   workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type DELETE_AUDITED_BRANCHES after reviewing the SHA audit'
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -17,7 +19,7 @@ concurrency:
 
 jobs:
   prune:
-    if: ${{ github.repository == 'bonaqu/Pandora-Saga-Build-Studio' && github.ref == 'refs/heads/bonaqu_projects' }}
+    if: ${{ github.repository == 'bonaqu/Pandora-Saga-Build-Studio' && github.ref == 'refs/heads/bonaqu_projects' && inputs.confirm == 'DELETE_AUDITED_BRANCHES' }}
     runs-on: ubuntu-latest
     timeout-minutes: 4
     steps:
