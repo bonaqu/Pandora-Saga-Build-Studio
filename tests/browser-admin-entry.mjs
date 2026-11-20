@@ -773,6 +773,13 @@ export async function runAdminEntrySmoke(browser,base){
   assert.ok(structures.every(x=>!x.pencilInsideLabel&&x.pencilCount===0),
    'Checkbox captions must have no edit pencil');
   const formattingChoice=choices.first();
+  // #390: owner captions are independent of disabled checkboxes. Browser
+  // dblclick on a span INSIDE a disabled native label is refused as disabled.
+  assert.equal(await formattingChoice.locator('.os-sync-formatting-option').evaluate(
+   node=>node.tagName),'DIV');
+  assert.equal(await formattingChoice.locator('input[type="checkbox"]').isDisabled(),true);
+  assert.equal(await formattingChoice.locator('.os-sync-formatting-option>span').first().isEnabled(),true,
+   'Owner text stays editable even while its gameplay checkbox is locked');
   await formattingChoice.evaluate(el=>{
    el.closest('.os-sync-review-steps').hidden=false;
    el.closest('.os-sync-formatting-review').hidden=false;

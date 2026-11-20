@@ -14,6 +14,11 @@ test('catalog checkbox captions edit directly without changing native input beha
  assert.match(catalog,/caption\.addEventListener\('click'/);
  assert.match(catalog,/if\(pending\)\{clearTimeout\(pending\);pending=null;return\}/);
  assert.match(catalog,/box\.click\(\)/);
+ assert.match(catalog,/caption\.closest\('\.os-sync-formatting-option'\)/);
+ assert.match(catalog,/const formattingOption=h\(canEdit\?'div':'label'/);
+ assert.match(catalog,/const russianOption=h\(canEdit\?'div':'label'/);
+ // A disabled native checkbox must never disable a visible owner text span.
+ // Players still retain the original native label hit-area for ordinary taps.
  for(const type of ['formatting','russian']){
   assert.ok(catalog.includes("const "+type+"CountLabel=h('small',{class:'os-sync-choice-count'})"));
   assert.ok(catalog.includes("const "+type+"Choice=h('div',{class:'os-sync-choice-editor'},["+type+"Option])"));

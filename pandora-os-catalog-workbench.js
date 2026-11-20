@@ -62,7 +62,10 @@
       editLabel(node,key,ru,en);
       return h('div',{class:'os-sync-copy-field'},[node]);
     };
-    // Preserve a native checkbox's single-click behavior while suppressing
+    // In player mode the caption stays inside a native label. In owner mode,
+    // the same text is independent of a disabled checkbox, otherwise browsers
+    // regard the nested editable text as disabled and block double-click.
+    // Preserve a checkbox's single-click behavior while suppressing
     // both toggles from a genuine owner double-click on its written caption.
     const choiceEditor=(caption,key,ru,en)=>{
       if(!canEdit||typeof editLabel!=='function')return null;
@@ -76,7 +79,7 @@
         if(pending){clearTimeout(pending);pending=null;return}
         pending=setTimeout(()=>{
           pending=null;
-          const box=caption.closest('label')?.querySelector('input[type="checkbox"]');
+          const box=caption.closest('.os-sync-formatting-option')?.querySelector('input[type="checkbox"]');
           if(caption.isConnected&&box&&!box.disabled)box.click();
         },500);
       },true);
@@ -313,7 +316,7 @@
      'formattingExplanation',
      'После сверки с игровым сайтом можно восстановить оригинальные переносы. Другие поля не меняются. Понадобятся галочка и подтверждение публикации.',
      'After comparing the live game data, original line breaks can be restored. Other fields remain unchanged. This requires selecting the checkbox and confirming publication.');
-    const formattingOption=h('label',{class:'os-sync-formatting-option'},
+    const formattingOption=h(canEdit?'div':'label',{class:'os-sync-formatting-option'},
       [formattingToggle,formattingLabel,formattingCountLabel]);
     const formattingChoice=h('div',{class:'os-sync-choice-editor'},[formattingOption]);
     choiceEditor(formattingLabel,'formattingLabel',formattingRu,formattingEn);
@@ -336,7 +339,7 @@
     const russianDetails=h('details',{class:'os-sync-russian-preview'},[
       h('summary',{text:copy('russianPreviewSummary','Посмотреть русские тексты','Preview Russian texts')}),russianList
     ]);
-    const russianOption=h('label',{class:'os-sync-formatting-option'},
+    const russianOption=h(canEdit?'div':'label',{class:'os-sync-formatting-option'},
       [russianToggle,russianLabel,russianCountLabel]);
     const russianChoice=h('div',{class:'os-sync-choice-editor'},[russianOption]);
     choiceEditor(russianLabel,'russianDescriptionsLabel',russianRu,russianEn);
