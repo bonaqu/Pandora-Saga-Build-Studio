@@ -136,3 +136,17 @@ test('unrelated record keys remain independent rather than globally blocking the
  assert.equal(env.queue.size,0);
  assert.equal(env.busy(),false);
 });
+
+test('Wiki record queue opts into ambiguous readback only for explicit creation flows',async()=>{
+ const captured=[];
+ const env=environment({apiRequest:async(...args)=>captured.push(args)});
+ const npc='owner-npc-0011223344556677';
+ await env.save('npc',npc,{name:'Торговец',nameEn:'Merchant',maps:['el-beht']},
+  {verifyUncertain:true});
+ await env.field('monster',600,'name','Койот');
+ assert.equal(captured.length,2);
+ assert.equal(captured[0][2],'test');
+ assert.deepEqual(captured[0][3],{verifyUncertain:true});
+ assert.deepEqual(captured[1][3],{verifyUncertain:false});
+ assert.equal(env.ownerEdits.length,2);
+});

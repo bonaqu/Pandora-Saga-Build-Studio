@@ -316,8 +316,10 @@ test('reported monster links rebase independent rows but reject stale edits to t
  const persist=Function('wikiIndex','mapRoster','wt','saveWikiRecordPatch',body+
   ';return persistRosterLink;')(
   {records:type=>records[type]},rec=>rec.roster??rec.reportedSpawns??[],
-  (ru,en)=>ru,(type,id,make)=>{
+  (ru,en)=>ru,(type,id,make,options)=>{
    assert.equal(type,'map');assert.equal(id,'el-beht');
+   assert.deepEqual(options,{verifyUncertain:true},
+    'Map linking must verify D1 state if its CAS receipt is lost');
    const writing=chain.catch(()=>{}).then(()=>{
     const patch=make({});Object.assign(record,patch);writes++;
    });
