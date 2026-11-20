@@ -1,37 +1,4 @@
-/* Owner edits live beside game actions, never inside nested interactive buttons.
-   The tablist retains its original number of logical tabs via presentation hosts. */
-.stage-attribute-tabs>.stage-book-tab-owner,
-.path-sections>.path-tab-owner-wrap{
- position:relative;display:flex;align-items:stretch;min-width:0
-}
-.stage-attribute-tabs>.stage-book-tab-owner>button[role="tab"],
-.path-sections>.path-tab-owner-wrap>button[role="tab"]{
- display:flex;align-items:center;justify-content:center;gap:4px;
- flex:1 1 auto;min-width:0;width:100%;padding-inline-end:26px
-}
-.stage-attribute-tabs>.stage-book-tab-owner>.stage-book-tab-pencil,
-.path-sections>.path-tab-owner-wrap>.path-tab-pencil{
- position:absolute;z-index:2;top:50%;right:4px;transform:translateY(-50%);
- display:inline-flex;align-items:center;justify-content:center;
- width:20px;min-width:20px;height:22px;min-height:22px;
- margin:0;padding:1px;border:1px solid #957247;border-radius:4px;
- background:#392719;color:#f0cf99;cursor:pointer;
- font:650 11px/1 Manrope,Arial,sans-serif;opacity:.9
-}
-.stage-attribute-tabs>.stage-book-tab-owner>.stage-book-tab-pencil:focus-visible,
-.path-sections>.path-tab-owner-wrap>.path-tab-pencil:focus-visible{
- outline:2px solid #f2c989;outline-offset:1px
-}
-@media(max-width:390px){
- .stage-attribute-tabs>.stage-book-tab-owner>button[role="tab"],
- .path-sections>.path-tab-owner-wrap>button[role="tab"]{
-  padding-inline-end:21px
- }
- .stage-attribute-tabs>.stage-book-tab-owner>.stage-book-tab-pencil,
- .path-sections>.path-tab-owner-wrap>.path-tab-pencil{
-  width:17px;min-width:17px;height:20px;min-height:20px;right:2px
- }
-}
+/* Direct inline editing uses the original tab buttons; no pencil column. */
 .stage-copy-caption,.stage-book-tab-copy,.path-tab-copy{
  min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;
  white-space:nowrap
@@ -73,7 +40,7 @@
 .stage-copy-caption.origin-copy-editable::after{content:none}
 .stage-action-edit-wrap{position:relative;display:flex;align-items:stretch;min-width:0}
 .stage-action-edit-wrap>button:not(.stage-control-pencil){flex:1 1 auto;width:100%;min-width:0;
- padding-inline-end:23px!important}
+ padding-inline-end:6px!important}
 .stage-rich-tabs>.stage-action-edit-wrap{width:100%;min-width:0}
 .stage-rich-tabs .stage-action-edit-wrap>button:not(.stage-control-pencil){
  display:flex;align-items:center;justify-content:center;gap:3px}
@@ -157,7 +124,7 @@
   width:16px;min-width:16px;height:18px;min-height:18px;font-size:10px;right:1px
  }
  .stage-action-edit-wrap>button:not(.stage-control-pencil){
-  padding-inline-end:18px!important
+  padding-inline-end:5px!important
  }
 }
 
@@ -223,8 +190,7 @@
 #accountPanel .account-copy-edit-host[hidden],
 #accountPanel .account-copy-pencil[hidden]{display:none!important}
 
-/* One anchored editorial toolbar per caption: no absolute positioning.
-   Align the label, two compact actions, and numeric value in separate tracks. */
+/* Only the existing authorial hover hint needs a separate control. */
 .stage-guide-actions{
  display:inline-flex;align-items:center;justify-content:flex-end;
  flex:0 0 auto;gap:3px;min-width:0;max-width:100%;margin-left:auto
@@ -610,7 +576,7 @@
 .studio-owner-interface-editor>summary:focus-visible{outline:2px solid #e8b979;
  outline-offset:2px}
 .studio-owner-interface-fields{padding:3px 9px 10px;display:grid;gap:6px}
-.studio-owner-interface-row{display:grid;grid-template-columns:minmax(85px,110px) minmax(0,1fr) 24px;
+.studio-owner-interface-row{display:grid;grid-template-columns:minmax(85px,110px) minmax(0,1fr);
  gap:7px;align-items:center;min-width:0;padding:7px 9px;
  border:1px solid #6f5235;border-radius:4px;background:#231a13}
 .studio-owner-interface-name{color:#d4b389;overflow-wrap:anywhere}
@@ -626,22 +592,21 @@
 .wiki-filter-labels-editor .studio-owner-interface-name{
  font-size:10px;line-height:1.4
 }
-.studio-owner-interface-row:has([data-owner-text-field]){grid-template-columns:minmax(80px,100px) minmax(0,1fr) 24px;
+.studio-owner-interface-row:has([data-owner-text-field]){grid-template-columns:minmax(80px,100px) minmax(0,1fr);
  align-items:start}
 .studio-owner-interface-row [contenteditable]{max-width:100%;min-width:0;
  overflow-wrap:anywhere;white-space:pre-wrap}
 @media(max-width:560px){
  .studio-owner-interface-fields{padding:3px 6px 7px}
- .studio-owner-interface-row{grid-template-columns:minmax(65px,82px) minmax(0,1fr) 22px;
+ .studio-owner-interface-row{grid-template-columns:minmax(65px,82px) minmax(0,1fr);
   gap:5px;padding:6px}
 }
 
-/* Hero Book editorial actions: real sibling buttons in a fixed two-cell
-   toolbar. Header button padding and narrow grids must never overlap them. */
+/* A single hover-hint editor fits beside the Book's headings. */
 #stageAttributes .stage-guide-actions{
- display:inline-grid!important;grid-template-columns:repeat(2,22px)!important;
+ display:inline-grid!important;grid-template-columns:22px!important;
  grid-auto-rows:22px!important;align-items:center;justify-content:end;
- gap:4px!important;min-width:48px;max-width:100%;
+ gap:0!important;min-width:22px;max-width:100%;
  width:max-content;flex:0 0 auto;position:static!important;
  transform:none!important;isolation:isolate
 }
@@ -864,8 +829,7 @@
  white-space:pre-wrap;overflow:visible
 }
 
-// Authorial skill prose stays inline with immutable catalog numbers. Owner
-// pencils are compact, without a second row or nested button controls.
+/* Authored skill prose stays inline with immutable catalog numbers. */
 .path-skill-count>.path-owner-edit-row,
 .path-skill-version-note>.path-owner-edit-row{display:inline-flex;
  align-items:baseline;vertical-align:baseline;min-width:0;gap:3px}

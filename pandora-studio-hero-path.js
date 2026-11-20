@@ -51,22 +51,12 @@ const skillCountLabel=(count,locale='ru')=>{
 const authored=(api,key,ru,en,tag='p',cls='muted')=>{
  const value=api.copyLabel?.(key,ru,en)||tr(api,ru,en);
  const node=make(tag,{class:cls});
- if(!api.canEdit||typeof api.editLabel!=='function'){
-  node.textContent=value;return node;
- }
- node.classList.add('path-owner-edit-row');
  const label=make('span',{class:'path-owner-copy-text',text:value});
- const pencil=make('button',{type:'button',class:'path-owner-pencil',
-  text:'✎','aria-label':tr(api,'Изменить надпись: ','Edit caption: ')+value});
- const sync=next=>pencil.setAttribute('aria-label',
-  tr(api,'Изменить надпись: ','Edit caption: ')+next);
- api.editLabel(label,key,ru,en,{onCommitted:sync});
- pencil.addEventListener('click',event=>{
-  event.preventDefault();event.stopPropagation();
-  label.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
- });
- pencil.addEventListener('focus',()=>sync(label.textContent));
- node.append(label,pencil);
+ node.append(label);
+ if(api.canEdit&&typeof api.editLabel==='function'){
+  node.classList.add('path-owner-edit-row');
+  api.editLabel(label,key,ru,en);
+ }
  return node;
 };
 // Bind only author-written copy. Game levels and skill names are immutable
@@ -386,26 +376,10 @@ function viewGrowth(target,api){
   const name=api.copyLabel?.(captionKey,group.ru,group.en)||
    (api.lang==='en'?group.en:group.ru);
   const caption=make('strong',{text:name});
-  let groupPencil=null;
-  const pencilName=()=>tr(api,'Редактировать направление ','Edit path group ')+caption.textContent;
-  api.editLabel?.(caption,captionKey,group.ru,group.en,{
-   onCommitted:()=>groupPencil?.setAttribute('aria-label',pencilName())
-  });
+  api.editLabel?.(caption,captionKey,group.ru,group.en);
+  if(api.canEdit)root.PandoraStudioCaptionActionGuard?.(groupButton,caption);
   groupButton.append(caption,groupCount);
   head.append(groupButton);
-  if(api.canEdit){
-   // Real sibling action: a pencil must not be nested in disclosure controls.
-   // Both actions support touch, keyboard and screen-reader navigation.
-   const pencil=make('button',{type:'button',class:'path-group-pencil',text:'✎',
-    'aria-label':pencilName()});
-   groupPencil=pencil;
-   pencil.addEventListener('focus',()=>pencil.setAttribute('aria-label',pencilName()));
-   pencil.addEventListener('click',event=>{
-    event.preventDefault();event.stopPropagation();
-    caption.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
-   });
-   head.append(pencil);
-  }
   wrap.append(head);
   if(selectedGroup===group.id){
    // The game client also shows the Racial line under Special, greyed out.
@@ -429,16 +403,7 @@ function viewGrowth(target,api){
      const row=make('div',{class:'path-racial-owner-row'},[race]);
      const captionHost=make('div',{class:'path-racial-owner-caption'},[caption]);
      api.editLabel(caption,key,ru,en);
-     const pencil=make('button',{type:'button',class:'path-racial-pencil',
-      text:'✎','aria-label':tr(api,'Изменить надпись: ','Edit caption: ')+value});
-     const sync=()=>pencil.setAttribute('aria-label',
-      tr(api,'Изменить надпись: ','Edit caption: ')+caption.textContent);
-     pencil.addEventListener('focus',sync);
-     pencil.addEventListener('click',event=>{
-      event.preventDefault();event.stopPropagation();
-      caption.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
-     });
-     row.append(captionHost,pencil);wrap.append(row);
+     row.append(captionHost);wrap.append(row);
     }else{
      info.append(caption);race.append(info,make('b',{class:'count',text:'—'}));
      wrap.append(race);
@@ -857,17 +822,9 @@ function viewSkills(target,details,api){
    }},[caption,remain]);
   if(api.canEdit&&typeof api.editLabel==='function'){
    const row=make('div',{class:'path-more-owner-row'},[showMore]);
-   const pencil=make('button',{type:'button',class:'path-more-pencil',
-    text:'✎','aria-label':tr(api,'Изменить надпись: ','Edit caption: ')+title});
-   const sync=()=>pencil.setAttribute('aria-label',
-    tr(api,'Изменить надпись: ','Edit caption: ')+caption.textContent);
-   api.editLabel(caption,key,ru,en,{onCommitted:sync});
-   pencil.addEventListener('focus',sync);
-   pencil.addEventListener('click',event=>{
-    event.preventDefault();event.stopPropagation();
-    caption.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
-   });
-   row.append(pencil);target.append(row);
+   api.editLabel(caption,key,ru,en);
+   root.PandoraStudioCaptionActionGuard?.(showMore,caption);
+   target.append(row);
   }else target.append(showMore);
  }
  if(!rows.length)target.append(authored(api,'skillSearchEmpty',

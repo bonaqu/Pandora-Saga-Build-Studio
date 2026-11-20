@@ -133,10 +133,9 @@ body>#ownerDock.owner-dock-collapsed{
  padding:8px 6px;margin:0;border-radius:5px;font-size:11px;
  white-space:normal;transition:border-color .18s,background .18s;
 }
-/* An action and its inline-editor pencil share one grid cell. Editing a
-   caption must never activate the underlying save/reset/navigation button. */
+/* Actions keep their full width; double-click opens the inline D1 caption editor. */
 #ownerDock .owner-dock-action-slot{
- display:grid;grid-template-columns:minmax(0,1fr) 23px;
+ display:grid;grid-template-columns:minmax(0,1fr);
  align-items:stretch;gap:4px;min-width:0
 }
 #ownerDock .owner-dock-action-slot:has(>.owner-dock-primary),
@@ -316,8 +315,7 @@ body>#ownerDock{
 #ownerDock .owner-dock-group-description{
  color:#b9a78d;font-size:10px;line-height:1.4
 }
-/* Inline D1 editors for the three short group titles and descriptions.
-   The extra pencil never sits inside a real action button. */
+/* Group headings and descriptions are editable directly without extra controls. */
 #ownerDock .owner-dock-group-copy-wrap{
  display:inline-flex;align-items:baseline;gap:4px;min-width:0;max-width:100%
 }
@@ -344,7 +342,7 @@ body>#ownerDock{
  gap:8px;min-width:0
 }
 #ownerDock .owner-dock-action-slot{
- grid-template-columns:minmax(0,1fr) 29px;gap:5px;min-width:0;
+ grid-template-columns:minmax(0,1fr);gap:0;min-width:0;
  align-items:stretch
 }
 #ownerDock .owner-dock-action-slot:has(>.owner-dock-primary),
