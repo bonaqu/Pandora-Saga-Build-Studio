@@ -211,7 +211,10 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
   assert.equal(writes.filter(x=>x.key.startsWith('wikiedit.')).length,3,
    'Readback confirmations and retried rejected NPC must leave exactly three D1 records');
   // Real EN edition shares each semantic key with RU and leaves NPC/location
-  // source data untouched. The copy editor is not available to guest users.
+  // source data untouched. Close the modal workbench before using the
+  // global locale selector; it must never allow click-through.
+  await page.locator('#dockClose').click();
+  await page.locator('#detailPanel').waitFor({state:'hidden',timeout:10000});
   await page.locator('#locale [data-locale="en"]').click();
   await page.waitForFunction(()=>document.documentElement.lang==='en');
   await page.locator('[data-wiki-chapter="map"]').click();
