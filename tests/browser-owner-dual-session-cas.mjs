@@ -91,7 +91,8 @@ export async function runOwnerDualSessionCasSmoke(browser,base){
    '#ownerDock .owner-dock-action-slot[data-owner-dock-key="testD1"]');
   const edit=async(page,text)=>{
    const slot=editSlot(page);
-   await slot.locator('.owner-dock-action-pencil').click();
+   assert.equal(await slot.locator('.owner-dock-action-pencil').count(),0);
+  await slot.locator('.owner-dock-d1-check').dblclick();
    const input=slot.locator('[contenteditable="plaintext-only"]');
    await input.waitFor({state:'visible'});
    await input.fill(text);await input.press('Tab');

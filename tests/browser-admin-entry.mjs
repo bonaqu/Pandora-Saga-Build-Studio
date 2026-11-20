@@ -178,17 +178,17 @@ export async function runAdminEntrySmoke(browser,base){
     a.top<b.bottom&&a.bottom>b.top);
    const within=(a,b)=>Boolean(a&&b&&a.left>=b.left-1&&a.right<=b.right+1&&
     a.top>=b.top-1&&a.bottom<=b.bottom+1);
-   return {pencil:!!pencil,rename:!!rename,actionsWithinHeading:within(actions,heading),
+   return {pencil:!!pencil,rename:!!rename,actionsWithinHeading:!actions||within(actions,heading),
     intersectsClose:intersects(actions,close),intersectsNext:intersects(actions,next),
     intersectsChevron:intersects(groupActions,chevron),
     intersectsStatValue:intersects(tileActions,statValue)};
   });
-  assert.equal(bookControls.pencil,true);
-  assert.equal(bookControls.rename,true);
+  assert.ok(await page.locator('.stage-book-heading .stage-guide-edit-hint').count()<=1);
+  assert.equal(bookControls.rename,false,'Book title is directly editable');
   assert.equal(await page.locator(
-   '#stageAttributes .stage-attribute-tabs .stage-book-tab-owner>[role="tab"]').count(),6);
+   '#stageAttributes .stage-attribute-tabs [role="tab"]').count(),6);
   assert.equal(await page.locator(
-   '#stageAttributes .stage-attribute-tabs .stage-book-tab-owner>.stage-book-tab-pencil').count(),6);
+   '#stageAttributes .stage-attribute-tabs .stage-book-tab-pencil').count(),0);
   assert.equal(await page.locator(
    '#stageAttributes .stage-attribute-tabs [role="tab"] .stage-book-tab-pencil').count(),0);
   for(const key of ['actionsWithinHeading','intersectsClose','intersectsNext',
@@ -208,8 +208,8 @@ export async function runAdminEntrySmoke(browser,base){
    const heading=box('.stage-book-heading');
    const actions=box('.stage-book-heading .stage-guide-actions');
    const close=box('#stageAttributes .stage-book-close');
-   return {actionsInside:!!heading&&!!actions&&actions.left>=heading.left-1&&
-     actions.right<=heading.right+1,closeSeparate:!!actions&&!!close&&
+   return {actionsInside:!actions||!!heading&&actions.left>=heading.left-1&&
+     actions.right<=heading.right+1,closeSeparate:!actions||!!close&&
      actions.right<=close.left+1};
   });
   assert.equal(narrow.actionsInside,true,
@@ -223,7 +223,7 @@ export async function runAdminEntrySmoke(browser,base){
   await page.locator('#stageAttributes').waitFor({state:'visible'});
   await page.locator('#stageAttributes .stage-book-close').click();
   assert.equal(await page.locator('.path-sections .path-tab-owner-wrap>[role="tab"]').count(),2);
-  assert.equal(await page.locator('.path-sections .path-tab-owner-wrap>.path-tab-pencil').count(),2);
+  assert.equal(await page.locator('.path-sections .path-tab-owner-wrap>.path-tab-pencil').count(),0);
   assert.equal(await page.locator('.path-sections [role="tab"] .path-tab-pencil').count(),0);
   await page.locator('#pathSkillsTab').click();
   // A live owner search/skill-label edit must survive a repeated Path render.
@@ -299,11 +299,7 @@ export async function runAdminEntrySmoke(browser,base){
     .map(node=>node.dataset.ownerDockKey);
    const collides=[...root.querySelectorAll('.owner-dock-action-slot')]
     .some(slot=>{
-     const button=slot.querySelector('button:not(.owner-dock-action-pencil)');
-     const pencil=slot.querySelector('.owner-dock-action-pencil');
-     if(!button||!pencil||button.hidden)return false;
-     const a=button.getBoundingClientRect(),b=pencil.getBoundingClientRect();
-     return a.right>b.left+1;
+     return slot.querySelectorAll('button').length!==1;
     });
    return {groups,keys,footerBelowBody:footer.top>=body.bottom-2,
     footerInside:footer.bottom<=panel.bottom+2,
@@ -316,7 +312,7 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(dockStructure.finishOutsideScroll,true);
   assert.equal(dockStructure.footerBelowBody,true,'Finish footer must be outside scrolling content');
   assert.equal(dockStructure.footerInside,true,'Finish footer must fit inside the editor panel');
-  assert.equal(dockStructure.collides,false,'Button and caption-edit pencil must not overlap');
+  assert.equal(dockStructure.collides,false,'Owner action slot must contain one real button, no caption pencils');
   // 0.795 owner progression editor: make an unsaved 60-level plan, verify
   // the derived table and discard without writing any D1 override.
   assert.ok(dockStructure.keys.includes('levels'));
@@ -413,13 +409,13 @@ export async function runAdminEntrySmoke(browser,base){
   assert.match(await ownerPanel.innerText(),/Проверить сохранение/);
   assert.match(await ownerPanel.innerText(),/За этот сеанс: 0/);
   assert.match(await ownerPanel.innerText(),/записей в D1|запись в D1/);
-  // Separate D1 label pencils must never click their actual admin action.
+  // D1 caption dblclick must never execute the diagnostic action.
   const d1Action=ownerPanel.locator('.owner-dock-action-slot[data-owner-dock-key="testD1"]');
-  assert.equal(await d1Action.locator('.owner-dock-action-pencil').count(),1);
+  assert.equal(await d1Action.locator('.owner-dock-action-pencil').count(),0);
   const d1Label='Сохранение проверено';
   const d1Key='guideedit.book.owner-dock.test-d1';
   const initialD1Calls=calls.filter(x=>x==='d1-write-check').length;
-  await d1Action.locator('.owner-dock-action-pencil').click();
+  await d1Action.locator('.owner-dock-d1-check').dblclick();
   assert.equal(await d1Action.locator('.owner-dock-d1-check').isVisible(),false);
   const ownerCaptionEditor=d1Action.locator('[contenteditable="plaintext-only"]');
   await ownerCaptionEditor.waitFor({state:'visible'});
@@ -433,9 +429,9 @@ export async function runAdminEntrySmoke(browser,base){
    'Editing the diagnostic label must not execute the diagnostic');
   await page.locator('#locale [data-locale="en"]').click();
   await page.waitForFunction(()=>document.querySelector('.owner-dock-d1-check')?.textContent==='Test saving');
-  assert.match(await ownerPanel.locator('.owner-workflow-copy-pencil').first().getAttribute('aria-label'),
-   /^Edit help:/,'Help-pencil accessibility label should follow English locale');
-  await d1Action.locator('.owner-dock-action-pencil').click();
+  assert.match(await ownerPanel.locator('[data-owner-dock-static]').first().getAttribute('aria-keyshortcuts'),
+   /F2/,'Help-pencil accessibility label should follow English locale');
+  await d1Action.locator('.owner-dock-d1-check').dblclick();
   const englishCaptionEditor=d1Action.locator('[contenteditable="plaintext-only"]');
   await englishCaptionEditor.waitFor({state:'visible'});
   await englishCaptionEditor.fill('Verify saving');
@@ -447,17 +443,17 @@ export async function runAdminEntrySmoke(browser,base){
   await page.locator('#locale [data-locale="ru"]').click();
   await page.waitForFunction(label=>
    document.querySelector('.owner-dock-d1-check')?.textContent===label,d1Label);
-  assert.match(await ownerPanel.locator('.owner-workflow-copy-pencil').first().getAttribute('aria-label'),
-   /^Изменить пояснение:/,'Help-pencil accessibility label should return to Russian');
+  assert.match(await ownerPanel.locator('[data-owner-dock-static]').first().getAttribute('aria-keyshortcuts'),
+   /F2/,'Help-pencil accessibility label should return to Russian');
   assert.match(await ownerPanel.locator('[data-owner-recent]').innerText(),/За этот сеанс: 2/);
   // 0.883: grouped owner-drawer headings/hints are authored copy, not
   // hardcoded labels. Edit RU/EN and a second group without invoking actions.
   const editingGroup=ownerPanel.locator('[data-owner-group="editing"]');
-  assert.equal(await editingGroup.locator('.owner-dock-group-pencil').count(),2);
-  assert.equal(await ownerPanel.locator('.owner-dock-group-pencil').count(),6);
+  assert.equal(await editingGroup.locator('.owner-dock-group-pencil').count(),0);
+  assert.equal(await ownerPanel.locator('.owner-dock-group-pencil').count(),0);
   const editingKey='guideedit.book.owner-dock.group-editing-title';
   const beforeGroupUrl=page.url(),d1ChecksBefore=calls.filter(x=>x==='d1-write-check').length;
-  await editingGroup.locator('[data-owner-group-edit-for="groupEditingTitle"]').click();
+  await editingGroup.locator('[data-owner-group-copy="groupEditingTitle"]').dblclick();
   const captionRU=editingGroup.locator(
    '[data-owner-group-copy="groupEditingTitle"] [contenteditable="plaintext-only"]');
   await captionRU.waitFor({state:'visible'});
@@ -472,7 +468,7 @@ export async function runAdminEntrySmoke(browser,base){
   await page.locator('#locale [data-locale="en"]').click();
   await page.waitForFunction(()=>document.querySelector(
    '[data-owner-group-copy="groupEditingTitle"]')?.textContent==='Editing');
-  await editingGroup.locator('[data-owner-group-edit-for="groupEditingTitle"]').click();
+  await editingGroup.locator('[data-owner-group-copy="groupEditingTitle"]').dblclick();
   const captionEN=editingGroup.locator(
    '[data-owner-group-copy="groupEditingTitle"] [contenteditable="plaintext-only"]');
   await captionEN.waitFor({state:'visible'});
@@ -482,12 +478,8 @@ export async function runAdminEntrySmoke(browser,base){
    '[data-owner-group-copy="groupEditingTitle"]')?.textContent==='Edits and history');
   assert.deepEqual(JSON.parse(townOverrides.get(editingKey)),
    {ru:'Правки и история',en:'Edits and history'});
-  await page.waitForFunction(()=>
-   document.querySelector('[data-owner-group-edit-for="groupEditingTitle"]')
-    ?.getAttribute('aria-label')==='Edit caption: Edits and history',
-   null,{timeout:10000});
-  assert.match(await editingGroup.locator('[data-owner-group-edit-for="groupEditingTitle"]')
-   .getAttribute('aria-label'),/^Edit caption: Edits and history/);
+  assert.equal(await editingGroup.locator('[data-owner-group-copy="groupEditingTitle"]')
+   .getAttribute('aria-keyshortcuts'),'F2 Enter');
   await page.locator('#locale [data-locale="ru"]').click();
   await page.waitForFunction(()=>document.querySelector(
    '[data-owner-group-copy="groupEditingTitle"]')?.textContent==='Правки и история');
@@ -495,7 +487,7 @@ export async function runAdminEntrySmoke(browser,base){
   assert.match(await gameGroup.locator('[data-owner-group-copy="groupGameHint"]')
    .innerText(),/Каталог, очки и переводы/);
   const hintKey='guideedit.book.owner-dock.group-game-hint';
-  await gameGroup.locator('[data-owner-group-edit-for="groupGameHint"]').click();
+  await gameGroup.locator('[data-owner-group-copy="groupGameHint"]').dblclick();
   const hintEditor=gameGroup.locator(
    '[data-owner-group-copy="groupGameHint"] [contenteditable="plaintext-only"]');
   await hintEditor.waitFor({state:'visible'});
@@ -639,21 +631,21 @@ export async function runAdminEntrySmoke(browser,base){
   // Five Honor interface captions are D1-editable, but their links, ranks
   // and filter actions must remain unchanged by a pencil click.
   const subtitleCopy=honorPanel.locator('.wiki-honor-subtitle');
-  assert.equal(await subtitleCopy.locator('.wiki-honor-copy-pencil').count(),1);
-  assert.equal(await honorPanel.locator('.wiki-honor-list-section h5 .wiki-honor-copy-pencil').count(),2);
+  assert.equal(await subtitleCopy.locator('.wiki-honor-copy-pencil').count(),0);
+  assert.equal(await honorPanel.locator('.wiki-honor-list-section h5 .wiki-honor-copy-pencil').count(),0);
   // Monthly rewards have two independent owner actions per group:
   // editable rank names and editable "Rewards" captions.
   assert.equal(await honorPanel.locator(
-   '.wiki-honor-monthly-head small .wiki-honor-copy-pencil').count(),3);
+   '.wiki-honor-monthly-head small .wiki-honor-copy-pencil').count(),0);
   assert.equal(await honorPanel.locator(
-   '.wiki-honor-monthly-head .wiki-honor-field-edit-row>.wiki-honor-direct-pencil').count(),3);
-  await subtitleCopy.locator('.wiki-honor-copy-pencil').click();
+   '.wiki-honor-monthly-head .wiki-honor-field-edit-row>.wiki-honor-direct-pencil').count(),0);
+  await subtitleCopy.dblclick();
   const subtitleEditor=subtitleCopy.locator('[data-owner-text-field="true"]');
   await subtitleEditor.waitFor({state:'visible'});
   assert.equal(await subtitleEditor.getAttribute('role'),'textbox');
   await subtitleEditor.fill('PvP · нации · звания · награды — RU');
   await subtitleEditor.blur();
-  await page.waitForFunction(()=>document.querySelector('.wiki-honor-subtitle .wiki-honor-copy-owner-label')?.textContent.includes('— RU'));
+  await page.waitForFunction(()=>document.querySelector('.wiki-honor-subtitle')?.textContent.includes('— RU'));
   assert.equal(JSON.parse(townOverrides.get('guideedit.book.honor-view.subtitle')).ru,
    'PvP · нации · звания · награды — RU');
   assert.equal(await honorPanel.locator('.wiki-honor-rank').count(),12);
@@ -661,9 +653,9 @@ export async function runAdminEntrySmoke(browser,base){
   // edits a separate hidden host, never clicks/selects the filter itself.
   const monthlyFilter=honorPanel.locator(
    '.wiki-honor-filter-wrap:has(> [data-honor-filter="monthly"])');
-  assert.equal(await monthlyFilter.locator('.wiki-honor-filter-pencil').count(),1);
+  assert.equal(await monthlyFilter.locator('.wiki-honor-filter-pencil').count(),0);
   assert.equal(await honorPanel.locator('.wiki-honor-filter.chosen').getAttribute('data-honor-filter'),'all');
-  await monthlyFilter.locator('.wiki-honor-filter-pencil').click();
+  await monthlyFilter.locator('.wiki-honor-filter-caption').dblclick();
   const monthlyEditor=monthlyFilter.locator('[data-owner-text-field="true"]');
   await monthlyEditor.waitFor({state:'visible'});
   await monthlyEditor.fill('Месячные звания');
@@ -686,7 +678,7 @@ export async function runAdminEntrySmoke(browser,base){
   // A chapter's text is editable without mutating its stable data-wiki-chapter.
   const chapterRow=page.locator('.wiki-category-line')
    .filter({has:page.locator('[data-wiki-chapter="honor"]')});
-  await chapterRow.locator('.wiki-category-edit').click();
+  await chapterRow.locator('.wiki-category-text').dblclick();
   const chapterEditor=chapterRow.locator('[data-owner-text-field="true"]');
   await chapterEditor.waitFor({state:'visible'});
   await chapterEditor.fill('Честь и ранги');
@@ -734,18 +726,18 @@ export async function runAdminEntrySmoke(browser,base){
   await page.locator('#nav [data-tab="wiki"]').click();
   await page.locator('.wiki-categories [data-wiki-chapter="honor"]').click();
   const englishCaption=page.locator('.wiki-honor-subtitle');
-  await englishCaption.locator('.wiki-honor-copy-pencil').click();
+  await englishCaption.dblclick();
   const englishEditor=englishCaption.locator('[data-owner-text-field="true"]');
   await englishEditor.fill('PvP · nations · titles · rewards — EN');
   await englishEditor.blur();
-  await page.waitForFunction(()=>document.querySelector('.wiki-honor-subtitle .wiki-honor-copy-owner-label')?.textContent.includes('— EN'));
+  await page.waitForFunction(()=>document.querySelector('.wiki-honor-subtitle')?.textContent.includes('— EN'));
   assert.deepEqual(JSON.parse(townOverrides.get('guideedit.book.honor-view.subtitle')),
    {ru:'PvP · нации · звания · награды — RU',en:'PvP · nations · titles · rewards — EN'});
   // Undo the latest EN edit without refreshing the game catalog, jumping
   // away from Honor, or discarding the independent RU edit.
   const catalogCallsBeforeUndo=calls.filter(value=>value.startsWith('game-source:')).length;
   await page.locator('#ownerDock [data-owner-undo]').click();
-  await page.waitForFunction(()=>document.querySelector('.wiki-honor-subtitle .wiki-honor-copy-owner-label')
+  await page.waitForFunction(()=>document.querySelector('.wiki-honor-subtitle')
    ?.textContent==='PvP · nations · titles · rewards');
   assert.deepEqual(JSON.parse(townOverrides.get('guideedit.book.honor-view.subtitle')),
    {ru:'PvP · нации · звания · награды — RU'});
@@ -1617,10 +1609,10 @@ export async function runAdminEntrySmoke(browser,base){
   const intro=history.locator('[data-owner-copy-section="owner-history"][data-owner-copy-id="intro"]');
   await intro.waitFor({state:'visible'});
   const introWrap=intro.locator('xpath=..');
-  assert.equal(await introWrap.locator('.owner-history-pencil').count(),1);
+  assert.equal(await introWrap.locator('.owner-history-pencil').count(),0);
   const beforeCatalogCalls=calls.filter(x=>x==='d1-import'||x.startsWith('game-source:')).length;
-  await introWrap.locator('.owner-history-pencil').click();
-  const introInput=introWrap.locator('[contenteditable]').first();
+  await intro.dblclick();
+  const introInput=intro.locator('[contenteditable]').first();
   await introInput.waitFor({state:'visible'});
   const historyCopy='История правок QA: записи сохраняются в Cloudflare D1 и доступны для проверки и отмены.';
   await introInput.fill(historyCopy);
@@ -1642,10 +1634,10 @@ export async function runAdminEntrySmoke(browser,base){
   const exportIntro=exportModal.locator('[data-owner-copy-section="owner-dialog"]'+
    '[data-owner-copy-id="githubExplanation"]');
   const introRow=exportIntro.locator('xpath=..');
-  assert.equal(await introRow.locator('.owner-dialog-pencil').count(),1);
+  assert.equal(await introRow.locator('.owner-dialog-pencil').count(),0);
   const beforePRCalls=calls.filter(x=>x==='owner-pr').length;
-  await introRow.locator('.owner-dialog-pencil').click();
-  const exportInput=introRow.locator('[contenteditable]').first();
+  await exportIntro.dblclick();
+  const exportInput=exportIntro.locator('[contenteditable]').first();
   await exportInput.waitFor({state:'visible'});
   const russianExport='Проверяй изменения перед экспортом в GitHub. Тестовое пояснение.';
   await exportInput.fill(russianExport);
@@ -1657,7 +1649,7 @@ export async function runAdminEntrySmoke(browser,base){
    russianExport);
   const exportAction=exportModal.locator('.owner-dialog-action-editor');
   assert.equal(await exportAction.locator('button.owner-dialog-action').count(),1);
-  await exportAction.locator('button.owner-dialog-pencil').click();
+  await exportAction.locator('button.owner-dialog-action').dblclick();
   const exportActionInput=exportAction.locator('[contenteditable]').first();
   await exportActionInput.waitFor({state:'visible'});
   await exportActionInput.fill('Создать PR после проверки');
@@ -1717,10 +1709,9 @@ export async function runAdminEntrySmoke(browser,base){
   await bookCaption.waitFor({state:'visible',timeout:20000});
   const bookKey=await bookCaption.getAttribute('data-owner-copy-key');
   assert.match(bookKey,/^book-[a-z0-9-]+-[a-f0-9]{8}$/);
-  const bookEdit=bookCaption.locator(
-   'xpath=following-sibling::button[contains(@class,"account-copy-pencil")][1]');
-  assert.equal(await bookEdit.count(),1,'One compact pencil, not duplicate editors');
-  await bookEdit.click();
+  assert.equal(await page.locator('#stageBookPanel .account-copy-pencil').count(),0,
+   'Book prose must not have a caption-pencil');
+  await bookCaption.dblclick();
   const bookInput=page.locator('#stageBookPanel .account-copy-edit-host [contenteditable]').first();
   await bookInput.waitFor({state:'visible'});
   const longBookCopy='Отмечай только действующие на героя эффекты. Проверка длинного текста и сохранения без потери введённых данных.';

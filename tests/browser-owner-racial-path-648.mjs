@@ -77,6 +77,22 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   await page.locator('.modal').getByRole('button',{name:'Войти',exact:true}).click();
   await page.locator('#ownerDock').waitFor({state:'visible'});
   await page.locator('#ownerDock [data-owner-collapse]').click();
+  // The passive remains selectable, but its caption edits directly without
+  // a pencil. Escape must preserve the selected passive and avoid D1 writes.
+  const passive=page.locator('#originPassives .origin-passive').first();
+  await passive.waitFor({state:'visible'});
+  assert.equal(await page.locator('#originPassives .owner-race-passive-edit').count(),0);
+  const passiveLabel=passive.locator('b[data-edit-key^="skill.race."]');
+  assert.equal(await passiveLabel.count(),1);
+  const selectedPassive=await passive.getAttribute('aria-pressed');
+  await passiveLabel.dblclick();
+  const passiveEditor=passiveLabel.locator('[data-owner-text-field]');
+  await passiveEditor.waitFor({state:'visible'});
+  await passiveEditor.fill('Не сохраняем пассивку QA');
+  await passiveEditor.press('Escape');
+  assert.equal(await passive.getAttribute('aria-pressed'),selectedPassive,
+   'Editing a racial skill name must not select a passive');
+  assert.equal(writes.length,0,'Escape must not write a D1 skill name');
   await openSpecial();
   // Author edits a hint through the ONE compact owner panel. The disabled
   // Racial branch and current hero remain mounted; no per-card pencil.
@@ -197,15 +213,15 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   await prereq.waitFor({state:'visible',timeout:12000});
   const requiredName=await prereq.locator('.path-skill-previous-value').innerText();
   assert.ok(requiredName.trim(),'The source prerequisite name must remain visible');
-  assert.equal((await prereq.locator('.path-owner-copy-text').innerText()).trim(),
+  assert.equal((await prereq.locator('.path-skill-previous-label').innerText()).trim(),
    'Previous skill');
   assert.equal(await prereq.locator('.path-owner-pencil').count(),0);
-  await prereq.locator('.path-owner-copy-text').dblclick();
+  await prereq.locator('.path-skill-previous-label').dblclick();
   const prereqEdit=prereq.locator('[data-owner-text-field]');
   await prereqEdit.waitFor({state:'visible'});
   await prereqEdit.fill('Prerequisite QA');await prereqEdit.press('Tab');
   await page.waitForFunction(()=>document.querySelector(
-   '#pathSkillDetails .path-skill-previous-label .path-owner-copy-text')
+   '#pathSkillDetails .path-skill-previous-label')
    ?.textContent==='Prerequisite QA',null,{timeout:12000});
   await savedOverride('guideedit.book.path.skill-previous-label',
    {en:'Prerequisite QA'});

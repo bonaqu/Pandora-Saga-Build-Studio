@@ -155,7 +155,7 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
   const monsterCaptions=monsterForm.locator('.studio-owner-interface-editor');
   await monsterCaptions.locator('summary').click();
   const saveCaption=monsterCaptions.locator('.studio-owner-interface-row:has([data-owner-copy-id="createMonsterSave"])');
-  await saveCaption.locator('.studio-owner-interface-pencil').click();
+  await saveCaption.locator('.studio-owner-interface-value').dblclick();
   const monsterCopyInput=saveCaption.locator('[data-owner-text-field]');
   await monsterCopyInput.fill('Добавить монстра в энциклопедию');
   await monsterCopyInput.press('Tab');
@@ -183,7 +183,7 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
   const mapCaptions=mapForm.locator('.studio-owner-interface-editor');
   await mapCaptions.locator('summary').click();
   const mapPlaceholder=mapCaptions.locator('.studio-owner-interface-row:has([data-owner-copy-id="createMapNameRuPlaceholder"])');
-  await mapPlaceholder.locator('.studio-owner-interface-pencil').click();
+  await mapPlaceholder.locator('.studio-owner-interface-value').dblclick();
   const mapCopyInput=mapPlaceholder.locator('[data-owner-text-field]');
   await mapCopyInput.fill('Новое название местности · RU');
   await mapCopyInput.press('Tab');
@@ -232,7 +232,7 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
   const deletePanel=page.locator('.wiki-page .studio-owner-interface-editor:has([data-owner-copy-id="deleteRecordButton"])');
   await deletePanel.locator('summary').click();
   const deleteRow=deletePanel.locator('.studio-owner-interface-row:has([data-owner-copy-id="deleteRecordButton"])');
-  await deleteRow.locator('.studio-owner-interface-pencil').click();
+  await deleteRow.locator('.studio-owner-interface-value').dblclick();
   const editDelete=deleteRow.locator('[data-owner-text-field]');
   await editDelete.fill('Удалить моего NPC');
   await editDelete.press('Tab');
@@ -263,7 +263,7 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
   const englishPanels=englishForm.locator('.studio-owner-interface-editor');
   await englishPanels.locator('summary').click();
   const englishRow=englishPanels.locator('.studio-owner-interface-row:has([data-owner-copy-id="createMapNameRuPlaceholder"])');
-  await englishRow.locator('.studio-owner-interface-pencil').click();
+  await englishRow.locator('.studio-owner-interface-value').dblclick();
   const enCopy=englishRow.locator('[data-owner-text-field]');
   await enCopy.fill('Name for a new place · RU');
   await enCopy.press('Tab');

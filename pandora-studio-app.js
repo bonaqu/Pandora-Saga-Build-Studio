@@ -2921,13 +2921,18 @@ function renderOriginPassives(){
   btn.append(h('span',{},[label,
     h('small',{text:selected?(lang==='en'?'✓ Selected':'✓ Выбрано'):
       (lang==='en'?'Select':'Выбрать')})]));
-  if(adminEditing&&lang==='ru'){
-    const edit=h('button',{type:'button',class:'owner-race-passive-edit',
-      title:'Редактировать название пассивной способности',
-      'aria-label':'Изменить название '+skill.name,text:'✎',
-      onclick:()=>editor(label)});
-    root.append(h('div',{class:'owner-race-passive-row'},[btn,edit]));
-  }else root.append(btn);
+  if(adminEditing&&adminToken&&lang==='ru'){
+   // Names of racial skills edit on the same visible label: no extra pencil.
+   // Keep the underlying selection action working on a single click.
+   ownerCaptionActionGuard(btn,label);
+   btn.addEventListener('keydown',event=>{
+    if(event.key==='F2'){
+     event.preventDefault();event.stopPropagation();inlineWikiText(label);
+    }
+   });
+   btn.setAttribute('aria-keyshortcuts','F2');
+  }
+  root.append(btn);
   skillHover(btn,skill);
  }
 }
@@ -4518,7 +4523,7 @@ function renderWiki(root){
    wikiLink(dataName(kind,key),kind,key));
   if(adminEditing&&adminToken){
    if(replaceable)chip.append(h('button',{type:'button',
-    class:'wiki-owner-replace',text:'✎',
+    class:'wiki-owner-replace',text:'↻',
     'aria-label':wt('Заменить связь: ','Replace relation: ')+dataName(kind,key),
     title:wt('Заменить на другую запись из каталога','Replace with an existing record'),
     onclick:event=>{event.stopPropagation();openPicker(chip,key)}}));
@@ -6339,7 +6344,7 @@ function renderWiki(root){
       product.append(itemLink(trade.i,dataName('item',trade.i),id));
       if(editing){
         const editReward=h('button',{type:'button',class:'wiki-owner-plus',
-         text:'✎',onclick:()=>wikiItemChoice(output,i=>amend({i}))});
+         text:'↻',onclick:()=>wikiItemChoice(output,i=>amend({i}))});
         npcTradeBind(editReward,'changeReward','aria-label');
         product.append(editReward);
        }
@@ -9196,9 +9201,12 @@ function ownerCaptionActionGuard(button,caption){
  button.dataset.ownerCaptionActionGuard='1';
  let pending=null;
  button.addEventListener('click',event=>{
-  if(!adminEditing||!adminToken||!event.detail||
-   !caption.contains(event.target)||event.target.closest?.('input,textarea,select'))
-   return;
+  if(!adminEditing||!adminToken||!event.detail||!caption.contains(event.target))return;
+  // Contenteditable fields inside an action are NOT clicks on that action.
+  if(event.target.closest?.('[data-owner-text-field],.wiki-inline-input')){
+   event.preventDefault();event.stopImmediatePropagation();return;
+  }
+  if(event.target.closest?.('input,textarea,select'))return;
   event.preventDefault();event.stopImmediatePropagation();
   if(pending){clearTimeout(pending);pending=null;return}
   pending=setTimeout(()=>{
