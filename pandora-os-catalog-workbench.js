@@ -58,7 +58,8 @@
     // a separate ✎ is reserved for independently authored hover tooltips.
     const authored=(tag,attrs,key,ru,en)=>{
       const node=h(tag,{...attrs,text:copy(key,ru,en)});
-      if(canEdit&&typeof editLabel==='function')editLabel(node,key,ru,en);
+      if(!canEdit||typeof editLabel!=='function')return node;
+      editLabel(node,key,ru,en);
       return h('div',{class:'os-sync-copy-field'},[node]);
     };
     // Preserve a native checkbox's single-click behavior while suppressing
@@ -100,7 +101,7 @@
         ownerCopySection:'catalog-sync',ownerCopyId:key,
         ownerCopyRu:ru,ownerCopyEn:en}))button.dataset[keyName]=value;
       const startEdit=event=>{
-        if(!button.isConnected||!host.hidden)return;
+        if(!button.isConnected||!host.hidden||wrap.classList.contains('editing-hint'))return;
         event?.preventDefault?.();event?.stopPropagation?.();
         button.hidden=true;host.hidden=false;
         host.textContent=copy(key,ru,en);
@@ -117,11 +118,12 @@
         },500);
       },true);
       wrap.addEventListener('dblclick',event=>{
-        if(event.target.closest?.('.os-sync-hint-pencil,.os-sync-secondary-pencil,.wiki-inline-input,[data-owner-text-field]'))return;
+        if(event.target.closest?.('.os-sync-hint-pencil,.os-sync-hint-edit-host,.os-sync-secondary-pencil,.wiki-inline-input,[data-owner-text-field]'))return;
         startEdit(event);
       });
       wrap.addEventListener('keydown',event=>{
-        if(event.key==='F2'&&!event.target.closest?.('.wiki-inline-input,[data-owner-text-field]'))
+        if(event.key==='F2'&&!event.target.closest?.(
+          '.os-sync-hint-pencil,.os-sync-hint-edit-host,.wiki-inline-input,[data-owner-text-field]'))
           startEdit(event);
       });
       wrap.append(button,host);

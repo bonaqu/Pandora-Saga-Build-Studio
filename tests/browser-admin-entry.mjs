@@ -861,6 +861,8 @@ export async function runAdminEntrySmoke(browser,base){
   const hintPencil=liveAction.locator('.os-sync-hint-pencil');
   assert.equal(await hintPencil.count(),1);
   await hintPencil.click();
+  assert.equal(await liveAction.locator('.os-sync-action-edit-host [contenteditable]').count(),0,
+   'Opening a hover-hint editor must not open the action caption editor too');
   const hintInput=liveAction.locator('.os-sync-hint-edit-host [contenteditable]');
   await hintInput.waitFor({state:'visible'});
   await hintInput.fill('Подсказка проверки игрового источника QA.');
