@@ -3929,28 +3929,27 @@ function renderWiki(root){
   const parent=button.parentElement;
   if(parent?.querySelector('.wiki-owner-monster-form'))return;
   const form=h('div',{class:'wiki-owner-source-picker wiki-owner-monster-form'});
-  const ru=ownerPlainTextField({class:'wiki-inline-input',value:name,
-   'aria-label':wt('Название монстра RU','Monster name RU'),
-   placeholder:wt('Название · RU','Name · RU')});
-  const en=ownerPlainTextField({class:'wiki-inline-input',
-   'aria-label':wt('Название монстра EN','Monster name EN'),
-   placeholder:wt('Название · EN','Name · EN')});
-  const lvl=h('input',{type:'number',min:'1',max:'255',step:'1',
-   value:String(level),'aria-label':wt('Уровень монстра','Monster level'),
-   class:'wiki-inline-input wiki-owner-monster-level'});
+  const ru=ownerPlainTextField({class:'wiki-inline-input',value:name});
+  monsterBind(ru,'createMonsterNameRuAria','aria-label');
+  monsterBind(ru,'createMonsterNameRuPlaceholder','placeholder');
+  const en=ownerPlainTextField({class:'wiki-inline-input'});
+  monsterBind(en,'createMonsterNameEnAria','aria-label');
+  monsterBind(en,'createMonsterNameEnPlaceholder','placeholder');
+  const lvl=monsterBind(h('input',{type:'number',min:'1',max:'255',step:'1',
+   value:String(level),class:'wiki-inline-input wiki-owner-monster-level'}),
+   'createMonsterLevelAria','aria-label');
   const error=h('small',{class:'inline-owner-error',role:'status'});
   let reservedId=null,created=false;
-  const submit=h('button',{type:'button',class:'wiki-owner-plus',
-   text:wt('Сохранить монстра','Save monster'),onclick:async()=>{
+  const submit=monsterBind(h('button',{type:'button',class:'wiki-owner-plus',
+   onclick:async()=>{
     if(submit.disabled)return;
     const label=ru.value.trim(),english=en.value.trim(),num=Number(lvl.value);
     if(!label||!english||label.length>240||english.length>240||
       !Number.isInteger(num)||num<1||num>255){
-     error.textContent=wt('Нужны названия RU/EN и уровень 1–255',
-      'Both names and a level 1–255 are required');return;
+     error.textContent=monsterCopy('createMonsterRequired');return;
     }
     const monsterId=reservedId||(reservedId=reserveWikiOwnerId('monster'));
-    if(!monsterId){error.textContent=wt('Не удалось создать монстра. Повтори попытку.','Could not create monster. Try again.');return}
+    if(!monsterId){error.textContent=monsterCopy('createMonsterFailure');return}
     submit.disabled=true;error.textContent='';
     try{
      if(!created){
@@ -3971,14 +3970,19 @@ function renderWiki(root){
      }
      error.textContent=String(e.message||e);submit.disabled=false
     }
-   }});
-  const cancel=h('button',{type:'button',class:'wiki-owner-remove',
-   text:wt('Отмена','Cancel'),onclick:()=>form.remove()});
-  form.append(ru,en,lvl,submit,cancel,error);button.after(form);ru.focus();
+   }}),'createMonsterSave');
+  const cancel=monsterBind(h('button',{type:'button',class:'wiki-owner-remove',
+   onclick:()=>form.remove()}),'createMonsterCancel');
+  form.append(ru,en,lvl,submit,cancel,error);
+  const copyPanel=ownerInterfaceEditor('wiki.monster.text',
+   wikiMonsterRows.filter(row=>row[0].startsWith('createMonster')),
+   'Подписи создания монстра','Create monster captions');
+  if(copyPanel)form.append(copyPanel);
+  button.after(form);ru.focus();
  };
  if(adminEditing&&adminToken&&wikiSelection.type==='monster'){
-  const newMonster=h('button',{type:'button',class:'wiki-owner-plus wiki-monster-create',
-   text:wt('+ Создать монстра','+ Create monster')});
+  const newMonster=monsterBind(h('button',{type:'button',
+   class:'wiki-owner-plus wiki-monster-create'}),'createMonster');
   newMonster.onclick=()=>createOwnerMonster(newMonster);
   controls.append(newMonster);
  }
