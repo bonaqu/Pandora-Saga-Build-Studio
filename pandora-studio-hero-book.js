@@ -383,25 +383,21 @@ function guideLabel(node,key,ru,en,options={},fallbackRu='',fallbackEn=''){
   node.addEventListener('dblclick',editName);
   node.setAttribute('aria-keyshortcuts','F2');
   node.addEventListener('keydown',event=>{if(event.key==='F2')editName(event)});
-  const hintPencil=make('button',{type:'button',class:'stage-guide-edit-hint',
-   text:'?',title:english?'Edit explanation':'Изменить пояснение',
-   'aria-label':english?'Edit explanation for '+label:'Изменить пояснение: '+label,
-   onclick:event=>{
-    event.preventDefault();event.stopPropagation();
-    root.PandoraGuideTooltip?.dismiss();
-    options.onTextEdit(node,key,english?'hintEn':'hintRu',hint||'');
-   }});
-  const namePencil=make('button',{type:'button',class:'stage-guide-edit-name',
-   text:'✎',title:english?'Rename label':'Переименовать подпись',
-   'aria-label':english?'Rename '+label:'Переименовать '+label,
-   onclick:editName});
-  // Keep the two actions in one stable toolbar instead of two free
-  // siblings: title, controls and disclosure arrow have separate tracks.
-  // The D1 record still stores independent ru/en/hintRu/hintEn values.
-  const actions=make('span',{class:'stage-guide-actions',
-   role:'group','aria-label':english?'Edit field label':'Редактирование надписи'});
-  actions.append(namePencil,hintPencil);
-  node.after(actions);
+  if(meaningfulGuideHint(hint)){
+   const hintPencil=make('button',{type:'button',class:'stage-guide-edit-hint',
+    text:'✎',title:english?'Edit explanation':'Изменить подсказку',
+    'aria-label':english?'Edit hover explanation for '+label:'Изменить подсказку: '+label,
+    onclick:event=>{
+     event.preventDefault();event.stopPropagation();
+     root.PandoraGuideTooltip?.dismiss();
+     options.onTextEdit(node,key,english?'hintEn':'hintRu',hint);
+    }});
+   const actions=make('span',{class:'stage-guide-actions',
+    role:'group','aria-label':english?'Edit hover help':'Редактирование подсказки'});
+   actions.append(hintPencil);
+   node.after(actions);
+  }
+
  }
  return node;
 }
@@ -1972,10 +1968,7 @@ function appendChapterGroups(body,groups,english,emptyRu,emptyEn,options={}){
      copy.setAttribute('aria-keyshortcuts','F2');
      copy.addEventListener('keydown',event=>{if(event.key==='F2')edit(event)});
      copy.tabIndex=0;
-     paragraph.append(make('button',{type:'button',class:'stage-guide-edit-name',
-      text:'✎',title:english?'Edit status explanation':'Изменить пояснение',
-      'aria-label':english?'Edit status explanation':'Изменить пояснение',
-      onclick:edit}));
+
     }
     help.append(paragraph);
    }
@@ -2403,6 +2396,19 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
   bookPages[index][1],bookEnglish[bookPages[index][1]]||bookPages[index][1],
   copyOptions);
  const nav=make('nav',{class:'stage-attribute-tabs',role:'tablist','aria-label':document.documentElement?.lang==='en'?'Hero Book chapters':'Разделы книги героя'});
+ const protectTabCaption=(button,caption)=>{
+  let pending=null;
+  button.addEventListener('click',event=>{
+   if(!event.detail||!caption.contains(event.target)||event.target.closest?.('.wiki-inline-input'))return;
+   event.preventDefault();event.stopImmediatePropagation();
+   if(pending){clearTimeout(pending);pending=null;return}
+   pending=setTimeout(()=>{
+    pending=null;
+    if(button.isConnected&&!button.disabled&&!caption.querySelector('.wiki-inline-input'))
+     button.click();
+   },240);
+  },true);
+ };
  for(const [name,label] of bookPages){
   const button=make('button',{
    type:'button',role:'tab',text:chapterTitle(name,label),id:'stageBookTab_'+name,
@@ -2417,22 +2423,17 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
   if(canEdit&&typeof onTextEdit==='function'){
    const display=chapterTitle(name,label);
    const caption=make('span',{class:'stage-book-tab-copy',text:display});
-   const pencil=make('button',{type:'button',class:'stage-book-tab-pencil',
-    text:'✎','aria-label':document.documentElement?.lang==='en'?
-     'Edit tab '+display:'Редактировать вкладку '+display});
    const edit=event=>{
     event.preventDefault();event.stopPropagation();
     onTextEdit(caption,'chapter.'+name,
      document.documentElement?.lang==='en'?'en':'ru',display);
    };
    caption.addEventListener('dblclick',edit);
-   pencil.addEventListener('click',edit);
-   // The tab remains the real game navigation action; editing is its sibling.
-   // Role=presentation keeps the wrapper out of the tablist's logical tabs.
+   caption.setAttribute('aria-keyshortcuts','F2');
+   button.addEventListener('keydown',event=>{if(event.key==='F2'){event.preventDefault();edit(event)}});
    button.replaceChildren(caption);
-   const wrapper=make('span',{class:'stage-book-tab-owner',role:'presentation'});
-   wrapper.append(button,pencil);
-   nav.append(wrapper);
+   protectTabCaption(button,caption);
+   nav.append(button);
   }else nav.append(button);
  }
  if(reusePanel)target.insertBefore(nav,stablePanel);
