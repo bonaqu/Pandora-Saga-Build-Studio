@@ -1,0 +1,36 @@
+name: Prune audited stale branches (one-time or manual)
+
+on:
+  # Only once on installation into the protected main branch.
+  push:
+    branches: [bonaqu_projects]
+    paths:
+      - .github/workflows/prune-audited-branches.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: prune-audited-branches
+  cancel-in-progress: false
+
+jobs:
+  prune:
+    if: ${{ github.repository == 'bonaqu/Pandora-Saga-Build-Studio' && github.ref == 'refs/heads/bonaqu_projects' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Checkout protected main
+        uses: actions/checkout@v5
+        with:
+          ref: bonaqu_projects
+          persist-credentials: false
+      - name: Use Node 22
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Delete only exact reviewed SHA refs and report mismatches
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/prune-audited-branches.mjs

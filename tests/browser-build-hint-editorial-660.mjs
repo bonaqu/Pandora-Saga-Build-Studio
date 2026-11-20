@@ -233,6 +233,11 @@ export async function runOwnerBuildHints660Smoke(browser,base){
    '” with your current hero? This cannot be undone.');
   assert.equal(await editedCard.locator('.build-confirm-dynamic-name').textContent(),name);
   await enOverwrite.locator('[data-owner-copy-key="libraryCancel"]').click();
+  // Owner action labels distinguish a single click from a double-click.
+  // Match the RU assertion: wait for the real cancellation, not the timer.
+  await page.waitForFunction(()=>
+   document.querySelector('.build-overwrite-choice')?.querySelectorAll('button').length===0,
+   null,{timeout:2500});
   assert.equal(await page.locator('.build-overwrite-choice button').count(),0);
   assert.equal(await page.locator('.build-card.is-current .build-card-current-label').innerText(),
    '● Editing now');
