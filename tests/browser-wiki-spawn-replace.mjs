@@ -240,7 +240,7 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
   assert.deepEqual(JSON.parse(stored.get(
    'guideedit.book.wiki.npc.trade.delete-record-button')),
    {ru:'Удалить моего NPC'});
-  await page.locator('.wiki-owner-delete-record').getByText('Удалить моего NPC').click();
+  await page.getByRole('button',{name:'Удалить моего NPC',exact:true}).click();
   await page.waitForFunction(()=>!document.querySelector('.wiki-owner-delete-record'),
    null,{timeout:18000});
   assert.equal(resetAttempts.length,1,'Lost reset receipt cannot cause duplicate POST');
