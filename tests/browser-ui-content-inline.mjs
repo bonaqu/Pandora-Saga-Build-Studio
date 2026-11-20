@@ -14,6 +14,12 @@ export async function runUIContentInlineSmoke(browser,base){
  });
  const values={},writes=[],resets=[],errors=[],nextConflicts=new Set(),
   unconfirmedWrites=new Set(),slowWrites=new Set();
+ // This group has no authored hover explanation by default. An owner copy
+ // override supplies a *real* hint so that the only visible pencil edits
+ // its independent hintRu field, not the visible group caption.
+ values['guideedit.book.summary.group.0']=JSON.stringify({
+  hintRu:'Результаты здоровья, маны и других вычислений героя.'
+ });
  let slowLibraryNext=false,offeredRelease=null;
  await context.route('**/*',async route=>{
   const req=route.request(),url=req.url(),method=req.method();
