@@ -220,49 +220,54 @@ export async function runUIContentInlineSmoke(browser,base){
    document.querySelector('#catalogStatus')?.textContent?.includes('навыков'),
    null,{timeout:25000});
   await page.locator('#hero').click();
-  const actions=page.locator('#stageBookPanel .stage-result-section-head .stage-guide-actions').first();
-  const buttons=actions.locator('button');
-  assert.equal(await buttons.count(),1,'Only the independent hover hint gets an edit control');
-  assert.equal(await actions.locator('.stage-guide-edit-name').count(),0);
   const firstGroup=page.locator('#stageBookPanel details.stage-result-section').first();
   await firstGroup.waitFor({state:'visible'});
-  const bookActions=firstGroup.locator('summary .stage-guide-actions');
-  assert.equal(await bookActions.locator('button').count(),1);
-  await bookActions.locator('.stage-guide-edit-hint').click();
-  const bookHint=firstGroup.locator('summary [data-guide-key="summary.group.0"] [contenteditable]');
+  const groupTitle=firstGroup.locator('summary [data-guide-key="summary.group.0"]');
+  // A group title has no independent hover hint. The correct owner UI must
+  // NOT synthesize a pencil simply because its visible caption is editable.
+  assert.equal(await firstGroup.locator('summary .stage-guide-edit-hint').count(),0,
+   'A group heading without a real hover explanation has no pencil');
+  const stat=firstGroup.locator('.stage-result-grid [data-guide-key="summary.0"]');
+  assert.equal(await stat.count(),1,'The first result is the source-backed health stat');
+  assert.match(await stat.innerText(),/ОЗ|HP/);
+  const statHint=firstGroup.locator('.stage-result-grid .stage-guide-actions').first();
+  assert.equal(await statHint.locator('.stage-guide-edit-hint').count(),1,
+   'The real hover explanation of health keeps precisely one hint pencil');
+  assert.equal(await statHint.locator('.stage-guide-edit-name').count(),0);
+  await statHint.locator('.stage-guide-edit-hint').click();
+  const bookHint=stat.locator('[contenteditable]');
   await bookHint.fill('Не терять черновик при повторном двойном клике');
   await bookHint.dblclick();
   assert.equal(await bookHint.textContent(),
    'Не терять черновик при повторном двойном клике',
    'Double-click inside an active contenteditable must not open a nested editor');
-  assert.equal(await firstGroup.locator('summary [data-guide-key="summary.group.0"] [data-owner-text-field]').count(),1);
-  // Contenteditable is NOT a native input: while an asynchronous D1 save is
-  // in flight, the submitted text must be locked and visibly busy.
-  slowWrites.add('guideedit.book.summary.group.0');
+  assert.equal(await stat.locator('[data-owner-text-field]').count(),1);
+  // A slow D1 write must lock the contenteditable and disallow Undo.
+  slowWrites.add('guideedit.book.summary.0');
   await bookHint.fill('Очки здоровья и маны героя');
   await bookHint.press('Tab');
   await page.waitForFunction(()=>{
-   const node=document.querySelector('#stageBookPanel [data-guide-key="summary.group.0"]');
+   const node=document.querySelector('#stageBookPanel [data-guide-key="summary.0"]');
    return node?.getAttribute('aria-busy')==='true'&&
     node.querySelector('[data-owner-text-field]')?.getAttribute('contenteditable')==='false';
   },null,{timeout:6000});
-  // Owner status and the real Undo button must agree with the pending CAS.
   await page.waitForFunction(()=>{
    const state=document.querySelector('#ownerDock [data-owner-save-state]');
    const undo=document.querySelector('#ownerDock [data-owner-undo]');
    return state?.dataset.state==='saving'&&undo?.disabled===true;
   },null,{timeout:6000});
   await page.waitForFunction(()=>
-   !document.querySelector('#stageBookPanel .stage-result-section-head [contenteditable]'),
+   !document.querySelector('#stageBookPanel [data-guide-key="summary.0"] [contenteditable]'),
    null,{timeout:12000});
   assert.equal(await page.locator('#ownerDock [data-owner-save-state]').getAttribute('data-state'),'saved');
   assert.equal(await page.locator('#ownerDock [data-owner-undo]').isDisabled(),false);
-  assert.equal(JSON.parse(values['guideedit.book.summary.group.0']).hintRu,
+  assert.equal(JSON.parse(values['guideedit.book.summary.0']).hintRu,
    'Очки здоровья и маны героя');
   assert.equal(await firstGroup.getAttribute('open'),'',
-   'Editing a help text must not collapse the native results disclosure');
-  await firstGroup.locator('summary [data-guide-key="summary.group.0"]').dblclick();
-  const bookTitle=firstGroup.locator('summary [data-guide-key="summary.group.0"] [contenteditable]');
+   'Editing a real stat help must not collapse the native results disclosure');
+  // The headline is a separate editable caption, even when it has no hint pencil.
+  await groupTitle.dblclick();
+  const bookTitle=groupTitle.locator('[contenteditable]');
   await bookTitle.fill('Жизнь героя');
   await bookTitle.press('Tab');
   await page.waitForFunction(()=>document.querySelector(
@@ -270,30 +275,28 @@ export async function runUIContentInlineSmoke(browser,base){
    ?.textContent==='Жизнь героя',null,{timeout:12000});
   assert.equal(JSON.parse(values['guideedit.book.summary.group.0']).ru,'Жизнь героя');
   assert.equal(await firstGroup.getAttribute('open'),'');
-  // Reject a CAS update: keep the exact draft beside a local error, and
-  // restore editability so a retry or Escape is still possible.
-  nextConflicts.add('guideedit.book.summary.group.0');
-  await bookActions.locator('.stage-guide-edit-hint').click();
-  const failedBook=firstGroup.locator('summary [data-guide-key="summary.group.0"] [data-owner-text-field]');
+  // Reject a CAS hint update; the exact draft must remain recoverable.
+  nextConflicts.add('guideedit.book.summary.0');
+  await statHint.locator('.stage-guide-edit-hint').click();
+  const failedBook=stat.locator('[data-owner-text-field]');
   await failedBook.fill('Неопубликованный текст должен остаться для повторной попытки');
   await failedBook.press('Tab');
-  await firstGroup.locator('summary [data-guide-key="summary.group.0"] .ui-content-inline-error')
-   .waitFor({state:'visible',timeout:12000});
-  assert.match(await firstGroup.locator('summary [data-guide-key="summary.group.0"] .ui-content-inline-error').textContent(),/^Не сохранено:/);
+  await stat.locator('.ui-content-inline-error').waitFor({
+   state:'visible',timeout:12000});
+  assert.match(await stat.locator('.ui-content-inline-error').textContent(),/^Не сохранено:/);
   assert.equal(await failedBook.textContent(),
    'Неопубликованный текст должен остаться для повторной попытки');
   assert.equal(await failedBook.getAttribute('contenteditable'),'plaintext-only');
-  assert.equal(await firstGroup.locator('summary [data-guide-key="summary.group.0"] [data-owner-text-field]').count(),1);
-  assert.equal(JSON.parse(values['guideedit.book.summary.group.0']).hintRu,'Очки здоровья и маны героя');
-  // Arm a tooltip hover while the unsaved editor is focused. A capturing
-  // tooltip must not steal Escape from the editing control.
+  assert.equal(await stat.locator('[data-owner-text-field]').count(),1);
+  assert.equal(JSON.parse(values['guideedit.book.summary.0']).hintRu,'Очки здоровья и маны героя');
+  // Hover feedback must never intercept Escape from an unsaved hint editor.
   await failedBook.evaluate(node=>{
    const label=node.closest('[data-guide-key]');
    window.PandoraGuideTooltip.attach(label,'Test guide hint',{hoverDelay:3000});
    label.dispatchEvent(new PointerEvent('pointerenter',{pointerType:'mouse'}));
   });
   await failedBook.press('Escape');
-  assert.equal(await firstGroup.locator('summary [data-guide-key="summary.group.0"] [data-owner-text-field]').count(),0);
+  assert.equal(await stat.locator('[data-owner-text-field]').count(),0);
   await page.locator('#stageAttributes .stage-book-close').click();
   const wiki=page.locator('#nav [data-i18n="wiki"]');
   await wiki.waitFor({state:'visible'});
