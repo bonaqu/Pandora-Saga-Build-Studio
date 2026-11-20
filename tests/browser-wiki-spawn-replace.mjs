@@ -88,6 +88,7 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
  // A successful create can immediately unmount the form. A one-shot real
  // mouse gesture avoids locator retries that would duplicate a D1 POST.
  const clickPointerOnce=async locator=>{
+  await locator.scrollIntoViewIfNeeded();
   const rect=await locator.boundingBox();
   assert.ok(rect&&rect.width>0&&rect.height>0,'Expected visible owner action');
   await page.mouse.click(rect.x+rect.width/2,rect.y+rect.height/2);
