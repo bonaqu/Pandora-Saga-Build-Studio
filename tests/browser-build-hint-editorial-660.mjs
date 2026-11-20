@@ -193,6 +193,11 @@ export async function runOwnerBuildHints660Smoke(browser,base){
   assert.equal(await card.locator('h3').textContent(),originalName);
   assert.equal(await originalCard.evaluate(node=>node.isConnected),true);
   await deletion.locator('[data-owner-copy-key="libraryCancel"]').click();
+  // Owner caption actions deliberately distinguish single and double click.
+  // Wait for the single-click action to complete, rather than asserting while
+  // the 500ms double-click detection window is still open.
+  await page.waitForFunction(()=>document.querySelector('.build-delete-choice')?.querySelectorAll('button').length===0,
+   null,{timeout:2500});
   assert.equal(await deletion.locator('button').count(),0);
   assert.equal(await page.locator('.build-card').count(),2);
   assert.equal(await page.locator('.build-card h3').first().textContent(),name);
