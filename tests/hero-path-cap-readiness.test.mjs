@@ -66,7 +66,9 @@ test('official 569-skill OS source contains no malformed branch requirement',()=
 
 test('marker readiness uses shared prerequisite index and dead spent subtotal is gone',()=>{
  assert.match(source,/const learned=skillsAt\.some\(skill=>readiness\(skill,api,new Set\(\),skillIndex\)\.learned\)/);
- assert.match(source,/const mastered=branchKeys\.reduce/);
+ assert.match(source,/const refreshGroupSummary=\(\)=>/);
+ assert.match(source,/groupValues\[0\]\.textContent=String\(branchKeys\.reduce/);
+ assert.match(source,/total\+M\.branchMastery\(state,key,innate,caps\)/);
  assert.match(source,/entry\.skills\.some\(skill=>readiness\(skill,api,new Set\(\),skillIndex\)\.learned\)/);
 });
 

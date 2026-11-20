@@ -293,13 +293,15 @@ test('class-limited skills keep individual numbers in the separate details list'
  const ticks=walk(f.target).filter(x=>String(x.className).includes('path-unlock-notch'));
  assert.deepEqual(ticks.map(x=>x.attributes['data-milestone-points']),['8','12']);
  const details=walk(f.target).find(x=>x.className==='path-unlock-details');
- const captions=walk(details).filter(x=>x.tag==='small').map(x=>x.textContent);
+ const captions=walk(details).filter(x=>x.tag==='small').map(x=>
+  walk(x).map(child=>child.textContent||'').join(''));
  assert.ok(captions.some(x=>x.includes('8 оч.')));
  assert.ok(captions.some(x=>x.includes('12 оч.')&&x.includes('выше лимита')));
  const options=walk(details).filter(x=>x.tag==='button');
  options[1].listeners.click();assert.equal(selected.id,981);
  const heading=walk(f.target).find(x=>String(x.className).includes('game-tree-head active'));
- assert.ok(walk(heading).some(x=>x.tag==='small'&&x.textContent.includes('освоено')));
+ assert.ok(walk(heading).some(x=>x.tag==='small'&&
+  walk(x).some(child=>String(child.textContent).includes('освоено'))));
 });
 
 test('requirements above 90 are visible only in the accessible list, never off the fixed track',()=>{
@@ -921,7 +923,8 @@ test('group totals update only numeric spans without deleting edited D1 captions
   else node.setAttribute(attr,prefix+customized+suffix);
  };
  root.PandoraHeroPath.viewGrowth(target,api);
- const summary=walk(target).find(el=>el.className==='path-group-summary');
+ const group=walk(target).find(el=>el.attributes?.['data-path-group']==='prayer');
+ const summary=walk(group).find(el=>el.className==='path-group-summary');
  assert.ok(summary);
  const labels=summary.children.filter(el=>el.className==='path-group-summary-copy');
  const values=summary.children.filter(el=>el.className==='path-group-summary-value');

@@ -6,18 +6,26 @@ const path=read('pandora-studio-hero-path.js'),app=read('pandora-studio-app.js')
  equipment=read('pandora-studio-equipment-ui.js'),css=read('pandora-studio-theme.css'),
  html=read('index.html'),release=JSON.parse(read('site-version.json')).release;
 
-test('skill group displays independently calculated mastered, learned and manually invested totals',()=>{
- assert.match(path,/const mastered=branchKeys\.reduce\(\(sum,key\)=>sum\+M\.branchMastery\(state,key,innate,caps\),0\)/);
- assert.match(path,/const learned=branchKeys\.reduce\(\(sum,key\)=>sum\+M\.branchPotential\(state,key,innate,caps\),0\)/);
- assert.match(path,/tr\(api,'освоено ','trained '\)\+mastered/);
- assert.match(path,/tr\(api,' · изучено ',' · learned '\)\+learned/);
- assert.match(path,/tr\(api,' · вложено ',' · invested '\)\+spent/);
+test('group summary keeps trained, learned and invested metrics independent of owner text',()=>{
+ for(const [key,calculation] of [
+  ['pathGroupTrained','M.branchMastery(state,key,innate,caps)'],
+  ['pathGroupLearned','M.branchPotential(state,key,innate,caps)'],
+  ['pathGroupInvested','M.potential(state,key)']
+ ]){
+  assert.ok(path.includes("'"+key+"'"),'Editable D1 caption '+key);
+  assert.ok(path.includes(calculation),'Authorial caption must not replace game calculation');
+ }
+ assert.match(path,/const refreshGroupSummary=\(\)=>/);
+ assert.match(path,/groupCount\.append\(caption,value\)/);
+ assert.doesNotMatch(path,/groupCount\.textContent=groupSummary\(\)/,
+  'Changing points must never delete a live owner-copy binding');
 });
 test('milestone labels consistently distinguish initial, invested, class cap and absolute threshold',()=>{
  for(const fragment of [
   "'Начально (оч.): '","' · Вложено (оч.): '",
-  "' оч. ветки'","' оч.'","'Лимит (оч.): '"
+  "' оч. ветки'","'Лимит (оч.):'"
  ])assert.ok(path.includes(fragment),fragment);
+ assert.match(path,/bindPathCopy\(api,unit,'pathUnlockPoints','оч\.','pts','text','',' '\)/);
  assert.ok(!path.includes("'Старт: '"),'Outdated start legend must not remain');
  assert.ok(!path.includes("'Предел: '"),'Outdated potential legend must not remain');
  assert.ok(!path.includes("' очков ветки'"),'Wrong long-form threshold must not remain');

@@ -30,13 +30,17 @@ test('choice metadata gates Soul slot count by equipment slot type',()=>{
  assert.match(app,/saveGuidePatch\('book\.'\+ownerCopyKey\(section,key\)/);
 });
 
-test('mastery group summary puts label before value in both locales',()=>{
+test('mastery summary keeps source totals following three independent RU/EN labels',()=>{
  const path=source('pandora-studio-hero-path.js');
- assert.match(path,/tr\(api,'освоено ','trained '\)\+mastered/);
- assert.match(path,/tr\(api,' · изучено ',' · learned '\)\+learned/);
- assert.match(path,/tr\(api,' · вложено ',' · invested '\)\+spent/);
+ for(const [id,ru,en] of [
+  ['pathGroupTrained','освоено','trained'],
+  ['pathGroupLearned','изучено','learned'],
+  ['pathGroupInvested','вложено','invested']
+ ])assert.ok(path.includes("['"+id+"','"+ru+"','"+en+"']"),id);
+ assert.match(path,/groupValues\[0\]\.textContent=String/);
+ assert.match(path,/groupCount\.append\(caption,value\)/);
+ assert.match(path,/bindPathCopy\(api,caption,copyKey,ru,en,'text',' '/);
 });
-
 test('approved segmented forge bar and compact Soul slots remain accessible',()=>{
  const css=source('pandora-studio-forge-controls.css');
  const ui=source('pandora-studio-equipment-ui.js');
