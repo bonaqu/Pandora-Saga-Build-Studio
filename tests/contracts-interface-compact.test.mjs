@@ -174,7 +174,7 @@ test('Honor text edits directly, without any caption pencils or game-data change
  assert.doesNotMatch(view,/directPencil|wiki-honor-copy-pencil/);
  assert.match(view,/heading\.addEventListener\('dblclick',change\)/);
  assert.match(view,/title\.addEventListener\('dblclick',edit\)/);
- assert.match(view,/content\.addEventListener\('dblclick',startEdit\)/);
+ assert.match(view,/content\.addEventListener\('dblclick',event=>/);
  assert.match(view,/target\.addEventListener\('dblclick',start\)/);
  assert.match(view,/wrap\.append\(target\)/);
  assert.match(view,/if\(!editable\)return target/);

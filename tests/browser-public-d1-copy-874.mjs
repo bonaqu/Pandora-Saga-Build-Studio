@@ -103,9 +103,9 @@ export async function runPublicD1Copy874Smoke(browser,base){
   assert.equal(await page.locator('#authState').count(),1,
    'Editor status appears only after confirmed login');
   picker=await openBelt(page);
-  const pencil=picker.locator('.stage-soul-unavailable-pencil');
-  await pencil.waitFor({state:'visible'});
-  await pencil.click();
+  const notice=picker.locator('.stage-soul-unavailable');
+  assert.equal(await picker.locator('.stage-soul-unavailable-pencil').count(),0);
+  await notice.dblclick();
   const input=picker.locator('.stage-soul-unavailable [contenteditable]');
   await input.waitFor({state:'visible'});
   await input.fill('У этого пояса нет слотов для душ.');
@@ -121,7 +121,7 @@ export async function runPublicD1Copy874Smoke(browser,base){
   await page.locator('#locale [data-locale="en"]').click();
   await page.waitForFunction(()=>document.documentElement.lang==='en');
   picker=await openBelt(page);
-  await picker.locator('.stage-soul-unavailable-pencil').click();
+  await picker.locator('.stage-soul-unavailable').dblclick();
   const enInput=picker.locator('.stage-soul-unavailable [contenteditable]');
   await enInput.fill('This belt has no Soul sockets.');
   const enSave=page.waitForResponse(res=>
