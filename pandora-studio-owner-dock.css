@@ -115,16 +115,8 @@ body>#ownerDock.owner-dock-collapsed{
  display:block;box-sizing:border-box;max-width:100%;width:100%;min-width:0;
  min-height:37px;white-space:pre-wrap;overflow-wrap:anywhere
 }
-#ownerDock .owner-workflow-copy-pencil{
- display:inline-flex;align-items:center;justify-content:center;
- width:20px;height:20px;min-width:20px;min-height:20px;
- margin:0 0 0 5px;padding:0;
- vertical-align:middle;border:1px solid #7a5f40;border-radius:4px;
- background:#302319;color:#cda879;font-size:10px;line-height:1
-}
-#ownerDock .owner-workflow-copy-pencil:hover{
- background:#553a25;border-color:#d5a36b;color:#ffe4b4
-}
+
+
 #ownerDock .owner-dock-actions{
  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;
 }
@@ -133,8 +125,7 @@ body>#ownerDock.owner-dock-collapsed{
  padding:8px 6px;margin:0;border-radius:5px;font-size:11px;
  white-space:normal;transition:border-color .18s,background .18s;
 }
-/* An action and its inline-editor pencil share one grid cell. Editing a
-   caption must never activate the underlying save/reset/navigation button. */
+/* Owner action labels are directly editable, without a separate pencil. */
 #ownerDock .owner-dock-action-slot{
  display:grid;grid-template-columns:minmax(0,1fr);
  align-items:stretch;gap:4px;min-width:0
@@ -148,19 +139,12 @@ body>#ownerDock.owner-dock-collapsed{
 #ownerDock .owner-dock-action-slot>.owner-dock-finish{
  grid-column:auto
 }
-#ownerDock .owner-dock-action-slot>button:not(.owner-dock-action-pencil){
+#ownerDock .owner-dock-action-slot>button{
  width:100%;min-width:0;margin:0
 }
-#ownerDock .owner-dock-action-slot>.owner-dock-action-pencil{
- width:23px;min-width:23px;min-height:37px;margin:0;padding:0;
- display:flex;align-items:center;justify-content:center;flex:none;
- border:1px solid #786044;border-radius:5px;background:#2b2018;
- color:#d8b580;font:600 11px/1 Manrope,Arial,sans-serif
-}
-#ownerDock .owner-dock-action-slot>.owner-dock-action-pencil:hover{
- border-color:#ddaf72;background:#49311f;color:#ffe0a9
-}
-#ownerDock .owner-dock-action-slot>.owner-dock-action-pencil[hidden]{display:none}
+
+
+
 #ownerDock .owner-dock-action-edit-host{
  grid-column:1/-1;display:block;min-width:0;max-width:100%;
  border:1px solid #b28a56;border-radius:5px;background:#17110e
@@ -316,25 +300,15 @@ body>#ownerDock{
 #ownerDock .owner-dock-group-description{
  color:#b9a78d;font-size:10px;line-height:1.4
 }
-/* Inline D1 editors for the three short group titles and descriptions.
-   The extra pencil never sits inside a real action button. */
+/* Inline D1 editors for group titles and descriptions. */
 #ownerDock .owner-dock-group-copy-wrap{
  display:inline-flex;align-items:baseline;gap:4px;min-width:0;max-width:100%
 }
 #ownerDock .owner-dock-group-copy-wrap>[data-owner-group-copy]{
  min-width:0;overflow-wrap:anywhere
 }
-#ownerDock .owner-dock-actions button.owner-dock-group-pencil{
- display:inline-flex;flex:0 0 16px;align-items:center;justify-content:center;
- box-sizing:border-box;width:16px;min-width:16px;height:16px;min-height:16px;
- padding:0;margin:0;border:1px solid #655039;border-radius:4px;
- background:transparent;color:#b19a77;font-size:10px;line-height:1;
- opacity:.7;vertical-align:middle
-}
-#ownerDock .owner-dock-actions button.owner-dock-group-pencil:hover,
-#ownerDock .owner-dock-actions button.owner-dock-group-pencil:focus-visible{
- background:#4e3522;border-color:#d3a876;color:#ffe5b9;opacity:1
-}
+
+
 #ownerDock .owner-dock-group-copy-wrap .wiki-inline-input{
  display:block;box-sizing:border-box;min-width:0;max-width:100%;
  overflow-wrap:anywhere;white-space:pre-wrap
@@ -351,7 +325,7 @@ body>#ownerDock{
 #ownerDock .owner-dock-action-slot.owner-dock-action-wide{
  grid-column:1/-1
 }
-#ownerDock .owner-dock-action-slot>button:not(.owner-dock-action-pencil){
+#ownerDock .owner-dock-action-slot>button{
  grid-column:1;display:flex;justify-content:flex-start;align-items:center;gap:9px;
  text-align:left;min-height:43px;box-sizing:border-box;padding:9px 11px;
  border-radius:8px;font:600 12px/1.35 Manrope,Arial,sans-serif;
@@ -360,23 +334,12 @@ body>#ownerDock{
 /* Native hidden must win over display:flex while a D1 caption is edited.
    This also protects conditional English-translation actions. */
 #ownerDock .owner-dock-action-slot>button[hidden]{display:none!important}
-#ownerDock .owner-dock-action-slot>button:not(.owner-dock-action-pencil):hover:not(:disabled){
+#ownerDock .owner-dock-action-slot>button:hover:not(:disabled){
  border-color:#d2a66e;background:#46301d;color:#ffe3ba
 }
-#ownerDock .owner-dock-action-slot>.owner-dock-action-pencil{
- grid-column:2;box-sizing:border-box;min-width:29px;width:29px;min-height:43px;
- padding:0;border-radius:8px;background:#29221a;
- border-color:#624e37;color:#c9ad86;
- opacity:.78;transition:opacity .12s,border-color .12s
-}
-#ownerDock .owner-dock-action-slot:hover>.owner-dock-action-pencil,
-#ownerDock .owner-dock-action-slot:focus-within>.owner-dock-action-pencil{
- opacity:1;border-color:#b99362
-}
-#ownerDock .owner-dock-action-slot>.owner-dock-action-pencil:focus-visible,
-#ownerDock .owner-workflow-copy-pencil:focus-visible{
- outline:2px solid #ffd595;outline-offset:2px
-}
+
+
+
 #ownerDock .owner-dock-actions .owner-dock-primary{
  background:linear-gradient(125deg,#664423,#4c321e);border-color:#ae8754;
  color:#ffdfab;font-weight:750
@@ -400,7 +363,7 @@ body>#ownerDock{
 #ownerDock .owner-dock-d1-check:before{content:"✓"}
 #ownerDock .owner-dock-export:before{content:"↗"}
 #ownerDock .owner-dock-finish:before{content:"✓"}
-#ownerDock .owner-dock-action-slot>button:not(.owner-dock-action-pencil):before{
+#ownerDock .owner-dock-action-slot>button:before{
  display:inline-flex;align-items:center;justify-content:center;flex:none;
  min-width:16px;color:#dcb87c;font-size:14px;font-weight:700
 }
@@ -463,10 +426,7 @@ body>#ownerDock{
  font-size:11px;line-height:1.6;color:#c6b69e
 }
 #ownerDock .owner-workflow-glossary strong{color:#f2d29f}
-#ownerDock .owner-workflow-copy-pencil{
- min-height:23px;min-width:23px;width:23px;height:23px;
- margin-left:6px;border-radius:6px
-}
+
 @media(max-width:480px){
  #ownerDock .owner-dock-head{padding:15px 105px 14px 15px}
  #ownerDock .owner-dock-body{padding:13px 13px 16px;gap:13px}
@@ -477,20 +437,15 @@ body>#ownerDock{
  #ownerDock .owner-dock-footer .owner-dock-action-slot{grid-column:1}
 }
 @media(prefers-reduced-motion:reduce){
- #ownerDock .owner-dock-action-slot>button:not(.owner-dock-action-pencil),
- #ownerDock .owner-dock-action-slot>.owner-dock-action-pencil{transition:none}
+ #ownerDock .owner-dock-action-slot>button{transition:none}
 }
 
-/* 0.791: accessible help-edit targets and OS high-contrast fallback. */
-#ownerDock .owner-workflow-copy-pencil{
- min-width:28px;min-height:28px;width:28px;height:28px
-}
+/* Accessible high-contrast fallback for dock controls. */
+
 @media(forced-colors:active){
  #ownerDock .owner-dock-panel,#ownerDock .owner-dock-save-state,
- #ownerDock .owner-dock-handle,#ownerDock .owner-dock-action-slot>button,
- #ownerDock .owner-workflow-copy-pencil{border:1px solid CanvasText}
- #ownerDock .owner-dock-action-slot>button:focus-visible,
- #ownerDock .owner-workflow-copy-pencil:focus-visible{outline:2px solid Highlight;outline-offset:2px}
+ #ownerDock .owner-dock-handle,#ownerDock .owner-dock-action-slot>button{border:1px solid CanvasText}
+ #ownerDock .owner-dock-action-slot>button:focus-visible{outline:2px solid Highlight;outline-offset:2px}
 }
 
 /* 0.792 · Clarify in-flight writes without extra badges or dashboard cards. */
@@ -503,7 +458,7 @@ body>#ownerDock{
 @media(max-width:350px){
  #ownerDock .owner-dock-head{padding-right:100px}
  #ownerDock .owner-dock-footer-note{font-size:10px}
- #ownerDock .owner-dock-action-slot>button:not(.owner-dock-action-pencil){font-size:11px}
+ #ownerDock .owner-dock-action-slot>button{font-size:11px}
 }
 
 /* 0.796 · Two equally discoverable game-data actions, no orphaned grid cell. */
@@ -517,12 +472,10 @@ body>#ownerDock{
 #ownerDock .owner-dock-action-group[data-owner-group="game"] .owner-dock-action-grid{
  align-items:stretch
 }
-#ownerDock .owner-dock-action-slot>button:not(.owner-dock-action-pencil){
+#ownerDock .owner-dock-action-slot>button{
  text-wrap:pretty
 }
-#ownerDock .owner-dock-action-slot>.owner-dock-action-pencil:focus-visible{
- opacity:1
-}
+
 @media(max-width:480px){
  #ownerDock .owner-dock-action-group[data-owner-group="game"] .owner-dock-action-grid{
   grid-template-columns:1fr

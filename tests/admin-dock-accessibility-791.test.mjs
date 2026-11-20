@@ -32,4 +32,6 @@ test('owner help captions edit directly and retain keyboard access',()=>{
  assert.match(app,/ownerCopyLabel\(node,'owner-dock',key,pair\[0\],pair\[1\]\)/);
  assert.match(style,/@media\(forced-colors:active\)/);
  assert.match(browser,/Control\+Alt\+Shift\+P/);
+ assert.doesNotMatch(app,/owner-workflow-copy-pencil|owner-dock-action-pencil/);
+ assert.doesNotMatch(style,/owner-workflow-copy-pencil|owner-dock-action-pencil|owner-dock-group-pencil/);
 });

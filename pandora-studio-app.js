@@ -9701,21 +9701,13 @@ function refreshOwnerUI(){
    ownerDockPatchText(translations,ownerDockCopy('translations')+' · '+count);
   }
   for(const slot of root.querySelectorAll('.owner-dock-action-slot[data-owner-dock-key]')){
-   const key=slot.dataset.ownerDockKey,button=slot.querySelector('button:not(.owner-dock-action-pencil)');
+   const key=slot.dataset.ownerDockKey,button=slot.querySelector(':scope > button');
    if(button&&key!=='translations')ownerDockPatchText(button,ownerDockCopy(key));
    // Purely visual CSS glyphs must not become part of the spoken button name.
    if(button){
     ownerDockPatchAttr(button,'aria-label',button.textContent);
     if(ownerDockHints[key])
      ownerDockPatchData(button,'guideHint',ownerDockHints[key][lang==='en'?1:0]);
-   }
-   const pencil=slot.querySelector('.owner-dock-action-pencil');
-   if(pencil){
-    ownerDockPatchAttr(pencil,'aria-label',
-     (lang==='en'?'Edit label: ':'Изменить надпись: ')+ownerDockCopy(key));
-    ownerDockPatchData(pencil,'guideHint',lang==='en'?
-     'Edit the button label only. Does not execute the action.':
-     'Изменяет только название кнопки. Само действие не запускается.');
    }
   }
   // Two everyday game-data tools share a row; conditional English fills
@@ -9751,12 +9743,6 @@ function refreshOwnerUI(){
   for(const node of root.querySelectorAll('[data-owner-dock-static]')){
    if(!node.querySelector('.wiki-inline-input'))
     ownerDockPatchText(node,ownerDockCopy(node.dataset.ownerDockStatic));
-  }
-  // Refresh the accessible name of help edit buttons on RU/EN switch.
-  for(const pencil of root.querySelectorAll('.owner-workflow-copy-pencil')){
-   const key=pencil.previousElementSibling?.dataset.ownerDockStatic;
-   if(key)ownerDockPatchAttr(pencil,'aria-label',
-    (lang==='en'?'Edit help: ':'Изменить пояснение: ')+ownerDockCopy(key));
   }
   const guide=root.querySelector('.owner-workflow-guide>summary');
   ownerDockPatchText(guide,ownerDockCopy('guide'));
