@@ -9070,7 +9070,7 @@ async function apiRequest(path,body,token=adminToken,{verifyUncertain=false}={})
   try{
    const checkSignal=AbortSignal.timeout(12000);
    const check=await untilAbort(()=>fetch(API+'/api/overrides',{
-    method:'GET',cache:'no-store',headers:{'Cache-Control':'no-cache'},
+    method:'GET',cache:'no-store',
     signal:checkSignal
    }),checkSignal);
    if(!check?.ok)return null;

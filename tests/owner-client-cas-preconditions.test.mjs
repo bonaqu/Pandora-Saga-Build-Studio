@@ -412,7 +412,8 @@ test('uncertain owner create accepts only byte-exact uncached D1 readback after 
    reads++;
    assert.equal(opts.method,'GET');
    assert.equal(opts.cache,'no-store','D1 proof cannot use the client snapshot cache');
-   assert.equal(opts.headers['Cache-Control'],'no-cache');
+   assert.equal(opts.headers,undefined,
+    'Avoid custom request headers that trigger a cross-origin preflight');
    assert.equal(opts.body,undefined);
    return respond({values:{[key]:value}});
   }
