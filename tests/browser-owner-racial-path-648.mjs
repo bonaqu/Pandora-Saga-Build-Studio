@@ -76,7 +76,12 @@ export async function runOwnerRacialPath648Smoke(browser,base){
    .fill('Correct admin password!');
   await page.locator('.modal').getByRole('button',{name:'Войти',exact:true}).click();
   await page.locator('#ownerDock').waitFor({state:'visible'});
-  await page.locator('#ownerDock [data-owner-collapse]').click();
+  // The dock may start collapsed; an unconditional toggle would expand it
+  // across the Origin passives and intercept the double-click. Keep the
+  // real UI collapsed while exercising the visible text editor.
+  const dockToggle=page.locator('#ownerDock [data-owner-collapse]');
+  if(await dockToggle.getAttribute('aria-expanded')==='true')
+   await dockToggle.click();
   // The passive remains selectable, but its caption edits directly without
   // a pencil. Escape must preserve the selected passive and avoid D1 writes.
   const passive=page.locator('#originPassives .origin-passive').first();
