@@ -1,0 +1,59 @@
+name: Recover stale GitHub Pages after a failed live release
+
+on:
+  # Run once when this safeguard first lands on the protected source branch.
+  # Normal releases use GitHub Pages' built-in branch deployment. No cron.
+  push:
+    branches: [bonaqu_projects]
+    paths:
+      - .github/workflows/pages-recovery.yml
+  # Only a failed production readiness check can request a fallback build.
+  # A Worker/D1 outage is not a reason to rebuild if Pages is already current.
+  workflow_run:
+    workflows:
+      - Live Pages and Worker readiness (on release or manual)
+    types: [completed]
+    branches: [bonaqu_projects]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+
+concurrency:
+  group: pages-recovery-bonaqu_projects
+  cancel-in-progress: true
+
+jobs:
+  request-rebuild:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'failure' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Checkout current protected source
+        uses: actions/checkout@v5
+        with:
+          ref: bonaqu_projects
+          persist-credentials: false
+      - name: Reject an obsolete release trigger
+        id: guard
+        env:
+          EVENT_KIND: ${{ github.event_name }}
+          EVENT_HEAD_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+        run: |
+          current="$(git rev-parse HEAD)"
+          if [ "$EVENT_HEAD_SHA" != "$current" ]; then
+            echo "Old release trigger ignored; current protected branch is newer."
+            exit 0
+          fi
+          echo "eligible=true" >> "$GITHUB_OUTPUT"
+      - name: Use Node 22
+        if: steps.guard.outputs.eligible == 'true'
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Request the latest branch-based Pages build only when still stale
+        if: steps.guard.outputs.eligible == 'true'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/recover-stale-pages.mjs

@@ -28,6 +28,31 @@ To recheck metadata: `GET /repos/bonaqu/Pandora-Saga-Build-Studio` and `GET /rep
 - Do not put `[skip ci]` or equivalent skip directives into PR commits; these also leave required checks Pending. Do not rename the job checks without first updating Ruleset #27159457. A manually dispatched run cannot replace a missing PR status.
 - Preserve real Chromium even in the fast browser path. Impact selector `scripts/select-browser-suite.mjs` chooses **quick** for proven harmless Markdown/style/test changes, **full** for JS/gameplay/unknown changes. If selection fails, the workflow safely falls back to **full**. The manual `--only=<scenario>` is an optional local/debug run, never a replacement for the PR gate.
 
+## Automatic recovery of a missed GitHub Pages branch build
+
+A successful protected-branch merge and green Node/Chromium do not prove
+that GitHub Pages has published the new release. The `live-readonly.yml`
+workflow first waits for the exact `site-version.json` revision and
+does not mutate Cloudflare D1.
+
+GitHub normally runs its built-in **pages build and deployment** when
+`bonaqu_projects` advances. If that build never starts, the
+`pages-recovery.yml` workflow is a strictly conditional fallback: after a
+**failed** live readiness run, it checks out the current protected head
+and compares its version with a fresh public Pages manifest. Only a
+verified older public release may cause one request to GitHub's documented
+`POST /repos/{owner}/{repo}/pages/builds` endpoint. A more recent push,
+an already-current site, unavailable/malformed public JSON, or a D1-only
+failure cannot trigger the request. It runs once on initial installation
+of the safeguard and can be manually invoked from Actions; **no cron**.
+
+This fallback uses the scoped GitHub Actions `pages:write` token. It does
+not publish a custom artifact, change the repository's Pages source mode,
+modify Cloudflare/D1, or replace the built-in Pages workflow. If GitHub
+rejects the Pages build request, inspect the workflow's HTTP status
+and the repository's Pages permissions/settings; do not manufacture
+empty Git commits to force a publication.
+
 ## Fast feedback loop without lowering coverage
 
 1. **Before edits:** read current `bonaqu_projects` HEAD, open PRs and relevant Issue *once per new work batch*. Inspect current release, related code and its existing tests together. Do not copy stale version numbers from chat.

@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
+import {compareRelease,recoverStalePages} from '../scripts/recover-stale-pages.mjs';
 
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 test('live readiness runs parity only after the published release and Worker checks',()=>{
@@ -110,3 +111,100 @@ test('read-only D1 Insights runs after green parity and skips all direct SQL pro
  assert.doesNotMatch(source,/console\.(?:log|warn|error)\([^\n]*item\.query/);
 });
 
+
+test('Pages recovery listens only to failed protected-branch readiness, never a cron or PR',()=>{
+ const workflow=read('.github/workflows/pages-recovery.yml');
+ assert.match(workflow,/workflow_run:/);
+ assert.match(workflow,/Live Pages and Worker readiness \(on release or manual\)/);
+ assert.match(workflow,/github\.event\.workflow_run\.conclusion == 'failure'/);
+ assert.match(workflow,/pages: write/);
+ assert.match(workflow,/contents: read/);
+ assert.match(workflow,/branches: \[bonaqu_projects\]/);
+ assert.match(workflow,/ref: bonaqu_projects/);
+ assert.match(workflow,/if \[ "\$EVENT_HEAD_SHA" != "\$current" \]/);
+ assert.match(workflow,/scripts\/recover-stale-pages\.mjs/);
+ assert.doesNotMatch(workflow,/^\s*(?:schedule:|pull_request:)/m);
+ assert.doesNotMatch(workflow,/wrangler|CLOUDFLARE|D1_DATABASE|catalog:import/);
+});
+
+test('GitHub Pages recovery is a no-op when public release is equal or newer',async()=>{
+ for(const live of ['2026.11.20.945','2026.11.20.946']){
+  const requests=[];
+  const result=await recoverStalePages({
+   expected:'2026.11.20.945',repository:'bonaqu/Pandora-Saga-Build-Studio',
+   fetcher:async(url,options)=>{
+    requests.push({url,options});
+    return {ok:true,json:async()=>({release:live})};
+   },clock:()=>42
+  });
+  assert.equal(result.status,'current');
+  assert.equal(requests.length,1,'Current Pages does not need API permissions or a POST');
+  assert.match(requests[0].url,/site-version\.json\?recovery=42/);
+  assert.equal(requests[0].options.cache,'no-store');
+  assert.equal(compareRelease(live,'2026.11.20.945')>=0,true);
+ }
+});
+
+test('stale Pages requests exactly one authenticated build for the current branch',async()=>{
+ const requests=[];
+ const result=await recoverStalePages({
+  expected:'2026.11.20.945',repository:'bonaqu/Pandora-Saga-Build-Studio',
+  token:'test-temporary-github-token',
+  fetcher:async(url,options)=>{
+   requests.push({url,options});
+   if(options.method==='POST')return {status:201};
+   return {ok:true,json:async()=>({release:'2026.11.20.944'})};
+  },clock:()=>88
+ });
+ assert.equal(result.status,'requested');
+ assert.equal(result.live,'2026.11.20.944');
+ assert.equal(requests.length,2,'Only the public GET and Pages build POST are permitted');
+ assert.equal(requests[1].url,
+  'https://api.github.com/repos/bonaqu/Pandora-Saga-Build-Studio/pages/builds');
+ assert.equal(requests[1].options.method,'POST');
+ assert.equal(requests[1].options.headers.Authorization,'Bearer test-temporary-github-token');
+ assert.equal(requests[1].options.headers['X-GitHub-Api-Version'],'2026-03-10');
+});
+
+test('unverified release, inaccessible site and denied build never silently succeed',async()=>{
+ const base={expected:'2026.11.20.945',repository:'bonaqu/Pandora-Saga-Build-Studio',
+  token:'test-temp-token'};
+ for(const bad of [
+  {ok:false,status:503},
+  {ok:true,json:async()=>({release:'not-an-actual-release'})}
+ ]){
+  let calls=0;
+  await assert.rejects(()=>recoverStalePages({...base,fetcher:async()=>{
+   calls++;return bad;
+  }}),/unavailable|Malformed/);
+  assert.equal(calls,1,'Do not authorize a rebuild from unverified public data');
+ }
+ await assert.rejects(()=>recoverStalePages({...base,
+  fetcher:async(_url,options)=>options.method==='POST'?{status:403}:
+   {ok:true,json:async()=>({release:'2026.11.20.944'})}
+ }),/HTTP 403/);
+ await assert.rejects(()=>recoverStalePages({...base,token:null,
+  fetcher:async()=>({ok:true,json:async()=>({release:'2026.11.20.944'})})
+ }),/permissions unavailable/);
+});
+
+test('a stalled Pages response ignores its signal but the recovery job still settles',async()=>{
+ await assert.rejects(()=>recoverStalePages({
+  expected:'2026.11.20.945',repository:'bonaqu/Pandora-Saga-Build-Studio',
+  token:'test-temp-token',timeoutMs:20,
+  fetcher:async()=>new Promise(()=>{})
+ }),/deadline exceeded|TimeoutError|timed out|aborted/i);
+});
+
+test('Pages recovery also bounds a stalled JSON body and never requests a rebuild',async()=>{
+ let posts=0;
+ await assert.rejects(()=>recoverStalePages({
+  expected:'2026.11.20.945',repository:'bonaqu/Pandora-Saga-Build-Studio',
+  token:'test-temp-token',timeoutMs:20,
+  fetcher:async(_url,options)=>{
+   if(options.method==='POST')posts++;
+   return {ok:true,json:async()=>new Promise(()=>{})};
+  }
+ }),/deadline exceeded/);
+ assert.equal(posts,0,'A JSON decoder stall must never trigger Pages or D1 writes');
+});
