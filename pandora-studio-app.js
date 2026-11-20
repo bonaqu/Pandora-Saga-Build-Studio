@@ -1266,6 +1266,10 @@ const wikiMapRows=Object.freeze([
  ["createMapCancel","Отмена","Cancel"],
  ["createMapRequired","Укажи названия RU и EN","Enter both RU and EN names"],
  ["createMapFailure","Не удалось создать локацию. Повтори попытку.","Could not create location. Try again."],
+ ["deleteRecordButton","Удалить созданную локацию","Delete created location"],
+ ["deleteRecordLinked","Сначала убери связанные монстров, NPC, добычу, разделы и ссылки на эту запись. Удаление с зависимостями заблокировано.","Remove linked monsters, NPCs, loot, sections and references before deleting this record."],
+ ["deleteRecordConfirm","Удалить созданную вручную локацию из D1? Это нельзя отменить после завершения сеанса.","Delete this owner-created location from D1? This cannot be undone after the session."],
+ ["deleteRecordFailure","Удаление не выполнено:","Deletion failed:"],
 ]);
 const wikiMapByKey=new Map(wikiMapRows.map(row=>[row[0],row]));
 function mapCopy(key){
@@ -1363,6 +1367,10 @@ const wikiMonsterRows=Object.freeze([
  ["createMonsterCancel","Отмена","Cancel"],
  ["createMonsterRequired","Нужны названия RU/EN и уровень 1–255","Both names and a level 1–255 are required"],
  ["createMonsterFailure","Не удалось создать монстра. Повтори попытку.","Could not create monster. Try again."],
+ ["deleteRecordButton","Удалить созданного монстра","Delete created monster"],
+ ["deleteRecordLinked","Сначала убери связанные монстров, NPC, добычу, разделы и ссылки на эту запись. Удаление с зависимостями заблокировано.","Remove linked monsters, NPCs, loot, sections and references before deleting this record."],
+ ["deleteRecordConfirm","Удалить созданную вручную карточку монстра из D1?","Delete this owner-created monster card from D1?"],
+ ["deleteRecordFailure","Удаление не выполнено:","Deletion failed:"],
 ]);
 const wikiMonsterByKey=new Map(wikiMonsterRows.map(row=>[row[0],row]));
 function monsterCopy(key){
@@ -1413,6 +1421,10 @@ const wikiNpcTradeRows=Object.freeze([
  ["deleteConfirm","Подтвердить удаление","Confirm deletion"],
  ["newTrade","+ Добавить обмен","+ Add trade"],
  ["newTradeTitle","Создать новый обмен у этого NPC","Create a new trade with this NPC"],
+ ["deleteRecordButton","Удалить созданного NPC","Delete created NPC"],
+ ["deleteRecordLinked","Сначала убери ссылки на NPC из локаций и разделов.","Remove NPC references from maps and custom sections before deletion."],
+ ["deleteRecordConfirm","Удалить созданного вручную NPC из Cloudflare D1?","Delete this owner-created NPC from Cloudflare D1?"],
+ ["deleteRecordFailure","Удаление не выполнено:","Deletion failed:"],
 ]);
 const wikiNpcTradeByKey=new Map(wikiNpcTradeRows.map(row=>[row[0],row]));
 function npcTradeCopy(key){
@@ -4964,10 +4976,10 @@ function renderWiki(root){
       type==='monster'&&window.PandoraWikiOwnerData.ownerMonsterId(id))){
      const owned=Boolean(rec.ownerCreated);
      if(owned){
-      const button=h('button',{type:'button',
-       class:'wiki-owner-remove wiki-owner-delete-record',
-       text:type==='map'?wt('Удалить созданную локацию','Delete created location'):
-        wt('Удалить созданного монстра','Delete created monster')});
+      const copy=type==='map'?mapCopy:monsterCopy;
+      const bind=type==='map'?mapBind:monsterBind;
+      const button=bind(h('button',{type:'button',
+       class:'wiki-owner-remove wiki-owner-delete-record'}),'deleteRecordButton');
       const remove=async()=>{
        const maps=wikiIndex.records('map')||{};
        const instances=wikiIndex.records('instance')||{};
@@ -4982,26 +4994,19 @@ function renderWiki(root){
         wikiIndex.locations(id).length||
          Object.values(instances).some(d=>(d.mobs||[]).some(x=>String(x)===String(id)));
        if(linked||usedInCustom){
-        showStudioToast(wt(
-         'Сначала убери связанные монстров, NPC, добычу, разделы и ссылки на эту запись. Удаление с зависимостями заблокировано.',
-         'Remove linked monsters, NPCs, loot, sections and references before deleting this record.'),
-         'warning');return;
+        showStudioToast(copy('deleteRecordLinked'),'warning');return;
        }
-       if(!confirm(type==='map'?
-        wt('Удалить созданную вручную локацию из D1? Это нельзя отменить после завершения сеанса.',
-         'Delete this owner-created location from D1? This cannot be undone after the session.'):
-        wt('Удалить созданную вручную карточку монстра из D1?',
-         'Delete this owner-created monster card from D1?')))return;
+       if(!confirm(copy('deleteRecordConfirm')))return;
        const key='wikiedit.'+type+'.'+id,before=activeOverride(key);
        if(before===null)return;
        button.disabled=true;
        try{
-        await apiRequest('/api/admin/reset',{key});
+        await apiRequest('/api/admin/reset',{key},adminToken,{verifyUncertain:true});
         delete override[key];ownerEdits.push({key,before,after:null});
         wikiSelection={type,id:null,highlight:null};wikiSearch='';
         await refreshOwnerCatalog();refreshOwnerUI();
        }catch(error){button.disabled=false;showStudioToast(
-        'Удаление не выполнено: '+error.message,'warning')}
+        copy('deleteRecordFailure')+' '+error.message,'warning')}
       };
       button.onclick=()=>void remove();
       detail.append(button);
@@ -5010,30 +5015,28 @@ function renderWiki(root){
    }
    if(type==='npc'&&rec.ownerCreated&&window.PandoraWikiOwnerData.curatedNpcId(id)&&
      adminEditing&&adminToken){
-    const button=h('button',{type:'button',class:'wiki-owner-remove wiki-owner-delete-record',
-     text:wt('Удалить созданного NPC','Delete created NPC')});
+    const button=npcTradeBind(h('button',{type:'button',
+     class:'wiki-owner-remove wiki-owner-delete-record'}),'deleteRecordButton');
     button.onclick=async()=>{
      const linked=Object.values(wikiIndex.records('map')||{}).some(loc=>
       (loc.npcs||[]).some(x=>String(x)===String(id))||
       (loc.extraSections||[]).some(group=>
        group.kind==='npc'&&(group.entries||[]).some(x=>String(x)===String(id))));
      if(linked){
-      showStudioToast(wt('Сначала убери ссылки на NPC из локаций и разделов.',
-       'Remove NPC references from maps and custom sections before deletion.'),'warning');
+      showStudioToast(npcTradeCopy('deleteRecordLinked'),'warning');
       return;
      }
-     if(!confirm(wt('Удалить созданного вручную NPC из Cloudflare D1?',
-      'Delete this owner-created NPC from Cloudflare D1?')))return;
+     if(!confirm(npcTradeCopy('deleteRecordConfirm')))return;
      const key='wikiedit.npc.'+id,before=activeOverride(key);
      if(before===null)return;
      button.disabled=true;
      try{
-      await apiRequest('/api/admin/reset',{key});
+      await apiRequest('/api/admin/reset',{key},adminToken,{verifyUncertain:true});
       delete override[key];ownerEdits.push({key,before,after:null});
       wikiSelection={type:'npc',id:null,highlight:null};wikiSearch='';
       await refreshOwnerCatalog();refreshOwnerUI();
      }catch(error){button.disabled=false;showStudioToast(
-      'Удаление не выполнено: '+error.message,'warning')}
+      npcTradeCopy('deleteRecordFailure')+' '+error.message,'warning')}
     };
     detail.append(button);
    }
