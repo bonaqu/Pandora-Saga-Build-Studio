@@ -36,5 +36,10 @@ test('rank filter direct edit never triggers a filter action',()=>{
  assert.doesNotMatch(view,/wiki-honor-filter-pencil/);
  assert.match(app,/ownerDockPatchText\(filterCaption,value\)/);
  assert.match(css,/\.wiki-honor-filter-wrap\{/);
+ assert.match(css,/\.wiki-honor-filter-caption\{pointer-events:auto\}/,
+  'An owner double-click must target the actual caption, not its action button');
+ assert.match(css,/\.wiki-honor-filter-count\{pointer-events:none\}/,
+  'Live rank counts stay passive and cannot be edited');
+ assert.doesNotMatch(css,/\.wiki-honor-filter-pencil\{/);
  assert.match(css,/\.wiki-honor-filter-edit-host\[hidden\]\{display:none!important\}/);
 });
