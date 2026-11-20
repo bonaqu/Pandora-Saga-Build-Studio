@@ -126,11 +126,11 @@ test('future zone UI shares the native monster grid and offers in-place linked-c
  assert.match(app,/wiki-add-resistance/);
 });
 
-test('52 monster labels are bilingual D1 overlays with isolated OS stats and loot',()=>{
+test('56 monster labels are bilingual D1 overlays with isolated OS stats and loot',()=>{
  const app=read('pandora-studio-app.js');
  const block=app.slice(app.indexOf('const wikiMonsterRows='),app.indexOf('const wikiNpcTradeRows='));
  const entries=[...block.matchAll(/^ \["([^"]+)","([^"]+)","([^"]+)"\],?$/gm)];
- assert.equal(entries.length,52);
+ assert.equal(entries.length,56);
  assert.equal(new Set(entries.map(row=>row[1])).size,entries.length,
   'Every owner-editable label has a distinct semantic key');
  const langEnv={window:{}};
@@ -169,7 +169,7 @@ test('map and dungeon captions use the shared bilingual D1 owner editor',()=>{
  const app=read('pandora-studio-app.js');
  const block=app.slice(app.indexOf('const wikiMapRows='),app.indexOf('const wikiMonsterRows='));
  const captions=[...block.matchAll(/^ \["([^"]+)","([^"]+)","([^"]+)"\],?$/gm)];
- assert.equal(captions.length,54);
+ assert.equal(captions.length,58);
  assert.equal(new Set(captions.map(row=>row[1])).size,captions.length);
  const win={};Function('window',read('pandora-studio-honor-guide.js'))(win);
  for(const [,key,ru,en]of captions){
@@ -464,4 +464,14 @@ test('a failed create POST reuses its ID; a failed follow-up link reveals the al
  assert.deepEqual(notices,[['Saved without a location link','warning']]);
  await save.onclick();
  assert.equal(posts.length,2,'A completed-but-detached form cannot submit duplicates');
+});
+
+test('created-entity deletion copy uses four distinct safe RU/EN keys',()=>{
+ const app=read('pandora-studio-app.js');
+ const begin=app.indexOf('const wikiMonsterRows=');
+ const end=app.indexOf('const wikiMonsterByKey=',begin);
+ const block=app.slice(begin,end);
+ for(const key of ['deleteRecordButton','deleteRecordLinked','deleteRecordConfirm','deleteRecordFailure'])
+  assert.ok(block.includes('['+JSON.stringify(key)+','),'Missing editable deletion copy '+key);
+ assert.ok(app.includes("verifyUncertain:true"));
 });

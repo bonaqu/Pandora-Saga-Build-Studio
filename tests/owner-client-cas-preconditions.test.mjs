@@ -491,3 +491,84 @@ test('readback is opt-in for Wiki: ordinary admin writes and unauthorized respon
  await assert.rejects(guest.request('/api/admin/override',{key,value}));
  assert.equal(reads,0,'Non-opt-in writes must never add D1 query costs');
 });
+
+test('owner Wiki reset lost its Worker response but GET proves D1 key absent, with no second reset',async()=>{
+ const key='wikiedit.monster.owner-monster-0011223344556677',old='{"name":"Old"}';
+ let postCount=0,reads=0;
+ const editor=instance(async(url,options={})=>{
+  const path=new URL(url).pathname;
+  if(path==='/api/overrides'){
+   reads++;
+   assert.equal(options.cache,'no-store');
+   assert.equal(options.method,'GET');
+   assert.equal(options.body,undefined);
+   return respond({values:{}});
+  }
+  postCount++;
+  assert.equal(path,'/api/admin/reset');
+  assert.deepEqual(JSON.parse(options.body),{key,expectedValue:old});
+  throw Error('Worker response lost after the database committed DELETE');
+ },{values:{[key]:old}});
+ const proof=await editor.request('/api/admin/reset',{key},validToken,{verifyUncertain:true});
+ assert.deepEqual({ok:proof.ok,deleted:proof.deleted,verified:proof.verifiedReadback},
+  {ok:true,deleted:true,verified:true});
+ assert.equal(editor.status().ownerSaveState,'saved');
+ assert.equal(postCount,1,'An uncertain D1 reset must not repeat POST');
+ assert.equal(reads,1);
+});
+test('owner Wiki reset lost ack after 503/409/malformed 200: only absent D1 key counts as success',async()=>{
+ const key='wikiedit.map.custom-0011223344556677',previous='{"name":"Map"}';
+ for(const kind of ['503','409','bad200']){
+  let reads=0;
+  const editor=instance(async(url,opts={})=>{
+   if(new URL(url).pathname==='/api/overrides'){
+    reads++;return respond({values:{}});
+   }
+   assert.equal(JSON.parse(opts.body).expectedValue,previous);
+   return kind==='503'?respond({error:'Uncertain'},503):
+    kind==='409'?respond({code:'OWNER_EDIT_CONFLICT',error:'Changed'},409):
+    respond({ok:true,key,conditional:false,deleted:false});
+  },{values:{[key]:previous}});
+  const result=await editor.request('/api/admin/reset',{key},validToken,{verifyUncertain:true});
+  assert.equal(result.deleted,true,kind);
+  assert.equal(result.verifiedReadback,true,kind);
+  assert.equal(reads,1,kind);
+  assert.equal(editor.status().ownerSaveState,'saved',kind);
+ }
+});
+test('reset verification fails closed on a different value, failed GET, 401 and missing CAS baseline',async()=>{
+ const key='wikiedit.npc.owner-npc-0011223344556677',before='{"name":"NPC"}';
+ for(const mode of ['changed','get-failure','unauthorized','absent-baseline']){
+  let reads=0,posts=0;
+  const old=mode==='absent-baseline'?{}:{[key]:before};
+  const editor=instance(async(url)=>{
+   if(new URL(url).pathname==='/api/overrides'){
+    reads++;
+    if(mode==='get-failure')throw Error('D1 unavailable');
+    return respond({values:mode==='changed'?{[key]:'Other edit'}:{}});
+   }
+   posts++;
+   return mode==='unauthorized'?respond({error:'Unauthorized'},401):
+    respond({code:'OWNER_EDIT_CONFLICT',error:'Not confirmed'},409);
+  },{values:old});
+  await assert.rejects(editor.request('/api/admin/reset',{key},validToken,
+   {verifyUncertain:true}));
+  assert.equal(posts,1);
+  assert.equal(reads,mode==='unauthorized'||mode==='absent-baseline'?0:1,
+   'A reset requires a known prior D1 value and never bypasses auth');
+  assert.equal(editor.status().ownerSaveState,'error',mode);
+  assert.equal(Object.hasOwn(editor.override,key),mode!=='absent-baseline',
+   'A failed delete cannot mutate local owner changes');
+ }
+});
+test('non-Wiki admin reset stays one POST even if D1 now lacks the record',async()=>{
+ const key='itemdesc.111',old='Old description';let reads=0;
+ const editor=instance(async(url)=>{
+  if(new URL(url).pathname==='/api/overrides'){
+   reads++;return respond({values:{}});
+  }
+  return respond({error:'Uncertain'},503);
+ },{values:{[key]:old}});
+ await assert.rejects(editor.request('/api/admin/reset',{key}));
+ assert.equal(reads,0,'Only explicitly opted-in Wiki deletions may read full D1 overrides');
+});

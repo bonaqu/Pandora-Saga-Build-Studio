@@ -202,8 +202,8 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   await npcPanel.locator('summary').click();
   const npcKeys=await npcPanel.locator('.studio-owner-interface-row [data-owner-copy-id]')
    .evaluateAll(nodes=>nodes.map(node=>node.dataset.ownerCopyId));
-  assert.equal(npcKeys.length,36);
-  assert.equal(new Set(npcKeys).size,36);
+  assert.equal(npcKeys.length,40);
+  assert.equal(new Set(npcKeys).size,npcKeys.length);
   const offersBefore=await npc.locator('.wiki-trade-card').count();
   const searchNpcTrades=npc.locator('.wiki-inline-search[role="textbox"]');
   await searchNpcTrades.click();
@@ -259,7 +259,7 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   await monsterPanel.locator('summary').click();
   const monsterKeys=await monsterPanel.locator('[data-owner-copy-id]')
    .evaluateAll(nodes=>nodes.map(node=>node.dataset.ownerCopyId));
-  assert.equal(monsterKeys.length,52);
+  assert.equal(monsterKeys.length,56);
   assert.equal(new Set(monsterKeys).size,monsterKeys.length);
   const monsterStatsBefore=await monster.locator('.wiki-monster-stat strong').allInnerTexts();
   const monsterResistsBefore=await monster.locator('.wiki-monster-resist strong').allInnerTexts();
@@ -300,7 +300,7 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   const atlasPanel=atlas.locator('.studio-owner-interface-editor')
    .filter({has:page.locator('[data-owner-copy-section="wiki.map.text"]')});
   await atlasPanel.locator('summary').click();
-  assert.equal(await atlasPanel.locator('[data-owner-copy-id]').count(),54);
+  assert.equal(await atlasPanel.locator('[data-owner-copy-id]').count(),58);
   const atlasCount=await atlas.locator('.wiki-map-monsters .wiki-entry').count();
   assert.ok(atlasCount>0);
   await edit('wiki.map.text','monsters','Обитатели локации');
