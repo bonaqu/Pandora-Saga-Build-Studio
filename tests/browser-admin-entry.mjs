@@ -1093,14 +1093,17 @@ export async function runAdminEntrySmoke(browser,base){
    'Archived sources must require an explicit caution acknowledgement');
   await dialog.locator('.os-sync-risk-approval input').check();
   assert.equal(await dialog.locator('.os-sync-review-steps button').filter({hasText:'Применить выбранные изменения'}).isEnabled(),true);
-  let publishPrompt='';
-  page.once('dialog',confirmation=>{
-    publishPrompt=confirmation.message();
-    confirmation.dismiss();
+  // Owner copy actions defer one pointer click to distinguish it from
+  // a double-click edit gesture. The browser confirmation is asynchronous:
+  // do not inspect an empty variable before the 500 ms action fires.
+  const archivePrompt=page.waitForEvent('dialog',{timeout:12000}).then(async confirmation=>{
+    const warning=confirmation.message();
+    await confirmation.dismiss();
+    assert.match(warning,/архивная копия/);
   });
   await dialog.locator('.os-sync-review-steps button')
     .filter({hasText:'Применить выбранные изменения'}).click();
-  assert.match(publishPrompt,/архивная копия/);
+  await archivePrompt;
   assert.equal(calls.filter(x=>x==='d1-import').length,0,'dismissal prevents catalog publication');
   await dialog.getByRole('button',{name:'Снять весь выбор'}).click();
   assert.equal(await dialog.locator('.os-sync-review-steps button').filter({hasText:'Применить выбранные изменения'}).isDisabled(),true);
