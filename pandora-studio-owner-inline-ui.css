@@ -7,7 +7,7 @@
 .stage-attribute-tabs>.stage-book-tab-owner>button[role="tab"],
 .path-sections>.path-tab-owner-wrap>button[role="tab"]{
  display:flex;align-items:center;justify-content:center;gap:4px;
- flex:1 1 auto;min-width:0;width:100%;padding-inline-end:26px
+ flex:1 1 auto;min-width:0;width:100%;padding-inline-end:8px
 }
 .stage-attribute-tabs>.stage-book-tab-owner>.stage-book-tab-pencil,
 .path-sections>.path-tab-owner-wrap>.path-tab-pencil{

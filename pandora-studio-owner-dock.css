@@ -136,7 +136,7 @@ body>#ownerDock.owner-dock-collapsed{
 /* An action and its inline-editor pencil share one grid cell. Editing a
    caption must never activate the underlying save/reset/navigation button. */
 #ownerDock .owner-dock-action-slot{
- display:grid;grid-template-columns:minmax(0,1fr) 23px;
+ display:grid;grid-template-columns:minmax(0,1fr);
  align-items:stretch;gap:4px;min-width:0
 }
 #ownerDock .owner-dock-action-slot:has(>.owner-dock-primary),

@@ -407,6 +407,21 @@ function render(root,api){
   return node;
  };
  const editable=(node,key,ru,en,options)=>{api.editLabel?.(node,key,ru,en,options);return node};
+ const guardCaption=(button,caption)=>{
+  if(!api.canEdit)return;
+  let pending=null;
+  button.addEventListener('click',event=>{
+   if(!event.detail||!caption.contains(event.target)||
+    caption.querySelector('.wiki-inline-input'))return;
+   event.preventDefault();event.stopImmediatePropagation();
+   if(pending){clearTimeout(pending);pending=null;return}
+   pending=setTimeout(()=>{
+    pending=null;
+    if(button.isConnected&&!button.disabled&&!caption.querySelector('.wiki-inline-input'))
+     button.click();
+   },240);
+  },true);
+ };
  // The owner edits only the semantic caption; the real equipment slot name
  // remains source-backed and cannot accidentally be saved as D1 copy.
  const fallbackSlotLabel=api.slotLabel||tr('Слот: ','Slot: ')+slot;
@@ -419,21 +434,6 @@ function render(root,api){
   titlePrefix,el('span',{text:': '+currentSlotName})
  ]);
  const titleWrap=el('div',{class:'stage-picker-slot-title-wrap'},[title]);
- if(api.canEdit){
-  const pencil=el('button',{type:'button',
-   class:'stage-control-pencil stage-picker-slot-pencil',text:'✎',
-   'aria-label':tr('Изменить надпись: ','Edit caption: ')+titlePrefix.textContent});
-  const openEdit=event=>{
-   event.preventDefault();event.stopPropagation();
-   titlePrefix.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
-  };
-  const refreshPencil=()=>pencil.setAttribute('aria-label',
-   tr('Изменить надпись: ','Edit caption: ')+titlePrefix.textContent);
-  pencil.addEventListener('click',openEdit);
-  pencil.addEventListener('focus',refreshPencil);
-  pencil.addEventListener('pointerenter',refreshPencil);
-  titleWrap.append(pencil);
- }
  const head=el('div',{class:'stage-picker-head'},[
   titleWrap,
   bind(el('button',{type:'button',text:'✕',onclick:api.close}),
@@ -441,26 +441,15 @@ function render(root,api){
  ]);root.append(head);
  const labeledAction=(button,key,ru,en,prefix='')=>{
   if(!api.canEdit)return button;
-  const caption=editable(el('span',{class:'stage-copy-caption',text:copy(key,ru,en)}),key,ru,en);
-  const pencil=el('button',{type:'button',class:'stage-control-pencil',
-   text:'✎','aria-label':tr('Изменить надпись: ','Edit caption: ')+copy(key,ru,en)});
-  const start=event=>{
-   event.preventDefault();event.stopPropagation();
-   // Sibling button: editing must never activate the underlying tab/refinement.
-   caption.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
-  };
-  const syncName=()=>pencil.setAttribute('aria-label',
-   tr('Изменить надпись: ','Edit caption: ')+caption.textContent);
-  pencil.addEventListener('click',start);
-  pencil.addEventListener('focus',syncName);
-  pencil.addEventListener('pointerenter',syncName);
+  const caption=editable(el('span',{class:'stage-copy-caption',text:copy(key,ru,en)}),
+   key,ru,en);
   button.replaceChildren(...(prefix?[el('span',{class:'stage-action-glyph',
    'aria-hidden':'true'},[prefix])]:[]),caption);
-  const wrapper=el('span',{class:'stage-action-edit-wrap'});
-  wrapper.append(button,pencil);
-  return wrapper;
+  caption.tabIndex=0;caption.setAttribute('aria-keyshortcuts','F2');
+  guardCaption(button,caption);
+  return button;
  };
- const tabs=bind(el('nav',{class:'stage-rich-tabs'+(hasSouls?' has-souls':' no-souls'),
+  const tabs=bind(el('nav',{class:'stage-rich-tabs'+(hasSouls?' has-souls':' no-souls'),
   role:'group'}),'pickerItemSettings','Настройка предмета','Item settings','aria-label');
  // Choosing gear opens the separate item picker. Properties/Souls are one
  // settings surface with a shared frame and a visible divider.
@@ -600,16 +589,6 @@ function render(root,api){
     'data-soul-slot-type':slot,text:copy(key,ru,en)});
    const row=el('div',{class:'stage-soul-unavailable-row'});
    row.append(editable(notice,key,ru,en));
-   if(api.canEdit){
-    const pencil=el('button',{type:'button',
-     class:'stage-control-pencil stage-soul-unavailable-pencil',text:'✎',
-     'aria-label':tr('Изменить пояснение','Edit explanation')});
-    pencil.addEventListener('click',event=>{
-     event.preventDefault();event.stopPropagation();
-     notice.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
-    });
-    row.append(pencil);
-   }
    body.append(row);
    return;
   }
@@ -656,17 +635,6 @@ function render(root,api){
   const progressCount=el('span',{'data-soul-progress-count':''});
   if(english)progress.append(progressCount,document.createTextNode(' '),progressLabel);
   else progress.append(progressLabel,progressCount);
-  if(api.canEdit){
-   const pencil=el('button',{type:'button',class:'stage-control-pencil',text:'✎',
-    'aria-label':tr('Изменить надпись: ','Edit caption: ')+progressLabel.textContent});
-   pencil.addEventListener('click',event=>{
-    event.preventDefault();event.stopPropagation();
-    progressLabel.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
-   });
-   pencil.addEventListener('focus',()=>pencil.setAttribute('aria-label',
-    tr('Изменить надпись: ','Edit caption: ')+progressLabel.textContent));
-   progress.append(pencil);
-  }
   const moreControl=labeledAction(more,'soulShowMore',moreRu,moreEn);
   const paging=el('div',{class:'stage-soul-more-row'},[moreControl,progress]);
   const updatePaging=()=>{
@@ -698,17 +666,9 @@ function render(root,api){
     if(api.canEdit){
      caption.setAttribute('data-owner-record','soul:'+rec.id);
      caption.setAttribute('data-owner-field',english?'nameEn':'name');
-     const pencil=el('button',{type:'button',class:'stage-control-pencil',
-      text:'✎','aria-label':tr('Изменить душу: ','Edit Soul: ')+name});
-     const edit=event=>{
-      event.preventDefault();event.stopPropagation();
-      caption.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
-     };
-     pencil.addEventListener('click',edit);
-     pencil.addEventListener('focus',()=>pencil.setAttribute('aria-label',
-      tr('Изменить душу: ','Edit Soul: ')+caption.textContent));
+     caption.tabIndex=0;caption.setAttribute('aria-keyshortcuts','F2');
      button.append(caption);
-     row=el('div',{class:'stage-rich-result-edit-wrap'},[button,pencil]);
+     guardCaption(button,caption);
     }else button.append(caption);
     // No extra wrapper: keep the real list grid and the clicked More control.
     if(paging.parentNode===list)list.insertBefore(row,paging);
