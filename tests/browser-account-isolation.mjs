@@ -64,8 +64,16 @@ export async function runAccountLibraryIsolationSmoke(browser,base){
   },{owner:token?'account:'+username:'guest:'+guestToken,
     username:token?username:null},{timeout:30000});
   await page.locator('#startupOverlay').waitFor({state:'hidden',timeout:30000});
-  if(token)await openManager();
-  else{
+  if(token){
+   await openManager();
+   // An account scope and profile may become ready before the asynchronous
+   // initial library GET has reconciled. Exercise save/switch isolation only
+   // after the owner has a completed, visible cloud-library state.
+   await page.waitForFunction(()=>{
+    const text=document.querySelector('.cloud-library-status')?.textContent||'';
+    return Boolean(text)&&!/Подключаем облачную библиотеку|Проверяем облако|Connecting cloud library|Checking cloud/.test(text);
+   },null,{timeout:20000});
+  }else{
    // The previous workbench can be restored already open after sign-out.
    // Never click the main navigation through its modal overlay.
    if(!await page.locator('.build-signin-gate').isVisible())

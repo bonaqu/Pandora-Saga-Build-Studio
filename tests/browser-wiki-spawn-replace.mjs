@@ -158,31 +158,12 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
   await page.locator('[data-wiki-chapter="monster"]').click();
   await page.locator('.wiki-monster-create').click();
   const monsterForm=page.locator('.wiki-owner-monster-form');
-  // Capture any unexpected owner-form teardown, including the initiating
-  // call stack. This test must reject loss of unsaved form data, not retry
-  // opening a fresh form (which would conceal a real owner data-loss bug).
-  await page.evaluate(()=>{
-    const form=document.querySelector('.wiki-owner-monster-form');
-    window.__monsterDraftTeardowns=[];
-    if(!form)return;
-    for(const method of ['replaceChildren','replaceWith','remove','removeChild','replaceChild']){
-      const holder=typeof Element.prototype[method]==='function'?
-       Element.prototype:Node.prototype;
-      const native=holder[method];
-      if(typeof native!=='function')continue;
-      holder[method]=function(...args){
-        if((this===form||this.contains?.(form))&&
-           window.__monsterDraftTeardowns.length<20){
-          window.__monsterDraftTeardowns.push({
-            method,tag:this.tagName||'#node',id:this.id||'',
-            cls:String(this.className||'').slice(0,90),
-            stack:String(new Error().stack||'').split('\n').slice(1,9)
-          });
-        }
-        return native.apply(this,args);
-      };
-    }
-  });
+  // A single owner click on a chapter is deferred to distinguish a
+  // double-click edit gesture. Opening a creation draft immediately afterward
+  // must cancel that obsolete navigation; otherwise it destroys the form.
+  await page.waitForTimeout(650);
+  assert.equal(await monsterForm.count(),1,
+   'Rapid chapter navigation must not unmount a newly opened monster draft');
   await monsterForm.locator('[role="textbox"][aria-label="Название монстра RU"]').fill('Тестовый монстр');
   await monsterForm.locator('[role="textbox"][aria-label="Название монстра EN"]').fill('Test monster');
   await monsterForm.locator('input[type="number"]').fill('27');
@@ -199,16 +180,8 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
   const monsterCaptionKey='guideedit.book.wiki.monster.text.create-monster-save';
   assert.deepEqual(JSON.parse(stored.get(monsterCaptionKey)),
    {ru:'Добавить монстра в энциклопедию'});
-  const draftState=await page.evaluate(()=>({
-    chapter:document.querySelector('.wiki-categories .chosen')?.getAttribute('data-wiki-chapter'),
-    hash:location.hash,search:document.querySelector('.wiki-controls input[type="search"]')?.value,
-    formCount:document.querySelectorAll('.wiki-owner-monster-form').length,
-    textboxes:[...document.querySelectorAll('.wiki-owner-monster-form [role="textbox"]')]
-     .map(node=>({aria:node.getAttribute('aria-label'),value:node.textContent})),
-    teardowns:window.__monsterDraftTeardowns||[]
-  }));
-  assert.equal(draftState.formCount,1,
-   'Owner monster draft must survive a saved UI caption: '+JSON.stringify(draftState));
+  assert.equal(await monsterForm.count(),1,
+   'A saved UI caption must not unmount the unsaved monster creation form');
   assert.equal(await monsterForm.locator('[role="textbox"][aria-label="Название монстра RU"]').textContent(),
    'Тестовый монстр','Editing a caption must not erase an entered monster name');
   assert.equal(await monsterForm.locator('[role="textbox"][aria-label="Название монстра EN"]').textContent(),

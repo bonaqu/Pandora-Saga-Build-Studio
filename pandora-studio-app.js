@@ -9201,30 +9201,43 @@ function updateAdminHint(){
 // Preserve ordinary single-click actions while allowing double-click on the
 // caption itself. Only mouse clicks inside owner-editable action labels are
 // deferred; keyboard and programmatic clicks stay immediate.
+// Only one deferred owner-caption action may exist across the whole page.
+// When the user starts interacting elsewhere before that timeout, cancel the
+// obsolete navigation/action rather than letting it redraw the next editor
+// or silently discard an unsaved Monster/Map/NPC creation form.
+let pendingOwnerCaptionAction=null;
+document.addEventListener('pointerdown',event=>{
+ const pending=pendingOwnerCaptionAction;
+ if(pending&&!pending.button.contains(event.target))pending.cancel();
+},true);
 function ownerCaptionActionGuard(button,caption){
  if(!button||button.dataset.ownerCaptionActionGuard==='1')return;
  button.dataset.ownerCaptionActionGuard='1';
- let pending=null;
+ let timer=null;
+ const cancel=()=>{
+  if(timer!==null){clearTimeout(timer);timer=null}
+  delete button.dataset.ownerCaptionPending;
+  if(pendingOwnerCaptionAction?.button===button)pendingOwnerCaptionAction=null;
+ };
  button.addEventListener('click',event=>{
-  if(!adminEditing||!adminToken||!event.detail||!caption.contains(event.target))return;
-  // Contenteditable fields inside an action are NOT clicks on that action.
+  // Real keyboard and programmatic clicks have detail=0 and execute
+  // immediately. They must still cancel any delayed pointer navigation.
+  if(!event.detail){
+   if(pendingOwnerCaptionAction)pendingOwnerCaptionAction.cancel();
+   return;
+  }
+  if(!adminEditing||!adminToken||!caption.contains(event.target))return;
   if(event.target.closest?.('[data-owner-text-field],.wiki-inline-input')){
    event.preventDefault();event.stopImmediatePropagation();return;
   }
   if(event.target.closest?.('input,textarea,select'))return;
   event.preventDefault();event.stopImmediatePropagation();
-  if(pending){
-   clearTimeout(pending);pending=null;
-   delete button.dataset.ownerCaptionPending;
-   return;
-  }
-  // The visible pending state lets follow-up interactions wait for chapter
-  // navigation before typing into a search box. Do not expose a delayed
-  // action as completed while a double-click may still follow.
+  if(timer!==null){cancel();return} // Actual double-click, not a navigation.
+  if(pendingOwnerCaptionAction)pendingOwnerCaptionAction.cancel();
   button.dataset.ownerCaptionPending='1';
-  pending=setTimeout(()=>{
-   pending=null;
-   delete button.dataset.ownerCaptionPending;
+  pendingOwnerCaptionAction={button,cancel};
+  timer=setTimeout(()=>{
+   cancel();
    if(button.isConnected&&!button.disabled&&adminEditing&&adminToken&&
     !caption.hidden)button.click();
   },500);
