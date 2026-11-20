@@ -138,7 +138,25 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
   await monsterForm.locator('[role="textbox"][aria-label="Название монстра RU"]').fill('Тестовый монстр');
   await monsterForm.locator('[role="textbox"][aria-label="Название монстра EN"]').fill('Test monster');
   await monsterForm.locator('input[type="number"]').fill('27');
-  const monsterSave=monsterForm.getByRole('button',{name:'Сохранить монстра'});
+  // The owner edits a live caption while creation data is already typed.
+  // D1 changes only the public copy, never the player's authored record.
+  const monsterCaptions=monsterForm.locator('.studio-owner-interface-editor');
+  await monsterCaptions.locator('summary').click();
+  const saveCaption=monsterCaptions.locator('.studio-owner-interface-row')
+   .filter({has:monsterCaptions.locator('[data-owner-copy-id="createMonsterSave"]')});
+  await saveCaption.locator('.studio-owner-interface-pencil').click();
+  const monsterCopyInput=saveCaption.locator('[data-owner-text-field]');
+  await monsterCopyInput.fill('Добавить монстра в энциклопедию');
+  await monsterCopyInput.press('Tab');
+  await monsterCopyInput.waitFor({state:'detached',timeout:15000});
+  const monsterCaptionKey='guideedit.book.wiki.monster.text.create-monster-save';
+  assert.deepEqual(JSON.parse(stored.get(monsterCaptionKey)),
+   {ru:'Добавить монстра в энциклопедию'});
+  assert.equal(await monsterForm.locator('[role="textbox"][aria-label="Название монстра RU"]').textContent(),
+   'Тестовый монстр','Editing a caption must not erase an entered monster name');
+  assert.equal(await monsterForm.locator('[role="textbox"][aria-label="Название монстра EN"]').textContent(),
+   'Test monster');
+  const monsterSave=monsterForm.getByRole('button',{name:'Добавить монстра в энциклопедию'});
   await monsterSave.click();
   await page.waitForFunction(()=>document.querySelector('.wiki-page')
     ?.textContent.includes('Тестовый монстр'),null,{timeout:18000});
@@ -151,6 +169,24 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
   const mapForm=page.locator('.wiki-map-create-form');
   await mapForm.locator('[role="textbox"][aria-label="Название локации на русском"]').fill('Тестовая локация');
   await mapForm.locator('[role="textbox"][aria-label="Название локации на английском"]').fill('Test location');
+  const mapCaptions=mapForm.locator('.studio-owner-interface-editor');
+  await mapCaptions.locator('summary').click();
+  const mapPlaceholder=mapCaptions.locator('.studio-owner-interface-row')
+   .filter({has:mapCaptions.locator('[data-owner-copy-id="createMapNameRuPlaceholder"]')});
+  await mapPlaceholder.locator('.studio-owner-interface-pencil').click();
+  const mapCopyInput=mapPlaceholder.locator('[data-owner-text-field]');
+  await mapCopyInput.fill('Новое название местности · RU');
+  await mapCopyInput.press('Tab');
+  await mapCopyInput.waitFor({state:'detached',timeout:15000});
+  const mapCaptionKey='guideedit.book.wiki.map.text.create-map-name-ru-placeholder';
+  assert.deepEqual(JSON.parse(stored.get(mapCaptionKey)),
+   {ru:'Новое название местности · RU'});
+  const mapName=mapForm.locator('[role="textbox"][aria-label="Название локации на русском"]');
+  assert.equal(await mapName.getAttribute('placeholder'),'Новое название местности · RU');
+  assert.equal(await mapName.getAttribute('data-placeholder'),'Новое название местности · RU',
+   'A contenteditable placeholder needs its visible data-placeholder updated');
+  assert.equal(await mapName.textContent(),'Тестовая локация',
+   'Editing a location hint must not overwrite its authored name');
   const mapSave=mapForm.getByRole('button',{name:'Создать',exact:true});
   await mapSave.click();
   await page.locator('.wiki-map-create-npc').waitFor({state:'visible',timeout:18000});
@@ -176,6 +212,26 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
    'Three creates must recover as three stable records, not duplicate orphans');
   assert.equal(writes.filter(x=>x.key.startsWith('wikiedit.')).length,3,
    'Readback confirmations and retried rejected NPC must leave exactly three D1 records');
+  // Real EN edition shares each semantic key with RU and leaves NPC/location
+  // source data untouched. The copy editor is not available to guest users.
+  await page.locator('#locale [data-locale="en"]').click();
+  await page.waitForFunction(()=>document.documentElement.lang==='en');
+  await page.locator('[data-wiki-chapter="map"]').click();
+  await page.locator('.wiki-map-create').click();
+  const englishForm=page.locator('.wiki-map-create-form');
+  const englishPanels=englishForm.locator('.studio-owner-interface-editor');
+  await englishPanels.locator('summary').click();
+  const englishRow=englishPanels.locator('.studio-owner-interface-row')
+   .filter({has:englishPanels.locator('[data-owner-copy-id="createMapNameRuPlaceholder"]')});
+  await englishRow.locator('.studio-owner-interface-pencil').click();
+  const enCopy=englishRow.locator('[data-owner-text-field]');
+  await enCopy.fill('Name for a new place · RU');
+  await enCopy.press('Tab');
+  await enCopy.waitFor({state:'detached',timeout:15000});
+  assert.deepEqual(JSON.parse(stored.get(mapCaptionKey)),{
+   ru:'Новое название местности · RU',en:'Name for a new place · RU'});
+  assert.equal(await englishForm.locator('[role="textbox"][aria-label="Location name in Russian"]')
+   .getAttribute('data-placeholder'),'Name for a new place · RU');
   assert.deepEqual(errors,[]);
   console.log('Chromium Wiki: spawn CAS, committed 503, bad 200 receipt, rejected 503 retry; 3 records, no duplicates');
  }finally{await context.close()}
