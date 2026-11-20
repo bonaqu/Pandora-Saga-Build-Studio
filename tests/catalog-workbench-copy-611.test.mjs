@@ -41,7 +41,7 @@ test('catalog editor edits real captions directly and never activates publish on
  assert.match(view,/editLabel\(node,key,ru,en\)/);
  assert.match(view,/class:'os-sync-copy-field'/);
  assert.match(view,/caption\.addEventListener\('click'/);
- assert.match(view,/const box=caption\.closest\('label'\)\?\.querySelector/);
+ assert.match(view,/const box=caption\.closest\('\.os-sync-formatting-option'\)\?\.querySelector/);
  assert.match(view,/box\.click\(\)/);
  for(const legacy of ['os-sync-owner-pencil','os-sync-copy-pencil',
   'os-sync-choice-pencil','os-sync-state-pencil']){
