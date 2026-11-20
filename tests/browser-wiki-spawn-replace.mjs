@@ -5,7 +5,7 @@ import {readFileSync} from 'node:fs';
 // No live administrator credentials or production writes are ever sent.
 export async function runWikiSpawnReplacementSmoke(browser,base){
  const api='https://ps-build-studio-cloud.bonaqu.workers.dev';
- const stored=new Map(),writes=[],errors=[],createAttempts=[],failedTypes=new Set();
+ const stored=new Map(),writes=[],errors=[],createAttempts=[],failedTypes=new Set(),resetAttempts=[];
  const source=JSON.parse(readFileSync(
   new URL('../data/os/maps.json',import.meta.url),'utf8'));
  const before=Object.entries(source)
@@ -38,6 +38,17 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
   if(path==='/api/overrides')return reply({values:Object.fromEntries(stored)});
   if(path==='/api/admin/login'&&method==='POST')
    return reply({token:'a'.repeat(43),expires:Date.now()+600000});
+  if(path==='/api/admin/reset'&&method==='POST'){
+   const body=req.postDataJSON();
+   assert.equal(req.headers().authorization,'Bearer '+'a'.repeat(43));
+   assert.equal(body.expectedValue,stored.get(body.key),
+    'Record deletion must send the original D1 CAS value');
+   resetAttempts.push(body);
+   if(!stored.has(body.key))return reply({error:'Not found'},409);
+   stored.delete(body.key);
+   // D1 committed the reset, but the Worker lost its acknowledgment.
+   return reply({error:'Reset receipt lost after D1 commit'},503);
+  }
   if(path==='/api/admin/override'&&method==='POST'){
    assert.equal(req.headers().authorization,'Bearer '+'a'.repeat(43));
    const body=req.postDataJSON();
@@ -74,6 +85,7 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
  });
  const page=await context.newPage();
  page.on('pageerror',error=>errors.push(error.message));
+ page.on('dialog',dialog=>void dialog.accept());
  try{
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
   // A fast mocked D1 may finish on first launch. Retry only if the public
@@ -210,6 +222,32 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
    'Three creates must recover as three stable records, not duplicate orphans');
   assert.equal(writes.filter(x=>x.key.startsWith('wikiedit.')).length,3,
    'Readback confirmations and retried rejected NPC must leave exactly three D1 records');
+  // Delete the freshly created NPC through its real article. The Worker
+  // commits the CAS reset but replies with 503: uncached GET must confirm
+  // that exactly one deletion succeeded, without sending a second POST.
+  const npcId=npcAttempts[0].key.slice('wikiedit.npc.'.length);
+  await page.locator('[data-wiki-chapter="npc"]').click();
+  await page.locator('.wiki-controls input[type="search"]').fill('Тестовый торговец');
+  await page.locator('[data-wiki-record="'+npcId+'"]').click();
+  const deletePanel=page.locator('.wiki-page .studio-owner-interface-editor:has([data-owner-copy-id="deleteRecordButton"])');
+  await deletePanel.locator('summary').click();
+  const deleteRow=deletePanel.locator('.studio-owner-interface-row:has([data-owner-copy-id="deleteRecordButton"])');
+  await deleteRow.locator('.studio-owner-interface-pencil').click();
+  const editDelete=deleteRow.locator('[data-owner-text-field]');
+  await editDelete.fill('Удалить моего NPC');
+  await editDelete.press('Tab');
+  await editDelete.waitFor({state:'detached',timeout:15000});
+  assert.deepEqual(JSON.parse(stored.get(
+   'guideedit.book.wiki.npc.trade.delete-record-button')),
+   {ru:'Удалить моего NPC'});
+  await page.locator('.wiki-owner-delete-record').getByText('Удалить моего NPC').click();
+  await page.waitForFunction(()=>!document.querySelector('.wiki-owner-delete-record'),
+   null,{timeout:18000});
+  assert.equal(resetAttempts.length,1,'Lost reset receipt cannot cause duplicate POST');
+  assert.equal(resetAttempts[0].key,'wikiedit.npc.'+npcId);
+  assert.equal(stored.has(resetAttempts[0].key),false);
+  assert.equal(writes.filter(x=>x.key.startsWith('wikiedit.')).length,3,
+   'Deleting the NPC must not rewrite unrelated monster and map records');
   // Real EN edition shares each semantic key with RU and leaves NPC/location
   // source data untouched. Close the modal workbench before using the
   // global locale selector; it must never allow click-through.
