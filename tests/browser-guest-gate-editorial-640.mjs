@@ -124,7 +124,9 @@ export async function runGuestGateEditorialSmoke(browser,base){
   await modalTitle.waitFor({state:'visible'});
   const dialog=page.locator('#modalRoot .modal[role="dialog"]');
   assert.equal(await dialog.getAttribute('aria-label'),'Sign in to open this build');
-  await page.locator('#modalRoot [data-owner-copy-pencil="librarySharedDialogTitle"]').click();
+  assert.equal(await page.locator('#modalRoot [data-owner-copy-pencil="librarySharedDialogTitle"]').count(),0,
+    'A caption without a hover tooltip must not have a pencil');
+   await modalTitle.dblclick();
   await page.locator('#modalRoot .account-copy-edit-host [contenteditable]').last()
    .fill('Open this shared build after sign-in');
   await page.locator('#modalRoot .account-copy-edit-host [contenteditable]').last().press('Tab');

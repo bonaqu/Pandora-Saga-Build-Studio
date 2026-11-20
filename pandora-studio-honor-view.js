@@ -123,7 +123,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
    heading.addEventListener('keydown',event=>{
     if(event.key==='F2'||event.key==='Enter'){event.preventDefault();change()}
    });
-   headingRow.append(directPencil(change,name));
+   // Heading text already owns a dblclick/F2 editor.
   }
   element.append(headingRow);detail.append(element);
   return element;
@@ -141,15 +141,14 @@ function render({browse,detail,make,lang='ru',article,editable=false,
     event.preventDefault();start();
    }
   });
-  // Only owner mode adds a touch action; player-facing rank cards keep
-  // their original markup and their source-verified game values.
+  // Editing is done on this very text node; game values remain unchanged.
   const kind=target.tagName==='STRONG'?
    tr('название','name'):tr('описание','description');
   const isRequirement=target.classList.contains('wiki-honor-requirement');
   const isBenefit=target.classList.contains('wiki-honor-rank-benefit');
   const wrap=make('div',{class:'wiki-honor-field-edit-row'+
    (isRequirement?' is-rank-requirement':isBenefit?' is-rank-benefit':'')});
-  wrap.append(target,directPencil(start,kind));
+  wrap.append(target);
   return wrap;
  };
  const editableListText=(target,value,key,items,index,field)=>{
@@ -218,7 +217,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
   title.addEventListener('keydown',event=>{
    if(event.key==='F2'||event.key==='Enter'){event.preventDefault();change()}
   });
-  titleRow.append(directPencil(change,honorTitle));
+  // Title text already owns a dblclick/F2 editor.
  }
  detail.append(titleRow,editorial('p','wiki-honor-subtitle','subtitle',
   'PvP · нации · звания · награды','PvP · nations · titles · rewards'));
@@ -473,7 +472,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
    class:'wiki-honor-filter'+(key===oldFilter?' chosen':''),
    'data-honor-filter':key,
    'aria-pressed':String(key===oldFilter),onclick:()=>{
-    // Editing pencils are buttons too, but never a filter action.
+    // Caption editing does not change the selected rank filter.
     for(const choice of rankFilters.querySelectorAll('button[data-honor-filter]')){
      const active=choice===button;
      choice.classList.toggle('chosen',active);choice.setAttribute('aria-pressed',String(active));
@@ -611,7 +610,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
    content.addEventListener('keydown',event=>{
     if(event.key==='F2'){event.preventDefault();startEdit()}
    });
-   contentRow.append(directPencil(startEdit,name));
+   // Monthly title text already owns a dblclick/F2 editor.
   }
   row.append(contentRow);
   monthlyGrid.append(row);

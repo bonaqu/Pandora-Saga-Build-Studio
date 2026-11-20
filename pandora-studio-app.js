@@ -1629,9 +1629,7 @@ function editOriginCopyLabel(node,key,ru,en){
   onCommitted:next=>{
    const visible=lang===editLang?next:originCopy(key,ru,en);
    node.textContent=visible;
-   for(const pencil of document.querySelectorAll('[data-origin-edit-for]'))
-    if(pencil.dataset.originEditFor===key)pencil.setAttribute('aria-label',
-     (lang==='en'?'Edit caption: ':'Изменить надпись: ')+visible);
+
   },
   onFinished:()=>{
    node.dataset.originEditing='0';
@@ -9404,7 +9402,10 @@ function bindAccountCopyEditors(panel){
      event.preventDefault();edit(event);
     }
    });
-   if(isAction)ownerCaptionActionGuard(node,node);
+   // Library/action captions may be spans inside a real button: guard the
+   // enclosing action as well, so double-click never saves/opens twice.
+   const action=node.closest('button,[role="button"]');
+   if(action)ownerCaptionActionGuard(action,node);
   }
 
  }
@@ -10052,14 +10053,7 @@ function refreshVisibleOriginCopy(recordKey){
    node.querySelector?.('.wiki-inline-input,[data-owner-editor]'))continue;
   ownerDockPatchText(node,originCopy(key,node.dataset.originCopyRu,node.dataset.originCopyEn));
  }
- for(const pencil of document.querySelectorAll('[data-origin-edit-for]')){
-  const key=pencil.dataset.originEditFor;
-  if(originGuideKey(key)!==wanted)continue;
-  const caption=[...document.querySelectorAll('[data-origin-copy-key]')]
-   .find(node=>node.dataset.originCopyKey===key);
-  if(caption)ownerDockPatchAttr(pencil,'aria-label',
-   (lang==='en'?'Edit caption: ':'Изменить надпись: ')+caption.textContent);
- }
+
 }
 // Copy-only Undo/saves must not unmount the Soul search or Path card.
 function refreshVisibleOwnerCopy(recordKey){

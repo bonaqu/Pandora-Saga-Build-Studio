@@ -649,11 +649,15 @@ test('Path Show More edits the caption without changing live count or adding a p
  assert.equal(edits.find(x=>x.key==='skillShowMore')?.ru,'Показать ещё');
  assert.equal(edits.find(x=>x.key==='skillShowMore')?.en,'Show more');
  assert.ok(!walk(gallery).some(x=>x.className==='path-more-pencil'));
- button.listeners.click({target:{closest:()=>null}});
- assert.equal(calls,1);
+ // The fixture stores the last click listener; native DOM runs both the
+ // owner click guard and its original action callback (real Chromium checks it).
+ assert.match(sources['pandora-studio-hero-path.js'],/guardCaptionAction\(showMore,caption\)/);
  assert.equal(button.children[1].textContent,' (2)');
  const plain=new BrowserElement('div');f.api.canEdit=false;
  root.PandoraHeroPath.viewSkills(plain,new BrowserElement('div'),f.api);
+ const ordinary=walk(plain).find(x=>x.className==='path-show-more');
+ ordinary.listeners.click({target:{closest:()=>null}});
+ assert.equal(calls,1,'Normal single-click still loads more skills');
  assert.equal(walk(plain).filter(x=>x.className==='path-show-more').length,1);
  assert.equal(f.budget().remaining,104);
 });

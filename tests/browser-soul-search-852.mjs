@@ -151,19 +151,21 @@ export async function runSoulSearch852Smoke(browser,base){
   assert.equal(await panel.locator('[data-owner-edit-key="soulProgressLabel"]').count(),1,
    'The progress caption is owner-editable but the numeric span is not');
   assert.equal(await panel.locator('[data-soul-progress-count][data-owner-edit-key]').count(),0);
-  assert.equal(await panel.locator('.stage-soul-progress .stage-control-pencil').count(),1);
+  assert.equal(await panel.locator('.stage-soul-progress .stage-control-pencil').count(),0,
+    'Progress caption edits directly; only genuine tooltip text gets a pencil');
   assert.equal(await panel.locator('[data-owner-edit-key="soulShowMore"]').count(),1,
    'The short RU/EN caption supports the existing owner inline editor');
   assert.equal(await more.count(),1);
   assert.equal(await many.count(),80,'Editing never renders or mutates the entire catalog');
   await page.evaluate(()=>window.__soulPagingState.shown=186);
   await page.evaluate(()=>window.__renderSoulPaging(true));
-  assert.equal(await panel.locator('.stage-soul-progress .stage-control-pencil').count(),1);
+  assert.equal(await panel.locator('.stage-soul-progress .stage-control-pencil').count(),0,
+    'Progress caption edits directly; only genuine tooltip text gets a pencil');
   assert.equal(await panel.locator('[data-soul-progress-count]').count(),1,
    'Owner may edit the caption but never the numeric total');
   assert.equal(await panel.locator('[data-soul-more]').isHidden(),true);
   assert.equal(await panel.locator('[data-owner-edit-key="soulShowMore"]').isHidden(),true,
-   'Owner More action and its pencil hide together');
+   'Owner More action hides without any companion caption pencil');
   assert.equal(await panel.locator('[data-soul-progress]').innerText(),'186 of 186 Souls');
   assert.equal(await page.evaluate(()=>window.__soulPagingState.selected),310186);
   assert.deepEqual(errors,[]);
