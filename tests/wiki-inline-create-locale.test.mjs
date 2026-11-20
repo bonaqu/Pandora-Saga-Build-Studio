@@ -4,13 +4,27 @@ import {readFileSync} from 'node:fs';
 
 const app=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
 
-test('monster and location create forms localize all RU/EN text inputs',()=>{
- assert.match(app,/'aria-label':wt\('Название монстра RU','Monster name RU'\),\s*placeholder:wt\('Название · RU','Name · RU'\)/);
- assert.match(app,/'aria-label':wt\('Название монстра EN','Monster name EN'\),\s*placeholder:wt\('Название · EN','Name · EN'\)/);
- assert.match(app,/placeholder:wt\('Название · RU','Name · RU'\),\s*'aria-label':wt\('Название локации на русском','Location name in Russian'\)/);
- assert.match(app,/placeholder:wt\('Название · EN','Name · EN'\),\s*'aria-label':wt\('Название локации на английском','Location name in English'\)/);
+test('monster and location forms bind both visible placeholders and accessible labels to unique RU/EN D1 keys',()=>{
+ const production=app;
+ const creator=production.slice(production.indexOf('const createOwnerMonster='),
+  production.indexOf("if(wikiSelection.type==='item'"));
+ for(const [prefix,type] of [['createMonster','monster'],['createMap','map']]){
+  const ownerType=type==='monster'?'monsterBind':'mapBind';
+  for(const locale of ['Ru','En']){
+   assert.ok(creator.includes(ownerType+'('+locale.toLowerCase()+",'"+prefix+
+    'Name'+locale+'Aria'+",'aria-label')"));
+   assert.ok(creator.includes(ownerType+'('+locale.toLowerCase()+",'"+prefix+
+    'Name'+locale+'Placeholder'+",'placeholder')"));
+  }
+  assert.ok(creator.includes("'"+prefix+"Save'"));
+  assert.ok(creator.includes("'"+prefix+"Cancel'"));
+  assert.ok(creator.includes("'"+prefix+"Required'"));
+  assert.ok(creator.includes("'"+prefix+"Failure'"));
+  assert.ok(creator.includes("wiki"+(type==='monster'?'Monster':'Map')+"Rows.filter("));
+ }
+ assert.ok(creator.includes("monsterBind(lvl,")||
+  creator.includes("'createMonsterLevelAria','aria-label'"));
 });
-
 test('NPC creation on Astir and custom maps uses a single D1-bound bilingual form',()=>{
  for(const snippet of [
   "[ru,'npcNameRu','npcNameRuAria']",
@@ -39,7 +53,7 @@ test('NPC creation on Astir and custom maps uses a single D1-bound bilingual for
 
 test('wiki editor error copy does not expose internal IDs and translates source failures',()=>{
  assert.doesNotMatch(app,/Не удалось создать уникальный ID|No unique ID available|Конфликт ID, попробуй ещё раз|ID collision, please retry/);
- assert.ok(app.includes("wt('Не удалось создать монстра. Повтори попытку.','Could not create monster. Try again.')"));
+ assert.ok(app.includes("monsterCopy('createMonsterFailure')"));
  assert.ok(app.includes("mapCopy('npcCreateFailure')"));
  assert.ok(app.includes("wt('NPC не найден в каталоге','NPC not found in catalog')"));
  assert.ok(app.includes("wt('Проверь названия и связи списка','Check list names and links')"));
@@ -52,4 +66,25 @@ test('all three creation forms use one reserved ID on retry and guard deleted pa
  assert.match(app,/if\(!wikiIndex\.records\('map'\)\?\.\[String\(id\)\]\)/);
  assert.ok(app.includes("monsterCopy('createLinkFailure')"),
   'A partial success must be surfaced rather than creating a second monster');
+});
+
+test('creator caption defaults remain unique, bilingual and safe authorial copy',()=>{
+ const production=app;
+ const map=production.slice(production.indexOf('const wikiMapRows='),
+  production.indexOf('const wikiMapByKey='));
+ const monster=production.slice(production.indexOf('const wikiMonsterRows='),
+  production.indexOf('const wikiMonsterByKey='));
+ const capture=block=>[...block.matchAll(/^ \["([^"]+)","([^"]+)","([^"]+)"\],?$/gm)]
+  .map(([,key,ru,en])=>({key,ru,en}));
+ const a=capture(map).filter(x=>x.key.startsWith('createMap'));
+ const b=capture(monster).filter(x=>x.key.startsWith('createMonster'));
+ assert.equal(a.length,9);
+ assert.equal(b.length,10);
+ for(const list of [a,b]){
+  assert.equal(new Set(list.map(x=>x.key)).size,list.length);
+  for(const {ru,en} of list){assert.ok(ru.trim());assert.ok(en.trim())}
+ }
+ for(const block of [map,monster])
+  assert.doesNotMatch(block,/api\/admin\/override|expectedValue|password|token/,
+   'Editorial captions must not include server credentials or mechanics');
 });

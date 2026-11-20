@@ -126,11 +126,11 @@ test('future zone UI shares the native monster grid and offers in-place linked-c
  assert.match(app,/wiki-add-resistance/);
 });
 
-test('42 monster labels are bilingual D1 overlays with isolated OS stats and loot',()=>{
+test('52 monster labels are bilingual D1 overlays with isolated OS stats and loot',()=>{
  const app=read('pandora-studio-app.js');
  const block=app.slice(app.indexOf('const wikiMonsterRows='),app.indexOf('const wikiNpcTradeRows='));
  const entries=[...block.matchAll(/^ \["([^"]+)","([^"]+)","([^"]+)"\],?$/gm)];
- assert.equal(entries.length,42);
+ assert.equal(entries.length,52);
  assert.equal(new Set(entries.map(row=>row[1])).size,entries.length,
   'Every owner-editable label has a distinct semantic key');
  const langEnv={window:{}};
@@ -428,11 +428,20 @@ test('a failed create POST reuses its ID; a failed follow-up link reveals the al
  };
  const field=attrs=>{const node={...attrs,value:attrs.value||'',focus(){}};fields.push(node);return node};
  let failFirst=true;
- const factory=Function('h','ownerPlainTextField','saveWikiRecordPatch',
+ const factory=Function('h','ownerPlainTextField','monsterBind',
+  'ownerInterfaceEditor','wikiMonsterRows','saveWikiRecordPatch',
   'persistRosterLink','openWiki','showStudioToast','reserveWikiOwnerId',
   'monsterCopy','wt','const adminToken="token",adminEditing=true;\n'+
   app.slice(start,end)+'\nreturn createOwnerMonster;');
- const create=factory(h,field,async(type,id,patch)=>{
+ const creatorBind=(node,key,attr='text')=>{
+  const labels={createMonsterSave:'Сохранить монстра',
+   createMonsterCancel:'Отмена',createMonsterNameRuAria:'Название монстра RU',
+   createMonsterNameEnAria:'Название монстра EN'};
+  if(attr==='text')node.text=labels[key]||key;
+  else node[attr]=labels[key]||key;
+  return node;
+ };
+ const create=factory(h,field,creatorBind,()=>null,[],async(type,id,patch)=>{
   posts.push({type,id,patch});
   if(failFirst){failFirst=false;throw Error('Temporary D1 failure')}
  },async(...args)=>{links.push(args);throw Error('Map CAS 409')},
