@@ -11,6 +11,8 @@ function boot(local,remote,href='https://bonaqu.github.io/Pandora-Saga-Build-Stu
  let currentRemote=remote,holdResponses=false,saveAllowed=true,lastEventCancelable=null;
  let guard=null,accountPanelOpen=false,heroBookOpen=false,onlineRecoveryOpen=false,
   ownerMode=false,inlineEditing=false,overlayVisible=false,activeEditable=null,now=Date.now();
+ let visibility='visible';
+ const listeners={},timers=new Map();let nextTimer=0;
  const intervals=[];
  const localeContext={};localeContext.window=localeContext;
  runInNewContext(localeSource,localeContext);
@@ -26,7 +28,10 @@ function boot(local,remote,href='https://bonaqu.github.io/Pandora-Saga-Build-Stu
    selector.includes('#stageAttributes:not([hidden])')&&heroBookOpen||
    selector.includes('#startupOverlay:not([hidden])')&&overlayVisible||
    selector.includes('.inline-owner-editor')&&inlineEditing)?{}:null,
-  addEventListener(){},dispatchEvent(event){saved++;lastEventCancelable=event.cancelable;return saveAllowed},getElementById(id){return id==='studio-update-banner'&&!banner?.removed?banner:null},
+  addEventListener(name,fn){listeners[name]=fn},
+  dispatchEvent(event){saved++;lastEventCancelable=event.cancelable;return saveAllowed},
+  get visibilityState(){return visibility},
+  getElementById(id){return id==='studio-update-banner'&&!banner?.removed?banner:null},
   createElement:tag=>({
    tag,children:[],listeners:{},attrs:{},
    setAttribute(key,value){this.attrs[key]=String(value)},
@@ -37,7 +42,7 @@ function boot(local,remote,href='https://bonaqu.github.io/Pandora-Saga-Build-Stu
    remove(){this.removed=true}
   }),
   body:{classList:{contains:name=>name==='studio-live-blocked'&&onlineRecoveryOpen},
-   appendChild(node){banner=node}},visibilityState:'visible'
+   appendChild(node){banner=node}}
  };
  const location={href,replace:url=>{navigated=url}};
  const history={state:null,replaceState:(_state,_title,url)=>{normalized=url}};
@@ -57,8 +62,13 @@ function boot(local,remote,href='https://bonaqu.github.io/Pandora-Saga-Build-Stu
     new Promise(resolve=>heldBodies.push(resolve)):Promise.resolve({release:currentRemote})};
   },
   setInterval:(fn,ms)=>{intervals.push({fn,ms});return intervals.length},
-  setTimeout:(fn,delay)=>{if(delay===3000)check=fn;return 1},
-  clearTimeout:()=>{}
+  setTimeout:(fn,delay)=>{
+   const id=++nextTimer;
+   if(delay===3000)check=fn;
+   else timers.set(id,{fn,delay});
+   return id;
+  },
+  clearTimeout:id=>{timers.delete(id)}
  });
  return{
   check:()=>check(),
@@ -77,16 +87,29 @@ function boot(local,remote,href='https://bonaqu.github.io/Pandora-Saga-Build-Stu
    closest:query=>query.includes('[contenteditable]')?selector:null
   }:null},
   holdBodyReads:()=>{holdBodies=true},
+  releaseBodyReads:()=>{holdBodies=false},
   heldBodyCount:()=>heldBodies.length,
   resolveBody:(index,release)=>heldBodies[index]({release}),
   get requestCount(){return requestCount},
   advance:ms=>{now+=ms},
   checkAuto:()=>intervals.find(x=>x.ms===15000)?.fn(),
   holdChecks:()=>{holdResponses=true},
+  releaseChecks:()=>{holdResponses=false},
   heldCount:()=>heldRequests.length,
   resolveCheck:(index,release)=>heldRequests[index]({
    ok:true,json:async()=>({release})
   }),
+  expireVersionDeadline:()=>{
+   for(const [id,timer]of [...timers]){
+    if(timer.delay!==6000)continue;
+    timers.delete(id);
+    timer.fn();
+   }
+  },
+  setVisible:value=>{
+   visibility=value?'visible':'hidden';
+   listeners.visibilitychange?.();
+  },
   setLocale:language=>{document.documentElement.lang=language;languageChanged?.()},
   get banner(){return banner},get normalized(){return normalized},
   get navigated(){return navigated},get saved(){return saved},
@@ -455,5 +478,66 @@ test('idle update works after Finish but waits for queued owner records',async()
  owner.wikiRecordWriteQueue.clear();
  page.checkAuto();
  assert.match(page.navigated,/ps-revision=2026[.]11[.]18[.]898/);
+ assert.equal(page.saved,1);
+});
+
+test('manifest request settles on timeout even when the HTTP adapter ignores AbortSignal',async()=>{
+ const page=boot('2026.11.20.944','2026.11.20.945');
+ page.holdChecks();
+ const stuck=page.check();
+ assert.equal(page.heldCount(),1,'First manifest fetch remains unresolved');
+ page.expireVersionDeadline();
+ await stuck;
+ assert.equal(page.banner,null,'Timeout must not offer an unverified site release');
+ page.releaseChecks();
+ const recovered=page.check();
+ await recovered;
+ assert.equal(page.requestCount,2,'Timeout frees the single-flight slot for a fresh request');
+ assert.match(page.banner.children[0].textContent,/Новая версия опубликована/);
+ page.resolveCheck(0,'2026.11.20.999');
+ await new Promise(resolve=>setImmediate(resolve));
+ page.banner.children[1].listeners.click();
+ assert.match(page.navigated,/ps-revision=2026[.]11[.]20[.]945/,
+  'An obsolete reply cannot override the recovered update target');
+});
+
+test('manifest body timeout frees polling and ignores JSON arriving after its cancellation',async()=>{
+ const page=boot('2026.11.20.944','2026.11.20.945');
+ page.holdBodyReads();
+ const first=page.check();
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(page.heldBodyCount(),1,'Response arrived but its JSON decoder hung');
+ page.expireVersionDeadline();
+ await first;
+ assert.equal(page.banner,null);
+ page.releaseBodyReads();
+ await page.check();
+ assert.equal(page.requestCount,2,'A subsequent manifest can be read normally');
+ assert.ok(page.banner);
+ page.resolveBody(0,'2026.11.20.999');
+ await new Promise(resolve=>setImmediate(resolve));
+ page.banner.children[1].listeners.click();
+ assert.match(page.navigated,/ps-revision=2026[.]11[.]20[.]945/,
+  'Late JSON content cannot replace the release from a new verified read');
+});
+
+test('rapid tab hide and show coalesces reconnect after an uncooperative fetch',async()=>{
+ const page=boot('2026.11.20.944','2026.11.20.945');
+ page.holdChecks();
+ const stuck=page.check();
+ assert.equal(page.heldCount(),1);
+ // A visibilitychange may fire before the rejected promise reaches finally.
+ page.setVisible(false);
+ page.releaseChecks();
+ page.setVisible(true);
+ await stuck;
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(page.requestCount,2,
+  'Visible tab retries immediately after abort instead of waiting 60 seconds');
+ assert.ok(page.banner,'The recovered response offers the current version');
+ page.resolveCheck(0,'2026.11.20.999');
+ await new Promise(resolve=>setImmediate(resolve));
+ page.banner.children[1].listeners.click();
+ assert.match(page.navigated,/ps-revision=2026[.]11[.]20[.]945/);
  assert.equal(page.saved,1);
 });

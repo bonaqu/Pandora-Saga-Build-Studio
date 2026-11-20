@@ -192,7 +192,28 @@
     document.body.appendChild(banner);
     refreshUpdateLocale();
   }
-  let versionCheckInFlight = false, versionController = null;
+  // Canceling fetch is advisory: a browser adapter, service worker or a
+  // stalled response.json() may ignore the signal. Settle OUR own checkpoint
+  // on abort so future polls do not stay blocked by versionCheckInFlight.
+  // Late success is ignored, and only the original request is aborted.
+  const untilAbort = (operation, signal) => new Promise((resolve, reject) => {
+    if (signal.aborted) { reject(signal.reason || Error('Version check aborted')); return; }
+    let done = false;
+    const finish = (callback, value) => {
+      if (done) return;
+      done = true;
+      signal.removeEventListener('abort', onAbort);
+      callback(value);
+    };
+    const onAbort = () => finish(reject, signal.reason || Error('Version check aborted'));
+    signal.addEventListener('abort', onAbort, {once:true});
+    try {
+      Promise.resolve(operation()).then(
+        value => finish(resolve, value), error => finish(reject, error)
+      );
+    } catch (error) { finish(reject, error); }
+  });
+  let versionCheckInFlight = false, versionController = null, retryOnVisible = false;
   async function checkVersion() {
     // The visible-tab event already triggers a fresh read. Avoid pointless
     // manifest traffic and stale banners from background/suspended tabs.
@@ -204,12 +225,15 @@
       const timeout = setTimeout(() => controller.abort(), 6000);
       let manifest;
       try {
-        const response = await fetch('./site-version.json?check=' + Date.now(), {
-          cache: 'no-store', signal: controller.signal
-        });
+        const response = await untilAbort(
+          () => fetch('./site-version.json?check=' + Date.now(), {
+            cache: 'no-store', signal: controller.signal
+          }), controller.signal
+        );
         if (!response.ok) return;
-        // The deadline applies to the response body as well as the headers.
-        manifest = await response.json();
+        // The same deadline governs body decoding. A stalled adapter must
+        // not pin the version poll even after its AbortSignal was ignored.
+        manifest = await untilAbort(() => response.json(), controller.signal);
       } finally { clearTimeout(timeout); }
       // Visibility and periodic checks may overlap. Do not start a second
       // request while the first one is reading its response, or offer a
@@ -225,6 +249,12 @@
     finally {
       if (versionController === controller) versionController = null;
       versionCheckInFlight = false;
+      // Switching hidden->visible while the prior abort is still settling
+      // must not miss the only immediate reconnect check. Coalesce repeated
+      // visibility events into one follow-up, without starting parallel polls.
+      const retry = retryOnVisible && document.visibilityState === 'visible';
+      retryOnVisible = false;
+      if (retry && !applying) void checkVersion();
       // A version poll refreshes an existing blocker without remounting it.
       // Owner state transitions also trigger this immediately.
       if (document.getElementById('studio-update-banner')) refreshUpdateLocale();
@@ -237,8 +267,13 @@
   }, 15000);
   setInterval(checkVersion, 60000);
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') versionController?.abort();
-    else if (document.visibilityState === 'visible') checkVersion();
+    if (document.visibilityState === 'hidden') {
+      retryOnVisible = false;
+      versionController?.abort();
+    } else if (document.visibilityState === 'visible') {
+      if (versionCheckInFlight) retryOnVisible = true;
+      else void checkVersion();
+    }
   });
   setTimeout(checkVersion, 3000);
   // Only a view refresh, never a privileged operation or a reload.
