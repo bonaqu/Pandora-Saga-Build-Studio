@@ -1187,7 +1187,11 @@ function ownerInterfaceEditor(section,rows,headingRu='Подписи интер�
  for(const [key,ru,en,shortRu,shortEn] of rows){
   const label=h('span',{class:'studio-owner-interface-value',
    text:ownerCopy(section,key,ru,en)});
-  ownerCopyLabel(label,section,key,ru,en);
+  ownerCopyLabel(label,section,key,ru,en,{
+   // A saved RU/EN value must refresh every existing visible binding
+   // (aria-label, title, placeholder and text) without remounting controls.
+   onCommitted:visible=>applyOwnerInterfaceEditedValue(section,key,visible)
+  });
   items.append(h('div',{class:'studio-owner-interface-row'},[
    h('span',{class:'studio-owner-interface-name',
     text:lang==='en'?(shortEn||en):(shortRu||ru)}),label]));
