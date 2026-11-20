@@ -2307,6 +2307,7 @@ function renderStageAttributes(calculated=undefined){
   onItem:id=>openWiki('item',String(id)),
   onSkill:id=>openWiki('skill',String(id)),
   copy:override,canEdit:Boolean(adminEditing&&adminToken),
+  guardCaptionAction:ownerCaptionActionGuard,
   onTextEdit:(node,key,field,initial)=>editWikiValue(node,initial,{
    type:field==='hintRu'||field==='hintEn'?'textarea':'text',
    onCommit:value=>saveGuidePatch('book.'+key,{[field]:value}),
@@ -2399,6 +2400,7 @@ function renderStagePicker(focusSearch=false){
    bindInterfaceText:(node,key,ru,en,attribute='text',suffix='')=>
     bindOwnerInterfaceText(node,'equipment',key,ru,en,attribute,suffix),
    canEdit:Boolean(adminEditing&&adminToken),
+   guardCaptionAction:ownerCaptionActionGuard,
    record,item:equipped,slot:key,capacity,
    issue:record?equipmentIssue(record,selectedSlot):[],
    slotLabel:(lang==='en'?'Slot: ':'Слот: ')+gearSlotName(selectedSlot),
@@ -3126,6 +3128,7 @@ function heroPathApi(){
   shown:pathSkillShown,onMoreSkills:()=>{pathSkillShown+=24;renderPathSkills()},
   cap:branchCap,
   canEdit:Boolean(adminEditing&&adminToken),
+  guardCaptionAction:ownerCaptionActionGuard,
   copyLabel:(key,ru,en)=>ownerCopy('path',key,ru,en),
   editLabel:(node,key,ru,en,callbacks)=>ownerCopyLabel(node,'path',key,ru,en,callbacks),
   bindCopy:(node,key,ru,en,attribute='text',suffix='',prefix='')=>
@@ -4223,6 +4226,7 @@ function renderWiki(root){
     browse,detail,make:h,lang,article:window.PandoraHonorGuide?.article(override),
     searchQuery:wikiSearch,
     editable:adminEditing&&Boolean(adminToken),
+    guardCaptionAction:ownerCaptionActionGuard,
     label:(group,id,ru,en)=>wikiTitle(group,id,ru,en),
     copy:(key,ru,en)=>ownerCopy('honor-view',key,ru,en),
     editCopy:(node,key,ru,en,callbacks)=>ownerCopyLabel(node,'honor-view',key,ru,en,callbacks),
@@ -9579,23 +9583,17 @@ function decorateOwnerDockActions(actions){
   const button=actions.querySelector(selector);
   if(!button)continue;
   const slot=h('span',{class:'owner-dock-action-slot','data-owner-dock-key':key});
-  const pencil=h('button',{type:'button',class:'owner-dock-action-pencil',
-   text:'✎','aria-label':(lang==='en'?'Edit label: ':'Изменить надпись: ')+ownerDockCopy(key)});
   const host=h('span',{class:'owner-dock-action-edit-host',hidden:true});
-  button.before(slot);slot.append(button,pencil,host);
-  window.PandoraGuideTooltip?.attach(pencil,lang==='en'?
-   'Edit the button label only. Does not execute the action.':
-   'Изменяет только название кнопки. Само действие не запускается.',
-   {hoverDelay:350});
-  pencil.onclick=event=>{
-   event.preventDefault();event.stopPropagation();
+  button.before(slot);slot.append(button,host);
+  const edit=event=>{
    if(!adminEditing||!adminToken||!host.hidden)return;
+   event.preventDefault();event.stopPropagation();
    if(ownerSaveInFlight()){
     showStudioToast(lang==='en'?'Finish the current save first.':
      'Сначала заверши текущее сохранение.','warning');return;
    }
    const editLang=lang,before=ownerDockCopy(key);
-   button.hidden=true;pencil.hidden=true;host.hidden=false;
+   button.hidden=true;host.hidden=false;
    window.PandoraGuideTooltip?.dismiss();
    editWikiValue(host,before,{
     type:'text',
@@ -9606,13 +9604,19 @@ function decorateOwnerDockActions(actions){
     onCommitted:()=>{button.textContent=ownerDockCopy(key)},
     onFinished:()=>{
      host.hidden=true;host.replaceChildren();
-     button.hidden=false;pencil.hidden=false;
+     button.hidden=false;
      button.textContent=key==='translations'?
       ownerDockCopy(key)+' · '+(window.PandoraOwnerBilingual?.pending(override)||[])
        .reduce((sum,item)=>sum+item.fields.length,0):ownerDockCopy(key);
     }
    });
   };
+  button.setAttribute('aria-keyshortcuts','F2');
+  button.addEventListener('dblclick',edit);
+  button.addEventListener('keydown',event=>{
+   if(event.key==='F2')edit(event);
+  });
+  ownerCaptionActionGuard(button,button);
  }
 }
 // Refreshing status in the owner drawer must not repeatedly mutate the same
@@ -11072,23 +11076,25 @@ function ownerDialogAction(button,key,ru,en){
  if(!adminEditing||!adminToken)return button;
  const wrapper=h('span',{class:'owner-dialog-action-editor'});
  const host=h('span',{class:'owner-dialog-action-host',hidden:true});
- const pencil=h('button',{type:'button',class:'owner-dialog-pencil',
-  text:'✎',title:lang==='en'?'Edit action caption':'Изменить подпись действия',
-  'aria-label':lang==='en'?'Edit action caption':'Изменить подпись действия',
-  onclick:event=>{
-   event.preventDefault();event.stopPropagation();
-   if(!button.isConnected)return;
-   button.hidden=true;pencil.hidden=true;host.hidden=false;
-   host.textContent=ownerCopy('owner-dialog',key,ru,en);
-   host.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
-  }});
  ownerCopyLabel(host,'owner-dialog',key,ru,en,{
   onCommitted:next=>{button.textContent=next},
-  onFinished:()=>{button.hidden=false;pencil.hidden=false;host.hidden=true}
+  onFinished:()=>{button.hidden=false;host.hidden=true}
  });
- wrapper.append(button,pencil,host);
+ const edit=event=>{
+  if(!adminEditing||!adminToken||!button.isConnected||!host.hidden)return;
+  event.preventDefault();event.stopPropagation();
+  button.hidden=true;host.hidden=false;
+  host.textContent=ownerCopy('owner-dialog',key,ru,en);
+  host.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
+ };
+ button.setAttribute('aria-keyshortcuts','F2');
+ button.addEventListener('dblclick',edit);
+ button.addEventListener('keydown',event=>{if(event.key==='F2')edit(event)});
+ ownerCaptionActionGuard(button,button);
+ wrapper.append(button,host);
  return wrapper;
 }
+
 function showOwnerEnglishReview(){
  if(!adminEditing||!adminToken)return;
  const tr=(ru,en)=>lang==='en'?en:ru;
