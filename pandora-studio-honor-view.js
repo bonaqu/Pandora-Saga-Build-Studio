@@ -16,7 +16,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  editText=()=>{},saveText=()=>{},saveList=()=>{},link=()=>null,cloakLink=()=>null,
  warId=null,warLink=()=>null,backButton=()=>null,
  label=(group,id,ru,en)=>lang==='en'?en:ru,editLabel=()=>{},
-  copy=(key,ru,en)=>lang==='en'?en:ru,editCopy=()=>{},
+  copy=(key,ru,en)=>lang==='en'?en:ru,editCopy=()=>{},guardCaptionAction=()=>{},
  mapOptions=[],onOpenLocations=()=>{},searchQuery=''}={}){
  if(!browse||!detail||!article||typeof make!=='function')return;
  // Re-rendering after admin edits must never accumulate scroll observers.
@@ -34,37 +34,14 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  const oldFilter=detail.querySelector('.wiki-honor-filter.chosen')?.dataset.honorFilter||'all';
  browse.replaceChildren();detail.replaceChildren();
  const node=(tag,cls,text)=>make(tag,{class:cls,text});
-  // Honor's interface captions are authored UI, not game data or rank rules.
-  // Only the owner sees an inline editor with a neighboring touch-friendly pencil.
-  const editorial=(tag,cls,key,ru,english)=>{
-   const value=copy(key,ru,english);
-   const element=node(tag,cls,value);
-   if(!editable)return element;
-   const target=node('span','wiki-honor-copy-owner-label',value);
-   const pencil=make('button',{type:'button',class:'wiki-honor-copy-pencil',
-    text:'✎','aria-label':tr('Изменить подпись: ','Edit caption: ')+value});
-   element.replaceChildren(target,pencil);
-   pencil.addEventListener('click',event=>{
-    event.preventDefault();event.stopPropagation();
-    // This follows the exact editor, blur-save, Escape, CAS and Undo path as F2.
-    target.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
-   });
-   editCopy(target,key,ru,english,{
-    onCommitted:next=>pencil.setAttribute('aria-label',
-     tr('Изменить подпись: ','Edit caption: ')+next)
-   });
-   return element;
-  };
- // One independent owner control for native headings and rich Honor text.
- // It is never nested in navigation buttons, links or disclosure controls.
- const directPencil=(action,caption)=>{
-  const pencil=make('button',{type:'button',
-   class:'wiki-honor-copy-pencil wiki-honor-direct-pencil',
-   text:'✎','aria-label':tr('Изменить: ','Edit: ')+caption});
-  pencil.addEventListener('click',event=>{
-   event.preventDefault();event.stopPropagation();action();
-  });
-  return pencil;
+  // Honor authorial captions are edited on their visible text, not by pencils.
+ const editorial=(tag,cls,key,ru,english)=>{
+  const value=copy(key,ru,english),element=node(tag,cls,value);
+  if(!editable)return element;
+  const caption=node('span','wiki-honor-copy-owner-label',value);
+  element.replaceChildren(caption);
+  editCopy(caption,key,ru,english);
+  return element;
  };
  // Wars are Honor records, not OS map IDs. Give every existing and
  // owner-created entry its own page without inventing location records.
@@ -102,7 +79,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
     title.addEventListener('keydown',event=>{
      if(event.key==='F2'){event.preventDefault();edit()}
     });
-    titleRow.append(directPencil(edit,name));
+    // Direct editing on the title via dblclick and F2.
    }
    detail.append(titleRow);
    // Use existing Honor information instead of inventing war-specific rules.
@@ -139,7 +116,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
    heading.addEventListener('keydown',event=>{
     if(event.key==='F2'||event.key==='Enter'){event.preventDefault();change()}
    });
-   headingRow.append(directPencil(change,name));
+   // Direct editing via dblclick and F2.
   }
   element.append(headingRow);detail.append(element);
   return element;
@@ -165,7 +142,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
   const isBenefit=target.classList.contains('wiki-honor-rank-benefit');
   const wrap=make('div',{class:'wiki-honor-field-edit-row'+
    (isRequirement?' is-rank-requirement':isBenefit?' is-rank-benefit':'')});
-  wrap.append(target,directPencil(start,kind));
+  wrap.append(target);
   return wrap;
  };
  const editableListText=(target,value,key,items,index,field)=>{
@@ -234,7 +211,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
   title.addEventListener('keydown',event=>{
    if(event.key==='F2'||event.key==='Enter'){event.preventDefault();change()}
   });
-  titleRow.append(directPencil(change,honorTitle));
+  // Direct editing via dblclick and F2.
  }
  detail.append(titleRow,editorial('p','wiki-honor-subtitle','subtitle',
   'PvP · нации · звания · награды','PvP · nations · titles · rewards'));
@@ -284,12 +261,15 @@ function render({browse,detail,make,lang='ru',article,editable=false,
      names.append(anchor);
     }else names.append(editableListText(name,value,key,items,index,field));
     if(editable&&anchor){
-     // Clicking a war name navigates; editing remains a separate owner action.
-     const edit=make('button',{type:'button',class:'wiki-honor-war-rename',
-      text:'✎','aria-label':tr('Изменить название войны','Edit war name')+': '+value,
-      onclick:()=>editText(edit,value,false,next=>saveList(key,
-       items.map((row,i)=>i===index?{...row,[field]:next}:row)))});
-     names.append(edit);
+     const edit=event=>{
+      event.preventDefault();event.stopPropagation();
+      editText(anchor,value,false,next=>saveList(key,
+       items.map((row,i)=>i===index?{...row,[field]:next}:row)));
+     };
+     anchor.addEventListener('dblclick',edit);
+     anchor.setAttribute('aria-keyshortcuts','F2');
+     anchor.addEventListener('keydown',event=>{if(event.key==='F2')edit(event)});
+     guardCaptionAction(anchor,anchor);
     }
    }
    row.append(names);
@@ -498,26 +478,22 @@ function render({browse,detail,make,lang='ru',article,editable=false,
   button.append(caption,node('span','wiki-honor-filter-count',' · '+count));
   wrap.append(button);
   if(editable){
-   // Do not nest a pencil inside a filter button. Triggering an editor
-   // must never change active filter or the rank cards' visibility.
-   const pencil=make('button',{type:'button',
-    class:'wiki-honor-copy-pencil wiki-honor-filter-pencil',text:'✎',
-    'aria-label':tr('Изменить подпись: ','Edit caption: ')+label});
    const host=make('span',{class:'wiki-honor-filter-edit-host',hidden:true,text:label});
-   const restore=()=>{button.hidden=false;pencil.hidden=false;host.hidden=true};
+   const restore=()=>{button.hidden=false;host.hidden=true};
    editCopy(host,copyKey,ru,english,{
-    onCommitted:visible=>{
-     caption.textContent=visible;
-     pencil.setAttribute('aria-label',tr('Изменить подпись: ','Edit caption: ')+visible);
-    },
+    onCommitted:visible=>{caption.textContent=visible},
     onFinished:restore
    });
-   pencil.addEventListener('click',event=>{
+   const edit=event=>{
     event.preventDefault();event.stopPropagation();
-    button.hidden=true;pencil.hidden=true;host.hidden=false;
+    button.hidden=true;host.hidden=false;
     host.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
-   });
-   wrap.append(pencil,host);
+   };
+   caption.addEventListener('dblclick',edit);
+   button.setAttribute('aria-keyshortcuts','F2');
+   button.addEventListener('keydown',event=>{if(event.key==='F2')edit(event)});
+   guardCaptionAction(button,caption);
+   wrap.append(host);
   }
   rankFilters.append(wrap);
  }
@@ -626,7 +602,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
    content.addEventListener('keydown',event=>{
     if(event.key==='F2'){event.preventDefault();startEdit()}
    });
-   contentRow.append(directPencil(startEdit,name));
+   // Direct editing via dblclick and F2.
   }
   row.append(contentRow);
   monthlyGrid.append(row);
