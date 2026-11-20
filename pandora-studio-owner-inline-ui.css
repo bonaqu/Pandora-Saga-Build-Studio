@@ -863,3 +863,14 @@
 .stage-picker-head .stage-picker-slot-prefix:has([data-owner-text-field]){
  white-space:pre-wrap;overflow:visible
 }
+
+// Authorial skill prose stays inline with immutable catalog numbers. Owner
+// pencils are compact, without a second row or nested button controls.
+.path-skill-count>.path-owner-edit-row,
+.path-skill-version-note>.path-owner-edit-row{display:inline-flex;
+ align-items:baseline;vertical-align:baseline;min-width:0;gap:3px}
+.path-skill-count>.path-owner-edit-row>.path-owner-copy-text,
+.path-skill-version-note>.path-owner-edit-row>.path-owner-copy-text{flex:none;white-space:pre-wrap}
+.path-skill-count>.path-owner-edit-row>.path-owner-pencil,
+.path-skill-version-note>.path-owner-edit-row>.path-owner-pencil{
+ width:18px;min-width:18px;height:18px;min-height:18px}

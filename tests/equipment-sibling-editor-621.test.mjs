@@ -37,5 +37,6 @@ test('Hero Path skill count obeys Russian and English declensions',()=>{
   assert.equal(count(n,'ru'),ru);
   assert.equal(count(n,'en'),en);
  }
- assert.match(path,/text:skillCountLabel\(rows\.length,api\.lang\)/);
+ assert.match(path,/class:'path-skill-count-value'/);
+ assert.match(path,/authored\(api,\.\.\.countCopy,'span','path-skill-count-caption'\)/);
 });
