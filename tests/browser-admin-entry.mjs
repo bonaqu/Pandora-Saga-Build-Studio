@@ -526,14 +526,15 @@ export async function runAdminEntrySmoke(browser,base){
    }
   };
   const originEditor=async (value,stage)=>{
-   await page.locator('[data-origin-edit-for="raceChoose"]').click();
+   // #390: direct double-click on the actual visible caption, no extra ✎.
+   await page.locator('.race-slide-select').dblclick();
    const field=page.locator('.origin-copy-input-slot [contenteditable]');
    await field.waitFor({state:'visible'});
    await field.fill(value);
    await field.press('Tab');
    await captionReady(page,value,stage);
   };
-  assert.equal(await page.locator('[data-origin-edit-for="raceChoose"]').count(),1);
+  assert.equal(await page.locator('[data-origin-edit-for="raceChoose"]').count(),0);
   await originEditor('Выбрать расу','RU-save');
   assert.equal(JSON.parse(townOverrides.get(raceCopy)).ru,'Выбрать расу');
   await page.locator('#locale [data-locale="en"]').click();
@@ -755,8 +756,8 @@ export async function runAdminEntrySmoke(browser,base){
   await page.locator('#ownerDock').getByRole('button',{name:'Игровой каталог',exact:true}).click();
   const dialog=page.getByRole('dialog',{name:/Обновление игрового каталога/});
   await dialog.waitFor({state:'visible'});
-  // A pencil next to the LIVE catalog check must edit only its RU/EN copy.
-  // The real check button retains its normal behavior and accessible name.
+  // Catalog action captions are double-click editable; only independently
+  // authored hover hints keep a separate pencil. Ordinary clicks still work.
   // Scope :has() to each wrapper, not to the outer dialog.
   // #390: catalog checkbox captions are editable independently of their
   // checkbox and dynamic approval counts. The test fixture reveals the
@@ -765,12 +766,12 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(await choices.count(),2);
   const structures=await choices.evaluateAll(nodes=>nodes.map(node=>({
    pencilInsideLabel:Boolean(node.querySelector('label .os-sync-choice-pencil')),
-   pencilCount:node.querySelectorAll(':scope>.os-sync-choice-pencil').length,
+   pencilCount:node.querySelectorAll('.os-sync-choice-pencil').length,
    count:node.querySelector('small.os-sync-choice-count')?.textContent||'',
    label:node.querySelector('label>span')?.textContent||''
   })));
-  assert.ok(structures.every(x=>!x.pencilInsideLabel&&x.pencilCount===1),
-   'Catalog checkbox pencils must be siblings of the clickable native label');
+  assert.ok(structures.every(x=>!x.pencilInsideLabel&&x.pencilCount===0),
+   'Checkbox captions must have no edit pencil');
   const formattingChoice=choices.first();
   await formattingChoice.evaluate(el=>{
    el.closest('.os-sync-review-steps').hidden=false;
@@ -786,7 +787,7 @@ export async function runAdminEntrySmoke(browser,base){
     el.closest('.os-sync-review-steps').hidden=false;
     el.closest('.os-sync-formatting-review').hidden=false;
    });
-   await formattingChoice.locator('.os-sync-choice-pencil').click();
+   await formattingChoice.locator('.os-sync-formatting-option>span').dblclick();
    const editor=formattingChoice.locator('[contenteditable]').first();
    await editor.waitFor({state:'visible'});
    await editor.fill(value);
@@ -803,22 +804,31 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(await formattingChoice.locator('input[type="checkbox"]').isChecked(),checkboxBefore);
   assert.equal(calls.filter(x=>x.startsWith('game-source:')).length,sourceCallsBefore,
    'Editing a catalog caption must not launch a comparison or D1 game publication');
+  // Even disabled catalog actions must allow direct caption editing without
+  // unblocking the action or accidentally publishing game records.
+  await formattingChoice.evaluate(el=>{el.closest('.os-sync-review-steps').hidden=false});
+  const disabledPublish=dialog.locator('.os-sync-review-actions .os-sync-action-editor:has(> .primary)');
+  assert.equal(await disabledPublish.locator('button.primary').isDisabled(),true);
+  await disabledPublish.dblclick();
+  const disabledCopy=disabledPublish.locator('.os-sync-action-edit-host [contenteditable]');
+  await disabledCopy.waitFor({state:'visible'});
+  await disabledCopy.press('Escape');
+  assert.equal(await disabledPublish.locator('button.primary').isDisabled(),true);
+  assert.equal(calls.filter(x=>x.startsWith('game-source:')).length,sourceCallsBefore);
+  assert.equal(calls.filter(x=>x==='catalog-publish').length,0);
   await formattingChoice.evaluate(el=>{
    el.closest('.os-sync-formatting-review').hidden=true;
    el.closest('.os-sync-review-steps').hidden=true;
   });
   const liveAction=dialog.locator('.os-sync-action-editor:has(> .os-sync-main-check)');
-  const actionPencil=liveAction.locator('.os-sync-owner-pencil');
-  const actionState=await dialog.evaluate(node=>({
-   ownerPencils:node.querySelectorAll('.os-sync-owner-pencil').length,
-   actionWrappers:node.querySelectorAll('.os-sync-action-editor').length,
-   liveActionClass:node.querySelector('.os-sync-main-check')?.parentElement?.className
-  }));
-  assert.equal(await actionPencil.count(),1,
-   'Live catalog edit action missing or incorrectly nested: '+JSON.stringify(actionState));
+  assert.equal(await dialog.locator('.os-sync-owner-pencil,.os-sync-copy-pencil,'+
+   '.os-sync-state-pencil,.os-sync-choice-pencil').count(),0,
+   'All catalog text captions must be free of redundant pencils');
+  assert.equal(await liveAction.count(),1,
+   'The live catalog button remains in a direct-edit wrapper');
   const expectedCalls=calls.filter(value=>value.startsWith('game-source:')).length;
   for(const caption of ['Проверить игровой источник QA','Проверить изменения в текущей игре']){
-   await actionPencil.click();
+   await liveAction.locator('.os-sync-main-check').dblclick();
    const input=liveAction.locator('.os-sync-action-edit-host [contenteditable]');
    await input.waitFor({state:'visible'});
    await input.fill(caption);
@@ -846,7 +856,7 @@ export async function runAdminEntrySmoke(browser,base){
   await page.waitForTimeout(1050);
   assert.equal(await page.getByRole('tooltip').isVisible(),false,
    'Leaving an admin button cancels the tooltip timer');
-  // 0.614: the help ? is independent of the action and updates the original
+  // Hover hint ✎ is independent of the action and updates the original
   // tooltip target after a D1 save, without adding duplicate hover handlers.
   const hintPencil=liveAction.locator('.os-sync-hint-pencil');
   assert.equal(await hintPencil.count(),1);
@@ -943,22 +953,17 @@ export async function runAdminEntrySmoke(browser,base){
   await waitForCatalogResult('archive comparison',
    () => document.querySelector('.os-sync [role=status]')?.textContent?.includes('Найдено изменений:'));
   // 0.612: reloading results may update checksum evidence but must not
-  // erase the D1-editable explanation or the adjacent touch pencil.
+  // erase the directly editable D1 explanation.
   const checksumRow=dialog.locator(
    '.os-sync-advanced .os-sync-copy-field:has(> .os-sync-meta-status)');
-  const checksumPencil=checksumRow.locator('.os-sync-copy-pencil');
-  const checksumStructure=await dialog.evaluate(node=>({
-   explanationCount:node.querySelectorAll('.os-sync-meta-status').length,
-   parentClass:node.querySelector('.os-sync-meta-status')?.parentElement?.className,
-   advancedPencils:node.querySelectorAll('.os-sync-advanced .os-sync-copy-pencil').length
-  }));
-  assert.equal(await checksumPencil.count(),1,
-   'Checksum copy pencil disappeared after refreshing the catalog: '+
-    JSON.stringify(checksumStructure));
+  const checksumCaption=checksumRow.locator('.os-sync-meta-status');
+  assert.equal(await checksumCaption.count(),1,
+   'Direct-edit checksum copy survives catalog refresh');
+  assert.equal(await checksumRow.locator('.os-sync-copy-pencil').count(),0);
   assert.match(await dialog.locator('.os-sync-meta-detail').textContent(),
    /Сведения об источнике:/);
   const originalChecksum=await dialog.locator('.os-sync-meta-status').textContent();
-  await checksumPencil.click();
+  await checksumCaption.dblclick();
   const checksumInput=checksumRow.locator('[contenteditable]');
   await checksumInput.fill('Контрольные суммы описывают целостность файлов.');
   await checksumInput.press('Tab');
@@ -967,8 +972,8 @@ export async function runAdminEntrySmoke(browser,base){
    'Контрольные суммы описывают целостность файлов.',null,{timeout:15000});
   assert.equal(JSON.parse(townOverrides.get('guideedit.book.catalog-sync.checksum-explanation')).ru,
    'Контрольные суммы описывают целостность файлов.');
-  assert.equal(await checksumPencil.count(),1,
-   'Saving the explanation must preserve its separate edit control');
+  assert.equal(await checksumRow.locator('.os-sync-copy-pencil').count(),0,
+   'Saving must not restore a redundant caption pencil');
   assert.ok(originalChecksum.length>30);
   // 0.613: safe static status and archive banner text can be D1-edited
   // without running the data comparison, catalog publication or D1 probe.
@@ -977,9 +982,9 @@ export async function runAdminEntrySmoke(browser,base){
   assert.match(await banner.innerText(),/сохранённой копии/,
    'Archive warning should be present before an editor replaces its text');
   const state=dialog.locator('.os-sync-status');
-  assert.equal(await banner.locator('.os-sync-state-pencil').count(),1);
-  assert.equal(await state.locator('.os-sync-state-pencil').count(),1);
-  await banner.locator('.os-sync-state-pencil').click();
+  assert.equal(await banner.locator('.os-sync-state-pencil').count(),0);
+  assert.equal(await state.locator('.os-sync-state-pencil').count(),0);
+  await banner.locator('.os-sync-state-caption').dblclick();
   const bannerEditor=banner.locator('[contenteditable]');
   await bannerEditor.fill('Архивный источник проверен отдельно.');
   await bannerEditor.press('Tab');
@@ -988,7 +993,7 @@ export async function runAdminEntrySmoke(browser,base){
     ?.textContent==='Архивный источник проверен отдельно.',null,{timeout:12000});
   assert.equal(JSON.parse(townOverrides.get('guideedit.book.catalog-sync.source-archive-notice')).ru,
    'Архивный источник проверен отдельно.');
-  await state.locator('.os-sync-state-pencil').click();
+  await state.locator('.os-sync-state-caption').dblclick();
   const statusEditor=state.locator('[contenteditable]');
   await statusEditor.fill('Сверка завершена. Изменения не выбраны.');
   await statusEditor.press('Tab');
@@ -1013,8 +1018,8 @@ export async function runAdminEntrySmoke(browser,base){
   }
   assert.equal(readSavedComparison().ru,savedComparisonRu);
   assert.equal(calls.filter(x=>x.startsWith('game-source:')).length,originalCompareCalls);
-  assert.equal(await banner.locator('.os-sync-state-pencil').count(),1);
-  assert.equal(await state.locator('.os-sync-state-pencil').count(),1);
+  assert.equal(await banner.locator('.os-sync-state-pencil').count(),0);
+  assert.equal(await state.locator('.os-sync-state-pencil').count(),0);
   await dialog.getByRole('button',{name:/Новые · 0/}).click();
   assert.equal(await dialog.locator('.os-sync-record').count(),0,'No added records');
   await dialog.getByRole('button',{name:/Изменённые · 1/}).click();

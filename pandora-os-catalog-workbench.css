@@ -266,8 +266,9 @@
  .os-sync-review-signals{margin-left:0}
 }
 
-/* Admin copy controls are external siblings of publish/test action buttons.
-   Editing a caption cannot dispatch an action click. */
+/* Direct owner editing preserves the native action button. The surrounding
+   wrapper is also a dblclick/F2 target for disabled actions; it never runs
+   catalog mutations when the owner only edits a caption. */
 .os-sync-action-editor{
  display:inline-flex;align-items:center;gap:5px;min-width:0;max-width:100%;
  vertical-align:middle
@@ -275,19 +276,15 @@
 .os-sync-action-editor>.button-action{
  min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere
 }
+.os-sync-action-editor>.button-action:disabled{pointer-events:none}
+.os-sync-action-editor:has(>.button-action:disabled){cursor:text}
+.os-sync-action-editor:focus-visible{
+ outline:2px solid #edc485;outline-offset:3px;border-radius:3px
+}
 .os-sync-actions>.os-sync-action-editor{width:100%}
 .os-sync-actions>.os-sync-action-editor>.button-action{flex:1}
 .os-sync-archive-choice>.os-sync-action-editor{margin:0 13px 12px}
 .os-sync-review-actions .os-sync-action-editor:has(>.primary){margin-left:auto}
-.os-sync-owner-pencil{
- display:inline-flex;align-items:center;justify-content:center;
- flex:0 0 22px;min-width:22px;width:22px;height:25px;padding:0;
- border:1px solid #80613d;border-radius:4px;background:#312318;
- color:#dfbd85;font-size:12px;cursor:pointer
-}
-.os-sync-owner-pencil:hover,.os-sync-owner-pencil:focus-visible{
- background:#573920;border-color:#efc181;color:#ffe5b3;outline-offset:2px
-}
 .os-sync-action-edit-host{display:inline-flex;align-items:center;min-width:140px;max-width:100%;flex:1}
 .os-sync-action-edit-host.origin-copy-editable::after{content:none}
 .os-sync-action-edit-host .wiki-inline-input{
@@ -306,47 +303,26 @@
  .os-sync-action-editor>.button-action{flex:1}
 }
 
-/* Explanatory copy uses the same separate-action rule for touch screens. */
-.os-sync-copy-field{display:flex;align-items:flex-start;gap:6px;min-width:0}
-.os-sync-copy-field>.origin-copy-editable{flex:1;min-width:0}
+/* Explanatory author copy is edited by double-clicking its visible text.
+   No caption pencil or reserved width is required. */
+.os-sync-copy-field{display:block;min-width:0}
+.os-sync-copy-field>.origin-copy-editable{min-width:0}
 .os-sync-copy-field>.origin-copy-editable::after{content:none}
-.os-sync-copy-pencil{
- display:inline-flex;align-items:center;justify-content:center;
- flex:0 0 20px;min-width:20px;width:20px;height:21px;
- margin-top:1px;padding:0;border:1px solid #80613d;border-radius:4px;
- background:#312318;color:#dfbd85;font-size:11px;cursor:pointer
-}
-.os-sync-copy-pencil:hover,.os-sync-copy-pencil:focus-visible{
- background:#573920;border-color:#efc181;color:#ffe5b3;outline-offset:2px
-}
 
 /* Checksum evidence is runtime data. It follows, rather than replaces,
-   the owner-editable explanation and its compact pencil. */
+   the owner-editable explanation. */
 .os-sync-meta-detail{overflow-wrap:anywhere;white-space:normal;
  font-size:11px;line-height:1.45}
 
 /* Fixed source notices and status messages can be edited independently.
    Live progress/errors stay ordinary text and never expose an editor. */
-.os-sync-status:has(>.os-sync-state-pencil),
-.os-sync-source-banner:has(>.os-sync-state-pencil){
- display:flex;align-items:flex-start;gap:7px;min-width:0
-}
-.os-sync-state-caption{display:inline-block;min-width:0;flex:1;overflow-wrap:anywhere}
+.os-sync-state-caption{display:inline-block;min-width:0;overflow-wrap:anywhere}
 .os-sync-state-caption.origin-copy-editable::after{content:none}
-.os-sync-state-pencil{
- display:inline-flex;align-items:center;justify-content:center;
- flex:0 0 21px;min-width:21px;width:21px;height:22px;
- padding:0;border:1px solid #80613d;border-radius:4px;
- background:#312318;color:#dfbd85;font-size:11px;cursor:pointer
-}
-.os-sync-state-pencil:hover,.os-sync-state-pencil:focus-visible{
- background:#573920;border-color:#efc181;color:#ffe5b3;outline-offset:2px
-}
 .os-sync-state-caption.origin-copy-editable:focus-visible{
  outline:2px solid #edc485;outline-offset:3px;border-radius:2px
 }
 
-/* Inline D1-editable hover help: ? is separate from the actual publish/test
+/* Inline D1-editable hover help: ✎ is separate from the actual publish/test
    button, so an editorial click cannot trigger a catalog operation. */
 .os-sync-hint-pencil{
  display:inline-flex;align-items:center;justify-content:center;
@@ -364,11 +340,10 @@
  box-sizing:border-box;display:block;min-width:0;width:100%;
  max-width:100%;min-height:29px;padding:5px 7px;font-size:11px
 }
-.os-sync-action-editor.editing-hint>.button-action,
-.os-sync-action-editor.editing-hint>.os-sync-owner-pencil{display:none}
+.os-sync-action-editor.editing-hint>.button-action{display:none}
 .os-sync-action-editor.editing-hint{flex:1 1 200px}
 
-/* Native disclosure/search controls stay intact. Editor ? lives OUTSIDE
+/* Native disclosure/search controls stay intact. Editor ✎ lives OUTSIDE
    summary, so a tooltip edit never expands/collapses a details section. */
 .os-sync-secondary-hint{display:grid;grid-template-columns:minmax(0,1fr) 22px;
  gap:6px;align-items:start;min-width:0;width:100%}
@@ -395,16 +370,11 @@
  .os-sync-secondary-hint{grid-template-columns:minmax(0,1fr) 22px;gap:4px}
 }
 
-/* Catalog review checkbox captions are D1-editable separately from live counts.
-   The pencil is never nested inside a native label and cannot toggle the checkbox. */
-.os-sync-choice-editor{display:flex;align-items:center;gap:6px;min-width:0;width:100%}
+/* Checkbox captions edit in place; no extra controls occupy this row.
+   A single caption click still activates the native checkbox. */
+.os-sync-choice-editor{display:flex;align-items:center;min-width:0;width:100%}
 .os-sync-choice-editor>.os-sync-formatting-option{flex:1 1 auto;min-width:0;margin:8px 0 2px}
 .os-sync-choice-editor .os-sync-choice-count{margin-left:auto;white-space:nowrap;color:#cfb185;font-size:11px}
-.os-sync-choice-pencil{display:inline-grid;place-items:center;flex:0 0 22px;
- width:22px;height:25px;min-width:22px;padding:0;border:1px solid #80613d;
- border-radius:4px;background:#312318;color:#dfbd85;font-size:12px;cursor:pointer}
-.os-sync-choice-pencil:hover,.os-sync-choice-pencil:focus-visible{
- background:#573920;border-color:#efc181;color:#ffe5b3;outline-offset:2px}
 .os-sync-choice-editor .wiki-inline-input{display:block;min-width:0;max-width:100%;
  width:100%;height:auto;white-space:pre-wrap;overflow-wrap:anywhere}
 @media(max-width:450px){.os-sync-choice-editor{gap:3px}

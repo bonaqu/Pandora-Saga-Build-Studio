@@ -9,13 +9,11 @@ const css=read('pandora-os-catalog-workbench.css');
 const root={};root.window=root;
 runInNewContext(read('pandora-studio-honor-guide.js'),root);
 
-test('only safe static catalog status text receives a separate inline D1 pencil',()=>{
+test('only safe static catalog status text receives direct inline D1 editing',()=>{
  assert.match(workbench,/const editorialState=\(target,key,ru,en\)=>/);
  assert.match(workbench,/target\.replaceChildren\(label\)/);
- assert.match(workbench,/if\(!canEdit\|\|typeof editLabel!=='function'\)return/);
- assert.match(workbench,/class:'os-sync-state-pencil'/);
- assert.match(workbench,/label\.dispatchEvent\(new MouseEvent\('dblclick'/);
- assert.match(workbench,/target\.append\(pencil\)/);
+ assert.match(workbench,/if\(canEdit&&typeof editLabel==='function'\)editLabel\(label,key,ru,en\)/);
+ assert.doesNotMatch(workbench,/os-sync-state-pencil|target\.append\(pencil\)/);
  assert.match(workbench,/editorialState\(status,'initialStatus'/);
  assert.match(workbench,/editorialState\(status,\.\.\.complete\)/);
  assert.match(workbench,/if\(from==='server'\)editorialState\(sourceBanner/);
@@ -23,8 +21,9 @@ test('only safe static catalog status text receives a separate inline D1 pencil'
  assert.match(workbench,/status\.textContent=issue\+tr\(/);
  assert.match(workbench,/status\.textContent=\(from==='server'\?/);
  assert.match(css,/\.os-sync-state-caption\.origin-copy-editable::after\{content:none\}/);
- assert.match(css,/\.os-sync-source-banner:has\(>\.os-sync-state-pencil\)/);
+ assert.doesNotMatch(css,/os-sync-state-pencil/);
 });
+
 test('catalog notice and comparison status translations use valid guide edit fields',()=>{
  const labels=['initialStatus','sourceLiveNotice','sourceArchiveNotice','comparisonFound',
   'comparisonFormatting','comparisonFormattingAndRussian','comparisonRussian',

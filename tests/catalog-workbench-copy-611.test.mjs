@@ -28,19 +28,29 @@ test('catalog workbench labels have stable RU/EN D1 identifiers',()=>{
  assert.match(app,/node,'catalog-sync',key,ru,en,callbacks/);
 });
 
-test('editing catalog actions is separate from their potentially destructive click',()=>{
- assert.match(view,/const wrap=h\('span',\{class:'os-sync-action-editor'\}\)/);
- assert.match(view,/const pencil=h\('button',\{type:'button',class:'os-sync-owner-pencil'/);
- assert.match(view,/button.hidden=true;pencil.hidden=true;host.hidden=false/);
- assert.match(view,/host.dispatchEvent\(new MouseEvent\('dblclick'/);
- assert.doesNotMatch(view,/button.dispatchEvent\(new MouseEvent\('dblclick'/);
- assert.match(view,/onFinished:\(\)=>\{button.hidden=false;pencil.hidden=false;host.hidden=true\}/);
- assert.match(view,/if\(!canEdit\|\|typeof editLabel!=='function'\)return button/);
+test('catalog editor edits real captions directly and never activates publish on a double-click',()=>{
+ assert.match(view,/const wrap=h\('span',\{class:'os-sync-action-editor'/);
+ assert.match(view,/wrap\.addEventListener\('dblclick'/);
+ assert.match(view,/wrap\.addEventListener\('keydown'/);
+ assert.match(view,/button\.addEventListener\('click',event=>/);
+ assert.match(view,/event\.preventDefault\(\);event\.stopImmediatePropagation\(\)/);
+ assert.match(view,/button\.hidden=true;host\.hidden=false/);
+ assert.match(view,/host\.dispatchEvent\(new MouseEvent\('dblclick'/);
+ assert.match(view,/onFinished:\(\)=>\{button\.hidden=false;host\.hidden=true\}/);
+ assert.match(view,/const authored=\(tag,attrs,key,ru,en\)=>/);
+ assert.match(view,/editLabel\(node,key,ru,en\)/);
+ assert.match(view,/class:'os-sync-copy-field'/);
+ assert.match(view,/caption\.addEventListener\('click'/);
+ assert.match(view,/const box=caption\.closest\('label'\)\?\.querySelector/);
+ assert.match(view,/box\.click\(\)/);
+ for(const legacy of ['os-sync-owner-pencil','os-sync-copy-pencil',
+  'os-sync-choice-pencil','os-sync-state-pencil']){
+  assert.equal(view.includes(legacy),false,'Removed visible caption pencil: '+legacy);
+  assert.equal(css.includes(legacy),false,'Removed decorative caption CSS: '+legacy);
+ }
+ assert.match(css,/\.os-sync-action-editor>\.button-action:disabled\{pointer-events:none\}/);
  assert.match(css,/\.os-sync-actions>\.os-sync-action-editor\{width:100%\}/);
  assert.match(css,/\.os-sync-action-edit-host\.origin-copy-editable::after\{content:none\}/);
- assert.match(view,/class:'os-sync-copy-field'/);
- assert.match(view,/class:'os-sync-copy-pencil'/);
- assert.match(view,/node.dispatchEvent\(new MouseEvent\('dblclick'/);
  assert.match(css,/\.os-sync-copy-field>\.origin-copy-editable::after\{content:none\}/);
 });
 
