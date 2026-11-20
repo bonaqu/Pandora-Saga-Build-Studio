@@ -169,8 +169,8 @@ test('map and dungeon captions use the shared bilingual D1 owner editor',()=>{
  const app=read('pandora-studio-app.js');
  const block=app.slice(app.indexOf('const wikiMapRows='),app.indexOf('const wikiMonsterRows='));
  const captions=[...block.matchAll(/^ \["([^"]+)","([^"]+)","([^"]+)"\],?$/gm)];
- assert.equal(captions.length,45);
- assert.equal(new Set(captions.map(row=>row[1])).size,45);
+ assert.equal(captions.length,54);
+ assert.equal(new Set(captions.map(row=>row[1])).size,captions.length);
  const win={};Function('window',read('pandora-studio-honor-guide.js'))(win);
  for(const [,key,ru,en]of captions){
   const path='wiki.map.text.'+key.replace(/[A-Z]/g,x=>'-'+x.toLowerCase());

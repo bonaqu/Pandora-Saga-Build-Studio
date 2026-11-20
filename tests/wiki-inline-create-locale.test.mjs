@@ -11,10 +11,11 @@ test('monster and location forms bind both visible placeholders and accessible l
  for(const [prefix,type] of [['createMonster','monster'],['createMap','map']]){
   const ownerType=type==='monster'?'monsterBind':'mapBind';
   for(const locale of ['Ru','En']){
-   assert.ok(creator.includes(ownerType+'('+locale.toLowerCase()+",'"+prefix+
-    'Name'+locale+'Aria'+",'aria-label')"));
-   assert.ok(creator.includes(ownerType+'('+locale.toLowerCase()+",'"+prefix+
-    'Name'+locale+'Placeholder'+",'placeholder')"));
+   const field=locale.toLowerCase();
+   const aria=prefix+'Name'+locale+'Aria';
+   const hint=prefix+'Name'+locale+'Placeholder';
+   assert.ok(creator.includes(ownerType+'('+field+",'"+aria+"','aria-label')"));
+   assert.ok(creator.includes(ownerType+'('+field+",'"+hint+"','placeholder')"));
   }
   assert.ok(creator.includes("'"+prefix+"Save'"));
   assert.ok(creator.includes("'"+prefix+"Cancel'"));
