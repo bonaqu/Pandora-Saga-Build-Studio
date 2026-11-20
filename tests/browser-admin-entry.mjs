@@ -249,10 +249,12 @@ export async function runAdminEntrySmoke(browser,base){
    'The compact owner panel keeps its expanded state across Path navigation');
   assert.equal(await page.locator('#ownerPathMetricsCopy').count(),1,
    '18 source-independent metric captions share a collapsed editor');
-  const authoredPencil=page.locator('#pathSkillGallery .path-owner-pencil').first();
-  await authoredPencil.waitFor({state:'visible'});
-  assert.equal(await authoredPencil.getAttribute('type'),'button');
-  await authoredPencil.click();
+  // #390: direct caption editing replaces the redundant rename pencil.
+  const authoredCaption=page.locator('#pathSkillGallery .path-skill-count-caption');
+  await authoredCaption.waitFor({state:'visible'});
+  assert.equal(await page.locator('#pathSkillGallery .path-owner-pencil').count(),0,
+   'Ordinary skill captions must not have redundant rename pencils');
+  await authoredCaption.dblclick();
   const quickEditor=page.locator('#pathSkillGallery [data-owner-text-field="true"]').first();
   await quickEditor.waitFor({state:'visible'});
   await quickEditor.press('Escape');
