@@ -85,6 +85,13 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
  });
  const page=await context.newPage();
  page.on('pageerror',error=>errors.push(error.message));
+ // A successful create can immediately unmount the form. A one-shot real
+ // mouse gesture avoids locator retries that would duplicate a D1 POST.
+ const clickPointerOnce=async locator=>{
+  const rect=await locator.boundingBox();
+  assert.ok(rect&&rect.width>0&&rect.height>0,'Expected visible owner action');
+  await page.mouse.click(rect.x+rect.width/2,rect.y+rect.height/2);
+ };
  page.on('dialog',dialog=>void dialog.accept());
  try{
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
@@ -168,7 +175,10 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
   assert.equal(await monsterForm.locator('[role="textbox"][aria-label="Название монстра EN"]').textContent(),
    'Test monster');
   const monsterSave=monsterForm.getByRole('button',{name:'Добавить монстра в энциклопедию',exact:true});
-  await monsterSave.click();
+  // Use one real pointer gesture. The mocked D1 write can finish and replace
+  // the form before locator.click has stopped checking the old button.
+  // Never retry a create action after the first click has been dispatched.
+  await clickPointerOnce(monsterSave);
   await page.waitForFunction(()=>document.querySelector('.wiki-page')
     ?.textContent.includes('Тестовый монстр'),null,{timeout:18000});
   const monsterAttempts=createAttempts.filter(x=>x.family==='monster');
@@ -198,7 +208,7 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
   assert.equal(await mapName.textContent(),'Тестовая локация',
    'Editing a location hint must not overwrite its authored name');
   const mapSave=mapForm.getByRole('button',{name:'Создать',exact:true});
-  await mapSave.click();
+  await clickPointerOnce(mapSave);
   await page.locator('.wiki-map-create-npc').waitFor({state:'visible',timeout:18000});
   const mapAttempts=createAttempts.filter(x=>x.family==='map');
   assert.equal(mapAttempts.length,1,
@@ -211,7 +221,7 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
   const npcSave=npcForm.getByRole('button',{name:'Сохранить NPC'});
   await npcSave.click();
   await npcForm.locator('.inline-owner-error').getByText('Temporary creation failure').waitFor();
-  await npcSave.click();
+  await clickPointerOnce(npcSave);
   await page.waitForFunction(()=>document.querySelector('.wiki-page')
     ?.textContent.includes('Тестовый торговец'),null,{timeout:18000});
   const npcAttempts=createAttempts.filter(x=>x.family==='npc');
