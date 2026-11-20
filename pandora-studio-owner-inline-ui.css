@@ -636,16 +636,15 @@
   gap:5px;padding:6px}
 }
 
-/* Hero Book editorial actions: real sibling buttons in a fixed two-cell
-   toolbar. Header button padding and narrow grids must never overlap them. */
+/* Hero Book: the only adjacent control edits a genuine hover explanation.
+   The heading itself is editable by double-click, without a second cell. */
 #stageAttributes .stage-guide-actions{
- display:inline-grid!important;grid-template-columns:repeat(2,22px)!important;
+ display:inline-grid!important;grid-template-columns:22px!important;
  grid-auto-rows:22px!important;align-items:center;justify-content:end;
- gap:4px!important;min-width:48px;max-width:100%;
+ gap:0!important;min-width:22px;max-width:100%;
  width:max-content;flex:0 0 auto;position:static!important;
  transform:none!important;isolation:isolate
 }
-#stageAttributes .stage-guide-actions>.stage-guide-edit-name,
 #stageAttributes .stage-guide-actions>.stage-guide-edit-hint{
  box-sizing:border-box!important;display:grid!important;place-items:center;
  width:22px!important;min-width:22px!important;max-width:22px!important;

@@ -78,11 +78,11 @@ export async function runOwnerBuildHints660Smoke(browser,base){
    'libraryCardDelete','libraryHintOpen','libraryHintOverwrite','libraryHintShare',
    'libraryHintDelete','libraryHintDeleteLocal','librarySearchInputLabel',
    'librarySearchPlaceholder','librarySearchEmpty','libraryEmpty']){
-   assert.equal(await panel.locator('[data-owner-copy-pencil="'+key+'"]').count(),1,
-    'Exactly one owner pencil per semantic text: '+key);
+   assert.equal(await panel.locator('[data-owner-copy-pencil="'+key+'"]').count(),0,
+    'Owner captions have no pencil; edit by double click: '+key);
   }
   const edit=async(key,text)=>{
-   await panel.locator('[data-owner-copy-pencil="'+key+'"]').click();
+   await panel.locator('[data-owner-copy-key="'+key+'"]').dblclick();
    const field=panel.locator('.account-copy-edit-host [contenteditable]');
    await field.fill(text);
    await field.press('Tab');
@@ -92,12 +92,12 @@ export async function runOwnerBuildHints660Smoke(browser,base){
   };
   for(const key of ['librarySortSaved','libraryCompare',
    'librarySortAria','libraryBuildNameAria','libraryDraftNameAria']){
-   assert.equal(await panel.locator('[data-owner-copy-pencil="'+key+'"]').count(),1,
-    'Owner can edit additional RU/EN library captions: '+key);
+   assert.equal(await panel.locator('[data-owner-copy-pencil="'+key+'"]').count(),0,
+    'Owner can double-click additional RU/EN library captions: '+key);
   }
   const editCurrent=async text=>{
    const current=page.locator('.build-card.is-current');
-   await current.locator('[data-owner-copy-pencil="libraryCurrentBadge"]').click();
+   await current.locator('[data-owner-copy-key="libraryCurrentBadge"]').dblclick();
    const field=current.locator('.account-copy-edit-host [contenteditable]');
    await field.fill(text);
    await field.press('Tab');
@@ -120,7 +120,7 @@ export async function runOwnerBuildHints660Smoke(browser,base){
   assert.equal(await popup.innerText(),russian);
   await page.mouse.move(1,1);
   await popup.waitFor({state:'hidden'});
-  await panel.locator('[data-owner-copy-pencil="libraryHintOpen"]').click();
+  await panel.locator('[data-owner-copy-key="libraryHintOpen"]').dblclick();
   const cancel=panel.locator('.account-copy-edit-host [contenteditable]');
   await cancel.fill('Не сохранять');
   await cancel.press('Escape');
@@ -163,8 +163,8 @@ export async function runOwnerBuildHints660Smoke(browser,base){
   const overwrite=card.locator('.build-overwrite-choice');
   await overwrite.waitFor({state:'visible'});
   assert.equal(await overwrite.locator('.build-confirm-dynamic-name').innerText(),originalName);
-  assert.equal(await overwrite.locator('[data-owner-copy-pencil="libraryOverwriteBefore"]').count(),1);
-  await overwrite.locator('[data-owner-copy-pencil="libraryOverwriteBefore"]').click();
+  assert.equal(await overwrite.locator('[data-owner-copy-pencil="libraryOverwriteBefore"]').count(),0);
+  await overwrite.locator('[data-owner-copy-key="libraryOverwriteBefore"]').dblclick();
   const beforeInput=overwrite.locator('.account-copy-edit-host [contenteditable]');
   await beforeInput.fill('Вместо этого билда «');
   await beforeInput.press('Tab');
@@ -181,7 +181,7 @@ export async function runOwnerBuildHints660Smoke(browser,base){
    'Switching actions must release the previous hidden confirmation nodes');
   const deletion=card.locator('.build-delete-choice');
   await deletion.waitFor({state:'visible'});
-  await deletion.locator('[data-owner-copy-pencil="libraryDeleteAsk"]').click();
+  await deletion.locator('[data-owner-copy-key="libraryDeleteAsk"]').dblclick();
   await deletion.locator('.account-copy-edit-host [contenteditable]')
    .fill('Удалить сохранение и ссылки навсегда?');
   await deletion.locator('.account-copy-edit-host [contenteditable]').press('Tab');
@@ -213,7 +213,7 @@ export async function runOwnerBuildHints660Smoke(browser,base){
   const enOverwrite=editedCard.locator('.build-overwrite-choice');
   assert.ok((await enOverwrite.innerText()).includes('QA preserved hero'));
   assert.ok((await enOverwrite.innerText()).includes('Overwrite saved build'));
-  await enOverwrite.locator('[data-owner-copy-pencil="libraryOverwriteAfter"]').click();
+  await enOverwrite.locator('[data-owner-copy-key="libraryOverwriteAfter"]').dblclick();
   await enOverwrite.locator('.account-copy-edit-host [contenteditable]')
    .fill('” with your current hero? This cannot be undone.');
   await enOverwrite.locator('.account-copy-edit-host [contenteditable]').press('Tab');
