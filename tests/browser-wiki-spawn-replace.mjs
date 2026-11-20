@@ -50,6 +50,20 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
     createAttempts.push({key:body.key,family});
     if(!failedTypes.has(family)){
      failedTypes.add(family);
+     if(family==='monster'){
+      // The CAS write succeeded in D1 but its Worker reply was lost.
+      // A verified GET must complete this action without a second POST.
+      writes.push(body);stored.set(body.key,body.value);
+      return reply({error:'Worker reply lost after commit'},503);
+     }
+     if(family==='map'){
+      // A malformed 200 acknowledgment is also ambiguous, not proof of
+      // failure or success until the same D1 payload is read back.
+      writes.push(body);stored.set(body.key,body.value);
+      return reply({ok:true,key:body.key,value:'wrong receipt',conditional:false});
+     }
+     // Unwritten NPC must still fail closed, retaining its original ID
+     // for a deliberate user retry.
      return reply({error:'Temporary creation failure'},503);
     }
    }
@@ -116,8 +130,8 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
   for(const other of before.filter(id=>id!=='2001001'))
    assert.ok(links.some(x=>x.type==='map'&&x.id===other),
     'An unrelated original spawn was lost: '+other);
-  // Simulate one Worker 503 per actual owner creation form. Retrying each
-  // form must use its original key, not generate a duplicate orphan record.
+  // Test three genuinely distinct D1 outcomes through real Wiki forms:
+  // committed-but-503, committed-but-invalid-ack, and rejected 503 + retry.
   await page.locator('[data-wiki-chapter="monster"]').click();
   await page.locator('.wiki-monster-create').click();
   const monsterForm=page.locator('.wiki-owner-monster-form');
@@ -126,13 +140,11 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
   await monsterForm.locator('input[type="number"]').fill('27');
   const monsterSave=monsterForm.getByRole('button',{name:'Сохранить монстра'});
   await monsterSave.click();
-  await monsterForm.locator('.inline-owner-error').getByText('Temporary creation failure').waitFor();
-  await monsterSave.click();
   await page.waitForFunction(()=>document.querySelector('.wiki-page')
     ?.textContent.includes('Тестовый монстр'),null,{timeout:18000});
   const monsterAttempts=createAttempts.filter(x=>x.family==='monster');
-  assert.equal(monsterAttempts.length,2);
-  assert.equal(monsterAttempts[0].key,monsterAttempts[1].key);
+  assert.equal(monsterAttempts.length,1,
+   'Readback-proved monster creation must not trigger another POST');
 
   await page.locator('[data-wiki-chapter="map"]').click();
   await page.locator('.wiki-map-create').click();
@@ -141,12 +153,10 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
   await mapForm.locator('[role="textbox"][aria-label="Название локации на английском"]').fill('Test location');
   const mapSave=mapForm.getByRole('button',{name:'Создать',exact:true});
   await mapSave.click();
-  await mapForm.locator('.inline-owner-error').getByText('Temporary creation failure').waitFor();
-  await mapSave.click();
   await page.locator('.wiki-map-create-npc').waitFor({state:'visible',timeout:18000});
   const mapAttempts=createAttempts.filter(x=>x.family==='map');
-  assert.equal(mapAttempts.length,2);
-  assert.equal(mapAttempts[0].key,mapAttempts[1].key);
+  assert.equal(mapAttempts.length,1,
+   'Malformed success ack may be resolved only by exact D1 readback');
 
   await page.locator('.wiki-map-create-npc').click();
   const npcForm=page.locator('.wiki-map-create-npc-form');
@@ -161,9 +171,12 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
   const npcAttempts=createAttempts.filter(x=>x.family==='npc');
   assert.equal(npcAttempts.length,2);
   assert.equal(npcAttempts[0].key,npcAttempts[1].key);
+  assert.deepEqual(createAttempts.map(x=>x.family),['monster','map','npc','npc']);
   assert.equal(new Set(createAttempts.map(x=>x.key)).size,3,
-   'Three failed creates must recover as three stable records, not six');
+   'Three creates must recover as three stable records, not duplicate orphans');
+  assert.equal(writes.filter(x=>x.key.startsWith('wikiedit.')).length,3,
+   'Readback confirmations and retried rejected NPC must leave exactly three D1 records');
   assert.deepEqual(errors,[]);
-  console.log('Chromium Wiki source-spawn and 503→retry for monster, map and NPC passed');
+  console.log('Chromium Wiki: spawn CAS, committed 503, bad 200 receipt, rejected 503 retry; 3 records, no duplicates');
  }finally{await context.close()}
 }

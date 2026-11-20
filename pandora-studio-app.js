@@ -3903,7 +3903,7 @@ function renderWiki(root){
    const mobs=[...new Map([...extra,...next.map(x=>x.monsterId).filter(x=>x!=null)]
     .map(x=>[String(x),x])).values()];
    return {roster:next,mobs};
-  });
+  },{verifyUncertain:true});
  };
  const createOwnerMonster=(button,{mapId=null,spawnId=null,name='',level=1}={})=>{
   if(!adminEditing||!adminToken)return;
@@ -3936,7 +3936,8 @@ function renderWiki(root){
     try{
      if(!created){
       await saveWikiRecordPatch('monster',monsterId,{
-       name:label,nameEn:english,desc:'',descEn:'',level:num});
+       name:label,nameEn:english,desc:'',descEn:'',level:num},
+       {verifyUncertain:true});
       created=true;
      }
      if(mapId&&spawnId)await persistRosterLink(mapId,spawnId,monsterId);
@@ -3990,7 +3991,8 @@ function renderWiki(root){
      try{
       await saveWikiRecordPatch('map',id,{name,nameEn,desc:'',descEn:'',
        mobs:[],npcs:[],loot:[],tags:[],
-       sections:['monsters','npcs','loot','tags','custom'],extraSections:[]});
+       sections:['monsters','npcs','loot','tags','custom'],extraSections:[]},
+       {verifyUncertain:true});
       openWiki('map',id);
      }catch(err){error.textContent=String(err.message||err);submit.disabled=false}
     }});
@@ -6942,7 +6944,8 @@ function renderWiki(root){
          if(!npcId){err.textContent=mapCopy('npcCreateFailure');return}
          submit.disabled=true;err.textContent='';
          try{
-          await saveWikiRecordPatch('npc',npcId,{name,nameEn,service,maps:[String(id)]});
+          await saveWikiRecordPatch('npc',npcId,{name,nameEn,service,maps:[String(id)]},
+           {verifyUncertain:true});
           openWiki('map',id);
          }catch(error){err.textContent=String(error?.message||error);submit.disabled=false}
         };
@@ -9030,7 +9033,7 @@ function modal(title,content){
  heading.focus({preventScroll:true});
  return box;
 }
-async function apiRequest(path,body,token=adminToken) {
+async function apiRequest(path,body,token=adminToken,{verifyUncertain=false}={}) {
  const editingWrite=Boolean(body)&&/^\/api\/admin\/(?:override|reset)$/.test(path);
  // The last D1 snapshot read by this editor is the precondition for every
  // owner write, including inline edits, list edits, deletion and Undo.
@@ -9057,6 +9060,29 @@ async function apiRequest(path,body,token=adminToken) {
  const signal=AbortSignal.timeout(body?30000:22000);
  const untilAbort=window.PandoraStudioOnlineGate.untilAbort;
  let response,parsed=null;
+ // Only explicitly opted-in Wiki saves may resolve an ambiguous POST via a
+ // fresh read-only D1 observation. Never retry the POST, change its CAS
+ // precondition or accept a cached catalog snapshot as proof of success.
+ const verifyOwnerReadback=async()=>{
+  if(!verifyUncertain||path!=='/api/admin/override'||
+     typeof requestBody?.key!=='string'||typeof requestBody?.value!=='string')
+   return null;
+  try{
+   const checkSignal=AbortSignal.timeout(12000);
+   const check=await untilAbort(()=>fetch(API+'/api/overrides',{
+    method:'GET',cache:'no-store',
+    signal:checkSignal
+   }),checkSignal);
+   if(!check?.ok)return null;
+   const remote=await untilAbort(()=>check.json(),checkSignal);
+   if(!remote?.values||Array.isArray(remote.values)||
+      typeof remote.values!=='object'||
+      !Object.hasOwn(remote.values,requestBody.key)||
+      remote.values[requestBody.key]!==requestBody.value)return null;
+   return {ok:true,conditional:true,key:requestBody.key,
+    value:requestBody.value.trim(),verifiedReadback:true};
+  }catch{return null}
+ };
  try {
   const request=body||path!=='/api/overrides'?fetch:window.PandoraStudioLiveRead.get;
   response=await untilAbort(()=>request(API+path,{
@@ -9073,6 +9099,8 @@ async function apiRequest(path,body,token=adminToken) {
   catch(error){if(signal.aborted)throw error}
  } catch {
   if(path.startsWith('/api/admin/')){
+   const confirmed=await verifyOwnerReadback();
+   if(confirmed){finishOwnerWrite();return confirmed}
    finishOwnerWrite('Cloudflare Worker недоступен');
    throw new Error('Нет соединения с Cloudflare Worker. Проверь сервер.');
   }
@@ -9085,6 +9113,12 @@ async function apiRequest(path,body,token=adminToken) {
  // the *separate* owner-write acknowledgment contract below.
  const data=parsed===null?{}:parsed;
  if(!response.ok){
+  // CAS 409 can mean a previous POST committed and only its acknowledgment
+  // vanished. A byte-exact fresh readback proves the desired D1 state;
+  // any different value stays an explicit conflict with no overwrite.
+  const confirmed=(response.status===409||response.status>=500)?
+   await verifyOwnerReadback():null;
+  if(confirmed){finishOwnerWrite();return confirmed}
   const conflict=response.status===409&&data.code==='OWNER_EDIT_CONFLICT';
   const outdated=response.status===428&&data.code==='OWNER_CLIENT_UPDATE_REQUIRED';
   const rawError=data.error||(lang==='en'?
@@ -9121,6 +9155,8 @@ async function apiRequest(path,body,token=adminToken) {
     data.value===String(requestBody.value).trim()
    );
   if(!valid){
+   const confirmed=await verifyOwnerReadback();
+   if(confirmed){finishOwnerWrite();return confirmed}
    const error=new Error(lang==='en'?
     'The server did not confirm the D1 save. Your edit is still here; try again.':
     'Сервер не подтвердил сохранение в D1. Правка осталась в поле — повтори.');
@@ -10702,7 +10738,7 @@ async function saveGuideList(key,rows){
   }
  }finally{editIsSaving=false;refreshOwnerUI()}
 }
-async function saveWikiRecordPatch(type,id,updates){
+async function saveWikiRecordPatch(type,id,updates,{verifyUncertain=false}={}){
  if(!adminToken||!adminEditing)throw Error('Недостаточно прав');
  const key='wikiedit.'+type+'.'+id;
  const previous=wikiRecordWriteQueue.get(key);
@@ -10721,7 +10757,7 @@ async function saveWikiRecordPatch(type,id,updates){
    throw Error('Некорректное значение поля');
   const before=activeOverride(key),after=JSON.stringify(patch);
   if(before===after)return;
-  await apiRequest('/api/admin/override',{key,value:after});
+  await apiRequest('/api/admin/override',{key,value:after},adminToken,{verifyUncertain});
   ownerEdits.push({key,before,after});override[key]=after;
   await refreshOwnerCatalog();
  });

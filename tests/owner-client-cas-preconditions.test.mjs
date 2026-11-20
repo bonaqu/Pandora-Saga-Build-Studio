@@ -402,3 +402,92 @@ test('admin Finish/Undo gate sees queued bilingual edits, even before their netw
  assert.match(app,/if\(!adminToken\|\|!ownerEdits.length\|\|ownerSaveInFlight\(\)\)return/);
  assert.doesNotMatch(app,/let wikiLabelWriteQueue=Promise\.resolve\(\)/);
 });
+
+test('uncertain owner create accepts only byte-exact uncached D1 readback after lost HTTP response',async()=>{
+ const key='wikiedit.monster.owner-monster-0011223344556677';
+ const value=JSON.stringify({name:'Солдат',nameEn:'Soldier',level:30});
+ let posts=0,reads=0;
+ const editor=instance(async(url,opts)=>{
+  if(new URL(url).pathname==='/api/overrides'){
+   reads++;
+   assert.equal(opts.method,'GET');
+   assert.equal(opts.cache,'no-store','D1 proof cannot use the client snapshot cache');
+   assert.equal(opts.headers,undefined,
+    'Avoid custom request headers that trigger a cross-origin preflight');
+   assert.equal(opts.body,undefined);
+   return respond({values:{[key]:value}});
+  }
+  posts++;assert.equal(JSON.parse(opts.body).expectedValue,null);
+  throw Error('Worker disconnected AFTER conditional D1 commit');
+ });
+ const result=await editor.request('/api/admin/override',{key,value},
+  validToken,{verifyUncertain:true});
+ assert.equal(result.verifiedReadback,true);
+ assert.equal(result.key,key);
+ assert.equal(result.value,value);
+ assert.equal(posts,1,'The client must never replay an ambiguous write');
+ assert.equal(reads,1,'Only one explicit fresh readback is needed');
+ assert.equal(editor.status().ownerSaveState,'saved');
+ assert.equal(editor.status().ownerSaveError,'');
+});
+test('ambiguous HTTP 503 and malformed 200 acknowledgments can be proved by readback',async()=>{
+ const key='wikiedit.map.custom-0011223344556677';
+ const value=JSON.stringify({name:'Карта',nameEn:'Map'});
+ for(const mode of ['503','broken-ack']){
+  let reads=0;
+  const editor=instance(async(url,opts)=>{
+   if(new URL(url).pathname==='/api/overrides'){
+    reads++;return respond({values:{[key]:value}});
+   }
+   return mode==='503'?respond({error:'Worker partial reply'},503):
+    respond({ok:true,key,value:'not confirmed',conditional:false});
+  });
+  const result=await editor.request('/api/admin/override',{key,value},
+   validToken,{verifyUncertain:true});
+  assert.equal(result.verifiedReadback,true,mode);
+  assert.equal(editor.status().ownerSaveState,'saved',mode);
+  assert.equal(reads,1,mode);
+ }
+});
+test('stale CAS conflict, absent D1 key and failed verification never become false success',async()=>{
+ const key='wikiedit.npc.owner-npc-0011223344556677',value='New NPC';
+ for(const mode of ['different','absent','readback-error']){
+  let reads=0,posts=0;
+  const editor=instance(async(url)=>{
+   if(new URL(url).pathname==='/api/overrides'){
+    reads++;
+    if(mode==='readback-error')throw Error('Verification unavailable');
+    return respond({values:mode==='different'?{[key]:'Concurrent edit'}:{}});
+   }
+   posts++;
+   return mode==='different'?respond({code:'OWNER_EDIT_CONFLICT',error:'Conflict'},409):
+    respond({error:'Temporary Worker failure'},503);
+  });
+  await assert.rejects(editor.request('/api/admin/override',{key,value},
+   validToken,{verifyUncertain:true}));
+  assert.equal(posts,1,mode);
+  assert.equal(reads,1,mode);
+  assert.equal(editor.status().ownerSaveState,'error',mode);
+  assert.equal(Object.hasOwn(editor.override,key),false,mode);
+ }
+});
+test('readback is opt-in for Wiki: ordinary admin writes and unauthorized responses never probe',async()=>{
+ const key='wikiedit.monster.owner-monster-0011223344556677',value='Monster';
+ let reads=0,posts=0;
+ const editor=instance(async(url)=>{
+  if(new URL(url).pathname==='/api/overrides'){
+   reads++;return respond({values:{[key]:value}});
+  }
+  posts++;return respond({error:'Unauthorized'},401);
+ });
+ await assert.rejects(editor.request('/api/admin/override',{key,value},
+  validToken,{verifyUncertain:true}),err=>err.httpStatus===401);
+ assert.equal(posts,1);assert.equal(reads,0);
+ assert.equal(editor.auth().adminEditing,false);
+ const guest=instance(async(url)=>{
+  if(new URL(url).pathname==='/api/overrides'){reads++;return respond({values:{[key]:value}})}
+  return respond({error:'Worker unavailable'},503);
+ });
+ await assert.rejects(guest.request('/api/admin/override',{key,value}));
+ assert.equal(reads,0,'Non-opt-in writes must never add D1 query costs');
+});

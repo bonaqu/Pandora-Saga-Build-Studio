@@ -196,7 +196,7 @@ test('wrong-owner credentials cannot reset even an unrelated valid override',asy
 
 test('real owner CAS client releases saving state after hung headers/JSON without replay',async()=>{
  const app=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
- const start=app.indexOf('async function apiRequest(path,body,token=adminToken) {');
+ const start=app.indexOf('async function apiRequest(');
  const end=app.indexOf('\nfunction showAdmin()',start);
  assert.ok(start>=0&&end>start,'Owner request must stay independently testable');
  const gateHost={};
