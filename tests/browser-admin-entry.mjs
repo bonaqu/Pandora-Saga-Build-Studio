@@ -1105,9 +1105,24 @@ export async function runAdminEntrySmoke(browser,base){
     .filter({hasText:'Применить выбранные изменения'}).click();
   await archivePrompt;
   assert.equal(calls.filter(x=>x==='d1-import').length,0,'dismissal prevents catalog publication');
+  // The same owner double-click guard defers Clear selection / Select safe
+  // by one click interval. Wait for the actual selection state, not just
+  // Playwright's pointer dispatch, before asserting or exporting.
+  const waitForClearedCatalogSelection=()=>page.waitForFunction(()=>{
+    const choices=[...document.querySelectorAll(
+     '.os-sync-record input[type="checkbox"]')];
+    const publish=document.querySelector(
+     '.os-sync-review-actions button.primary');
+    return choices.length>0&&choices.every(input=>!input.checked)&&
+      publish?.disabled===true;
+  },null,{timeout:12000});
   await dialog.getByRole('button',{name:'Снять весь выбор'}).click();
+  await waitForClearedCatalogSelection();
   assert.equal(await dialog.locator('.os-sync-review-steps button').filter({hasText:'Применить выбранные изменения'}).isDisabled(),true);
   await dialog.getByRole('button',{name:'Выбрать понятные изменения',exact:true}).click();
+  await page.waitForFunction(()=>[...document.querySelectorAll(
+   '.os-sync-record input[type="checkbox"]')].some(input=>input.checked),
+   null,{timeout:12000});
   const downloadPromise=page.waitForEvent('download');
   await dialog.getByRole('button',{name:'Скачать выбранное для GitHub'}).click();
   const download=await downloadPromise;
@@ -1183,6 +1198,7 @@ export async function runAdminEntrySmoke(browser,base){
    'Rejecting final confirmation cannot write a catalog snapshot');
   // Changing the selection must invalidate the previous risky approval.
   await dialog.getByRole('button',{name:'Снять весь выбор'}).click();
+  await waitForClearedCatalogSelection();
   assert.equal(await approval.isChecked(),false);
   assert.equal(await publishButton.isDisabled(),true);
   // The exact failure reported by an administrator must NOT suggest a live
