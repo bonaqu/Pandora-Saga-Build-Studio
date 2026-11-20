@@ -1097,8 +1097,8 @@ function ownerCopyLabel(node,section,key,ru,en,{onCommitted,onFinished}={}){
  node.dataset.ownerCopyRu=ru;
  node.dataset.ownerCopyEn=en;
  node.classList.add('origin-copy-editable');
- // Captions inside real buttons already have their own pencil and handler.
- // Plain labels also need keyboard access without inserting extra controls.
+ // Captions inside buttons are edited in place; keyboard focus is retained
+ // without adding a separate icon to the owner interface.
  if(!node.matches?.('button,[role="button"]')&&
     !node.closest?.('button,[role="button"]')){
   node.tabIndex=0;
@@ -1187,24 +1187,10 @@ function ownerInterfaceEditor(section,rows,headingRu='Подписи интер�
  for(const [key,ru,en,shortRu,shortEn] of rows){
   const label=h('span',{class:'studio-owner-interface-value',
    text:ownerCopy(section,key,ru,en)});
-  let pencil=null;
-  ownerCopyLabel(label,section,key,ru,en,{
-   onCommitted:visible=>{
-    applyOwnerInterfaceEditedValue(section,key,visible);
-    pencil?.setAttribute('aria-label',
-     (lang==='en'?'Edit caption: ':'Изменить надпись: ')+visible);
-   }
-  });
-  pencil=h('button',{type:'button',class:'ui-content-pencil studio-owner-interface-pencil',
-   text:'✎',
-   'aria-label':(lang==='en'?'Edit caption: ':'Изменить надпись: ')+ownerCopy(section,key,ru,en),
-   onclick:event=>{
-    event.preventDefault();event.stopPropagation();
-    label.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
-   }});
+  ownerCopyLabel(label,section,key,ru,en);
   items.append(h('div',{class:'studio-owner-interface-row'},[
    h('span',{class:'studio-owner-interface-name',
-    text:lang==='en'?(shortEn||en):(shortRu||ru)}),label,pencil]));
+    text:lang==='en'?(shortEn||en):(shortRu||ru)}),label]));
  }
  box.append(items);
  return box;
@@ -1583,15 +1569,9 @@ function wikiSourceCopy(key,ru,en){
  const label=h('small',{class:'wiki-source-meta',
   text:ownerCopy('wiki-ui',key,ru,en)});
  ownerCopyLabel(label,'wiki-ui',key,ru,en);
- if(!(adminEditing&&adminToken))return label;
- const pencil=h('button',{type:'button',class:'ui-content-pencil wiki-source-pencil',
-  'aria-label':(lang==='en'?'Edit caption: ':'Изменить надпись: ')+label.textContent,
-  text:'✎',onclick:event=>{
-   event.preventDefault();event.stopPropagation();
-   label.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
-  }});
- return h('span',{class:'wiki-source-copy-owner'},[label,pencil]);
+ return label;
 }
+
 const originFixedLabels=[
  ['.workspace>.left>.panel-heading h2','heading','Происхождение','Origin'],
  ['#originTabs [data-origin-tab="race"]','tabRace','Раса','Race'],
@@ -1608,7 +1588,7 @@ const originFixedLabels=[
  ['#originPanelStats [data-i18n="baseStats"]','baseHeading','Базовые характеристики','Base attributes'],
  ['#originPanelStats [data-i18n="distributePoints"]','distributeHeading','Распредели очки','Distribute points']
 ];
-function originCopyLabel(node,key,ru,en,{pencilHost=null}={}){
+function originCopyLabel(node,key,ru,en){
  if(!node)return node;
  if(!node.querySelector?.('.wiki-inline-input,[data-owner-editor]'))
   node.textContent=originCopy(key,ru,en);
@@ -1624,22 +1604,17 @@ function originCopyLabel(node,key,ru,en,{pencilHost=null}={}){
    event.preventDefault();event.stopImmediatePropagation();
    editOriginCopyLabel(node,key,ru,en);
   },true);
+  node.setAttribute?.('aria-keyshortcuts','F2');
+  if(!node.matches?.('button,[role="button"]'))node.tabIndex=0;
+  node.addEventListener?.('keydown',event=>{
+   if(event.key==='F2'&&adminEditing&&adminToken){
+    event.preventDefault();event.stopPropagation();
+    editOriginCopyLabel(node,key,ru,en);
+   }
+  });
+  if(node.matches?.('button,[role="button"]'))ownerCaptionActionGuard(node,node);
  }
- if(pencilHost){
-  const existing=[...pencilHost.querySelectorAll('[data-origin-edit-for]')]
-   .find(x=>x.dataset.originEditFor===key);
-  if(existing&&!editing)existing.remove();
-  else if(existing&&editing){
-   existing.setAttribute('aria-label',(lang==='en'?'Edit caption: ':'Изменить надпись: ')+originCopy(key,ru,en));
-  }else if(!existing&&editing){
-   pencilHost.append(h('button',{type:'button',class:'origin-copy-pencil',
-    'data-origin-edit-for':key,
-    'aria-label':(lang==='en'?'Edit caption: ':'Изменить надпись: ')+originCopy(key,ru,en),
-    title:lang==='en'?'Edit this caption':'Изменить эту надпись',
-    text:'✎',onclick:event=>{event.preventDefault();event.stopPropagation();
-     editOriginCopyLabel(node,key,ru,en)}}));
-  }
- }
+ // Direct editing happens on the visible caption; no adjacent pencil.
  return node;
 }
 function editOriginCopyLabel(node,key,ru,en){
@@ -1666,11 +1641,7 @@ function editOriginCopyLabel(node,key,ru,en){
 function renderOriginCopyLabels(){
  for(const [selector,key,ru,en] of originFixedLabels){
   const node=document.querySelector(selector);
-  // Plain Origin titles and subheads need a real touch-accessible pencil.
-  // Navigation tabs already own their click actions: keep those untouched.
-  const pencilHost=node?.matches?.('h2')||node?.closest?.('.subhead')?
-   node.parentElement:null;
-  originCopyLabel(node,key,ru,en,{pencilHost});
+  originCopyLabel(node,key,ru,en);
  }
 }
 function editAttr(el,key){el.dataset.editKey=key;if(adminEditing&&adminToken)el.classList.add('admin-edit');return el}
@@ -2037,16 +2008,7 @@ function openStageGearMenu(index,sourceSlot,event,anchor){
     record?'This item type has no Soul sockets.':'Item data unavailable.','title');
   }
   const wrap=h('div',{class:'stage-gear-context-row'},[button]);
-  if(adminEditing&&adminToken){
-   equipmentCopyLabel(label,'context.'+id,ru,en);
-   const pencil=h('button',{type:'button',class:'stage-gear-context-pencil',text:'✎',
-    'aria-label':tr('Редактировать название: ','Edit caption: ')+equipmentCopy('context.'+id,ru,en),
-    onclick:e=>{
-     e.preventDefault();e.stopPropagation();
-     label.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
-    }});
-   wrap.append(pencil);
-  }
+  if(adminEditing&&adminToken)equipmentCopyLabel(label,'context.'+id,ru,en);
   menu.append(wrap);
  }
  document.body.append(menu);stageGearMenu=menu;stageGearMenuAnchor=anchor;
@@ -3339,11 +3301,7 @@ function renderPathCopyControls(){
    editWikiValue(node,copy(key,ru,en),{type:'text',
     onCommit:next=>saveGuidePatch('book.'+ownerCopyKey('path',key),{[editLang]:next}),
     onCommitted:next=>{
-     const visible=lang===editLang?next:copy(key,ru,en);
-     node.textContent=visible;
-     const pencil=node.nextElementSibling;
-     if(pencil?.dataset?.pathCopyFor===key)pencil.setAttribute('aria-label',
-      (lang==='en'?'Rename: ':'Переименовать: ')+visible);
+     node.textContent=lang===editLang?next:copy(key,ru,en);
     }});
   };
   // Origin/path labels should be discoverable on touch and keyboard, without
@@ -3352,15 +3310,8 @@ function renderPathCopyControls(){
    node.dataset.pathCopyBound='1';
    node.addEventListener('dblclick',edit);
   }
-  const existing=node.nextElementSibling?.dataset?.pathCopyFor===key?
-   node.nextElementSibling:null;
-  if(!editing){existing?.remove();continue}
-  if(existing)continue;
-  node.after(h('button',{type:'button',class:'path-inline-copy-pencil',
-   'data-path-copy-for':key,text:'✎',
-   title:lang==='en'?'Rename caption':'Переименовать подпись',
-   'aria-label':(lang==='en'?'Rename: ':'Переименовать: ')+copy(key,ru,en),
-   onclick:edit}));
+  node.nextElementSibling?.matches?.('.path-inline-copy-pencil')&&
+   node.nextElementSibling.remove();
  }
  for(const [id,key,ru,en,symbol] of [
   ['pathGrowthTab','tabGrowth','Развитие','Growth','◈'],
@@ -3379,8 +3330,6 @@ function renderPathCopyControls(){
   const caption=h('span',{class:'path-tab-copy',text:label});
   caption.dataset.ownerCopySection='path';caption.dataset.ownerCopyId=key;
   caption.dataset.ownerCopyRu=ru;caption.dataset.ownerCopyEn=en;
-  const pencil=h('button',{type:'button',class:'path-tab-pencil',text:'✎',
-   'aria-label':lang==='en'?'Edit '+label:'Редактировать '+label});
   const edit=event=>{
    if(!adminEditing||!adminToken)return;
    event.preventDefault();event.stopPropagation();
@@ -3391,18 +3340,17 @@ function renderPathCopyControls(){
     onCommitted:next=>{
      const visible=lang===editLang?next:copy(key,ru,en);
      caption.textContent=visible;
-     pencil.setAttribute('aria-label',(lang==='en'?'Edit ':'Редактировать ')+visible);
     }});
   };
   caption.addEventListener('dblclick',edit);
-  pencil.addEventListener('click',edit);
+  caption.tabIndex=0;caption.setAttribute('aria-keyshortcuts','F2');
+  caption.addEventListener('keydown',event=>{if(event.key==='F2')edit(event)});
   button.replaceChildren(h('span',{text:symbol}),caption);
   if(!wrapper){
    wrapper=h('span',{class:'path-tab-owner-wrap',role:'presentation'});
    button.before(wrapper);wrapper.append(button);
   }
   wrapper.querySelector('.path-tab-pencil')?.remove();
-  wrapper.append(pencil);
  }
  // These are the real user-visible Hero Path skills controls. The legacy
  // workbench "skills" tab is not present in the site's navigation.
@@ -3902,22 +3850,23 @@ function renderWiki(root){
    }},[h('span',{class:'wiki-category-text',text:current})]);
   const line=h('div',{class:'wiki-category-line'},[chapter]);
   if(adminEditing&&adminToken){
-   const edit=h('button',{type:'button',class:'wiki-category-edit',
-    title:wt('Переименовать вкладку','Rename chapter'),
-    'aria-label':wt('Переименовать вкладку: ','Rename chapter: ')+current,
-    text:'✎'});
-   edit.onclick=()=>{
+   const label=chapter.querySelector('.wiki-category-text');
+   const startEdit=event=>{
+    if(!adminEditing||!adminToken)return;
+    event.preventDefault();event.stopPropagation();
     if(line.querySelector('[data-owner-text-field]'))return;
-    const label=chapter.querySelector('.wiki-category-text');
     const field=window.PandoraWikiLabels.key('chapter',key,lang);
     const host=h('span',{class:'wiki-category-edit-host',text:label.textContent});
-    chapter.hidden=true;edit.hidden=true;line.append(host);
+    chapter.hidden=true;line.append(host);
     editWikiValue(host,label.textContent,{type:'text',
      onCommit:value=>saveGuidePatch('wiki.labels',{[field]:value}),
      onCommitted:value=>{if(label.isConnected)label.textContent=value},
-     onFinished:()=>{chapter.hidden=false;edit.hidden=false;host.remove()}});
+     onFinished:()=>{chapter.hidden=false;host.remove()}});
    };
-   line.append(edit);
+   label.classList.add('wiki-label-editable');label.tabIndex=0;
+   label.setAttribute('aria-keyshortcuts','F2');
+   label.addEventListener('dblclick',startEdit);
+   label.addEventListener('keydown',event=>{if(event.key==='F2')startEdit(event)});
   }
   categories.append(line);
  }
@@ -4151,7 +4100,7 @@ function renderWiki(root){
     id:'wikiSkillLabelList',hidden:true,
     'aria-label':wt('Названия категорий навыков','Skill category labels')});
    const toggle=h('button',{type:'button',
-    class:'wiki-category-edit wiki-skill-edit-toggle',text:'✎',
+    class:'wiki-category-edit wiki-skill-edit-toggle',text:wt('Названия','Labels'),
     'aria-controls':'wikiSkillLabelList','aria-expanded':'false',
     'aria-label':wt('Редактировать названия категорий',
      'Edit category names')});
@@ -4165,29 +4114,27 @@ function renderWiki(root){
      'data-skill-filter-label':id});
     const caption=h('span',{class:'wiki-category-text wiki-skill-label-caption',
      text:localizedFilterLabel(id,labels)});
-    const edit=h('button',{type:'button',class:'wiki-category-edit wiki-skill-label-edit',
-     text:'✎','aria-label':wt('Изменить: ','Edit: ')+caption.textContent});
     const startEdit=()=>{
      if(row.querySelector('[data-owner-text-field]')||!adminEditing||!adminToken)return;
      const name=caption.textContent,host=h('span',{
       class:'wiki-category-edit-host wiki-skill-edit-host',text:name});
-     caption.hidden=true;edit.hidden=true;row.append(host);
+     caption.hidden=true;row.append(host);
      editWikiValue(host,name,{type:'text',
       onCommit:value=>saveGuidePatch('wiki.labels',{
        [window.PandoraWikiLabels.key('skillFilter',id,lang)]:value
       }),
       onCommitted:value=>{
        caption.textContent=value;
-       edit.setAttribute('aria-label',wt('Изменить: ','Edit: ')+value);
        const count=model?.counts?.[id],option=optionFor.get(id);
        if(option)option.textContent=value+(count==null?'':' · '+count);
       },
-      onFinished:()=>{caption.hidden=false;edit.hidden=false;host.remove()}
+      onFinished:()=>{caption.hidden=false;host.remove()}
      });
     };
-    edit.onclick=startEdit;
+    caption.tabIndex=0;caption.setAttribute('aria-keyshortcuts','F2');
     caption.addEventListener('dblclick',event=>{event.preventDefault();startEdit()});
-    row.append(caption,edit);list.append(row);
+    caption.addEventListener('keydown',event=>{if(event.key==='F2'){event.preventDefault();startEdit()}});
+    row.append(caption);list.append(row);
    }
    toolbar.append(toggle);
    controls.append(toolbar,list);
@@ -5378,12 +5325,9 @@ function renderWiki(root){
       caption.addEventListener('keydown',event=>{
        if(event.key==='F2'){editLabel(event)}
       });
-      dt.append(h('button',{type:'button',class:'wiki-label-pencil',
-       text:'✎',title:wt('Переименовать поле','Rename field label'),
-       'aria-label':wt('Переименовать: ','Rename: ')+fieldName,
-       onclick:editLabel}));
-      dt.append(h('button',{type:'button',class:'wiki-hint-pencil',
-       text:'?',title:wt('Изменить подсказку','Edit hint'),
+      // Only a distinct hover hint deserves an icon.
+      if(hint&&hint!==fieldName)dt.append(h('button',{type:'button',class:'wiki-hint-pencil',
+       text:'✎',title:wt('Изменить подсказку','Edit hint'),
        'aria-label':wt('Изменить подсказку: ','Edit hint: ')+fieldName,
        onclick:editHint}));
      }
@@ -5902,16 +5846,7 @@ function renderWiki(root){
        (lang==='en'?en:ru);
       const label=h('span',{text:visible});
       const description=h('p',{class:'wiki-description'},[label]);
-      if(ownerKey&&adminEditing&&adminToken){
-       ownerCopyLabel(label,'wiki-ui',ownerKey,ru,en);
-       description.append(h('button',{type:'button',class:'ui-content-pencil',
-        text:'✎',title:wt('Изменить пояснение','Edit note'),
-        'aria-label':wt('Изменить пояснение умения','Edit skill note'),
-        onclick:event=>{
-         event.preventDefault();event.stopPropagation();
-         label.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
-        }}));
-      }
+      if(ownerKey&&adminEditing&&adminToken)ownerCopyLabel(label,'wiki-ui',ownerKey,ru,en);
       section.append(description);
      }
      if(evidence.paths.length){
@@ -7367,18 +7302,6 @@ function renderWiki(root){
        ownerCopyLabel(slotHeading,'wiki.chest','slotHeading',
         'Тип экипировки','Equipment type');
        slotChips.append(slotHeading);
-       if(adminEditing&&adminToken){
-        slotChips.append(h('button',{type:'button',
-         class:'ui-content-pencil wiki-chest-slot-copy-pencil',
-         text:'✎',title:wt('Изменить подпись','Edit caption'),
-         'aria-label':wt('Изменить подпись типа экипировки',
-          'Edit equipment type caption'),
-         onclick:event=>{
-          event.preventDefault();event.stopPropagation();
-          slotHeading.dispatchEvent(new MouseEvent('dblclick',
-           {bubbles:true,cancelable:true}));
-         }}));
-       }
        for(const [key,ru,en] of [
         ['all','Вся экипировка','All equipment'],...slotLabels
        ]){
@@ -7618,11 +7541,7 @@ function profileCopyLabel(key,ru,en,{as='span',forId=null}={}){
  node.tabIndex=0;
  node.setAttribute('aria-keyshortcuts','F2');
  node.addEventListener('keydown',event=>{if(event.key==='F2')edit(event)});
- const pencil=h('button',{type:'button',class:'ps-profile-copy-pencil',
-  'data-profile-copy-pencil':key,text:'✎',
-  'aria-label':(lang==='en'?'Rename: ':'Переименовать: ')+label,onclick:edit});
- const host=h('span',{class:'ps-profile-copy-host'},[node,pencil]);
- return host;
+ return node;
 }
 function profileCopyNote(key,ru,en){
  const note=h('p',{class:'muted'});
@@ -9266,6 +9185,26 @@ function updateAdminHint(){
 
 // Stable UI labels are edited where they appear, never in an admin dialog.
 // Existing specialized origin/path editors retain priority over generic labels.
+// Preserve ordinary single-click actions while allowing double-click on the
+// caption itself. Only mouse clicks inside owner-editable action labels are
+// deferred; keyboard and programmatic clicks stay immediate.
+function ownerCaptionActionGuard(button,caption){
+ if(!button||button.dataset.ownerCaptionActionGuard==='1')return;
+ button.dataset.ownerCaptionActionGuard='1';
+ let pending=null;
+ button.addEventListener('click',event=>{
+  if(!adminEditing||!adminToken||!event.detail||
+   !caption.contains(event.target)||event.target.closest?.('input,textarea,select'))
+   return;
+  event.preventDefault();event.stopImmediatePropagation();
+  if(pending){clearTimeout(pending);pending=null;return}
+  pending=setTimeout(()=>{
+   pending=null;
+   if(button.isConnected&&!button.disabled&&adminEditing&&adminToken&&
+    !caption.hidden)button.click();
+  },240);
+ },true);
+}
 function bindStaticUICopyEditors(){
  const locale=window.PandoraUILocale,canEdit=Boolean(adminEditing&&adminToken);
  const syncPencil=(pencil,key,hint=false)=>{
@@ -9290,6 +9229,7 @@ function bindStaticUICopyEditors(){
    syncPencil(target.nextElementSibling.nextElementSibling,key);continue;
   }
   const oldPencil=target.nextElementSibling;
+  if(oldPencil?.dataset?.uiContentFor===key)oldPencil.remove();
   if(!canEdit){
    node.classList.remove('ui-content-editable');
    if(oldPencil?.dataset?.uiContentFor===key)oldPencil.remove();
@@ -9325,30 +9265,24 @@ function bindStaticUICopyEditors(){
   };
   if(!node.dataset.uiContentBound){
    node.dataset.uiContentBound='1';
-   if(!button)node.addEventListener('dblclick',edit);
+   node.addEventListener('dblclick',edit);
+   node.setAttribute('aria-keyshortcuts','F2');
+   if(!button)node.tabIndex=0;
+   node.addEventListener('keydown',event=>{
+    if(event.key==='F2'){event.preventDefault();edit(event)}
+   });
+   if(button)ownerCaptionActionGuard(button,node);
   }
-  // Headings were technically editable by a hidden double-click, but had
-  // no discoverable touch control. Buttons keep their existing pencil.
-  if((button||node.matches('h2,h3'))&&!oldPencil?.dataset?.uiContentFor){
-   const pencil=h('button',{type:'button',
-    class:'ui-content-pencil','data-ui-content-for':key,
-    text:'✎',title:(lang==='en'?'Edit label':'Изменить надпись'),
-    'aria-label':(lang==='en'?'Edit label: ':'Изменить надпись: ')+locale.text(key,lang),
-    onclick:edit});
-   target.after(pencil);
-  }
+
  }
  // Placeholder, title and aria-label tooltips on actual controls use the same
  // locale key and D1 save path. Do not add decoration to layout containers.
- for(const node of document.querySelectorAll(
-  '[data-i18n-placeholder],[data-i18n-title],[data-i18n-aria-label]')){
-  if(node.hasAttribute('data-i18n')||
-   !node.matches('button,input,select,[role="button"]'))continue;
-  const key=node.dataset.i18nTitle||node.dataset.i18nPlaceholder||
-   node.dataset.i18nAriaLabel,id=locale.fieldKey(key);
+ for(const node of document.querySelectorAll('[data-i18n-title]')){
+  if(!node.matches('button,input,select,[role="button"]'))continue;
+  const key=node.dataset.i18nTitle,id=locale.fieldKey(key);
   if(!id)continue;
   const pencil=node.nextElementSibling;
-  if(!canEdit){
+  if(!canEdit||!node.getAttribute('title')){
    if(pencil?.dataset?.uiContentFor===key)pencil.remove();
    continue;
   }
@@ -9462,23 +9396,16 @@ function bindAccountCopyEditors(panel){
   };
   if(!node.dataset.ownerCopyBound){
    node.dataset.ownerCopyBound='1';
-   if(!isAction){
-    node.addEventListener('dblclick',edit);
-    node.addEventListener('keydown',event=>{
-     if(event.key==='Enter'||event.key===' '){event.preventDefault();edit(event)}
-    });
-   }
+   node.addEventListener('dblclick',edit);
+   node.setAttribute('aria-keyshortcuts','F2');
+   node.addEventListener('keydown',event=>{
+    if(event.key==='F2'||(!isAction&&(event.key==='Enter'||event.key===' '))){
+     event.preventDefault();edit(event);
+    }
+   });
+   if(isAction)ownerCaptionActionGuard(node,node);
   }
-  // A small pencil keeps descriptions accessible to touch and keyboard;
-  // existing account paragraphs remain compact with double-click editing.
-  if((isAction||isLibrary||node.classList.contains('account-feedback'))&&
-   !node.nextElementSibling?.dataset?.ownerCopyPencil){
-   node.after(h('button',{type:'button',class:'ui-content-pencil account-copy-pencil',
-    'data-owner-copy-pencil':key,text:'✎',
-    title:lang==='en'?'Edit caption':'Изменить надпись',
-    'aria-label':(lang==='en'?'Edit caption: ':'Изменить надпись: ')+locale.text(key,lang),
-    onclick:edit}));
-  }
+
  }
 }
 
@@ -9650,15 +9577,9 @@ function decorateOwnerDockActions(actions){
   const button=actions.querySelector(selector);
   if(!button)continue;
   const slot=h('span',{class:'owner-dock-action-slot','data-owner-dock-key':key});
-  const pencil=h('button',{type:'button',class:'owner-dock-action-pencil',
-   text:'✎','aria-label':(lang==='en'?'Edit label: ':'Изменить надпись: ')+ownerDockCopy(key)});
   const host=h('span',{class:'owner-dock-action-edit-host',hidden:true});
-  button.before(slot);slot.append(button,pencil,host);
-  window.PandoraGuideTooltip?.attach(pencil,lang==='en'?
-   'Edit the button label only. Does not execute the action.':
-   'Изменяет только название кнопки. Само действие не запускается.',
-   {hoverDelay:350});
-  pencil.onclick=event=>{
+  button.before(slot);slot.append(button,host);
+  const edit=event=>{
    event.preventDefault();event.stopPropagation();
    if(!adminEditing||!adminToken||!host.hidden)return;
    if(ownerSaveInFlight()){
@@ -9666,7 +9587,7 @@ function decorateOwnerDockActions(actions){
      'Сначала заверши текущее сохранение.','warning');return;
    }
    const editLang=lang,before=ownerDockCopy(key);
-   button.hidden=true;pencil.hidden=true;host.hidden=false;
+   button.hidden=true;host.hidden=false;
    window.PandoraGuideTooltip?.dismiss();
    editWikiValue(host,before,{
     type:'text',
@@ -9677,13 +9598,17 @@ function decorateOwnerDockActions(actions){
     onCommitted:()=>{button.textContent=ownerDockCopy(key)},
     onFinished:()=>{
      host.hidden=true;host.replaceChildren();
-     button.hidden=false;pencil.hidden=false;
+     button.hidden=false;
      button.textContent=key==='translations'?
       ownerDockCopy(key)+' · '+(window.PandoraOwnerBilingual?.pending(override)||[])
        .reduce((sum,item)=>sum+item.fields.length,0):ownerDockCopy(key);
     }
    });
   };
+  button.addEventListener('dblclick',edit);
+  button.addEventListener('keydown',event=>{if(event.key==='F2')edit(event)});
+  button.setAttribute('aria-keyshortcuts','F2');
+  ownerCaptionActionGuard(button,button);
  }
 }
 // Refreshing status in the owner drawer must not repeatedly mutate the same
@@ -9919,28 +9844,8 @@ function refreshOwnerUI(){
     class:title?'owner-dock-group-title':'owner-dock-group-description',
     [title?'data-owner-group-heading':'data-owner-group-hint']:id,
     'data-owner-group-copy':key,text:ownerDockCopy(key)});
-   // D1 is committed before the plain-text input is restored. Update the
-   // discoverable pencil after both successful save and Esc/cancel; otherwise
-   // its accessible name keeps the old RU/EN text until a full UI refresh.
-   let pencil;
-   // The committed value is authoritative for the visible accessible
-   // name. Re-reading locale fallbacks inside a save callback can retain the
-   // previous label until the broader owner panel refresh finishes.
-   const syncPencil=committed=>pencil?.setAttribute('aria-label',
-    (lang==='en'?'Edit caption: ':'Изменить надпись: ')+
-    (typeof committed==='string'&&committed?committed:ownerDockCopy(key)));
-   ownerCopyLabel(label,'owner-dock',key,pair[0],pair[1],{
-    onCommitted:visible=>syncPencil(visible),
-    onFinished:()=>syncPencil()
-   });
-   pencil=h('button',{type:'button',class:'owner-dock-group-pencil',
-    'data-owner-group-edit-for':key,text:'✎',
-    'aria-label':(lang==='en'?'Edit caption: ':'Изменить надпись: ')+ownerDockCopy(key),
-    onclick:event=>{
-     event.preventDefault();event.stopPropagation();
-     label.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
-    }});
-   return h('span',{class:'owner-dock-group-copy-wrap'},[label,pencil]);
+   ownerCopyLabel(label,'owner-dock',key,pair[0],pair[1]);
+   return h('span',{class:'owner-dock-group-copy-wrap'},[label]);
   };
   const grid=h('div',{class:'owner-dock-action-grid'});
   for(const key of keys){const slot=actionSlots.get(key);if(slot)grid.append(slot)}
@@ -9970,12 +9875,7 @@ function refreshOwnerUI(){
    'd1Help','levelsHelp','finishHelp'].includes(key))continue;
   const pair=ownerDockText[key];
   ownerCopyLabel(node,'owner-dock',key,pair[0],pair[1]);
-  node.after(h('button',{type:'button',class:'owner-workflow-copy-pencil',
-   text:'✎','aria-label':(lang==='en'?'Edit help: ':'Изменить пояснение: ')+ownerDockCopy(key),
-   onclick:event=>{
-    event.preventDefault();event.stopPropagation();
-    node.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
-   }}));
+
  }
  const health=h('div',{class:'owner-dock-health'},[status,counters]);
  const body=h('div',{class:'owner-dock-body'},[health,actions,guide]);
@@ -10357,14 +10257,7 @@ function showOverrideManager(){
    text:ownerCopy('owner-history',key,ru,en)});
   ownerCopyLabel(node,'owner-history',key,ru,en);
   if(!adminEditing||!adminToken)return node;
-  const pencil=h('button',{type:'button',class:'owner-history-pencil',
-   text:'✎',title:tr('Изменить пояснение','Edit explanation'),
-   'aria-label':tr('Изменить пояснение','Edit explanation')+': '+node.textContent,
-   onclick:event=>{
-    event.preventDefault();event.stopPropagation();
-    node.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
-   }});
-  return h('div',{class:'owner-history-edit-row'},[node,pencil]);
+  return node;
  };
  body.append(authoredHistory('intro',
   'Ручные изменения, сохранённые в Cloudflare D1. Для каждой записи показаны раздел, поле, исходное значение игрового каталога и текущая правка. Неизвестные исходные значения отмечены отдельно.',
@@ -11167,15 +11060,7 @@ function ownerDialogHelp(key,ru,en){
   id:'owner-dialog-copy-'+key,text:ownerCopy('owner-dialog',key,ru,en)});
  if(!adminEditing||!adminToken)return caption;
  ownerCopyLabel(caption,'owner-dialog',key,ru,en);
- const pencil=h('button',{type:'button',class:'owner-dialog-pencil',
-  text:'✎',title:lang==='en'?'Edit explanation':'Изменить пояснение',
-  'aria-label':lang==='en'?'Edit explanation':'Изменить пояснение',
-  'aria-describedby':caption.id,
-  onclick:event=>{
-   event.preventDefault();event.stopPropagation();
-   caption.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
-  }});
- return h('div',{class:'owner-dialog-editor'},[caption,pencil]);
+ return caption;
 }
 function ownerDialogAction(button,key,ru,en){
  button.textContent=ownerCopy('owner-dialog',key,ru,en);
@@ -11188,24 +11073,27 @@ function ownerDialogAction(button,key,ru,en){
  };
  if(hints[key])window.PandoraGuideTooltip?.attach(button,
   hints[key][lang==='en'?1:0],{hoverDelay:350});
+ if(hints[key])window.PandoraGuideTooltip?.attach(button,
+  hints[key][lang==='en'?1:0],{hoverDelay:350});
  if(!adminEditing||!adminToken)return button;
  const wrapper=h('span',{class:'owner-dialog-action-editor'});
  const host=h('span',{class:'owner-dialog-action-host',hidden:true});
- const pencil=h('button',{type:'button',class:'owner-dialog-pencil',
-  text:'✎',title:lang==='en'?'Edit action caption':'Изменить подпись действия',
-  'aria-label':lang==='en'?'Edit action caption':'Изменить подпись действия',
-  onclick:event=>{
-   event.preventDefault();event.stopPropagation();
-   if(!button.isConnected)return;
-   button.hidden=true;pencil.hidden=true;host.hidden=false;
-   host.textContent=ownerCopy('owner-dialog',key,ru,en);
-   host.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
-  }});
  ownerCopyLabel(host,'owner-dialog',key,ru,en,{
   onCommitted:next=>{button.textContent=next},
-  onFinished:()=>{button.hidden=false;pencil.hidden=false;host.hidden=true}
+  onFinished:()=>{button.hidden=false;host.hidden=true;host.replaceChildren()}
  });
- wrapper.append(button,pencil,host);
+ const edit=event=>{
+  event.preventDefault();event.stopPropagation();
+  if(!button.isConnected||!host.hidden)return;
+  button.hidden=true;host.hidden=false;
+  host.textContent=ownerCopy('owner-dialog',key,ru,en);
+  host.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
+ };
+ button.addEventListener('dblclick',edit);
+ button.addEventListener('keydown',event=>{if(event.key==='F2')edit(event)});
+ button.setAttribute('aria-keyshortcuts','F2');
+ ownerCaptionActionGuard(button,button);
+ wrapper.append(button,host);
  return wrapper;
 }
 function showOwnerEnglishReview(){
@@ -11817,15 +11705,7 @@ $('pathGrowthTab').onclick=event=>{if(event.target?.closest?.('.path-tab-pencil,
   ownerCopyLabel(note,'path','resetConfirmHelp',ru,en);
   const copyRow=h('div',{class:'path-reset-confirm-copy'});
   copyRow.append(note);
-  if(adminEditing&&adminToken){
-   const pencil=h('button',{type:'button',class:'path-reset-confirm-pencil',
-    text:'✎','aria-label':(lang==='en'?'Edit warning: ':'Изменить предупреждение: ')+note.textContent,
-    onclick:event=>{
-     event.preventDefault();event.stopPropagation();
-     note.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
-    }});
-   copyRow.append(pencil);
-  }
+
   const panel=h('div',{id:'pathResetConfirm',class:'path-reset-confirm',
    role:'group','aria-label':lang==='en'?'Confirm skill reset':'Подтверждение сброса навыков'});
   const controls=h('div',{class:'path-reset-confirm-actions'});
