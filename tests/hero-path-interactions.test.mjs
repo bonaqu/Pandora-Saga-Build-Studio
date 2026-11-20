@@ -863,7 +863,7 @@ test('Hero Path editor plural captions keep counts and RU/EN word forms separate
   }));
   const list=new BrowserElement('root'),details=new BrowserElement('detail');
   root.PandoraHeroPath.viewSkills(list,details,api);
-  const caption=walk(list).find(node=>node.className==='path-skill-count-caption');
+  const caption=walk(list).find(node=>node.className.split(/\s+/).includes('path-skill-count-caption'));
   assert.ok(caption);
   assert.equal(walk(caption).find(node=>node.className==='path-owner-copy-text')?.textContent,word);
   assert.equal(walk(list).find(node=>node.className==='path-skill-count-value')?.textContent,String(count)+' ');
