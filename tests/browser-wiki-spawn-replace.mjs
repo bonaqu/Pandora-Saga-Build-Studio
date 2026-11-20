@@ -237,6 +237,11 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
   // that exactly one deletion succeeded, without sending a second POST.
   const npcId=npcAttempts[0].key.slice('wikiedit.npc.'.length);
   await page.locator('[data-wiki-chapter="npc"]').click();
+  await page.waitForFunction(()=>{
+   const selected=document.querySelector('[data-wiki-chapter="npc"]');
+   return selected?.classList.contains('chosen')&&
+    selected.dataset.ownerCaptionPending!=='1';
+  },null,{timeout:15000});
   await page.locator('.wiki-controls input[type="search"]').fill('Тестовый торговец');
   await page.locator('[data-wiki-record="'+npcId+'"]').click();
   const deletePanel=page.locator('.wiki-page .studio-owner-interface-editor:has([data-owner-copy-id="deleteRecordButton"])');
