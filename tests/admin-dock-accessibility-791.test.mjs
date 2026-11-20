@@ -25,9 +25,11 @@ test('editor keyboard navigation and contextual Escape are predictable',()=>{
  assert.match(browser,/Opening the drawer should focus its first action/);
  assert.match(browser,/Closing with Escape should restore launcher focus/);
 });
-test('editable help labels follow locale and pencils remain touch accessible',()=>{
- assert.match(app,/for\(const pencil of root\.querySelectorAll\('\.owner-workflow-copy-pencil'\)\)/);
- assert.match(style,/#ownerDock \.owner-workflow-copy-pencil\{\s*min-width:28px;min-height:28px/);
+test('owner help captions edit directly and retain keyboard access',()=>{
+ assert.match(app,/guide\.querySelectorAll\('\[data-owner-dock-static\]'\)/);
+ assert.match(app,/ownerCopyLabel\(node,'owner-dock',key,pair\[0\],pair\[1\]\)/);
+ assert.doesNotMatch(app,/class:'owner-workflow-copy-pencil'/);
+ assert.match(app,/ownerCopyLabel\(node,'owner-dock',key,pair\[0\],pair\[1\]\)/);
  assert.match(style,/@media\(forced-colors:active\)/);
- assert.match(browser,/Help-pencil accessibility label should follow English locale/);
+ assert.match(browser,/Control\+Alt\+Shift\+P/);
 });

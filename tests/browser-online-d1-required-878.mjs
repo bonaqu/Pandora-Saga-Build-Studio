@@ -58,11 +58,28 @@ export async function runOnlineD1Required878Smoke(browser,base){
  const page=await ctx.newPage(),pageErrors=[];
  page.on('pageerror',error=>pageErrors.push(error.message));
  const blocked=()=>page.locator('#startupOverlay[data-state="error"]');
+ // Keep the failing checkpoint visible in Chromium CI, without changing the gate.
+ const watchedWait=async(check,arg,options,label)=>{
+  const where=label||new Error().stack?.split('\n')[2]?.trim()||'unknown checkpoint';
+  try{return await page.waitForFunction(check,arg,options)}
+  catch(error){
+   const state=await page.evaluate(()=>{
+    const overlay=document.querySelector('#startupOverlay');
+    return overlay?{state:overlay.dataset.state,hidden:overlay.hidden,
+     finished:overlay.classList.contains('is-finished'),
+     title:document.querySelector('#startupTitle')?.textContent}:null;
+   }).catch(()=>null);
+   throw new Error('online-d1-required-878 '+where+': '+error.message+
+    '; overlay='+JSON.stringify(state)+'; remoteUp='+remoteUp+
+    '; quotaMode='+quotaMode+'; recentCatalogRequests='+JSON.stringify(catalogPaths.slice(-5)),
+    {cause:error});
+  }
+ };
  // The fade can reach visual opacity 0 before hidden=true, while native
  // inert is still correctly active. Wait for the actual modal dismissal.
- const waitReady=async()=>page.waitForFunction(()=>
+ const waitReady=async(stage)=>watchedWait(()=>
   document.querySelector('#startupOverlay')?.hidden===true,
-  null,{timeout:30000});
+  null,{timeout:30000},stage);
  try{
   await page.goto(publicOrigin+'/',{waitUntil:'domcontentloaded'});
   await blocked().waitFor({state:'visible',timeout:20000});
@@ -82,7 +99,7 @@ export async function runOnlineD1Required878Smoke(browser,base){
    button.id='onlineInertLateButton';button.textContent='Late app control';
    document.body.append(button);
   });
-  await page.waitForFunction(()=>
+  await watchedWait(()=>
    document.querySelector('#onlineInertLateButton')?.inert===true,null,{timeout:4000});
   assert.equal(await page.locator('#startupRetry').count(),1);
   assert.match(await page.locator('#startupStatus').innerText(),/актуальные игровые данные/i);
@@ -91,13 +108,13 @@ export async function runOnlineD1Required878Smoke(browser,base){
   const firstReads=reads;
   remoteUp=true;
   await page.locator('#startupRetry').click();
-  await page.waitForFunction(()=>{
+  await watchedWait(()=>{
    const overlay=document.querySelector('#startupOverlay');
    return overlay.classList.contains('is-finished')&&!overlay.hidden;
   },null,{timeout:30000});
   assert.equal(await page.evaluate(()=>document.querySelector('main').inert),true,
    'Fade-out must not unlock underlying controls before the overlay is hidden');
-  await waitReady();
+  await waitReady('initial retry');
   assert.equal(await page.evaluate(()=>document.querySelector('main').inert),false);
   assert.equal(await page.evaluate(()=>document.querySelector('header').inert),false);
   assert.equal(await page.evaluate(()=>document.querySelector('#onlineInertLateButton').inert),false,
@@ -147,7 +164,7 @@ export async function runOnlineD1Required878Smoke(browser,base){
    'Focus and visibility must not repeat a blocked D1 checkpoint');
   quotaMode=false;
   await page.locator('#startupRetry').click();
-  await waitReady();
+  await waitReady('quota retry');
   assert.equal(await page.evaluate(()=>
    window.PandoraStudioLiveRead.quotaCooldownMs()),0,
    'Manual verified recovery clears the advisory limit immediately');
@@ -165,14 +182,14 @@ export async function runOnlineD1Required878Smoke(browser,base){
   assert.equal(await page.evaluate(()=>document.querySelector('main').inert),true);
   quotaMode=false;
   await page.locator('#startupRetry').click();
-  await waitReady();
+  await waitReady('proactive quota retry');
   assert.equal(await page.evaluate(()=>
    window.PandoraStudioLiveRead.quotaCooldownMs()),0);
 
   // A pending English translation must NOT dismiss the D1 recovery gate
   // when it fails after the browser goes offline.
   await page.locator('#locale [data-locale="en"]').click();
-  await page.waitForFunction(()=>document.querySelector('#startupOverlay')
+  await watchedWait(()=>document.querySelector('#startupOverlay')
    ?.dataset.state==='loading',null,{timeout:10000});
   remoteUp=false;
   await page.evaluate(()=>window.dispatchEvent(new Event('offline')));
@@ -184,13 +201,13 @@ export async function runOnlineD1Required878Smoke(browser,base){
   assert.equal(await page.locator('#locale [data-locale="ru"]').getAttribute('aria-pressed'),'true');
   remoteUp=true;
   await page.evaluate(()=>window.dispatchEvent(new Event('online')));
-  await waitReady();
+  await waitReady('EN reconnect');
 
   // Preserve an unsaved current character through a live network failure.
   await page.locator('#level').evaluate(input=>{
    input.value='35';input.dispatchEvent(new Event('input',{bubbles:true}));
   });
-  await page.waitForFunction(()=>JSON.parse(localStorage.getItem(
+  await watchedWait(()=>JSON.parse(localStorage.getItem(
    'ps-build-studio.v1')||'{}').level===35,null,{timeout:10000});
   remoteUp=false;
   await page.evaluate(()=>window.dispatchEvent(new Event('offline')));
@@ -211,7 +228,7 @@ export async function runOnlineD1Required878Smoke(browser,base){
   // A verified same-snapshot reconnect should return to the same local hero.
   remoteUp=true;
   await page.evaluate(()=>window.dispatchEvent(new Event('online')));
-  await waitReady();
+  await waitReady('hero reconnect');
   assert.equal(await page.evaluate(()=>document.querySelector('main').inert),false,
    'Recovered same D1 snapshot releases native background lock');
   assert.equal(await page.locator('body').evaluate(el=>el.classList.contains('studio-live-blocked')),false);
@@ -236,7 +253,7 @@ export async function runOnlineD1Required878Smoke(browser,base){
   assert.match(await page.locator('#startupMicro').innerText(),/Не удалось сохранить черновик/);
   remoteUp=true;
   await page.evaluate(()=>window.dispatchEvent(new Event('online')));
-  await page.waitForFunction(()=>document.querySelector('#startupTitle')
+  await watchedWait(()=>document.querySelector('#startupTitle')
    ?.textContent.includes('Не удалось сохранить изменения'),null,{timeout:15000});
   assert.equal(await page.locator('#startupOverlay').isVisible(),true,
    'Recovered D1 must not hide a failed local draft save');
@@ -246,7 +263,7 @@ export async function runOnlineD1Required878Smoke(browser,base){
    delete window.__originalSaveForOnline878;
   });
   await page.locator('#startupRetry').click();
-  await waitReady();
+  await waitReady('local quota retry');
   assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem(
    'ps-build-studio.v1')).level),35);
 
@@ -263,7 +280,7 @@ export async function runOnlineD1Required878Smoke(browser,base){
     !url.href.includes('ps-revision'),{timeout:20000}).catch(()=>{}),
    page.locator('#startupRetry').click()
   ]);
-  await waitReady();
+  await waitReady('snapshot update');
   assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem(
    'ps-build-studio.v1')).level),35,
    'Safe update must preserve the active unsaved current hero');
@@ -301,7 +318,7 @@ export async function runOnlineD1Required878Smoke(browser,base){
   assert.equal(unchanged.points.slash,undefined);
   badProgression=false;
   await page.locator('#startupRetry').click();
-  await waitReady();
+  await waitReady('bad override retry');
   const verified=await page.evaluate(()=>JSON.parse(localStorage.getItem('ps-build-studio.v1')));
   assert.equal(verified.level,32);
   assert.equal(verified.points.slash,5,
