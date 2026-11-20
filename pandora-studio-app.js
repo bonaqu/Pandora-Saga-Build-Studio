@@ -1187,10 +1187,15 @@ function ownerInterfaceEditor(section,rows,headingRu='Подписи интер�
  for(const [key,ru,en,shortRu,shortEn] of rows){
   const label=h('span',{class:'studio-owner-interface-value',
    text:ownerCopy(section,key,ru,en)});
+  let pencil=null;
   ownerCopyLabel(label,section,key,ru,en,{
-   onCommitted:visible=>applyOwnerInterfaceEditedValue(section,key,visible)
+   onCommitted:visible=>{
+    applyOwnerInterfaceEditedValue(section,key,visible);
+    pencil?.setAttribute('aria-label',
+     (lang==='en'?'Edit caption: ':'Изменить надпись: ')+visible);
+   }
   });
-  const pencil=h('button',{type:'button',class:'ui-content-pencil studio-owner-interface-pencil',
+  pencil=h('button',{type:'button',class:'ui-content-pencil studio-owner-interface-pencil',
    text:'✎',
    'aria-label':(lang==='en'?'Edit caption: ':'Изменить надпись: ')+ownerCopy(section,key,ru,en),
    onclick:event=>{
@@ -3406,31 +3411,31 @@ function renderPathCopyControls(){
   'Найти умение','Find skill','placeholder');
  if(filter)bindOwnerInterfaceText(filter,'skill-ui','filterAria',
   'Фильтр навыков','Skill filter','aria-label');
- $('ownerSkillSearchCopy')?.remove();
- if(editing&&!$('pathSkillsPage')?.hidden){
-  const owner=ownerInterfaceEditor('skill-ui',[
-   ['searchPlaceholder','Найти умение','Find skill','Поле поиска','Search placeholder'],
-   ['filterAria','Фильтр навыков','Skill filter','Фильтр умений','Skill filter']
-  ],'Подписи умений','Skill labels');
-  if(owner){
-   owner.id='ownerSkillSearchCopy';
-   document.querySelector('#pathSkillsPage .path-skills-filter')?.after(owner);
+
+ // A persistent copy panel must not discard an in-progress owner edit when
+ // Path re-renders for a language, group, search or active-tab change.
+ // The Skills panel remains mounted in its hidden page during Growth: its
+ // draft resumes when the owner comes back rather than silently vanishing.
+ const reconcilePanel=(id,section,rows,headingRu,headingEn,place,shouldCreate)=>{
+  let panel=$(id);
+  let wasOpen=panel?.open||false;
+  if(panel&&(!editing||(panel.dataset.pathHelpLocale!==lang&&
+     !panel.querySelector('.wiki-inline-input')))){
+   panel.remove();panel=null;
   }
- }
- // One collapsed owner-only editor for the actual Path hints and ARIA copy.
- // Static RU/EN defaults are editable; game numbers and skill names stay out.
- let pathHelp=$('ownerPathHelpCopy');
- if(!editing)pathHelp?.remove();
- else{
-  // Keep a live inline editor intact; replace only a finished panel when
-  // the owner changes RU/EN so its caption and defaults cannot go stale.
-  if(pathHelp&&pathHelp.dataset.pathHelpLocale!==lang&&
-     !pathHelp.querySelector('.wiki-inline-input')){
-   pathHelp.remove();pathHelp=null;
-  }
- }
- if(editing&&!pathHelp){
-  pathHelp=ownerInterfaceEditor('path',[
+  if(!editing||panel||!shouldCreate)return;
+  panel=ownerInterfaceEditor(section,rows,headingRu,headingEn);
+  if(!panel)return;
+  panel.id=id;panel.dataset.pathHelpLocale=lang;panel.open=wasOpen;
+  place(panel);
+ };
+ reconcilePanel('ownerSkillSearchCopy','skill-ui',[
+  ['searchPlaceholder','Найти умение','Find skill','Поле поиска','Search placeholder'],
+  ['filterAria','Фильтр навыков','Skill filter','Фильтр умений','Skill filter']
+ ],'Подписи умений','Skill labels',
+  panel=>document.querySelector('#pathSkillsPage .path-skills-filter')?.after(panel),
+  !$('pathSkillsPage')?.hidden);
+ reconcilePanel('ownerPathHelpCopy','path',[
    ['branchPointHelp','Очки умений, распределяемые при развитии персонажа.','Skill points allocated as the character develops.','Вложенные очки','Invested points help'],
    ['greenMasteryHelp','Растёт при использовании умений этой ветки, а также соответствующих типов атак или оружия.','Increases when using this branch’s skills or its corresponding attack or weapon types.','Зелёное мастерство','Green mastery help'],
    ['racialUnavailableAria','Расовые навыки: не прокачиваются очками веток','Racial skills: no branch point allocation','Расовая ветка','Racial branch'],
@@ -3447,13 +3452,34 @@ function renderPathCopyControls(){
    ['skillLineageAria','Продолжение умения','Skill upgrades','Развитие умения','Skill lineage'],
    ['skillNextAria','Следующее умение:','Next skill:','Следующее умение','Next skill'],
    ['skillNextLink','Следующее →','Next →','Ссылка к следующему','Next skill link']
-  ],'Подсказки Пути героя','Hero Path hints');
-  if(pathHelp){
-   pathHelp.id='ownerPathHelpCopy';
-   pathHelp.dataset.pathHelpLocale=lang;
-   document.querySelector('.path-sections')?.after(pathHelp);
-  }
- }
+
+ ],'Подсказки Пути героя','Hero Path hints',
+  panel=>document.querySelector('.path-sections')?.after(panel),true);
+ // Source-backed values remain separate from their translated descriptions.
+ // One collapsed owner-only panel edits these shared fragments across all
+ // branches, requirements and milestone cards; no repeated pencils per skill.
+ reconcilePanel('ownerPathMetricsCopy','path',[
+  ['pathGroupTrained','освоено','trained','Освоенное мастерство','Trained group total'],
+  ['pathGroupLearned','изучено','learned','Изучено в группе','Learned group total'],
+  ['pathGroupInvested','вложено','invested','Вложено в группе','Invested group total'],
+  ['pathReqThreshold','порог','threshold','Требование: порог','Required threshold'],
+  ['pathReqClassCap','предел','class cap','Требование: предел','Class limit'],
+  ['pathReqAllocated','изучено','allocated','Требование: изучено','Allocated points'],
+  ['pathReqTrained','освоено','trained','Требование: освоено','Trained mastery'],
+  ['pathReqInnate','старт','innate','Требование: старт','Innate points'],
+  ['pathReqPotential','доступно','potential','Требование: доступно','Available points'],
+  ['pathRangeAria','Прокачка ветки','Allocated branch level:','Ползунок ветки','Branch slider'],
+  ['pathExactAria','Точное количество вложенных очков','Exact branch points:','Вложенные очки','Exact points'],
+  ['pathMasteryAria','Мастерство','Mastery:','Поле мастерства','Mastery input'],
+  ['pathLimitPoints','Лимит (оч.):','Limit (pts):','Предел ветки','Branch limit'],
+  ['pathMilestoneNoDesc','Описание отсутствует.','No description available.','Нет описания','Missing description'],
+  ['pathMilestoneMana','Затрат ОМ:','MP cost:','Затраты ОМ','Mana cost'],
+  ['pathUnlockPoints','оч.','pts','Очки на шкале','Milestone points'],
+  ['pathUnlockOverCap','выше лимита','above limit','Выше лимита','Above class limit'],
+  ['pathUnlockReady','доступно','available','Умение доступно','Skill available']
+ ],'Показатели и требования','Values and requirements',
+  panel=>document.querySelector('#ownerPathHelpCopy')?.after(panel),true);
+
 }
 function renderPathPages(){
  const grow=heroPathPage==='growth';
@@ -10153,6 +10179,12 @@ function refreshVisibleOwnerCopy(recordKey){
   ownerDockPatchText(node,value);
   // Reset/Undo of an editorial hover hint must update the already-mounted
   // tooltip target rather than leaving the previous text in its dataset.
+  if(node.closest('.studio-owner-interface-row')){
+   const pencil=node.closest('.studio-owner-interface-row')
+    ?.querySelector('.studio-owner-interface-pencil');
+   ownerDockPatchAttr(pencil,'aria-label',
+    (lang==='en'?'Edit caption: ':'Изменить надпись: ')+value);
+  }
   if(section==='path'){
    // Path captions are plain D1 copy: Undo updates the current field in place.
    const tabPencil=node.closest('.path-tab-owner-wrap')?.querySelector('.path-tab-pencil');
