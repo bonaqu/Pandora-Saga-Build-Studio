@@ -158,11 +158,11 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   assert.equal(await en.locator('button.path-racial-unavailable').isDisabled(),true);
   // New D1 caption: never edit or persist the computed number of skills.
   await page.locator('#pathSkillsTab').click();
-  const more=page.locator('#pathSkillGallery .path-more-owner-row');
+  const more=page.locator('#pathSkillGallery button.path-show-more');
   await more.waitFor({state:'visible',timeout:15000});
   const before=Number((await more.locator('.path-more-count').innerText()).match(/[0-9]+/)?.[0]);
   assert.ok(before>0,'Fixture must have more than the initial 24 future-learnable skills');
-  assert.equal(await more.locator('button.path-more-pencil').count(),0);
+  assert.equal(await page.locator('#pathSkillGallery .path-more-pencil').count(),0);
   await more.locator('.path-more-copy').dblclick();
   const moreEditor=more.locator('.path-more-copy [data-owner-text-field]');
   await moreEditor.waitFor({state:'visible'});
@@ -172,9 +172,10 @@ export async function runOwnerRacialPath648Smoke(browser,base){
    null,{timeout:12000});
   await savedOverride('guideedit.book.path.skill-show-more',
    {en:'More skills QA'});
-  assert.equal(await more.locator('button.path-more-pencil').count(),0);
+  assert.equal(await page.locator('#pathSkillGallery .path-more-pencil').count(),0);
   assert.equal(Number((await more.locator('.path-more-count').innerText()).match(/[0-9]+/)?.[0]),before);
-  await more.locator('button.path-show-more').click();
+  // The number is not the owner-editable caption: one click loads skills.
+  await more.locator('.path-more-count').click();
   const remaining=page.locator('#pathSkillGallery .path-more-count');
   const after=await remaining.count()?
    Number((await remaining.innerText()).match(/[0-9]+/)?.[0]):0;

@@ -129,7 +129,16 @@ export async function runOwnerEquipmentInlineSmoke(browser,base){
   await enLabel.dblclick();
   const enInput=enLabel.locator('[data-owner-text-field]');
   await enInput.fill('Soul sockets');
-  await enInput.press('Tab');
+  // Diagnose a disappearing inline editor after locale change without
+  // bypassing actual D1 CAS save and visible caption assertions below.
+  const enEditorState=await page.evaluate(()=>{
+   const label=document.querySelector(
+    '#stagePicker .stage-rich-fields dt[data-owner-copy-id="field.slots"]');
+   return {editing:!!label?.querySelector('[data-owner-text-field]'),
+    text:label?.textContent,focused:document.activeElement?.matches?.('[data-owner-text-field]')};
+  });
+  console.log('Owner equipment 632: EN editor after fill '+JSON.stringify(enEditorState));
+  await page.keyboard.press('Tab');
   await page.waitForFunction(()=>document.querySelector(
    '#stagePicker .stage-rich-fields dt[data-owner-copy-id="field.slots"]')
    ?.textContent==='Soul sockets',null,{timeout:12000});

@@ -543,6 +543,12 @@ export async function runUIContentInlineSmoke(browser,base){
   const enLibrary=page.locator('#detailContent [data-owner-copy-key="librarySaveNew"]');
   await enLibrary.waitFor({state:'visible'});
   assert.equal(await enLibrary.textContent(),'✧ Save new build');
+  // A deliberately expanded owner drawer can obscure the library button.
+  // Collapse via the real UI rather than bypassing pointer hit-testing.
+  const libraryDock=page.locator('#ownerDock');
+  if(await libraryDock.locator('[data-owner-collapse]')
+   .getAttribute('aria-expanded')==='true')
+   await libraryDock.locator('[data-owner-collapse]').click();
   await enLibrary.dblclick();
   const enLibraryInput=page.locator('#detailContent .account-copy-edit-host [contenteditable]');
   await enLibraryInput.fill('✧ Save character');
