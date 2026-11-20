@@ -136,7 +136,7 @@ body>#ownerDock.owner-dock-collapsed{
 /* An action and its inline-editor pencil share one grid cell. Editing a
    caption must never activate the underlying save/reset/navigation button. */
 #ownerDock .owner-dock-action-slot{
- display:grid;grid-template-columns:minmax(0,1fr) 23px;
+ display:grid;grid-template-columns:minmax(0,1fr);
  align-items:stretch;gap:4px;min-width:0
 }
 #ownerDock .owner-dock-action-slot:has(>.owner-dock-primary),
@@ -344,7 +344,7 @@ body>#ownerDock{
  gap:8px;min-width:0
 }
 #ownerDock .owner-dock-action-slot{
- grid-template-columns:minmax(0,1fr) 29px;gap:5px;min-width:0;
+ grid-template-columns:minmax(0,1fr);gap:5px;min-width:0;
  align-items:stretch
 }
 #ownerDock .owner-dock-action-slot:has(>.owner-dock-primary),
@@ -528,3 +528,7 @@ body>#ownerDock{
   grid-template-columns:1fr
  }
 }
+
+/* 0.946: no caption pencil. Drawer action and editing host occupy the full cell. */
+#ownerDock .owner-dock-action-slot{grid-template-columns:minmax(0,1fr)}
+#ownerDock .owner-dock-action-slot>.owner-dock-action-edit-host{grid-column:1/-1}

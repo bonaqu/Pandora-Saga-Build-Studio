@@ -47,7 +47,8 @@ test('Book editing keeps stable stat and header tracks, not overlay pencils',()=
  const owner=read('pandora-studio-owner-inline-ui.css');
  const wiki=read('pandora-studio-wiki-polish.css');
  const app=read('pandora-studio-app.js');
- assert.match(book,/const actions=make\('span',\{class:'stage-guide-actions'/);
+ assert.match(book,/if\(meaningfulGuideHint\(hint\)\)/);
+ assert.doesNotMatch(book,/class:'stage-guide-edit-name'/);
  assert.match(book,/const heading=make\('div',\{class:'stage-chapter-heading'/);
  assert.match(book,/const labelSlot=make\('div',\{class:'stage-chapter-label'/);
  assert.match(theme,/\.stage-result-section\[open\]/);

@@ -36,8 +36,8 @@ test('Origin tabs and section titles have stable copy edit targets',()=>{
  assert.match(app,/function originCopyLabel\(/);
  assert.match(app,/function editOriginCopyLabel\(/);
  assert.match(app,/originCopyLabel\(select,chosen\?'raceChosen':'raceChoose'/);
- assert.match(app,/data-origin-edit-for/);
- assert.match(css,/\.origin-copy-pencil\{/);
+ assert.doesNotMatch(app,/data-origin-edit-for/);
+ assert.match(css,/\.origin-copy-editable:not\(button\)/);
  assert.match(css,/\.origin-copy-input-slot\{/);
 });
 
@@ -82,6 +82,6 @@ test('guest receives approved custom caption but no editor pencil or editing aff
  const admin=makeNode(),adminHost=makeHost();
  make(true)(admin,'raceChoose','Выбрать эту расу','Choose this race',{pencilHost:adminHost});
  assert.equal(admin.textContent,'Выбрать расу');
- assert.equal(adminHost.children.length,1);
+ assert.equal(adminHost.children.length,0);
  assert.equal(admin.classList.state,true);
 });

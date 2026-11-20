@@ -35,7 +35,8 @@ test('ordinary page has no pre-rendered owner entry and no technical editorial m
  assert.match(app,/const verifiedOwner=Boolean\(adminEditing&&adminToken\)/);
  assert.match(app,/if\(!verifiedOwner\)indicator\.remove\(\)/);
  assert.match(app,/classList\.toggle\('admin-edit',verifiedOwner\)/);
- assert.match(equipment,/if\(api\.canEdit\)\{\s*const pencil=el\('button'/);
+ assert.doesNotMatch(equipment,/class:'stage-control-pencil'/);
+ assert.match(equipment,/guardCaptionAction\(button,caption\)/);
  assert.match(equipment,/ownerCopy|copy\(key,ru,en\)/);
  assert.doesNotMatch(app,/Указано редактором · шанс не задан|Связь с добычей добавлена редактором/);
  assert.doesNotMatch(app,/Других редакторов этих значений здесь нет/);

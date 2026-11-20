@@ -72,7 +72,7 @@ export async function runSharedReceiverEditorial655Smoke(browser,base){
   assert.equal(await importDialog.locator('.shared-import-count [data-owner-copy-key]').count(),1);
   assert.equal(await importDialog.locator('.shared-import-count-value [data-owner-copy-key]').count(),0);
   const countKey='guideedit.book.ui.label.library-shared-import-count-label';
-  await importDialog.locator('[data-owner-copy-pencil="librarySharedImportCountLabel"]').click();
+  await importDialog.locator('[data-owner-copy-key="librarySharedImportCountLabel"]').dblclick();
   const countEdit=importDialog.locator('.shared-import-count .account-copy-edit-host [contenteditable]');
   await countEdit.fill('В ссылке билдов:');
   await countEdit.press('Tab');
@@ -84,7 +84,7 @@ export async function runSharedReceiverEditorial655Smoke(browser,base){
   const importKey='guideedit.book.ui.label.library-shared-import-note';
   const ruNote=importDialog.locator('[data-owner-copy-key="librarySharedImportNote"]');
   await ruNote.waitFor({state:'visible'});
-  await importDialog.locator('[data-owner-copy-pencil="librarySharedImportNote"]').click();
+  await importDialog.locator('[data-owner-copy-key="librarySharedImportNote"]').dblclick();
   const importEditor=importDialog.locator('.shared-receiver-copy-row .account-copy-edit-host [contenteditable]');
   await importEditor.fill('Герой и библиотека сохранены; добавим только новые копии.');
   await importEditor.press('Tab');
@@ -103,7 +103,7 @@ export async function runSharedReceiverEditorial655Smoke(browser,base){
   await enImport.waitFor({state:'visible'});
   const enCount=enImport.locator('[data-owner-copy-key="librarySharedImportCountLabel"]');
   assert.equal(await enCount.innerText(),'Builds in link:');
-  await enImport.locator('[data-owner-copy-pencil="librarySharedImportCountLabel"]').click();
+  await enImport.locator('[data-owner-copy-key="librarySharedImportCountLabel"]').dblclick();
   const enCountEdit=enImport.locator('.shared-import-count .account-copy-edit-host [contenteditable]');
   await enCountEdit.fill('Builds received:');
   await enCountEdit.press('Tab');
@@ -115,7 +115,7 @@ export async function runSharedReceiverEditorial655Smoke(browser,base){
   const enNote=enImport.locator('[data-owner-copy-key="librarySharedImportNote"]');
   assert.equal(await enNote.innerText(),
    'Your current character and saved builds will not change. New copies will be added to My Builds.');
-  await enImport.locator('[data-owner-copy-pencil="librarySharedImportNote"]').click();
+  await enImport.locator('[data-owner-copy-key="librarySharedImportNote"]').dblclick();
   const enInput=enImport.locator('.shared-receiver-copy-row .account-copy-edit-host [contenteditable]');
   await enInput.fill('Keep your hero and saved builds; add new copies only.');
   await enInput.press('Tab');
@@ -135,7 +135,7 @@ export async function runSharedReceiverEditorial655Smoke(browser,base){
   const warnKey='guideedit.book.ui.label.library-shared-unsaved-warning';
   assert.match(await openDialog.locator('[data-owner-copy-key="librarySharedUnsavedWarning"]').innerText(),
    /unsaved changes will be lost/i);
-  await openDialog.locator('[data-owner-copy-pencil="librarySharedUnsavedWarning"]').click();
+  await openDialog.locator('[data-owner-copy-key="librarySharedUnsavedWarning"]').dblclick();
   const warnInput=openDialog.locator('.shared-unsaved-warning-row .account-copy-edit-host [contenteditable]');
   await warnInput.fill('Unsaved character changes will be discarded.');
   await warnInput.press('Tab');
@@ -145,7 +145,7 @@ export async function runSharedReceiverEditorial655Smoke(browser,base){
   assert.equal(JSON.parse(values[warnKey]).en,'Unsaved character changes will be discarded.');
   assert.match(await openDialog.locator('.shared-personal-name').innerText(),/Friend private QA hero/);
   const openKey='guideedit.book.ui.label.library-shared-open-note';
-  await openDialog.locator('[data-owner-copy-pencil="librarySharedOpenNote"]').click();
+  await openDialog.locator('[data-owner-copy-key="librarySharedOpenNote"]').dblclick();
   const openInput=openDialog.locator('.shared-receiver-copy-row .account-copy-edit-host [contenteditable]');
   await openInput.fill('Your previously saved builds stay untouched.');
   await openInput.press('Tab');

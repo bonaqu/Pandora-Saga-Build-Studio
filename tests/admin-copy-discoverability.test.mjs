@@ -37,27 +37,28 @@ test('fixed notices have safe RU/EN D1 copy keys, with no server/user inputs',()
  locale.setOverrides({});
 });
 
-test('authoring pencil is visible for origin and main stage headings',()=>{
+test('origin and generic headings edit their own text without duplicate caption pencils',()=>{
  const app=read('pandora-studio-app.js');
- assert.match(app,/node\?\.matches\?\.\('h2'\)/);
- assert.match(app,/originCopyLabel\(node,key,ru,en,\{pencilHost\}\)/);
- assert.match(app,/button\|\|node\.matches\('h2,h3'\)/);
+ assert.match(app,/function originCopyLabel\(node,key,ru,en\)/);
+ assert.match(app,/editOriginCopyLabel\(node,key,ru,en\)/);
+ assert.match(app,/node\.addEventListener\('dblclick',edit\)/);
+ assert.match(app,/function bindStaticUICopyEditors\(/);
+ assert.doesNotMatch(app,/class:'origin-copy-pencil'/);
+ assert.doesNotMatch(app,/class:'ui-content-pencil','data-ui-content-for':key/);
  assert.match(app,/node\.dataset\.pathCopyBound==='1'/);
  assert.match(app,/bindAccountCopyEditors\(root\)/);
  assert.match(app,/const authoredKey=statusKey\?\.startsWith\('status'\)/);
  assert.match(app,/authoredKey&&adminEditing&&adminToken/);
- assert.match(app,/data-owner-copy-key':authoredKey/);
 });
 
-test('hero-book editor offers distinct stat caption and hint actions',()=>{
+
+test('hero book edits visible captions in place and adds pencil only for real hover explanations',()=>{
  const book=read('pandora-studio-hero-book.js');
- const css=read('pandora-studio-owner-inline-ui.css');
- assert.match(book,/class:'stage-guide-edit-name'/);
+ assert.match(book,/node\.addEventListener\('dblclick',editName\)/);
+ assert.match(book,/if\(meaningfulGuideHint\(hint\)\)/);
  assert.match(book,/class:'stage-guide-edit-hint'/);
- assert.match(book,/onclick:editName/);
  assert.match(book,/english\?'hintEn':'hintRu'/);
- assert.match(book,/text:'\?'/);
- assert.match(book,/class:'stage-guide-actions'/);
- assert.match(css,/\.stage-result-tile>\.stage-guide-actions/);
- assert.match(css,/\.stage-chapter-label/);
+ assert.doesNotMatch(book,/class:'stage-guide-edit-name'/);
+ assert.doesNotMatch(book,/class:'stage-book-tab-pencil'/);
 });
+

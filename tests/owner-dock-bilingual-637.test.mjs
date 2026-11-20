@@ -14,22 +14,22 @@ test('admin actions have bilingual D1 guide keys, isolated pencil and no double-
   assert.match(source,new RegExp('\\b'+key+':\\['));
  assert.match(source,/ownerCopy\('owner-dock',key,pair\[0\],pair\[1\]\)/);
  assert.match(source,/function decorateOwnerDockActions\(actions\)/);
- assert.match(source,/button\.before\(slot\);slot\.append\(button,pencil,host\)/);
- assert.match(source,/pencil\.onclick=event=>\{/);
+ assert.match(source,/button\.before\(slot\);slot\.append\(button,host\)/);
+ assert.match(source,/button\.addEventListener\('dblclick',edit\)/);
  assert.match(source,/event\.preventDefault\(\);event\.stopPropagation\(\)/);
  assert.match(source,/const editLang=lang,before=ownerDockCopy\(key\)/);
  assert.match(source,/editWikiValue\(host,before,\{/);
  assert.match(source,/saveGuidePatch\('book\.'\+ownerCopyKey\('owner-dock',key\),\{\[editLang\]:next\}\)/);
  assert.match(source,/onFinished:\(\)=>\{/);
- assert.doesNotMatch(source,/button\.ondblclick|button\.addEventListener\('dblclick'/);
+ assert.match(source,/ownerCaptionActionGuard\(button,button\)/);
 });
 
 test('editor pencils stay in the button grid cell while the input expands',()=>{
  const css=get('pandora-studio-owner-dock.css');
- assert.match(css,/\.owner-dock-action-slot\{\s*display:grid;grid-template-columns:minmax\(0,1fr\) 23px/);
+ assert.match(css,/\.owner-dock-action-slot\{\s*display:grid;grid-template-columns:minmax\(0,1fr\)/);
  assert.match(css,/\.owner-dock-action-slot:has\(>\.owner-en-sync\[hidden\]\)/);
  assert.match(css,/\.owner-dock-action-slot\.owner-dock-action-wide\{grid-column:1\/-1\}/);
- assert.match(css,/\.owner-dock-action-slot>\.owner-dock-action-pencil\{/);
+ assert.match(css,/\.owner-dock-action-edit-host\[hidden\]\{display:none\}/);
  assert.match(css,/\.owner-dock-action-edit-host\[hidden\]\{display:none\}/);
  assert.match(css,/\.owner-dock-action-edit-host \.wiki-inline-input\{/);
 });

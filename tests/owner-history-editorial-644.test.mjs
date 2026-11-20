@@ -20,8 +20,8 @@ test('owner history has stable bilingual editorial keys and does not expose game
  }
  assert.match(manager,/ownerCopy\('owner-history',key,ru,en\)/);
  assert.match(manager,/ownerCopyLabel\(node,'owner-history',key,ru,en\)/);
- assert.match(manager,/class:'owner-history-pencil'/);
- assert.match(manager,/node\.dispatchEvent\(new MouseEvent\('dblclick'/);
+ assert.doesNotMatch(manager,/class:'owner-history-pencil'/);
+ assert.match(manager,/ownerCopyLabel\(node,'owner-history',key,ru,en\)/);
  assert.match(manager,/count\.textContent=tr\('Показано '/);
  assert.match(manager,/h\('p',\{text:entry\.before\}\)/);
  assert.match(manager,/h\('p',\{text:entry\.after\}\)/);
@@ -40,7 +40,7 @@ test('history copy save, Undo and reset share D1 CAS and keep the current modal 
  assert.match(refresh,/owner-history/);
  assert.match(app,/refreshVisibleOwnerCopy\(last\.key\);saveView\(\)/);
  assert.match(css,/\.owner-manager \.owner-history-edit-row/);
- assert.match(css,/\.owner-manager \.owner-history-pencil/);
+ assert.match(css,/\.owner-manager \.owner-history-edit-row/);
  assert.match(css,/\.owner-manager \.owner-history-edit-row \.wiki-inline-input/);
  assert.match(browser,/guideedit\.book\.owner-history\.intro/);
  assert.match(browser,/beforeCatalogCalls/);

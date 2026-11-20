@@ -71,7 +71,7 @@ export async function runWikiSkillLabelEditorSmoke(browser,base){
   const toggle=page.locator('.wiki-skill-edit-toggle');
   const selectBox=await control.boundingBox(),editBox=await toggle.boundingBox();
   assert.ok(selectBox&&editBox&&selectBox.x+selectBox.width<=editBox.x+1,
-   'Owner edit pencil must sit next to the compact select without overlap');
+   'Owner category-label disclosure must sit beside the select without overlap');
   await toggle.click();
   assert.equal(await toggle.getAttribute('aria-expanded'),'true');
   assert.equal(await disclosure.locator('[data-skill-filter-label]').count(),8,
@@ -79,7 +79,7 @@ export async function runWikiSkillLabelEditorSmoke(browser,base){
   assert.equal(await disclosure.locator('[data-skill-filter-label="racial"]').count(),1);
 
   const target=disclosure.locator('[data-skill-filter-label="unknown"]');
-  await target.locator('.wiki-skill-label-edit').click();
+  await target.locator('.wiki-skill-label-caption').dblclick();
   const editable=target.locator('[contenteditable]');
   await editable.waitFor({state:'visible'});
   await editable.fill('Дополнительные навыки');
@@ -96,7 +96,7 @@ export async function runWikiSkillLabelEditorSmoke(browser,base){
    'Дополнительные навыки');
 
   const playerRow=disclosure.locator('[data-skill-filter-label="player"]');
-  await playerRow.locator('.wiki-skill-label-edit').click();
+  await playerRow.locator('.wiki-skill-label-caption').dblclick();
   const playerField=playerRow.locator('[contenteditable]');
   await playerField.waitFor({state:'visible'});
   await playerField.fill('Умения героев');
