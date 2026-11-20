@@ -3987,29 +3987,28 @@ function renderWiki(root){
   controls.append(newMonster);
  }
  if(adminEditing&&adminToken&&wikiSelection.type==='map'){
-  const create=h('button',{type:'button',class:'wiki-owner-plus wiki-map-create',
-   text:wt('+ Создать локацию','+ Create location')});
+  const create=mapBind(h('button',{type:'button',
+   class:'wiki-owner-plus wiki-map-create'}),'createMap');
   create.onclick=()=>{
    if(controls.querySelector('.wiki-map-create-form'))return;
    const form=h('div',{class:'wiki-map-create-form wiki-owner-source-picker'});
    let reservedId=null;
-   const ru=ownerPlainTextField({class:'wiki-inline-input',
-    placeholder:wt('Название · RU','Name · RU'),
-    'aria-label':wt('Название локации на русском','Location name in Russian')});
-   const en=ownerPlainTextField({class:'wiki-inline-input',
-    placeholder:wt('Название · EN','Name · EN'),
-    'aria-label':wt('Название локации на английском','Location name in English')});
+   const ru=ownerPlainTextField({class:'wiki-inline-input'});
+   mapBind(ru,'createMapNameRuAria','aria-label');
+   mapBind(ru,'createMapNameRuPlaceholder','placeholder');
+   const en=ownerPlainTextField({class:'wiki-inline-input'});
+   mapBind(en,'createMapNameEnAria','aria-label');
+   mapBind(en,'createMapNameEnPlaceholder','placeholder');
    const error=h('small',{class:'inline-owner-error',role:'status'});
-   const submit=h('button',{type:'button',class:'wiki-owner-plus',
-    text:wt('Создать','Create'),onclick:async()=>{
+   const submit=mapBind(h('button',{type:'button',class:'wiki-owner-plus',
+    onclick:async()=>{
      if(submit.disabled)return;
      const name=ru.value.trim(),nameEn=en.value.trim();
      if(!name||!nameEn||name.length>240||nameEn.length>240){
-      error.textContent=wt('Укажи названия RU и EN','Enter both RU and EN names');return;
+      error.textContent=mapCopy('createMapRequired');return;
      }
      const id=reservedId||(reservedId=reserveWikiOwnerId('map'));
-     if(!id){error.textContent=wt('Не удалось создать локацию. Повтори попытку.',
-      'Could not create location. Try again.');return}
+     if(!id){error.textContent=mapCopy('createMapFailure');return}
      submit.disabled=true;error.textContent='';
      try{
       await saveWikiRecordPatch('map',id,{name,nameEn,desc:'',descEn:'',
@@ -4018,10 +4017,15 @@ function renderWiki(root){
        {verifyUncertain:true});
       openWiki('map',id);
      }catch(err){error.textContent=String(err.message||err);submit.disabled=false}
-    }});
-   const cancel=h('button',{type:'button',class:'wiki-owner-remove',
-    text:wt('Отмена','Cancel'),onclick:()=>form.remove()});
-   form.append(ru,en,submit,cancel,error);create.after(form);ru.focus();
+    }}),'createMapSave');
+   const cancel=mapBind(h('button',{type:'button',class:'wiki-owner-remove',
+    onclick:()=>form.remove()}),'createMapCancel');
+   form.append(ru,en,submit,cancel,error);
+   const copyPanel=ownerInterfaceEditor('wiki.map.text',
+    wikiMapRows.filter(row=>row[0].startsWith('createMap')),
+    'Подписи создания локации','Create location captions');
+   if(copyPanel)form.append(copyPanel);
+   create.after(form);ru.focus();
   };
   controls.append(create);
  }
