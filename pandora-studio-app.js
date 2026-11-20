@@ -9091,9 +9091,12 @@ async function apiRequest(path,body,token=adminToken,{verifyUncertain=false}={})
  // fresh read-only D1 observation. Never retry the POST, change its CAS
  // precondition or accept a cached catalog snapshot as proof of success.
  const verifyOwnerReadback=async()=>{
-  if(!verifyUncertain||path!=='/api/admin/override'||
-     typeof requestBody?.key!=='string'||typeof requestBody?.value!=='string')
-   return null;
+  const isDelete=path==='/api/admin/reset';
+  if(!verifyUncertain||
+     !['/api/admin/override','/api/admin/reset'].includes(path)||
+     typeof requestBody?.key!=='string'||
+     (isDelete?typeof requestBody.expectedValue!=='string':
+      typeof requestBody.value!=='string'))return null;
   try{
    const checkSignal=AbortSignal.timeout(12000);
    const check=await untilAbort(()=>fetch(API+'/api/overrides',{
@@ -9103,8 +9106,15 @@ async function apiRequest(path,body,token=adminToken,{verifyUncertain=false}={})
    if(!check?.ok)return null;
    const remote=await untilAbort(()=>check.json(),checkSignal);
    if(!remote?.values||Array.isArray(remote.values)||
-      typeof remote.values!=='object'||
-      !Object.hasOwn(remote.values,requestBody.key)||
+      typeof remote.values!=='object')return null;
+   if(isDelete){
+    // Only a fresh public snapshot proving the key is ABSENT can confirm
+    // a lost reset acknowledgement. A different value remains a conflict.
+    if(Object.hasOwn(remote.values,requestBody.key))return null;
+    return {ok:true,conditional:true,key:requestBody.key,
+     deleted:true,verifiedReadback:true};
+   }
+   if(!Object.hasOwn(remote.values,requestBody.key)||
       remote.values[requestBody.key]!==requestBody.value)return null;
    return {ok:true,conditional:true,key:requestBody.key,
     value:requestBody.value.trim(),verifiedReadback:true};
