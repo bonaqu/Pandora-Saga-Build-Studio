@@ -50,6 +50,31 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   assert.deepEqual(JSON.parse(values[key]),expected,
    'Edited text did not persist in the mocked D1 override');
  };
+ const openEditableTrack=async()=>{
+  // The rail legend is rendered only inside an OPEN branch. A selected
+  // chapter alone is insufficient: search source-enabled branches without
+  // changing invested points or mastery.
+  const groups=page.locator('.right .game-tree-group');
+  const total=await groups.count();
+  for(let i=0;i<total;i++){
+   const group=groups.nth(i),head=group.locator('.game-tree-head').first();
+   if(await head.getAttribute('aria-expanded')!=='true'){
+    await head.click({position:{x:4,y:4}});
+    await page.waitForFunction(index=>{
+     const button=document.querySelectorAll('.right .game-tree-head')[index];
+     return button?.getAttribute('aria-expanded')==='true';
+    },i,{timeout:12000});
+   }
+   const branch=group.locator('.branch-row[data-path-branch]:not([disabled])').first();
+   if(!await branch.count())continue;
+   if(await branch.getAttribute('aria-expanded')!=='true')
+    await branch.click();
+   await page.locator('#pathGrowthPage .path-limit-copy').first()
+    .waitFor({state:'visible',timeout:12000});
+   return;
+  }
+  throw Error('No editable class branch to exercise a live point-cap caption');
+ };
  const openSpecial=async()=>{
   const expand=page.locator('.right [data-path-group="special"]');
   await expand.waitFor({state:'visible'});
@@ -100,6 +125,7 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   assert.equal(writes.length,0,'Escape must not write a D1 skill name');
   // Source-backed caps are not authorial copy. Edit the visible caption
   // directly while keeping the cap number and the growth state untouched.
+  await openEditableTrack();
   const capLabel=page.locator('#pathGrowthPage .path-limit-copy').first();
   await capLabel.waitFor({state:'visible',timeout:15000});
   const capNumber=page.locator('#pathGrowthPage .path-limit-number').first();
@@ -197,6 +223,7 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   assert.equal(await en.locator('button.path-racial-unavailable').isDisabled(),true);
   // Locale switching must preserve the Russian copy while exposing an
   // independently editable English caption, not the numeric branch cap.
+  await openEditableTrack();
   const capEn=page.locator('#pathGrowthPage .path-limit-copy').first();
   await capEn.waitFor({state:'visible',timeout:15000});
   assert.equal(await capEn.textContent(),'Limit (pts):');
