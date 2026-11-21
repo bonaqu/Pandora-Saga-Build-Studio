@@ -31,7 +31,9 @@ test('obvious origin and hero path tabs do not show duplicate hover guides',()=>
  for(const selector of ['[data-origin-tab="race"]','[data-origin-tab="class"]','[data-origin-tab="stats"]','#pathGrowthTab','#pathSkillsTab']){
   assert.ok(app.includes("'"+selector+"'"));
  }
- assert.match(app,/if\(SELF_EXPLANATORY_TABS\.has\(selector\)\)/);
+ assert.match(app,/for\(const selector of SELF_EXPLANATORY_TABS\)/);
+ assert.match(app,/if\(node\.dataset\.guideHint\|\|node\.dataset\.workbenchGuideBound\)/);
+ assert.match(app,/PandoraGuideTooltip\?\.attach\?\.\(node,''\)/);
  assert.match(app,/node\.removeAttribute\('aria-description'\)/);
  assert.match(locale,/Развитие — вложить очки\. Умения — посмотреть доступные умения\./);
 });
