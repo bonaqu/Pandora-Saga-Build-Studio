@@ -2,6 +2,7 @@ import {accountApi,accountNeedsD1,principal as accountPrincipal} from './pandora
 import {readPublishedCatalog} from './pandora-studio-catalog-cache.js';
 import {createCatalogPullRequest,githubCatalogEnabled,githubCatalogReadiness,previewOwnerOverrides,createOwnerOverridesPullRequest} from './pandora-studio-github-catalog-pr.js';
 import {BACKUP_OUTBOX_SCHEMA,queueBackupStatement,getBackupJob,completeBackupJob,deliverCatalogBackupJob} from './pandora-studio-catalog-backup-outbox.js';
+import {readVerifiedEditorialSnapshot} from './pandora-studio-editorial-defaults.js';
 // Cloudflare Worker backend for Pandora Saga Build Studio.
 // Passwords and session hashes are NEVER stored in the Pages repository.
 // Native PBKDF2 in Cloudflare Workers supports at most 100,000 iterations.
@@ -770,6 +771,13 @@ if(path==='/api/health'&&method==='GET'){
  return json({status:ready?'ok':'setup_required',storage:'d1',tablesReady:ready,
   features:{sharing:sharingReady,catalog:catalogPublished,library:found.has('private_builds'),
    accounts:['user_accounts','user_sessions','user_registration_limits'].every(n=>found.has(n))}},ready?200:503);
+}
+// Optional authorial defaults staging: exact snapshot only, SELECT-only,
+// no production activation. Existing public overrides stay independent.
+if(path==='/api/editorial-defaults'&&method==='GET'){
+ const snapshot=new URL(request.url).searchParams.get('snapshot');
+ const outcome=await readVerifiedEditorialSnapshot(env.DB,snapshot);
+ return json(outcome.payload,outcome.status);
 }
 if(path==='/api/overrides'&&method==='GET'){const records=await env.DB.prepare('SELECT key,value FROM overrides ORDER BY key').all();return json({values:Object.fromEntries((records.results||[]).filter(r=>!String(r.key).startsWith('__qa.')).map(r=>[r.key,r.value]))})}
 if(path==='/api/admin/setup'&&method==='POST'){
