@@ -93,6 +93,9 @@ test('#390 D1 authored defaults: incomplete, duplicate and edited snapshots fail
    'EDITORIAL_DEFAULTS_DIGEST_MISMATCH'],
   [{rows:records.map((r,i)=>i===0?{...r,record_key:'guideedit.user.55'}:r)},
    'EDITORIAL_DEFAULTS_INVALID_ROW'],
+  [{rows:records.map(r=>r.record_key==='guideedit.wiki.labels'&&
+    r.field==='honor_victories_ru'?{...r,field:'honor_victories_points'}:r)},
+   'EDITORIAL_DEFAULTS_INVALID_ROW'],
   [{marker:{...metadata,sha256:'f'.repeat(64)}},
    'EDITORIAL_DEFAULTS_CORRUPT_MARKER'],
   [{marker:{...metadata,expected_rows:3001}},
