@@ -58,7 +58,6 @@ test('profile owner copy changes only labels and accessible placeholders, never 
  assert.match(app,/last\.key\.startsWith\('guideedit\.book\.profile\.'/);
  assert.match(app,/key\.startsWith\('book\.profile\.'/);
  const css=read('pandora-studio-owner-inline-ui.css');
- assert.match(css,/\.ps-profile-copy-host/);
  assert.doesNotMatch(css,/\.ps-profile-copy-pencil/);
  assert.doesNotMatch(css,/\.ps-profile-copy-host/);
  assert.doesNotMatch(css,/\.path-inline-copy-pencil|\.path-racial-pencil|\.path-more-pencil/);
