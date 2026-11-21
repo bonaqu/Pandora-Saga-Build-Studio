@@ -20,6 +20,7 @@ From the repository root, with Node 20+:
 npm run editorial:defaults:plan
 node scripts/plan-editorial-d1-defaults.mjs --json > local-editorial-defaults.json
 npm run editorial:defaults:sql > local-editorial-defaults.sql
+npm run editorial:defaults:readback-sql > local-editorial-readback.sql
 ```
 
 For offline **post-import verification** in a staging database, export the actual rows and the single snapshot marker into a local JSON document with exactly this structure:
@@ -71,6 +72,20 @@ This is a **measured subset**, not proof that every page's dynamically generated
 4. **Review the optional read-only Worker endpoint** `GET /api/editorial-defaults?snapshot=<release-digest>`, added only to this Draft PR. It checks table existence, exact snapshot marker, expected row count, allowlisted keys, duplicate identities and a SHA-256 of actual D1 row contents. Missing/mismatched snapshots fail closed with 404/503. **The endpoint is disabled by default** unless an operator explicitly sets `EDITORIAL_DEFAULTS_PREVIEW=enabled` in a staging Worker environment. Without the flag the route returns 404 **without any D1 query**. The generator and reader share hard limits of 3,000 rows and 450,000 source characters per snapshot. **The endpoint has NOT been deployed or exercised against real D1.** The Draft PR now includes a **version-pinned browser verifier** (`pandora-studio-editorial-defaults-client.js`) and exact-key fallback integration for the shared UI, Hero Book/Honor, and Wiki label registries. It verifies SHA-256 on canonical sorted rows, the exact requested snapshot, schema, field allowlists, limits and duplicate identities before an **explicit** `installVerified` call can change defaults. The priority is **existing owner CAS override → verified staged default → release code fallback**. `reset()` returns to code text without writing anything. The verifier has **no automatic activation or startup fetch**, and is tested in Node and Chromium with a synthetic verified snapshot. Its explicit `loadPinned(snapshot,{endpoint,fetcher,subtle,signal})` method rejects non-HTTPS remote endpoints, credentials embedded in URLs, unapproved query strings, fragments, wrong paths and unpinned versions. Requests use `credentials:'omit'`, `cache:'no-store'`, `redirect:'error'` and an exact `?snapshot=` query. An older asynchronous response cannot supersede a newer load or reset. A future **release-authorized staging bootstrap and pinned snapshot configuration**, physical D1 import/readback and rollback are still NOT implemented. No current browser invokes this endpoint automatically. The existing `GET /api/overrides`, fallback text and CAS remain unchanged.
 5. **Run the full Node+Chromium matrix on the same SHA**, including RU/EN, guest/no-owner, 409, Undo/Reset, offline/503, and no data loss. A real touchscreen/OS input check remains separate from synthetic browser pointer tests.
 6. After explicit approval for production: publish through the normal protected PR workflow; perform read-only verification of Pages, Worker, and D1. No manual production write is implied by this document.
+
+## Repeatable isolated staging rehearsal and rollback
+
+The mandatory Node 22 CI now executes the **actual generated SQLite SQL** inside an in-memory database. It checks first import, idempotent retry, a complete JSON readback, corruption rejection, and exact-version rollback while keeping other snapshots and the preexisting CAS `overrides` table intact. This is a local SQL rehearsal, **not** evidence of a real Cloudflare D1 staging import.
+
+After an independently authorized staging-only import, execute the SELECT-only `local-editorial-readback.sql` against that staging D1 and save the exact `staging_readback_json` column value (not the Wrangler output envelope) to `staging-readback.json`. Run `npm run editorial:defaults:verify -- staging-readback.json` and require exit code 0 before testing the pinned Worker reader.
+
+For a separate, backed-up **staging-only** rollback review, generate:
+
+```bash
+npm run editorial:defaults:rollback-sql > local-editorial-rollback.sql
+```
+
+That SQL deletes the **completion marker first**, then rows for the **exact pinned snapshot only**. This deliberately disables the reader immediately if an operator's rollback stops halfway. It must never be run on production D1, and its generation itself never connects to any database. Check both zero-count readbacks after a separately authorized staging execution. No other snapshot, override or game table should change.
 
 ## Rollback
 

@@ -8,6 +8,7 @@ import {fileURLToPath} from 'node:url';
 import {runInNewContext} from 'node:vm';
 import {
  buildEditorialDefaultsManifest,renderEditorialDefaultsSQL,
+ renderEditorialDefaultsReadbackSQL,renderEditorialDefaultsRollbackSQL,
  verifyEditorialDefaultsReadback
 } from '../scripts/plan-editorial-d1-defaults.mjs';
 
@@ -201,4 +202,89 @@ test('issue 390: current public reads and CAS writes remain on the existing over
  assert.doesNotMatch(locale,/\/api\/editorial-defaults/);
  // The optional read-only backend endpoint is not a frontend activation.
  assert.match(worker,/readVerifiedEditorialSnapshot\(env\.DB,snapshot\)/);
+});
+
+
+test('issue 390: real SQLite rehearsal round-trips pinned import and isolated rollback',async(t)=>{
+ // Node 22 is the mandatory CI runtime. Older supported Node 20 can run the
+ // planner; only the extra local SQLite rehearsal is skipped there.
+ if(Number(process.versions.node.split('.')[0])<22){
+  t.skip('node:sqlite rehearsal needs Node 22');return;
+ }
+ const {DatabaseSync}=await import('node:sqlite');
+ const db=new DatabaseSync(':memory:');
+ try{
+  db.exec(renderEditorialDefaultsSQL(manifest));
+  const exportQuery=renderEditorialDefaultsReadbackSQL(manifest);
+  assert.match(exportQuery,/^-- STAGING READBACK ONLY/m);
+  assert.doesNotMatch(exportQuery,/\b(?:INSERT|UPDATE|DELETE|CREATE|DROP)\b/i);
+  let exported=JSON.parse(db.prepare(exportQuery).get().staging_readback_json);
+  assert.deepEqual(verifyEditorialDefaultsReadback(manifest,exported.metadata,
+   exported.rows),{ok:true,checkedRows:manifest.records.length,
+    snapshot:manifest.snapshot,digest:manifest.digest});
+  // Retrying a successful import must be idempotent: no rows are replaced.
+  db.exec(renderEditorialDefaultsSQL(manifest));
+  assert.equal(db.prepare('SELECT COUNT(*) AS total FROM editorial_default_rows').get().total,
+   manifest.records.length);
+  assert.equal(db.prepare('SELECT COUNT(*) AS total FROM editorial_default_snapshots').get().total,1);
+
+  // A source-data corruption must be caught before a staging reader is activated.
+  db.prepare('UPDATE editorial_default_rows SET value=? WHERE snapshot=? AND record_key=? AND field=?')
+   .run('corrupted',manifest.snapshot,manifest.records[0].recordKey,manifest.records[0].field);
+  exported=JSON.parse(db.prepare(exportQuery).get().staging_readback_json);
+  assert.equal(verifyEditorialDefaultsReadback(manifest,exported.metadata,
+   exported.rows).reason,'content-digest-mismatch');
+
+  // Other releases plus existing CAS overrides must survive this rollback.
+  db.exec("CREATE TABLE overrides (key TEXT PRIMARY KEY,value TEXT NOT NULL);");
+  db.prepare('INSERT INTO overrides(key,value) VALUES (?,?)')
+   .run('guideedit.book.keep','owner edit');
+  db.prepare('INSERT INTO editorial_default_rows(snapshot,record_key,field,value) VALUES (?,?,?,?)')
+   .run('another-release-snapshot','guideedit.book.keep','ru','other release');
+  db.prepare('INSERT INTO editorial_default_snapshots(snapshot,source_release,sha256,expected_rows,installed_at) VALUES (?,?,?,?,unixepoch())')
+   .run('another-release-snapshot','0.946.0','f'.repeat(64),1);
+  const rollback=renderEditorialDefaultsRollbackSQL(manifest);
+  assert.doesNotMatch(rollback,/\b(?:DROP|UPDATE|REPLACE)\b/i);
+  assert.doesNotMatch(rollback,/\boverrides\b/i);
+  db.exec(rollback);
+  db.exec(rollback); // repeat is safe and exact-version-scoped
+  assert.equal(db.prepare('SELECT COUNT(*) AS total FROM editorial_default_rows WHERE snapshot=?')
+   .get(manifest.snapshot).total,0);
+  assert.equal(db.prepare('SELECT COUNT(*) AS total FROM editorial_default_snapshots WHERE snapshot=?')
+   .get(manifest.snapshot).total,0);
+  assert.equal(db.prepare('SELECT COUNT(*) AS total FROM editorial_default_rows').get().total,1);
+  assert.equal(db.prepare('SELECT COUNT(*) AS total FROM editorial_default_snapshots').get().total,1);
+  assert.equal(db.prepare('SELECT value FROM overrides WHERE key=?')
+   .get('guideedit.book.keep').value,'owner edit');
+ }finally{db.close()}
+});
+
+test('issue 390: staging SQL cannot be generated from a forged but self-consistent namespace',()=>{
+ const rows=manifest.records.map(r=>({...r}));
+ rows[0].field='playerId';
+ const canonical={schema:1,release:manifest.release,records:rows};
+ const digest=(await import('node:crypto')).createHash('sha256')
+  .update(JSON.stringify(canonical)).digest('hex');
+ const forged={...manifest,records:rows,digest,
+  snapshot:manifest.release+'-'+digest.slice(0,16)};
+ for(const build of [
+  renderEditorialDefaultsSQL,
+  renderEditorialDefaultsReadbackSQL,
+  renderEditorialDefaultsRollbackSQL
+ ])assert.throws(()=>build(forged),/Unallowlisted D1 default row/);
+});
+
+test('issue 390: readback and rollback CLI emit the matching version-only SQL',()=>{
+ const cli=fileURLToPath(new URL('../scripts/plan-editorial-d1-defaults.mjs',import.meta.url));
+ const command=(format)=>spawnSync(process.execPath,[cli,format],
+  {encoding:'utf8',maxBuffer:4*1024*1024});
+ for(const [option,expected] of [
+  ['--readback-sql','staging_readback_json'],
+  ['--staging-rollback-sql','DELETE FROM editorial_default_snapshots']
+ ]){
+  const result=command(option);
+  assert.equal(result.status,0,result.stderr);
+  assert.ok(result.stdout.includes(expected),option);
+  assert.ok(result.stdout.includes(manifest.snapshot),option);
+ }
 });

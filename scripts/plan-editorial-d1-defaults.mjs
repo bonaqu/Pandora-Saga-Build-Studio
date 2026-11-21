@@ -12,6 +12,52 @@ const byCodepoint=(a,b)=>a<b?-1:a>b?1:0;
 const sha256=text=>createHash('sha256').update(text,'utf8').digest('hex');
 const sqlString=value=>"'"+String(value).replaceAll("'","''")+"'";
 
+const DEFAULT_KEY=/^guideedit\.(?:book\.[a-z][a-zA-Z0-9._:-]{1,80}|honor\.(?:overview|rank\.(?:[0-9]|1[01]))|wiki\.labels)$/;
+const DEFAULT_WIKI_FIELD=/^(?:chapter_(?:item|utility|monster|map|honor|npc|chest|instance|skill|soul)|honor_(?:overview|gain|victories|ranks|monthly)|skill_filter_(?:player|racial|guild|special|variants|other|unknown|all))_(?:ru|en)$/;
+const DEFAULT_OVERVIEW_FIELD=/^(?:pvp(?:Intro|Daily|Weekly|Hunt)(?:Ru|En)|overview(?:Ru|En)|honor(?:Ru|En)|total(?:Ru|En)|gain(?:Ru|En)|loss(?:Ru|En)|current(?:Ru|En)|ranks(?:Ru|En)|joining(?:Ru|En)|cloaks(?:Ru|En)|monthlyNote(?:Ru|En))$/;
+function allowedDefaultRow(row){
+ if(!row||typeof row.recordKey!=='string'||!DEFAULT_KEY.test(row.recordKey)||
+  typeof row.field!=='string'||typeof row.value!=='string'||
+  !row.value.trim()||row.value.length>8000||
+  /[\x00-\x08\x0b\x0c\x0e-\x1f]/.test(row.value))return false;
+ if(row.recordKey==='guideedit.wiki.labels')
+  return DEFAULT_WIKI_FIELD.test(row.field)&&row.value.length<=90;
+ if(row.recordKey==='guideedit.honor.overview')
+  return DEFAULT_OVERVIEW_FIELD.test(row.field)&&row.value.length<=2200;
+ if(row.recordKey.startsWith('guideedit.honor.rank.'))
+  return /^(?:nameRu|nameEn|benefitRu|benefitEn)$/.test(row.field)&&
+   row.value.length<=500;
+ return /^(?:ru|en|hintRu|hintEn)$/.test(row.field)&&row.value.length<=360;
+}
+// Guard exported SQL against a caller-supplied but self-consistent invalid
+// manifest. The staging reader and frontend use this same closed namespace.
+function assertVerifiedManifest(manifest){
+ if(!manifest||!Array.isArray(manifest.records)||
+  !/^[0-9]+\.[0-9]+\.[0-9]+$/.test(manifest.release||''))
+  throw Error('Invalid source-release or missing D1 default rows');
+ const payload={schema:manifest.schema,release:manifest.release,
+  records:manifest.records};
+ const digest=sha256(JSON.stringify(payload));
+ if(manifest.schema!==1||manifest.digest!==digest||
+  manifest.snapshot!==manifest.release+'-'+digest.slice(0,16))
+  throw Error('Manifest content or version does not match its SHA-256');
+ if(!manifest.records.length||manifest.records.length>3000)
+  throw Error('Invalid D1 default row count');
+ let characters=0,previous=null;
+ for(const row of manifest.records){
+  if(!allowedDefaultRow(row))
+   throw Error('Unallowlisted D1 default row: '+String(row?.recordKey)+'/'+String(row?.field));
+  const identity=row.recordKey+'\u0000'+row.field;
+  if(previous!==null&&identity<=previous)
+   throw Error('Duplicate or unsorted D1 default identity: '+identity);
+  previous=identity;
+  characters+=row.value.length;
+  if(characters>450000)throw Error('D1 default text exceeds reader limits');
+ }
+ return manifest.snapshot;
+}
+
+
 export function buildEditorialDefaultsManifest(){
  const scope={};
  const context={window:scope};
@@ -226,19 +272,9 @@ export function verifyEditorialDefaultsReadback(manifest,metadata,readbackRows){
 }
 
 export function renderEditorialDefaultsSQL(manifest){
- // Refuse tampered manifests; an immutable snapshot is identified by its
- // source-release + digest, not a mutable 'current' table pointer.
- const payload={schema:manifest.schema,release:manifest.release,
-  records:manifest.records};
- const digest=sha256(JSON.stringify(payload));
- if(manifest.schema!==1||manifest.digest!==digest||
-  manifest.snapshot!==manifest.release+'-'+digest.slice(0,16))
-  throw Error('Manifest content or version does not match its SHA-256');
+ // Refuse stale/corrupt caller-provided data before returning executable SQL.
+ assertVerifiedManifest(manifest);
  const rows=manifest.records;
- if(!Array.isArray(rows)||!rows.length||
-  rows.some(r=>typeof r.recordKey!=='string'||
-   typeof r.field!=='string'||typeof r.value!=='string'))
-  throw Error('Missing or invalid D1 default rows');
  const lines=[
   '-- DRY RUN SQL ONLY. Review and back up D1 before a separate authorized import.',
   '-- No deployment/import happens by running the planning script.',
@@ -271,10 +307,48 @@ export function renderEditorialDefaultsSQL(manifest){
  return lines.join('\n')+'\n';
 }
 
+
+// SELECT-only, one-row JSON export. Save the *column value* as a JSON file,
+// then feed it to --verify-readback; never trust an import exit code alone.
+export function renderEditorialDefaultsReadbackSQL(manifest){
+ const snapshot=sqlString(assertVerifiedManifest(manifest));
+ return [
+  '-- STAGING READBACK ONLY. Returns one JSON document to verify offline.',
+  "SELECT json_object("+
+   "'metadata',(SELECT json_object("+
+    "'snapshot',snapshot,'source_release',source_release,"+
+    "'sha256',sha256,'expected_rows',expected_rows)"+
+    " FROM editorial_default_snapshots WHERE snapshot="+snapshot+"),"+
+   "'rows',(SELECT json_group_array(json_object("+
+    "'record_key',record_key,'field',field,'value',value))"+
+    " FROM (SELECT record_key,field,value FROM editorial_default_rows"+
+    " WHERE snapshot="+snapshot+" ORDER BY record_key,field)))"+
+   " AS staging_readback_json;"
+ ].join('\n')+'\n';
+}
+
+// Explicit, snapshot-scoped STAGING rollback plan; it cannot touch CAS,
+// accounts, game catalogs, builds, or any other release. The marker is
+// deleted FIRST so even a partial rollback fails closed in the Worker.
+export function renderEditorialDefaultsRollbackSQL(manifest){
+ const snapshot=sqlString(assertVerifiedManifest(manifest));
+ return [
+  '-- STAGING ONLY. Requires a separate approved, backed-up D1 execution.',
+  '-- NEVER run this SQL against production D1.',
+  '-- Deactivate this exact version before removing its immutable rows.',
+  'DELETE FROM editorial_default_snapshots WHERE snapshot='+snapshot+';',
+  'DELETE FROM editorial_default_rows WHERE snapshot='+snapshot+';',
+  'SELECT COUNT(*) AS remaining_markers FROM editorial_default_snapshots WHERE snapshot='+snapshot+';',
+  'SELECT COUNT(*) AS remaining_rows FROM editorial_default_rows WHERE snapshot='+snapshot+';'
+ ].join('\n')+'\n';
+}
+
 if(process.argv[1]&&fileURLToPath(import.meta.url)===resolve(process.argv[1])){
  const manifest=buildEditorialDefaultsManifest();
  const format=process.argv[2]||'--report';
  if(format==='--sql')process.stdout.write(renderEditorialDefaultsSQL(manifest));
+ else if(format==='--readback-sql')process.stdout.write(renderEditorialDefaultsReadbackSQL(manifest));
+ else if(format==='--staging-rollback-sql')process.stdout.write(renderEditorialDefaultsRollbackSQL(manifest));
  else if(format==='--json')process.stdout.write(JSON.stringify(manifest,null,2)+'\n');
  else if(format==='--verify-readback'){
   const filename=process.argv[3];
@@ -299,7 +373,7 @@ if(process.argv[1]&&fileURLToPath(import.meta.url)===resolve(process.argv[1])){
  },null,2)+'\n');
  else{
   process.stderr.write('Usage: node scripts/plan-editorial-d1-defaults.mjs '+
-   '[--report|--json|--sql|--verify-readback <staging-readback.json>]\n');
+   '[--report|--json|--sql|--readback-sql|--staging-rollback-sql|--verify-readback <staging-readback.json>]\n');
   process.exitCode=2;
  }
 }
