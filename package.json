@@ -26,6 +26,8 @@
     "catalog:review": "node scripts/apply-reviewed-pandora-catalog.mjs",
     "bench:wiki:local": "node scripts/benchmark-encyclopedia.mjs",
     "locales:audit": "node scripts/audit-os-localization.mjs",
+    "editorial:defaults:plan": "node scripts/plan-editorial-d1-defaults.mjs --report",
+    "editorial:defaults:sql": "node scripts/plan-editorial-d1-defaults.mjs --sql",
     "assets:missing": "node scripts/report-missing-original-artwork.mjs",
     "assets:aliases:check": "node scripts/skill-icon-display-aliases.mjs",
     "assets:aliases:refresh": "node scripts/skill-icon-display-aliases.mjs --write",
