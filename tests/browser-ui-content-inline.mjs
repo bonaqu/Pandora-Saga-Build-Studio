@@ -796,8 +796,12 @@ export async function runUIContentInlineSmoke(browser,base){
   // the list, losing the selection or exposing D1 controls to guests.
   // The top navigation is hidden behind an open builds workbench; use the
   // real Close control before switching chapters.
-  if(await page.locator('#dockClose').isVisible())
+  if(await page.locator('#detailPanel.is-open').count()){
    await page.locator('#dockClose').click();
+   // A deferred owner-mode action must finish before interacting elsewhere.
+   await page.locator('#detailPanel.is-open').waitFor({state:'hidden',timeout:15000});
+  }
+  await page.locator('#nav [data-tab="wiki"]').waitFor({state:'visible'});
   // The previous CAS-conflict test deliberately leaves the owner drawer open
   // with an error. Collapse only its visual panel before normal navigation;
   // neither suppress nor clear that failure or its D1 state.
