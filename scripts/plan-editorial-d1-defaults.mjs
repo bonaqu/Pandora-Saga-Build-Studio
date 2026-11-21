@@ -4,6 +4,8 @@
 import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
 import {createHash} from 'node:crypto';
+import {fileURLToPath} from 'node:url';
+import {resolve} from 'node:path';
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const byCodepoint=(a,b)=>a<b?-1:a>b?1:0;
@@ -143,7 +145,7 @@ export function renderEditorialDefaultsSQL(manifest){
  return lines.join('\n')+'\n';
 }
 
-if(process.argv[1]&&import.meta.url==='file://'+process.argv[1]){
+if(process.argv[1]&&fileURLToPath(import.meta.url)===resolve(process.argv[1])){
  const manifest=buildEditorialDefaultsManifest();
  const format=process.argv[2]||'--report';
  if(format==='--sql')process.stdout.write(renderEditorialDefaultsSQL(manifest));
