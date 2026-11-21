@@ -2649,6 +2649,10 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
  }
  decorateChapterCaptions(body,chosen,copyOptions);
  collapseBookSections(body,chosen);
+ // Section headings may have been bound before collapseBookSections moved
+ // them into a native summary. Resolve ancestry after their final mount.
+ if(canEdit)for(const caption of body.querySelectorAll?.('summary [data-guide-key]')||[])
+  guardBookSummaryCaption(caption);
  // Existing chapter tabs and guide labels already own a dedicated editor.
  // Suppress generic pencils there and on actionable game/item controls.
  for(const node of body.querySelectorAll?.('[data-book-editorial-key]')||[]){
