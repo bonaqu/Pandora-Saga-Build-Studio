@@ -16,7 +16,8 @@ test('group summary keeps trained, learned and invested metrics independent of o
   assert.ok(path.includes(calculation),'Authorial caption must not replace game calculation');
  }
  assert.match(path,/const refreshGroupSummary=\(\)=>/);
- assert.match(path,/groupCount\.append\(caption,value\)/);
+ assert.match(path,/groupCount\.append\(make\('span',\{text:groupValues\.length\?' · ':''\}\),/);
+ assert.match(path,/authored\(api,copyKey,ru,en,'span','path-group-summary-copy'\)/);
  assert.doesNotMatch(path,/groupCount\.textContent=groupSummary\(\)/,
   'Changing points must never delete a live owner-copy binding');
 });
@@ -25,7 +26,7 @@ test('milestone labels consistently distinguish initial, invested, class cap and
   "'Начально (оч.): '","' · Вложено (оч.): '",
   "' оч. ветки'","'Лимит (оч.):'"
  ])assert.ok(path.includes(fragment),fragment);
- assert.match(path,/bindPathCopy\(api,unit,'pathUnlockPoints','оч\.','pts','text','',' '\)/);
+ assert.match(path,/authored\(api,'pathUnlockPoints','оч\.','pts',/);
  assert.ok(!path.includes("'Старт: '"),'Outdated start legend must not remain');
  assert.ok(!path.includes("'Предел: '"),'Outdated potential legend must not remain');
  assert.ok(!path.includes("' очков ветки'"),'Wrong long-form threshold must not remain');
