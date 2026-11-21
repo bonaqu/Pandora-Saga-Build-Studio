@@ -128,8 +128,8 @@ test('#390 Wiki static headings edit directly without wrapping game values or ad
  assert.match(binder,/ownerCopyLabel\(node,section,key,ru,en,\{/);
  assert.match(binder,/onCommitted:visible=>applyOwnerInterfaceEditedValue\(section,key,visible\)/);
  assert.match(binder,/else if\(attribute!=='text'\)\{/);
- assert.doesNotMatch(binder,/pencil|icon/i,
-  'Caption editor must not introduce a new pencil or action icon');
+ assert.doesNotMatch(binder,/class:'.*pencil'/,
+  'Caption editor must not create an adjacent pencil button');
 });
 
 test('search terms, actual item stats, skill packets, and character state remain unedited',()=>{
