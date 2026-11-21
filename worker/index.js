@@ -775,6 +775,9 @@ if(path==='/api/health'&&method==='GET'){
 // Optional authorial defaults staging: exact snapshot only, SELECT-only,
 // no production activation. Existing public overrides stay independent.
 if(path==='/api/editorial-defaults'&&method==='GET'){
+ // Disabled by default in every existing Worker environment: a future
+ // staging import and explicit operator flag are prerequisites to reads.
+ if(env.EDITORIAL_DEFAULTS_PREVIEW!=='enabled')return no('Not found',404);
  const snapshot=new URL(request.url).searchParams.get('snapshot');
  const outcome=await readVerifiedEditorialSnapshot(env.DB,snapshot);
  return json(outcome.payload,outcome.status);
