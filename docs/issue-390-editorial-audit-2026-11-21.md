@@ -159,3 +159,13 @@
 - Unit regressions assert English and original Russian meanings and unchanged source-model `uncertain` classification and approval gates. Same-SHA Node+Chromium are required.
 - Touch owner gesture: unrelated clicks no longer consume the synthetic-action suppression of a long-pressed caption. The independent Chromium flow explicitly tests a normal unrelated click followed by an ignored delayed tab action.
 - Gear menu locale readiness: the EN smoke checks the actual belt's localized accessible name before opening a transient native menu, rather than relying only on `documentElement.lang`.
+
+
+## Continuation: multiple captions and skill-attack-range prose · 21.11.2026
+
+- Native Hero Book `summary` elements can contain **more than one distinct source-authored RU/EN caption** (e.g., Honor + its passive-skill annotation). `guardBookSummaryCaption` now registers all targets under one WeakMap-backed guard, protecting dblclick/edit of either caption without blocking short native disclosure activation, while retaining one listener. The shared generic button/summary guard likewise accepts multiple explicitly registered captions per action.
+- `appendItemEvents` separates the preexisting D1 authorial summary label from the runtime trigger count; original UI copy keys remain intact. Neither gameplay trigger IDs nor source equipment names become editable.
+- Skill-use attack range preview now separates **seven known bilingual authorial fragments** (bonus, source, direction, mastery, two activation contexts, ready state) from all source-backed bonuses, official skill names, class/branch labels, and unknown denial reasons. These use scoped `book.attack.skillRange.*` CAS keys and the standard direct dblclick/F2/touch editor, without caption pencils. Unverified source reasons remain plain read-only text.
+- Tests retain full Node + real Chromium browser coverage, plus an isolated two-locale rendering fixture: RU/EN editorial editor entry, identical `+42/+20/+22` source values, stable source skill name, preserved gated reason, no D1 writes. Separate browser checks edit **both** Honor captions inside one native summary while confirming unchanged disclosure state and ordinary click behavior.
+- **CI acceptance requires both full workflows on the exact last PR head**; intermediate successful or failed older SHAs are not proof of a newer commit. Do not merge or close this Draft PR or #390.
+- **Heuristic remaining ≈50%**, not measured by source lines. Still blocked: exhaustive rare dynamic-authorial coverage, physical touch acceptance, safe versioned storage of defaults in production D1, and read-only production verification after an approved release. No production D1 writes in this packet.
