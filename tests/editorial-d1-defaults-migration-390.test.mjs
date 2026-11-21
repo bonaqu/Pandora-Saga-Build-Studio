@@ -176,7 +176,9 @@ test('issue 390: current public reads and CAS writes remain on the existing over
  assert.match(worker,/if\(path==='\/api\/overrides'&&method==='GET'\)/);
  assert.match(worker,/if\(path==='\/api\/admin\/override'&&method==='POST'\)/);
  assert.match(locale,/contentOverrides\['guideedit\.book\.'\+id\]/);
- assert.match(locale,/saved:defaults\[lang==='en'\?1:0\]/);
+ assert.match(locale,/const fallback=defaults\[lang==='en'\?1:0\]/);
+ assert.match(locale,/typeof saved==='string'&&saved\.trim\(\)&&saved\.length<=max\?saved:/);
+ assert.match(locale,/typeof staged==='string'&&staged\.trim\(\)&&staged\.length<=max\?staged:fallback/);
  // A staged migration manifest is not an excuse to silently switch site
  // text reads or deploy a new default snapshot on the live Worker.
  assert.match(worker,/if\(path==='\/api\/editorial-defaults'&&method==='GET'\)/);
