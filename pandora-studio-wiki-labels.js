@@ -17,6 +17,7 @@ const chapter=Object.freeze({
 const honor=Object.freeze({
  overview:['Система чести','Honor system'],
  gain:['Получение и потеря чести','Earning and losing Honor'],
+ victories:['Победы в PvP','PvP Victories'],
  ranks:['Ранги и привилегии','Ranks and privileges'],
  monthly:['Ежемесячные звания','Monthly titles']
 });
@@ -33,7 +34,7 @@ const skillFilter=Object.freeze({
 const key=(group,id,lang)=>(group==='chapter'?'chapter_':
  group==='skillFilter'?'skill_filter_':'honor_')+id+
  (lang==='en'?'_en':'_ru');
-const validField=k=>/^(?:chapter_(?:item|utility|monster|map|honor|npc|chest|instance|skill|soul)|honor_(?:overview|gain|ranks|monthly)|skill_filter_(?:player|racial|guild|special|variants|other|unknown|all))_(?:ru|en)$/.test(k);
+const validField=k=>/^(?:chapter_(?:item|utility|monster|map|honor|npc|chest|instance|skill|soul)|honor_(?:overview|gain|victories|ranks|monthly)|skill_filter_(?:player|racial|guild|special|variants|other|unknown|all))_(?:ru|en)$/.test(k);
 const validPatch=patch=>patch&&typeof patch==='object'&&!Array.isArray(patch)&&
  Object.keys(patch).length>0&&Object.keys(patch).length<=50&&
  Object.entries(patch).every(([k,v])=>validField(k)&&typeof v==='string'&&
