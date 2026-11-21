@@ -53,6 +53,15 @@ test('Hero Path uses Origin-approved attribute translations, not bare powerStat 
  assert.doesNotMatch(source,/field\(tr\(api,'Характеристика','Attribute'\),skill\.powerStat\)/);
 });
 
+test('issue 390: Path group and requirement captions are direct-edit and keep numbers separate',()=>{
+ assert.match(source,/authored\(api,key,ru,en,'span','path-requirement-caption'\)/);
+ assert.match(source,/class:'path-requirement-value',text:String\(value\)/);
+ assert.match(source,/authored\(api,copyKey,ru,en,'span','path-group-summary-copy'\)/);
+ assert.match(source,/class:'path-group-summary-value'/);
+ assert.match(source,/guardCaptionAction\(groupButton,caption\)/);
+ assert.doesNotMatch(source,/bindPathCopy\(api,caption,key,ru,en,'text',' ',' · '\)/);
+});
+
 test('issue 390: skill rail summary edits only author copy and not the live count',()=>{
  assert.match(source,/authored\(api,'skillsOnTrackCaption',fallbackRu,/);
  assert.match(source,/PandoraUILocale\?\.text\('skillsOnTrack','ru'\)/);
