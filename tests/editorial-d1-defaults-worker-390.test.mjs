@@ -176,5 +176,5 @@ test('#390 enabled preview route exposes only exact verified snapshot and remain
  const payload=await response.json();
  assert.equal(payload.sha256,manifest.digest);
  assert.equal(payload.records.length,manifest.records.length);
- assert.ok(db.queries.every(q=>/^\\s*SELECT\\b/i.test(q)));
+ assert.ok(db.queries.every(q=>/^\s*SELECT\b/i.test(q)));
 });
