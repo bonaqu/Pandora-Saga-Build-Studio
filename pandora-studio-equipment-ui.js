@@ -519,7 +519,7 @@ function render(root,api){
    'aria-pressed':String(mode===key),
    'data-stage-tab':key,disabled:!record&&key!=='choose',
    onclick:event=>{
-    if(event?.target?.closest?.('.stage-control-pencil,.wiki-inline-input'))return;
+    if(event?.target?.closest?.('.wiki-inline-input'))return;
     api.changeMode(key);
    }});
   button.append(el('span',{class:'stage-tab-symbol','aria-hidden':'true'},[glyph]),
@@ -608,7 +608,7 @@ function render(root,api){
       'aria-pressed':String(choice?.[key]===option.id),
       'data-enchant-key':key,'data-enchant-value':option.id,
       onclick:event=>{
-       if(event?.target?.closest?.('.stage-control-pencil,.wiki-inline-input'))return;
+       if(event?.target?.closest?.('.wiki-inline-input'))return;
        api.assignGem({type:key==='type'?option.id:(choice?.type||'physical'),
         element:key==='element'?option.id:(choice?.element||'fire')});
       }});
@@ -700,7 +700,7 @@ function render(root,api){
    for(const rec of results.slice(start,shown)){
     const button=el('button',{type:'button',class:'stage-rich-result',
      onclick:event=>{
-      if(event?.target?.closest?.('.stage-control-pencil,.wiki-inline-input'))return;
+      if(event?.target?.closest?.('.wiki-inline-input'))return;
       api.assignSoul(rec);
      }});
     const src=icons(rec,'soul');
@@ -760,7 +760,7 @@ function render(root,api){
   const remove=el('button',{type:'button',class:'stage-enchant-reset',
    text:'✕ '+copy('soulRemove',removeRu,removeEn),
    onclick:event=>{
-    if(event?.target?.closest?.('.stage-control-pencil,.wiki-inline-input'))return;
+    if(event?.target?.closest?.('.wiki-inline-input'))return;
     api.assignSoul(null);
    }});
   body.append(query,labeledAction(remove,'soulRemove',removeRu,removeEn,'✕'),list);

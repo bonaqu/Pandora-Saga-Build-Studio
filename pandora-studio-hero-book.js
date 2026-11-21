@@ -2509,7 +2509,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
    'aria-pressed':String(chosen===name),'data-book-page':name,
    class:chosen===name?'chosen':'',
    onclick:event=>{
-    if(event.target?.closest?.('.stage-book-tab-pencil,.wiki-inline-input'))return;
+    if(event.target?.closest?.('.wiki-inline-input'))return;
     onPage(name);
    }
   });

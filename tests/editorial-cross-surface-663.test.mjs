@@ -132,6 +132,24 @@ test('#390 Wiki static headings edit directly without wrapping game values or ad
   'Caption editor must not create an adjacent pencil button');
 });
 
+test('#390 only actual independent hint pencils remain across all affected runtime modules',()=>{
+ const hero=read('pandora-studio-hero-book.js');
+ const workbench=read('pandora-os-catalog-workbench.js');
+ for(const [module,source] of [['app',app],['equipment',itemUI],['heroBook',hero]]){
+  for(const dead of ['studio-owner-interface-pencil','path-tab-pencil',
+   'path-owner-pencil','stage-picker-slot-pencil','stage-control-pencil',
+   'stage-book-tab-pencil','profileCopyPencil']){
+   assert.ok(!source.includes(dead),'Retired caption pencil in '+module+': '+dead);
+  }
+ }
+ assert.match(app,/class:'wiki-hint-pencil'/);
+ assert.match(hero,/class:'stage-guide-edit-hint'/);
+ assert.match(workbench,/class:'os-sync-hint-pencil'/);
+ assert.match(workbench,/class:'os-sync-secondary-pencil'/);
+ assert.match(itemUI,/event\?\.target\?\.closest\?\.\('\.wiki-inline-input'\)/);
+ assert.match(app,/event\.target\?\.closest\?\.\('\.wiki-inline-input'\)/);
+});
+
 test('search terms, actual item stats, skill packets, and character state remain unedited',()=>{
  assert.match(app,/bindOwnerInterfaceText\(search,'wiki-ui','searchPlaceholder'/);
  assert.match(app,/bindOwnerInterfaceText\(search,'equipment','pickerSearchPlaceholder'/);

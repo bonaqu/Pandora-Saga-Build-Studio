@@ -3524,7 +3524,6 @@ function renderPathCopyControls(){
    wrapper=h('span',{class:'path-tab-owner-wrap',role:'presentation'});
    button.before(wrapper);wrapper.append(button);
   }
-  wrapper.querySelector('.path-tab-pencil')?.remove();
  }
  // These are the real user-visible Hero Path skills controls. The legacy
  // workbench "skills" tab is not present in the site's navigation.
@@ -10264,31 +10263,6 @@ function refreshVisibleOwnerCopy(recordKey){
   if(ownerCopyKey(section,id)!==key||node.querySelector('.wiki-inline-input'))continue;
   const value=ownerCopy(section,id,ru,en);
   ownerDockPatchText(node,value);
-  // Reset/Undo of an editorial hover hint must update the already-mounted
-  // tooltip target rather than leaving the previous text in its dataset.
-  if(node.closest('.studio-owner-interface-row')){
-   const pencil=node.closest('.studio-owner-interface-row')
-    ?.querySelector('.studio-owner-interface-pencil');
-   ownerDockPatchAttr(pencil,'aria-label',
-    (lang==='en'?'Edit caption: ':'Изменить надпись: ')+value);
-  }
-  if(section==='path'){
-   // Path captions are plain D1 copy: Undo updates the current field in place.
-   const tabPencil=node.closest('.path-tab-owner-wrap')?.querySelector('.path-tab-pencil');
-   const inlinePencil=node.nextElementSibling?.dataset?.pathCopyFor===id?
-    node.nextElementSibling:null;
-   const helpPencil=node.parentElement?.classList?.contains('path-owner-edit-row')?
-    node.parentElement.querySelector('.path-owner-pencil'):null;
-   ownerDockPatchAttr(tabPencil||inlinePencil||helpPencil,'aria-label',
-    (lang==='en'?'Edit caption: ':'Изменить надпись: ')+value);
-  }
-  if(section==='equipment'&&id==='pickerSlotHeading'){
-   // The dynamic game slot beside this caption is never part of the D1 key.
-   const pencil=node.closest('.stage-picker-slot-title-wrap')
-    ?.querySelector('.stage-picker-slot-pencil');
-   ownerDockPatchAttr(pencil,'aria-label',
-    (lang==='en'?'Edit caption: ':'Изменить надпись: ')+value);
-  }
   if(section==='owner-dialog'){
    const action=node.closest('.owner-dialog-action-editor')?.querySelector('.owner-dialog-action');
    ownerDockPatchText(action,value);
@@ -10353,9 +10327,6 @@ function refreshVisibleOwnerCopy(recordKey){
    ownerDockPatchData(button,'ownerInterfaceBindings',JSON.stringify(bindings));
    ownerDockPatchAttr(button,'aria-label',
     ownerCopy('equipment',headingKey,titleRu,titleEn)+suffix);
-   const pencil=button.parentElement?.querySelector('.stage-control-pencil');
-   pencil?.setAttribute('aria-label',(lang==='en'?'Edit caption: ':'Изменить надпись: ')+
-    ownerCopy('equipment','gem.'+kind+'.'+id,option.ru,option.en));
   }
  }
  // The editable word "empty" is separate from dynamic Soul slot IDs.
@@ -10397,9 +10368,6 @@ function refreshVisibleProfileCopy(){
   const key=node.dataset.profileCopyKey;
   const value=ownerCopy('profile',key,node.dataset.profileCopyRu,node.dataset.profileCopyEn);
   ownerDockPatchText(node,value);
-  const pencil=node.nextElementSibling;
-  if(pencil?.dataset.profileCopyPencil===key)
-   ownerDockPatchAttr(pencil,'aria-label',(lang==='en'?'Rename: ':'Переименовать: ')+value);
   const id=key.startsWith('field-')?'ps-profile-field-'+key.slice(6):
    key==='bio-label'||key==='bio-placeholder'?'ps-profile-description':null;
   const input=id?document.getElementById(id):null;
@@ -11908,8 +11876,8 @@ document.addEventListener('dblclick',event=>{
  if(!editable||!/^(?:item|itemdesc|itemslots|skill|skilldesc)\./.test(editable.dataset.editKey))return;
  event.preventDefault();event.stopImmediatePropagation();inlineWikiText(editable);
 },true);
-$('pathGrowthTab').onclick=event=>{if(event.target?.closest?.('.path-tab-pencil,.wiki-inline-input'))return;heroPathPage='growth';renderPathPages();saveView()};
- $('pathSkillsTab').onclick=event=>{if(event.target?.closest?.('.path-tab-pencil,.wiki-inline-input'))return;heroPathPage='skills';renderPathPages();saveView()};
+$('pathGrowthTab').onclick=event=>{if(event.target?.closest?.('.wiki-inline-input'))return;heroPathPage='growth';renderPathPages();saveView()};
+ $('pathSkillsTab').onclick=event=>{if(event.target?.closest?.('.wiki-inline-input'))return;heroPathPage='skills';renderPathPages();saveView()};
  // The one-step browser confirm interrupts the game and is RU-only.
  // Keep this warning in the Path itself, with separate cancel/confirm actions.
  function closePathResetConfirm(restoreFocus=false){
