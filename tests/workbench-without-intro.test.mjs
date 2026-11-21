@@ -45,8 +45,9 @@ test('owner indicator mounts only with a verified editor session, never for gues
  assert.match(css,/\.owner-session-state\[hidden\],\.notice\[hidden\]\{display:none!important\}/);
 });
 test('catalog footer is natural-language and retired archive notice stays absent',()=>{
- assert.match(app,/data\.meta\.counts\.skills/);
-  assert.match(app,/В энциклопедии: /);
+ assert.match(app,/counts=catalogSource\?\.meta\?\.counts/);
+  assert.match(app,/\['lead','В энциклопедии:','Encyclopedia:'\]/);
+  assert.match(app,/String\(counts\[key\]\)/);
  assert.match(app,/Encyclopedia: /);
  assert.doesNotMatch(app,/Cloudflare D1 · актуальный опубликованный каталог/);
  assert.doesNotMatch(app,/renderArchiveNotice/);

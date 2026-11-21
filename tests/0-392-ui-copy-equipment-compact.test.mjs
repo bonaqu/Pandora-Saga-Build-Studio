@@ -81,9 +81,9 @@ test('site shell has clean title/footer, D1-grounded counters and no retired arc
  assert.match(app,/function renderCatalogStatus\(\)/);
  assert.match(app,/\['lead','В энциклопедии:','Encyclopedia:'\]/);
  assert.match(app,/data-catalog-status-value/);
- assert.match(app,/data\.meta\.counts\.skills/);
- assert.match(app,/data\.meta\.counts\.items/);
- assert.match(app,/data\.meta\.counts\.souls/);
+ assert.match(app,/counts=catalogSource\?\.meta\?\.counts/);
+ assert.match(app,/data-catalog-status-value/);
+ assert.match(app,/String\(counts\[key\]\)/);
  assert.ok(!app.includes("'Cloudflare D1 · актуальный опубликованный каталог'"));
  assert.doesNotMatch(app,/function renderArchiveNotice/);
  assert.doesNotMatch(html,/id="siteNotice"/);
