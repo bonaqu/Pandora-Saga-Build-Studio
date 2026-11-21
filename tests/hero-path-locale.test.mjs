@@ -55,10 +55,10 @@ test('Hero Path uses Origin-approved attribute translations, not bare powerStat 
 
 test('issue 390: milestone and successor labels are edited directly without renaming game skills',()=>{
  assert.match(source,/authored\(api,'pathUnlockPoints','оч\.','pts'/);
- assert.match(source,/class:'path-unlock-unit'/);
- assert.match(source,/class:'path-unlock-state'/);
+ assert.match(source,/'span','path-unlock-unit'/);
+ assert.match(source,/'span','path-unlock-state'/);
  assert.match(source,/guardCaptionAction\(button,unit\)/);
- assert.match(source,/class:'path-skill-lineage-caption'/);
+ assert.match(source,/'span','path-skill-lineage-caption'/);
  assert.match(source,/class:'path-skill-lineage-name',text:' '\+label/);
  assert.match(source,/guardCaptionAction\(button,nextCaption\)/);
  assert.doesNotMatch(source,/bindPathCopy\(api,button,'skillNextLink'/);
