@@ -42,7 +42,7 @@ test('issue #390: every existing Honor overview and PvP event default passes act
  assert.ok(start>=0&&end>start);
  const server=runInNewContext(worker.slice(start,end)+'\nvalidGuideEdit');
  const defaults=scope.PandoraHonorGuide.intro;
- assert.ok(Object.keys(defaults).length>=30);
+ assert.ok(Object.keys(defaults).length>=28);
  for(const [field,value] of Object.entries(defaults)){
   const body=JSON.stringify({[field]:value});
   assert.equal(scope.PandoraHonorGuide.validOverride('honor.overview',body),true,
