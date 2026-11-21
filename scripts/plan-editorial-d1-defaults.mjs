@@ -59,6 +59,27 @@ export function buildEditorialDefaultsManifest(){
    append('guideedit.book.'+id,lang,ui.baseText(key,lang),'ui-locale');
  }
 
+ // The owner dock's fixed visible action captions, group headings and
+ // instructions are also already editable via ownerCopy('owner-dock').
+ // Extract only the audited literal dictionary, never execute the app's
+ // startup logic, inspect player state, or guess text keys from a game UI.
+ const app=read('pandora-studio-app.js');
+ const match=app.match(/const ownerDockText=Object\.freeze\((\{[\s\S]*?\})\);/);
+ if(!match)throw Error('Missing audited owner dock authorial source registry');
+ const dock=runInNewContext('('+match[1]+')',{},{
+  filename:'ownerDockText',timeout:5000
+ });
+ if(!dock||typeof dock!=='object'||Array.isArray(dock))
+  throw Error('Invalid owner dock text dictionary');
+ for(const [key,pair] of Object.entries(dock)){
+  if(!/^[a-z][a-zA-Z0-9]{1,50}$/.test(key)||
+   !Array.isArray(pair)||pair.length!==2)
+   throw Error('Invalid owner-dock authorial field: '+key);
+  const slug=key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  for(const [i,lang] of ['ru','en'].entries())
+   append('guideedit.book.owner-dock.'+slug,lang,pair[i],'owner-dock');
+ }
+
  // The Wiki chapters, all five Honor subchapters and skill filters are
  // one existing D1 JSON record. Preserve their exact field identities;
  // never reconstruct these labels from list position or save them as game IDs.
