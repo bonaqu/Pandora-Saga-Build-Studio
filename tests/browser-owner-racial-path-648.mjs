@@ -281,14 +281,14 @@ export async function runOwnerRacialPath648Smoke(browser,base){
    'Renaming a summary caption must not toggle the skills disclosure');
   assert.equal(await unlock.locator('button.path-owner-pencil').count(),0);
 
-  // Every skill milestone keeps its threshold and target skill ID outside
+  // Every skill milestone keeps its threshold and source skill name outside
   // the RU/EN author caption, even when edited on a real clickable row.
   const unlockDetails=unlock.locator('xpath=..');
   if(!await unlockDetails.evaluate(el=>el.open))
    await unlock.locator('.path-unlock-count').click();
   const milestone=unlockDetails.locator('button.path-unlock-skill').first();
   await milestone.waitFor({state:'visible',timeout:12000});
-  const skillIdBefore=await milestone.locator('xpath=.').getAttribute('type');
+  const sourceSkillBefore=await milestone.locator('.path-unlock-copy strong').innerText();
   const thresholdBefore=await milestone.locator('.path-unlock-status span').first().innerText();
   const unit=milestone.locator('.path-unlock-unit');
   assert.equal(await unit.innerText(),'pts');
@@ -302,7 +302,8 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   assert.equal(await unit.innerText(),'milestone pts QA');
   assert.equal(await milestone.locator('.path-unlock-status span').first().innerText(),
    thresholdBefore);
-  assert.equal(await milestone.getAttribute('type'),skillIdBefore);
+  assert.equal(await milestone.locator('.path-unlock-copy strong').innerText(),
+   sourceSkillBefore,'An owner caption never renames the catalog skill');
   assert.match(await milestone.getAttribute('aria-label'),/milestone pts QA/,
    'The same D1 key refreshes the accessible action label after inline save');
   assert.equal(await page.locator('#pathGrowthPage').isVisible(),true,
