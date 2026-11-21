@@ -10223,16 +10223,14 @@ function refreshVisibleOriginCopy(recordKey){
 
 }
 // Copy-only Undo/saves must not unmount the Soul search or Path card.
-// Text-only Wiki keys are independent of editable gameplay records.
-// Save/Undo must patch their already-mounted captions without rerendering
-// a selected encyclopedia entry or dropping scroll/search state.
-const isWikiAuthorCopy=key=>
- /^wiki\.(?:map\.text|monster\.text|npc\.trade|chest\.text|item\.text)\.[a-z][a-z0-9-]*$/.test(key);
+// Five reviewed Wiki editorial families use exact keys, not gameplay data.
+// Keep the allowlist local to each isolated Save/Undo handler so partial
+// browser-free CAS harnesses exercise the same branch as the full app.
 function refreshVisibleOwnerCopy(recordKey){
  const key=String(recordKey).replace(/^guideedit\.book\./,'');
  if(key.startsWith('owner-dock.')){refreshOwnerUI();return}
  if(/^(origin|equipment|path)\.hint/.test(key))refreshWorkbenchHints();
- if(!isWikiAuthorCopy(key)&&
+ if(!/^wiki\.(?:map\.text|monster\.text|npc\.trade|chest\.text|item\.text)\.[a-z][a-z0-9-]*$/.test(key)&&
   !/^(origin|equipment|path|catalog-sync|honor-view|owner-history|owner-dialog|wiki-ui|skill-ui|stats-ui)\./.test(key))return;
  for(const node of document.querySelectorAll('[data-owner-copy-section][data-owner-copy-id]')){
   const {ownerCopySection:section,ownerCopyId:id,ownerCopyRu:ru,ownerCopyEn:en}=node.dataset;
@@ -10405,7 +10403,7 @@ async function undoOwnerEdit(){
      // UI copy does not affect catalogs or builds; preserve active inputs.
      saveView();
     }else if(/^guideedit\.book\.(equipment|path|catalog-sync|honor-view|owner-dock|owner-history|owner-dialog|wiki-ui|skill-ui|stats-ui)\./.test(last.key)||
-      isWikiAuthorCopy(last.key.replace(/^guideedit\.book\./,''))){
+      /^guideedit\.book\.wiki\.(?:map\.text|monster\.text|npc\.trade|chest\.text|item\.text)\.[a-z][a-z0-9-]*$/.test(last.key)){
      refreshVisibleOwnerCopy(last.key);saveView();
     }else await refreshOwnerCatalog();
   }catch(e){alert('Не удалось отменить изменение: '+e.message)}
@@ -10835,7 +10833,7 @@ async function saveGuidePatchNow(key,fields){
      key.startsWith('book.owner-dock.')||key.startsWith('book.owner-history.')||
      key.startsWith('book.owner-dialog.')||key.startsWith('book.wiki-ui.')||
      key.startsWith('book.skill-ui.')||key.startsWith('book.stats-ui.')||
-     isWikiAuthorCopy(key.replace(/^book\./,'')))
+     /^book\.wiki\.(?:map\.text|monster\.text|npc\.trade|chest\.text|item\.text)\.[a-z][a-z0-9-]*$/.test(key))
    refreshVisibleOwnerCopy('guideedit.'+key);
   if(activeTab==='wiki'&&wikiSelection.type==='honor'&&
      !key.startsWith('book.catalog-sync.')){

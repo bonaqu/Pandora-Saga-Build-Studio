@@ -92,27 +92,28 @@ test('shared owner editor reuses CAS, blur and Escape without wrapping buttons',
  assert.match(app,/ownerInterfaceEditor\('stats-ui'/);
 });
 
-test('#390 Wiki authorial copy Save/Undo patches five families without remounting records',()=>{
- const wikiAuthor=app.slice(app.indexOf('const isWikiAuthorCopy=key=>'),
-  app.indexOf('function refreshVisibleOwnerCopy(recordKey)'));
+test('#390 Wiki authorial Save, Undo and mounted refresh accept only five text-only families',()=>{
  const undo=app.slice(app.indexOf('async function undoOwnerEdit()'),
   app.indexOf('function showOverrideManager()',app.indexOf('async function undoOwnerEdit()')));
  const save=app.slice(app.indexOf('async function saveGuidePatchNow('),
   app.indexOf('async function saveGuideList(',app.indexOf('async function saveGuidePatchNow(')));
  const refresh=app.slice(app.indexOf('function refreshVisibleOwnerCopy(recordKey)'),
   app.indexOf('function refreshVisibleProfileCopy()',app.indexOf('function refreshVisibleOwnerCopy(recordKey)')));
- for(const prefix of ['map\\.text','monster\\.text','npc\\.trade','chest\\.text','item\\.text'])
-  assert.ok(wikiAuthor.includes(prefix),'Missing Wiki authorial family '+prefix);
- assert.match(save,/isWikiAuthorCopy\(key\.replace\(\/\^book\\\.\//);
- assert.match(undo,/isWikiAuthorCopy\(last\.key\.replace\(\/\^guideedit\\\.book\\\.\//);
- assert.match(refresh,/if\(!isWikiAuthorCopy\(key\)&&/);
+ const marker='(?:map\\.text|monster\\.text|npc\\.trade|chest\\.text|item\\.text)';
+ for(const section of [save,undo,refresh])
+  assert.ok(section.includes(marker),'Exact Wiki family allowlist missing');
+ assert.match(save,/\/\^book\\\.wiki\\\./);
+ assert.match(undo,/\/\^guideedit\\\.book\\\.wiki\\\./);
+ assert.match(refresh,/if\(!\/\^wiki\\\./);
+ assert.doesNotMatch(save,/isWikiAuthorCopy\(/);
+ assert.doesNotMatch(undo,/isWikiAuthorCopy\(/);
+ assert.doesNotMatch(refresh,/isWikiAuthorCopy\(/);
  assert.match(refresh,/\[data-owner-interface-bindings\]/);
  assert.match(refresh,/ownerDockPatchText\(node,value\)/);
  assert.match(undo,/refreshVisibleOwnerCopy\(last\.key\);saveView\(\)/);
- // The data-editing branch intentionally retains the full catalog refresh,
- // while the text-only authorial branch bypasses it.
  assert.match(undo,/else await refreshOwnerCatalog\(\)/);
 });
+
 
 test('search terms, actual item stats, skill packets, and character state remain unedited',()=>{
  assert.match(app,/bindOwnerInterfaceText\(search,'wiki-ui','searchPlaceholder'/);
