@@ -229,3 +229,7 @@ The live encyclopedia footer now has four independently editable RU/EN spans and
 ## #390 runtime cleanup of retired caption pencils
 
 Audited all 58 shipped `pandora-*.js` modules and static HTML. Pencil creation remains only for genuinely separate explanations in Wiki item stats, Hero Book help and catalog-review action/search hints. Removed dead selector guards and no-op ARIA updates for the old `path-tab-pencil`, `path-owner-pencil`, `studio-owner-interface-pencil`, `stage-picker-slot-pencil`, `stage-control-pencil`, `stage-book-tab-pencil` and profile caption pencils across the main app, equipment and Hero Book. Inline editors, keyboard behavior, CAS Save/Undo and legitimate hover pencils remain. New Node contract requires this distinction; full Chromium check still required before acceptance.
+
+## #390 cleaned CSS after direct-caption migration
+
+Removed orphaned pencil CSS from owner-inline and Workbench guidance after auditing the 58 runtime JS modules; simplified native button rules and restored 8px right padding where 23/28px was previously reserved for duplicate caption pencils. True independent hover-hint pencil buttons and actual inline text editor styles are preserved. New Node CSS contract protects against regression. Physical touch QA still open.

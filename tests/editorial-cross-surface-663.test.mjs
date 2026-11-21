@@ -150,6 +150,24 @@ test('#390 only actual independent hint pencils remain across all affected runti
  assert.match(app,/event\.target\?\.closest\?\.\('\.wiki-inline-input'\)/);
 });
 
+test('#390 no retired caption-pencil CSS reserves extra native button gutter',()=>{
+ const css=read('pandora-studio-owner-inline-ui.css');
+ const guide=read('pandora-studio-workbench-guidance.css');
+ for(const selector of ['stage-control-pencil','stage-book-tab-pencil',
+  'path-tab-pencil','path-owner-pencil','path-group-pencil',
+  'stage-picker-slot-pencil','ps-profile-copy-pencil','studio-owner-interface-pencil']){
+  assert.ok(!css.includes(selector),'Dead owner CSS: '+selector);
+  assert.ok(!guide.includes(selector),'Dead workbench CSS: '+selector);
+ }
+ assert.match(css,/\.stage-action-edit-wrap>button\{/);
+ assert.match(css,/padding-inline-end:8px!important/);
+ assert.doesNotMatch(css,/padding-inline-end:23px!important/);
+ assert.doesNotMatch(css,/padding-inline-end:28px\}/);
+ assert.match(guide,/\.stage-rich-tabs \.stage-rich-settings-group button\{/);
+ assert.match(css,/\.studio-owner-interface-value\{/);
+ assert.match(css,/\.stage-rich-body \.origin-copy-editable:focus-visible/);
+});
+
 test('search terms, actual item stats, skill packets, and character state remain unedited',()=>{
  assert.match(app,/bindOwnerInterfaceText\(search,'wiki-ui','searchPlaceholder'/);
  assert.match(app,/bindOwnerInterfaceText\(search,'equipment','pickerSearchPlaceholder'/);
