@@ -99,6 +99,38 @@ export function buildEditorialDefaultsManifest(){
   })});
 }
 
+// Validate a complete readback from an isolated D1 import, not just the
+// number of imported rows. No browser/Worker activity or persistence occurs.
+export function verifyEditorialDefaultsReadback(manifest,metadata,readbackRows){
+ const fail=reason=>({ok:false,reason});
+ if(!metadata||!Array.isArray(readbackRows))return fail('missing-readback');
+ if(metadata.snapshot!==manifest.snapshot||
+  metadata.source_release!==manifest.release||
+  metadata.sha256!==manifest.digest||
+  metadata.expected_rows!==manifest.records.length)
+  return fail('snapshot-metadata-mismatch');
+ if(readbackRows.length!==manifest.records.length)
+  return fail('row-count-mismatch');
+ const seen=new Set(),rows=[];
+ for(const input of readbackRows){
+  if(!input||typeof input!=='object')return fail('invalid-record');
+  const row={recordKey:input.record_key??input.recordKey,
+   field:input.field,value:input.value};
+  if(Object.values(row).some(value=>typeof value!=='string'))
+   return fail('invalid-record');
+  const key=row.recordKey+'\u0000'+row.field;
+  if(seen.has(key))return fail('duplicate-record');
+  seen.add(key);rows.push(row);
+ }
+ rows.sort((a,b)=>byCodepoint(a.recordKey,b.recordKey)||
+  byCodepoint(a.field,b.field));
+ const digest=sha256(JSON.stringify({
+  schema:manifest.schema,release:manifest.release,records:rows
+ }));
+ if(digest!==manifest.digest)return fail('content-digest-mismatch');
+ return {ok:true,checkedRows:rows.length,snapshot:manifest.snapshot,digest};
+}
+
 export function renderEditorialDefaultsSQL(manifest){
  // Refuse tampered manifests; an immutable snapshot is identified by its
  // source-release + digest, not a mutable 'current' table pointer.
