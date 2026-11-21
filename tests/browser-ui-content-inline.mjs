@@ -546,6 +546,46 @@ export async function runUIContentInlineSmoke(browser,base){
    'Зона влияния:');
   assert.deepEqual(await page.locator('.wiki-skill-source-chain a[href]')
    .evaluateAll(nodes=>nodes.map(node=>node.getAttribute('href'))),linksBefore);
+  // The Honor PvP table headings are authorial copy, but rewards and rank
+  // counts are game data. Verify direct editing on the real owner surface.
+  await page.locator('#dockClose').click();
+  await wiki.click();
+  await search.click();
+  await search.fill('');
+  await chooseWikiChapter('honor');
+  const honorPane=page.locator('.wiki-page');
+  const tableHead=honorPane.locator(
+   '.wiki-honor-pvp-label[data-owner-copy-id="pvpDailyHeading"]');
+  await tableHead.waitFor({state:'visible',timeout:20000});
+  const rewardsBefore=await honorPane.locator('#honor-victories .wiki-honor-pvp-table tbody')
+   .first().innerText();
+  assert.equal(await tableHead.innerText(),'Ежедневные награды');
+  assert.equal(await honorPane.locator('.wiki-honor-pvp-group .wiki-honor-copy-pencil').count(),0);
+  await tableHead.dblclick();
+  const tableInput=honorPane.locator('.wiki-honor-pvp-label [contenteditable]').first();
+  await tableInput.fill('Награды за сутки');
+  await tableInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '.wiki-honor-pvp-label[data-owner-copy-id="pvpDailyHeading"]')
+   ?.textContent==='Награды за сутки',null,{timeout:15000});
+  const honorD1='guideedit.book.honor-view.pvp-daily-heading';
+  assert.equal(JSON.parse(values[honorD1]).ru,'Награды за сутки');
+  assert.equal(await honorPane.locator('#honor-victories .wiki-honor-pvp-table tbody')
+   .first().innerText(),rewardsBefore,
+   'Editing a header must not mutate the game reward table');
+  const sectionsCaption=honorPane.locator(
+   '.wiki-honor-sections-label [data-owner-copy-id="sectionsHeading"]');
+  assert.equal(await sectionsCaption.textContent(),'Разделы');
+  assert.equal(await honorPane.locator('.wiki-honor-live-count').textContent(),' · 5');
+  await sectionsCaption.dblclick();
+  const sectionsInput=honorPane.locator('.wiki-honor-sections-label [contenteditable]');
+  await sectionsInput.fill('Категории');
+  await sectionsInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '.wiki-honor-sections-label [data-owner-copy-id="sectionsHeading"]')
+   ?.textContent==='Категории',null,{timeout:15000});
+  assert.equal(JSON.parse(values['guideedit.book.honor-view.sections-heading']).ru,'Категории');
+  assert.equal(await honorPane.locator('.wiki-honor-live-count').textContent(),' · 5');
   // Leave the existing Encyclopedia detail workbench before opening the
   // account UI: a modal workbench correctly intercepts background clicks.
   if(await page.locator('#detailPanel.is-open').count())
