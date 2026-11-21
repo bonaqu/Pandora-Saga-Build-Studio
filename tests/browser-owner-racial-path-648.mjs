@@ -240,6 +240,27 @@ export async function runOwnerRacialPath648Smoke(browser,base){
    {ru:'Лимит ветки:',en:'Branch ceiling:'});
   assert.equal(await page.locator('#pathGrowthPage .path-limit-number').first()
    .textContent(),enCapNumber);
+  // The expandable rail keeps its live skill count outside the owner D1
+  // editor. Double-clicking the author caption must not toggle the summary.
+  const unlock=page.locator('#pathGrowthPage .path-unlock-details summary').first();
+  await unlock.waitFor({state:'visible',timeout:15000});
+  const countBefore=await unlock.locator('.path-unlock-count').innerText();
+  const openBefore=await unlock.evaluate(el=>el.parentElement.open);
+  const railCaption=unlock.locator('.path-unlock-heading');
+  assert.equal(await railCaption.innerText(),'Skills on track');
+  await railCaption.dblclick();
+  const railEditor=railCaption.locator('[data-owner-text-field]');
+  await railEditor.waitFor({state:'visible'});
+  await railEditor.fill('Skills on this rail QA');
+  await railEditor.press('Tab');
+  await savedOverride('guideedit.book.path.skills-on-track-caption',
+   {en:'Skills on this rail QA'});
+  assert.equal(await railCaption.innerText(),'Skills on this rail QA');
+  assert.equal(await unlock.locator('.path-unlock-count').innerText(),countBefore);
+  assert.equal(await unlock.evaluate(el=>el.parentElement.open),openBefore,
+   'Renaming a summary caption must not toggle the skills disclosure');
+  assert.equal(await unlock.locator('button.path-owner-pencil').count(),0);
+
   // New D1 caption: never edit or persist the computed number of skills.
   await page.locator('#pathSkillsTab').click();
   const more=page.locator('#pathSkillGallery button.path-show-more');
