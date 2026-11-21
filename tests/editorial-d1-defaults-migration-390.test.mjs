@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {
- buildEditorialDefaultsManifest,renderEditorialDefaultsSQL
+ buildEditorialDefaultsManifest,renderEditorialDefaultsSQL,
+ verifyEditorialDefaultsReadback
 } from '../scripts/plan-editorial-d1-defaults.mjs';
 
 const read=name=>readFileSync(new URL('../'+name,import.meta.url),'utf8');
@@ -54,6 +55,30 @@ test('issue 390: migration never materializes runtime values or rewrites an over
  assert.doesNotMatch(sql,/\b(?:UPDATE|DELETE FROM|REPLACE INTO)\s+editorial_default_rows\b/i);
  assert.match(sql,/ON CONFLICT\(snapshot,record_key,field\) DO NOTHING/);
  assert.match(sql,/SELECT COUNT\(\*\) AS actual_rows/);
+});
+
+test('issue 390: staging D1 readback is rejected on partial, stale or corrupted rows',()=>{
+ const metadata={snapshot:manifest.snapshot,source_release:manifest.release,
+  sha256:manifest.digest,expected_rows:manifest.records.length};
+ const rows=manifest.records.map(r=>({
+  record_key:r.recordKey,field:r.field,value:r.value
+ })).reverse();
+ const verified=verifyEditorialDefaultsReadback(manifest,metadata,rows);
+ assert.deepEqual(verified,{ok:true,checkedRows:rows.length,
+  snapshot:manifest.snapshot,digest:manifest.digest});
+ assert.equal(verifyEditorialDefaultsReadback(manifest,metadata,
+  rows.slice(1)).reason,'row-count-mismatch');
+ assert.equal(verifyEditorialDefaultsReadback(manifest,metadata,
+  [rows[0],...rows.slice(0,-1)]).reason,'duplicate-record');
+ const corrupted=rows.map((row,i)=>i===1?{...row,value:'tampered'}:row);
+ assert.equal(verifyEditorialDefaultsReadback(manifest,metadata,
+  corrupted).reason,'content-digest-mismatch');
+ assert.equal(verifyEditorialDefaultsReadback(manifest,
+  {...metadata,sha256:'not-the-installed-source'},rows).reason,
+  'snapshot-metadata-mismatch');
+ assert.equal(verifyEditorialDefaultsReadback(manifest,metadata,
+  [{record_key:null,field:'ru',value:'Unknown'},...rows.slice(1)])
+  .reason,'invalid-record');
 });
 
 test('issue 390: snapshot tampering cannot produce an installable SQL plan',()=>{
