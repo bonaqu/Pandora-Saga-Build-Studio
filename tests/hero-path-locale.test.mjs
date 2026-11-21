@@ -53,6 +53,19 @@ test('Hero Path uses Origin-approved attribute translations, not bare powerStat 
  assert.doesNotMatch(source,/field\(tr\(api,'Характеристика','Attribute'\),skill\.powerStat\)/);
 });
 
+test('issue 390: milestone and successor labels are edited directly without renaming game skills',()=>{
+ assert.match(source,/authored\(api,'pathUnlockPoints','оч\.','pts'/);
+ assert.match(source,/class:'path-unlock-unit'/);
+ assert.match(source,/class:'path-unlock-state'/);
+ assert.match(source,/guardCaptionAction\(button,unit\)/);
+ assert.match(source,/class:'path-skill-lineage-caption'/);
+ assert.match(source,/class:'path-skill-lineage-name',text:' '\+label/);
+ assert.match(source,/guardCaptionAction\(button,nextCaption\)/);
+ assert.doesNotMatch(source,/bindPathCopy\(api,button,'skillNextLink'/);
+ const app=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
+ assert.match(app,/applyOwnerInterfaceEditedValue\('path',key,visible\)/);
+});
+
 test('issue 390: Path group and requirement captions are direct-edit and keep numbers separate',()=>{
  assert.match(source,/authored\(api,key,ru,en,'span','path-requirement-caption'\)/);
  assert.match(source,/class:'path-requirement-value',text:String\(value\)/);
