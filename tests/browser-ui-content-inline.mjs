@@ -586,6 +586,22 @@ export async function runUIContentInlineSmoke(browser,base){
    ?.textContent==='Категории',null,{timeout:15000});
   assert.equal(JSON.parse(values['guideedit.book.honor-view.sections-heading']).ru,'Категории');
   assert.equal(await page.locator('.wiki-layout-honor .wiki-honor-live-count').textContent(),' · 5');
+  // The left navigation shares the actual Wiki honor label with its chapter,
+  // so a second title registry or an editable nav ID must never appear.
+  const honorNav=page.locator(
+   '.wiki-layout-honor [data-honor-section="overview"] .wiki-honor-nav-caption');
+  assert.equal(await honorNav.textContent(),'Система чести');
+  await honorNav.dblclick();
+  const honorNavInput=page.locator(
+   '.wiki-layout-honor [data-honor-section="overview"] [contenteditable]');
+  await honorNavInput.fill('Правила чести');
+  await honorNavInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '.wiki-layout-honor [data-honor-section="overview"] .wiki-honor-nav-caption')
+   ?.textContent==='Правила чести',null,{timeout:15000});
+  assert.equal(JSON.parse(values['guideedit.wiki.labels']).honor_overview_ru,'Правила чести');
+  assert.equal(await honorPane.locator('#honor-victories').count(),1,
+   'A double-click in the chapter menu must not navigate away from Honor');
   // Leave the existing Encyclopedia detail workbench before opening the
   // account UI: a modal workbench correctly intercepts background clicks.
   if(await page.locator('#detailPanel.is-open').count())
