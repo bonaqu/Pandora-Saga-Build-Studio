@@ -220,6 +220,18 @@ export async function runUIContentInlineSmoke(browser,base){
   await longField.press('Escape');
   assert.equal(await page.locator('#stageHeading').innerText(),
    'Черновик после неподтверждённой записи');
+  // Owner touch gesture is long-press only on a plain caption. A short tap
+  // must not replace a button click or expose the editor to a guest.
+  await appearanceHeading.dispatchEvent('pointerdown',{
+   pointerType:'touch',isPrimary:true,button:0,clientX:12,clientY:20
+  });
+  await page.waitForTimeout(570);
+  const touchHeading=page.locator(
+   '.stage .panel-heading .ui-content-edit-host [contenteditable]');
+  await touchHeading.waitFor({state:'visible',timeout:6000});
+  assert.equal(await touchHeading.textContent(),'Черновик после неподтверждённой записи');
+  await touchHeading.press('Escape');
+  await appearanceHeading.dispatchEvent('pointerup',{pointerType:'touch',isPrimary:true});
   await page.setViewportSize({width:1100,height:810});
   assert.equal(await page.locator('.right .panel-heading [data-ui-content-for="path"]').count(),0);
   assert.equal(await page.locator('.workspace>.left>.panel-heading [data-origin-edit-for="heading"]').count(),0);
@@ -260,6 +272,16 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(await statHint.locator('.stage-guide-edit-hint').count(),1,
    'The real hover explanation of health keeps precisely one hint pencil');
   assert.equal(await statHint.locator('.stage-guide-edit-name').count(),0);
+  await stat.dispatchEvent('pointerdown',{
+   pointerType:'touch',isPrimary:true,button:0,clientX:17,clientY:19
+  });
+  await page.waitForTimeout(570);
+  const bookTouchEdit=stat.locator('[contenteditable]');
+  await bookTouchEdit.waitFor({state:'visible',timeout:6000});
+  await bookTouchEdit.press('Escape');
+  await stat.dispatchEvent('pointerup',{pointerType:'touch',isPrimary:true});
+  assert.equal(await statHint.locator('.stage-guide-edit-hint').count(),1,
+   'Touch caption editing must not create a second pencil or rewrite a hover hint');
   await statHint.locator('.stage-guide-edit-hint').click();
   const bookHint=stat.locator('[contenteditable]');
   await bookHint.fill('Не терять черновик при повторном двойном клике');
@@ -686,6 +708,17 @@ export async function runUIContentInlineSmoke(browser,base){
    .allTextContents()).map(s=>s.replace(/\D/g,'')),['3000','20000']);
   if(await page.locator('#ownerDock [data-owner-collapse]').getAttribute('aria-expanded')==='true')
    await page.locator('#ownerDock [data-owner-collapse]').click();
+  const fingerRank=page.locator('#honor-rank-2 [data-owner-copy-id="rankReqPointsLead"]');
+  await fingerRank.dispatchEvent('pointerdown',{
+   pointerType:'touch',isPrimary:true,button:0,clientX:16,clientY:16
+  });
+  await page.waitForTimeout(570);
+  const fingerRankEditor=fingerRank.locator('[contenteditable]');
+  await fingerRankEditor.waitFor({state:'visible',timeout:6000});
+  await fingerRankEditor.press('Escape');
+  await fingerRank.dispatchEvent('pointerup',{pointerType:'touch',isPrimary:true});
+  assert.deepEqual((await page.locator('#honor-rank-2 .wiki-honor-runtime-value')
+   .allTextContents()).map(s=>s.replace(/\D/g,'')),['3000','20000']);
   // Leave the existing Encyclopedia detail workbench before opening the
   // account UI: a modal workbench correctly intercepts background clicks.
   if(await page.locator('#detailPanel.is-open').count())
@@ -697,6 +730,19 @@ export async function runUIContentInlineSmoke(browser,base){
   await guestLead.waitFor({state:'visible'});
   const login=page.locator('#accountPanel .account-form input').first();
   await login.fill('TestingProfile');
+  await guestLead.dispatchEvent('pointerdown',{
+   pointerType:'touch',isPrimary:true,button:0,clientX:18,clientY:18
+  });
+  await page.waitForTimeout(570);
+  const touchGuest=guestLead.locator('[contenteditable]');
+  // Account inline editors use a sibling editing host rather than rewriting
+  // the source node, so detect that host via the actual panel.
+  const guestTouchHost=page.locator(
+   '#accountPanel .account-copy-edit-host [contenteditable]');
+  await guestTouchHost.waitFor({state:'visible',timeout:6000});
+  await guestTouchHost.press('Escape');
+  await guestLead.dispatchEvent('pointerup',{pointerType:'touch',isPrimary:true});
+  assert.equal(await login.inputValue(),'TestingProfile');
   await guestLead.dblclick();
   const accountInput=page.locator('#accountPanel .account-copy-edit-host [contenteditable]');
   await accountInput.fill('Вход открывает облачные билды.');

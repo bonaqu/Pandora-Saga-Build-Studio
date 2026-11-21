@@ -51,3 +51,11 @@
 - [x] Removed abandoned Honor caption-pencil CSS, whitespace and obsolete attribute updater; the rank requirement and benefit grid owners remain intact.
 - [x] Expanded regression checks for default Book keys, archived authored rank requirements, 409 draft survival and Undo preserving runtime rank threshold numbers.
 - [ ] This packet requires new same-SHA CI. Do not use the successful preceding SHA as evidence for its content.
+
+## Third continuation packet · plain-caption touch and stale pencil state
+
+- [x] The preceding SHA `25d0e67df00696913e33450abde8ff6cfb6feb97` passed [Node](https://github.com/bonaqu/Pandora-Saga-Build-Studio/actions/runs/44856207648) and [Chromium](https://github.com/bonaqu/Pandora-Saga-Build-Studio/actions/runs/44856207639).
+- [x] Plain, **non-interactive** owner-only labels support delegated touch long-press (~460ms), reusing exact double-click/D1/CAS editor; moving a finger to scroll or releasing early cancels. No additional per-label listeners or UI pencils. True buttons, links, labels and disclosure summaries remain excluded to protect single taps.
+- [x] Removed obsolete `ownerCopyPencil` branches across core app, account and update manager, retaining only current direct-caption and independent hover-hint flows. Eliminated an unnecessary second append of each Hero Book result tile.
+- [x] Added Chromium synthetic touch-pointer scenarios at narrow viewport, Book guide, Honor numeric requirement, and account draft. This tests the delegated handler in real Chromium; a physical touchscreen/real OS gesture is still a distinct acceptance step.
+- [ ] This third packet requires Node + Chromium on its own head SHA. Guest permissions and interactive-control touch behavior still need full independent acceptance; no closure of #390.

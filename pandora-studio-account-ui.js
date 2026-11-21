@@ -114,14 +114,10 @@ function field(placeholder,type='text',auto='off',max=128){
 }
 function paintFeedback(){
  if(!errorLine||feedbackSource===null)return;
- const previous=errorLine.dataset.ownerCopyKey||null;
  // Never mistake a server-supplied error for a locally authored, editable
  // status—even when its text happens to resemble a known localized phrase.
  if(feedbackAuthoredKey)errorLine.dataset.ownerCopyKey=feedbackAuthoredKey;
  else errorLine.removeAttribute('data-owner-copy-key');
- if(previous&&previous!==feedbackAuthoredKey&&
-  errorLine.nextElementSibling?.dataset?.ownerCopyPencil===previous)
-  errorLine.nextElementSibling.remove();
  errorLine.textContent=tr(feedbackSource);
  errorLine.dataset.sourceMessage=feedbackSource;
 }
@@ -655,12 +651,6 @@ function refresh(){
  if(errorLine&&feedbackSource!==null&&
   feedbackToken===(session?.token||null)&&feedbackMode===mode)
   paintFeedback();
- for(const pencil of (panel.querySelectorAll?.('[data-owner-copy-pencil]')||[])){
-  const caption=pencil.previousElementSibling;
-  if(caption?.dataset?.ownerCopyKey!==pencil.dataset.ownerCopyPencil)continue;
-  const label=(document.documentElement.lang==='en'?'Edit caption: ':'Изменить надпись: ')+caption.textContent;
-  if(pencil.getAttribute('aria-label')!==label)pencil.setAttribute('aria-label',label);
- }
 }
 // The release manager must never discard the only recovery code or an
 // unfinished account request. Expose state, never the token or secret itself.

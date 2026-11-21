@@ -430,9 +430,6 @@ function cloudStatusText(message){
 function syncCloudStatusNode(node,message){
  if(!node)return;
  const key=cloudStatusCopyKey(message);
- const adjacent=node.nextElementSibling;
- if(adjacent?.dataset?.ownerCopyPencil&&adjacent.dataset.ownerCopyPencil!==key)
-  adjacent.remove();
  if(adminEditing&&adminToken&&key)ownerDockPatchData(node,'ownerCopyKey',key);
  else node.removeAttribute('data-owner-copy-key');
  // A late cloud status update must not destroy a draft in the inline editor.
@@ -1090,6 +1087,69 @@ function ownerCopy(section,key,ru,en){
  const entry=window.PandoraHonorGuide?.field(override,ownerCopyKey(section,key),ru,en);
  return lang==='en'?(entry?.en||en):(entry?.ru||ru);
 }
+// One delegated, owner-only touch gesture for plain, non-action captions.
+// Long press opens the same inline editor as double click or F2; a short tap
+// keeps its original behavior. WeakMap avoids listeners on every stat row and
+// does not hold detached Book/Wiki nodes after rerender.
+const ownerTouchCaptionEditors=new WeakMap();
+let ownerTouchGesture=null,ownerTouchSwallow=null,ownerTouchInstalled=false;
+function cancelOwnerTouchGesture(){
+ if(ownerTouchGesture?.timer!=null)clearTimeout(ownerTouchGesture.timer);
+ ownerTouchGesture=null;
+}
+function bindOwnerTouchCaption(node,edit){
+ if(!node||typeof edit!=='function'||!node.closest||
+  node.closest('button,a,summary,label,[role="button"]'))return;
+ ownerTouchCaptionEditors.set(node,edit);
+ if(ownerTouchInstalled)return;
+ ownerTouchInstalled=true;
+ const open=()=>{
+  const gesture=ownerTouchGesture;
+  cancelOwnerTouchGesture();
+  if(!gesture||!adminEditing||!adminToken||!gesture.node.isConnected||
+   gesture.node.hidden||!ownerTouchCaptionEditors.has(gesture.node)||
+   gesture.node.querySelector('[contenteditable],.wiki-inline-input,.ui-content-edit-host'))return;
+  ownerTouchSwallow={node:gesture.node,until:Date.now()+400};
+  gesture.edit({preventDefault(){},stopPropagation(){}});
+ };
+ document.addEventListener('pointerdown',event=>{
+  if(!adminEditing||!adminToken||event.pointerType!=='touch'||
+   event.isPrimary===false||event.button!==0||
+   event.target?.closest?.('input,textarea,select,[contenteditable]'))return;
+  for(let node=event.target;node&&node!==document;node=node.parentElement){
+   const edit=ownerTouchCaptionEditors.get(node);
+   if(!edit)continue;
+   cancelOwnerTouchGesture();
+   ownerTouchGesture={node,edit,x:event.clientX,y:event.clientY,
+    timer:setTimeout(open,460)};
+   return;
+  }
+ },true);
+ document.addEventListener('pointermove',event=>{
+  const g=ownerTouchGesture;
+  if(g&&(event.pointerType!=='touch'||Math.abs(event.clientX-g.x)>12||
+   Math.abs(event.clientY-g.y)>12))cancelOwnerTouchGesture();
+ },true);
+ for(const name of ['pointerup','pointercancel'])
+  document.addEventListener(name,cancelOwnerTouchGesture,true);
+ document.addEventListener('contextmenu',event=>{
+  const g=ownerTouchGesture;
+  if(g?.node.contains(event.target)){
+   event.preventDefault();
+   open(); // Native mobile context menu must not hide the owner editor.
+  }
+ },true);
+ document.addEventListener('click',event=>{
+  const marked=ownerTouchSwallow;
+  if(!marked)return;
+  ownerTouchSwallow=null;
+  if(Date.now()<=marked.until&&marked.node.contains(event.target)){
+   event.preventDefault();event.stopImmediatePropagation();
+  }
+ },true);
+}
+window.PandoraOwnerTouchEdit=bindOwnerTouchCaption;
+
 function ownerCopyLabel(node,section,key,ru,en,{onCommitted,onFinished}={}){
  if(!node||!adminEditing||!adminToken)return;
  node.dataset.ownerCopySection=section;
@@ -1120,6 +1180,7 @@ function ownerCopyLabel(node,section,key,ru,en,{onCommitted,onFinished}={}){
   });
  };
  node.addEventListener('dblclick',edit);
+ bindOwnerTouchCaption(node,edit);
  node.addEventListener('keydown',event=>{
   if(event.target===node&&(event.key==='F2'||event.key==='Enter'))edit(event);
  });
@@ -7790,11 +7851,7 @@ function renderBuildComparison(host,onSelection=()=>{}){
  const syncCompareCopy=(node,key)=>{
   if(node.nextElementSibling?.classList?.contains('ui-content-edit-host'))
    return false;
-  if(node.dataset.ownerCopyKey!==key){
-   const pencil=node.nextElementSibling;
-   if(pencil?.dataset?.ownerCopyPencil)pencil.remove();
-   node.dataset.ownerCopyKey=key;
-  }
+  if(node.dataset.ownerCopyKey!==key)node.dataset.ownerCopyKey=key;
   ownerDockPatchText(node,copy(key));
   return true;
  };
@@ -8444,7 +8501,7 @@ function renderBuilds(root){
    fillCardChoice(target);
    target.hidden=false;
    if(adminEditing&&adminToken)bindAccountCopyEditors(target);
-   target.querySelector('button:not(.account-copy-pencil)')?.focus({preventScroll:true});
+   target.querySelector('button')?.focus({preventScroll:true});
   };
   const cardActions=h('div',{class:'build-card-actions'},[
    cardAction('📂','libraryCardOpen','libraryHintOpen',()=>{
@@ -8980,12 +9037,6 @@ function refreshOpenAuthoredToast(){
  const heading=root.querySelector('.studio-toast-content>strong');
  if(heading)heading.textContent=locale.ui(root.classList.contains('success')?'Готово':
   root.classList.contains('error')?'Ошибка':'Уведомление',lang);
- const pencil=textNode.nextElementSibling;
- if(pencil?.dataset?.ownerCopyPencil===key){
-  pencil.title=lang==='en'?'Edit caption':'Изменить надпись';
-  pencil.setAttribute('aria-label',
-   (lang==='en'?'Edit caption: ':'Изменить надпись: ')+textNode.textContent);
- }
 }
 async function restoreSharedHash(){
  const match=location.hash.match(/^#b\/([A-Za-z0-9_-]{11})$/);
@@ -9335,6 +9386,7 @@ function bindStaticUICopyEditors(){
   if(!node.dataset.uiContentBound){
    node.dataset.uiContentBound='1';
    node.addEventListener('dblclick',edit);
+   bindOwnerTouchCaption(node,edit);
    node.setAttribute('aria-keyshortcuts','F2');
    if(!button)node.tabIndex=0;
    node.addEventListener('keydown',event=>{
@@ -9413,11 +9465,7 @@ function bindAccountCopyEditors(panel){
   node.classList.toggle('ui-content-editable',enabled&&!isAction);
   if(!isAction&&enabled)node.tabIndex=0;
   else if(!isAction&&node.tabIndex===0)node.removeAttribute('tabindex');
-  if(!enabled){
-   if(node.nextElementSibling?.dataset?.ownerCopyPencil===key)
-    node.nextElementSibling.remove();
-   continue;
-  }
+  if(!enabled)continue;
   if(node.nextElementSibling?.classList?.contains('ui-content-edit-host'))continue;
   const edit=event=>{
    // A cloud status element can change between requests without remounting.
@@ -9431,9 +9479,6 @@ function bindAccountCopyEditors(panel){
    const editLang=lang,before=locale.text(key,editLang);
    const host=h('span',{class:'ui-content-edit-host account-copy-edit-host',text:before});
    node.after(host);node.hidden=true;
-   const pencil=host.nextElementSibling?.dataset?.ownerCopyPencil===key?
-    host.nextElementSibling:null;
-   if(pencil)pencil.hidden=true;
    editWikiValue(host,before,{
     type:'text',
     onCommit:next=>{
@@ -9445,14 +9490,12 @@ function bindAccountCopyEditors(panel){
      ownerDockPatchText(node,editLang===lang?next:locale.text(key,lang));
      if(node.matches('h2'))
       ownerDockPatchAttr(node.closest('.modal[role="dialog"]'),'aria-label',node.textContent);
-     if(pencil)ownerDockPatchAttr(pencil,'aria-label',
-      (lang==='en'?'Edit caption: ':'Изменить надпись: ')+node.textContent);
      if(panel.id==='studioToast')refreshOpenAuthoredToast();
      if(panel.id==='studio-update-banner')
       window.PandoraStudioUpdateBanner?.refresh?.();
     },
     onFinished:()=>{
-     node.hidden=false;host.remove();if(pencil)pencil.hidden=false;
+     node.hidden=false;host.remove();
      if(node.closest('[data-build-compare]'))
       node.closest('[data-build-compare]').dispatchEvent(
        new Event('pandora:comparison-copy-finished'));
@@ -9466,6 +9509,7 @@ function bindAccountCopyEditors(panel){
   if(!node.dataset.ownerCopyBound){
    node.dataset.ownerCopyBound='1';
    node.addEventListener('dblclick',edit);
+   bindOwnerTouchCaption(node,edit);
    node.setAttribute('aria-keyshortcuts','F2');
    node.addEventListener('keydown',event=>{
     if(event.key==='F2'||(!isAction&&(event.key==='Enter'||event.key===' '))){
@@ -10014,9 +10058,6 @@ function refreshVisibleUICopy(recordKey){
   // after CAS, Undo and Restore Original without reconstructing the dialog.
   if(node.matches('h2'))
    ownerDockPatchAttr(node.closest('.modal[role="dialog"]'),'aria-label',value);
-  const pencil=node.nextElementSibling;
-  if(pencil?.dataset?.ownerCopyPencil===key)
-   ownerDockPatchAttr(pencil,'aria-label',(lang==='en'?'Edit caption: ':'Изменить надпись: ')+value);
  }
  // The cloud library has an independent status lifecycle outside the toast.
  // A D1 save/reset/Undo must refresh its mounted copy without re-rendering
@@ -10025,10 +10066,6 @@ function refreshVisibleUICopy(recordKey){
   const cloud=document.querySelector('#detailContent .cloud-library-status');
   if(cloud&&locale.fieldKey(cloud.dataset.ownerCopyKey)===id){
    syncCloudStatusNode(cloud,cloudLibraryStatus);
-   const pencil=cloud.nextElementSibling;
-   if(pencil?.dataset?.ownerCopyPencil===cloud.dataset.ownerCopyKey)
-    ownerDockPatchAttr(pencil,'aria-label',
-     (lang==='en'?'Edit caption: ':'Изменить надпись: ')+cloud.textContent);
   }
  }
  // The same routine handles save, Undo and owner reset. Do not replace

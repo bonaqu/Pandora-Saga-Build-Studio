@@ -125,3 +125,9 @@ test('issue #390: rare static Book notes and the source-breakdown header are ind
  assert.match(source,/guideLabel\(label,section\+'\.caption\.'\+key,ru,en,options\)/);
  assert.match(source,/node\.setAttribute\('data-owner-copy-key',node\.dataset\.bookEditorialKey\)/);
 });
+
+test('touch owner mode reuses the Book inline editor and avoids redundant DOM moves',()=>{
+ const source=file('pandora-studio-hero-book.js');
+ assert.match(source,/root\.PandoraOwnerTouchEdit\?\.\(node,editName\)/);
+ assert.doesNotMatch(source,/grid\.append\(tile\);\s*grid\.append\(tile\)/);
+});

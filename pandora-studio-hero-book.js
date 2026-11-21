@@ -396,6 +396,7 @@ function guideLabel(node,key,ru,en,options={},fallbackRu='',fallbackEn=''){
    options.onTextEdit(node,key,english?'en':'ru',label);
   };
   node.addEventListener('dblclick',editName);
+  root.PandoraOwnerTouchEdit?.(node,editName);
   node.setAttribute('aria-keyshortcuts','F2');
   node.addEventListener('keydown',event=>{if(event.key==='F2')editName(event)});
   // Only an independently authored hover hint uses a pencil.
@@ -555,7 +556,6 @@ function summaryPage(body,calc,options={}){
     make('strong',{text})
    ]);
    guideLabel(tile.firstChild,'summary.'+summaryIndex++,result.ru,result.en,options);
-   grid.append(tile);
    grid.append(tile);
   }
   section.append(heading,grid);
