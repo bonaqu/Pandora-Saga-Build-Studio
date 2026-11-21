@@ -463,7 +463,12 @@ function text(key,lang='ru'){
  }
  const field=lang==='en'?'en':'ru',saved=parsedCopyOverrides.get(id)?.[field];
  const max=copyLimit(key);
- return typeof saved==='string'&&saved.trim()&&saved.length<=max?saved:defaults[lang==='en'?1:0];
+ // An explicitly verified, version-pinned staging default is below the
+ // owner's original CAS override but above this release's authored fallback.
+ const fallback=defaults[lang==='en'?1:0];
+ const staged=root.PandoraEditorialDefaults?.value('guideedit.book.'+id,field);
+ return typeof saved==='string'&&saved.trim()&&saved.length<=max?saved:
+  typeof staged==='string'&&staged.trim()&&staged.length<=max?staged:fallback;
 }
 function keys(){return authoredKeys.slice()}
 function ui(value,lang='ru'){
