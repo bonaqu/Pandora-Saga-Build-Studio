@@ -87,6 +87,25 @@ export async function runUIContentInlineSmoke(browser,base){
  // Caption buttons intentionally defer owner-mode single clicks to distinguish
  // them from direct-text double clicks. Wait for the actual chosen chapter
  // and for that pending action to finish before typing into its search box.
+ // Give a named, source-specific failure with the current modal state.
+ const expectHonorCaption=async(selector,expected,label)=>{
+  try{
+   await page.waitForFunction(({selector,expected})=>
+    document.querySelector(selector)?.textContent===expected,
+    {selector,expected},{timeout:15000});
+  }catch(error){
+   const actual=await page.evaluate(selector=>{
+    const caption=document.querySelector(selector);
+    return {language:document.documentElement.lang,
+     text:caption?.textContent??null,
+     editing:Boolean(caption?.querySelector('[contenteditable]')),
+     honorOpen:Boolean(document.querySelector('.wiki-layout-honor')),
+     detailOpen:Boolean(document.querySelector('#detailPanel.is-open'))};
+   },selector);
+   throw new Error('Honor editorial '+label+' failed; expected='+
+    JSON.stringify(expected)+'; actual='+JSON.stringify(actual),{cause:error});
+  }
+ };
  const chooseWikiChapter=async key=>{
   const selector='[data-wiki-chapter="'+key+'"]';
   await page.locator(selector).click();
@@ -923,9 +942,8 @@ export async function runUIContentInlineSmoke(browser,base){
   await introInput.waitFor({state:'visible'});
   await introInput.fill('Официальное описание события PvP · QA.');
   await introInput.press('Tab');
-  await page.waitForFunction(()=>document.querySelector(
-   '#honor-victories .wiki-honor-copy')?.textContent===
-    'Официальное описание события PvP · QA.',null,{timeout:15000});
+  await expectHonorCaption('#honor-victories .wiki-honor-copy',
+   'Официальное описание события PvP · QA.','RU PvP introduction');
   assert.equal(JSON.parse(values['guideedit.honor.overview']).pvpIntroRu,
    'Официальное описание события PvP · QA.');
   assert.equal(await honorPane.locator('#honor-victories .wiki-honor-pvp-table tbody')
@@ -971,9 +989,9 @@ export async function runUIContentInlineSmoke(browser,base){
    '.wiki-layout-honor [data-honor-section="victories"] [contenteditable]');
   await victoryEditor.fill('Победы героев PvP');
   await victoryEditor.press('Tab');
-  await page.waitForFunction(()=>document.querySelector(
-   '.wiki-layout-honor [data-honor-section="victories"] .wiki-honor-nav-caption')
-   ?.textContent==='Победы героев PvP',null,{timeout:15000});
+  await expectHonorCaption(
+   '.wiki-layout-honor [data-honor-section="victories"] .wiki-honor-nav-caption',
+   'Победы героев PvP','RU PvP navigation');
   assert.equal(JSON.parse(values['guideedit.wiki.labels']).honor_victories_ru,
    'Победы героев PvP');
   assert.equal(await page.locator('.wiki-honor-live-count').textContent(),' · 5');
@@ -991,9 +1009,9 @@ export async function runUIContentInlineSmoke(browser,base){
    '.wiki-layout-honor [data-honor-section="victories"] [contenteditable]');
   await victoryEnglishInput.fill('Hero PvP Victories');
   await victoryEnglishInput.press('Tab');
-  await page.waitForFunction(()=>document.querySelector(
-   '.wiki-layout-honor [data-honor-section="victories"] .wiki-honor-nav-caption')
-   ?.textContent==='Hero PvP Victories',null,{timeout:15000});
+  await expectHonorCaption(
+   '.wiki-layout-honor [data-honor-section="victories"] .wiki-honor-nav-caption',
+   'Hero PvP Victories','EN PvP navigation');
   const englishIntro=page.locator(
    '#honor-victories .wiki-honor-field-edit-row p.wiki-honor-copy').first();
   await englishIntro.dblclick();
@@ -1001,9 +1019,8 @@ export async function runUIContentInlineSmoke(browser,base){
    '#honor-victories .wiki-honor-field-edit-row [contenteditable]').first();
   await englishIntroInput.fill('Verified PvP event introduction · QA.');
   await englishIntroInput.press('Tab');
-  await page.waitForFunction(()=>document.querySelector(
-   '#honor-victories .wiki-honor-copy')?.textContent===
-   'Verified PvP event introduction · QA.',null,{timeout:15000});
+  await expectHonorCaption('#honor-victories .wiki-honor-copy',
+   'Verified PvP event introduction · QA.','EN PvP introduction');
   assert.deepEqual(JSON.parse(values['guideedit.honor.overview']),{
    pvpIntroRu:'Официальное описание события PvP · QA.',
    pvpIntroEn:'Verified PvP event introduction · QA.'
@@ -1015,9 +1032,9 @@ export async function runUIContentInlineSmoke(browser,base){
   await page.locator('#locale [data-locale="ru"]').focus();
   await page.keyboard.press('Enter');
   await page.waitForFunction(()=>document.documentElement.lang==='ru');
-  await page.waitForFunction(()=>document.querySelector(
-   '.wiki-layout-honor [data-honor-section="victories"] .wiki-honor-nav-caption')
-   ?.textContent==='Победы героев PvP',null,{timeout:15000});
+  await expectHonorCaption(
+   '.wiki-layout-honor [data-honor-section="victories"] .wiki-honor-nav-caption',
+   'Победы героев PvP','RU PvP navigation');
   assert.equal(await page.locator('.wiki-honor-live-count').textContent(),' · 5');
   // Rank requirements that come from numeric records must never be editable
   // as one paragraph. Edit only their authorial words (same CAS/Undo store).
