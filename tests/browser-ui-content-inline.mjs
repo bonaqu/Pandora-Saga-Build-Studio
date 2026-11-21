@@ -941,6 +941,47 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(JSON.parse(values['guideedit.wiki.labels']).honor_overview_ru,'Правила чести');
   assert.equal(await honorPane.locator('#honor-victories').count(),1,
    'A double-click in the chapter menu must not navigate away from Honor');
+  // The fifth known Wiki Honor chapter is also legal on the actual Worker.
+  // Previously its owner CAS save could be rejected as an unknown label.
+  const victoryNav=page.locator(
+   '.wiki-layout-honor [data-honor-section="victories"] .wiki-honor-nav-caption');
+  await victoryNav.waitFor({state:'visible'});
+  assert.equal(await victoryNav.innerText(),'Победы в PvP');
+  await victoryNav.dblclick();
+  const victoryEditor=page.locator(
+   '.wiki-layout-honor [data-honor-section="victories"] [contenteditable]');
+  await victoryEditor.fill('Победы героев PvP');
+  await victoryEditor.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '.wiki-layout-honor [data-honor-section="victories"] .wiki-honor-nav-caption')
+   ?.textContent==='Победы героев PvP',null,{timeout:15000});
+  assert.equal(JSON.parse(values['guideedit.wiki.labels']).honor_victories_ru,
+   'Победы героев PvP');
+  assert.equal(await page.locator('.wiki-honor-live-count').textContent(),' · 5');
+  await page.locator('#locale [data-locale="en"]').click();
+  await page.waitForFunction(()=>document.documentElement.lang==='en');
+  const victoryEnglish=page.locator(
+   '.wiki-layout-honor [data-honor-section="victories"] .wiki-honor-nav-caption');
+  await victoryEnglish.waitFor({state:'visible',timeout:15000});
+  assert.equal(await victoryEnglish.innerText(),'PvP Victories');
+  await victoryEnglish.dblclick();
+  const victoryEnglishInput=page.locator(
+   '.wiki-layout-honor [data-honor-section="victories"] [contenteditable]');
+  await victoryEnglishInput.fill('Hero PvP Victories');
+  await victoryEnglishInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '.wiki-layout-honor [data-honor-section="victories"] .wiki-honor-nav-caption')
+   ?.textContent==='Hero PvP Victories',null,{timeout:15000});
+  assert.deepEqual(JSON.parse(values['guideedit.wiki.labels']),{
+   honor_overview_ru:'Правила чести',honor_victories_ru:'Победы героев PvP',
+   honor_victories_en:'Hero PvP Victories'
+  });
+  await page.locator('#locale [data-locale="ru"]').click();
+  await page.waitForFunction(()=>document.documentElement.lang==='ru');
+  await page.waitForFunction(()=>document.querySelector(
+   '.wiki-layout-honor [data-honor-section="victories"] .wiki-honor-nav-caption')
+   ?.textContent==='Победы героев PvP',null,{timeout:15000});
+  assert.equal(await page.locator('.wiki-honor-live-count').textContent(),' · 5');
   // Rank requirements that come from numeric records must never be editable
   // as one paragraph. Edit only their authorial words (same CAS/Undo store).
   // Existing custom requirement fields remain separately editable for
