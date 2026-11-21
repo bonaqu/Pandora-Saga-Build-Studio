@@ -504,9 +504,8 @@ test('#390 only actually mounted workbench hints become editable D1 defaults',()
  assert.equal(suppressed.length,5);
  assert.equal(manifest.stats.cohorts['workbench-hover-hints'],10);
  const active=hints.filter(row=>!suppressed.includes(row[2]));
- assert.deepEqual(active.map(row=>row[1]),[
-  'hintPortrait','hintWeapon','hintNewBuild','hintSaveBuild','hintReset'
- ]);
+ assert.equal(active.map(row=>row[1]).join('|'),
+  'hintPortrait|hintWeapon|hintNewBuild|hintSaveBuild|hintReset');
  for(const [section,key,,ru,en] of hints){
   const recordKey='guideedit.book.'+section+'.'+
    key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());

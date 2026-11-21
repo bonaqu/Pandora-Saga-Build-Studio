@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {runInNewContext} from 'node:vm';
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const app=read('pandora-studio-app.js');
@@ -61,9 +62,19 @@ test('Wiki results and actions preserve live numbers beside independent owner-ed
   ['placeOther','Другие локации','Other locations'],
   ['backLabel','← Назад','← Back']
  ];
+ // The shared owner-copy dictionary is intentionally outside renderWiki;
+ // the live view must still consume it and keep each precise semantic identity.
+ const source=app.match(
+  /const wikiCoreCopyRows=Object\\.freeze\\((\\[[\\s\\S]*?\\])\\);/);
+ assert.ok(source,'The production Wiki must share one source copy dictionary');
+ const rows=runInNewContext('('+source[1]+')',{});
+ assert.equal(rows.length,17);
+ assert.match(wiki,/ownerInterfaceEditor\\('wiki-ui',wikiCoreCopyRows/);
  for(const [key,ru,en] of expected){
-  assert.ok(wiki.includes("'"+key+"'"),'Missing semantic UI key '+key);
-  assert.ok(wiki.includes(ru)&&wiki.includes(en),'Missing RU/EN defaults '+key);
+  const entry=rows.find(row=>row[0]===key);
+  assert.ok(entry,'Missing semantic owner-copy key '+key);
+  assert.ok(entry[1].startsWith(ru)&&entry[2].startsWith(en),
+   'Source-authored RU/EN default mismatch for '+key);
  }
  assert.match(wiki,/summary\.append\(/);
  assert.match(wiki,/String\(visible\.length\)/);
