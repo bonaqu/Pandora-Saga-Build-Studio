@@ -232,6 +232,22 @@ export async function runUIContentInlineSmoke(browser,base){
   await page.locator('#hero').click();
   const firstGroup=page.locator('#stageBookPanel details.stage-result-section').first();
   await firstGroup.waitFor({state:'visible'});
+  // The author may rename the Book title, never the live 1/6 page counter.
+  const bookHeading=page.locator('#stageAttributes .stage-book-title-text[data-owner-copy-key]');
+  await bookHeading.waitFor({state:'visible'});
+  assert.equal(await bookHeading.innerText(),'КНИГА ГЕРОЯ');
+  assert.equal(await page.locator('#stageAttributes .stage-book-title-count').textContent(),' · 1 / 6');
+  const headingKey=await bookHeading.getAttribute('data-owner-copy-key');
+  const headingD1='guideedit.book.'+
+   await page.evaluate(key=>window.PandoraUILocale.fieldKey(key),headingKey);
+  await bookHeading.dblclick();
+  const headingInput=page.locator('#stageAttributes .stage-book-heading .account-copy-edit-host [contenteditable]');
+  await headingInput.fill('КНИГА ГЕРОЯ · QA');
+  await headingInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector('#stageAttributes .stage-book-title-text')
+   ?.textContent==='КНИГА ГЕРОЯ · QA',null,{timeout:15000});
+  assert.equal(JSON.parse(values[headingD1]).ru,'КНИГА ГЕРОЯ · QA');
+  assert.equal(await page.locator('#stageAttributes .stage-book-title-count').textContent(),' · 1 / 6');
   const groupTitle=firstGroup.locator('summary [data-guide-key="summary.group.0"]');
   // A group title has no independent hover hint. The correct owner UI must
   // NOT synthesize a pencil simply because its visible caption is editable.

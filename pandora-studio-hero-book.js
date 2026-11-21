@@ -4,6 +4,7 @@
 // Exact, player-interface labels only; source names and item descriptions stay untouched.
 const bookEnglish=Object.freeze({
  'Итоги': "Summary",
+ 'КНИГА ГЕРОЯ': 'HERO BOOK',
  'Атака': "Attack",
  'Защита': "Defense",
  'Зелья и умения': "Potions & skills",
@@ -2394,11 +2395,17 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
  target.setAttribute('aria-label',document.documentElement?.lang==='en'?
   'Hero Book. '+chapterTitle(chosen,bookPages[index][1])+'. Chapter '+(index+1)+' of 6':
   'Книга героя. '+chapterTitle(chosen,bookPages[index][1])+'. Страница '+(index+1)+' из 6');
+ // The chapter count is generated state, not part of an editable D1 label.
+ const bookTitleText=make('span',{class:'stage-book-title-text',
+  text:document.documentElement?.lang==='en'?'HERO BOOK':'КНИГА ГЕРОЯ'});
+ if(bookTitleText.dataset.bookEditorialKey)
+  bookTitleText.dataset.ownerCopyKey=bookTitleText.dataset.bookEditorialKey;
  const bookHeader=make('div',{class:'stage-attribute-head'},[
   make('button',{type:'button',class:'stage-book-arrow',text:'‹',
    onclick:()=>onPage(prior),'aria-label':document.documentElement?.lang==='en'?'Previous page':'Предыдущая страница'}),
   make('div',{class:'stage-book-heading'},[
-   make('span',{text:(document.documentElement?.lang==='en'?'HERO BOOK':'КНИГА ГЕРОЯ')+' · '+(index+1)+' / 6'}),
+   make('span',{class:'stage-book-title-line'},[bookTitleText,
+    make('span',{class:'stage-book-title-count',text:' · '+(index+1)+' / 6'})]),
    make('strong',{text:chapterTitle(chosen,bookPages[index][1])})]),
   make('button',{type:'button',class:'stage-book-arrow',text:'›',
    onclick:()=>onPage(next),'aria-label':document.documentElement?.lang==='en'?'Next page':'Следующая страница'}),

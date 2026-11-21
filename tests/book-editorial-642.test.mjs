@@ -89,3 +89,19 @@ test('issue #390: source-backed values stay separate from editable Hero Book RU/
  for(const runtime of ['45','Player character name','250','320007001'])
   assert.equal(locale.bookFieldKey(runtime),null);
 });
+
+test('issue #390: Hero Book heading text is independent of live chapter number',()=>{
+ const ru='КНИГА ГЕРОЯ',en='HERO BOOK',key=book.bookEditorialKey(ru);
+ assert.ok(key);
+ assert.equal(locale.bookFieldKey(ru),key);
+ assert.equal(locale.bookFieldKey(en),key);
+ const d1='guideedit.book.'+locale.fieldKey(key);
+ locale.setOverrides({[d1]:JSON.stringify({ru:'Летопись героя',en:'Hero chronicle'})});
+ assert.equal(locale.text(key,'ru'),'Летопись героя');
+ assert.equal(locale.text(key,'en'),'Hero chronicle');
+ locale.setOverrides({});
+ const src=file('pandora-studio-hero-book.js');
+ assert.match(src,/bookTitleText\.dataset\.ownerCopyKey=bookTitleText\.dataset\.bookEditorialKey/);
+ assert.match(src,/stage-book-title-count',text:' · '\+\(index\+1\)\+' \/ 6'/);
+ assert.equal(locale.bookFieldKey('1 / 6'),null);
+});
