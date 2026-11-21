@@ -54,7 +54,9 @@ test('Hero Path uses Origin-approved attribute translations, not bare powerStat 
 });
 
 test('issue 390: skill rail summary edits only author copy and not the live count',()=>{
- assert.match(source,/authored\(api,'skillsOnTrackCaption','Умения на шкале'/);
+ assert.match(source,/authored\(api,'skillsOnTrackCaption',fallbackRu,/);
+ assert.match(source,/PandoraUILocale\?\.text\('skillsOnTrack','ru'\)/);
+ assert.match(source,/PandoraUILocale\?\.text\('skillsOnTrack','en'\)/);
  assert.match(source,/class:'path-unlock-count'/);
  assert.match(source,/marks\.reduce\(\(total,mark\)=>total\+mark\.skills\.length,0\)/);
  assert.match(source,/guardCaptionAction\(unlockSummary,unlockCaption\)/);
