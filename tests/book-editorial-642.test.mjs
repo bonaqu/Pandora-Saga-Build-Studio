@@ -46,6 +46,22 @@ test('issue #390: Book proc headline separates the authorial D1 key from source-
   assert.equal(locale.bookFieldKey(label),null,'Game value cannot become copy: '+label);
 });
 
+test('issue #390: Book and shared action guards support multiple captions per disclosure',()=>{
+ const src=file('pandora-studio-hero-book.js');
+ const app=file('pandora-studio-app.js');
+ assert.match(src,/const bookSummaryCaptionTargets=new WeakMap\(\)/);
+ assert.match(src,/bookSummaryCaptionTargets\.get\(summary\)/);
+ assert.match(src,/captions\.add\(node\)/);
+ assert.match(src,/const caption=\[\.\.\.captions\]\.find\(item=>item\.contains\(event\.target\)\)/);
+ assert.match(src,/guideLabel\(honorTerm,'buffs\.honor'/);
+ assert.match(app,/const ownerCaptionActionTargets=new WeakMap\(\)/);
+ assert.match(app,/ownerCaptionActionTargets\.get\(button\)/);
+ assert.match(app,/captions\.add\(caption\)/);
+ assert.match(app,/const activeCaption=\[\.\.\.captions\]\.find\(item=>item\.contains\(event\.target\)\)/);
+ assert.match(app,/if\(button\.isConnected&&!button\.disabled&&adminEditing&&adminToken&&/);
+ assert.match(app,/!activeCaption\.hidden\)button\.click\(\)/);
+});
+
 test('Book user text, numeric values and runtime item labels never become editable D1 keys',()=>{
  for(const value of ['Hero PvP 255','Sword +9','1927','172–209','ОЗ: 1900','Сияние героя','Сохранённый билд']){
   assert.equal(locale.bookFieldKey(value),null);
