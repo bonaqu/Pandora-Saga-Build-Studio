@@ -78,3 +78,19 @@ test('source/Wiki and Soul headings use direct-edit D1 keys without pencils',()=
  assert.equal(edited.ru,'Результаты источника');
  assert.equal(edited.en,'Source effects');
 });
+
+test('source quantities are immutable while their Wiki labels are editable in D1',()=>{
+ const src=readFileSync(resolve(root,'pandora-studio-app.js'),'utf8');
+ for(const key of ['sourceRecipeLabel','sourceUsedResultLabel',
+  'sourceTrapCostLabel','sourceRequiredItemLabel','sourceMaterialLabel',
+  'sourceAmmunitionLabel','sourceSpecialCostLabel'])
+  assert.ok(src.includes("'"+key+"'"),key+' requires an independent D1 identity');
+ assert.match(src,/sourcePrefix\(key,ru,en\),h\('span',\{text:count\+' × '\}\)/);
+ assert.match(src,/wrapper\.append\(sourceCopy\('span',key,ru,en\),document\.createTextNode\(' '\)\)/);
+ const key='wiki-ui.source-recipe-label';
+ const copy=inspectWindow.PandoraHonorGuide.field({
+  ['guideedit.book.'+key]:JSON.stringify({ru:'Материалы:',en:'Ingredients:'})
+ },key,'Рецепт:','Recipe:');
+ assert.equal(copy.ru,'Материалы:');
+ assert.equal(copy.en,'Ingredients:');
+});

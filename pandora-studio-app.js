@@ -5838,6 +5838,12 @@ function renderWiki(root){
       if(adminEditing&&adminToken)ownerCopyLabel(node,'wiki-ui',key,ru,en);
       return node;
      };
+     // Keep editable source wording apart from immutable counts, links and IDs.
+     const sourcePrefix=(key,ru,en)=>{
+      const wrapper=h('span',{class:'wiki-skill-source-prefix'});
+      wrapper.append(sourceCopy('span',key,ru,en),document.createTextNode(' '));
+      return wrapper;
+     };
      const section=h('section',{class:'wiki-skill-source-insight'});
      section.append(sourceCopy('h4','sourceSkillEffectsHeading',
       'Действие умения','Skill effects'));
@@ -5912,9 +5918,10 @@ function renderWiki(root){
      // They lead to item provenance/loot/trades, never mutate inventory.
      const ingredientLink=itemId=>wikiLink(
       itemName(itemId),'item',String(itemId));
-     const materialLine=(label,count,itemId)=>{
+     const materialLine=(key,ru,en,count,itemId)=>{
       const line=h('p',{class:'wiki-skill-source-material'});
-      line.append(h('span',{text:label+count+' × '}),ingredientLink(itemId));
+      line.append(sourcePrefix(key,ru,en),h('span',{text:count+' × '}),
+       ingredientLink(itemId));
       return line;
      };
      for(const extra of evidence.extra){
@@ -5924,7 +5931,7 @@ function renderWiki(root){
        Number.isSafeInteger(extra.produces.quantity)&&
        extra.produces.quantity>0){
        const recipe=h('p',{class:'wiki-skill-source-recipe'});
-       recipe.append(h('span',{text:wt('Рецепт: ','Recipe: ')}));
+       recipe.append(sourcePrefix('sourceRecipeLabel','Рецепт:','Recipe:'));
        extra.uses.forEach((ingredient,index)=>{
         if(index)recipe.append(h('span',{text:' + '}));
         recipe.append(h('span',{text:ingredient.quantity+' × '}));
@@ -5944,8 +5951,8 @@ function renderWiki(root){
        .slice(0,8);
       if(followUps.length){
        const used=h('p',{class:'wiki-skill-recipe-followups'});
-       used.append(h('span',{text:wt('Используют результат: ',
-        'Uses the result: ')}));
+       used.append(sourcePrefix('sourceUsedResultLabel','Используют результат:',
+        'Uses the result:'));
        followUps.forEach((row,i)=>{
         if(i)used.append(h('span',{text:' · '}));
         used.append(wikiLink(dataName('skill',String(row.id)),
@@ -5956,24 +5963,26 @@ function renderWiki(root){
       }
       if(extra.type==='trap'&&itemName(extra.itemId)&&
        Number.isSafeInteger(extra.count)&&extra.count>0)
-       section.append(materialLine(wt('Расход: ','Cost: '),
+       section.append(materialLine('sourceTrapCostLabel','Расход:','Cost:',
         extra.count,extra.itemId));
       if(extra.type==='requiredItem'&&itemName(extra.itemId)&&
        Number.isSafeInteger(extra.count)&&extra.count>0)
-       section.append(materialLine(wt('Для применения нужно: ','Requires: '),
-        extra.count,extra.itemId));
+       section.append(materialLine('sourceRequiredItemLabel','Для применения нужно:',
+        'Requires:',extra.count,extra.itemId));
       // These are source-only numbers, not verified inventory or damage.
       if(extra.type==='sourceMaterial'&&itemName(extra.itemId)&&
        Number.isSafeInteger(extra.count)&&extra.count>0)
-       section.append(materialLine(wt('Материал в игровых данных: ',
-        'Material in game data: '),extra.count,extra.itemId));
+       section.append(materialLine('sourceMaterialLabel','Материал в игровых данных:',
+        'Material in game data:',extra.count,extra.itemId));
       if(extra.type==='sourceAmmo'&&Number.isSafeInteger(extra.count)&&extra.count>0)
-       section.append(h('p',{class:'wiki-skill-source-material',
-        text:wt('Боеприпасы в игровых данных: ',
-         'Ammunition in game data: ')+extra.count}));
+       section.append(h('p',{class:'wiki-skill-source-material'},[
+        sourcePrefix('sourceAmmunitionLabel','Боеприпасы в игровых данных:',
+         'Ammunition in game data:'),
+        h('span',{text:String(extra.count)})]));
       if(extra.type==='resource')
-       section.append(h('p',{text:wt('Особый расход: ','Special cost: ')+
-        extra.value}));
+       section.append(h('p',{},[
+        sourcePrefix('sourceSpecialCostLabel','Особый расход:','Special cost:'),
+        h('span',{text:String(extra.value)})]));
      }
      detail.append(section);
     }
