@@ -5,6 +5,7 @@ import {spawnSync} from 'node:child_process';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {runInNewContext} from 'node:vm';
 import {
  buildEditorialDefaultsManifest,renderEditorialDefaultsSQL,
  verifyEditorialDefaultsReadback
@@ -37,6 +38,34 @@ test('issue 390: source-authored D1 default snapshot is stable and uses exact ex
   r.recordKey.startsWith('guideedit.book.ui.label.book-')&&r.field==='en'));
  assert.ok(manifest.records.some(r=>
   r.recordKey==='guideedit.honor.overview'&&r.field==='overviewRu'));
+});
+
+test('issue #390: all exact Wiki label field identities enter the physical D1 defaults plan',()=>{
+ const scope={};scope.window=scope;
+ runInNewContext(read('pandora-studio-wiki-labels.js'),scope);
+ const wiki=scope.PandoraWikiLabels;
+ const expected=[];
+ for(const [group,entries] of [
+  ['chapter',wiki.chapter],['honor',wiki.honor],['skillFilter',wiki.skillFilter]
+ ]){
+  for(const [id,[ru,en]] of Object.entries(entries)){
+   expected.push([wiki.key(group,id,'ru'),ru]);
+   expected.push([wiki.key(group,id,'en'),en]);
+  }
+ }
+ const rows=manifest.records.filter(row=>row.recordKey==='guideedit.wiki.labels');
+ assert.equal(manifest.stats.cohorts['wiki-labels'],expected.length);
+ assert.equal(rows.length,expected.length);
+ assert.equal(wiki.honor.victories[0],'Победы в PvP');
+ assert.equal(wiki.honor.victories[1],'PvP Victories');
+ for(const [field,value] of expected){
+  assert.equal(wiki.validField(field),true,field);
+  assert.equal(rows.filter(row=>row.field===field&&row.value===value).length,1,
+   'Unmapped or duplicate Wiki author-copy field '+field);
+ }
+ for(const field of ['honor_victories_points','chapter_42_ru','skill_filter_stats_en'])
+  assert.equal(rows.some(row=>row.field===field),false,
+   'Runtime/game-derived fields must never enter authorial defaults');
 });
 
 test('issue 390: migration never materializes runtime values or rewrites an override',()=>{
