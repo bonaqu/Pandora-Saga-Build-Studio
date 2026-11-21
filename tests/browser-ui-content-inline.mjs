@@ -188,6 +188,12 @@ export async function runUIContentInlineSmoke(browser,base){
    .fill('Correct admin password!');
   await page.locator('.modal').getByRole('button',{name:'Войти',exact:true}).click();
   await page.locator('#ownerDock').waitFor({state:'visible',timeout:15000});
+  // A title duplicating a button's ARIA is not a distinct hover-hint.
+  const profileButton=page.locator('#profileTrigger');
+  assert.equal(await profileButton.getAttribute('title'),'Войти или зарегистрироваться');
+  assert.equal(await profileButton.getAttribute('aria-label'),'Войти или зарегистрироваться');
+  assert.equal(await page.locator('#profileTrigger + .ui-content-pencil').count(),0);
+  assert.equal(await page.locator('#profileTrigger + [data-ui-content-for="profileAccess"]').count(),0);
   // The update manager mounts after the main app and creates its banner
   // asynchronously. Its authorial text must join the SAME D1/CAS editor.
   const updateBanner=page.locator('#studio-update-banner');
@@ -242,6 +248,16 @@ export async function runUIContentInlineSmoke(browser,base){
   const appearanceHeading=page.locator('#stageHeading');
   await appearanceHeading.waitFor({state:'visible'});
   assert.equal(await page.locator('.stage .panel-heading [data-ui-content-for="appearance"]').count(),0);
+  assert.equal(await appearanceHeading.getAttribute('aria-keyshortcuts'),'F2 Enter');
+  await appearanceHeading.focus();
+  await appearanceHeading.press('Enter');
+  const keyboardDraft=page.locator('.stage .panel-heading .ui-content-edit-host [contenteditable]');
+  await keyboardDraft.waitFor({state:'visible'});
+  await keyboardDraft.fill('Отменено через Enter');
+  await keyboardDraft.press('Escape');
+  assert.equal(await appearanceHeading.textContent(),'Образ героя');
+  assert.equal(Object.hasOwn(values,'guideedit.book.ui.label.appearance'),false,
+   'Esc from Enter editor cannot produce an owner D1 CAS write');
   await appearanceHeading.dblclick();
   const appearanceInput=page.locator('.stage .panel-heading .ui-content-edit-host [contenteditable]');
   await appearanceInput.fill('Облик героя');
@@ -758,6 +774,9 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(JSON.parse(values[expD1]).ru,'Бонусы опыта сейчас не действуют.');
   await page.locator('#locale [data-locale="en"]').click();
   await page.waitForFunction(()=>document.documentElement.lang==='en');
+  assert.equal(await profileButton.getAttribute('title'),'Sign in or register');
+  assert.equal(await profileButton.getAttribute('aria-label'),'Sign in or register');
+  assert.equal(await page.locator('#profileTrigger + .ui-content-pencil').count(),0);
   const expEnglish=page.locator('#stageBookPanel .stage-experience-effects p.stage-attribute-note[data-owner-copy-key]');
   assert.equal(await expEnglish.innerText(),'No experience bonuses are currently active.');
   await expEnglish.dblclick();

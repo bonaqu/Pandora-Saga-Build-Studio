@@ -178,3 +178,11 @@
 - [ ] Аппаратная touch-проверка на реальных устройствах и полная RU/EN-инвентаризация не завершены.
 - [ ] Новый пакет требует *полного* Node + Chromium SUCCESS на одном HEAD SHA; статус промежуточных коммитов не заменяет финальный.
 - **Осталось приблизительно 50% общей #390** по совокупности критериев приёмки, а не по строкам кода. PR #809 — OPEN DRAFT, #390 — OPEN. Никакого merge или изменения Pages/Worker/production D1.
+
+## Checkpoint: generic labels are direct-edit only; mirrored browser titles are not hints
+
+- A fixed `data-i18n` caption is edited in place through double click; non-interactive captions also support owner Enter/F2, and interactive actions retain their native Enter behavior (F2 remains available for editing). Existing blur/CAS/Escape/Undo is retained.
+- Owner-only tabindex/aria-keyshortcuts are cleaned up on exit; existing author-defined keyboard semantics are preserved.
+- A `data-i18n-title` such as the profile trigger's `profileAccess` simply mirrors its accessible name. It does not create an independent authorial hover hint or a caption pencil. RU/EN title+ARIA still refresh together through `PandoraUILocale.apply`. The site-specific true independent tooltip editors are untouched.
+- Length validation is now based on `PandoraUILocale.copyLimit(key)` instead of a blanket 90-character cap, preserving safety for each key.
+- Added Node source contract assertions and Chromium owner login/guest/EN/Escape keyboard tests. Physical touch QA is still open.

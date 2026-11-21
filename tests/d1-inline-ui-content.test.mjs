@@ -67,6 +67,23 @@ test('real Worker D1 override path authenticates, CAS checks, and serves saved U
  assert.equal((await send('guideedit.other.bad',initial)).status,400);
 });
 
+test('#390 generic text editing and mirrored profile title use distinct authorial rules',()=>{
+ const app=read('pandora-studio-app.js'),html=read('index.html');
+ const bind=app.slice(app.indexOf('function bindStaticUICopyEditors(){'),
+  app.indexOf('// Edit only semantically keyed authored labels'));
+ assert.match(html,/id="profileTrigger"[\s\S]*?data-i18n-title="profileAccess"/);
+ assert.match(html,/data-i18n-aria-label="profileAccess"/);
+ assert.doesNotMatch(bind,/class:'ui-content-pencil'/);
+ assert.match(bind,/const interactive=node\.closest\('button,a,summary/);
+ assert.match(bind,/event\.key==='F2'\|\|\(!interactive&&event\.key==='Enter'\)/);
+ assert.match(bind,/next\.length>locale\.copyLimit\(key\)/);
+ assert.match(bind,/node\.dataset\.uiContentTabAdded==='1'/);
+ assert.match(bind,/node\.dataset\.uiContentShortcutAdded==='1'/);
+ assert.match(bind,/next\?\.dataset\?\.uiContentFor===node\.dataset\.i18nTitle/);
+ assert.match(app,/class:'wiki-hint-pencil'/,
+  'Real independently authored hover help must remain editable');
+});
+
 test('UI editing uses tiny in-place controls, blur save and no extra modal route',()=>{
  const app=read('pandora-studio-app.js'),css=read('pandora-studio-wiki-polish.css');
  assert.match(app,/caption\.addEventListener\('dblclick',editLabel\)/);
@@ -78,7 +95,9 @@ test('UI editing uses tiny in-place controls, blur save and no extra modal route
  assert.match(app,/saveGuidePatch\('book\.'\+/);
  assert.match(app,/function bindStaticUICopyEditors\(/);
  assert.match(app,/locale\.fieldKey\(key\)/);
- assert.match(app,/class:'ui-content-pencil'/);
+ assert.doesNotMatch(app.slice(app.indexOf('function bindStaticUICopyEditors'),
+  app.indexOf('// Edit only semantically keyed authored labels')),
+  /class:'ui-content-pencil'/);
  assert.match(app,/window\.PandoraUILocale\.setOverrides\(override\)/);
  assert.match(css,/\.wiki-item-field-inline-editor/);
  const edit=app.slice(app.indexOf('function editWikiValue('),
