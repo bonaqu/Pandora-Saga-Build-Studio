@@ -61,3 +61,20 @@ test('only static source-proven notes expose semantic Wiki editorial keys',()=>{
  assert.ok(dynamic.includes("notes.push({ru:row.noteRu||'',en:row.noteEn||''})"));
  assert.doesNotMatch(dynamic,/editorialKey/);
 });
+
+test('source/Wiki and Soul headings use direct-edit D1 keys without pencils',()=>{
+ const app=readFileSync(resolve(root,'pandora-studio-app.js'),'utf8');
+ for(const key of ['sourceSkillEffectsHeading','sourceLearningRestrictionsHeading',
+  'sourceLinkedActionsHeading','soulCompatibleHeading'])
+  assert.ok(app.includes("'"+key+"'"),key+' must be a stable D1 field');
+ assert.match(app,/sourceCopy\('h4','sourceSkillEffectsHeading'/);
+ assert.match(app,/sourceCopy\('h5','sourceLinkedActionsHeading'/);
+ assert.match(app,/ownerCopyLabel\(compatibleHeading,'wiki-ui'/);
+ assert.doesNotMatch(app,/class:'wiki-skill-source-heading-pencil'/);
+ const key='wiki-ui.source-skill-effects-heading';
+ const edited=inspectWindow.PandoraHonorGuide.field({
+  ['guideedit.book.'+key]:JSON.stringify({ru:'Результаты источника',en:'Source effects'})
+ },key,'Действие умения','Skill effects');
+ assert.equal(edited.ru,'Результаты источника');
+ assert.equal(edited.en,'Source effects');
+});

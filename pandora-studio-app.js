@@ -5831,12 +5831,21 @@ function renderWiki(root){
      id,calculator:window.PandoraOSCalculator
     });
     if(evidence){
+     // Fixed Wiki headings are authorial copy, separate from live source IDs
+     // and calculator results. Reuse direct editing, not separate pencils.
+     const sourceCopy=(tag,key,ru,en)=>{
+      const node=h(tag,{text:ownerCopy('wiki-ui',key,ru,en)});
+      if(adminEditing&&adminToken)ownerCopyLabel(node,'wiki-ui',key,ru,en);
+      return node;
+     };
      const section=h('section',{class:'wiki-skill-source-insight'});
-     section.append(h('h4',{text:wt('Действие умения','Skill effects')}));
+     section.append(sourceCopy('h4','sourceSkillEffectsHeading',
+      'Действие умения','Skill effects'));
      if(evidence.accessNotice){
       const access=evidence.accessNotice;
       const note=h('div',{class:'wiki-skill-access-notice'},[
-       h('strong',{text:wt('Особенности изучения','Learning restrictions')}),
+       sourceCopy('strong','sourceLearningRestrictionsHeading',
+        'Особенности изучения','Learning restrictions'),
        h('p',{text:lang==='en'?access.en:access.ru})
       ]);
       if(access.relatedSkillId&&wikiData.skills?.[String(access.relatedSkillId)]){
@@ -5863,7 +5872,8 @@ function renderWiki(root){
       section.append(description);
      }
      if(evidence.paths.length){
-      section.append(h('h5',{text:wt('Связанные действия','Linked actions')}));
+      section.append(sourceCopy('h5','sourceLinkedActionsHeading',
+       'Связанные действия','Linked actions'));
       for(const path of evidence.paths){
        const chain=h('div',{class:'wiki-skill-source-chain'});
        path.forEach((linkId,index)=>{
@@ -5977,7 +5987,12 @@ function renderWiki(root){
     const slotLabel=slot=>window.PandoraItemPresentation.slotLabel(slot,lang);
     const traits=h('section',{class:'wiki-soul-properties','aria-label':wt('Свойства души','Soul properties')});
     const slotPane=h('div',{class:'wiki-soul-properties-half'});
-    slotPane.append(h('h4',{text:wt('Куда вставляется','Compatible equipment')}));
+    const compatibleRu='Куда вставляется',compatibleEn='Compatible equipment';
+    const compatibleHeading=h('h4',{text:ownerCopy('wiki-ui','soulCompatibleHeading',
+     compatibleRu,compatibleEn)});
+    if(adminEditing&&adminToken)ownerCopyLabel(compatibleHeading,'wiki-ui',
+     'soulCompatibleHeading',compatibleRu,compatibleEn);
+    slotPane.append(compatibleHeading);
     const slots=h('div',{class:'wiki-soul-slot-list'});
     for(const slot of rec.slots||[]){
      const chip=h('span',{class:'wiki-owner-mat',text:slotLabel(slot)});
