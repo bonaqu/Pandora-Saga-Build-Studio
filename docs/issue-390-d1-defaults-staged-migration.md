@@ -77,7 +77,7 @@ This is a **measured subset**, not proof that every page's dynamically generated
 
 ## Repeatable isolated staging rehearsal and rollback
 
-The mandatory Node 22 CI now executes the **actual generated SQLite SQL** inside an in-memory database. It checks first import, idempotent retry, a complete JSON readback, corruption rejection, and exact-version rollback while keeping other snapshots and the preexisting CAS `overrides` table intact. This is a local SQL rehearsal, **not** evidence of a real Cloudflare D1 staging import.
+The mandatory Node 22 CI now executes the **actual generated SQLite SQL** inside an in-memory database. It also executes the actual SELECT-only Worker snapshot reader against those materialized SQLite tables before corruption, after corruption and after rollback. It checks first import, idempotent retry, a complete JSON readback, corruption rejection, and exact-version rollback while keeping other snapshots and the preexisting CAS `overrides` table intact. This is a local SQL rehearsal, **not** evidence of a real Cloudflare D1 staging import.
 
 After an independently authorized staging-only import, execute the SELECT-only `local-editorial-readback.sql` against that staging D1 and save the exact `staging_readback_json` column value (not the Wrangler output envelope) to `staging-readback.json`. Run `npm run editorial:defaults:verify -- staging-readback.json` and require exit code 0 before testing the pinned Worker reader.
 

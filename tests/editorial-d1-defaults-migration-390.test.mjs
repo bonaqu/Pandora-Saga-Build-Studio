@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,mkdtempSync,writeFileSync,rmSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
-import {createHash} from 'node:crypto';
+import {createHash,webcrypto} from 'node:crypto';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -12,6 +12,7 @@ import {
  renderEditorialDefaultsReadbackSQL,renderEditorialDefaultsRollbackSQL,
  verifyEditorialDefaultsReadback
 } from '../scripts/plan-editorial-d1-defaults.mjs';
+import {readVerifiedEditorialSnapshot} from '../worker/pandora-studio-editorial-defaults.js';
 
 const read=name=>readFileSync(new URL('../'+name,import.meta.url),'utf8');
 const manifest=buildEditorialDefaultsManifest();
@@ -214,8 +215,26 @@ test('issue 390: real SQLite rehearsal round-trips pinned import and isolated ro
  }
  const {DatabaseSync}=await import('node:sqlite');
  const db=new DatabaseSync(':memory:');
+ // D1 uses the SQLite SQL dialect. Drive the real Worker SELECT reader
+ // against the actual in-memory tables, not hard-coded mock rows.
+ const adapter={prepare(sql){
+  const statement=db.prepare(sql);
+  return {
+   all:async()=>({results:statement.all()}),
+   bind(...params){return {
+    first:async()=>statement.get(...params)??null,
+    all:async()=>({results:statement.all(...params)})
+   }}
+  };
+ }};
+ const workerRead=()=>readVerifiedEditorialSnapshot(adapter,manifest.snapshot,
+  {subtle:webcrypto.subtle});
  try{
   db.exec(renderEditorialDefaultsSQL(manifest));
+  const before=await workerRead();
+  assert.equal(before.status,200,'Materialized SQL must be readable by the real Worker code');
+  assert.equal(before.payload.sha256,manifest.digest);
+  assert.equal(before.payload.records.length,manifest.records.length);
   const exportQuery=renderEditorialDefaultsReadbackSQL(manifest);
   assert.match(exportQuery,/^-- STAGING READBACK ONLY/m);
   assert.doesNotMatch(exportQuery,/\b(?:INSERT|UPDATE|DELETE|CREATE|DROP)\b/i);
@@ -237,6 +256,10 @@ test('issue 390: real SQLite rehearsal round-trips pinned import and isolated ro
   exported=JSON.parse(db.prepare(exportQuery).get().staging_readback_json);
   assert.equal(verifyEditorialDefaultsReadback(manifest,exported.metadata,
    exported.rows).reason,'content-digest-mismatch');
+  const corruptedRead=await workerRead();
+  assert.equal(corruptedRead.status,503);
+  assert.equal(corruptedRead.payload.code,'EDITORIAL_DEFAULTS_DIGEST_MISMATCH');
+  assert.equal(Object.hasOwn(corruptedRead.payload,'records'),false);
 
   // Other releases plus existing CAS overrides must survive this rollback.
   db.exec("CREATE TABLE overrides (key TEXT PRIMARY KEY,value TEXT NOT NULL);");
@@ -251,6 +274,9 @@ test('issue 390: real SQLite rehearsal round-trips pinned import and isolated ro
   assert.doesNotMatch(rollback,/\boverrides\b/i);
   db.exec(rollback);
   db.exec(rollback); // repeat is safe and exact-version-scoped
+  const afterRollback=await workerRead();
+  assert.equal(afterRollback.status,404);
+  assert.equal(afterRollback.payload.code,'EDITORIAL_DEFAULTS_SNAPSHOT_NOT_FOUND');
   assert.equal(db.prepare('SELECT COUNT(*) AS total FROM editorial_default_rows WHERE snapshot=?')
    .get(manifest.snapshot).total,0);
   assert.equal(db.prepare('SELECT COUNT(*) AS total FROM editorial_default_snapshots WHERE snapshot=?')
