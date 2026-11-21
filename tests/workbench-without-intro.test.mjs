@@ -48,7 +48,7 @@ test('catalog footer is natural-language and retired archive notice stays absent
  assert.match(app,/counts=catalogSource\?\.meta\?\.counts/);
   assert.match(app,/\['lead','В энциклопедии:','Encyclopedia:'\]/);
   assert.match(app,/String\(counts\[key\]\)/);
- assert.match(app,/Encyclopedia: /);
+ assert.match(app,/\['lead','В энциклопедии:','Encyclopedia:'\]/);
  assert.doesNotMatch(app,/Cloudflare D1 · актуальный опубликованный каталог/);
  assert.doesNotMatch(app,/renderArchiveNotice/);
  assert.doesNotMatch(html,/id="siteNotice"/);
