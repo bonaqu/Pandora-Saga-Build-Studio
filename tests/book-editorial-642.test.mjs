@@ -53,6 +53,10 @@ test('issue #390: Book and shared action guards support multiple captions per di
  assert.match(src,/bookSummaryCaptionTargets\.get\(summary\)/);
  assert.match(src,/captions\.add\(node\)/);
  assert.match(src,/const caption=\[\.\.\.captions\]\.find\(item=>item\.contains\(event\.target\)\)/);
+ assert.match(src,/const caption=make\('span',\{class:'stage-book-buff-heading-copy'/);
+ assert.match(src,/const heading=make\('strong',\{\},\[caption\]\)/);
+ assert.match(src,/guideLabel\(caption,stableId==='guild'\?'buffs\.guild'/);
+ assert.doesNotMatch(src,/guideLabel\(node\.firstChild,stableId==='guild'/);
  assert.match(src,/guideLabel\(honorTerm,'buffs\.honor'/);
  assert.match(app,/const ownerCaptionActionTargets=new WeakMap\(\)/);
  assert.match(app,/ownerCaptionActionTargets\.get\(button\)/);
