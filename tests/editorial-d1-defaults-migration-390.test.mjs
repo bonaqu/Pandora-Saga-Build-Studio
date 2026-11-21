@@ -300,6 +300,52 @@ test('#390 profession count is derived from current class identities, never D1 a
    'Count must not be stored as authorial default: '+key);
 });
 
+test('#390 Hero Path and Honor source-authored labels have pinned semantic D1 defaults',()=>{
+ const path=read('pandora-studio-hero-path.js');
+ const honor=read('pandora-studio-honor-view.js');
+ const app=read('pandora-studio-app.js');
+ const authored=[...path.matchAll(
+  /\bauthored\(\s*api\s*,\s*'([^']+)'\s*,\s*'([^']*)'\s*,\s*'([^']*)'/g
+ )].map(m=>[m[1],m[2],m[3]]);
+ assert.equal(authored.length,14);
+ assert.equal(manifest.stats.cohorts['hero-path-authorial'],28);
+ assert.match(app,/copyLabel:\(key,ru,en\)=>ownerCopy\('path',key,ru,en\)/);
+ for(const [key,ru,en] of authored){
+  const id='guideedit.book.path.'+
+   key.replace(/[A-Z]/g,ch=>'-'+ch.toLowerCase());
+  assert.equal(manifest.records.find(r=>r.recordKey===id&&r.field==='ru')?.value,ru);
+  assert.equal(manifest.records.find(r=>r.recordKey===id&&r.field==='en')?.value,en);
+ }
+ const honorRows=[...honor.matchAll(
+  /\beditorial\(\s*'[^']+'\s*,\s*'[^']*'\s*,\s*'([^']+)'\s*,\s*'([^']*)'\s*,\s*'([^']*)'\s*\)/g
+ )].map(m=>[m[1],m[2],m[3]]);
+ assert.equal(honorRows.length,9,'Exact deployed Honor editorial call inventory');
+ const unique=new Map();
+ for(const [key,ru,en] of honorRows){
+  const previous=unique.get(key);
+  if(previous)assert.deepEqual(previous,[ru,en]);
+  unique.set(key,[ru,en]);
+ }
+ assert.equal(unique.size,8,'Search-empty key is reused by two routes');
+ assert.equal(manifest.stats.cohorts['honor-view-authorial'],14);
+ assert.match(app,/copy:\(key,ru,en\)=>ownerCopy\('honor-view',key,ru,en\)/);
+ for(const [key,[ru,en]] of unique){
+  const id='guideedit.book.honor-view.'+
+   key.replace(/[A-Z]/g,ch=>'-'+ch.toLowerCase());
+  const stored=manifest.records.filter(r=>r.recordKey===id);
+  if(key==='pvpDoubleRewards'){
+   assert.equal(stored.length,0,'Source-defined PvP schedule is not authorial content');
+  }else{
+   assert.equal(stored.length,2,id);
+   assert.equal(stored.find(r=>r.field==='ru')?.value,ru);
+   assert.equal(stored.find(r=>r.field==='en')?.value,en);
+  }
+ }
+ for(const term of ['guideedit.book.path.skill.32001','guideedit.book.honor-view.rank.5'])
+  assert.ok(!manifest.records.some(r=>r.recordKey===term),
+   'Skill IDs and Honor rank mechanics never enter source-authored copy');
+});
+
 test('issue 390: migration never materializes runtime values or rewrites an override',()=>{
  assert.equal(manifest.records.some(r=>
   /(?:^|\.)(?:character|item|soul|account|formula|amount|gold|points|chance)\.[0-9]+/.test(r.recordKey)),false);

@@ -456,6 +456,62 @@ export function buildEditorialDefaultsManifest(){
   }
  }
 
+ // Existing Path renderer already edits these exact static RU/EN captions
+ // through ownerCopy('path',key,ru,en). Source game numbers, skill names,
+ // dynamic requirements and any strings not paired with a stable key are
+ // never inferred by this extractor.
+ const pathSource=read('pandora-studio-hero-path.js');
+ const pathRows=[...pathSource.matchAll(
+  /\bauthored\(\s*api\s*,\s*'([^']+)'\s*,\s*'([^']*)'\s*,\s*'([^']*)'/g
+ )].map(match=>[match[1],match[2],match[3]]);
+ const expectedPath=[
+  'pathUnlockPoints','innateBaselineLabel','pathLimitPoints',
+  'pathPointsPreserved','skillCatalogLoading','skillSearchEmpty',
+  'skillDescriptionUnavailable','skillReady','skillUpgradeCastBefore',
+  'skillUpgradeCastAfter','skillRequirementsHeading','skillPreviousLabel',
+  'skillPrerequisiteMissing','skillNextLink'
+ ];
+ if(pathRows.length!==expectedPath.length||
+  pathRows.map(row=>row[0]).sort().join('|')!==expectedPath.sort().join('|'))
+  throw Error('Hero Path authored-call inventory changed: review rendered copy');
+ for(const [key,ru,en] of pathRows){
+  if(!ru.trim()||!en.trim())throw Error('Empty Hero Path translation: '+key);
+  const slug=key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  append('guideedit.book.path.'+slug,'ru',ru,'hero-path-authorial');
+  append('guideedit.book.path.'+slug,'en',en,'hero-path-authorial');
+ }
+
+ // Honor uses the same ownerCopy('honor-view',key,ru,en) for its visible
+ // static captions. One search-empty label renders in two branches with
+ // exactly the same semantic key. Treat duplicate usage as one D1 identity.
+ // The hard-coded Tuesday/Thursday reward schedule is a GAME RULE: it must
+ // not become arbitrary editor copy in the new defaults snapshot.
+ const honorViewSource=read('pandora-studio-honor-view.js');
+ const honorRows=[...honorViewSource.matchAll(
+  /\beditorial\(\s*'[^']+'\s*,\s*'[^']*'\s*,\s*'([^']+)'\s*,\s*'([^']*)'\s*,\s*'([^']*)'\s*\)/g
+ )].map(match=>[match[1],match[2],match[3]]);
+ const expectedHonor=[
+  'warsHeading','warEyebrow','warNotFound','searchEmpty',
+  'sectionsHeading','subtitle','pvpDoubleRewards','rewardsHeading'
+ ];
+ const uniqueHonor=new Map();
+ for(const [key,ru,en] of honorRows){
+  const current=uniqueHonor.get(key);
+  if(current&&(current[0]!==ru||current[1]!==en))
+   throw Error('Contradictory Honor editorial fallback: '+key);
+  uniqueHonor.set(key,[ru,en]);
+ }
+ if(honorRows.length!==9||uniqueHonor.size!==expectedHonor.length||
+  [...uniqueHonor.keys()].sort().join('|')!==expectedHonor.sort().join('|'))
+  throw Error('Honor static editorial inventory changed: review before staging');
+ for(const [key,[ru,en]] of uniqueHonor){
+  if(key==='pvpDoubleRewards')continue;
+  if(!ru.trim()||!en.trim())throw Error('Empty Honor view translation: '+key);
+  const slug=key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  append('guideedit.book.honor-view.'+slug,'ru',ru,'honor-view-authorial');
+  append('guideedit.book.honor-view.'+slug,'en',en,'honor-view-authorial');
+ }
+
  // The Wiki chapters, all five Honor subchapters and skill filters are
  // one existing D1 JSON record. Preserve their exact field identities;
  // never reconstruct these labels from list position or save them as game IDs.

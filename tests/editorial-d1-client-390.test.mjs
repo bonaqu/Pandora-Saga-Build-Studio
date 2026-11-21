@@ -163,6 +163,34 @@ test('#390 source-verified monster and chest labels stay below existing owner CA
   'Как открыть сундук','How to open this chest').ru,'Как открыть сундук');
 });
 
+test('#390 verified Path/Honor RU/EN defaults remain subordinate to existing owner CAS',async()=>{
+ const root=context(),staging=root.PandoraEditorialDefaults,guide=root.PandoraHonorGuide;
+ const pathKey='guideedit.book.path.innate-baseline-label';
+ const honorKey='guideedit.book.honor-view.sections-heading';
+ const payload=fixture([
+  [pathKey,'en','Initial points · staging:'],
+  [honorKey,'ru','Разделы чести · staging']
+ ]);
+ assert.equal(await staging.installVerified(payload,payload.snapshot,webcrypto.subtle),true);
+ assert.equal(guide.field({},'path.innate-baseline-label',
+  'Начально (оч.):','Initially (pts):').en,'Initial points · staging:');
+ assert.equal(guide.field({},'honor-view.sections-heading',
+  'Разделы','Sections').ru,'Разделы чести · staging');
+ const overrides={
+  [pathKey]:JSON.stringify({en:'Initial points · owner:'}),
+  [honorKey]:JSON.stringify({ru:'Разделы · владелец'})
+ };
+ assert.equal(guide.field(overrides,'path.innate-baseline-label',
+  'Начально (оч.):','Initially (pts):').en,'Initial points · owner:');
+ assert.equal(guide.field(overrides,'honor-view.sections-heading',
+  'Разделы','Sections').ru,'Разделы · владелец');
+ staging.reset();
+ assert.equal(guide.field({},'path.innate-baseline-label',
+  'Начально (оч.):','Initially (pts):').en,'Initially (pts):');
+ assert.equal(guide.field({},'honor-view.sections-heading',
+  'Разделы','Sections').ru,'Разделы');
+});
+
 test('#390 staging text uses only exact semantic identities and CAS outranks defaults',async()=>{
  const root=context(),stage=root.PandoraEditorialDefaults;
  const ui=root.PandoraUILocale,guide=root.PandoraHonorGuide,wiki=root.PandoraWikiLabels;
