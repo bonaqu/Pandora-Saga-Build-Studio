@@ -524,6 +524,40 @@ test('#390 only actually mounted workbench hints become editable D1 defaults',()
  assert.match(app,/node\.removeAttribute\('aria-description'\)/);
 });
 
+test('#390 actual Wiki, Skill and Stats owner editors seed their exact fixed copy, not live numbers',()=>{
+ const app=read('pandora-studio-app.js');
+ const sets=[
+  ['wikiCoreCopyRows','wiki-ui','wiki-core-authorial',17,34],
+  ['skillUiCopyRows','skill-ui','skill-controls-authorial',2,4],
+  ['statsUiCopyRows','stats-ui','hero-stats-authorial',2,4]
+ ];
+ for(const [name,section,cohort,count,rowsExpected] of sets){
+  const match=app.match(new RegExp('const '+name+
+   '=Object\\.freeze\\((\\[[\\s\\S]*?\\])\\);'));
+  assert.ok(match,'Missing actual live registry '+name);
+  const entries=runInNewContext('('+match[1]+')',{});
+  assert.equal(entries.length,count,name);
+  assert.equal(manifest.stats.cohorts[cohort],rowsExpected,name);
+  for(const [key,ru,en] of entries){
+   const recordKey='guideedit.book.'+section+'.'+
+    key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+   assert.equal(manifest.records.filter(r=>r.recordKey===recordKey).length,2,
+    recordKey);
+   assert.equal(manifest.records.find(r=>r.recordKey===recordKey&&r.field==='ru')?.value,
+    ru,recordKey);
+   assert.equal(manifest.records.find(r=>r.recordKey===recordKey&&r.field==='en')?.value,
+    en,recordKey);
+  }
+ }
+ assert.match(app,/ownerInterfaceEditor\('wiki-ui',wikiCoreCopyRows/);
+ assert.match(app,/ownerInterfaceEditor\('stats-ui',statsUiCopyRows/);
+ assert.match(app,/reconcilePanel\('ownerSkillSearchCopy','skill-ui',skillUiCopyRows/);
+ assert.match(app,/String\(visible\.length\)/);
+ assert.match(app,/String\(results\.length\)/);
+ for(const path of ['wiki-ui.results-total','stats-ui.remaining-number','skill-ui.search-query'])
+  assert.equal(manifest.records.some(r=>r.recordKey==='guideedit.book.'+path),false);
+});
+
 test('issue 390: migration never materializes runtime values or rewrites an override',()=>{
  assert.equal(manifest.records.some(r=>
   /(?:^|\.)(?:character|item|soul|account|formula|amount|gold|points|chance)\.[0-9]+/.test(r.recordKey)),false);

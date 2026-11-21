@@ -1666,6 +1666,38 @@ function refreshEquipmentPickerItemAria(one=null){
   if(level)ownerDockPatchAttr(button,'title',value);
  }
 }
+// Existing owner-facing RU/EN labels shared by mounted Wiki, Skills, Stats
+// and the offline immutable defaults plan. Never include user-entered queries,
+// game totals or the currently selected filter/skill identity.
+const statsUiCopyRows=Object.freeze([
+['remainingPrefix','Свободно:','Available:','Свободные очки','Available points'],
+  ['spentPrefix','Потрачено:','Spent:','Вложенные очки','Spent points']
+]);
+const skillUiCopyRows=Object.freeze([
+['searchPlaceholder','Найти умение','Find skill','Поле поиска','Search placeholder'],
+  ['filterAria','Фильтр навыков','Skill filter','Фильтр умений','Skill filter']
+]);
+const wikiCoreCopyRows=Object.freeze([
+['searchPlaceholder','Поиск по названию','Search by name','Подсказка поиска','Search placeholder'],
+  ['searchAria','Поиск по энциклопедии','Search encyclopedia','Название поиска','Search accessible name'],
+  ['backTop','↑ В начало списка','↑ Back to top','В начало','Back to top'],
+  ['backTopAria','Прокрутить список энциклопедии к началу',
+   'Scroll the encyclopedia list to the beginning','Описание перехода','Top-button description'],
+  ['viewAria','Вид Энциклопедии','Encyclopedia view','Переключатель вида','View selector'],
+  ['viewList','☰ Список','☰ List','Режим списка','List mode'],
+  ['viewGrid','▦ Сетка','▦ Grid','Режим сетки','Grid mode'],
+  ['backLabel','← Назад','← Back','Возврат','Back'],
+  ['resultsShown','Показано','Showing','Результаты · до числа','Results · before count'],
+  ['resultsOf','из','of','Результаты · между числами','Results · between counts'],
+  ['resultsUnits','записей','entries','Результаты · после числа','Results · after count'],
+  ['morePrefix','Показать ещё','Show more','Загрузить ещё','Show more'],
+  ['noMatches','Ничего не найдено.','No matching entries.','Пустой поиск','No matches'],
+  ['selectPrompt','Выбери запись для просмотра характеристик и связанных источников.',
+   'Select an entry to view its details and sources.','При выборе','Selection prompt'],
+  ['placeCity','Город Астир · районы','Astir city · districts','Районы города','City districts'],
+  ['placeNation','Государства','Nations','Государства','Nations'],
+  ['placeOther','Другие локации','Other locations','Прочие локации','Other locations']
+]);
 const equipmentPickerMetaCopyRows=Object.freeze([
  ['gearMenuEquippedAria','Действия с надетой вещью','Equipped item actions','Меню с вещью','Equipped menu'],
  ['gearMenuEmptyAria','Действия с пустым слотом','Empty equipment slot actions','Меню пустого слота','Empty slot menu'],
@@ -3006,10 +3038,7 @@ function renderOriginStats(calculated=undefined){
  });
  root.append(list);
  if(typeof adminEditing!=='undefined'&&adminEditing&&adminToken)
-  root.append(ownerInterfaceEditor('stats-ui',[
-  ['remainingPrefix','Свободно:','Available:','Свободные очки','Available points'],
-  ['spentPrefix','Потрачено:','Spent:','Вложенные очки','Spent points']
- ],'Подписи очков героя','Hero point labels'));
+  root.append(ownerInterfaceEditor('stats-ui',statsUiCopyRows,'Подписи очков героя','Hero point labels'));
  refresh(calculated);
 }
 function renderOriginPassives(){
@@ -3522,10 +3551,7 @@ function renderPathCopyControls(){
   panel.id=id;panel.dataset.pathHelpLocale=lang;panel.open=wasOpen;
   place(panel);
  };
- reconcilePanel('ownerSkillSearchCopy','skill-ui',[
-  ['searchPlaceholder','Найти умение','Find skill','Поле поиска','Search placeholder'],
-  ['filterAria','Фильтр навыков','Skill filter','Фильтр умений','Skill filter']
- ],'Подписи умений','Skill labels',
+ reconcilePanel('ownerSkillSearchCopy','skill-ui',skillUiCopyRows,'Подписи умений','Skill labels',
   panel=>document.querySelector('#pathSkillsPage .path-skills-filter')?.after(panel),
   !$('pathSkillsPage')?.hidden);
  reconcilePanel('ownerPathHelpCopy','path',[
@@ -4333,27 +4359,7 @@ function renderWiki(root){
   view.append(button);
  }
  controls.append(view);
- if(adminEditing&&adminToken)controls.append(ownerInterfaceEditor('wiki-ui',[
-  ['searchPlaceholder','Поиск по названию','Search by name','Подсказка поиска','Search placeholder'],
-  ['searchAria','Поиск по энциклопедии','Search encyclopedia','Название поиска','Search accessible name'],
-  ['backTop','↑ В начало списка','↑ Back to top','В начало','Back to top'],
-  ['backTopAria','Прокрутить список энциклопедии к началу',
-   'Scroll the encyclopedia list to the beginning','Описание перехода','Top-button description'],
-  ['viewAria','Вид Энциклопедии','Encyclopedia view','Переключатель вида','View selector'],
-  ['viewList','☰ Список','☰ List','Режим списка','List mode'],
-  ['viewGrid','▦ Сетка','▦ Grid','Режим сетки','Grid mode'],
-  ['backLabel','← Назад','← Back','Возврат','Back'],
-  ['resultsShown','Показано','Showing','Результаты · до числа','Results · before count'],
-  ['resultsOf','из','of','Результаты · между числами','Results · between counts'],
-  ['resultsUnits','записей','entries','Результаты · после числа','Results · after count'],
-  ['morePrefix','Показать ещё','Show more','Загрузить ещё','Show more'],
-  ['noMatches','Ничего не найдено.','No matching entries.','Пустой поиск','No matches'],
-  ['selectPrompt','Выбери запись для просмотра характеристик и связанных источников.',
-   'Select an entry to view its details and sources.','При выборе','Selection prompt'],
-  ['placeCity','Город Астир · районы','Astir city · districts','Районы города','City districts'],
-  ['placeNation','Государства','Nations','Государства','Nations'],
-  ['placeOther','Другие локации','Other locations','Прочие локации','Other locations']
- ],'Подписи энциклопедии','Encyclopedia labels'));
+ if(adminEditing&&adminToken)controls.append(ownerInterfaceEditor('wiki-ui',wikiCoreCopyRows,'Подписи энциклопедии','Encyclopedia labels'));
  if(wikiFilterCopyRows.length){
   const filterEditor=ownerInterfaceEditor('wiki-ui',wikiFilterCopyRows,
    'Подписи фильтров','Filter labels');

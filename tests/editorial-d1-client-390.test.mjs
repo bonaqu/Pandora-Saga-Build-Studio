@@ -302,6 +302,27 @@ test('#390 real Workbench hover text has verified default below owner CAS',async
   'Открыть Книгу героя с рассчитанными характеристиками.');
 });
 
+test('#390 Wiki result-count labels and the Skills search placeholder stay below owner CAS',async()=>{
+ const root=context(),stage=root.PandoraEditorialDefaults,guide=root.PandoraHonorGuide;
+ const wiki='guideedit.book.wiki-ui.results-shown';
+ const skill='guideedit.book.skill-ui.search-placeholder';
+ const data=fixture([
+  [wiki,'ru','Найдено · staging'],
+  [skill,'en','Search abilities · staging']
+ ]);
+ assert.equal(await stage.installVerified(data,data.snapshot,webcrypto.subtle),true);
+ assert.equal(guide.field({},'wiki-ui.results-shown','Показано','Showing').ru,
+  'Найдено · staging');
+ assert.equal(guide.field({},'skill-ui.search-placeholder','Найти умение','Find skill').en,
+  'Search abilities · staging');
+ const overrides={[wiki]:JSON.stringify({ru:'Найдено · владелец'})};
+ assert.equal(guide.field(overrides,'wiki-ui.results-shown','Показано','Showing').ru,
+  'Найдено · владелец');
+ stage.reset();
+ assert.equal(guide.field({},'wiki-ui.results-shown','Показано','Showing').ru,
+  'Показано');
+});
+
 test('#390 staging text uses only exact semantic identities and CAS outranks defaults',async()=>{
  const root=context(),stage=root.PandoraEditorialDefaults;
  const ui=root.PandoraUILocale,guide=root.PandoraHonorGuide,wiki=root.PandoraWikiLabels;

@@ -734,6 +734,43 @@ export function buildEditorialDefaultsManifest(){
   append('guideedit.book.'+section+'.'+slug,'en',en,'workbench-hover-hints');
  }
 
+ // The mounted owner panels for Wiki, Skills and Stats already expose
+ // these independent fixed captions using their *existing* D1 CAS key map.
+ // Source exact RU/EN defaults for one version; do not seed player queries,
+ // numeric stats, source record names or live search-result counts.
+ const coreCopySets=[
+  ['wikiCoreCopyRows','wiki-ui','wiki-core-authorial',[
+   'searchPlaceholder','searchAria','backTop','backTopAria','viewAria',
+   'viewList','viewGrid','backLabel','resultsShown','resultsOf',
+   'resultsUnits','morePrefix','noMatches','selectPrompt',
+   'placeCity','placeNation','placeOther']],
+  ['skillUiCopyRows','skill-ui','skill-controls-authorial',
+   ['searchPlaceholder','filterAria']],
+  ['statsUiCopyRows','stats-ui','hero-stats-authorial',
+   ['remainingPrefix','spentPrefix']]
+ ];
+ for(const [registry,section,cohort,keys] of coreCopySets){
+  const re=new RegExp('const '+registry+
+   '=Object\\.freeze\\((\\[[\\s\\S]*?\\])\\);');
+  const source=app.match(re);
+  if(!source)throw Error('Missing owner-copy registry '+registry);
+  const rows=runInNewContext('('+source[1]+')',{},{
+   filename:registry,timeout:5000
+  });
+  if(!Array.isArray(rows)||rows.length!==keys.length||
+   rows.map(row=>row?.[0]).sort().join('|')!==keys.sort().join('|'))
+   throw Error('Owner-panel RU/EN source inventory drift: '+registry);
+  for(const row of rows){
+   if(!Array.isArray(row)||row.length!==5)
+    throw Error('Invalid source owner-panel caption: '+registry);
+   const [key,ru,en]=row;
+   if(!ru.trim()||!en.trim())throw Error('Empty owner-panel translation: '+key);
+   const slug=key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+   append('guideedit.book.'+section+'.'+slug,'ru',ru,cohort);
+   append('guideedit.book.'+section+'.'+slug,'en',en,cohort);
+  }
+ }
+
  // The Wiki chapters, all five Honor subchapters and skill filters are
  // one existing D1 JSON record. Preserve their exact field identities;
  // never reconstruct these labels from list position or save them as game IDs.
