@@ -628,8 +628,13 @@ function viewGrowth(target,api){
      // The caption belongs to the author; the number of matching skills
      // comes from the live catalog and must never be written as D1 copy.
      const unlockSummary=make('summary');
-     const unlockCaption=authored(api,'skillsOnTrackCaption','Умения на шкале',
-      'Skills on track','span','path-unlock-heading');
+     // Keep previously saved shared UI translations as the fallback;
+     // this rail-specific caption has its own direct editor only when the
+     // owner deliberately overrides it.
+     const fallbackRu=root.PandoraUILocale?.text('skillsOnTrack','ru')||'Умения на шкале';
+     const fallbackEn=root.PandoraUILocale?.text('skillsOnTrack','en')||'Skills on track';
+     const unlockCaption=authored(api,'skillsOnTrackCaption',fallbackRu,
+      fallbackEn,'span','path-unlock-heading');
      unlockSummary.append(unlockCaption,make('span',{
       class:'path-unlock-count',
       text:' · '+marks.reduce((total,mark)=>total+mark.skills.length,0)}));
