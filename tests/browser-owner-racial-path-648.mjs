@@ -195,6 +195,24 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   await savedOverride('guideedit.book.path.racial-branch',
    {ru:'Расовые умения QA',en:'Race traits QA'});
   assert.equal(await en.locator('button.path-racial-unavailable').isDisabled(),true);
+  // Locale switching must preserve the Russian copy while exposing an
+  // independently editable English caption, not the numeric branch cap.
+  const capEn=page.locator('#pathGrowthPage .path-limit-copy').first();
+  await capEn.waitFor({state:'visible',timeout:15000});
+  assert.equal(await capEn.textContent(),'Limit (pts):');
+  const enCapNumber=await page.locator('#pathGrowthPage .path-limit-number').first()
+   .textContent();
+  await capEn.dblclick();
+  const capEnInput=capEn.locator('[data-owner-text-field]');
+  await capEnInput.waitFor({state:'visible'});
+  await capEnInput.fill('Branch ceiling:');
+  await capEnInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector('#pathGrowthPage .path-limit-copy')
+   ?.textContent==='Branch ceiling:',null,{timeout:12000});
+  await savedOverride('guideedit.book.path.path-limit-points',
+   {ru:'Лимит ветки:',en:'Branch ceiling:'});
+  assert.equal(await page.locator('#pathGrowthPage .path-limit-number').first()
+   .textContent(),enCapNumber);
   // New D1 caption: never edit or persist the computed number of skills.
   await page.locator('#pathSkillsTab').click();
   const more=page.locator('#pathSkillGallery button.path-show-more');
