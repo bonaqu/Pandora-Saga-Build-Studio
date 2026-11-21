@@ -341,6 +341,44 @@ export async function runUIContentInlineSmoke(browser,base){
    null,{timeout:15000});
   assert.equal(Object.hasOwn(values,'guideedit.book.catalog-sync.catalog-count-skills'),false);
   assert.equal(resets.at(-1)?.key,'guideedit.book.catalog-sync.catalog-count-skills');
+  // RU/EN use distinct existing CAS fields, while all three source
+  // numbers keep their DOM identities through repeated language changes.
+  await page.locator('#locale [data-locale="en"]').click();
+  await page.waitForFunction(()=>document.documentElement.lang==='en');
+  assert.equal(await skillWord.textContent(),'skills');
+  assert.deepEqual(await footer.locator('[data-catalog-status-value]')
+   .evaluateAll(nodes=>nodes.map(node=>node.textContent)),countCopy);
+  if(!await page.locator('#ownerDock').evaluate(
+   el=>el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
+  await skillWord.dblclick();
+  const footerEnglish=skillWord.locator('[data-owner-text-field]');
+  await footerEnglish.fill('skills QA');
+  await footerEnglish.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#catalogStatus [data-catalog-status-copy="skills"]')?.textContent==='skills QA',
+   null,{timeout:15000});
+  assert.deepEqual(JSON.parse(values['guideedit.book.catalog-sync.catalog-count-skills']),{
+   en:'skills QA'
+  });
+  await page.locator('#locale [data-locale="ru"]').click();
+  await page.waitForFunction(()=>document.documentElement.lang==='ru');
+  assert.equal(await skillWord.textContent(),'навыков');
+  await page.locator('#locale [data-locale="en"]').click();
+  await page.waitForFunction(()=>document.documentElement.lang==='en');
+  assert.equal(await skillWord.textContent(),'skills QA');
+  if(await page.locator('#ownerDock').evaluate(
+   el=>el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
+  await page.locator('#ownerDock [data-owner-undo]').click();
+  await page.waitForFunction(()=>document.querySelector(
+   '#catalogStatus [data-catalog-status-copy="skills"]')?.textContent==='skills',
+   null,{timeout:15000});
+  assert.equal(resets.at(-1)?.key,'guideedit.book.catalog-sync.catalog-count-skills');
+  await page.locator('#locale [data-locale="ru"]').click();
+  await page.waitForFunction(()=>document.documentElement.lang==='ru');
+  assert.deepEqual(await footer.locator('[data-catalog-status-value]')
+   .evaluateAll(nodes=>nodes.map(node=>node.textContent)),countCopy);
   for(const [index,node] of numberNodes.entries()){
    assert.equal(await node.evaluate(el=>el.isConnected),true,
     'Catalog count DOM node '+index+' must survive authorial Undo');
