@@ -9564,7 +9564,10 @@ function bindAccountCopyEditors(panel){
    });
    // Library/action captions may be spans inside a real button: guard the
    // enclosing action as well, so double-click never saves/opens twice.
-   const action=node.closest('button,[role="button"]');
+   // Native <summary> is also an action. A quick owner double-click on
+   // its text must edit that caption instead of toggling the disclosure
+   // twice; single clicks and keyboard actions remain functional.
+   const action=node.closest('button,summary,[role="button"]');
    if(action)ownerCaptionActionGuard(action,node);
   }
 
