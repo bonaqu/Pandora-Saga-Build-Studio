@@ -502,6 +502,65 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(await overview.locator('strong').innerText(),originalCount,
    'A separate Book fixture cannot mutate the real hero buffs');
 
+  // Source-only range fixture: the real Book renderer has two separate
+  // editorial languages and numerically identical values. Never impersonate
+  // a real OS skill, write D1, or localize unknown source skill identities.
+  const rangeFixtures=await page.evaluate(()=>{
+   const old=document.documentElement.lang,results=[];
+   try{
+    for(const language of ['ru','en']){
+     document.documentElement.lang=language;
+     const host=document.createElement('div');document.body.append(host);
+     const edits=[];
+     try{
+      window.PandoraStageAttributes.render(host,{
+       page:'attack',items:[],canEdit:true,
+       modifiers:{skillAttackRange:{rows:[{
+        id:910000001,name:'QA source skill',sourceBonus:42,
+        sourceConstant:20,sourceMasteryPart:22,
+        mode:'toggle',available:false,
+        reasonRu:'Требуется мастерство QA',
+        reasonEn:'Requires mastery QA'
+       }]}},
+       gameTerms:{skills:{'910000001':{id:910000001,name:'QA source skill'}},
+        branchLabels:{archery:'Стрельба'},englishBranches:{archery:'Archery'}},
+       onTextEdit:(_node,key,field,label)=>edits.push({key,field,label})
+      });
+      const row=host.querySelector('[data-range-skill="910000001"]');
+      const bonus=row?.querySelector('.stage-skill-range-bonus .stage-skill-range-editorial');
+      bonus?.dispatchEvent(new MouseEvent('dblclick',{
+       bubbles:true,cancelable:true,detail:2}));
+      results.push({
+       language,
+       bonus:bonus?.textContent,
+       value:row?.querySelector('.stage-skill-range-bonus-value')?.textContent,
+       sourceValue:row?.querySelector('.stage-skill-range-source-value')?.textContent,
+       masteryValue:row?.querySelector('.stage-skill-range-mastery-value')?.textContent,
+       sourceName:row?.querySelector('.stage-effect-skill-label')?.textContent,
+       branch:row?.querySelector('.stage-skill-range-source-branch')?.textContent,
+       reason:row?.querySelector('.stage-skill-range-source-reason')?.textContent,
+       hintPencils:row?.querySelectorAll('.stage-guide-edit-hint').length,
+       edits
+      });
+     }finally{host.remove()}
+    }
+   }finally{document.documentElement.lang=old}
+   return results;
+  });
+  assert.deepEqual(rangeFixtures.map(x=>[x.language,x.bonus,x.branch,x.reason]),[
+   ['ru','Прибавка к дальности','Стрельба','Требуется мастерство QA'],
+   ['en','Range bonus','Archery','Requires mastery QA']
+  ]);
+  for(const [i,result] of rangeFixtures.entries()){
+   assert.equal(result.value,'+42');
+   assert.equal(result.sourceValue,'+20');
+   assert.equal(result.masteryValue,'+22');
+   assert.equal(result.sourceName,'QA source skill');
+   assert.equal(result.hintPencils,0);
+   assert.deepEqual(result.edits,[{key:'attack.skillRange.bonus',
+    field:i===0?'ru':'en',label:i===0?'Прибавка к дальности':'Range bonus'}]);
+  }
+
   await page.locator('#stageAttributes [data-book-page="summary"]').click();
   await page.locator('#stageBookPanel[data-book-visible="summary"]')
    .waitFor({state:'visible',timeout:15000});
