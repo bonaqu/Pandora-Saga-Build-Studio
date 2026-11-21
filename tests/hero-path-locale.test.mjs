@@ -83,6 +83,19 @@ test('issue 390: committed attribute copy updates an action even around live nes
  assert.match(restore,/ownerDockPatchAttr\(node,attr,value\)/);
 });
 
+test('issue 390: an ancestor editor never blocks independent accessible attributes',()=>{
+ const app=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
+ const section=app.slice(app.indexOf('function applyOwnerInterfaceEditedValue('),
+  app.indexOf('// Compact non-modal owner-only copy editor'));
+ assert.match(section,/const editingText=Boolean\(node\.querySelector/);
+ assert.match(section,/if\(!editingText\)node\.textContent=value/);
+ assert.match(section,/node\.setAttribute\(attr,value\)/);
+ const restore=app.slice(app.indexOf('function refreshVisibleOwnerCopy('),
+  app.indexOf('function refreshVisibleUICopy(',app.indexOf('function refreshVisibleOwnerCopy('))+1);
+ assert.match(app,/if\(!editingText\)ownerDockPatchText\(node,value\)/);
+ assert.match(app,/ownerDockPatchAttr\(node,attr,value\)/);
+});
+
 test('issue 390: milestone and successor labels are edited directly without renaming game skills',()=>{
  assert.match(source,/authored\(api,'pathUnlockPoints','оч\.','pts'/);
  assert.match(source,/'span','path-unlock-unit'/);
