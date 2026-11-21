@@ -1243,7 +1243,19 @@ function bindOwnerInterfaceText(node,section,key,ru,en,attribute='text',suffix='
  node.dataset.ownerInterfaceSuffix=suffix;
  const value=prefix+ownerCopy(section,key,ru,en)+suffix;
  if(attribute==='text')node.textContent=value;
- else{
+ // Five audited Wiki families expose actual static, visible H4 headings.
+ // Edit that exact heading on double-click/F2 rather than requiring the
+ // separate owner inventory. Guard out numbers, item names, interactive
+ // descendants and all dynamic suffix/prefix combinations.
+ if(attribute==='text'&&!prefix&&!suffix&&node.tagName==='H4'&&
+  /^(?:wiki\.map\.text|wiki\.monster\.text|wiki\.npc\.trade|wiki\.chest\.text|wiki\.item\.text)$/.test(section)&&
+  !node.childElementCount&&!node.dataset.wikiDirectCaption){
+  node.dataset.wikiDirectCaption='1';
+  ownerCopyLabel(node,section,key,ru,en,{
+   onCommitted:visible=>applyOwnerInterfaceEditedValue(section,key,visible)
+  });
+ }
+ else if(attribute!=='text'){
   node.setAttribute(attribute,value);
   // ownerPlainTextField uses a contenteditable span, not an input. Its
   // visible placeholder depends on data-placeholder; do not clear its text.

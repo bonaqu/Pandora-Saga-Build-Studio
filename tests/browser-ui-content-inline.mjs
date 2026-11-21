@@ -1812,6 +1812,45 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(await mapBrowse.evaluate(el=>el.scrollTop),browseScroll);
   await mountedMapCaption.dispose();await mountedMapPage.dispose();
   await mountedBrowse.dispose();
+  // The visible, plain Wiki heading is ALSO an immediate owner edit target.
+  // Static text only: no Soul counts, item IDs or clickable links are edited.
+  let directMapHeading=mapPage.locator('h4[data-wiki-direct-caption="1"]').first();
+  if(!await directMapHeading.count()){
+   const mapCards=page.locator('#detailContent .wiki-list [data-wiki-record]');
+   const limit=Math.min(await mapCards.count(),25);
+   for(let i=1;i<limit;i++){
+    await mapCards.nth(i).click();
+    directMapHeading=mapPage.locator('h4[data-wiki-direct-caption="1"]').first();
+    if(await directMapHeading.count())break;
+   }
+  }
+  assert.ok(await directMapHeading.count(),
+   'At least one mounted Wiki map heading must support direct owner dblclick');
+  const directId=await directMapHeading.getAttribute('data-owner-copy-id');
+  const directKey='guideedit.book.wiki.map.text.'+
+   directId.replace(/[A-Z]/g,ch=>'-'+ch.toLowerCase());
+  const originalHeading=await directMapHeading.textContent();
+  const directNode=await directMapHeading.elementHandle();
+  await directMapHeading.dblclick();
+  const directField=directMapHeading.locator('[data-owner-text-field]');
+  await directField.waitFor({state:'visible'});
+  await directField.fill('Прямой заголовок Wiki QA');
+  await directField.press('Tab');
+  await page.waitForFunction(key=>document.querySelector(
+   '#detailContent .wiki-page [data-owner-copy-id="'+key+'"][data-wiki-direct-caption="1"]')
+   ?.textContent==='Прямой заголовок Wiki QA',directId,{timeout:15000});
+  assert.equal(JSON.parse(values[directKey]).ru,'Прямой заголовок Wiki QA');
+  assert.equal(await directNode.evaluate(el=>el.isConnected),true);
+  assert.equal(await page.locator('#detailContent h4[data-wiki-direct-caption="1"] + .ui-content-pencil').count(),0);
+  if(await page.locator('#ownerDock').evaluate(el=>el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
+  await page.locator('#ownerDock [data-owner-undo]').click();
+  await page.waitForFunction(({key,expected})=>document.querySelector(
+   '#detailContent .wiki-page [data-owner-copy-id="'+key+'"][data-wiki-direct-caption="1"]')
+   ?.textContent===expected,{key:directId,expected:originalHeading},{timeout:15000});
+  assert.equal(Object.hasOwn(values,directKey),false);
+  assert.equal(await directNode.evaluate(el=>el.isConnected),true);
+  await directNode.dispose();
   if(!await page.locator('#ownerDock').evaluate(el=>el.classList.contains('owner-dock-collapsed')))
    await page.locator('#ownerDock [data-owner-collapse]').click();
   assert.deepEqual(errors,[]);

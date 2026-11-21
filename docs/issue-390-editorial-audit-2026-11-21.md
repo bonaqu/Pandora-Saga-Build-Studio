@@ -197,3 +197,9 @@
 
 - `#profileTrigger` has no visible caption; the `title` mirrors its same-key `aria-label`, not a separate authorial hover guide. Owner-mode keyboard F2 opens the ordinary inline editor for `ui.label.profile-access`; Enter/Space/click retain their normal account action. No pencil appears.
 - Save, Escape, cross-language fallback and validation reuse the original `book.ui.label.profile-access` D1 CAS key and `PandoraUILocale.copyLimit`; only this icon's title/ARIA are refreshed at editor close without remounting the account form. Nonowners do not receive the F2 shortcut. Browser regression covers F2, blur-save, Escape/no-write, mirrored title/ARIA and absence of pencils.
+
+## #390 directly editable static Wiki section headings
+
+- Audited five Wiki owner-copy families now mount a direct dblclick/F2 editor on their **visible plain H4 heading** (map/dungeon, monster, NPC trade, chest, item). This reuses the exact original CAS key and inline blur/Escape/Undo semantics. No additional pencil or owner panel is required to edit the displayed heading.
+- Only a leaf H4 with no prefix/suffix, dynamic child, or active interactive control receives the editor. Runtime counts, probabilities, IDs, Soul data, inputs, options, action buttons, and other chapter data remain outside this direct edit path.
+- Added Node assertions for the narrow binding and a real Chromium Save/Undo on a mounted Wiki map heading with unchanged DOM identity; synthetic test never writes real D1. Physical touch testing remains separate.

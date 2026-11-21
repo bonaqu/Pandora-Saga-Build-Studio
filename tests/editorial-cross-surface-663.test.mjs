@@ -115,6 +115,23 @@ test('#390 Wiki authorial Save, Undo and mounted refresh accept only five text-o
 });
 
 
+test('#390 Wiki static headings edit directly without wrapping game values or adding pencils',()=>{
+ const binder=app.slice(app.indexOf('function bindOwnerInterfaceText('),
+  app.indexOf('function applyOwnerInterfaceEditedValue(',app.indexOf('function bindOwnerInterfaceText(')));
+ assert.match(binder,/node\.tagName==='H4'/);
+ assert.match(binder,/!prefix&&!suffix/);
+ assert.match(binder,/!node\.childElementCount/);
+ for(const item of ['wiki\\.map\\.text','wiki\\.monster\\.text','wiki\\.npc\\.trade',
+  'wiki\\.chest\\.text','wiki\\.item\\.text'])
+  assert.ok(binder.includes(item),item);
+ assert.match(binder,/!node\.dataset\.wikiDirectCaption/);
+ assert.match(binder,/ownerCopyLabel\(node,section,key,ru,en,\{/);
+ assert.match(binder,/onCommitted:visible=>applyOwnerInterfaceEditedValue\(section,key,visible\)/);
+ assert.match(binder,/else if\(attribute!=='text'\)\{/);
+ assert.doesNotMatch(binder,/pencil|icon/i,
+  'Caption editor must not introduce a new pencil or action icon');
+});
+
 test('search terms, actual item stats, skill packets, and character state remain unedited',()=>{
  assert.match(app,/bindOwnerInterfaceText\(search,'wiki-ui','searchPlaceholder'/);
  assert.match(app,/bindOwnerInterfaceText\(search,'equipment','pickerSearchPlaceholder'/);
