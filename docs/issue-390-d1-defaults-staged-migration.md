@@ -47,6 +47,8 @@ npm run editorial:defaults:verify -- staging-readback.json
 
 The command compares snapshot/release/digest/count, detects duplicate identities, rehashes the **actual readback contents** in canonical order and exits nonzero for any mismatch. A successful check validates only that isolated export; it does not activate any D1 snapshot or prove the live frontend uses it.
 
+The staging-only Worker preview accepts exactly one `snapshot` query field and refuses duplicate or unknown parameters before accessing D1. When enabled, an unexpected D1 read failure returns a generic 503 without private SQL diagnostics; known daily D1 quota failures retain the standard 503 and `Retry-After`. Preview responses are not cached. The route remains disabled by default, and the public override/CAS protocol is unchanged.
+
 The generator evaluates the actual `PandoraUILocale` and `PandoraHonorGuide` authorial dictionaries in isolated Node VM contexts. It does **not** make network requests, import Worker secrets, connect to Cloudflare, or run the SQL. The SQL is a review artifact: generating it does not authorize its execution.
 
 The manifest contains the source release, exact existing D1 record keys, field identities, bilingual fallback values, sorted rows, a SHA-256 digest of the canonical content, and a snapshot name incorporating that digest. The SQL includes the two versioned staging tables, conflict-preserving inserts, the completion marker inserted last, and readback queries. Apostrophes in authored text are escaped.

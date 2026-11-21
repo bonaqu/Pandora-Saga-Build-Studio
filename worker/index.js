@@ -778,9 +778,23 @@ if(path==='/api/editorial-defaults'&&method==='GET'){
  // Disabled by default in every existing Worker environment: a future
  // staging import and explicit operator flag are prerequisites to reads.
  if(env.EDITORIAL_DEFAULTS_PREVIEW!=='enabled')return no('Not found',404);
- const snapshot=new URL(request.url).searchParams.get('snapshot');
- const outcome=await readVerifiedEditorialSnapshot(env.DB,snapshot);
- return json(outcome.payload,outcome.status);
+ const params=new URL(request.url).searchParams;
+ // A pinned snapshot is the ONLY accepted input. Duplicate query keys or
+ // extra parameters cannot silently change which D1 data is displayed.
+ if(params.size!==1||params.getAll('snapshot').length!==1)
+  return json({error:'Authorial defaults unavailable',
+   code:'EDITORIAL_DEFAULTS_BAD_REQUEST'},400);
+ const snapshot=params.get('snapshot');
+ try{
+  const outcome=await readVerifiedEditorialSnapshot(env.DB,snapshot);
+  return json(outcome.payload,outcome.status);
+ }catch(error){
+  // Preserve the existing D1 daily quota retry-after behavior, but never
+  // expose staging SQL/table diagnostics to the public preview reader.
+  if(isD1DailyQuotaError(error))throw error;
+  return json({error:'Authorial defaults unavailable',
+   code:'EDITORIAL_DEFAULTS_READ_FAILED'},503);
+ }
 }
 if(path==='/api/overrides'&&method==='GET'){const records=await env.DB.prepare('SELECT key,value FROM overrides ORDER BY key').all();return json({values:Object.fromEntries((records.results||[]).filter(r=>!String(r.key).startsWith('__qa.')).map(r=>[r.key,r.value]))})}
 if(path==='/api/admin/setup'&&method==='POST'){

@@ -122,3 +122,59 @@ test('#390 D1 authored defaults: incomplete, duplicate and edited snapshots fail
   assert.ok(db.queries.every(query=>/^\s*SELECT\b/i.test(query)));
  }
 });
+
+test('#390 staged endpoint rejects unexpected or repeated snapshot inputs before D1',async()=>{
+ let queryCount=0;
+ const db={prepare(){queryCount++;throw Error('Unexpected staging SQL read')}};
+ const endpoint='https://ps-build-studio-cloud.bonaqu.workers.dev/api/editorial-defaults';
+ for(const query of [
+  '',
+  '?snapshot='+manifest.snapshot+'&debug=1',
+  '?snapshot='+manifest.snapshot+'&snapshot='+manifest.snapshot,
+  '?debug=1',
+  '?snapshot='+manifest.snapshot+'&snapshot=other'
+ ]){
+  const response=await worker.fetch(new Request(endpoint+query),
+   {DB:db,EDITORIAL_DEFAULTS_PREVIEW:'enabled'},{});
+  assert.equal(response.status,400,query);
+  assert.equal((await response.json()).code,'EDITORIAL_DEFAULTS_BAD_REQUEST');
+  assert.equal(response.headers.get('cache-control'),'no-store');
+ }
+ assert.equal(queryCount,0,'Preview query validation must precede all D1 access');
+});
+
+test('#390 staged endpoint masks D1 errors without leaking private SQL, preserving daily quota',async()=>{
+ const endpoint='https://ps-build-studio-cloud.bonaqu.workers.dev'+
+  '/api/editorial-defaults?snapshot='+manifest.snapshot;
+ const fault=message=>({prepare(){throw Error(message)}});
+ const internal=await worker.fetch(new Request(endpoint),{
+  DB:fault('PRIVATE_SNAPSHOT_TABLE or internal SQL info'),
+  EDITORIAL_DEFAULTS_PREVIEW:'enabled'
+ },{});
+ assert.equal(internal.status,503);
+ assert.equal(internal.headers.get('cache-control'),'no-store');
+ const body=await internal.text();
+ assert.equal(JSON.parse(body).code,'EDITORIAL_DEFAULTS_READ_FAILED');
+ assert.doesNotMatch(body,/PRIVATE_SNAPSHOT_TABLE|internal SQL info/);
+ const quota=await worker.fetch(new Request(endpoint),{
+  DB:fault("exceeded D1's free tier daily row read limit"),
+  EDITORIAL_DEFAULTS_PREVIEW:'enabled'
+ },{});
+ assert.equal(quota.status,503);
+ assert.equal(JSON.parse(await quota.text()).code,'D1_DAILY_QUOTA_EXCEEDED');
+ assert.match(quota.headers.get('retry-after')||'',/^[0-9]+$/);
+});
+
+test('#390 enabled preview route exposes only exact verified snapshot and remains GET-only',async()=>{
+ const db=stagingDB();
+ const endpoint='https://ps-build-studio-cloud.bonaqu.workers.dev'+
+  '/api/editorial-defaults?snapshot='+manifest.snapshot;
+ const response=await worker.fetch(new Request(endpoint),{
+  DB:db,EDITORIAL_DEFAULTS_PREVIEW:'enabled'
+ },{});
+ assert.equal(response.status,200);
+ const payload=await response.json();
+ assert.equal(payload.sha256,manifest.digest);
+ assert.equal(payload.records.length,manifest.records.length);
+ assert.ok(db.queries.every(q=>/^\\s*SELECT\\b/i.test(q)));
+});
