@@ -97,6 +97,16 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
   await page.mouse.click(rect.x+rect.width/2,rect.y+rect.height/2);
  };
  page.on('dialog',dialog=>void dialog.accept());
+ // The editor delays caption navigation briefly to distinguish a dblclick.
+ // Wait for a completed chapter change before touching another control.
+ const chooseWikiChapter=async key=>{
+  const selector='[data-wiki-chapter="'+key+'"]';
+  await page.locator(selector).click();
+  await page.waitForFunction(chapterKey=>{
+   const tab=document.querySelector('[data-wiki-chapter="'+chapterKey+'"]');
+   return tab?.classList.contains('chosen')&&tab.dataset.ownerCaptionPending!=='1';
+  },key,{timeout:15000});
+ };
  try{
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
   // A fast mocked D1 may finish on first launch. Retry only if the public
@@ -112,7 +122,7 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
   await page.locator('.modal').getByRole('button',{name:'Войти',exact:true}).click();
   await page.locator('#ownerDock').waitFor({state:'visible'});
   await page.locator('#nav [data-tab="wiki"]').click();
-  await page.locator('[data-wiki-chapter="monster"]').click();
+  await chooseWikiChapter('monster');
   const search=page.locator('.wiki-controls input[type="search"]');
   await search.click();await search.fill('Слизень');
   await page.locator('[data-wiki-record="13101"]').waitFor({state:'visible'});
@@ -155,7 +165,7 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
     'An unrelated original spawn was lost: '+other);
   // Test three genuinely distinct D1 outcomes through real Wiki forms:
   // committed-but-503, committed-but-invalid-ack, and rejected 503 + retry.
-  await page.locator('[data-wiki-chapter="monster"]').click();
+  await chooseWikiChapter('monster');
   await page.locator('.wiki-monster-create').click();
   const monsterForm=page.locator('.wiki-owner-monster-form');
   // A single owner click on a chapter is deferred to distinguish a
@@ -197,7 +207,7 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
   assert.equal(monsterAttempts.length,1,
    'Readback-proved monster creation must not trigger another POST');
 
-  await page.locator('[data-wiki-chapter="map"]').click();
+  await chooseWikiChapter('map');
   await page.locator('.wiki-map-create').click();
   const mapForm=page.locator('.wiki-map-create-form');
   await mapForm.locator('[role="textbox"][aria-label="Название локации на русском"]').fill('Тестовая локация');
@@ -248,7 +258,7 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
   // commits the CAS reset but replies with 503: uncached GET must confirm
   // that exactly one deletion succeeded, without sending a second POST.
   const npcId=npcAttempts[0].key.slice('wikiedit.npc.'.length);
-  await page.locator('[data-wiki-chapter="npc"]').click();
+  await chooseWikiChapter('npc');
   await page.waitForFunction(()=>{
    const selected=document.querySelector('[data-wiki-chapter="npc"]');
    return selected?.classList.contains('chosen')&&
@@ -284,7 +294,7 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
   await page.waitForFunction(()=>document.documentElement.lang==='en');
   await page.locator('#nav [data-tab="wiki"]').click();
   await page.locator('#detailPanel.is-open').waitFor({state:'visible',timeout:10000});
-  await page.locator('[data-wiki-chapter="map"]').click();
+  await chooseWikiChapter('map');
   await page.locator('.wiki-map-create').click();
   const englishForm=page.locator('.wiki-map-create-form');
   const englishPanels=englishForm.locator('.studio-owner-interface-editor');
