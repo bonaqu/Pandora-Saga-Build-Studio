@@ -143,6 +143,18 @@ export async function runAdminEntrySmoke(browser,base){
  });
  const page=await context.newPage(),errors=[];
  page.on('pageerror',e=>errors.push(e.message));
+ // Mouse caption actions defer single-click until a double-click can be ruled out.
+ const closeWorkbench=async()=>{
+  await page.locator('#dockClose').click();
+  await page.locator('#detailPanel.is-open').waitFor({state:'hidden',timeout:15000});
+ };
+ const chooseWikiChapter=async key=>{
+  await page.locator('.wiki-categories [data-wiki-chapter="'+key+'"]').click();
+  await page.waitForFunction(chapterKey=>{
+   const tab=document.querySelector('.wiki-categories [data-wiki-chapter="'+chapterKey+'"]');
+   return tab?.classList.contains('chosen')&&tab.dataset.ownerCaptionPending!=='1';
+  },key,{timeout:15000});
+ };
  try{
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
   await page.locator('#profileTrigger').click();
@@ -565,7 +577,7 @@ export async function runAdminEntrySmoke(browser,base){
   await page.locator('#detailPanel.is-open').waitFor({state:'visible'});
   assert.equal(await edge.getAttribute('aria-expanded'),'true',
    'Opening saved builds must not collapse the editor');
-  await page.locator('#dockClose').click();
+  await closeWorkbench();
   assert.equal(await edge.getAttribute('aria-expanded'),'true');
   await ownerPanel.locator('.owner-dock-primary').click();
   await page.locator('#detailPanel.is-open').waitFor({state:'visible'});
@@ -622,7 +634,7 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(await edge.getAttribute('aria-expanded'),'true');
   // Honor is directly editable and D1-saving must preserve the encyclopedia
   // scroll position rather than rebuilding the entire workbench from the top.
-  await page.locator('.wiki-categories [data-wiki-chapter="honor"]').click();
+  await chooseWikiChapter('honor');
   const honorPanel=page.locator('.wiki-page');
   await honorPanel.locator('.wiki-honor-rank').first().waitFor({state:'visible'});
   assert.doesNotMatch(await honorPanel.innerText(),
@@ -724,10 +736,10 @@ export async function runAdminEntrySmoke(browser,base){
   // The Wiki workbench is modal; close it before using the global
   // language switch, then reopen the same Honor article.
   // The other locale has its own D1 field, not a replacement for RU.
-  await page.locator('#dockClose').click();
+  await closeWorkbench();
   await page.locator('#locale [data-locale="en"]').click();
   await page.locator('#nav [data-tab="wiki"]').click();
-  await page.locator('.wiki-categories [data-wiki-chapter="honor"]').click();
+  await chooseWikiChapter('honor');
   const englishCaption=page.locator('.wiki-honor-subtitle');
   await englishCaption.dblclick();
   const englishEditor=englishCaption.locator('[data-owner-text-field="true"]');
@@ -746,10 +758,10 @@ export async function runAdminEntrySmoke(browser,base){
    {ru:'PvP · нации · звания · награды — RU'});
   assert.equal(calls.filter(value=>value.startsWith('game-source:')).length,
    catalogCallsBeforeUndo,'Undo of editorial text reloaded the game source');
-  await page.locator('#dockClose').click();
+  await closeWorkbench();
   await page.locator('#locale [data-locale="ru"]').click();
   await page.locator('#nav [data-tab="wiki"]').click();
-  await page.locator('.wiki-categories [data-wiki-chapter="honor"]').click();
+  await chooseWikiChapter('honor');
   assert.match(await page.locator('.wiki-honor-subtitle').innerText(),/— RU/);
   // Reuse the existing authenticated admin smoke to check the real OS workbench.
   // All catalog requests are mocked; no production Worker or D1 is mutated.
@@ -1234,11 +1246,11 @@ export async function runAdminEntrySmoke(browser,base){
   // scenario. Restore the original navigation context before re-entering Wiki:
   // page-level #nav is intentionally hidden while a workbench is open.
   await dialog.getByRole('button',{name:/Закрыть/}).click();
-  await page.locator('#dockClose').click();
+  await closeWorkbench();
   await page.locator('#nav [data-tab="wiki"]').click();
   // Do not inherit Honor from the preceding regression: item editing starts
   // in the equipment chapter, regardless of the user's last visited chapter.
-  await page.locator('.wiki-categories [data-wiki-chapter="item"]').click();
+  await chooseWikiChapter('item');
   const wikiSearch=page.locator('input[name="pandora-studio-encyclopedia-filter"]');
   await wikiSearch.waitFor({state:'visible'});
   const speedCheck=page.locator('.wiki-speed-check');
@@ -1310,7 +1322,7 @@ export async function runAdminEntrySmoke(browser,base){
   // RU/EN names and its map relation; no production D1 writes.
   // The owner workbench is already open. Its backdrop intentionally blocks
   // top-level locale/navigation clicks until the panel is closed.
-  await page.locator('.wiki-categories [data-wiki-chapter="npc"]').click();
+  await chooseWikiChapter('npc');
   const npcFilter=page.locator('.wiki-controls input[type="search"]');
   await npcFilter.click();
   await npcFilter.fill('Кларис');
@@ -1391,7 +1403,7 @@ export async function runAdminEntrySmoke(browser,base){
   await savedLocation;
   assert.deepEqual(JSON.parse(townOverrides.get('wikiedit.npc.astir-npc-kingdom-claris')).maps,
    ['astir-union']);
-  await page.locator('#dockClose').click();
+  await closeWorkbench();
   await page.locator('#locale [data-locale="en"]').click();
   await page.locator('#nav [data-tab="wiki"]').click();
   const enHeading=page.locator('.wiki-page h3[data-owner-field="nameEn"]');
@@ -1408,7 +1420,7 @@ export async function runAdminEntrySmoke(browser,base){
   // Astir districts previously used a separate, non-cancellable NPC form.
   // Verify the shared bilingual D1 editor, cancellation, creation, visibility,
   // and removal of a newly created NPC; no game client or production writes.
-  await page.locator('.wiki-categories [data-wiki-chapter="map"]').click();
+  await chooseWikiChapter('map');
   const districtFilter=page.locator('input[name="pandora-studio-encyclopedia-filter"]');
   await districtFilter.fill('Kingdom District');
   await page.locator('.wiki-list [data-wiki-record="astir-kingdom"]')
@@ -1471,7 +1483,7 @@ export async function runAdminEntrySmoke(browser,base){
   console.log('Chromium Astir district owner NPC D1: bilingual, validation, cancel, save, read-back and delete passed');
 
   // Create an entirely new D1 location, then edit its sections and tags in place.
-  await page.locator('.wiki-categories [data-wiki-chapter="map"]').click();
+  await chooseWikiChapter('map');
   await page.locator('.wiki-map-create').waitFor({state:'visible'});
   await page.locator('.wiki-map-create').click();
   await page.locator('.wiki-map-create-form [aria-label="Location name in Russian"]')
@@ -1521,7 +1533,7 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(townOverrides.has(removedKey),false,'Owner location removed from D1');
   // The owner's verified El Beht roster is editable without inventing OS
   // numeric IDs. Create an owner monster from an unmatched report and link it.
-  await page.locator('.wiki-categories [data-wiki-chapter="map"]').click();
+  await chooseWikiChapter('map');
   const futureFilter=page.locator('input[name="pandora-studio-encyclopedia-filter"]');
   await futureFilter.click();
   await futureFilter.fill('Эль Ведд');
@@ -1613,7 +1625,7 @@ export async function runAdminEntrySmoke(browser,base){
   // The NPC Wiki workbench is modal and covers the language switch.
   // Close it using the real X button before changing language.
   if(await page.locator('#detailPanel.is-open').count())
-   await page.locator('#dockClose').click();
+   await closeWorkbench();
   // NPC admin flow can finish in EN; guarantee the RU editor writes RU.
   await page.locator('#locale [data-locale="ru"]').click();
   await page.waitForFunction(()=>document.documentElement.lang==='ru');
@@ -1711,7 +1723,7 @@ export async function runAdminEntrySmoke(browser,base){
   await page.locator('#locale [data-locale="ru"]').click();
   // #390: exercise the Hero Book's real RU/EN author-copy editor under a
   // logged-in admin with an isolated, mocked Cloudflare D1 override response.
-  if(await page.locator('#dockClose').isVisible())await page.locator('#dockClose').click();
+  if(await page.locator('#dockClose').isVisible())await closeWorkbench();
   // Previous scenario deliberately ends in English. Select RU for the RU
   // write first, then verify untouched EN fallback and restoration.
   await page.locator('#locale [data-locale="ru"]').click();
