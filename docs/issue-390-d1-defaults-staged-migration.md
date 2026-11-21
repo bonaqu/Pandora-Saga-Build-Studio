@@ -53,6 +53,7 @@ The manifest contains the source release, exact existing D1 record keys, field i
 ### Intentionally bounded coverage
 
 - Current `PandoraUILocale.keys()` and the Hero Book exact bilingual authorial defaults.
+- The complete existing `PandoraWikiLabels` bilingual chapter, Honor (including PvP Victories) and skill-filter registry, preserving the shared `guideedit.wiki.labels` D1 identity and each exact field name. The Reader validates the same closed allowlist; live game counts/thresholds are excluded.
 - Existing Book summary hover hints whose captions can be matched to the current ordered result metadata, plus semantic tooltip keys.
 - Existing Honor overview fields and rank names/benefit prose, **excluding rank thresholds**.
 - Missing summary hint matches are reported as `unmappedHints`, not silently assigned to a different game stat.
