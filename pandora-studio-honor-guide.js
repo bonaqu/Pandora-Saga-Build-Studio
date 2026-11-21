@@ -222,9 +222,22 @@ function patchFor(overrides,key){
  const translated=root.PandoraOwnerBilingual?.value(overrides,full)??overrides?.[full];
  return validOverride(key,translated)?parse(translated):null;
 }
+function stagedFallback(key,defaults){
+ const reader=root.PandoraEditorialDefaults;
+ if(!reader)return defaults;
+ const recordKey='guideedit.'+key;
+ const output={...defaults};
+ for(const field of Object.keys(defaults)){
+  const staged=reader.value(recordKey,field);
+  if(typeof staged==='string'&&staged.trim()&&staged.length<=(
+   key==='honor.overview'?2200:key.startsWith('honor.rank.')?500:360))
+   output[field]=staged;
+ }
+ return output;
+}
 function book(overrides,key,defaults){
  const patch=patchFor(overrides,'book.'+key)||{};
- return {...defaults,...patch};
+ return {...stagedFallback('book.'+key,defaults),...patch};
 }
 function summary(overrides,index,ru,en){
  const hint=hints[ru]||['',''];
