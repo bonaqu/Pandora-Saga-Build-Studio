@@ -661,18 +661,22 @@ function viewGrowth(target,api){
        const copy=make('span',{class:'path-unlock-copy'});
        const status=make('small',{class:'path-unlock-status'});
        status.append(make('span',{text:String(mark.threshold)}));
-       const unit=make('span');
-       bindPathCopy(api,unit,'pathUnlockPoints','оч.','pts','text','',' ');
-       status.append(unit);
+       const unit=authored(api,'pathUnlockPoints','оч.','pts',
+        'span','path-unlock-unit');
+       status.append(make('span',{text:' '}),unit);
+       let word=null;
        if(mark.locked||gate.learned){
-        const word=make('span');
-        bindPathCopy(api,word,mark.locked?'pathUnlockOverCap':'pathUnlockReady',
+        word=authored(api,mark.locked?'pathUnlockOverCap':'pathUnlockReady',
          mark.locked?'выше лимита':'доступно',
-         mark.locked?'above limit':'available','text','',' · ');
-        status.append(word);
+         mark.locked?'above limit':'available','span','path-unlock-state');
+        status.append(make('span',{text:' · '}),word);
        }
        copy.append(make('strong',{text:skill.name||tr(api,'Умение','Skill')}),status);
        button.append(copy);list.append(button);
+       if(api.canEdit){
+        guardCaptionAction(button,unit);
+        if(word)guardCaptionAction(button,word);
+       }
       }
      }
      unlockDetails.append(list);
@@ -1023,12 +1027,16 @@ function viewSkills(target,details,api){
      class:'path-skill-lineage-link',
      'data-related-skill-id':String(related.id),
      'aria-label':tr(api,'Следующее умение: ','Next skill: ')+label,
-     text:tr(api,'Следующее → ','Next → ')+label,
      onclick:()=>navigate(related)});
     bindPathCopy(api,button,'skillNextAria','Следующее умение:',
      'Next skill:','aria-label',' '+label);
-    bindPathCopy(api,button,'skillNextLink','Следующее →',
-     'Next →','text',' '+label);
+    // The published skill name comes from the catalog. Only the short
+    // "Next" action caption belongs to the D1 author editor.
+    const nextCaption=authored(api,'skillNextLink','Следующее →',
+     'Next →','span','path-skill-lineage-caption');
+    button.append(nextCaption,make('span',{
+     class:'path-skill-lineage-name',text:' '+label}));
+    if(api.canEdit)guardCaptionAction(button,nextCaption);
     lineage.append(button);
    }
    details.append(lineage);
