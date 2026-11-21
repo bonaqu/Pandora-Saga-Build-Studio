@@ -281,6 +281,33 @@ export async function runOwnerRacialPath648Smoke(browser,base){
    'Renaming a summary caption must not toggle the skills disclosure');
   assert.equal(await unlock.locator('button.path-owner-pencil').count(),0);
 
+  // Every skill milestone keeps its threshold and target skill ID outside
+  // the RU/EN author caption, even when edited on a real clickable row.
+  const unlockDetails=unlock.locator('xpath=..');
+  if(!await unlockDetails.evaluate(el=>el.open))
+   await unlock.locator('.path-unlock-count').click();
+  const milestone=unlockDetails.locator('button.path-unlock-skill').first();
+  await milestone.waitFor({state:'visible',timeout:12000});
+  const skillIdBefore=await milestone.locator('xpath=.').getAttribute('type');
+  const thresholdBefore=await milestone.locator('.path-unlock-status span').first().innerText();
+  const unit=milestone.locator('.path-unlock-unit');
+  assert.equal(await unit.innerText(),'pts');
+  await unit.dblclick();
+  const unitEditor=unit.locator('[data-owner-text-field]');
+  await unitEditor.waitFor({state:'visible'});
+  await unitEditor.fill('milestone pts QA');
+  await unitEditor.press('Tab');
+  await savedOverride('guideedit.book.path.path-unlock-points',
+   {en:'milestone pts QA'});
+  assert.equal(await unit.innerText(),'milestone pts QA');
+  assert.equal(await milestone.locator('.path-unlock-status span').first().innerText(),
+   thresholdBefore);
+  assert.equal(await milestone.getAttribute('type'),skillIdBefore);
+  assert.match(await milestone.getAttribute('aria-label'),/milestone pts QA/,
+   'The same D1 key refreshes the accessible action label after inline save');
+  assert.equal(await page.locator('#pathGrowthPage').isVisible(),true,
+   'Double-clicking a milestone caption must not navigate to skill details');
+
   // New D1 caption: never edit or persist the computed number of skills.
   await page.locator('#pathSkillsTab').click();
   const more=page.locator('#pathSkillGallery button.path-show-more');
