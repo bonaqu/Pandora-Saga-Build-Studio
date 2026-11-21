@@ -240,6 +240,26 @@ export async function runOwnerRacialPath648Smoke(browser,base){
    {ru:'Лимит ветки:',en:'Branch ceiling:'});
   assert.equal(await page.locator('#pathGrowthPage .path-limit-number').first()
    .textContent(),enCapNumber);
+  // Shared group metric captions can now be edited where the owner sees
+  // them, while all three numbers and the group disclosure remain intact.
+  const groupCount=page.locator('#pathGrowthPage .path-group-summary').first();
+  await groupCount.waitFor({state:'visible',timeout:12000});
+  const groupValuesBefore=await groupCount.locator('.path-group-summary-value').allTextContents();
+  const groupButton=groupCount.locator('xpath=..');
+  const expandedBefore=await groupButton.getAttribute('aria-expanded');
+  const groupMetric=groupCount.locator('.path-group-summary-copy').first();
+  assert.equal(await groupMetric.innerText(),'trained');
+  await groupMetric.dblclick();
+  const groupMetricEditor=groupMetric.locator('[data-owner-text-field]');
+  await groupMetricEditor.waitFor({state:'visible'});
+  await groupMetricEditor.fill('mastered QA');
+  await groupMetricEditor.press('Tab');
+  await savedOverride('guideedit.book.path.path-group-trained',{en:'mastered QA'});
+  assert.equal(await groupMetric.innerText(),'mastered QA');
+  assert.deepEqual(await groupCount.locator('.path-group-summary-value').allTextContents(),
+   groupValuesBefore,'Editing a shared metric cannot overwrite game totals');
+  assert.equal(await groupButton.getAttribute('aria-expanded'),expandedBefore);
+
   // The expandable rail keeps its live skill count outside the owner D1
   // editor. Double-clicking the author caption must not toggle the summary.
   const unlock=page.locator('#pathGrowthPage .path-unlock-details summary').first();
