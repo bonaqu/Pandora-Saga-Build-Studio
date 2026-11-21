@@ -169,3 +169,12 @@
 - Tests retain full Node + real Chromium browser coverage, plus an isolated two-locale rendering fixture: RU/EN editorial editor entry, identical `+42/+20/+22` source values, stable source skill name, preserved gated reason, no D1 writes. Separate browser checks edit **both** Honor captions inside one native summary while confirming unchanged disclosure state and ordinary click behavior.
 - **CI acceptance requires both full workflows on the exact last PR head**; intermediate successful or failed older SHAs are not proof of a newer commit. Do not merge or close this Draft PR or #390.
 - **Heuristic remaining ≈50%**, not measured by source lines. Still blocked: exhaustive rare dynamic-authorial coverage, physical touch acceptance, safe versioned storage of defaults in production D1, and read-only production verification after an approved release. No production D1 writes in this packet.
+
+## Продолжение · версионированные дефолтные тексты D1 и PvP label CAS · 21.11.2026
+
+- [x] Найдено фактическое расхождение между `PandoraHonorGuide.validOverride('wiki.labels')` и `worker/index.js`: клиент разрешал `honor_victories_{ru,en}`, Worker отказывал. Валидаторы выровнены, добавлена Node-проверка на все пять глав и отрицательные случаи.
+- [x] Реализован **только офлайн-планировщик**, вычисляющий детерминированный SHA-256-снимок проверяемого подмножества авторских D1 defaults, а также неизменяемую SQL-заготовку. Схема и контрольные суммы описаны в [плане миграции](issue-390-d1-defaults-staged-migration.md). Скрипт и тесты исключают изменение действующих `overrides` и production D1.
+- [ ] Физическая D1 миграция по-прежнему **не выполнена**: источник некоторых динамических надписей пока не инвентаризирован, версия не активирована в Worker, клиент не читает новую таблицу, staging/production readback и rollback не проведены.
+- [ ] Аппаратная touch-проверка на реальных устройствах и полная RU/EN-инвентаризация не завершены.
+- [ ] Новый пакет требует *полного* Node + Chromium SUCCESS на одном HEAD SHA; статус промежуточных коммитов не заменяет финальный.
+- **Осталось приблизительно 50% общей #390** по совокупности критериев приёмки, а не по строкам кода. PR #809 — OPEN DRAFT, #390 — OPEN. Никакого merge или изменения Pages/Worker/production D1.
