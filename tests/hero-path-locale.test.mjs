@@ -53,6 +53,14 @@ test('Hero Path uses Origin-approved attribute translations, not bare powerStat 
  assert.doesNotMatch(source,/field\(tr\(api,'Характеристика','Attribute'\),skill\.powerStat\)/);
 });
 
+test('issue 390: skill rail summary edits only author copy and not the live count',()=>{
+ assert.match(source,/authored\(api,'skillsOnTrackCaption','Умения на шкале'/);
+ assert.match(source,/class:'path-unlock-count'/);
+ assert.match(source,/marks\.reduce\(\(total,mark\)=>total\+mark\.skills\.length,0\)/);
+ assert.match(source,/guardCaptionAction\(unlockSummary,unlockCaption\)/);
+ assert.doesNotMatch(source,/text:\(root\.PandoraUILocale\?\.text\('skillsOnTrack'/);
+});
+
 test('issue 390: Path baseline/limit captions are editable separately from values',()=>{
  const src=readFileSync(new URL('../pandora-studio-hero-path.js',import.meta.url),'utf8');
  assert.match(src,/authored\(api,'innateBaselineLabel','Начально \(оч\.\):'/);
