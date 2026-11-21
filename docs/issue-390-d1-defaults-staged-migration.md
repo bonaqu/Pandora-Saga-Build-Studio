@@ -22,6 +22,30 @@ node scripts/plan-editorial-d1-defaults.mjs --json > local-editorial-defaults.js
 npm run editorial:defaults:sql > local-editorial-defaults.sql
 ```
 
+For offline **post-import verification** in a staging database, export the actual rows and the single snapshot marker into a local JSON document with exactly this structure:
+
+```json
+{
+  "metadata": {
+    "snapshot": "0.947.0-<digest-prefix-from-plan>",
+    "source_release": "0.947.0",
+    "sha256": "<full-64-character-SHA-256-from-plan>",
+    "expected_rows": 0
+  },
+  "rows": [
+    {"record_key": "guideedit.book.ui.label.some-key", "field": "ru", "value": "Actual database value"}
+  ]
+}
+```
+
+The example is a **schema illustration**, not a complete valid dump: `expected_rows` must match the generated report and `rows` must contain every physically read-back entry. To validate the real staging export, run:
+
+```bash
+npm run editorial:defaults:verify -- staging-readback.json
+```
+
+The command compares snapshot/release/digest/count, detects duplicate identities, rehashes the **actual readback contents** in canonical order and exits nonzero for any mismatch. A successful check validates only that isolated export; it does not activate any D1 snapshot or prove the live frontend uses it.
+
 The generator evaluates the actual `PandoraUILocale` and `PandoraHonorGuide` authorial dictionaries in isolated Node VM contexts. It does **not** make network requests, import Worker secrets, connect to Cloudflare, or run the SQL. The SQL is a review artifact: generating it does not authorize its execution.
 
 The manifest contains the source release, exact existing D1 record keys, field identities, bilingual fallback values, sorted rows, a SHA-256 digest of the canonical content, and a snapshot name incorporating that digest. The SQL includes the two versioned staging tables, conflict-preserving inserts, the completion marker inserted last, and readback queries. Apostrophes in authored text are escaped.
