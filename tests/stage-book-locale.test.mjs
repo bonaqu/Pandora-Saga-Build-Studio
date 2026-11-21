@@ -41,7 +41,9 @@ test('equipment effects, item procs and experience preview headings follow RU/EN
  assert.match(code,/function appendItemEvents\(body,calc,english,kind,gameTerms=\{\}\)/);
  assert.match(code,/root\.PandoraSkillPreview\?\.attach\(skillLink,row\.skillId\)/);
  assert.match(code,/calc\?\.specialEquipment\?\.entries/);
- assert.match(code,/english\?'Item and Soul triggers'/);
+ assert.match(code,/class:'stage-source-events-caption',text:english\?/);
+ assert.match(code,/english\?\s*'Item and Soul triggers'/);
+ assert.match(code,/class:'stage-book-live-count',text:' · '\+rows\.length/);
  assert.match(code,/english\?'Experience gain bonuses'/);
  assert.match(code,/entry\.triggerEn\|\|entry\.trigger/);
  assert.match(code,/entry\.skillNameEn\|\|entry\.skillName/);
