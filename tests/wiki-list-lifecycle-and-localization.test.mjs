@@ -65,11 +65,11 @@ test('Wiki results and actions preserve live numbers beside independent owner-ed
  // The shared owner-copy dictionary is intentionally outside renderWiki;
  // the live view must still consume it and keep each precise semantic identity.
  const source=app.match(
-  /const wikiCoreCopyRows=Object\\.freeze\\((\\[[\\s\\S]*?\\])\\);/);
+  /const wikiCoreCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
  assert.ok(source,'The production Wiki must share one source copy dictionary');
  const rows=runInNewContext('('+source[1]+')',{});
  assert.equal(rows.length,17);
- assert.match(wiki,/ownerInterfaceEditor\\('wiki-ui',wikiCoreCopyRows/);
+ assert.match(wiki,/ownerInterfaceEditor\('wiki-ui',wikiCoreCopyRows/);
  for(const [key,ru,en] of expected){
   const entry=rows.find(row=>row[0]===key);
   assert.ok(entry,'Missing semantic owner-copy key '+key);
