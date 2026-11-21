@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,mkdtempSync,writeFileSync,rmSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
+import {createHash} from 'node:crypto';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -263,7 +264,7 @@ test('issue 390: staging SQL cannot be generated from a forged but self-consiste
  const rows=manifest.records.map(r=>({...r}));
  rows[0].field='playerId';
  const canonical={schema:1,release:manifest.release,records:rows};
- const digest=(await import('node:crypto')).createHash('sha256')
+ const digest=createHash('sha256')
   .update(JSON.stringify(canonical)).digest('hex');
  const forged={...manifest,records:rows,digest,
   snapshot:manifest.release+'-'+digest.slice(0,16)};
