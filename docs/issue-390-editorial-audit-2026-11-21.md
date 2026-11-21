@@ -65,3 +65,10 @@
 - SHA `04d9e1d88fa044d2f90fe64557960be58eb48a1b`: [Chromium #44856815386](https://github.com/bonaqu/Pandora-Saga-Build-Studio/actions/runs/44856815386) passed with the added touch-pointer scenarios.
 - [Node #44856815374](https://github.com/bonaqu/Pandora-Saga-Build-Studio/actions/runs/44856815374) ran 3304 tests: 3302 passed, 1 TODO, 1 failure in `tests/library-inline-copy.test.mjs`. This was a stale assertion demanding the removed `button:not(.account-copy-pencil)` selector; the current code rightly focuses the real first button. Updated the assertion to require the live direct button focus and **absence** of obsolete pencil code. The earlier code was not restored.
 - Cleaned the unreferenced local variable in Chromium touch acceptance. The repair commit must receive a fresh Node + Chromium on the same SHA; the preceding Chromium success is only evidence for the preceding revision.
+
+## Fourth continuation packet · real touch edge-case protection
+
+- [x] Head `2dabe3c3d5ed9ac38650d3367c2cdb671b8c064a` passed [Node 44857304880](https://github.com/bonaqu/Pandora-Saga-Build-Studio/actions/runs/44857304880) and [Chromium 44857304908](https://github.com/bonaqu/Pandora-Saga-Build-Studio/actions/runs/44857304908).
+- [x] Fixed the nested-button long-press gap: controls nested inside a caption cannot trigger an editor on the parent. Added pointer cancellation on a scrolling container/window event and suppression of native context menus arriving **after** the editor opened.
+- [x] Extended actual Chromium synthetic pointer coverage at 390px for nested actions, scroll cancellation, movement cancellation and context-menu suppression. Existing full owner RU/EN/CAS scenarios remain enabled.
+- [ ] This touch-hardening packet requires Node + real Chromium on its own new SHA. Physical mobile hardware/OS gestures remain unverified, and owner controls inside buttons/summary still intentionally excluded.

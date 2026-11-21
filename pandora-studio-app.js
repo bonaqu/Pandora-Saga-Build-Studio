@@ -1109,13 +1109,15 @@ function bindOwnerTouchCaption(node,edit){
   if(!gesture||!adminEditing||!adminToken||!gesture.node.isConnected||
    gesture.node.hidden||!ownerTouchCaptionEditors.has(gesture.node)||
    gesture.node.querySelector('[contenteditable],.wiki-inline-input,.ui-content-edit-host'))return;
-  ownerTouchSwallow={node:gesture.node,until:Date.now()+400};
+  // Long-press may open the editor before the OS delivers its native menu.
+  // Keep the gesture mark long enough to suppress that delayed menu too.
+  ownerTouchSwallow={node:gesture.node,until:Date.now()+1000};
   gesture.edit({preventDefault(){},stopPropagation(){}});
  };
  document.addEventListener('pointerdown',event=>{
   if(!adminEditing||!adminToken||event.pointerType!=='touch'||
    event.isPrimary===false||event.button!==0||
-   event.target?.closest?.('input,textarea,select,[contenteditable]'))return;
+   event.target?.closest?.('input,textarea,select,button,a,summary,label,[role="button"],[contenteditable]'))return;
   for(let node=event.target;node&&node!==document;node=node.parentElement){
    const edit=ownerTouchCaptionEditors.get(node);
    if(!edit)continue;
@@ -1132,11 +1134,16 @@ function bindOwnerTouchCaption(node,edit){
  },true);
  for(const name of ['pointerup','pointercancel'])
   document.addEventListener(name,cancelOwnerTouchGesture,true);
+ // The platform can begin scrolling without a final pointermove on the
+ // caption itself. Do not open an editor after that viewport/panel scroll.
+ document.addEventListener('scroll',cancelOwnerTouchGesture,true);
  document.addEventListener('contextmenu',event=>{
-  const g=ownerTouchGesture;
+  const g=ownerTouchGesture,marked=ownerTouchSwallow;
   if(g?.node.contains(event.target)){
    event.preventDefault();
-   open(); // Native mobile context menu must not hide the owner editor.
+   open();
+  }else if(marked&&Date.now()<=marked.until&&marked.node.contains(event.target)){
+   event.preventDefault(); // Context menu arrives after the editor opened.
   }
  },true);
  document.addEventListener('click',event=>{

@@ -131,3 +131,12 @@ test('touch owner mode reuses the Book inline editor and avoids redundant DOM mo
  assert.match(source,/root\.PandoraOwnerTouchEdit\?\.\(node,editName\)/);
  assert.doesNotMatch(source,/grid\.append\(tile\);\s*grid\.append\(tile\)/);
 });
+
+test('owner touch caption guard excludes actions, viewport scroll and delayed OS menus',()=>{
+ const source=file('pandora-studio-app.js');
+ assert.match(source,/ownerTouchCaptionEditors=new WeakMap\(\)/);
+ assert.match(source,/event\.target\?\.closest\?\.\('input,textarea,select,button,a,summary,label,\[role="button"\],\[contenteditable\]'\)/);
+ assert.match(source,/document\.addEventListener\('scroll',cancelOwnerTouchGesture,true\)/);
+ assert.match(source,/marked\.node\.contains\(event\.target\)/);
+ assert.match(source,/ownerTouchSwallow=\{node:gesture\.node,until:Date\.now\(\)\+1000\}/);
+});

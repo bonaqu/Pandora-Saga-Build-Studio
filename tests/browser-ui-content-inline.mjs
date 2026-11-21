@@ -220,6 +220,40 @@ export async function runUIContentInlineSmoke(browser,base){
   await longField.press('Escape');
   assert.equal(await page.locator('#stageHeading').innerText(),
    'Черновик после неподтверждённой записи');
+  // Holding a *nested action* must never borrow its parent caption editor.
+  await appearanceHeading.evaluate(el=>{
+   const button=document.createElement('button');
+   button.type='button';button.className='touch-owner-action-probe';
+   button.textContent='Action';el.append(button);
+  });
+  const nestedAction=appearanceHeading.locator('.touch-owner-action-probe');
+  await nestedAction.dispatchEvent('pointerdown',{
+   pointerType:'touch',isPrimary:true,button:0,clientX:12,clientY:20
+  });
+  await page.waitForTimeout(560);
+  assert.equal(await page.locator(
+   '.stage .panel-heading .ui-content-edit-host [contenteditable]').count(),0);
+  await nestedAction.dispatchEvent('pointerup',{pointerType:'touch',isPrimary:true});
+  await nestedAction.evaluate(el=>el.remove());
+  // Scrolling or moving a finger away must cancel before the hold threshold.
+  await appearanceHeading.dispatchEvent('pointerdown',{
+   pointerType:'touch',isPrimary:true,button:0,clientX:12,clientY:20
+  });
+  await page.evaluate(()=>document.dispatchEvent(new Event('scroll')));
+  await page.waitForTimeout(530);
+  assert.equal(await page.locator(
+   '.stage .panel-heading .ui-content-edit-host [contenteditable]').count(),0);
+  await appearanceHeading.dispatchEvent('pointerup',{pointerType:'touch',isPrimary:true});
+  await appearanceHeading.dispatchEvent('pointerdown',{
+   pointerType:'touch',isPrimary:true,button:0,clientX:12,clientY:20
+  });
+  await appearanceHeading.dispatchEvent('pointermove',{
+   pointerType:'touch',isPrimary:true,button:0,clientX:50,clientY:20
+  });
+  await page.waitForTimeout(530);
+  assert.equal(await page.locator(
+   '.stage .panel-heading .ui-content-edit-host [contenteditable]').count(),0);
+  await appearanceHeading.dispatchEvent('pointerup',{pointerType:'touch',isPrimary:true});
   // Owner touch gesture is long-press only on a plain caption. A short tap
   // must not replace a button click or expose the editor to a guest.
   await appearanceHeading.dispatchEvent('pointerdown',{
@@ -230,6 +264,11 @@ export async function runUIContentInlineSmoke(browser,base){
    '.stage .panel-heading .ui-content-edit-host [contenteditable]');
   await touchHeading.waitFor({state:'visible',timeout:6000});
   assert.equal(await touchHeading.textContent(),'Черновик после неподтверждённой записи');
+  const menuBlocked=await appearanceHeading.evaluate(el=>{
+   const menu=new MouseEvent('contextmenu',{bubbles:true,cancelable:true});
+   el.dispatchEvent(menu);return menu.defaultPrevented;
+  });
+  assert.equal(menuBlocked,true,'Native context menu must not hide an active touch editor');
   await touchHeading.press('Escape');
   await appearanceHeading.dispatchEvent('pointerup',{pointerType:'touch',isPrimary:true});
   await page.setViewportSize({width:1100,height:810});
