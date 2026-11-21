@@ -887,12 +887,8 @@ test('click and hold controls bind authorial aria texts without editing point co
 test('group totals update only numeric spans without deleting edited D1 captions',()=>{
  const {api,target,state}=fixture('CLERIC','prayer','benevolence');
  const copied=[];
- api.bindCopy=(node,key,ru,en,attr='text',suffix='',prefix='')=>{
-  copied.push({node,key,attr,suffix,prefix});
-  const customized=key.startsWith('pathGroup')?'CUSTOM_'+key:ru;
-  if(attr==='text')node.textContent=prefix+customized+suffix;
-  else node.setAttribute(attr,prefix+customized+suffix);
- };
+ api.copyLabel=(key,ru)=>key.startsWith('pathGroup')?'CUSTOM_'+key:ru;
+ api.editLabel=(node,key)=>copied.push({node,key});
  root.PandoraHeroPath.viewGrowth(target,api);
  const group=walk(target).find(el=>el.attributes?.['data-path-group']==='prayer');
  const summary=walk(group).find(el=>el.className==='path-group-summary');
@@ -900,8 +896,10 @@ test('group totals update only numeric spans without deleting edited D1 captions
  const labels=summary.children.filter(el=>el.className==='path-group-summary-copy');
  const values=summary.children.filter(el=>el.className==='path-group-summary-value');
  assert.deepEqual(labels.map(el=>el.textContent),[
-  'CUSTOM_pathGroupTrained ',' · CUSTOM_pathGroupLearned ',' · CUSTOM_pathGroupInvested '
+  'CUSTOM_pathGroupTrained','CUSTOM_pathGroupLearned','CUSTOM_pathGroupInvested'
  ]);
+ assert.equal(summary.children.filter(el=>el.tag==='#text').length,0,
+  'Punctuation is isolated in DOM spans, not part of D1 content');
  assert.equal(values.length,3);
  const originals=[...labels];const startCount=values.map(el=>el.textContent);
  const range=walk(target).find(el=>el.attributes?.['data-branch-control']==='benevolence:potential-range');
@@ -920,6 +918,7 @@ test('group totals update only numeric spans without deleting edited D1 captions
 test('requirements use bilingual editable fragments while source numbers and branches are immutable',()=>{
  const {api}=fixture('CLERIC','prayer','benevolence');
  const bound=[];
+ api.editLabel=(node,key)=>bound.push({node,key,attr:'direct'});
  api.bindCopy=(node,key,ru,en,attr='text',suffix='',prefix='')=>{
   bound.push({node,key,attr,prefix,suffix});
   if(attr==='text')node.textContent=prefix+(api.lang==='en'?en:ru)+suffix;
@@ -944,7 +943,8 @@ test('requirements use bilingual editable fragments while source numbers and bra
   String(points.branchMastery(api.state,'benevolence',api.innate,api.branchCaps))
  ]);
  assert.deepEqual(line.children.filter(el=>el.className==='path-requirement-caption')
-  .map(el=>el.textContent),[' · порог ',' · старт ',' · доступно ',' · освоено ']);
+  .map(el=>el.textContent),['порог','старт','доступно','освоено']);
+ assert.equal(line.children.filter(el=>el.className==='path-requirement-value').length,4);
  assert.deepEqual(bound.filter(x=>x.key.startsWith('pathReq')).map(x=>x.key),[
   'pathReqThreshold','pathReqInnate','pathReqPotential','pathReqTrained'
  ]);
