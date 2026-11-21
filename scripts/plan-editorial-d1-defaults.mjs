@@ -182,6 +182,22 @@ if(process.argv[1]&&fileURLToPath(import.meta.url)===resolve(process.argv[1])){
  const format=process.argv[2]||'--report';
  if(format==='--sql')process.stdout.write(renderEditorialDefaultsSQL(manifest));
  else if(format==='--json')process.stdout.write(JSON.stringify(manifest,null,2)+'\n');
+ else if(format==='--verify-readback'){
+  const filename=process.argv[3];
+  if(!filename){process.stderr.write('Missing staging readback JSON path\n');process.exitCode=2;}
+  else {
+   try{
+    const data=JSON.parse(readFileSync(resolve(filename),'utf8'));
+    const verdict=verifyEditorialDefaultsReadback(
+     manifest,data?.metadata,data?.rows);
+    process.stdout.write(JSON.stringify(verdict,null,2)+'\n');
+    if(!verdict.ok)process.exitCode=1;
+   }catch(error){
+    process.stderr.write('Invalid staging readback file: '+error.message+'\n');
+    process.exitCode=2;
+   }
+  }
+ }
  else if(format==='--report')process.stdout.write(JSON.stringify({
   schema:manifest.schema,release:manifest.release,
   snapshot:manifest.snapshot,digest:manifest.digest,
@@ -189,7 +205,7 @@ if(process.argv[1]&&fileURLToPath(import.meta.url)===resolve(process.argv[1])){
  },null,2)+'\n');
  else{
   process.stderr.write('Usage: node scripts/plan-editorial-d1-defaults.mjs '+
-   '[--report|--json|--sql]\n');
+   '[--report|--json|--sql|--verify-readback <staging-readback.json>]\n');
   process.exitCode=2;
  }
 }
