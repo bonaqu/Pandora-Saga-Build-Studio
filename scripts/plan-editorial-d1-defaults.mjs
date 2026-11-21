@@ -18,12 +18,15 @@ export function buildEditorialDefaultsManifest(){
  for(const path of [
   'pandora-studio-hero-book.js',
   'pandora-studio-ui-locale.js',
-  'pandora-studio-honor-guide.js'
+  'pandora-studio-honor-guide.js',
+  'pandora-studio-wiki-labels.js'
  ])runInNewContext(read(path),context,{filename:path,timeout:5000});
  const ui=scope.PandoraUILocale;
  const book=scope.PandoraStageAttributes;
  const guide=scope.PandoraHonorGuide;
- if(!ui?.fieldKey||!book?.summaryRows||!guide?.validOverride)
+ const wiki=scope.PandoraWikiLabels;
+ if(!ui?.fieldKey||!book?.summaryRows||!guide?.validOverride||
+  !wiki?.key||!wiki?.validField)
   throw Error('Required audited authorial catalogs did not initialize');
 
  const packageInfo=JSON.parse(read('package.json'));
@@ -32,9 +35,10 @@ export function buildEditorialDefaultsManifest(){
   throw Error('Invalid pinned source release');
  const records=[],seen=new Set(),cohorts=Object.create(null);
  function append(recordKey,field,value,cohort){
-  if(!/^guideedit\.(?:book\.[a-z][a-zA-Z0-9._:-]{1,80}|honor\.(?:overview|rank\.(?:[0-9]|1[01])))$/.test(recordKey))
+  if(!/^guideedit\.(?:book\.[a-z][a-zA-Z0-9._:-]{1,80}|honor\.(?:overview|rank\.(?:[0-9]|1[01]))|wiki\.labels)$/.test(recordKey))
    throw Error('Unallowlisted authorial field: '+recordKey);
-  if(!/^(?:ru|en|hintRu|hintEn|[a-z][a-zA-Z]*Ru|[a-z][a-zA-Z]*En)$/.test(field))
+  if(recordKey==='guideedit.wiki.labels'?!wiki.validField(field):
+   !/^(?:ru|en|hintRu|hintEn|[a-z][a-zA-Z]*Ru|[a-z][a-zA-Z]*En)$/.test(field))
    throw Error('Unallowlisted authorial subfield: '+field);
   if(typeof value!=='string'||!value.trim()||value.length>8000||
    /[\x00-\x08\x0b\x0c\x0e-\x1f]/.test(value))
@@ -53,6 +57,20 @@ export function buildEditorialDefaultsManifest(){
   if(!id)throw Error('Missing existing bilingual owner field key: '+key);
   for(const lang of ['ru','en'])
    append('guideedit.book.'+id,lang,ui.baseText(key,lang),'ui-locale');
+ }
+
+ // The Wiki chapters, all five Honor subchapters and skill filters are
+ // one existing D1 JSON record. Preserve their exact field identities;
+ // never reconstruct these labels from list position or save them as game IDs.
+ for(const [group,registry] of [
+  ['chapter',wiki.chapter],['honor',wiki.honor],['skillFilter',wiki.skillFilter]
+ ]){
+  for(const [id,names] of Object.entries(registry)){
+   if(!Array.isArray(names)||names.length!==2)
+    throw Error('Invalid bilingual Wiki label default: '+group+'/'+id);
+   for(const [index,lang] of ['ru','en'].entries())
+    append('guideedit.wiki.labels',wiki.key(group,id,lang),names[index],'wiki-labels');
+  }
  }
 
  // Summary tooltip keys are position-defined in the existing public UI.
