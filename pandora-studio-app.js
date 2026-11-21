@@ -3484,8 +3484,6 @@ function renderPathCopyControls(){
    node.dataset.pathCopyBound='1';
    node.addEventListener('dblclick',edit);
   }
-  node.nextElementSibling?.matches?.('.path-inline-copy-pencil')&&
-   node.nextElementSibling.remove();
  }
  for(const [id,key,ru,en,symbol] of [
   ['pathGrowthTab','tabGrowth','Развитие','Growth','◈'],
@@ -7714,15 +7712,21 @@ function profileCopyLabel(key,ru,en,{as='span',forId=null}={}){
   editWikiValue(node,ownerCopy('profile',key,ru,en),{
    type:'text',
    onCommit:next=>saveGuidePatch('book.'+ownerCopyKey('profile',key),{[editLang]:next}),
-   // The shared refresh also handles Esc, newer locale, input aria/placeholder,
-   // and the pencil; no profile redraw or player field remount is required.
+   // The shared refresh handles Esc, newer locale and input aria/placeholder;
+   // no label pencil, profile redraw or player-field remount is necessary.
    onFinished:()=>refreshVisibleProfileCopy()
   });
  };
  node.addEventListener('dblclick',edit);
  node.tabIndex=0;
- node.setAttribute('aria-keyshortcuts','F2');
- node.addEventListener('keydown',event=>{if(event.key==='F2')edit(event)});
+ // A bound <label> retains its native action for Enter; standalone captions
+ // use Enter or F2 to start editing without inserting a new action button.
+ const canUseEnter=as!=='label';
+ node.setAttribute('aria-keyshortcuts',canUseEnter?'F2 Enter':'F2');
+ node.addEventListener('keydown',event=>{
+  if(event.target!==node)return; // Do not reopen from a nested editor.
+  if(event.key==='F2'||(canUseEnter&&event.key==='Enter'))edit(event);
+ });
  return node;
 }
 function profileCopyNote(key,ru,en){

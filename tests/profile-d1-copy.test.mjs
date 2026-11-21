@@ -59,6 +59,16 @@ test('profile owner copy changes only labels and accessible placeholders, never 
  assert.match(app,/key\.startsWith\('book\.profile\.'/);
  const css=read('pandora-studio-owner-inline-ui.css');
  assert.match(css,/\.ps-profile-copy-host/);
- assert.match(css,/\.ps-profile-copy-pencil/);
+ assert.doesNotMatch(css,/\.ps-profile-copy-pencil/);
+ assert.doesNotMatch(css,/\.ps-profile-copy-host/);
+ assert.doesNotMatch(css,/\.path-inline-copy-pencil|\.path-racial-pencil|\.path-more-pencil/);
+ assert.match(css,/\.ps-profile-row>\.ps-profile-copy/);
+ assert.match(css,/\.ps-profile-copy>\.wiki-inline-input/);
+ assert.match(css,/@media\(max-width:700px\)\{\s*\.ps-profile-row>\.ps-profile-copy\{width:100%\}/);
+ assert.match(css,/grid-template-columns:minmax\(0,1fr\);align-items:stretch/);
+ assert.match(editor,/const canUseEnter=as!=='label'/);
+ assert.match(editor,/node\.setAttribute\('aria-keyshortcuts',canUseEnter\?'F2 Enter':'F2'\)/);
+ assert.match(editor,/if\(event\.target!==node\)return/);
+ assert.match(editor,/if\(event\.key==='F2'\|\|\(canUseEnter&&event\.key==='Enter'\)\)edit\(event\)/);
  assert.doesNotMatch(app,/saveGuidePatch\('book\.profile\.'\+state\.name/);
 });

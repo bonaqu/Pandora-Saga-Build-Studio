@@ -233,3 +233,7 @@ Audited all 58 shipped `pandora-*.js` modules and static HTML. Pencil creation r
 ## #390 cleaned CSS after direct-caption migration
 
 Removed orphaned pencil CSS from owner-inline and Workbench guidance after auditing the 58 runtime JS modules; simplified native button rules and restored 8px right padding where 23/28px was previously reserved for duplicate caption pencils. True independent hover-hint pencil buttons and actual inline text editor styles are preserved. New Node CSS contract protects against regression. Physical touch QA still open.
+
+## #390 direct profile copy sizing and retired pencil tracks · 22.11.2026
+
+Reviewed rendered profile DOM: the live copy sits on `.ps-profile-copy`, with no `.ps-profile-copy-host` or pencil. Removed dead profile and Hero Path legend/racial/show-more pencil CSS. The racial disabled row no longer wastes a 27px empty grid track. The visible profile caption and its in-place text editor now use the actual DOM selectors for mobile wrapping and width; editable build name, guild, nation, rank and bio inputs are not replaced. Standalone profile copy accepts Enter/F2, while a real associated `label` keeps its native Enter behavior and exposes F2 for editing; key events from nested draft inputs do not reenter the editor. Updated the failing profile regression test to verify these real contracts rather than the removed pencil. Await full Node+Chromium on the new exact SHA; production D1 unchanged.

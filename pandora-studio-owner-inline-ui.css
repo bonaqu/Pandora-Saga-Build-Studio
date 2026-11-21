@@ -261,43 +261,25 @@
  .stage-guide-edit-name,.stage-guide-edit-hint{transition:none}
 }
 
-/* A real pencil is more discoverable than a dotted underline on the
-   Hero Path legend and auto mastery label, while remaining unobtrusive. */
-.path-inline-copy-pencil{
- display:inline-flex;align-items:center;justify-content:center;
- flex:0 0 17px;min-width:17px;width:17px;height:18px;
- padding:0;margin:0 2px;border:1px solid #8b6b44;border-radius:3px;
- background:#302117;color:#e4bd87;font:600 10px/1 Manrope,Arial,sans-serif;
- vertical-align:middle;cursor:pointer
+/* Direct-edit profile labels share the same mounted element as their input.
+   No pencil or obsolete wrapper column; allow wide RU/EN drafts on mobile. */
+.ps-profile-row>.ps-profile-copy,
+.ps-overview-card .ps-profile-copy,
+.ps-profile-placeholder-editor>.ps-profile-copy{
+ display:inline-block;min-width:0;max-width:100%;overflow-wrap:anywhere
 }
-.path-inline-copy-pencil:hover,.path-inline-copy-pencil:focus-visible{
- background:#52371f;border-color:#e9be7f;outline-offset:2px
-}
-.path-inline-copy-pencil[hidden]{display:none!important}
-
-/* Profile/character editorial labels: one compact pencil beside the caption,
-   never inside the real name/bio input; player text stays undisturbed. */
-.ps-profile-copy-host{
- display:inline-flex;align-items:center;justify-content:flex-start;
- min-width:0;max-width:100%;gap:5px;flex-wrap:wrap
-}
-.ps-profile-copy-host>.ps-profile-copy{min-width:0;overflow-wrap:anywhere}
-.ps-profile-row>.ps-profile-copy-host{
- display:inline-flex;align-self:center;min-width:0
-}
-.ps-overview-card .ps-profile-copy-host{display:inline-flex;flex-wrap:wrap}
 .ps-profile-placeholder-editor{
  display:flex;align-items:center;min-width:0;
  padding:2px 0 4px;margin-left:0;color:#bca27e;
  font:500 10px/1.4 Manrope,Arial,sans-serif
 }
-.ps-profile-copy-host .wiki-inline-input{
+.ps-profile-copy>.wiki-inline-input{
  display:block;width:min(100%,230px);min-width:0;max-width:100%;
  box-sizing:border-box;font:500 12px/1.35 Manrope,Arial,sans-serif
 }
 @media(max-width:700px){
- .ps-profile-row>.ps-profile-copy-host{width:100%}
- .ps-profile-copy-host .wiki-inline-input{width:100%}
+ .ps-profile-row>.ps-profile-copy{width:100%}
+ .ps-profile-copy>.wiki-inline-input{width:100%}
 }
 
 /* Toast editorial forms should stay inside the live notice and never
@@ -421,22 +403,16 @@
  .owner-dialog-editor{gap:4px}
 }
 
-/* Racial branch stays disabled; the site-copy pencil is a separate control. */
-.path-racial-owner-row{display:grid;grid-template-columns:minmax(0,1fr) 27px;align-items:stretch;gap:3px;min-width:0}
+/* Racial branch text overlays its disabled button, without the retired
+   extra 27px pencil track or truncated editable caption. */
+.path-racial-owner-row{display:grid;grid-template-columns:minmax(0,1fr);align-items:stretch;min-width:0}
 .path-racial-owner-row>.path-racial-unavailable{grid-column:1;grid-row:1;min-width:0;margin:0}
-.path-racial-owner-row>.path-racial-owner-caption{grid-column:1;grid-row:1;z-index:1;align-self:center;margin-inline:12px 28px;min-width:0;overflow-wrap:anywhere}
+.path-racial-owner-row>.path-racial-owner-caption{grid-column:1;grid-row:1;z-index:1;align-self:center;margin-inline:12px;min-width:0;overflow-wrap:anywhere}
 .path-racial-owner-row>.path-racial-owner-caption .wiki-inline-input{max-width:100%;min-width:0}
-.path-racial-owner-row>.path-racial-pencil{grid-column:2;grid-row:1}
-.path-racial-owner-row>.path-racial-pencil{flex:0 0 27px;align-self:center;width:27px;height:27px;border:1px solid #89643b;border-radius:4px;background:#302017;color:#e5c28b;cursor:pointer}
-.path-racial-owner-row>.path-racial-pencil:hover{background:#513520;border-color:#dcb477}
-.path-racial-owner-row>.path-racial-pencil:focus-visible{outline:2px solid #ecc88c;outline-offset:2px}
 
 /* The dynamic skill-count suffix stays outside the editable Show-more caption. */
 .path-more-owner-row{display:flex;align-items:stretch;gap:4px;min-width:0}
 .path-more-owner-row>.path-show-more{flex:1 1 auto;width:auto;min-width:0}
-.path-more-owner-row>.path-more-pencil{flex:0 0 28px;align-self:stretch;border:1px solid #85643d;border-radius:4px;background:#302017;color:#e5c28b;cursor:pointer}
-.path-more-owner-row>.path-more-pencil:hover{background:#513520;border-color:#dcb477}
-.path-more-owner-row>.path-more-pencil:focus-visible{outline:2px solid #ecc88c;outline-offset:2px}
 .path-more-owner-row .path-more-copy{overflow-wrap:anywhere}
 
 /* Hero Path prerequisite text: edit only the caption, not the linked skill. */
