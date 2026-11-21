@@ -79,7 +79,8 @@ test('site shell has clean title/footer, D1-grounded counters and no retired arc
  assert.ok(!html.includes('VINTAGE · CHARACTER PLANNER'));
  assert.match(html,/<span id="iconStatus" hidden aria-hidden="true"><\/span>/);
  assert.match(app,/function renderCatalogStatus\(\)/);
- assert.match(app,/В энциклопедии: /);
+ assert.match(app,/\['lead','В энциклопедии:','Encyclopedia:'\]/);
+ assert.match(app,/data-catalog-status-value/);
  assert.match(app,/data\.meta\.counts\.skills/);
  assert.match(app,/data\.meta\.counts\.items/);
  assert.match(app,/data\.meta\.counts\.souls/);

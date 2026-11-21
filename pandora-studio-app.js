@@ -3638,7 +3638,7 @@ $('jobTitle').textContent=hasJob?editableValue('job.'+state.job,jobs[state.job])
  renderOriginStats(calculated);renderBranches();refreshBudgetLabel();
  renderPathPages();renderDetails();renderOriginVitals(calculated);
  renderOriginCopyLabels();renderWorkbenchHintEditors();
- refreshWorkbenchHints();updateAdminHint()}
+ refreshWorkbenchHints();renderCatalogStatus();updateAdminHint()}
 // Cloud reconciliation replaces saved-build cards, but it must not erase a
 // title being typed or move the reader away from the filtered results.
 function refreshBuildsAfterCloudLoad(){
@@ -11472,15 +11472,48 @@ function syncLocaleControls(){
   button.setAttribute('aria-pressed',String(active));
  }
 }
+// Only source-authored words of the footer enter D1. The three quantities
+// always come from the loaded catalog snapshot, not editable text.
+const catalogCountParts=Object.freeze([
+ ['lead','В энциклопедии:','Encyclopedia:'],
+ ['skills','навыков','skills'],
+ ['items','предметов','items'],
+ ['souls','душ','souls']
+]);
 function renderCatalogStatus(){
- const target=$('catalogStatus'),data=catalogSource;
- if(!target||!data?.meta?.counts)return;
- // Counts come from the current selected catalog snapshot, never a hard-coded
- // number. Re-evaluate the user-facing text after every locale change.
- target.textContent=(lang==='en'?'Encyclopedia: ':'В энциклопедии: ')+
-  data.meta.counts.skills+(lang==='en'?' skills · ':' навыков · ')+
-  data.meta.counts.items+(lang==='en'?' items · ':' предметов · ')+
-  data.meta.counts.souls+(lang==='en'?' souls':' душ');
+ const target=$('catalogStatus'),counts=catalogSource?.meta?.counts;
+ if(!target||!counts)return;
+ const owner=Boolean(adminEditing&&adminToken);
+ if(target.querySelectorAll('[data-catalog-status-copy]').length!==4||
+   target.dataset.catalogStatusOwner!==String(owner)){
+  const nodes=[];
+  for(const [key,ru,en] of catalogCountParts){
+   if(key!=='lead')nodes.push(h('span',{
+    'data-catalog-status-value':key,
+    text:' '+(key==='skills'?'':'· ')+String(counts[key])+' '
+   }));
+   const id='catalogCount'+key[0].toUpperCase()+key.slice(1);
+   const label=h('span',{'data-catalog-status-copy':key,
+    text:ownerCopy('catalog-sync',id,ru,en)});
+   ownerCopyLabel(label,'catalog-sync',id,ru,en);
+   nodes.push(label);
+  }
+  target.replaceChildren(...nodes);
+  target.dataset.catalogStatusOwner=String(owner);
+ }
+ for(const [key,ru,en] of catalogCountParts){
+  const label=target.querySelector('[data-catalog-status-copy="'+key+'"]');
+  if(label&&!label.querySelector('.wiki-inline-input,[data-owner-text-field]')){
+   const id='catalogCount'+key[0].toUpperCase()+key.slice(1);
+   const value=ownerCopy('catalog-sync',id,ru,en);
+   if(label.textContent!==value)label.textContent=value;
+  }
+  if(key!=='lead'){
+   const count=target.querySelector('[data-catalog-status-value="'+key+'"]');
+   const value=' '+(key==='skills'?'':'· ')+String(counts[key])+' ';
+   if(count&&count.textContent!==value)count.textContent=value;
+  }
+ }
 }
 // Only mounted, meaningful action help belongs to the editable hover
 // catalog. Five retired Origin/Path tab hints are not user-facing copy.

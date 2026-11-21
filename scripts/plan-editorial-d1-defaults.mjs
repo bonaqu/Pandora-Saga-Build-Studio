@@ -772,6 +772,25 @@ export function buildEditorialDefaultsManifest(){
   }
  }
 
+ // Footer source copy is four static RU/EN fragments around three
+ // immutable, current-catalog counts. Never materialize numeric values.
+ const footerMatch=app.match(
+  /const catalogCountParts=Object\.freeze\((\[[\s\S]*?\])\);/);
+ if(!footerMatch)throw Error('Missing source encyclopedia footer copy');
+ const footerParts=runInNewContext('('+footerMatch[1]+')',{},{
+  filename:'catalogCountParts',timeout:5000
+ });
+ if(!Array.isArray(footerParts)||footerParts.length!==4||
+  footerParts.map(row=>row?.[0]).join('|')!=='lead|skills|items|souls')
+  throw Error('Unreviewed encyclopedia footer copy keys');
+ for(const [key,ru,en] of footerParts){
+  if(typeof ru!=='string'||!ru.trim()||
+   typeof en!=='string'||!en.trim())throw Error('Invalid footer copy '+key);
+  const recordKey='guideedit.book.catalog-sync.catalog-count-'+key;
+  append(recordKey,'ru',ru,'catalog-footer-authorial');
+  append(recordKey,'en',en,'catalog-footer-authorial');
+ }
+
  // The Wiki chapters, all five Honor subchapters and skill filters are
  // one existing D1 JSON record. Preserve their exact field identities;
  // never reconstruct these labels from list position or save them as game IDs.

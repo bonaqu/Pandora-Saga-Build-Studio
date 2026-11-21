@@ -304,6 +304,53 @@ export async function runUIContentInlineSmoke(browser,base){
   // action to finish after double-click disambiguation.
   await updateBanner.waitFor({state:'detached',timeout:3000});
   assert.equal(await updateBanner.count(),0);
+  // The encyclopedia footer's words are owner-copy; actual D1 catalog
+  // counts remain separate, stable DOM nodes across save and guarded Undo.
+  await page.waitForFunction(()=>{
+   const root=document.querySelector('#catalogStatus');
+   return root?.querySelectorAll('[data-catalog-status-copy]').length===4&&
+    root.querySelectorAll('[data-catalog-status-value]').length===3;
+  },null,{timeout:30000});
+  const footer=page.locator('#catalogStatus');
+  const countCopy=await footer.locator('[data-catalog-status-value]')
+   .evaluateAll(nodes=>nodes.map(node=>node.textContent));
+  const numberNodes=await footer.locator('[data-catalog-status-value]').elementHandles();
+  const skillWord=footer.locator('[data-catalog-status-copy="skills"]');
+  assert.equal(await skillWord.textContent(),'навыков');
+  assert.equal(await footer.locator('[data-owner-copy-section="catalog-sync"]').count(),4);
+  const wasCollapsed=await page.locator('#ownerDock').evaluate(
+   el=>el.classList.contains('owner-dock-collapsed'));
+  if(!wasCollapsed)await page.locator('#ownerDock [data-owner-collapse]').click();
+  await skillWord.dblclick();
+  const footerInput=skillWord.locator('[data-owner-text-field]');
+  await footerInput.fill('навыков QA');
+  await footerInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#catalogStatus [data-catalog-status-copy="skills"]')?.textContent==='навыков QA',
+   null,{timeout:15000});
+  assert.equal(JSON.parse(values['guideedit.book.catalog-sync.catalog-count-skills']).ru,
+   'навыков QA');
+  assert.deepEqual(await footer.locator('[data-catalog-status-value]')
+   .evaluateAll(nodes=>nodes.map(node=>node.textContent)),countCopy);
+  if(await page.locator('#ownerDock').evaluate(
+   el=>el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
+  await page.locator('#ownerDock [data-owner-undo]').click();
+  await page.waitForFunction(()=>document.querySelector(
+   '#catalogStatus [data-catalog-status-copy="skills"]')?.textContent==='навыков',
+   null,{timeout:15000});
+  assert.equal(Object.hasOwn(values,'guideedit.book.catalog-sync.catalog-count-skills'),false);
+  assert.equal(resets.at(-1)?.key,'guideedit.book.catalog-sync.catalog-count-skills');
+  for(const [index,node] of numberNodes.entries()){
+   assert.equal(await node.evaluate(el=>el.isConnected),true,
+    'Catalog count DOM node '+index+' must survive authorial Undo');
+   await node.dispose();
+  }
+  if(wasCollapsed&&
+   !await page.locator('#ownerDock').evaluate(
+    el=>el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
+
   // A fixed heading is itself the direct-edit target; no sibling pencil.
   const appearanceHeading=page.locator('#stageHeading');
   await appearanceHeading.waitFor({state:'visible'});

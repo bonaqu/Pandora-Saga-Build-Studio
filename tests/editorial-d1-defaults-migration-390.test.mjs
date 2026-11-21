@@ -561,6 +561,31 @@ test('#390 actual Wiki, Skill and Stats owner editors seed their exact fixed cop
   assert.equal(manifest.records.some(r=>r.recordKey==='guideedit.book.'+path),false);
 });
 
+test('#390 encyclopedia footer authorial D1 words stay separate from real catalog counts',()=>{
+ const app=read('pandora-studio-app.js'),html=read('index.html');
+ const m=app.match(/const catalogCountParts=Object\.freeze\((\[[\s\S]*?\])\);/);
+ assert.ok(m);
+ const rows=runInNewContext('('+m[1]+')',{});
+ assert.equal(rows.map(r=>r[0]).join('|'),'lead|skills|items|souls');
+ assert.equal(manifest.stats.cohorts['catalog-footer-authorial'],8);
+ for(const [key,ru,en] of rows){
+  const id='guideedit.book.catalog-sync.catalog-count-'+key;
+  assert.equal(manifest.records.find(r=>r.recordKey===id&&r.field==='ru')?.value,ru);
+  assert.equal(manifest.records.find(r=>r.recordKey===id&&r.field==='en')?.value,en);
+ }
+ const source=app.slice(app.indexOf('function renderCatalogStatus(){'),
+  app.indexOf('// Only mounted, meaningful action help',app.indexOf('function renderCatalogStatus(){')));
+ assert.match(source,/catalogSource\?\.meta\?\.counts/);
+ assert.match(source,/ownerCopyLabel\(label,'catalog-sync',id,ru,en\)/);
+ assert.match(source,/data-catalog-status-value/);
+ assert.match(source,/data-catalog-status-copy/);
+ assert.match(source,/target\.dataset\.catalogStatusOwner/);
+ assert.match(source,/label\.querySelector\('\.wiki-inline-input,\[data-owner-text-field\]'\)/);
+ assert.match(app,/refreshWorkbenchHints\(\);renderCatalogStatus\(\);updateAdminHint\(\)/);
+ assert.match(html,/id="catalogStatus"/);
+ assert.equal(manifest.records.some(r=>r.recordKey==='guideedit.book.catalog-sync.catalog-count-total'),false);
+});
+
 test('issue 390: migration never materializes runtime values or rewrites an override',()=>{
  assert.equal(manifest.records.some(r=>
   /(?:^|\.)(?:character|item|soul|account|formula|amount|gold|points|chance)\.[0-9]+/.test(r.recordKey)),false);
