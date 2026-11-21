@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 
 export async function runUIContentInlineSmoke(browser,base){
  const api='https://ps-build-studio-cloud.bonaqu.workers.dev';
@@ -465,6 +466,39 @@ export async function runUIContentInlineSmoke(browser,base){
    {timeout:15000});
   assert.equal(JSON.parse(values['guideedit.book.wiki-ui.os-patch420007101']).ru,
    'Усиленная версия с сокращённой подготовкой и повышенным уроном.');
+  // The verified Hymn has a static, source-gated explanation. The name, ID,
+  // link chain, gameplay values and account state are not editor copy.
+  const hymn=JSON.parse(readFileSync(new URL('../data/os/skills.json',import.meta.url),
+   'utf8'))['340004001'];
+  assert.ok(hymn?.name,'The tested hymn must originate from the catalog');
+  await page.locator('#dockClose').click();
+  await page.locator('#detailPanel.is-open').waitFor({state:'hidden',timeout:15000});
+  await wiki.click();
+  await page.locator('#detailPanel.is-open').waitFor({state:'visible',timeout:15000});
+  await chooseWikiChapter('skill');
+  await search.click();
+  await search.fill(hymn.name);
+  const hymnRecord=page.locator('[data-wiki-record="340004001"]');
+  await hymnRecord.waitFor({state:'visible',timeout:25000});
+  await hymnRecord.click();
+  const hymnCaption=page.locator(
+   '.wiki-skill-source-insight p.wiki-description [data-owner-copy-id="osSourceHymn340004001"]');
+  await hymnCaption.waitFor({state:'visible',timeout:15000});
+  assert.equal(await page.locator('.wiki-skill-source-insight .wiki-owner-pencil').count(),0,
+   'Static source notes edit by direct click, not a spare caption pencil');
+  const originalHymn=await hymnCaption.innerText();
+  assert.match(originalHymn,/стихийн|стихийн|стихийный|стихийного|стихийный урон/i);
+  await hymnCaption.dblclick();
+  const hymnEditor=page.locator('.wiki-skill-source-insight [contenteditable]').first();
+  await hymnEditor.fill('Подтверждённое описание песни · QA');
+  await hymnEditor.press('Tab');
+  await page.waitForFunction(()=>
+   document.querySelector('.wiki-skill-source-insight [data-owner-copy-id="osSourceHymn340004001"]')
+    ?.textContent==='Подтверждённое описание песни · QA',null,{timeout:15000});
+  const hymnD1='guideedit.book.wiki-ui.os-source-hymn340004001';
+  assert.equal(JSON.parse(values[hymnD1]).ru,'Подтверждённое описание песни · QA');
+  assert.ok(writes.some(x=>x.key===hymnD1&&x.expectedValue===null),
+   'The source-gated owner note uses the same CAS handshake as other labels');
   // Leave the existing Encyclopedia detail workbench before opening the
   // account UI: a modal workbench correctly intercepts background clicks.
   if(await page.locator('#detailPanel.is-open').count())
