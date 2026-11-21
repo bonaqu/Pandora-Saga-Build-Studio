@@ -52,3 +52,13 @@ test('Hero Path uses Origin-approved attribute translations, not bare powerStat 
  assert.match(source,/api\.attributeLabel\(skill\.powerStat\)/);
  assert.doesNotMatch(source,/field\(tr\(api,'Характеристика','Attribute'\),skill\.powerStat\)/);
 });
+
+test('issue 390: Path baseline/limit captions are editable separately from values',()=>{
+ const src=readFileSync(new URL('../pandora-studio-hero-path.js',import.meta.url),'utf8');
+ assert.match(src,/authored\(api,'innateBaselineLabel','Начально \(оч\.\):'/);
+ assert.match(src,/authored\(api,'pathLimitPoints','Лимит \(оч\.\):'/);
+ assert.match(src,/class:'path-innate-value',text:' '\+String\(base\)/);
+ assert.match(src,/class:'path-limit-number',text:' '\+String\(cap\)/);
+ assert.match(src,/bindPathCopy\(api,baseline,'innateBaselineAria'/);
+ assert.match(src,/'aria-hidden':api\.canEdit\?null:'true'/);
+});

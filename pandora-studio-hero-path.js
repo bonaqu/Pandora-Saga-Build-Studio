@@ -730,15 +730,22 @@ function viewGrowth(target,api){
       'greenMasteryHelp','Растёт при использовании умений этой ветки, а также соответствующих типов атак или оружия.',
       'Increases when using this branch’s skills or its corresponding attack or weapon types.',input,true)
     );
-    const baseline=base>0?make('span',{class:'path-innate-baseline',
-     text:tr(api,'Начально (оч.): ','Initially (pts): ')+base,
-     'aria-label':tr(api,'Начальная прокачка класса: ','Starting branch points: ')+base}):null;
+    // The owner edits captions, not the source-backed branch limit or
+    // starting points. Reuse existing bilingual D1 keys when available.
+    const baseline=base>0?make('span',{class:'path-innate-baseline'},[
+     authored(api,'innateBaselineLabel','Начально (оч.):',
+      'Initially (pts):','span','path-innate-copy'),
+     make('span',{class:'path-innate-value',text:' '+String(base)})]):null;
     if(baseline)bindPathCopy(api,baseline,'innateBaselineAria',
      'Начальная прокачка класса:','Starting branch points:','aria-label',' '+String(base));
-    const limitCaption=make('span',{class:'path-track-limit-value'});
-    bindPathCopy(api,limitCaption,'pathLimitPoints','Лимит (оч.):',
-     'Limit (pts):','text',' '+String(cap));
-    const legend=make('div',{class:'path-track-legend','aria-hidden':'true'},[
+    const limitCaption=make('span',{class:'path-track-limit-value'},[
+     authored(api,'pathLimitPoints','Лимит (оч.):',
+      'Limit (pts):','span','path-limit-copy'),
+     make('span',{class:'path-limit-number',text:' '+String(cap)})
+    ]);
+    // Focusable owner captions must not live inside an aria-hidden subtree.
+    const legend=make('div',{class:'path-track-legend',
+     'aria-hidden':api.canEdit?null:'true'},[
      make('span',{text:'0'}),
      make('span',{class:'path-track-limit'},[limitCaption,...(baseline?[baseline]:[])]),
      make('span',{text:String(visualMax)})
