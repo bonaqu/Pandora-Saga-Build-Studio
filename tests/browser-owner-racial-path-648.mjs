@@ -264,7 +264,7 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   // editor. Double-clicking the author caption must not toggle the summary.
   const unlock=page.locator('#pathGrowthPage .path-unlock-details summary').first();
   await unlock.waitFor({state:'visible',timeout:15000});
-  const countBefore=await unlock.locator('.path-unlock-count').innerText();
+  const countBefore=await unlock.locator('.path-unlock-count').textContent();
   const openBefore=await unlock.evaluate(el=>el.parentElement.open);
   const railCaption=unlock.locator('.path-unlock-heading');
   assert.equal(await railCaption.innerText(),'Skills on track');
@@ -276,7 +276,8 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   await savedOverride('guideedit.book.path.skills-on-track-caption',
    {en:'Skills on this rail QA'});
   assert.equal(await railCaption.innerText(),'Skills on this rail QA');
-  assert.equal(await unlock.locator('.path-unlock-count').innerText(),countBefore);
+  assert.equal(await unlock.locator('.path-unlock-count').textContent(),countBefore,
+   'The source-derived skill count and punctuation must remain byte-identical');
   assert.equal(await unlock.evaluate(el=>el.parentElement.open),openBefore,
    'Renaming a summary caption must not toggle the skills disclosure');
   assert.equal(await unlock.locator('button.path-owner-pencil').count(),0);
