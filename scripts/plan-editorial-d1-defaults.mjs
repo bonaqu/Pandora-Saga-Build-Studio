@@ -1,0 +1,161 @@
+// Read-only, deterministic preparation for a FUTURE approved D1 defaults
+// migration. Running this program NEVER connects to Cloudflare or writes D1.
+// Existing guideedit overrides are not rewritten or deleted.
+import {readFileSync} from 'node:fs';
+import {runInNewContext} from 'node:vm';
+import {createHash} from 'node:crypto';
+
+const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
+const byCodepoint=(a,b)=>a<b?-1:a>b?1:0;
+const sha256=text=>createHash('sha256').update(text,'utf8').digest('hex');
+const sqlString=value=>"'"+String(value).replaceAll("'","''")+"'";
+
+export function buildEditorialDefaultsManifest(){
+ const scope={};
+ const context={window:scope};
+ for(const path of [
+  'pandora-studio-hero-book.js',
+  'pandora-studio-ui-locale.js',
+  'pandora-studio-honor-guide.js'
+ ])runInNewContext(read(path),context,{filename:path,timeout:5000});
+ const ui=scope.PandoraUILocale;
+ const book=scope.PandoraStageAttributes;
+ const guide=scope.PandoraHonorGuide;
+ if(!ui?.fieldKey||!book?.summaryRows||!guide?.validOverride)
+  throw Error('Required audited authorial catalogs did not initialize');
+
+ const packageInfo=JSON.parse(read('package.json'));
+ const release=packageInfo.version;
+ if(!/^[0-9]+\.[0-9]+\.[0-9]+$/.test(release))
+  throw Error('Invalid pinned source release');
+ const records=[],seen=new Set(),cohorts=Object.create(null);
+ function append(recordKey,field,value,cohort){
+  if(!/^guideedit\.(?:book\.[a-z][a-zA-Z0-9._:-]{1,80}|honor\.(?:overview|rank\.(?:[0-9]|1[01])))$/.test(recordKey))
+   throw Error('Unallowlisted authorial field: '+recordKey);
+  if(!/^(?:ru|en|hintRu|hintEn|[a-z][a-zA-Z]*Ru|[a-z][a-zA-Z]*En)$/.test(field))
+   throw Error('Unallowlisted authorial subfield: '+field);
+  if(typeof value!=='string'||!value.trim()||value.length>8000||
+   /[\x00-\x08\x0b\x0c\x0e-\x1f]/.test(value))
+   throw Error('Invalid source text for '+recordKey+'/'+field);
+  const identity=recordKey+'\u0000'+field;
+  if(seen.has(identity))throw Error('Duplicate D1 default identity: '+identity);
+  seen.add(identity);
+  records.push({recordKey,field,value});
+  cohorts[cohort]=(cohorts[cohort]||0)+1;
+ }
+
+ // The exact same stable ids and fallback values that existing owner CAS
+ // already uses for headings, status text, and the Hero Book text catalog.
+ for(const key of ui.keys()){
+  const id=ui.fieldKey(key);
+  if(!id)throw Error('Missing existing bilingual owner field key: '+key);
+  for(const lang of ['ru','en'])
+   append('guideedit.book.'+id,lang,ui.baseText(key,lang),'ui-locale');
+ }
+
+ // Summary tooltip keys are position-defined in the existing public UI.
+ // Only source-authored explanations are materialized, never live stats.
+ const summaryRows=book.summaryRows({}).flatMap(group=>group.rows);
+ const unmappedHints=[];
+ for(const [caption,pair] of Object.entries(guide.hints)){
+  const index=summaryRows.findIndex(row=>row.ru===caption);
+  if(index<0){unmappedHints.push(caption);continue}
+  for(const [offset,field] of ['hintRu','hintEn'].entries())
+   if(pair[offset])append('guideedit.book.summary.'+index,field,pair[offset],
+    'summary-hints');
+ }
+
+ // Semantic Book help fields may exist without a fixed heading literal.
+ // These are independent hover explanations, not editable game parameters.
+ for(const [key,pair] of Object.entries(guide.help))
+  for(const [offset,field] of ['hintRu','hintEn'].entries())
+   if(pair[offset])append('guideedit.book.'+key,field,pair[offset],
+    'semantic-hints');
+
+ // Honor overview has its own existing D1 data schema. Preserve each
+ // authorial field and do not seed live rank thresholds or numeric rewards.
+ for(const [field,value] of Object.entries(guide.intro))
+  if(typeof value==='string'&&value.trim())
+   append('guideedit.honor.overview',field,value,'honor-overview');
+ for(const rank of guide.defaultRanks){
+  if(!Number.isInteger(rank.id)||rank.id<0||rank.id>11)
+   throw Error('Unexpected Honor rank identity');
+  for(const field of ['nameRu','nameEn','benefitRu','benefitEn'])
+   if(typeof rank[field]==='string'&&rank[field].trim())
+    append('guideedit.honor.rank.'+rank.id,field,rank[field],
+     'honor-rank-copy');
+ }
+ records.sort((a,b)=>byCodepoint(a.recordKey,b.recordKey)||
+  byCodepoint(a.field,b.field));
+ const payload={schema:1,release,records};
+ const digest=sha256(JSON.stringify(payload));
+ return Object.freeze({...payload,digest,
+  snapshot:release+'-'+digest.slice(0,16),
+  stats:Object.freeze({
+   entries:records.length,recordKeys:new Set(records.map(r=>r.recordKey)).size,
+   cohorts,unmappedHints:unmappedHints.sort(byCodepoint)
+  })});
+}
+
+export function renderEditorialDefaultsSQL(manifest){
+ // Refuse tampered manifests; an immutable snapshot is identified by its
+ // source-release + digest, not a mutable 'current' table pointer.
+ const payload={schema:manifest.schema,release:manifest.release,
+  records:manifest.records};
+ const digest=sha256(JSON.stringify(payload));
+ if(manifest.schema!==1||manifest.digest!==digest||
+  manifest.snapshot!==manifest.release+'-'+digest.slice(0,16))
+  throw Error('Manifest content or version does not match its SHA-256');
+ const rows=manifest.records;
+ if(!Array.isArray(rows)||!rows.length||
+  rows.some(r=>typeof r.recordKey!=='string'||
+   typeof r.field!=='string'||typeof r.value!=='string'))
+  throw Error('Missing or invalid D1 default rows');
+ const lines=[
+  '-- DRY RUN SQL ONLY. Review and back up D1 before a separate authorized import.',
+  '-- No deployment/import happens by running the planning script.',
+  '-- Only a complete verified snapshot may be activated by a future reader.',
+  'CREATE TABLE IF NOT EXISTS editorial_default_rows ('+
+   'snapshot TEXT NOT NULL, record_key TEXT NOT NULL, field TEXT NOT NULL, '+
+   'value TEXT NOT NULL, PRIMARY KEY(snapshot,record_key,field));',
+  'CREATE TABLE IF NOT EXISTS editorial_default_snapshots ('+
+   'snapshot TEXT PRIMARY KEY, source_release TEXT NOT NULL, sha256 TEXT NOT NULL, '+
+   'expected_rows INTEGER NOT NULL, installed_at INTEGER NOT NULL);'
+ ];
+ for(const r of rows)lines.push(
+  'INSERT INTO editorial_default_rows(snapshot,record_key,field,value) VALUES ('+
+   [manifest.snapshot,r.recordKey,r.field,r.value].map(sqlString).join(',')+
+   ') ON CONFLICT(snapshot,record_key,field) DO NOTHING;');
+ // Insert the marker last. A partial upload has no completed snapshot entry.
+ // A future reader MUST also verify exact count and digest before activation.
+ lines.push('INSERT INTO editorial_default_snapshots('+
+  'snapshot,source_release,sha256,expected_rows,installed_at) VALUES ('+
+  [sqlString(manifest.snapshot),sqlString(manifest.release),
+   sqlString(manifest.digest),String(rows.length),
+   "unixepoch()"].join(',')+
+  ') ON CONFLICT(snapshot) DO NOTHING;');
+ lines.push('-- Readback check; mismatch means DO NOT activate:');
+ lines.push('SELECT COUNT(*) AS actual_rows FROM editorial_default_rows WHERE snapshot='+
+  sqlString(manifest.snapshot)+';');
+ lines.push('SELECT snapshot,source_release,sha256,expected_rows '+
+  'FROM editorial_default_snapshots WHERE snapshot='+
+  sqlString(manifest.snapshot)+';');
+ return lines.join('\n')+'\n';
+}
+
+if(process.argv[1]&&import.meta.url==='file://'+process.argv[1]){
+ const manifest=buildEditorialDefaultsManifest();
+ const format=process.argv[2]||'--report';
+ if(format==='--sql')process.stdout.write(renderEditorialDefaultsSQL(manifest));
+ else if(format==='--json')process.stdout.write(JSON.stringify(manifest,null,2)+'\n');
+ else if(format==='--report')process.stdout.write(JSON.stringify({
+  schema:manifest.schema,release:manifest.release,
+  snapshot:manifest.snapshot,digest:manifest.digest,
+  ...manifest.stats,note:'No D1 writes or network calls performed'
+ },null,2)+'\n');
+ else{
+  process.stderr.write('Usage: node scripts/plan-editorial-d1-defaults.mjs '+
+   '[--report|--json|--sql]\n');
+  process.exitCode=2;
+ }
+}
