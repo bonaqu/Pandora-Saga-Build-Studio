@@ -38,8 +38,9 @@ test('mastery summary keeps source totals following three independent RU/EN labe
   ['pathGroupInvested','вложено','invested']
  ])assert.ok(path.includes("['"+id+"','"+ru+"','"+en+"']"),id);
  assert.match(path,/groupValues\[0\]\.textContent=String/);
- assert.match(path,/groupCount\.append\(caption,value\)/);
- assert.match(path,/bindPathCopy\(api,caption,copyKey,ru,en,'text',' '/);
+ assert.match(path,/groupCount\.append\(make\('span',\{text:groupValues\.length\?' · ':''\}\),/);
+ assert.match(path,/authored\(api,copyKey,ru,en,'span','path-group-summary-copy'\)/);
+ assert.match(path,/guardCaptionAction\(groupButton,caption\)/);
 });
 test('approved segmented forge bar and compact Soul slots remain accessible',()=>{
  const css=source('pandora-studio-forge-controls.css');
