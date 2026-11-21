@@ -1100,7 +1100,8 @@ function cancelOwnerTouchGesture(){
 function bindOwnerTouchCaption(node,edit,{interactive=false}={}){
  if(!node||typeof edit!=='function'||!node.closest||
   node.matches('input,textarea,select,[contenteditable]')||
-  node.closest('label'))return;
+  // Do not replace a label that contains actual form controls.
+  (node.matches('label')&&node.querySelector('input,textarea,select,button')))return;
  // Renderers register captions BEFORE inserting them in a button, tab or
  // summary. Cache only their editor and policy, resolve action ancestry on
  // the real pointer event after DOM mount; never cache a detached null parent.
@@ -1136,7 +1137,7 @@ function bindOwnerTouchCaption(node,edit,{interactive=false}={}){
   for(let node=event.target;node&&node!==document;node=node.parentElement){
    const bound=ownerTouchCaptionEditors.get(node);
    if(!bound)continue;
-   const action=node.closest('button,a,summary,[role="button"]');
+   const action=node.closest('button,a,summary,label,[role="button"]');
    // A nested real action cannot inherit the parent's editor; only explicitly
    // opted-in authorial captions inside actions may start on touch.
    if((action&&!bound.interactive)||action!==targetAction)return;
@@ -1159,7 +1160,12 @@ function bindOwnerTouchCaption(node,edit,{interactive=false}={}){
  // shifts, popover opening and input focus may scroll an unrelated ancestor
  // after pointerdown, incorrectly cancelling legitimate label editing.
  for(const name of ['pointerup','pointercancel'])
-  document.addEventListener(name,cancelOwnerTouchGesture,true);
+  document.addEventListener(name,event=>{
+   const held=ownerTouchGesture;
+   // A mouse release on a hybrid tablet cannot cancel a different finger.
+   if(held&&event.pointerType==='touch'&&event.pointerId===held.pointerId)
+    cancelOwnerTouchGesture();
+  },true);
  document.addEventListener('contextmenu',event=>{
   const g=ownerTouchGesture,marked=ownerTouchSwallow;
   if((g?.action||g?.node)?.contains(event.target)){

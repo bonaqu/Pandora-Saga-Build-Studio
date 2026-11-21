@@ -94,3 +94,12 @@
 - [x] Root cause from code: Hero Book registers a caption with the touch helper **before** inserting it into its tab button. The helper cached its nearest action at bind time as null, then rejected the valid touch when the caption had been mounted inside a button.
 - [x] The centralized helper now stores only the editor callback and whether an interactive ancestor is allowed. At pointerdown time it resolves the current button/link/summary ancestry after mount, rejects nested foreign actions, and uses the real ancestor to suppress the delayed click.
 - [x] The existing Book tab Chromium case exercises exactly this detached registration and ensures no unintended navigation. Full Node/Chromium must rerun on the repair SHA; PR and issue remain open.
+
+## Follow-up · HTML labels and hybrid input
+
+- [x] Previous head `c02e7187a831be16c2040d80cda9e26c32d40b8b` passed [Node](https://github.com/bonaqu/Pandora-Saga-Build-Studio/actions/runs/44860923568) and [real Chromium](https://github.com/bonaqu/Pandora-Saga-Build-Studio/actions/runs/44860923580).
+- [x] Added owner-only long-press for explicitly registered authorial HTML label captions, including the real mounted toggle in Hero Book. A label containing native inputs stays ineligible for destructive replacement.
+- [x] The editor suppresses a synthetic touch click, so it cannot change the character setting. Short clicks must still toggle the associated checkbox; Chromium verifies both and restores the original state.
+- [x] An unrelated mouse pointermove or pointerup on a hybrid touchscreen PC cannot cancel a held touch. Only touch pointercancel/release with matching pointerId cancels; Chromium exercises these cases.
+- [x] Updated 0.947.0 changelog, release notes and roadmap to describe real RU/EN, Honor numeric safety and touch work. No version bump, game formulas, Worker or production D1 changes.
+- [ ] This packet requires full same-SHA Node/Chromium, physical hardware acceptance is still unknown; #390 and PR #809 remain open.

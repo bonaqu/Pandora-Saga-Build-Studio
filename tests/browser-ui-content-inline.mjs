@@ -267,6 +267,25 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(await page.locator(
    '.stage .panel-heading .ui-content-edit-host [contenteditable]').count(),0);
   await appearanceHeading.dispatchEvent('pointercancel',{pointerType:'touch',pointerId:19});
+  // A simultaneous mouse pointer on a hybrid tablet cannot interrupt
+  // another still-held finger's authorial caption editor.
+  await appearanceHeading.dispatchEvent('pointerdown',{
+   pointerType:'touch',isPrimary:true,button:0,pointerId:32,clientX:12,clientY:20
+  });
+  await appearanceHeading.dispatchEvent('pointermove',{
+   pointerType:'mouse',isPrimary:true,button:0,pointerId:99,clientX:80,clientY:20
+  });
+  await appearanceHeading.dispatchEvent('pointerup',{
+   pointerType:'mouse',isPrimary:true,button:0,pointerId:99
+  });
+  await page.waitForTimeout(570);
+  const hybridTouch=page.locator(
+   '.stage .panel-heading .ui-content-edit-host [contenteditable]');
+  await hybridTouch.waitFor({state:'visible',timeout:6000});
+  await hybridTouch.press('Escape');
+  await appearanceHeading.dispatchEvent('pointerup',{
+   pointerType:'touch',isPrimary:true,pointerId:32
+  });
   // Owner touch gesture is long-press only on a plain caption. A short tap
   // must not replace a button click or expose the editor to a guest.
   await appearanceHeading.dispatchEvent('pointerdown',{
@@ -331,6 +350,40 @@ export async function runUIContentInlineSmoke(browser,base){
   await page.locator('#stageAttributes [data-book-page="defense"]').click();
   await page.locator('#stageBookPanel[data-book-visible="defense"]')
    .waitFor({state:'visible',timeout:15000});
+  await page.locator('#stageAttributes [data-book-page="summary"]').click();
+  await page.locator('#stageBookPanel[data-book-visible="summary"]')
+   .waitFor({state:'visible',timeout:15000});
+  // HTML label = an action. A hold edits the author's RU/EN caption, not
+  // the current character's mounted checkbox. Normal clicks still toggle.
+  await page.locator('#stageAttributes [data-book-page="attack"]').click();
+  await page.locator('#stageBookPanel[data-book-visible="attack"]')
+   .waitFor({state:'visible',timeout:15000});
+  const mountedLabel=page.locator('#stageBookPanel .stage-mounted-label');
+  const mountedCheck=page.locator('#stageBookMountedToggle');
+  await mountedLabel.waitFor({state:'visible',timeout:10000});
+  const beforeMounted=await mountedCheck.isChecked();
+  await mountedLabel.dispatchEvent('pointerdown',{
+   pointerType:'touch',isPrimary:true,button:0,pointerId:82,
+   clientX:18,clientY:18
+  });
+  await page.waitForTimeout(570);
+  const mountedTouch=mountedLabel.locator('[contenteditable]');
+  await mountedTouch.waitFor({state:'visible',timeout:6000});
+  await mountedLabel.dispatchEvent('click',{bubbles:true,cancelable:true,detail:1});
+  assert.equal(await mountedCheck.isChecked(),beforeMounted,
+   'A touch editor must not toggle a gameplay setting');
+  await mountedTouch.press('Escape');
+  await mountedLabel.dispatchEvent('pointerup',{
+   pointerType:'touch',isPrimary:true,pointerId:82
+  });
+  await mountedLabel.click();
+  await page.waitForFunction(previous=>
+   document.querySelector('#stageBookMountedToggle')?.checked!==previous,
+   beforeMounted,{timeout:15000});
+  await mountedLabel.click();
+  await page.waitForFunction(previous=>
+   document.querySelector('#stageBookMountedToggle')?.checked===previous,
+   beforeMounted,{timeout:15000});
   await page.locator('#stageAttributes [data-book-page="summary"]').click();
   await page.locator('#stageBookPanel[data-book-visible="summary"]')
    .waitFor({state:'visible',timeout:15000});

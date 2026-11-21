@@ -147,3 +147,13 @@ test('owner touch caption guard excludes actions, viewport scroll and delayed OS
  assert.match(source,/const marked=\{node:gesture\.node,action:gesture\.action\|\|gesture\.node,/);
  assert.match(source,/if\(ownerTouchSwallow===marked\)ownerTouchSwallow=null/);
 });
+
+test('editable HTML labels preserve their associated checkbox and hybrid pointer identity',()=>{
+ const source=file('pandora-studio-app.js');
+ assert.match(source,/node\.matches\('label'\)&&node\.querySelector\('input,textarea,select,button'\)/);
+ assert.match(source,/const action=node\.closest\('button,a,summary,label,\[role="button"\]'\)/);
+ assert.match(source,/event\.pointerType==='touch'&&event\.pointerId===held\.pointerId/);
+ const bookSource=file('pandora-studio-hero-book.js');
+ assert.match(bookSource,/guideLabel\(toggle\.querySelector\('\.stage-mounted-label'\),'attack\.mountedToggle'/);
+ assert.match(bookSource,/id:'stageBookMountedToggle',type:'checkbox'/);
+});
