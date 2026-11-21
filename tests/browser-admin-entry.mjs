@@ -946,6 +946,23 @@ export async function runAdminEntrySmoke(browser,base){
     .some(node=>node.textContent?.includes('Сохранение работает')));
   assert.deepEqual(calls.filter(x=>x==='d1-write-check'),['d1-write-check']);
 
+  // Only a confirmed success message is authorial D1 copy. A real inline
+  // blur-save must not touch the live game catalog or confirmation proof.
+  const writeSuccess=dialog.locator('.os-sync-status .os-sync-state-caption');
+  await writeSuccess.waitFor({state:'visible',timeout:12000});
+  await writeSuccess.dblclick();
+  const writeSuccessEditor=writeSuccess.locator('[contenteditable]');
+  await writeSuccessEditor.waitFor({state:'visible',timeout:6000});
+  await writeSuccessEditor.fill('Пробные записи безопасно проверены.');
+  await writeSuccessEditor.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '.os-sync-status .os-sync-state-caption')?.textContent===
+   'Пробные записи безопасно проверены.',null,{timeout:12000});
+  assert.equal(JSON.parse(townOverrides.get(
+   'guideedit.book.catalog-sync.test-write-success')).ru,
+   'Пробные записи безопасно проверены.');
+  assert.deepEqual(calls.filter(x=>x==='d1-write-check'),['d1-write-check']);
+
   // A failed owner comparison must expose the real visible error rather
   // than hiding it behind a generic Playwright timeout. No test condition is
   // relaxed: the exact same captions are still required for success.

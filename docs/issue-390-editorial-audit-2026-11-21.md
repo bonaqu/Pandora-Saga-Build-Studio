@@ -103,3 +103,11 @@
 - [x] An unrelated mouse pointermove or pointerup on a hybrid touchscreen PC cannot cancel a held touch. Only touch pointercancel/release with matching pointerId cancels; Chromium exercises these cases.
 - [x] Updated 0.947.0 changelog, release notes and roadmap to describe real RU/EN, Honor numeric safety and touch work. No version bump, game formulas, Worker or production D1 changes.
 - [ ] This packet requires full same-SHA Node/Chromium, physical hardware acceptance is still unknown; #390 and PR #809 remain open.
+
+## Catalog synchronization success copy · remaining #390 admin gap
+
+- [x] The root ROADMAP was compacted after [Node run 44861414647](https://github.com/bonaqu/Pandora-Saga-Build-Studio/actions/runs/44861414647) failed only the existing under-7000-character contract. No history is discarded: detailed #390 acceptance stays here and the roadmap archive remains linked.
+- [x] The corresponding [Chromium run 44861414634](https://github.com/bonaqu/Pandora-Saga-Build-Studio/actions/runs/44861414634) passed the physical-label and hybrid-pointer synthetic browser scenarios on `e3ad6afe`.
+- [x] Four **verified success-only** catalog workbench statuses now use the existing `editorialState(status,...)` D1 direct-editor with separate RU/EN: downloadable snapshot, test-write readback/cleanup, CAS stale-edit rejection and no-op GitHub sync.
+- [x] Raw network errors, source dataset IDs, authentication diagnostics, operational warnings and game records remain separate from authorial overrides. Added Node validation of new keys and real Chromium owner blur/save on a confirmed workbench success without modifying the game catalog.
+- [ ] Recheck full Node/Chromium on the new SHA, and continue broader #390 acceptance; do not merge or close draft PR.

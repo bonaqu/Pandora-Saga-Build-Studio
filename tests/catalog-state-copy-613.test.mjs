@@ -38,3 +38,20 @@ test('catalog notice and comparison status translations use valid guide edit fie
  assert.match(app,/refreshVisibleOwnerCopy\('guideedit\.'\+key\)/);
  assert.doesNotMatch(workbench,/request\('\/api\/admin\/catalog\/publish',\{[^}]*editorialState/);
 });
+
+test('issue #390: verified admin success states are exact bilingual inline D1 fields',()=>{
+ const labels=['exportDownloaded','testWriteSuccess','testCasSuccess','githubNoChanges'];
+ for(const key of labels){
+  const dashed=key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase());
+  assert.equal(root.PandoraHonorGuide.validOverride('book.catalog-sync.'+dashed,
+   JSON.stringify({ru:'Подтверждено',en:'Confirmed'})),true,key);
+  assert.ok(workbench.includes("editorialState(status,'"+key+"'"),key);
+ }
+ assert.doesNotMatch(workbench,/status\.textContent='Выбранный снимок скачан/);
+ assert.doesNotMatch(workbench,/status\.textContent='Сохранение работает/);
+ assert.doesNotMatch(workbench,/status\.textContent='Проверка пройдена:/);
+ assert.doesNotMatch(workbench,/status\.textContent='Каталог в GitHub уже совпадает/);
+ // Dynamic upstream response details are still not owner-editable.
+ assert.match(workbench,/diagnosticText\.textContent='Этап: '/);
+ assert.match(workbench,/status\.textContent=error\.message/);
+});

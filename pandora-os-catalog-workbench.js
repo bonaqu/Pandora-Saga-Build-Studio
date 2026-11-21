@@ -1554,7 +1554,9 @@
         anchor.href=url;anchor.download='pandora-studio-reviewed-catalog.json';
         document.body.append(anchor);anchor.click();anchor.remove();
         URL.revokeObjectURL(url);
-        status.textContent='Выбранный снимок скачан. GitHub не изменён.';
+        editorialState(status,'exportDownloaded',
+         'Выбранный снимок скачан. GitHub не изменён.',
+         'Selected snapshot downloaded. GitHub was not changed.');
       }catch(error){status.textContent='Экспорт не выполнен: '+error.message}
     };
 
@@ -1739,7 +1741,9 @@
            result.overrideReadback!==true||result.overrideCleaned!==true||
            result.activeCatalogUnchanged!==true)
           throw Error('D1 не подтвердила запись, чтение, очистку и неизменность каталога');
-        status.textContent='Сохранение работает: обе пробные записи созданы, прочитаны и удалены. Игровой каталог не изменился.';
+        editorialState(status,'testWriteSuccess',
+         'Сохранение работает: обе пробные записи созданы, прочитаны и удалены. Игровой каталог не изменился.',
+         'Saving works: both test records were created, read, and deleted. The game catalog is unchanged.');
       }catch(error){
         status.textContent=error.httpStatus===401
           ? 'Сеанс администратора завершился. Войди заново.'
@@ -1755,7 +1759,9 @@
         if(result.ok!==true||result.casVerified!==true||result.qaCleaned!==true||
            result.activeCatalogUnchanged!==true)
           throw Error('Не подтверждены конфликты, очистка и неизменность каталога');
-        status.textContent='Проверка пройдена: устаревшие правки отклоняются, обе тестовые записи удалены, игровой каталог не изменился.';
+        editorialState(status,'testCasSuccess',
+         'Проверка пройдена: устаревшие правки отклоняются, обе тестовые записи удалены, игровой каталог не изменился.',
+         'Check passed: stale edits are rejected, both test records were removed, and the game catalog is unchanged.');
       }catch(error){
         status.textContent=error.httpStatus===401
           ?'Сеанс администратора закончился. Войди заново.'
@@ -1774,7 +1780,9 @@
         const result=await request('/api/admin/catalog/github-pr',{
           expectedActive:publishedSnapshot});
         if(result.unchanged){
-          status.textContent='Каталог в GitHub уже совпадает с опубликованным. PR не требуется.';
+          editorialState(status,'githubNoChanges',
+           'Каталог в GitHub уже совпадает с опубликованным. PR не требуется.',
+           'The GitHub catalog already matches the published catalog. No PR is needed.');
         }else if(/^https:\/\/github\.com\/bonaqu\/Pandora-Saga-Build-Studio\/pull\/\d+$/.test(result.url||'')){
           status.replaceChildren('Проверенный каталог подготовлен. ',
             h('a',{href:result.url,target:'_blank',rel:'noopener noreferrer',
