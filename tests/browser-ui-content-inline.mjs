@@ -1235,6 +1235,9 @@ export async function runUIContentInlineSmoke(browser,base){
   await page.locator('#profileTrigger').click();
   const guestLead=page.locator('#accountPanel [data-owner-copy-key="accountGuestLead"]');
   await guestLead.waitFor({state:'visible'});
+  assert.equal(await guestLead.getAttribute('aria-keyshortcuts'),'F2');
+  assert.equal(await guestLead.getAttribute('tabindex'),'0');
+  assert.equal(await page.locator('#accountPanel .account-copy-pencil').count(),0);
   const login=page.locator('#accountPanel .account-form input').first();
   await login.fill('TestingProfile');
   await guestLead.dispatchEvent('pointerdown',{

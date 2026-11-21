@@ -207,3 +207,7 @@
 ## #390 removal of abandoned generic/label pencils
 
 Legacy CSS for the non-rendered `.ui-content-pencil` and `.wiki-label-pencil` has been removed, including obsolete source label-pen ARIA updates. Real independent `.wiki-hint-pencil` controls retain keyboard/touch focus styling; direct caption editing and in-place host CSS remain intact. This reduces unnecessary layout reservations without altering item/game values.
+
+## #390 owner-only keyboard affordance cleanup on account and library copy
+
+The generic account/library text editor now tracks `tabindex` and `aria-keyshortcuts` attributes that it adds. Reopening owner editing restores F2 without duplicate listeners; leaving owner mode removes only those owner-added attributes while retaining authored/native tabindex values. This does not touch passwords, account state, player names, CAS values, or action semantics. Added Node and Chromium source/mounted-account assertions. Hardware touchscreen testing remains outstanding.

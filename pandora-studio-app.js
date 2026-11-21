@@ -9541,9 +9541,24 @@ function bindAccountCopyEditors(panel){
   const isAction=node.matches('button,summary,[role="button"]');
   const isLibrary=panel.id!=='accountPanel';
   node.classList.toggle('ui-content-editable',enabled&&!isAction);
-  if(!isAction&&enabled)node.tabIndex=0;
-  else if(!isAction&&node.tabIndex===0)node.removeAttribute('tabindex');
-  if(!enabled)continue;
+  if(!enabled){
+   // Revert only owner-added affordances, never author-provided tabindex.
+   if(node.dataset.accountCopyTabAdded==='1'){
+    node.removeAttribute('tabindex');delete node.dataset.accountCopyTabAdded;
+   }
+   if(node.dataset.accountCopyShortcutAdded==='1'){
+    node.removeAttribute('aria-keyshortcuts');
+    delete node.dataset.accountCopyShortcutAdded;
+   }
+   continue;
+  }
+  if(!isAction&&!node.hasAttribute('tabindex')){
+   node.tabIndex=0;node.dataset.accountCopyTabAdded='1';
+  }
+  if(!node.hasAttribute('aria-keyshortcuts')){
+   node.setAttribute('aria-keyshortcuts','F2');
+   node.dataset.accountCopyShortcutAdded='1';
+  }
   if(node.nextElementSibling?.classList?.contains('ui-content-edit-host'))continue;
   const edit=event=>{
    // A cloud status element can change between requests without remounting.
@@ -9588,7 +9603,6 @@ function bindAccountCopyEditors(panel){
    node.dataset.ownerCopyBound='1';
    node.addEventListener('dblclick',edit);
    bindOwnerTouchCaption(node,edit,{interactive:true});
-   node.setAttribute('aria-keyshortcuts','F2');
    node.addEventListener('keydown',event=>{
     if(event.key==='F2'||(!isAction&&(event.key==='Enter'||event.key===' '))){
      event.preventDefault();edit(event);
