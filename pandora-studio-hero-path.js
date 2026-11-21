@@ -625,8 +625,16 @@ function viewGrowth(target,api){
      });
      // A separate collapsed list provides access to every skill without covering the drag surface.
      unlockDetails=make('details',{class:'path-unlock-details'});
-     unlockDetails.append(make('summary',{
-      text:(root.PandoraUILocale?.text('skillsOnTrack',api.lang)||'Умения на шкале')+' · '+marks.reduce((total,mark)=>total+mark.skills.length,0)}));
+     // The caption belongs to the author; the number of matching skills
+     // comes from the live catalog and must never be written as D1 copy.
+     const unlockSummary=make('summary');
+     const unlockCaption=authored(api,'skillsOnTrackCaption','Умения на шкале',
+      'Skills on track','span','path-unlock-heading');
+     unlockSummary.append(unlockCaption,make('span',{
+      class:'path-unlock-count',
+      text:' · '+marks.reduce((total,mark)=>total+mark.skills.length,0)}));
+     if(api.canEdit)guardCaptionAction(unlockSummary,unlockCaption);
+     unlockDetails.append(unlockSummary);
      const list=make('div',{class:'path-unlock-list'});
      for(const mark of [...marks].sort((a,b)=>a.threshold-b.threshold)){
       for(const skill of mark.skills){
