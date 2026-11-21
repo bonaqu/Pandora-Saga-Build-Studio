@@ -127,6 +127,21 @@ test('#390 D1 selection-list captions preserve author overrides and keep game co
   'matching');
 });
 
+test('#390 verified Wiki map authored headings yield to established owner CAS and reset',async()=>{
+ const root=context(),stage=root.PandoraEditorialDefaults,guide=root.PandoraHonorGuide;
+ const id='guideedit.book.wiki.map.text.tags';
+ const patched=fixture([[id,'en','Location topics · staging']]);
+ assert.equal(await stage.installVerified(patched,patched.snapshot,webcrypto.subtle),true);
+ assert.equal(guide.field({},'wiki.map.text.tags','Теги локации','Location tags').en,
+  'Location topics · staging');
+ const overrides={[id]:JSON.stringify({en:'Tags · owner'})};
+ assert.equal(guide.field(overrides,'wiki.map.text.tags','Теги локации','Location tags').en,
+  'Tags · owner');
+ stage.reset();
+ assert.equal(guide.field({},'wiki.map.text.tags','Теги локации','Location tags').en,
+  'Location tags');
+});
+
 test('#390 staging text uses only exact semantic identities and CAS outranks defaults',async()=>{
  const root=context(),stage=root.PandoraEditorialDefaults;
  const ui=root.PandoraUILocale,guide=root.PandoraHonorGuide,wiki=root.PandoraWikiLabels;

@@ -215,6 +215,33 @@ test('#390 equipment picker owner selection registry seeds real direct-edit keys
  assert.equal(manifest.records.some(r=>r.recordKey==='guideedit.book.equipment.picker-search-query'),false);
 });
 
+test('#390 original Wiki map authorial labels seed exact CAS fields, not validation/game truth',()=>{
+ const source=read('pandora-studio-app.js');
+ const sourceRegistry=source.match(/const wikiMapRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ assert.ok(sourceRegistry);
+ const rows=runInNewContext('('+sourceRegistry[1]+')',{});
+ assert.equal(rows.length,58);
+ assert.equal(manifest.stats.cohorts['wiki-map-authorial'],88);
+ assert.match(source,/ownerCopy\('wiki\.map\.text',key,row\[1\],row\[2\]\)/);
+ const excluded=new Set([
+  'chanceUnknown','tagLimit','tagDuplicate','tagRequired',
+  'sectionLimit','sectionRequired','npcRequired','npcCreateFailure',
+  'createMapRequired','createMapFailure','deleteRecordButton',
+  'deleteRecordLinked','deleteRecordConfirm','deleteRecordFailure'
+ ]);
+ for(const [key,ru,en] of rows){
+  const recordKey='guideedit.book.wiki.map.text.'+
+   key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  const records=manifest.records.filter(r=>r.recordKey===recordKey);
+  if(excluded.has(key))assert.equal(records.length,0,'Unsafe source field '+key);
+  else{
+   assert.equal(records.length,2,recordKey);
+   assert.equal(records.find(r=>r.field==='ru')?.value,ru);
+   assert.equal(records.find(r=>r.field==='en')?.value,en);
+  }
+ }
+});
+
 test('issue 390: migration never materializes runtime values or rewrites an override',()=>{
  assert.equal(manifest.records.some(r=>
   /(?:^|\.)(?:character|item|soul|account|formula|amount|gold|points|chance)\.[0-9]+/.test(r.recordKey)),false);

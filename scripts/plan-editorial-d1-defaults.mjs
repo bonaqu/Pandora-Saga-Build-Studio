@@ -374,6 +374,38 @@ export function buildEditorialDefaultsManifest(){
   append(recordKey,'en',en,'equipment-picker-selection');
  }
 
+ // Existing Wiki map/dungeon captions are already editable through
+ // ownerCopy('wiki.map.text') and one frozen bilingual source registry.
+ // Safely seed only authorial display/actions. Exclude validated limits,
+ // security/destructive confirmations, dynamic source truth and errors.
+ const mapSource=app.match(/const wikiMapRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ if(!mapSource)throw Error('Missing reviewed Wiki map editorial registry');
+ const mapRows=runInNewContext('('+mapSource[1]+')',{},{
+  filename:'wikiMapRows',timeout:5000
+ });
+ const excludedMapKeys=new Set([
+  'chanceUnknown','tagLimit','tagDuplicate','tagRequired',
+  'sectionLimit','sectionRequired','npcRequired','npcCreateFailure',
+  'createMapRequired','createMapFailure','deleteRecordButton',
+  'deleteRecordLinked','deleteRecordConfirm','deleteRecordFailure'
+ ]);
+ if(!Array.isArray(mapRows)||mapRows.length!==58||
+  new Set(mapRows.map(row=>row?.[0])).size!==58||
+  mapRows.filter(row=>excludedMapKeys.has(row[0])).length!==excludedMapKeys.size)
+  throw Error('Wiki map safe authorial inventory drift');
+ for(const entry of mapRows){
+  if(!Array.isArray(entry)||entry.length!==3)
+   throw Error('Unexpected Wiki map editorial entry');
+  const [key,ru,en]=entry;
+  if(excludedMapKeys.has(key))continue;
+  if(!/^[a-z][a-zA-Z0-9]{1,55}$/.test(key))
+   throw Error('Unreviewed Wiki map copy key: '+key);
+  const recordKey='guideedit.book.wiki.map.text.'+
+   key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  append(recordKey,'ru',ru,'wiki-map-authorial');
+  append(recordKey,'en',en,'wiki-map-authorial');
+ }
+
  // The Wiki chapters, all five Honor subchapters and skill filters are
  // one existing D1 JSON record. Preserve their exact field identities;
  // never reconstruct these labels from list position or save them as game IDs.
