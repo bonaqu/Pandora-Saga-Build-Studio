@@ -141,3 +141,12 @@
 - Added `previewEn` for English solo/4-player/8-player estimated probabilities, formatted with English decimal punctuation but sourced from the same independently modeled odds.
 - Both review rows and final publication confirmation select a locale-matched projection, preserving real game-source map, monster and item names without inventing translations or mechanics.
 - Added Node tests for bilingual preview values and both workbench output paths. The batch still requires same-SHA full Node+Chromium acceptance.
+
+## Bilingual source-review summaries (staged, requires CI)
+
+- Source-human-review keeps its existing Russian `summary`/`caution` and adds conservative `summaryEn`/`cautionEn` where semantics are verified: catalog checksum metadata, monster drops, quest records, translations, item-reference changes, source text mismatch and atomic formula/loot updates.
+- Unknown raw fields and complex ambiguous descriptions are not guessed or turned into D1-editable text: a missing safe English summary falls back to the source-derived review rather than silently dropping evidence.
+- Workbench uses safe available English messages in review and publication preview; the search index includes bilingual summaries for finding related changes.
+- Unit regressions assert English and original Russian meanings and unchanged source-model `uncertain` classification and approval gates. Same-SHA Node+Chromium are required.
+- Touch owner gesture: unrelated clicks no longer consume the synthetic-action suppression of a long-pressed caption. The independent Chromium flow explicitly tests a normal unrelated click followed by an ignored delayed tab action.
+- Gear menu locale readiness: the EN smoke checks the actual belt's localized accessible name before opening a transient native menu, rather than relying only on `documentElement.lang`.

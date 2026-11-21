@@ -813,7 +813,7 @@
         .replace(/<br\s*\/?>/gi,' ');
       const text=[
         review.labels[change.dataset]||change.dataset,
-        change.title,description.title,description.summary,
+        change.title,description.title,description.summary,description.summaryEn,
         ...description.rows.flatMap(field=>[
           field.label,field.linkedItemName||'',
           field.beforeFull??field.before,field.afterFull??field.after
@@ -927,7 +927,7 @@
       if(description.rows.length>1)content.append(h('small',{
         class:'os-sync-result-count',
         text:tr('Изменено параметров: ','Changed parameters: ')+description.rows.length}));
-      content.append(h('p',{class:'os-sync-change-summary',text:description.summary}));
+      content.append(h('p',{class:'os-sync-change-summary',text:lang==='en'&&description.summaryEn?description.summaryEn:description.summary}));
       // Show the game-level meaning up front, not only technical field changes.
       const impacts=description.impacts||[];
       const notable=impactSamples(impacts);
@@ -947,7 +947,7 @@
         content.append(panel);
       }
       if(description.caution)content.append(h('p',{
-        class:'os-sync-change-caution',text:description.caution}));
+        class:'os-sync-change-caution',text:lang==='en'&&description.cautionEn?description.cautionEn:description.caution}));
       const details=h('details',{class:'os-sync-field-details'});
       details.open=expandedDetails.has(change.id);
       details.addEventListener('toggle',()=>{
@@ -1608,7 +1608,7 @@
        tr('\nЭто расчётная оценка; фактический результат на игровом сервере не проверен.',
           '\nThese are estimates; actual game-server results have not been verified.'):'';
       const otherPreview=selectedDescriptions.filter(d=>!(d.impacts||[]).length)
-       .slice(0,2).map(d=>'\n• '+d.title+': '+d.summary.slice(0,200)).join('');
+       .slice(0,2).map(d=>'\n• '+d.title+': '+(lang==='en'&&d.summaryEn?d.summaryEn:d.summary).slice(0,200)).join('');
       const atomicWarning=selectedChanges.some(e=>e.dataset==='tables')?
        tr('\n\nВАЖНО: выбран весь набор «Игровые формулы», не один предмет. '+
           'После подтверждения обновятся все таблицы этого раздела в D1. '+

@@ -343,8 +343,19 @@ export async function runUIContentInlineSmoke(browser,base){
   const tabTouch=tabCaption.locator('[contenteditable]');
   await tabTouch.waitFor({state:'visible',timeout:6000});
   assert.equal(await page.locator('#stageBookPanel').getAttribute('data-book-visible'),'summary');
+  // A click on another element (e.g. focus restoration or hybrid mouse)
+  // must not consume suppression for the pending synthetic touch click.
+  const unrelatedClicks=await tabCaption.evaluate(el=>{
+   const unrelated=document.createElement('button');
+   unrelated.type='button';unrelated.textContent='Unrelated action';
+   el.ownerDocument.body.append(unrelated);
+   let fired=0;unrelated.addEventListener('click',()=>fired++);
+   unrelated.click();unrelated.remove();return fired;
+  });
+  assert.equal(unrelatedClicks,1,'Unrelated clicks are not blocked by touch editor');
   await tabCaption.dispatchEvent('click',{bubbles:true,cancelable:true,detail:1});
-  assert.equal(await page.locator('#stageBookPanel').getAttribute('data-book-visible'),'summary');
+  assert.equal(await page.locator('#stageBookPanel').getAttribute('data-book-visible'),'summary',
+   'Unrelated click must not consume delayed synthetic tab suppression');
   await tabTouch.press('Escape');
   await tabCaption.dispatchEvent('pointerup',{pointerType:'touch',isPrimary:true,pointerId:71});
   await page.locator('#stageAttributes [data-book-page="defense"]').click();

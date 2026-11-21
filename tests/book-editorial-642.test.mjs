@@ -157,3 +157,13 @@ test('editable HTML labels preserve their associated checkbox and hybrid pointer
  assert.match(bookSource,/guideLabel\(toggle\.querySelector\('\.stage-mounted-label'\),'attack\.mountedToggle'/);
  assert.match(bookSource,/id:'stageBookMountedToggle',type:'checkbox'/);
 });
+
+test('touch long press preserves delayed-action suppression after unrelated clicks',()=>{
+ const source=file('pandora-studio-app.js');
+ const browser=file('tests/browser-ui-content-inline.mjs');
+ assert.match(source,/if\(Date\.now\(\)>marked\.until\)\{ownerTouchSwallow=null;return\}/);
+ assert.match(source,/if\(!marked\.action\.contains\(event\.target\)\)return/);
+ assert.match(source,/ownerTouchSwallow=null;\s*event\.preventDefault\(\);event\.stopImmediatePropagation\(\)/);
+ assert.match(browser,/Unrelated clicks are not blocked by touch editor/);
+ assert.match(browser,/Unrelated click must not consume delayed synthetic tab suppression/);
+});

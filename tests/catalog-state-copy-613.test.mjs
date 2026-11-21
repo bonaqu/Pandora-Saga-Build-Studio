@@ -112,3 +112,14 @@ test('pre-publication blockers cannot be bypassed by English localization',()=>{
  assert.match(workbench,/const modelCheck=safety\.check\(combined\)/);
  assert.match(workbench,/review\.auditSelection\(baseline,upstream,combined,chosen,importer\.files/);
 });
+
+test('English human-review cautions are displayed but game-model safety remains read-only',()=>{
+ for(const label of [
+  'description.summaryEn','description.cautionEn',
+  'lang===\'en\'&&description.summaryEn',
+  'lang===\'en\'&&description.cautionEn',
+  'change.title,description.title,description.summary,description.summaryEn'
+ ])assert.ok(workbench.includes(label),label);
+ assert.match(workbench,/const uncertain=changes\.filter\(x=>checked\(x\)&&describe\(x\)\.uncertain\)\.length/);
+ assert.match(workbench,/const riskApproval=/);
+});

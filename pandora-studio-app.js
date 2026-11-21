@@ -1178,10 +1178,12 @@ function bindOwnerTouchCaption(node,edit,{interactive=false}={}){
  document.addEventListener('click',event=>{
   const marked=ownerTouchSwallow;
   if(!marked)return;
+  if(Date.now()>marked.until){ownerTouchSwallow=null;return}
+  // Another click can fire before the browser's delayed synthetic touch
+  // click. Ignore unrelated targets without dropping the short-lived guard.
+  if(!marked.action.contains(event.target))return;
   ownerTouchSwallow=null;
-  if(Date.now()<=marked.until&&marked.action.contains(event.target)){
-   event.preventDefault();event.stopImmediatePropagation();
-  }
+  event.preventDefault();event.stopImmediatePropagation();
  },true);
 }
 window.PandoraOwnerTouchEdit=bindOwnerTouchCaption;
