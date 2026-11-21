@@ -1770,8 +1770,18 @@ function editOriginCopyLabel(node,key,ru,en){
 }
 function renderOriginCopyLabels(){
  for(const [selector,key,ru,en] of originFixedLabels){
+  // Class count is derived game data, never authorial text or owner CAS.
+  if(key==='classCount')continue;
   const node=document.querySelector(selector);
   originCopyLabel(node,key,ru,en);
+ }
+ const classNode=$('classCount');
+ if(classNode){
+  const n=jobKeys.length,rem=n%10,lastTwo=n%100;
+  const plural=rem===1&&lastTwo!==11?'класс':
+   rem>=2&&rem<=4&&(lastTwo<12||lastTwo>14)?'класса':'классов';
+  const text=lang==='en'?n+' classes':n+' '+plural;
+  if(classNode.textContent!==text)classNode.textContent=text;
  }
 }
 function editAttr(el,key){el.dataset.editKey=key;if(adminEditing&&adminToken)el.classList.add('admin-edit');return el}

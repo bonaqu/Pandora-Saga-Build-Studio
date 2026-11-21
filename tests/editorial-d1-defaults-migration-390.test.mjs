@@ -287,6 +287,19 @@ test('#390 actual monster, NPC trade, chest and item owner registries exclude un
   assert.match(app,new RegExp("ownerCopy\\('"+section.replaceAll('.','\\.')+"',key,"));
 });
 
+test('#390 profession count is derived from current class identities, never D1 authorial copy',()=>{
+ const app=read('pandora-studio-app.js'),html=read('index.html');
+ assert.match(app,/if\(key==='classCount'\)continue/);
+ assert.match(app,/const n=jobKeys\.length/);
+ assert.match(app,/const text=lang==='en'\?n\+' classes'/);
+ assert.match(html,/id="classCount" data-derived-game-count="classes"/);
+ assert.doesNotMatch(html,/id="classCount" data-i18n=/);
+ for(const key of [
+  'guideedit.book.origin.class-count','guideedit.book.ui.label.class-count'
+ ])assert.equal(manifest.records.some(row=>row.recordKey===key),false,
+   'Count must not be stored as authorial default: '+key);
+});
+
 test('issue 390: migration never materializes runtime values or rewrites an override',()=>{
  assert.equal(manifest.records.some(r=>
   /(?:^|\.)(?:character|item|soul|account|formula|amount|gold|points|chance)\.[0-9]+/.test(r.recordKey)),false);

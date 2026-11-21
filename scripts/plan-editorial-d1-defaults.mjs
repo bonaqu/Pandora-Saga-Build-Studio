@@ -99,6 +99,9 @@ export function buildEditorialDefaultsManifest(){
  // The exact same stable ids and fallback values that existing owner CAS
  // already uses for headings, status text, and the Hero Book text catalog.
  for(const key of ui.keys()){
+  // Even the fixed release dictionary contains a literal class count.
+  // Never seed it as D1 editable text: live UI uses jobKeys.length instead.
+  if(key==='classCount')continue;
   const id=ui.fieldKey(key);
   if(!id)throw Error('Missing existing bilingual owner field key: '+key);
   for(const lang of ['ru','en'])

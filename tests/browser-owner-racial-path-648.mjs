@@ -2,7 +2,15 @@ import assert from 'node:assert/strict';
 
 export async function runOwnerRacialPath648Smoke(browser,base){
  const api='https://ps-build-studio-cloud.bonaqu.workers.dev';
- const values={},writes=[],errors=[];
+ const values={
+  // Corrupted/old D1 editorial captions must never impersonate game counts.
+  'guideedit.book.origin.class-count':JSON.stringify({
+   ru:'999 классов',en:'999 classes'
+  }),
+  'guideedit.book.ui.label.class-count':JSON.stringify({
+   ru:'999 профессий',en:'999 jobs'
+  })
+ },writes=[],errors=[];
  const context=await browser.newContext({viewport:{width:1365,height:850}});
  await context.addInitScript(()=>{
   localStorage.setItem('ps-build-studio.v1',JSON.stringify({
@@ -107,6 +115,23 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   const dockToggle=page.locator('#ownerDock [data-owner-collapse]');
   if(await dockToggle.getAttribute('aria-expanded')==='true')
    await dockToggle.click();
+  // A source-backed profession count is not editable authorial copy, even
+  // when old D1 overrides contain misleading RU/EN labels.
+  await page.locator('#originTabs [data-origin-tab="class"]').click();
+  const classCount=page.locator('#classCount');
+  await classCount.waitFor({state:'visible'});
+  assert.equal((await classCount.innerText()).trim(),'28 классов');
+  assert.equal(await classCount.getAttribute('data-derived-game-count'),'classes');
+  assert.equal(await classCount.getAttribute('data-i18n'),null);
+  assert.equal(await classCount.getAttribute('aria-keyshortcuts'),null);
+  assert.equal(await classCount.getAttribute('tabindex'),null);
+  assert.equal(await classCount.evaluate(node=>
+   node.classList.contains('origin-copy-editable')||
+   node.classList.contains('ui-content-editable')),false);
+  await classCount.dblclick();
+  assert.equal(await classCount.locator('[data-owner-text-field]').count(),0);
+  assert.equal(writes.length,0,'Derived profession counts cannot produce D1 CAS writes');
+  await page.locator('#originTabs [data-origin-tab="race"]').click();
   // The passive remains selectable, but its caption edits directly without
   // a pencil. Escape must preserve the selected passive and avoid D1 writes.
   const passive=page.locator('#originPassives .origin-passive').first();
@@ -190,6 +215,8 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   assert.equal(await group.locator('button.path-group-pencil').count(),0);
   await page.locator('#locale [data-locale="en"]').click();
   await page.waitForFunction(()=>document.documentElement.lang==='en');
+  assert.equal((await page.locator('#classCount').textContent()).trim(),'28 classes');
+  assert.equal(await page.locator('#classCount [data-owner-text-field]').count(),0);
   await openSpecial();
   const pathEnHelp=page.locator('#ownerPathHelpCopy');
   // Locale changes preserve the expanded owner panel; clicking Summary
