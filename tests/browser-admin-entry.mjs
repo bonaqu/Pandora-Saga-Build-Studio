@@ -1141,7 +1141,13 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(download.suggestedFilename(),'pandora-studio-reviewed-catalog.json');
   assert.match(await dialog.locator('.os-sync [role=status]').last().innerText(),/GitHub не изменён/);
   // Exercise the authenticated game-data proxy as well as archive preview.
+  // The archived comparison already has a matching success caption. Wait for
+  // the new *network calls*, not for that stale caption, before inspecting
+  // the authenticated live-result counters.
+  const liveMetaBefore=calls.filter(x=>x==='game-source:meta').length;
   await dialog.getByRole('button',{name:'Проверить изменения в текущей игре'}).click();
+  for(let n=0;n<240&&calls.filter(x=>x==='game-source:meta').length<liveMetaBefore+2;n++)
+   await page.waitForTimeout(50);
   await waitForCatalogResult('live source comparison',
    () => document.querySelector('.os-sync [role=status]')?.textContent?.includes('Найдено изменений:'));
   assert.equal(calls.filter(x=>x==='game-source:meta').length,2,
