@@ -96,6 +96,15 @@ test('#390 D1 authored defaults: incomplete, duplicate and edited snapshots fail
   [{rows:records.map(r=>r.record_key==='guideedit.wiki.labels'&&
     r.field==='honor_victories_ru'?{...r,field:'honor_victories_points'}:r)},
    'EDITORIAL_DEFAULTS_INVALID_ROW'],
+  [{rows:records.map((r,i)=>i===0?{
+    ...r,record_key:'guideedit.book.owner-dock.title',field:'unverifiedRu'
+   }:r)},'EDITORIAL_DEFAULTS_INVALID_ROW'],
+  [{rows:records.map((r,i)=>i===0?{
+    ...r,record_key:'guideedit.honor.overview',field:'secretRu'
+   }:r)},'EDITORIAL_DEFAULTS_INVALID_ROW'],
+  [{rows:records.map((r,i)=>i===0?{
+    ...r,record_key:'guideedit.honor.rank.0',field:'requirementRu'
+   }:r)},'EDITORIAL_DEFAULTS_INVALID_ROW'],
   [{marker:{...metadata,sha256:'f'.repeat(64)}},
    'EDITORIAL_DEFAULTS_CORRUPT_MARKER'],
   [{marker:{...metadata,expected_rows:3001}},
