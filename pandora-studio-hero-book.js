@@ -2398,7 +2398,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
  // The chapter count is generated state, not part of an editable D1 label.
  const bookTitleText=make('span',{class:'stage-book-title-text',
   text:document.documentElement?.lang==='en'?'HERO BOOK':'КНИГА ГЕРОЯ'});
- if(bookTitleText.dataset.bookEditorialKey)
+ if(bookTitleText.dataset?.bookEditorialKey)
   bookTitleText.dataset.ownerCopyKey=bookTitleText.dataset.bookEditorialKey;
  const bookHeader=make('div',{class:'stage-attribute-head'},[
   make('button',{type:'button',class:'stage-book-arrow',text:'‹',
