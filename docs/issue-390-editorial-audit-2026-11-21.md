@@ -186,3 +186,9 @@
 - A `data-i18n-title` such as the profile trigger's `profileAccess` simply mirrors its accessible name. It does not create an independent authorial hover hint or a caption pencil. RU/EN title+ARIA still refresh together through `PandoraUILocale.apply`. The site-specific true independent tooltip editors are untouched.
 - Length validation is now based on `PandoraUILocale.copyLimit(key)` instead of a blanket 90-character cap, preserving safety for each key.
 - Added Node source contract assertions and Chromium owner login/guest/EN/Escape keyboard tests. Physical touch QA is still open.
+
+## Checkpoint: Wiki authored-copy Save and Undo without reloading records
+
+- Source-only `guideedit.book.wiki.map.text.*`, `wiki.monster.text.*`, `wiki.npc.trade.*`, `wiki.chest.text.*`, `wiki.item.text.*` now have an explicit, narrow authorial key matcher. The same matcher is used on successful CAS save, mounted-field refresh and Undo.
+- Editing or Undoing an authorial caption no longer calls `refreshOwnerCatalog()` as if a monster stat, item ID, NPC trade or loot had changed. The existing card, browser list, search, scroll, inline editors and real gameplay values remain mounted. Gameplay `wikiedit.*` keys still use the full catalog refresh as required.
+- Added Node contracts and a Chromium RU CAS/Undo scenario on an actual selected Wiki map caption, asserting stable DOM node identity, selected map and browse scroll, verified D1 reset. This is mock D1, not production/staging import.

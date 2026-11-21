@@ -1742,6 +1742,54 @@ export async function runUIContentInlineSmoke(browser,base){
   await chooseWikiChapter('map');
   assert.ok(await page.locator('#detailContent .wiki-location-list-heading').count()>0);
   assert.ok(await summaryEditor.locator('[data-owner-copy-id="placeCity"]').count());
+
+  // #390: Undo of a source-authored Wiki map caption must patch the existing
+  // card, rather than recreate the Wiki browse list or discard its search.
+  const firstMap=page.locator('#detailContent .wiki-list [data-wiki-record]').first();
+  await firstMap.click();
+  const mapPage=page.locator('#detailContent article.wiki-page');
+  const mapEditor=mapPage.locator('.studio-owner-interface-editor')
+   .filter({hasText:'Подписи локаций и подземелий'});
+  await mapEditor.locator('summary').waitFor({state:'visible'});
+  await mapEditor.locator('summary').click();
+  const mapCaption=mapEditor.locator('[data-owner-copy-id="tags"]');
+  await mapCaption.waitFor({state:'visible'});
+  const mountedMapCaption=await mapCaption.elementHandle();
+  const mountedMapPage=await mapPage.elementHandle();
+  const mapBrowse=page.locator('#detailContent .wiki-list');
+  const mountedBrowse=await mapBrowse.elementHandle();
+  const selectedMap=await firstMap.getAttribute('data-wiki-record');
+  const browseScroll=await mapBrowse.evaluate(el=>el.scrollTop);
+  await mapCaption.dblclick();
+  const mapDraft=mapCaption.locator('[data-owner-text-field]');
+  await mapDraft.waitFor({state:'visible'});
+  await mapDraft.fill('Теги карты QA');
+  await mapDraft.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#detailContent .wiki-page [data-owner-copy-id="tags"]')?.textContent==='Теги карты QA',
+   null,{timeout:15000});
+  assert.equal(JSON.parse(values['guideedit.book.wiki.map.text.tags']).ru,'Теги карты QA');
+  if(await page.locator('#ownerDock').evaluate(el=>el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
+  await page.locator('#ownerDock [data-owner-undo]').click();
+  await page.waitForFunction(()=>document.querySelector(
+   '#detailContent .wiki-page [data-owner-copy-id="tags"]')?.textContent==='Теги локации',
+   null,{timeout:15000});
+  assert.equal(Object.hasOwn(values,'guideedit.book.wiki.map.text.tags'),false);
+  assert.equal(resets.at(-1)?.key,'guideedit.book.wiki.map.text.tags');
+  assert.equal(await mountedMapCaption.evaluate(el=>el.isConnected),true,
+   'Wiki authorial Undo must not remount the caption');
+  assert.equal(await mountedMapPage.evaluate(el=>el.isConnected),true,
+   'Wiki authorial Undo must preserve the currently open map');
+  assert.equal(await mountedBrowse.evaluate(el=>el.isConnected),true,
+   'Wiki authorial Undo must preserve the browsing/search list');
+  assert.equal(await page.locator('#detailContent .wiki-list [data-wiki-record].selected')
+   .first().getAttribute('data-wiki-record'),selectedMap);
+  assert.equal(await mapBrowse.evaluate(el=>el.scrollTop),browseScroll);
+  await mountedMapCaption.dispose();await mountedMapPage.dispose();
+  await mountedBrowse.dispose();
+  if(!await page.locator('#ownerDock').evaluate(el=>el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
   assert.deepEqual(errors,[]);
   console.log('Chromium Wiki results: RU D1 CAS, 409 draft, Undo, live counters, more and groups passed');
   assert.deepEqual(errors,[]);
