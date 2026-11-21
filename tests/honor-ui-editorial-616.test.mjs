@@ -8,6 +8,7 @@ const app=read('pandora-studio-app.js');
 const css=read('pandora-studio-honor.css');
 const scope={};scope.window=scope;
 runInNewContext(read('pandora-studio-honor-guide.js'),scope);
+runInNewContext(read('pandora-studio-wiki-labels.js'),scope);
 
 test('issue #390: Honor PvP Victories sidebar D1 labels pass the same client and Worker validation',()=>{
  const worker=read('worker/index.js');
@@ -20,7 +21,15 @@ test('issue #390: Honor PvP Victories sidebar D1 labels pass the same client and
    ['honor_'+section+'_en']:'Caption '+section};
   const data=JSON.stringify(fields);
   assert.equal(scope.PandoraHonorGuide.validOverride('wiki.labels',data),true,
-   'Client rejected the built-in Honor section '+section);
+   'Honor guide rejected the built-in section '+section);
+  assert.equal(scope.PandoraWikiLabels.validPatch(fields),true,
+   'Canonical Wiki label parser rejected the built-in section '+section);
+  assert.equal(scope.PandoraWikiLabels.value({'guideedit.wiki.labels':data},
+   'honor',section,'ru'),'Заголовок '+section,
+   'Actual RU renderer ignored a saved Honor caption '+section);
+  assert.equal(scope.PandoraWikiLabels.value({'guideedit.wiki.labels':data},
+   'honor',section,'en'),'Caption '+section,
+   'Actual EN renderer ignored a saved Honor caption '+section);
   assert.equal(server(data,'wiki.labels'),true,
    'Worker rejected a valid client-owned Honor chapter: '+section);
  }
@@ -32,6 +41,7 @@ test('issue #390: Honor PvP Victories sidebar D1 labels pass the same client and
  ]){
   assert.equal(server(data,'wiki.labels'),false);
   assert.equal(scope.PandoraHonorGuide.validOverride('wiki.labels',data),false);
+  assert.equal(scope.PandoraWikiLabels.validPatch(JSON.parse(data)),false);
  }
 });
 
