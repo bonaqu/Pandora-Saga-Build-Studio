@@ -3,7 +3,9 @@
 // A frontend reader must pin an exact release+digest before using this data.
 const SNAPSHOT=/^([0-9]+\.[0-9]+\.[0-9]+)-([a-f0-9]{16})$/;
 const KEY=/^guideedit\.(?:book\.[a-z][a-zA-Z0-9._:-]{1,80}|honor\.(?:overview|rank\.(?:[0-9]|1[01]))|wiki\.labels)$/;
-const FIELD=/^(?:ru|en|hintRu|hintEn|[a-z][a-zA-Z]*Ru|[a-z][a-zA-Z]*En)$/;
+const BOOK_FIELD=/^(?:ru|en|hintRu|hintEn)$/;
+const RANK_FIELD=/^(?:nameRu|nameEn|benefitRu|benefitEn)$/;
+const OVERVIEW_FIELD=/^(?:pvp(?:Intro|Daily|Weekly|Hunt)(?:Ru|En)|overview(?:Ru|En)|honor(?:Ru|En)|total(?:Ru|En)|gain(?:Ru|En)|loss(?:Ru|En)|current(?:Ru|En)|ranks(?:Ru|En)|joining(?:Ru|En)|cloaks(?:Ru|En)|monthlyNote(?:Ru|En))$/;
 // Match the existing Wiki label client's explicit namespace allowlist.
 // Do not treat arbitrary attribute names, source IDs or user data as copy.
 const WIKI_FIELD=/^(?:chapter_(?:item|utility|monster|map|honor|npc|chest|instance|skill|soul)|honor_(?:overview|gain|victories|ranks|monthly)|skill_filter_(?:player|racial|guild|special|variants|other|unknown|all))_(?:ru|en)$/;
@@ -16,7 +18,12 @@ function validRecord(record){
   typeof record.recordKey==='string'&&KEY.test(record.recordKey)&&
   typeof record.field==='string'&&
   (record.recordKey==='guideedit.wiki.labels'?
-   WIKI_FIELD.test(record.field):FIELD.test(record.field))&&
+   WIKI_FIELD.test(record.field)&&record.value?.length<=90:
+   record.recordKey==='guideedit.honor.overview'?
+    OVERVIEW_FIELD.test(record.field)&&record.value?.length<=2200:
+    record.recordKey.startsWith('guideedit.honor.rank.')?
+     RANK_FIELD.test(record.field)&&record.value?.length<=500:
+     BOOK_FIELD.test(record.field)&&record.value?.length<=360)&&
   typeof record.value==='string'&&record.value.trim()&&
   record.value.length<=8000&&!/[\x00-\x08\x0b\x0c\x0e-\x1f]/.test(record.value);
 }
