@@ -35,6 +35,32 @@ test('issue #390: Honor PvP Victories sidebar D1 labels pass the same client and
  }
 });
 
+test('issue #390: every existing Honor overview and PvP event default passes actual Worker CAS schema',()=>{
+ const worker=read('worker/index.js');
+ const start=worker.indexOf('function validGuideEdit(');
+ const end=worker.indexOf('function validWikiDropEdit(',start);
+ assert.ok(start>=0&&end>start);
+ const server=runInNewContext(worker.slice(start,end)+'\nvalidGuideEdit');
+ const defaults=scope.PandoraHonorGuide.intro;
+ assert.ok(Object.keys(defaults).length>=30);
+ for(const [field,value] of Object.entries(defaults)){
+  const body=JSON.stringify({[field]:value});
+  assert.equal(scope.PandoraHonorGuide.validOverride('honor.overview',body),true,
+   'Client rejected '+field);
+  assert.equal(server(body,'honor.overview'),true,
+   'Worker rejected real authorial Honor default '+field);
+ }
+ for(const body of [
+  JSON.stringify({pvpIntroRu:''}),
+  JSON.stringify({pvpHuntEn:'x'.repeat(2201)}),
+  JSON.stringify({honorPoints:1234}),
+  JSON.stringify({rankThresholdRu:'3000 очков'})
+ ]){
+  assert.equal(scope.PandoraHonorGuide.validOverride('honor.overview',body),false);
+  assert.equal(server(body,'honor.overview'),false);
+ }
+});
+
 test('Honor UI captions have five stable, independent D1 RU/EN keys',()=>{
  const keys=['warsHeading','warEyebrow','subtitle','zonesHeading','rewardsHeading'];
  for(const key of keys){
