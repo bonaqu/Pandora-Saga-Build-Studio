@@ -368,19 +368,32 @@ function guideDisplayText(value){
 }
 // Native disclosure headers need to distinguish owner double-click from
 // normal click. Never steal keyboard or guest disclosure navigation.
+// A native summary may contain several independent authored captions, e.g.
+// the Honor group name and the smaller "passive skill" phrase. Register all
+// of them under ONE capture guard rather than guarding only the first.
+const bookSummaryCaptionTargets=new WeakMap();
 function guardBookSummaryCaption(node){
  const summary=node.closest?.('summary');
- if(!summary||summary.dataset.bookCaptionGuard==='1')return;
+ if(!summary)return;
+ let captions=bookSummaryCaptionTargets.get(summary);
+ if(!captions){
+  captions=new Set();
+  bookSummaryCaptionTargets.set(summary,captions);
+ }
+ captions.add(node);
+ if(summary.dataset.bookCaptionGuard==='1')return;
  summary.dataset.bookCaptionGuard='1';
  let pending=null;
  summary.addEventListener('click',event=>{
-  if(!event.detail||!node.contains(event.target)||
+  if(!event.detail||
    event.target.closest?.('input,textarea,select,[data-owner-text-field]'))return;
+  const caption=[...captions].find(item=>item.contains(event.target));
+  if(!caption)return; // Chevrons and all other native actions still work.
   event.preventDefault();event.stopImmediatePropagation();
   if(pending){clearTimeout(pending);pending=null;return}
   pending=setTimeout(()=>{
    pending=null;
-   if(summary.isConnected&&!node.hidden&&summary.closest('details'))summary.click();
+   if(summary.isConnected&&!caption.hidden&&summary.closest('details'))summary.click();
   },500);
  },true);
 }
