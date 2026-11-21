@@ -798,18 +798,25 @@ test('Path help and skill-navigation copy bind bilingual D1 fields without touch
   {id:91003,name:'Original successor',classes:{WARRIOR:1},
    learnable:true,prereq:91002,reqs:[]}
  ];
+ const edits=[];
  const skillApi={...api,job:'WARRIOR',skillCatalog:source,catalogReady:true,
-  query:'',filter:'all',shown:24,selectedSkill:source[1],onInspect:()=>{}};
+  query:'',filter:'all',shown:24,selectedSkill:source[1],onInspect:()=>{},
+  canEdit:true,editLabel:(node,key)=>edits.push({node,key})};
  const gallery=new BrowserElement('root'),details=new BrowserElement('root');
  root.PandoraHeroPath.viewSkills(gallery,details,skillApi);
  for(const key of ['skillBrowseAria','skillWeaponRange','skillPreviousAria',
-  'skillLineageAria','skillNextAria','skillNextLink'])
+  'skillLineageAria','skillNextAria'])
   assert.ok(bound.some(row=>row.key===key),'Skill copy '+key+' is bound');
  const previous=bound.find(row=>row.key==='skillPreviousAria');
- const next=bound.find(row=>row.key==='skillNextLink');
+ const next=edits.find(row=>row.key==='skillNextLink');
  assert.equal(previous.suffix,' Original prerequisite');
- assert.equal(next.suffix,' Original successor');
- assert.equal(next.node.textContent,'Следующее → Original successor');
+ assert.ok(next,'The visible author caption is directly editable');
+ assert.equal(next.node.textContent,'Следующее →');
+ const lineage=walk(details).find(row=>row.className==='path-skill-lineage-link');
+ assert.equal(walk(lineage).find(row=>row.className==='path-skill-lineage-name')
+  ?.textContent,' Original successor');
+ assert.equal(bound.some(row=>row.key==='skillNextLink'),false,
+  'The whole button and catalog skill name must not be an owner-editable value');
  assert.equal(previous.node.textContent,'Original prerequisite');
  assert.equal(source[0].name,'Original prerequisite');
  assert.equal(source[2].name,'Original successor');
