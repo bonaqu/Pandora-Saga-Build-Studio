@@ -176,6 +176,49 @@ export function buildEditorialDefaultsManifest(){
    append('guideedit.book.equipment.tab.'+tab,lang,pair[i],'equipment-tabs');
  }
 
+ // Preserve exact equipment CAS identities from the on-screen source registry.
+ // This inventory is never generated from mutable item records or numeric
+ // character state. A changed source registry requires deliberate review.
+ const summaryMatch=equipmentSrc.match(
+  /const equipmentSummaryCopy=Object\.freeze\((\{[\s\S]*?\})\);/);
+ if(!summaryMatch)throw Error('Missing equipment summary source dictionary');
+ const summary=runInNewContext('('+summaryMatch[1]+')',{},{
+  filename:'equipmentSummaryCopy',timeout:5000
+ });
+ const expectedSummary=[
+  'field.soulCompatible','field.type','field.level','field.attack',
+  'field.magicAttack','field.defense','field.slots','field.speed',
+  'field.range','field.gemType','field.element','field.specialEffect',
+  'wearableBy','outfitNote','socketedSoulHeading'
+ ];
+ if(Object.keys(summary).sort().join('|')!==expectedSummary.sort().join('|'))
+  throw Error('Equipment summary registry has new or missing keys');
+ for(const key of expectedSummary){
+  const pair=summary[key];
+  if(!Array.isArray(pair)||pair.length!==2)
+   throw Error('Invalid equipment summary RU/EN: '+key);
+  const ownerKey='guideedit.book.equipment.'+
+   key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  for(const [i,lang] of ['ru','en'].entries())
+   append(ownerKey,lang,pair[i],'equipment-summary');
+ }
+ // The three tab tooltips use distinct existing hint.{tab} CAS keys.
+ const hintsMatch=equipmentSrc.match(
+  /const equipmentTabHints=Object\.freeze\((\{[\s\S]*?\})\);/);
+ if(!hintsMatch)throw Error('Missing equipment tooltip source registry');
+ const tabHints=runInNewContext('('+hintsMatch[1]+')',{},{
+  filename:'equipmentTabHints',timeout:5000
+ });
+ if(Object.keys(tabHints).sort().join('|')!=='choose|details|souls')
+  throw Error('Equipment tooltip registry changed');
+ for(const [tab,pair] of Object.entries(tabHints)){
+  if(!Array.isArray(pair)||pair.length!==2)
+   throw Error('Invalid equipment tooltip RU/EN: '+tab);
+  for(const [i,lang] of ['ru','en'].entries())
+   append('guideedit.book.equipment.hint.'+tab,lang,pair[i],
+    'equipment-hints');
+ }
+
  // The Wiki chapters, all five Honor subchapters and skill filters are
  // one existing D1 JSON record. Preserve their exact field identities;
  // never reconstruct these labels from list position or save them as game IDs.

@@ -51,6 +51,31 @@ test('#390 staged D1 client is inert until explicit verified version activation'
  assert.deepEqual(expectPlain(stage.status()),{active:false,snapshot:null});
 });
 
+test('#390 verified equipment summary defaults are below existing owner CAS',async()=>{
+ const root=context(),stage=root.PandoraEditorialDefaults,guide=root.PandoraHonorGuide;
+ const key='guideedit.book.equipment.field.soul-compatible';
+ const hint='guideedit.book.equipment.hint.souls';
+ const patched=fixture([
+  [key,'ru','Совместимые слоты · staging'],
+  [key,'en','Compatible slots · staging'],
+  [hint,'en','Manage Soul sockets · staging']
+ ]);
+ assert.equal(await stage.installVerified(patched,patched.snapshot,webcrypto.subtle),true);
+ assert.equal(guide.field({},'equipment.field.soul-compatible',
+  'Подходящие слоты','Compatible slots').ru,'Совместимые слоты · staging');
+ assert.equal(guide.field({},'equipment.hint.souls',
+  'Вставить, заменить или снять душу.','Insert, replace or remove a Soul.').en,
+  'Manage Soul sockets · staging');
+ const override={[key]:JSON.stringify({ru:'Редактура владельца'})};
+ assert.equal(guide.field(override,'equipment.field.soul-compatible',
+  'Подходящие слоты','Compatible slots').ru,'Редактура владельца');
+ assert.equal(guide.field(override,'equipment.field.soul-compatible',
+  'Подходящие слоты','Compatible slots').en,'Compatible slots · staging');
+ stage.reset();
+ assert.equal(guide.field({},'equipment.field.soul-compatible',
+  'Подходящие слоты','Compatible slots').ru,'Подходящие слоты');
+});
+
 test('#390 staging text uses only exact semantic identities and CAS outranks defaults',async()=>{
  const root=context(),stage=root.PandoraEditorialDefaults;
  const ui=root.PandoraUILocale,guide=root.PandoraHonorGuide,wiki=root.PandoraWikiLabels;

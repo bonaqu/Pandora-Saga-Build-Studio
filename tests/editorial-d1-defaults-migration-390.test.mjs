@@ -97,6 +97,36 @@ test('issue #390: all exact Wiki label field identities enter the physical D1 de
    'Runtime/game-derived fields must never enter authorial defaults');
 });
 
+test('#390 actual equipment captions and independent hover hints are pinned to current CAS identities',()=>{
+ const source=read('pandora-studio-equipment-ui.js');
+ const match=source.match(/const equipmentSummaryCopy=Object\.freeze\((\{[\s\S]*?\})\);/);
+ const hint=source.match(/const equipmentTabHints=Object\.freeze\((\{[\s\S]*?\})\);/);
+ assert.ok(match&&hint,'Rendered equipment source copy registries are required');
+ const summary=runInNewContext('('+match[1]+')',{});
+ const hints=runInNewContext('('+hint[1]+')',{});
+ assert.equal(Object.keys(summary).length,15);
+ assert.equal(manifest.stats.cohorts['equipment-summary'],30);
+ assert.equal(manifest.stats.cohorts['equipment-hints'],6);
+ assert.match(source,/\.map\(summaryCopyField\)/);
+ assert.match(source,/const hints=equipmentTabHints/);
+ assert.match(source,/context\?\.editLabel\?\.\(dt,'field\.'\+field\[0\]/);
+ for(const [key,pair] of Object.entries(summary)){
+  const recordKey='guideedit.book.equipment.'+
+   key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  for(const [i,lang] of ['ru','en'].entries())
+   assert.equal(manifest.records.find(row=>
+    row.recordKey===recordKey&&row.field===lang)?.value,pair[i],recordKey);
+ }
+ for(const [tab,pair] of Object.entries(hints)){
+  for(const [i,lang] of ['ru','en'].entries())
+   assert.equal(manifest.records.find(row=>
+    row.recordKey==='guideedit.book.equipment.hint.'+tab&&row.field===lang)?.value,
+    pair[i]);
+ }
+ assert.equal(manifest.records.some(row=>
+  /guideedit\.book\.equipment\..*item\.[0-9]+/.test(row.recordKey)),false);
+});
+
 test('issue 390: migration never materializes runtime values or rewrites an override',()=>{
  assert.equal(manifest.records.some(r=>
   /(?:^|\.)(?:character|item|soul|account|formula|amount|gold|points|chance)\.[0-9]+/.test(r.recordKey)),false);
