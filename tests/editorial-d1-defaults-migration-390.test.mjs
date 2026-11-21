@@ -24,6 +24,9 @@ test('issue 390: source-authored D1 default snapshot is stable and uses exact ex
  assert.deepEqual(manifest.records,repeated.records);
  assert.ok(manifest.records.length>200,'Expected substantive bilingual UI authorial coverage');
  assert.equal(manifest.stats.entries,manifest.records.length);
+ assert.ok(manifest.records.length<=3000,'Matches read-only Worker record limit');
+ assert.ok(manifest.records.reduce((n,r)=>n+r.value.length,0)<=450000,
+  'Matches read-only Worker total source-character limit');
  const identities=manifest.records.map(r=>r.recordKey+'\u0000'+r.field);
  assert.equal(new Set(identities).size,identities.length,'Duplicate D1 field');
  assert.deepEqual([...identities].sort(),identities,'Canonical deterministic row order');
