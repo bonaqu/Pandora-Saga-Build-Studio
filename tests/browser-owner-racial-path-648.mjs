@@ -98,6 +98,24 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   assert.equal(await passive.getAttribute('aria-pressed'),selectedPassive,
    'Editing a racial skill name must not select a passive');
   assert.equal(writes.length,0,'Escape must not write a D1 skill name');
+  // Source-backed caps are not authorial copy. Edit the visible caption
+  // directly while keeping the cap number and the growth state untouched.
+  const capLabel=page.locator('#pathGrowthPage .path-limit-copy').first();
+  await capLabel.waitFor({state:'visible',timeout:15000});
+  const capNumber=page.locator('#pathGrowthPage .path-limit-number').first();
+  const originalCap=await capNumber.textContent();
+  assert.ok(/^\s*[0-9]+$/.test(originalCap),'The fixture needs a real numeric branch cap');
+  await capLabel.dblclick();
+  const capInput=capLabel.locator('[data-owner-text-field]');
+  await capInput.waitFor({state:'visible'});
+  await capInput.fill('Лимит ветки:');
+  await capInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector('#pathGrowthPage .path-limit-copy')
+   ?.textContent==='Лимит ветки:',null,{timeout:12000});
+  await savedOverride('guideedit.book.path.path-limit-points',
+   {ru:'Лимит ветки:'});
+  assert.equal(await page.locator('#pathGrowthPage .path-limit-number').first().textContent(),
+   originalCap,'Editing the author label must not overwrite branch point caps');
   await openSpecial();
   // Author edits a hint through the ONE compact owner panel. The disabled
   // Racial branch and current hero remain mounted; no per-card pencil.
