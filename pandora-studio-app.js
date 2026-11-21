@@ -5847,12 +5847,12 @@ function renderWiki(root){
       }
       section.append(note);
      }
-     // Only source-authored, fixed game-patch explanations get owner copy keys.
-     // Calculated results and generated game data remain outside editorial D1.
+     // Only source-proven fixed explanations get owner copy keys.
+     // Calculated results, game IDs and dynamic source values remain outside D1.
      for(const note of evidence.notes){
       const ru=note.ru||note.en||'',en=note.en||note.ru||'';
       if(!ru&&!en)continue;
-      const ownerKey=/^osPatch[0-9]+$/.test(note.editorialKey||'')?
+      const ownerKey=/^(?:osPatch|osSource(?:Poison|Hymn|Trap|Composite|Linked))[0-9]+$/.test(note.editorialKey||'')?
        note.editorialKey:null;
       const visible=ownerKey?ownerCopy('wiki-ui',ownerKey,ru,en):
        (lang==='en'?en:ru);

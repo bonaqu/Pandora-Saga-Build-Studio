@@ -41,8 +41,23 @@ test('verified game-patch skill notes have stable owner-editable RU/EN D1 keys',
 
 test('skill-note editor is gated by verified owner mode, never enabled for generated notes',()=>{
  const source=readFileSync(resolve(root,'pandora-studio-app.js'),'utf8');
- assert.match(source,/\^osPatch\[0-9\]\+\$/);
+ assert.match(source,/osPatch\|osSource/);
+ assert.match(source,/Poison\|Hymn\|Trap\|Composite\|Linked/);
  assert.match(source,/ownerCopy\('wiki-ui',ownerKey,ru,en\)/);
  assert.match(source,/ownerCopyLabel\(label,'wiki-ui',ownerKey,ru,en\)/);
  assert.match(source,/if\(ownerKey&&adminEditing&&adminToken\)/);
+});
+
+test('only static source-proven notes expose semantic Wiki editorial keys',()=>{
+ const src=readFileSync(resolve(root,'pandora-studio-wiki-skill-insights.js'),'utf8');
+ const app=readFileSync(resolve(root,'pandora-studio-app.js'),'utf8');
+ for(const name of ['Poison','Hymn','Trap','Composite','Linked'])
+  assert.ok(src.includes("editorialKey:'osSource"+name+"'+skill.id"),
+   name+' must have a stable source-attested key');
+ assert.match(app,/if\(ownerKey&&adminEditing&&adminToken\)/);
+ assert.match(app,/ownerCopyLabel\(label,'wiki-ui',ownerKey,ru,en\)/);
+ const dynamic=src.slice(src.indexOf('const jobs=Object.keys(classes)'),
+  src.indexOf('const linked=sourceLinkedEvidence'));
+ assert.ok(dynamic.includes("notes.push({ru:row.noteRu||'',en:row.noteEn||''})"));
+ assert.doesNotMatch(dynamic,/editorialKey/);
 });
