@@ -128,17 +128,21 @@ test('issue #390: rare static Book notes and the source-breakdown header are ind
 
 test('touch owner mode reuses the Book inline editor and avoids redundant DOM moves',()=>{
  const source=file('pandora-studio-hero-book.js');
- assert.match(source,/root\.PandoraOwnerTouchEdit\?\.\(node,editName\)/);
+ assert.match(source,/root\.PandoraOwnerTouchEdit\?\.\(node,editName,\{interactive:true\}\)/);
+ assert.match(source,/root\.PandoraOwnerTouchEdit\?\.\(caption,edit,\{interactive:true\}\)/);
  assert.doesNotMatch(source,/grid\.append\(tile\);\s*grid\.append\(tile\)/);
 });
 
 test('owner touch caption guard excludes actions, viewport scroll and delayed OS menus',()=>{
  const source=file('pandora-studio-app.js');
  assert.match(source,/ownerTouchCaptionEditors=new WeakMap\(\)/);
- assert.match(source,/event\.target\?\.closest\?\.\('input,textarea,select,button,a,summary,label,\[role="button"\],\[contenteditable\]'\)/);
+ assert.match(source,/event\.target\?\.closest\?\.\('input,textarea,select,\[contenteditable\]'\)/);
+ assert.match(source,/if\(bound\.action!==targetAction\)return/);
+ assert.match(source,/bindOwnerTouchCaption\(node,edit,\{interactive:true\}\)/);
  assert.match(source,/\['pointerup','pointercancel'\]/);
  assert.doesNotMatch(source,/document\.addEventListener\('scroll',cancelOwnerTouchGesture,true\)/);
  assert.match(source,/event\.pointerId!==g\.pointerId/);
- assert.match(source,/marked\.node\.contains\(event\.target\)/);
- assert.match(source,/ownerTouchSwallow=\{node:gesture\.node,until:Date\.now\(\)\+1000\}/);
+ assert.match(source,/marked\.action\.contains\(event\.target\)/);
+ assert.match(source,/const marked=\{node:gesture\.node,action:gesture\.action\|\|gesture\.node,/);
+ assert.match(source,/if\(ownerTouchSwallow===marked\)ownerTouchSwallow=null/);
 });

@@ -79,3 +79,11 @@
 - [x] Removed overly broad **global scroll-event cancellation** introduced in `9673901`; an unrelated scroll while opening a popover or focusing an input must not kill the hold gesture. Native touch panning cancels via `pointercancel`, movement and multi-pointer checks remain explicit.
 - [x] Added multi-touch/pinch cancellation and pointer identity tracking. Chromium tests now cover actual `pointercancel`, movement, second-finger cancellation, and an unrelated document scroll followed by account caption long press. No extra pencil was reintroduced.
 - [ ] Confirm full Node+Chromium on a new SHA; hardware and interactive controls are still not fully accepted. Keep PR #809 Draft and #390 open.
+
+## Next packet · interactive-caption touch parity
+
+- [x] Head `10f2c11c84e091c5af1664647db2a633db2fe835` passed [Node](https://github.com/bonaqu/Pandora-Saga-Build-Studio/actions/runs/44859899066) and [real Chromium](https://github.com/bonaqu/Pandora-Saga-Build-Studio/actions/runs/44859899062): no longer loses the account touch editor on unrelated scroll.
+- [x] Registered *explicit D1-owned* captions inside buttons, links, tab buttons and native disclosure summaries for the same owner long-press editor, without reintroducing caption pencils. Plain guest text and game numbers are unaffected. The target's nearest real action must match the registered caption action, preventing nested-button accidental edits.
+- [x] Once the editor opens, a delayed synthesized click/contextmenu on the *enclosing action* is suppressed. Short clicks still navigate/activate normally. An unrelated mouse pointermove on a hybrid laptop cannot cancel a held touch; stale gesture DOM references are released after timeout.
+- [x] Chromium adds Chapter tab navigation/no-navigation, native summary no-toggle and login action no-submit tests, alongside the existing account/Book/Honor CAS, 409, Undo and touch coverage.
+- [ ] This packet needs green full Node + Chromium at its own SHA. Physical mobile validation, disabled interactive native controls and physical D1 defaults remain separately open under #390.

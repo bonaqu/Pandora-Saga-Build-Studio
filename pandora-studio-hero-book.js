@@ -396,7 +396,7 @@ function guideLabel(node,key,ru,en,options={},fallbackRu='',fallbackEn=''){
    options.onTextEdit(node,key,english?'en':'ru',label);
   };
   node.addEventListener('dblclick',editName);
-  root.PandoraOwnerTouchEdit?.(node,editName);
+  root.PandoraOwnerTouchEdit?.(node,editName,{interactive:true});
   node.setAttribute('aria-keyshortcuts','F2');
   node.addEventListener('keydown',event=>{if(event.key==='F2')editName(event)});
   // Only an independently authored hover hint uses a pencil.
@@ -2446,6 +2446,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
      document.documentElement?.lang==='en'?'en':'ru',display);
    };
    caption.addEventListener('dblclick',edit);
+   root.PandoraOwnerTouchEdit?.(caption,edit,{interactive:true});
    caption.tabIndex=0;caption.setAttribute('aria-keyshortcuts','F2');
    caption.addEventListener('keydown',event=>{if(event.key==='F2')edit(event)});
    button.replaceChildren(caption);

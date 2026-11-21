@@ -312,11 +312,46 @@ export async function runUIContentInlineSmoke(browser,base){
    ?.textContent==='КНИГА ГЕРОЯ · QA',null,{timeout:15000});
   assert.equal(JSON.parse(values[headingD1]).ru,'КНИГА ГЕРОЯ · QA');
   assert.equal(await page.locator('#stageAttributes .stage-book-title-count').textContent(),' · 1 / 6');
+  // Interactive captions are editable with a long press, but a synthetic
+  // post-touch click must not navigate, change the current page or save a
+  // different chapter. Short taps keep the original navigation.
+  const tabCaption=page.locator(
+   '#stageAttributes [data-book-page="defense"] .stage-book-tab-copy');
+  await tabCaption.dispatchEvent('pointerdown',{
+   pointerType:'touch',isPrimary:true,button:0,pointerId:71,clientX:18,clientY:18
+  });
+  await page.waitForTimeout(570);
+  const tabTouch=tabCaption.locator('[contenteditable]');
+  await tabTouch.waitFor({state:'visible',timeout:6000});
+  assert.equal(await page.locator('#stageBookPanel').getAttribute('data-book-visible'),'summary');
+  await tabCaption.dispatchEvent('click',{bubbles:true,cancelable:true,detail:1});
+  assert.equal(await page.locator('#stageBookPanel').getAttribute('data-book-visible'),'summary');
+  await tabTouch.press('Escape');
+  await tabCaption.dispatchEvent('pointerup',{pointerType:'touch',isPrimary:true,pointerId:71});
+  await page.locator('#stageAttributes [data-book-page="defense"]').click();
+  await page.locator('#stageBookPanel[data-book-visible="defense"]')
+   .waitFor({state:'visible',timeout:15000});
+  await page.locator('#stageAttributes [data-book-page="summary"]').click();
+  await page.locator('#stageBookPanel[data-book-visible="summary"]')
+   .waitFor({state:'visible',timeout:15000});
   const groupTitle=firstGroup.locator('summary [data-guide-key="summary.group.0"]');
   // A group title has no independent hover hint. The correct owner UI must
   // NOT synthesize a pencil simply because its visible caption is editable.
   assert.equal(await firstGroup.locator('summary .stage-guide-edit-hint').count(),0,
    'A group heading without a real hover explanation has no pencil');
+  // A summary text label has its own authorial D1 field. Holding it edits
+  // that field without toggling the native disclosure on touch release.
+  await groupTitle.dispatchEvent('pointerdown',{
+   pointerType:'touch',isPrimary:true,button:0,pointerId:72,clientX:18,clientY:18
+  });
+  await page.waitForTimeout(570);
+  const groupTouch=groupTitle.locator('[contenteditable]');
+  await groupTouch.waitFor({state:'visible',timeout:6000});
+  const groupWasOpen=await firstGroup.getAttribute('open');
+  await groupTitle.dispatchEvent('click',{bubbles:true,cancelable:true,detail:1});
+  assert.equal(await firstGroup.getAttribute('open'),groupWasOpen);
+  await groupTouch.press('Escape');
+  await groupTitle.dispatchEvent('pointerup',{pointerType:'touch',isPrimary:true,pointerId:72});
   const stat=firstGroup.locator('.stage-result-grid [data-guide-key="summary.0"]');
   assert.equal(await stat.count(),1,'The first result is the source-backed health stat');
   assert.match(await stat.innerText(),/ОЗ|HP/);
@@ -796,6 +831,28 @@ export async function runUIContentInlineSmoke(browser,base){
   await guestTouchHost.waitFor({state:'visible',timeout:6000});
   await guestTouchHost.press('Escape');
   await guestLead.dispatchEvent('pointerup',{pointerType:'touch',isPrimary:true});
+  assert.equal(await login.inputValue(),'TestingProfile');
+  // This is a real action button, not a spare pencil or a decoration.
+  // A hold edits its D1 caption but must not submit the login form.
+  const signInCaption=page.locator(
+   '#accountPanel button[data-owner-copy-key="accountSignIn"]').first();
+  await signInCaption.waitFor({state:'visible'});
+  await signInCaption.evaluate(el=>{
+   el.dataset.qaTouchClicks='0';
+   el.addEventListener('click',()=>{
+    el.dataset.qaTouchClicks=String(Number(el.dataset.qaTouchClicks)+1);
+   });
+  });
+  await signInCaption.dispatchEvent('pointerdown',{
+   pointerType:'touch',isPrimary:true,button:0,pointerId:73,clientX:20,clientY:20
+  });
+  await page.waitForTimeout(570);
+  const buttonTouch=page.locator('#accountPanel .account-copy-edit-host [contenteditable]');
+  await buttonTouch.waitFor({state:'visible',timeout:6000});
+  await signInCaption.dispatchEvent('click',{bubbles:true,cancelable:true,detail:1});
+  assert.equal(await signInCaption.getAttribute('data-qa-touch-clicks'),'0');
+  await buttonTouch.press('Escape');
+  await signInCaption.dispatchEvent('pointerup',{pointerType:'touch',isPrimary:true,pointerId:73});
   assert.equal(await login.inputValue(),'TestingProfile');
   await guestLead.dblclick();
   const accountInput=page.locator('#accountPanel .account-copy-edit-host [contenteditable]');

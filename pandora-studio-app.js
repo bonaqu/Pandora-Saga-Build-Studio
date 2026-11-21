@@ -1097,21 +1097,31 @@ function cancelOwnerTouchGesture(){
  if(ownerTouchGesture?.timer!=null)clearTimeout(ownerTouchGesture.timer);
  ownerTouchGesture=null;
 }
-function bindOwnerTouchCaption(node,edit){
- if(!node||typeof edit!=='function'||!node.closest||
-  node.closest('button,a,summary,label,[role="button"]'))return;
- ownerTouchCaptionEditors.set(node,edit);
+function bindOwnerTouchCaption(node,edit,{interactive=false}={}){
+ if(!node||typeof edit!=='function'||!node.closest||node.closest('label'))return;
+ // Only explicitly registered semantic captions can use a long press inside
+ // links, buttons or disclosure headings. Short taps retain normal actions.
+ const action=node.closest('button,a,summary,[role="button"]');
+ if(action&&!interactive)return;
+ ownerTouchCaptionEditors.set(node,{edit,action});
  if(ownerTouchInstalled)return;
  ownerTouchInstalled=true;
  const open=()=>{
   const gesture=ownerTouchGesture;
   cancelOwnerTouchGesture();
+  const bound=gesture&&ownerTouchCaptionEditors.get(gesture.node);
   if(!gesture||!adminEditing||!adminToken||!gesture.node.isConnected||
-   gesture.node.hidden||!ownerTouchCaptionEditors.has(gesture.node)||
+   gesture.node.hidden||!bound||bound.edit!==gesture.edit||
+   (gesture.action&&!gesture.action.contains(gesture.node))||
    gesture.node.querySelector('[contenteditable],.wiki-inline-input,.ui-content-edit-host'))return;
-  // Long-press may open the editor before the OS delivers its native menu.
-  // Keep the gesture mark long enough to suppress that delayed menu too.
-  ownerTouchSwallow={node:gesture.node,until:Date.now()+1000};
+  // A touch release can synthesize a click on the enclosing action even
+  // after a hidden caption has been replaced by an editing host. Block it.
+  const marked={node:gesture.node,action:gesture.action||gesture.node,
+   until:Date.now()+1000};
+  ownerTouchSwallow=marked;
+  // WeakMap keys are weak, but a lingering gesture marker is not: release
+  // its strong DOM reference even if no synthetic click is delivered.
+  setTimeout(()=>{if(ownerTouchSwallow===marked)ownerTouchSwallow=null},1050);
   gesture.edit({preventDefault(){},stopPropagation(){}});
  };
  document.addEventListener('pointerdown',event=>{
@@ -1120,18 +1130,24 @@ function bindOwnerTouchCaption(node,edit){
   // Also cancel when a new touch begins on a native input or action.
   cancelOwnerTouchGesture();
   if(!adminEditing||!adminToken||event.isPrimary===false||event.button!==0||
-   event.target?.closest?.('input,textarea,select,button,a,summary,label,[role="button"],[contenteditable]'))return;
+   event.target?.closest?.('input,textarea,select,[contenteditable]'))return;
+  const targetAction=event.target?.closest?.('button,a,summary,label,[role="button"]')||null;
   for(let node=event.target;node&&node!==document;node=node.parentElement){
-   const edit=ownerTouchCaptionEditors.get(node);
-   if(!edit)continue;
-   ownerTouchGesture={node,edit,x:event.clientX,y:event.clientY,
-    pointerId:event.pointerId,timer:setTimeout(open,460)};
+   const bound=ownerTouchCaptionEditors.get(node);
+   if(!bound)continue;
+   // A nested real button/label must not inherit a parent's caption editor.
+   if(bound.action!==targetAction)return;
+   ownerTouchGesture={node,edit:bound.edit,action:bound.action,
+    x:event.clientX,y:event.clientY,pointerId:event.pointerId,
+    timer:setTimeout(open,460)};
    return;
   }
  },true);
  document.addEventListener('pointermove',event=>{
   const g=ownerTouchGesture;
-  if(g&&(event.pointerType!=='touch'||event.pointerId!==g.pointerId||
+  // An unrelated mouse moving on a hybrid touch laptop cannot cancel an
+  // already held finger. Pointer identity still protects multi-touch.
+  if(g&&event.pointerType==='touch'&&(event.pointerId!==g.pointerId||
    Math.abs(event.clientX-g.x)>12||Math.abs(event.clientY-g.y)>12))
    cancelOwnerTouchGesture();
  },true);
@@ -1143,18 +1159,18 @@ function bindOwnerTouchCaption(node,edit){
   document.addEventListener(name,cancelOwnerTouchGesture,true);
  document.addEventListener('contextmenu',event=>{
   const g=ownerTouchGesture,marked=ownerTouchSwallow;
-  if(g?.node.contains(event.target)){
+  if((g?.action||g?.node)?.contains(event.target)){
    event.preventDefault();
    open();
-  }else if(marked&&Date.now()<=marked.until&&marked.node.contains(event.target)){
-   event.preventDefault(); // Context menu arrives after the editor opened.
+  }else if(marked&&Date.now()<=marked.until&&marked.action.contains(event.target)){
+   event.preventDefault(); // OS menu can arrive on the enclosing action.
   }
  },true);
  document.addEventListener('click',event=>{
   const marked=ownerTouchSwallow;
   if(!marked)return;
   ownerTouchSwallow=null;
-  if(Date.now()<=marked.until&&marked.node.contains(event.target)){
+  if(Date.now()<=marked.until&&marked.action.contains(event.target)){
    event.preventDefault();event.stopImmediatePropagation();
   }
  },true);
@@ -1191,7 +1207,7 @@ function ownerCopyLabel(node,section,key,ru,en,{onCommitted,onFinished}={}){
   });
  };
  node.addEventListener('dblclick',edit);
- bindOwnerTouchCaption(node,edit);
+ bindOwnerTouchCaption(node,edit,{interactive:true});
  node.addEventListener('keydown',event=>{
   if(event.target===node&&(event.key==='F2'||event.key==='Enter'))edit(event);
  });
@@ -9397,7 +9413,7 @@ function bindStaticUICopyEditors(){
   if(!node.dataset.uiContentBound){
    node.dataset.uiContentBound='1';
    node.addEventListener('dblclick',edit);
-   bindOwnerTouchCaption(node,edit);
+   bindOwnerTouchCaption(node,edit,{interactive:true});
    node.setAttribute('aria-keyshortcuts','F2');
    if(!button)node.tabIndex=0;
    node.addEventListener('keydown',event=>{
@@ -9520,7 +9536,7 @@ function bindAccountCopyEditors(panel){
   if(!node.dataset.ownerCopyBound){
    node.dataset.ownerCopyBound='1';
    node.addEventListener('dblclick',edit);
-   bindOwnerTouchCaption(node,edit);
+   bindOwnerTouchCaption(node,edit,{interactive:true});
    node.setAttribute('aria-keyshortcuts','F2');
    node.addEventListener('keydown',event=>{
     if(event.key==='F2'||(!isAction&&(event.key==='Enter'||event.key===' '))){
