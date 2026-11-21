@@ -177,15 +177,6 @@
 
 /* D1-backed interface labels: no modal dialogs or intrusive editor panels. */
 .ui-content-editable:not(button){cursor:text;text-decoration:underline dotted #8c7049;text-underline-offset:3px}
-.ui-content-pencil{
- display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;
- flex:0 0 auto;min-width:19px;width:19px;height:19px;padding:0;margin:0 3px;
- border:1px solid #82643d;border-radius:3px;background:#302219;color:#e8c38a;
- font-size:11px;line-height:1;cursor:pointer
-}
-.ui-content-pencil:hover,.ui-content-pencil:focus-visible{
- background:#624226;border-color:#efc68a;outline-offset:2px
-}
 /* A long editorial value must grow downward instead of disappearing into
    a 280px clipped single-line box. This changes editor mode only. */
 .ui-content-edit-host{display:inline-flex;flex:1 1 230px;
@@ -204,7 +195,7 @@
  height:auto;max-height:none;white-space:pre-wrap;
  overflow-wrap:anywhere;word-break:break-word;overflow:visible
 }
-.ui-content-pencil[hidden],.ui-content-edit-host[hidden]{display:none!important}
+.ui-content-edit-host[hidden]{display:none!important}
 
 
 /* Account descriptions and buttons are editable on their existing panel.

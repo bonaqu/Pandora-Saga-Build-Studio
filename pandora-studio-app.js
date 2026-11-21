@@ -5433,7 +5433,7 @@ function renderWiki(root){
        // value stays aligned with the label while the owner types.
        const editorHost=h('div',{class:'wiki-item-field-inline-editor wiki-label-inline-edit',
         'data-editor-field':key,text:fieldName});
-       const buttons=[...dt.querySelectorAll('.wiki-label-pencil,.wiki-hint-pencil')];
+       const buttons=[...dt.querySelectorAll('.wiki-hint-pencil')];
        dd.after(editorHost);for(const button of buttons)button.hidden=true;
        editWikiValue(editorHost,fieldName,{
         type:'text',
@@ -5441,12 +5441,7 @@ function renderWiki(root){
          if(next.length>90)throw Error(wt('Название слишком длинное','Label is too long'));
          await saveGuidePatch(recordKey,{[lang==='en'?'en':'ru']:next});
         },
-        onCommitted:next=>{
-         fieldName=next;caption.textContent=next;
-         const pencil=dt.querySelector('.wiki-label-pencil');
-         if(pencil)pencil.setAttribute('aria-label',
-          wt('Переименовать: ','Rename: ')+next);
-        },
+        onCommitted:next=>{fieldName=next;caption.textContent=next},
         onFinished:()=>{editorHost.remove();for(const button of buttons)button.hidden=false}
        });
       };
@@ -5455,7 +5450,7 @@ function renderWiki(root){
        if(dl.querySelector('.wiki-item-field-inline-editor'))return;
        const editorHost=h('div',{class:'wiki-item-field-inline-editor wiki-hint-inline-edit',
         'data-editor-field':key,text:hint});
-       const buttons=[...dt.querySelectorAll('.wiki-label-pencil,.wiki-hint-pencil')];
+       const buttons=[...dt.querySelectorAll('.wiki-hint-pencil')];
        dd.after(editorHost);for(const button of buttons)button.hidden=true;
        editWikiValue(editorHost,hint,{
         type:'text',

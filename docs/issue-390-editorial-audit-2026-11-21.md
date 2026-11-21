@@ -203,3 +203,7 @@
 - Audited five Wiki owner-copy families now mount a direct dblclick/F2 editor on their **visible plain H4 heading** (map/dungeon, monster, NPC trade, chest, item). This reuses the exact original CAS key and inline blur/Escape/Undo semantics. No additional pencil or owner panel is required to edit the displayed heading.
 - Only a leaf H4 with no prefix/suffix, dynamic child, or active interactive control receives the editor. Runtime counts, probabilities, IDs, Soul data, inputs, options, action buttons, and other chapter data remain outside this direct edit path.
 - Added Node assertions for the narrow binding and a real Chromium Save/Undo on a mounted Wiki map heading with unchanged DOM identity; synthetic test never writes real D1. Physical touch testing remains separate.
+
+## #390 removal of abandoned generic/label pencils
+
+Legacy CSS for the non-rendered `.ui-content-pencil` and `.wiki-label-pencil` has been removed, including obsolete source label-pen ARIA updates. Real independent `.wiki-hint-pencil` controls retain keyboard/touch focus styling; direct caption editing and in-place host CSS remain intact. This reduces unnecessary layout reservations without altering item/game values.

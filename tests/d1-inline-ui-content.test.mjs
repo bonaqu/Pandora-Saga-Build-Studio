@@ -87,6 +87,18 @@ test('#390 generic text editing and mirrored profile title use distinct authoria
   'Real independently authored hover help must remain editable');
 });
 
+test('#390 no hidden caption-pencil styles remain; independently editable Wiki hint remains',()=>{
+ const css=read('pandora-studio-owner-inline-ui.css');
+ const wiki=read('pandora-studio-wiki-polish.css');
+ const app=read('pandora-studio-app.js');
+ assert.doesNotMatch(css,/\.ui-content-pencil/);
+ assert.doesNotMatch(wiki,/\.wiki-label-pencil/);
+ assert.doesNotMatch(app,/\.wiki-label-pencil/);
+ assert.match(wiki,/\.item-fields \.wiki-hint-pencil/);
+ assert.match(css,/\.ui-content-edit-host\{/);
+ assert.match(app,/class:'wiki-hint-pencil'/);
+});
+
 test('UI editing uses tiny in-place controls, blur save and no extra modal route',()=>{
  const app=read('pandora-studio-app.js'),css=read('pandora-studio-wiki-polish.css');
  assert.match(app,/caption\.addEventListener\('dblclick',editLabel\)/);
