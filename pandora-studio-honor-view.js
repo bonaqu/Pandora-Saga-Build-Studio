@@ -173,7 +173,11 @@ function render({browse,detail,make,lang='ru',article,editable=false,
   ['ranks','Ранги и привилегии','Ranks and privileges','♜'],
   ['monthly','Ежемесячные звания','Monthly titles','✦']
  ];
- browse.append(node('p','muted',tr('Разделы · 5','Sections · 5')));
+ // Keep the owner-editable label separate from live chapter count.
+ const sectionsLabel=make('p',{class:'muted wiki-honor-sections-label'});
+ sectionsLabel.append(editorial('span','','sectionsHeading','Разделы','Sections'),
+  node('span','wiki-honor-live-count',' · '+sidebar.length));
+ browse.append(sectionsLabel);
  browse.append(node('h4','wiki-location-list-heading',
   label('chapter','honor','Честь','Honor')));
  const nav=[];
@@ -415,12 +419,18 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  victories.append(eventImage);
  const event=article.pvpVictories;
  if(event?.daily&&event?.weekly&&event?.hunts){
-  const addTable=(captionRu,captionEn,headers,rows)=>{
+  const addTable=(key,captionRu,captionEn,headers,rows)=>{
    const group=make('div',{class:'wiki-honor-pvp-group'});
-   group.append(node('h5','wiki-honor-pvp-label',tr(captionRu,captionEn)));
+   group.append(editorial('h5','wiki-honor-pvp-label',
+    key+'Heading',captionRu,captionEn));
    const table=make('table',{class:'wiki-honor-pvp-table'});
    const thead=make('thead'),head=make('tr');
-   for(const [ru,english] of headers)head.append(node('th','',tr(ru,english)));
+   headers.forEach(([ru,english],index)=>{
+    const cell=make('th',{});
+    cell.append(editorial('span','wiki-honor-table-caption',
+     key+'Column'+index,ru,english));
+    head.append(cell);
+   });
    thead.append(head);table.append(thead);
    const tbody=make('tbody');
    for(const values of rows){
@@ -430,22 +440,23 @@ function render({browse,detail,make,lang='ru',article,editable=false,
    }
    table.append(tbody);group.append(table);victories.append(group);
   };
-  addTable('Ежедневные награды','Daily rewards',
+  addTable('pvpDaily','Ежедневные награды','Daily rewards',
    [['Победы за день','Daily victories'],['Награда','Reward']],
    event.daily.map(row=>[row.wins,en?row.rewardEn:row.rewardRu]));
   paragraph(victories,en?o.pvpDailyEn:o.pvpDailyRu,'honor.overview',
    en?'pvpDailyEn':'pvpDailyRu');
-  addTable('Обмен боевых жетонов','Combat-token exchange',
+  addTable('pvpWeekly','Обмен боевых жетонов','Combat-token exchange',
    [['Награда','Reward'],['Стоимость','Cost'],['Лимит за неделю','Weekly limit']],
    event.weekly.map(row=>[en?row.rewardEn:row.rewardRu,
     en?row.costEn:row.costRu,row.limit]));
   paragraph(victories,en?o.pvpWeeklyEn:o.pvpWeeklyRu,'honor.overview',
    en?'pvpWeeklyEn':'pvpWeeklyRu');
-  victories.append(node('h5','wiki-honor-pvp-label',
-   tr('Двойные награды: вторник и четверг','Double rewards: Tuesday and Thursday')));
+  victories.append(editorial('h5','wiki-honor-pvp-label',
+   'pvpDoubleRewards','Двойные награды: вторник и четверг',
+   'Double rewards: Tuesday and Thursday'));
   paragraph(victories,en?o.pvpHuntEn:o.pvpHuntRu,'honor.overview',
    en?'pvpHuntEn':'pvpHuntRu');
-  addTable('Расписание охоты (МСК)','Hunt schedule (Moscow time)',
+  addTable('pvpHunt','Расписание охоты (МСК)','Hunt schedule (Moscow time)',
    [['День','Day'],['Время','Time'],['Карта','Map']],
    event.hunts.map(row=>[en?row.daysEn:row.daysRu,row.hours,
     en?row.mapEn:row.mapRu]));

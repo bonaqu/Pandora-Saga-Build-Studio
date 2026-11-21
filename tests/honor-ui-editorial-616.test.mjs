@@ -35,3 +35,23 @@ test('Honor captions edit at their text, never via neighboring pencil',()=>{
  assert.doesNotMatch(view,/directPencil|wiki-honor-copy-pencil/);
  assert.match(css,/\.wiki-honor-copy-owner-label:focus-visible/);
 });
+
+test('issue 390: PvP rewards and schedules expose D1 headings but not reward or count data',()=>{
+ const fields=['sectionsHeading','pvpDailyHeading','pvpDailyColumn0',
+  'pvpDailyColumn1','pvpWeeklyHeading','pvpWeeklyColumn0',
+  'pvpWeeklyColumn1','pvpWeeklyColumn2','pvpDoubleRewards',
+  'pvpHuntHeading','pvpHuntColumn0','pvpHuntColumn1','pvpHuntColumn2'];
+ for(const field of fields){
+  const key='book.honor-view.'+field.replace(/[A-Z]/g,c=>'-'+c.toLowerCase());
+  assert.equal(scope.PandoraHonorGuide.validOverride(key,
+   JSON.stringify({ru:'Подпись',en:'Caption'})),true,key);
+ }
+ assert.match(view,/editorial\('span','','sectionsHeading','Разделы','Sections'\)/);
+ assert.match(view,/wiki-honor-live-count',' · '\+sidebar\.length/);
+ assert.match(view,/group\.append\(editorial\('h5','wiki-honor-pvp-label'/);
+ assert.match(view,/cell\.append\(editorial\('span','wiki-honor-table-caption'/);
+ assert.match(view,/key\+'Column'\+index/);
+ assert.match(view,/key\+'Heading'/);
+ assert.match(view,/node\('td','',String\(value\)\)/);
+ assert.doesNotMatch(view,/wiki-honor-pvp-pencil|sections-pencil/);
+});
