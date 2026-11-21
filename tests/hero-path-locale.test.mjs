@@ -90,8 +90,6 @@ test('issue 390: an ancestor editor never blocks independent accessible attribut
  assert.match(section,/const editingText=Boolean\(node\.querySelector/);
  assert.match(section,/if\(!editingText\)node\.textContent=value/);
  assert.match(section,/node\.setAttribute\(attr,value\)/);
- const restore=app.slice(app.indexOf('function refreshVisibleOwnerCopy('),
-  app.indexOf('function refreshVisibleUICopy(',app.indexOf('function refreshVisibleOwnerCopy('))+1);
  assert.match(app,/if\(!editingText\)ownerDockPatchText\(node,value\)/);
  assert.match(app,/ownerDockPatchAttr\(node,attr,value\)/);
 });
