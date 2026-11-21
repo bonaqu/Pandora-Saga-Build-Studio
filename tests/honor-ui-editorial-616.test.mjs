@@ -9,6 +9,32 @@ const css=read('pandora-studio-honor.css');
 const scope={};scope.window=scope;
 runInNewContext(read('pandora-studio-honor-guide.js'),scope);
 
+test('issue #390: Honor PvP Victories sidebar D1 labels pass the same client and Worker validation',()=>{
+ const worker=read('worker/index.js');
+ const start=worker.indexOf('function validGuideEdit(');
+ const end=worker.indexOf('function validWikiDropEdit(',start);
+ assert.ok(start>=0&&end>start,'Server validation must be present');
+ const server=runInNewContext(worker.slice(start,end)+'\nvalidGuideEdit');
+ for(const section of ['overview','gain','victories','ranks','monthly']){
+  const fields={['honor_'+section+'_ru']:'Заголовок '+section,
+   ['honor_'+section+'_en']:'Caption '+section};
+  const data=JSON.stringify(fields);
+  assert.equal(scope.PandoraHonorGuide.validOverride('wiki.labels',data),true,
+   'Client rejected the built-in Honor section '+section);
+  assert.equal(server(data,'wiki.labels'),true,
+   'Worker rejected a valid client-owned Honor chapter: '+section);
+ }
+ for(const data of [
+  JSON.stringify({honor_victories_ru:'',honor_victories_en:'PvP Victories'}),
+  JSON.stringify({honor_victories_ru:'x'.repeat(91)}),
+  JSON.stringify({honor_victories_ru:'Победы',honor_victories_dynamic:'17'}),
+  JSON.stringify({honor_unverified_ru:'Неизвестный раздел'})
+ ]){
+  assert.equal(server(data,'wiki.labels'),false);
+  assert.equal(scope.PandoraHonorGuide.validOverride('wiki.labels',data),false);
+ }
+});
+
 test('Honor UI captions have five stable, independent D1 RU/EN keys',()=>{
  const keys=['warsHeading','warEyebrow','subtitle','zonesHeading','rewardsHeading'];
  for(const key of keys){
