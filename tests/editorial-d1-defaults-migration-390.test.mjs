@@ -220,6 +220,8 @@ test('issue 390: real SQLite rehearsal round-trips pinned import and isolated ro
   assert.match(exportQuery,/^-- STAGING READBACK ONLY/m);
   assert.doesNotMatch(exportQuery,/\b(?:INSERT|UPDATE|DELETE|CREATE|DROP)\b/i);
   let exported=JSON.parse(db.prepare(exportQuery).get().staging_readback_json);
+  assert.equal(typeof exported.metadata,'object','Metadata must be a JSON object');
+  assert.ok(Array.isArray(exported.rows),'Readback rows must be a JSON array');
   assert.deepEqual(verifyEditorialDefaultsReadback(manifest,exported.metadata,
    exported.rows),{ok:true,checkedRows:manifest.records.length,
     snapshot:manifest.snapshot,digest:manifest.digest});

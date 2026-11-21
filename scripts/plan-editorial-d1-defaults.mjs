@@ -308,21 +308,21 @@ export function renderEditorialDefaultsSQL(manifest){
 }
 
 
-// SELECT-only, one-row JSON export. Save the *column value* as a JSON file,
+// SELECT-only, one-row JSON export. Force JSON subtypes after SQLite\n// scalar-subquery boundaries to keep metadata/rows as objects/arrays.\n// Save the *column value* as a JSON file,
 // then feed it to --verify-readback; never trust an import exit code alone.
 export function renderEditorialDefaultsReadbackSQL(manifest){
  const snapshot=sqlString(assertVerifiedManifest(manifest));
  return [
   '-- STAGING READBACK ONLY. Returns one JSON document to verify offline.',
   "SELECT json_object("+
-   "'metadata',(SELECT json_object("+
+   "'metadata',json((SELECT json_object("+
     "'snapshot',snapshot,'source_release',source_release,"+
     "'sha256',sha256,'expected_rows',expected_rows)"+
-    " FROM editorial_default_snapshots WHERE snapshot="+snapshot+"),"+
-   "'rows',(SELECT json_group_array(json_object("+
+    " FROM editorial_default_snapshots WHERE snapshot="+snapshot+")),"+
+   "'rows',json((SELECT json_group_array(json_object("+
     "'record_key',record_key,'field',field,'value',value))"+
     " FROM (SELECT record_key,field,value FROM editorial_default_rows"+
-    " WHERE snapshot="+snapshot+" ORDER BY record_key,field)))"+
+    " WHERE snapshot="+snapshot+" ORDER BY record_key,field))))"+
    " AS staging_readback_json;"
  ].join('\n')+'\n';
 }
