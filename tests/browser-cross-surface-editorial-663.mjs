@@ -331,32 +331,45 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   // Skills: work inside the real right-hand Hero Path instead of the
   // retired standalone skills workbench, which has no navigation tab.
   await page.locator('#dockClose').click();
-  // 864: fixed tooltips in all three workbench areas are owner-authored D1
-  // content. Editing must refresh the target without changing the hero.
+  // #390: meaningful hover explanations remain editable. Self-explanatory
+  // Origin/Path tabs cannot keep legacy phantom hint panels or hover copy.
   const hints=page.locator('.workbench-hint-editor');
-  assert.equal(await hints.count(),3);
+  assert.equal(await hints.count(),2);
+  assert.equal(await page.locator(
+   '[data-i18n="originGuide"] + .workbench-hint-editor').count(),0);
+  for(const selector of [
+   '[data-origin-tab="race"]','[data-origin-tab="class"]',
+   '[data-origin-tab="stats"]','#pathGrowthTab','#pathSkillsTab'
+  ]){
+   const tab=page.locator(selector);
+   assert.equal(await tab.getAttribute('data-guide-hint'),null,
+    'Self-explanatory tab must not expose phantom hover help: '+selector);
+   assert.equal(await tab.getAttribute('aria-description'),null);
+  }
   for(const [section,key,selector,newCopy] of [
-   ['origin','hintRace','[data-origin-tab="race"]','Помощь: раса'],
+   ['equipment','hintPortrait','#hero','Помощь: книга героя'],
    ['equipment','hintWeapon','#jumpEquipment','Помощь: выбор оружия'],
-   ['path','hintSkills','#pathSkillsTab','Помощь: умения героя']
+   ['equipment','hintNewBuild','#newBuildQuick','Помощь: новый билд'],
+   ['equipment','hintSaveBuild','#snapshot','Помощь: сохранить билд'],
+   ['path','hintReset','#pathResetPoints','Помощь: сброс веток']
   ]){
    const panel=page.locator('[data-i18n="'+
-    (section==='origin'?'originGuide':section==='equipment'?'appearanceGuide':'pathGuide')+
+    (section==='equipment'?'appearanceGuide':'pathGuide')+
     '"] + .workbench-hint-editor');
-   await panel.locator('summary').click();
+   assert.equal(await panel.count(),1,'Exactly one panel per real hint family');
+   if(!(await panel.evaluate(node=>node.open)))
+    await panel.locator('summary').click();
    const target=page.locator(selector);
-   const original=await target.getAttribute('data-guide-hint');
-   const redundant=section==='origin'||section==='path';
-   if(redundant)assert.equal(original,null,'Self-explanatory tabs must not have redundant hover help');
-   else assert.ok(original,'Useful action hints must remain visible');
+   assert.ok(await target.getAttribute('data-guide-hint'),
+    'A real hint target must expose independent hover help: '+selector);
    const beforeLevel=await page.locator('#levelOut').innerText();
    await edit(section,key,newCopy);
-   assert.equal(await target.getAttribute('data-guide-hint'),redundant?null:newCopy);
-   assert.equal(await target.getAttribute('aria-description'),redundant?null:newCopy);
+   assert.equal(await target.getAttribute('data-guide-hint'),newCopy);
+   assert.equal(await target.getAttribute('aria-description'),newCopy);
    assert.equal(await page.locator('#levelOut').innerText(),beforeLevel);
-   await panel.locator('summary').click();
   }
-  assert.equal(writes.filter(write=>/(origin|equipment|path)\.hint-/.test(write.key)).length,3);
+  assert.equal(writes.filter(write=>/(origin|equipment|path)\.hint-/.test(write.key)).length,5);
+  assert.equal(await hints.count(),2,'Saves must not duplicate hint panels');
   await page.locator('#pathSkillsTab').click();
   const pathSearch=page.locator('#pathSkillSearch');
   await pathSearch.waitFor({state:'visible'});
