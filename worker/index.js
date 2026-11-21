@@ -1019,7 +1019,9 @@ function validGuideEdit(text,key){
  const allowed=key.startsWith('book.')?['ru','en','hintRu','hintEn']:
   key.startsWith('honor.rank.')?['nameRu','nameEn','benefitRu','benefitEn',
    'requirementRu','requirementEn']:
-  ['overviewRu','overviewEn','gainRu','gainEn','lossRu','lossEn','currentRu',
+  ['pvpIntroRu','pvpIntroEn','pvpDailyRu','pvpDailyEn',
+   'pvpWeeklyRu','pvpWeeklyEn','pvpHuntRu','pvpHuntEn',
+   'overviewRu','overviewEn','gainRu','gainEn','lossRu','lossEn','currentRu',
    'currentEn','ranksRu','ranksEn','cloaksRu','cloaksEn',
    'honorRu','honorEn','totalRu','totalEn','joiningRu','joiningEn',
    'monthlyNoteRu','monthlyNoteEn'];
