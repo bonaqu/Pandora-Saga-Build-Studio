@@ -55,3 +55,13 @@ test('issue 390: PvP rewards and schedules expose D1 headings but not reward or 
  assert.match(view,/node\('td','',String\(value\)\)/);
  assert.doesNotMatch(view,/wiki-honor-pvp-pencil|sections-pencil/);
 });
+
+test('issue #390: Honor sidebar headings directly edit their shared Wiki labels',()=>{
+ assert.match(view,/const navCaption=node\('span','wiki-honor-nav-caption'/);
+ assert.match(view,/editLabel\(navCaption,'honor',id,initial\)/);
+ assert.match(view,/navCaption\.addEventListener\('dblclick',edit\)/);
+ assert.match(view,/guardCaptionAction\(jump,navCaption\)/);
+ assert.match(view,/if\(event\.key==='F2'\)edit\(event\)/);
+ // No sidebar editor may have independent keys that drift from article titles.
+ assert.doesNotMatch(view,/ownerCopy\('honor-view','sidebar/);
+});

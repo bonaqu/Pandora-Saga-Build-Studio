@@ -192,8 +192,26 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  for(const [id,ru,english,glyph]of sidebar){
   const jump=make('button',{type:'button',class:'wiki-link wiki-honor-nav-link',
    'data-honor-section':id,'aria-current':id===oldSection?'location':null});
-  jump.append(node('span','wiki-honor-nav-icon',glyph),
-   node('span','',label('honor',id,ru,english)));
+  const navCaption=node('span','wiki-honor-nav-caption',
+   label('honor',id,ru,english));
+  jump.append(node('span','wiki-honor-nav-icon',glyph),navCaption);
+  if(editable){
+   // The sidebar and the article heading share an existing wiki.labels
+   // identity; a double click edits this exact caption, never the link ID.
+   const initial=label('honor',id,ru,english);
+   navCaption.classList.add('wiki-honor-editable');
+   navCaption.tabIndex=0;
+   navCaption.setAttribute('aria-keyshortcuts','F2');
+   const edit=event=>{
+    event.preventDefault();event.stopPropagation();
+    editLabel(navCaption,'honor',id,initial);
+   };
+   navCaption.addEventListener('dblclick',edit);
+   navCaption.addEventListener('keydown',event=>{
+    if(event.key==='F2')edit(event);
+   });
+   guardCaptionAction(jump,navCaption);
+  }
   jump.addEventListener('click',()=>{
    selectSection(id);
    const selected=detail.querySelector('#honor-'+id);
