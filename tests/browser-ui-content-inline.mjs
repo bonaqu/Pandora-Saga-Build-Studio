@@ -439,6 +439,35 @@ export async function runUIContentInlineSmoke(browser,base){
   },wasOpen,{timeout:5000});
   assert.equal(await overview.locator('strong').innerText(),originalCount);
 
+  // Deterministic DOM-only source-events fixture: the real renderer, no
+  // live Worker or invented gameplay effect, isolates the published count
+  // from the older stable Book D1 copy key in an actionable native summary.
+  const procStructure=await page.evaluate(()=>{
+   const host=document.createElement('div');document.body.append(host);
+   try{
+    window.PandoraStageAttributes.render(host,{
+     page:'attack',items:[],
+     modifiers:{specialEquipment:{entries:[{
+      code:'EP_ONHIT_EDITORIAL_TEST',source:'Fixture item',
+      ru:'Synthetic effect',en:'Synthetic effect'
+     }]}}
+    });
+    const row=host.querySelector('.stage-source-events');
+    const label=row?.querySelector('summary .stage-source-events-caption');
+    return {label:label?.textContent,key:label?.dataset.ownerCopyKey,
+     count:row?.querySelector('summary .stage-book-live-count')?.textContent,
+     source:row?.querySelector('p')?.textContent,
+     numberOfRows:row?.querySelectorAll('p').length};
+   }finally{host.remove()}
+  });
+  assert.equal(procStructure.label,'Срабатывания предметов и душ');
+  assert.match(procStructure.key||'',/^book-/);
+  assert.equal(procStructure.count,' · 1');
+  assert.equal(procStructure.source,'Fixture item · Synthetic effect');
+  assert.equal(procStructure.numberOfRows,1);
+  assert.equal(await overview.locator('strong').innerText(),originalCount,
+   'A separate Book fixture cannot mutate the real hero buffs');
+
   await page.locator('#stageAttributes [data-book-page="summary"]').click();
   await page.locator('#stageBookPanel[data-book-visible="summary"]')
    .waitFor({state:'visible',timeout:15000});
