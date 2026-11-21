@@ -1257,14 +1257,18 @@ function bindOwnerInterfaceText(node,section,key,ru,en,attribute='text',suffix='
 // refreshes. Undo independently derives the restored value from D1.
 function applyOwnerInterfaceEditedValue(section,key,visible){
  for(const node of document.querySelectorAll('[data-owner-interface-bindings]')){
-  if(node.querySelector?.('.wiki-inline-input'))continue;
+  // Keep a nested caption input alive, while still updating independent
+  // ARIA/placeholder/title attributes on the containing button.
+  const editingText=Boolean(node.querySelector?.(
+   '.wiki-inline-input,.ui-content-edit-host,[data-owner-text-field]'));
   let bindings={};
   try{bindings=JSON.parse(node.dataset.ownerInterfaceBindings||'{}')}catch{}
   for(const [attr,field] of Object.entries(bindings)){
    if(field.section!==section||field.key!==key)continue;
    const value=(field.prefix||'')+visible+(field.suffix||'');
-   if(attr==='text')node.textContent=value;
-   else if(['placeholder','aria-label','title','aria-description','data-help'].includes(attr)){
+   if(attr==='text'){
+    if(!editingText)node.textContent=value;
+   }else if(['placeholder','aria-label','title','aria-description','data-help'].includes(attr)){
     node.setAttribute(attr,value);
     if(attr==='placeholder'&&node.getAttribute?.('contenteditable'))
      node.dataset.placeholder=value;
@@ -10248,7 +10252,10 @@ function refreshVisibleOwnerCopy(recordKey){
  // Attribute/text copy changes patch the existing mounted control only:
  // never replace an active search field, picker, selection or character.
  for(const node of document.querySelectorAll('[data-owner-interface-bindings]')){
-  if(node.querySelector?.('.wiki-inline-input'))continue;
+  // Keep a nested caption input alive, while still updating independent
+  // ARIA/placeholder/title attributes on the containing button.
+  const editingText=Boolean(node.querySelector?.(
+   '.wiki-inline-input,.ui-content-edit-host,[data-owner-text-field]'));
   let bindings={};
   try{bindings=JSON.parse(node.dataset.ownerInterfaceBindings||'{}')}catch{}
   for(const [attr,field] of Object.entries(bindings)){
@@ -10257,8 +10264,9 @@ function refreshVisibleOwnerCopy(recordKey){
     suffix:field.suffix,prefix:field.prefix};
    if(ownerCopyKey(section,id)!==key)continue;
    const value=(prefix||'')+ownerCopy(section,id,ru,en)+(suffix||'');
-   if(attr==='text')ownerDockPatchText(node,value);
-   else if(['placeholder','aria-label','title','aria-description','data-help'].includes(attr)){
+   if(attr==='text'){
+    if(!editingText)ownerDockPatchText(node,value);
+   }else if(['placeholder','aria-label','title','aria-description','data-help'].includes(attr)){
     ownerDockPatchAttr(node,attr,value);
     if(attr==='aria-description'&&node.dataset.guideHint!==undefined)
      ownerDockPatchData(node,'guideHint',value);
