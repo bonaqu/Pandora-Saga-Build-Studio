@@ -1098,12 +1098,13 @@ function cancelOwnerTouchGesture(){
  ownerTouchGesture=null;
 }
 function bindOwnerTouchCaption(node,edit,{interactive=false}={}){
- if(!node||typeof edit!=='function'||!node.closest||node.closest('label'))return;
- // Only explicitly registered semantic captions can use a long press inside
- // links, buttons or disclosure headings. Short taps retain normal actions.
- const action=node.closest('button,a,summary,[role="button"]');
- if(action&&!interactive)return;
- ownerTouchCaptionEditors.set(node,{edit,action});
+ if(!node||typeof edit!=='function'||!node.closest||
+  node.matches('input,textarea,select,[contenteditable]')||
+  node.closest('label'))return;
+ // Renderers register captions BEFORE inserting them in a button, tab or
+ // summary. Cache only their editor and policy, resolve action ancestry on
+ // the real pointer event after DOM mount; never cache a detached null parent.
+ ownerTouchCaptionEditors.set(node,{edit,interactive});
  if(ownerTouchInstalled)return;
  ownerTouchInstalled=true;
  const open=()=>{
@@ -1135,9 +1136,11 @@ function bindOwnerTouchCaption(node,edit,{interactive=false}={}){
   for(let node=event.target;node&&node!==document;node=node.parentElement){
    const bound=ownerTouchCaptionEditors.get(node);
    if(!bound)continue;
-   // A nested real button/label must not inherit a parent's caption editor.
-   if(bound.action!==targetAction)return;
-   ownerTouchGesture={node,edit:bound.edit,action:bound.action,
+   const action=node.closest('button,a,summary,[role="button"]');
+   // A nested real action cannot inherit the parent's editor; only explicitly
+   // opted-in authorial captions inside actions may start on touch.
+   if((action&&!bound.interactive)||action!==targetAction)return;
+   ownerTouchGesture={node,edit:bound.edit,action,
     x:event.clientX,y:event.clientY,pointerId:event.pointerId,
     timer:setTimeout(open,460)};
    return;

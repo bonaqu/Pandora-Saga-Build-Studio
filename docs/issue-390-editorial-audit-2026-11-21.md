@@ -87,3 +87,10 @@
 - [x] Once the editor opens, a delayed synthesized click/contextmenu on the *enclosing action* is suppressed. Short clicks still navigate/activate normally. An unrelated mouse pointermove on a hybrid laptop cannot cancel a held touch; stale gesture DOM references are released after timeout.
 - [x] Chromium adds Chapter tab navigation/no-navigation, native summary no-toggle and login action no-submit tests, alongside the existing account/Book/Honor CAS, 409, Undo and touch coverage.
 - [ ] This packet needs green full Node + Chromium at its own SHA. Physical mobile validation, disabled interactive native controls and physical D1 defaults remain separately open under #390.
+
+## Recovery after Chromium failure on 7522be2 · detached Book tab registration
+
+- [x] [Node #44860534228](https://github.com/bonaqu/Pandora-Saga-Build-Studio/actions/runs/44860534228) passed, but [Chromium #44860534243](https://github.com/bonaqu/Pandora-Saga-Build-Studio/actions/runs/44860534243) failed the new Hero Book tab long-press case waiting for a contenteditable after 6 seconds.
+- [x] Root cause from code: Hero Book registers a caption with the touch helper **before** inserting it into its tab button. The helper cached its nearest action at bind time as null, then rejected the valid touch when the caption had been mounted inside a button.
+- [x] The centralized helper now stores only the editor callback and whether an interactive ancestor is allowed. At pointerdown time it resolves the current button/link/summary ancestry after mount, rejects nested foreign actions, and uses the real ancestor to suppress the delayed click.
+- [x] The existing Book tab Chromium case exercises exactly this detached registration and ensures no unintended navigation. Full Node/Chromium must rerun on the repair SHA; PR and issue remain open.
