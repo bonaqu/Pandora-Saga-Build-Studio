@@ -527,6 +527,25 @@ export async function runUIContentInlineSmoke(browser,base){
    ?.textContent==='Действие умения · QA',null,{timeout:15000});
   assert.equal(JSON.parse(values['guideedit.book.wiki-ui.source-skill-effects-heading']).ru,
    'Действие умения · QA');
+  // The role label is independently editable; the actual wiki links and
+  // verified chain IDs must remain unchanged after the D1 CAS save.
+  const areaRole=page.locator(
+   '.wiki-skill-source-chain [data-owner-copy-id="sourceAreaRole"]').first();
+  await areaRole.waitFor({state:'visible',timeout:15000});
+  const linksBefore=await page.locator('.wiki-skill-source-chain a[href]')
+   .evaluateAll(nodes=>nodes.map(node=>node.getAttribute('href')));
+  assert.ok(linksBefore.length>=3,'The Hymn still has its verified root/area/target chain');
+  await areaRole.dblclick();
+  const roleInput=page.locator('.wiki-skill-source-chain [contenteditable]').first();
+  await roleInput.fill('Зона влияния:');
+  await roleInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '.wiki-skill-source-chain [data-owner-copy-id="sourceAreaRole"]')
+   ?.textContent==='Зона влияния:',null,{timeout:15000});
+  assert.equal(JSON.parse(values['guideedit.book.wiki-ui.source-area-role']).ru,
+   'Зона влияния:');
+  assert.deepEqual(await page.locator('.wiki-skill-source-chain a[href]')
+   .evaluateAll(nodes=>nodes.map(node=>node.getAttribute('href'))),linksBefore);
   // Leave the existing Encyclopedia detail workbench before opening the
   // account UI: a modal workbench correctly intercepts background clicks.
   if(await page.locator('#detailPanel.is-open').count())
