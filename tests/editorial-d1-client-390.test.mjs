@@ -63,7 +63,9 @@ test('#390 staging text uses only exact semantic identities and CAS outranks def
   ['guideedit.wiki.labels','honor_victories_en','PvP Victories · staging'],
   ['guideedit.honor.overview','overviewRu','Описание чести · staging'],
   ['guideedit.honor.rank.0','benefitEn','Rank reward · staging'],
-  ['guideedit.book.attack.mountedToggle','hintRu','Настоящая подсказка · staging']
+  ['guideedit.book.attack.mountedToggle','hintRu','Настоящая подсказка · staging'],
+  ['guideedit.book.wiki.item-field.pen','hintRu','Пробитие · staging'],
+  ['guideedit.book.equipment.tab.choose','en','Choose gear · staging']
  ]);
  assert.equal(await stage.installVerified(changed,changed.snapshot,webcrypto.subtle),true);
  assert.equal(ui.text(key,'ru'),'Выбранные усиления · staging');
@@ -76,6 +78,10 @@ test('#390 staging text uses only exact semantic identities and CAS outranks def
  assert.equal(guide.article({}).ranks[0].benefitEn,'Rank reward · staging');
  assert.equal(guide.field({},'attack.mountedToggle','Верхом','Mounted').hintRu,
   'Настоящая подсказка · staging');
+ assert.equal(guide.field({},'wiki.item-field.pen','Пробитие','Penetration',
+  'Original item description','Original item hint').hintRu,'Пробитие · staging');
+ assert.equal(guide.field({},'equipment.tab.choose','Выбрать другую вещь',
+  'Choose another item').en,'Choose gear · staging');
 
  ui.setOverrides({[uiRecord]:JSON.stringify({ru:'Редактура владельца'})});
  assert.equal(ui.text(key,'ru'),'Редактура владельца');
