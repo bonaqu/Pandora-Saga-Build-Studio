@@ -1180,7 +1180,7 @@
         }
       }
       const response=await fetch('./data/os/'+name+'.json',{cache:'no-store'});
-      if (!response.ok) throw Error('Архив '+name+': HTTP '+response.status);
+      if (!response.ok) throw Error(tr('Архив ','Archive ')+name+': HTTP '+response.status);
       return response.json();
     };
 
@@ -1239,10 +1239,10 @@
         if(from==='server') {
           const finalMeta=await sourceFile('meta','server');
           if(!review.equal(next.meta,finalMeta))
-            throw Error('Игровой каталог обновился во время проверки. Повтори сверку.');
+            throw Error(tr('Игровой каталог обновился во время проверки. Повтори сверку.','Game data changed during comparison. Run the check again.'));
         }
         const locales=await fetch('./data/localization/legacy-approved.v1.json',{cache:'no-store'});
-        if (!locales.ok) throw Error('Утверждённый архив перевода недоступен');
+        if (!locales.ok) throw Error(tr('Утверждённый архив перевода недоступен','The approved translation archive is unavailable'));
         const approved=await locales.json();
         importer.normalize(next,approved); // Reject incomplete live source before review.
         const versions=new Set();
@@ -1251,24 +1251,24 @@
           const alias=name==='strings.en'?'stringsEn':name;
           const response=await fetch(apiBase+'/api/catalog/'+alias+'.json',
             {cache:'no-store',signal:AbortSignal.timeout(15000)});
-          if (!response.ok) throw Error('Активная D1 '+name+': HTTP '+response.status);
+          if (!response.ok) throw Error(tr('Активная D1 ','Active D1 ')+name+': HTTP '+response.status);
           if(response.headers.get('x-ps-catalog')!=='d1')
-            throw Error('Не подтверждён источник D1 для '+name+'. Обнови страницу и повтори сверку.');
+            throw Error(tr('Не подтверждён источник D1 для ','D1 source was not verified for ')+name+tr('. Обнови страницу и повтори сверку.','. Refresh the page and compare again.'));
           const snapshot=response.headers.get('x-ps-catalog-snapshot');
-          if (!snapshot) throw Error('D1 не сообщает версию каталога');
+          if (!snapshot) throw Error(tr('D1 не сообщает версию каталога','D1 did not report a catalog revision'));
           versions.add(snapshot);
           old[name]=await response.json();
           progress.value=45+Math.round(55*(++compared)/importer.files.length);
         });
         const localeResponse=await fetch(apiBase+'/api/catalog/legacyLocale.json',
           {cache:'no-store',signal:AbortSignal.timeout(15000)});
-        if (!localeResponse.ok) throw Error('Не получен текущий перевод D1');
+        if (!localeResponse.ok) throw Error(tr('Не получен текущий перевод D1','Could not retrieve the active D1 translation'));
         if(localeResponse.headers.get('x-ps-catalog')!=='d1')
-          throw Error('Не подтверждён источник D1 для локализации. Публикация остановлена.');
+          throw Error(tr('Не подтверждён источник D1 для локализации. Публикация остановлена.','D1 translation source was not verified. Publishing is blocked.'));
         const localeSnapshot=localeResponse.headers.get('x-ps-catalog-snapshot');
-        if (!localeSnapshot) throw Error('Нет версии локализации D1');
+        if (!localeSnapshot) throw Error(tr('Нет версии локализации D1','D1 translation revision is missing'));
         versions.add(localeSnapshot);
-        if (versions.size!==1) throw Error('D1 изменилась во время проверки — повтори сверку');
+        if (versions.size!==1) throw Error(tr('D1 изменилась во время проверки — повтори сверку','D1 changed during comparison — run the check again'));
         const retained=review.retainLegacyRows(await localeResponse.json());
         importer.normalize(old,retained.locales); // Validate D1 itself, not the local backup.
         const oldSha=old.meta?.sha||{},newSha=next.meta?.sha||{};
@@ -1334,22 +1334,34 @@
           archiveChoice.open=true;
           const reason=String(error.reason||'');
           const code=/^http-(\d{3})$/.exec(reason)?.[1];
+          // The Worker's reason, source path and HTTP status are raw diagnostics.
+          // Only this fixed explanation is translated; it cannot edit D1.
           const issue=code==='403'||code==='401'
-            ?'Сайт игры не разрешил запрос Cloudflare Worker (HTTP '+code+'). Даже если адрес открывается в браузере, серверные запросы могут блокироваться.'
-            :code==='404'
-            ?'На сайте игры не найден один из файлов игровых данных (HTTP 404).'
-            :code==='429'
-            ?'Сайт игры временно ограничил число запросов (HTTP 429).'
-            :reason==='timeout'
-            ?'Истекло время ожидания ответа сайта игры.'
-            :reason==='network'
-            ?'Cloudflare Worker не смог установить соединение с сайтом игры.'
-            :reason==='invalid-json'||reason==='invalid-format'
-            ?'Сайт игры ответил данными, которые нельзя распознать как игровой JSON.'
-            :reason==='too-large'
-            ?'Ответ сайта игры превысил ограничение безопасности.'
-            :code?'Сайт игры ответил HTTP '+code+'.'
-            :'Не удалось получить открытые игровые данные через Cloudflare Worker.';
+           ?tr('Сайт игры не разрешил запрос Cloudflare Worker (HTTP ',
+               'The game site rejected the Cloudflare Worker request (HTTP ')+code+
+            tr('). Даже если адрес открывается в браузере, серверные запросы могут блокироваться.',
+               '). Server-side requests can be blocked even if the site opens in your browser.')
+           :code==='404'
+           ?tr('На сайте игры не найден один из файлов игровых данных (HTTP 404).',
+               'A game-data file was not found on the game site (HTTP 404).')
+           :code==='429'
+           ?tr('Сайт игры временно ограничил число запросов (HTTP 429).',
+               'The game site temporarily rate-limited requests (HTTP 429).')
+           :reason==='timeout'
+           ?tr('Истекло время ожидания ответа сайта игры.',
+               'The game site did not respond before the timeout.')
+           :reason==='network'
+           ?tr('Cloudflare Worker не смог установить соединение с сайтом игры.',
+               'Cloudflare Worker could not connect to the game site.')
+           :reason==='invalid-json'||reason==='invalid-format'
+           ?tr('Сайт игры ответил данными, которые нельзя распознать как игровой JSON.',
+               'The game site returned data that could not be parsed as game JSON.')
+           :reason==='too-large'
+           ?tr('Ответ сайта игры превысил ограничение безопасности.',
+               'The game site response exceeded the safety size limit.')
+           :code?tr('Сайт игры ответил HTTP ','The game site returned HTTP ')+code+'.'
+           :tr('Не удалось получить открытые игровые данные через Cloudflare Worker.',
+               'Public game data could not be retrieved through Cloudflare Worker.');
           status.textContent=issue+tr(
            ' Каталог Build Studio не изменён. Архивную копию можно сравнить отдельно, но она может быть старее.',
            ' The Build Studio catalog is unchanged. You can compare the archived copy separately, but it may be older.');
@@ -1362,9 +1374,12 @@
             'Сверка не завершена. Действующие данные остались прежними. Попробуй ещё раз или воспользуйся сохранённой копией.',
             'Comparison did not finish. Published data is unchanged. Try again or use the archived snapshot.');
         }
-        diagnosticText.textContent='Этап: '+(error.sourceDataset||'не определён')+
-          ' · Ответ Worker: '+(error.httpStatus??'нет HTTP-ответа')+
-          ' · Причина: '+(error.reason||'не указана')+
+        diagnosticText.textContent=tr('Этап: ','Stage: ')+
+          (error.sourceDataset||tr('не определён','unknown'))+
+          tr(' · Ответ Worker: ',' · Worker response: ')+
+          (error.httpStatus??tr('нет HTTP-ответа','no HTTP response'))+
+          tr(' · Причина: ',' · Reason: ')+
+          (error.reason||tr('не указана','not provided'))+
           ' · '+String(error.message||error);
         diagnostic.hidden=false;
         baseline=null;upstream=null;changes=[];impactCache=null;
@@ -1573,61 +1588,72 @@
       const unselectedSettings=changes.filter(x=>!checked(x)&&describe(x).service).length;
       const formatted=mode==='server'&&formattingToggle.checked?formattingCount:0;
       const ruCount=mode==='server'&&russianToggle.checked?verifiedRussian.length:0;
+      // A single confirmation path preserves all irreversible safety evidence
+      // across languages. Source-authored titles and estimates stay read-only.
       const sourceWarning=mode==='archive'
-        ?tr('\nИСТОЧНИК: архивная копия может быть устаревшей.',
-         '\nSOURCE: the archive may be outdated.'):
-         tr('\nИСТОЧНИК: доступные данные текущей игры.',
-          '\nSOURCE: currently available game data.');
+       ?tr('\nИСТОЧНИК: архивная копия может быть устаревшей.',
+           '\nSOURCE: the archive may be outdated.')
+       :tr('\nИСТОЧНИК: доступные данные текущей игры.',
+           '\nSOURCE: currently available game data.');
       const selectedChanges=changes.filter(checked);
       const selectedDescriptions=selectedChanges.map(describe);
       const selectedImpacts=selectedDescriptions.flatMap(d=>d.impacts||[]);
       const impactPreview=selectedImpacts.length?
-        '\n\nРАСЧЁТНОЕ ИЗМЕНЕНИЕ ШАНСОВ В BUILD STUDIO:\n'+
-        impactSamples(selectedImpacts).map(e=>'• '+e.preview).join('\n')+
-        (selectedImpacts.length>4?'\n• И ещё '+(selectedImpacts.length-4)+
-          ' изменений (смотри подробную сверку).':'')+
-        '\nЭто расчётная оценка; фактический результат на игровом сервере не проверен.':'';
+       tr('\n\nРАСЧЁТНОЕ ИЗМЕНЕНИЕ ШАНСОВ В BUILD STUDIO:\n',
+          '\n\nESTIMATED CHANCE CHANGES IN BUILD STUDIO:\n')+
+       impactSamples(selectedImpacts).map(e=>'• '+e.preview).join('\n')+
+       (selectedImpacts.length>4?
+        tr('\n• И ещё ','\n• And ')+(selectedImpacts.length-4)+
+        tr(' изменений (смотри подробную сверку).',' more changes (see detailed comparison).'):'')+
+       tr('\nЭто расчётная оценка; фактический результат на игровом сервере не проверен.',
+          '\nThese are estimates; actual game-server results have not been verified.'):'';
       const otherPreview=selectedDescriptions.filter(d=>!(d.impacts||[]).length)
-        .slice(0,2).map(d=>'\n• '+d.title+': '+d.summary.slice(0,200)).join('');
+       .slice(0,2).map(d=>'\n• '+d.title+': '+d.summary.slice(0,200)).join('');
       const atomicWarning=selectedChanges.some(e=>e.dataset==='tables')?
-        '\n\nВАЖНО: выбран весь набор «Игровые формулы», не один предмет. '+
-        'После подтверждения обновятся все таблицы этого раздела в D1. '+
-        'Применить только одну строку внутри невозможно.':'';
-      const uncertainWarning=uncertain
-        ?'\nВНИМАНИЕ: '+uncertain+' выбранных изменений требуют ручной проверки.':'';
+       tr('\n\nВАЖНО: выбран весь набор «Игровые формулы», не один предмет. '+
+          'После подтверждения обновятся все таблицы этого раздела в D1. '+
+          'Применить только одну строку внутри невозможно.',
+          '\n\nIMPORTANT: the entire game-formula table group was selected, not one item. '+
+          'Confirming replaces all tables in this D1 section. '+
+          'An individual row cannot be published separately.'):'';
+      const uncertainWarning=uncertain?
+       tr('\nВНИМАНИЕ: ','\nWARNING: ')+uncertain+
+       tr(' выбранных изменений требуют ручной проверки.',
+          ' selected changes require manual review.'):'';
       const compatibility=staged.compatibility;
       const mechanicWarning=compatibility?.requiresMechanicReview?
-       '\n\nПРОВЕРКА МЕХАНИК: '+compatibility.totals.needsReview+
-       ' изменений игровых свойств и эффектов требуют проверки совместимости. '+
-       'Новая формула не подтверждается одним обновлением D1. Примеры: '+
+       tr('\n\nПРОВЕРКА МЕХАНИК: ','\n\nMECHANICS REVIEW: ')+
+       compatibility.totals.needsReview+
+       tr(' изменений игровых свойств и эффектов требуют проверки совместимости. '+
+          'Новая формула не подтверждается одним обновлением D1. Примеры: ',
+          ' gameplay properties or effects need compatibility review. '+
+          'Publishing D1 alone does not validate a new formula. Examples: ')+
        compatibility.samples.needsReview.slice(0,3).map(x=>x.title).join('; ')+
-       '. Публикация не гарантирует численные результаты неизвестных эффектов.':'';
+       tr('. Публикация не гарантирует численные результаты неизвестных эффектов.',
+          '. Publishing does not guarantee numeric results for unknown effects.'):'';
       const verifiedNotice=compatibility?.totals.verified?
-       '\nБазовые расчёты и таблицы: проверено '+compatibility.totals.verified+
-       ' разделов (не полная проверка всех боевых механик).':'';
-      const confirmationRu='Применить выбранные изменения в каталог Build Studio?\n'+
-       'Новых: '+added+' · Изменённых: '+changed+' · Удалённых: '+removed+
-       ' · Переносов: '+formatted+' · Русских описаний: '+ruCount+'.'+
-       (notSelectedGame?'\nНе выбрано игровых изменений: '+notSelectedGame+'.':'')+
-       (unselectedSettings?'\nНе выбрано настроек: '+unselectedSettings+'.':'')+
-       sourceWarning+uncertainWarning+mechanicWarning+verifiedNotice+atomicWarning+impactPreview+otherPreview+
-       '\n\nМеняется каталог Build Studio, а НЕ сама игра. Проверь выбранное перед подтверждением. '+
-       'Ничего не опубликовано до этого подтверждения.';
-      const confirmationEn='Publish these changes to the Build Studio catalog?\n'+
-       'New: '+added+' · Changed: '+changed+' · Removed: '+removed+
-       ' · Line breaks: '+formatted+' · Russian descriptions: '+ruCount+'.'+
-       (notSelectedGame?'\nUnselected game changes: '+notSelectedGame+'.':'')+
-       (unselectedSettings?'\nUnselected settings: '+unselectedSettings+'.':'')+
-       sourceWarning+
-       (compatibility?.requiresMechanicReview?
-        '\nMECHANICS: '+compatibility.totals.needsReview+
-        ' effect/property changes require an independent model review. '+
-        'Publishing D1 does not prove unknown formulas.':'')+
-       (uncertain?'\nFlagged for manual review: '+uncertain+'.':'')+
-       (selectedChanges.some(x=>x.dataset==='tables')?
-         '\nGame formula tables, including level caps, are replaced together.':'')+
-       '\n\nOnly the Build Studio catalog changes, not the game. Review before confirming.';
-      if(!confirm(tr(confirmationRu,confirmationEn)))return;
+       tr('\nБазовые расчёты и таблицы: проверено ',
+          '\nBase calculations and tables: verified ')+compatibility.totals.verified+
+       tr(' разделов (не полная проверка всех боевых механик).',
+          ' sections (not a complete check of every combat mechanic).'):'';
+      const confirmation=tr('Применить выбранные изменения в каталог Build Studio?\n',
+                            'Publish these changes to the Build Studio catalog?\n')+
+       tr('Новых: ','New: ')+added+
+       tr(' · Изменённых: ',' · Changed: ')+changed+
+       tr(' · Удалённых: ',' · Removed: ')+removed+
+       tr(' · Переносов: ',' · Line breaks: ')+formatted+
+       tr(' · Русских описаний: ',' · Russian descriptions: ')+ruCount+'.'+
+       (notSelectedGame?
+        tr('\nНе выбрано игровых изменений: ','\nUnselected game changes: ')+notSelectedGame+'.':'')+
+       (unselectedSettings?
+        tr('\nНе выбрано настроек: ','\nUnselected settings: ')+unselectedSettings+'.':'')+
+       sourceWarning+uncertainWarning+mechanicWarning+verifiedNotice+
+       atomicWarning+impactPreview+otherPreview+
+       tr('\n\nМеняется каталог Build Studio, а НЕ сама игра. Проверь выбранное перед подтверждением. '+
+          'Ничего не опубликовано до этого подтверждения.',
+          '\n\nOnly the Build Studio catalog changes, NOT the game. Review before confirming. '+
+          'Nothing is published before you confirm.');
+      if(!confirm(confirmation))return;
       if(!permitMutation())return;
       publishing=true;
       const closeButton=view.closest('.modal')?.querySelector('button.close');
@@ -1661,12 +1687,12 @@
           failure.preflight=true;throw failure;
         }
         const current=await request('/api/admin/catalog/status',{});
-        if (current.active!==activeSnapshot) throw Error('D1 обновлена после проверки. Сверь данные заново.');
+        if (current.active!==activeSnapshot) throw Error(tr('D1 обновлена после проверки. Сверь данные заново.','D1 changed after comparison. Run the comparison again.'));
         await request('/api/admin/catalog/initialize',{});
         const snapshot='ps-'+crypto.randomUUID().replaceAll('-','');
         publishingSnapshot=snapshot;
         if(!/^[a-z0-9-]{8,64}$/.test(snapshot))
-          throw Error('Не удалось подготовить новую версию каталога');
+          throw Error(tr('Не удалось подготовить новую версию каталога','Could not prepare a new catalog revision'));
         const prepared=staged.normalized;
         const total=Object.values(prepared.counts).reduce((n,count)=>n+count,0);
         let done=0;
@@ -1676,7 +1702,7 @@
             const batch=[];let size=0;
             while (offset<rows.length && batch.length<30) {
               const entry=rows[offset],bytes=JSON.stringify(entry).length;
-              if (bytes>12000) throw Error('Запись слишком велика: '+name+'/'+entry.key);
+              if (bytes>12000) throw Error(tr('Запись слишком велика: ','Record exceeds size limit: ')+name+'/'+entry.key);
               if (batch.length && size+bytes>42000) break;
               batch.push(entry);size+=bytes;offset++;
             }
@@ -1720,9 +1746,11 @@
           }catch{}
         }
         status.textContent=error.httpStatus===401
-          ? 'Сеанс администратора истёк. Проверь активную версию D1 после повторного входа.'
-          : 'Не удалось завершить обновление: '+error.message+
-             '. Данные могли остаться прежними или уже обновиться. Сначала проверь каталог заново; не применяй тот же набор вслепую.';
+          ?tr('Сеанс администратора истёк. Проверь активную версию D1 после повторного входа.',
+              'The admin session expired. After signing in again, check the active D1 revision.')
+          :tr('Не удалось завершить обновление: ','Could not complete the update: ')+error.message+
+            tr('. Данные могли остаться прежними или уже обновиться. Сначала проверь каталог заново; не применяй тот же набор вслепую.',
+               '. Data may be unchanged or already published. Check the active catalog before retrying; never apply the same selection blindly.');
       }finally{
         publishing=false;
         if(closeButton?.isConnected)closeButton.disabled=false;
