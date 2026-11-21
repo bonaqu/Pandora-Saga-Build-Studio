@@ -101,5 +101,8 @@ test('issue 390: current public reads and CAS writes remain on the existing over
  assert.match(locale,/saved:defaults\[lang==='en'\?1:0\]/);
  // A staged migration manifest is not an excuse to silently switch site
  // text reads or deploy a new default snapshot on the live Worker.
- assert.doesNotMatch(worker,/\/api\/editorial-defaults/);
+ assert.match(worker,/if\(path==='\/api\/editorial-defaults'&&method==='GET'\)/);
+ assert.doesNotMatch(locale,/\/api\/editorial-defaults/);
+ // The optional read-only backend endpoint is not a frontend activation.
+ assert.match(worker,/readVerifiedEditorialSnapshot\(env\.DB,snapshot\)/);
 });
