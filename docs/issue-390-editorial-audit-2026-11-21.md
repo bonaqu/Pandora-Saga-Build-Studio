@@ -142,6 +142,15 @@
 - Both review rows and final publication confirmation select a locale-matched projection, preserving real game-source map, monster and item names without inventing translations or mechanics.
 - Added Node tests for bilingual preview values and both workbench output paths. The batch still requires same-SHA full Node+Chromium acceptance.
 
+## Path metrics and rail caption: separate editable labels from game data (21.11.2026)
+
+- The expanded skill-rail summary previously combined the shared `skillsOnTrack` label and the calculated number in one uneditable DOM text. Its authorial label is now a direct dblclick/F2/long-press D1/CAS caption, with a separate immutable count node.
+- Previously saved `PandoraUILocale.skillsOnTrack` RU/EN overrides remain valid defaults for the new Path-specific editor. The new key changes only that particular rail caption; there is no global-key migration or reset.
+- Existing `pathGroupTrained/Learned/Invested` and `pathReq*` authorial captions were previously editable only in the owner panel. Now the visible captions themselves reuse the exact same existing D1 keys, while punctuation and all calculated metrics remain separate nodes. No new pencils or duplicated edit keys.
+- A delegated guard distinguishes the owner double-click from an ordinary click on group headings or disclosure summaries; guest navigation and source skills remain unchanged.
+- `tests/hero-path-locale.test.mjs` covers the structural copy-versus-number contract. `tests/browser-owner-racial-path-648.mjs` adds actual EN inline blur→D1 CAS on the group and rail captions, preserves live group totals, the count and disclosure expansion. Check the final same-SHA Node/Chromium workflow before marking this slice accepted.
+- Remaining #390 blockers are unchanged: comprehensive dynamic-text audit, independent physical touchscreen acceptance, safe versioned physical D1 defaults migration, and read-only production acceptance only after an approved release. PR stays Draft.
+
 ## Bilingual source-review summaries (staged, requires CI)
 
 - Source-human-review keeps its existing Russian `summary`/`caution` and adds conservative `summaryEn`/`cautionEn` where semantics are verified: catalog checksum metadata, monster drops, quest records, translations, item-reference changes, source text mismatch and atomic formula/loot updates.
