@@ -345,6 +345,35 @@ export function buildEditorialDefaultsManifest(){
   append(id,'en',en,'origin-headings');
  }
 
+ // The two owner equipment picker surfaces reuse one frozen source catalog
+ // for static labels. This selection-only half is separate from metadata,
+ // source gear names, player-entered search queries and live item counts.
+ const selectionMatch=app.match(
+  /const equipmentPickerSelectionCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ if(!selectionMatch)throw Error('Missing equipment picker selection copy registry');
+ const selectionRows=runInNewContext('('+selectionMatch[1]+')',{},{
+  filename:'equipmentPickerSelectionCopyRows',timeout:5000
+ });
+ const expectedSelection=[
+  'pickerChoosePrefix','pickerDetails','pickerClose',
+  'pickerSearchPlaceholder','pickerSearchAria','pickerUnequip',
+  'pickerAvailableLabel','pickerAvailableAria','pickerMatchSuffix',
+  'pickerShownSuffix','pickerMorePrefix','pickerOutfitNote','pickerLoading',
+  'pickerOriginFirst','pickerNoMatches'
+ ];
+ if(!Array.isArray(selectionRows)||selectionRows.length!==expectedSelection.length||
+  selectionRows.map(row=>row?.[0]).sort().join('|')!==expectedSelection.sort().join('|'))
+  throw Error('Unexpected equipment selection copy registry');
+ for(const entry of selectionRows){
+  if(!Array.isArray(entry)||entry.length!==5)
+   throw Error('Invalid equipment selection RU/EN source entry');
+  const [key,ru,en]=entry;
+  const recordKey='guideedit.book.equipment.'+
+   key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  append(recordKey,'ru',ru,'equipment-picker-selection');
+  append(recordKey,'en',en,'equipment-picker-selection');
+ }
+
  // The Wiki chapters, all five Honor subchapters and skill filters are
  // one existing D1 JSON record. Preserve their exact field identities;
  // never reconstruct these labels from list position or save them as game IDs.

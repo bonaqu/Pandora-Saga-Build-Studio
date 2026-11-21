@@ -112,6 +112,21 @@ test('#390 pinned context menu and Origin captions never outrank existing CAS ed
  assert.equal(guide.field({},'origin.tab-race','Раса','Race').en,'Race');
 });
 
+test('#390 D1 selection-list captions preserve author overrides and keep game counts out of copy',async()=>{
+ const root=context(),stage=root.PandoraEditorialDefaults,guide=root.PandoraHonorGuide;
+ const id='guideedit.book.equipment.picker-match-suffix';
+ const payload=fixture([[id,'en','compatible · staging']]);
+ assert.equal(await stage.installVerified(payload,payload.snapshot,webcrypto.subtle),true);
+ assert.equal(guide.field({},'equipment.picker-match-suffix','подходящих','matching').en,
+  'compatible · staging');
+ const custom={[id]:JSON.stringify({en:'matches · owner'})};
+ assert.equal(guide.field(custom,'equipment.picker-match-suffix','подходящих','matching').en,
+  'matches · owner');
+ stage.reset();
+ assert.equal(guide.field({},'equipment.picker-match-suffix','подходящих','matching').en,
+  'matching');
+});
+
 test('#390 staging text uses only exact semantic identities and CAS outranks defaults',async()=>{
  const root=context(),stage=root.PandoraEditorialDefaults;
  const ui=root.PandoraUILocale,guide=root.PandoraHonorGuide,wiki=root.PandoraWikiLabels;

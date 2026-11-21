@@ -197,6 +197,24 @@ test('#390 original gear context, picker and Origin copy registries preserve exi
  }
 });
 
+test('#390 equipment picker owner selection registry seeds real direct-edit keys, not player search data',()=>{
+ const app=read('pandora-studio-app.js');
+ const match=app.match(
+  /const equipmentPickerSelectionCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ assert.ok(match);
+ const rows=runInNewContext('('+match[1]+')',{});
+ assert.equal(rows.length,15);
+ assert.equal(manifest.stats.cohorts['equipment-picker-selection'],30);
+ assert.match(app,/\.\.\.equipmentPickerSelectionCopyRows/);
+ for(const [key,ru,en] of rows){
+  const id='guideedit.book.equipment.'+
+   key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  assert.equal(manifest.records.find(r=>r.recordKey===id&&r.field==='ru')?.value,ru);
+  assert.equal(manifest.records.find(r=>r.recordKey===id&&r.field==='en')?.value,en);
+ }
+ assert.equal(manifest.records.some(r=>r.recordKey==='guideedit.book.equipment.picker-search-query'),false);
+});
+
 test('issue 390: migration never materializes runtime values or rewrites an override',()=>{
  assert.equal(manifest.records.some(r=>
   /(?:^|\.)(?:character|item|soul|account|formula|amount|gold|points|chance)\.[0-9]+/.test(r.recordKey)),false);
