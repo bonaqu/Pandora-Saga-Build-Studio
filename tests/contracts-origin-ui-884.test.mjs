@@ -156,8 +156,12 @@ test('three onboarding steps and equipment tabs have bilingual help',()=>{
   assert.match(html,new RegExp('data-i18n="'+key+'"'));
   assert.match(locale,new RegExp(key+':\\['));
  }
- assert.match(equipment,/const hints=\{/);
- for(const id of ['choose','details','souls'])assert.match(equipment,new RegExp(id+':\\['));
+ // The same named dictionary feeds live buttons and the versioned defaults.
+ const registry=equipment.match(/const equipmentTabHints=Object\.freeze\((\{[\s\S]*?\})\);/);
+ assert.ok(registry,'A complete bilingual equipment hint registry is required');
+ assert.match(equipment,/const hints=equipmentTabHints/);
+ for(const id of ['choose','details','souls'])
+  assert.match(registry[1],new RegExp(id+':\\['));
  assert.match(equipment,/PandoraGuideTooltip\?\.attach\(button,actionHelp,/);
 });
 }

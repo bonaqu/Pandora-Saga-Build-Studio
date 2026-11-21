@@ -34,6 +34,27 @@ function matchesSoulSearch(record,query){
   .filter(value=>typeof value==='string').join(' ');
  return root.PandoraSearchField.matches(names,query);
 }
+// Static authorial equipment summary copy, already using owner D1 CAS.
+// Values, game IDs, Soul capacities, and refinement numbers are NOT copy.
+const equipmentSummaryCopy=Object.freeze({
+ 'field.soulCompatible':['Подходящие слоты','Compatible slots'],
+ 'field.type':['Тип','Type'],
+ 'field.level':['Уровень','Level'],
+ 'field.attack':['Атака','Attack'],
+ 'field.magicAttack':['Магическая атака','Magic attack'],
+ 'field.defense':['Защита','Defense'],
+ 'field.slots':['Слоты душ','Soul slots'],
+ 'field.speed':['Скорость','Speed'],
+ 'field.range':['Дальность','Range'],
+ 'field.gemType':['Тип самоцвета','Gemstone type'],
+ 'field.element':['Стихия улучшения','Refinement element'],
+ 'field.specialEffect':['Особый эффект','Special effect'],
+ wearableBy:['Подходит','Wearable by'],
+ outfitNote:['Броня + штаны · одна вещь','Armor + pants · one item'],
+ socketedSoulHeading:['Вставленные души','Socketed Souls']
+});
+const summaryCopyField=id=>[id,...equipmentSummaryCopy['field.'+id]];
+
 function summary(record,icon,kind='item',context=null){
  if(!record)return el('p',{class:'muted',text:document.documentElement?.lang==='en'?
   'Item information is not loaded yet':'Данные о предмете пока не загружены'});
@@ -113,19 +134,16 @@ function summary(record,icon,kind='item',context=null){
  // magical refinements and hidden Soul slots. Index drift formerly assigned
  // Defense the "Slots" editor key on magically enhanced weapons.
  const fieldNames=kind==='soul'?
-  [['soulCompatible','Подходящие слоты','Compatible slots']]:
-  [['type','Тип','Type'],['level','Уровень','Level'],
-   ['attack','Атака','Attack'],
-   ...(magicPlus?[['magicAttack','Магическая атака','Magic attack']]:[]),
-   ['defense','Защита','Defense'],
-   ...(showSoulSlots?[['slots','Слоты душ','Soul slots']]:[]),
-   ['speed','Скорость','Speed'],['range','Дальность','Range']];
+  [summaryCopyField('soulCompatible')]:
+  ['type','level','attack',...(magicPlus?['magicAttack']:[]),
+   'defense',...(showSoulSlots?['slots']:[]),'speed','range']
+   .map(summaryCopyField);
  if(gem&&grade>0){
   if((context.slot||record.slot)==='weapon'&&gemType)
-   fieldNames.push(['gemType','Тип самоцвета','Gemstone type']);
-  if(gemElement)fieldNames.push(['element','Стихия улучшения','Refinement element']);
+   fieldNames.push(summaryCopyField('gemType'));
+  if(gemElement)fieldNames.push(summaryCopyField('element'));
  }
- if(phoenix)fieldNames.push(['specialEffect','Особый эффект','Special effect']);
+ if(phoenix)fieldNames.push(summaryCopyField('specialEffect'));
  const dl=el('dl',{class:'stage-rich-fields'});
  rows.forEach(([key,value],index)=>{
   if(value===null||value===undefined||value==='')return;
@@ -154,7 +172,7 @@ function summary(record,icon,kind='item',context=null){
  // Keep the exact catalog order and RU/EN names, without a separate card,
  // extra border, clickable chips, or gameplay data changes.
  if(wearers?.length){
-  const labelRu='Подходит',labelEn='Wearable by';
+  const [labelRu,labelEn]=equipmentSummaryCopy.wearableBy;
   const labelNode=el('dt',{class:'stage-gear-wearers-label',
    text:context?.copyLabel?.('wearableBy',labelRu,labelEn)||tr(labelRu,labelEn)});
   context?.editLabel?.(labelNode,'wearableBy',labelRu,labelEn);
@@ -167,7 +185,7 @@ function summary(record,icon,kind='item',context=null){
  }
  if(dl.children.length)wrap.append(dl);
  if(kind==='item'&&root.PandoraUIPlanner?.occupiesBodyAndLegs?.(record))
-  {const ru='Броня + штаны · одна вещь',en='Armor + pants · one item';
+  {const [ru,en]=equipmentSummaryCopy.outfitNote;
    const note=el('small',{class:'stage-outfit-note',
     text:context?.copyLabel?.('outfitNote',ru,en)||tr(ru,en)});
    context?.editLabel?.(note,'outfitNote',ru,en);
@@ -180,7 +198,7 @@ function summary(record,icon,kind='item',context=null){
  if(kind==='item'&&Array.isArray(context?.souls)&&context.souls.length){
   const group=el('div',{class:'stage-gear-souls'});
   // Stable bilingual owner copy; never edit the equipped Soul IDs/names.
-  const titleRu='Вставленные души',titleEn='Socketed Souls';
+  const [titleRu,titleEn]=equipmentSummaryCopy.socketedSoulHeading;
   const title=el('strong',{text:context?.copyLabel?.('socketedSoulHeading',titleRu,titleEn)||
    tr(titleRu,titleEn)});
   context?.editLabel?.(title,'socketedSoulHeading',titleRu,titleEn);
@@ -370,6 +388,35 @@ const actionLabels=Object.freeze({
  souls:Object.freeze(['Управление душами','Manage Souls']),
  remove:Object.freeze(['Снять вещь','Unequip item'])
 });
+// Independent, already-editable tooltip copy for each equipment tab.
+const equipmentTabHints=Object.freeze({
+ choose:['Выбрать или сменить предмет в этом слоте.','Choose or replace gear in this slot.'],
+ details:['Посмотреть свойства, заточку и слоты душ.','View properties, refinement and Soul sockets.'],
+ souls:['Вставить, заменить или снять душу.','Insert, replace or remove a Soul.']
+});
+// Original static RU/EN equipment labels for controls and ARIA prefixes.
+// The live numbers, item/Soul names and slot capacities are never authored copy.
+const equipmentInterfaceCopy=Object.freeze({
+ pickerSlotHeading:['Слот','Slot'],
+ pickerItemClose:['Закрыть настройку','Close item settings'],
+ pickerItemSettings:['Настройка предмета','Item settings'],
+ chooseItemEmpty:['Сначала выбери предмет.','Choose an item first.'],
+ socketCapacityHeading:['Слоты душ','Soul slots'],
+ socketOverflowHint:['Сначала извлеките души из лишних слотов','Remove Souls from extra sockets first'],
+ refinementHeading:['Заточка: +0…+10','Refinement: +0…+10'],
+ gemTypeLabel:['Тип','Type'],
+ gemElementLabel:['Стихия','Element'],
+ pickerSoulSlotAria:['Слот души','Soul slot'],
+ pickerEmptySoul:['пусто','empty'],
+ pickerSoulSlotCaption:['Слот','Slot'],
+ soulSlotsHeading:['Слоты душ','Soul slots'],
+ soulSearch:['Поиск совместимой души','Find a compatible Soul'],
+ pickerSoulSearchAria:['Поиск души','Find Soul'],
+ soulShowMore:['Показать ещё души','Show more Souls'],
+ soulProgressLabel:['Душ','Souls'],
+ soulSearchEmpty:['Совместимых душ не найдено','No compatible Souls found'],
+ soulRemove:['Извлечь душу из выбранного слота','Remove Soul from selected slot']
+});
 // Genitive phrases keep the unavailable-state explanation natural in RU.
 const SOUL_SLOT_NOUNS=Object.freeze({
  weapon:['этого оружия','weapon'],shield:['этого щита','shield'],
@@ -396,17 +443,25 @@ function render(root,api){
  const hasSouls=plan.supportsSoulSlot(slot);
  if(mode==='gems'||mode==='souls'&&(!hasSouls||!record)){api.changeMode('details');return}
  const english=document.documentElement?.lang==='en',tr=(ru,en)=>english?en:ru;
- const copy=(key,ru,en)=>api.copyLabel?.(key,ru,en)||tr(ru,en);
+ const copy=(key,ru,en)=>{
+  const fixed=equipmentInterfaceCopy[key];
+  if(fixed)[ru,en]=fixed;
+  return api.copyLabel?.(key,ru,en)||tr(ru,en);
+ };
  // Bind only immutable user-facing prefixes; numeric slots, Soul names and
  // selected state stay outside the D1 editorial value.
  const bind=(node,key,ru,en,attribute='text',suffix='')=>{
+  if(equipmentInterfaceCopy[key])[ru,en]=equipmentInterfaceCopy[key];
   if(api.bindInterfaceText)return api.bindInterfaceText(node,key,ru,en,attribute,suffix);
   const value=copy(key,ru,en)+suffix;
   if(attribute==='text')node.textContent=value;
   else node.setAttribute(attribute,value);
   return node;
  };
- const editable=(node,key,ru,en,options)=>{api.editLabel?.(node,key,ru,en,options);return node};
+ const editable=(node,key,ru,en,options)=>{
+  if(equipmentInterfaceCopy[key])[ru,en]=equipmentInterfaceCopy[key];
+  api.editLabel?.(node,key,ru,en,options);return node;
+ };
  const guardCaptionAction=(button,caption)=>{
   if(!api.canEdit)return;
   let pending=null;
@@ -456,11 +511,7 @@ function render(root,api){
  for(const key of sections){
   const action=key==='choose'?'replace':key==='details'?'properties':'souls';
   const [ru,en]=actionLabels[action],text=copy('tab.'+key,ru,en);
-  const hints={
-   choose:['Выбрать или сменить предмет в этом слоте.','Choose or replace gear in this slot.'],
-   details:['Посмотреть свойства, заточку и слоты душ.','View properties, refinement and Soul sockets.'],
-   souls:['Вставить, заменить или снять душу.','Insert, replace or remove a Soul.']
-  };
+  const hints=equipmentTabHints;
   const returningToDetails=mode==='choose'&&key==='details'&&Boolean(record);
   const glyph=actionIcon(key,{forward:returningToDetails});
   const button=el('button',{type:'button',

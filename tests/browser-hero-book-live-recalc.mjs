@@ -127,7 +127,8 @@ export async function runHeroBookLiveRecalcSmoke(browser,base){
   const authored=key=>page.locator('#stageBookPanel [data-guide-key="'+key+'"]');
   for(const [key,text] of [
    ['buffs.section.0','Priest buffs'],['buffs.guild','Guild'],
-   ['buffs.section.honor','Honor · passive skill'],
+   ['buffs.section.honor','Honor'],
+   ['buffs.honor','passive skill'],
    ['buffs.section.self','Self buffs'],['buffs.section.party','Ally buffs'],
    ['buffs.setting.guildHp','Physical'],
    ['buffs.setting.guildMp','Spirit'],
@@ -137,6 +138,8 @@ export async function runHeroBookLiveRecalcSmoke(browser,base){
   await page.locator('#locale [data-locale="ru"]').click();
   for(const [key,text] of [
    ['buffs.section.0','Усиления жреца'],['buffs.guild','Гильдия'],
+   ['buffs.section.honor','Честь'],
+   ['buffs.honor','пассивное умение'],
    ['buffs.section.self','Личные умения'],['buffs.section.party','Усиления от союзников'],
    ['buffs.setting.guildHp','Сила гильдии'],
    ['buffs.setting.guildAll','Магистр битвы']

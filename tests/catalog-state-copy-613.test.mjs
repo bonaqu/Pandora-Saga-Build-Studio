@@ -38,3 +38,88 @@ test('catalog notice and comparison status translations use valid guide edit fie
  assert.match(app,/refreshVisibleOwnerCopy\('guideedit\.'\+key\)/);
  assert.doesNotMatch(workbench,/request\('\/api\/admin\/catalog\/publish',\{[^}]*editorialState/);
 });
+
+test('issue #390: verified admin success states are exact bilingual inline D1 fields',()=>{
+ const labels=['exportDownloaded','testWriteSuccess','testCasSuccess','githubNoChanges'];
+ for(const key of labels){
+  const dashed=key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase());
+  assert.equal(root.PandoraHonorGuide.validOverride('book.catalog-sync.'+dashed,
+   JSON.stringify({ru:'Подтверждено',en:'Confirmed'})),true,key);
+  assert.ok(workbench.includes("editorialState(status,'"+key+"'"),key);
+ }
+ assert.doesNotMatch(workbench,/status\.textContent='Выбранный снимок скачан/);
+ assert.doesNotMatch(workbench,/status\.textContent='Сохранение работает/);
+ assert.doesNotMatch(workbench,/status\.textContent='Проверка пройдена:/);
+ assert.doesNotMatch(workbench,/status\.textContent='Каталог в GitHub уже совпадает/);
+ // Dynamic upstream response details are still not owner-editable.
+ assert.match(workbench,/diagnosticText\.textContent=tr\('Этап: ','Stage: '\)/);
+ assert.match(workbench,/status\.textContent=error\.message/);
+});
+
+test('catalog security confirmations and runtime failure messages are bilingual, but not D1-editable',()=>{
+ for(const russian of [
+  'Проверить, работают ли сохранение и удаление правок?',
+  'Проверить конфликты правок?',
+  'Создать отдельный GitHub PR из текущего опубликованного игрового каталога?'
+ ]){
+  assert.ok(workbench.includes(russian),russian);
+ }
+ for(const english of [
+  'Verify that saving and deleting edits works?',
+  'Check edit conflicts?',
+  'Create a separate GitHub PR from the currently published game catalog?',
+  'Export failed: ','Cannot publish: ','Preparing update · ',
+  'D1 write verification failed: ','D1 conflict check failed: ',
+  'Could not create PR: ','Create GitHub PR — server token configuration required'
+ ])assert.ok(workbench.includes(english),english);
+ assert.match(workbench,/status\.textContent=tr\('Экспорт не выполнен: '/);
+ assert.match(workbench,/status\.textContent=tr\('Нельзя публиковать: '/);
+ assert.match(workbench,/status\.textContent=tr\('Подготавливаю обновление · '/);
+ assert.match(workbench,/error\.message/);
+ assert.doesNotMatch(workbench,/editorialState\(status,'(?:exportFailure|publishFailure|casFailure|githubFailure)'/);
+});
+
+test('source failures and publishing risk caveats have bilingual parity',()=>{
+ for(const english of [
+  'Cloudflare Worker could not connect to the game site.',
+  'The game site temporarily rate-limited requests (HTTP 429).',
+  'D1 source was not verified for ',
+  'Stage: ','Worker response: ','Reason: ',
+  'ESTIMATED CHANCE CHANGES IN BUILD STUDIO',
+  'IMPORTANT: the entire game-formula table group was selected',
+  'MECHANICS REVIEW: ','Unselected settings: ',
+  'These are estimates; actual game-server results have not been verified.',
+  'Nothing is published before you confirm.',
+  'Data may be unchanged or already published.'
+ ])assert.ok(workbench.includes(english),english);
+ assert.match(workbench,/const unselectedSettings=changes\.filter\(x=>!checked\(x\)&&describe\(x\)\.service\)\.length/);
+ assert.match(workbench,/if\(!confirm\(confirmation\)\)return;/);
+ assert.doesNotMatch(workbench,/const confirmationEn=/);
+ assert.doesNotMatch(workbench,/editorialState\(status,'(?:sourceFailure|publishWarning|publishFailure)'/);
+});
+
+test('pre-publication blockers cannot be bypassed by English localization',()=>{
+ for(const label of [
+  'No changes selected for publication',
+  'Pre-publication calculation check: ',
+  'Calculation and source-link check: ',
+  'Game links: new broken references found: ',
+  'Item and Soul bonus check: ',
+  'Target and level-difference check: ',
+  'Published D1 translation count changed during review'
+ ])assert.ok(workbench.includes(label),label);
+ assert.match(workbench,/return verifyPublishedSnapshot\(apiBase,snapshot,expected,fetch,lang\)/);
+ assert.match(workbench,/const modelCheck=safety\.check\(combined\)/);
+ assert.match(workbench,/review\.auditSelection\(baseline,upstream,combined,chosen,importer\.files/);
+});
+
+test('English human-review cautions are displayed but game-model safety remains read-only',()=>{
+ for(const label of [
+  'description.summaryEn','description.cautionEn',
+  'lang===\'en\'&&description.summaryEn',
+  'lang===\'en\'&&description.cautionEn',
+  'change.title,description.title,description.summary,description.summaryEn'
+ ])assert.ok(workbench.includes(label),label);
+ assert.match(workbench,/const uncertain=changes\.filter\(x=>checked\(x\)&&describe\(x\)\.uncertain\)\.length/);
+ assert.match(workbench,/const riskApproval=/);
+});

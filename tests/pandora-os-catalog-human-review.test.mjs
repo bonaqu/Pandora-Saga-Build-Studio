@@ -249,3 +249,24 @@ test('English NPC and map sources resolve their original Russian catalogue names
  assert.ok(location.title.includes(source.mapNames[mapId].name));
  assert.equal(location.uncertain,false);
 });
+
+test('English human-review summaries preserve source meaning and safety classification',()=>{
+ const metadata=describe(change('meta','@dataset',
+  {sha:{'monster/monster.csv':'old'}},{sha:{'monster/monster.csv':'new'}}),context);
+ assert.match(metadata.summaryEn,/Catalog checksums changed: 1 file/);
+ assert.match(metadata.cautionEn,/Service metadata should not be accepted separately/);
+ assert.match(metadata.summary,/контрольные сведения: 1 файл/);
+ assert.equal(metadata.uncertain,true);
+ const current=structuredClone(read('drops')['43730']),old=structuredClone(current);
+ old.d[0].p=100;
+ const drop=describe(change('drops','43730',old,current),context);
+ assert.match(drop.summaryEn,/monster loot table changed/);
+ assert.match(drop.summary,/таблица добычи монстра/);
+ assert.equal(drop.uncertain,false,'Only source evidence decides whether the record is safe');
+ const link=describe(change('items','1',
+  {desc:'Old <item 53002>'},{desc:'New <item 53006>'}),context);
+ assert.equal(link.uncertain,true);
+ assert.match(link.summaryEn,/item link in a game description changed/);
+ assert.match(link.cautionEn,/Verify its destination/);
+ assert.match(link.caution,/Изменилась игровая связь/);
+});

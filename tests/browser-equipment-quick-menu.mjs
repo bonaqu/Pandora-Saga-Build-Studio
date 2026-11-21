@@ -159,7 +159,13 @@ export async function runEquipmentQuickMenuSmoke(browser,base){
   assert.equal(await menu.count(),0,'Soul-tab navigation closes the context menu');
 
   await page.locator('#locale [data-locale="en"]').click();
-  await page.waitForFunction(()=>document.documentElement.lang==='en');
+  // The document lang changes before the equipment rail finishes its
+  // localized rerender. Only click the new belt when its real accessible
+  // label reflects EN; otherwise a detached old rail can lose contextmenu.
+  await page.waitForFunction(()=>document.documentElement.lang==='en'&&
+   document.querySelector('.equipment-slot[data-slot-index="11"]')
+    ?.getAttribute('aria-label')?.startsWith('Belt · '),
+   null,{timeout:15000});
   await right(belt);
   await menu.waitFor({state:'visible',timeout:5000});
   assert.match(await action('properties').innerText(),/Properties/);

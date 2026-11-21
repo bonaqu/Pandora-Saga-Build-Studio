@@ -173,7 +173,11 @@ function render({browse,detail,make,lang='ru',article,editable=false,
   ['ranks','Ранги и привилегии','Ranks and privileges','♜'],
   ['monthly','Ежемесячные звания','Monthly titles','✦']
  ];
- browse.append(node('p','muted',tr('Разделы · 5','Sections · 5')));
+ // Keep the owner-editable label separate from live chapter count.
+ const sectionsLabel=make('p',{class:'muted wiki-honor-sections-label'});
+ sectionsLabel.append(editorial('span','','sectionsHeading','Разделы','Sections'),
+  node('span','wiki-honor-live-count',' · '+sidebar.length));
+ browse.append(sectionsLabel);
  browse.append(node('h4','wiki-location-list-heading',
   label('chapter','honor','Честь','Honor')));
  const nav=[];
@@ -188,8 +192,26 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  for(const [id,ru,english,glyph]of sidebar){
   const jump=make('button',{type:'button',class:'wiki-link wiki-honor-nav-link',
    'data-honor-section':id,'aria-current':id===oldSection?'location':null});
-  jump.append(node('span','wiki-honor-nav-icon',glyph),
-   node('span','',label('honor',id,ru,english)));
+  const navCaption=node('span','wiki-honor-nav-caption',
+   label('honor',id,ru,english));
+  jump.append(node('span','wiki-honor-nav-icon',glyph),navCaption);
+  if(editable){
+   // The sidebar and the article heading share an existing wiki.labels
+   // identity; a double click edits this exact caption, never the link ID.
+   const initial=label('honor',id,ru,english);
+   navCaption.classList.add('wiki-honor-editable');
+   navCaption.tabIndex=0;
+   navCaption.setAttribute('aria-keyshortcuts','F2');
+   const edit=event=>{
+    event.preventDefault();event.stopPropagation();
+    editLabel(navCaption,'honor',id,initial);
+   };
+   navCaption.addEventListener('dblclick',edit);
+   navCaption.addEventListener('keydown',event=>{
+    if(event.key==='F2')edit(event);
+   });
+   guardCaptionAction(jump,navCaption);
+  }
   jump.addEventListener('click',()=>{
    selectSection(id);
    const selected=detail.querySelector('#honor-'+id);
@@ -415,12 +437,18 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  victories.append(eventImage);
  const event=article.pvpVictories;
  if(event?.daily&&event?.weekly&&event?.hunts){
-  const addTable=(captionRu,captionEn,headers,rows)=>{
+  const addTable=(key,captionRu,captionEn,headers,rows)=>{
    const group=make('div',{class:'wiki-honor-pvp-group'});
-   group.append(node('h5','wiki-honor-pvp-label',tr(captionRu,captionEn)));
+   group.append(editorial('h5','wiki-honor-pvp-label',
+    key+'Heading',captionRu,captionEn));
    const table=make('table',{class:'wiki-honor-pvp-table'});
    const thead=make('thead'),head=make('tr');
-   for(const [ru,english] of headers)head.append(node('th','',tr(ru,english)));
+   headers.forEach(([ru,english],index)=>{
+    const cell=make('th',{});
+    cell.append(editorial('span','wiki-honor-table-caption',
+     key+'Column'+index,ru,english));
+    head.append(cell);
+   });
    thead.append(head);table.append(thead);
    const tbody=make('tbody');
    for(const values of rows){
@@ -430,22 +458,23 @@ function render({browse,detail,make,lang='ru',article,editable=false,
    }
    table.append(tbody);group.append(table);victories.append(group);
   };
-  addTable('Ежедневные награды','Daily rewards',
+  addTable('pvpDaily','Ежедневные награды','Daily rewards',
    [['Победы за день','Daily victories'],['Награда','Reward']],
    event.daily.map(row=>[row.wins,en?row.rewardEn:row.rewardRu]));
   paragraph(victories,en?o.pvpDailyEn:o.pvpDailyRu,'honor.overview',
    en?'pvpDailyEn':'pvpDailyRu');
-  addTable('Обмен боевых жетонов','Combat-token exchange',
+  addTable('pvpWeekly','Обмен боевых жетонов','Combat-token exchange',
    [['Награда','Reward'],['Стоимость','Cost'],['Лимит за неделю','Weekly limit']],
    event.weekly.map(row=>[en?row.rewardEn:row.rewardRu,
     en?row.costEn:row.costRu,row.limit]));
   paragraph(victories,en?o.pvpWeeklyEn:o.pvpWeeklyRu,'honor.overview',
    en?'pvpWeeklyEn':'pvpWeeklyRu');
-  victories.append(node('h5','wiki-honor-pvp-label',
-   tr('Двойные награды: вторник и четверг','Double rewards: Tuesday and Thursday')));
+  victories.append(editorial('h5','wiki-honor-pvp-label',
+   'pvpDoubleRewards','Двойные награды: вторник и четверг',
+   'Double rewards: Tuesday and Thursday'));
   paragraph(victories,en?o.pvpHuntEn:o.pvpHuntRu,'honor.overview',
    en?'pvpHuntEn':'pvpHuntRu');
-  addTable('Расписание охоты (МСК)','Hunt schedule (Moscow time)',
+  addTable('pvpHunt','Расписание охоты (МСК)','Hunt schedule (Moscow time)',
    [['День','Day'],['Время','Time'],['Карта','Map']],
    event.hunts.map(row=>[en?row.daysEn:row.daysRu,row.hours,
     en?row.mapEn:row.mapRu]));
@@ -525,26 +554,57 @@ function render({browse,detail,make,lang='ru',article,editable=false,
    'honor.rank.'+rank.id,en?'nameEn':'nameRu'));
   // Display only the active locale, including in owner edit mode.
   header.append(rankTitle);card.append(header);
-  const defaultRequirement=rank.top!=null?
-   tr('Для получения ранга необходимо находиться в топ-'+rank.top+
-    ' нации за предыдущий месяц.',
-    'To earn this rank, finish in your nation’s top '+rank.top+
-    ' for the previous month.'):
-   rank.points!=null?
-    tr('Для получения ранга необходимо ','To obtain this rank, you need ')+
-    fmt.format(rank.points)+
-    tr(' оч. ресурса «Вся честь» · ',' Total Honor points · ')+
-    fmt.format(rank.gold)+tr(' золота.',' gold.'):
-   rank.id===0?
-    tr('Ранг можно получить при вступлении в любую из существующих наций в игре.',
-     'This rank can be earned by joining any of the nations in the game.'):
-    tr('Для получения ранга необходимо ','To obtain this rank, you need ')+
-     fmt.format(rank.gold)+tr(' золота.',' gold.');
-  const required=en?rank.requirementEn||defaultRequirement:
-   rank.requirementRu||defaultRequirement;
-  card.append(editableText(node('p','wiki-honor-requirement',required),
-   required,'honor.rank.'+rank.id,
-   en?'requirementEn':'requirementRu',true));
+  // Rank thresholds are game records, not authorial prose. Earlier fallback
+  // requirements were editable as one string, letting a translation overwrite
+  // the displayed Total Honor, gold, or monthly placement threshold. Split
+  // only GENERATED fallback copy into D1 captions and immutable numeric nodes.
+  // A pre-existing authored requirementRu/En remains on its original record:
+  // do not discard a saved Wiki override or silently migrate its D1 key.
+  const authoredRequirement=en?rank.requirementEn:rank.requirementRu;
+  if(authoredRequirement){
+   card.append(editableText(node('p','wiki-honor-requirement',authoredRequirement),
+    authoredRequirement,'honor.rank.'+rank.id,
+    en?'requirementEn':'requirementRu',true));
+  }else{
+   const requirement=node('p','wiki-honor-requirement','');
+   const phrase=(key,ru,english)=>
+    requirement.append(editorial('span','wiki-honor-requirement-copy',key,ru,english));
+   const space=()=>requirement.append(document.createTextNode(' '));
+   const number=value=>requirement.append(
+    node('span','wiki-honor-runtime-value',fmt.format(value)));
+   if(rank.top!=null){
+    phrase('rankReqTopLead',
+     'Для получения ранга необходимо находиться в топ',
+     'To earn this rank, finish in your nation’s top');
+    requirement.append(document.createTextNode(en?' ':'-'));
+    number(rank.top);
+    space();
+    phrase('rankReqTopEnd','нации за предыдущий месяц.',
+     'for the previous month.');
+   }else if(rank.points!=null){
+    phrase('rankReqPointsLead','Для получения ранга необходимо',
+     'To obtain this rank, you need');
+    space();number(rank.points);space();
+    phrase('rankReqPointsMiddle','оч. ресурса «Вся честь» ·',
+     'Total Honor points ·');
+    space();number(rank.gold);space();
+    phrase('rankReqGoldEnd','золота.','gold.');
+   }else if(rank.id===0){
+    phrase('rankReqJoinNation',
+     'Ранг можно получить при вступлении в любую из существующих наций в игре.',
+     'This rank can be earned by joining any of the nations in the game.');
+   }else{
+    phrase('rankReqGoldLead','Для получения ранга необходимо',
+     'To obtain this rank, you need');
+    space();number(rank.gold);space();
+    phrase('rankReqGoldEnd','золота.','gold.');
+   }
+   // Match the existing owner-only grid layout without adding a pencil.
+   if(editable){
+    const row=make('div',{class:'wiki-honor-field-edit-row is-rank-requirement'});
+    row.append(requirement);card.append(row);
+   }else card.append(requirement);
+  }
   const bonus=en?rank.benefitEn:rank.benefitRu;
   card.append(editableText(node('p','wiki-honor-rank-benefit',bonus),
    bonus,'honor.rank.'+rank.id,en?'benefitEn':'benefitRu',true));

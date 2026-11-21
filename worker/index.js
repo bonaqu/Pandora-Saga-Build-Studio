@@ -2,6 +2,7 @@ import {accountApi,accountNeedsD1,principal as accountPrincipal} from './pandora
 import {readPublishedCatalog} from './pandora-studio-catalog-cache.js';
 import {createCatalogPullRequest,githubCatalogEnabled,githubCatalogReadiness,previewOwnerOverrides,createOwnerOverridesPullRequest} from './pandora-studio-github-catalog-pr.js';
 import {BACKUP_OUTBOX_SCHEMA,queueBackupStatement,getBackupJob,completeBackupJob,deliverCatalogBackupJob} from './pandora-studio-catalog-backup-outbox.js';
+import {readVerifiedEditorialSnapshot} from './pandora-studio-editorial-defaults.js';
 // Cloudflare Worker backend for Pandora Saga Build Studio.
 // Passwords and session hashes are NEVER stored in the Pages repository.
 // Native PBKDF2 in Cloudflare Workers supports at most 100,000 iterations.
@@ -771,6 +772,30 @@ if(path==='/api/health'&&method==='GET'){
   features:{sharing:sharingReady,catalog:catalogPublished,library:found.has('private_builds'),
    accounts:['user_accounts','user_sessions','user_registration_limits'].every(n=>found.has(n))}},ready?200:503);
 }
+// Optional authorial defaults staging: exact snapshot only, SELECT-only,
+// no production activation. Existing public overrides stay independent.
+if(path==='/api/editorial-defaults'&&method==='GET'){
+ // Disabled by default in every existing Worker environment: a future
+ // staging import and explicit operator flag are prerequisites to reads.
+ if(env.EDITORIAL_DEFAULTS_PREVIEW!=='enabled')return no('Not found',404);
+ const params=new URL(request.url).searchParams;
+ // A pinned snapshot is the ONLY accepted input. Duplicate query keys or
+ // extra parameters cannot silently change which D1 data is displayed.
+ if(params.size!==1||params.getAll('snapshot').length!==1)
+  return json({error:'Authorial defaults unavailable',
+   code:'EDITORIAL_DEFAULTS_BAD_REQUEST'},400);
+ const snapshot=params.get('snapshot');
+ try{
+  const outcome=await readVerifiedEditorialSnapshot(env.DB,snapshot);
+  return json(outcome.payload,outcome.status);
+ }catch(error){
+  // Preserve the existing D1 daily quota retry-after behavior, but never
+  // expose staging SQL/table diagnostics to the public preview reader.
+  if(isD1DailyQuotaError(error))throw error;
+  return json({error:'Authorial defaults unavailable',
+   code:'EDITORIAL_DEFAULTS_READ_FAILED'},503);
+ }
+}
 if(path==='/api/overrides'&&method==='GET'){const records=await env.DB.prepare('SELECT key,value FROM overrides ORDER BY key').all();return json({values:Object.fromEntries((records.results||[]).filter(r=>!String(r.key).startsWith('__qa.')).map(r=>[r.key,r.value]))})}
 if(path==='/api/admin/setup'&&method==='POST'){
  if(!env.ADMIN_SETUP_TOKEN||env.ADMIN_SETUP_TOKEN.length<32)return no('Secure setup not configured',503);
@@ -1013,13 +1038,15 @@ function validGuideEdit(text,key){
  if(!plain(data))return false;
  if(key==='wiki.labels')return Object.keys(data).length>0&&
   Object.keys(data).length<=50&&Object.entries(data).every(([k,v])=>
-   /^(?:chapter_(?:item|utility|monster|map|honor|npc|chest|instance|skill|soul)|honor_(?:overview|gain|ranks|monthly)|skill_filter_(?:player|racial|guild|special|variants|other|unknown|all))_(?:ru|en)$/.test(k)&&
+   /^(?:chapter_(?:item|utility|monster|map|honor|npc|chest|instance|skill|soul)|honor_(?:overview|gain|victories|ranks|monthly)|skill_filter_(?:player|racial|guild|special|variants|other|unknown|all))_(?:ru|en)$/.test(k)&&
    typeof v==='string'&&v.trim()&&v.length<=90&&
    Array.from(v).every(ch=>ch.charCodeAt(0)>=32));
  const allowed=key.startsWith('book.')?['ru','en','hintRu','hintEn']:
   key.startsWith('honor.rank.')?['nameRu','nameEn','benefitRu','benefitEn',
    'requirementRu','requirementEn']:
-  ['overviewRu','overviewEn','gainRu','gainEn','lossRu','lossEn','currentRu',
+  ['pvpIntroRu','pvpIntroEn','pvpDailyRu','pvpDailyEn',
+   'pvpWeeklyRu','pvpWeeklyEn','pvpHuntRu','pvpHuntEn',
+   'overviewRu','overviewEn','gainRu','gainEn','lossRu','lossEn','currentRu',
    'currentEn','ranksRu','ranksEn','cloaksRu','cloaksEn',
    'honorRu','honorEn','totalRu','totalEn','joiningRu','joiningEn',
    'monthlyNoteRu','monthlyNoteEn'];

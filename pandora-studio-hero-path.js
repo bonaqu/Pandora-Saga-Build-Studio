@@ -85,9 +85,11 @@ function requirementRow(api,name,metrics){
  const row=make('p',{class:'path-skill-requirement-row'});
  row.append(make('span',{class:'path-requirement-name',text:name}));
  for(const [key,ru,en,value] of metrics){
-  const caption=make('span',{class:'path-requirement-caption'});
-  bindPathCopy(api,caption,key,ru,en,'text',' ',' · ');
-  row.append(caption,make('span',{class:'path-requirement-value',text:String(value)}));
+  // Punctuation and the calculated requirement stay outside the author
+  // text node: double-click edits only the bilingual metric label.
+  const caption=authored(api,key,ru,en,'span','path-requirement-caption');
+  row.append(make('span',{text:' · '}),caption,make('span',{text:' '}),
+   make('span',{class:'path-requirement-value',text:String(value)}));
  }
  return row;
 }
@@ -370,11 +372,12 @@ function viewGrowth(target,api){
    ['pathGroupLearned','изучено','learned'],
    ['pathGroupInvested','вложено','invested']
   ]){
-   const caption=make('span',{class:'path-group-summary-copy'});
-   bindPathCopy(api,caption,copyKey,ru,en,'text',' ',
-    groupValues.length?' · ':'');
+   const caption=authored(api,copyKey,ru,en,'span','path-group-summary-copy');
    const value=make('span',{class:'path-group-summary-value'});
-   groupCount.append(caption,value);groupValues.push(value);
+   groupCount.append(make('span',{text:groupValues.length?' · ':''}),
+    caption,make('span',{text:' '}),value);
+   groupValues.push(value);
+   if(api.canEdit)guardCaptionAction(groupButton,caption);
   }
   const refreshGroupSummary=()=>{
    groupValues[0].textContent=String(branchKeys.reduce((total,key)=>total+M.branchMastery(state,key,innate,caps),0));
@@ -625,8 +628,21 @@ function viewGrowth(target,api){
      });
      // A separate collapsed list provides access to every skill without covering the drag surface.
      unlockDetails=make('details',{class:'path-unlock-details'});
-     unlockDetails.append(make('summary',{
-      text:(root.PandoraUILocale?.text('skillsOnTrack',api.lang)||'Умения на шкале')+' · '+marks.reduce((total,mark)=>total+mark.skills.length,0)}));
+     // The caption belongs to the author; the number of matching skills
+     // comes from the live catalog and must never be written as D1 copy.
+     const unlockSummary=make('summary');
+     // Keep previously saved shared UI translations as the fallback;
+     // this rail-specific caption has its own direct editor only when the
+     // owner deliberately overrides it.
+     const fallbackRu=root.PandoraUILocale?.text('skillsOnTrack','ru')||'Умения на шкале';
+     const fallbackEn=root.PandoraUILocale?.text('skillsOnTrack','en')||'Skills on track';
+     const unlockCaption=authored(api,'skillsOnTrackCaption',fallbackRu,
+      fallbackEn,'span','path-unlock-heading');
+     unlockSummary.append(unlockCaption,make('span',{
+      class:'path-unlock-count',
+      text:' · '+marks.reduce((total,mark)=>total+mark.skills.length,0)}));
+     if(api.canEdit)guardCaptionAction(unlockSummary,unlockCaption);
+     unlockDetails.append(unlockSummary);
      const list=make('div',{class:'path-unlock-list'});
      for(const mark of [...marks].sort((a,b)=>a.threshold-b.threshold)){
       for(const skill of mark.skills){
@@ -645,18 +661,22 @@ function viewGrowth(target,api){
        const copy=make('span',{class:'path-unlock-copy'});
        const status=make('small',{class:'path-unlock-status'});
        status.append(make('span',{text:String(mark.threshold)}));
-       const unit=make('span');
-       bindPathCopy(api,unit,'pathUnlockPoints','оч.','pts','text','',' ');
-       status.append(unit);
+       const unit=authored(api,'pathUnlockPoints','оч.','pts',
+        'span','path-unlock-unit');
+       status.append(make('span',{text:' '}),unit);
+       let word=null;
        if(mark.locked||gate.learned){
-        const word=make('span');
-        bindPathCopy(api,word,mark.locked?'pathUnlockOverCap':'pathUnlockReady',
+        word=authored(api,mark.locked?'pathUnlockOverCap':'pathUnlockReady',
          mark.locked?'выше лимита':'доступно',
-         mark.locked?'above limit':'available','text','',' · ');
-        status.append(word);
+         mark.locked?'above limit':'available','span','path-unlock-state');
+        status.append(make('span',{text:' · '}),word);
        }
        copy.append(make('strong',{text:skill.name||tr(api,'Умение','Skill')}),status);
        button.append(copy);list.append(button);
+       if(api.canEdit){
+        guardCaptionAction(button,unit);
+        if(word)guardCaptionAction(button,word);
+       }
       }
      }
      unlockDetails.append(list);
@@ -730,15 +750,22 @@ function viewGrowth(target,api){
       'greenMasteryHelp','Растёт при использовании умений этой ветки, а также соответствующих типов атак или оружия.',
       'Increases when using this branch’s skills or its corresponding attack or weapon types.',input,true)
     );
-    const baseline=base>0?make('span',{class:'path-innate-baseline',
-     text:tr(api,'Начально (оч.): ','Initially (pts): ')+base,
-     'aria-label':tr(api,'Начальная прокачка класса: ','Starting branch points: ')+base}):null;
+    // The owner edits captions, not the source-backed branch limit or
+    // starting points. Reuse existing bilingual D1 keys when available.
+    const baseline=base>0?make('span',{class:'path-innate-baseline'},[
+     authored(api,'innateBaselineLabel','Начально (оч.):',
+      'Initially (pts):','span','path-innate-copy'),
+     make('span',{class:'path-innate-value',text:' '+String(base)})]):null;
     if(baseline)bindPathCopy(api,baseline,'innateBaselineAria',
      'Начальная прокачка класса:','Starting branch points:','aria-label',' '+String(base));
-    const limitCaption=make('span',{class:'path-track-limit-value'});
-    bindPathCopy(api,limitCaption,'pathLimitPoints','Лимит (оч.):',
-     'Limit (pts):','text',' '+String(cap));
-    const legend=make('div',{class:'path-track-legend','aria-hidden':'true'},[
+    const limitCaption=make('span',{class:'path-track-limit-value'},[
+     authored(api,'pathLimitPoints','Лимит (оч.):',
+      'Limit (pts):','span','path-limit-copy'),
+     make('span',{class:'path-limit-number',text:' '+String(cap)})
+    ]);
+    // Focusable owner captions must not live inside an aria-hidden subtree.
+    const legend=make('div',{class:'path-track-legend',
+     'aria-hidden':api.canEdit?null:'true'},[
      make('span',{text:'0'}),
      make('span',{class:'path-track-limit'},[limitCaption,...(baseline?[baseline]:[])]),
      make('span',{text:String(visualMax)})
@@ -1000,12 +1027,16 @@ function viewSkills(target,details,api){
      class:'path-skill-lineage-link',
      'data-related-skill-id':String(related.id),
      'aria-label':tr(api,'Следующее умение: ','Next skill: ')+label,
-     text:tr(api,'Следующее → ','Next → ')+label,
      onclick:()=>navigate(related)});
     bindPathCopy(api,button,'skillNextAria','Следующее умение:',
      'Next skill:','aria-label',' '+label);
-    bindPathCopy(api,button,'skillNextLink','Следующее →',
-     'Next →','text',' '+label);
+    // The published skill name comes from the catalog. Only the short
+    // "Next" action caption belongs to the D1 author editor.
+    const nextCaption=authored(api,'skillNextLink','Следующее →',
+     'Next →','span','path-skill-lineage-caption');
+    button.append(nextCaption,make('span',{
+     class:'path-skill-lineage-name',text:' '+label}));
+    if(api.canEdit)guardCaptionAction(button,nextCaption);
     lineage.append(button);
    }
    details.append(lineage);

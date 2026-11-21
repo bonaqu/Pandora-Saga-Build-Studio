@@ -430,9 +430,6 @@ function cloudStatusText(message){
 function syncCloudStatusNode(node,message){
  if(!node)return;
  const key=cloudStatusCopyKey(message);
- const adjacent=node.nextElementSibling;
- if(adjacent?.dataset?.ownerCopyPencil&&adjacent.dataset.ownerCopyPencil!==key)
-  adjacent.remove();
  if(adminEditing&&adminToken&&key)ownerDockPatchData(node,'ownerCopyKey',key);
  else node.removeAttribute('data-owner-copy-key');
  // A late cloud status update must not destroy a draft in the inline editor.
@@ -1090,6 +1087,107 @@ function ownerCopy(section,key,ru,en){
  const entry=window.PandoraHonorGuide?.field(override,ownerCopyKey(section,key),ru,en);
  return lang==='en'?(entry?.en||en):(entry?.ru||ru);
 }
+// One delegated, owner-only touch gesture for plain, non-action captions.
+// Long press opens the same inline editor as double click or F2; a short tap
+// keeps its original behavior. WeakMap avoids listeners on every stat row and
+// does not hold detached Book/Wiki nodes after rerender.
+const ownerTouchCaptionEditors=new WeakMap();
+let ownerTouchGesture=null,ownerTouchSwallow=null,ownerTouchInstalled=false;
+function cancelOwnerTouchGesture(){
+ if(ownerTouchGesture?.timer!=null)clearTimeout(ownerTouchGesture.timer);
+ ownerTouchGesture=null;
+}
+function bindOwnerTouchCaption(node,edit,{interactive=false}={}){
+ if(!node||typeof edit!=='function'||!node.closest||
+  node.matches('input,textarea,select,[contenteditable]')||
+  // Do not replace a label that contains actual form controls.
+  (node.matches('label')&&node.querySelector('input,textarea,select,button')))return;
+ // Renderers register captions BEFORE inserting them in a button, tab or
+ // summary. Cache only their editor and policy, resolve action ancestry on
+ // the real pointer event after DOM mount; never cache a detached null parent.
+ ownerTouchCaptionEditors.set(node,{edit,interactive});
+ if(ownerTouchInstalled)return;
+ ownerTouchInstalled=true;
+ const open=()=>{
+  const gesture=ownerTouchGesture;
+  cancelOwnerTouchGesture();
+  const bound=gesture&&ownerTouchCaptionEditors.get(gesture.node);
+  if(!gesture||!adminEditing||!adminToken||!gesture.node.isConnected||
+   gesture.node.hidden||!bound||bound.edit!==gesture.edit||
+   (gesture.action&&!gesture.action.contains(gesture.node))||
+   gesture.node.querySelector('[contenteditable],.wiki-inline-input,.ui-content-edit-host'))return;
+  // A touch release can synthesize a click on the enclosing action even
+  // after a hidden caption has been replaced by an editing host. Block it.
+  const marked={node:gesture.node,action:gesture.action||gesture.node,
+   until:Date.now()+1000};
+  ownerTouchSwallow=marked;
+  // WeakMap keys are weak, but a lingering gesture marker is not: release
+  // its strong DOM reference even if no synthetic click is delivered.
+  setTimeout(()=>{if(ownerTouchSwallow===marked)ownerTouchSwallow=null},1050);
+  gesture.edit({preventDefault(){},stopPropagation(){}});
+ };
+ document.addEventListener('pointerdown',event=>{
+  if(event.pointerType!=='touch')return;
+  // A second finger starts a pinch/pan gesture, never a caption edit.
+  // Also cancel when a new touch begins on a native input or action.
+  cancelOwnerTouchGesture();
+  if(!adminEditing||!adminToken||event.isPrimary===false||event.button!==0||
+   event.target?.closest?.('input,textarea,select,[contenteditable]'))return;
+  const targetAction=event.target?.closest?.('button,a,summary,label,[role="button"]')||null;
+  for(let node=event.target;node&&node!==document;node=node.parentElement){
+   const bound=ownerTouchCaptionEditors.get(node);
+   if(!bound)continue;
+   const action=node.closest('button,a,summary,label,[role="button"]');
+   // A nested real action cannot inherit the parent's editor; only explicitly
+   // opted-in authorial captions inside actions may start on touch.
+   if((action&&!bound.interactive)||action!==targetAction)return;
+   ownerTouchGesture={node,edit:bound.edit,action,
+    x:event.clientX,y:event.clientY,pointerId:event.pointerId,
+    timer:setTimeout(open,460)};
+   return;
+  }
+ },true);
+ document.addEventListener('pointermove',event=>{
+  const g=ownerTouchGesture;
+  // An unrelated mouse moving on a hybrid touch laptop cannot cancel an
+  // already held finger. Pointer identity still protects multi-touch.
+  if(g&&event.pointerType==='touch'&&(event.pointerId!==g.pointerId||
+   Math.abs(event.clientX-g.x)>12||Math.abs(event.clientY-g.y)>12))
+   cancelOwnerTouchGesture();
+ },true);
+ // Touch panning triggers pointercancel in Chromium and other Pointer Events
+ // browsers. A global scroll listener is intentionally NOT used here: layout
+ // shifts, popover opening and input focus may scroll an unrelated ancestor
+ // after pointerdown, incorrectly cancelling legitimate label editing.
+ for(const name of ['pointerup','pointercancel'])
+  document.addEventListener(name,event=>{
+   const held=ownerTouchGesture;
+   // A mouse release on a hybrid tablet cannot cancel a different finger.
+   if(held&&event.pointerType==='touch'&&event.pointerId===held.pointerId)
+    cancelOwnerTouchGesture();
+  },true);
+ document.addEventListener('contextmenu',event=>{
+  const g=ownerTouchGesture,marked=ownerTouchSwallow;
+  if((g?.action||g?.node)?.contains(event.target)){
+   event.preventDefault();
+   open();
+  }else if(marked&&Date.now()<=marked.until&&marked.action.contains(event.target)){
+   event.preventDefault(); // OS menu can arrive on the enclosing action.
+  }
+ },true);
+ document.addEventListener('click',event=>{
+  const marked=ownerTouchSwallow;
+  if(!marked)return;
+  if(Date.now()>marked.until){ownerTouchSwallow=null;return}
+  // Another click can fire before the browser's delayed synthetic touch
+  // click. Ignore unrelated targets without dropping the short-lived guard.
+  if(!marked.action.contains(event.target))return;
+  ownerTouchSwallow=null;
+  event.preventDefault();event.stopImmediatePropagation();
+ },true);
+}
+window.PandoraOwnerTouchEdit=bindOwnerTouchCaption;
+
 function ownerCopyLabel(node,section,key,ru,en,{onCommitted,onFinished}={}){
  if(!node||!adminEditing||!adminToken)return;
  node.dataset.ownerCopySection=section;
@@ -1120,6 +1218,7 @@ function ownerCopyLabel(node,section,key,ru,en,{onCommitted,onFinished}={}){
   });
  };
  node.addEventListener('dblclick',edit);
+ bindOwnerTouchCaption(node,edit,{interactive:true});
  node.addEventListener('keydown',event=>{
   if(event.target===node&&(event.key==='F2'||event.key==='Enter'))edit(event);
  });
@@ -1158,14 +1257,18 @@ function bindOwnerInterfaceText(node,section,key,ru,en,attribute='text',suffix='
 // refreshes. Undo independently derives the restored value from D1.
 function applyOwnerInterfaceEditedValue(section,key,visible){
  for(const node of document.querySelectorAll('[data-owner-interface-bindings]')){
-  if(node.querySelector?.('.wiki-inline-input'))continue;
+  // Keep a nested caption input alive, while still updating independent
+  // ARIA/placeholder/title attributes on the containing button.
+  const editingText=Boolean(node.querySelector?.(
+   '.wiki-inline-input,.ui-content-edit-host,[data-owner-text-field]'));
   let bindings={};
   try{bindings=JSON.parse(node.dataset.ownerInterfaceBindings||'{}')}catch{}
   for(const [attr,field] of Object.entries(bindings)){
    if(field.section!==section||field.key!==key)continue;
    const value=(field.prefix||'')+visible+(field.suffix||'');
-   if(attr==='text')node.textContent=value;
-   else if(['placeholder','aria-label','title','aria-description','data-help'].includes(attr)){
+   if(attr==='text'){
+    if(!editingText)node.textContent=value;
+   }else if(['placeholder','aria-label','title','aria-description','data-help'].includes(attr)){
     node.setAttribute(attr,value);
     if(attr==='placeholder'&&node.getAttribute?.('contenteditable'))
      node.dataset.placeholder=value;
@@ -1568,6 +1671,31 @@ const equipmentPickerMetaCopyRows=Object.freeze([
  ['pickerFutureBadgePrefix','С','From','Метка уровня: начало','Level badge prefix'],
  ['pickerFutureBadgeSuffix','ур.','Lv.','Метка уровня: окончание','Level badge suffix']
 ]);
+// This audited owner-editor registry is also the source of versioned D1
+// authorial defaults. It contains labels, never item/player results.
+const equipmentPickerSelectionCopyRows=Object.freeze([
+ ['pickerChoosePrefix','Выбор:','Choose:','Заголовок слота','Slot heading'],
+   ['pickerDetails','Свойства','Properties','Переход к свойствам','Open properties'],
+   ['pickerClose','Закрыть выбор','Close item picker','Закрытие','Close picker'],
+   ['pickerSearchPlaceholder','Поиск по названию','Search by name','Поле поиска','Search placeholder'],
+   ['pickerSearchAria','Поиск предмета для','Search equipment for','Название поиска','Search accessible name'],
+   ['pickerUnequip','Снять предмет','Unequip item','Снять предмет','Unequip action'],
+   ['pickerAvailableLabel','Доступные на моём уровне','Available at my level',
+    'Фильтр по уровню','Level filter'],
+   ['pickerAvailableAria','Только доступные на моём уровне','Only items available at my level',
+    'Доступное имя фильтра','Level filter accessible name'],
+   ['pickerMatchSuffix','подходящих','matching','Найдено предметов','Matching items'],
+   ['pickerShownSuffix','показано','shown','Отображено предметов','Shown items'],
+   ['pickerMorePrefix','Показать ещё','Show more','Загрузить ещё','Show more'],
+   ['pickerOutfitNote','Платье занимает броню и штаны. Выбор штанов снимет его.',
+    'Armor and pants are occupied by one outfit. Choosing pants removes it.',
+    'Подсказка костюма','Outfit note'],
+   ['pickerLoading','Каталог ещё не загружен.','The catalog is still loading.','Загрузка','Loading'],
+   ['pickerOriginFirst','Сначала выберите расу и профессию.',
+    'Choose a race and class first.','Выбор расы','Choose race first'],
+   ['pickerNoMatches','Нет совместимых предметов. Измени поиск или слот.',
+    'No compatible items. Try another search or slot.','Нет предметов','No matching items']
+]);
 // Source confidence stays visible, implementation details do not.
 function wikiSourceCopy(key,ru,en){
  const label=h('small',{class:'wiki-source-meta',
@@ -1642,8 +1770,18 @@ function editOriginCopyLabel(node,key,ru,en){
 }
 function renderOriginCopyLabels(){
  for(const [selector,key,ru,en] of originFixedLabels){
+  // Class count is derived game data, never authorial text or owner CAS.
+  if(key==='classCount')continue;
   const node=document.querySelector(selector);
   originCopyLabel(node,key,ru,en);
+ }
+ const classNode=$('classCount');
+ if(classNode){
+  const n=jobKeys.length,rem=n%10,lastTwo=n%100;
+  const plural=rem===1&&lastTwo!==11?'класс':
+   rem>=2&&rem<=4&&(lastTwo<12||lastTwo>14)?'класса':'классов';
+  const text=lang==='en'?n+' classes':n+' '+plural;
+  if(classNode.textContent!==text)classNode.textContent=text;
  }
 }
 function editAttr(el,key){el.dataset.editKey=key;if(adminEditing&&adminToken)el.classList.add('admin-edit');return el}
@@ -2701,27 +2839,7 @@ function renderStagePicker(focusSearch=false){
  root.append(search,onlyAvailable);
  if(adminEditing&&adminToken)root.append(ownerInterfaceEditor('equipment',[
   ...equipmentPickerMetaCopyRows,
-  ['pickerChoosePrefix','Выбор:','Choose:','Заголовок слота','Slot heading'],
-  ['pickerDetails','Свойства','Properties','Переход к свойствам','Open properties'],
-  ['pickerClose','Закрыть выбор','Close item picker','Закрытие','Close picker'],
-  ['pickerSearchPlaceholder','Поиск по названию','Search by name','Поле поиска','Search placeholder'],
-  ['pickerSearchAria','Поиск предмета для','Search equipment for','Название поиска','Search accessible name'],
-  ['pickerUnequip','Снять предмет','Unequip item','Снять предмет','Unequip action'],
-  ['pickerAvailableLabel','Доступные на моём уровне','Available at my level',
-   'Фильтр по уровню','Level filter'],
-  ['pickerAvailableAria','Только доступные на моём уровне','Only items available at my level',
-   'Доступное имя фильтра','Level filter accessible name'],
-  ['pickerMatchSuffix','подходящих','matching','Найдено предметов','Matching items'],
-  ['pickerShownSuffix','показано','shown','Отображено предметов','Shown items'],
-  ['pickerMorePrefix','Показать ещё','Show more','Загрузить ещё','Show more'],
-  ['pickerOutfitNote','Платье занимает броню и штаны. Выбор штанов снимет его.',
-   'Armor and pants are occupied by one outfit. Choosing pants removes it.',
-   'Подсказка костюма','Outfit note'],
-  ['pickerLoading','Каталог ещё не загружен.','The catalog is still loading.','Загрузка','Loading'],
-  ['pickerOriginFirst','Сначала выберите расу и профессию.',
-   'Choose a race and class first.','Выбор расы','Choose race first'],
-  ['pickerNoMatches','Нет совместимых предметов. Измени поиск или слот.',
-   'No compatible items. Try another search or slot.','Нет предметов','No matching items']
+  ...equipmentPickerSelectionCopyRows
  ],'Подписи выбора экипировки','Equipment picker labels'));
  root.append(count,list,bottom);draw();
  if(focusSearch)search.focus({preventScroll:true});
@@ -3134,7 +3252,15 @@ function heroPathApi(){
   cap:branchCap,
   canEdit:Boolean(adminEditing&&adminToken),
   copyLabel:(key,ru,en)=>ownerCopy('path',key,ru,en),
-  editLabel:(node,key,ru,en,callbacks)=>ownerCopyLabel(node,'path',key,ru,en,callbacks),
+  editLabel:(node,key,ru,en,callbacks)=>ownerCopyLabel(node,'path',key,ru,en,{
+   ...callbacks,
+   onCommitted:visible=>{
+    // Inline edits must immediately refresh any companion aria/placeholder
+    // using the same D1 key, without rerendering the character or skills.
+    applyOwnerInterfaceEditedValue('path',key,visible);
+    callbacks?.onCommitted?.(visible);
+   }
+  }),
   bindCopy:(node,key,ru,en,attribute='text',suffix='',prefix='')=>
    bindOwnerInterfaceText(node,'path',key,ru,en,attribute,suffix,prefix),
   branchName:key=>editableValue('branch.'+key,catalog.meta?.branchLabels?.[key]||key),
@@ -5831,12 +5957,27 @@ function renderWiki(root){
      id,calculator:window.PandoraOSCalculator
     });
     if(evidence){
+     // Fixed Wiki headings are authorial copy, separate from live source IDs
+     // and calculator results. Reuse direct editing, not separate pencils.
+     const sourceCopy=(tag,key,ru,en)=>{
+      const node=h(tag,{text:ownerCopy('wiki-ui',key,ru,en)});
+      if(adminEditing&&adminToken)ownerCopyLabel(node,'wiki-ui',key,ru,en);
+      return node;
+     };
+     // Keep editable source wording apart from immutable counts, links and IDs.
+     const sourcePrefix=(key,ru,en)=>{
+      const wrapper=h('span',{class:'wiki-skill-source-prefix'});
+      wrapper.append(sourceCopy('span',key,ru,en),document.createTextNode(' '));
+      return wrapper;
+     };
      const section=h('section',{class:'wiki-skill-source-insight'});
-     section.append(h('h4',{text:wt('Действие умения','Skill effects')}));
+     section.append(sourceCopy('h4','sourceSkillEffectsHeading',
+      'Действие умения','Skill effects'));
      if(evidence.accessNotice){
       const access=evidence.accessNotice;
       const note=h('div',{class:'wiki-skill-access-notice'},[
-       h('strong',{text:wt('Особенности изучения','Learning restrictions')}),
+       sourceCopy('strong','sourceLearningRestrictionsHeading',
+        'Особенности изучения','Learning restrictions'),
        h('p',{text:lang==='en'?access.en:access.ru})
       ]);
       if(access.relatedSkillId&&wikiData.skills?.[String(access.relatedSkillId)]){
@@ -5847,12 +5988,12 @@ function renderWiki(root){
       }
       section.append(note);
      }
-     // Only source-authored, fixed game-patch explanations get owner copy keys.
-     // Calculated results and generated game data remain outside editorial D1.
+     // Only source-proven fixed explanations get owner copy keys.
+     // Calculated results, game IDs and dynamic source values remain outside D1.
      for(const note of evidence.notes){
       const ru=note.ru||note.en||'',en=note.en||note.ru||'';
       if(!ru&&!en)continue;
-      const ownerKey=/^osPatch[0-9]+$/.test(note.editorialKey||'')?
+      const ownerKey=/^(?:osPatch|osSource(?:Poison|Hymn|Trap|Composite|Linked))[0-9]+$/.test(note.editorialKey||'')?
        note.editorialKey:null;
       const visible=ownerKey?ownerCopy('wiki-ui',ownerKey,ru,en):
        (lang==='en'?en:ru);
@@ -5863,7 +6004,8 @@ function renderWiki(root){
       section.append(description);
      }
      if(evidence.paths.length){
-      section.append(h('h5',{text:wt('Связанные действия','Linked actions')}));
+      section.append(sourceCopy('h5','sourceLinkedActionsHeading',
+       'Связанные действия','Linked actions'));
       for(const path of evidence.paths){
        const chain=h('div',{class:'wiki-skill-source-chain'});
        path.forEach((linkId,index)=>{
@@ -5874,20 +6016,27 @@ function renderWiki(root){
         // The full trap chain is proved by source item and action effects.
         // Present the linked gameplay steps in readable language rather
         // than pretending an unknown damage packet is calculable.
+        const roles={
+         projectile:['sourceProjectileRole','Снаряд:','Projectile:'],
+         area:['sourceAreaRole','Область:','Area:'],
+         fireBlast:['sourceFireBlastRole','Огненный взрыв:','Fire blast:'],
+         effect:['sourceEffectRole','Эффект:','Effect:'],
+         hit:['sourceHitRole','Попадание:','Hit:']
+        };
         const trapRole=evidence.pathKind==='trap'&&index>0?
-         linked?.skillType==='BOLT'?wt('Снаряд: ','Projectile: '):
-         linked?.skillType==='CIRCLE'?wt('Область: ','Area: '):
+         linked?.skillType==='BOLT'?roles.projectile:
+         linked?.skillType==='CIRCLE'?roles.area:
          linked?.skillType==='SPHERE'&&linked?.element==='FIRE'&&
          linked?.funcs?.some(f=>f.ep==='EP_ELEMENT_DAMAGE')?
-          wt('Огненный взрыв: ','Fire blast: '):
-         wt('Эффект: ','Effect: '):'';
+          roles.fireBlast:roles.effect:null;
         const damageRole=evidence.pathKind==='damage'&&index>0?
          linked?.funcs?.some(f=>f.ep==='EP_ELEMENT_DAMAGE')?
-          wt('Попадание: ','Hit: '):wt('Эффект: ','Effect: '):'';
+          roles.hit:roles.effect:null;
         const role=evidence.pathKind==='hymn'&&index>0?
-         (index===1?wt('Область: ','Area: '):wt('Эффект: ','Effect: ')):
-         (damageRole||trapRole);
-        chain.append(wikiLink(role+dataName('skill',String(linkId)),
+         (index===1?roles.area:roles.effect):(damageRole||trapRole);
+        if(role)chain.append(sourcePrefix(...role));
+        // Keep exact source-linked skill IDs in the Wiki anchor, not in D1.
+        chain.append(wikiLink(dataName('skill',String(linkId)),
          'skill',String(linkId)));
        });
        section.append(chain);
@@ -5902,9 +6051,10 @@ function renderWiki(root){
      // They lead to item provenance/loot/trades, never mutate inventory.
      const ingredientLink=itemId=>wikiLink(
       itemName(itemId),'item',String(itemId));
-     const materialLine=(label,count,itemId)=>{
+     const materialLine=(key,ru,en,count,itemId)=>{
       const line=h('p',{class:'wiki-skill-source-material'});
-      line.append(h('span',{text:label+count+' × '}),ingredientLink(itemId));
+      line.append(sourcePrefix(key,ru,en),h('span',{text:count+' × '}),
+       ingredientLink(itemId));
       return line;
      };
      for(const extra of evidence.extra){
@@ -5914,7 +6064,7 @@ function renderWiki(root){
        Number.isSafeInteger(extra.produces.quantity)&&
        extra.produces.quantity>0){
        const recipe=h('p',{class:'wiki-skill-source-recipe'});
-       recipe.append(h('span',{text:wt('Рецепт: ','Recipe: ')}));
+       recipe.append(sourcePrefix('sourceRecipeLabel','Рецепт:','Recipe:'));
        extra.uses.forEach((ingredient,index)=>{
         if(index)recipe.append(h('span',{text:' + '}));
         recipe.append(h('span',{text:ingredient.quantity+' × '}));
@@ -5934,8 +6084,8 @@ function renderWiki(root){
        .slice(0,8);
       if(followUps.length){
        const used=h('p',{class:'wiki-skill-recipe-followups'});
-       used.append(h('span',{text:wt('Используют результат: ',
-        'Uses the result: ')}));
+       used.append(sourcePrefix('sourceUsedResultLabel','Используют результат:',
+        'Uses the result:'));
        followUps.forEach((row,i)=>{
         if(i)used.append(h('span',{text:' · '}));
         used.append(wikiLink(dataName('skill',String(row.id)),
@@ -5946,24 +6096,26 @@ function renderWiki(root){
       }
       if(extra.type==='trap'&&itemName(extra.itemId)&&
        Number.isSafeInteger(extra.count)&&extra.count>0)
-       section.append(materialLine(wt('Расход: ','Cost: '),
+       section.append(materialLine('sourceTrapCostLabel','Расход:','Cost:',
         extra.count,extra.itemId));
       if(extra.type==='requiredItem'&&itemName(extra.itemId)&&
        Number.isSafeInteger(extra.count)&&extra.count>0)
-       section.append(materialLine(wt('Для применения нужно: ','Requires: '),
-        extra.count,extra.itemId));
+       section.append(materialLine('sourceRequiredItemLabel','Для применения нужно:',
+        'Requires:',extra.count,extra.itemId));
       // These are source-only numbers, not verified inventory or damage.
       if(extra.type==='sourceMaterial'&&itemName(extra.itemId)&&
        Number.isSafeInteger(extra.count)&&extra.count>0)
-       section.append(materialLine(wt('Материал в игровых данных: ',
-        'Material in game data: '),extra.count,extra.itemId));
+       section.append(materialLine('sourceMaterialLabel','Материал в игровых данных:',
+        'Material in game data:',extra.count,extra.itemId));
       if(extra.type==='sourceAmmo'&&Number.isSafeInteger(extra.count)&&extra.count>0)
-       section.append(h('p',{class:'wiki-skill-source-material',
-        text:wt('Боеприпасы в игровых данных: ',
-         'Ammunition in game data: ')+extra.count}));
+       section.append(h('p',{class:'wiki-skill-source-material'},[
+        sourcePrefix('sourceAmmunitionLabel','Боеприпасы в игровых данных:',
+         'Ammunition in game data:'),
+        h('span',{text:String(extra.count)})]));
       if(extra.type==='resource')
-       section.append(h('p',{text:wt('Особый расход: ','Special cost: ')+
-        extra.value}));
+       section.append(h('p',{},[
+        sourcePrefix('sourceSpecialCostLabel','Особый расход:','Special cost:'),
+        h('span',{text:String(extra.value)})]));
      }
      detail.append(section);
     }
@@ -5977,7 +6129,12 @@ function renderWiki(root){
     const slotLabel=slot=>window.PandoraItemPresentation.slotLabel(slot,lang);
     const traits=h('section',{class:'wiki-soul-properties','aria-label':wt('Свойства души','Soul properties')});
     const slotPane=h('div',{class:'wiki-soul-properties-half'});
-    slotPane.append(h('h4',{text:wt('Куда вставляется','Compatible equipment')}));
+    const compatibleRu='Куда вставляется',compatibleEn='Compatible equipment';
+    const compatibleHeading=h('h4',{text:ownerCopy('wiki-ui','soulCompatibleHeading',
+     compatibleRu,compatibleEn)});
+    if(adminEditing&&adminToken)ownerCopyLabel(compatibleHeading,'wiki-ui',
+     'soulCompatibleHeading',compatibleRu,compatibleEn);
+    slotPane.append(compatibleHeading);
     const slots=h('div',{class:'wiki-soul-slot-list'});
     for(const slot of rec.slots||[]){
      const chip=h('span',{class:'wiki-owner-mat',text:slotLabel(slot)});
@@ -7759,11 +7916,7 @@ function renderBuildComparison(host,onSelection=()=>{}){
  const syncCompareCopy=(node,key)=>{
   if(node.nextElementSibling?.classList?.contains('ui-content-edit-host'))
    return false;
-  if(node.dataset.ownerCopyKey!==key){
-   const pencil=node.nextElementSibling;
-   if(pencil?.dataset?.ownerCopyPencil)pencil.remove();
-   node.dataset.ownerCopyKey=key;
-  }
+  if(node.dataset.ownerCopyKey!==key)node.dataset.ownerCopyKey=key;
   ownerDockPatchText(node,copy(key));
   return true;
  };
@@ -8413,7 +8566,7 @@ function renderBuilds(root){
    fillCardChoice(target);
    target.hidden=false;
    if(adminEditing&&adminToken)bindAccountCopyEditors(target);
-   target.querySelector('button:not(.account-copy-pencil)')?.focus({preventScroll:true});
+   target.querySelector('button')?.focus({preventScroll:true});
   };
   const cardActions=h('div',{class:'build-card-actions'},[
    cardAction('📂','libraryCardOpen','libraryHintOpen',()=>{
@@ -8949,12 +9102,6 @@ function refreshOpenAuthoredToast(){
  const heading=root.querySelector('.studio-toast-content>strong');
  if(heading)heading.textContent=locale.ui(root.classList.contains('success')?'Готово':
   root.classList.contains('error')?'Ошибка':'Уведомление',lang);
- const pencil=textNode.nextElementSibling;
- if(pencil?.dataset?.ownerCopyPencil===key){
-  pencil.title=lang==='en'?'Edit caption':'Изменить надпись';
-  pencil.setAttribute('aria-label',
-   (lang==='en'?'Edit caption: ':'Изменить надпись: ')+textNode.textContent);
- }
 }
 async function restoreSharedHash(){
  const match=location.hash.match(/^#b\/([A-Za-z0-9_-]{11})$/);
@@ -9210,8 +9357,19 @@ document.addEventListener('pointerdown',event=>{
  const pending=pendingOwnerCaptionAction;
  if(pending&&!pending.button.contains(event.target))pending.cancel();
 },true);
+// Multiple independent D1 captions may share one real button/summary.
+// Keep one delegated click guard and register every eligible caption; never
+// attach duplicate listeners or let an older child suppress a newer editor.
+const ownerCaptionActionTargets=new WeakMap();
 function ownerCaptionActionGuard(button,caption){
- if(!button||button.dataset.ownerCaptionActionGuard==='1')return;
+ if(!button||!caption)return;
+ let captions=ownerCaptionActionTargets.get(button);
+ if(!captions){
+  captions=new Set();
+  ownerCaptionActionTargets.set(button,captions);
+ }
+ captions.add(caption);
+ if(button.dataset.ownerCaptionActionGuard==='1')return;
  button.dataset.ownerCaptionActionGuard='1';
  let timer=null;
  const cancel=()=>{
@@ -9220,26 +9378,27 @@ function ownerCaptionActionGuard(button,caption){
   if(pendingOwnerCaptionAction?.button===button)pendingOwnerCaptionAction=null;
  };
  button.addEventListener('click',event=>{
-  // Real keyboard and programmatic clicks have detail=0 and execute
-  // immediately. They must still cancel any delayed pointer navigation.
+  // Keyboard/programmatic clicks (detail=0) still act immediately.
   if(!event.detail){
    if(pendingOwnerCaptionAction)pendingOwnerCaptionAction.cancel();
    return;
   }
-  if(!adminEditing||!adminToken||!caption.contains(event.target))return;
+  if(!adminEditing||!adminToken)return;
+  const activeCaption=[...captions].find(item=>item.contains(event.target));
+  if(!activeCaption)return;
   if(event.target.closest?.('[data-owner-text-field],.wiki-inline-input')){
    event.preventDefault();event.stopImmediatePropagation();return;
   }
   if(event.target.closest?.('input,textarea,select'))return;
   event.preventDefault();event.stopImmediatePropagation();
-  if(timer!==null){cancel();return} // Actual double-click, not a navigation.
+  if(timer!==null){cancel();return} // Actual double-click, not an action.
   if(pendingOwnerCaptionAction)pendingOwnerCaptionAction.cancel();
   button.dataset.ownerCaptionPending='1';
   pendingOwnerCaptionAction={button,cancel};
   timer=setTimeout(()=>{
    cancel();
    if(button.isConnected&&!button.disabled&&adminEditing&&adminToken&&
-    !caption.hidden)button.click();
+    !activeCaption.hidden)button.click();
   },500);
  },true);
 }
@@ -9304,6 +9463,7 @@ function bindStaticUICopyEditors(){
   if(!node.dataset.uiContentBound){
    node.dataset.uiContentBound='1';
    node.addEventListener('dblclick',edit);
+   bindOwnerTouchCaption(node,edit,{interactive:true});
    node.setAttribute('aria-keyshortcuts','F2');
    if(!button)node.tabIndex=0;
    node.addEventListener('keydown',event=>{
@@ -9382,11 +9542,7 @@ function bindAccountCopyEditors(panel){
   node.classList.toggle('ui-content-editable',enabled&&!isAction);
   if(!isAction&&enabled)node.tabIndex=0;
   else if(!isAction&&node.tabIndex===0)node.removeAttribute('tabindex');
-  if(!enabled){
-   if(node.nextElementSibling?.dataset?.ownerCopyPencil===key)
-    node.nextElementSibling.remove();
-   continue;
-  }
+  if(!enabled)continue;
   if(node.nextElementSibling?.classList?.contains('ui-content-edit-host'))continue;
   const edit=event=>{
    // A cloud status element can change between requests without remounting.
@@ -9400,9 +9556,6 @@ function bindAccountCopyEditors(panel){
    const editLang=lang,before=locale.text(key,editLang);
    const host=h('span',{class:'ui-content-edit-host account-copy-edit-host',text:before});
    node.after(host);node.hidden=true;
-   const pencil=host.nextElementSibling?.dataset?.ownerCopyPencil===key?
-    host.nextElementSibling:null;
-   if(pencil)pencil.hidden=true;
    editWikiValue(host,before,{
     type:'text',
     onCommit:next=>{
@@ -9414,14 +9567,12 @@ function bindAccountCopyEditors(panel){
      ownerDockPatchText(node,editLang===lang?next:locale.text(key,lang));
      if(node.matches('h2'))
       ownerDockPatchAttr(node.closest('.modal[role="dialog"]'),'aria-label',node.textContent);
-     if(pencil)ownerDockPatchAttr(pencil,'aria-label',
-      (lang==='en'?'Edit caption: ':'Изменить надпись: ')+node.textContent);
      if(panel.id==='studioToast')refreshOpenAuthoredToast();
      if(panel.id==='studio-update-banner')
       window.PandoraStudioUpdateBanner?.refresh?.();
     },
     onFinished:()=>{
-     node.hidden=false;host.remove();if(pencil)pencil.hidden=false;
+     node.hidden=false;host.remove();
      if(node.closest('[data-build-compare]'))
       node.closest('[data-build-compare]').dispatchEvent(
        new Event('pandora:comparison-copy-finished'));
@@ -9435,6 +9586,7 @@ function bindAccountCopyEditors(panel){
   if(!node.dataset.ownerCopyBound){
    node.dataset.ownerCopyBound='1';
    node.addEventListener('dblclick',edit);
+   bindOwnerTouchCaption(node,edit,{interactive:true});
    node.setAttribute('aria-keyshortcuts','F2');
    node.addEventListener('keydown',event=>{
     if(event.key==='F2'||(!isAction&&(event.key==='Enter'||event.key===' '))){
@@ -9443,7 +9595,10 @@ function bindAccountCopyEditors(panel){
    });
    // Library/action captions may be spans inside a real button: guard the
    // enclosing action as well, so double-click never saves/opens twice.
-   const action=node.closest('button,[role="button"]');
+   // Native <summary> is also an action. A quick owner double-click on
+   // its text must edit that caption instead of toggling the disclosure
+   // twice; single clicks and keyboard actions remain functional.
+   const action=node.closest('button,summary,[role="button"]');
    if(action)ownerCaptionActionGuard(action,node);
   }
 
@@ -9983,9 +10138,6 @@ function refreshVisibleUICopy(recordKey){
   // after CAS, Undo and Restore Original without reconstructing the dialog.
   if(node.matches('h2'))
    ownerDockPatchAttr(node.closest('.modal[role="dialog"]'),'aria-label',value);
-  const pencil=node.nextElementSibling;
-  if(pencil?.dataset?.ownerCopyPencil===key)
-   ownerDockPatchAttr(pencil,'aria-label',(lang==='en'?'Edit caption: ':'Изменить надпись: ')+value);
  }
  // The cloud library has an independent status lifecycle outside the toast.
  // A D1 save/reset/Undo must refresh its mounted copy without re-rendering
@@ -9994,10 +10146,6 @@ function refreshVisibleUICopy(recordKey){
   const cloud=document.querySelector('#detailContent .cloud-library-status');
   if(cloud&&locale.fieldKey(cloud.dataset.ownerCopyKey)===id){
    syncCloudStatusNode(cloud,cloudLibraryStatus);
-   const pencil=cloud.nextElementSibling;
-   if(pencil?.dataset?.ownerCopyPencil===cloud.dataset.ownerCopyKey)
-    ownerDockPatchAttr(pencil,'aria-label',
-     (lang==='en'?'Edit caption: ':'Изменить надпись: ')+cloud.textContent);
   }
  }
  // The same routine handles save, Undo and owner reset. Do not replace
@@ -10123,8 +10271,6 @@ function refreshVisibleOwnerCopy(recordKey){
   if(section==='honor-view'){
    const filterCaption=node.parentElement?.querySelector('.wiki-honor-filter-caption');
    ownerDockPatchText(filterCaption,value);
-   const pencil=node.parentElement?.querySelector('.wiki-honor-copy-pencil');
-   ownerDockPatchAttr(pencil,'aria-label',(lang==='en'?'Edit caption: ':'Изменить подпись: ')+value);
   }
   if(section==='catalog-sync'&&id.startsWith('hint'))
    for(const target of document.querySelectorAll('[data-guide-owner-key]'))
@@ -10133,7 +10279,10 @@ function refreshVisibleOwnerCopy(recordKey){
  // Attribute/text copy changes patch the existing mounted control only:
  // never replace an active search field, picker, selection or character.
  for(const node of document.querySelectorAll('[data-owner-interface-bindings]')){
-  if(node.querySelector?.('.wiki-inline-input'))continue;
+  // Keep a nested caption input alive, while still updating independent
+  // ARIA/placeholder/title attributes on the containing button.
+  const editingText=Boolean(node.querySelector?.(
+   '.wiki-inline-input,.ui-content-edit-host,[data-owner-text-field]'));
   let bindings={};
   try{bindings=JSON.parse(node.dataset.ownerInterfaceBindings||'{}')}catch{}
   for(const [attr,field] of Object.entries(bindings)){
@@ -10142,8 +10291,9 @@ function refreshVisibleOwnerCopy(recordKey){
     suffix:field.suffix,prefix:field.prefix};
    if(ownerCopyKey(section,id)!==key)continue;
    const value=(prefix||'')+ownerCopy(section,id,ru,en)+(suffix||'');
-   if(attr==='text')ownerDockPatchText(node,value);
-   else if(['placeholder','aria-label','title','aria-description','data-help'].includes(attr)){
+   if(attr==='text'){
+    if(!editingText)ownerDockPatchText(node,value);
+   }else if(['placeholder','aria-label','title','aria-description','data-help'].includes(attr)){
     ownerDockPatchAttr(node,attr,value);
     if(attr==='aria-description'&&node.dataset.guideHint!==undefined)
      ownerDockPatchData(node,'guideHint',value);

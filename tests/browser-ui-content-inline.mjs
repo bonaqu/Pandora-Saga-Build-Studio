@@ -1,4 +1,7 @@
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
+import {buildEditorialDefaultsManifest} from '../scripts/plan-editorial-d1-defaults.mjs';
 
 export async function runUIContentInlineSmoke(browser,base){
  const api='https://ps-build-studio-cloud.bonaqu.workers.dev';
@@ -86,6 +89,25 @@ export async function runUIContentInlineSmoke(browser,base){
  // Caption buttons intentionally defer owner-mode single clicks to distinguish
  // them from direct-text double clicks. Wait for the actual chosen chapter
  // and for that pending action to finish before typing into its search box.
+ // Give a named, source-specific failure with the current modal state.
+ const expectHonorCaption=async(selector,expected,label)=>{
+  try{
+   await page.waitForFunction(({selector,expected})=>
+    document.querySelector(selector)?.textContent===expected,
+    {selector,expected},{timeout:15000});
+  }catch(error){
+   const actual=await page.evaluate(selector=>{
+    const caption=document.querySelector(selector);
+    return {language:document.documentElement.lang,
+     text:caption?.textContent??null,
+     editing:Boolean(caption?.querySelector('[contenteditable]')),
+     honorOpen:Boolean(document.querySelector('.wiki-layout-honor')),
+     detailOpen:Boolean(document.querySelector('#detailPanel.is-open'))};
+   },selector);
+   throw new Error('Honor editorial '+label+' failed; expected='+
+    JSON.stringify(expected)+'; actual='+JSON.stringify(actual),{cause:error});
+  }
+ };
  const chooseWikiChapter=async key=>{
   const selector='[data-wiki-chapter="'+key+'"]';
   await page.locator(selector).click();
@@ -101,6 +123,56 @@ export async function runUIContentInlineSmoke(browser,base){
   // Never invoke owner keyboard actions before the native startup modal releases.
   await page.locator('#startupOverlay').waitFor({state:'hidden',timeout:30000});
   await page.locator('#nav [data-tab="wiki"]').waitFor({state:'visible'});
+
+  // Stage-only, verified bilingual D1 defaults can overlay this release's
+  // authored copy WITHOUT a network request, gameplay rerender, owner
+  // privilege, or altering the cloud overrides used by the real editor.
+  const manifest=buildEditorialDefaultsManifest();
+  const rows=manifest.records.map(r=>({...r}));
+  const changes=[
+   ['guideedit.wiki.labels','honor_victories_ru','Стадийные PvP победы'],
+   ['guideedit.wiki.labels','honor_victories_en','Staging PvP Victories'],
+   ['guideedit.honor.overview','overviewRu','Тестовое описание чести']
+  ];
+  for(const [key,field,value] of changes){
+   const row=rows.find(r=>r.recordKey===key&&r.field===field);
+   assert.ok(row,'Missing safe source-authored field for staged browser test');
+   row.value=value;
+  }
+  const digest=createHash('sha256').update(JSON.stringify({
+   schema:1,release:manifest.release,records:rows
+  })).digest('hex');
+  const staging={schema:1,release:manifest.release,records:rows,
+   sha256:digest,snapshot:manifest.release+'-'+digest.slice(0,16)};
+  const result=await page.evaluate(async payload=>{
+   const defaults=window.PandoraEditorialDefaults;
+   if(!defaults)return {moduleMissing:true};
+   const before=window.PandoraWikiLabels.value({},'honor','victories','ru');
+   const accepted=await defaults.installVerified(payload,payload.snapshot);
+   const stagedRu=window.PandoraWikiLabels.value({},'honor','victories','ru');
+   const stagedEn=window.PandoraWikiLabels.value({},'honor','victories','en');
+   const guide=window.PandoraHonorGuide.article({}).overview.overviewRu;
+   const bad=await defaults.installVerified({...payload,sha256:'0'.repeat(64)},
+    payload.snapshot);
+   const intact=window.PandoraWikiLabels.value({},'honor','victories','ru');
+   defaults.reset();
+   const restored=window.PandoraWikiLabels.value({},'honor','victories','ru');
+   return {before,accepted,stagedRu,stagedEn,guide,bad,intact,restored,
+    active:defaults.status().active};
+  },staging);
+  assert.equal(result.before,'Победы в PvP');
+  assert.equal(result.accepted,true);
+  assert.equal(result.stagedRu,'Стадийные PvP победы');
+  assert.equal(result.stagedEn,'Staging PvP Victories');
+  assert.equal(result.guide,'Тестовое описание чести');
+  assert.equal(result.bad,false);
+  assert.equal(result.intact,'Стадийные PvP победы');
+  assert.equal(result.restored,'Победы в PvP');
+  assert.equal(result.active,false);
+  assert.equal(Object.keys(values).length,0,
+   'Staged browser read must never create a mock admin D1 CAS override');
+  console.log('Chromium #390: pinned SHA-256 RU/EN defaults, bad snapshot and rollback passed');
+
   assert.equal(await page.locator('#nav .ui-content-pencil').count(),0,
    'Guest does not see editing controls');
   const published=await page.locator('meta[name="ps-studio-release"]')
@@ -219,6 +291,89 @@ export async function runUIContentInlineSmoke(browser,base){
   await longField.press('Escape');
   assert.equal(await page.locator('#stageHeading').innerText(),
    'Черновик после неподтверждённой записи');
+  // Holding a *nested action* must never borrow its parent caption editor.
+  await appearanceHeading.evaluate(el=>{
+   const button=document.createElement('button');
+   button.type='button';button.className='touch-owner-action-probe';
+   button.textContent='Action';el.append(button);
+  });
+  const nestedAction=appearanceHeading.locator('.touch-owner-action-probe');
+  await nestedAction.dispatchEvent('pointerdown',{
+   pointerType:'touch',isPrimary:true,button:0,clientX:12,clientY:20
+  });
+  await page.waitForTimeout(560);
+  assert.equal(await page.locator(
+   '.stage .panel-heading .ui-content-edit-host [contenteditable]').count(),0);
+  await nestedAction.dispatchEvent('pointerup',{pointerType:'touch',isPrimary:true});
+  await nestedAction.evaluate(el=>el.remove());
+  // Touch scrolling emits pointercancel; an unrelated synthetic document
+  // scroll (e.g. a popup repositioning) must NOT cancel the touch editor.
+  await appearanceHeading.dispatchEvent('pointerdown',{
+   pointerType:'touch',isPrimary:true,button:0,pointerId:17,clientX:12,clientY:20
+  });
+  await appearanceHeading.dispatchEvent('pointercancel',{
+   pointerType:'touch',isPrimary:true,button:0,pointerId:17
+  });
+  await page.waitForTimeout(530);
+  assert.equal(await page.locator(
+   '.stage .panel-heading .ui-content-edit-host [contenteditable]').count(),0);
+  await appearanceHeading.dispatchEvent('pointerdown',{
+   pointerType:'touch',isPrimary:true,button:0,pointerId:18,clientX:12,clientY:20
+  });
+  await appearanceHeading.dispatchEvent('pointermove',{
+   pointerType:'touch',isPrimary:true,button:0,pointerId:18,clientX:50,clientY:20
+  });
+  await page.waitForTimeout(530);
+  assert.equal(await page.locator(
+   '.stage .panel-heading .ui-content-edit-host [contenteditable]').count(),0);
+  await appearanceHeading.dispatchEvent('pointerup',{pointerType:'touch',isPrimary:true,pointerId:18});
+  // Multi-touch must never open an editor during pinch/zoom or panning.
+  await appearanceHeading.dispatchEvent('pointerdown',{
+   pointerType:'touch',isPrimary:true,button:0,pointerId:19,clientX:12,clientY:20
+  });
+  await appearanceHeading.dispatchEvent('pointerdown',{
+   pointerType:'touch',isPrimary:false,button:0,pointerId:20,clientX:12,clientY:20
+  });
+  await page.waitForTimeout(530);
+  assert.equal(await page.locator(
+   '.stage .panel-heading .ui-content-edit-host [contenteditable]').count(),0);
+  await appearanceHeading.dispatchEvent('pointercancel',{pointerType:'touch',pointerId:19});
+  // A simultaneous mouse pointer on a hybrid tablet cannot interrupt
+  // another still-held finger's authorial caption editor.
+  await appearanceHeading.dispatchEvent('pointerdown',{
+   pointerType:'touch',isPrimary:true,button:0,pointerId:32,clientX:12,clientY:20
+  });
+  await appearanceHeading.dispatchEvent('pointermove',{
+   pointerType:'mouse',isPrimary:true,button:0,pointerId:99,clientX:80,clientY:20
+  });
+  await appearanceHeading.dispatchEvent('pointerup',{
+   pointerType:'mouse',isPrimary:true,button:0,pointerId:99
+  });
+  await page.waitForTimeout(570);
+  const hybridTouch=page.locator(
+   '.stage .panel-heading .ui-content-edit-host [contenteditable]');
+  await hybridTouch.waitFor({state:'visible',timeout:6000});
+  await hybridTouch.press('Escape');
+  await appearanceHeading.dispatchEvent('pointerup',{
+   pointerType:'touch',isPrimary:true,pointerId:32
+  });
+  // Owner touch gesture is long-press only on a plain caption. A short tap
+  // must not replace a button click or expose the editor to a guest.
+  await appearanceHeading.dispatchEvent('pointerdown',{
+   pointerType:'touch',isPrimary:true,button:0,clientX:12,clientY:20
+  });
+  await page.waitForTimeout(570);
+  const touchHeading=page.locator(
+   '.stage .panel-heading .ui-content-edit-host [contenteditable]');
+  await touchHeading.waitFor({state:'visible',timeout:6000});
+  assert.equal(await touchHeading.textContent(),'Черновик после неподтверждённой записи');
+  const menuBlocked=await appearanceHeading.evaluate(el=>{
+   const menu=new MouseEvent('contextmenu',{bubbles:true,cancelable:true});
+   el.dispatchEvent(menu);return menu.defaultPrevented;
+  });
+  assert.equal(menuBlocked,true,'Native context menu must not hide an active touch editor');
+  await touchHeading.press('Escape');
+  await appearanceHeading.dispatchEvent('pointerup',{pointerType:'touch',isPrimary:true});
   await page.setViewportSize({width:1100,height:810});
   assert.equal(await page.locator('.right .panel-heading [data-ui-content-for="path"]').count(),0);
   assert.equal(await page.locator('.workspace>.left>.panel-heading [data-origin-edit-for="heading"]').count(),0);
@@ -231,11 +386,273 @@ export async function runUIContentInlineSmoke(browser,base){
   await page.locator('#hero').click();
   const firstGroup=page.locator('#stageBookPanel details.stage-result-section').first();
   await firstGroup.waitFor({state:'visible'});
+  // The author may rename the Book title, never the live 1/6 page counter.
+  const bookHeading=page.locator('#stageAttributes .stage-book-title-text[data-owner-copy-key]');
+  await bookHeading.waitFor({state:'visible'});
+  assert.equal(await bookHeading.innerText(),'КНИГА ГЕРОЯ');
+  assert.equal(await page.locator('#stageAttributes .stage-book-title-count').textContent(),' · 1 / 6');
+  const headingKey=await bookHeading.getAttribute('data-owner-copy-key');
+  const headingD1='guideedit.book.'+
+   await page.evaluate(key=>window.PandoraUILocale.fieldKey(key),headingKey);
+  await bookHeading.dblclick();
+  const headingInput=page.locator('#stageAttributes .stage-book-heading .account-copy-edit-host [contenteditable]');
+  await headingInput.fill('КНИГА ГЕРОЯ · QA');
+  await headingInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector('#stageAttributes .stage-book-title-text')
+   ?.textContent==='КНИГА ГЕРОЯ · QA',null,{timeout:15000});
+  assert.equal(JSON.parse(values[headingD1]).ru,'КНИГА ГЕРОЯ · QA');
+  assert.equal(await page.locator('#stageAttributes .stage-book-title-count').textContent(),' · 1 / 6');
+  // Interactive captions are editable with a long press, but a synthetic
+  // post-touch click must not navigate, change the current page or save a
+  // different chapter. Short taps keep the original navigation.
+  const tabCaption=page.locator(
+   '#stageAttributes [data-book-page="defense"] .stage-book-tab-copy');
+  await tabCaption.dispatchEvent('pointerdown',{
+   pointerType:'touch',isPrimary:true,button:0,pointerId:71,clientX:18,clientY:18
+  });
+  await page.waitForTimeout(570);
+  const tabTouch=tabCaption.locator('[contenteditable]');
+  await tabTouch.waitFor({state:'visible',timeout:6000});
+  assert.equal(await page.locator('#stageBookPanel').getAttribute('data-book-visible'),'summary');
+  // A click on another element (e.g. focus restoration or hybrid mouse)
+  // must not consume suppression for the pending synthetic touch click.
+  const unrelatedClicks=await tabCaption.evaluate(el=>{
+   const unrelated=document.createElement('button');
+   unrelated.type='button';unrelated.textContent='Unrelated action';
+   el.ownerDocument.body.append(unrelated);
+   let fired=0;unrelated.addEventListener('click',()=>fired++);
+   unrelated.click();unrelated.remove();return fired;
+  });
+  assert.equal(unrelatedClicks,1,'Unrelated clicks are not blocked by touch editor');
+  await tabCaption.dispatchEvent('click',{bubbles:true,cancelable:true,detail:1});
+  assert.equal(await page.locator('#stageBookPanel').getAttribute('data-book-visible'),'summary',
+   'Unrelated click must not consume delayed synthetic tab suppression');
+  await tabTouch.press('Escape');
+  await tabCaption.dispatchEvent('pointerup',{pointerType:'touch',isPrimary:true,pointerId:71});
+  await page.locator('#stageAttributes [data-book-page="defense"]').click();
+  await page.locator('#stageBookPanel[data-book-visible="defense"]')
+   .waitFor({state:'visible',timeout:15000});
+  await page.locator('#stageAttributes [data-book-page="summary"]').click();
+  await page.locator('#stageBookPanel[data-book-visible="summary"]')
+   .waitFor({state:'visible',timeout:15000});
+  // HTML label = an action. A hold edits the author's RU/EN caption, not
+  // the current character's mounted checkbox. Normal clicks still toggle.
+  await page.locator('#stageAttributes [data-book-page="attack"]').click();
+  await page.locator('#stageBookPanel[data-book-visible="attack"]')
+   .waitFor({state:'visible',timeout:15000});
+  const mountedLabel=page.locator('#stageBookPanel .stage-mounted-label');
+  const mountedCheck=page.locator('#stageBookMountedToggle');
+  await mountedLabel.waitFor({state:'visible',timeout:10000});
+  const beforeMounted=await mountedCheck.isChecked();
+  await mountedLabel.dispatchEvent('pointerdown',{
+   pointerType:'touch',isPrimary:true,button:0,pointerId:82,
+   clientX:18,clientY:18
+  });
+  await page.waitForTimeout(570);
+  const mountedTouch=mountedLabel.locator('[contenteditable]');
+  await mountedTouch.waitFor({state:'visible',timeout:6000});
+  await mountedLabel.dispatchEvent('click',{bubbles:true,cancelable:true,detail:1});
+  assert.equal(await mountedCheck.isChecked(),beforeMounted,
+   'A touch editor must not toggle a gameplay setting');
+  await mountedTouch.press('Escape');
+  await mountedLabel.dispatchEvent('pointerup',{
+   pointerType:'touch',isPrimary:true,pointerId:82
+  });
+  await mountedLabel.click();
+  await page.waitForFunction(previous=>
+   document.querySelector('#stageBookMountedToggle')?.checked!==previous,
+   beforeMounted,{timeout:15000});
+  await mountedLabel.click();
+  await page.waitForFunction(previous=>
+   document.querySelector('#stageBookMountedToggle')?.checked===previous,
+   beforeMounted,{timeout:15000});
+
+  // A dynamic enhancement counter and its independent bilingual caption
+  // must never share an editable source value. Check real owner D1 CAS and
+  // the native disclosure guard without changing a character buff.
+  await page.locator('#stageAttributes [data-book-page="buffs"]').click();
+  await page.locator('#stageBookPanel[data-book-visible="buffs"]')
+   .waitFor({state:'visible',timeout:15000});
+  const overview=page.locator('#stageBookPanel .stage-buff-overview');
+  await overview.waitFor({state:'visible'});
+  const originalCount=await overview.locator('strong').innerText();
+  const buffCaption=overview.locator('span[data-owner-copy-key]').first();
+  assert.equal(await buffCaption.innerText(),'Выбранные усиления');
+  const buffKey=await buffCaption.getAttribute('data-owner-copy-key');
+  const buffD1='guideedit.book.'+
+   await page.evaluate(key=>window.PandoraUILocale.fieldKey(key),buffKey);
+  await buffCaption.dblclick();
+  const buffEditor=overview.locator('.account-copy-edit-host [contenteditable]');
+  await buffEditor.waitFor({state:'visible'});
+  await buffEditor.fill('Активные усиления QA');
+  await buffEditor.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#stageBookPanel .stage-buff-overview > span')?.textContent==='Активные усиления QA',
+   null,{timeout:15000});
+  assert.equal(JSON.parse(values[buffD1]).ru,'Активные усиления QA');
+  assert.equal(await overview.locator('strong').innerText(),originalCount);
+  assert.equal(await overview.locator('.account-copy-pencil').count(),0);
+  const guildLabel=page.locator('#stageBookPanel summary [data-guide-key="buffs.guild"]').first();
+  await guildLabel.waitFor({state:'visible',timeout:15000});
+  const guildSummary=guildLabel.locator('xpath=ancestor::summary[1]');
+  const guildDisclosure=guildSummary.locator('xpath=..');
+  const wasOpen=await guildDisclosure.evaluate(node=>node.open);
+  await guildLabel.dblclick();
+  await guildLabel.locator('[contenteditable]').waitFor({state:'visible'});
+  assert.equal(await guildDisclosure.evaluate(node=>node.open),wasOpen,
+   'Double-clicking the owner caption must not toggle its guild disclosure');
+  await guildLabel.locator('[contenteditable]').press('Escape');
+  await guildSummary.locator('.stage-result-symbol').click();
+  await page.waitForFunction(previous=>{
+   const summary=document.querySelector('#stageBookPanel summary [data-guide-key="buffs.guild"]')
+    ?.closest('summary');
+   return summary?.parentElement?.open!==previous;
+  },wasOpen,{timeout:5000});
+  assert.equal(await overview.locator('strong').innerText(),originalCount);
+
+  // Honor's native summary contains TWO independent owner captions.
+  // Both must edit without toggling that same disclosure, and the second
+  // caption must not be silently ignored by a guard bound to the first.
+  const honorTitle=page.locator(
+   '#stageBookPanel summary [data-guide-key="buffs.section.honor"]');
+  const honorTerm=page.locator(
+   '#stageBookPanel summary [data-guide-key="buffs.honor"]');
+  await honorTitle.waitFor({state:'visible',timeout:15000});
+  await honorTerm.waitFor({state:'visible',timeout:15000});
+  const honorSummary=honorTerm.locator('xpath=ancestor::summary[1]');
+  const honorDisclosure=honorSummary.locator('xpath=..');
+  const honorWasOpen=await honorDisclosure.evaluate(node=>node.open);
+  assert.equal(await honorTitle.innerText(),'Честь');
+  assert.equal(await honorTerm.innerText(),'пассивное умение');
+  await honorTitle.dblclick();
+  const honorTitleEditor=honorTitle.locator('[contenteditable]');
+  await honorTitleEditor.waitFor({state:'visible'});
+  assert.equal(await honorDisclosure.evaluate(node=>node.open),honorWasOpen);
+  await honorTitleEditor.press('Escape');
+  await honorTerm.dblclick();
+  const honorTermEditor=honorTerm.locator('[contenteditable]');
+  await honorTermEditor.waitFor({state:'visible'});
+  assert.equal(await honorDisclosure.evaluate(node=>node.open),honorWasOpen);
+  await honorTermEditor.fill('пассивная способность QA');
+  await honorTermEditor.press('Tab');
+  await page.waitForFunction(()=>
+   document.querySelector('#stageBookPanel summary [data-guide-key="buffs.honor"]')
+    ?.textContent==='пассивная способность QA',null,{timeout:15000});
+  assert.equal(JSON.parse(values['guideedit.book.buffs.honor']).ru,
+   'пассивная способность QA');
+  assert.equal(await honorDisclosure.evaluate(node=>node.open),honorWasOpen,
+   'Editing either of two captions must preserve one native disclosure state');
+  assert.equal(await honorSummary.locator('.stage-guide-edit-name').count(),0);
+
+  // Deterministic DOM-only source-events fixture: the real renderer, no
+  // live Worker or invented gameplay effect, isolates the published count
+  // from the older stable Book D1 copy key in an actionable native summary.
+  const procStructure=await page.evaluate(()=>{
+   const host=document.createElement('div');document.body.append(host);
+   try{
+    window.PandoraStageAttributes.render(host,{
+     page:'attack',items:[],
+     modifiers:{specialEquipment:{entries:[{
+      code:'EP_ONHIT_EDITORIAL_TEST',source:'Fixture item',
+      ru:'Synthetic effect',en:'Synthetic effect'
+     }]}}
+    });
+    const row=host.querySelector('.stage-source-events');
+    const label=row?.querySelector('summary .stage-source-events-caption');
+    return {label:label?.textContent,key:label?.dataset.ownerCopyKey,
+     count:row?.querySelector('summary .stage-book-live-count')?.textContent,
+     source:row?.querySelector('p')?.textContent,
+     numberOfRows:row?.querySelectorAll('p').length};
+   }finally{host.remove()}
+  });
+  assert.equal(procStructure.label,'Срабатывания предметов и душ');
+  assert.match(procStructure.key||'',/^book-/);
+  assert.equal(procStructure.count,' · 1');
+  assert.equal(procStructure.source,'Fixture item · Synthetic effect');
+  assert.equal(procStructure.numberOfRows,1);
+  assert.equal(await overview.locator('strong').innerText(),originalCount,
+   'A separate Book fixture cannot mutate the real hero buffs');
+
+  // Source-only range fixture: the real Book renderer has two separate
+  // editorial languages and numerically identical values. Never impersonate
+  // a real OS skill, write D1, or localize unknown source skill identities.
+  const rangeFixtures=await page.evaluate(()=>{
+   const old=document.documentElement.lang,results=[];
+   try{
+    for(const language of ['ru','en']){
+     document.documentElement.lang=language;
+     const host=document.createElement('div');document.body.append(host);
+     const edits=[];
+     try{
+      window.PandoraStageAttributes.render(host,{
+       page:'attack',items:[],canEdit:true,
+       modifiers:{skillAttackRange:{rows:[{
+        id:910000001,name:'QA source skill',sourceBonus:42,
+        sourceConstant:20,sourceMasteryPart:22,
+        mode:'toggle',available:false,
+        reasonRu:'Требуется мастерство QA',
+        reasonEn:'Requires mastery QA'
+       }]}},
+       gameTerms:{skills:{'910000001':{id:910000001,name:'QA source skill'}},
+        branchLabels:{archery:'Стрельба'},englishBranches:{archery:'Archery'}},
+       onTextEdit:(_node,key,field,label)=>edits.push({key,field,label})
+      });
+      const row=host.querySelector('[data-range-skill="910000001"]');
+      const bonus=row?.querySelector('.stage-skill-range-bonus .stage-skill-range-editorial');
+      bonus?.dispatchEvent(new MouseEvent('dblclick',{
+       bubbles:true,cancelable:true,detail:2}));
+      results.push({
+       language,
+       bonus:bonus?.textContent,
+       value:row?.querySelector('.stage-skill-range-bonus-value')?.textContent,
+       sourceValue:row?.querySelector('.stage-skill-range-source-value')?.textContent,
+       masteryValue:row?.querySelector('.stage-skill-range-mastery-value')?.textContent,
+       sourceName:row?.querySelector('.stage-effect-skill-label')?.textContent,
+       branch:row?.querySelector('.stage-skill-range-source-branch')?.textContent,
+       reason:row?.querySelector('.stage-skill-range-source-reason')?.textContent,
+       hintPencils:row?.querySelectorAll('.stage-guide-edit-hint').length,
+       edits
+      });
+     }finally{host.remove()}
+    }
+   }finally{document.documentElement.lang=old}
+   return results;
+  });
+  assert.deepEqual(rangeFixtures.map(x=>[x.language,x.bonus,x.branch,x.reason]),[
+   ['ru','Прибавка к дальности','Стрельба','Требуется мастерство QA'],
+   ['en','Range bonus','Archery','Requires mastery QA']
+  ]);
+  for(const [i,result] of rangeFixtures.entries()){
+   assert.equal(result.value,'+42');
+   assert.equal(result.sourceValue,'+20');
+   assert.equal(result.masteryValue,'+22');
+   assert.equal(result.sourceName,'QA source skill');
+   assert.equal(result.hintPencils,0);
+   assert.deepEqual(result.edits,[{key:'attack.skillRange.bonus',
+    field:i===0?'ru':'en',label:i===0?'Прибавка к дальности':'Range bonus'}]);
+  }
+
+  await page.locator('#stageAttributes [data-book-page="summary"]').click();
+  await page.locator('#stageBookPanel[data-book-visible="summary"]')
+   .waitFor({state:'visible',timeout:15000});
   const groupTitle=firstGroup.locator('summary [data-guide-key="summary.group.0"]');
   // A group title has no independent hover hint. The correct owner UI must
   // NOT synthesize a pencil simply because its visible caption is editable.
   assert.equal(await firstGroup.locator('summary .stage-guide-edit-hint').count(),0,
    'A group heading without a real hover explanation has no pencil');
+  // A summary text label has its own authorial D1 field. Holding it edits
+  // that field without toggling the native disclosure on touch release.
+  await groupTitle.dispatchEvent('pointerdown',{
+   pointerType:'touch',isPrimary:true,button:0,pointerId:72,clientX:18,clientY:18
+  });
+  await page.waitForTimeout(570);
+  const groupTouch=groupTitle.locator('[contenteditable]');
+  await groupTouch.waitFor({state:'visible',timeout:6000});
+  const groupWasOpen=await firstGroup.getAttribute('open');
+  await groupTitle.dispatchEvent('click',{bubbles:true,cancelable:true,detail:1});
+  assert.equal(await firstGroup.getAttribute('open'),groupWasOpen);
+  await groupTouch.press('Escape');
+  await groupTitle.dispatchEvent('pointerup',{pointerType:'touch',isPrimary:true,pointerId:72});
   const stat=firstGroup.locator('.stage-result-grid [data-guide-key="summary.0"]');
   assert.equal(await stat.count(),1,'The first result is the source-backed health stat');
   assert.match(await stat.innerText(),/ОЗ|HP/);
@@ -243,6 +660,16 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(await statHint.locator('.stage-guide-edit-hint').count(),1,
    'The real hover explanation of health keeps precisely one hint pencil');
   assert.equal(await statHint.locator('.stage-guide-edit-name').count(),0);
+  await stat.dispatchEvent('pointerdown',{
+   pointerType:'touch',isPrimary:true,button:0,clientX:17,clientY:19
+  });
+  await page.waitForTimeout(570);
+  const bookTouchEdit=stat.locator('[contenteditable]');
+  await bookTouchEdit.waitFor({state:'visible',timeout:6000});
+  await bookTouchEdit.press('Escape');
+  await stat.dispatchEvent('pointerup',{pointerType:'touch',isPrimary:true});
+  assert.equal(await statHint.locator('.stage-guide-edit-hint').count(),1,
+   'Touch caption editing must not create a second pencil or rewrite a hover hint');
   await statHint.locator('.stage-guide-edit-hint').click();
   const bookHint=stat.locator('[contenteditable]');
   await bookHint.fill('Не терять черновик при повторном двойном клике');
@@ -306,6 +733,45 @@ export async function runUIContentInlineSmoke(browser,base){
   });
   await failedBook.press('Escape');
   assert.equal(await stat.locator('[data-owner-text-field]').count(),0);
+  // A formerly hard-coded explanation beside live EXP values is now one
+  // directly editable D1 label, without a redundant pencil or numeric edit.
+  await page.locator('#stageAttributes [data-book-page="defense"]').click();
+  await page.locator('#stageBookPanel[data-book-visible="defense"]')
+   .waitFor({state:'visible',timeout:15000});
+  const expDetails=page.locator('#stageBookPanel .stage-experience-effects');
+  await expDetails.locator('summary').click();
+  const noExp=expDetails.locator('p.stage-attribute-note[data-owner-copy-key]');
+  await noExp.waitFor({state:'visible',timeout:15000});
+  assert.equal(await noExp.innerText(),'Сейчас нет активных бонусов к опыту.');
+  assert.equal(await expDetails.locator('.account-copy-pencil').count(),0);
+  const expKey=await noExp.getAttribute('data-owner-copy-key');
+  assert.match(expKey,/^book-/);
+  const expD1='guideedit.book.'+
+   await page.evaluate(key=>window.PandoraUILocale.fieldKey(key),expKey);
+  await noExp.dblclick();
+  const expInput=expDetails.locator('.account-copy-edit-host [contenteditable]');
+  await expInput.fill('Бонусы опыта сейчас не действуют.');
+  await expInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#stageBookPanel .stage-experience-effects p.stage-attribute-note')?.textContent===
+   'Бонусы опыта сейчас не действуют.',null,{timeout:15000});
+  assert.equal(JSON.parse(values[expD1]).ru,'Бонусы опыта сейчас не действуют.');
+  await page.locator('#locale [data-locale="en"]').click();
+  await page.waitForFunction(()=>document.documentElement.lang==='en');
+  const expEnglish=page.locator('#stageBookPanel .stage-experience-effects p.stage-attribute-note[data-owner-copy-key]');
+  assert.equal(await expEnglish.innerText(),'No experience bonuses are currently active.');
+  await expEnglish.dblclick();
+  const expEnInput=page.locator('#stageBookPanel .stage-experience-effects .account-copy-edit-host [contenteditable]');
+  await expEnInput.fill('No EXP bonus is active for this build.');
+  await expEnInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#stageBookPanel .stage-experience-effects p.stage-attribute-note')?.textContent===
+   'No EXP bonus is active for this build.',null,{timeout:15000});
+  assert.deepEqual(JSON.parse(values[expD1]),{
+   ru:'Бонусы опыта сейчас не действуют.',en:'No EXP bonus is active for this build.'
+  });
+  await page.locator('#locale [data-locale="ru"]').click();
+  await page.waitForFunction(()=>document.documentElement.lang==='ru');
   await page.locator('#stageAttributes .stage-book-close').click();
   const wiki=page.locator('#nav [data-i18n="wiki"]');
   await wiki.waitFor({state:'visible'});
@@ -426,6 +892,297 @@ export async function runUIContentInlineSmoke(browser,base){
    {timeout:15000});
   assert.equal(JSON.parse(values['guideedit.book.wiki-ui.os-patch420007101']).ru,
    'Усиленная версия с сокращённой подготовкой и повышенным уроном.');
+  // The verified Hymn has a static, source-gated explanation. The name, ID,
+  // link chain, gameplay values and account state are not editor copy.
+  const hymn=JSON.parse(readFileSync(new URL('../data/os/skills.json',import.meta.url),
+   'utf8'))['340004001'];
+  assert.ok(hymn?.name,'The tested hymn must originate from the catalog');
+  await page.locator('#dockClose').click();
+  await page.locator('#detailPanel.is-open').waitFor({state:'hidden',timeout:15000});
+  await wiki.click();
+  await page.locator('#detailPanel.is-open').waitFor({state:'visible',timeout:15000});
+  await chooseWikiChapter('skill');
+  await search.click();
+  await search.fill(hymn.name);
+  const hymnRecord=page.locator('[data-wiki-record="340004001"]');
+  await hymnRecord.waitFor({state:'visible',timeout:25000});
+  await hymnRecord.click();
+  const hymnCaption=page.locator(
+   '.wiki-skill-source-insight p.wiki-description [data-owner-copy-id="osSourceHymn340004001"]');
+  await hymnCaption.waitFor({state:'visible',timeout:15000});
+  assert.equal(await page.locator('.wiki-skill-source-insight .wiki-owner-pencil').count(),0,
+   'Static source notes edit by direct click, not a spare caption pencil');
+  const originalHymn=await hymnCaption.innerText();
+  assert.match(originalHymn,/стихийн|стихийн|стихийный|стихийного|стихийный урон/i);
+  await hymnCaption.dblclick();
+  const hymnEditor=page.locator('.wiki-skill-source-insight [contenteditable]').first();
+  await hymnEditor.fill('Подтверждённое описание песни · QA');
+  await hymnEditor.press('Tab');
+  await page.waitForFunction(()=>
+   document.querySelector('.wiki-skill-source-insight [data-owner-copy-id="osSourceHymn340004001"]')
+    ?.textContent==='Подтверждённое описание песни · QA',null,{timeout:15000});
+  const hymnD1='guideedit.book.wiki-ui.os-source-hymn340004001';
+  assert.equal(JSON.parse(values[hymnD1]).ru,'Подтверждённое описание песни · QA');
+  assert.ok(writes.some(x=>x.key===hymnD1&&x.expectedValue===null),
+   'The source-gated owner note uses the same CAS handshake as other labels');
+  const skillSourceHeading=page.locator(
+   '.wiki-skill-source-insight h4[data-owner-copy-id="sourceSkillEffectsHeading"]');
+  assert.equal(await skillSourceHeading.innerText(),'Действие умения');
+  await skillSourceHeading.dblclick();
+  const sourceHeadingInput=page.locator('.wiki-skill-source-insight [contenteditable]').first();
+  await sourceHeadingInput.fill('Действие умения · QA');
+  await sourceHeadingInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '.wiki-skill-source-insight h4[data-owner-copy-id="sourceSkillEffectsHeading"]')
+   ?.textContent==='Действие умения · QA',null,{timeout:15000});
+  assert.equal(JSON.parse(values['guideedit.book.wiki-ui.source-skill-effects-heading']).ru,
+   'Действие умения · QA');
+  // The role label is independently editable; the actual wiki links and
+  // verified chain IDs must remain unchanged after the D1 CAS save.
+  const areaRole=page.locator(
+   '.wiki-skill-source-chain [data-owner-copy-id="sourceAreaRole"]').first();
+  await areaRole.waitFor({state:'visible',timeout:15000});
+  const linksBefore=await page.locator('.wiki-skill-source-chain a[href]')
+   .evaluateAll(nodes=>nodes.map(node=>node.getAttribute('href')));
+  assert.ok(linksBefore.length>=3,'The Hymn still has its verified root/area/target chain');
+  await areaRole.dblclick();
+  const roleInput=page.locator('.wiki-skill-source-chain [contenteditable]').first();
+  await roleInput.fill('Зона влияния:');
+  await roleInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '.wiki-skill-source-chain [data-owner-copy-id="sourceAreaRole"]')
+   ?.textContent==='Зона влияния:',null,{timeout:15000});
+  assert.equal(JSON.parse(values['guideedit.book.wiki-ui.source-area-role']).ru,
+   'Зона влияния:');
+  assert.deepEqual(await page.locator('.wiki-skill-source-chain a[href]')
+   .evaluateAll(nodes=>nodes.map(node=>node.getAttribute('href'))),linksBefore);
+  // The Honor PvP table headings are authorial copy, but rewards and rank
+  // counts are game data. Verify direct editing on the real owner surface.
+  await page.locator('#dockClose').click();
+  await wiki.click();
+  await search.click();
+  await search.fill('');
+  await chooseWikiChapter('honor');
+  const honorPane=page.locator('.wiki-page');
+  const tableHead=honorPane.locator(
+   '.wiki-honor-pvp-label[data-owner-copy-id="pvpDailyHeading"]');
+  await tableHead.waitFor({state:'visible',timeout:20000});
+  const rewardsBefore=await honorPane.locator('#honor-victories .wiki-honor-pvp-table tbody')
+   .first().innerText();
+  assert.equal(await tableHead.innerText(),'Ежедневные награды');
+  assert.equal(await honorPane.locator('.wiki-honor-pvp-group .wiki-honor-copy-pencil').count(),0);
+  await tableHead.dblclick();
+  const tableInput=honorPane.locator('.wiki-honor-pvp-label [contenteditable]').first();
+  await tableInput.fill('Награды за сутки');
+  await tableInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '.wiki-honor-pvp-label[data-owner-copy-id="pvpDailyHeading"]')
+   ?.textContent==='Награды за сутки',null,{timeout:15000});
+  const honorD1='guideedit.book.honor-view.pvp-daily-heading';
+  assert.equal(JSON.parse(values[honorD1]).ru,'Награды за сутки');
+  assert.equal(await honorPane.locator('#honor-victories .wiki-honor-pvp-table tbody')
+   .first().innerText(),rewardsBefore,
+   'Editing a header must not mutate the game reward table');
+  // Previously the client offered this PvP paragraph editor but the actual
+  // Worker rejected its pvpIntroRu/En fields as unknown Honor overview keys.
+  const victoryIntro=honorPane.locator(
+   '#honor-victories .wiki-honor-field-edit-row p.wiki-honor-copy').first();
+  await victoryIntro.waitFor({state:'visible',timeout:12000});
+  await victoryIntro.dblclick();
+  const introInput=honorPane.locator(
+   '#honor-victories .wiki-honor-field-edit-row [contenteditable]').first();
+  await introInput.waitFor({state:'visible'});
+  await introInput.fill('Официальное описание события PvP · QA.');
+  await introInput.press('Tab');
+  await expectHonorCaption('#honor-victories .wiki-honor-copy',
+   'Официальное описание события PvP · QA.','RU PvP introduction');
+  assert.equal(JSON.parse(values['guideedit.honor.overview']).pvpIntroRu,
+   'Официальное описание события PvP · QA.');
+  assert.equal(await honorPane.locator('#honor-victories .wiki-honor-pvp-table tbody')
+   .first().innerText(),rewardsBefore,
+   'Editing event intro copy cannot rewrite source reward values');
+  const sectionsCaption=page.locator(
+   '.wiki-layout-honor .wiki-honor-sections-label [data-owner-copy-id="sectionsHeading"]');
+  assert.equal(await sectionsCaption.textContent(),'Разделы');
+  assert.equal(await page.locator('.wiki-layout-honor .wiki-honor-live-count').textContent(),' · 5');
+  await sectionsCaption.dblclick();
+  const sectionsInput=page.locator('.wiki-layout-honor .wiki-honor-sections-label [contenteditable]');
+  await sectionsInput.fill('Категории');
+  await sectionsInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '.wiki-honor-sections-label [data-owner-copy-id="sectionsHeading"]')
+   ?.textContent==='Категории',null,{timeout:15000});
+  assert.equal(JSON.parse(values['guideedit.book.honor-view.sections-heading']).ru,'Категории');
+  assert.equal(await page.locator('.wiki-layout-honor .wiki-honor-live-count').textContent(),' · 5');
+  // The left navigation shares the actual Wiki honor label with its chapter,
+  // so a second title registry or an editable nav ID must never appear.
+  const honorNav=page.locator(
+   '.wiki-layout-honor [data-honor-section="overview"] .wiki-honor-nav-caption');
+  assert.equal(await honorNav.textContent(),'Система чести');
+  await honorNav.dblclick();
+  const honorNavInput=page.locator(
+   '.wiki-layout-honor [data-honor-section="overview"] [contenteditable]');
+  await honorNavInput.fill('Правила чести');
+  await honorNavInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '.wiki-layout-honor [data-honor-section="overview"] .wiki-honor-nav-caption')
+   ?.textContent==='Правила чести',null,{timeout:15000});
+  assert.equal(JSON.parse(values['guideedit.wiki.labels']).honor_overview_ru,'Правила чести');
+  assert.equal(await honorPane.locator('#honor-victories').count(),1,
+   'A double-click in the chapter menu must not navigate away from Honor');
+  // The fifth known Wiki Honor chapter is also legal on the actual Worker.
+  // Previously its owner CAS save could be rejected as an unknown label.
+  const victoryNav=page.locator(
+   '.wiki-layout-honor [data-honor-section="victories"] .wiki-honor-nav-caption');
+  await victoryNav.waitFor({state:'visible'});
+  assert.equal(await victoryNav.innerText(),'Победы в PvP');
+  await victoryNav.dblclick();
+  const victoryEditor=page.locator(
+   '.wiki-layout-honor [data-honor-section="victories"] [contenteditable]');
+  await victoryEditor.fill('Победы героев PvP');
+  await victoryEditor.press('Tab');
+  await expectHonorCaption(
+   '.wiki-layout-honor [data-honor-section="victories"] .wiki-honor-nav-caption',
+   'Победы героев PvP','RU PvP navigation');
+  assert.equal(JSON.parse(values['guideedit.wiki.labels']).honor_victories_ru,
+   'Победы героев PvP');
+  assert.equal(await page.locator('.wiki-honor-live-count').textContent(),' · 5');
+  // The Wiki detail is aria-modal and covers the pointer target. Exercise
+  // the existing keyboard locale path without bypassing the modal with force.
+  await page.locator('#locale [data-locale="en"]').focus();
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(()=>document.documentElement.lang==='en');
+  const victoryEnglish=page.locator(
+   '.wiki-layout-honor [data-honor-section="victories"] .wiki-honor-nav-caption');
+  await victoryEnglish.waitFor({state:'visible',timeout:15000});
+  assert.equal(await victoryEnglish.innerText(),'PvP Victories');
+  await victoryEnglish.dblclick();
+  const victoryEnglishInput=page.locator(
+   '.wiki-layout-honor [data-honor-section="victories"] [contenteditable]');
+  await victoryEnglishInput.fill('Hero PvP Victories');
+  await victoryEnglishInput.press('Tab');
+  await expectHonorCaption(
+   '.wiki-layout-honor [data-honor-section="victories"] .wiki-honor-nav-caption',
+   'Hero PvP Victories','EN PvP navigation');
+  const englishIntro=page.locator(
+   '#honor-victories .wiki-honor-field-edit-row p.wiki-honor-copy').first();
+  await englishIntro.dblclick();
+  const englishIntroInput=page.locator(
+   '#honor-victories .wiki-honor-field-edit-row [contenteditable]').first();
+  await englishIntroInput.fill('Verified PvP event introduction · QA.');
+  await englishIntroInput.press('Tab');
+  await expectHonorCaption('#honor-victories .wiki-honor-copy',
+   'Verified PvP event introduction · QA.','EN PvP introduction');
+  assert.deepEqual(JSON.parse(values['guideedit.honor.overview']),{
+   pvpIntroRu:'Официальное описание события PvP · QA.',
+   pvpIntroEn:'Verified PvP event introduction · QA.'
+  });
+  assert.deepEqual(JSON.parse(values['guideedit.wiki.labels']),{
+   honor_overview_ru:'Правила чести',honor_victories_ru:'Победы героев PvP',
+   honor_victories_en:'Hero PvP Victories'
+  });
+  await page.locator('#locale [data-locale="ru"]').focus();
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(()=>document.documentElement.lang==='ru');
+  await expectHonorCaption(
+   '.wiki-layout-honor [data-honor-section="victories"] .wiki-honor-nav-caption',
+   'Победы героев PvP','RU PvP navigation');
+  assert.equal(await page.locator('.wiki-honor-live-count').textContent(),' · 5');
+  // Rank requirements that come from numeric records must never be editable
+  // as one paragraph. Edit only their authorial words (same CAS/Undo store).
+  // Existing custom requirement fields remain separately editable for
+  // backward compatibility with pre-#390 Honor overrides.
+  const rankReq=honorPane.locator('#honor-rank-2 .wiki-honor-requirement');
+  const immutableNumbers=rankReq.locator('.wiki-honor-runtime-value');
+  const beforeThresholds=await immutableNumbers.allTextContents();
+  assert.equal(beforeThresholds.length,2);
+  assert.equal(beforeThresholds[0].replace(/\D/g,''),'3000');
+  assert.equal(beforeThresholds[1].replace(/\D/g,''),'20000');
+  assert.equal(await rankReq.locator('.wiki-honor-direct-pencil').count(),0);
+  const rankLead=rankReq.locator('[data-owner-copy-id="rankReqPointsLead"]');
+  await rankLead.dblclick();
+  const rankEditor=rankLead.locator('[contenteditable]');
+  await rankEditor.fill('Для ранга требуется');
+  await rankEditor.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#honor-rank-2 [data-owner-copy-id="rankReqPointsLead"]')
+   ?.textContent==='Для ранга требуется',null,{timeout:15000});
+  const rankCaptionKey='guideedit.book.honor-view.rank-req-points-lead';
+  assert.equal(JSON.parse(values[rankCaptionKey]).ru,'Для ранга требуется');
+  assert.deepEqual(await immutableNumbers.allTextContents(),beforeThresholds);
+  // An English edit must not replace the Russian value or any live number.
+  await page.locator('#locale [data-locale="en"]').focus();
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(()=>document.documentElement.lang==='en');
+  const enRank=page.locator('#honor-rank-2 .wiki-honor-requirement');
+  const enNumbers=enRank.locator('.wiki-honor-runtime-value');
+  assert.deepEqual((await enNumbers.allTextContents()).map(s=>s.replace(/\D/g,'')),
+   ['3000','20000']);
+  const enRankLead=enRank.locator('[data-owner-copy-id="rankReqPointsLead"]');
+  await enRankLead.focus();
+  await page.keyboard.press('F2');
+  const enRankEditor=enRankLead.locator('[contenteditable]');
+  await enRankEditor.fill('This rank requires');
+  await enRankEditor.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#honor-rank-2 [data-owner-copy-id="rankReqPointsLead"]')
+   ?.textContent==='This rank requires',null,{timeout:15000});
+  assert.deepEqual(JSON.parse(values[rankCaptionKey]),{
+   ru:'Для ранга требуется',en:'This rank requires'
+  });
+  assert.deepEqual((await enNumbers.allTextContents()).map(s=>s.replace(/\D/g,'')),
+   ['3000','20000']);
+  await page.locator('#locale [data-locale="ru"]').focus();
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(()=>document.documentElement.lang==='ru');
+  assert.equal(await page.locator(
+   '#honor-rank-2 [data-owner-copy-id="rankReqPointsLead"]').textContent(),
+   'Для ранга требуется');
+  assert.deepEqual((await page.locator(
+   '#honor-rank-2 .wiki-honor-runtime-value').allTextContents())
+   .map(s=>s.replace(/\D/g,'')),['3000','20000']);
+  // A CAS conflict cannot replace the verified numerical requirements or
+  // discard the exact draft. Undo should remove the latest EN translation
+  // without reverting the already saved RU translation.
+  const ruRankLead=page.locator('#honor-rank-2 [data-owner-copy-id="rankReqPointsLead"]');
+  nextConflicts.add(rankCaptionKey);
+  await ruRankLead.dblclick();
+  const rankDraft=ruRankLead.locator('[contenteditable]');
+  await rankDraft.fill('Неопубликованный черновик требования ранга');
+  await rankDraft.press('Tab');
+  await ruRankLead.locator('.ui-content-inline-error').waitFor({state:'visible',timeout:15000});
+  assert.equal(await rankDraft.textContent(),'Неопубликованный черновик требования ранга');
+  assert.equal(JSON.parse(values[rankCaptionKey]).ru,'Для ранга требуется');
+  assert.deepEqual((await page.locator('#honor-rank-2 .wiki-honor-runtime-value')
+   .allTextContents()).map(s=>s.replace(/\D/g,'')),['3000','20000']);
+  await rankDraft.press('Escape');
+  assert.equal(await ruRankLead.textContent(),'Для ранга требуется');
+  if(await page.locator('#ownerDock').evaluate(el=>el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
+  await page.locator('#ownerDock [data-owner-undo]').click();
+  let revertedRankEnglish=false;
+  for(let check=0;check<120;check++){
+   const value=values[rankCaptionKey];
+   if(value&&JSON.parse(value).en===undefined){revertedRankEnglish=true;break}
+   await page.waitForTimeout(50);
+  }
+  assert.ok(revertedRankEnglish,'Undo must restore the previous bilingual D1 record');
+  assert.equal(JSON.parse(values[rankCaptionKey]).ru,'Для ранга требуется');
+  assert.deepEqual((await page.locator('#honor-rank-2 .wiki-honor-runtime-value')
+   .allTextContents()).map(s=>s.replace(/\D/g,'')),['3000','20000']);
+  if(await page.locator('#ownerDock [data-owner-collapse]').getAttribute('aria-expanded')==='true')
+   await page.locator('#ownerDock [data-owner-collapse]').click();
+  const fingerRank=page.locator('#honor-rank-2 [data-owner-copy-id="rankReqPointsLead"]');
+  await fingerRank.dispatchEvent('pointerdown',{
+   pointerType:'touch',isPrimary:true,button:0,clientX:16,clientY:16
+  });
+  await page.waitForTimeout(570);
+  const fingerRankEditor=fingerRank.locator('[contenteditable]');
+  await fingerRankEditor.waitFor({state:'visible',timeout:6000});
+  await fingerRankEditor.press('Escape');
+  await fingerRank.dispatchEvent('pointerup',{pointerType:'touch',isPrimary:true});
+  assert.deepEqual((await page.locator('#honor-rank-2 .wiki-honor-runtime-value')
+   .allTextContents()).map(s=>s.replace(/\D/g,'')),['3000','20000']);
   // Leave the existing Encyclopedia detail workbench before opening the
   // account UI: a modal workbench correctly intercepts background clicks.
   if(await page.locator('#detailPanel.is-open').count())
@@ -437,6 +1194,43 @@ export async function runUIContentInlineSmoke(browser,base){
   await guestLead.waitFor({state:'visible'});
   const login=page.locator('#accountPanel .account-form input').first();
   await login.fill('TestingProfile');
+  await guestLead.dispatchEvent('pointerdown',{
+   pointerType:'touch',isPrimary:true,button:0,pointerId:52,clientX:18,clientY:18
+  });
+  // A scroll event from unrelated layout or input focus does not mean the
+  // finger moved to scroll. This was the reported Chromium failure at 9673901.
+  await guestLead.evaluate(el=>el.ownerDocument.dispatchEvent(new Event('scroll')));
+  await page.waitForTimeout(570);
+  // Account inline editors use a sibling editing host rather than rewriting
+  // the source node, so detect that host via the actual panel.
+  const guestTouchHost=page.locator(
+   '#accountPanel .account-copy-edit-host [contenteditable]');
+  await guestTouchHost.waitFor({state:'visible',timeout:6000});
+  await guestTouchHost.press('Escape');
+  await guestLead.dispatchEvent('pointerup',{pointerType:'touch',isPrimary:true});
+  assert.equal(await login.inputValue(),'TestingProfile');
+  // This is a real action button, not a spare pencil or a decoration.
+  // A hold edits its D1 caption but must not submit the login form.
+  const signInCaption=page.locator(
+   '#accountPanel button[data-owner-copy-key="accountSignIn"]').first();
+  await signInCaption.waitFor({state:'visible'});
+  await signInCaption.evaluate(el=>{
+   el.dataset.qaTouchClicks='0';
+   el.addEventListener('click',()=>{
+    el.dataset.qaTouchClicks=String(Number(el.dataset.qaTouchClicks)+1);
+   });
+  });
+  await signInCaption.dispatchEvent('pointerdown',{
+   pointerType:'touch',isPrimary:true,button:0,pointerId:73,clientX:20,clientY:20
+  });
+  await page.waitForTimeout(570);
+  const buttonTouch=page.locator('#accountPanel .account-copy-edit-host [contenteditable]');
+  await buttonTouch.waitFor({state:'visible',timeout:6000});
+  await signInCaption.dispatchEvent('click',{bubbles:true,cancelable:true,detail:1});
+  assert.equal(await signInCaption.getAttribute('data-qa-touch-clicks'),'0');
+  await buttonTouch.press('Escape');
+  await signInCaption.dispatchEvent('pointerup',{pointerType:'touch',isPrimary:true,pointerId:73});
+  assert.equal(await login.inputValue(),'TestingProfile');
   await guestLead.dblclick();
   const accountInput=page.locator('#accountPanel .account-copy-edit-host [contenteditable]');
   await accountInput.fill('Вход открывает облачные билды.');

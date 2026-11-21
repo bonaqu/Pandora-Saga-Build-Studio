@@ -2,7 +2,15 @@ import assert from 'node:assert/strict';
 
 export async function runOwnerRacialPath648Smoke(browser,base){
  const api='https://ps-build-studio-cloud.bonaqu.workers.dev';
- const values={},writes=[],errors=[];
+ const values={
+  // Corrupted/old D1 editorial captions must never impersonate game counts.
+  'guideedit.book.origin.class-count':JSON.stringify({
+   ru:'999 классов',en:'999 classes'
+  }),
+  'guideedit.book.ui.label.class-count':JSON.stringify({
+   ru:'999 профессий',en:'999 jobs'
+  })
+ },writes=[],errors=[];
  const context=await browser.newContext({viewport:{width:1365,height:850}});
  await context.addInitScript(()=>{
   localStorage.setItem('ps-build-studio.v1',JSON.stringify({
@@ -50,6 +58,31 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   assert.deepEqual(JSON.parse(values[key]),expected,
    'Edited text did not persist in the mocked D1 override');
  };
+ const openEditableTrack=async()=>{
+  // The rail legend is rendered only inside an OPEN branch. A selected
+  // chapter alone is insufficient: search source-enabled branches without
+  // changing invested points or mastery.
+  const groups=page.locator('.right .game-tree-group');
+  const total=await groups.count();
+  for(let i=0;i<total;i++){
+   const group=groups.nth(i),head=group.locator('.game-tree-head').first();
+   if(await head.getAttribute('aria-expanded')!=='true'){
+    await head.click({position:{x:4,y:4}});
+    await page.waitForFunction(index=>{
+     const button=document.querySelectorAll('.right .game-tree-head')[index];
+     return button?.getAttribute('aria-expanded')==='true';
+    },i,{timeout:12000});
+   }
+   const branch=group.locator('.branch-row[data-path-branch]:not([disabled])').first();
+   if(!await branch.count())continue;
+   if(await branch.getAttribute('aria-expanded')!=='true')
+    await branch.click();
+   await page.locator('#pathGrowthPage .path-limit-copy').first()
+    .waitFor({state:'visible',timeout:12000});
+   return;
+  }
+  throw Error('No editable class branch to exercise a live point-cap caption');
+ };
  const openSpecial=async()=>{
   const expand=page.locator('.right [data-path-group="special"]');
   await expand.waitFor({state:'visible'});
@@ -82,6 +115,23 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   const dockToggle=page.locator('#ownerDock [data-owner-collapse]');
   if(await dockToggle.getAttribute('aria-expanded')==='true')
    await dockToggle.click();
+  // A source-backed profession count is not editable authorial copy, even
+  // when old D1 overrides contain misleading RU/EN labels.
+  await page.locator('#originTabs [data-origin-tab="class"]').click();
+  const classCount=page.locator('#classCount');
+  await classCount.waitFor({state:'visible'});
+  assert.equal((await classCount.innerText()).trim(),'28 классов');
+  assert.equal(await classCount.getAttribute('data-derived-game-count'),'classes');
+  assert.equal(await classCount.getAttribute('data-i18n'),null);
+  assert.equal(await classCount.getAttribute('aria-keyshortcuts'),null);
+  assert.equal(await classCount.getAttribute('tabindex'),null);
+  assert.equal(await classCount.evaluate(node=>
+   node.classList.contains('origin-copy-editable')||
+   node.classList.contains('ui-content-editable')),false);
+  await classCount.dblclick();
+  assert.equal(await classCount.locator('[data-owner-text-field]').count(),0);
+  assert.equal(writes.length,0,'Derived profession counts cannot produce D1 CAS writes');
+  await page.locator('#originTabs [data-origin-tab="race"]').click();
   // The passive remains selectable, but its caption edits directly without
   // a pencil. Escape must preserve the selected passive and avoid D1 writes.
   const passive=page.locator('#originPassives .origin-passive').first();
@@ -98,6 +148,25 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   assert.equal(await passive.getAttribute('aria-pressed'),selectedPassive,
    'Editing a racial skill name must not select a passive');
   assert.equal(writes.length,0,'Escape must not write a D1 skill name');
+  // Source-backed caps are not authorial copy. Edit the visible caption
+  // directly while keeping the cap number and the growth state untouched.
+  await openEditableTrack();
+  const capLabel=page.locator('#pathGrowthPage .path-limit-copy').first();
+  await capLabel.waitFor({state:'visible',timeout:15000});
+  const capNumber=page.locator('#pathGrowthPage .path-limit-number').first();
+  const originalCap=await capNumber.textContent();
+  assert.ok(/^\s*[0-9]+$/.test(originalCap),'The fixture needs a real numeric branch cap');
+  await capLabel.dblclick();
+  const capInput=capLabel.locator('[data-owner-text-field]');
+  await capInput.waitFor({state:'visible'});
+  await capInput.fill('Лимит ветки:');
+  await capInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector('#pathGrowthPage .path-limit-copy')
+   ?.textContent==='Лимит ветки:',null,{timeout:12000});
+  await savedOverride('guideedit.book.path.path-limit-points',
+   {ru:'Лимит ветки:'});
+  assert.equal(await page.locator('#pathGrowthPage .path-limit-number').first().textContent(),
+   originalCap,'Editing the author label must not overwrite branch point caps');
   await openSpecial();
   // Author edits a hint through the ONE compact owner panel. The disabled
   // Racial branch and current hero remain mounted; no per-card pencil.
@@ -146,6 +215,8 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   assert.equal(await group.locator('button.path-group-pencil').count(),0);
   await page.locator('#locale [data-locale="en"]').click();
   await page.waitForFunction(()=>document.documentElement.lang==='en');
+  assert.equal((await page.locator('#classCount').textContent()).trim(),'28 classes');
+  assert.equal(await page.locator('#classCount [data-owner-text-field]').count(),0);
   await openSpecial();
   const pathEnHelp=page.locator('#ownerPathHelpCopy');
   // Locale changes preserve the expanded owner panel; clicking Summary
@@ -177,6 +248,99 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   await savedOverride('guideedit.book.path.racial-branch',
    {ru:'Расовые умения QA',en:'Race traits QA'});
   assert.equal(await en.locator('button.path-racial-unavailable').isDisabled(),true);
+  // Locale switching must preserve the Russian copy while exposing an
+  // independently editable English caption, not the numeric branch cap.
+  await openEditableTrack();
+  const capEn=page.locator('#pathGrowthPage .path-limit-copy').first();
+  await capEn.waitFor({state:'visible',timeout:15000});
+  assert.equal(await capEn.textContent(),'Limit (pts):');
+  const enCapNumber=await page.locator('#pathGrowthPage .path-limit-number').first()
+   .textContent();
+  await capEn.dblclick();
+  const capEnInput=capEn.locator('[data-owner-text-field]');
+  await capEnInput.waitFor({state:'visible'});
+  await capEnInput.fill('Branch ceiling:');
+  await capEnInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector('#pathGrowthPage .path-limit-copy')
+   ?.textContent==='Branch ceiling:',null,{timeout:12000});
+  await savedOverride('guideedit.book.path.path-limit-points',
+   {ru:'Лимит ветки:',en:'Branch ceiling:'});
+  assert.equal(await page.locator('#pathGrowthPage .path-limit-number').first()
+   .textContent(),enCapNumber);
+  // Shared group metric captions can now be edited where the owner sees
+  // them, while all three numbers and the group disclosure remain intact.
+  const groupCount=page.locator('#pathGrowthPage .path-group-summary').first();
+  await groupCount.waitFor({state:'visible',timeout:12000});
+  const groupValuesBefore=await groupCount.locator('.path-group-summary-value').allTextContents();
+  const groupButton=groupCount.locator('xpath=..');
+  const expandedBefore=await groupButton.getAttribute('aria-expanded');
+  const groupMetric=groupCount.locator('.path-group-summary-copy').first();
+  assert.equal(await groupMetric.innerText(),'trained');
+  await groupMetric.dblclick();
+  const groupMetricEditor=groupMetric.locator('[data-owner-text-field]');
+  await groupMetricEditor.waitFor({state:'visible'});
+  await groupMetricEditor.fill('mastered QA');
+  await groupMetricEditor.press('Tab');
+  await savedOverride('guideedit.book.path.path-group-trained',{en:'mastered QA'});
+  assert.equal(await groupMetric.innerText(),'mastered QA');
+  assert.deepEqual(await groupCount.locator('.path-group-summary-value').allTextContents(),
+   groupValuesBefore,'Editing a shared metric cannot overwrite game totals');
+  assert.equal(await groupButton.getAttribute('aria-expanded'),expandedBefore);
+
+  // The expandable rail keeps its live skill count outside the owner D1
+  // editor. Double-clicking the author caption must not toggle the summary.
+  const unlock=page.locator('#pathGrowthPage .path-unlock-details summary').first();
+  await unlock.waitFor({state:'visible',timeout:15000});
+  const countBefore=await unlock.locator('.path-unlock-count').textContent();
+  const openBefore=await unlock.evaluate(el=>el.parentElement.open);
+  const railCaption=unlock.locator('.path-unlock-heading');
+  assert.equal(await railCaption.innerText(),'Skills on track');
+  await railCaption.dblclick();
+  const railEditor=railCaption.locator('[data-owner-text-field]');
+  await railEditor.waitFor({state:'visible'});
+  await railEditor.fill('Skills on this rail QA');
+  await railEditor.press('Tab');
+  await savedOverride('guideedit.book.path.skills-on-track-caption',
+   {en:'Skills on this rail QA'});
+  assert.equal(await railCaption.innerText(),'Skills on this rail QA');
+  assert.equal(await unlock.locator('.path-unlock-count').textContent(),countBefore,
+   'The source-derived skill count and punctuation must remain byte-identical');
+  assert.equal(await unlock.evaluate(el=>el.parentElement.open),openBefore,
+   'Renaming a summary caption must not toggle the skills disclosure');
+  assert.equal(await unlock.locator('button.path-owner-pencil').count(),0);
+
+  // Every skill milestone keeps its threshold and source skill name outside
+  // the RU/EN author caption, even when edited on a real clickable row.
+  const unlockDetails=unlock.locator('xpath=..');
+  if(!await unlockDetails.evaluate(el=>el.open))
+   await unlock.locator('.path-unlock-count').click();
+  const milestone=unlockDetails.locator('button.path-unlock-skill').first();
+  await milestone.waitFor({state:'visible',timeout:12000});
+  const sourceSkillBefore=await milestone.locator('.path-unlock-copy strong').innerText();
+  const thresholdBefore=await milestone.locator('.path-unlock-status span').first().innerText();
+  const unit=milestone.locator('.path-unlock-unit');
+  assert.equal(await unit.innerText(),'pts');
+  await unit.dblclick();
+  const unitEditor=unit.locator('[data-owner-text-field]');
+  await unitEditor.waitFor({state:'visible'});
+  await unitEditor.fill('milestone pts QA');
+  await unitEditor.press('Tab');
+  await savedOverride('guideedit.book.path.path-unlock-points',
+   {en:'milestone pts QA'});
+  assert.equal(await unit.innerText(),'milestone pts QA');
+  assert.equal(await milestone.locator('.path-unlock-status span').first().innerText(),
+   thresholdBefore);
+  assert.equal(await milestone.locator('.path-unlock-copy strong').innerText(),
+   sourceSkillBefore,'An owner caption never renames the catalog skill');
+  await page.waitForFunction(()=>[...document.querySelectorAll(
+   '#pathGrowthPage button.path-unlock-skill')].some(node=>
+    node.getAttribute('aria-label')?.includes('milestone pts QA')),
+   null,{timeout:12000});
+  assert.match(await milestone.getAttribute('aria-label'),/milestone pts QA/,
+   'The same D1 key refreshes the accessible action label after inline save');
+  assert.equal(await page.locator('#pathGrowthPage').isVisible(),true,
+   'Double-clicking a milestone caption must not navigate to skill details');
+
   // New D1 caption: never edit or persist the computed number of skills.
   await page.locator('#pathSkillsTab').click();
   const more=page.locator('#pathSkillGallery button.path-show-more');

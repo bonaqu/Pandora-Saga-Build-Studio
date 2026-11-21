@@ -32,14 +32,18 @@ test('Hero Book UI and aria descriptions follow document language on rerender',(
  assert.match(code,/n\.textContent=bookText\(value\)/);
  assert.match(code,/document\.documentElement\?\.lang==='en'\?/);
  assert.match(code,/Hero Book\./);
- assert.match(code,/make\('span',\{text:\(document\.documentElement\?\.lang==='en'\?'HERO BOOK'/);
+ assert.match(code,/class:'stage-book-title-text'/);
+ assert.match(code,/bookTitleText\.dataset\?\.bookEditorialKey/);
+ assert.match(code,/class:'stage-book-title-count',text:' · '\+\(index\+1\)\+' \/ 6'/);
 });
 
 test('equipment effects, item procs and experience preview headings follow RU/EN selection',()=>{
  assert.match(code,/function appendItemEvents\(body,calc,english,kind,gameTerms=\{\}\)/);
  assert.match(code,/root\.PandoraSkillPreview\?\.attach\(skillLink,row\.skillId\)/);
  assert.match(code,/calc\?\.specialEquipment\?\.entries/);
- assert.match(code,/english\?'Item and Soul triggers'/);
+ assert.match(code,/class:'stage-source-events-caption',text:english\?/);
+ assert.match(code,/english\?\s*'Item and Soul triggers'/);
+ assert.match(code,/class:'stage-book-live-count',text:' · '\+rows\.length/);
  assert.match(code,/english\?'Experience gain bonuses'/);
  assert.match(code,/entry\.triggerEn\|\|entry\.trigger/);
  assert.match(code,/entry\.skillNameEn\|\|entry\.skillName/);

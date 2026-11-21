@@ -3,7 +3,12 @@
 // Partial source-backed combat preview. Do not claim current OS parity for missing buffs or procs.
 // Exact, player-interface labels only; source names and item descriptions stay untouched.
 const bookEnglish=Object.freeze({
+ '«Вольный ветер» и «Благословение ветра»: прибавки показаны отдельно.': 'Free Wind and Wind Blessing: bonuses are shown separately.',
+ 'У текущего билда нет рассчитанных эффектов умений. Описания и требования смотри в Энциклопедии → Навыки.': 'No calculated skill effects for this build. Skill descriptions and requirements are in Encyclopedia → Skills.',
+ 'На экипированном оружии нет активных подтверждённых стихийных эффектов.': 'No supported elemental weapon effect is active on the equipped weapon.',
+ 'Здесь только прямые бонусы вещей и душ. Титулы, пассивные умения, комплекты и другие эффекты тоже могут влиять на итоговые значения выше.': 'Direct item and Soul bonuses only. Titles, passives, sets and other effects may also change the totals above.',
  'Итоги': "Summary",
+ 'КНИГА ГЕРОЯ': 'HERO BOOK',
  'Атака': "Attack",
  'Защита': "Defense",
  'Зелья и умения': "Potions & skills",
@@ -196,6 +201,16 @@ const bookEnglish=Object.freeze({
  'Эффекты плащей на военных картах': "Battle-map cloak effects",
  'Расовая стойкость цверга': "Dwarven racial survival",
  'Бонусы к опыту': "Experience gain bonuses",
+ // Source-backed numbers and item IDs remain separate from author-copy spans.
+ 'Сейчас нет активных бонусов к опыту.': 'No experience bonuses are currently active.',
+ 'Уровень союзника': 'Ally level',
+ 'СД союзника': 'Ally SPR',
+ 'Песнопения союзника': 'Ally Hymn',
+ 'Союзник: Клирик · Исцеление': 'Ally: Cleric · Healing',
+ 'необходимо (учитывается автоматически)': 'required (automatic)',
+ 'Упрямое сердце': 'Stronghearted',
+ 'шанс по данным навыка': 'skill-source chance',
+ 'Подробнее': 'More details',
  'Показывать восстановление от зелий': "Show potion recovery",
  'Для текущих зелий ещё нет доступных значений.': "No potion values are available yet.",
  'Предметы восстановления ОМ': "MP recovery items",
@@ -351,6 +366,37 @@ function meaningfulGuideHint(value){
 function guideDisplayText(value){
  return typeof value==='string'?value.replace(/\\n/g,'\n'):value;
 }
+// Native disclosure headers need to distinguish owner double-click from
+// normal click. Never steal keyboard or guest disclosure navigation.
+// A native summary may contain several independent authored captions, e.g.
+// the Honor group name and the smaller "passive skill" phrase. Register all
+// of them under ONE capture guard rather than guarding only the first.
+const bookSummaryCaptionTargets=new WeakMap();
+function guardBookSummaryCaption(node){
+ const summary=node.closest?.('summary');
+ if(!summary)return;
+ let captions=bookSummaryCaptionTargets.get(summary);
+ if(!captions){
+  captions=new Set();
+  bookSummaryCaptionTargets.set(summary,captions);
+ }
+ captions.add(node);
+ if(summary.dataset.bookCaptionGuard==='1')return;
+ summary.dataset.bookCaptionGuard='1';
+ let pending=null;
+ summary.addEventListener('click',event=>{
+  if(!event.detail||
+   event.target.closest?.('input,textarea,select,[data-owner-text-field]'))return;
+  const caption=[...captions].find(item=>item.contains(event.target));
+  if(!caption)return; // Chevrons and all other native actions still work.
+  event.preventDefault();event.stopImmediatePropagation();
+  if(pending){clearTimeout(pending);pending=null;return}
+  pending=setTimeout(()=>{
+   pending=null;
+   if(summary.isConnected&&!caption.hidden&&summary.closest('details'))summary.click();
+  },500);
+ },true);
+}
 function guideLabel(node,key,ru,en,options={},fallbackRu='',fallbackEn=''){
  if(!node)return node;
  const guide=root.PandoraHonorGuide;
@@ -381,6 +427,8 @@ function guideLabel(node,key,ru,en,options={},fallbackRu='',fallbackEn=''){
    options.onTextEdit(node,key,english?'en':'ru',label);
   };
   node.addEventListener('dblclick',editName);
+  guardBookSummaryCaption(node);
+  root.PandoraOwnerTouchEdit?.(node,editName,{interactive:true});
   node.setAttribute('aria-keyshortcuts','F2');
   node.addEventListener('keydown',event=>{if(event.key==='F2')editName(event)});
   // Only an independently authored hover hint uses a pencil.
@@ -541,7 +589,6 @@ function summaryPage(body,calc,options={}){
    ]);
    guideLabel(tile.firstChild,'summary.'+summaryIndex++,result.ru,result.en,options);
    grid.append(tile);
-   grid.append(tile);
   }
   section.append(heading,grid);
   body.append(section);
@@ -624,8 +671,15 @@ function buffsPage(body,options){
  body.append(status);
  let sectionIndex=0;
  const section=(ru,en,stableId=null)=>{
-  const node=make('section',{class:'stage-book-buff-group'},[make('strong',{text:english?en:ru})]);
-  guideLabel(node.firstChild,stableId==='guild'?'buffs.guild':
+  // Honor adds a second, separately editable phrase to the heading. The
+  // primary author label must therefore be its own SPAN, not the parent
+  // STRONG: editing the parent would swallow the nested term and fire both
+  // handlers on a double-click.
+  const caption=make('span',{class:'stage-book-buff-heading-copy',
+   text:english?en:ru});
+  const heading=make('strong',{},[caption]);
+  const node=make('section',{class:'stage-book-buff-group'},[heading]);
+  guideLabel(caption,stableId==='guild'?'buffs.guild':
    'buffs.section.'+(stableId||sectionIndex++),ru,en,options);
   body.append(node);
   return node;
@@ -1258,9 +1312,11 @@ function buffsPage(body,options){
    const requirements=Array.isArray(details?.reqs)?details.reqs:[];
    const minHymn=requirements.find(x=>x.branch==='hymn')?.amount??30;
    const minHealing=requirements.find(x=>x.branch==='benevolence')?.amount??61;
-   caster.append(make('small',{class:'stage-attribute-note stage-ally-peace-note',
-    text:(english?'Ally: Cleric · Healing ':'Союзник: Клирик · Исцеление ')+
-     minHealing+(english?' required (automatic)':' необходимо (учитывается автоматически)')}));
+   caster.append(make('small',{class:'stage-attribute-note stage-ally-peace-note'},[
+    make('span',{text:english?'Ally: Cleric · Healing':'Союзник: Клирик · Исцеление'}),
+    ' ',make('strong',{text:String(minHealing)}),' ',
+    make('span',{text:english?'required (automatic)':'необходимо (учитывается автоматически)'})
+   ]));
    for(const [key,ru,en,min,max,defaultValue] of [
     ['allyPeaceSpi','СД союзника','Ally SPR',0,500,134],
     ['allyPeaceHymn','Песнопения союзника','Ally Hymn',minHymn,maxHymn,30]
@@ -2037,8 +2093,13 @@ function appendItemEvents(body,calc,english,kind,gameTerms={}){
  }
  if(!rows.length)return;
  const panel=make('details',{class:'stage-attribute-row stage-source-events'});
- panel.append(make('summary',{text:(english?'Item and Soul triggers':
-  'Срабатывания предметов и душ')+' · '+rows.length}));
+ // The source-derived event count is not an authorial translation.
+ // Keep its original bilingual Book text key separate from the live count.
+ panel.append(make('summary',{},[
+  make('span',{class:'stage-source-events-caption',text:english?
+   'Item and Soul triggers':'Срабатывания предметов и душ'}),
+  make('span',{class:'stage-book-live-count',text:' · '+rows.length})
+ ]));
  for(const row of rows){
   const skill=gameTerms.skills?.[String(row.skillId)];
   const valid=Number.isSafeInteger(row.skillId)&&row.skillId>0&&
@@ -2121,31 +2182,64 @@ function appendSkillAttackRange(body,calc,english,options={}){
  section.append(help);
  guideLabel(help,'attack.skillRangeHelp',helpRu,helpEn,options);
  const terms=options.gameTerms||{};
+ // These captions belong to the author; the underlying source skill, range
+ // numbers, branch name and unmet-requirement explanations do not. Reuse the
+ // Book's existing bilingual CAS editor without creating label pencils.
+ const authoredRange=(key,ru,en)=>{
+  const node=make('span',{class:'stage-skill-range-editorial',text:english?en:ru});
+  guideLabel(node,'attack.skillRange.'+key,ru,en,options);
+  return node;
+ };
  for(const row of rows){
   const skill=terms.skills?.[String(row.id)],official=terms.englishSkills?.[String(row.id)];
   if(skill?.id!==row.id)continue;
   const label=gameSkillBadge(row.id,row.name,official?.n,terms,english,
    options.skillIconForId||(()=>null));
-  const prefix=english?'Range bonus: ':'Прибавка к дальности: ';
   const size=Number.isSafeInteger(row.sourceBonus)?
    '+'+row.sourceBonus:'—';
-  const timing=english?(row.mode==='toggle'?'Only while toggled on':'Only when using this skill'):
-   (row.mode==='toggle'?'Только при включённом умении':'Только при применении умения');
-  const state=row.available?(english?'Requirements met':'Требования выполнены'):
-   (english?row.reasonEn:row.reasonRu);
+  const sourcePart=Number.isSafeInteger(row.sourceConstant)&&
+   Number.isSafeInteger(row.sourceMasteryPart);
+  const branchName=gameBranchName('archery',terms,english);
+  const timingToggle=row.mode==='toggle';
+  const timing=authoredRange(timingToggle?'timingToggle':'timingUse',
+   timingToggle?'Только при включённом умении':'Только при применении умения',
+   timingToggle?'Only while toggled on':'Only when using this skill');
+  const status=row.available?
+   authoredRange('requirementsMet','Требования выполнены','Requirements met'):
+   make('span',{class:'stage-skill-range-source-reason',
+    text:(english?row.reasonEn:row.reasonRu)??'—'});
+  const breakdown=sourcePart?make('small',{class:'stage-skill-range-breakdown'},[
+   authoredRange('fromSkill','От умения','From skill'),
+   make('span',{text:': '}),
+   make('span',{class:'stage-skill-range-source-value',text:'+'+row.sourceConstant}),
+   make('span',{text:' · '}),
+   authoredRange('from','от','from'),
+   make('span',{text:' '}),
+   ...(english?[
+    make('span',{class:'stage-skill-range-source-branch',text:branchName}),
+    make('span',{text:' '}),
+    authoredRange('mastery','мастерства','mastery')
+   ]:[
+    authoredRange('mastery','мастерства','mastery'),
+    make('span',{text:' «'}),
+    make('span',{class:'stage-skill-range-source-branch',text:branchName}),
+    make('span',{text:'»'})
+   ]),
+   make('span',{text:': '}),
+   make('span',{class:'stage-skill-range-mastery-value',text:'+'+row.sourceMasteryPart})
+  ]):null;
   section.append(make('div',{class:'stage-heal-row stage-skill-attack-range-row'+
    (row.available?'':' stage-book-unavailable'),'data-range-skill':String(row.id)},[
    make('strong',{},[label]),
-   make('small',{text:prefix+size}),
-   ...(Number.isSafeInteger(row.sourceConstant)&&
-    Number.isSafeInteger(row.sourceMasteryPart)?[
-    make('small',{text:english?
-     'From skill: +'+row.sourceConstant+' · from '+
-       gameBranchName('archery',terms,true)+' mastery: +'+row.sourceMasteryPart:
-     'От умения: +'+row.sourceConstant+' · от мастерства «'+
-       gameBranchName('archery',terms,false)+'»: +'+row.sourceMasteryPart})
-   ]:[]),
-   make('small',{text:timing+' · '+state})
+   make('small',{class:'stage-skill-range-bonus'},[
+    authoredRange('bonus','Прибавка к дальности','Range bonus'),
+    make('span',{text:': '}),
+    make('span',{class:'stage-skill-range-bonus-value',text:size})
+   ]),
+   ...(breakdown?[breakdown]:[]),
+   make('small',{class:'stage-skill-range-status'},[
+    timing,make('span',{text:' · '}),status
+   ])
   ]));
  }
  body.append(section);
@@ -2191,8 +2285,11 @@ function defensePage(body,calc,english,options={}){
  const conditional=calc?.battleMapCloaks?.entries||[];
  if(conditional.length){
   const panel=make('details',{class:'stage-attribute-row stage-battle-map-cloaks'});
-  panel.append(make('summary',{text:(english?'Battle-map cloak effects':
-   'Эффекты плащей на военных картах')+' · '+conditional.length}));
+  panel.append(make('summary',{},[
+   make('span',{text:english?'Battle-map cloak effects':
+    'Эффекты плащей на военных картах'}),
+   make('span',{class:'stage-book-live-count',text:' · '+conditional.length})
+  ]));
   for(const entry of conditional){
    const line=english?['All attributes +'+entry.all,'DEF +'+entry.armor,
     'HP +'+entry.hp]:['Все характеристики +'+entry.all,
@@ -2212,8 +2309,11 @@ function defensePage(body,calc,english,options={}){
   body.append(make('section',{class:'stage-attribute-row stage-racial-survival'},[
    make('strong',{text:english?'Dwarven racial survival':
     'Расовая стойкость цверга'}),
-   make('p',{text:(english?'Stronghearted: ':'Упрямое сердце: ')+
-    survival.chance+(english?'% skill-source chance':'% шанс по данным навыка')})
+   make('p',{},[
+    make('span',{text:english?'Stronghearted':'Упрямое сердце'}),': ',
+    make('strong',{text:String(survival.chance)}),'% ',
+    make('span',{text:english?'skill-source chance':'шанс по данным навыка'})
+   ])
   ]));
  }
  const exp=calc?.experienceBonus?.entries||[];
@@ -2304,6 +2404,8 @@ const chapterCaptionSpecs=Object.freeze([
  ['recovery','enabled','.stage-potion-book .stage-book-check > span','Показывать восстановление от зелий','Show potion recovery'],
  ['recovery','mana','.stage-mana-consumables > strong','Предметы восстановления ОМ','MP recovery items'],
  ['recovery','health','.stage-health-consumables > summary','Предметы восстановления ОЗ','HP recovery items'],
+ ['defense','sources','.stage-status-source-breakdown > summary',
+  'Вклад предметов и душ','Bonuses from equipment and Souls'],
  ['defense','experience','.stage-experience-effects > summary','Бонусы к опыту','Experience gain bonuses'],
  ['attack','elemental','.stage-active-elemental > summary','Эффекты стихийных оружий','Elemental weapon effects'],
  ['recovery','cures','.stage-status-cures > summary','Снятие состояний','Remove status effects'],
@@ -2376,11 +2478,17 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
  target.setAttribute('aria-label',document.documentElement?.lang==='en'?
   'Hero Book. '+chapterTitle(chosen,bookPages[index][1])+'. Chapter '+(index+1)+' of 6':
   'Книга героя. '+chapterTitle(chosen,bookPages[index][1])+'. Страница '+(index+1)+' из 6');
+ // The chapter count is generated state, not part of an editable D1 label.
+ const bookTitleText=make('span',{class:'stage-book-title-text',
+  text:document.documentElement?.lang==='en'?'HERO BOOK':'КНИГА ГЕРОЯ'});
+ if(bookTitleText.dataset?.bookEditorialKey)
+  bookTitleText.dataset.ownerCopyKey=bookTitleText.dataset.bookEditorialKey;
  const bookHeader=make('div',{class:'stage-attribute-head'},[
   make('button',{type:'button',class:'stage-book-arrow',text:'‹',
    onclick:()=>onPage(prior),'aria-label':document.documentElement?.lang==='en'?'Previous page':'Предыдущая страница'}),
   make('div',{class:'stage-book-heading'},[
-   make('span',{text:(document.documentElement?.lang==='en'?'HERO BOOK':'КНИГА ГЕРОЯ')+' · '+(index+1)+' / 6'}),
+   make('span',{class:'stage-book-title-line'},[bookTitleText,
+    make('span',{class:'stage-book-title-count',text:' · '+(index+1)+' / 6'})]),
    make('strong',{text:chapterTitle(chosen,bookPages[index][1])})]),
   make('button',{type:'button',class:'stage-book-arrow',text:'›',
    onclick:()=>onPage(next),'aria-label':document.documentElement?.lang==='en'?'Next page':'Следующая страница'}),
@@ -2415,6 +2523,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
      document.documentElement?.lang==='en'?'en':'ru',display);
    };
    caption.addEventListener('dblclick',edit);
+   root.PandoraOwnerTouchEdit?.(caption,edit,{interactive:true});
    caption.tabIndex=0;caption.setAttribute('aria-keyshortcuts','F2');
    caption.addEventListener('keydown',event=>{if(event.key==='F2')edit(event)});
    button.replaceChildren(caption);
@@ -2593,6 +2702,10 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
  }
  decorateChapterCaptions(body,chosen,copyOptions);
  collapseBookSections(body,chosen);
+ // Section headings may have been bound before collapseBookSections moved
+ // them into a native summary. Resolve ancestry after their final mount.
+ if(canEdit)for(const caption of body.querySelectorAll?.('summary [data-guide-key]')||[])
+  guardBookSummaryCaption(caption);
  // Existing chapter tabs and guide labels already own a dedicated editor.
  // Suppress generic pencils there and on actionable game/item controls.
  for(const node of body.querySelectorAll?.('[data-book-editorial-key]')||[]){

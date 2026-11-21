@@ -28,6 +28,63 @@ test('full Book copy catalog includes additional static player-facing explanatio
  }
 });
 
+test('issue #390: Book proc headline separates the authorial D1 key from source-event counts',()=>{
+ const src=file('pandora-studio-hero-book.js');
+ const app=file('pandora-studio-app.js');
+ const key=locale.bookFieldKey('Срабатывания предметов и душ');
+ assert.ok(key,'The historical bilingual Book key must remain valid');
+ assert.match(locale.fieldKey(key)||'',/^ui\.label\.book-/);
+ assert.match(src,/class:'stage-source-events-caption',text:english\?/);
+ assert.match(src,/class:'stage-book-live-count',text:' · '\+rows\.length/);
+ assert.doesNotMatch(src,/panel\.append\(make\('summary',\{text:\(english\?'Item and Soul triggers'/);
+ assert.match(src,/function guardBookSummaryCaption\(node\)/);
+ assert.match(src,/guardBookSummaryCaption\(node\)/);
+ assert.match(src,/collapseBookSections\(body,chosen\);\s*\/\/[^\n]+\n[^\n]+\n if\(canEdit\)for\(const caption of body\.querySelectorAll\?\.\('summary \[data-guide-key\]'\)/);
+ assert.match(app,/node\.closest\('button,summary,\[role="button"\]'\)/);
+ assert.match(app,/ownerCaptionActionGuard\(action,node\)/);
+ for(const label of ['42','Sword +9','Source ID 123','ОЗ: 4900'])
+  assert.equal(locale.bookFieldKey(label),null,'Game value cannot become copy: '+label);
+});
+
+test('issue #390: Book and shared action guards support multiple captions per disclosure',()=>{
+ const src=file('pandora-studio-hero-book.js');
+ const app=file('pandora-studio-app.js');
+ assert.match(src,/const bookSummaryCaptionTargets=new WeakMap\(\)/);
+ assert.match(src,/bookSummaryCaptionTargets\.get\(summary\)/);
+ assert.match(src,/captions\.add\(node\)/);
+ assert.match(src,/const caption=\[\.\.\.captions\]\.find\(item=>item\.contains\(event\.target\)\)/);
+ assert.match(src,/const caption=make\('span',\{class:'stage-book-buff-heading-copy'/);
+ assert.match(src,/const heading=make\('strong',\{\},\[caption\]\)/);
+ assert.match(src,/guideLabel\(caption,stableId==='guild'\?'buffs\.guild'/);
+ assert.doesNotMatch(src,/guideLabel\(node\.firstChild,stableId==='guild'/);
+ assert.match(src,/guideLabel\(honorTerm,'buffs\.honor'/);
+ assert.match(app,/const ownerCaptionActionTargets=new WeakMap\(\)/);
+ assert.match(app,/ownerCaptionActionTargets\.get\(button\)/);
+ assert.match(app,/captions\.add\(caption\)/);
+ assert.match(app,/const activeCaption=\[\.\.\.captions\]\.find\(item=>item\.contains\(event\.target\)\)/);
+ assert.match(app,/if\(button\.isConnected&&!button\.disabled&&adminEditing&&adminToken&&/);
+ assert.match(app,/!activeCaption\.hidden\)button\.click\(\)/);
+});
+
+test('issue #390: skill range copy is edited separately from OS numbers and skill names',()=>{
+ const src=file('pandora-studio-hero-book.js');
+ assert.match(src,/const authoredRange=\(key,ru,en\)=>/);
+ assert.match(src,/guideLabel\(node,'attack\.skillRange\.'\+key,ru,en,options\)/);
+ for(const key of ['bonus','fromSkill','from','mastery','timingToggle',
+   'timingUse','requirementsMet'])
+  assert.ok(src.includes("'"+key+"'"),'Missing exact bilingual range copy: '+key);
+ assert.match(src,/if\(skill\?\.id!==row\.id\)continue/);
+ assert.match(src,/class:'stage-skill-range-bonus-value',text:size/);
+ assert.match(src,/class:'stage-skill-range-source-value',text:'\+'\+row\.sourceConstant/);
+ assert.match(src,/class:'stage-skill-range-mastery-value',text:'\+'\+row\.sourceMasteryPart/);
+ assert.match(src,/class:'stage-skill-range-source-branch',text:branchName/);
+ assert.match(src,/class:'stage-skill-range-source-reason'/);
+ assert.match(src,/text:\(english\?row\.reasonEn:row\.reasonRu\)\?\?'—'/);
+ // All authorial fragments are exact Book D1 keys, not skill IDs or
+ // source-derived numbers translated by fuzzy string replacement.
+ assert.doesNotMatch(src,/guideLabel\(label,'attack\.skillRange\./);
+});
+
 test('Book user text, numeric values and runtime item labels never become editable D1 keys',()=>{
  for(const value of ['Hero PvP 255','Sword +9','1927','172–209','ОЗ: 1900','Сияние героя','Сохранённый билд']){
   assert.equal(locale.bookFieldKey(value),null);
@@ -57,4 +114,113 @@ test('Book overrides stay scoped to one exact bilingual literal with archive fal
   if(previous===undefined)delete globalThis.document;
   else globalThis.document=previous;
  }
+});
+
+test('issue #390: source-backed values stay separate from editable Hero Book RU/EN copy',()=>{
+ const authored=[
+  ['Сейчас нет активных бонусов к опыту.','No experience bonuses are currently active.'],
+  ['Уровень союзника','Ally level'],['СД союзника','Ally SPR'],
+  ['Песнопения союзника','Ally Hymn'],
+  ['Союзник: Клирик · Исцеление','Ally: Cleric · Healing'],
+  ['необходимо (учитывается автоматически)','required (automatic)'],
+  ['Упрямое сердце','Stronghearted'],['шанс по данным навыка','skill-source chance'],
+  ['Подробнее','More details']
+ ];
+ for(const [ru,en] of authored){
+  const key=book.bookEditorialKey(ru),d1=key&&'guideedit.book.'+locale.fieldKey(key);
+  assert.ok(key&&d1,'No stable key for '+ru);
+  assert.equal(locale.bookFieldKey(ru),key);
+  assert.equal(locale.bookFieldKey(en),key);
+  locale.setOverrides({[d1]:JSON.stringify({ru:'Правка '+ru,en:'Edit '+en})});
+  assert.equal(locale.text(key,'ru'),'Правка '+ru);
+  assert.equal(locale.text(key,'en'),'Edit '+en);
+  locale.setOverrides({[d1]:'{broken'});
+  assert.equal(locale.text(key,'ru'),ru);
+  assert.equal(locale.text(key,'en'),en);
+  locale.setOverrides({});
+ }
+ const source=file('pandora-studio-hero-book.js');
+ assert.match(source,/class:'stage-book-live-count',text:' · '\+conditional\.length/);
+ assert.match(source,/make\('strong',\{text:String\(minHealing\)\}\)/);
+ assert.match(source,/make\('strong',\{text:String\(survival\.chance\)\}\)/);
+ for(const runtime of ['45','Player character name','250','320007001'])
+  assert.equal(locale.bookFieldKey(runtime),null);
+});
+
+test('issue #390: Hero Book heading text is independent of live chapter number',()=>{
+ const ru='КНИГА ГЕРОЯ',en='HERO BOOK',key=book.bookEditorialKey(ru);
+ assert.ok(key);
+ assert.equal(locale.bookFieldKey(ru),key);
+ assert.equal(locale.bookFieldKey(en),key);
+ const d1='guideedit.book.'+locale.fieldKey(key);
+ locale.setOverrides({[d1]:JSON.stringify({ru:'Летопись героя',en:'Hero chronicle'})});
+ assert.equal(locale.text(key,'ru'),'Летопись героя');
+ assert.equal(locale.text(key,'en'),'Hero chronicle');
+ locale.setOverrides({});
+ const src=file('pandora-studio-hero-book.js');
+ assert.match(src,/bookTitleText\.dataset\.ownerCopyKey=bookTitleText\.dataset\.bookEditorialKey/);
+ assert.match(src,/stage-book-title-count',text:' · '\+\(index\+1\)\+' \/ 6'/);
+ assert.equal(locale.bookFieldKey('1 / 6'),null);
+});
+
+test('issue #390: rare static Book notes and the source-breakdown header are independently RU/EN editable',()=>{
+ const expected=[["«Вольный ветер» и «Благословение ветра»: прибавки показаны отдельно.","Free Wind and Wind Blessing: bonuses are shown separately."],["У текущего билда нет рассчитанных эффектов умений. Описания и требования смотри в Энциклопедии → Навыки.","No calculated skill effects for this build. Skill descriptions and requirements are in Encyclopedia → Skills."],["На экипированном оружии нет активных подтверждённых стихийных эффектов.","No supported elemental weapon effect is active on the equipped weapon."],["Здесь только прямые бонусы вещей и душ. Титулы, пассивные умения, комплекты и другие эффекты тоже могут влиять на итоговые значения выше.","Direct item and Soul bonuses only. Titles, passives, sets and other effects may also change the totals above."]];
+ for(const [ru,en] of expected){
+  assert.equal(book.bookEditorialDefaults[ru],en);
+  const key=book.bookEditorialKey(ru);
+  assert.ok(key,'Missing semantic key for '+ru);
+  assert.equal(locale.bookFieldKey(en),key);
+  const d1='guideedit.book.'+locale.fieldKey(key);
+  locale.setOverrides({[d1]:JSON.stringify({ru:'Правка RU',en:'Edited EN'})});
+  assert.equal(locale.text(key,'ru'),'Правка RU');
+  assert.equal(locale.text(key,'en'),'Edited EN');
+  locale.setOverrides({});
+  assert.equal(locale.text(key,'ru'),ru);
+ }
+ const source=file('pandora-studio-hero-book.js');
+ assert.match(source,/\['defense','sources','\.stage-status-source-breakdown > summary'/);
+ assert.match(source,/guideLabel\(label,section\+'\.caption\.'\+key,ru,en,options\)/);
+ assert.match(source,/node\.setAttribute\('data-owner-copy-key',node\.dataset\.bookEditorialKey\)/);
+});
+
+test('touch owner mode reuses the Book inline editor and avoids redundant DOM moves',()=>{
+ const source=file('pandora-studio-hero-book.js');
+ assert.match(source,/root\.PandoraOwnerTouchEdit\?\.\(node,editName,\{interactive:true\}\)/);
+ assert.match(source,/root\.PandoraOwnerTouchEdit\?\.\(caption,edit,\{interactive:true\}\)/);
+ assert.doesNotMatch(source,/grid\.append\(tile\);\s*grid\.append\(tile\)/);
+});
+
+test('owner touch caption guard excludes actions, viewport scroll and delayed OS menus',()=>{
+ const source=file('pandora-studio-app.js');
+ assert.match(source,/ownerTouchCaptionEditors=new WeakMap\(\)/);
+ assert.match(source,/event\.target\?\.closest\?\.\('input,textarea,select,\[contenteditable\]'\)/);
+ assert.match(source,/ownerTouchCaptionEditors\.set\(node,\{edit,interactive\}\)/);
+ assert.match(source,/if\(\(action&&!bound\.interactive\)\|\|action!==targetAction\)return/);
+ assert.match(source,/bindOwnerTouchCaption\(node,edit,\{interactive:true\}\)/);
+ assert.match(source,/\['pointerup','pointercancel'\]/);
+ assert.doesNotMatch(source,/document\.addEventListener\('scroll',cancelOwnerTouchGesture,true\)/);
+ assert.match(source,/event\.pointerId!==g\.pointerId/);
+ assert.match(source,/marked\.action\.contains\(event\.target\)/);
+ assert.match(source,/const marked=\{node:gesture\.node,action:gesture\.action\|\|gesture\.node,/);
+ assert.match(source,/if\(ownerTouchSwallow===marked\)ownerTouchSwallow=null/);
+});
+
+test('editable HTML labels preserve their associated checkbox and hybrid pointer identity',()=>{
+ const source=file('pandora-studio-app.js');
+ assert.match(source,/node\.matches\('label'\)&&node\.querySelector\('input,textarea,select,button'\)/);
+ assert.match(source,/const action=node\.closest\('button,a,summary,label,\[role="button"\]'\)/);
+ assert.match(source,/event\.pointerType==='touch'&&event\.pointerId===held\.pointerId/);
+ const bookSource=file('pandora-studio-hero-book.js');
+ assert.match(bookSource,/guideLabel\(toggle\.querySelector\('\.stage-mounted-label'\),'attack\.mountedToggle'/);
+ assert.match(bookSource,/id:'stageBookMountedToggle',type:'checkbox'/);
+});
+
+test('touch long press preserves delayed-action suppression after unrelated clicks',()=>{
+ const source=file('pandora-studio-app.js');
+ const browser=file('tests/browser-ui-content-inline.mjs');
+ assert.match(source,/if\(Date\.now\(\)>marked\.until\)\{ownerTouchSwallow=null;return\}/);
+ assert.match(source,/if\(!marked\.action\.contains\(event\.target\)\)return/);
+ assert.match(source,/ownerTouchSwallow=null;\s*event\.preventDefault\(\);event\.stopImmediatePropagation\(\)/);
+ assert.match(browser,/Unrelated clicks are not blocked by touch editor/);
+ assert.match(browser,/Unrelated click must not consume delayed synthetic tab suppression/);
 });

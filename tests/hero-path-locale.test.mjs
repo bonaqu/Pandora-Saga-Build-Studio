@@ -52,3 +52,86 @@ test('Hero Path uses Origin-approved attribute translations, not bare powerStat 
  assert.match(source,/api\.attributeLabel\(skill\.powerStat\)/);
  assert.doesNotMatch(source,/field\(tr\(api,'Характеристика','Attribute'\),skill\.powerStat\)/);
 });
+
+test('issue 390: committed attribute copy updates an action even around live nested editor',()=>{
+ const app=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
+ const start=app.indexOf('function applyOwnerInterfaceEditedValue(');
+ const end=app.indexOf('// Compact non-modal owner-only copy editor',start);
+ assert.ok(start>0&&end>start,'The production attribute updater must be present');
+ const attrs={'aria-label':'Slice, 8 pts'};
+ const action={
+  textContent:'LIVE UNSAVED DRAFT',
+  dataset:{ownerInterfaceBindings:JSON.stringify({
+   text:{section:'path',key:'pathUnlockPoints',prefix:'',suffix:''},
+   'aria-label':{section:'path',key:'pathUnlockPoints',prefix:'Slice, 8 ',suffix:''}
+  })},
+  querySelector:selector=>selector.includes('wiki-inline-input')?{}:null,
+  setAttribute:(key,value)=>{attrs[key]=value;},
+  getAttribute:key=>attrs[key]
+ };
+ const document={querySelectorAll:()=>[action]};
+ const update=Function('document',app.slice(start,end)+
+  '\nreturn applyOwnerInterfaceEditedValue;')(document);
+ update('path','pathUnlockPoints','milestone pts QA');
+ assert.equal(action.textContent,'LIVE UNSAVED DRAFT',
+  'An ancestor with an active editor must not lose typed text');
+ assert.equal(attrs['aria-label'],'Slice, 8 milestone pts QA',
+  'A non-textual attribute must still refresh after the same D1 commit');
+ const restore=app.slice(app.indexOf('function refreshVisibleOwnerCopy('),
+  app.indexOf('async function saveGuidePatch(',app.indexOf('function refreshVisibleOwnerCopy(')));
+ assert.match(restore,/if\(!editingText\)ownerDockPatchText\(node,value\)/);
+ assert.match(restore,/ownerDockPatchAttr\(node,attr,value\)/);
+});
+
+test('issue 390: an ancestor editor never blocks independent accessible attributes',()=>{
+ const app=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
+ const section=app.slice(app.indexOf('function applyOwnerInterfaceEditedValue('),
+  app.indexOf('// Compact non-modal owner-only copy editor'));
+ assert.match(section,/const editingText=Boolean\(node\.querySelector/);
+ assert.match(section,/if\(!editingText\)node\.textContent=value/);
+ assert.match(section,/node\.setAttribute\(attr,value\)/);
+ assert.match(app,/if\(!editingText\)ownerDockPatchText\(node,value\)/);
+ assert.match(app,/ownerDockPatchAttr\(node,attr,value\)/);
+});
+
+test('issue 390: milestone and successor labels are edited directly without renaming game skills',()=>{
+ assert.match(source,/authored\(api,'pathUnlockPoints','оч\.','pts'/);
+ assert.match(source,/'span','path-unlock-unit'/);
+ assert.match(source,/'span','path-unlock-state'/);
+ assert.match(source,/guardCaptionAction\(button,unit\)/);
+ assert.match(source,/'span','path-skill-lineage-caption'/);
+ assert.match(source,/class:'path-skill-lineage-name',text:' '\+label/);
+ assert.match(source,/guardCaptionAction\(button,nextCaption\)/);
+ assert.doesNotMatch(source,/bindPathCopy\(api,button,'skillNextLink'/);
+ const app=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
+ assert.match(app,/applyOwnerInterfaceEditedValue\('path',key,visible\)/);
+});
+
+test('issue 390: Path group and requirement captions are direct-edit and keep numbers separate',()=>{
+ assert.match(source,/authored\(api,key,ru,en,'span','path-requirement-caption'\)/);
+ assert.match(source,/class:'path-requirement-value',text:String\(value\)/);
+ assert.match(source,/authored\(api,copyKey,ru,en,'span','path-group-summary-copy'\)/);
+ assert.match(source,/class:'path-group-summary-value'/);
+ assert.match(source,/guardCaptionAction\(groupButton,caption\)/);
+ assert.doesNotMatch(source,/bindPathCopy\(api,caption,key,ru,en,'text',' ',' · '\)/);
+});
+
+test('issue 390: skill rail summary edits only author copy and not the live count',()=>{
+ assert.match(source,/authored\(api,'skillsOnTrackCaption',fallbackRu,/);
+ assert.match(source,/PandoraUILocale\?\.text\('skillsOnTrack','ru'\)/);
+ assert.match(source,/PandoraUILocale\?\.text\('skillsOnTrack','en'\)/);
+ assert.match(source,/class:'path-unlock-count'/);
+ assert.match(source,/marks\.reduce\(\(total,mark\)=>total\+mark\.skills\.length,0\)/);
+ assert.match(source,/guardCaptionAction\(unlockSummary,unlockCaption\)/);
+ assert.doesNotMatch(source,/text:\(root\.PandoraUILocale\?\.text\('skillsOnTrack'/);
+});
+
+test('issue 390: Path baseline/limit captions are editable separately from values',()=>{
+ const src=readFileSync(new URL('../pandora-studio-hero-path.js',import.meta.url),'utf8');
+ assert.match(src,/authored\(api,'innateBaselineLabel','Начально \(оч\.\):'/);
+ assert.match(src,/authored\(api,'pathLimitPoints','Лимит \(оч\.\):'/);
+ assert.match(src,/class:'path-innate-value',text:' '\+String\(base\)/);
+ assert.match(src,/class:'path-limit-number',text:' '\+String\(cap\)/);
+ assert.match(src,/bindPathCopy\(api,baseline,'innateBaselineAria'/);
+ assert.match(src,/'aria-hidden':api\.canEdit\?null:'true'/);
+});

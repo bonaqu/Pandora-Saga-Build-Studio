@@ -99,9 +99,9 @@ function analyzeZoneLootImpact(oldZones,newZones,ctx){
   }
   return Math.round((1-noDrop)*100*1e4)/1e4;
  };
- const percent=(n,other)=>{
+ const percent=(n,other,locale='ru-RU')=>{
   const precision=Math.round(n*100)===Math.round(other*100)&&n!==other?4:2;
-  return new Intl.NumberFormat('ru-RU',
+  return new Intl.NumberFormat(locale,
    {minimumFractionDigits:precision,maximumFractionDigits:precision}).format(n)+'%';
  };
  const impacts=[],skipped=[];
@@ -128,6 +128,14 @@ function analyzeZoneLootImpact(oldZones,newZones,ctx){
   impact.preview=title+': соло '+percent(before[0],after[0])+' → '+percent(after[0],before[0])+
    '; 4 игрока '+percent(before[1],after[1])+' → '+percent(after[1],before[1])+
    '; 8 игроков '+percent(before[2],after[2])+' → '+percent(after[2],before[2]);
+  // Independent-roll estimates are unchanged, only the output locale differs.
+  // Original source map, monster and item names remain unchanged.
+  impact.previewEn=title+': solo '+percent(before[0],after[0],'en-US')+
+   ' → '+percent(after[0],before[0],'en-US')+
+   '; 4 players '+percent(before[1],after[1],'en-US')+
+   ' → '+percent(after[1],before[1],'en-US')+
+   '; 8 players '+percent(before[2],after[2],'en-US')+
+   ' → '+percent(after[2],before[2],'en-US');
   impacts.push(impact);
  }
  impacts.sort((x,y)=>x.mapName.localeCompare(y.mapName,'ru')||
@@ -818,7 +826,53 @@ function describe(change,ctx={}){
  if(uncertain&&!caution)caution=unexplained?
    'Некоторые обозначения или соответствия строк не подтверждены. Проверь их перед публикацией.':
    'Расшифровка доступна, но изменение целого игрового раздела требует ручной проверки перед публикацией.';
- return {title,summary,rows,impacts,technical,uncertain,unexplained,caution,service:kind==='meta'};
+ // Supplement known Russian model-review copy with equivalent English.
+ // Do not guess translations for arbitrary game/source fields or change the
+ // classification of unknown mechanics. Original RU and source names survive.
+ let summaryEn='';
+ if(hasReferenceChange)
+  summaryEn='An item link in a game description changed. Inspect the linked item in the details.';
+ else if(hasInvisibleChange&&rows.length&&rows.every(row=>row.sameVisible))
+  summaryEn='Rendered text matches, but original source records differ. Review before selecting.';
+ else if(kind==='meta'){
+  const old=change.before||{},next=change.after||{};
+  const keys=new Set([...Object.keys(old.sha||{}),...Object.keys(next.sha||{})]);
+  const count=[...keys].filter(key=>old.sha?.[key]!==next.sha?.[key]).length;
+  summaryEn=count?'Catalog checksums changed: '+count+' file'+(count===1?'':'s')+
+   '. This does not change character attributes.':
+   'Catalog service metadata changed, not character attributes.';
+ }else if(kind==='drops')
+  summaryEn='The monster loot table changed. A listed drop chance does not guarantee a reward.';
+ else if(kind==='instances')
+  summaryEn='Dungeon or story quest records changed.';
+ else if(kind==='strings.en')
+  summaryEn='English names or descriptions changed.';
+ else if(rows.some(row=>/описани/i.test(row.label))&&
+  !['trades','chests','tables','expertise'].includes(kind))
+  summaryEn='A description changed. The full before-and-after text is available in the details.';
+ else if(kind==='tables'&&impacts.length){
+  const down=impacts.filter(effect=>effect.direction==='снизился').length;
+  const up=impacts.filter(effect=>effect.direction==='вырос').length;
+  summaryEn='Game formula tables changed. Estimated drop chances differ in '+
+   impacts.length+' modeled sources (decreased: '+down+', increased: '+up+
+   '). Inspect all changes in this atomic section.';
+ }
+ let cautionEn='';
+ if(caution){
+  const notes=[];
+  if(hasReferenceChange)notes.push('An item reference changed. Verify its destination before approval.');
+  else if(hasInvisibleChange)notes.push('Visible text matches but raw source values differ; review manually.');
+  if(kind==='meta')notes.push('Service metadata should not be accepted separately from verified gameplay changes.');
+  if(kind==='tables')notes.push('Publishing replaces the entire Game formulas dataset in Build Studio D1, not the game. Real game-server mechanics are not verified by this estimate.');
+  if(kind==='trades')notes.push('NPC trades are published as one atomic dataset. Inspect all changes.');
+  if(kind==='chests')notes.push('Chest rewards are published as one atomic dataset. Inspect all groups.');
+  if(kind==='expertise')notes.push('Mastery data is published atomically. Inspect all limits and tables.');
+  if(unexplained)notes.push('Some source fields or row correspondences were not verified.');
+  if(!notes.length)notes.push('Manual review is required before publishing this section.');
+  cautionEn=notes.join(' ');
+ }
+ return {title,summary,summaryEn,rows,impacts,technical,uncertain,unexplained,
+  caution,cautionEn,service:kind==='meta'};
 }
 root.PandoraCatalogHumanReview=Object.freeze({describe});
 })(typeof window==='undefined'?globalThis:window);
