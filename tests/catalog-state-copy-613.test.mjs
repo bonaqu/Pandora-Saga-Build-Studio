@@ -97,3 +97,18 @@ test('source failures and publishing risk caveats have bilingual parity',()=>{
  assert.doesNotMatch(workbench,/const confirmationEn=/);
  assert.doesNotMatch(workbench,/editorialState\(status,'(?:sourceFailure|publishWarning|publishFailure)'/);
 });
+
+test('pre-publication blockers cannot be bypassed by English localization',()=>{
+ for(const label of [
+  'No changes selected for publication',
+  'Pre-publication calculation check: ',
+  'Calculation and source-link check: ',
+  'Game links: new broken references found: ',
+  'Item and Soul bonus check: ',
+  'Target and level-difference check: ',
+  'Published D1 translation count changed during review'
+ ])assert.ok(workbench.includes(label),label);
+ assert.match(workbench,/return verifyPublishedSnapshot\(apiBase,snapshot,expected,fetch,lang\)/);
+ assert.match(workbench,/const modelCheck=safety\.check\(combined\)/);
+ assert.match(workbench,/review\.auditSelection\(baseline,upstream,combined,chosen,importer\.files/);
+});

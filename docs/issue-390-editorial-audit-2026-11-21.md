@@ -127,3 +127,10 @@
 - [x] Verified unselected gameplay (`!service`) vs unselected settings (`service`) were already counted correctly; these predicates were left unchanged.
 - [x] Added Node source/boundary checks and actual Chromium EN flow: failed source, Worker diagnostics, archived comparison, English publication confirmation dismissal, no D1 mutation, and return to RU.
 - [ ] Complete Node and Chromium are required on the final same SHA; no physical touchscreen or production D1 acceptance was performed. PR #809 stays draft, issue #390 open.
+
+## Prepared follow-on · fail-closed model checks in both languages
+
+- Preserve the existing `safety.check`, `replaySkills`, graph, equipment and target guards; translate only static explanatory prefixes and known module labels. Return raw model issues, dynamic identifiers and counts unchanged.
+- Make final read-only verification of every published D1 dataset bilingual, while retaining the pinned snapshot equality, per-dataset strict data equality, second meta read and hero base safety check. Existing callers of the four-argument helper remain backward-compatible; the owner calls it with the current locale.
+- Add actual Node execution tests for English D1 provenance failure, content mismatch and base calculation failure. Those tests must still verify the complete 17-dataset audit and meta read twice.
+- This batch is independent of changing D1 records or reaching the live game. It requires its own Node + Chromium acceptance after commit.

@@ -1276,7 +1276,7 @@ export async function runAdminEntrySmoke(browser,base){
   await page.locator('#ownerDock').getByRole('button',{name:'Game catalog',exact:true}).click();
   const enCatalog=page.getByRole('dialog',{name:/Game catalog updates/});
   await enCatalog.waitFor({state:'visible'});
-  await enCatalog.getByRole('button',{name:'Check changes in the current game'}).click();
+  await enCatalog.getByRole('button',{name:'Check live game updates'}).click();
   await page.waitForFunction(()=>document.querySelector('.os-sync-status')?.textContent
     ?.includes('Cloudflare Worker could not connect to the game site.'),
     null,{timeout:15000});

@@ -56,3 +56,19 @@ test('failing base-calculation verification is not hidden by data parity',async(
  const a=setup({},()=>({ok:false,issues:['hero calculation failed']}));
  await assert.rejects(a.audit('https://invalid.example',a.snapshot,a.expected,a.fetcher),/hero calculation failed/);
 });
+
+test('published revision audit preserves fail-closed checks and speaks the selected locale',async()=>{
+ const missing=setup({items:{source:'archive'}});
+ await assert.rejects(
+  missing.audit('https://invalid.example',missing.snapshot,missing.expected,missing.fetcher,'en'),
+  /Published D1 revision not verified: items/);
+ const mismatched=setup({skills:{data:{different:true}}});
+ await assert.rejects(
+  mismatched.audit('https://invalid.example',mismatched.snapshot,mismatched.expected,mismatched.fetcher,'en'),
+  /Published dataset differs from selection: skills/);
+ const invalid=setup({},()=>({ok:false,issues:['source-guard-806']}));
+ await assert.rejects(
+  invalid.audit('https://invalid.example',invalid.snapshot,invalid.expected,invalid.fetcher,'en'),
+  /Base calculations after publication: source-guard-806/);
+ assert.equal(invalid.calls.length,18,'English verification still checks all datasets and meta twice');
+});

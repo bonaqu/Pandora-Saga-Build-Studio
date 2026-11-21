@@ -1390,7 +1390,7 @@
 
     async function verifyPublishedForPlayers(snapshot,expected){
       await afterPublish();
-      return verifyPublishedSnapshot(apiBase,snapshot,expected);
+      return verifyPublishedSnapshot(apiBase,snapshot,expected,fetch,lang);
     }
 
     // The public release and GitHub fallback are distinct: a failed backup
@@ -1496,13 +1496,13 @@
       const syncFormatting=mode==='server'&&formattingToggle.checked&&formattingCount>0;
       const syncRussianInstances=mode==='server'&&russianToggle.checked&&verifiedRussian.length>0;
       if(!baseline||!upstream||(!chosen.size&&!syncFormatting&&!syncRussianInstances))
-       throw Error('Нет выбранных изменений для публикации');
+       throw Error(tr('Нет выбранных изменений для публикации','No changes selected for publication'));
       const combined=review.compose(baseline,upstream,chosen,importer.files,
         {syncFormatting,syncRussianInstances,localInstances});
       // Full structural and count validation is required after selective merging.
       const modelCheck=safety.check(combined);
       if(!modelCheck.ok)
-        throw Error('Проверка расчётов перед публикацией: '+modelCheck.issues.join(' · '));
+        throw Error(tr('Проверка расчётов перед публикацией: ','Pre-publication calculation check: ')+modelCheck.issues.join(' · '));
       const compatibility=safety.compatibility(baseline,combined);
       // Recheck immediately before confirmed publication, independently
       // of the cached UI preview. Do not silently discard old numeric models.
@@ -1512,46 +1512,46 @@
        .sort((a,b)=>b[1]-a[1]).slice(0,3)
        .map(([group,count])=>replaySourceLabel(group)+' · '+count);
       if(replay&&!replay.ok)throw Error(
-       'Проверка расчётов и источниковых связей: '+replay.lost+
-       ' ранее проверенных сценариев перестали подтверждаться. '+
-       (lossSummary.length?'Основные разделы: '+lossSummary.join(' · ')+'. ':'')+
+       tr('Проверка расчётов и источниковых связей: ','Calculation and source-link check: ')+replay.lost+
+       tr(' ранее проверенных сценариев перестали подтверждаться. ',' previously verified scenarios can no longer be confirmed. ')+
+       (lossSummary.length?tr('Основные разделы: ','Main sections: ')+lossSummary.join(' · ')+'. ':'')+
        [...replay.errors,...replay.samples.map(x=>x.name+' / '+
-        (x.module==='source-access-notice'?'доступность навыка':
-         x.module==='ally-recipient'?'усиление союзника':
-         x.module==='priest-cast'?'усиление жреца':
-         x.module.startsWith('source-recipe-')?'рецепт':
-         x.module==='source-ammunition'?'расход стрел':
-         x.module==='source-support-material'?'материалы умения':
+        (x.module==='source-access-notice'?tr('доступность навыка','skill availability'):
+         x.module==='ally-recipient'?tr('усиление союзника','ally buff'):
+         x.module==='priest-cast'?tr('усиление жреца','priest buff'):
+         x.module.startsWith('source-recipe-')?tr('рецепт','recipe'):
+         x.module==='source-ammunition'?tr('расход стрел','ammunition use'):
+         x.module==='source-support-material'?tr('материалы умения','skill materials'):
          x.module==='source-special-resource'||
-         x.module==='source-situational-material'?'особый ресурс':
+         x.module==='source-situational-material'?tr('особый ресурс','special resource'):
          x.module==='source-item-skill'||
-         x.module==='source-item-cure'?'связь расходника':
+         x.module==='source-item-cure'?tr('связь расходника','consumable link'):
          x.module.startsWith('source-')?replaySourceLabel(x.module):
-         x.job==='target'?'эффект цели':x.job)+
+         x.job==='target'?tr('эффект цели','target effect'):x.job)+
         (x.level?' / '+x.level:''))].slice(0,4).join(' · '));
       const graph=typeof safety.sourceGraphIntegrity==='function'?
        safety.sourceGraphIntegrity(baseline,combined):null;
       if(graph&&!graph.ok)throw Error(
-       'Проверка связей: обнаружено новых повреждённых ссылок: '+
+       tr('Проверка связей: обнаружено новых повреждённых ссылок: ','Game links: new broken references found: ')+
        graph.newBroken+' · '+graph.samples.map(x=>x.kind+' '+x.owner+
         ' / '+x.field+' → '+String(x.target??'—')).slice(0,4).join(' · '));
       const equipment=typeof safety.replayEquipmentEffects==='function'?
        safety.replayEquipmentEffects(baseline,combined):null;
       if(equipment&&!equipment.ok)throw Error(
-       'Проверка бонусов предметов и душ: '+equipment.lost+
-       ' известных числовых действий перестали рассчитываться. '+
+       tr('Проверка бонусов предметов и душ: ','Item and Soul bonus check: ')+equipment.lost+
+       tr(' известных числовых действий перестали рассчитываться. ',' known numeric effects are no longer calculated. ')+
        [...equipment.errors,...equipment.samples.map(x=>x.name+' / +'+
         x.grade+' / '+x.previous+' → '+x.next)].slice(0,4).join(' · '));
       const targets=typeof safety.replayMonsterTargets==='function'?
         safety.replayMonsterTargets(baseline,combined):null;
       if(targets&&!targets.ok)throw Error(
-        'Проверка игровых целей и разницы уровней: '+
-        targets.lost+' ранее доступных целей или расчётов перестали подтверждаться. '+
+        tr('Проверка игровых целей и разницы уровней: ','Target and level-difference check: ')+
+        targets.lost+tr(' ранее доступных целей или расчётов перестали подтверждаться. ',' previously available targets or calculations can no longer be confirmed. ')+
         [...targets.errors,...targets.samples.map(row=>
          row.name+' / '+row.detail)].slice(0,4).join(' · '));
       const normalized=importer.normalize(combined,legacy);
       if(!Array.isArray(legacyRows)||legacyRows.length!==normalized.counts.legacyLocale)
-        throw Error('Published D1 translation count changed during review');
+        throw Error(tr('Количество записей перевода D1 изменилось во время сверки','Published D1 translation count changed during review'));
       normalized.entries.legacyLocale=legacyRows; // Preserve exact IDs, payloads and source attribution.
       review.auditSelection(baseline,upstream,combined,chosen,importer.files,
         {syncRussianInstances});
@@ -1897,13 +1897,14 @@
 
   // Read-only. Each JSON value must match the reviewed selection, not merely
   // a version header, count, or two of the game's seventeen datasets.
-  async function verifyPublishedSnapshot(apiBase,snapshot,expected,fetcher=fetch){
+  async function verifyPublishedSnapshot(apiBase,snapshot,expected,fetcher=fetch,lang='ru'){
+    const tr=(ru,en)=>lang==='en'?en:ru;
     const files=root.PandoraCatalogImport?.files;
     const review=root.PandoraOSCatalogReview;
     const safety=root.PandoraCatalogSafety;
     if(!Array.isArray(files)||!files.length||
        !review?.strictEqual||!safety?.check)
-      throw Error('Не подключены модули проверки каталога');
+      throw Error(tr('Не подключены модули проверки каталога','Catalog verification modules are unavailable'));
     const received={},queue=[...files];
     async function read(name){
       const alias=name==='strings.en'?'stringsEn':name;
@@ -1912,10 +1913,10 @@
       });
       if(!response.ok||response.headers.get('x-ps-catalog')!=='d1'||
          response.headers.get('x-ps-catalog-snapshot')!==snapshot)
-        throw Error('Не подтверждена версия D1: '+name);
+        throw Error(tr('Не подтверждена версия D1: ','Published D1 revision not verified: ')+name);
       const data=await response.json();
       if(!review.strictEqual(data,expected?.[name]))
-        throw Error('Опубликованный раздел отличается от выбранного: '+name);
+        throw Error(tr('Опубликованный раздел отличается от выбранного: ','Published dataset differs from selection: ')+name);
       return data;
     }
     let failure=null;
@@ -1930,7 +1931,7 @@
     // Reject a concurrent publication even when all previous reads succeeded.
     await read('meta');
     const check=safety.check(received);
-    if(!check.ok)throw Error('Базовые расчёты после обновления: '+check.issues.join(' · '));
+    if(!check.ok)throw Error(tr('Базовые расчёты после обновления: ','Base calculations after publication: ')+check.issues.join(' · '));
     return {...check,verifiedDatasets:files.length};
   }
 
