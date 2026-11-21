@@ -305,6 +305,10 @@ export async function runOwnerRacialPath648Smoke(browser,base){
    thresholdBefore);
   assert.equal(await milestone.locator('.path-unlock-copy strong').innerText(),
    sourceSkillBefore,'An owner caption never renames the catalog skill');
+  await page.waitForFunction(()=>[...document.querySelectorAll(
+   '#pathGrowthPage button.path-unlock-skill')].some(node=>
+    node.getAttribute('aria-label')?.includes('milestone pts QA')),
+   null,{timeout:12000});
   assert.match(await milestone.getAttribute('aria-label'),/milestone pts QA/,
    'The same D1 key refreshes the accessible action label after inline save');
   assert.equal(await page.locator('#pathGrowthPage').isVisible(),true,
