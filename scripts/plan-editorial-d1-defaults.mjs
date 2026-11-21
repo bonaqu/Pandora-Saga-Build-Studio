@@ -519,6 +519,33 @@ export function buildEditorialDefaultsManifest(){
   })});
 }
 
+// Wrangler D1 --json wraps the SELECT result in a one-query envelope.
+// Require exactly one successful statement and one JSON text column. Never
+// accept an import summary, extra query results or ambiguous multiple rows.
+export function parseWranglerEditorialReadback(raw){
+ if(typeof raw!=='string'||raw.length>6_000_000)
+  throw Error('Wrangler readback size or type is invalid');
+ let output;
+ try{output=JSON.parse(raw)}catch{throw Error('Wrangler readback is not JSON')}
+ if(!Array.isArray(output)||output.length!==1)
+  throw Error('Exactly one Wrangler SQL statement is required');
+ const query=output[0];
+ if(query?.success!==true||!Array.isArray(query.results)||query.results.length!==1)
+  throw Error('Wrangler SQL query failed or result count is ambiguous');
+ const row=query.results[0];
+ if(!row||typeof row!=='object'||Array.isArray(row)||
+  Object.keys(row).length!==1||
+  typeof row.staging_readback_json!=='string')
+  throw Error('Expected only the staging_readback_json text column');
+ try{
+  const data=JSON.parse(row.staging_readback_json);
+  if(!data||typeof data!=='object'||Array.isArray(data)||
+   !Object.hasOwn(data,'metadata')||!Object.hasOwn(data,'rows'))
+   throw Error('Readback payload shape is invalid');
+  return data;
+ }catch{throw Error('Wrangler staging_readback_json is malformed')}
+}
+
 // Validate a complete readback from an isolated D1 import, not just the
 // number of imported rows. No browser/Worker activity or persistence occurs.
 export function verifyEditorialDefaultsReadback(manifest,metadata,readbackRows){
@@ -630,12 +657,14 @@ if(process.argv[1]&&fileURLToPath(import.meta.url)===resolve(process.argv[1])){
  else if(format==='--readback-sql')process.stdout.write(renderEditorialDefaultsReadbackSQL(manifest));
  else if(format==='--staging-rollback-sql')process.stdout.write(renderEditorialDefaultsRollbackSQL(manifest));
  else if(format==='--json')process.stdout.write(JSON.stringify(manifest,null,2)+'\n');
- else if(format==='--verify-readback'){
+ else if(format==='--verify-readback'||format==='--verify-wrangler-readback'){
   const filename=process.argv[3];
   if(!filename){process.stderr.write('Missing staging readback JSON path\n');process.exitCode=2;}
   else {
    try{
-    const data=JSON.parse(readFileSync(resolve(filename),'utf8'));
+    const input=readFileSync(resolve(filename),'utf8');
+    const data=format==='--verify-wrangler-readback'?
+     parseWranglerEditorialReadback(input):JSON.parse(input);
     const verdict=verifyEditorialDefaultsReadback(
      manifest,data?.metadata,data?.rows);
     process.stdout.write(JSON.stringify(verdict,null,2)+'\n');
@@ -653,7 +682,7 @@ if(process.argv[1]&&fileURLToPath(import.meta.url)===resolve(process.argv[1])){
  },null,2)+'\n');
  else{
   process.stderr.write('Usage: node scripts/plan-editorial-d1-defaults.mjs '+
-   '[--report|--json|--sql|--readback-sql|--staging-rollback-sql|--verify-readback <staging-readback.json>]\n');
+   '[--report|--json|--sql|--readback-sql|--staging-rollback-sql|--verify-readback <staging-readback.json>|--verify-wrangler-readback <wrangler-output.json>]\n');
   process.exitCode=2;
  }
 }

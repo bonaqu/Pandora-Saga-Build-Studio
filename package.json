@@ -31,6 +31,7 @@
     "editorial:defaults:readback-sql": "node scripts/plan-editorial-d1-defaults.mjs --readback-sql",
     "editorial:defaults:rollback-sql": "node scripts/plan-editorial-d1-defaults.mjs --staging-rollback-sql",
     "editorial:defaults:verify": "node scripts/plan-editorial-d1-defaults.mjs --verify-readback",
+    "editorial:defaults:verify-wrangler": "node scripts/plan-editorial-d1-defaults.mjs --verify-wrangler-readback",
     "assets:missing": "node scripts/report-missing-original-artwork.mjs",
     "assets:aliases:check": "node scripts/skill-icon-display-aliases.mjs",
     "assets:aliases:refresh": "node scripts/skill-icon-display-aliases.mjs --write",

@@ -86,7 +86,14 @@ This is a **measured subset**, not proof that every page's dynamically generated
 
 The mandatory Node 22 CI now executes the **actual generated SQLite SQL** inside an in-memory database. It also executes the actual SELECT-only Worker snapshot reader against those materialized SQLite tables before corruption, after corruption and after rollback. It checks first import, idempotent retry, a complete JSON readback, corruption rejection, and exact-version rollback while keeping other snapshots and the preexisting CAS `overrides` table intact. This is a local SQL rehearsal, **not** evidence of a real Cloudflare D1 staging import.
 
-After an independently authorized staging-only import, execute the SELECT-only `local-editorial-readback.sql` against that staging D1 and save the exact `staging_readback_json` column value (not the Wrangler output envelope) to `staging-readback.json`. Run `npm run editorial:defaults:verify -- staging-readback.json` and require exit code 0 before testing the pinned Worker reader.
+After an independently authorized staging-only import, execute the SELECT-only `local-editorial-readback.sql` against that staging D1. Cloudflare Wrangler officially supports `d1 execute --remote --file ... --json` (https://developers.cloudflare.com/d1/wrangler-commands/#d1-execute). Save its **unmodified JSON response** for offline verification. Example **READ-ONLY** command, with the target independently confirmed as an **isolated staging D1 database** (never production):
+
+```bash
+npx wrangler@4 d1 execute STAGING_DATABASE_NAME --remote --file=local-editorial-readback.sql --json > staging-wrangler-readback.json
+npm run editorial:defaults:verify-wrangler -- staging-wrangler-readback.json
+```
+
+The CLI validates that Wrangler returned exactly **one successful query, one result row, one `staging_readback_json` column**, then independently verifies all expected rows and the exact SHA-256. Multiple statements/results, failed SQL, malformed envelopes, stale hashes and incomplete rows fail closed, with no D1 writes. Exit code 0 is mandatory before activating a staged snapshot. For direct SQLite/JSON exports containing only `{metadata,rows}`, the original `npm run editorial:defaults:verify -- staging-readback.json` remains supported. Never mistake generated SQL or an import success message for verified staging data.
 
 For a separate, backed-up **staging-only** rollback review, generate:
 

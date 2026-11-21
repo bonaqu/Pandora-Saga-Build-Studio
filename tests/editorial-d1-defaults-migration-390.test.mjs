@@ -10,7 +10,7 @@ import {runInNewContext} from 'node:vm';
 import {
  buildEditorialDefaultsManifest,renderEditorialDefaultsSQL,
  renderEditorialDefaultsReadbackSQL,renderEditorialDefaultsRollbackSQL,
- verifyEditorialDefaultsReadback
+ verifyEditorialDefaultsReadback,parseWranglerEditorialReadback
 } from '../scripts/plan-editorial-d1-defaults.mjs';
 import {readVerifiedEditorialSnapshot} from '../worker/pandora-studio-editorial-defaults.js';
 
@@ -389,6 +389,55 @@ test('issue 390: Windows-safe CLI reports sources and rejects damaged staging re
   const invalid=command('--verify-readback',file);
   assert.equal(invalid.status,1,'Readback hash mismatch must fail the CLI');
   assert.equal(JSON.parse(invalid.stdout).reason,'content-digest-mismatch');
+ }finally{rmSync(dir,{recursive:true,force:true})}
+});
+
+test('#390 Wrangler D1 --json readback must be one successful, verified SELECT, not an import summary',()=>{
+ const readback={metadata:{snapshot:manifest.snapshot,
+  source_release:manifest.release,sha256:manifest.digest,
+  expected_rows:manifest.records.length},
+  rows:manifest.records.map(r=>({record_key:r.recordKey,field:r.field,value:r.value}))};
+ const envelope=body=>JSON.stringify([{success:true,results:[
+  {staging_readback_json:JSON.stringify(body)}],meta:{duration:5}}]);
+ const parsed=parseWranglerEditorialReadback(envelope(readback));
+ assert.equal(verifyEditorialDefaultsReadback(manifest,parsed.metadata,parsed.rows).ok,true);
+ const malformed=[
+  JSON.stringify([{success:false,results:[{staging_readback_json:'{}'}]}]),
+  JSON.stringify([{success:true,results:[]}]),
+  JSON.stringify([{success:true,results:[{not_readback:'{}'}]}]),
+  JSON.stringify([{success:true,results:[{staging_readback_json:'{}',secret:'unexpected'}]}]),
+  JSON.stringify([{success:true,results:[{staging_readback_json:'{}'}]},
+   {success:true,results:[{staging_readback_json:'{}'}]}]),
+  JSON.stringify({success:true,results:[]}),
+  'not a JSON document',
+  JSON.stringify([{success:true,results:[{staging_readback_json:'broken JSON'}]}])
+ ];
+ for(const input of malformed)
+  assert.throws(()=>parseWranglerEditorialReadback(input),
+   'Must reject malformed or ambiguous Wrangler D1 result');
+ const tampered={...readback,rows:readback.rows.map(row=>({...row}))};
+ tampered.rows[0].value+=' tampered';
+ const damaged=parseWranglerEditorialReadback(envelope(tampered));
+ assert.equal(verifyEditorialDefaultsReadback(manifest,damaged.metadata,damaged.rows).reason,
+  'content-digest-mismatch');
+ const dir=mkdtempSync(join(tmpdir(),'pandora-wrangler-readback-'));
+ const file=join(dir,'wrangler-readback.json'),cli=fileURLToPath(
+  new URL('../scripts/plan-editorial-d1-defaults.mjs',import.meta.url));
+ const command=()=>spawnSync(process.execPath,[cli,'--verify-wrangler-readback',file],
+  {encoding:'utf8',maxBuffer:4*1024*1024});
+ try{
+  writeFileSync(file,envelope(readback));
+  const valid=command();
+  assert.equal(valid.status,0,valid.stderr);
+  assert.equal(JSON.parse(valid.stdout).checkedRows,manifest.records.length);
+  writeFileSync(file,envelope(tampered));
+  const damagedResult=command();
+  assert.equal(damagedResult.status,1);
+  assert.equal(JSON.parse(damagedResult.stdout).reason,'content-digest-mismatch');
+  writeFileSync(file,malformed[0]);
+  const invalid=command();
+  assert.equal(invalid.status,2);
+  assert.match(invalid.stderr,/Invalid staging readback file/);
  }finally{rmSync(dir,{recursive:true,force:true})}
 });
 
