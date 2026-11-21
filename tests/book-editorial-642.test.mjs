@@ -62,6 +62,25 @@ test('issue #390: Book and shared action guards support multiple captions per di
  assert.match(app,/!activeCaption\.hidden\)button\.click\(\)/);
 });
 
+test('issue #390: skill range copy is edited separately from OS numbers and skill names',()=>{
+ const src=file('pandora-studio-hero-book.js');
+ assert.match(src,/const authoredRange=\(key,ru,en\)=>/);
+ assert.match(src,/guideLabel\(node,'attack\.skillRange\.'\+key,ru,en,options\)/);
+ for(const key of ['bonus','fromSkill','from','mastery','timingToggle',
+   'timingUse','requirementsMet'])
+  assert.ok(src.includes("'"+key+"'"),'Missing exact bilingual range copy: '+key);
+ assert.match(src,/if\(skill\?\.id!==row\.id\)continue/);
+ assert.match(src,/class:'stage-skill-range-bonus-value',text:size/);
+ assert.match(src,/class:'stage-skill-range-source-value',text:'\+'\+row\.sourceConstant/);
+ assert.match(src,/class:'stage-skill-range-mastery-value',text:'\+'\+row\.sourceMasteryPart/);
+ assert.match(src,/class:'stage-skill-range-source-branch',text:branchName/);
+ assert.match(src,/class:'stage-skill-range-source-reason'/);
+ assert.match(src,/text:\(english\?row\.reasonEn:row\.reasonRu\)\?\?'—'/);
+ // All authorial fragments are exact Book D1 keys, not skill IDs or
+ // source-derived numbers translated by fuzzy string replacement.
+ assert.doesNotMatch(src,/guideLabel\(label,'attack\.skillRange\./);
+});
+
 test('Book user text, numeric values and runtime item labels never become editable D1 keys',()=>{
  for(const value of ['Hero PvP 255','Sword +9','1927','172–209','ОЗ: 1900','Сияние героя','Сохранённый билд']){
   assert.equal(locale.bookFieldKey(value),null);
