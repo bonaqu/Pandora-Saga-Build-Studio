@@ -33,7 +33,7 @@ test('issue #390: Book proc headline separates the authorial D1 key from source-
  const app=file('pandora-studio-app.js');
  const key=locale.bookFieldKey('Срабатывания предметов и душ');
  assert.ok(key,'The historical bilingual Book key must remain valid');
- assert.equal(locale.fieldKey(key)?.startsWith('book-'),true);
+ assert.match(locale.fieldKey(key)||'',/^ui\.label\.book-/);
  assert.match(src,/class:'stage-source-events-caption',text:english\?/);
  assert.match(src,/class:'stage-book-live-count',text:' · '\+rows\.length/);
  assert.doesNotMatch(src,/panel\.append\(make\('summary',\{text:\(english\?'Item and Soul triggers'/);
