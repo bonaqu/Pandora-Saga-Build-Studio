@@ -274,7 +274,8 @@ test('three saved-build confirmations mount lazily with stable D1 copy and never
  assert.match(toggle,/choice\.replaceChildren\(\)/);
  assert.match(toggle,/fillCardChoice\(target\)/);
  assert.match(toggle,/bindAccountCopyEditors\(target\)/);
- assert.match(toggle,/button:not\(\.account-copy-pencil\)/);
+ assert.match(toggle,/target\.querySelector\('button'\)\?\.focus\(\{preventScroll:true\}\)/);
+ assert.doesNotMatch(toggle,/account-copy-pencil/);
  const msg=locale.text('libraryOverwriteBefore','ru')+'Мой секретный персонаж'+
   locale.text('libraryOverwriteAfter','ru');
  assert.match(msg,/Мой секретный персонаж/);

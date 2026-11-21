@@ -734,7 +734,6 @@ export async function runUIContentInlineSmoke(browser,base){
    pointerType:'touch',isPrimary:true,button:0,clientX:18,clientY:18
   });
   await page.waitForTimeout(570);
-  const touchGuest=guestLead.locator('[contenteditable]');
   // Account inline editors use a sibling editing host rather than rewriting
   // the source node, so detect that host via the actual panel.
   const guestTouchHost=page.locator(

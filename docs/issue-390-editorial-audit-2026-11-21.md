@@ -59,3 +59,9 @@
 - [x] Removed obsolete `ownerCopyPencil` branches across core app, account and update manager, retaining only current direct-caption and independent hover-hint flows. Eliminated an unnecessary second append of each Hero Book result tile.
 - [x] Added Chromium synthetic touch-pointer scenarios at narrow viewport, Book guide, Honor numeric requirement, and account draft. This tests the delegated handler in real Chromium; a physical touchscreen/real OS gesture is still a distinct acceptance step.
 - [ ] This third packet requires Node + Chromium on its own head SHA. Guest permissions and interactive-control touch behavior still need full independent acceptance; no closure of #390.
+
+## CI repair after third packet
+
+- SHA `04d9e1d88fa044d2f90fe64557960be58eb48a1b`: [Chromium #44856815386](https://github.com/bonaqu/Pandora-Saga-Build-Studio/actions/runs/44856815386) passed with the added touch-pointer scenarios.
+- [Node #44856815374](https://github.com/bonaqu/Pandora-Saga-Build-Studio/actions/runs/44856815374) ran 3304 tests: 3302 passed, 1 TODO, 1 failure in `tests/library-inline-copy.test.mjs`. This was a stale assertion demanding the removed `button:not(.account-copy-pencil)` selector; the current code rightly focuses the real first button. Updated the assertion to require the live direct button focus and **absence** of obsolete pencil code. The earlier code was not restored.
+- Cleaned the unreferenced local variable in Chromium touch acceptance. The repair commit must receive a fresh Node + Chromium on the same SHA; the preceding Chromium success is only evidence for the preceding revision.
