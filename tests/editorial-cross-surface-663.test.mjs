@@ -74,7 +74,8 @@ test('shared owner editor reuses CAS, blur and Escape without wrapping buttons',
  assert.match(app,/function bindOwnerInterfaceText\(node,section,key,ru,en,attribute='text'/);
  assert.match(app,/node\.dataset\.ownerInterfaceKey=key/);
  assert.match(app,/ownerCopyKey\(section,id\)!==key/);
- assert.match(app,/if\(attr==='text'\)node\.textContent=value/);
+ assert.match(app,/if\(attr==='text'\)\{\s*if\(!editingText\)node\.textContent=value/);
+ assert.match(app,/if\(attr==='text'\)\{\s*if\(!editingText\)ownerDockPatchText\(node,value\)/);
  assert.match(app,/node\.setAttribute\(attr,value\)/);
  assert.match(app,/key\.startsWith\('book\.wiki-ui\.'\)/);
  assert.match(app,/key\.startsWith\('book\.skill-ui\.'\)/);
