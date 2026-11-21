@@ -107,5 +107,6 @@ test('admin action tooltips are quicker, deliberate and keyboard accessible',()=
  assert.match(workbench,/PandoraGuideTooltip\?\.attach\(node,description,\{hoverDelay:420\}\)/);
  assert.match(app,/ownerDockHints\[key\]\[lang==='en'\?1:0\],\{hoverDelay:350\}\)/);
  assert.match(app,/button\.removeAttribute\('title'\)/);
- assert.match(app,/ownerDockPatchData\(pencil,'guideHint',lang==='en'/);
+ assert.match(app,/ownerDockPatchData\(button,'guideHint',ownerDockHints\[key\]/);
+ assert.doesNotMatch(app,/ownerDockPatchData\(pencil,'guideHint'/);
 });

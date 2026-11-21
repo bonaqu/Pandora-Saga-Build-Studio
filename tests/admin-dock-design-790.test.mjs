@@ -33,18 +33,18 @@ test('save status, pinned finish, and editable labels retain their safety behavi
  assert.match(app,/ownerDockCollapsed=true/);
  assert.match(dock,/#ownerDock \.owner-dock-footer\{/);
  assert.match(dock,/#ownerDock \.owner-dock-footer \.owner-dock-finish\{/);
- assert.match(dock,/#ownerDock \.owner-dock-action-slot>button:not\(\.owner-dock-action-pencil\)\{\s*grid-column:1/);
- assert.match(dock,/#ownerDock \.owner-dock-action-slot>\.owner-dock-action-pencil\{\s*grid-column:2/);
+ assert.match(dock,/#ownerDock \.owner-dock-action-slot>button\{\s*grid-column:1/);
+ assert.match(dock,/#ownerDock \.owner-dock-action-slot\{\s*grid-template-columns:minmax\(0,1fr\)/);
  assert.match(dock,/#ownerDock \.owner-dock-action-slot>button\[hidden\]\{display:none!important\}/);
 });
-test('new visual design keeps meaningful responsive actions, visible editor pens and one scroll area',()=>{
+test('new visual design keeps responsive actions, direct-edit labels and one scroll area',()=>{
  assert.match(dock,/#ownerDock \.owner-dock-body\{[\s\S]*?overflow-y:auto/);
  assert.match(dock,/#ownerDock \.owner-dock-action-grid\{/);
  assert.match(dock,/#ownerDock \.owner-dock-group-heading\{/);
  assert.match(dock,/#ownerDock \.owner-workflow-guide>summary\{/);
  assert.match(dock,/@media\(max-width:480px\)/);
  assert.match(dock,/prefers-reduced-motion:reduce/);
- assert.match(dock,/#ownerDock \.owner-dock-action-slot:hover>\.owner-dock-action-pencil/);
+ assert.doesNotMatch(dock,/owner-dock-action-pencil|owner-workflow-copy-pencil|owner-dock-group-pencil/);
  assert.match(app,/ownerDockPatchAttr\(root,'aria-label',lang==='en'/);
 });
 test('manual edit history and all admin dialogs use the improved controls',()=>{
