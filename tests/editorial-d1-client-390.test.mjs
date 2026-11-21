@@ -191,6 +191,98 @@ test('#390 verified Path/Honor RU/EN defaults remain subordinate to existing own
   'Разделы','Sections').ru,'Разделы');
 });
 
+test('#390 versioned Honor PvP and rank-phrase defaults keep owner CAS and live numbers separate',async()=>{
+ const root=context(),stage=root.PandoraEditorialDefaults,guide=root.PandoraHonorGuide;
+ const column='guideedit.book.honor-view.pvp-daily-column0';
+ const requirement='guideedit.book.honor-view.rank-req-top-lead';
+ const payload=fixture([
+  [column,'en','Victories · staging'],
+  [requirement,'ru','Для ранга попадите в топ · staging']
+ ]);
+ assert.equal(await stage.installVerified(payload,payload.snapshot,webcrypto.subtle),true);
+ assert.equal(guide.field({},'honor-view.pvp-daily-column0',
+  'Победы за день','Daily victories').en,'Victories · staging');
+ assert.equal(guide.field({},'honor-view.rank-req-top-lead',
+  'Для получения ранга необходимо находиться в топ',
+  'To earn this rank, finish in your nation’s top').ru,
+  'Для ранга попадите в топ · staging');
+ const overrides={[requirement]:JSON.stringify({ru:'Для ранга — в топ · owner'})};
+ assert.equal(guide.field(overrides,'honor-view.rank-req-top-lead',
+  'Для получения ранга необходимо находиться в топ',
+  'To earn this rank, finish in your nation’s top').ru,
+  'Для ранга — в топ · owner');
+ stage.reset();
+ assert.equal(guide.field({},'honor-view.pvp-daily-column0',
+  'Победы за день','Daily victories').en,'Daily victories');
+});
+
+test('#390 staged conditional Path copy preserves CAS and does not transport calculated points',async()=>{
+ const root=context(),stage=root.PandoraEditorialDefaults,guide=root.PandoraHonorGuide;
+ const group='guideedit.book.path.path-group-trained';
+ const count='guideedit.book.path.skill-count-many';
+ const payload=fixture([
+  [group,'en','trained · staging'],
+  [count,'ru','освоенных умений · staging']
+ ]);
+ assert.equal(await stage.installVerified(payload,payload.snapshot,webcrypto.subtle),true);
+ assert.equal(guide.field({},'path.path-group-trained','освоено','trained').en,
+  'trained · staging');
+ assert.equal(guide.field({},'path.skill-count-many','умений','skills').ru,
+  'освоенных умений · staging');
+ const overrides={[group]:JSON.stringify({en:'mastered · owner'})};
+ assert.equal(guide.field(overrides,'path.path-group-trained','освоено','trained').en,
+  'mastered · owner');
+ stage.reset();
+ assert.equal(guide.field({},'path.skill-count-many','умений','skills').ru,
+  'умений');
+});
+
+test('#390 Path accessibility and hover copy honors pinned staging, owner CAS and reset',async()=>{
+ const root=context(),stage=root.PandoraEditorialDefaults,guide=root.PandoraHonorGuide;
+ const label='guideedit.book.path.skill-previous-aria';
+ const help='guideedit.book.path.branch-point-help';
+ const staged=fixture([
+  [label,'en','Previous ability · staging:'],
+  [help,'ru','Как вкладывать очки · staging']
+ ]);
+ assert.equal(await stage.installVerified(staged,staged.snapshot,webcrypto.subtle),true);
+ assert.equal(guide.field({},'path.skill-previous-aria',
+  'Предыдущее умение:','Previous skill:').en,'Previous ability · staging:');
+ assert.equal(guide.field({},'path.branch-point-help',
+  'Очки умений, распределяемые при развитии персонажа.',
+  'Skill points allocated as the character develops.').ru,
+  'Как вкладывать очки · staging');
+ const owner={[help]:JSON.stringify({ru:'Подсказка владельца'})};
+ assert.equal(guide.field(owner,'path.branch-point-help',
+  'Очки умений, распределяемые при развитии персонажа.',
+  'Skill points allocated as the character develops.').ru,
+  'Подсказка владельца');
+ stage.reset();
+ assert.equal(guide.field({},'path.skill-previous-aria',
+  'Предыдущее умение:','Previous skill:').en,'Previous skill:');
+});
+
+test('#390 Path requirement captions and unlock states use verified bilingual fallback beneath CAS',async()=>{
+ const root=context(),stage=root.PandoraEditorialDefaults,guide=root.PandoraHonorGuide;
+ const req='guideedit.book.path.path-req-threshold';
+ const unlock='guideedit.book.path.path-unlock-ready';
+ const payload=fixture([
+  [req,'ru','Условие: · staging'],
+  [unlock,'en','available · staging']
+ ]);
+ assert.equal(await stage.installVerified(payload,payload.snapshot,webcrypto.subtle),true);
+ assert.equal(guide.field({},'path.path-req-threshold','порог','threshold').ru,
+  'Условие: · staging');
+ assert.equal(guide.field({},'path.path-unlock-ready','доступно','available').en,
+  'available · staging');
+ const owner={[req]:JSON.stringify({ru:'Порог · owner'})};
+ assert.equal(guide.field(owner,'path.path-req-threshold','порог','threshold').ru,
+  'Порог · owner');
+ stage.reset();
+ assert.equal(guide.field({},'path.path-unlock-ready','доступно','available').en,
+  'available');
+});
+
 test('#390 staging text uses only exact semantic identities and CAS outranks defaults',async()=>{
  const root=context(),stage=root.PandoraEditorialDefaults;
  const ui=root.PandoraUILocale,guide=root.PandoraHonorGuide,wiki=root.PandoraWikiLabels;

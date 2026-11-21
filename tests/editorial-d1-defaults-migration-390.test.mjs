@@ -346,6 +346,152 @@ test('#390 Hero Path and Honor source-authored labels have pinned semantic D1 de
    'Skill IDs and Honor rank mechanics never enter source-authored copy');
 });
 
+test('#390 real Honor PvP tables and generated rank phrases are copied without gameplay row values',()=>{
+ const honor=read('pandora-studio-honor-view.js');
+ const tables=[...honor.matchAll(
+  /\baddTable\('([^']+)','([^']+)','([^']+)',\s*(\[\[[\s\S]*?\]\])\s*,/g
+ )].map(m=>[m[1],m[2],m[3],m[4]]);
+ assert.deepEqual(tables.map(row=>row[0]),['pvpDaily','pvpWeekly','pvpHunt']);
+ assert.equal(manifest.stats.cohorts['honor-pvp-tables'],22);
+ const values=[];
+ for(const [key,ru,en,raw] of tables){
+  const headers=runInNewContext('('+raw+')',{});
+  values.push([key+'Heading',ru,en]);
+  for(const [i,pair] of headers.entries())values.push([key+'Column'+i,...pair]);
+ }
+ assert.equal(values.length,11);
+ const phrases=[...honor.matchAll(
+  /\bphrase\('([^']+)'\s*,\s*'([^']*)'\s*,\s*'([^']*)'\s*\)/g
+ )].map(m=>[m[1],m[2],m[3]]);
+ assert.equal(phrases.length,8);
+ const unique=new Map();
+ for(const [key,ru,en] of phrases){
+  if(unique.has(key))assert.deepEqual(unique.get(key),[ru,en]);
+  unique.set(key,[ru,en]);
+ }
+ assert.equal(unique.size,7);
+ assert.equal(manifest.stats.cohorts['honor-rank-phrases'],14);
+ assert.equal(manifest.stats.cohorts['honor-list-headings'],2);
+ values.push(...[...unique].map(([key,pair])=>[key,...pair]));
+ values.push(['zonesHeading','PvP-локации','PvP locations']);
+ for(const [key,ru,en] of values){
+  const id='guideedit.book.honor-view.'+
+   key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  assert.equal(manifest.records.find(row=>row.recordKey===id&&row.field==='ru')?.value,
+   ru,id);
+  assert.equal(manifest.records.find(row=>row.recordKey===id&&row.field==='en')?.value,
+   en,id);
+ }
+ const original=manifest.records.find(row=>row.recordKey===
+  'guideedit.book.honor-view.wars-heading'&&row.field==='ru');
+ assert.equal(original?.value,'PvP-войны','No duplicate warsHeading D1 key');
+ assert.equal(manifest.records.filter(row=>row.recordKey===
+  'guideedit.book.honor-view.wars-heading').length,2);
+ for(const suffix of ['pvp-daily-wins','rank-1-total-honor','pvp-weekly-limit-value'])
+  assert.equal(manifest.records.some(row=>
+   row.recordKey==='guideedit.book.honor-view.'+suffix),false);
+});
+
+test('#390 Path group, skill count, loading and metadata prose are versioned but numbers are not',()=>{
+ const source=read('pandora-studio-hero-path.js');
+ const expected=new Set([
+  'pathGroupTrained','pathGroupLearned','pathGroupInvested',
+  'pathPointsLoading','pathBranchCapZero','pathPointsUnavailable',
+  'skillCountOne','skillCountFew','skillCountMany',
+  'skillUpgradeCurrentBefore','skillUpgradeFutureBefore',
+  'skillUpgradeCurrentAfter','skillUpgradeFutureAfter'
+ ]);
+ const states=[...source.matchAll(
+  /\['([^']+)','([^']*)','([^']*)'\]/g
+ )].filter(m=>expected.has(m[1])).map(m=>[m[1],m[2],m[3]]);
+ const fieldRows=[...source.matchAll(
+  /\bfield\('([^']+)','([^']+)','([^']+)',/g
+ )].map(m=>[m[1],m[2],m[3]]);
+ assert.equal(states.length,13);
+ assert.equal(fieldRows.length,7);
+ assert.equal(manifest.stats.cohorts['hero-path-states'],40);
+ for(const [key,ru,en] of [...states,...fieldRows]){
+  const id='guideedit.book.path.'+
+   key.replace(/[A-Z]/g,ch=>'-'+ch.toLowerCase());
+  assert.equal(manifest.records.filter(r=>r.recordKey===id).length,2,id);
+  assert.equal(manifest.records.find(r=>r.recordKey===id&&r.field==='ru')?.value,
+   ru,id);
+  assert.equal(manifest.records.find(r=>r.recordKey===id&&r.field==='en')?.value,
+   en,id);
+ }
+ assert.match(source,/class:'path-group-summary-value'/);
+ assert.match(source,/class:'path-skill-count-value'/);
+ assert.match(source,/class:'path-version-level',text:'50'/);
+ for(const id of ['path.skill-320005001','path.level-50','path.group-trained-value'])
+  assert.ok(!manifest.records.some(r=>r.recordKey==='guideedit.book.'+id));
+});
+
+test('#390 Hero Path aria/help source captions exclude dynamic branch names and points',()=>{
+ const path=read('pandora-studio-hero-path.js');
+ const binds=[...path.matchAll(
+  /bindPathCopy\(api,\s*\w+,'([^']+)'\s*,\s*'([^']+)'\s*,\s*'([^']+)'/g
+ )].map(m=>[m[1],m[2],m[3]]);
+ const help=[...path.matchAll(
+  /'(branchPointHelp|greenMasteryHelp)','([^']+)'\s*,\s*'([^']+)'/g
+ )].map(m=>[m[1],m[2],m[3]]);
+ const weapon=[...path.matchAll(
+  /\['(skillWeaponRange)','([^']+)','([^']+)'\]/g
+ )].map(m=>[m[1],m[2],m[3]]);
+ assert.equal(binds.length,16);
+ assert.equal(help.length,2);
+ assert.equal(weapon.length,1);
+ assert.equal(manifest.stats.cohorts['hero-path-accessible'],36);
+ for(const [key,ru,en] of [...binds,...help,...weapon]){
+  const id='guideedit.book.path.'+
+   key.replace(/[A-Z]/g,ch=>'-'+ch.toLowerCase());
+  assert.equal(manifest.records.filter(row=>row.recordKey===id).length,2,id);
+  assert.equal(manifest.records.find(row=>row.recordKey===id&&row.field==='ru')?.value,
+   ru,id);
+  assert.equal(manifest.records.find(row=>row.recordKey===id&&row.field==='en')?.value,
+   en,id);
+ }
+ assert.match(path,/bindPathCopy\(api,input,'pathMasteryAria'/);
+ assert.match(path,/bindPathCopy\(api,button,'pathUnlockPoints'/);
+ assert.ok(path.includes("bindPathCopy(api,title,helpKey,ruHelp,enHelp,'aria-label','',name+'. ');"));
+ for(const key of ['path.branch-branch-name','path.skill-current-mp-value'])
+  assert.ok(!manifest.records.some(row=>row.recordKey==='guideedit.book.'+key));
+});
+
+test('#390 Path requirements and unlock status copy never include thresholds or skill identities',()=>{
+ const source=read('pandora-studio-hero-path.js');
+ const rows=[...source.matchAll(
+  /\['(pathReq[a-zA-Z]+)','([^']+)','([^']+)',(?:req\.amount|cap|available|mastered|base|value|green)\]/g
+ )].map(m=>[m[1],m[2],m[3]]);
+ const unique=new Map();
+ for(const [key,ru,en] of rows){
+  if(unique.has(key))assert.deepEqual(unique.get(key),[ru,en]);
+  unique.set(key,[ru,en]);
+ }
+ assert.equal(rows.length,8);
+ assert.equal(unique.size,6);
+ assert.equal(manifest.stats.cohorts['hero-path-requirement-captions'],12);
+ assert.equal(manifest.stats.cohorts['hero-path-unlock-states'],4);
+ const status=source.match(
+  /word=authored\(api,mark\.locked\?'pathUnlockOverCap':'pathUnlockReady',\s*mark\.locked\?'([^']+)':'([^']+)',\s*mark\.locked\?'([^']+)':'([^']+)'/
+ );
+ assert.ok(status,'Status selection still uses source readiness');
+ unique.set('pathUnlockOverCap',[status[1],status[3]]);
+ unique.set('pathUnlockReady',[status[2],status[4]]);
+ for(const [key,[ru,en]] of unique){
+  const id='guideedit.book.path.'+
+   key.replace(/[A-Z]/g,ch=>'-'+ch.toLowerCase());
+  assert.equal(manifest.records.filter(row=>row.recordKey===id).length,2,id);
+  assert.equal(manifest.records.find(row=>row.recordKey===id&&row.field==='ru')?.value,
+   ru,id);
+  assert.equal(manifest.records.find(row=>row.recordKey===id&&row.field==='en')?.value,
+   en,id);
+ }
+ assert.match(source,/class:'path-requirement-value',text:String\(value\)/);
+ assert.match(source,/class:'path-unlock-status'/);
+ for(const key of ['path.path-req-threshold-value','path.path-unlock-skill-id'])
+  assert.ok(!manifest.records.some(row=>row.recordKey==='guideedit.book.'+key));
+});
+
 test('issue 390: migration never materializes runtime values or rewrites an override',()=>{
  assert.equal(manifest.records.some(r=>
   /(?:^|\.)(?:character|item|soul|account|formula|amount|gold|points|chance)\.[0-9]+/.test(r.recordKey)),false);

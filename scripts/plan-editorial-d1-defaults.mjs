@@ -512,6 +512,194 @@ export function buildEditorialDefaultsManifest(){
   append('guideedit.book.honor-view.'+slug,'en',en,'honor-view-authorial');
  }
 
+ // The same Honor renderer already exposes D1/CAS captions for each
+ // PvP table heading/column and generated rank requirement phrase.
+ // Extract its literal source *arguments*, never the numeric row values.
+ // A single source label reused by several branches has one D1 identity.
+ const honorView=read('pandora-studio-honor-view.js');
+ const tableCalls=[...honorView.matchAll(
+  /\baddTable\('([^']+)','([^']+)','([^']+)',\s*(\[\[[\s\S]*?\]\])\s*,/g
+ )].map(m=>[m[1],m[2],m[3],m[4]]);
+ const expectedTables=[['pvpDaily',2],['pvpWeekly',3],['pvpHunt',3]];
+ if(tableCalls.length!==expectedTables.length||
+  tableCalls.some(([key,, ,headers],i)=>key!==expectedTables[i][0]||
+   !Array.isArray(runInNewContext('('+headers+')',{},{
+    filename:'Honor '+key+' headers',timeout:5000
+   }))||runInNewContext('('+headers+')',{},{
+    filename:'Honor '+key+' headers',timeout:5000
+   }).length!==expectedTables[i][1]))
+  throw Error('Honor PvP heading/column source inventory changed');
+ for(const [key,ru,en,headerSource] of tableCalls){
+  const headings=runInNewContext('('+headerSource+')',{},{
+   filename:key+' PvP headers',timeout:5000
+  });
+  const fields=[[key+'Heading',ru,en],
+   ...headings.map((pair,i)=>{
+    if(!Array.isArray(pair)||pair.length!==2)
+     throw Error('Invalid Honor PvP header: '+key+'/'+i);
+    return [key+'Column'+i,pair[0],pair[1]];
+   })];
+  for(const [name,ruValue,enValue] of fields){
+   if(!ruValue.trim()||!enValue.trim())
+    throw Error('Empty Honor PvP copy: '+name);
+   const slug=name.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+   append('guideedit.book.honor-view.'+slug,'ru',ruValue,'honor-pvp-tables');
+   append('guideedit.book.honor-view.'+slug,'en',enValue,'honor-pvp-tables');
+  }
+ }
+ const phraseCalls=[...honorView.matchAll(
+  /\bphrase\('([^']+)'\s*,\s*'([^']*)'\s*,\s*'([^']*)'\s*\)/g
+ )].map(m=>[m[1],m[2],m[3]]);
+ const expectedPhraseNames=[
+  'rankReqTopLead','rankReqTopEnd','rankReqPointsLead',
+  'rankReqPointsMiddle','rankReqGoldEnd','rankReqJoinNation','rankReqGoldLead'
+ ];
+ const uniquePhrases=new Map();
+ for(const [key,ru,en] of phraseCalls){
+  const old=uniquePhrases.get(key);
+  if(old&&(old[0]!==ru||old[1]!==en))
+   throw Error('Inconsistent reused Honor requirement phrase: '+key);
+  uniquePhrases.set(key,[ru,en]);
+ }
+ if(phraseCalls.length!==8||uniquePhrases.size!==expectedPhraseNames.length||
+  [...uniquePhrases.keys()].sort().join('|')!==expectedPhraseNames.sort().join('|'))
+  throw Error('Honor generated requirement prose inventory changed');
+ for(const [key,[ru,en]] of uniquePhrases){
+  const slug=key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  append('guideedit.book.honor-view.'+slug,'ru',ru,'honor-rank-phrases');
+  append('guideedit.book.honor-view.'+slug,'en',en,'honor-rank-phrases');
+ }
+ const lists=[...honorView.matchAll(
+  /\blistField\(article\.(zones|battles),'([^']+)','([^']+)','([^']+)'\)/g
+ )].map(m=>[m[1],m[2],m[3],m[4]]);
+ if(lists.length!==2||lists[0][0]!=='zones'||lists[1][0]!=='battles'||
+  lists[0][1]!=='zones'||lists[1][1]!=='wars')
+  throw Error('Honor list heading source inventory changed');
+ // The same warsHeading is already sourced from literal editorial() calls.
+ const originalWar=honorRows.find(row=>row[0]==='warsHeading');
+ if(!originalWar||originalWar[1]!==lists[1][2]||
+  originalWar[2]!==lists[1][3])
+  throw Error('Contradictory Honor wars heading copy');
+ append('guideedit.book.honor-view.zones-heading','ru',
+  lists[0][2],'honor-list-headings');
+ append('guideedit.book.honor-view.zones-heading','en',
+  lists[0][3],'honor-list-headings');
+
+ // Hero Path also renders authored fragments from conditional source
+ // arrays and skill metadata labels. These never derive from the current
+ // character's numbers: only the matched (key, RU, EN) literals are seeded.
+ // Fail on additions/removals rather than accidentally migrating game data.
+ const dynamicPathSource=read('pandora-studio-hero-path.js');
+ const reviewedDynamicKeys=[
+  'pathGroupTrained','pathGroupLearned','pathGroupInvested',
+  'pathPointsLoading','pathBranchCapZero','pathPointsUnavailable',
+  'skillCountOne','skillCountFew','skillCountMany',
+  'skillUpgradeCurrentBefore','skillUpgradeFutureBefore',
+  'skillUpgradeCurrentAfter','skillUpgradeFutureAfter'
+ ];
+ const reviewedSkillFields=[
+  'skillCharacterLevel','skillMana','skillCast','skillCooldown',
+  'skillRange','skillElement','skillAttribute'
+ ];
+ const literalSet=new Set(reviewedDynamicKeys);
+ const stateRows=[...dynamicPathSource.matchAll(
+  /\['([^']+)','([^']*)','([^']*)'\]/g
+ )].filter(m=>literalSet.has(m[1])).map(m=>[m[1],m[2],m[3]]);
+ const skillFieldRows=[...dynamicPathSource.matchAll(
+  /\bfield\('([^']+)','([^']+)','([^']+)',/g
+ )].map(m=>[m[1],m[2],m[3]]);
+ if(stateRows.length!==reviewedDynamicKeys.length||
+  stateRows.map(r=>r[0]).sort().join('|')!==reviewedDynamicKeys.sort().join('|')||
+  skillFieldRows.length!==reviewedSkillFields.length||
+  skillFieldRows.map(r=>r[0]).sort().join('|')!==reviewedSkillFields.sort().join('|'))
+  throw Error('Hero Path conditional copy inventory changed: review live UI');
+ for(const [key,ru,en] of [...stateRows,...skillFieldRows]){
+  if(!ru.trim()||!en.trim())throw Error('Invalid Path authored state: '+key);
+  const slug=key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  append('guideedit.book.path.'+slug,'ru',ru,'hero-path-states');
+  append('guideedit.book.path.'+slug,'en',en,'hero-path-states');
+ }
+
+ // Owner-editable Hero Path aria/descriptions use bindPathCopy,
+ // with any hero class, point count or skill name kept as a separate suffix.
+ // The two help explanations and one weapon-range condition follow the same
+ // original D1 path.* keys. Never copy the composite, calculated aria-label.
+ const pathBoundRows=[...dynamicPathSource.matchAll(
+  /bindPathCopy\(api,\s*\w+,'([^']+)'\s*,\s*'([^']+)'\s*,\s*'([^']+)'/g
+ )].map(m=>[m[1],m[2],m[3]]);
+ const expectedBound=[
+  'pathHoldRepeatAria','racialUnavailableAria','branchTrackAria',
+  'pathRangeAria','pathExactAria','pathMilestoneNoDesc',
+  'pathMilestoneMana','pathUnlockPoints','pathMasteryAria',
+  'pathDecreaseAria','pathIncreaseAria','innateBaselineAria',
+  'skillBrowseAria','skillPreviousAria','skillLineageAria','skillNextAria'
+ ];
+ const pathHelpRows=[...dynamicPathSource.matchAll(
+  /'(branchPointHelp|greenMasteryHelp)','([^']+)'\s*,\s*'([^']+)'/g
+ )].map(m=>[m[1],m[2],m[3]]);
+ const weaponRows=[...dynamicPathSource.matchAll(
+  /\['(skillWeaponRange)','([^']+)','([^']+)'\]/g
+ )].map(m=>[m[1],m[2],m[3]]);
+ if(pathBoundRows.length!==expectedBound.length||
+  pathBoundRows.map(r=>r[0]).sort().join('|')!==expectedBound.sort().join('|')||
+  pathHelpRows.length!==2||new Set(pathHelpRows.map(r=>r[0])).size!==2||
+  weaponRows.length!==1)
+  throw Error('Hero Path accessibility/help source inventory changed');
+ for(const [key,ru,en] of [...pathBoundRows,...pathHelpRows,...weaponRows]){
+  if(key==='pathUnlockPoints'){
+   // Already staged from the direct visible caption, exact shared identity.
+   const existing=pathRows.find(row=>row[0]===key);
+   if(!existing||existing[1]!==ru||existing[2]!==en)
+    throw Error('Inconsistent Path unlock unit source fallback');
+   continue;
+  }
+  if(!ru.trim()||!en.trim())throw Error('Missing Path accessible copy '+key);
+  const slug=key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  append('guideedit.book.path.'+slug,'ru',ru,'hero-path-accessible');
+  append('guideedit.book.path.'+slug,'en',en,'hero-path-accessible');
+ }
+
+ // Branch prerequisite requirement words have separate D1 labels
+ // beside live thresholds, allocated points and mastery. Two source paths
+ // intentionally share the SAME exact key/text, never double-seed.
+ const requirementRows=[...dynamicPathSource.matchAll(
+  /\['(pathReq[a-zA-Z]+)','([^']+)','([^']+)',(?:req\.amount|cap|available|mastered|base|value|green)\]/g
+ )].map(m=>[m[1],m[2],m[3]]);
+ const requirementNames=[
+  'pathReqThreshold','pathReqClassCap','pathReqAllocated',
+  'pathReqTrained','pathReqInnate','pathReqPotential'
+ ];
+ const uniqueReqs=new Map();
+ for(const [key,ru,en] of requirementRows){
+  const existing=uniqueReqs.get(key);
+  if(existing&&(existing[0]!==ru||existing[1]!==en))
+   throw Error('Contradictory skill requirement copy: '+key);
+  uniqueReqs.set(key,[ru,en]);
+ }
+ if(requirementRows.length!==8||uniqueReqs.size!==requirementNames.length||
+  [...uniqueReqs.keys()].sort().join('|')!==requirementNames.sort().join('|'))
+  throw Error('Path branch requirement source inventory changed');
+ for(const [key,[ru,en]] of uniqueReqs){
+  const slug=key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  append('guideedit.book.path.'+slug,'ru',ru,'hero-path-requirement-captions');
+  append('guideedit.book.path.'+slug,'en',en,'hero-path-requirement-captions');
+ }
+ // The unlock rail has two mutually exclusive authorial state captions.
+ // Their eligibility and live skill thresholds come from readiness/mark;
+ // never put those calculated flags, names or numbers into D1.
+ const unlockState=dynamicPathSource.match(
+  /word=authored\(api,mark\.locked\?'pathUnlockOverCap':'pathUnlockReady',\s*mark\.locked\?'([^']+)':'([^']+)',\s*mark\.locked\?'([^']+)':'([^']+)'/
+ );
+ if(!unlockState)throw Error('Path unlock state source grammar changed');
+ for(const [key,ru,en] of [
+  ['pathUnlockOverCap',unlockState[1],unlockState[3]],
+  ['pathUnlockReady',unlockState[2],unlockState[4]]
+ ]){
+  const slug=key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  append('guideedit.book.path.'+slug,'ru',ru,'hero-path-unlock-states');
+  append('guideedit.book.path.'+slug,'en',en,'hero-path-unlock-states');
+ }
+
  // The Wiki chapters, all five Honor subchapters and skill filters are
  // one existing D1 JSON record. Preserve their exact field identities;
  // never reconstruct these labels from list position or save them as game IDs.
