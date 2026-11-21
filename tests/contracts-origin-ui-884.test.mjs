@@ -157,7 +157,7 @@ test('three onboarding steps and equipment tabs have bilingual help',()=>{
   assert.match(locale,new RegExp(key+':\\['));
  }
  // The same named dictionary feeds live buttons and the versioned defaults.
- const registry=equipment.match(/const equipmentTabHints=Object\\.freeze\\((\\{[\\s\\S]*?\\})\\);/);
+ const registry=equipment.match(/const equipmentTabHints=Object\.freeze\((\{[\s\S]*?\})\);/);
  assert.ok(registry,'A complete bilingual equipment hint registry is required');
  assert.match(equipment,/const hints=equipmentTabHints/);
  for(const id of ['choose','details','souls'])

@@ -74,7 +74,7 @@ test('equipment rail never adds a mystery Phoenix glyph; Properties keeps condit
  assert.match(equipment,/Пламя феникса','Phoenix Flame/);
  // The Phoenix condition still controls the field; only source-authored
  // RU/EN caption literals have moved to a shared D1-copy dictionary.
- assert.match(equipment,/if\\(phoenix\\)fieldNames\\.push\\(summaryCopyField\\('specialEffect'\\)\\)/);
- assert.match(equipment,/'field\\.specialEffect':\\['Особый эффект','Special effect'\\]/);
+ assert.match(equipment,/if\(phoenix\)fieldNames\.push\(summaryCopyField\('specialEffect'\)\)/);
+ assert.match(equipment,/'field\.specialEffect':\['Особый эффект','Special effect'\]/);
  assert.match(equipment,/issue:api\.issue\|\|\[\]/);
 });
