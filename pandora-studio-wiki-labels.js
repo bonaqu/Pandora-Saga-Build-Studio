@@ -60,7 +60,11 @@ function value(overrides,group,id,lang='ru'){
   (id==='special'?['Особые умения','Special skills']:
    id==='variants'?['Варианты навыков','Skill variants']:null):null;
  const locale=lang==='en'?1:0;
- return saved&&saved!==legacy?.[locale]?saved:defaults[id][locale];
+ const fallback=defaults[id][locale];
+ const staged=root.PandoraEditorialDefaults?.value('guideedit.wiki.labels',
+  key(group,id,lang));
+ return saved&&saved!==legacy?.[locale]?saved:
+  typeof staged==='string'&&staged.trim()&&staged.length<=90?staged:fallback;
 }
 root.PandoraWikiLabels=Object.freeze({
  chapter,honor,skillFilter,key,value,validField,validPatch
