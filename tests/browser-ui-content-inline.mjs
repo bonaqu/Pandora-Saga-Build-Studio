@@ -439,6 +439,40 @@ export async function runUIContentInlineSmoke(browser,base){
   },wasOpen,{timeout:5000});
   assert.equal(await overview.locator('strong').innerText(),originalCount);
 
+  // Honor's native summary contains TWO independent owner captions.
+  // Both must edit without toggling that same disclosure, and the second
+  // caption must not be silently ignored by a guard bound to the first.
+  const honorTitle=page.locator(
+   '#stageBookPanel summary [data-guide-key="buffs.section.honor"]');
+  const honorTerm=page.locator(
+   '#stageBookPanel summary [data-guide-key="buffs.honor"]');
+  await honorTitle.waitFor({state:'visible',timeout:15000});
+  await honorTerm.waitFor({state:'visible',timeout:15000});
+  const honorSummary=honorTerm.locator('xpath=ancestor::summary[1]');
+  const honorDisclosure=honorSummary.locator('xpath=..');
+  const honorWasOpen=await honorDisclosure.evaluate(node=>node.open);
+  assert.equal(await honorTitle.innerText(),'Честь');
+  assert.equal(await honorTerm.innerText(),'пассивное умение');
+  await honorTitle.dblclick();
+  const honorTitleEditor=honorTitle.locator('[contenteditable]');
+  await honorTitleEditor.waitFor({state:'visible'});
+  assert.equal(await honorDisclosure.evaluate(node=>node.open),honorWasOpen);
+  await honorTitleEditor.press('Escape');
+  await honorTerm.dblclick();
+  const honorTermEditor=honorTerm.locator('[contenteditable]');
+  await honorTermEditor.waitFor({state:'visible'});
+  assert.equal(await honorDisclosure.evaluate(node=>node.open),honorWasOpen);
+  await honorTermEditor.fill('пассивная способность QA');
+  await honorTermEditor.press('Tab');
+  await page.waitForFunction(()=>
+   document.querySelector('#stageBookPanel summary [data-guide-key="buffs.honor"]')
+    ?.textContent==='пассивная способность QA',null,{timeout:15000});
+  assert.equal(JSON.parse(values['guideedit.book.buffs.honor']).ru,
+   'пассивная способность QA');
+  assert.equal(await honorDisclosure.evaluate(node=>node.open),honorWasOpen,
+   'Editing either of two captions must preserve one native disclosure state');
+  assert.equal(await honorSummary.locator('.stage-guide-edit-name').count(),0);
+
   // Deterministic DOM-only source-events fixture: the real renderer, no
   // live Worker or invented gameplay effect, isolates the published count
   // from the older stable Book D1 copy key in an actionable native summary.
