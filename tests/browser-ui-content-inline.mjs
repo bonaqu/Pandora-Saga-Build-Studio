@@ -218,6 +218,42 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(writes.filter(entry=>entry.key==='guideedit.book.ui.label.profile-access').length,
    profileWrites);
   assert.equal(await profileButton.getAttribute('title'),'Профиль или регистрация QA');
+  // Owner help editor must list only independently mounted hover hints.
+  // Self-explanatory Origin and Path tabs have no guide tooltip to edit.
+  assert.equal(await page.locator(
+   '[data-i18n="originGuide"] + .workbench-hint-editor').count(),0);
+  const equipHints=page.locator(
+   '[data-i18n="appearanceGuide"] + .workbench-hint-editor');
+  const pathHints=page.locator(
+   '[data-i18n="pathGuide"] + .workbench-hint-editor');
+  await equipHints.waitFor({state:'visible'});
+  assert.equal(await equipHints.locator('.studio-owner-interface-row').count(),4);
+  assert.equal(await pathHints.locator('.studio-owner-interface-row').count(),1);
+  assert.equal(await pathHints.locator('[data-owner-copy-id="hintGrowth"]').count(),0);
+  assert.equal(await equipHints.locator('[data-owner-copy-id="hintPortrait"]').count(),1);
+  await equipHints.locator('summary').click();
+  const portraitHint=equipHints.locator('[data-owner-copy-id="hintPortrait"]');
+  await portraitHint.dblclick();
+  const portraitEdit=portraitHint.locator('[data-owner-text-field]');
+  await portraitEdit.waitFor({state:'visible'});
+  await portraitEdit.fill('Открыть Книгу героя · QA');
+  await portraitEdit.press('Tab');
+  await page.waitForFunction(()=>document.querySelector('#hero')
+   ?.dataset.guideHint==='Открыть Книгу героя · QA',null,{timeout:15000});
+  assert.equal(JSON.parse(values['guideedit.book.equipment.hint-portrait']).ru,
+   'Открыть Книгу героя · QA');
+  if(await page.locator('#ownerDock').evaluate(el=>
+   el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
+  await page.locator('#ownerDock [data-owner-undo]').click();
+  await page.waitForFunction(()=>document.querySelector('#hero')?.dataset.guideHint===
+   'Открыть Книгу героя с рассчитанными характеристиками.',
+   null,{timeout:15000});
+  assert.equal(Object.hasOwn(values,'guideedit.book.equipment.hint-portrait'),false);
+  assert.equal(resets.at(-1)?.key,'guideedit.book.equipment.hint-portrait');
+  if(!await page.locator('#ownerDock').evaluate(el=>
+   el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
   // The update manager mounts after the main app and creates its banner
   // asynchronously. Its authorial text must join the SAME D1/CAS editor.
   const updateBanner=page.locator('#studio-update-banner');

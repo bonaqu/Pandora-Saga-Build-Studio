@@ -700,6 +700,40 @@ export function buildEditorialDefaultsManifest(){
   append('guideedit.book.path.'+slug,'en',en,'hero-path-unlock-states');
  }
 
+ // Only hover hints actually mounted in the workbench should be owner
+ // editable or seeded into the physical D1 defaults. The "origin" and
+ // two ordinary Path tabs have self-explanatory captions; their old
+ // unused CAS overrides are retained, but no fake tooltip editor appears.
+ const workbenchMatch=app.match(/const WORKBENCH_HINTS=(\[[\s\S]*?\]);/);
+ const suppressedMatch=app.match(
+  /const SELF_EXPLANATORY_TABS=new Set\((\[[\s\S]*?\])\);/);
+ if(!workbenchMatch||!suppressedMatch)
+  throw Error('Missing source Workbench hover editor catalog');
+ const workbenchHints=runInNewContext('('+workbenchMatch[1]+')',{},{
+  filename:'WORKBENCH_HINTS',timeout:5000
+ });
+ const suppressedSelectors=runInNewContext('('+suppressedMatch[1]+')',{},{
+  filename:'SELF_EXPLANATORY_TABS',timeout:5000
+ });
+ const expectedWorkbench=['hintPortrait','hintWeapon','hintNewBuild',
+  'hintSaveBuild','hintReset'];
+ if(!Array.isArray(workbenchHints)||workbenchHints.length!==10||
+  !Array.isArray(suppressedSelectors)||suppressedSelectors.length!==5||
+  new Set(workbenchHints.map(row=>row?.[1])).size!==10)
+  throw Error('Unreviewed Workbench hover copy source inventory');
+ const mountedWorkbench=workbenchHints.filter(row=>
+  !suppressedSelectors.includes(row[2]));
+ if(mountedWorkbench.map(row=>row[1]).sort().join('|')!==
+  expectedWorkbench.sort().join('|'))
+  throw Error('Workbench mounted hover copy changed');
+ for(const [section,key,selector,ru,en] of mountedWorkbench){
+  if(!['equipment','path'].includes(section)||typeof selector!=='string'||
+   !ru.trim()||!en.trim())throw Error('Invalid mounted workbench hint: '+key);
+  const slug=key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  append('guideedit.book.'+section+'.'+slug,'ru',ru,'workbench-hover-hints');
+  append('guideedit.book.'+section+'.'+slug,'en',en,'workbench-hover-hints');
+ }
+
  // The Wiki chapters, all five Honor subchapters and skill filters are
  // one existing D1 JSON record. Preserve their exact field identities;
  // never reconstruct these labels from list position or save them as game IDs.

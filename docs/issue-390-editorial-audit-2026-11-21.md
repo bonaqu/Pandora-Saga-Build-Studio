@@ -211,3 +211,7 @@ Legacy CSS for the non-rendered `.ui-content-pencil` and `.wiki-label-pencil` ha
 ## #390 owner-only keyboard affordance cleanup on account and library copy
 
 The generic account/library text editor now tracks `tabindex` and `aria-keyshortcuts` attributes that it adds. Reopening owner editing restores F2 without duplicate listeners; leaving owner mode removes only those owner-added attributes while retaining authored/native tabindex values. This does not touch passwords, account state, player names, CAS values, or action semantics. Added Node and Chromium source/mounted-account assertions. Hardware touchscreen testing remains outstanding.
+
+## Checkpoint: only mounted, meaningful Workbench hover help is editable
+
+The owner Workbench help editor previously displayed five copy entries for self-explanatory Origin/Path tabs whose hover descriptions are explicitly suppressed in the real renderer. The panel now filters those phantom fields by the existing `SELF_EXPLANATORY_TABS` allowlist, omits the empty Origin hint panel, and retains only four mounted equipment hints and the actual Path Reset hint. Existing unused overrides are **not** deleted or rewritten; direct-edit captions and game controls remain untouched. The staging manifest now includes the exact ten RU/EN defaults for those five real hover hints, with source-drift checks and mock Chromium Save→Undo verifying the mounted portrait tooltip updates and rolls back without affecting game data.

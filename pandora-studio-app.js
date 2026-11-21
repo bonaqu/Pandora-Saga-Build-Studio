@@ -11489,7 +11489,8 @@ const WORKBENCH_HINTS=[
  ['path','hintSkills','#pathSkillsTab','Посмотреть изученные и доступные для изучения умения этого героя.','View learned skills and abilities this hero could learn.'],
  ['path','hintReset','#pathResetPoints','Сбросить вложенные очки веток для нового распределения.','Reset allocated branch points for redistribution.']
 ];
-// Self-explanatory tabs need no duplicate hover guide; D1 copy stays editable.
+// Self-explanatory tabs have no hover guide; do not offer phantom editors.
+// Previously saved owner CAS values remain untouched and can be reviewed in history.
 const SELF_EXPLANATORY_TABS=new Set([
  '[data-origin-tab="race"]','[data-origin-tab="class"]','[data-origin-tab="stats"]',
  '#pathGrowthTab','#pathSkillsTab'
@@ -11522,9 +11523,11 @@ function renderWorkbenchHintEditors(){
   if(!adminEditing||!adminToken){old?.remove();continue}
   if(old?.querySelector('.wiki-inline-input'))continue;
   old?.remove();
-  const rows=WORKBENCH_HINTS.filter(row=>row[0]===section).map(([,key,,hintRu,hintEn])=>
+  const rows=WORKBENCH_HINTS.filter(row=>row[0]===section&&
+   !SELF_EXPLANATORY_TABS.has(row[2])).map(([,key,,hintRu,hintEn])=>
    [key,hintRu,hintEn,key.replace(/^hint/,'')+' · '+hintRu,
     key.replace(/^hint/,'')+' · '+hintEn]);
+  if(!rows.length)continue; // No owner panel for hints that never appear.
   const panel=ownerInterfaceEditor(section,rows,ru,en);
   if(panel){panel.classList.add('workbench-hint-editor');target.after(panel)}
  }

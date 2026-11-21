@@ -283,6 +283,25 @@ test('#390 Path requirement captions and unlock states use verified bilingual fa
   'available');
 });
 
+test('#390 real Workbench hover text has verified default below owner CAS',async()=>{
+ const root=context(),stage=root.PandoraEditorialDefaults,guide=root.PandoraHonorGuide;
+ const id='guideedit.book.equipment.hint-portrait';
+ const patched=fixture([[id,'ru','Книга героя · staging']]);
+ assert.equal(await stage.installVerified(patched,patched.snapshot,webcrypto.subtle),true);
+ assert.equal(guide.field({},'equipment.hint-portrait',
+  'Открыть Книгу героя с рассчитанными характеристиками.',
+  'Open the Hero Book with calculated stats.').ru,'Книга героя · staging');
+ const owner={[id]:JSON.stringify({ru:'Книга героя · автор'})};
+ assert.equal(guide.field(owner,'equipment.hint-portrait',
+  'Открыть Книгу героя с рассчитанными характеристиками.',
+  'Open the Hero Book with calculated stats.').ru,'Книга героя · автор');
+ stage.reset();
+ assert.equal(guide.field({},'equipment.hint-portrait',
+  'Открыть Книгу героя с рассчитанными характеристиками.',
+  'Open the Hero Book with calculated stats.').ru,
+  'Открыть Книгу героя с рассчитанными характеристиками.');
+});
+
 test('#390 staging text uses only exact semantic identities and CAS outranks defaults',async()=>{
  const root=context(),stage=root.PandoraEditorialDefaults;
  const ui=root.PandoraUILocale,guide=root.PandoraHonorGuide,wiki=root.PandoraWikiLabels;

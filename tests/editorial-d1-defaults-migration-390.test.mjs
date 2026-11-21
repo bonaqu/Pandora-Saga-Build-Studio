@@ -492,6 +492,38 @@ test('#390 Path requirements and unlock status copy never include thresholds or 
   assert.ok(!manifest.records.some(row=>row.recordKey==='guideedit.book.'+key));
 });
 
+test('#390 only actually mounted workbench hints become editable D1 defaults',()=>{
+ const app=read('pandora-studio-app.js');
+ const source=app.match(/const WORKBENCH_HINTS=(\[[\s\S]*?\]);/);
+ const excluded=app.match(
+  /const SELF_EXPLANATORY_TABS=new Set\((\[[\s\S]*?\])\);/);
+ assert.ok(source&&excluded);
+ const hints=runInNewContext('('+source[1]+')',{});
+ const suppressed=runInNewContext('('+excluded[1]+')',{});
+ assert.equal(hints.length,10);
+ assert.equal(suppressed.length,5);
+ assert.equal(manifest.stats.cohorts['workbench-hover-hints'],10);
+ const active=hints.filter(row=>!suppressed.includes(row[2]));
+ assert.deepEqual(active.map(row=>row[1]),[
+  'hintPortrait','hintWeapon','hintNewBuild','hintSaveBuild','hintReset'
+ ]);
+ for(const [section,key,,ru,en] of hints){
+  const recordKey='guideedit.book.'+section+'.'+
+   key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  const defaults=manifest.records.filter(row=>row.recordKey===recordKey);
+  if(active.some(row=>row[1]===key)){
+   assert.equal(defaults.length,2,recordKey);
+   assert.equal(defaults.find(row=>row.field==='ru')?.value,ru);
+   assert.equal(defaults.find(row=>row.field==='en')?.value,en);
+  }else{
+   assert.equal(defaults.length,0,'Phantom hint must not be in D1 defaults');
+  }
+ }
+ assert.match(app,/WORKBENCH_HINTS\.filter\(row=>row\[0\]===section&&\s*!SELF_EXPLANATORY_TABS\.has\(row\[2\]\)\)/);
+ assert.match(app,/if\(!rows\.length\)continue; \/\/ No owner panel for hints that never appear/);
+ assert.match(app,/node\.removeAttribute\('aria-description'\)/);
+});
+
 test('issue 390: migration never materializes runtime values or rewrites an override',()=>{
  assert.equal(manifest.records.some(r=>
   /(?:^|\.)(?:character|item|soul|account|formula|amount|gold|points|chance)\.[0-9]+/.test(r.recordKey)),false);
