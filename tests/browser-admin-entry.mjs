@@ -1270,6 +1270,39 @@ export async function runAdminEntrySmoke(browser,base){
   // page-level #nav is intentionally hidden while a workbench is open.
   await dialog.getByRole('button',{name:/Закрыть/}).click();
   await closeWorkbench();
+  // #390: English owner sees the real source failure and a complete,
+  // cancelable publication warning. Only the mocked Worker is involved.
+  await page.locator('#locale [data-locale="en"]').click();
+  await page.locator('#ownerDock').getByRole('button',{name:'Game catalog',exact:true}).click();
+  const enCatalog=page.getByRole('dialog',{name:/Game catalog updates/});
+  await enCatalog.waitFor({state:'visible'});
+  await enCatalog.getByRole('button',{name:'Check changes in the current game'}).click();
+  await page.waitForFunction(()=>document.querySelector('.os-sync-status')?.textContent
+    ?.includes('Cloudflare Worker could not connect to the game site.'),
+    null,{timeout:15000});
+  await enCatalog.locator('.os-sync-diagnostics>summary').click();
+  assert.match(await enCatalog.locator('.os-sync-diagnostics').innerText(),
+    /Stage: [a-zA-Z0-9_-]+[.]json · Worker response: 502 · Reason: network/);
+  assert.equal(await enCatalog.locator('.os-sync-review-steps').isHidden(),true);
+  const englishWritesBefore=calls.filter(x=>x==='catalog-publish'||x==='d1-import').length;
+  await enCatalog.getByRole('button',{name:'Compare saved snapshot'}).click();
+  await enCatalog.locator('.os-sync-review-steps').waitFor({state:'visible'});
+  await enCatalog.locator('.os-sync-group-heading').first().click();
+  await enCatalog.locator('.os-sync-record input[type="checkbox"]').first().check();
+  await enCatalog.locator('.os-sync-risk-approval input').check();
+  const englishConfirm=page.waitForEvent('dialog',{timeout:12000}).then(async confirmation=>{
+    const warning=confirmation.message();
+    assert.match(warning,/SOURCE: the archive may be outdated/);
+    assert.match(warning,/Only the Build Studio catalog changes, NOT the game/);
+    assert.match(warning,/Nothing is published before you confirm/);
+    await confirmation.dismiss();
+  });
+  await enCatalog.getByRole('button',{name:'Publish selected changes'}).click();
+  await englishConfirm;
+  assert.equal(calls.filter(x=>x==='catalog-publish'||x==='d1-import').length,
+    englishWritesBefore,'English cancellation must not write D1');
+  await enCatalog.getByRole('button',{name:/Close/}).click();
+  await page.locator('#locale [data-locale="ru"]').click();
   await page.locator('#nav [data-tab="wiki"]').click();
   // Do not inherit Honor from the preceding regression: item editing starts
   // in the equipment chapter, regardless of the user's last visited chapter.

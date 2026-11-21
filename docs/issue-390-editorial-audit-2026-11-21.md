@@ -118,3 +118,12 @@
 - [x] Localized export/publish failure prefixes, progress surrounding live counts, the GitHub PR success link and its accessible label, while preserving all original dynamic values, errors and operational steps.
 - [x] Existing workbench Chromium confirms the same verified D1 workflow and PR link without action behavior changes; Node regression covers both language literals, edit/non-edit boundaries and native confirmation presence.
 - [ ] The source-error reason codes and complex publish impact confirmations still require a separate audit; do not mistake these translations for a completed #390. New SHA must pass full Node and Chromium.
+
+## Continuation · source error details & publish parity (21.11.2026)
+
+- [x] Fixed RU/EN reasons for source unavailability (401/403, 404, 429, timeout, network, invalid JSON, over-limit response). Exact HTTP, Worker reason, dataset name and raw technical response are shown separately, not owner-editable.
+- [x] Fixed D1 source and snapshot mismatch messages. Sensitive publication-failure guidance is localized without masking original Worker errors or allowing direct editing.
+- [x] Replaced diverging RU/EN publication confirmations with a single builder. Both languages now preserve calculated chance samples and caveats, manual-review flags, mechanic compatibility examples, atomic formula-table risks, source/archived provenance and accurate dynamic counters.
+- [x] Verified unselected gameplay (`!service`) vs unselected settings (`service`) were already counted correctly; these predicates were left unchanged.
+- [x] Added Node source/boundary checks and actual Chromium EN flow: failed source, Worker diagnostics, archived comparison, English publication confirmation dismissal, no D1 mutation, and return to RU.
+- [ ] Complete Node and Chromium are required on the final same SHA; no physical touchscreen or production D1 acceptance was performed. PR #809 stays draft, issue #390 open.

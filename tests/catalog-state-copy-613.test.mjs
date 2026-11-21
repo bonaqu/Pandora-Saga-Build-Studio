@@ -52,7 +52,7 @@ test('issue #390: verified admin success states are exact bilingual inline D1 fi
  assert.doesNotMatch(workbench,/status\.textContent='Проверка пройдена:/);
  assert.doesNotMatch(workbench,/status\.textContent='Каталог в GitHub уже совпадает/);
  // Dynamic upstream response details are still not owner-editable.
- assert.match(workbench,/diagnosticText\.textContent='Этап: '/);
+ assert.match(workbench,/diagnosticText\.textContent=tr\('Этап: ','Stage: '\)/);
  assert.match(workbench,/status\.textContent=error\.message/);
 });
 
@@ -77,4 +77,23 @@ test('catalog security confirmations and runtime failure messages are bilingual,
  assert.match(workbench,/status\.textContent=tr\('Подготавливаю обновление · '/);
  assert.match(workbench,/error\.message/);
  assert.doesNotMatch(workbench,/editorialState\(status,'(?:exportFailure|publishFailure|casFailure|githubFailure)'/);
+});
+
+test('source failures and publishing risk caveats have bilingual parity',()=>{
+ for(const english of [
+  'Cloudflare Worker could not connect to the game site.',
+  'The game site temporarily rate-limited requests (HTTP 429).',
+  'D1 source was not verified for ',
+  'Stage: ','Worker response: ','Reason: ',
+  'ESTIMATED CHANCE CHANGES IN BUILD STUDIO',
+  'IMPORTANT: the entire game-formula table group was selected',
+  'MECHANICS REVIEW: ','Unselected settings: ',
+  'These are estimates; actual game-server results have not been verified.',
+  'Nothing is published before you confirm.',
+  'Data may be unchanged or already published.'
+ ])assert.ok(workbench.includes(english),english);
+ assert.match(workbench,/const unselectedSettings=changes\.filter\(x=>!checked\(x\)&&describe\(x\)\.service\)\.length/);
+ assert.match(workbench,/if\(!confirm\(confirmation\)\)return;/);
+ assert.doesNotMatch(workbench,/const confirmationEn=/);
+ assert.doesNotMatch(workbench,/editorialState\(status,'(?:sourceFailure|publishWarning|publishFailure)'/);
 });
