@@ -515,6 +515,18 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(JSON.parse(values[hymnD1]).ru,'Подтверждённое описание песни · QA');
   assert.ok(writes.some(x=>x.key===hymnD1&&x.expectedValue===null),
    'The source-gated owner note uses the same CAS handshake as other labels');
+  const skillSourceHeading=page.locator(
+   '.wiki-skill-source-insight h4[data-owner-copy-id="sourceSkillEffectsHeading"]');
+  assert.equal(await skillSourceHeading.innerText(),'Действие умения');
+  await skillSourceHeading.dblclick();
+  const sourceHeadingInput=page.locator('.wiki-skill-source-insight [contenteditable]').first();
+  await sourceHeadingInput.fill('Действие умения · QA');
+  await sourceHeadingInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '.wiki-skill-source-insight h4[data-owner-copy-id="sourceSkillEffectsHeading"]')
+   ?.textContent==='Действие умения · QA',null,{timeout:15000});
+  assert.equal(JSON.parse(values['guideedit.book.wiki-ui.source-skill-effects-heading']).ru,
+   'Действие умения · QA');
   // Leave the existing Encyclopedia detail workbench before opening the
   // account UI: a modal workbench correctly intercepts background clicks.
   if(await page.locator('#detailPanel.is-open').count())
