@@ -394,6 +394,29 @@ const equipmentTabHints=Object.freeze({
  details:['Посмотреть свойства, заточку и слоты душ.','View properties, refinement and Soul sockets.'],
  souls:['Вставить, заменить или снять душу.','Insert, replace or remove a Soul.']
 });
+// Original static RU/EN equipment labels for controls and ARIA prefixes.
+// The live numbers, item/Soul names and slot capacities are never authored copy.
+const equipmentInterfaceCopy=Object.freeze({
+ pickerSlotHeading:['Слот','Slot'],
+ pickerItemClose:['Закрыть настройку','Close item settings'],
+ pickerItemSettings:['Настройка предмета','Item settings'],
+ chooseItemEmpty:['Сначала выбери предмет.','Choose an item first.'],
+ socketCapacityHeading:['Слоты душ','Soul slots'],
+ socketOverflowHint:['Сначала извлеките души из лишних слотов','Remove Souls from extra sockets first'],
+ refinementHeading:['Заточка: +0…+10','Refinement: +0…+10'],
+ gemTypeLabel:['Тип','Type'],
+ gemElementLabel:['Стихия','Element'],
+ pickerSoulSlotAria:['Слот души','Soul slot'],
+ pickerEmptySoul:['пусто','empty'],
+ pickerSoulSlotCaption:['Слот','Slot'],
+ soulSlotsHeading:['Слоты душ','Soul slots'],
+ soulSearch:['Поиск совместимой души','Find a compatible Soul'],
+ pickerSoulSearchAria:['Поиск души','Find Soul'],
+ soulShowMore:['Показать ещё души','Show more Souls'],
+ soulProgressLabel:['Душ','Souls'],
+ soulSearchEmpty:['Совместимых душ не найдено','No compatible Souls found'],
+ soulRemove:['Извлечь душу из выбранного слота','Remove Soul from selected slot']
+});
 // Genitive phrases keep the unavailable-state explanation natural in RU.
 const SOUL_SLOT_NOUNS=Object.freeze({
  weapon:['этого оружия','weapon'],shield:['этого щита','shield'],
@@ -420,17 +443,25 @@ function render(root,api){
  const hasSouls=plan.supportsSoulSlot(slot);
  if(mode==='gems'||mode==='souls'&&(!hasSouls||!record)){api.changeMode('details');return}
  const english=document.documentElement?.lang==='en',tr=(ru,en)=>english?en:ru;
- const copy=(key,ru,en)=>api.copyLabel?.(key,ru,en)||tr(ru,en);
+ const copy=(key,ru,en)=>{
+  const fixed=equipmentInterfaceCopy[key];
+  if(fixed)[ru,en]=fixed;
+  return api.copyLabel?.(key,ru,en)||tr(ru,en);
+ };
  // Bind only immutable user-facing prefixes; numeric slots, Soul names and
  // selected state stay outside the D1 editorial value.
  const bind=(node,key,ru,en,attribute='text',suffix='')=>{
+  if(equipmentInterfaceCopy[key])[ru,en]=equipmentInterfaceCopy[key];
   if(api.bindInterfaceText)return api.bindInterfaceText(node,key,ru,en,attribute,suffix);
   const value=copy(key,ru,en)+suffix;
   if(attribute==='text')node.textContent=value;
   else node.setAttribute(attribute,value);
   return node;
  };
- const editable=(node,key,ru,en,options)=>{api.editLabel?.(node,key,ru,en,options);return node};
+ const editable=(node,key,ru,en,options)=>{
+  if(equipmentInterfaceCopy[key])[ru,en]=equipmentInterfaceCopy[key];
+  api.editLabel?.(node,key,ru,en,options);return node;
+ };
  const guardCaptionAction=(button,caption)=>{
   if(!api.canEdit)return;
   let pending=null;
