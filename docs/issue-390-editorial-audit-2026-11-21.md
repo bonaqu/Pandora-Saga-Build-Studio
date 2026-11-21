@@ -134,3 +134,10 @@
 - Make final read-only verification of every published D1 dataset bilingual, while retaining the pinned snapshot equality, per-dataset strict data equality, second meta read and hero base safety check. Existing callers of the four-argument helper remain backward-compatible; the owner calls it with the current locale.
 - Add actual Node execution tests for English D1 provenance failure, content mismatch and base calculation failure. Those tests must still verify the complete 17-dataset audit and meta read twice.
 - This batch is independent of changing D1 records or reaching the live game. It requires its own Node + Chromium acceptance after commit.
+
+## Follow-up · bilingual calculated loot previews (staged; requires CI)
+
+- The drop chance model and `before`/`after` numeric arrays are unchanged. The published Russian `preview` remains byte-for-byte the same.
+- Added `previewEn` for English solo/4-player/8-player estimated probabilities, formatted with English decimal punctuation but sourced from the same independently modeled odds.
+- Both review rows and final publication confirmation select a locale-matched projection, preserving real game-source map, monster and item names without inventing translations or mechanics.
+- Added Node tests for bilingual preview values and both workbench output paths. The batch still requires same-SHA full Node+Chromium acceptance.

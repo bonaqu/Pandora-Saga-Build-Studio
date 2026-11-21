@@ -937,7 +937,7 @@
           'Как изменится расчётный шанс выпадения',
           'How estimated drop chances change')}));
         for(const effect of notable)
-          panel.append(h('p',{class:'os-sync-impact-line',text:effect.preview}));
+          panel.append(h('p',{class:'os-sync-impact-line',text:lang==='en'?effect.previewEn||effect.preview:effect.preview}));
         if(impacts.length>4)panel.append(h('small',{class:'muted',
           text:tr('Ещё ','And ')+(impacts.length-4)+
             tr(' изменений — открой подробности ниже.',' more changes — see details below.')}));
@@ -1601,7 +1601,7 @@
       const impactPreview=selectedImpacts.length?
        tr('\n\nРАСЧЁТНОЕ ИЗМЕНЕНИЕ ШАНСОВ В BUILD STUDIO:\n',
           '\n\nESTIMATED CHANCE CHANGES IN BUILD STUDIO:\n')+
-       impactSamples(selectedImpacts).map(e=>'• '+e.preview).join('\n')+
+       impactSamples(selectedImpacts).map(e=>'• '+(lang==='en'?e.previewEn||e.preview:e.preview)).join('\n')+
        (selectedImpacts.length>4?
         tr('\n• И ещё ','\n• And ')+(selectedImpacts.length-4)+
         tr(' изменений (смотри подробную сверку).',' more changes (see detailed comparison).'):'')+

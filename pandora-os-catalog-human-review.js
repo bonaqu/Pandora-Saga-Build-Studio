@@ -99,9 +99,9 @@ function analyzeZoneLootImpact(oldZones,newZones,ctx){
   }
   return Math.round((1-noDrop)*100*1e4)/1e4;
  };
- const percent=(n,other)=>{
+ const percent=(n,other,locale='ru-RU')=>{
   const precision=Math.round(n*100)===Math.round(other*100)&&n!==other?4:2;
-  return new Intl.NumberFormat('ru-RU',
+  return new Intl.NumberFormat(locale,
    {minimumFractionDigits:precision,maximumFractionDigits:precision}).format(n)+'%';
  };
  const impacts=[],skipped=[];
@@ -128,6 +128,14 @@ function analyzeZoneLootImpact(oldZones,newZones,ctx){
   impact.preview=title+': соло '+percent(before[0],after[0])+' → '+percent(after[0],before[0])+
    '; 4 игрока '+percent(before[1],after[1])+' → '+percent(after[1],before[1])+
    '; 8 игроков '+percent(before[2],after[2])+' → '+percent(after[2],before[2]);
+  // Independent-roll estimates are unchanged, only the output locale differs.
+  // Original source map, monster and item names remain unchanged.
+  impact.previewEn=title+': solo '+percent(before[0],after[0],'en-US')+
+   ' → '+percent(after[0],before[0],'en-US')+
+   '; 4 players '+percent(before[1],after[1],'en-US')+
+   ' → '+percent(after[1],before[1],'en-US')+
+   '; 8 players '+percent(before[2],after[2],'en-US')+
+   ' → '+percent(after[2],before[2],'en-US');
   impacts.push(impact);
  }
  impacts.sort((x,y)=>x.mapName.localeCompare(y.mapName,'ru')||
