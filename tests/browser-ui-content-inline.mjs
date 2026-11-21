@@ -235,25 +235,38 @@ export async function runUIContentInlineSmoke(browser,base){
    '.stage .panel-heading .ui-content-edit-host [contenteditable]').count(),0);
   await nestedAction.dispatchEvent('pointerup',{pointerType:'touch',isPrimary:true});
   await nestedAction.evaluate(el=>el.remove());
-  // Scrolling or moving a finger away must cancel before the hold threshold.
+  // Touch scrolling emits pointercancel; an unrelated synthetic document
+  // scroll (e.g. a popup repositioning) must NOT cancel the touch editor.
   await appearanceHeading.dispatchEvent('pointerdown',{
-   pointerType:'touch',isPrimary:true,button:0,clientX:12,clientY:20
+   pointerType:'touch',isPrimary:true,button:0,pointerId:17,clientX:12,clientY:20
   });
-  await page.evaluate(()=>document.dispatchEvent(new Event('scroll')));
+  await appearanceHeading.dispatchEvent('pointercancel',{
+   pointerType:'touch',isPrimary:true,button:0,pointerId:17
+  });
   await page.waitForTimeout(530);
   assert.equal(await page.locator(
    '.stage .panel-heading .ui-content-edit-host [contenteditable]').count(),0);
-  await appearanceHeading.dispatchEvent('pointerup',{pointerType:'touch',isPrimary:true});
   await appearanceHeading.dispatchEvent('pointerdown',{
-   pointerType:'touch',isPrimary:true,button:0,clientX:12,clientY:20
+   pointerType:'touch',isPrimary:true,button:0,pointerId:18,clientX:12,clientY:20
   });
   await appearanceHeading.dispatchEvent('pointermove',{
-   pointerType:'touch',isPrimary:true,button:0,clientX:50,clientY:20
+   pointerType:'touch',isPrimary:true,button:0,pointerId:18,clientX:50,clientY:20
   });
   await page.waitForTimeout(530);
   assert.equal(await page.locator(
    '.stage .panel-heading .ui-content-edit-host [contenteditable]').count(),0);
-  await appearanceHeading.dispatchEvent('pointerup',{pointerType:'touch',isPrimary:true});
+  await appearanceHeading.dispatchEvent('pointerup',{pointerType:'touch',isPrimary:true,pointerId:18});
+  // Multi-touch must never open an editor during pinch/zoom or panning.
+  await appearanceHeading.dispatchEvent('pointerdown',{
+   pointerType:'touch',isPrimary:true,button:0,pointerId:19,clientX:12,clientY:20
+  });
+  await appearanceHeading.dispatchEvent('pointerdown',{
+   pointerType:'touch',isPrimary:false,button:0,pointerId:20,clientX:12,clientY:20
+  });
+  await page.waitForTimeout(530);
+  assert.equal(await page.locator(
+   '.stage .panel-heading .ui-content-edit-host [contenteditable]').count(),0);
+  await appearanceHeading.dispatchEvent('pointercancel',{pointerType:'touch',pointerId:19});
   // Owner touch gesture is long-press only on a plain caption. A short tap
   // must not replace a button click or expose the editor to a guest.
   await appearanceHeading.dispatchEvent('pointerdown',{
@@ -770,8 +783,11 @@ export async function runUIContentInlineSmoke(browser,base){
   const login=page.locator('#accountPanel .account-form input').first();
   await login.fill('TestingProfile');
   await guestLead.dispatchEvent('pointerdown',{
-   pointerType:'touch',isPrimary:true,button:0,clientX:18,clientY:18
+   pointerType:'touch',isPrimary:true,button:0,pointerId:52,clientX:18,clientY:18
   });
+  // A scroll event from unrelated layout or input focus does not mean the
+  // finger moved to scroll. This was the reported Chromium failure at 9673901.
+  await guestLead.evaluate(el=>el.ownerDocument.dispatchEvent(new Event('scroll')));
   await page.waitForTimeout(570);
   // Account inline editors use a sibling editing host rather than rewriting
   // the source node, so detect that host via the actual panel.

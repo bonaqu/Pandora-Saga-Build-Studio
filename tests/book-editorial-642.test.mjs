@@ -136,7 +136,9 @@ test('owner touch caption guard excludes actions, viewport scroll and delayed OS
  const source=file('pandora-studio-app.js');
  assert.match(source,/ownerTouchCaptionEditors=new WeakMap\(\)/);
  assert.match(source,/event\.target\?\.closest\?\.\('input,textarea,select,button,a,summary,label,\[role="button"\],\[contenteditable\]'\)/);
- assert.match(source,/document\.addEventListener\('scroll',cancelOwnerTouchGesture,true\)/);
+ assert.match(source,/\['pointerup','pointercancel'\]/);
+ assert.doesNotMatch(source,/document\.addEventListener\('scroll',cancelOwnerTouchGesture,true\)/);
+ assert.match(source,/event\.pointerId!==g\.pointerId/);
  assert.match(source,/marked\.node\.contains\(event\.target\)/);
  assert.match(source,/ownerTouchSwallow=\{node:gesture\.node,until:Date\.now\(\)\+1000\}/);
 });

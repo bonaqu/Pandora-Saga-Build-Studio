@@ -1115,28 +1115,32 @@ function bindOwnerTouchCaption(node,edit){
   gesture.edit({preventDefault(){},stopPropagation(){}});
  };
  document.addEventListener('pointerdown',event=>{
-  if(!adminEditing||!adminToken||event.pointerType!=='touch'||
-   event.isPrimary===false||event.button!==0||
+  if(event.pointerType!=='touch')return;
+  // A second finger starts a pinch/pan gesture, never a caption edit.
+  // Also cancel when a new touch begins on a native input or action.
+  cancelOwnerTouchGesture();
+  if(!adminEditing||!adminToken||event.isPrimary===false||event.button!==0||
    event.target?.closest?.('input,textarea,select,button,a,summary,label,[role="button"],[contenteditable]'))return;
   for(let node=event.target;node&&node!==document;node=node.parentElement){
    const edit=ownerTouchCaptionEditors.get(node);
    if(!edit)continue;
-   cancelOwnerTouchGesture();
    ownerTouchGesture={node,edit,x:event.clientX,y:event.clientY,
-    timer:setTimeout(open,460)};
+    pointerId:event.pointerId,timer:setTimeout(open,460)};
    return;
   }
  },true);
  document.addEventListener('pointermove',event=>{
   const g=ownerTouchGesture;
-  if(g&&(event.pointerType!=='touch'||Math.abs(event.clientX-g.x)>12||
-   Math.abs(event.clientY-g.y)>12))cancelOwnerTouchGesture();
+  if(g&&(event.pointerType!=='touch'||event.pointerId!==g.pointerId||
+   Math.abs(event.clientX-g.x)>12||Math.abs(event.clientY-g.y)>12))
+   cancelOwnerTouchGesture();
  },true);
+ // Touch panning triggers pointercancel in Chromium and other Pointer Events
+ // browsers. A global scroll listener is intentionally NOT used here: layout
+ // shifts, popover opening and input focus may scroll an unrelated ancestor
+ // after pointerdown, incorrectly cancelling legitimate label editing.
  for(const name of ['pointerup','pointercancel'])
   document.addEventListener(name,cancelOwnerTouchGesture,true);
- // The platform can begin scrolling without a final pointermove on the
- // caption itself. Do not open an editor after that viewport/panel scroll.
- document.addEventListener('scroll',cancelOwnerTouchGesture,true);
  document.addEventListener('contextmenu',event=>{
   const g=ownerTouchGesture,marked=ownerTouchSwallow;
   if(g?.node.contains(event.target)){

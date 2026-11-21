@@ -72,3 +72,10 @@
 - [x] Fixed the nested-button long-press gap: controls nested inside a caption cannot trigger an editor on the parent. Added pointer cancellation on a scrolling container/window event and suppression of native context menus arriving **after** the editor opened.
 - [x] Extended actual Chromium synthetic pointer coverage at 390px for nested actions, scroll cancellation, movement cancellation and context-menu suppression. Existing full owner RU/EN/CAS scenarios remain enabled.
 - [ ] This touch-hardening packet requires Node + real Chromium on its own new SHA. Physical mobile hardware/OS gestures remain unverified, and owner controls inside buttons/summary still intentionally excluded.
+
+## Recovered follow-up · Chromium regression on 9673901 (21.11.2026)
+
+- [x] GitHub Actions [Node #44857829405](https://github.com/bonaqu/Pandora-Saga-Build-Studio/actions/runs/44857829405) succeeded; [Chromium #44857829381](https://github.com/bonaqu/Pandora-Saga-Build-Studio/actions/runs/44857829381) failed **only** the UI-content-inline account touch caption check (account editor host not visible before 6s). The preceding SHA `2dabe3c` had both checks green.
+- [x] Removed overly broad **global scroll-event cancellation** introduced in `9673901`; an unrelated scroll while opening a popover or focusing an input must not kill the hold gesture. Native touch panning cancels via `pointercancel`, movement and multi-pointer checks remain explicit.
+- [x] Added multi-touch/pinch cancellation and pointer identity tracking. Chromium tests now cover actual `pointercancel`, movement, second-finger cancellation, and an unrelated document scroll followed by account caption long press. No extra pencil was reintroduced.
+- [ ] Confirm full Node+Chromium on a new SHA; hardware and interactive controls are still not fully accepted. Keep PR #809 Draft and #390 open.
