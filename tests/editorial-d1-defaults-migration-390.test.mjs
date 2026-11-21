@@ -34,6 +34,16 @@ test('issue 390: source-authored D1 default snapshot is stable and uses exact ex
  assert.ok(manifest.stats.cohorts['ui-locale']>100);
  assert.ok(manifest.stats.cohorts['semantic-hints']>10);
  assert.ok(manifest.stats.cohorts['honor-overview']>10);
+ assert.ok(manifest.stats.cohorts['owner-dock']>=40,
+  'The existing owner dock headings and instructions must be in the D1 plan');
+ for(const [key,locale] of [
+  ['title','ru'],['step1','en'],['groupToolsHint','ru'],['finishHelp','en']
+ ]){
+  const slug=key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  const recordKey='guideedit.book.owner-dock.'+slug;
+  const match=manifest.records.filter(r=>r.recordKey===recordKey&&r.field===locale);
+  assert.equal(match.length,1,'Missing owner-dock default '+recordKey+'/'+locale);
+ }
  assert.ok(manifest.records.some(r=>
   r.recordKey.startsWith('guideedit.book.ui.label.book-')&&r.field==='en'));
  assert.ok(manifest.records.some(r=>
