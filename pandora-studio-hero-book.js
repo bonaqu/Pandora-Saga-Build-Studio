@@ -2175,31 +2175,64 @@ function appendSkillAttackRange(body,calc,english,options={}){
  section.append(help);
  guideLabel(help,'attack.skillRangeHelp',helpRu,helpEn,options);
  const terms=options.gameTerms||{};
+ // These captions belong to the author; the underlying source skill, range
+ // numbers, branch name and unmet-requirement explanations do not. Reuse the
+ // Book's existing bilingual CAS editor without creating label pencils.
+ const authoredRange=(key,ru,en)=>{
+  const node=make('span',{class:'stage-skill-range-editorial',text:english?en:ru});
+  guideLabel(node,'attack.skillRange.'+key,ru,en,options);
+  return node;
+ };
  for(const row of rows){
   const skill=terms.skills?.[String(row.id)],official=terms.englishSkills?.[String(row.id)];
   if(skill?.id!==row.id)continue;
   const label=gameSkillBadge(row.id,row.name,official?.n,terms,english,
    options.skillIconForId||(()=>null));
-  const prefix=english?'Range bonus: ':'Прибавка к дальности: ';
   const size=Number.isSafeInteger(row.sourceBonus)?
    '+'+row.sourceBonus:'—';
-  const timing=english?(row.mode==='toggle'?'Only while toggled on':'Only when using this skill'):
-   (row.mode==='toggle'?'Только при включённом умении':'Только при применении умения');
-  const state=row.available?(english?'Requirements met':'Требования выполнены'):
-   (english?row.reasonEn:row.reasonRu);
+  const sourcePart=Number.isSafeInteger(row.sourceConstant)&&
+   Number.isSafeInteger(row.sourceMasteryPart);
+  const branchName=gameBranchName('archery',terms,english);
+  const timingToggle=row.mode==='toggle';
+  const timing=authoredRange(timingToggle?'timingToggle':'timingUse',
+   timingToggle?'Только при включённом умении':'Только при применении умения',
+   timingToggle?'Only while toggled on':'Only when using this skill');
+  const status=row.available?
+   authoredRange('requirementsMet','Требования выполнены','Requirements met'):
+   make('span',{class:'stage-skill-range-source-reason',
+    text:(english?row.reasonEn:row.reasonRu)??'—'});
+  const breakdown=sourcePart?make('small',{class:'stage-skill-range-breakdown'},[
+   authoredRange('fromSkill','От умения','From skill'),
+   make('span',{text:': '}),
+   make('span',{class:'stage-skill-range-source-value',text:'+'+row.sourceConstant}),
+   make('span',{text:' · '}),
+   authoredRange('from','от','from'),
+   make('span',{text:' '}),
+   ...(english?[
+    make('span',{class:'stage-skill-range-source-branch',text:branchName}),
+    make('span',{text:' '}),
+    authoredRange('mastery','мастерства','mastery')
+   ]:[
+    authoredRange('mastery','мастерства','mastery'),
+    make('span',{text:' «'}),
+    make('span',{class:'stage-skill-range-source-branch',text:branchName}),
+    make('span',{text:'»'})
+   ]),
+   make('span',{text:': '}),
+   make('span',{class:'stage-skill-range-mastery-value',text:'+'+row.sourceMasteryPart})
+  ]):null;
   section.append(make('div',{class:'stage-heal-row stage-skill-attack-range-row'+
    (row.available?'':' stage-book-unavailable'),'data-range-skill':String(row.id)},[
    make('strong',{},[label]),
-   make('small',{text:prefix+size}),
-   ...(Number.isSafeInteger(row.sourceConstant)&&
-    Number.isSafeInteger(row.sourceMasteryPart)?[
-    make('small',{text:english?
-     'From skill: +'+row.sourceConstant+' · from '+
-       gameBranchName('archery',terms,true)+' mastery: +'+row.sourceMasteryPart:
-     'От умения: +'+row.sourceConstant+' · от мастерства «'+
-       gameBranchName('archery',terms,false)+'»: +'+row.sourceMasteryPart})
-   ]:[]),
-   make('small',{text:timing+' · '+state})
+   make('small',{class:'stage-skill-range-bonus'},[
+    authoredRange('bonus','Прибавка к дальности','Range bonus'),
+    make('span',{text:': '}),
+    make('span',{class:'stage-skill-range-bonus-value',text:size})
+   ]),
+   ...(breakdown?[breakdown]:[]),
+   make('small',{class:'stage-skill-range-status'},[
+    timing,make('span',{text:' · '}),status
+   ])
   ]));
  }
  body.append(section);
