@@ -65,6 +65,40 @@ async function installVerified(payload,expectedSnapshot,
  active={snapshot:expectedSnapshot,values:mapped};
  return true;
 }
+// Explicit staging-only loader. There is intentionally NO startup call.
+ // Credentials, authorization headers and caches never accompany a public
+ // authored-defaults fetch, and no "latest" or unpinned snapshot is accepted.
+async function loadPinned(expectedSnapshot,{
+ endpoint,fetcher=root.fetch?.bind(root),subtle=root.crypto?.subtle,signal
+}={}){
+ const selected=SNAPSHOT.exec(String(expectedSnapshot||''));
+ if(!selected||typeof endpoint!=='string'||typeof fetcher!=='function')
+  return false;
+ let source;
+ try{
+  source=new URL(endpoint);
+  if(source.protocol!=='https:'&&
+   !(source.protocol==='http:'&&['localhost','127.0.0.1','[::1]'].includes(source.hostname)))
+   return false;
+  if(source.username||source.password||source.hash||
+   source.pathname!=='/api/editorial-defaults'||source.search)
+   return false;
+ }catch{return false}
+ const generation=++loadGeneration;
+ source.searchParams.set('snapshot',expectedSnapshot);
+ try{
+  const response=await fetcher(source.href,{
+   method:'GET',credentials:'omit',cache:'no-store',redirect:'error',signal
+  });
+  if(generation!==loadGeneration||!response?.ok)return false;
+  const payload=await response.json();
+  if(generation!==loadGeneration)return false;
+  const mapped=await verifySnapshot(payload,expectedSnapshot,subtle);
+  if(generation!==loadGeneration||!mapped)return false;
+  active={snapshot:expectedSnapshot,values:mapped};
+  return true;
+ }catch{return false}
+}
 function reset(){
  ++loadGeneration;
  active=null;
@@ -81,6 +115,6 @@ function status(){
   Object.freeze({active:false,snapshot:null});
 }
 root.PandoraEditorialDefaults=Object.freeze({
- installVerified,verifySnapshot,reset,value,resolve,status
+ installVerified,verifySnapshot,loadPinned,reset,value,resolve,status
 });
 })(typeof window==='undefined'?globalThis:window);
