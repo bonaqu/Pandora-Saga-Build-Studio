@@ -977,7 +977,10 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(JSON.parse(values['guideedit.wiki.labels']).honor_victories_ru,
    'Победы героев PvP');
   assert.equal(await page.locator('.wiki-honor-live-count').textContent(),' · 5');
-  await page.locator('#locale [data-locale="en"]').click();
+  // The Wiki detail is aria-modal and covers the pointer target. Exercise
+  // the existing keyboard locale path without bypassing the modal with force.
+  await page.locator('#locale [data-locale="en"]').focus();
+  await page.keyboard.press('Enter');
   await page.waitForFunction(()=>document.documentElement.lang==='en');
   const victoryEnglish=page.locator(
    '.wiki-layout-honor [data-honor-section="victories"] .wiki-honor-nav-caption');
@@ -1009,7 +1012,8 @@ export async function runUIContentInlineSmoke(browser,base){
    honor_overview_ru:'Правила чести',honor_victories_ru:'Победы героев PvP',
    honor_victories_en:'Hero PvP Victories'
   });
-  await page.locator('#locale [data-locale="ru"]').click();
+  await page.locator('#locale [data-locale="ru"]').focus();
+  await page.keyboard.press('Enter');
   await page.waitForFunction(()=>document.documentElement.lang==='ru');
   await page.waitForFunction(()=>document.querySelector(
    '.wiki-layout-honor [data-honor-section="victories"] .wiki-honor-nav-caption')
