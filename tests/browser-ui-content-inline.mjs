@@ -395,6 +395,50 @@ export async function runUIContentInlineSmoke(browser,base){
   await page.waitForFunction(previous=>
    document.querySelector('#stageBookMountedToggle')?.checked===previous,
    beforeMounted,{timeout:15000});
+
+  // A dynamic enhancement counter and its independent bilingual caption
+  // must never share an editable source value. Check real owner D1 CAS and
+  // the native disclosure guard without changing a character buff.
+  await page.locator('#stageAttributes [data-book-page="buffs"]').click();
+  await page.locator('#stageBookPanel[data-book-visible="buffs"]')
+   .waitFor({state:'visible',timeout:15000});
+  const overview=page.locator('#stageBookPanel .stage-buff-overview');
+  await overview.waitFor({state:'visible'});
+  const originalCount=await overview.locator('strong').innerText();
+  const buffCaption=overview.locator('span[data-owner-copy-key]').first();
+  assert.equal(await buffCaption.innerText(),'Выбранные усиления');
+  const buffKey=await buffCaption.getAttribute('data-owner-copy-key');
+  const buffD1='guideedit.book.'+
+   await page.evaluate(key=>window.PandoraUILocale.fieldKey(key),buffKey);
+  await buffCaption.dblclick();
+  const buffEditor=overview.locator('.account-copy-edit-host [contenteditable]');
+  await buffEditor.waitFor({state:'visible'});
+  await buffEditor.fill('Активные усиления QA');
+  await buffEditor.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#stageBookPanel .stage-buff-overview > span')?.textContent==='Активные усиления QA',
+   null,{timeout:15000});
+  assert.equal(JSON.parse(values[buffD1]).ru,'Активные усиления QA');
+  assert.equal(await overview.locator('strong').innerText(),originalCount);
+  assert.equal(await overview.locator('.account-copy-pencil').count(),0);
+  const guildLabel=page.locator('#stageBookPanel summary [data-guide-key="buffs.guild"]').first();
+  await guildLabel.waitFor({state:'visible',timeout:15000});
+  const guildSummary=guildLabel.locator('xpath=ancestor::summary[1]');
+  const guildDisclosure=guildSummary.locator('xpath=..');
+  const wasOpen=await guildDisclosure.evaluate(node=>node.open);
+  await guildLabel.dblclick();
+  await guildLabel.locator('[contenteditable]').waitFor({state:'visible'});
+  assert.equal(await guildDisclosure.evaluate(node=>node.open),wasOpen,
+   'Double-clicking the owner caption must not toggle its guild disclosure');
+  await guildLabel.locator('[contenteditable]').press('Escape');
+  await guildSummary.locator('.stage-result-symbol').click();
+  await page.waitForFunction(previous=>{
+   const summary=document.querySelector('#stageBookPanel summary [data-guide-key="buffs.guild"]')
+    ?.closest('summary');
+   return summary?.parentElement?.open!==previous;
+  },wasOpen,{timeout:5000});
+  assert.equal(await overview.locator('strong').innerText(),originalCount);
+
   await page.locator('#stageAttributes [data-book-page="summary"]').click();
   await page.locator('#stageBookPanel[data-book-visible="summary"]')
    .waitFor({state:'visible',timeout:15000});
