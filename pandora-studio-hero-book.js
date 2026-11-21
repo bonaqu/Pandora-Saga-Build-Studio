@@ -196,6 +196,16 @@ const bookEnglish=Object.freeze({
  'Эффекты плащей на военных картах': "Battle-map cloak effects",
  'Расовая стойкость цверга': "Dwarven racial survival",
  'Бонусы к опыту': "Experience gain bonuses",
+ // Source-backed numbers and item IDs remain separate from author-copy spans.
+ 'Сейчас нет активных бонусов к опыту.': 'No experience bonuses are currently active.',
+ 'Уровень союзника': 'Ally level',
+ 'СД союзника': 'Ally SPR',
+ 'Песнопения союзника': 'Ally Hymn',
+ 'Союзник: Клирик · Исцеление': 'Ally: Cleric · Healing',
+ 'необходимо (учитывается автоматически)': 'required (automatic)',
+ 'Упрямое сердце': 'Stronghearted',
+ 'шанс по данным навыка': 'skill-source chance',
+ 'Подробнее': 'More details',
  'Показывать восстановление от зелий': "Show potion recovery",
  'Для текущих зелий ещё нет доступных значений.': "No potion values are available yet.",
  'Предметы восстановления ОМ': "MP recovery items",
@@ -1258,9 +1268,11 @@ function buffsPage(body,options){
    const requirements=Array.isArray(details?.reqs)?details.reqs:[];
    const minHymn=requirements.find(x=>x.branch==='hymn')?.amount??30;
    const minHealing=requirements.find(x=>x.branch==='benevolence')?.amount??61;
-   caster.append(make('small',{class:'stage-attribute-note stage-ally-peace-note',
-    text:(english?'Ally: Cleric · Healing ':'Союзник: Клирик · Исцеление ')+
-     minHealing+(english?' required (automatic)':' необходимо (учитывается автоматически)')}));
+   caster.append(make('small',{class:'stage-attribute-note stage-ally-peace-note'},[
+    make('span',{text:english?'Ally: Cleric · Healing':'Союзник: Клирик · Исцеление'}),
+    ' ',make('strong',{text:String(minHealing)}),' ',
+    make('span',{text:english?'required (automatic)':'необходимо (учитывается автоматически)'})
+   ]));
    for(const [key,ru,en,min,max,defaultValue] of [
     ['allyPeaceSpi','СД союзника','Ally SPR',0,500,134],
     ['allyPeaceHymn','Песнопения союзника','Ally Hymn',minHymn,maxHymn,30]
@@ -2191,8 +2203,11 @@ function defensePage(body,calc,english,options={}){
  const conditional=calc?.battleMapCloaks?.entries||[];
  if(conditional.length){
   const panel=make('details',{class:'stage-attribute-row stage-battle-map-cloaks'});
-  panel.append(make('summary',{text:(english?'Battle-map cloak effects':
-   'Эффекты плащей на военных картах')+' · '+conditional.length}));
+  panel.append(make('summary',{},[
+   make('span',{text:english?'Battle-map cloak effects':
+    'Эффекты плащей на военных картах'}),
+   make('span',{class:'stage-book-live-count',text:' · '+conditional.length})
+  ]));
   for(const entry of conditional){
    const line=english?['All attributes +'+entry.all,'DEF +'+entry.armor,
     'HP +'+entry.hp]:['Все характеристики +'+entry.all,
@@ -2212,8 +2227,11 @@ function defensePage(body,calc,english,options={}){
   body.append(make('section',{class:'stage-attribute-row stage-racial-survival'},[
    make('strong',{text:english?'Dwarven racial survival':
     'Расовая стойкость цверга'}),
-   make('p',{text:(english?'Stronghearted: ':'Упрямое сердце: ')+
-    survival.chance+(english?'% skill-source chance':'% шанс по данным навыка')})
+   make('p',{},[
+    make('span',{text:english?'Stronghearted':'Упрямое сердце'}),': ',
+    make('strong',{text:String(survival.chance)}),'% ',
+    make('span',{text:english?'skill-source chance':'шанс по данным навыка'})
+   ])
   ]));
  }
  const exp=calc?.experienceBonus?.entries||[];

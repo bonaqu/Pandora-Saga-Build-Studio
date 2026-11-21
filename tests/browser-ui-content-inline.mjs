@@ -306,6 +306,45 @@ export async function runUIContentInlineSmoke(browser,base){
   });
   await failedBook.press('Escape');
   assert.equal(await stat.locator('[data-owner-text-field]').count(),0);
+  // A formerly hard-coded explanation beside live EXP values is now one
+  // directly editable D1 label, without a redundant pencil or numeric edit.
+  await page.locator('#stageAttributes [data-book-page="defense"]').click();
+  await page.locator('#stageBookPanel[data-book-visible="defense"]')
+   .waitFor({state:'visible',timeout:15000});
+  const expDetails=page.locator('#stageBookPanel .stage-experience-effects');
+  await expDetails.locator('summary').click();
+  const noExp=expDetails.locator('p.stage-attribute-note[data-owner-copy-key]');
+  await noExp.waitFor({state:'visible',timeout:15000});
+  assert.equal(await noExp.innerText(),'Сейчас нет активных бонусов к опыту.');
+  assert.equal(await expDetails.locator('.account-copy-pencil').count(),0);
+  const expKey=await noExp.getAttribute('data-owner-copy-key');
+  assert.match(expKey,/^book-/);
+  const expD1='guideedit.book.'+
+   await page.evaluate(key=>window.PandoraUILocale.fieldKey(key),expKey);
+  await noExp.dblclick();
+  const expInput=expDetails.locator('.account-copy-edit-host [contenteditable]');
+  await expInput.fill('Бонусы опыта сейчас не действуют.');
+  await expInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#stageBookPanel .stage-experience-effects p.stage-attribute-note')?.textContent===
+   'Бонусы опыта сейчас не действуют.',null,{timeout:15000});
+  assert.equal(JSON.parse(values[expD1]).ru,'Бонусы опыта сейчас не действуют.');
+  await page.locator('#locale [data-locale="en"]').click();
+  await page.waitForFunction(()=>document.documentElement.lang==='en');
+  const expEnglish=page.locator('#stageBookPanel .stage-experience-effects p.stage-attribute-note[data-owner-copy-key]');
+  assert.equal(await expEnglish.innerText(),'No experience bonuses are currently active.');
+  await expEnglish.dblclick();
+  const expEnInput=page.locator('#stageBookPanel .stage-experience-effects .account-copy-edit-host [contenteditable]');
+  await expEnInput.fill('No EXP bonus is active for this build.');
+  await expEnInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#stageBookPanel .stage-experience-effects p.stage-attribute-note')?.textContent===
+   'No EXP bonus is active for this build.',null,{timeout:15000});
+  assert.deepEqual(JSON.parse(values[expD1]),{
+   ru:'Бонусы опыта сейчас не действуют.',en:'No EXP bonus is active for this build.'
+  });
+  await page.locator('#locale [data-locale="ru"]').click();
+  await page.waitForFunction(()=>document.documentElement.lang==='ru');
   await page.locator('#stageAttributes .stage-book-close').click();
   const wiki=page.locator('#nav [data-i18n="wiki"]');
   await wiki.waitFor({state:'visible'});

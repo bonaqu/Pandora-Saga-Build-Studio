@@ -58,3 +58,34 @@ test('Book overrides stay scoped to one exact bilingual literal with archive fal
   else globalThis.document=previous;
  }
 });
+
+test('issue #390: source-backed values stay separate from editable Hero Book RU/EN copy',()=>{
+ const authored=[
+  ['Сейчас нет активных бонусов к опыту.','No experience bonuses are currently active.'],
+  ['Уровень союзника','Ally level'],['СД союзника','Ally SPR'],
+  ['Песнопения союзника','Ally Hymn'],
+  ['Союзник: Клирик · Исцеление','Ally: Cleric · Healing'],
+  ['необходимо (учитывается автоматически)','required (automatic)'],
+  ['Упрямое сердце','Stronghearted'],['шанс по данным навыка','skill-source chance'],
+  ['Подробнее','More details']
+ ];
+ for(const [ru,en] of authored){
+  const key=book.bookEditorialKey(ru),d1=key&&'guideedit.book.'+locale.fieldKey(key);
+  assert.ok(key&&d1,'No stable key for '+ru);
+  assert.equal(locale.bookFieldKey(ru),key);
+  assert.equal(locale.bookFieldKey(en),key);
+  locale.setOverrides({[d1]:JSON.stringify({ru:'Правка '+ru,en:'Edit '+en})});
+  assert.equal(locale.text(key,'ru'),'Правка '+ru);
+  assert.equal(locale.text(key,'en'),'Edit '+en);
+  locale.setOverrides({[d1]:'{broken'});
+  assert.equal(locale.text(key,'ru'),ru);
+  assert.equal(locale.text(key,'en'),en);
+  locale.setOverrides({});
+ }
+ const source=file('pandora-studio-hero-book.js');
+ assert.match(source,/class:'stage-book-live-count',text:' · '\+conditional\.length/);
+ assert.match(source,/make\('strong',\{text:String\(minHealing\)\}\)/);
+ assert.match(source,/make\('strong',\{text:String\(survival\.chance\)\}\)/);
+ for(const runtime of ['45','Player character name','250','320007001'])
+  assert.equal(locale.bookFieldKey(runtime),null);
+});
