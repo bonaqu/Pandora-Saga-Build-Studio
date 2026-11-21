@@ -655,6 +655,37 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.deepEqual((await page.locator(
    '#honor-rank-2 .wiki-honor-runtime-value').allTextContents())
    .map(s=>s.replace(/\D/g,'')),['3000','20000']);
+  // A CAS conflict cannot replace the verified numerical requirements or
+  // discard the exact draft. Undo should remove the latest EN translation
+  // without reverting the already saved RU translation.
+  const ruRankLead=page.locator('#honor-rank-2 [data-owner-copy-id="rankReqPointsLead"]');
+  nextConflicts.add(rankCaptionKey);
+  await ruRankLead.dblclick();
+  const rankDraft=ruRankLead.locator('[contenteditable]');
+  await rankDraft.fill('Неопубликованный черновик требования ранга');
+  await rankDraft.press('Tab');
+  await ruRankLead.locator('.ui-content-inline-error').waitFor({state:'visible',timeout:15000});
+  assert.equal(await rankDraft.textContent(),'Неопубликованный черновик требования ранга');
+  assert.equal(JSON.parse(values[rankCaptionKey]).ru,'Для ранга требуется');
+  assert.deepEqual((await page.locator('#honor-rank-2 .wiki-honor-runtime-value')
+   .allTextContents()).map(s=>s.replace(/\D/g,'')),['3000','20000']);
+  await rankDraft.press('Escape');
+  assert.equal(await ruRankLead.textContent(),'Для ранга требуется');
+  if(await page.locator('#ownerDock').evaluate(el=>el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
+  await page.locator('#ownerDock [data-owner-undo]').click();
+  let revertedRankEnglish=false;
+  for(let check=0;check<120;check++){
+   const value=values[rankCaptionKey];
+   if(value&&JSON.parse(value).en===undefined){revertedRankEnglish=true;break}
+   await page.waitForTimeout(50);
+  }
+  assert.ok(revertedRankEnglish,'Undo must restore the previous bilingual D1 record');
+  assert.equal(JSON.parse(values[rankCaptionKey]).ru,'Для ранга требуется');
+  assert.deepEqual((await page.locator('#honor-rank-2 .wiki-honor-runtime-value')
+   .allTextContents()).map(s=>s.replace(/\D/g,'')),['3000','20000']);
+  if(await page.locator('#ownerDock [data-owner-collapse]').getAttribute('aria-expanded')==='true')
+   await page.locator('#ownerDock [data-owner-collapse]').click();
   // Leave the existing Encyclopedia detail workbench before opening the
   // account UI: a modal workbench correctly intercepts background clicks.
   if(await page.locator('#detailPanel.is-open').count())

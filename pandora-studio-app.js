@@ -10154,8 +10154,6 @@ function refreshVisibleOwnerCopy(recordKey){
   if(section==='honor-view'){
    const filterCaption=node.parentElement?.querySelector('.wiki-honor-filter-caption');
    ownerDockPatchText(filterCaption,value);
-   const pencil=node.parentElement?.querySelector('.wiki-honor-copy-pencil');
-   ownerDockPatchAttr(pencil,'aria-label',(lang==='en'?'Edit caption: ':'Изменить подпись: ')+value);
   }
   if(section==='catalog-sync'&&id.startsWith('hint'))
    for(const target of document.querySelectorAll('[data-guide-owner-key]'))

@@ -3,6 +3,10 @@
 // Partial source-backed combat preview. Do not claim current OS parity for missing buffs or procs.
 // Exact, player-interface labels only; source names and item descriptions stay untouched.
 const bookEnglish=Object.freeze({
+ '«Вольный ветер» и «Благословение ветра»: прибавки показаны отдельно.': 'Free Wind and Wind Blessing: bonuses are shown separately.',
+ 'У текущего билда нет рассчитанных эффектов умений. Описания и требования смотри в Энциклопедии → Навыки.': 'No calculated skill effects for this build. Skill descriptions and requirements are in Encyclopedia → Skills.',
+ 'На экипированном оружии нет активных подтверждённых стихийных эффектов.': 'No supported elemental weapon effect is active on the equipped weapon.',
+ 'Здесь только прямые бонусы вещей и душ. Титулы, пассивные умения, комплекты и другие эффекты тоже могут влиять на итоговые значения выше.': 'Direct item and Soul bonuses only. Titles, passives, sets and other effects may also change the totals above.',
  'Итоги': "Summary",
  'КНИГА ГЕРОЯ': 'HERO BOOK',
  'Атака': "Attack",
@@ -2323,6 +2327,8 @@ const chapterCaptionSpecs=Object.freeze([
  ['recovery','enabled','.stage-potion-book .stage-book-check > span','Показывать восстановление от зелий','Show potion recovery'],
  ['recovery','mana','.stage-mana-consumables > strong','Предметы восстановления ОМ','MP recovery items'],
  ['recovery','health','.stage-health-consumables > summary','Предметы восстановления ОЗ','HP recovery items'],
+ ['defense','sources','.stage-status-source-breakdown > summary',
+  'Вклад предметов и душ','Bonuses from equipment and Souls'],
  ['defense','experience','.stage-experience-effects > summary','Бонусы к опыту','Experience gain bonuses'],
  ['attack','elemental','.stage-active-elemental > summary','Эффекты стихийных оружий','Elemental weapon effects'],
  ['recovery','cures','.stage-status-cures > summary','Снятие состояний','Remove status effects'],

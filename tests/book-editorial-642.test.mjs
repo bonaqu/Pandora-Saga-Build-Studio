@@ -105,3 +105,23 @@ test('issue #390: Hero Book heading text is independent of live chapter number',
  assert.match(src,/stage-book-title-count',text:' · '\+\(index\+1\)\+' \/ 6'/);
  assert.equal(locale.bookFieldKey('1 / 6'),null);
 });
+
+test('issue #390: rare static Book notes and the source-breakdown header are independently RU/EN editable',()=>{
+ const expected=[["«Вольный ветер» и «Благословение ветра»: прибавки показаны отдельно.","Free Wind and Wind Blessing: bonuses are shown separately."],["У текущего билда нет рассчитанных эффектов умений. Описания и требования смотри в Энциклопедии → Навыки.","No calculated skill effects for this build. Skill descriptions and requirements are in Encyclopedia → Skills."],["На экипированном оружии нет активных подтверждённых стихийных эффектов.","No supported elemental weapon effect is active on the equipped weapon."],["Здесь только прямые бонусы вещей и душ. Титулы, пассивные умения, комплекты и другие эффекты тоже могут влиять на итоговые значения выше.","Direct item and Soul bonuses only. Titles, passives, sets and other effects may also change the totals above."]];
+ for(const [ru,en] of expected){
+  assert.equal(book.bookEditorialDefaults[ru],en);
+  const key=book.bookEditorialKey(ru);
+  assert.ok(key,'Missing semantic key for '+ru);
+  assert.equal(locale.bookFieldKey(en),key);
+  const d1='guideedit.book.'+locale.fieldKey(key);
+  locale.setOverrides({[d1]:JSON.stringify({ru:'Правка RU',en:'Edited EN'})});
+  assert.equal(locale.text(key,'ru'),'Правка RU');
+  assert.equal(locale.text(key,'en'),'Edited EN');
+  locale.setOverrides({});
+  assert.equal(locale.text(key,'ru'),ru);
+ }
+ const source=file('pandora-studio-hero-book.js');
+ assert.match(source,/\['defense','sources','\.stage-status-source-breakdown > summary'/);
+ assert.match(source,/guideLabel\(label,section\+'\.caption\.'\+key,ru,en,options\)/);
+ assert.match(source,/node\.setAttribute\('data-owner-copy-key',node\.dataset\.bookEditorialKey\)/);
+});

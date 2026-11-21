@@ -42,3 +42,12 @@
 - The generated text is now split into seven stable RU/EN D1 fragments; runtime values are independent read-only nodes. No caption pencil is added. Source-authored or previously overridden `honor.rank.*.requirementRu/En` remains on its original D1 path without destructive migration.
 - Added Node validation for the new D1 keys and no generated whole-paragraph editor, plus a real Chromium RU/EN CAS scenario protecting rank thresholds and F2/double-click behavior.
 - **Still open:** 409/Undo across new fragments, broad guest and mobile UX, remaining dynamic editorial strings and whether physical storage of all defaults in D1 is in scope. Do not mark #390 or PR #809 complete on account of this targeted fix.
+
+## Second continuation packet · exact Book notes and abandoned Honor chrome
+
+- [x] Previous `68af443f35dfcbc2b337e5a4a8793508649261bf`: full [Node](https://github.com/bonaqu/Pandora-Saga-Build-Studio/actions/runs/44855588375) and [Chromium](https://github.com/bonaqu/Pandora-Saga-Build-Studio/actions/runs/44855588276) succeeded.
+- [x] Four additional existing, authored, nonnumeric Hero Book notes are registered with exact RU/EN semantic defaults. Rendered static note nodes therefore reuse shared direct-dblclick D1/CAS; dynamic numeric skill results and item names are excluded.
+- [x] Defense status-source breakdown disclosure has a separate `defense.caption.sources` key rather than making the numerical/source rows editable.
+- [x] Removed abandoned Honor caption-pencil CSS, whitespace and obsolete attribute updater; the rank requirement and benefit grid owners remain intact.
+- [x] Expanded regression checks for default Book keys, archived authored rank requirements, 409 draft survival and Undo preserving runtime rank threshold numbers.
+- [ ] This packet requires new same-SHA CI. Do not use the successful preceding SHA as evidence for its content.

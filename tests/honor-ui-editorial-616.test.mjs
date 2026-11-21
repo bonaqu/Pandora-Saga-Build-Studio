@@ -33,7 +33,7 @@ test('Honor captions edit at their text, never via neighboring pencil',()=>{
  assert.match(view,/caption\.addEventListener\('dblclick',edit\)/);
  assert.match(view,/event\.preventDefault\(\);event\.stopPropagation\(\)/);
  assert.doesNotMatch(view,/directPencil|wiki-honor-copy-pencil/);
- assert.match(css,/\.wiki-honor-copy-owner-label:focus-visible/);
+ assert.doesNotMatch(css,/wiki-honor-(?:copy-owner-label|copy-pencil|direct-pencil)/);
 });
 
 test('issue 390: PvP rewards and schedules expose D1 headings but not reward or count data',()=>{
@@ -85,4 +85,19 @@ test('issue #390: generated rank thresholds remain immutable while their RU/EN p
  assert.match(view,/number\(rank\.gold\)/);
  assert.doesNotMatch(view,/const defaultRequirement=rank\.top/);
  assert.doesNotMatch(view,/wiki-honor-requirement-pencil/);
+});
+
+test('legacy authored rank requirements retain the original fields without altering source numbers',()=>{
+ const old={
+  'guideedit.honor.rank.2':JSON.stringify({
+   requirementRu:'Архивное описание ранга',
+   requirementEn:'Legacy authored rank requirement'
+  })
+ };
+ const rank=scope.PandoraHonorGuide.article(old).ranks.find(entry=>entry.id===2);
+ assert.equal(rank.requirementRu,'Архивное описание ранга');
+ assert.equal(rank.requirementEn,'Legacy authored rank requirement');
+ assert.equal(rank.points,3000);
+ assert.equal(rank.gold,20000);
+ assert.match(view,/if\(authoredRequirement\)/);
 });
