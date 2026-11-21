@@ -192,3 +192,8 @@
 - Source-only `guideedit.book.wiki.map.text.*`, `wiki.monster.text.*`, `wiki.npc.trade.*`, `wiki.chest.text.*`, `wiki.item.text.*` now have an explicit, narrow authorial key matcher. The same matcher is used on successful CAS save, mounted-field refresh and Undo.
 - Editing or Undoing an authorial caption no longer calls `refreshOwnerCatalog()` as if a monster stat, item ID, NPC trade or loot had changed. The existing card, browser list, search, scroll, inline editors and real gameplay values remain mounted. Gameplay `wikiedit.*` keys still use the full catalog refresh as required.
 - Added Node contracts and a Chromium RU CAS/Undo scenario on an actual selected Wiki map caption, asserting stable DOM node identity, selected map and browse scroll, verified D1 reset. This is mock D1, not production/staging import.
+
+## Checkpoint: icon-only accessible copy stays editable without a false pencil
+
+- `#profileTrigger` has no visible caption; the `title` mirrors its same-key `aria-label`, not a separate authorial hover guide. Owner-mode keyboard F2 opens the ordinary inline editor for `ui.label.profile-access`; Enter/Space/click retain their normal account action. No pencil appears.
+- Save, Escape, cross-language fallback and validation reuse the original `book.ui.label.profile-access` D1 CAS key and `PandoraUILocale.copyLimit`; only this icon's title/ARIA are refreshed at editor close without remounting the account form. Nonowners do not receive the F2 shortcut. Browser regression covers F2, blur-save, Escape/no-write, mirrored title/ARIA and absence of pencils.

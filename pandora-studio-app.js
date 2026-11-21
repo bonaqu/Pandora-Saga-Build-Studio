@@ -9468,13 +9468,57 @@ function bindStaticUICopyEditors(){
    if(button)ownerCaptionActionGuard(button,node);
   }
  }
- // A mirrored browser title/ARIA (such as the profile icon's access name)
- // is not a separate editable authorial hover explanation. The locale
- // controller still keeps title/placeholder/aria synchronized after CAS,
- // while independent guide hints retain their own tooltip-only editor.
+ // An icon-only control may have no visible text: its title mirrors its
+ // accessible name, not an independent authorial hover explanation. Owners
+ // can edit that SAME semantic RU/EN string via F2 on the focused control.
+ // Never add a pencil or hijack the control's native Enter/Space/click.
  for(const node of document.querySelectorAll('[data-i18n-title]')){
   const next=node.nextElementSibling;
   if(next?.dataset?.uiContentFor===node.dataset.i18nTitle)next.remove();
+  const key=node.dataset.i18nTitle;
+  if(!locale.fieldKey(key))continue;
+  if(!canEdit){
+   if(node.dataset.uiTitleShortcutAdded==='1'){
+    node.removeAttribute('aria-keyshortcuts');
+    delete node.dataset.uiTitleShortcutAdded;
+   }
+   continue;
+  }
+  if(!node.hasAttribute('aria-keyshortcuts')){
+   node.setAttribute('aria-keyshortcuts','F2');
+   node.dataset.uiTitleShortcutAdded='1';
+  }
+  if(node.dataset.uiTitleBound==='1')continue;
+  node.dataset.uiTitleBound='1';
+  node.addEventListener('keydown',event=>{
+   if(event.key!=='F2'||event.target!==node||!adminEditing||!adminToken)return;
+   event.preventDefault();event.stopPropagation();
+   if(node.nextElementSibling?.classList?.contains('ui-content-edit-host'))return;
+   // Resolve key at edit time: a reused icon can change its accessible copy.
+   const currentKey=node.dataset.i18nTitle,id=locale.fieldKey(currentKey);
+   if(!id)return;
+   const editLang=lang,current=locale.text(currentKey,editLang);
+   const host=h('span',{class:'ui-content-edit-host',text:current});
+   node.after(host);node.hidden=true;
+   editWikiValue(host,current,{
+    type:'text',
+    onCommit:value=>{
+     if(value.length>locale.copyLimit(currentKey))
+      throw Error(editLang==='en'?'Label is too long':'Надпись слишком длинная');
+     return saveGuidePatch('book.'+id,{[editLang]:value});
+    },
+    onFinished:()=>{
+     node.hidden=false;host.remove();
+     // The attribute and its accessible equivalent are the same D1 value.
+     // Only patch this mounted control; do not remount an open account form.
+     for(const [attribute,dataKey] of [
+      ['title','i18nTitle'],['aria-label','i18nAriaLabel'],
+      ['placeholder','i18nPlaceholder']])
+      if(node.dataset[dataKey])
+       node.setAttribute(attribute,locale.text(node.dataset[dataKey],lang));
+    }
+   });
+  });
  }
 }
 

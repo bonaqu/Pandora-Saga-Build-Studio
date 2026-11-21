@@ -80,6 +80,9 @@ test('#390 generic text editing and mirrored profile title use distinct authoria
  assert.match(bind,/node\.dataset\.uiContentTabAdded==='1'/);
  assert.match(bind,/node\.dataset\.uiContentShortcutAdded==='1'/);
  assert.match(bind,/next\?\.dataset\?\.uiContentFor===node\.dataset\.i18nTitle/);
+ assert.match(bind,/node\.addEventListener\('keydown',event=>\{/);
+ assert.match(bind,/if\(event\.key!=='F2'\|\|event\.target!==node/);
+ assert.match(bind,/return saveGuidePatch\('book\.'\+id,\{\[editLang\]:value\}\)/);
  assert.match(app,/class:'wiki-hint-pencil'/,
   'Real independently authored hover help must remain editable');
 });

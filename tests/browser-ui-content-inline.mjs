@@ -194,6 +194,30 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(await profileButton.getAttribute('aria-label'),'Войти или зарегистрироваться');
   assert.equal(await page.locator('#profileTrigger + .ui-content-pencil').count(),0);
   assert.equal(await page.locator('#profileTrigger + [data-ui-content-for="profileAccess"]').count(),0);
+  // Icon-only accessible copy remains editable without adding an ordinary
+  // caption pencil: F2 edits the same source shared by title and ARIA.
+  assert.equal(await profileButton.getAttribute('aria-keyshortcuts'),'F2');
+  await profileButton.focus();
+  await profileButton.press('F2');
+  const profileEditor=page.locator('#profileTrigger + .ui-content-edit-host [data-owner-text-field]');
+  await profileEditor.waitFor({state:'visible'});
+  await profileEditor.fill('Профиль или регистрация QA');
+  await profileEditor.press('Tab');
+  await page.waitForFunction(()=>document.querySelector('#profileTrigger')
+   ?.getAttribute('title')==='Профиль или регистрация QA',null,{timeout:15000});
+  assert.equal(await profileButton.getAttribute('aria-label'),'Профиль или регистрация QA');
+  assert.equal(JSON.parse(values['guideedit.book.ui.label.profile-access']).ru,
+   'Профиль или регистрация QA');
+  assert.equal(await page.locator('#profileTrigger + .ui-content-pencil').count(),0);
+  // Escape cancels a second edit without changing the saved D1 value.
+  const profileWrites=writes.filter(entry=>entry.key==='guideedit.book.ui.label.profile-access').length;
+  await profileButton.focus();await profileButton.press('F2');
+  const discarded=page.locator('#profileTrigger + .ui-content-edit-host [data-owner-text-field]');
+  await discarded.fill('Не сохранять доступ');
+  await discarded.press('Escape');
+  assert.equal(writes.filter(entry=>entry.key==='guideedit.book.ui.label.profile-access').length,
+   profileWrites);
+  assert.equal(await profileButton.getAttribute('title'),'Профиль или регистрация QA');
   // The update manager mounts after the main app and creates its banner
   // asynchronously. Its authorial text must join the SAME D1/CAS editor.
   const updateBanner=page.locator('#studio-update-banner');
