@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
+import {buildEditorialDefaultsManifest} from '../scripts/plan-editorial-d1-defaults.mjs';
 
 export async function runUIContentInlineSmoke(browser,base){
  const api='https://ps-build-studio-cloud.bonaqu.workers.dev';
@@ -121,6 +123,56 @@ export async function runUIContentInlineSmoke(browser,base){
   // Never invoke owner keyboard actions before the native startup modal releases.
   await page.locator('#startupOverlay').waitFor({state:'hidden',timeout:30000});
   await page.locator('#nav [data-tab="wiki"]').waitFor({state:'visible'});
+
+  // Stage-only, verified bilingual D1 defaults can overlay this release's
+  // authored copy WITHOUT a network request, gameplay rerender, owner
+  // privilege, or altering the cloud overrides used by the real editor.
+  const manifest=buildEditorialDefaultsManifest();
+  const rows=manifest.records.map(r=>({...r}));
+  const changes=[
+   ['guideedit.wiki.labels','honor_victories_ru','Стадийные PvP победы'],
+   ['guideedit.wiki.labels','honor_victories_en','Staging PvP Victories'],
+   ['guideedit.honor.overview','overviewRu','Тестовое описание чести']
+  ];
+  for(const [key,field,value] of changes){
+   const row=rows.find(r=>r.recordKey===key&&r.field===field);
+   assert.ok(row,'Missing safe source-authored field for staged browser test');
+   row.value=value;
+  }
+  const digest=createHash('sha256').update(JSON.stringify({
+   schema:1,release:manifest.release,records:rows
+  })).digest('hex');
+  const staging={schema:1,release:manifest.release,records:rows,
+   sha256:digest,snapshot:manifest.release+'-'+digest.slice(0,16)};
+  const result=await page.evaluate(async payload=>{
+   const defaults=window.PandoraEditorialDefaults;
+   if(!defaults)return {moduleMissing:true};
+   const before=window.PandoraWikiLabels.value({},'honor','victories','ru');
+   const accepted=await defaults.installVerified(payload,payload.snapshot);
+   const stagedRu=window.PandoraWikiLabels.value({},'honor','victories','ru');
+   const stagedEn=window.PandoraWikiLabels.value({},'honor','victories','en');
+   const guide=window.PandoraHonorGuide.article({}).overview.overviewRu;
+   const bad=await defaults.installVerified({...payload,sha256:'0'.repeat(64)},
+    payload.snapshot);
+   const intact=window.PandoraWikiLabels.value({},'honor','victories','ru');
+   defaults.reset();
+   const restored=window.PandoraWikiLabels.value({},'honor','victories','ru');
+   return {before,accepted,stagedRu,stagedEn,guide,bad,intact,restored,
+    active:defaults.status().active};
+  },staging);
+  assert.equal(result.before,'Победы в PvP');
+  assert.equal(result.accepted,true);
+  assert.equal(result.stagedRu,'Стадийные PvP победы');
+  assert.equal(result.stagedEn,'Staging PvP Victories');
+  assert.equal(result.guide,'Тестовое описание чести');
+  assert.equal(result.bad,false);
+  assert.equal(result.intact,'Стадийные PvP победы');
+  assert.equal(result.restored,'Победы в PvP');
+  assert.equal(result.active,false);
+  assert.equal(Object.keys(values).length,0,
+   'Staged browser read must never create a mock admin D1 CAS override');
+  console.log('Chromium #390: pinned SHA-256 RU/EN defaults, bad snapshot and rollback passed');
+
   assert.equal(await page.locator('#nav .ui-content-pencil').count(),0,
    'Guest does not see editing controls');
   const published=await page.locator('meta[name="ps-studio-release"]')
