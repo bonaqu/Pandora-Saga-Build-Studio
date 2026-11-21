@@ -9342,8 +9342,19 @@ document.addEventListener('pointerdown',event=>{
  const pending=pendingOwnerCaptionAction;
  if(pending&&!pending.button.contains(event.target))pending.cancel();
 },true);
+// Multiple independent D1 captions may share one real button/summary.
+// Keep one delegated click guard and register every eligible caption; never
+// attach duplicate listeners or let an older child suppress a newer editor.
+const ownerCaptionActionTargets=new WeakMap();
 function ownerCaptionActionGuard(button,caption){
- if(!button||button.dataset.ownerCaptionActionGuard==='1')return;
+ if(!button||!caption)return;
+ let captions=ownerCaptionActionTargets.get(button);
+ if(!captions){
+  captions=new Set();
+  ownerCaptionActionTargets.set(button,captions);
+ }
+ captions.add(caption);
+ if(button.dataset.ownerCaptionActionGuard==='1')return;
  button.dataset.ownerCaptionActionGuard='1';
  let timer=null;
  const cancel=()=>{
@@ -9352,26 +9363,27 @@ function ownerCaptionActionGuard(button,caption){
   if(pendingOwnerCaptionAction?.button===button)pendingOwnerCaptionAction=null;
  };
  button.addEventListener('click',event=>{
-  // Real keyboard and programmatic clicks have detail=0 and execute
-  // immediately. They must still cancel any delayed pointer navigation.
+  // Keyboard/programmatic clicks (detail=0) still act immediately.
   if(!event.detail){
    if(pendingOwnerCaptionAction)pendingOwnerCaptionAction.cancel();
    return;
   }
-  if(!adminEditing||!adminToken||!caption.contains(event.target))return;
+  if(!adminEditing||!adminToken)return;
+  const activeCaption=[...captions].find(item=>item.contains(event.target));
+  if(!activeCaption)return;
   if(event.target.closest?.('[data-owner-text-field],.wiki-inline-input')){
    event.preventDefault();event.stopImmediatePropagation();return;
   }
   if(event.target.closest?.('input,textarea,select'))return;
   event.preventDefault();event.stopImmediatePropagation();
-  if(timer!==null){cancel();return} // Actual double-click, not a navigation.
+  if(timer!==null){cancel();return} // Actual double-click, not an action.
   if(pendingOwnerCaptionAction)pendingOwnerCaptionAction.cancel();
   button.dataset.ownerCaptionPending='1';
   pendingOwnerCaptionAction={button,cancel};
   timer=setTimeout(()=>{
    cancel();
    if(button.isConnected&&!button.disabled&&adminEditing&&adminToken&&
-    !caption.hidden)button.click();
+    !activeCaption.hidden)button.click();
   },500);
  },true);
 }
