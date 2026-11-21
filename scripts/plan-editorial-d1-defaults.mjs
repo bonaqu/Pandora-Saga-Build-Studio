@@ -219,6 +219,63 @@ export function buildEditorialDefaultsManifest(){
     'equipment-hints');
  }
 
+ // Source-authored equipment controls include fixed headings and ARIA
+ // prefixes next to dynamic Soul counts. Only the pure literals are seeded.
+ const controlsMatch=equipmentSrc.match(
+  /const equipmentInterfaceCopy=Object\.freeze\((\{[\s\S]*?\})\);/);
+ if(!controlsMatch)throw Error('Missing equipment interface copy registry');
+ const controlCopy=runInNewContext('('+controlsMatch[1]+')',{},{
+  filename:'equipmentInterfaceCopy',timeout:5000
+ });
+ const expectedControls=[
+  'pickerSlotHeading','pickerItemClose','pickerItemSettings','chooseItemEmpty',
+  'socketCapacityHeading','socketOverflowHint','refinementHeading',
+  'gemTypeLabel','gemElementLabel','pickerSoulSlotAria','pickerEmptySoul',
+  'pickerSoulSlotCaption','soulSlotsHeading','soulSearch','pickerSoulSearchAria',
+  'soulShowMore','soulProgressLabel','soulSearchEmpty','soulRemove'
+ ];
+ if(Object.keys(controlCopy).sort().join('|')!==expectedControls.sort().join('|'))
+  throw Error('Equipment interface copy registry has changed');
+ for(const key of expectedControls){
+  const pair=controlCopy[key];
+  if(!Array.isArray(pair)||pair.length!==2)
+   throw Error('Invalid equipment interface RU/EN: '+key);
+  const id='guideedit.book.equipment.'+
+   key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  for(const [i,lang] of ['ru','en'].entries())
+   append(id,lang,pair[i],'equipment-interface');
+ }
+
+ // Eight supported equipment families use exact, stable editor keys for
+ // their zero-capacity and unknown-capacity Soul notices. Evaluate only the
+ // audited source grammar and noun table; never inspect equipped user items.
+ const nounsMatch=equipmentSrc.match(
+  /const SOUL_SLOT_NOUNS=Object\.freeze\((\{[\s\S]*?\})\);/);
+ const unavailableMatch=equipmentSrc.match(
+  /function soulUnavailableCopy\(slot,capacity,english=false\)\{([\s\S]*?)\n\}/);
+ if(!nounsMatch||!unavailableMatch)
+  throw Error('Missing original Soul unavailable copy generator');
+ const soulSlots=['weapon','shield','head','body','gloves','legs','feet','belt'];
+ const nouns=runInNewContext('('+nounsMatch[1]+')',{},{
+  filename:'SOUL_SLOT_NOUNS',timeout:5000
+ });
+ if(Object.keys(nouns).sort().join('|')!==[...soulSlots].sort().join('|'))
+  throw Error('Soul slot noun families changed: review mapping');
+ const unavailable=runInNewContext(
+  'const SOUL_SLOT_NOUNS=Object.freeze('+nounsMatch[1]+');'+
+  'function soulUnavailableCopy(slot,capacity,english=false){'+
+   unavailableMatch[1]+'\n}\nsoulUnavailableCopy',{},{
+    filename:'soulUnavailableCopy',timeout:5000
+   });
+ for(const slot of soulSlots){
+  for(const [suffix,capacity] of [['zero',0],['unknown',null]]){
+   const key='guideedit.book.equipment.soul-unavailable-'+suffix+'.'+slot;
+   for(const [lang,english] of [['ru',false],['en',true]])
+    append(key,lang,unavailable(slot,capacity,english),
+     'equipment-soul-unavailable');
+  }
+ }
+
  // The Wiki chapters, all five Honor subchapters and skill filters are
  // one existing D1 JSON record. Preserve their exact field identities;
  // never reconstruct these labels from list position or save them as game IDs.

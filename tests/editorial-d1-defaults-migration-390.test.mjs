@@ -127,6 +127,34 @@ test('#390 actual equipment captions and independent hover hints are pinned to c
   /guideedit\.book\.equipment\..*item\.[0-9]+/.test(row.recordKey)),false);
 });
 
+test('#390 equipment controls and exact Soul unavailable states use existing CAS identities',()=>{
+ const source=read('pandora-studio-equipment-ui.js');
+ const registry=source.match(/const equipmentInterfaceCopy=Object\.freeze\((\{[\s\S]*?\})\);/);
+ assert.ok(registry);
+ const pairs=runInNewContext('('+registry[1]+')',{});
+ assert.equal(Object.keys(pairs).length,19);
+ assert.equal(manifest.stats.cohorts['equipment-interface'],38);
+ assert.equal(manifest.stats.cohorts['equipment-soul-unavailable'],32);
+ for(const [key,pair] of Object.entries(pairs)){
+  const recordKey='guideedit.book.equipment.'+
+   key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  for(const [i,lang] of ['ru','en'].entries())
+   assert.equal(manifest.records.find(row=>
+    row.recordKey===recordKey&&row.field===lang)?.value,pair[i],recordKey);
+ }
+ for(const slot of ['weapon','shield','head','body','gloves','legs','feet','belt']){
+  for(const state of ['zero','unknown']){
+   const id='guideedit.book.equipment.soul-unavailable-'+state+'.'+slot;
+   const matched=manifest.records.filter(r=>r.recordKey===id);
+   assert.deepEqual(matched.map(r=>r.field).sort(),['en','ru']);
+   assert.ok(matched.every(r=>!r.value.includes('undefined')&&!r.value.includes('NaN')));
+  }
+ }
+ assert.match(source,/if\(equipmentInterfaceCopy\[key\]\)\[ru,en\]=equipmentInterfaceCopy\[key\]/);
+ assert.match(source,/const key=\(zero\?'soulUnavailableZero\.':'soulUnavailableUnknown\.'\)\+slot/);
+ assert.equal(manifest.records.some(r=>r.recordKey.includes('item.13041')),false);
+});
+
 test('issue 390: migration never materializes runtime values or rewrites an override',()=>{
  assert.equal(manifest.records.some(r=>
   /(?:^|\.)(?:character|item|soul|account|formula|amount|gold|points|chance)\.[0-9]+/.test(r.recordKey)),false);

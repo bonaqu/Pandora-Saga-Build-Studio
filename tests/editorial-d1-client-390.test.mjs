@@ -76,6 +76,23 @@ test('#390 verified equipment summary defaults are below existing owner CAS',asy
   'Подходящие слоты','Compatible slots').ru,'Подходящие слоты');
 });
 
+test('#390 verified Soul-unavailable defaults stay below CAS without changing actual socket rules',async()=>{
+ const root=context(),stage=root.PandoraEditorialDefaults,guide=root.PandoraHonorGuide;
+ const id='guideedit.book.equipment.soul-unavailable-zero.weapon';
+ const fallback='Управление душами этого оружия недоступно: 0 слотов для душ.';
+ const en='Soul management for this weapon is unavailable: 0 Soul slots.';
+ const patched=fixture([[id,'ru','Недоступно для этого оружия · staging']]);
+ assert.equal(await stage.installVerified(patched,patched.snapshot,webcrypto.subtle),true);
+ assert.equal(guide.field({},'equipment.soul-unavailable-zero.weapon',fallback,en).ru,
+  'Недоступно для этого оружия · staging');
+ const override={[id]:JSON.stringify({ru:'Редактура владельца'})};
+ assert.equal(guide.field(override,'equipment.soul-unavailable-zero.weapon',fallback,en).ru,
+  'Редактура владельца');
+ stage.reset();
+ assert.equal(guide.field({},'equipment.soul-unavailable-zero.weapon',fallback,en).ru,
+  fallback);
+});
+
 test('#390 staging text uses only exact semantic identities and CAS outranks defaults',async()=>{
  const root=context(),stage=root.PandoraEditorialDefaults;
  const ui=root.PandoraUILocale,guide=root.PandoraHonorGuide,wiki=root.PandoraWikiLabels;

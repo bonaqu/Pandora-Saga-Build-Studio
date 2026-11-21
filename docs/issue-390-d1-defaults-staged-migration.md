@@ -62,6 +62,8 @@ The manifest contains the source release, exact existing D1 record keys, field i
 - Exact Wiki equipment/item **field captions** (kind, level, W, PEN, AC, attack speed, range, Soul slots) and their independent RU/EN hover explanations; names, IDs and numeric field values remain game data.
 - Exactly three existing settings-tab copy keys for equipment chooser/properties/Souls: `equipment.tab.{choose,details,souls}`, plus three **independent preexisting** `equipment.hint.{choose,details,souls}` tooltip keys. No invented D1 keys for other context-menu actions.
 - Fifteen additional source-authored equipment summary captions already routed through owner CAS (`equipment.field.*`, `equipment.wearable-by`, `equipment.outfit-note`, `equipment.socketed-soul-heading`). The static registry supplies mounted label defaults and the staging manifest; item data, values, IDs, Soul capacities, refinement and combat calculations remain excluded.
+- Nineteen additional fixed equipment interface captions and ARIA prefixes (search, empty states, slot, refinement, Souls, and gemstone controls) shared by the UI and manifest, with no dynamic item names or numeric suffixes in D1 defaults.
+- All 16 source-verified zero/unknown Soul-capacity explanations (eight equipment families × two states) as 32 RU/EN rows using the exact original owner CAS keys. This does **not** seed actual capacities or change the Soul-slot rule engine.
 - Existing static owner-dock RU/EN headings, button copy, group explanations and instructions via the original `owner-dock.*` key family; runtime save/error states and dynamic D1 operation hints are excluded.
 - Missing summary hint matches are reported as `unmappedHints`, not silently assigned to a different game stat.
 
