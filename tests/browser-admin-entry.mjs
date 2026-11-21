@@ -1820,6 +1820,12 @@ export async function runAdminEntrySmoke(browser,base){
   await updateBanner.waitFor({state:'visible',timeout:10000});
   const updateButton=updateBanner.locator('[data-update-role="apply"]');
   await updateButton.click();
+  // The owner-editable action separates one click from direct dblclick text
+  // editing; assert the resulting feedback, not the stale pre-click banner.
+  await page.waitForFunction(()=>
+   /выйди из режима владельца/i.test(document.querySelector(
+    '#studio-update-banner [data-update-role="message"]')?.textContent||''),
+   null,{timeout:12000});
   assert.match(await updateBanner.locator('[data-update-role="message"]').innerText(),
    /выйди из режима владельца/i,'Active owner cannot refresh during editing');
   const ownerLauncher=page.locator('#ownerDock [data-owner-collapse]');
