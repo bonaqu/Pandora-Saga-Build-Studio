@@ -573,19 +573,19 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(await honorPane.locator('#honor-victories .wiki-honor-pvp-table tbody')
    .first().innerText(),rewardsBefore,
    'Editing a header must not mutate the game reward table');
-  const sectionsCaption=honorPane.locator(
-   '.wiki-honor-sections-label [data-owner-copy-id="sectionsHeading"]');
+  const sectionsCaption=page.locator(
+   '.wiki-layout-honor .wiki-honor-sections-label [data-owner-copy-id="sectionsHeading"]');
   assert.equal(await sectionsCaption.textContent(),'Разделы');
-  assert.equal(await honorPane.locator('.wiki-honor-live-count').textContent(),' · 5');
+  assert.equal(await page.locator('.wiki-layout-honor .wiki-honor-live-count').textContent(),' · 5');
   await sectionsCaption.dblclick();
-  const sectionsInput=honorPane.locator('.wiki-honor-sections-label [contenteditable]');
+  const sectionsInput=page.locator('.wiki-layout-honor .wiki-honor-sections-label [contenteditable]');
   await sectionsInput.fill('Категории');
   await sectionsInput.press('Tab');
   await page.waitForFunction(()=>document.querySelector(
    '.wiki-honor-sections-label [data-owner-copy-id="sectionsHeading"]')
    ?.textContent==='Категории',null,{timeout:15000});
   assert.equal(JSON.parse(values['guideedit.book.honor-view.sections-heading']).ru,'Категории');
-  assert.equal(await honorPane.locator('.wiki-honor-live-count').textContent(),' · 5');
+  assert.equal(await page.locator('.wiki-layout-honor .wiki-honor-live-count').textContent(),' · 5');
   // Leave the existing Encyclopedia detail workbench before opening the
   // account UI: a modal workbench correctly intercepts background clicks.
   if(await page.locator('#detailPanel.is-open').count())
