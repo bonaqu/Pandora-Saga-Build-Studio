@@ -11,7 +11,9 @@ runInNewContext(read('pandora-studio-honor-guide.js'),scope);
 test('Path help is directly editable with stable D1 keys and no caption pencils',()=>{
  assert.match(hero,/const authored=\(api,key,ru,en,tag='p',cls='muted'\)=>/);
  assert.match(hero,/api\.editLabel\(node,key,ru,en\)/);
- assert.match(app,/editLabel:\(node,key,ru,en,callbacks\)=>ownerCopyLabel\(node,'path',key,ru,en,callbacks\)/);
+ assert.match(app,/editLabel:\(node,key,ru,en,callbacks\)=>ownerCopyLabel\(node,'path',key,ru,en,\{/);
+ assert.match(app,/applyOwnerInterfaceEditedValue\('path',key,visible\)/);
+ assert.match(app,/callbacks\?\.onCommitted\?\.\(visible\)/);
  assert.match(app,/node\.addEventListener\('dblclick',edit\)/);
  assert.doesNotMatch(hero,/class:'path-owner-pencil'/);
  assert.doesNotMatch(hero,/class:'path-group-pencil'/);
