@@ -554,26 +554,57 @@ function render({browse,detail,make,lang='ru',article,editable=false,
    'honor.rank.'+rank.id,en?'nameEn':'nameRu'));
   // Display only the active locale, including in owner edit mode.
   header.append(rankTitle);card.append(header);
-  const defaultRequirement=rank.top!=null?
-   tr('Для получения ранга необходимо находиться в топ-'+rank.top+
-    ' нации за предыдущий месяц.',
-    'To earn this rank, finish in your nation’s top '+rank.top+
-    ' for the previous month.'):
-   rank.points!=null?
-    tr('Для получения ранга необходимо ','To obtain this rank, you need ')+
-    fmt.format(rank.points)+
-    tr(' оч. ресурса «Вся честь» · ',' Total Honor points · ')+
-    fmt.format(rank.gold)+tr(' золота.',' gold.'):
-   rank.id===0?
-    tr('Ранг можно получить при вступлении в любую из существующих наций в игре.',
-     'This rank can be earned by joining any of the nations in the game.'):
-    tr('Для получения ранга необходимо ','To obtain this rank, you need ')+
-     fmt.format(rank.gold)+tr(' золота.',' gold.');
-  const required=en?rank.requirementEn||defaultRequirement:
-   rank.requirementRu||defaultRequirement;
-  card.append(editableText(node('p','wiki-honor-requirement',required),
-   required,'honor.rank.'+rank.id,
-   en?'requirementEn':'requirementRu',true));
+  // Rank thresholds are game records, not authorial prose. Earlier fallback
+  // requirements were editable as one string, letting a translation overwrite
+  // the displayed Total Honor, gold, or monthly placement threshold. Split
+  // only GENERATED fallback copy into D1 captions and immutable numeric nodes.
+  // A pre-existing authored requirementRu/En remains on its original record:
+  // do not discard a saved Wiki override or silently migrate its D1 key.
+  const authoredRequirement=en?rank.requirementEn:rank.requirementRu;
+  if(authoredRequirement){
+   card.append(editableText(node('p','wiki-honor-requirement',authoredRequirement),
+    authoredRequirement,'honor.rank.'+rank.id,
+    en?'requirementEn':'requirementRu',true));
+  }else{
+   const requirement=node('p','wiki-honor-requirement','');
+   const phrase=(key,ru,english)=>
+    requirement.append(editorial('span','wiki-honor-requirement-copy',key,ru,english));
+   const space=()=>requirement.append(document.createTextNode(' '));
+   const number=value=>requirement.append(
+    node('span','wiki-honor-runtime-value',fmt.format(value)));
+   if(rank.top!=null){
+    phrase('rankReqTopLead',
+     'Для получения ранга необходимо находиться в топ',
+     'To earn this rank, finish in your nation’s top');
+    requirement.append(document.createTextNode(en?' ':'-'));
+    number(rank.top);
+    space();
+    phrase('rankReqTopEnd','нации за предыдущий месяц.',
+     'for the previous month.');
+   }else if(rank.points!=null){
+    phrase('rankReqPointsLead','Для получения ранга необходимо',
+     'To obtain this rank, you need');
+    space();number(rank.points);space();
+    phrase('rankReqPointsMiddle','оч. ресурса «Вся честь» ·',
+     'Total Honor points ·');
+    space();number(rank.gold);space();
+    phrase('rankReqGoldEnd','золота.','gold.');
+   }else if(rank.id===0){
+    phrase('rankReqJoinNation',
+     'Ранг можно получить при вступлении в любую из существующих наций в игре.',
+     'This rank can be earned by joining any of the nations in the game.');
+   }else{
+    phrase('rankReqGoldLead','Для получения ранга необходимо',
+     'To obtain this rank, you need');
+    space();number(rank.gold);space();
+    phrase('rankReqGoldEnd','золота.','gold.');
+   }
+   // Match the existing owner-only grid layout without adding a pencil.
+   if(editable){
+    const row=make('div',{class:'wiki-honor-field-edit-row is-rank-requirement'});
+    row.append(requirement);card.append(row);
+   }else card.append(requirement);
+  }
   const bonus=en?rank.benefitEn:rank.benefitRu;
   card.append(editableText(node('p','wiki-honor-rank-benefit',bonus),
    bonus,'honor.rank.'+rank.id,en?'benefitEn':'benefitRu',true));

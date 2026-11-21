@@ -602,6 +602,59 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(JSON.parse(values['guideedit.wiki.labels']).honor_overview_ru,'Правила чести');
   assert.equal(await honorPane.locator('#honor-victories').count(),1,
    'A double-click in the chapter menu must not navigate away from Honor');
+  // Rank requirements that come from numeric records must never be editable
+  // as one paragraph. Edit only their authorial words (same CAS/Undo store).
+  // Existing custom requirement fields remain separately editable for
+  // backward compatibility with pre-#390 Honor overrides.
+  const rankReq=honorPane.locator('#honor-rank-2 .wiki-honor-requirement');
+  const immutableNumbers=rankReq.locator('.wiki-honor-runtime-value');
+  const beforeThresholds=await immutableNumbers.allTextContents();
+  assert.equal(beforeThresholds.length,2);
+  assert.equal(beforeThresholds[0].replace(/\D/g,''),'3000');
+  assert.equal(beforeThresholds[1].replace(/\D/g,''),'20000');
+  assert.equal(await rankReq.locator('.wiki-honor-direct-pencil').count(),0);
+  const rankLead=rankReq.locator('[data-owner-copy-id="rankReqPointsLead"]');
+  await rankLead.dblclick();
+  const rankEditor=rankLead.locator('[contenteditable]');
+  await rankEditor.fill('Для ранга требуется');
+  await rankEditor.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#honor-rank-2 [data-owner-copy-id="rankReqPointsLead"]')
+   ?.textContent==='Для ранга требуется',null,{timeout:15000});
+  const rankCaptionKey='guideedit.book.honor-view.rank-req-points-lead';
+  assert.equal(JSON.parse(values[rankCaptionKey]).ru,'Для ранга требуется');
+  assert.deepEqual(await immutableNumbers.allTextContents(),beforeThresholds);
+  // An English edit must not replace the Russian value or any live number.
+  await page.locator('#locale [data-locale="en"]').focus();
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(()=>document.documentElement.lang==='en');
+  const enRank=page.locator('#honor-rank-2 .wiki-honor-requirement');
+  const enNumbers=enRank.locator('.wiki-honor-runtime-value');
+  assert.deepEqual((await enNumbers.allTextContents()).map(s=>s.replace(/\D/g,'')),
+   ['3000','20000']);
+  const enRankLead=enRank.locator('[data-owner-copy-id="rankReqPointsLead"]');
+  await enRankLead.focus();
+  await page.keyboard.press('F2');
+  const enRankEditor=enRankLead.locator('[contenteditable]');
+  await enRankEditor.fill('This rank requires');
+  await enRankEditor.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#honor-rank-2 [data-owner-copy-id="rankReqPointsLead"]')
+   ?.textContent==='This rank requires',null,{timeout:15000});
+  assert.deepEqual(JSON.parse(values[rankCaptionKey]),{
+   ru:'Для ранга требуется',en:'This rank requires'
+  });
+  assert.deepEqual((await enNumbers.allTextContents()).map(s=>s.replace(/\D/g,'')),
+   ['3000','20000']);
+  await page.locator('#locale [data-locale="ru"]').focus();
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(()=>document.documentElement.lang==='ru');
+  assert.equal(await page.locator(
+   '#honor-rank-2 [data-owner-copy-id="rankReqPointsLead"]').textContent(),
+   'Для ранга требуется');
+  assert.deepEqual((await page.locator(
+   '#honor-rank-2 .wiki-honor-runtime-value').allTextContents())
+   .map(s=>s.replace(/\D/g,'')),['3000','20000']);
   // Leave the existing Encyclopedia detail workbench before opening the
   // account UI: a modal workbench correctly intercepts background clicks.
   if(await page.locator('#detailPanel.is-open').count())

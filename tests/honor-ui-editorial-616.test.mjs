@@ -65,3 +65,24 @@ test('issue #390: Honor sidebar headings directly edit their shared Wiki labels'
  // No sidebar editor may have independent keys that drift from article titles.
  assert.doesNotMatch(view,/ownerCopy\('honor-view','sidebar/);
 });
+
+
+test('issue #390: generated rank thresholds remain immutable while their RU/EN prose uses D1 captions',()=>{
+ const fields=['rankReqTopLead','rankReqTopEnd','rankReqPointsLead',
+  'rankReqPointsMiddle','rankReqGoldEnd','rankReqJoinNation',
+  'rankReqGoldLead'];
+ for(const field of fields){
+  const key='book.honor-view.'+field.replace(/[A-Z]/g,ch=>'-'+ch.toLowerCase());
+  assert.equal(scope.PandoraHonorGuide.validOverride(key,
+   JSON.stringify({ru:'Подпись',en:'Caption'})),true,key);
+ }
+ assert.match(view,/const authoredRequirement=en\?rank\.requirementEn:rank\.requirementRu/);
+ assert.match(view,/if\(authoredRequirement\)/);
+ assert.match(view,/requirement\.append\(editorial\('span','wiki-honor-requirement-copy'/);
+ assert.match(view,/node\('span','wiki-honor-runtime-value',fmt\.format\(value\)\)/);
+ assert.match(view,/number\(rank\.top\)/);
+ assert.match(view,/number\(rank\.points\)/);
+ assert.match(view,/number\(rank\.gold\)/);
+ assert.doesNotMatch(view,/const defaultRequirement=rank\.top/);
+ assert.doesNotMatch(view,/wiki-honor-requirement-pencil/);
+});
