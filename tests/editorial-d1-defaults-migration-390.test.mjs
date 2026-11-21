@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readFileSync,mkdtempSync,writeFileSync,rmSync} from 'node:fs';
+import {spawnSync} from 'node:child_process';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {fileURLToPath} from 'node:url';
 import {
  buildEditorialDefaultsManifest,renderEditorialDefaultsSQL,
  verifyEditorialDefaultsReadback
@@ -90,6 +94,38 @@ test('issue 390: snapshot tampering cannot produce an installable SQL plan',()=>
  assert.throws(()=>renderEditorialDefaultsSQL({...manifest,snapshot:'current'}),
   /SHA-256/);
  assert.throws(()=>renderEditorialDefaultsSQL({...manifest,records:[]}),/SHA-256/);
+});
+
+test('issue 390: Windows-safe CLI reports sources and rejects damaged staging readback',()=>{
+ const cli=fileURLToPath(new URL('../scripts/plan-editorial-d1-defaults.mjs',import.meta.url));
+ const command=(...args)=>spawnSync(process.execPath,[cli,...args],
+  {encoding:'utf8',maxBuffer:4*1024*1024});
+ const report=command('--report');
+ assert.equal(report.status,0,report.stderr);
+ const summary=JSON.parse(report.stdout);
+ assert.equal(summary.digest,manifest.digest);
+ assert.equal(summary.snapshot,manifest.snapshot);
+ assert.equal(summary.entries,manifest.records.length);
+ const dir=mkdtempSync(join(tmpdir(),'pandora-editorial-'));
+ const file=join(dir,'readback.json');
+ try{
+  const input={
+   metadata:{snapshot:manifest.snapshot,source_release:manifest.release,
+    sha256:manifest.digest,expected_rows:manifest.records.length},
+   rows:manifest.records.map(r=>({
+    record_key:r.recordKey,field:r.field,value:r.value
+   }))
+  };
+  writeFileSync(file,JSON.stringify(input));
+  const valid=command('--verify-readback',file);
+  assert.equal(valid.status,0,valid.stderr);
+  assert.equal(JSON.parse(valid.stdout).ok,true);
+  input.rows[0].value+=' tampered';
+  writeFileSync(file,JSON.stringify(input));
+  const invalid=command('--verify-readback',file);
+  assert.equal(invalid.status,1,'Readback hash mismatch must fail the CLI');
+  assert.equal(JSON.parse(invalid.stdout).reason,'content-digest-mismatch');
+ }finally{rmSync(dir,{recursive:true,force:true})}
 });
 
 test('issue 390: current public reads and CAS writes remain on the existing override protocol',()=>{
