@@ -366,6 +366,24 @@ function meaningfulGuideHint(value){
 function guideDisplayText(value){
  return typeof value==='string'?value.replace(/\\n/g,'\n'):value;
 }
+// Native disclosure headers need to distinguish owner double-click from
+// normal click. Never steal keyboard or guest disclosure navigation.
+function guardBookSummaryCaption(node){
+ const summary=node.closest?.('summary');
+ if(!summary||summary.dataset.bookCaptionGuard==='1')return;
+ summary.dataset.bookCaptionGuard='1';
+ let pending=null;
+ summary.addEventListener('click',event=>{
+  if(!event.detail||!node.contains(event.target)||
+   event.target.closest?.('input,textarea,select,[data-owner-text-field]'))return;
+  event.preventDefault();event.stopImmediatePropagation();
+  if(pending){clearTimeout(pending);pending=null;return}
+  pending=setTimeout(()=>{
+   pending=null;
+   if(summary.isConnected&&!node.hidden&&summary.closest('details'))summary.click();
+  },500);
+ },true);
+}
 function guideLabel(node,key,ru,en,options={},fallbackRu='',fallbackEn=''){
  if(!node)return node;
  const guide=root.PandoraHonorGuide;
@@ -396,6 +414,7 @@ function guideLabel(node,key,ru,en,options={},fallbackRu='',fallbackEn=''){
    options.onTextEdit(node,key,english?'en':'ru',label);
   };
   node.addEventListener('dblclick',editName);
+  guardBookSummaryCaption(node);
   root.PandoraOwnerTouchEdit?.(node,editName,{interactive:true});
   node.setAttribute('aria-keyshortcuts','F2');
   node.addEventListener('keydown',event=>{if(event.key==='F2')editName(event)});
@@ -2054,8 +2073,13 @@ function appendItemEvents(body,calc,english,kind,gameTerms={}){
  }
  if(!rows.length)return;
  const panel=make('details',{class:'stage-attribute-row stage-source-events'});
- panel.append(make('summary',{text:(english?'Item and Soul triggers':
-  'Срабатывания предметов и душ')+' · '+rows.length}));
+ // The source-derived event count is not an authorial translation.
+ // Keep its original bilingual Book text key separate from the live count.
+ panel.append(make('summary',{},[
+  make('span',{class:'stage-source-events-caption',text:english?
+   'Item and Soul triggers':'Срабатывания предметов и душ'}),
+  make('span',{class:'stage-book-live-count',text:' · '+rows.length})
+ ]));
  for(const row of rows){
   const skill=gameTerms.skills?.[String(row.skillId)];
   const valid=Number.isSafeInteger(row.skillId)&&row.skillId>0&&
