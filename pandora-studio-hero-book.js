@@ -671,8 +671,15 @@ function buffsPage(body,options){
  body.append(status);
  let sectionIndex=0;
  const section=(ru,en,stableId=null)=>{
-  const node=make('section',{class:'stage-book-buff-group'},[make('strong',{text:english?en:ru})]);
-  guideLabel(node.firstChild,stableId==='guild'?'buffs.guild':
+  // Honor adds a second, separately editable phrase to the heading. The
+  // primary author label must therefore be its own SPAN, not the parent
+  // STRONG: editing the parent would swallow the nested term and fire both
+  // handlers on a double-click.
+  const caption=make('span',{class:'stage-book-buff-heading-copy',
+   text:english?en:ru});
+  const heading=make('strong',{},[caption]);
+  const node=make('section',{class:'stage-book-buff-group'},[heading]);
+  guideLabel(caption,stableId==='guild'?'buffs.guild':
    'buffs.section.'+(stableId||sectionIndex++),ru,en,options);
   body.append(node);
   return node;
