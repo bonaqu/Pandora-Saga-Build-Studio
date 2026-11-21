@@ -111,3 +111,10 @@
 - [x] Four **verified success-only** catalog workbench statuses now use the existing `editorialState(status,...)` D1 direct-editor with separate RU/EN: downloadable snapshot, test-write readback/cleanup, CAS stale-edit rejection and no-op GitHub sync.
 - [x] Raw network errors, source dataset IDs, authentication diagnostics, operational warnings and game records remain separate from authorial overrides. Added Node validation of new keys and real Chromium owner blur/save on a confirmed workbench success without modifying the game catalog.
 - [ ] Recheck full Node/Chromium on the new SHA, and continue broader #390 acceptance; do not merge or close draft PR.
+
+## Administrator safety copy · RU/EN without editing sensitive workflow decisions
+
+- [x] Localized the native confirmation dialogs for write/readback check, CAS conflict check, and creation of a GitHub PR from the published catalog. These prompts remain immutable security workflow instructions; they do not become D1 fields.
+- [x] Localized export/publish failure prefixes, progress surrounding live counts, the GitHub PR success link and its accessible label, while preserving all original dynamic values, errors and operational steps.
+- [x] Existing workbench Chromium confirms the same verified D1 workflow and PR link without action behavior changes; Node regression covers both language literals, edit/non-edit boundaries and native confirmation presence.
+- [ ] The source-error reason codes and complex publish impact confirmations still require a separate audit; do not mistake these translations for a completed #390. New SHA must pass full Node and Chromium.

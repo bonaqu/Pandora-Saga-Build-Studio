@@ -1557,14 +1557,14 @@
         editorialState(status,'exportDownloaded',
          'Выбранный снимок скачан. GitHub не изменён.',
          'Selected snapshot downloaded. GitHub was not changed.');
-      }catch(error){status.textContent='Экспорт не выполнен: '+error.message}
+      }catch(error){status.textContent=tr('Экспорт не выполнен: ','Export failed: ')+error.message}
     };
 
     publish.onclick=async()=>{
       if(busy||publish.disabled||!permitMutation())return;
       let publishingSnapshot=null;
       let staged;
-      try{staged=prepare()}catch(error){status.textContent='Нельзя публиковать: '+error.message;return}
+      try{staged=prepare()}catch(error){status.textContent=tr('Нельзя публиковать: ','Cannot publish: ')+error.message;return}
       const added=changes.filter(x=>checked(x)&&x.kind==='added').length;
       const changed=changes.filter(x=>checked(x)&&x.kind==='changed').length;
       const removed=changes.filter(x=>checked(x)&&x.kind==='removed').length;
@@ -1683,7 +1683,8 @@
             await request('/api/admin/catalog/batch',{snapshot,dataset:name,records:batch});
             done+=batch.length;
             progress.value=Math.round(done/total*100);
-            status.textContent='Подготавливаю обновление · '+done+' из '+total;
+            status.textContent=tr('Подготавливаю обновление · ','Preparing update · ')+
+              done+tr(' из ',' of ')+total;
           }
         }
         const result=await request('/api/admin/catalog/publish',{
@@ -1733,7 +1734,9 @@
     // contents ever pass through the browser.
     testWrite.onclick=async()=>{
       if(busy||!permitMutation())return;
-      if(!confirm('Проверить, работают ли сохранение и удаление правок? Будут созданы и удалены две временные записи. Игровой каталог и билды не изменяются.'))return;
+      if(!confirm(tr(
+       'Проверить, работают ли сохранение и удаление правок? Будут созданы и удалены две временные записи. Игровой каталог и билды не изменяются.',
+       'Verify that saving and deleting edits works? Two temporary records will be created and deleted. The game catalog and builds will not change.')))return;
       setBusy(true);
       try{
         const result=await request('/api/admin/catalog/test-write',{});
@@ -1746,13 +1749,17 @@
          'Saving works: both test records were created, read, and deleted. The game catalog is unchanged.');
       }catch(error){
         status.textContent=error.httpStatus===401
-          ? 'Сеанс администратора завершился. Войди заново.'
-          : 'Проверка записи D1 не пройдена: '+error.message;
+          ? tr('Сеанс администратора завершился. Войди заново.',
+              'The admin session ended. Sign in again.')
+          : tr('Проверка записи D1 не пройдена: ','D1 write verification failed: ')+
+            error.message;
       }finally{setBusy(false)}
     };
     testCAS.onclick=async()=>{
       if(busy||!permitMutation())return;
-      if(!confirm('Проверить конфликты правок? Будут временно записаны и удалены только две случайные тестовые записи D1. Игровые данные и билды не меняются.'))return;
+      if(!confirm(tr(
+       'Проверить конфликты правок? Будут временно записаны и удалены только две случайные тестовые записи D1. Игровые данные и билды не меняются.',
+       'Check edit conflicts? Only two random temporary D1 test records will be written and deleted. Game data and builds will not change.')))return;
       setBusy(true);
       try{
         const result=await request('/api/admin/catalog/test-owner-cas',{});
@@ -1764,14 +1771,19 @@
          'Check passed: stale edits are rejected, both test records were removed, and the game catalog is unchanged.');
       }catch(error){
         status.textContent=error.httpStatus===401
-          ?'Сеанс администратора закончился. Войди заново.'
-          :'Проверка конфликтов D1 не пройдена: '+error.message;
+          ?tr('Сеанс администратора закончился. Войди заново.',
+              'The admin session ended. Sign in again.')
+          :tr('Проверка конфликтов D1 не пройдена: ','D1 conflict check failed: ')+
+            error.message;
       }finally{setBusy(false)}
     };
     github.onclick=async()=>{
       if(busy||!githubReady||!publishedSnapshot||!permitMutation())return;
-      if(!confirm('Создать отдельный GitHub PR из текущего опубликованного игрового каталога?\n'+
-        'Он не объединится с основной веткой автоматически.'))return;
+      if(!confirm(tr(
+       'Создать отдельный GitHub PR из текущего опубликованного игрового каталога?\n'+
+        'Он не объединится с основной веткой автоматически.',
+       'Create a separate GitHub PR from the currently published game catalog?\n'+
+        'It will not be merged into the main branch automatically.')))return;
       setBusy(true);
       try{
         const active=await request('/api/admin/catalog/status',{});
@@ -1784,14 +1796,16 @@
            'Каталог в GitHub уже совпадает с опубликованным. PR не требуется.',
            'The GitHub catalog already matches the published catalog. No PR is needed.');
         }else if(/^https:\/\/github\.com\/bonaqu\/Pandora-Saga-Build-Studio\/pull\/\d+$/.test(result.url||'')){
-          status.replaceChildren('Проверенный каталог подготовлен. ',
+          status.replaceChildren(tr('Проверенный каталог подготовлен. ',
+            'Verified catalog prepared. '),
             h('a',{href:result.url,target:'_blank',rel:'noopener noreferrer',
-              text:'Открыть PR #'+result.number}));
+              text:tr('Открыть PR #','Open PR #')+result.number}));
         }else throw Error('Некорректный ответ интеграции GitHub');
       }catch(error){
         status.textContent=error.httpStatus===401
-          ? 'Сеанс администратора завершился. Войди заново.'
-          : 'Не удалось создать PR: '+error.message;
+          ? tr('Сеанс администратора завершился. Войди заново.',
+              'The admin session ended. Sign in again.')
+          : tr('Не удалось создать PR: ','Could not create PR: ')+error.message;
       }finally{setBusy(false)}
     };
     // Existing published snapshots can be sent to GitHub even if no new
@@ -1803,8 +1817,10 @@
       githubReady=settings.configured===true&&settings.connected===true&&settings.writeAccess===true;
       publishedSnapshot=current.active||null;
       github.setAttribute('aria-label',githubReady
-        ? 'Создать PR в GitHub из опубликованного каталога'
-        : 'Создать PR в GitHub — требуется настройка токена на сервере');
+        ? tr('Создать PR в GitHub из опубликованного каталога',
+             'Create a GitHub PR from the published catalog')
+        : tr('Создать PR в GitHub — требуется настройка токена на сервере',
+             'Create GitHub PR — server token configuration required'));
       refreshActions();
     }).catch(()=>{githubReady=false;refreshActions()});
 

@@ -55,3 +55,26 @@ test('issue #390: verified admin success states are exact bilingual inline D1 fi
  assert.match(workbench,/diagnosticText\.textContent='Этап: '/);
  assert.match(workbench,/status\.textContent=error\.message/);
 });
+
+test('catalog security confirmations and runtime failure messages are bilingual, but not D1-editable',()=>{
+ for(const russian of [
+  'Проверить, работают ли сохранение и удаление правок?',
+  'Проверить конфликты правок?',
+  'Создать отдельный GitHub PR из текущего опубликованного игрового каталога?'
+ ]){
+  assert.ok(workbench.includes(russian),russian);
+ }
+ for(const english of [
+  'Verify that saving and deleting edits works?',
+  'Check edit conflicts?',
+  'Create a separate GitHub PR from the currently published game catalog?',
+  'Export failed: ','Cannot publish: ','Preparing update · ',
+  'D1 write verification failed: ','D1 conflict check failed: ',
+  'Could not create PR: ','Create GitHub PR — server token configuration required'
+ ])assert.ok(workbench.includes(english),english);
+ assert.match(workbench,/status\.textContent=tr\('Экспорт не выполнен: '/);
+ assert.match(workbench,/status\.textContent=tr\('Нельзя публиковать: '/);
+ assert.match(workbench,/status\.textContent=tr\('Подготавливаю обновление · '/);
+ assert.match(workbench,/error\.message/);
+ assert.doesNotMatch(workbench,/editorialState\(status,'(?:exportFailure|publishFailure|casFailure|githubFailure)'/);
+});
