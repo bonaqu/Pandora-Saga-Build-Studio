@@ -93,6 +93,25 @@ test('#390 verified Soul-unavailable defaults stay below CAS without changing ac
   fallback);
 });
 
+test('#390 pinned context menu and Origin captions never outrank existing CAS edits',async()=>{
+ const root=context(),stage=root.PandoraEditorialDefaults,guide=root.PandoraHonorGuide;
+ const contextKey='guideedit.book.equipment.context.remove';
+ const originKey='guideedit.book.origin.tab-race';
+ const patched=fixture([
+  [contextKey,'ru','Снять предмет · staging'],
+  [originKey,'en','Hero race · staging']
+ ]);
+ assert.equal(await stage.installVerified(patched,patched.snapshot,webcrypto.subtle),true);
+ assert.equal(guide.field({},'equipment.context.remove','Снять вещь','Unequip item').ru,
+  'Снять предмет · staging');
+ assert.equal(guide.field({},'origin.tab-race','Раса','Race').en,
+  'Hero race · staging');
+ const override={[originKey]:JSON.stringify({en:'Race · owner'})};
+ assert.equal(guide.field(override,'origin.tab-race','Раса','Race').en,'Race · owner');
+ stage.reset();
+ assert.equal(guide.field({},'origin.tab-race','Раса','Race').en,'Race');
+});
+
 test('#390 staging text uses only exact semantic identities and CAS outranks defaults',async()=>{
  const root=context(),stage=root.PandoraEditorialDefaults;
  const ui=root.PandoraUILocale,guide=root.PandoraHonorGuide,wiki=root.PandoraWikiLabels;

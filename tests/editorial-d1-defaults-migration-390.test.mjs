@@ -155,6 +155,48 @@ test('#390 equipment controls and exact Soul unavailable states use existing CAS
  assert.equal(manifest.records.some(r=>r.recordKey.includes('item.13041')),false);
 });
 
+test('#390 original gear context, picker and Origin copy registries preserve existing stable owner keys',()=>{
+ const app=read('pandora-studio-app.js');
+ const gear=read('pandora-studio-equipment-ui.js');
+ const picker=app.match(/const equipmentPickerMetaCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ const origin=app.match(/const originFixedLabels=(\[[\s\S]*?\]);/);
+ const actions=gear.match(/const actionLabels=Object\.freeze\((\{[\s\S]*?\})\);/);
+ assert.ok(picker&&origin&&actions);
+ const pickerRows=runInNewContext('('+picker[1]+')',{});
+ const originRows=runInNewContext('('+origin[1]+')',{});
+ const actionLabels=runInNewContext('('+actions[1]+')',{});
+ assert.equal(pickerRows.length,15);
+ assert.equal(originRows.length,14);
+ assert.equal(manifest.stats.cohorts['equipment-picker-meta'],30);
+ assert.equal(manifest.stats.cohorts['equipment-context-menu'],10);
+ assert.equal(manifest.stats.cohorts['origin-headings'],26);
+ assert.match(app,/equipmentCopy\('context\.'\+id,ru,en\)/);
+ assert.match(app,/if\(adminEditing&&adminToken\)equipmentCopyLabel\(label,'context\.'\+id,ru,en\)/);
+ for(const [key,ru,en] of pickerRows){
+  const id='guideedit.book.equipment.'+
+   key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  for(const [lang,value] of [['ru',ru],['en',en]])
+   assert.equal(manifest.records.find(r=>r.recordKey===id&&r.field===lang)?.value,
+    value,id);
+ }
+ for(const [selector,key,ru,en] of originRows){
+  assert.ok(selector);
+  const id='guideedit.book.origin.'+
+   key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  for(const [lang,value] of [['ru',ru],['en',en]]){
+   const saved=manifest.records.find(r=>r.recordKey===id&&r.field===lang);
+   if(key==='classCount')assert.equal(saved,undefined);
+   else assert.equal(saved?.value,value,id);
+  }
+ }
+ for(const [key,values] of Object.entries(actionLabels)){
+  const id='guideedit.book.equipment.context.'+key;
+  for(const [i,lang] of ['ru','en'].entries())
+   assert.equal(manifest.records.find(r=>r.recordKey===id&&r.field===lang)?.value,
+    values[i],id);
+ }
+});
+
 test('issue 390: migration never materializes runtime values or rewrites an override',()=>{
  assert.equal(manifest.records.some(r=>
   /(?:^|\.)(?:character|item|soul|account|formula|amount|gold|points|chance)\.[0-9]+/.test(r.recordKey)),false);

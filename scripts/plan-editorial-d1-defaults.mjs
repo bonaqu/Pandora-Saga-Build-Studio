@@ -276,6 +276,75 @@ export function buildEditorialDefaultsManifest(){
   }
  }
 
+ // The existing right-click gear menu uses its own five editable
+ // context.{action} keys, independent of the item settings tab captions.
+ for(const action of ['choose','replace','properties','souls','remove']){
+  const pair=gear[action];
+  if(!Array.isArray(pair)||pair.length!==2)
+   throw Error('Missing context menu RU/EN default: '+action);
+  for(const [i,lang] of ['ru','en'].entries())
+   append('guideedit.book.equipment.context.'+action,lang,pair[i],
+    'equipment-context-menu');
+ }
+
+ // The mounted picker/gear menu has a hand-curated, five-column panel
+ // registry. Only key + RU/EN source text are copy; panel headings and
+ // runtime level/slot values are NOT editor defaults.
+ const metaMatch=app.match(
+  /const equipmentPickerMetaCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ if(!metaMatch)throw Error('Missing equipment picker meta source rows');
+ const equipmentMeta=runInNewContext('('+metaMatch[1]+')',{},{
+  filename:'equipmentPickerMetaCopyRows',timeout:5000
+ });
+ const expectedPickerMeta=[
+  'gearMenuEquippedAria','gearMenuEmptyAria','gearMenuEmptyTitle',
+  'gearMenuNoSoulSlots','gearMenuMissingItem','pickerNavGroup',
+  'pickerPreviousSlot','pickerNextSlot','pickerEquipAction','pickerPlanAction',
+  'pickerFutureLevel','pickerItemLevel','pickerItemSlots',
+  'pickerFutureBadgePrefix','pickerFutureBadgeSuffix'
+ ];
+ if(!Array.isArray(equipmentMeta)||equipmentMeta.length!==expectedPickerMeta.length||
+  equipmentMeta.map(r=>r[0]).sort().join('|')!==expectedPickerMeta.sort().join('|'))
+  throw Error('Unexpected equipment picker source copy inventory');
+ for(const entry of equipmentMeta){
+  if(!Array.isArray(entry)||entry.length!==5)
+   throw Error('Invalid equipment picker copy row');
+  const [key,ru,en]=entry;
+  const id='guideedit.book.equipment.'+
+   key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  append(id,'ru',ru,'equipment-picker-meta');
+  append(id,'en',en,'equipment-picker-meta');
+ }
+
+ // Origin headings are already editable on the live page by dblclick/F2
+ // through origin.{semantic-key}. Exclude the "28 classes" counter even
+ // though its current text happens to be a literal; it is gameplay data.
+ const originMatch=app.match(/const originFixedLabels=(\[[\s\S]*?\]);/);
+ if(!originMatch)throw Error('Missing audited origin owner copy registry');
+ const originLabels=runInNewContext('('+originMatch[1]+')',{},{
+  filename:'originFixedLabels',timeout:5000
+ });
+ const expectedOriginKeys=[
+  'heading','tabRace','tabProfession','tabStats','raceHeading',
+  'professionHeading','racePrompt','passiveHeading','classCount',
+  'progressHeading','levelParameters','levelHeading','baseHeading',
+  'distributeHeading'
+ ];
+ if(!Array.isArray(originLabels)||originLabels.length!==expectedOriginKeys.length||
+  originLabels.map(r=>r[1]).sort().join('|')!==expectedOriginKeys.sort().join('|'))
+  throw Error('Origin source copy set changed: review migration map');
+ for(const entry of originLabels){
+  if(!Array.isArray(entry)||entry.length!==4)
+   throw Error('Invalid original Origin source label');
+  const [selector,key,ru,en]=entry;
+  if(typeof selector!=='string'||!selector.trim())throw Error('Missing Origin selector');
+  if(key==='classCount')continue; // runtime/game catalog count
+  const id='guideedit.book.origin.'+
+   key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  append(id,'ru',ru,'origin-headings');
+  append(id,'en',en,'origin-headings');
+ }
+
  // The Wiki chapters, all five Honor subchapters and skill filters are
  // one existing D1 JSON record. Preserve their exact field identities;
  // never reconstruct these labels from list position or save them as game IDs.
