@@ -34,6 +34,22 @@ test('issue 390: source-authored D1 default snapshot is stable and uses exact ex
  assert.ok(manifest.stats.cohorts['ui-locale']>100);
  assert.ok(manifest.stats.cohorts['semantic-hints']>10);
  assert.ok(manifest.stats.cohorts['honor-overview']>10);
+ assert.equal(manifest.stats.cohorts['item-field'],32,
+  'Eight exact item stat labels and hover descriptions, RU + EN');
+ assert.equal(manifest.stats.cohorts['equipment-tabs'],6,
+  'Three existing equipment setting tabs, RU + EN');
+ for(const key of ['kind','level','w','pen','ac','atkspeed','range','soulslot']){
+  const recordKey='guideedit.book.wiki.item-field.'+key;
+  const fields=manifest.records.filter(r=>r.recordKey===recordKey)
+   .map(r=>r.field).sort();
+  assert.deepEqual(fields,['en','hintEn','hintRu','ru'],
+   'Only source-authorial item copy may be staged for '+key);
+ }
+ for(const tab of ['choose','details','souls']){
+  const key='guideedit.book.equipment.tab.'+tab;
+  assert.deepEqual(manifest.records.filter(r=>r.recordKey===key)
+   .map(r=>r.field).sort(),['en','ru']);
+ }
  assert.ok(manifest.stats.cohorts['owner-dock']>=40,
   'The existing owner dock headings and instructions must be in the D1 plan');
  for(const [key,locale] of [
