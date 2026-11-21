@@ -14,6 +14,8 @@ export async function runUIContentInlineSmoke(browser,base){
  });
  const values={},writes=[],resets=[],errors=[],nextConflicts=new Set(),
   unconfirmedWrites=new Set(),slowWrites=new Set();
+ // The first summary group has no source-authored hover explanation.
+ // Its visible title needs no pencil; the actual health stat has its own hint.
  let slowLibraryNext=false,offeredRelease=null;
  await context.route('**/*',async route=>{
   const req=route.request(),url=req.url(),method=req.method();
@@ -81,6 +83,19 @@ export async function runUIContentInlineSmoke(browser,base){
  });
  const page=await context.newPage();
  page.on('pageerror',error=>errors.push(error.message));
+ // Caption buttons intentionally defer owner-mode single clicks to distinguish
+ // them from direct-text double clicks. Wait for the actual chosen chapter
+ // and for that pending action to finish before typing into its search box.
+ const chooseWikiChapter=async key=>{
+  const selector='[data-wiki-chapter="'+key+'"]';
+  await page.locator(selector).click();
+  await page.waitForFunction(chapterKey=>{
+   const tab=document.querySelector('[data-wiki-chapter="'+chapterKey+'"]');
+   return Boolean(tab?.classList.contains('chosen')&&
+    tab.dataset.ownerCaptionPending!=='1');
+  },key,{timeout:15000});
+ };
+
  try{
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
   // Never invoke owner keyboard actions before the native startup modal releases.
@@ -105,9 +120,9 @@ export async function runUIContentInlineSmoke(browser,base){
   // asynchronously. Its authorial text must join the SAME D1/CAS editor.
   const updateBanner=page.locator('#studio-update-banner');
   const updateNotice=updateBanner.locator('[data-update-role="message"]');
-  const updatePencil=updateBanner.locator('[data-owner-copy-pencil="siteUpdateNotice"]');
-  await updatePencil.waitFor({state:'visible',timeout:12000});
-  await updatePencil.click();
+  await updateNotice.waitFor({state:'visible',timeout:12000});
+  assert.equal(await updateBanner.locator('[data-owner-copy-pencil="siteUpdateNotice"]').count(),0);
+  await updateNotice.dblclick();
   const updateInput=updateBanner.locator('.account-copy-edit-host [contenteditable]');
   await updateInput.fill('Новая версия сохранит текущего героя');
   await updateInput.press('Tab');
@@ -120,7 +135,7 @@ export async function runUIContentInlineSmoke(browser,base){
   // A competing D1 owner edit must keep the draft and present an error,
   // not silently overwrite remote content or reload the current hero.
   nextConflicts.add('guideedit.book.ui.label.site-update-notice');
-  await updatePencil.click();
+  await updateNotice.dblclick();
   const conflictInput=updateBanner.locator('.account-copy-edit-host [contenteditable]');
   await conflictInput.fill('Черновик обновления после конфликта');
   await conflictInput.press('Tab');
@@ -134,19 +149,28 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(await updateNotice.textContent(),
    'Новая версия сохранит текущего героя');
 
-  // Button pencils add siblings; stable action references must survive.
+  // Direct editing does not insert pencils or replace stable action references.
   await updateBanner.locator('[data-update-role="apply"]').click();
+  // Owner action captions distinguish a double-click from a single click.
+  // Wait for the actual updater warning after its bounded click delay.
+  await page.waitForFunction(()=>
+   /выйди из режима владельца/i.test(document.querySelector(
+    '#studio-update-banner [data-update-role="message"]')?.textContent||''),
+   null,{timeout:3000});
   assert.match(await updateNotice.textContent(),/выйди из режима владельца/i);
   assert.equal(await updateBanner.locator(
    '[data-owner-copy-pencil="siteUpdateNotice"]').count(),0,
    'The notice edit affordance must be removed when a different warning is shown');
   await updateBanner.locator('[data-update-role="later"]').click();
+  // This button also owns editable text. Wait for its real single-click
+  // action to finish after double-click disambiguation.
+  await updateBanner.waitFor({state:'detached',timeout:3000});
   assert.equal(await updateBanner.count(),0);
-  // A real pencil must exist beside fixed headers on touchscreens. Renaming
-  // the Hero Appearance heading is editorial copy, not a character change.
-  const appearancePencil=page.locator('.stage .panel-heading [data-ui-content-for="appearance"]');
-  await appearancePencil.waitFor({state:'visible'});
-  await appearancePencil.click();
+  // A fixed heading is itself the direct-edit target; no sibling pencil.
+  const appearanceHeading=page.locator('#stageHeading');
+  await appearanceHeading.waitFor({state:'visible'});
+  assert.equal(await page.locator('.stage .panel-heading [data-ui-content-for="appearance"]').count(),0);
+  await appearanceHeading.dblclick();
   const appearanceInput=page.locator('.stage .panel-heading .ui-content-edit-host [contenteditable]');
   await appearanceInput.fill('Облик героя');
   await appearanceInput.press('Tab');
@@ -156,7 +180,7 @@ export async function runUIContentInlineSmoke(browser,base){
   // A 200 response missing the conditional write proof is NOT a successful
   // owner save. Keep the exact draft and allow retry without a reload.
   unconfirmedWrites.add('guideedit.book.ui.label.appearance');
-  await appearancePencil.click();
+  await appearanceHeading.dblclick();
   const unconfirmedInput=page.locator(
    '.stage .panel-heading .ui-content-edit-host [contenteditable]');
   await unconfirmedInput.fill('Черновик после неподтверждённой записи');
@@ -175,7 +199,7 @@ export async function runUIContentInlineSmoke(browser,base){
   // A long owner draft must remain fully measurable at a mobile viewport.
   // Escape discards the draft, preserving the real short heading.
   await page.setViewportSize({width:390,height:780});
-  await appearancePencil.click();
+  await appearanceHeading.dblclick();
   const longField=page.locator('.stage .panel-heading .ui-content-edit-host [contenteditable]');
   await longField.fill('Полное название или пояснение '.repeat(10));
   const visibleText=await longField.evaluate(el=>{
@@ -196,61 +220,63 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(await page.locator('#stageHeading').innerText(),
    'Черновик после неподтверждённой записи');
   await page.setViewportSize({width:1100,height:810});
-  const pathTitlePencil=page.locator('.right .panel-heading [data-ui-content-for="path"]');
-  await pathTitlePencil.waitFor({state:'visible'});
-  const originHeadingPencil=page.locator('.workspace>.left>.panel-heading [data-origin-edit-for="heading"]');
-  await originHeadingPencil.waitFor({state:'visible'});
-  assert.equal(await page.locator('#pathGrowthPage [data-path-copy-for]').count(),4);
+  assert.equal(await page.locator('.right .panel-heading [data-ui-content-for="path"]').count(),0);
+  assert.equal(await page.locator('.workspace>.left>.panel-heading [data-origin-edit-for="heading"]').count(),0);
+  assert.equal(await page.locator('#pathGrowthPage [data-path-copy-for]').count(),0);
   // Edit a group heading and its help in the REAL Book. A D1 request must
   // not unmount the active editor or accidentally fold the results section.
   await page.waitForFunction(()=>
    document.querySelector('#catalogStatus')?.textContent?.includes('навыков'),
    null,{timeout:25000});
   await page.locator('#hero').click();
-  const actions=page.locator('#stageBookPanel .stage-result-section-head .stage-guide-actions').first();
-  const buttons=actions.locator('button');
-  assert.equal(await buttons.count(),2);
-  const pair=await buttons.evaluateAll(nodes=>nodes.map(n=>({x:n.getBoundingClientRect().left,w:n.getBoundingClientRect().width})));
-  assert.ok(pair[0].x+pair[0].w<=pair[1].x,'Hero Book owner buttons must not overlap');
   const firstGroup=page.locator('#stageBookPanel details.stage-result-section').first();
   await firstGroup.waitFor({state:'visible'});
-  const bookActions=firstGroup.locator('summary .stage-guide-actions');
-  assert.equal(await bookActions.locator('button').count(),2);
-  await bookActions.locator('.stage-guide-edit-hint').click();
-  const bookHint=firstGroup.locator('summary [data-guide-key="summary.group.0"] [contenteditable]');
+  const groupTitle=firstGroup.locator('summary [data-guide-key="summary.group.0"]');
+  // A group title has no independent hover hint. The correct owner UI must
+  // NOT synthesize a pencil simply because its visible caption is editable.
+  assert.equal(await firstGroup.locator('summary .stage-guide-edit-hint').count(),0,
+   'A group heading without a real hover explanation has no pencil');
+  const stat=firstGroup.locator('.stage-result-grid [data-guide-key="summary.0"]');
+  assert.equal(await stat.count(),1,'The first result is the source-backed health stat');
+  assert.match(await stat.innerText(),/ОЗ|HP/);
+  const statHint=firstGroup.locator('.stage-result-grid .stage-guide-actions').first();
+  assert.equal(await statHint.locator('.stage-guide-edit-hint').count(),1,
+   'The real hover explanation of health keeps precisely one hint pencil');
+  assert.equal(await statHint.locator('.stage-guide-edit-name').count(),0);
+  await statHint.locator('.stage-guide-edit-hint').click();
+  const bookHint=stat.locator('[contenteditable]');
   await bookHint.fill('Не терять черновик при повторном двойном клике');
   await bookHint.dblclick();
   assert.equal(await bookHint.textContent(),
    'Не терять черновик при повторном двойном клике',
    'Double-click inside an active contenteditable must not open a nested editor');
-  assert.equal(await firstGroup.locator('summary [data-guide-key="summary.group.0"] [data-owner-text-field]').count(),1);
-  // Contenteditable is NOT a native input: while an asynchronous D1 save is
-  // in flight, the submitted text must be locked and visibly busy.
-  slowWrites.add('guideedit.book.summary.group.0');
+  assert.equal(await stat.locator('[data-owner-text-field]').count(),1);
+  // A slow D1 write must lock the contenteditable and disallow Undo.
+  slowWrites.add('guideedit.book.summary.0');
   await bookHint.fill('Очки здоровья и маны героя');
   await bookHint.press('Tab');
   await page.waitForFunction(()=>{
-   const node=document.querySelector('#stageBookPanel [data-guide-key="summary.group.0"]');
+   const node=document.querySelector('#stageBookPanel [data-guide-key="summary.0"]');
    return node?.getAttribute('aria-busy')==='true'&&
     node.querySelector('[data-owner-text-field]')?.getAttribute('contenteditable')==='false';
   },null,{timeout:6000});
-  // Owner status and the real Undo button must agree with the pending CAS.
   await page.waitForFunction(()=>{
    const state=document.querySelector('#ownerDock [data-owner-save-state]');
    const undo=document.querySelector('#ownerDock [data-owner-undo]');
    return state?.dataset.state==='saving'&&undo?.disabled===true;
   },null,{timeout:6000});
   await page.waitForFunction(()=>
-   !document.querySelector('#stageBookPanel .stage-result-section-head [contenteditable]'),
+   !document.querySelector('#stageBookPanel [data-guide-key="summary.0"] [contenteditable]'),
    null,{timeout:12000});
   assert.equal(await page.locator('#ownerDock [data-owner-save-state]').getAttribute('data-state'),'saved');
   assert.equal(await page.locator('#ownerDock [data-owner-undo]').isDisabled(),false);
-  assert.equal(JSON.parse(values['guideedit.book.summary.group.0']).hintRu,
+  assert.equal(JSON.parse(values['guideedit.book.summary.0']).hintRu,
    'Очки здоровья и маны героя');
   assert.equal(await firstGroup.getAttribute('open'),'',
-   'Editing a help text must not collapse the native results disclosure');
-  await firstGroup.locator('summary .stage-guide-edit-name').click();
-  const bookTitle=firstGroup.locator('summary [data-guide-key="summary.group.0"] [contenteditable]');
+   'Editing a real stat help must not collapse the native results disclosure');
+  // The headline is a separate editable caption, even when it has no hint pencil.
+  await groupTitle.dblclick();
+  const bookTitle=groupTitle.locator('[contenteditable]');
   await bookTitle.fill('Жизнь героя');
   await bookTitle.press('Tab');
   await page.waitForFunction(()=>document.querySelector(
@@ -258,35 +284,33 @@ export async function runUIContentInlineSmoke(browser,base){
    ?.textContent==='Жизнь героя',null,{timeout:12000});
   assert.equal(JSON.parse(values['guideedit.book.summary.group.0']).ru,'Жизнь героя');
   assert.equal(await firstGroup.getAttribute('open'),'');
-  // Reject a CAS update: keep the exact draft beside a local error, and
-  // restore editability so a retry or Escape is still possible.
-  nextConflicts.add('guideedit.book.summary.group.0');
-  await bookActions.locator('.stage-guide-edit-hint').click();
-  const failedBook=firstGroup.locator('summary [data-guide-key="summary.group.0"] [data-owner-text-field]');
+  // Reject a CAS hint update; the exact draft must remain recoverable.
+  nextConflicts.add('guideedit.book.summary.0');
+  await statHint.locator('.stage-guide-edit-hint').click();
+  const failedBook=stat.locator('[data-owner-text-field]');
   await failedBook.fill('Неопубликованный текст должен остаться для повторной попытки');
   await failedBook.press('Tab');
-  await firstGroup.locator('summary [data-guide-key="summary.group.0"] .ui-content-inline-error')
-   .waitFor({state:'visible',timeout:12000});
-  assert.match(await firstGroup.locator('summary [data-guide-key="summary.group.0"] .ui-content-inline-error').textContent(),/^Не сохранено:/);
+  await stat.locator('.ui-content-inline-error').waitFor({
+   state:'visible',timeout:12000});
+  assert.match(await stat.locator('.ui-content-inline-error').textContent(),/^Не сохранено:/);
   assert.equal(await failedBook.textContent(),
    'Неопубликованный текст должен остаться для повторной попытки');
   assert.equal(await failedBook.getAttribute('contenteditable'),'plaintext-only');
-  assert.equal(await firstGroup.locator('summary [data-guide-key="summary.group.0"] [data-owner-text-field]').count(),1);
-  assert.equal(JSON.parse(values['guideedit.book.summary.group.0']).hintRu,'Очки здоровья и маны героя');
-  // Arm a tooltip hover while the unsaved editor is focused. A capturing
-  // tooltip must not steal Escape from the editing control.
+  assert.equal(await stat.locator('[data-owner-text-field]').count(),1);
+  assert.equal(JSON.parse(values['guideedit.book.summary.0']).hintRu,'Очки здоровья и маны героя');
+  // Hover feedback must never intercept Escape from an unsaved hint editor.
   await failedBook.evaluate(node=>{
    const label=node.closest('[data-guide-key]');
    window.PandoraGuideTooltip.attach(label,'Test guide hint',{hoverDelay:3000});
    label.dispatchEvent(new PointerEvent('pointerenter',{pointerType:'mouse'}));
   });
   await failedBook.press('Escape');
-  assert.equal(await firstGroup.locator('summary [data-guide-key="summary.group.0"] [data-owner-text-field]').count(),0);
+  assert.equal(await stat.locator('[data-owner-text-field]').count(),0);
   await page.locator('#stageAttributes .stage-book-close').click();
   const wiki=page.locator('#nav [data-i18n="wiki"]');
-  const pencil=page.locator('#nav [data-ui-content-for="wiki"]');
-  await pencil.waitFor({state:'visible'});
-  await pencil.click();
+  await wiki.waitFor({state:'visible'});
+  assert.equal(await page.locator('#nav [data-ui-content-for="wiki"]').count(),0);
+  await wiki.dblclick();
   const input=page.locator('#nav .ui-content-edit-host [contenteditable]');
   await input.waitFor({state:'visible'});
   await input.fill('📜 Справочник');
@@ -299,7 +323,7 @@ export async function runUIContentInlineSmoke(browser,base){
 
   await page.locator('#locale [data-locale="en"]').click();
   await page.waitForFunction(()=>document.documentElement.lang==='en');
-  await pencil.click();
+  await wiki.dblclick();
   const englishInput=page.locator('#nav .ui-content-edit-host [contenteditable]');
   await englishInput.fill('📜 Wiki Guide');
   await englishInput.press('Tab');
@@ -311,10 +335,10 @@ export async function runUIContentInlineSmoke(browser,base){
   await page.locator('#locale [data-locale="ru"]').click();
   await page.waitForFunction(()=>document.querySelector('#nav [data-i18n="wiki"]')
    ?.textContent==='📜 Справочник',null,{timeout:15000});
-  assert.match(await pencil.getAttribute('aria-label'),/Изменить надпись:.*Справочник/);
+  assert.match(await wiki.textContent(),/Справочник/);
   // A RU draft must not overwrite an existing EN value when the locale
   // changes before blur. Keep the active editor mounted through the switch.
-  await pencil.click();
+  await wiki.dblclick();
   const liveRu=page.locator('#nav .ui-content-edit-host [contenteditable]');
   await liveRu.fill('📜 Изменённый русский текст');
   await page.evaluate(()=>document.querySelector('#locale [data-locale="en"]').click());
@@ -334,14 +358,14 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.deepEqual(JSON.parse(values['guideedit.book.ui.label.wiki']),{
    ru:'📜 Изменённый русский текст',en:'📜 Wiki Guide'
   });
-  assert.match(await pencil.getAttribute('aria-label'),/Edit label:.*Wiki Guide/);
+  assert.match(await wiki.textContent(),/Wiki Guide/);
   await page.locator('#locale [data-locale="ru"]').click();
   await page.waitForFunction(()=>document.querySelector('#nav [data-i18n="wiki"]')
    ?.textContent==='📜 Изменённый русский текст',null,{timeout:15000});
 
   await wiki.click();
   const category=page.locator('[data-wiki-chapter="item"]');
-  if(await category.count())await category.click();
+  if(await category.count())await chooseWikiChapter('item');
   const search=page.locator('input[name="pandora-studio-encyclopedia-filter"]');
   // The UI intentionally guards this search against password-manager autofill.
   // Real pointer focus unlocks readonly before typing.
@@ -366,7 +390,7 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(JSON.parse(values['guideedit.book.wiki.item-field.pen']).hintRu,
    'Чем меньше пробитие, тем выше минимальная атака.');
   const penBefore=await page.locator('.item-fields dt[data-item-field="PEN"] + dd').textContent();
-  await penLabel.locator('.wiki-label-pencil').click();
+  await penLabel.locator('.wiki-help-word').dblclick();
   const rename=page.locator('.item-fields .wiki-item-field-inline-editor[data-editor-field="PEN"] [contenteditable]');
   await rename.fill('Потенциал атаки');
   await rename.press('Tab');
@@ -378,12 +402,12 @@ export async function runUIContentInlineSmoke(browser,base){
    'Чем меньше пробитие, тем выше минимальная атака.');
   assert.equal(await page.locator('.item-fields dt[data-item-field="PEN"] + dd').textContent(),penBefore);
   // The visible, source-verified patch note is real editorial UI copy.
-  // A guest never sees the pencil; an owner changes only the text, not the
+  // A guest never sees editor controls; the owner changes text, not the
   // supported gameplay signature or character build.
   if(await page.locator('#detailPanel.is-open').count())
    await page.locator('#dockClose').click();
   await wiki.click();
-  await page.locator('[data-wiki-chapter="skill"]').click();
+  await chooseWikiChapter('skill');
   await search.click();
   await search.fill('Песчаная буря');
   const sandstorm=page.locator('[data-wiki-record="420007101"]');
@@ -393,7 +417,7 @@ export async function runUIContentInlineSmoke(browser,base){
    .filter({hasText:'повышенный урон'});
   await patchNote.waitFor({state:'visible',timeout:15000});
   assert.doesNotMatch(await patchNote.textContent(),/коэффициент|не утверждается/);
-  await patchNote.locator('.ui-content-pencil').click();
+  await patchNote.locator('span').first().dblclick();
   const patchInput=page.locator('.wiki-skill-source-insight p.wiki-description [contenteditable]');
   await patchInput.fill('Усиленная версия с сокращённой подготовкой и повышенным уроном.');
   await patchInput.press('Tab');
@@ -468,6 +492,15 @@ export async function runUIContentInlineSmoke(browser,base){
   if(await page.locator('#ownerDock').evaluate(el=>el.classList.contains('owner-dock-collapsed')))
    await page.locator('#ownerDock [data-owner-collapse]').click();
   await page.locator('#ownerDock [data-owner-undo]').click();
+  // The owner action arbiter defers one physical click to separate it from
+  // a double-click on the action caption. Observe the completed CAS undo.
+  let enReverted=false;
+  for(let attempt=0;attempt<120;attempt++){
+   const value=values['guideedit.book.ui.label.account-guest-lead'];
+   if(value&&JSON.parse(value).en===undefined){enReverted=true;break}
+   await page.waitForTimeout(50);
+  }
+  assert.ok(enReverted,'The undo action must revert the saved English label');
   await page.waitForFunction(()=>document.querySelector(
    '#accountPanel [data-owner-copy-key="accountGuestLead"]')?.textContent===
    'Вход открывает облачные билды.',null,{timeout:12000});
@@ -498,14 +531,13 @@ export async function runUIContentInlineSmoke(browser,base){
   console.log('UI test: opening saved-build library');
   await page.locator('#nav [data-tab="builds"]').click();
   const saveNew=page.locator('#detailContent [data-owner-copy-key="librarySaveNew"]');
-  const libraryPencil=page.locator('#detailContent [data-owner-copy-pencil="librarySaveNew"]');
   await saveNew.waitFor({state:'visible'});
-  await libraryPencil.waitFor({state:'visible'});
+  assert.equal(await page.locator('#detailContent [data-owner-copy-pencil="librarySaveNew"]').count(),0);
   assert.equal(await page.locator('#detailContent [data-owner-copy-key]').count()>=7,true);
   assert.equal(await page.locator('#detailContent .build-name-input[data-owner-copy-key]').count(),0,
    'The user-entered build name must not become owner-editable');
   console.log('UI test: editing library Russian copy');
-  await libraryPencil.click();
+  await saveNew.dblclick();
   const libraryInput=page.locator('#detailContent .account-copy-edit-host [contenteditable]');
   await libraryInput.fill('✧ Сохранить персонажа');
   await libraryInput.press('Tab');
@@ -524,7 +556,13 @@ export async function runUIContentInlineSmoke(browser,base){
   const enLibrary=page.locator('#detailContent [data-owner-copy-key="librarySaveNew"]');
   await enLibrary.waitFor({state:'visible'});
   assert.equal(await enLibrary.textContent(),'✧ Save new build');
-  await page.locator('#detailContent [data-owner-copy-pencil="librarySaveNew"]').click();
+  // A deliberately expanded owner drawer can obscure the library button.
+  // Collapse via the real UI rather than bypassing pointer hit-testing.
+  const libraryDock=page.locator('#ownerDock');
+  if(await libraryDock.locator('[data-owner-collapse]')
+   .getAttribute('aria-expanded')==='true')
+   await libraryDock.locator('[data-owner-collapse]').click();
+  await enLibrary.dblclick();
   const enLibraryInput=page.locator('#detailContent .account-copy-edit-host [contenteditable]');
   await enLibraryInput.fill('✧ Save character');
   await enLibraryInput.press('Tab');
@@ -570,7 +608,7 @@ export async function runUIContentInlineSmoke(browser,base){
   const comparePanel=await compare.elementHandle();
   const compareTitle=compare.locator('[data-owner-copy-key="compareTitle"]');
   const comparisonName=await activeName.inputValue();
-  await compare.locator('[data-owner-copy-pencil="compareTitle"]').click();
+  await compareTitle.dblclick();
   const compareTitleEdit=compare.locator('.build-compare-title-group .account-copy-edit-host [contenteditable]');
   await compareTitleEdit.fill('Build comparison QA');
   await compareTitleEdit.press('Tab');
@@ -581,12 +619,12 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(await activeName.inputValue(),comparisonName);
   assert.equal(await comparePanel.evaluate(node=>node.isConnected),true);
   await compare.locator('[data-owner-copy-key="compareExpand"]').click();
-  await compare.locator('[data-owner-copy-pencil="compareCollapse"]').waitFor({state:'visible'});
+  await compare.locator('[data-owner-copy-key="compareCollapse"]').waitFor({state:'visible'});
   assert.equal(await compare.locator('[data-owner-copy-pencil="compareExpand"]').count(),0);
   assert.equal(await compare.locator('.build-compare-expand').getAttribute('aria-expanded'),'true');
   const compareStatus=compare.locator('[data-owner-copy-key="compareNeedTwo"]');
   await compareStatus.waitFor({state:'visible'});
-  await compare.locator('[data-owner-copy-pencil="compareNeedTwo"]').click();
+  await compareStatus.dblclick();
   const comparisonEdit=compare.locator('.build-compare-summary .account-copy-edit-host [contenteditable]');
   await comparisonEdit.fill('Save a pair of builds to compare.');
   await comparisonEdit.press('Tab');
@@ -599,7 +637,7 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(await comparePanel.evaluate(node=>node.isConnected),true);
   assert.equal(await activeName.inputValue(),comparisonName);
   nextConflicts.add(compareKey);
-  await compare.locator('[data-owner-copy-pencil="compareNeedTwo"]').click();
+  await compareStatus.dblclick();
   await comparisonEdit.fill('A compare caption that must survive HTTP 409');
   await comparisonEdit.press('Tab');
   await compare.locator('.build-compare-summary .ui-content-inline-error')
@@ -638,7 +676,7 @@ export async function runUIContentInlineSmoke(browser,base){
    '#detailContent .cloud-library-status')?.dataset.ownerCopyKey==='statusCloudConnected',
    null,{timeout:15000});
   assert.equal(await cloudLabel.textContent(),'Cloud library connected');
-  await page.locator('#detailContent [data-owner-copy-pencil="statusCloudConnected"]').click();
+  await cloudLabel.dblclick();
   const cloudEditor=page.locator('#detailContent .cloud-library-status + .account-copy-edit-host [contenteditable]');
   await cloudEditor.fill('Cloud library checked and ready.');
   await cloudEditor.press('Tab');
@@ -655,7 +693,7 @@ export async function runUIContentInlineSmoke(browser,base){
   await page.waitForFunction(()=>document.querySelector(
    '#detailContent .cloud-library-status')?.dataset.ownerCopyKey==='statusCloudConnected',
    null,{timeout:15000});
-  await page.locator('#detailContent [data-owner-copy-pencil="statusCloudConnected"]').click();
+  await cloudLabel.dblclick();
   await cloudEditor.fill('Облачная библиотека готова.');
   await cloudEditor.press('Tab');
   await page.waitForFunction(()=>document.querySelector(
@@ -664,14 +702,13 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.deepEqual(JSON.parse(values[cloudKey]),{
    ru:'Облачная библиотека готова.',en:'Cloud library checked and ready.'
   });
-  // Status transitions reuse the same paragraph; the pencil must update to
-  // the NEW D1 key, not keep the key captured on the first account binding.
+  // Status transitions reuse the same paragraph with a newly current D1 key.
   slowLibraryNext=true;
   await page.locator('#detailContent [data-library-action-copy="libraryRefresh"]').click();
   await page.waitForFunction(()=>document.querySelector(
    '#detailContent .cloud-library-status')?.dataset.ownerCopyKey==='statusCloudChecking',
    null,{timeout:10000});
-  assert.equal(await page.locator('#detailContent [data-owner-copy-pencil="statusCloudChecking"]').count(),1);
+  assert.equal(await page.locator('#detailContent [data-owner-copy-pencil="statusCloudChecking"]').count(),0);
   assert.equal(await page.locator('#detailContent [data-owner-copy-pencil="statusCloudConnected"]').count(),0);
   await page.waitForFunction(()=>document.querySelector(
    '#detailContent .cloud-library-status')?.dataset.ownerCopyKey==='statusCloudConnected',
@@ -710,7 +747,7 @@ export async function runUIContentInlineSmoke(browser,base){
   await toastText.waitFor({state:'visible'});
   assert.equal(await toastText.textContent(),
    'D1: временная запись и чтение проверены, тестовые данные удалены.');
-  await page.locator('#studioToast [data-owner-copy-pencil="statusOwnerD1Check"]').click();
+  await toastText.dblclick();
   const toastEditor=page.locator('#studioToast .account-copy-edit-host [contenteditable]');
   await toastEditor.fill('Запись удалена, ссылка отозвана.');
   await toastEditor.press('Tab');
@@ -726,9 +763,8 @@ export async function runUIContentInlineSmoke(browser,base){
    '#studioToast [data-owner-copy-key="statusOwnerD1Check"]')?.textContent===
    'D1: test write and read succeeded; temporary data was removed.',null,{timeout:15000});
   assert.equal(await page.locator('#studioToast .studio-toast-content>strong').textContent(),'Done');
-  const toastPencil=page.locator('#studioToast [data-owner-copy-pencil="statusOwnerD1Check"]');
-  assert.match(await toastPencil.getAttribute('aria-label'),/^Edit caption:/);
-  await toastPencil.click();
+  assert.equal(await page.locator('#studioToast [data-owner-copy-pencil="statusOwnerD1Check"]').count(),0);
+  await toastText.dblclick();
   await toastEditor.fill('Build removed and link revoked.');
   await toastEditor.press('Tab');
   await page.waitForFunction(()=>document.querySelector(
@@ -741,7 +777,7 @@ export async function runUIContentInlineSmoke(browser,base){
   // A CAS conflict in a toast edit must not replace the toast itself or
   // destroy typed text with another warning toast.
   nextConflicts.add(statusKey);
-  await toastPencil.click();
+  await toastText.dblclick();
   await toastEditor.fill('Uncommitted owner text survives conflict');
   await toastEditor.press('Tab');
   const inlineFailure=page.locator('#studioToast .ui-content-inline-error');
@@ -760,8 +796,12 @@ export async function runUIContentInlineSmoke(browser,base){
   // the list, losing the selection or exposing D1 controls to guests.
   // The top navigation is hidden behind an open builds workbench; use the
   // real Close control before switching chapters.
-  if(await page.locator('#dockClose').isVisible())
+  if(await page.locator('#detailPanel.is-open').count()){
    await page.locator('#dockClose').click();
+   // A deferred owner-mode action must finish before interacting elsewhere.
+   await page.locator('#detailPanel.is-open').waitFor({state:'hidden',timeout:15000});
+  }
+  await page.locator('#nav [data-tab="wiki"]').waitFor({state:'visible'});
   // The previous CAS-conflict test deliberately leaves the owner drawer open
   // with an error. Collapse only its visual panel before normal navigation;
   // neither suppress nor clear that failure or its D1 state.
@@ -770,7 +810,7 @@ export async function runUIContentInlineSmoke(browser,base){
      await ownerDrawer.locator('[data-owner-collapse]').getAttribute('aria-expanded')==='true')
    await ownerDrawer.locator('[data-owner-collapse]').click();
   await page.locator('#nav [data-tab="wiki"]').click();
-  await page.locator('[data-wiki-chapter="item"]').click();
+  await chooseWikiChapter('item');
   const gearFilter=page.locator('.wiki-equipment-type');
   await gearFilter.waitFor({state:'visible',timeout:15000});
   assert.equal(await gearFilter.inputValue(),'equipment');
@@ -794,7 +834,7 @@ export async function runUIContentInlineSmoke(browser,base){
   await page.locator('#locale [data-locale="ru"]').click();
   await page.waitForFunction(()=>document.documentElement.lang==='ru');
   await page.locator('#nav [data-tab="wiki"]').click();
-  await page.locator('[data-wiki-chapter="item"]').click();
+  await chooseWikiChapter('item');
   const gearRu=page.locator('.wiki-equipment-type');
   assert.equal(await gearRu.locator('option[value="weapon"]').textContent(),'Оружие');
   const ruGroup=page.locator('.wiki-filter-labels-editor');
@@ -810,11 +850,11 @@ export async function runUIContentInlineSmoke(browser,base){
   await gearRu.selectOption('weapon');
   assert.equal(await gearRu.inputValue(),'weapon',
    'Editing an option label never changes the semantic filter value');
-  await page.locator('[data-wiki-chapter="utility"]').click();
+  await chooseWikiChapter('utility');
   assert.equal(await page.locator('.wiki-effect-type option[value="buff"]').textContent(),
    'Дают положительные эффекты');
   assert.ok(await page.locator('.wiki-filter-labels-editor [data-owner-copy-id="filterUtilityEffectBuff"]').count());
-  await page.locator('[data-wiki-chapter="item"]').click();
+  await chooseWikiChapter('item');
   await page.locator('.wiki-equipment-type').selectOption('elemental');
   assert.ok(await page.locator('.wiki-elemental-type option[value="lightning"]').count());
   assert.ok(await page.locator('.wiki-filter-labels-editor [data-owner-copy-id="filterWeaponElementLightning"]').count());
@@ -886,7 +926,7 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(await page.locator('#detailContent .wiki-list [data-wiki-record]').count(),200);
   assert.match(await resultStatus.textContent(),
    /^Показано 200 из \d+ записей$/);
-  await page.locator('[data-wiki-chapter="map"]').click();
+  await chooseWikiChapter('map');
   assert.ok(await page.locator('#detailContent .wiki-location-list-heading').count()>0);
   assert.ok(await summaryEditor.locator('[data-owner-copy-id="placeCity"]').count());
   assert.deepEqual(errors,[]);

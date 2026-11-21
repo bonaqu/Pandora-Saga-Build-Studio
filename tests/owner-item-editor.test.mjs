@@ -120,7 +120,12 @@ test('single visual item patch may edit name and description without touching so
 });
 test('visible owner entry points and read-only-until-focus search guards are present',()=>{
  const source=readFileSync(new URL('pandora-studio-app.js',root),'utf8');
- assert.match(source,/class:'owner-race-passive-edit'/);
+ // The old companion pencil opened the race name editor. A real owner
+ // now double-clicks the displayed skill label, without selecting the passive.
+ assert.doesNotMatch(source,/class:'owner-race-passive-edit'/);
+ assert.match(source,/ownerCaptionActionGuard\(btn,label\)/);
+ assert.match(source,/btn\.setAttribute\('aria-keyshortcuts','F2'\)/);
+ assert.match(source,/inlineWikiText\(label\)/);
  assert.doesNotMatch(source,/class:'button-action wiki-owner-pencil'/);
   assert.match(source,/function guardOwnerInput/);
  assert.doesNotMatch(source,/class:'button-action wiki-owner-desc-edit'/);

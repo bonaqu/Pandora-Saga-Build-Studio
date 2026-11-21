@@ -54,7 +54,8 @@ export async function runOnlineOwnerDraft879Smoke(browser,base){
   await page.locator('#ownerDock').waitFor({state:'visible',timeout:16000});
   await page.locator('#ownerDock [data-owner-collapse]').click();
   const slot=page.locator('#ownerDock .owner-dock-action-slot[data-owner-dock-key="testD1"]');
-  await slot.locator('.owner-dock-action-pencil').click();
+  assert.equal(await slot.locator('.owner-dock-action-pencil').count(),0);
+   await slot.locator('button').dblclick();
   const edit=slot.locator('[contenteditable="plaintext-only"]');
   await edit.waitFor({state:'visible'});
   const unsent='Особая черновая подпись 879 — сохранить вручную';

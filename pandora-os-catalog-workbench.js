@@ -54,65 +54,83 @@
     };
     const copy=(key,ru,en)=>copyLabel?.(key,ru,en)||tr(ru,en);
     const permitMutation=()=>typeof canCommit!=='function'||canCommit();
-    // Only fixed author text, never a game ID, API status or comparison value.
+    // Only fixed author text is editable. The caption itself is the target:
+    // a separate ✎ is reserved for independently authored hover tooltips.
     const authored=(tag,attrs,key,ru,en)=>{
       const node=h(tag,{...attrs,text:copy(key,ru,en)});
       if(!canEdit||typeof editLabel!=='function')return node;
       editLabel(node,key,ru,en);
-      // A separate real control supports touch, unlike a decorative
-      // ::after pencil. Only this static copy receives the double-click.
-      node.id||='os-sync-label-'+key;
-      const pencil=h('button',{type:'button',class:'os-sync-copy-pencil',
-       text:'✎',title:tr('Изменить текст','Edit text'),
-       'aria-label':tr('Изменить пояснение','Edit explanation'),
-       'aria-describedby':node.id});
-      pencil.addEventListener('click',event=>{
-       event.preventDefault();event.stopPropagation();
-       node.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
-      });
-      return h('div',{class:'os-sync-copy-field'},[node,pencil]);
+      return h('div',{class:'os-sync-copy-field'},[node]);
     };
-    // A checkbox label must keep native checkbox semantics. Its editor is a
-    // sibling OUTSIDE <label>; counts remain non-editable runtime values.
+    // In player mode the caption stays inside a native label. In owner mode,
+    // the same text is independent of a disabled checkbox, otherwise browsers
+    // regard the nested editable text as disabled and block double-click.
+    // Preserve a checkbox's single-click behavior while suppressing
+    // both toggles from a genuine owner double-click on its written caption.
     const choiceEditor=(caption,key,ru,en)=>{
       if(!canEdit||typeof editLabel!=='function')return null;
       editLabel(caption,key,ru,en);
-      const pencil=h('button',{type:'button',class:'os-sync-choice-pencil',
-       text:'✎',title:tr('Изменить надпись','Edit caption'),
-       'aria-label':tr('Изменить надпись','Edit caption')+': '+copy(key,ru,en)});
-      pencil.addEventListener('click',event=>{
-       event.preventDefault();event.stopPropagation();
-       caption.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
-      });
-      return pencil;
+      caption.tabIndex=0;
+      caption.setAttribute('aria-keyshortcuts','F2');
+      let pending=null;
+      caption.addEventListener('click',event=>{
+        if(!event.detail||event.target.closest?.('.wiki-inline-input,[data-owner-text-field]'))return;
+        event.preventDefault();event.stopPropagation();
+        if(pending){clearTimeout(pending);pending=null;return}
+        pending=setTimeout(()=>{
+          pending=null;
+          const box=caption.closest('.os-sync-formatting-option')?.querySelector('input[type="checkbox"]');
+          if(caption.isConnected&&box&&!box.disabled)box.click();
+        },500);
+      },true);
+      return null; // no caption pencil
     };
-    // Publishing a catalog must never run when a pencil is pressed:
-    // place the editor BESIDE the action, not inside its clickable button.
+    // An action's visible caption is editable even when the action is
+    // disabled. The wrapper provides an F2 target in that case; ordinary
+    // single clicks still execute the action after dblclick disambiguation.
     const action=(button,key,ru,en)=>{
       button.textContent=copy(key,ru,en);
       if(!canEdit||typeof editLabel!=='function')return button;
-      const wrap=h('span',{class:'os-sync-action-editor'});
+      const wrap=h('span',{class:'os-sync-action-editor',
+        'aria-keyshortcuts':'F2'});
       const host=h('span',{class:'os-sync-action-edit-host',hidden:true});
+      if(button.disabled)wrap.tabIndex=0;
       button.id||='os-sync-copy-'+key;
-      const pencil=h('button',{type:'button',class:'os-sync-owner-pencil',
-        text:'✎',title:tr('Переименовать','Rename'),
-        'aria-label':tr('Изменить надпись действия','Edit action caption'),
-        'aria-describedby':button.id});
       editLabel(host,key,ru,en,{
         onCommitted:next=>{button.textContent=next},
-        onFinished:()=>{button.hidden=false;pencil.hidden=false;host.hidden=true}
+        onFinished:()=>{button.hidden=false;host.hidden=true}
       });
       for(const [keyName,value] of Object.entries({
         ownerCopySection:'catalog-sync',ownerCopyId:key,
         ownerCopyRu:ru,ownerCopyEn:en}))button.dataset[keyName]=value;
-      pencil.addEventListener('click',event=>{
-        event.preventDefault();event.stopPropagation();
-        if(!button.isConnected)return;
-        button.hidden=true;pencil.hidden=true;host.hidden=false;
+      const startEdit=event=>{
+        if(!button.isConnected||!host.hidden||wrap.classList.contains('editing-hint'))return;
+        event?.preventDefault?.();event?.stopPropagation?.();
+        button.hidden=true;host.hidden=false;
         host.textContent=copy(key,ru,en);
         host.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
+      };
+      let pending=null;
+      button.addEventListener('click',event=>{
+        if(!event.detail||event.target.closest?.('.wiki-inline-input,[data-owner-text-field]'))return;
+        event.preventDefault();event.stopImmediatePropagation();
+        if(pending){clearTimeout(pending);pending=null;return}
+        pending=setTimeout(()=>{
+          pending=null;
+          if(button.isConnected&&!button.hidden&&!button.disabled)button.click();
+        },500);
+      },true);
+      wrap.addEventListener('dblclick',event=>{
+        if(event.target.closest?.('.os-sync-hint-pencil,.os-sync-hint-edit-host,.os-sync-secondary-pencil,.wiki-inline-input,[data-owner-text-field]'))return;
+        startEdit(event);
       });
-      wrap.append(button,pencil,host);return wrap;
+      wrap.addEventListener('keydown',event=>{
+        if(event.key==='F2'&&!event.target.closest?.(
+          '.os-sync-hint-pencil,.os-sync-hint-edit-host,.wiki-inline-input,[data-owner-text-field]'))
+          startEdit(event);
+      });
+      wrap.append(button,host);
+      return wrap;
     };
     // Reuse the game's hover/focus helper. All hints remain plain text;
     // owner-authored copy updates the existing tooltip, never HTML.
@@ -128,7 +146,7 @@
       if(!wrap)return;
       const host=h('span',{class:'os-sync-hint-edit-host',hidden:true});
       const pencil=h('button',{type:'button',class:'os-sync-hint-pencil',
-        text:'?',title:tr('Изменить подсказку','Edit tooltip'),
+        text:'✎',title:tr('Изменить подсказку','Edit tooltip'),
         'aria-label':tr('Изменить подсказку действия','Edit action tooltip')});
       editLabel(host,key,ru,en,{
         onCommitted:next=>{node.dataset.guideHint=next},
@@ -159,7 +177,7 @@
       wrap.append(control);
       if(!canEdit||typeof editLabel!=='function')return wrap;
       const pencil=h('button',{type:'button',class:'os-sync-secondary-pencil',
-        text:'?',title:tr('Изменить подсказку','Edit tooltip'),
+        text:'✎',title:tr('Изменить подсказку','Edit tooltip'),
         'aria-label':tr('Изменить подсказку','Edit tooltip')});
       const host=h('span',{class:'os-sync-secondary-host',hidden:true});
       editLabel(host,key,ru,en,{
@@ -231,23 +249,12 @@
     const summary = h('div', {class:'os-sync-summary',role:'status'});
     const sourceBanner=h('p',{class:'os-sync-source-banner',hidden:true});
     const status = h('p', {class:'os-sync-status',role:'status'});
-    // Only fixed editor-authored messages receive a pencil. Runtime counts,
-    // server diagnostics, errors and catalog values remain read-only.
+    // Only fixed authorial status copy is editable; dynamic progress,
+    // server errors, game values and diagnostics remain untouched.
     const editorialState=(target,key,ru,en)=>{
       const label=h('span',{class:'os-sync-state-caption',text:copy(key,ru,en)});
       target.replaceChildren(label);
-      if(!canEdit||typeof editLabel!=='function')return;
-      editLabel(label,key,ru,en);
-      label.id||='os-sync-state-'+key;
-      const pencil=h('button',{type:'button',class:'os-sync-state-pencil',
-       text:'✎',title:tr('Изменить сообщение','Edit message'),
-       'aria-label':tr('Изменить текст сообщения','Edit status text'),
-       'aria-describedby':label.id});
-      pencil.addEventListener('click',event=>{
-       event.preventDefault();event.stopPropagation();
-       label.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
-      });
-      target.append(pencil);
+      if(canEdit&&typeof editLabel==='function')editLabel(label,key,ru,en);
     };
     editorialState(status,'initialStatus',
      'Начни с проверки текущей игры. Если данные недоступны, используй сохранённую копию.',
@@ -309,11 +316,10 @@
      'formattingExplanation',
      'После сверки с игровым сайтом можно восстановить оригинальные переносы. Другие поля не меняются. Понадобятся галочка и подтверждение публикации.',
      'After comparing the live game data, original line breaks can be restored. Other fields remain unchanged. This requires selecting the checkbox and confirming publication.');
-    const formattingOption=h('label',{class:'os-sync-formatting-option'},
+    const formattingOption=h(canEdit?'div':'label',{class:'os-sync-formatting-option'},
       [formattingToggle,formattingLabel,formattingCountLabel]);
     const formattingChoice=h('div',{class:'os-sync-choice-editor'},[formattingOption]);
-    const formattingPencil=choiceEditor(formattingLabel,'formattingLabel',formattingRu,formattingEn);
-    if(formattingPencil)formattingChoice.append(formattingPencil);
+    choiceEditor(formattingLabel,'formattingLabel',formattingRu,formattingEn);
     const formattingReview=h('div',{class:'os-sync-formatting-review',hidden:true},
       [formattingChoice,formattingInfo]);
     reviewSteps.append(formattingReview);
@@ -333,11 +339,10 @@
     const russianDetails=h('details',{class:'os-sync-russian-preview'},[
       h('summary',{text:copy('russianPreviewSummary','Посмотреть русские тексты','Preview Russian texts')}),russianList
     ]);
-    const russianOption=h('label',{class:'os-sync-formatting-option'},
+    const russianOption=h(canEdit?'div':'label',{class:'os-sync-formatting-option'},
       [russianToggle,russianLabel,russianCountLabel]);
     const russianChoice=h('div',{class:'os-sync-choice-editor'},[russianOption]);
-    const russianPencil=choiceEditor(russianLabel,'russianDescriptionsLabel',russianRu,russianEn);
-    if(russianPencil)russianChoice.append(russianPencil);
+    choiceEditor(russianLabel,'russianDescriptionsLabel',russianRu,russianEn);
     const russianReview=h('div',{class:'os-sync-formatting-review',hidden:true},
       [russianChoice,russianInfo,russianDetails]);
     reviewSteps.append(russianReview);
@@ -368,7 +373,7 @@
      secondaryHint(advanced,'hintAdvancedDisclosure',
        'Дополнительные инструменты: диагностика D1, ручной экспорт и повторное создание резервного PR при ошибке автоматической отправки.',
        'Advanced tools: D1 diagnostics, manual export, and retrying the fallback PR if automatic delivery failed.'));
-    // Each action tooltip has independent RU/EN D1 copy. Its ? editor is
+    // Each action tooltip has independent RU/EN D1 copy. Its ✎ editor is
     // a sibling of the real action button, never part of its click target.
     for(const [node,key,ru,en] of [
       [live,'hintLive',

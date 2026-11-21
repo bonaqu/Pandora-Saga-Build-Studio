@@ -85,7 +85,28 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
  });
  const page=await context.newPage();
  page.on('pageerror',error=>errors.push(error.message));
+ // A successful create can immediately unmount the form. A one-shot real
+ // mouse gesture avoids locator retries that would duplicate a D1 POST.
+ const clickPointerOnce=async locator=>{
+  const rect=await locator.evaluate(element=>{
+   element.scrollIntoView({block:'center',inline:'nearest'});
+   const bounds=element.getBoundingClientRect();
+   return {x:bounds.x,y:bounds.y,width:bounds.width,height:bounds.height};
+  });
+  assert.ok(rect&&rect.width>0&&rect.height>0,'Expected visible owner action');
+  await page.mouse.click(rect.x+rect.width/2,rect.y+rect.height/2);
+ };
  page.on('dialog',dialog=>void dialog.accept());
+ // The editor delays caption navigation briefly to distinguish a dblclick.
+ // Wait for a completed chapter change before touching another control.
+ const chooseWikiChapter=async key=>{
+  const selector='[data-wiki-chapter="'+key+'"]';
+  await page.locator(selector).click();
+  await page.waitForFunction(chapterKey=>{
+   const tab=document.querySelector('[data-wiki-chapter="'+chapterKey+'"]');
+   return tab?.classList.contains('chosen')&&tab.dataset.ownerCaptionPending!=='1';
+  },key,{timeout:15000});
+ };
  try{
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
   // A fast mocked D1 may finish on first launch. Retry only if the public
@@ -101,7 +122,7 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
   await page.locator('.modal').getByRole('button',{name:'Войти',exact:true}).click();
   await page.locator('#ownerDock').waitFor({state:'visible'});
   await page.locator('#nav [data-tab="wiki"]').click();
-  await page.locator('[data-wiki-chapter="monster"]').click();
+  await chooseWikiChapter('monster');
   const search=page.locator('.wiki-controls input[type="search"]');
   await search.click();await search.fill('Слизень');
   await page.locator('[data-wiki-record="13101"]').waitFor({state:'visible'});
@@ -144,9 +165,15 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
     'An unrelated original spawn was lost: '+other);
   // Test three genuinely distinct D1 outcomes through real Wiki forms:
   // committed-but-503, committed-but-invalid-ack, and rejected 503 + retry.
-  await page.locator('[data-wiki-chapter="monster"]').click();
+  await chooseWikiChapter('monster');
   await page.locator('.wiki-monster-create').click();
   const monsterForm=page.locator('.wiki-owner-monster-form');
+  // A single owner click on a chapter is deferred to distinguish a
+  // double-click edit gesture. Opening a creation draft immediately afterward
+  // must cancel that obsolete navigation; otherwise it destroys the form.
+  await page.waitForTimeout(650);
+  assert.equal(await monsterForm.count(),1,
+   'Rapid chapter navigation must not unmount a newly opened monster draft');
   await monsterForm.locator('[role="textbox"][aria-label="Название монстра RU"]').fill('Тестовый монстр');
   await monsterForm.locator('[role="textbox"][aria-label="Название монстра EN"]').fill('Test monster');
   await monsterForm.locator('input[type="number"]').fill('27');
@@ -155,7 +182,7 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
   const monsterCaptions=monsterForm.locator('.studio-owner-interface-editor');
   await monsterCaptions.locator('summary').click();
   const saveCaption=monsterCaptions.locator('.studio-owner-interface-row:has([data-owner-copy-id="createMonsterSave"])');
-  await saveCaption.locator('.studio-owner-interface-pencil').click();
+  await saveCaption.locator('.studio-owner-interface-value').dblclick();
   const monsterCopyInput=saveCaption.locator('[data-owner-text-field]');
   await monsterCopyInput.fill('Добавить монстра в энциклопедию');
   await monsterCopyInput.press('Tab');
@@ -163,19 +190,24 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
   const monsterCaptionKey='guideedit.book.wiki.monster.text.create-monster-save';
   assert.deepEqual(JSON.parse(stored.get(monsterCaptionKey)),
    {ru:'Добавить монстра в энциклопедию'});
+  assert.equal(await monsterForm.count(),1,
+   'A saved UI caption must not unmount the unsaved monster creation form');
   assert.equal(await monsterForm.locator('[role="textbox"][aria-label="Название монстра RU"]').textContent(),
    'Тестовый монстр','Editing a caption must not erase an entered monster name');
   assert.equal(await monsterForm.locator('[role="textbox"][aria-label="Название монстра EN"]').textContent(),
    'Test monster');
   const monsterSave=monsterForm.getByRole('button',{name:'Добавить монстра в энциклопедию',exact:true});
-  await monsterSave.click();
+  // Use one real pointer gesture. The mocked D1 write can finish and replace
+  // the form before locator.click has stopped checking the old button.
+  // Never retry a create action after the first click has been dispatched.
+  await clickPointerOnce(monsterSave);
   await page.waitForFunction(()=>document.querySelector('.wiki-page')
     ?.textContent.includes('Тестовый монстр'),null,{timeout:18000});
   const monsterAttempts=createAttempts.filter(x=>x.family==='monster');
   assert.equal(monsterAttempts.length,1,
    'Readback-proved monster creation must not trigger another POST');
 
-  await page.locator('[data-wiki-chapter="map"]').click();
+  await chooseWikiChapter('map');
   await page.locator('.wiki-map-create').click();
   const mapForm=page.locator('.wiki-map-create-form');
   await mapForm.locator('[role="textbox"][aria-label="Название локации на русском"]').fill('Тестовая локация');
@@ -183,7 +215,7 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
   const mapCaptions=mapForm.locator('.studio-owner-interface-editor');
   await mapCaptions.locator('summary').click();
   const mapPlaceholder=mapCaptions.locator('.studio-owner-interface-row:has([data-owner-copy-id="createMapNameRuPlaceholder"])');
-  await mapPlaceholder.locator('.studio-owner-interface-pencil').click();
+  await mapPlaceholder.locator('.studio-owner-interface-value').dblclick();
   const mapCopyInput=mapPlaceholder.locator('[data-owner-text-field]');
   await mapCopyInput.fill('Новое название местности · RU');
   await mapCopyInput.press('Tab');
@@ -198,7 +230,7 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
   assert.equal(await mapName.textContent(),'Тестовая локация',
    'Editing a location hint must not overwrite its authored name');
   const mapSave=mapForm.getByRole('button',{name:'Создать',exact:true});
-  await mapSave.click();
+  await clickPointerOnce(mapSave);
   await page.locator('.wiki-map-create-npc').waitFor({state:'visible',timeout:18000});
   const mapAttempts=createAttempts.filter(x=>x.family==='map');
   assert.equal(mapAttempts.length,1,
@@ -211,7 +243,7 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
   const npcSave=npcForm.getByRole('button',{name:'Сохранить NPC'});
   await npcSave.click();
   await npcForm.locator('.inline-owner-error').getByText('Temporary creation failure').waitFor();
-  await npcSave.click();
+  await clickPointerOnce(npcSave);
   await page.waitForFunction(()=>document.querySelector('.wiki-page')
     ?.textContent.includes('Тестовый торговец'),null,{timeout:18000});
   const npcAttempts=createAttempts.filter(x=>x.family==='npc');
@@ -226,13 +258,18 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
   // commits the CAS reset but replies with 503: uncached GET must confirm
   // that exactly one deletion succeeded, without sending a second POST.
   const npcId=npcAttempts[0].key.slice('wikiedit.npc.'.length);
-  await page.locator('[data-wiki-chapter="npc"]').click();
+  await chooseWikiChapter('npc');
+  await page.waitForFunction(()=>{
+   const selected=document.querySelector('[data-wiki-chapter="npc"]');
+   return selected?.classList.contains('chosen')&&
+    selected.dataset.ownerCaptionPending!=='1';
+  },null,{timeout:15000});
   await page.locator('.wiki-controls input[type="search"]').fill('Тестовый торговец');
   await page.locator('[data-wiki-record="'+npcId+'"]').click();
   const deletePanel=page.locator('.wiki-page .studio-owner-interface-editor:has([data-owner-copy-id="deleteRecordButton"])');
   await deletePanel.locator('summary').click();
   const deleteRow=deletePanel.locator('.studio-owner-interface-row:has([data-owner-copy-id="deleteRecordButton"])');
-  await deleteRow.locator('.studio-owner-interface-pencil').click();
+  await deleteRow.locator('.studio-owner-interface-value').dblclick();
   const editDelete=deleteRow.locator('[data-owner-text-field]');
   await editDelete.fill('Удалить моего NPC');
   await editDelete.press('Tab');
@@ -257,13 +294,13 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
   await page.waitForFunction(()=>document.documentElement.lang==='en');
   await page.locator('#nav [data-tab="wiki"]').click();
   await page.locator('#detailPanel.is-open').waitFor({state:'visible',timeout:10000});
-  await page.locator('[data-wiki-chapter="map"]').click();
+  await chooseWikiChapter('map');
   await page.locator('.wiki-map-create').click();
   const englishForm=page.locator('.wiki-map-create-form');
   const englishPanels=englishForm.locator('.studio-owner-interface-editor');
   await englishPanels.locator('summary').click();
   const englishRow=englishPanels.locator('.studio-owner-interface-row:has([data-owner-copy-id="createMapNameRuPlaceholder"])');
-  await englishRow.locator('.studio-owner-interface-pencil').click();
+  await englishRow.locator('.studio-owner-interface-value').dblclick();
   const enCopy=englishRow.locator('[data-owner-text-field]');
   await enCopy.fill('Name for a new place · RU');
   await enCopy.press('Tab');

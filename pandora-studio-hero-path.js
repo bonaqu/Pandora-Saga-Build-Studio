@@ -50,24 +50,24 @@ const skillCountLabel=(count,locale='ru')=>{
 // Fixed UI help stays separate from skill names, thresholds and player input.
 const authored=(api,key,ru,en,tag='p',cls='muted')=>{
  const value=api.copyLabel?.(key,ru,en)||tr(api,ru,en);
- const node=make(tag,{class:cls});
- if(!api.canEdit||typeof api.editLabel!=='function'){
-  node.textContent=value;return node;
- }
- node.classList.add('path-owner-edit-row');
- const label=make('span',{class:'path-owner-copy-text',text:value});
- const pencil=make('button',{type:'button',class:'path-owner-pencil',
-  text:'✎','aria-label':tr(api,'Изменить надпись: ','Edit caption: ')+value});
- const sync=next=>pencil.setAttribute('aria-label',
-  tr(api,'Изменить надпись: ','Edit caption: ')+next);
- api.editLabel(label,key,ru,en,{onCommitted:sync});
- pencil.addEventListener('click',event=>{
-  event.preventDefault();event.stopPropagation();
-  label.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
- });
- pencil.addEventListener('focus',()=>sync(label.textContent));
- node.append(label,pencil);
+ const node=make(tag,{class:cls,text:value});
+ if(api.canEdit&&typeof api.editLabel==='function')
+  api.editLabel(node,key,ru,en);
  return node;
+};
+// For disclosure/navigation buttons in owner mode, distinguish a real double
+// click on the caption from a single click that opens the section.
+const guardCaptionAction=(button,caption)=>{
+ if(!button||!caption)return;
+ let pending=null;
+ button.addEventListener('click',event=>{
+  if(!event.detail||!caption.contains(event.target)||
+     event.target.closest?.('input,textarea,select'))return;
+  event.preventDefault();event.stopImmediatePropagation();
+  if(pending){clearTimeout(pending);pending=null;return}
+  pending=setTimeout(()=>{pending=null;if(button.isConnected&&!button.disabled)
+   button.click()},500);
+ },true);
 };
 // Bind only author-written copy. Game levels and skill names are immutable
 // suffixes, never sent to the owner D1 string editor.
@@ -386,26 +386,10 @@ function viewGrowth(target,api){
   const name=api.copyLabel?.(captionKey,group.ru,group.en)||
    (api.lang==='en'?group.en:group.ru);
   const caption=make('strong',{text:name});
-  let groupPencil=null;
-  const pencilName=()=>tr(api,'Редактировать направление ','Edit path group ')+caption.textContent;
-  api.editLabel?.(caption,captionKey,group.ru,group.en,{
-   onCommitted:()=>groupPencil?.setAttribute('aria-label',pencilName())
-  });
+  api.editLabel?.(caption,captionKey,group.ru,group.en);
+  if(api.canEdit)guardCaptionAction(groupButton,caption);
   groupButton.append(caption,groupCount);
   head.append(groupButton);
-  if(api.canEdit){
-   // Real sibling action: a pencil must not be nested in disclosure controls.
-   // Both actions support touch, keyboard and screen-reader navigation.
-   const pencil=make('button',{type:'button',class:'path-group-pencil',text:'✎',
-    'aria-label':pencilName()});
-   groupPencil=pencil;
-   pencil.addEventListener('focus',()=>pencil.setAttribute('aria-label',pencilName()));
-   pencil.addEventListener('click',event=>{
-    event.preventDefault();event.stopPropagation();
-    caption.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
-   });
-   head.append(pencil);
-  }
   wrap.append(head);
   if(selectedGroup===group.id){
    // The game client also shows the Racial line under Special, greyed out.
@@ -429,16 +413,7 @@ function viewGrowth(target,api){
      const row=make('div',{class:'path-racial-owner-row'},[race]);
      const captionHost=make('div',{class:'path-racial-owner-caption'},[caption]);
      api.editLabel(caption,key,ru,en);
-     const pencil=make('button',{type:'button',class:'path-racial-pencil',
-      text:'✎','aria-label':tr(api,'Изменить надпись: ','Edit caption: ')+value});
-     const sync=()=>pencil.setAttribute('aria-label',
-      tr(api,'Изменить надпись: ','Edit caption: ')+caption.textContent);
-     pencil.addEventListener('focus',sync);
-     pencil.addEventListener('click',event=>{
-      event.preventDefault();event.stopPropagation();
-      caption.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
-     });
-     row.append(captionHost,pencil);wrap.append(row);
+     row.append(captionHost);wrap.append(row);
     }else{
      info.append(caption);race.append(info,make('b',{class:'count',text:'—'}));
      wrap.append(race);
@@ -856,18 +831,9 @@ function viewSkills(target,details,api){
     api.onMoreSkills();
    }},[caption,remain]);
   if(api.canEdit&&typeof api.editLabel==='function'){
-   const row=make('div',{class:'path-more-owner-row'},[showMore]);
-   const pencil=make('button',{type:'button',class:'path-more-pencil',
-    text:'✎','aria-label':tr(api,'Изменить надпись: ','Edit caption: ')+title});
-   const sync=()=>pencil.setAttribute('aria-label',
-    tr(api,'Изменить надпись: ','Edit caption: ')+caption.textContent);
-   api.editLabel(caption,key,ru,en,{onCommitted:sync});
-   pencil.addEventListener('focus',sync);
-   pencil.addEventListener('click',event=>{
-    event.preventDefault();event.stopPropagation();
-    caption.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
-   });
-   row.append(pencil);target.append(row);
+   api.editLabel(caption,key,ru,en);
+   guardCaptionAction(showMore,caption);
+   target.append(showMore);
   }else target.append(showMore);
  }
  if(!rows.length)target.append(authored(api,'skillSearchEmpty',

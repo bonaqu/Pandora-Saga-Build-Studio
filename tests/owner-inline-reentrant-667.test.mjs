@@ -42,7 +42,7 @@ test('failure message is readable in all owner screens, not only inside a toast'
  assert.match(css,/#studioToast \.ui-content-inline-error/);
  const browser=read('tests/browser-ui-content-inline.mjs');
  assert.match(browser,/bookHint\.dblclick\(\)/);
- assert.match(browser,/slowWrites\.add\('guideedit\.book\.summary\.group\.0'\)/);
- assert.match(browser,/nextConflicts\.add\('guideedit\.book\.summary\.group\.0'\)/);
+ assert.match(browser,/slowWrites\.add\('guideedit\.book\.summary\.0'\)/);
+ assert.match(browser,/nextConflicts\.add\('guideedit\.book\.summary\.0'\)/);
  assert.match(browser,/failedBook\.getAttribute\('contenteditable'\)/);
 });

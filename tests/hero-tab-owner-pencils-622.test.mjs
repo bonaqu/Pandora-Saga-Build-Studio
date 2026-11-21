@@ -6,30 +6,25 @@ const book=read('pandora-studio-hero-book.js');
 const app=read('pandora-studio-app.js');
 const styles=read('pandora-studio-owner-inline-ui.css');
 
-test('Hero Book owner tab pencils are native sibling actions, not nested in tabs',()=>{
- assert.match(book,/const pencil=make\('button',\{type:'button',class:'stage-book-tab-pencil'/);
- assert.match(book,/const wrapper=make\('span',\{class:'stage-book-tab-owner',role:'presentation'\}\)/);
+test('Hero Book tabs keep their real buttons and edit text with dblclick or F2',()=>{
+ assert.match(book,/caption\.addEventListener\('dblclick',edit\)/);
+ assert.match(book,/caption\.setAttribute\('aria-keyshortcuts','F2'\)/);
  assert.match(book,/button\.replaceChildren\(caption\)/);
- assert.match(book,/wrapper\.append\(button,pencil\)/);
- assert.match(book,/nav\.append\(wrapper\)/);
- assert.match(book,/else nav\.append\(button\)/);
- assert.doesNotMatch(book,/button\.replaceChildren\(caption,pencil\)/);
- assert.match(styles,/\.stage-attribute-tabs>\.stage-book-tab-owner>\.stage-book-tab-pencil/);
+ assert.match(book,/nav\.append\(button\)/);
+ assert.match(book,/onTextEdit\(caption,'chapter\.'\+name/);
+ assert.doesNotMatch(book,/class:'stage-book-tab-pencil'/);
+ assert.doesNotMatch(book,/wrapper\.append\(button,pencil\)/);
 });
-test('Path owner tabs retain original IDs and capture locale of D1 edit',()=>{
+
+
+test('Path owner tabs keep stable IDs, language snapshots and direct caption editing',()=>{
  assert.match(app,/const button=\$\(id\);if\(!button\)continue/);
- assert.ok((app.match(/const editLang=lang;/g)||[]).length>=2,
-  'both path tabs and mastery legend labels must capture the editing language');
- assert.match(app,/node\.dataset\.ownerCopySection='path';node\.dataset\.ownerCopyId=key/);
  assert.match(app,/caption\.dataset\.ownerCopySection='path';caption\.dataset\.ownerCopyId=key/);
- assert.match(app,/if\(section==='path'\)\{/);
- assert.match(app,/node\.closest\('\.path-tab-owner-wrap'\)/);
+ assert.match(app,/caption\.addEventListener\('dblclick',edit\)/);
+ assert.match(app,/caption\.setAttribute\('aria-keyshortcuts','F2'\)/);
+ assert.match(app,/const editLang=lang/);
  assert.match(app,/onCommit:next=>saveGuidePatch\('book\.'\+ownerCopyKey\('path',key\),\{\[editLang\]:next\}\)/);
- assert.match(app,/if\(button\.querySelector\('\.wiki-inline-input'\)\)continue/);
- assert.match(app,/if\(wrapper\)\{wrapper\.before\(button\);wrapper\.remove\(\)\}/);
- assert.match(app,/wrapper=h\('span',\{class:'path-tab-owner-wrap',role:'presentation'\}\)/);
  assert.match(app,/button\.before\(wrapper\);wrapper\.append\(button\)/);
- assert.match(app,/wrapper\.append\(pencil\)/);
- assert.doesNotMatch(app,/button\.replaceChildren\(h\('span',\{text:symbol\}\),caption,pencil\)/);
- assert.match(styles,/\.path-sections>\.path-tab-owner-wrap>\.path-tab-pencil/);
+ assert.doesNotMatch(app,/class:'path-tab-pencil',text:'✎'/);
 });
+

@@ -468,17 +468,12 @@ a.wiki-link:hover{text-decoration:none}
  background:#552a29;border-color:#df8c80;color:#ffd8d0;
  box-shadow:inset 0 0 0 1px #b96e6555;
 }
-/* One visual language for text editable in Origin, using the shared inline
-   editor. The pencil never covers the working race selector. */
+/* The text itself is the owner edit affordance. A subtle dotted
+   underline replaces both the old :after pencil and the sibling icon. */
 .origin-copy-editable:not(button){text-decoration:underline dotted #bd9869;text-decoration-thickness:1px;text-underline-offset:3px;cursor:text}
 .origin-copy-editable:not(button):hover{color:#f8dfa9}
-.origin-copy-editable:not(button)::after{content:' ✎';font-size:.78em;opacity:.65;text-decoration:none;pointer-events:none}
-.origin-copy-editable.origin-copy-input-slot::after{content:none}
 .origin-copy-editable:is(button){outline:1px dotted #a88452;outline-offset:-3px}
 .origin-copy-editable:is(button):focus-visible{outline:2px solid #eec588;outline-offset:2px}
-.origin-copy-pencil{flex:0 0 auto;min-width:30px;height:34px;border:1px solid #b58b55;
- background:#35261b;color:#f5d6a3;border-radius:4px;font-size:15px;cursor:pointer}
-.origin-copy-pencil:hover,.origin-copy-pencil:focus-visible{border-color:#efca8a;background:#60402a;outline-offset:2px}
 .race-slide-actions>.race-slide-select[hidden]{display:none!important}
 .origin-copy-input-slot{display:inline-flex;flex:1 1 140px;min-width:0;align-items:center}
 .origin-copy-input-slot .wiki-inline-input{width:100%;min-width:0;min-height:32px;padding:7px;

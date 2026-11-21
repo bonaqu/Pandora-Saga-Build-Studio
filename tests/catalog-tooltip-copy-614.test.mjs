@@ -22,6 +22,8 @@ test('nine catalog action hover hints have safe independent RU/EN D1 keys',()=>{
  assert.match(workbench,/actionHint\(node,key,ru,en\)/);
  assert.match(workbench,/const wrap=node\.closest\('\.os-sync-action-editor'\)/);
  assert.match(workbench,/class:'os-sync-hint-pencil'/);
+ assert.match(workbench,/class:'os-sync-secondary-pencil'/);
+ assert.match(workbench,/text:'✎',title:tr\('Изменить подсказку'/);
  assert.match(workbench,/node\.dataset\.guideHint=next/);
  assert.match(workbench,/node\.dataset\.guideOwnerKey=key/);
  assert.match(app,/if\(target\.dataset\.guideOwnerKey===id\)ownerDockPatchData\(target,'guideHint',value\)/);
@@ -43,7 +45,10 @@ test('hover help editor cannot click a catalog action and stays compact',()=>{
  assert.match(workbench,/host\.dispatchEvent\(new MouseEvent\('dblclick'/);
  assert.doesNotMatch(workbench,/node\.dispatchEvent\(new MouseEvent\('click'/);
  assert.match(workbench,/wrap\.classList\.add\('editing-hint'\)/);
+ assert.match(workbench,/wrap\.classList\.contains\('editing-hint'\)/);
+ assert.match(workbench,/\.os-sync-hint-edit-host/);
  assert.match(css,/\.os-sync-hint-pencil\{/);
+ assert.doesNotMatch(workbench,/os-sync-owner-pencil|os-sync-copy-pencil|os-sync-state-pencil|os-sync-choice-pencil/);
  assert.match(css,/\.os-sync-action-editor\.editing-hint>\.button-action/);
  assert.match(css,/\.os-sync-hint-edit-host \.wiki-inline-input/);
 });

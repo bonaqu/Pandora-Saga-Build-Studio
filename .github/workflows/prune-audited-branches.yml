@@ -1,0 +1,38 @@
+name: Prune audited stale branches (one-time or manual)
+
+on:
+  # Manual only. Old #615 experiments must not be deleted as a side effect
+  # of an unrelated editorial release or a failed CI retry.
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type DELETE_AUDITED_BRANCHES after reviewing the SHA audit'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: prune-audited-branches
+  cancel-in-progress: false
+
+jobs:
+  prune:
+    if: ${{ github.repository == 'bonaqu/Pandora-Saga-Build-Studio' && github.ref == 'refs/heads/bonaqu_projects' && inputs.confirm == 'DELETE_AUDITED_BRANCHES' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Checkout protected main
+        uses: actions/checkout@v5
+        with:
+          ref: bonaqu_projects
+          persist-credentials: false
+      - name: Use Node 22
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Delete only exact reviewed SHA refs and report mismatches
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node scripts/prune-audited-branches.mjs

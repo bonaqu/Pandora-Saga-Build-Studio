@@ -495,7 +495,7 @@
 /* Item field values keep their original two-column dl layout while
    renaming / editing hints happens in a full-width input row directly below. */
 .item-fields dt.wiki-help-label:has(.wiki-label-pencil,.wiki-hint-pencil){
- display:grid;grid-template-columns:minmax(0,1fr) 20px 20px;
+ display:grid;grid-template-columns:minmax(0,1fr) 20px;
  align-items:center;gap:3px;min-width:0
 }
 .item-fields dt.wiki-help-label .wiki-help-word{
@@ -533,7 +533,7 @@
 }
 @media(max-width:480px){
  .item-fields dt.wiki-help-label:has(.wiki-label-pencil,.wiki-hint-pencil){
-  grid-template-columns:minmax(0,1fr) 20px 20px;gap:2px
+  grid-template-columns:minmax(0,1fr) 20px;gap:2px
  }
 }
 

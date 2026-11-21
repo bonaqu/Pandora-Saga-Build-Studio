@@ -166,7 +166,7 @@ export async function runGuestDraftContinuitySmoke(browser,base){
     if(ownerEdit){
      const edit=async(key,next)=>{
       const selector='[data-owner-copy-key="'+key+'"]';
-      await chooser.locator('[data-owner-copy-pencil="'+key+'"]').click();
+      await chooser.locator('[data-owner-copy-key="'+key+'"]').dblclick();
       const input=chooser.locator('.account-copy-edit-host [contenteditable]').last();
       await input.fill(next);await input.press('Tab');
       await page.waitForFunction(({selector,next})=>

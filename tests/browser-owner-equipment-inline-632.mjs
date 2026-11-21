@@ -129,7 +129,16 @@ export async function runOwnerEquipmentInlineSmoke(browser,base){
   await enLabel.dblclick();
   const enInput=enLabel.locator('[data-owner-text-field]');
   await enInput.fill('Soul sockets');
-  await enInput.press('Tab');
+  // Diagnose a disappearing inline editor after locale change without
+  // bypassing actual D1 CAS save and visible caption assertions below.
+  const enEditorState=await page.evaluate(()=>{
+   const label=document.querySelector(
+    '#stagePicker .stage-rich-fields dt[data-owner-copy-id="field.slots"]');
+   return {editing:!!label?.querySelector('[data-owner-text-field]'),
+    text:label?.textContent,focused:document.activeElement?.matches?.('[data-owner-text-field]')};
+  });
+  console.log('Owner equipment 632: EN editor after fill '+JSON.stringify(enEditorState));
+  await page.keyboard.press('Tab');
   await page.waitForFunction(()=>document.querySelector(
    '#stagePicker .stage-rich-fields dt[data-owner-copy-id="field.slots"]')
    ?.textContent==='Soul sockets',null,{timeout:12000});
@@ -218,7 +227,9 @@ export async function runOwnerEquipmentInlineSmoke(browser,base){
   await slotPrefix.waitFor({state:'visible'});
   assert.equal((await slotPrefix.innerText()).trim(),'Slot');
   const englishSlotSuffix=await slotTitle.locator('span').last().textContent();
-  await page.locator('#stagePicker .stage-picker-slot-pencil').click();
+  assert.equal(await page.locator('#stagePicker .stage-picker-slot-pencil').count(),0,
+   'Real slot heading edits directly; no adjacent caption pencil');
+  await slotPrefix.dblclick();
   await slotPrefix.locator('[data-owner-text-field]').fill('Socket position');
   await slotPrefix.locator('[data-owner-text-field]').press('Tab');
   await page.waitForFunction(()=>
@@ -233,8 +244,8 @@ export async function runOwnerEquipmentInlineSmoke(browser,base){
    document.querySelector('#stagePicker .stage-picker-slot-prefix')?.textContent==='Slot',
    null,{timeout:12000});
   assert.equal(Object.hasOwn(values,headingKey),false);
-  assert.match(await page.locator('#stagePicker .stage-picker-slot-pencil')
-   .getAttribute('aria-label'),/Slot/);
+  assert.equal(await page.locator('#stagePicker .stage-picker-slot-pencil').count(),0,
+   'Undo must not recreate a deleted caption pencil');
   // On narrow viewports the deliberately persistent owner dock can cover
   // the picker close control. Collapse it through the actual admin UI;
   // never use a forced pointer click through an overlapping panel.
@@ -272,12 +283,13 @@ export async function runOwnerEquipmentInlineSmoke(browser,base){
   const replacementKey='guideedit.book.equipment.tab.choose';
   const replacementCaption=page.locator('#stagePicker [data-stage-tab="choose"] .stage-copy-caption');
   assert.equal((await replacementCaption.innerText()).trim(),'Выбрать другую вещь');
-  // Editing a caption nested in a real tab uses the adjacent pencil:
-  // direct double-clicking the tab would navigate away before editing starts.
+  // Owner-only gesture guard distinguishes tab navigation from direct
+  // double-click editing of the actual caption; no sibling pencil needed.
   if(!await page.locator('#ownerDock').evaluate(el=>
    el.classList.contains('owner-dock-collapsed')))
    await page.locator('#ownerDock [data-owner-collapse]').click();
-  await page.locator('#stagePicker .stage-rich-choose-group .stage-action-edit-wrap > .stage-control-pencil').click();
+  assert.equal(await page.locator('#stagePicker .stage-rich-choose-group .stage-action-edit-wrap > .stage-control-pencil').count(),0);
+  await replacementCaption.dblclick();
   await replacementCaption.locator('[data-owner-text-field]').fill('Сменить экипировку');
   await replacementCaption.locator('[data-owner-text-field]').press('Tab');
   await page.waitForFunction(()=>

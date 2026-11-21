@@ -41,10 +41,15 @@ test('the Buffs tab opens on controls, with no boilerplate and no permanent Moun
  assert.doesNotMatch(attack,/stage-mounted-note/);
 });
 
-test('admin controls have separate fixed cells and defend against header button padding',()=>{
- assert.match(owner,/#stageAttributes \.stage-guide-actions>.stage-guide-edit-name/);
- assert.match(owner,/grid-template-columns:repeat\(2,22px\)!important/);
+test('Hero Book direct captions use one non-overlapping hover-hint cell',()=>{
+ const book=read('pandora-studio-hero-book.js');
+ assert.doesNotMatch(book,/class:'stage-guide-edit-name'/);
+ assert.match(book,/if\(meaningfulGuideHint\(hint\)\)/);
+ assert.match(book,/node\.after\(make\('span',\{class:'stage-guide-actions'/);
+ assert.match(owner,/#stageAttributes \.stage-guide-actions>\.stage-guide-edit-hint/);
+ assert.match(owner,/grid-template-columns:22px!important/);
+ assert.doesNotMatch(owner,/grid-template-columns:repeat\(2,22px\)!important/);
  assert.match(owner,/padding:0!important/);
- assert.match(owner,/position:static!important/);
- assert.match(read('tests/browser-ui-content-inline.mjs'),/Hero Book owner buttons must not overlap/);
+ assert.match(read('tests/browser-ui-content-inline.mjs'),
+  /The real hover explanation of health keeps precisely one hint pencil/);
 });
