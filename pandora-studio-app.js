@@ -1671,6 +1671,31 @@ const equipmentPickerMetaCopyRows=Object.freeze([
  ['pickerFutureBadgePrefix','С','From','Метка уровня: начало','Level badge prefix'],
  ['pickerFutureBadgeSuffix','ур.','Lv.','Метка уровня: окончание','Level badge suffix']
 ]);
+// This audited owner-editor registry is also the source of versioned D1
+// authorial defaults. It contains labels, never item/player results.
+const equipmentPickerSelectionCopyRows=Object.freeze([
+ ['pickerChoosePrefix','Выбор:','Choose:','Заголовок слота','Slot heading'],
+   ['pickerDetails','Свойства','Properties','Переход к свойствам','Open properties'],
+   ['pickerClose','Закрыть выбор','Close item picker','Закрытие','Close picker'],
+   ['pickerSearchPlaceholder','Поиск по названию','Search by name','Поле поиска','Search placeholder'],
+   ['pickerSearchAria','Поиск предмета для','Search equipment for','Название поиска','Search accessible name'],
+   ['pickerUnequip','Снять предмет','Unequip item','Снять предмет','Unequip action'],
+   ['pickerAvailableLabel','Доступные на моём уровне','Available at my level',
+    'Фильтр по уровню','Level filter'],
+   ['pickerAvailableAria','Только доступные на моём уровне','Only items available at my level',
+    'Доступное имя фильтра','Level filter accessible name'],
+   ['pickerMatchSuffix','подходящих','matching','Найдено предметов','Matching items'],
+   ['pickerShownSuffix','показано','shown','Отображено предметов','Shown items'],
+   ['pickerMorePrefix','Показать ещё','Show more','Загрузить ещё','Show more'],
+   ['pickerOutfitNote','Платье занимает броню и штаны. Выбор штанов снимет его.',
+    'Armor and pants are occupied by one outfit. Choosing pants removes it.',
+    'Подсказка костюма','Outfit note'],
+   ['pickerLoading','Каталог ещё не загружен.','The catalog is still loading.','Загрузка','Loading'],
+   ['pickerOriginFirst','Сначала выберите расу и профессию.',
+    'Choose a race and class first.','Выбор расы','Choose race first'],
+   ['pickerNoMatches','Нет совместимых предметов. Измени поиск или слот.',
+    'No compatible items. Try another search or slot.','Нет предметов','No matching items']
+]);
 // Source confidence stays visible, implementation details do not.
 function wikiSourceCopy(key,ru,en){
  const label=h('small',{class:'wiki-source-meta',
@@ -2804,27 +2829,7 @@ function renderStagePicker(focusSearch=false){
  root.append(search,onlyAvailable);
  if(adminEditing&&adminToken)root.append(ownerInterfaceEditor('equipment',[
   ...equipmentPickerMetaCopyRows,
-  ['pickerChoosePrefix','Выбор:','Choose:','Заголовок слота','Slot heading'],
-  ['pickerDetails','Свойства','Properties','Переход к свойствам','Open properties'],
-  ['pickerClose','Закрыть выбор','Close item picker','Закрытие','Close picker'],
-  ['pickerSearchPlaceholder','Поиск по названию','Search by name','Поле поиска','Search placeholder'],
-  ['pickerSearchAria','Поиск предмета для','Search equipment for','Название поиска','Search accessible name'],
-  ['pickerUnequip','Снять предмет','Unequip item','Снять предмет','Unequip action'],
-  ['pickerAvailableLabel','Доступные на моём уровне','Available at my level',
-   'Фильтр по уровню','Level filter'],
-  ['pickerAvailableAria','Только доступные на моём уровне','Only items available at my level',
-   'Доступное имя фильтра','Level filter accessible name'],
-  ['pickerMatchSuffix','подходящих','matching','Найдено предметов','Matching items'],
-  ['pickerShownSuffix','показано','shown','Отображено предметов','Shown items'],
-  ['pickerMorePrefix','Показать ещё','Show more','Загрузить ещё','Show more'],
-  ['pickerOutfitNote','Платье занимает броню и штаны. Выбор штанов снимет его.',
-   'Armor and pants are occupied by one outfit. Choosing pants removes it.',
-   'Подсказка костюма','Outfit note'],
-  ['pickerLoading','Каталог ещё не загружен.','The catalog is still loading.','Загрузка','Loading'],
-  ['pickerOriginFirst','Сначала выберите расу и профессию.',
-   'Choose a race and class first.','Выбор расы','Choose race first'],
-  ['pickerNoMatches','Нет совместимых предметов. Измени поиск или слот.',
-   'No compatible items. Try another search or slot.','Нет предметов','No matching items']
+  ...equipmentPickerSelectionCopyRows
  ],'Подписи выбора экипировки','Equipment picker labels'));
  root.append(count,list,bottom);draw();
  if(focusSearch)search.focus({preventScroll:true});
