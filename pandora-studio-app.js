@@ -3233,7 +3233,15 @@ function heroPathApi(){
   cap:branchCap,
   canEdit:Boolean(adminEditing&&adminToken),
   copyLabel:(key,ru,en)=>ownerCopy('path',key,ru,en),
-  editLabel:(node,key,ru,en,callbacks)=>ownerCopyLabel(node,'path',key,ru,en,callbacks),
+  editLabel:(node,key,ru,en,callbacks)=>ownerCopyLabel(node,'path',key,ru,en,{
+   ...callbacks,
+   onCommitted:visible=>{
+    // Inline edits must immediately refresh any companion aria/placeholder
+    // using the same D1 key, without rerendering the character or skills.
+    applyOwnerInterfaceEditedValue('path',key,visible);
+    callbacks?.onCommitted?.(visible);
+   }
+  }),
   bindCopy:(node,key,ru,en,attribute='text',suffix='',prefix='')=>
    bindOwnerInterfaceText(node,'path',key,ru,en,attribute,suffix,prefix),
   branchName:key=>editableValue('branch.'+key,catalog.meta?.branchLabels?.[key]||key),
