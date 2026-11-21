@@ -80,6 +80,56 @@ export function buildEditorialDefaultsManifest(){
    append('guideedit.book.owner-dock.'+slug,lang,pair[i],'owner-dock');
  }
 
+ // Item encyclopedia field labels and their independent hover explanations
+ // share canonical guideedit.book.wiki.item-field.* records. Extract ONLY
+ // their audited static RU/EN dictionaries, never source item values.
+ const itemPresentation=read('pandora-studio-item-presentation.js');
+ const itemDict=name=>{
+  const source=itemPresentation.match(new RegExp(
+   'const '+name+'=Object\\.freeze\\((\\{[\\s\\S]*?\\})\\);'));
+  if(!source)throw Error('Missing reviewed item presentation '+name);
+  return runInNewContext('('+source[1]+')',{},{
+   filename:name,timeout:5000
+  });
+ };
+ const itemLabels=itemDict('itemFieldLabels');
+ const itemHints=itemDict('itemFieldHints');
+ const expectedItemFields=['kind','level','W','PEN','AC','atkspeed','range','soulslot'];
+ if(Object.keys(itemLabels).sort().join('|')!==[...expectedItemFields].sort().join('|')||
+  Object.keys(itemHints).sort().join('|')!==[...expectedItemFields].sort().join('|'))
+  throw Error('Source item fields changed: review migration map first');
+ for(const key of expectedItemFields){
+  const recordKey='guideedit.book.wiki.item-field.'+key.toLowerCase();
+  for(const [pair,ruField,enField] of [
+   [itemLabels,'ru','en'],[itemHints,'hintRu','hintEn']
+  ]){
+   if(!Array.isArray(pair[key])||pair[key].length!==2)
+    throw Error('Invalid item field authorial copy: '+key);
+   append(recordKey,ruField,pair[key][0],'item-field');
+   append(recordKey,enField,pair[key][1],'item-field');
+  }
+ }
+
+ // Three actual equipment settings tabs have existing owner-copy keys.
+ // The remaining context-menu actions use different dynamic UI surfaces,
+ // so never invent D1 identities for them in this partial inventory.
+ const equipmentSrc=read('pandora-studio-equipment-ui.js');
+ const equipmentMatch=equipmentSrc.match(
+  /const actionLabels=Object\.freeze\((\{[\s\S]*?\})\);/);
+ if(!equipmentMatch)throw Error('Missing existing equipment action labels');
+ const gear=runInNewContext('('+equipmentMatch[1]+')',{},{
+  filename:'equipment actionLabels',timeout:5000
+ });
+ for(const [tab,action] of [
+  ['choose','replace'],['details','properties'],['souls','souls']
+ ]){
+  const pair=gear[action];
+  if(!Array.isArray(pair)||pair.length!==2)
+   throw Error('Unknown equipment tab authorial label: '+action);
+  for(const [i,lang] of ['ru','en'].entries())
+   append('guideedit.book.equipment.tab.'+tab,lang,pair[i],'equipment-tabs');
+ }
+
  // The Wiki chapters, all five Honor subchapters and skill filters are
  // one existing D1 JSON record. Preserve their exact field identities;
  // never reconstruct these labels from list position or save them as game IDs.
