@@ -77,7 +77,8 @@ test('other source paths and recipes remain unchanged with contextual hymn label
   [{type:'requiredItem',count:1,itemId:50056}]);
  const app=read('pandora-studio-app.js');
  assert.match(app,/evidence\.pathKind==='hymn'&&index>0/);
- assert.match(app,/Область: /);
- assert.match(app,/Эффект: /);
- assert.match(app,/wikiLink\(role\+dataName\('skill'/);
+ assert.match(app,/\['sourceAreaRole','Область:','Area:'\]/);
+ assert.match(app,/\['sourceEffectRole','Эффект:','Effect:'\]/);
+ assert.match(app,/chain\.append\(sourcePrefix\(\.\.\.role\)\)/);
+ assert.match(app,/wikiLink\(dataName\('skill'/);
 });

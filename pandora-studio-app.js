@@ -5890,20 +5890,27 @@ function renderWiki(root){
         // The full trap chain is proved by source item and action effects.
         // Present the linked gameplay steps in readable language rather
         // than pretending an unknown damage packet is calculable.
+        const roles={
+         projectile:['sourceProjectileRole','Снаряд:','Projectile:'],
+         area:['sourceAreaRole','Область:','Area:'],
+         fireBlast:['sourceFireBlastRole','Огненный взрыв:','Fire blast:'],
+         effect:['sourceEffectRole','Эффект:','Effect:'],
+         hit:['sourceHitRole','Попадание:','Hit:']
+        };
         const trapRole=evidence.pathKind==='trap'&&index>0?
-         linked?.skillType==='BOLT'?wt('Снаряд: ','Projectile: '):
-         linked?.skillType==='CIRCLE'?wt('Область: ','Area: '):
+         linked?.skillType==='BOLT'?roles.projectile:
+         linked?.skillType==='CIRCLE'?roles.area:
          linked?.skillType==='SPHERE'&&linked?.element==='FIRE'&&
          linked?.funcs?.some(f=>f.ep==='EP_ELEMENT_DAMAGE')?
-          wt('Огненный взрыв: ','Fire blast: '):
-         wt('Эффект: ','Effect: '):'';
+          roles.fireBlast:roles.effect:null;
         const damageRole=evidence.pathKind==='damage'&&index>0?
          linked?.funcs?.some(f=>f.ep==='EP_ELEMENT_DAMAGE')?
-          wt('Попадание: ','Hit: '):wt('Эффект: ','Effect: '):'';
+          roles.hit:roles.effect:null;
         const role=evidence.pathKind==='hymn'&&index>0?
-         (index===1?wt('Область: ','Area: '):wt('Эффект: ','Effect: ')):
-         (damageRole||trapRole);
-        chain.append(wikiLink(role+dataName('skill',String(linkId)),
+         (index===1?roles.area:roles.effect):(damageRole||trapRole);
+        if(role)chain.append(sourcePrefix(...role));
+        // Keep exact source-linked skill IDs in the Wiki anchor, not in D1.
+        chain.append(wikiLink(dataName('skill',String(linkId)),
          'skill',String(linkId)));
        });
        section.append(chain);
