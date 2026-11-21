@@ -28,6 +28,7 @@
     "locales:audit": "node scripts/audit-os-localization.mjs",
     "editorial:defaults:plan": "node scripts/plan-editorial-d1-defaults.mjs --report",
     "editorial:defaults:sql": "node scripts/plan-editorial-d1-defaults.mjs --sql",
+    "editorial:defaults:verify": "node scripts/plan-editorial-d1-defaults.mjs --verify-readback",
     "assets:missing": "node scripts/report-missing-original-artwork.mjs",
     "assets:aliases:check": "node scripts/skill-icon-display-aliases.mjs",
     "assets:aliases:refresh": "node scripts/skill-icon-display-aliases.mjs --write",
