@@ -85,9 +85,11 @@ function requirementRow(api,name,metrics){
  const row=make('p',{class:'path-skill-requirement-row'});
  row.append(make('span',{class:'path-requirement-name',text:name}));
  for(const [key,ru,en,value] of metrics){
-  const caption=make('span',{class:'path-requirement-caption'});
-  bindPathCopy(api,caption,key,ru,en,'text',' ',' · ');
-  row.append(caption,make('span',{class:'path-requirement-value',text:String(value)}));
+  // Punctuation and the calculated requirement stay outside the author
+  // text node: double-click edits only the bilingual metric label.
+  const caption=authored(api,key,ru,en,'span','path-requirement-caption');
+  row.append(make('span',{text:' · '}),caption,make('span',{text:' '}),
+   make('span',{class:'path-requirement-value',text:String(value)}));
  }
  return row;
 }
@@ -370,11 +372,12 @@ function viewGrowth(target,api){
    ['pathGroupLearned','изучено','learned'],
    ['pathGroupInvested','вложено','invested']
   ]){
-   const caption=make('span',{class:'path-group-summary-copy'});
-   bindPathCopy(api,caption,copyKey,ru,en,'text',' ',
-    groupValues.length?' · ':'');
+   const caption=authored(api,copyKey,ru,en,'span','path-group-summary-copy');
    const value=make('span',{class:'path-group-summary-value'});
-   groupCount.append(caption,value);groupValues.push(value);
+   groupCount.append(make('span',{text:groupValues.length?' · ':''}),
+    caption,make('span',{text:' '}),value);
+   groupValues.push(value);
+   if(api.canEdit)guardCaptionAction(groupButton,caption);
   }
   const refreshGroupSummary=()=>{
    groupValues[0].textContent=String(branchKeys.reduce((total,key)=>total+M.branchMastery(state,key,innate,caps),0));
