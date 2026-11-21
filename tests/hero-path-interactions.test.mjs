@@ -886,6 +886,7 @@ test('click and hold controls bind authorial aria texts without editing point co
 
 test('group totals update only numeric spans without deleting edited D1 captions',()=>{
  const {api,target,state}=fixture('CLERIC','prayer','benevolence');
+ api.canEdit=true;
  const copied=[];
  api.copyLabel=(key,ru)=>key.startsWith('pathGroup')?'CUSTOM_'+key:ru;
  api.editLabel=(node,key)=>copied.push({node,key});
@@ -917,6 +918,7 @@ test('group totals update only numeric spans without deleting edited D1 captions
 
 test('requirements use bilingual editable fragments while source numbers and branches are immutable',()=>{
  const {api}=fixture('CLERIC','prayer','benevolence');
+ api.canEdit=true;
  const bound=[];
  api.editLabel=(node,key)=>bound.push({node,key,attr:'direct'});
  api.bindCopy=(node,key,ru,en,attr='text',suffix='',prefix='')=>{
