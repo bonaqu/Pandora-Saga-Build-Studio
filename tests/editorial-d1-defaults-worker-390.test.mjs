@@ -4,6 +4,7 @@ import {webcrypto} from 'node:crypto';
 import {readFileSync} from 'node:fs';
 import {buildEditorialDefaultsManifest} from '../scripts/plan-editorial-d1-defaults.mjs';
 import {readVerifiedEditorialSnapshot} from '../worker/pandora-studio-editorial-defaults.js';
+import worker from '../worker/index.js';
 
 const manifest=buildEditorialDefaultsManifest();
 const metadata={
@@ -33,6 +34,20 @@ function stagingDB({marker=metadata,rows=records,tables=defaultTables}={}){
 }
 const read=(db,snapshot=manifest.snapshot)=>
  readVerifiedEditorialSnapshot(db,snapshot,{subtle:webcrypto.subtle});
+
+test('#390 D1 authored defaults: Worker route defaults to off with zero database reads',async()=>{
+ let queries=0;
+ const env={DB:{prepare(){queries++;throw Error('Unexpected production query')}}};
+ const request=new Request('https://ps-build-studio-cloud.bonaqu.workers.dev'+
+  '/api/editorial-defaults?snapshot='+manifest.snapshot);
+ const response=await worker.fetch(request,env,{});
+ assert.equal(response.status,404);
+ assert.equal(queries,0,'A non-enabled release must never touch the staging D1 tables');
+ const payload=await response.json();
+ assert.equal(payload.error,'Not found');
+ const source=readFileSync(new URL('../worker/index.js',import.meta.url),'utf8');
+ assert.match(source,/env\.EDITORIAL_DEFAULTS_PREVIEW!=='enabled'/);
+});
 
 test('#390 D1 authored defaults: exact version read validates every source field',async()=>{
  const db=stagingDB();
