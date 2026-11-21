@@ -81,7 +81,7 @@ test('exact older default labels are updated while custom owner names survive',(
  assert.equal(registry.value(custom,'skillFilter','special','ru'),'Другая категория');
  assert.equal(registry.value(custom,'skillFilter','variants','en'),'Other variants');
 });
-test('all 44 bilingual chapter, Honor and skill filter labels fit one validated owner patch',()=>{
+test('all registered bilingual Wiki chapter, Honor and skill filter labels fit one validated owner patch',()=>{
  const all=Object.fromEntries([
   ...Object.entries(registry.chapter).flatMap(([id,names])=>[
    [registry.key('chapter',id,'ru'),names[0]],
@@ -93,7 +93,12 @@ test('all 44 bilingual chapter, Honor and skill filter labels fit one validated 
    [registry.key('skillFilter',id,'ru'),names[0]],
    [registry.key('skillFilter',id,'en'),names[1]]])
  ]);
- assert.equal(Object.keys(all).length,44);
+ const expected=2*(Object.keys(registry.chapter).length+
+  Object.keys(registry.honor).length+Object.keys(registry.skillFilter).length);
+ assert.equal(Object.keys(registry.honor).length,5,
+  'All five visible Honor chapters, including PvP Victories, have permanent IDs');
+ assert.equal(Object.keys(all).length,expected,
+  'Every source-authorial label must have exactly one RU and one EN key');
  assert.equal(registry.validPatch(all),true);
  assert.equal(guide.validOverride('wiki.labels',JSON.stringify(all)),true);
  const overrides={'guideedit.wiki.labels':JSON.stringify(all)};
