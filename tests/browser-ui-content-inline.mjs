@@ -912,6 +912,25 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(await honorPane.locator('#honor-victories .wiki-honor-pvp-table tbody')
    .first().innerText(),rewardsBefore,
    'Editing a header must not mutate the game reward table');
+  // Previously the client offered this PvP paragraph editor but the actual
+  // Worker rejected its pvpIntroRu/En fields as unknown Honor overview keys.
+  const victoryIntro=honorPane.locator(
+   '#honor-victories .wiki-honor-field-edit-row p.wiki-honor-copy').first();
+  await victoryIntro.waitFor({state:'visible',timeout:12000});
+  await victoryIntro.dblclick();
+  const introInput=honorPane.locator(
+   '#honor-victories .wiki-honor-field-edit-row [contenteditable]').first();
+  await introInput.waitFor({state:'visible'});
+  await introInput.fill('Официальное описание события PvP · QA.');
+  await introInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#honor-victories .wiki-honor-copy')?.textContent===
+    'Официальное описание события PvP · QA.',null,{timeout:15000});
+  assert.equal(JSON.parse(values['guideedit.honor.overview']).pvpIntroRu,
+   'Официальное описание события PvP · QA.');
+  assert.equal(await honorPane.locator('#honor-victories .wiki-honor-pvp-table tbody')
+   .first().innerText(),rewardsBefore,
+   'Editing event intro copy cannot rewrite source reward values');
   const sectionsCaption=page.locator(
    '.wiki-layout-honor .wiki-honor-sections-label [data-owner-copy-id="sectionsHeading"]');
   assert.equal(await sectionsCaption.textContent(),'Разделы');
@@ -972,6 +991,20 @@ export async function runUIContentInlineSmoke(browser,base){
   await page.waitForFunction(()=>document.querySelector(
    '.wiki-layout-honor [data-honor-section="victories"] .wiki-honor-nav-caption')
    ?.textContent==='Hero PvP Victories',null,{timeout:15000});
+  const englishIntro=page.locator(
+   '#honor-victories .wiki-honor-field-edit-row p.wiki-honor-copy').first();
+  await englishIntro.dblclick();
+  const englishIntroInput=page.locator(
+   '#honor-victories .wiki-honor-field-edit-row [contenteditable]').first();
+  await englishIntroInput.fill('Verified PvP event introduction · QA.');
+  await englishIntroInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#honor-victories .wiki-honor-copy')?.textContent===
+   'Verified PvP event introduction · QA.',null,{timeout:15000});
+  assert.deepEqual(JSON.parse(values['guideedit.honor.overview']),{
+   pvpIntroRu:'Официальное описание события PvP · QA.',
+   pvpIntroEn:'Verified PvP event introduction · QA.'
+  });
   assert.deepEqual(JSON.parse(values['guideedit.wiki.labels']),{
    honor_overview_ru:'Правила чести',honor_victories_ru:'Победы героев PvP',
    honor_victories_en:'Hero PvP Victories'
