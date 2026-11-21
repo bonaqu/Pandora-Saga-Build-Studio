@@ -492,7 +492,7 @@ test('#390 Path requirements and unlock status copy never include thresholds or 
   assert.ok(!manifest.records.some(row=>row.recordKey==='guideedit.book.'+key));
 });
 
-test('#390 only actually mounted workbench hints become editable D1 defaults',()=>{
+test('#390 Workbench catalog contains only five mounted hints, with old D1 CAS untouched',()=>{
  const app=read('pandora-studio-app.js');
  const source=app.match(/const WORKBENCH_HINTS=(\[[\s\S]*?\]);/);
  const excluded=app.match(
@@ -500,26 +500,30 @@ test('#390 only actually mounted workbench hints become editable D1 defaults',()
  assert.ok(source&&excluded);
  const hints=runInNewContext('('+source[1]+')',{});
  const suppressed=runInNewContext('('+excluded[1]+')',{});
- assert.equal(hints.length,10);
+ assert.equal(hints.length,5);
  assert.equal(suppressed.length,5);
  assert.equal(manifest.stats.cohorts['workbench-hover-hints'],10);
- const active=hints.filter(row=>!suppressed.includes(row[2]));
- assert.equal(active.map(row=>row[1]).join('|'),
+ assert.equal(hints.map(row=>row[1]).join('|'),
   'hintPortrait|hintWeapon|hintNewBuild|hintSaveBuild|hintReset');
- for(const [section,key,,ru,en] of hints){
+ for(const [section,key,selector,ru,en] of hints){
+  assert.ok(!suppressed.includes(selector));
   const recordKey='guideedit.book.'+section+'.'+
    key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
   const defaults=manifest.records.filter(row=>row.recordKey===recordKey);
-  if(active.some(row=>row[1]===key)){
-   assert.equal(defaults.length,2,recordKey);
-   assert.equal(defaults.find(row=>row.field==='ru')?.value,ru);
-   assert.equal(defaults.find(row=>row.field==='en')?.value,en);
-  }else{
-   assert.equal(defaults.length,0,'Phantom hint must not be in D1 defaults');
-  }
+  assert.equal(defaults.length,2,recordKey);
+  assert.equal(defaults.find(row=>row.field==='ru')?.value,ru);
+  assert.equal(defaults.find(row=>row.field==='en')?.value,en);
  }
- assert.match(app,/WORKBENCH_HINTS\.filter\(row=>row\[0\]===section&&\s*!SELF_EXPLANATORY_TABS\.has\(row\[2\]\)\)/);
- assert.match(app,/if\(!rows\.length\)continue; \/\/ No owner panel for hints that never appear/);
+ // Historical, no-longer-shown CAS overrides stay in D1 without becoming
+ // this release's editable authorial defaults.
+ for(const key of ['origin.hint-race','origin.hint-class','origin.hint-stats',
+  'path.hint-growth','path.hint-skills'])
+  assert.equal(manifest.records.some(row=>
+   row.recordKey==='guideedit.book.'+key),false);
+ assert.match(app,/WORKBENCH_HINTS\.filter\(row=>row\[0\]===section\)/);
+ assert.match(app,/if\(!rows\.length\)continue; \/\/ The Origin tabs have no hover explanations/);
+ assert.match(app,/window\.PandoraGuideTooltip\?\.attach\?\.\(node,hint,\{hoverDelay:350\}\)/);
+ assert.doesNotMatch(app,/node\.dataset\.workbenchGuideBound='1'/);
  assert.match(app,/node\.removeAttribute\('aria-description'\)/);
 });
 

@@ -11482,38 +11482,37 @@ function renderCatalogStatus(){
   data.meta.counts.items+(lang==='en'?' items · ':' предметов · ')+
   data.meta.counts.souls+(lang==='en'?' souls':' душ');
 }
-// Fixed action help can be edited via D1; live player/game data cannot.
+// Only mounted, meaningful action help belongs to the editable hover
+// catalog. Five retired Origin/Path tab hints are not user-facing copy.
+// Historical owner CAS overrides remain in D1 and can still be reviewed.
 const WORKBENCH_HINTS=[
- ['origin','hintRace','[data-origin-tab="race"]','Выбрать происхождение и расовые способности.','Choose race and passive abilities.'],
- ['origin','hintClass','[data-origin-tab="class"]','Выбрать профессию и направление развития.','Choose class and progression.'],
- ['origin','hintStats','[data-origin-tab="stats"]','Установить уровень и распределить характеристики.','Set level and allocate attributes.'],
  ['equipment','hintPortrait','#hero','Открыть Книгу героя с рассчитанными характеристиками.','Open the Hero Book with calculated stats.'],
  ['equipment','hintWeapon','#jumpEquipment','Выбрать или сменить оружие. Для других вещей нажми на нужный слот.','Change weapons. Choose another gear slot for other items.'],
  ['equipment','hintNewBuild','#newBuildQuick','Открыть создание нового билда.','Open the New Build workflow.'],
  ['equipment','hintSaveBuild','#snapshot','Открыть «Мои билды», чтобы сохранить текущего героя.','Open My Builds to save the current hero.'],
- ['path','hintGrowth','#pathGrowthTab','Вкладывать очки в ветки и смотреть пороги мастерства.','Allocate branch points and view mastery thresholds.'],
- ['path','hintSkills','#pathSkillsTab','Посмотреть изученные и доступные для изучения умения этого героя.','View learned skills and abilities this hero could learn.'],
  ['path','hintReset','#pathResetPoints','Сбросить вложенные очки веток для нового распределения.','Reset allocated branch points for redistribution.']
 ];
-// Self-explanatory tabs have no hover guide; do not offer phantom editors.
-// Previously saved owner CAS values remain untouched and can be reviewed in history.
+// Retired tab explanations must stay absent even if the user switches locale,
+// reloads an existing hero, or carries historical unused D1 overrides.
 const SELF_EXPLANATORY_TABS=new Set([
  '[data-origin-tab="race"]','[data-origin-tab="class"]','[data-origin-tab="stats"]',
  '#pathGrowthTab','#pathSkillsTab'
 ]);
 function refreshWorkbenchHints(){
+ for(const selector of SELF_EXPLANATORY_TABS){
+  const node=document.querySelector(selector);if(!node)continue;
+  if(node.dataset.guideHint||node.dataset.workbenchGuideBound)
+   window.PandoraGuideTooltip?.attach?.(node,'');
+  delete node.dataset.guideHint;
+  delete node.dataset.workbenchGuideBound;
+  node.removeAttribute('aria-description');
+ }
  for(const [section,key,selector,ru,en] of WORKBENCH_HINTS){
   const node=document.querySelector(selector);if(!node)continue;
-  if(SELF_EXPLANATORY_TABS.has(selector)){
-   node.removeAttribute('aria-description');
-   delete node.dataset.guideHint;
-   continue;
-  }
   const hint=ownerCopy(section,key,ru,en);
-  if(!node.dataset.workbenchGuideBound&&window.PandoraGuideTooltip?.attach){
-   window.PandoraGuideTooltip.attach(node,hint,{hoverDelay:350});
-   node.dataset.workbenchGuideBound='1';
-  }
+  // The tooltip module owns a WeakMap of handlers. Rebinding is idempotent
+  // and updates an already visible or delayed tooltip after D1 CAS/locale.
+  window.PandoraGuideTooltip?.attach?.(node,hint,{hoverDelay:350});
   node.dataset.guideHint=hint;
   node.setAttribute('aria-description',hint);
  }
@@ -11529,11 +11528,11 @@ function renderWorkbenchHintEditors(){
   if(!adminEditing||!adminToken){old?.remove();continue}
   if(old?.querySelector('.wiki-inline-input'))continue;
   old?.remove();
-  const rows=WORKBENCH_HINTS.filter(row=>row[0]===section&&
-   !SELF_EXPLANATORY_TABS.has(row[2])).map(([,key,,hintRu,hintEn])=>
-   [key,hintRu,hintEn,key.replace(/^hint/,'')+' · '+hintRu,
-    key.replace(/^hint/,'')+' · '+hintEn]);
-  if(!rows.length)continue; // No owner panel for hints that never appear.
+  const rows=WORKBENCH_HINTS.filter(row=>row[0]===section)
+   .map(([,key,,hintRu,hintEn])=>
+    [key,hintRu,hintEn,key.replace(/^hint/,'')+' · '+hintRu,
+     key.replace(/^hint/,'')+' · '+hintEn]);
+  if(!rows.length)continue; // The Origin tabs have no hover explanations.
   const panel=ownerInterfaceEditor(section,rows,ru,en);
   if(panel){panel.classList.add('workbench-hint-editor');target.after(panel)}
  }

@@ -215,3 +215,9 @@ The generic account/library text editor now tracks `tabindex` and `aria-keyshort
 ## Checkpoint: only mounted, meaningful Workbench hover help is editable
 
 The owner Workbench help editor previously displayed five copy entries for self-explanatory Origin/Path tabs whose hover descriptions are explicitly suppressed in the real renderer. The panel now filters those phantom fields by the existing `SELF_EXPLANATORY_TABS` allowlist, omits the empty Origin hint panel, and retains only four mounted equipment hints and the actual Path Reset hint. Existing unused overrides are **not** deleted or rewritten; direct-edit captions and game controls remain untouched. The staging manifest now includes the exact ten RU/EN defaults for those five real hover hints, with source-drift checks and mock Chromium Save→Undo verifying the mounted portrait tooltip updates and rolls back without affecting game data.
+
+## Follow-up: remove retired Workbench hint copy and live-refresh real tooltip text
+
+The Workbench source registry now contains only five genuine hover descriptions (portrait, equipment jump, new build, save build, Path points reset). The five self-explanatory Origin/Path tabs retain a separate explicit no-tooltip guard; their historical owner CAS rows are **not removed**, but do not appear in the editor or staging defaults. The owner panel and source migration inventory now agree without filtering dead source records.
+
+`refreshWorkbenchHints()` reuses the guide tooltip module's existing per-node WeakMap binding on every RU/EN or successful owner CAS refresh. An already open/pending tooltip is updated and no duplicate pointer/keyboard handlers are installed. A stale hint on a self-explanatory tab is detached. The normal caption editors, gameplay values, and guest UI are unchanged. Node source/manifest regression checks and existing tooltip lifecycle tests cover these transitions.

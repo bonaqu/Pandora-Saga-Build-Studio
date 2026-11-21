@@ -717,12 +717,13 @@ export function buildEditorialDefaultsManifest(){
  });
  const expectedWorkbench=['hintPortrait','hintWeapon','hintNewBuild',
   'hintSaveBuild','hintReset'];
- if(!Array.isArray(workbenchHints)||workbenchHints.length!==10||
+ if(!Array.isArray(workbenchHints)||workbenchHints.length!==5||
   !Array.isArray(suppressedSelectors)||suppressedSelectors.length!==5||
-  new Set(workbenchHints.map(row=>row?.[1])).size!==10)
+  new Set(workbenchHints.map(row=>row?.[1])).size!==5||
+  new Set(workbenchHints.map(row=>row?.[2])).size!==5||
+  workbenchHints.some(row=>suppressedSelectors.includes(row[2])))
   throw Error('Unreviewed Workbench hover copy source inventory');
- const mountedWorkbench=workbenchHints.filter(row=>
-  !suppressedSelectors.includes(row[2]));
+ const mountedWorkbench=workbenchHints;
  if(mountedWorkbench.map(row=>row[1]).sort().join('|')!==
   expectedWorkbench.sort().join('|'))
   throw Error('Workbench mounted hover copy changed');

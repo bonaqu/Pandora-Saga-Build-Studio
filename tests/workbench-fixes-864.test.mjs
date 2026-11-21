@@ -57,18 +57,25 @@ test('build overwrite preserves active record and guest draft has distinct save 
  assert.match(app,/Открытие билда «/);
  assert.doesNotMatch(app,/Создадим новую копию билда/);
 });
-test('D1 authoring covers all three workbench sections and per-tab help',()=>{
+test('Workbench publishes only meaningful independent hover help; retired CAS remains valid',()=>{
  const app=read('pandora-studio-app.js'),equip=read('pandora-studio-equipment-ui.js');
- for(const section of ['origin','equipment','path']){
-  assert.match(app,new RegExp("'"+section+"','hint"));
- }
+ for(const [section,key] of [
+  ['equipment','hintPortrait'],['equipment','hintWeapon'],
+  ['equipment','hintNewBuild'],['equipment','hintSaveBuild'],['path','hintReset']
+ ])assert.match(app,new RegExp("'"+section+"','"+key+"'"));
+ for(const key of ['hintRace','hintClass','hintStats','hintGrowth','hintSkills'])
+  assert.doesNotMatch(app,new RegExp("'(?:origin|path)','"+key+"'"));
  assert.match(app,/renderWorkbenchHintEditors\(\)/);
  assert.match(app,/ownerInterfaceEditor\(section,rows,ru,en\)/);
  assert.match(app,/ownerCopy\(section,key,ru,en\)/);
+ assert.match(app,/window\.PandoraGuideTooltip\?\.attach\?\.\(node,hint,\{hoverDelay:350\}\)/);
  assert.match(equip,/copy\('hint\.'\+key,\.\.\.hints\[key\]\)/);
- for(const key of ['book.origin.hint-race','book.equipment.hint.choose','book.path.hint-skills'])
-  assert.equal(host.PandoraHonorGuide.validOverride(key,JSON.stringify({ru:'Подсказка',en:'Hint'})),true);
+ for(const key of ['book.origin.hint-race','book.equipment.hint.choose',
+  'book.path.hint-skills','book.path.hint-reset'])
+  assert.equal(host.PandoraHonorGuide.validOverride(key,
+   JSON.stringify({ru:'Подсказка',en:'Hint'})),true);
 });
+
 test('slot indicators and chapter use unambiguous labels',()=>{
  const css=read('pandora-studio-workbench-guidance.css');
  const labels=read('pandora-studio-wiki-labels.js'),app=read('pandora-studio-app.js');
