@@ -242,6 +242,51 @@ test('#390 original Wiki map authorial labels seed exact CAS fields, not validat
  }
 });
 
+test('#390 actual monster, NPC trade, chest and item owner registries exclude unsafe source/game copy',()=>{
+ const app=read('pandora-studio-app.js');
+ const families=[
+  ['wikiMonsterRows','wiki.monster.text','wiki-monster-authorial',56,94,
+   ['chanceMissing','limitReached','createLinkFailure','createMonsterRequired',
+    'createMonsterFailure','deleteRecordButton','deleteRecordLinked',
+    'deleteRecordConfirm','deleteRecordFailure']],
+  ['wikiNpcTradeRows','wiki.npc.trade','wiki-npc-trade-authorial',40,64,
+   ['sellerMissing','deleteTrade','deleteAria','deleteConfirm',
+    'deleteRecordButton','deleteRecordLinked','deleteRecordConfirm',
+    'deleteRecordFailure']],
+  ['wikiChestDisplayRows','wiki.chest.text','wiki-chest-authorial',35,50,
+   ['certainHeading','oneGold','oneItem','keyUnlisted','contentsMissing',
+    'contentsUnlisted','goldMissing','rewardMissing','deleteGroup',
+    'removeReward']],
+  ['wikiItemDisplayRows','wiki.item.text','wiki-item-display-authorial',29,54,
+   ['levelRewardAbove','sourcesMissing']]
+ ];
+ let count=0;
+ for(const [registry,section,cohort,expectedSize,expectedEntries,excluded] of families){
+  const match=app.match(new RegExp('const '+registry+
+   '=Object\\.freeze\\((\\[[\\s\\S]*?\\])\\);'));
+  assert.ok(match,registry);
+  const rows=runInNewContext('('+match[1]+')',{});
+  assert.equal(rows.length,expectedSize,registry);
+  assert.equal(manifest.stats.cohorts[cohort],expectedEntries,cohort);
+  const blocked=new Set(excluded);
+  for(const [key,ru,en] of rows){
+   const id='guideedit.book.'+section+'.'+
+    key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+   const stored=manifest.records.filter(row=>row.recordKey===id);
+   if(blocked.has(key))assert.equal(stored.length,0,'Unsafe '+id);
+   else{
+    assert.equal(stored.length,2,id);
+    assert.equal(stored.find(r=>r.field==='ru')?.value,ru);
+    assert.equal(stored.find(r=>r.field==='en')?.value,en);
+    count+=2;
+   }
+  }
+ }
+ assert.equal(count,262);
+ for(const section of ['wiki.monster.text','wiki.npc.trade','wiki.chest.text','wiki.item.text'])
+  assert.match(app,new RegExp("ownerCopy\\('"+section.replaceAll('.','\\.')+"',key,"));
+});
+
 test('issue 390: migration never materializes runtime values or rewrites an override',()=>{
  assert.equal(manifest.records.some(r=>
   /(?:^|\.)(?:character|item|soul|account|formula|amount|gold|points|chance)\.[0-9]+/.test(r.recordKey)),false);

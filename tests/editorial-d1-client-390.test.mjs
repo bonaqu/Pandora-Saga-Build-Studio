@@ -142,6 +142,27 @@ test('#390 verified Wiki map authored headings yield to established owner CAS an
   'Location tags');
 });
 
+test('#390 source-verified monster and chest labels stay below existing owner CAS',async()=>{
+ const root=context(),stage=root.PandoraEditorialDefaults,guide=root.PandoraHonorGuide;
+ const monster='guideedit.book.wiki.monster.text.stat-level';
+ const chest='guideedit.book.wiki.chest.text.open-heading';
+ const staged=fixture([
+  [monster,'en','Monster tier · staging'],
+  [chest,'ru','Сундук: открытие · staging']
+ ]);
+ assert.equal(await stage.installVerified(staged,staged.snapshot,webcrypto.subtle),true);
+ assert.equal(guide.field({},'wiki.monster.text.stat-level','Уровень','Level').en,
+  'Monster tier · staging');
+ assert.equal(guide.field({},'wiki.chest.text.open-heading',
+  'Как открыть сундук','How to open this chest').ru,'Сундук: открытие · staging');
+ const overrides={[chest]:JSON.stringify({ru:'Сундук: автор'})};
+ assert.equal(guide.field(overrides,'wiki.chest.text.open-heading',
+  'Как открыть сундук','How to open this chest').ru,'Сундук: автор');
+ stage.reset();
+ assert.equal(guide.field({},'wiki.chest.text.open-heading',
+  'Как открыть сундук','How to open this chest').ru,'Как открыть сундук');
+});
+
 test('#390 staging text uses only exact semantic identities and CAS outranks defaults',async()=>{
  const root=context(),stage=root.PandoraEditorialDefaults;
  const ui=root.PandoraUILocale,guide=root.PandoraHonorGuide,wiki=root.PandoraWikiLabels;

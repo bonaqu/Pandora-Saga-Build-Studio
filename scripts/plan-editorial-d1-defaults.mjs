@@ -406,6 +406,53 @@ export function buildEditorialDefaultsManifest(){
   append(recordKey,'en',en,'wiki-map-authorial');
  }
 
+ // The existing Wiki owner panels for monsters, NPC trade, chests and items
+ // share original bilingual authorial registries. Their measured numbers,
+ // catalog rows, drop probabilities, item identities and dynamic reasons are
+ // deliberately NOT copied into the versioned D1 defaults.
+ const wikiFamilies=[
+  ['wikiMonsterRows','wiki.monster.text','wiki-monster-authorial',56,
+   ['chanceMissing','limitReached','createLinkFailure','createMonsterRequired',
+    'createMonsterFailure','deleteRecordButton','deleteRecordLinked',
+    'deleteRecordConfirm','deleteRecordFailure']],
+  ['wikiNpcTradeRows','wiki.npc.trade','wiki-npc-trade-authorial',40,
+   ['sellerMissing','deleteTrade','deleteAria','deleteConfirm',
+    'deleteRecordButton','deleteRecordLinked','deleteRecordConfirm',
+    'deleteRecordFailure']],
+  ['wikiChestDisplayRows','wiki.chest.text','wiki-chest-authorial',35,
+   ['certainHeading','oneGold','oneItem','keyUnlisted','contentsMissing',
+    'contentsUnlisted','goldMissing','rewardMissing','deleteGroup',
+    'removeReward']],
+  ['wikiItemDisplayRows','wiki.item.text','wiki-item-display-authorial',29,
+   ['levelRewardAbove','sourcesMissing']]
+ ];
+ for(const [sourceName,section,cohort,expectedRows,excludedKeys] of wikiFamilies){
+  const re=new RegExp('const '+sourceName+
+   '=Object\\.freeze\\((\\[[\\s\\S]*?\\])\\);');
+  const source=app.match(re);
+  if(!source)throw Error('Missing Wiki source editorial registry '+sourceName);
+  const rows=runInNewContext('('+source[1]+')',{},{
+   filename:sourceName,timeout:5000
+  });
+  const excluded=new Set(excludedKeys);
+  if(!Array.isArray(rows)||rows.length!==expectedRows||
+   new Set(rows.map(row=>row?.[0])).size!==expectedRows||
+   rows.filter(row=>excluded.has(row[0])).length!==excluded.size)
+   throw Error('Wiki authorial review inventory drift: '+sourceName);
+  for(const entry of rows){
+   if(!Array.isArray(entry)||entry.length!==3)
+    throw Error('Invalid Wiki authored bilingual row in '+sourceName);
+   const [key,ru,en]=entry;
+   if(excluded.has(key))continue;
+   if(!/^[a-z][a-zA-Z0-9]{1,55}$/.test(key))
+    throw Error('Unreviewed Wiki authorial field: '+sourceName+'/'+key);
+   const recordKey='guideedit.book.'+section+'.'+
+    key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+   append(recordKey,'ru',ru,cohort);
+   append(recordKey,'en',en,cohort);
+  }
+ }
+
  // The Wiki chapters, all five Honor subchapters and skill filters are
  // one existing D1 JSON record. Preserve their exact field identities;
  // never reconstruct these labels from list position or save them as game IDs.
