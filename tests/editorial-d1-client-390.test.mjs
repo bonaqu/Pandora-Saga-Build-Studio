@@ -24,7 +24,7 @@ function fixture(patches=[]){
 }
 function context(){
  const root={};
- const scope={window:root,crypto:webcrypto,TextEncoder,Uint8Array};
+ const scope={window:root,crypto:webcrypto,TextEncoder,Uint8Array,URL};
  for(const path of [
   'pandora-studio-editorial-defaults-client.js',
   'pandora-studio-hero-book.js',
@@ -143,6 +143,65 @@ test('#390 stale async verification cannot re-activate defaults after reset',asy
  assert.equal(stage.status().active,false);
 });
 
+test('#390 explicit staging fetch pins exact digest and never sends credentials',async()=>{
+ const root=context(),stage=root.PandoraEditorialDefaults,payload=fixture();
+ const requests=[];
+ const fetcher=async(url,options)=>{
+  requests.push({url,options});
+  return {ok:true,json:async()=>payload};
+ };
+ assert.equal(await stage.loadPinned(payload.snapshot,{
+  endpoint:'https://staging.example/api/editorial-defaults',
+  fetcher,subtle:webcrypto.subtle}),true);
+ assert.equal(stage.status().snapshot,payload.snapshot);
+ assert.equal(requests.length,1);
+ assert.equal(requests[0].url,
+  'https://staging.example/api/editorial-defaults?snapshot='+payload.snapshot);
+ assert.deepEqual(expectPlain(requests[0].options),{
+  method:'GET',credentials:'omit',cache:'no-store',redirect:'error'
+ });
+ for(const endpoint of [
+  'http://staging.example/api/editorial-defaults',
+  'https://username:secret@staging.example/api/editorial-defaults',
+  'https://staging.example/api/editorial-defaults?latest=1',
+  'https://staging.example/api/overrides',
+  'https://staging.example/api/editorial-defaults#token',
+  '//staging.example/api/editorial-defaults'
+ ]){
+  assert.equal(await stage.loadPinned(payload.snapshot,{
+   endpoint,fetcher,subtle:webcrypto.subtle}),false,endpoint);
+ }
+ assert.equal(requests.length,1,
+  'No network requests to unpinned, insecure or credential-bearing URLs');
+ assert.equal(await stage.loadPinned('latest',{endpoint:
+  'https://staging.example/api/editorial-defaults',fetcher}),false);
+ assert.equal(requests.length,1);
+});
+
+test('#390 delayed staging responses cannot overtake reset or a newer version',async()=>{
+ const root=context(),stage=root.PandoraEditorialDefaults,payload=fixture();
+ let resolveOld;
+ const fetcher=async()=>new Promise(resolve=>{resolveOld=resolve});
+ const slow=stage.loadPinned(payload.snapshot,{
+  endpoint:'https://staging.example/api/editorial-defaults',
+  fetcher,subtle:webcrypto.subtle});
+ const faster=stage.loadPinned(payload.snapshot,{
+  endpoint:'https://staging.example/api/editorial-defaults',
+  fetcher:async()=>({ok:true,json:async()=>payload}),
+  subtle:webcrypto.subtle});
+ assert.equal(await faster,true);
+ resolveOld({ok:true,json:async()=>payload});
+ assert.equal(await slow,false,'Older staged request cannot replace newer verified data');
+ assert.equal(stage.status().snapshot,payload.snapshot);
+ const unavailable=await stage.loadPinned(payload.snapshot,{
+  endpoint:'https://staging.example/api/editorial-defaults',
+  fetcher:async()=>({ok:false,status:503}),
+  subtle:webcrypto.subtle});
+ assert.equal(unavailable,false);
+ assert.equal(stage.status().snapshot,payload.snapshot,
+  'A failed fetch never discards the previously verified snapshot');
+});
+
 test('#390 no implicit network fetch, Worker mutation or editor pencil is added',()=>{
  const stage=read('pandora-studio-editorial-defaults-client.js');
  const html=read('index.html'),worker=read('worker/index.js');
@@ -154,6 +213,7 @@ test('#390 no implicit network fetch, Worker mutation or editor pencil is added'
  assert.match(honor,/function stagedFallback\(/);
  assert.match(wiki,/PandoraEditorialDefaults\?\.value/);
  assert.doesNotMatch(stage,/fetch\(|XMLHttpRequest|localStorage|document\.cookie/);
+ assert.match(stage,/credentials:'omit',cache:'no-store',redirect:'error'/);
  assert.match(worker,/env\.EDITORIAL_DEFAULTS_PREVIEW!=='enabled'/);
  assert.match(worker,/if\(path==='\/api\/overrides'&&method==='GET'\)/);
  assert.match(worker,/if\(path==='\/api\/admin\/override'&&method==='POST'\)/);
