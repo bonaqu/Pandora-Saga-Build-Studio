@@ -248,8 +248,11 @@ function field(overrides,key,ru,en,hintRu='',hintEn=''){
  return book(overrides,key,{ru,en,hintRu:desc[0]||'',hintEn:desc[1]||''});
 }
 function article(overrides){
- const overview={...intro,...(patchFor(overrides,'honor.overview')||{})};
- const ranks=defaultRanks.map(x=>({...x,...patchFor(overrides,'honor.rank.'+x.id)}));
+ const overview={...stagedFallback('honor.overview',intro),
+  ...(patchFor(overrides,'honor.overview')||{})};
+ const ranks=defaultRanks.map(x=>({
+  ...stagedFallback('honor.rank.'+x.id,x),...patchFor(overrides,'honor.rank.'+x.id)
+ }));
  const zones=patchFor(overrides,'honor.zones')||maps;
  const battles=patchFor(overrides,'honor.wars')||wars;
  return {overview,ranks,zones,battles,pvpVictories};
