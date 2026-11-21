@@ -89,6 +89,11 @@ export function buildEditorialDefaultsManifest(){
  }
  records.sort((a,b)=>byCodepoint(a.recordKey,b.recordKey)||
   byCodepoint(a.field,b.field));
+ // The read-only Worker reader refuses oversized snapshots. A successful
+ // planner must NEVER generate a version that the matching reader rejects.
+ if(records.length>3000||
+  records.reduce((sum,row)=>sum+row.value.length,0)>450000)
+  throw Error('Authored defaults exceed versioned D1 reader limits');
  const payload={schema:1,release,records};
  const digest=sha256(JSON.stringify(payload));
  return Object.freeze({...payload,digest,
