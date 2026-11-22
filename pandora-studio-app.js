@@ -1765,6 +1765,30 @@ const originFixedLabels=[
  ['#originPanelStats [data-i18n="baseStats"]','baseHeading','Базовые характеристики','Base attributes'],
  ['#originPanelStats [data-i18n="distributePoints"]','distributeHeading','Распредели очки','Distribute points']
 ];
+// Only the explanatory fragment is authorial. Race names remain immutable source text.
+const originGenderNoteRows=Object.freeze([
+ ['genderFollowAppearance','Пол по выбранному образу','Gender follows the selected appearance'],
+ ['genderSelectionUnavailable','выбор пола недоступен','gender selection unavailable'],
+ ['genderFemale','женский','female'],
+ ['genderMale','мужской','male'],
+ ['genderGenderless','бесполый','genderless'],
+ ['genderChooseRace','Сначала выберите расу','Choose a race first']
+]);
+function renderOriginGenderNote(){
+ const note=$('raceSexInfo');if(!note)return;
+ if(note.querySelector?.('.wiki-inline-input,[data-owner-text-field]'))return;
+ const race=Number.isInteger(state.race)&&state.race>=0&&state.race<races.length?
+  state.race:-1;
+ const index=race<0?5:race<2?0:race-1;
+ const [key,ru,en]=originGenderNoteRows[index];
+ const caption=h('span',{class:'origin-gender-caption'});
+ note.replaceChildren();
+ if(race>=2)
+  note.append(h('span',{class:'origin-race-source-name',
+   text:races[race][lang==='en'?1:0]}),document.createTextNode(' · '));
+ note.append(caption);
+ originCopyLabel(caption,key,ru,en);
+}
 function originCopyLabel(node,key,ru,en){
  if(!node)return node;
  if(!node.querySelector?.('.wiki-inline-input,[data-owner-editor]'))
@@ -1774,6 +1798,24 @@ function originCopyLabel(node,key,ru,en){
  node.dataset.originCopyRu=ru;node.dataset.originCopyEn=en;
  const editing=Boolean(adminEditing&&adminToken);
  node.classList?.toggle?.('origin-copy-editable',editing);
+ // Never announce editing-only keyboard shortcuts to guests, or remove an
+ // existing tabindex that belongs to an actual native action.
+ if(editing){
+  if(!node.hasAttribute?.('aria-keyshortcuts')){
+   node.setAttribute?.('aria-keyshortcuts','F2');
+   node.dataset.originCopyShortcutAdded='1';
+  }
+  if(!node.matches?.('button,[role="button"]')&&!node.hasAttribute?.('tabindex')){
+   node.tabIndex=0;node.dataset.originCopyTabAdded='1';
+  }
+ }else{
+  if(node.dataset.originCopyShortcutAdded==='1'){
+   node.removeAttribute?.('aria-keyshortcuts');delete node.dataset.originCopyShortcutAdded;
+  }
+  if(node.dataset.originCopyTabAdded==='1'){
+   node.removeAttribute?.('tabindex');delete node.dataset.originCopyTabAdded;
+  }
+ }
  if(!node.dataset.originCopyBound){
   node.dataset.originCopyBound='1';
   node.addEventListener?.('dblclick',event=>{
@@ -1781,8 +1823,6 @@ function originCopyLabel(node,key,ru,en){
    event.preventDefault();event.stopImmediatePropagation();
    editOriginCopyLabel(node,key,ru,en);
   },true);
-  node.setAttribute?.('aria-keyshortcuts','F2');
-  if(!node.matches?.('button,[role="button"]'))node.tabIndex=0;
   node.addEventListener?.('keydown',event=>{
    if(event.key==='F2'&&adminEditing&&adminToken){
     event.preventDefault();event.stopPropagation();
@@ -1811,6 +1851,8 @@ function editOriginCopyLabel(node,key,ru,en){
   onFinished:()=>{
    node.dataset.originEditing='0';
    if(isButton){node.hidden=false;mount.remove()}
+   // A changed race/locale is reconciled after the original CAS editor exits.
+   if(node.classList?.contains?.('origin-gender-caption'))renderOriginGenderNote();
   }});
 }
 function renderOriginCopyLabels(){
@@ -1828,6 +1870,7 @@ function renderOriginCopyLabels(){
   const text=lang==='en'?n+' classes':n+' '+plural;
   if(classNode.textContent!==text)classNode.textContent=text;
  }
+ renderOriginGenderNote();
 }
 function editAttr(el,key){el.dataset.editKey=key;if(adminEditing&&adminToken)el.classList.add('admin-edit');return el}
 function raceSource(i,gender){
@@ -3613,12 +3656,6 @@ function renderPathPages(){
 function render(){state.gender=window.PandoraUIPlanner.normalizeGender(races,state.race,state.gender);const hasRace=Number.isInteger(state.race)&&state.race>=0&&state.race<races.length;
  const hasJob=Number.isInteger(state.job)&&state.job>=0&&state.job<jobKeys.length;
  const logo=document.querySelector('.brand img');if(logo)logo.src=override['visual.logo']||'assets/pandora-logo.png';renderRaces();renderJobs();renderOriginTabs();$('genderF').classList.toggle('chosen',state.gender===0);
- const genderNotes=lang==='en'?
-  ['Gender follows the selected appearance','Gender follows the selected appearance',
-   'Dwarf · gender selection unavailable','Myrine · female','Enkidu · male','Lapin · genderless']:
-  ['Пол по выбранному образу','Пол по выбранному образу',
-   'Цверг · выбор пола недоступен','Мирина · женский','Энкиду · мужской','Кролль · бесполый'];
- $('raceSexInfo').textContent=genderNotes[state.race]||(lang==='en'?'Choose a race first':'Сначала выберите расу');
  $('genderM').classList.toggle('chosen',state.gender===1);
  const genderAllowed=window.PandoraUIPlanner.raceHasGender(races,state.race);
  $('genderF').disabled=!genderAllowed;$('genderM').disabled=!genderAllowed;
@@ -3667,7 +3704,24 @@ function refreshBuildsAfterCloudLoad(){
  updated.scrollTop=scrollTop;
 }
 let wikiOutsideCleanup=null;
-function renderDetails(){wikiOutsideCleanup?.();wikiOutsideCleanup=null;const titles=lang==='en'?{character:'Hero Workshop',skills:'Skill Tree',stats:'Attributes',builds:'Build Library',wiki:'Pandora Saga Encyclopedia'}:{character:'Мастерская героя',skills:'Дерево умений',stats:'Характеристики',builds:'Библиотека билдов',wiki:'Энциклопедия Pandora Saga'};$('detailTitle').textContent=titles[activeTab];$('detailContent').replaceChildren();const contents={character:renderCharacter,skills:renderSkills,stats:renderStats,builds:renderBuilds,wiki:renderWiki};contents[activeTab]($('detailContent'))}
+function renderDetails(){
+ wikiOutsideCleanup?.();wikiOutsideCleanup=null;
+ // Keep the current H2, its aria-labelledby identity and any live CAS input.
+ const titleKey={
+  character:'workbenchTitleCharacter',skills:'workbenchTitleSkills',
+  stats:'workbenchTitleStats',builds:'workbenchTitleBuilds',
+  wiki:'workbenchTitleWiki'
+ }[activeTab];
+ const heading=$('detailTitle');
+ heading.dataset.ownerCopyKey=titleKey;
+ if(!heading.nextElementSibling?.classList?.contains('ui-content-edit-host'))
+  heading.textContent=window.PandoraUILocale.text(titleKey,lang);
+ bindAccountCopyEditors(heading.parentElement);
+ $('detailContent').replaceChildren();
+ const contents={character:renderCharacter,skills:renderSkills,stats:renderStats,
+  builds:renderBuilds,wiki:renderWiki};
+ contents[activeTab]($('detailContent'));
+}
 
 let catalogArchived=false;
 let wikiRenderSelected=null,wikiRenderedRoot=null,wikiBaseData=null;
@@ -9710,7 +9764,9 @@ function bindAccountCopyEditors(panel){
      return saveGuidePatch('book.'+id,{[editLang]:next});
     },
     onCommitted:next=>{
-     ownerDockPatchText(node,editLang===lang?next:locale.text(key,lang));
+     ownerDockPatchText(node,node.id==='detailTitle'?
+      locale.text(node.dataset.ownerCopyKey,lang):
+      editLang===lang?next:locale.text(key,lang));
      if(node.matches('h2'))
       ownerDockPatchAttr(node.closest('.modal[role="dialog"]'),'aria-label',node.textContent);
      if(panel.id==='studioToast')refreshOpenAuthoredToast();
@@ -9719,6 +9775,8 @@ function bindAccountCopyEditors(panel){
     },
     onFinished:()=>{
      node.hidden=false;host.remove();
+     if(node.id==='detailTitle')
+      ownerDockPatchText(node,locale.text(node.dataset.ownerCopyKey,lang));
      if(node.closest('[data-build-compare]'))
       node.closest('[data-build-compare]').dispatchEvent(
        new Event('pandora:comparison-copy-finished'));
@@ -10264,10 +10322,12 @@ function refreshVisibleUICopy(recordKey){
  const isStatus=recordKey.startsWith('guideedit.book.ui.label.status-');
  const isBook=recordKey.startsWith('guideedit.book.ui.label.book-');
  const isAccount=recordKey.startsWith('guideedit.book.ui.label.account-');
- if(!isLibrary&&!isStatus&&!isBook&&!isAccount)return;
+ const isWorkbench=recordKey.startsWith('guideedit.book.ui.label.workbench-title-');
+ if(!isLibrary&&!isStatus&&!isBook&&!isAccount&&!isWorkbench)return;
  const id=recordKey.slice('guideedit.book.'.length);
  const selector=isLibrary?
   '#detailContent [data-owner-copy-key],#modalRoot [data-owner-copy-key]':
+  isWorkbench?'#detailPanel .detail-title [data-owner-copy-key]':
   isBook?'#stageAttributes [data-owner-copy-key]':
   isAccount?'#accountPanel [data-owner-copy-key],#detailContent [data-owner-copy-key],#modalRoot [data-owner-copy-key]':
   '#studioToast [data-owner-copy-key]';

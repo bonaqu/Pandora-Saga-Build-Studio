@@ -409,6 +409,29 @@ export function buildEditorialDefaultsManifest(){
   append(id,'en',en,'origin-headings');
  }
 
+
+ // A source race name is NOT authorial D1 text. Only its immutable contextual
+ // UI guidance fragment is seeded with the original owner CAS keys.
+ const genderMatch=app.match(
+  /const originGenderNoteRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ if(!genderMatch)throw Error('Missing audited Origin gender guidance registry');
+ const genderRows=runInNewContext('('+genderMatch[1]+')',{},{
+  filename:'originGenderNoteRows',timeout:5000
+ });
+ const expectedGender=['genderFollowAppearance','genderSelectionUnavailable',
+  'genderFemale','genderMale','genderGenderless','genderChooseRace'];
+ if(!Array.isArray(genderRows)||genderRows.length!==expectedGender.length||
+  genderRows.map(row=>row[0]).sort().join('|')!==expectedGender.sort().join('|'))
+  throw Error('Origin gender guidance changed: review source-safe keys');
+ for(const [key,ru,en] of genderRows){
+  if(typeof ru!=='string'||!ru.trim()||typeof en!=='string'||!en.trim())
+   throw Error('Missing bilingual Origin gender guidance');
+  const id='guideedit.book.origin.'+
+   key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  append(id,'ru',ru,'origin-gender-guidance');
+  append(id,'en',en,'origin-gender-guidance');
+ }
+
  // The two owner equipment picker surfaces reuse one frozen source catalog
  // for static labels. This selection-only half is separate from metadata,
  // source gear names, player-entered search queries and live item counts.

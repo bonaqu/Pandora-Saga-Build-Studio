@@ -14,6 +14,12 @@ const strings={
  editorHeading:['Pandora Saga Build Studio — редактор персонажа','Pandora Saga Build Studio — character planner'],
  workshopArea:['Мастерская персонажа','Character planner workspace'],
  workshopLabel:['Мастерская персонажа','Character workshop'],
+  // One authorial title per dock chapter; active tabs and user names are never D1 copy.
+  workbenchTitleCharacter:['Мастерская героя','Hero Workshop'],
+  workbenchTitleSkills:['Дерево умений','Skill Tree'],
+  workbenchTitleStats:['Характеристики','Attributes'],
+  workbenchTitleBuilds:['Библиотека билдов','Build Library'],
+  workbenchTitleWiki:['Энциклопедия Pandora Saga','Pandora Saga Encyclopedia'],
  raceCarousel:['Карусель портретов рас','Race portrait carousel'],
  racePassivesArea:['Пассивные способности выбранной расы','Selected race passives'],
  calculatedVitals:['Расчётные очки здоровья и маны','Calculated HP and MP'],
