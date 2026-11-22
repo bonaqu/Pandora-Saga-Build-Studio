@@ -150,8 +150,10 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   await chestPanel.locator('summary').click();
   const chestKeys=await chestPanel.locator('[data-owner-copy-id]').evaluateAll(
    nodes=>nodes.map(node=>node.dataset.ownerCopyId));
-  assert.equal(chestKeys.length,35,'All chest captions belong to one owner panel');
-  assert.equal(new Set(chestKeys).size,35,'No duplicate chest editor rows');
+  assert.equal(chestKeys.length,36,'All chest captions belong to one owner panel');
+  assert.equal(new Set(chestKeys).size,36,'No duplicate chest editor rows');
+  assert.ok(chestKeys.includes('goldAmountPrefix'),
+   'The gold-only authorial word shares the existing chest owner panel');
   const chestFilter=chest.locator('.wiki-chest-filter-type');
   const totalBefore=await chest.locator('.wiki-chest-filter-count').innerText();
   const countBefore=await chest.locator('.wiki-chest-reward').count();
