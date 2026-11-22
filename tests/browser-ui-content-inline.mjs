@@ -1455,6 +1455,61 @@ export async function runUIContentInlineSmoke(browser,base){
    '.wiki-layout-honor [data-honor-section="victories"] .wiki-honor-nav-caption',
    'Победы героев PvP','RU PvP navigation');
   assert.equal(await page.locator('.wiki-honor-live-count').textContent(),' · 5');
+  // The native filter is the F2 target; nested captions have no tab stop.
+  const month=honorPane.locator('#honor-ranks .wiki-honor-filter[data-honor-filter="monthly"]');
+  const monthBefore=await month.innerText();
+  await month.focus();await month.press('F2');
+  const monthInput=honorPane.locator('#honor-ranks .wiki-honor-filter-edit-host [contenteditable]').last();
+  await monthInput.waitFor({state:'visible',timeout:12000});
+  await monthInput.fill('Неподтверждённое имя месяца');
+  await monthInput.press('Escape');
+  assert.equal(await month.innerText(),monthBefore);
+  await month.focus();await month.press('F2');
+  const monthEdit=honorPane.locator('#honor-ranks .wiki-honor-filter-edit-host [contenteditable]').last();
+  await monthEdit.waitFor({state:'visible'});
+  await monthEdit.fill('Месячные титулы');
+  await monthEdit.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#honor-ranks .wiki-honor-filter[data-honor-filter="monthly"]')
+   ?.textContent?.includes('Месячные титулы'),null,{timeout:15000});
+  assert.equal(JSON.parse(values['guideedit.book.honor-view.filter-monthly']).ru,'Месячные титулы');
+  await month.focus();await month.press('Enter');
+  assert.equal(await month.getAttribute('aria-pressed'),'true');
+  const all=honorPane.locator('#honor-ranks .wiki-honor-filter[data-honor-filter="all"]');
+  await all.focus();await all.press('Enter');
+  assert.equal(await all.getAttribute('aria-pressed'),'true',
+   'Native Enter still toggles actual rank filters');
+
+  // Authorial accessible copy never changes original assets or rank names.
+  const eventImage=honorPane.locator('#honor-victories img.wiki-honor-pvp-illustration');
+  const srcBefore=await eventImage.getAttribute('src');
+  await eventImage.focus();await eventImage.press('F2');
+  const altInput=honorPane.locator(
+   '#honor-victories .wiki-honor-native-copy-editor [contenteditable]');
+  await altInput.waitFor({state:'visible',timeout:12000});
+  await altInput.fill('Иллюстрация побед PvP');
+  await altInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#honor-victories img.wiki-honor-pvp-illustration')
+   ?.alt==='Иллюстрация побед PvP',null,{timeout:15000});
+  assert.equal(JSON.parse(values['guideedit.book.honor-view.pvp-event-image-alt']).ru,
+   'Иллюстрация побед PvP');
+  assert.equal(await eventImage.getAttribute('src'),srcBefore);
+  const emblem=honorPane.locator('#honor-rank-2 .wiki-honor-emblem');
+  const originalEmblem=await emblem.getAttribute('aria-label');
+  const originalRankName=originalEmblem.split(': ').at(-1);
+  await emblem.focus();await emblem.press('F2');
+  const emblemInput=honorPane.locator('#honor-rank-2 .wiki-honor-native-copy-editor [contenteditable]');
+  await emblemInput.waitFor({state:'visible',timeout:12000});
+  await emblemInput.fill('Знак ранга');
+  await emblemInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#honor-rank-2 .wiki-honor-emblem')?.getAttribute('aria-label')?.startsWith('Знак ранга: '),
+   null,{timeout:15000});
+  assert.equal(await emblem.getAttribute('aria-label'),'Знак ранга: '+originalRankName);
+  assert.equal(JSON.parse(values['guideedit.book.honor-view.rank-emblem-label']).ru,'Знак ранга');
+  assert.equal(await emblem.locator('img').getAttribute('src'),'assets/wiki/honor-ranks/2.svg');
+
   // Rank requirements that come from numeric records must never be editable
   // as one paragraph. Edit only their authorial words (same CAS/Undo store).
   // Existing custom requirement fields remain separately editable for

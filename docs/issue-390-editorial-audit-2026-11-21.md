@@ -293,3 +293,9 @@ pencil controls. Full Node+Chromium required on the exact new PR SHA.
 
 - Identified a keyboard gap after removing caption pencils: gear actions kept focus on the native button, while their nested visible span alone listened for F2. Double-click worked but F2 did not. The source-backed equipment `labeledAction` now delegates button F2 to the existing caption editor and declares the shortcut; Enter/Space remain native actions, no new pencil or D1 identity is introduced.
 - Node source-contract assertions and a real Chromium owner-authenticated F2→draft→Escape scenario are added to an existing regression suite; the underlying item, Soul slot and selected tab stay unchanged. The packet needs same-HEAD Node+Chromium CI.
+
+## 22.11.2026 · Honor owner-editable accessibility and native F2 acceptance
+
+- The actual rank-filter button now accepts F2 without a second focusable caption; Enter remains its normal filter action, and Escape restores focus. Authored PvP illustration alt and rank-emblem label prefix now use the existing owner-only native D1/CAS editor. Game rank names, IDs, artwork assets and numeric rank thresholds are not owner-copy values.
+- Exactly two new source-reviewed semantic accessibility keys enter the offline staging D1 manifest (four RU/EN rows), guarded by a closed source inventory and existing Node tests. Existing real Chromium owner integration now tests cancel/save, rank-filter action, and original image/rank-name preservation.
+- Both complete CI workflows are required on the new exact PR SHA; no staging D1 import, production write, release, physical touch check, merge or issue closure is implied.
