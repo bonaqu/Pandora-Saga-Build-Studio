@@ -619,7 +619,7 @@ export function buildEditorialDefaultsManifest(){
  // the option shown on an unlinked row is a *selection prompt*, not a
  // fictitious "Unlinked" save action.
  const honorFormMatch=honorViewSource.match(
-  /const honorOwnerFormCopyRows=Object\\.freeze\\((\\[[\\s\\S]*?\\])\\);/);
+  /const honorOwnerFormCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
  if(!honorFormMatch)throw Error('Missing audited Honor owner-form copy registry');
  const honorFormRows=runInNewContext('('+honorFormMatch[1]+')',{},{timeout:5000});
  const honorFormKeys=['zoneChooseOption','zoneNoMatches',
