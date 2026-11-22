@@ -217,6 +217,10 @@ export async function runWikiSkillLabelEditorSmoke(browser,base){
    skill_filter_unknown_en:'Needs icon review'
   },'English save must not write a stale Russian field');
   assert.equal(await enFilter.inputValue(),'unknown');
+  // The owner actions were intentionally collapsed to expose the locale
+  // switch; reopen that same dock before using its visible Undo button.
+  if(await dock.locator('[data-owner-collapse]').getAttribute('aria-expanded')==='false')
+   await dock.locator('[data-owner-collapse]').click();
   await undo.click();
   await page.waitForFunction(()=>
    document.querySelector('.wiki-skill-type option[value="unknown"]')
