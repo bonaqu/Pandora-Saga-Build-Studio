@@ -317,7 +317,12 @@ test('#390 actual monster, NPC trade, chest and item owner registries exclude un
    }
   }
  }
- assert.equal(count,262);
+ // Sum is derived from four independently pinned source inventories and
+ // their explicitly excluded non-authorial keys, not a duplicated magic total.
+ const sourceReviewedTotal=families.reduce((sum,[, , ,size, ,excluded])=>
+  sum+2*(size-excluded.length),0);
+ assert.equal(count,sourceReviewedTotal,
+  'Every reviewed safe RU/EN field must appear exactly once');
  for(const section of ['wiki.monster.text','wiki.npc.trade','wiki.chest.text','wiki.item.text'])
   assert.match(app,new RegExp("ownerCopy\\('"+section.replaceAll('.','\\.')+"',key,"));
 });
