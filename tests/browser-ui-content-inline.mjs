@@ -396,7 +396,14 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.deepEqual(await sourceParts.allTextContents(),originalRuntimeParts);
   assert.equal(await detail.locator('h3').innerText(),originalSkillName);
   await page.locator('#pathSkillStatus').selectOption('all');
-  await page.locator('#pathGrowthTab').click();
+  // A floating owner dock and sticky top bar can cover the physical pointer
+  // coordinates of the newly scrolled-away tab. Exercise its real native
+  // keyboard activation instead of force-clicking through the overlays.
+  await page.locator('#pathGrowthTab').focus();
+  await page.locator('#pathGrowthTab').press('Enter');
+  await page.waitForFunction(()=>
+   document.querySelector('#pathGrowthTab')?.getAttribute('aria-selected')==='true',
+   null,{timeout:15000});
   if(!await page.locator('#ownerDock').evaluate(el=>el.classList.contains('owner-dock-collapsed')))
    await page.locator('#ownerDock [data-owner-collapse]').click();
   // A title duplicating a button's ARIA is not a distinct hover-hint.
