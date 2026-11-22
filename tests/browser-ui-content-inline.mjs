@@ -1158,6 +1158,26 @@ export async function runUIContentInlineSmoke(browser,base){
    'Leaving a pending Honor action cannot open a stale form');
   await linkAction.click();
   await zoneList.locator('.wiki-honor-new').waitFor({state:'visible',timeout:6000});
+  const zoneSearch=zoneList.locator('.wiki-honor-new input[type="search"]');
+  await zoneSearch.fill('Черновик поиска');
+  await zoneSearch.press('F2');
+  let nativeEditor=zoneList.locator('.wiki-honor-native-copy-editor [contenteditable]');
+  await nativeEditor.waitFor({state:'visible',timeout:8000});
+  await nativeEditor.fill('Найти область QA…');
+  await nativeEditor.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#honor-gain .wiki-honor-new input[type="search"]')?.placeholder==='Найти область QA…',
+   null,{timeout:15000});
+  assert.equal(await zoneSearch.inputValue(),'Черновик поиска');
+  assert.equal(JSON.parse(values['guideedit.book.honor-view.location-search-placeholder']).ru,
+   'Найти область QA…');
+  await zoneSearch.press('Shift+F2');
+  nativeEditor=zoneList.locator('.wiki-honor-native-copy-editor [contenteditable]');
+  await nativeEditor.waitFor({state:'visible',timeout:8000});
+  await nativeEditor.press('Escape');
+  assert.equal(await zoneSearch.inputValue(),'Черновик поиска');
+  assert.equal(await zoneSearch.getAttribute('aria-label'),'Поиск существующей локации');
+  assert.equal(values['guideedit.book.honor-view.location-search-aria'],undefined);
   const cancelAction=zoneList.locator('.wiki-honor-new .wiki-owner-remove').first();
   await cancelAction.focus();await cancelAction.press('F2');
   const cancelEditor=cancelAction.locator('[contenteditable]');
@@ -1166,6 +1186,26 @@ export async function runUIContentInlineSmoke(browser,base){
   await cancelAction.press('Enter');
   await zoneList.locator('.wiki-honor-new').waitFor({state:'detached',timeout:6000});
   assert.equal(await zoneList.locator('.wiki-honor-list-row').count(),linkedRows);
+  // New war names are account/catalog data. F2 changes only the native
+  // placeholder, without modifying a player's typed unsaved value.
+  const warList=honorPane.locator('#honor-gain .wiki-honor-list-section').nth(1);
+  await warList.locator('.wiki-honor-add').click();
+  await warList.locator('.wiki-honor-new').waitFor({state:'visible',timeout:8000});
+  const warName=warList.locator('.wiki-honor-new input').first();
+  await warName.fill('Черновик названия войны');
+  await warName.press('F2');
+  const warNative=warList.locator('.wiki-honor-native-copy-editor [contenteditable]');
+  await warNative.waitFor({state:'visible',timeout:8000});
+  await warNative.fill('Название новой войны QA');
+  await warNative.press('Tab');
+  await page.waitForFunction(()=>[...document.querySelectorAll('.wiki-honor-new input')]
+   .some(el=>el.placeholder==='Название новой войны QA'),null,{timeout:15000});
+  assert.equal(await warName.inputValue(),'Черновик названия войны');
+  assert.equal(await warName.getAttribute('aria-label'),'Название новой войны QA');
+  assert.equal(JSON.parse(values['guideedit.book.honor-view.war-name-ru']).ru,
+   'Название новой войны QA');
+  await warList.locator('.wiki-honor-new .wiki-owner-remove').first().press('Enter');
+  await warList.locator('.wiki-honor-new').waitFor({state:'detached',timeout:6000});
   // Only the authorial heading is editable; no owner override may replace
   // the source-defined PvP weekdays in its immutable sibling node.
   const doubleRewards=honorPane.locator('#honor-victories .wiki-honor-double-rewards');

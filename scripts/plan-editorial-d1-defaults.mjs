@@ -560,6 +560,25 @@ export function buildEditorialDefaultsManifest(){
   append('guideedit.book.honor-view.'+slug,'en',en,'honor-owner-actions');
  }
 
+ // Only these reviewed native field attributes enter staging defaults;
+ // passwords, user-entered values, IDs, selections and API errors do not.
+ const nativeCopy=[...honorViewSource.matchAll(
+  /\bownerNativeCopy\(\s*[a-z]+\s*,\s*'([^']+)'\s*,\s*'([^']*)'\s*,\s*'([^']*)'\s*,\s*'([^']+)'\s*,\s*'([^']+)'(?:\s*,\s*true)?\s*\)/g
+ )].map(m=>[m[1],m[2],m[3],m[4],m[5]]);
+ const expectedNative=['locationPickerAria','locationSearchAria',
+  'locationSearchPlaceholder','warNameEn','warNameRu','zoneReplaceAria'];
+ if(nativeCopy.length!==expectedNative.length||
+  nativeCopy.map(r=>r[0]).sort().join('|')!==expectedNative.sort().join('|'))
+  throw Error('Honor native field inventory changed');
+ for(const [key,ru,en,attribute,shortcut] of nativeCopy){
+  if(!ru.trim()||!en.trim()||!['placeholder','aria-label'].includes(attribute)||
+   !['F2','Shift+F2'].includes(shortcut))
+   throw Error('Unreviewed Honor native UI field: '+key);
+  const slug=key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  append('guideedit.book.honor-view.'+slug,'ru',ru,'honor-native-fields');
+  append('guideedit.book.honor-view.'+slug,'en',en,'honor-native-fields');
+ }
+
  // The same Honor renderer already exposes D1/CAS captions for each
  // PvP table heading/column and generated rank requirement phrase.
  // Extract its literal source *arguments*, never the numeric row values.

@@ -58,6 +58,34 @@ function render({browse,detail,make,lang='ru',article,editable=false,
    }
    return button;
   };
+  // Native controls retain real user input/selection. F2 edits authored
+  // placeholders or aria text with the regular CAS editor, no extra pencil.
+  const ownerNativeCopy=(field,key,ru,english,attribute,shortcut,mirrorAria=false)=>{
+   const paint=value=>{
+    field.setAttribute(attribute,value);
+    if(mirrorAria)field.setAttribute('aria-label',value);
+   };
+   paint(copy(key,ru,english));
+   if(!editable)return;
+   const previous=field.getAttribute('aria-keyshortcuts')||'';
+   field.setAttribute('aria-keyshortcuts',(previous+' '+shortcut).trim());
+   field.addEventListener('keydown',event=>{
+    if(event.target!==field||event.key!=='F2'||
+     event.shiftKey!==(shortcut==='Shift+F2'))return;
+    event.preventDefault();event.stopPropagation();
+    if(field.parentElement?.querySelector('.wiki-honor-native-copy-editor'))return;
+    const host=node('span','wiki-honor-native-copy-editor',copy(key,ru,english));
+    field.after(host);
+    editCopy(host,key,ru,english,{
+     onCommitted:paint,
+     onFinished:()=>{
+      host.remove();
+      if(field.isConnected)field.focus({preventScroll:true});
+     }
+    });
+    host.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
+   });
+  };
   // Wars are Honor records, not OS map IDs. Give every existing and
  // owner-created entry its own page without inventing location records.
  if(warId!=null){
@@ -314,7 +342,6 @@ function render({browse,detail,make,lang='ru',article,editable=false,
    if(editable){
     if(isZone){
      const select=make('select',{class:'wiki-honor-location-select',
-      'aria-label':tr('Заменить локацию','Replace location'),
       onchange:event=>{
        const id=event.target.value||null;
        const chosen=mapOptions.find(option=>option.id===id);
@@ -329,6 +356,8 @@ function render({browse,detail,make,lang='ru',article,editable=false,
        }:entry);
        void Promise.resolve(saveList(key,updated)).catch(error=>showError(row,error));
       }});
+     ownerNativeCopy(select,'zoneReplaceAria','Заменить локацию',
+      'Replace location','aria-label','F2');
      select.append(make('option',{value:'',text:tr('Без привязки','Unlinked')}));
      for(const candidate of mapOptions){
       const opt=make('option',{value:candidate.id,
@@ -359,13 +388,16 @@ function render({browse,detail,make,lang='ru',article,editable=false,
      ownerActionLabel(cancel,'cancelAction','Отмена','Cancel');
      if(isZone){
       const search=make('input',{type:'search',
-       'aria-label':tr('Поиск существующей локации','Search existing locations'),
-       placeholder:tr('Найти локацию…','Find a location…'),
        autocomplete:'none','aria-autocomplete':'none',
        'data-lpignore':'true','data-1p-ignore':'true',
        'data-bwignore':'true','data-form-type':'other'});
-      const select=make('select',{class:'wiki-honor-location-select',
-       'aria-label':tr('Выбери существующую локацию','Choose an existing location')});
+      ownerNativeCopy(search,'locationSearchPlaceholder','Найти локацию…',
+       'Find a location…','placeholder','F2');
+      ownerNativeCopy(search,'locationSearchAria','Поиск существующей локации',
+       'Search existing locations','aria-label','Shift+F2');
+      const select=make('select',{class:'wiki-honor-location-select'});
+      ownerNativeCopy(select,'locationPickerAria','Выбери существующую локацию',
+       'Choose an existing location','aria-label','F2');
       const fill=()=>{
        const matchesLocation=root.PandoraSearchField.compile(search.value);
        const selected=new Set(items.map(item=>item.mapId));
@@ -398,12 +430,12 @@ function render({browse,detail,make,lang='ru',article,editable=false,
       form.append(search,select,submit,cancel,create,note);
       search.addEventListener('input',fill);fill();search.focus();
      }else{
-      const ru=make('input',{type:'text',maxLength:140,
-       placeholder:tr('Название на русском','Russian name'),
-       'aria-label':tr('Название на русском','Russian name')});
-      const english=make('input',{type:'text',maxLength:140,
-       placeholder:tr('Название на английском','English name'),
-       'aria-label':tr('Название на английском','English name')});
+      const ru=make('input',{type:'text',maxLength:140});
+      const english=make('input',{type:'text',maxLength:140});
+      ownerNativeCopy(ru,'warNameRu','Название на русском',
+       'Russian name','placeholder','F2',true);
+      ownerNativeCopy(english,'warNameEn','Название на английском',
+       'English name','placeholder','F2',true);
       const submit=make('button',{type:'button',class:'wiki-owner-plus',
        onclick:async()=>{
         const nameRu=ru.value.trim(),nameEn=english.value.trim();

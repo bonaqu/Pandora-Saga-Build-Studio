@@ -121,6 +121,14 @@ test('issue 390: PvP rewards and schedules expose D1 headings but not reward or 
  assert.doesNotMatch(view,/wiki-honor-pvp-pencil|sections-pencil/);
 });
 
+test('#390 Honor native field F2 uses CAS with original value untouched',()=>{
+ assert.ok(view.includes("const ownerNativeCopy=(field,key,ru,english,attribute,shortcut,mirrorAria=false)=>"));
+ assert.ok(view.includes("event.shiftKey!==(shortcut==='Shift+F2')"));
+ assert.ok(view.includes("onCommitted:paint"));
+ assert.ok(view.includes("if(field.isConnected)field.focus({preventScroll:true})"));
+ assert.doesNotMatch(view,/wiki-honor-native-copy-pencil/);
+});
+
 test('issue #390: Honor sidebar headings directly edit their shared Wiki labels',()=>{
  assert.match(view,/const navCaption=node\('span','wiki-honor-nav-caption'/);
  assert.match(view,/editLabel\(navCaption,'honor',id,initial\)/);

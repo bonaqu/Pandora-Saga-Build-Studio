@@ -403,6 +403,20 @@ test('#390 Hero Path and Honor source-authored labels have pinned semantic D1 de
   'Legacy complete schedule is not staged as editable game copy');
  assert.match(honor,/wiki-honor-fixed-schedule/);
  assert.match(honor,/editorial\('span','wiki-honor-pvp-heading-copy','pvpDoubleHeading'/);
+ const native=[...honor.matchAll(
+  /\bownerNativeCopy\(\s*[a-z]+\s*,\s*'([^']+)'\s*,\s*'([^']*)'\s*,\s*'([^']*)'\s*,\s*'([^']+)'\s*,\s*'([^']+)'(?:\s*,\s*true)?\s*\)/g
+ )].map(m=>[m[1],m[2],m[3],m[4],m[5]]);
+ assert.deepEqual(native.map(r=>r[0]).sort(),
+  ['locationPickerAria','locationSearchAria','locationSearchPlaceholder',
+   'warNameEn','warNameRu','zoneReplaceAria']);
+ assert.equal(manifest.stats.cohorts['honor-native-fields'],12);
+ for(const [key,ru,en,attribute,shortcut] of native){
+  const record='guideedit.book.honor-view.'+key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase());
+  assert.equal(manifest.records.find(r=>r.recordKey===record&&r.field==='ru')?.value,ru);
+  assert.equal(manifest.records.find(r=>r.recordKey===record&&r.field==='en')?.value,en);
+  assert.ok(['placeholder','aria-label'].includes(attribute));
+  assert.ok(['F2','Shift+F2'].includes(shortcut));
+ }
  for(const term of ['guideedit.book.path.skill.32001','guideedit.book.honor-view.rank.5'])
   assert.ok(!manifest.records.some(r=>r.recordKey===term),
    'Skill IDs and Honor rank mechanics never enter source-authored copy');
