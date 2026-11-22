@@ -1182,6 +1182,11 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(await zoneSearch.getAttribute('aria-label'),'Поиск существующей локации');
   assert.equal(values['guideedit.book.honor-view.location-search-aria'],undefined);
   // Undo updates the same mounted search field; user query remains untouched.
+  const expandOwnerDockIfNeeded=async()=>{
+   const expanded=await page.locator('#ownerDock [data-owner-collapse]')
+    .getAttribute('aria-expanded');
+   if(expanded==='false')await page.locator('#ownerDock [data-owner-collapse]').click();
+  };
   const collapsedBefore=await page.locator('#ownerDock').evaluate(el=>
    el.classList.contains('owner-dock-collapsed'));
   if(collapsedBefore)await page.locator('#ownerDock [data-owner-collapse]').click();
@@ -1193,6 +1198,57 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(await zoneSearch.getAttribute('data-qa-stable-honor-search'),'1');
   assert.equal(values['guideedit.book.honor-view.location-search-placeholder'],undefined);
   if(collapsedBefore)await page.locator('#ownerDock [data-owner-collapse]').click();
+
+  // #390: a no-match native option is now owner-editable with Alt+F2,
+  // independently of the selector's F2 aria caption and the typed query.
+  const zonePick=zoneList.locator('.wiki-honor-new .wiki-honor-location-select');
+  const emptyOption=zonePick.locator('option[value=""]');
+  assert.equal(await emptyOption.textContent(),'Локации не найдены');
+  assert.equal(await zonePick.isDisabled(),false,
+   'Owner can reach Alt+F2 even when no locations match');
+  await zonePick.focus();await zonePick.press('Alt+F2');
+  const noMatchEditor=zoneList.locator('.wiki-honor-native-copy-editor [contenteditable]');
+  await noMatchEditor.waitFor({state:'visible',timeout:8000});
+  await noMatchEditor.fill('Поиск без совпадений · QA');
+  await noMatchEditor.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#honor-gain .wiki-honor-new select option[value=""]')
+   ?.textContent==='Поиск без совпадений · QA',null,{timeout:15000});
+  assert.equal(JSON.parse(values['guideedit.book.honor-view.zone-no-matches']).ru,
+   'Поиск без совпадений · QA');
+  assert.equal(await zoneSearch.inputValue(),'Черновик поиска');
+  assert.equal(await zonePick.inputValue(),'');
+  await expandOwnerDockIfNeeded();
+  await page.locator('#ownerDock [data-owner-undo]').click();
+  await page.waitForFunction(()=>document.querySelector(
+   '#honor-gain .wiki-honor-new select option[value=""]')
+   ?.textContent==='Локации не найдены',null,{timeout:15000});
+  assert.equal(values['guideedit.book.honor-view.zone-no-matches'],undefined);
+
+  // Only the error caption can be edited: an empty submit must not add a
+  // map ID, and CAS+Undo must preserve every existing location relation.
+  await zoneList.locator('.wiki-honor-new button.wiki-owner-plus').first().press('Enter');
+  const locationRequired=zoneList.locator('.wiki-honor-new .wiki-honor-owner-note');
+  await locationRequired.waitFor({state:'visible',timeout:7000});
+  assert.equal(await locationRequired.textContent(),'Выбери локацию');
+  await locationRequired.dblclick();
+  const requiredEditor=locationRequired.locator('[contenteditable]');
+  await requiredEditor.waitFor({state:'visible',timeout:6000});
+  await requiredEditor.fill('Сначала укажи место QA');
+  await requiredEditor.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#honor-gain .wiki-honor-new .wiki-honor-owner-note')
+   ?.textContent==='Сначала укажи место QA',null,{timeout:15000});
+  assert.equal(JSON.parse(values['guideedit.book.honor-view.zone-select-required']).ru,
+   'Сначала укажи место QA');
+  assert.equal(await zoneList.locator('.wiki-honor-list-row').count(),linkedRows);
+  await expandOwnerDockIfNeeded();
+  await page.locator('#ownerDock [data-owner-undo]').click();
+  await page.waitForFunction(()=>document.querySelector(
+   '#honor-gain .wiki-honor-new .wiki-honor-owner-note')
+   ?.textContent==='Выбери локацию',null,{timeout:15000});
+  assert.equal(values['guideedit.book.honor-view.zone-select-required'],undefined);
+
   const cancelAction=zoneList.locator('.wiki-honor-new .wiki-owner-remove').first();
   await cancelAction.focus();await cancelAction.press('F2');
   const cancelEditor=cancelAction.locator('[contenteditable]');
@@ -1219,6 +1275,30 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(await warName.getAttribute('aria-label'),'Название новой войны QA');
   assert.equal(JSON.parse(values['guideedit.book.honor-view.war-name-ru']).ru,
    'Название новой войны QA');
+  // Missing EN name is a safe human-authored hint, not a failed Worker
+  // response or invented PvP record. Edit and Undo on its visible caption.
+  await warList.locator('.wiki-honor-new button.wiki-owner-plus').first().press('Enter');
+  const warRequired=warList.locator('.wiki-honor-new .wiki-honor-owner-note');
+  await warRequired.waitFor({state:'visible',timeout:7000});
+  assert.equal(await warRequired.textContent(),'Заполни RU и EN');
+  await warRequired.dblclick();
+  const warRequiredEditor=warRequired.locator('[contenteditable]');
+  await warRequiredEditor.waitFor({state:'visible',timeout:7000});
+  await warRequiredEditor.fill('Два языка обязательны · QA');
+  await warRequiredEditor.press('Tab');
+  await page.waitForFunction(()=>document.querySelectorAll(
+   '#honor-gain .wiki-honor-new .wiki-honor-owner-note').length===1&&
+   document.querySelector('#honor-gain .wiki-honor-new .wiki-honor-owner-note')
+   ?.textContent==='Два языка обязательны · QA',null,{timeout:15000});
+  assert.equal(JSON.parse(values['guideedit.book.honor-view.war-names-required']).ru,
+   'Два языка обязательны · QA');
+  assert.equal(await warName.inputValue(),'Черновик названия войны');
+  await expandOwnerDockIfNeeded();
+  await page.locator('#ownerDock [data-owner-undo]').click();
+  await page.waitForFunction(()=>document.querySelector(
+   '#honor-gain .wiki-honor-new .wiki-honor-owner-note')
+   ?.textContent==='Заполни RU и EN',null,{timeout:15000});
+  assert.equal(values['guideedit.book.honor-view.war-names-required'],undefined);
   await warList.locator('.wiki-honor-new .wiki-owner-remove').first().press('Enter');
   await warList.locator('.wiki-honor-new').waitFor({state:'detached',timeout:6000});
   // Only the authorial heading is editable; no owner override may replace
