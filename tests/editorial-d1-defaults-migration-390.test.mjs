@@ -219,6 +219,12 @@ test('#390 equipment controls and exact Soul unavailable states use existing CAS
  assert.match(source,/const key=\(zero\?'soulUnavailableZero\.':'soulUnavailableUnknown\.'\)\+slot/);
  assert.match(source,/const settingsGroup=bind\(el\('div',\{class:'stage-rich-settings-group',role:'group'\}\),/,
   'The settings accessible name must be bound to an owner-editable source key');
+ assert.match(source,/button\.setAttribute\('aria-keyshortcuts','F2'\)/,
+  'Owner-action buttons must advertise direct F2 caption editing');
+ assert.match(source,/caption\.dispatchEvent\(new KeyboardEvent\('keydown',\{/,
+  'Focused owner action forwards F2 to the same direct text D1/CAS editor');
+ assert.match(source,/event\.target!==button\|\|event\.key!=='F2'/,
+  'Nested editor events and ordinary Enter/Space must not retrigger owner actions');
  assert.match(source,/PandoraItemPresentation\?\.displayName\(soul,/,
   'Use original locale-aware Soul names rather than only saved RU fallback');
  assert.doesNotMatch(source,/' '\+\(i\+1\)\+': '\+\(soul\?\.name/,

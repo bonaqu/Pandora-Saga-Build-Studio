@@ -288,3 +288,8 @@ pencil controls. Full Node+Chromium required on the exact new PR SHA.
 - The equipment settings group's native `aria-label` now binds to an independent owner-copy key `pickerPropertiesGroup`, exposed through the existing compact owner text panel, so Save/Undo updates mounted accessible text without rerendering the gear.
 - Equipped Soul socket accessible names use the original locale-aware item presenter (not a raw potentially RU-only `soul.name`). The source name, socket number and ID are never writable editorial text.
 - Exactly two new reviewed RU/EN source identities (four rows) are admitted to the deterministic offline staging default manifest. Source-key inventory checks and browser regression verify RU/EN group/socket names and preserve the actual gear actions. Physical staging D1 import, hardware touch acceptance, and production release still require separate validation; do not merge the Draft PR on this packet alone.
+
+## 22.11.2026 · Equipment native-button F2 parity
+
+- Identified a keyboard gap after removing caption pencils: gear actions kept focus on the native button, while their nested visible span alone listened for F2. Double-click worked but F2 did not. The source-backed equipment `labeledAction` now delegates button F2 to the existing caption editor and declares the shortcut; Enter/Space remain native actions, no new pencil or D1 identity is introduced.
+- Node source-contract assertions and a real Chromium owner-authenticated F2→draft→Escape scenario are added to an existing regression suite; the underlying item, Soul slot and selected tab stay unchanged. The packet needs same-HEAD Node+Chromium CI.

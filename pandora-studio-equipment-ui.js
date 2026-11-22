@@ -503,6 +503,18 @@ function render(root,api){
   button.replaceChildren(...(prefix?[el('span',{class:'stage-action-glyph',
    'aria-hidden':'true'},[prefix])]:[]),caption);
   guardCaptionAction(button,caption);
+  // The caption is nested in a native action: keyboard focus stays on the
+  // button, so F2 must forward to its existing inline D1/CAS editor.
+  // Enter/Space still activate the genuine gear control without editing.
+  button.setAttribute('aria-keyshortcuts','F2');
+  button.addEventListener('keydown',event=>{
+   if(event.target!==button||event.key!=='F2'||event.altKey||
+    event.ctrlKey||event.metaKey||event.shiftKey)return;
+   event.preventDefault();event.stopPropagation();
+   caption.dispatchEvent(new KeyboardEvent('keydown',{
+    key:'F2',bubbles:true,cancelable:true
+   }));
+  });
   return button;
  };
  const tabs=bind(el('nav',{class:'stage-rich-tabs'+(hasSouls?' has-souls':' no-souls'),

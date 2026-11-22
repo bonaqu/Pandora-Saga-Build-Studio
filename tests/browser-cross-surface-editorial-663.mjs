@@ -486,6 +486,21 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   ])assert.ok(detailsKeys.includes(key),'Missing item-details D1 copy: '+key);
   assert.equal(new Set(detailsKeys).size,detailsKeys.length,
    'Details and Souls must not duplicate the same editor');
+  // The native control itself, not its nested caption, takes keyboard focus.
+  // F2 must open its owner-only D1 editor; ordinary Enter continues changing
+  // tabs and must never become an accidental editor hotkey.
+  const detailsTab=picker.locator('[data-stage-tab="details"]');
+  await detailsTab.focus();
+  assert.equal(await detailsTab.getAttribute('aria-keyshortcuts'),'F2');
+  await detailsTab.press('F2');
+  const gearCaptionDraft=detailsTab.locator('.stage-copy-caption [data-owner-text-field]');
+  await gearCaptionDraft.waitFor({state:'visible'});
+  await gearCaptionDraft.fill('Проверенные свойства');
+  await gearCaptionDraft.press('Escape');
+  assert.equal(await detailsTab.locator('[data-owner-text-field]').count(),0,
+   'Esc cancels the direct keyboard caption edit without writing to D1');
+  assert.equal(await detailsTab.getAttribute('aria-pressed'),'true',
+   'F2 and Esc must not switch equipment tabs or change Soul data');
   await edit('equipment','pickerItemSettings','Параметры экипировки');
   await edit('equipment','hint.souls','Подсказка слотов душ');
   assert.equal(await picker.locator('[data-stage-tab="souls"]')
