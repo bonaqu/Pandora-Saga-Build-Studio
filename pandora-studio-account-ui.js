@@ -57,8 +57,8 @@ const triggerLabel=()=>session?tr('Профиль')+' · '+session.username:
 // The account username is appended separately and is never owner-copy D1.
 const syncTriggerCopy=()=>{
  const key=session?'accountProfileTitle':'profileAccess';
- trigger.dataset.i18nTitle=key;
- trigger.dataset.i18nAriaLabel=key;
+ trigger.setAttribute('data-i18n-title',key);
+ trigger.setAttribute('data-i18n-aria-label',key);
  trigger.title=triggerLabel();
  trigger.setAttribute('aria-label',trigger.title);
 };
