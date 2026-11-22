@@ -983,7 +983,7 @@ test('issue 390: readback and rollback CLI emit the matching version-only SQL',(
 
 test('#390 Honor form placeholders and validation captions stage exactly 14 safe RU/EN defaults',()=>{
  const source=read('pandora-studio-honor-view.js').match(
-  /const honorOwnerFormCopyRows=Object\\.freeze\\((\\[[\\s\\S]*?\\])\\);/);
+  /const honorOwnerFormCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
  assert.ok(source,'Honor owner forms must expose the audited immutable source list');
  const rows=runInNewContext('('+source[1]+')',{},{timeout:5000});
  const exact=['zoneChooseOption','zoneNoMatches','zoneSelectRequired',
