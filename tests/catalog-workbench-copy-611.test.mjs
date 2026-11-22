@@ -56,7 +56,7 @@ test('catalog editor edits real captions directly and never activates publish on
 
 test('catalog copy Undo refreshes only authored text and cannot rewrite D1 catalog',()=>{
  assert.match(app,/function refreshVisibleOwnerCopy\(recordKey\)/);
- assert.match(app,/\(origin\|equipment\|path\|catalog-sync\|honor-view\|owner-history\|owner-dialog\|wiki-ui\|skill-ui\|stats-ui\)/);
+ assert.match(app,/\(origin\|equipment\|path\|catalog-sync\|honor-view\|owner-history\|owner-dialog\|wiki-ui\|skill-ui\|stats-ui\|compare-metric\)/);
  assert.match(app,/refreshVisibleOwnerCopy\(last\.key\);saveView\(\)/);
  assert.match(app,/key\.startsWith\('book\.catalog-sync\.'\)/);
  assert.match(app,/!key\.startsWith\('book\.catalog-sync\.'\)/);
