@@ -212,7 +212,11 @@ export async function runWikiSkillLabelEditorSmoke(browser,base){
   await page.waitForFunction(()=>
    document.querySelector('.wiki-skill-type option[value="unknown"]')
     ?.textContent.startsWith('Needs icon review'),null,{timeout:10000});
-  assert.equal(writes.length,3);
+  assert.equal(writes.length,3,'Unexpected D1 writes after EN edit: '+
+   JSON.stringify(writes.map((post,index)=>({
+    index,key:post.key,fields:post.key==='guideedit.wiki.labels'?
+     Object.keys(JSON.parse(post.value)):undefined
+   }))));
   assert.deepEqual(JSON.parse(values['guideedit.wiki.labels']),{
    skill_filter_unknown_en:'Needs icon review'
   },'English save must not write a stale Russian field');
