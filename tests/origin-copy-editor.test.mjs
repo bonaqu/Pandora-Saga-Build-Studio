@@ -180,7 +180,7 @@ test('#390 class wizard accessibility has six independent original RU/EN D1 fiel
   assert.equal(en,en.trim(),'ARIA EN phrase must be safely trimmed: '+key);
  }
  assert.match(app,/bindOwnerInterfaceText\(choice,'origin',ariaKey,ariaRu,ariaEn,'aria-label'/);
- assert.match(app,/selectedOnPath\?selectedProfession\.name:'',node\.name\)/);
+ assert.match(app,/selectedOnPath\?' '\+selectedProfession\.name:'',node\.name\+' — '\)/);
  assert.match(app,/ownerInterfaceEditor\('origin',originClassWizardAriaRows/);
  assert.match(app,/refreshVisibleOwnerCopy\(recordKey\)/);
  assert.match(app,/key\.startsWith\('book\.origin\.'\)\)refreshVisibleOriginCopy/);

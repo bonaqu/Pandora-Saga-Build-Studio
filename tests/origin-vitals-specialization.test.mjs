@@ -77,13 +77,13 @@ function chosenProfession(){
  };
  const runtime=Function('h','$','jobKeys','jobs','catalog','state','editableValue',
   'saveView','lang','originCopy','originCopyLabel','originClassWizardCopyRows',
-  'originClassWizardAriaRows','bindOwnerInterfaceText',
+  'originClassWizardAriaRows','bindOwnerInterfaceText','document',
   'adminEditing','adminToken','ownerCaptionActionGuard',
   fallback+'\nlet jobPathKey=null;\nfunction selectJob(index){state.job=index;renderJobs()}\n'+
   app.slice(start,end)+'\nreturn {renderJobs,state,get:()=>jobPathKey};')(
   h,()=>grid,jobKeys,jobs,{classes},state,(_,v)=>v,()=>saves++,'ru',
   (_key,ru)=>ru,(node,_key,ru)=>{node.textContent=ru;return node},
-  rows,ariaRows,bind,false,'',()=>{});
+  rows,ariaRows,bind,{createTextNode:value=>String(value)},false,'',()=>{});
  const buttons=()=>walk(grid).filter(x=>x.tag==='button');
  const matching=key=>buttons().find(x=>x.className.includes('class-wizard-choice')&&
   x.children[0]?.textContent===jobs[jobKeys.indexOf(key)]);
