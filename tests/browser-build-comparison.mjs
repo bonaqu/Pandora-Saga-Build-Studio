@@ -190,6 +190,39 @@ export async function runBuildComparisonSmoke(browser,base){
   await mountedMetric.dispose();
   if(!await page.locator('#ownerDock').evaluate(el=>el.classList.contains('owner-dock-collapsed')))
    await page.locator('#ownerDock [data-owner-collapse]').click();
+  // The same metric is edited in English under the same exact D1 key,
+  // never conflated with the Russian source lookup or the A/B values.
+  await page.locator('#locale [data-locale="en"]').focus();
+  await page.locator('#locale [data-locale="en"]').press('Enter');
+  await page.waitForFunction(()=>document.documentElement.lang==='en'&&
+   document.querySelector('[data-compare-row="stat.hp"]')?.textContent==='HP',
+   null,{timeout:15000});
+  const numbersEn=[await hpA.textContent(),await hpB.textContent()];
+  await hp.focus();await hp.press('F2');
+  const enInput=hp.locator('[data-owner-text-field]');
+  await enInput.waitFor({state:'visible'});
+  await enInput.fill('Health · English QA');
+  await enInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '[data-compare-row="stat.hp"]')?.textContent==='Health · English QA',
+   null,{timeout:15000});
+  assert.equal(JSON.parse(copyValues[metricKey]).en,'Health · English QA');
+  assert.deepEqual([await hpA.textContent(),await hpB.textContent()],numbersEn);
+  if(await page.locator('#ownerDock').evaluate(el=>el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
+  await page.locator('#ownerDock [data-owner-undo]').click();
+  await page.waitForFunction(()=>document.querySelector(
+   '[data-compare-row="stat.hp"]')?.textContent==='HP',
+   null,{timeout:15000});
+  assert.equal(Object.hasOwn(copyValues,metricKey),false);
+  assert.equal(copyResets.at(-1)?.key,metricKey);
+  if(!await page.locator('#ownerDock').evaluate(el=>el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
+  await page.locator('#locale [data-locale="ru"]').focus();
+  await page.locator('#locale [data-locale="ru"]').press('Enter');
+  await page.waitForFunction(()=>document.documentElement.lang==='ru'&&
+   document.querySelector('[data-compare-row="stat.hp"]')?.textContent==='ОЗ',
+   null,{timeout:15000});
   assert.equal(await hpB.getAttribute('data-compare-advantage'),'',
    'Higher HP in B should be bold');
   assert.equal(await hpA.getAttribute('data-compare-advantage'),null);
