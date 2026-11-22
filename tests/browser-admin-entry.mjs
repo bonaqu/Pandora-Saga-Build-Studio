@@ -1709,6 +1709,47 @@ export async function runAdminEntrySmoke(browser,base){
    await sections.selectOption('');
   }
   assert.match(await history.locator('.owner-manager-summary').innerText(),/Показано/);
+  const summaryHistory=history.locator('.owner-manager-summary');
+  const historyTotals=summaryHistory.locator('.owner-history-live-count');
+  const beforeTotalValues=await historyTotals.allTextContents();
+  assert.equal(beforeTotalValues.length,2);
+  const historyLead=summaryHistory.locator('[data-owner-copy-id="shownLead"]');
+  const historyLeadOriginal=await historyLead.textContent();
+  assert.equal(historyLeadOriginal,'Показано');
+  await historyLead.dblclick();
+  const liveEditor=historyLead.locator('[contenteditable]');
+  await liveEditor.waitFor({state:'visible',timeout:9000});
+  await liveEditor.fill('Найдено');
+  await liveEditor.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '.owner-manager-summary [data-owner-copy-id="shownLead"]')?.textContent==='Найдено',
+   null,{timeout:15000});
+  assert.equal(JSON.parse(townOverrides.get('guideedit.book.owner-history.shown-lead')).ru,
+   'Найдено');
+  assert.deepEqual(await historyTotals.allTextContents(),beforeTotalValues,
+   'Owner copy edits cannot change the live totals');
+  assert.match(await summaryHistory.innerText(),/^Найдено \d+ из \d+ правок$/);
+  assert.equal(await summaryHistory.locator('.owner-history-pencil').count(),0);
+  const compareCopy=history.locator('.owner-history-comparison-copy').first();
+  if(await compareCopy.count()){
+   const firstBefore=await history.locator('.owner-review-before p').first().textContent();
+   const firstAfter=await history.locator('.owner-review-after p').first().textContent();
+   await compareCopy.dblclick();
+   const headingEditor=compareCopy.locator('[contenteditable]');
+   await headingEditor.waitFor({state:'visible',timeout:8000});
+   await headingEditor.fill('Исходно');
+   await headingEditor.press('Tab');
+   await page.waitForFunction(()=>document.querySelector(
+    '.owner-history-comparison-copy[data-owner-copy-id="beforeHeading"]')
+    ?.textContent==='Исходно',null,{timeout:15000});
+   assert.equal(JSON.parse(townOverrides.get('guideedit.book.owner-history.before-heading')).ru,
+    'Исходно');
+   assert.equal(await history.locator('.owner-review-before p').first().textContent(),
+    firstBefore);
+   assert.equal(await history.locator('.owner-review-after p').first().textContent(),
+    firstAfter);
+  }
+
   const intro=history.locator('[data-owner-copy-section="owner-history"][data-owner-copy-id="intro"]');
   await intro.waitFor({state:'visible'});
   const introWrap=intro.locator('xpath=..');

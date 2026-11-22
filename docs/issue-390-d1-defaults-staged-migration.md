@@ -171,3 +171,16 @@ The new local Node tests validate rejection of wrong targets, production D1,
 missing confirmation, unknown tables, malformed JSON and incomplete rollback.
 **No staging credentials were provided, no remote SQL was run, and no
 physical D1 readback/rollback is claimed.**
+
+## Owner change-history source labels · #390
+
+The fixed `owner-history` family now includes seven exact bilingual D1
+defaults (**14 RU/EN entries**): existing `intro` and `empty` explanations,
+plus five new `shownLead`, `shownOf`, `shownSuffix`, `beforeHeading`, and
+`afterHeading` labels. The migration planner pins those exact live source
+declarations and fails closed on unexpected keys; the D1 objects holding
+actual owner edits, original game data, and live history counts are deliberately
+excluded. Dynamic counts are separate numeric DOM nodes. Words have separate
+immutable spaces so trimming in the CAS editor cannot change the numeric UI.
+All remote Cloudflare staging operations remain unperformed unless an operator
+runs and verifies a separately authorized isolated staging migration.

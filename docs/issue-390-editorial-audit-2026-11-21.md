@@ -260,3 +260,24 @@ Extended the isolated Chromium Profile scenario beyond RU/EN happy-path: a stale
 - Split Honor double rewards into an authorial RU/EN D1/CAS heading (`book.honor-view.pvp-double-heading`) and a separate immutable Tuesday/Thursday schedule DOM node. Old full-schedule D1 overrides remain stored but cannot replace the live game-rule wording. Staged authorial defaults gain exactly one bilingual heading pair.
 - Chest source gold intervals are separate numeric DOM nodes beside the editable `book.wiki.chest.text.gold-amount-prefix` caption. The actual deterministic generator now recognizes 36 audited chest source captions; it continues to reject unreviewed keys and gameplay data.
 - Node and browser regression on the exact new SHA must pass before accepting this packet. No staging/production D1 migration, deployment or game-client verification occurred.
+
+## #390 · Owner change-history numeric and authorial separation (22.11.2026)
+
+The owner's **History of manual changes** contains two independently computed
+record totals and real before/after values. The five label fragments next to
+these live values are editable authorial RU/EN text, *not* part of the numeric
+counts or catalog data. `ownerHistoryTextRows` now drives the mounted source
+copy and the strict D1-only manifest inventory for `owner-history.*`.
+
+The summary DOM is mounted once, with two immutable live-number spans updated
+only in `draw()`. Standalone literal whitespace separates authorial captions,
+so CAS text trimming cannot concatenate the label with a count after Save.
+The game-data before/after paragraph nodes are unaffected. Existing
+`intro` and `empty` captions share the same source-verified default cohort:
+**seven unique bilingual keys / fourteen staging-only RU/EN default rows**.
+No player IDs, record names, D1 values or counts were staged.
+
+A real Chromium owner-history scenario exercises double-click Save on a summary
+caption, preserves both current numeric counters, edits a before-heading
+without changing D1 before/after values, and confirms the absence of extraneous
+pencil controls. Full Node+Chromium required on the exact new PR SHA.

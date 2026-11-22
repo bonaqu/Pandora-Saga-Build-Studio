@@ -17,6 +17,34 @@ import {readVerifiedEditorialSnapshot} from '../worker/pandora-studio-editorial-
 const read=name=>readFileSync(new URL('../'+name,import.meta.url),'utf8');
 const manifest=buildEditorialDefaultsManifest();
 
+
+test('#390 owner history seven source captions are staged without any dynamic records',()=>{
+ const app=read('pandora-studio-app.js');
+ const source=app.match(/const ownerHistoryTextRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ assert.ok(source);
+ const rows=runInNewContext('('+source[1]+')',{});
+ assert.deepEqual([...rows].map(row=>row[0]).sort(),
+  ['afterHeading','beforeHeading','shownLead','shownOf','shownSuffix']);
+ const existing=[...app.matchAll(
+  /authoredHistory\('([^']+)',\s*'([^']*)',\s*'([^']*)'\)/g
+ )].map(row=>[row[1],row[2],row[3]]);
+ assert.deepEqual(existing.map(row=>row[0]).sort(),['empty','intro']);
+ assert.equal(manifest.stats.cohorts['owner-history-authorial'],14);
+ for(const [key,ru,en] of [...rows,...existing]){
+  const id='guideedit.book.owner-history.'+
+   key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  const found=manifest.records.filter(row=>row.recordKey===id);
+  assert.deepEqual(found.map(row=>row.field).sort(),['en','ru'],id);
+  assert.equal(found.find(row=>row.field==='ru').value,ru);
+  assert.equal(found.find(row=>row.field==='en').value,en);
+ }
+ for(const unsafe of ['guideedit.book.owner-history.count',
+   'guideedit.book.owner-history.entry-before',
+   'guideedit.book.owner-history.record-key']){
+  assert.equal(manifest.records.some(row=>row.recordKey===unsafe),false,unsafe);
+ }
+});
+
 test('issue 390: source-authored D1 default snapshot is stable and uses exact existing keys',()=>{
  const repeated=buildEditorialDefaultsManifest();
  assert.equal(manifest.schema,1);

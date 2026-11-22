@@ -113,6 +113,41 @@ export function buildEditorialDefaultsManifest(){
  // Extract only the audited literal dictionary, never execute the app's
  // startup logic, inspect player state, or guess text keys from a game UI.
  const app=read('pandora-studio-app.js');
+
+ // Owner history prose is human-authored, while its live D1 records,
+ // source-before/after values, search filters and result totals are not.
+ // Extract seven existing exact semantic keys. Fail if the editor surface
+ // gains another key until the source inventory is explicitly reviewed.
+ const historyRegistry=app.match(
+  /const ownerHistoryTextRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ if(!historyRegistry)throw Error('Missing owner-history source caption registry');
+ const historyRows=runInNewContext('('+historyRegistry[1]+')',{},{timeout:5000});
+ const requiredHistory=['afterHeading','beforeHeading','shownLead','shownOf','shownSuffix'];
+ if(!Array.isArray(historyRows)||historyRows.length!==requiredHistory.length||
+  historyRows.map(row=>row?.[0]).sort().join('|')!==requiredHistory.sort().join('|'))
+  throw Error('Unreviewed dynamic owner-history caption');
+ const historyUnique=new Set();
+ for(const entry of historyRows){
+  if(!Array.isArray(entry)||entry.length!==3||entry.some(x=>
+    typeof x!=='string'||!x.trim())||historyUnique.has(entry[0]))
+   throw Error('Invalid bilingual owner-history caption');
+  const [key,ru,en]=entry;historyUnique.add(key);
+  const slug=key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  append('guideedit.book.owner-history.'+slug,'ru',ru,'owner-history-authorial');
+  append('guideedit.book.owner-history.'+slug,'en',en,'owner-history-authorial');
+ }
+ const historyExisting=[...app.matchAll(
+  /authoredHistory\('([^']+)',\s*'([^']*)',\s*'([^']*)'\)/g
+ )].map(m=>[m[1],m[2],m[3]]);
+ if(historyExisting.length!==2||
+  historyExisting.map(row=>row[0]).sort().join('|')!=='empty|intro')
+  throw Error('Owner history original heading/empty labels drifted');
+ for(const [key,ru,en] of historyExisting){
+  if(!ru.trim()||!en.trim())throw Error('Empty owner-history translation');
+  append('guideedit.book.owner-history.'+key,'ru',ru,'owner-history-authorial');
+  append('guideedit.book.owner-history.'+key,'en',en,'owner-history-authorial');
+ }
+
  // Profile labels have real owner CAS keys, but their values are strictly
  // authored captions. The editable hero profile itself is never D1 copy.
  const profileSource=app.match(

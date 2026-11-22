@@ -22,7 +22,14 @@ test('owner history has stable bilingual editorial keys and does not expose game
  assert.match(manager,/ownerCopyLabel\(node,'owner-history',key,ru,en\)/);
  assert.doesNotMatch(manager,/class:'owner-history-pencil'/);
  assert.match(manager,/ownerCopyLabel\(node,'owner-history',key,ru,en\)/);
- assert.match(manager,/count\.textContent=tr\('Показано '/);
+ assert.match(manager,/const ownerHistoryTextRows=Object\.freeze/);
+ assert.match(manager,/historyCaption\('span','owner-history-count-copy','shownLead'\)/);
+ assert.match(manager,/shownValue\.textContent=String\(entries\.length\)/);
+ assert.match(manager,/totalValue\.textContent=String\(allEntries\.length\)/);
+ assert.match(manager,/historyCaption\('small','owner-history-comparison-copy','beforeHeading'\)/);
+ assert.match(manager,/historyCaption\('small','owner-history-comparison-copy','afterHeading'\)/);
+ assert.match(manager,/document\.createTextNode\(' '\)/);
+ assert.doesNotMatch(manager,/count\.textContent=/);
  assert.match(manager,/h\('p',\{text:entry\.before\}\)/);
  assert.match(manager,/h\('p',\{text:entry\.after\}\)/);
  assert.doesNotMatch(manager,/ownerCopyLabel\(count/);

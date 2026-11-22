@@ -10521,6 +10521,26 @@ function showOverrideManager(){
   ownerCopyLabel(node,'owner-history',key,ru,en);
   return node;
  };
+ // Only the authorial words in history counters and comparisons are D1
+ // captions. Live entry totals, field values and source/game records remain
+ // separate DOM nodes, never saved as translated text.
+ const ownerHistoryTextRows=Object.freeze([
+  ['shownLead','Показано','Showing'],
+  ['shownOf','из','of'],
+  ['shownSuffix','правок','edits'],
+  ['beforeHeading','Было','Before'],
+  ['afterHeading','Стало','After']
+ ]);
+ const ownerHistoryTextByKey=new Map(ownerHistoryTextRows.map(row=>[row[0],row]));
+ const historyCaption=(tag,className,key)=>{
+  const source=ownerHistoryTextByKey.get(key);
+  if(!source)throw Error('Unknown authorial history label');
+  const [,ru,en]=source;
+  const target=h(tag,{class:className,
+   text:ownerCopy('owner-history',key,ru,en)});
+  ownerCopyLabel(target,'owner-history',key,ru,en);
+  return target;
+ };
  body.append(authoredHistory('intro',
   'Ручные изменения, сохранённые в Cloudflare D1. Для каждой записи показаны раздел, поле, исходное значение игрового каталога и текущая правка. Неизвестные исходные значения отмечены отдельно.',
   'Manual changes saved in Cloudflare D1. Every entry shows its section, field, original game-catalog value, and your edit. Unknown original values are marked.'));
@@ -10534,6 +10554,17 @@ function showOverrideManager(){
  ]);
  const pendingNote=h('p',{class:'owner-manager-pending-note',role:'status',hidden:true});
  const count=h('p',{class:'owner-manager-summary',role:'status'});
+ const shownValue=h('span',{class:'owner-history-live-count',text:'0'});
+ const totalValue=h('span',{class:'owner-history-live-count',text:'0'});
+ count.append(
+  historyCaption('span','owner-history-count-copy','shownLead'),
+  document.createTextNode(' '),shownValue,
+  document.createTextNode(' '),
+  historyCaption('span','owner-history-count-copy','shownOf'),
+  document.createTextNode(' '),totalValue,
+  document.createTextNode(' '),
+  historyCaption('span','owner-history-count-copy','shownSuffix')
+ );
  const list=h('div',{class:'owner-manager-list'});
  const clearSearch=h('button',{type:'button',class:'button-action owner-manager-search-clear',
   text:tr('Очистить','Clear'),disabled:true,
@@ -10565,8 +10596,8 @@ function showOverrideManager(){
    .filter(record=>!q||searchWords([record.key,record.title,...record.changes.flatMap(x=>
     [x.field,x.before,x.after])].join(' '),q))
    .sort((a,b)=>a.section.localeCompare(b.section,lang)||a.title.localeCompare(b.title,lang));
-  count.textContent=tr('Показано ','Showing ')+entries.length+
-   tr(' из ',' of ')+allEntries.length+tr(' правок',' edits');
+  shownValue.textContent=String(entries.length);
+  totalValue.textContent=String(allEntries.length);
   pendingNote.hidden=!ownerSaveInFlight()&&ownerSaveState!=='error';
   if(!pendingNote.hidden)pendingNote.textContent=ownerSaveState==='error'?
    tr('Есть ошибка сохранения. Исправь её перед изменением записей.',
@@ -10588,9 +10619,11 @@ function showOverrideManager(){
     change.append(h('strong',{class:'owner-review-field',text:entry.field}),
      h('div',{class:'owner-review-comparison'},[
       h('div',{class:'owner-review-before'},[
-       h('small',{text:tr('Было','Before')}),h('p',{text:entry.before})]),
+       historyCaption('small','owner-history-comparison-copy','beforeHeading'),
+       h('p',{text:entry.before})]),
       h('div',{class:'owner-review-after'},[
-       h('small',{text:tr('Стало','After')}),h('p',{text:entry.after})])
+       historyCaption('small','owner-history-comparison-copy','afterHeading'),
+       h('p',{text:entry.after})])
      ]));
     edits.append(change);
    }
