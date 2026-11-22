@@ -4246,7 +4246,6 @@ function renderWiki(root){
  if(wikiSelection.type==='skill'){
   const model=skillModel(),filterNames=window.PandoraWikiSkillFilters.names;
   const localizedFilterLabel=(id,labels)=>wikiTitle('skillFilter',id,labels.ru,labels.en);
-  const optionFor=new Map();
   let skillLabelList=null,skillLabelToggle=null;
   const filter=h('select',{class:'wiki-effect-type wiki-skill-type',
    'aria-label':wt('Категория навыков','Skill category'),
@@ -4264,7 +4263,7 @@ function renderWiki(root){
    const option=h('option',{value:id,text:name+(count==null?'':' · '+count),
     'data-label-count':count==null?'':String(count)});
    if(wikiSkillFilter===id)option.selected=true;
-   optionFor.set(id,option);filter.append(option);
+   filter.append(option);
   }
   // Reuse the native Encyclopedia filter and its established chapter-label
   // editor pattern. The edit rows expand IN the page (not a new floating menu).
@@ -4290,24 +4289,37 @@ function renderWiki(root){
      text:localizedFilterLabel(id,labels)});
     const startEdit=()=>{
      if(row.querySelector('[data-owner-text-field]')||!adminEditing||!adminToken)return;
-     const name=caption.textContent,host=h('span',{
+     // A language switch while an inline field is open must not route a RU
+     // draft into the EN D1 key (or vice versa).
+     const editLang=lang;
+     const name=window.PandoraWikiLabels.value(override,'skillFilter',id,editLang);
+     const host=h('span',{
       class:'wiki-category-edit-host wiki-skill-edit-host',text:name});
      caption.hidden=true;row.append(host);
      editWikiValue(host,name,{type:'text',
       onCommit:value=>saveGuidePatch('wiki.labels',{
-       [window.PandoraWikiLabels.key('skillFilter',id,lang)]:value
+       [window.PandoraWikiLabels.key('skillFilter',id,editLang)]:value
       }),
-      onCommitted:value=>{
-       caption.textContent=value;
-       const count=model?.counts?.[id],option=optionFor.get(id);
-       if(option)option.textContent=value+(count==null?'':' · '+count);
-      },
-      onFinished:()=>{caption.hidden=false;host.remove()}
+      // Resolve the current language from the source registry AFTER the
+      // editor detaches, including Escape, CAS conflicts and D1 Undo. Never
+      // overwrite a new locale's caption with an old-language draft.
+      onFinished:()=>{
+       caption.hidden=false;host.remove();refreshVisibleWikiLabels();
+      }
      });
     };
-    caption.tabIndex=0;caption.setAttribute('aria-keyshortcuts','F2');
-    caption.addEventListener('dblclick',event=>{event.preventDefault();startEdit()});
-    caption.addEventListener('keydown',event=>{if(event.key==='F2'){event.preventDefault();startEdit()}});
+    caption.tabIndex=0;caption.setAttribute('aria-keyshortcuts','F2 Enter');
+    caption.addEventListener('dblclick',event=>{
+     event.preventDefault();event.stopPropagation();startEdit();
+    });
+    caption.addEventListener('keydown',event=>{
+     if(event.key==='F2'||event.key==='Enter'){
+      event.preventDefault();event.stopPropagation();startEdit();
+     }
+    });
+    // The eight authorial labels are visible plain spans, not native options
+    // or actions. Reuse the owner-only long press instead of adding pencils.
+    bindOwnerTouchCaption(caption,startEdit);
     row.append(caption);list.append(row);
    }
    toolbar.append(toggle);
@@ -9751,9 +9763,7 @@ function refreshVisibleWikiLabels(){
   if(!filters||!Object.hasOwn(filters,id))continue;
   const name=labels.value(override,'skillFilter',id,lang);
   const caption=row.querySelector('.wiki-skill-label-caption');
-  const edit=row.querySelector('.wiki-skill-label-edit');
   ownerDockPatchText(caption,name);
-  ownerDockPatchAttr(edit,'aria-label',(lang==='en'?'Edit: ':'Изменить: ')+name);
  }
 }
 // Admin toolbar captions use the same bilingual, CAS-protected guideedit.book
