@@ -395,7 +395,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
        select.disabled=!found.length;
       };
       const submit=make('button',{type:'button',class:'wiki-owner-plus',
-
+       onclick:async()=>{
         const selected=mapOptions.find(entry=>entry.id===select.value);
         if(!selected){note.textContent=tr('Выбери локацию','Choose a location');return}
         let id='custom-1',n=1;
@@ -419,7 +419,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
        placeholder:tr('Название на английском','English name'),
        'aria-label':tr('Название на английском','English name')});
       const submit=make('button',{type:'button',class:'wiki-owner-plus',
-
+       onclick:async()=>{
         const nameRu=ru.value.trim(),nameEn=english.value.trim();
         if(!nameRu||!nameEn){note.textContent=tr('Заполни RU и EN','Enter RU and EN');return}
         let id='custom-1',n=1;
