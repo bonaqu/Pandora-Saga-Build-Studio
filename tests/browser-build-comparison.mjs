@@ -321,6 +321,31 @@ export async function runBuildComparisonSmoke(browser,base){
    Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-
    document.documentElement.clientWidth);
   assert.ok(overflow<=14,'Comparison created page-level overflow: '+overflow);
+  // Source-authored owner caption must survive checkbox auto-expand, not be
+  // replaced by hardcoded RU/EN copy or an obsolete D1 identity.
+  await page.setViewportSize({width:1240,height:850});
+  const expandAction=panel.locator('.build-compare-expand');
+  await expandAction.dblclick();
+  const expandEditor=panel.locator('.build-compare-action-group [data-owner-text-field]');
+  await expandEditor.waitFor({state:'visible',timeout:10000});
+  await expandEditor.fill('Скрыть сравнение · QA');
+  await expandEditor.press('Tab');
+  await expandEditor.waitFor({state:'detached',timeout:15000});
+  await page.waitForFunction(()=>
+   document.querySelector('.build-compare-expand')?.textContent==='Скрыть сравнение · QA',
+   null,{timeout:15000});
+  const expandKey=await page.evaluate(()=>
+   'guideedit.book.'+window.PandoraUILocale.fieldKey('compareCollapse'));
+  assert.equal(JSON.parse(copyValues[expandKey]).ru,'Скрыть сравнение · QA');
+  await expandAction.click();
+  await panel.locator('.build-compare-content').waitFor({state:'hidden',timeout:4000});
+  await page.locator('.build-card-compare input').first().uncheck();
+  await panel.locator('.build-compare-content').waitFor({state:'visible',timeout:4000});
+  assert.equal(await expandAction.getAttribute('data-owner-copy-key'),'compareCollapse');
+  assert.equal(await expandAction.getAttribute('aria-expanded'),'true');
+  assert.equal((await expandAction.textContent()).trim(),'Скрыть сравнение · QA',
+   'Checkbox auto-expand must retain current D1 owner copy');
+  assert.equal(await panel.locator('.ui-content-edit-host').count(),0);
   assert.deepEqual(errors,[]);
   console.log('Chromium compact A/B passed: differences, swap, identical results, mobile');
  }finally{await context.close()}

@@ -104,7 +104,10 @@ test('comparison renders within saved builds instead of a modal, with familiar s
  assert.match(app,/data-compare-row/);
  assert.match(app,/data-compare-select/);
  assert.doesNotMatch(app,/data-compare-differences/);
- assert.match(app,/comparisonSlot\.querySelector/);
+ assert.match(app,/expand:\(\)=>setComparisonExpanded\(true\)/);
+ assert.match(app,/if\(comparison\)\{comparison\.expand\(\);comparison\.update\(\)\}/);
+ assert.match(app,/syncCompareCopy\(collapse,comparisonOpen\?'compareCollapse':'compareExpand'\)/);
+ assert.doesNotMatch(app,/expand\.textContent=lang==='en'\?'Collapse'/);
  assert.doesNotMatch(app,/modal\('Сравнение билдов'/);
  assert.match(style,/build-compare-table-wrap/);
  assert.match(html,/pandora-studio-build-comparison\.css/);

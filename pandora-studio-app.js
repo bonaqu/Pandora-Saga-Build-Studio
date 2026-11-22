@@ -7987,13 +7987,16 @@ function renderBuildComparison(host,onSelection=()=>{}){
   'data-owner-copy-key':comparisonOpen?'compareCollapse':'compareExpand',
   'aria-expanded':String(comparisonOpen),
   text:copy(comparisonOpen?'compareCollapse':'compareExpand'),
-  onclick:()=>{
-   comparisonOpen=!comparisonOpen;
-   content.hidden=!comparisonOpen;
-   collapse.setAttribute('aria-expanded',String(comparisonOpen));
-   syncCompareCopy(collapse,comparisonOpen?'compareCollapse':'compareExpand');
-   if(adminEditing&&adminToken)bindAccountCopyEditors(header);
-  }});
+  onclick:()=>setComparisonExpanded(!comparisonOpen)});
+ // The header action and checkbox auto-expand must use the same semantic
+ // D1 caption, owner key and ARIA state, including authored RU/EN overrides.
+ function setComparisonExpanded(open){
+  comparisonOpen=Boolean(open);
+  content.hidden=!comparisonOpen;
+  collapse.setAttribute('aria-expanded',String(comparisonOpen));
+  syncCompareCopy(collapse,comparisonOpen?'compareCollapse':'compareExpand');
+  if(adminEditing&&adminToken)bindAccountCopyEditors(header);
+ }
  const actionGroup=h('div',{class:'build-compare-action-group'},[collapse]);
  header.append(titleGroup,actionGroup);
  const controls=h('div',{class:'build-compare-controls'});
@@ -8132,7 +8135,7 @@ function renderBuildComparison(host,onSelection=()=>{}){
   }
  }
  update();
- return {update};
+ return {update,expand:()=>setComparisonExpanded(true)};
 }
 
 function restoreLoadedBuildUI(){
@@ -8615,12 +8618,8 @@ function renderBuilds(root){
    compareIds=check.checked?[...chosen.filter(id=>id!==b.id),b.id].slice(-2):
     chosen.filter(id=>id!==b.id);
    comparisonOpen=true;
-   if(comparison)comparison.update();
+   if(comparison){comparison.expand();comparison.update()}
    syncCompareCheckboxes();
-   comparisonSlot.querySelector('.build-compare-content')?.removeAttribute('hidden');
-   const expand=comparisonSlot.querySelector('.build-compare-expand');
-   if(expand){expand.setAttribute('aria-expanded','true');
-    expand.textContent=lang==='en'?'Collapse':'Скрыть сравнение'}
   };
   // Keep the compare selector separate from the four one-row actions.
   // Build names remain user-owned; only static labels use D1 editorial copy.
