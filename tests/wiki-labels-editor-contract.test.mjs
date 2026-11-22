@@ -49,8 +49,20 @@ test('editable bilingual labels preserve stable internal chapter and section key
   assert.equal(guide.validOverride('wiki.labels',JSON.stringify(bad)),false);
  }
  assert.match(app,/'data-wiki-chapter':key/);
- assert.match(app,/window\.PandoraWikiLabels\.key\('skillFilter',id,lang\)/);
+ assert.match(app,/window\.PandoraWikiLabels\.key\('skillFilter',id,editLang\)/);
  assert.match(app,/class:'wiki-categories wiki-skill-edit-list'/);
+ const skillEditor=app.slice(app.indexOf("if(wikiSelection.type==='skill'){"),
+  app.indexOf("if(wikiSelection.type==='item'&&wikiItemType==='utility')"));
+ assert.match(skillEditor,/const editLang=lang;/,
+  'The owner translation target must be captured before typing');
+ assert.match(skillEditor,/key\('skillFilter',id,editLang\)/);
+ assert.match(skillEditor,/bindOwnerTouchCaption\(caption,startEdit\)/,
+  'Use touch hold on actual authorial text; no separate pencil');
+ assert.match(skillEditor,/aria-keyshortcuts','F2 Enter'/);
+ assert.match(skillEditor,/onFinished:\(\)=>\{[\s\S]*?refreshVisibleWikiLabels\(\)/,
+  'Escape, CAS and Undo must restore the current locale');
+ assert.doesNotMatch(skillEditor,/wiki-skill-label-edit|optionFor/,
+  'No retired pencil or stale option cache');
  assert.match(app,/saveGuidePatch\('wiki.labels',\{/);
  assert.match(app,/window\.PandoraWikiLabels\.key\('chapter',key,lang\)/);
  assert.match(view,/editLabel\(heading,'honor',id,name\)/);
@@ -166,8 +178,7 @@ test('Wiki label refresh reuses mounted DOM, skips unchanged text and active inl
  const b=app.indexOf('// Admin toolbar captions use the same bilingual',a);
  assert.ok(a>=0&&b>a);
  const source=app.slice(a,b);
- const attrs=new Map([['aria-label','Изменить: Неуточнённые']]);
- const counters={text:0,attr:0};
+ const counters={text:0};
  const caption=initial=>({
   _content:initial,
   get textContent(){return this._content},
@@ -178,19 +189,13 @@ test('Wiki label refresh reuses mounted DOM, skips unchanged text and active inl
   value:'unknown',dataset:{labelCount:'4'}
  });
  const rowCaption=caption('Неуточнённые');
- const pencil={
-  getAttribute:key=>attrs.get(key)??null,
-  setAttribute:(key,value)=>{counters.attr++;attrs.set(key,value)}
- };
  let chapterEditing=false;
  const chapter={dataset:{wikiChapter:'honor'},
   querySelector:selector=>selector==='.wiki-category-text'?chapterCaption:
    selector==='.wiki-inline-input,.ui-content-edit-host'&&chapterEditing?{}:null};
  const row={dataset:{skillFilterLabel:'unknown'},
-  querySelector:selector=>({
-   '.wiki-skill-label-caption':rowCaption,
-   '.wiki-skill-label-edit':pencil
-  })[selector]||null};
+  querySelector:selector=>selector==='.wiki-skill-label-caption'?
+   rowCaption:null};
  const doc={querySelectorAll:selector=>({
   '.wiki-category-line [data-wiki-chapter]':[chapter],
   '.wiki-skill-type option':[filterOption],
@@ -200,12 +205,12 @@ test('Wiki label refresh reuses mounted DOM, skips unchanged text and active inl
  const env={PandoraWikiLabels:{value:(_overrides,family)=>names[family]},
   PandoraWikiSkillFilters:{names:{unknown:'Unknown'}}};
  const patchText=(node,value)=>{if(node&&node.textContent!==value)node.textContent=value};
- const patchAttr=(node,key,value)=>{if(node&&node.getAttribute(key)!==value)node.setAttribute(key,value)};
+ const patchAttr=()=>{throw Error('No retired caption pencil may receive ARIA updates')};
  const refresh=Function('document','window','override','lang','ownerDockPatchText','ownerDockPatchAttr',
   source+'\nreturn refreshVisibleWikiLabels;')(
   doc,env,{},'ru',patchText,patchAttr);
  refresh();
- assert.deepEqual(counters,{text:0,attr:0},
+ assert.deepEqual(counters,{text:0},
   'No-op refreshes must not recreate labels or re-announce ARIA captions');
  names.chapter='Новые звания';
  names.skillFilter='На уточнении';
@@ -214,7 +219,8 @@ test('Wiki label refresh reuses mounted DOM, skips unchanged text and active inl
  assert.equal(chapterCaption.textContent,'Честь','Do not destroy a chapter edit draft');
  assert.equal(filterOption.textContent,'На уточнении · 4');
  assert.equal(rowCaption.textContent,'На уточнении');
- assert.equal(attrs.get('aria-label'),'Изменить: На уточнении');
+ assert.doesNotMatch(source,/wiki-skill-label-edit/,
+  'Restoring the current caption must not revive retired pencil controls');
  chapterEditing=false;
  refresh();
  assert.equal(chapterCaption.textContent,'Новые звания');
