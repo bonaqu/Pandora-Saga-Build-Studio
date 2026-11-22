@@ -73,6 +73,25 @@ test('English comparison and legacy saved states remain valid and complete',()=>
  assert.ok(empty.some(x=>x.key==='effective.vit'&&x.a==='—'&&x.b==='—'));
  assert.ok(empty.some(x=>x.key==='level'&&x.a==='—'&&x.delta===null));
 });
+test('#390 A/B stat titles are independent authorial fields with original game math',()=>{
+ const source=comparison.metricCopyRows;
+ assert.equal(source.length,36);
+ assert.equal(new Set(source.map(row=>row[0])).size,36);
+ assert.equal(Object.isFrozen(source),true);
+ assert.ok(source.every(row=>Object.isFrozen(row)&&row.length===3));
+ const rows=comparison.compactResults(opts.summaryA,opts.summaryB,{lang:'ru'});
+ const hp=rows.find(row=>row.key==='stat.hp');
+ assert.equal(hp.label,'ОЗ');assert.equal(hp.labelRu,'ОЗ');assert.equal(hp.labelEn,'HP');
+ assert.equal(hp.a,'300');assert.equal(hp.b,'600');assert.equal(hp.advantage,'b');
+ const app=file('pandora-studio-app.js');
+ assert.match(app,/ownerCopyLabel\(caption,'compare-metric',id,item\.labelRu,item\.labelEn/);
+ assert.match(app,/ownerCopy\('compare-metric',id,item\.labelRu,item\.labelEn\)/);
+ assert.match(app,/if\(tbody\.querySelector\('\[data-owner-text-field\]'\)\)/);
+ assert.match(app,/deferredMetricUpdate=false;update\(\)/);
+ assert.match(app,/key\.startsWith\('book\.compare-metric\.'\)/);
+ assert.match(app,/stats-ui\|compare-metric/);
+});
+
 test('comparison renders within saved builds instead of a modal, with familiar stats and controls',()=>{
  const app=file('pandora-studio-app.js'),style=file('pandora-studio-build-comparison.css'),
   html=file('index.html');

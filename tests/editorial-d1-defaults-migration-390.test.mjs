@@ -86,6 +86,24 @@ test('#390 comparison captions have exact bilingual D1 source defaults, never A/
   assert.equal(manifest.records.some(row=>row.recordKey.endsWith(forbidden)),false);
 });
 
+test('#390 all 36 stable A/B metric labels enter versioned D1, no game values',()=>{
+ const root={};runInNewContext(read('pandora-studio-build-comparison.js'),{window:root});
+ const entries=root.PandoraBuildComparison.metricCopyRows;
+ assert.equal(entries.length,36);
+ assert.equal(manifest.stats.cohorts['comparison-metric'],72);
+ for(const [id,ru,en] of entries){
+  const key='guideedit.book.compare-metric.'+
+   id.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  const rows=manifest.records.filter(row=>row.recordKey===key);
+  assert.deepEqual(rows.map(row=>row.field).sort(),['en','ru'],key);
+  assert.equal(rows.find(row=>row.field==='ru')?.value,ru);
+  assert.equal(rows.find(row=>row.field==='en')?.value,en);
+ }
+ for(const bad of ['compare-metric.user','compare-metric.delta',
+  'compare-metric.saved-build','compare-metric.A'])
+  assert.equal(manifest.records.some(row=>row.recordKey.startsWith('guideedit.book.'+bad)),false);
+});
+
 test('issue #390: all exact Wiki label field identities enter the physical D1 defaults plan',()=>{
  const scope={};scope.window=scope;
  runInNewContext(read('pandora-studio-wiki-labels.js'),scope);

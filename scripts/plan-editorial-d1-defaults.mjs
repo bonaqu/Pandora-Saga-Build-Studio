@@ -817,6 +817,34 @@ export function buildEditorialDefaultsManifest(){
   append(recordKey,'en',en,'catalog-footer-authorial');
  }
 
+ // All 36 fixed calculated stat names in A/B are authored RU/EN
+ // captions. Do NOT stage numeric calculations, summaries, saved-build
+ // identities or live selected character values.
+ const metricRoot={};
+ runInNewContext(read('pandora-studio-build-comparison.js'),{window:metricRoot},
+  {filename:'pandora-studio-build-comparison.js',timeout:5000});
+ const metrics=metricRoot.PandoraBuildComparison?.metricCopyRows;
+ const expectedMetricIds=[
+  'hp','mp','attack','magicAttack','defense','frontAttack','backAttack',
+  'meleeRange','rangedRange','physicalFlat','physicalResist','magicDamageResist',
+  'accuracy','frontAccuracy','dodge','rangedEvasion','crit','critResist',
+  'critDamage','critDamageResist','attackSpeed','moveSpeed','townSpeed',
+  'castSpeed','castTime','cooldown','fire','ice','lightning','poison','charm',
+  'light','dark','physicalConditions','mentalConditions','magic'
+ ];
+ if(!Array.isArray(metrics)||metrics.length!==expectedMetricIds.length||
+  metrics.map(row=>row?.[0]).sort().join('|')!==expectedMetricIds.sort().join('|'))
+  throw Error('The A/B metric registry changed: review owner-copy identities');
+ for(const row of metrics){
+  if(!Array.isArray(row)||row.length!==3)
+   throw Error('Invalid source A/B RU/EN metric caption');
+  const [id,ru,en]=row;
+  const key='guideedit.book.compare-metric.'+
+   id.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  append(key,'ru',ru,'comparison-metric');
+  append(key,'en',en,'comparison-metric');
+ }
+
  // The Wiki chapters, all five Honor subchapters and skill filters are
  // one existing D1 JSON record. Preserve their exact field identities;
  // never reconstruct these labels from list position or save them as game IDs.

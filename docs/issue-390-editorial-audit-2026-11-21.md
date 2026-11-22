@@ -247,3 +247,10 @@ Extended the isolated Chromium Profile scenario beyond RU/EN happy-path: a stale
 - The compact comparison now uses five stable `PandoraUILocale` D1/CAS RU/EN fields for its authored A/B selector prefix, default chooser option, swap accessible label/title, A/B statistics table ARIA description and repeated “Характеристика” column headers.
 - Visible selector prefixes and both column headings are directly editable by dblclick/F2 through the established owner-only inline editor; there are no caption pencils. Fixed A/B letters and private player build names, selections, calculated metrics, numeric values and game identities remain separate uneditable nodes.
 - Save, Undo and reset patch the existing selector accessible names, picker placeholder options and table/swap labels without remounting the selected builds. Added Node, source manifest/CAS, and RU/EN Chromium assertions; physical Cloudflare staging D1 import and hardware touch tests remain separately outstanding.
+
+## Checkpoint 22.11.2026 — immutable A/B stat metric captions
+
+- All **36** source-backed compact comparison metrics now carry independent, non-game authorial RU/EN captions editable **directly on the visible th** via owner dblclick, F2/Enter, blur→D1 CAS, Escape, Undo. No caption pencils or new numeric/delta columns.
+- The comparison module's original RU metric names remain its exclusive source lookup, and winner/max/min/delta and saved A/B identifiers are not altered by a textual owner override. The UI reads `compare-metric.<key>` via existing `PandoraHonorGuide` CAS and stages **72 immutable bilingual D1-defaults rows** from the very same fixed source registry.
+- An open/failed caption edit defers A/B table re-render until the editor closes, keeping drafts intact across a swap/selection. Numeric cells remain protected. Static Node tests cover the source key inventory and CAS precedence, browser acceptance must be green on the final PR SHA.
+- The D1 manifest is still offline staging-only: no Cloudflare staging import, production D1 write or deployment is implied.

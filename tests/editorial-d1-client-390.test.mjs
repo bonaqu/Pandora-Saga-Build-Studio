@@ -51,6 +51,20 @@ test('#390 staged D1 client is inert until explicit verified version activation'
  assert.deepEqual(expectPlain(stage.status()),{active:false,snapshot:null});
 });
 
+test('#390 verified A/B metric RU/EN defaults never outrank original owner CAS',async()=>{
+ const root=context(),stage=root.PandoraEditorialDefaults,guide=root.PandoraHonorGuide;
+ const id='guideedit.book.compare-metric.hp';
+ const snap=fixture([[id,'ru','Здоровье · staging'],[id,'en','Health · staging']]);
+ assert.equal(await stage.installVerified(snap,snap.snapshot,webcrypto.subtle),true);
+ assert.equal(guide.field({},'compare-metric.hp','ОЗ','HP').ru,'Здоровье · staging');
+ assert.equal(guide.field({},'compare-metric.hp','ОЗ','HP').en,'Health · staging');
+ const override={[id]:JSON.stringify({ru:'ОЗ · владелец'})};
+ assert.equal(guide.field(override,'compare-metric.hp','ОЗ','HP').ru,'ОЗ · владелец');
+ assert.equal(guide.field(override,'compare-metric.hp','ОЗ','HP').en,'Health · staging');
+ stage.reset();
+ assert.equal(guide.field({},'compare-metric.hp','ОЗ','HP').ru,'ОЗ');
+});
+
 test('#390 comparison author copy respects verified staging and prior owner CAS',async()=>{
  const root=context(),stage=root.PandoraEditorialDefaults,locale=root.PandoraUILocale;
  const id='guideedit.book.'+locale.fieldKey('compareStatColumn');
