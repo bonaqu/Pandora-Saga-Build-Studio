@@ -1147,6 +1147,15 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(JSON.parse(values['guideedit.book.honor-view.link-zone-action']).ru,
    '+ Связать локацию QA');
   assert.equal(await zoneList.locator('.wiki-honor-list-row').count(),linkedRows);
+  // A deferred owner-caption mouse click must be cancelled by a new
+  // pointerdown elsewhere, never open a stale form over the next task.
+  await linkAction.click();
+  assert.equal(await linkAction.getAttribute('data-owner-caption-pending'),'1');
+  await honorPane.locator('.wiki-honor-title').click();
+  await page.waitForTimeout(600);
+  assert.equal(await linkAction.getAttribute('data-owner-caption-pending'),null);
+  assert.equal(await zoneList.locator('.wiki-honor-new').count(),0,
+   'Leaving a pending Honor action cannot open a stale form');
   await linkAction.click();
   await zoneList.locator('.wiki-honor-new').waitFor({state:'visible',timeout:6000});
   const cancelAction=zoneList.locator('.wiki-honor-new .wiki-owner-remove').first();

@@ -4378,6 +4378,9 @@ function renderWiki(root){
     label:(group,id,ru,en)=>wikiTitle(group,id,ru,en),
     copy:(key,ru,en)=>ownerCopy('honor-view',key,ru,en),
     editCopy:(node,key,ru,en,callbacks)=>ownerCopyLabel(node,'honor-view',key,ru,en,callbacks),
+    // Global action guard cancels a deferred owner click on an unrelated
+    // pointerdown and preserves native keyboard activation.
+    guardAction:(button,caption)=>ownerCaptionActionGuard(button,caption),
     editLabel:(node,group,id,initial)=>editWikiValue(node,initial,{type:'text',
      onCommit:value=>saveGuidePatch('wiki.labels',{
       [window.PandoraWikiLabels.key(group,id,lang)]:value

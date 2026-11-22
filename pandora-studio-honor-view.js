@@ -17,7 +17,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  warId=null,warLink=()=>null,backButton=()=>null,
  label=(group,id,ru,en)=>lang==='en'?en:ru,editLabel=()=>{},
   copy=(key,ru,en)=>lang==='en'?en:ru,editCopy=()=>{},
- mapOptions=[],onOpenLocations=()=>{},searchQuery=''}={}){
+ mapOptions=[],onOpenLocations=()=>{},searchQuery='',guardAction=()=>{}}={}){
  if(!browse||!detail||!article||typeof make!=='function')return;
  // Re-rendering after admin edits must never accumulate scroll observers.
  stopObserving();
@@ -41,20 +41,6 @@ function render({browse,detail,make,lang='ru',article,editable=false,
    if(editable)editCopy(element,key,ru,english);
    return element;
   };
-  const guardCaptionAction=(action,caption)=>{
-   let pending=null;
-   action.addEventListener('click',event=>{
-    if(!event.detail||!caption.contains(event.target))return;
-     // An inline text draft must not trigger the native action underneath it.
-     if(event.target.closest?.('[data-owner-text-field],.wiki-inline-input')){
-      event.preventDefault();event.stopImmediatePropagation();return;
-     }
-     if(event.target.closest?.('input,textarea,select'))return;
-    event.preventDefault();event.stopImmediatePropagation();
-    if(pending){clearTimeout(pending);pending=null;return}
-    pending=setTimeout(()=>{pending=null;if(action.isConnected)action.click()},500);
-   },true);
-  };
   // Direct owner caption; native Enter/Space keep their action, F2 edits.
   const ownerActionLabel=(button,key,ru,english)=>{
    const caption=node('span','wiki-honor-action-caption',copy(key,ru,english));
@@ -68,7 +54,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
       key:'F2',bubbles:true,cancelable:true
      }));
     });
-    guardCaptionAction(button,caption);
+    guardAction(button,caption);
    }
    return button;
   };
@@ -232,7 +218,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
    navCaption.addEventListener('keydown',event=>{
     if(event.key==='F2')edit(event);
    });
-   guardCaptionAction(jump,navCaption);
+   guardAction(jump,navCaption);
   }
   jump.addEventListener('click',()=>{
    selectSection(id);
@@ -321,7 +307,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
      anchor.addEventListener('dblclick',edit);
      anchor.setAttribute('aria-keyshortcuts','F2');
      anchor.addEventListener('keydown',event=>{if(event.key==='F2')edit(event)});
-     guardCaptionAction(anchor,anchor);
+     guardAction(anchor,anchor);
     }
    }
    row.append(names);
@@ -554,7 +540,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
    caption.addEventListener('dblclick',edit);
    caption.tabIndex=0;caption.setAttribute('aria-keyshortcuts','F2');
    caption.addEventListener('keydown',event=>{if(event.key==='F2')edit(event)});
-   guardCaptionAction(button,caption);
+   guardAction(button,caption);
    wrap.append(host);
   }
     rankFilters.append(wrap);

@@ -389,7 +389,7 @@ test('#390 Hero Path and Honor source-authored labels have pinned semantic D1 de
   ['addWarAction','cancelAction','createLocationAction','linkZoneAction','submitAction']);
  assert.equal(manifest.stats.cohorts['honor-owner-actions'],10);
  assert.match(honor,/button\.addEventListener\('keydown',event=>\{/);
- assert.match(honor,/guardCaptionAction\(button,caption\)/);
+ assert.match(honor,/guardAction\(button,caption\)/);
  for(const [key,[ru,en]] of actions){
   const recordKey='guideedit.book.honor-view.'+
    key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase());
