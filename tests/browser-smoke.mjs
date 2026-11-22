@@ -61,6 +61,7 @@ import {runSavedBuildGridSmoke} from './browser-build-grid-640.mjs';
 import {runOwnerBuildHints660Smoke} from './browser-build-hint-editorial-660.mjs';
 import {runOwnerBuildSearch662Smoke} from './browser-build-search-editor-662.mjs';
 import {runCrossSurfaceEditorial663Smoke} from './browser-cross-surface-editorial-663.mjs';
+import {runProfileCaption390Smoke} from './browser-profile-caption-390.mjs';
 import {runEffectItemsSmoke} from './browser-effect-items.mjs';
 import {runWikiSkillFiltersSmoke,runWikiIconManifestFallbackSmoke} from './browser-wiki-skill-filters.mjs';
 import {runWikiMaterialLinks752Smoke} from './browser-wiki-material-links-752.mjs';
@@ -150,6 +151,7 @@ const scenarios=[
   ['owner-build-hint-edit-660',runOwnerBuildHints660Smoke],
   ['owner-build-search-662',runOwnerBuildSearch662Smoke],
   ['cross-surface-editorial-663',runCrossSurfaceEditorial663Smoke],
+  ['profile-direct-copy-390',runProfileCaption390Smoke],
   ['build-comparison',runBuildComparisonSmoke],
   ['saved-builds-english',runSavedBuildEnglishSmoke],
   ['effect-items',runEffectItemsSmoke],
