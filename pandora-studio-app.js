@@ -7716,9 +7716,14 @@ const profileAuthorialCopy=Object.freeze({
  'racial-heading':['Расовая пассивка — выбери одну из трёх',
   'Racial passive — choose one'],
  'overview-help':['Развивай умения в «Пути героя», а характеристики — в «Происхождении».',
-  'Train skills in Hero Path and allocate attributes in Origin.']
+  'Train skills in Hero Path and allocate attributes in Origin.'],
+ 'tab-character':['Персонаж','Character'],
+ 'tab-profile':['Профиль','Profile'],
+ 'action-hero-path':['⚔ Путь героя · умения','⚔ Hero Path · skills'],
+ 'action-attributes':['✥ Базовые характеристики','✥ Base attributes'],
+ 'action-edit-profile':['✎ Изменить профиль','✎ Edit profile']
 });
-function profileCopyLabel(key,ru,en,{as='span',forId=null}={}){
+function profileCopyLabel(key,ru,en,{as='span',forId=null,action=false}={}){
  const authored=profileAuthorialCopy[key];
  if(authored)[ru,en]=authored;
  const label=ownerCopy('profile',key,ru,en);
@@ -7742,11 +7747,12 @@ function profileCopyLabel(key,ru,en,{as='span',forId=null}={}){
   });
  };
  node.addEventListener('dblclick',edit);
- node.tabIndex=0;
- // A bound <label> retains its native action for Enter; standalone captions
- // use Enter or F2 to start editing without inserting a new action button.
- const canUseEnter=as!=='label';
- node.setAttribute('aria-keyshortcuts',canUseEnter?'F2 Enter':'F2');
+ bindOwnerTouchCaption(node,edit,{interactive:action||as==='label'});
+ // A button caption must not be another tab stop inside the real button.
+ // F2 on the parent opens editing, while Enter still triggers the action.
+ if(!action)node.tabIndex=0;
+ const canUseEnter=as!=='label'&&!action;
+ if(!action)node.setAttribute('aria-keyshortcuts',canUseEnter?'F2 Enter':'F2');
  node.addEventListener('keydown',event=>{
   if(event.target!==node)return; // Do not reopen from a nested editor.
   if(event.key==='F2'||(canUseEnter&&event.key==='Enter'))edit(event);
@@ -7809,11 +7815,28 @@ function renderCharacter(root){
  const tr=(ru,en)=>lang==='en'?en:ru;
  if(characterPanelTab!=='profile')characterPanelTab='character';
  const tabs=h("div",{class:"ps-character-tabs",role:"tablist","aria-label":tr("Окно персонажа","Character panel")});
- const selection=[["character",tr("Персонаж","Character")],["profile",tr("Профиль","Profile")]];
- for(const[key,label]of selection){
-  tabs.append(h("button",{role:"tab","aria-selected":String(characterPanelTab===key),class:characterPanelTab===key?"chosen":"",
-   text:label,onclick:()=>{characterPanelTab=key;renderDetails()}}));
- }
+ const selection=[['character','tab-character'],['profile','tab-profile']];
+ const authoredAction=(key,activate,{tab=false,selected=false}={})=>{
+  const caption=profileCopyLabel(key,...profileAuthorialCopy[key],{action:true});
+  const button=h('button',{
+   ...(tab?{role:'tab','aria-selected':String(selected)}:{}),
+   class:tab?(selected?'chosen':''):'button-action',
+   onclick:activate
+  },[caption]);
+  if(adminEditing&&adminToken){
+   ownerCaptionActionGuard(button,caption);
+   button.setAttribute('aria-keyshortcuts','F2');
+   button.addEventListener('keydown',event=>{
+    if(event.key!=='F2'||event.target!==button)return;
+    event.preventDefault();event.stopPropagation();
+    caption.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
+   });
+  }
+  return button;
+ };
+ for(const [key,copyKey] of selection)
+  tabs.append(authoredAction(copyKey,()=>{characterPanelTab=key;renderDetails()},
+   {tab:true,selected:characterPanelTab===key}));
  root.append(tabs);
  const body=h("section",{class:"ps-character-body"});
  if(characterPanelTab==="profile")renderProfile(body);
@@ -7851,16 +7874,16 @@ function renderCharacter(root){
   body.append(racialTitle,passivePicker);
   body.append(profileCopyNote('overview-help',...profileAuthorialCopy['overview-help']));
   const jump=h("div",{class:"ps-overview-actions"});
-  jump.append(h("button",{class:"button-action",text:tr("⚔ Путь героя · умения","⚔ Hero Path · skills"),onclick:()=>{
+  jump.append(authoredAction('action-hero-path',()=>{
    closeWorkbench();heroPathPage='skills';renderPathPages();saveView();
    $('pathSkillsTab')?.focus({preventScroll:true});
-  }}));
-  jump.append(h("button",{class:"button-action",text:tr("✥ Базовые характеристики","✥ Base attributes"),onclick:()=>{
+  }));
+  jump.append(authoredAction('action-attributes',()=>{
    closeWorkbench();originActive='stats';renderOriginTabs();saveView();
-  }}));
-  jump.append(h("button",{class:"button-action",text:tr("✎ Изменить профиль","✎ Edit profile"),onclick:()=>{
+  }));
+  jump.append(authoredAction('action-edit-profile',()=>{
    characterPanelTab='profile';renderDetails();
-  }}));
+  }));
   body.append(jump);
  }
  root.append(body);

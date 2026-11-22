@@ -125,7 +125,9 @@ export function buildEditorialDefaultsManifest(){
   'field-name','field-guild','field-nation','field-rank',
   'bio-label','bio-placeholder','profile-notes',
   'overview-race','overview-class','overview-level',
-  'racial-heading','overview-help'
+  'racial-heading','overview-help',
+  'tab-character','tab-profile','action-hero-path','action-attributes',
+  'action-edit-profile'
  ];
  if(Object.keys(profile).sort().join('|')!==expectedProfile.sort().join('|'))
   throw Error('Profile source keys drifted; review migration');

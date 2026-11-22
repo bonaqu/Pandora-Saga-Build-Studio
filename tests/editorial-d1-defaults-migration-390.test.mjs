@@ -591,8 +591,8 @@ test('#390 profile owner copy defaults mirror live source labels, never player d
  const match=source.match(/const profileAuthorialCopy=Object\.freeze\((\{[\s\S]*?\})\);/);
  assert.ok(match);
  const pairs=runInNewContext('('+match[1]+')',{});
- assert.equal(Object.keys(pairs).length,12);
- assert.equal(manifest.stats.cohorts['profile-authorial'],24);
+ assert.equal(Object.keys(pairs).length,17);
+ assert.equal(manifest.stats.cohorts['profile-authorial'],34);
  assert.match(source,/const authored=profileAuthorialCopy\[key\]/);
  assert.match(source,/\["name",\.\.\.profileAuthorialCopy\['field-name'\]/);
  assert.match(source,/placeholder:ownerCopy\('profile','bio-placeholder',\s*\.\.\.profileAuthorialCopy\['bio-placeholder'\]/);

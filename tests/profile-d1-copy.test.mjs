@@ -71,3 +71,23 @@ test('profile owner copy changes only labels and accessible placeholders, never 
  assert.match(editor,/if\(event\.key==='F2'\|\|\(canUseEnter&&event\.key==='Enter'\)\)edit\(event\)/);
  assert.doesNotMatch(app,/saveGuidePatch\('book\.profile\.'\+state\.name/);
 });
+
+test('profile and character button captions edit without a second action or tab stop',()=>{
+ const app=read('pandora-studio-app.js');
+ const src=app.slice(app.indexOf('function renderCharacter('),
+  app.indexOf('// Legacy duplicate skill editor retired',app.indexOf('function renderCharacter(')));
+ const label=app.slice(app.indexOf('function profileCopyLabel('),
+  app.indexOf('function profileCopyNote(',app.indexOf('function profileCopyLabel(')));
+ for(const key of ['tab-character','tab-profile','action-hero-path',
+  'action-attributes','action-edit-profile'])
+  assert.ok(app.includes("'"+key+"'"),'Missing source-backed action '+key);
+ assert.match(src,/const authoredAction=\(key,activate/);
+ assert.match(src,/ownerCaptionActionGuard\(button,caption\)/);
+ assert.match(src,/caption\.dispatchEvent\(new MouseEvent\('dblclick'/);
+ assert.match(src,/if\(event\.key!=='F2'\|\|event\.target!==button\)return/);
+ assert.match(src,/tabs\.append\(authoredAction\(copyKey/);
+ assert.match(src,/jump\.append\(authoredAction\('action-edit-profile'/);
+ assert.match(label,/bindOwnerTouchCaption\(node,edit,\{interactive:action\|\|as==='label'\}\)/);
+ assert.match(label,/if\(!action\)node\.tabIndex=0/);
+ assert.doesNotMatch(src,/class:'ps-profile-copy-pencil'/);
+});
