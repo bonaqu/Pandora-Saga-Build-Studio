@@ -51,6 +51,22 @@ test('#390 staged D1 client is inert until explicit verified version activation'
  assert.deepEqual(expectPlain(stage.status()),{active:false,snapshot:null});
 });
 
+test('#390 comparison author copy respects verified staging and prior owner CAS',async()=>{
+ const root=context(),stage=root.PandoraEditorialDefaults,locale=root.PandoraUILocale;
+ const id='guideedit.book.'+locale.fieldKey('compareStatColumn');
+ const payload=fixture([[id,'ru','Параметр · staging'],[id,'en','Metric · staging']]);
+ assert.equal(await stage.installVerified(payload,payload.snapshot,webcrypto.subtle),true);
+ assert.equal(locale.text('compareStatColumn','ru'),'Параметр · staging');
+ assert.equal(locale.text('compareStatColumn','en'),'Metric · staging');
+ locale.setOverrides({[id]:JSON.stringify({ru:'Показатель владельца'})});
+ assert.equal(locale.text('compareStatColumn','ru'),'Показатель владельца');
+ assert.equal(locale.text('compareStatColumn','en'),'Metric · staging');
+ locale.setOverrides({});
+ stage.reset();
+ assert.equal(locale.text('compareStatColumn','ru'),'Характеристика');
+ assert.equal(locale.text('compareStatColumn','en'),'Stat');
+});
+
 test('#390 profile field captions prefer CAS over verified staging text without touching hero data',async()=>{
  const root=context(),stage=root.PandoraEditorialDefaults,guide=root.PandoraHonorGuide;
  const name='guideedit.book.profile.field-name';

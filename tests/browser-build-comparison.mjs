@@ -80,7 +80,19 @@ export async function runBuildComparisonSmoke(browser,base){
   await panel.waitFor({state:'visible'});
   assert.equal(await page.locator('#modalRoot .modal').count(),0);
   await panel.getByRole('button',{name:'Развернуть сравнение'}).click();
-  const selects=panel.locator('[data-compare-select]');
+  // Fixed A/B captions are RU-authorial; A/B letters and selected IDs are not.
+   assert.deepEqual(await panel.locator('[data-owner-copy-key="compareBuildCaption"]')
+    .allTextContents(),['Билд','Билд']);
+   assert.deepEqual(await panel.locator('[data-compare-letter]').allTextContents(),[' A',' B']);
+   assert.deepEqual(await panel.locator('[data-compare-select]').evaluateAll(
+    fields=>fields.map(node=>node.getAttribute('aria-label'))),['Билд A','Билд B']);
+   assert.deepEqual(await panel.locator('[data-compare-select] option[value=""]').allTextContents(),
+    ['Выбери сохранённый билд','Выбери сохранённый билд']);
+   assert.equal(await panel.locator('.build-compare-table').getAttribute('aria-label'),
+    'Различающиеся итоговые характеристики билдов');
+   assert.equal(await panel.locator('.build-compare-swap').getAttribute('title'),
+    'Поменять билды A и B местами');
+   const selects=panel.locator('[data-compare-select]');
   await selects.nth(0).selectOption(idA);
   await selects.nth(1).selectOption(idB);
   const hp=panel.locator('[data-compare-row="stat.hp"]');
@@ -95,6 +107,8 @@ export async function runBuildComparisonSmoke(browser,base){
    'Higher HP in B should be bold');
   assert.equal(await hpA.getAttribute('data-compare-advantage'),null);
   assert.equal(await panel.locator('.build-compare-table thead th').count(),6);
+   assert.deepEqual(await panel.locator('[data-owner-copy-key="compareStatColumn"]')
+    .allTextContents(),['Характеристика','Характеристика']);
   assert.equal(await panel.locator('[data-compare-delta]').count(),0);
   assert.match(await panel.locator('.build-compare-summary').innerText(),/Отличий:/);
   const rows=panel.locator('[data-compare-row]'),count=await rows.count();
@@ -190,7 +204,22 @@ export async function runSavedBuildEnglishSmoke(browser,base){
    'Character workshop');
   assert.equal(await page.locator('#dockClose').getAttribute('aria-label'),
    'Close workbench');
-  const cards=page.locator('.build-card');
+  const comparisonPanel=page.locator('[data-build-compare]');
+   await comparisonPanel.waitFor({state:'visible'});
+   assert.deepEqual(await comparisonPanel.locator('[data-owner-copy-key="compareBuildCaption"]')
+    .allTextContents(),['Build','Build']);
+   assert.deepEqual(await comparisonPanel.locator('[data-compare-letter]').allTextContents(),[' A',' B']);
+   assert.deepEqual(await comparisonPanel.locator('[data-compare-select]').evaluateAll(
+    fields=>fields.map(node=>node.getAttribute('aria-label'))),['Build A','Build B']);
+   assert.deepEqual(await comparisonPanel.locator('[data-compare-select] option[value=""]').allTextContents(),
+    ['Choose a saved build','Choose a saved build']);
+   assert.equal(await comparisonPanel.locator('.build-compare-swap').getAttribute('aria-label'),
+    'Swap builds A and B');
+   assert.equal(await comparisonPanel.locator('.build-compare-table').getAttribute('aria-label'),
+    'Different calculated stats of saved builds');
+   assert.deepEqual(await comparisonPanel.locator('[data-owner-copy-key="compareStatColumn"]')
+    .allTextContents(),['Stat','Stat']);
+   const cards=page.locator('.build-card');
   await cards.first().waitFor({state:'visible',timeout:20000});
   assert.equal(await cards.count(),6,'Six saved builds must be present');
   assert.equal(await page.locator('.build-signin-gate').count(),0);

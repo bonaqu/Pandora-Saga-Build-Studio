@@ -69,6 +69,23 @@ test('issue 390: source-authored D1 default snapshot is stable and uses exact ex
   r.recordKey==='guideedit.honor.overview'&&r.field==='overviewRu'));
 });
 
+test('#390 comparison captions have exact bilingual D1 source defaults, never A/B game content',()=>{
+ const root={};runInNewContext(read('pandora-studio-ui-locale.js'),{window:root});
+ const locale=root.PandoraUILocale;
+ const keys=['compareBuildCaption','compareChooseSavedBuild','compareSwapAction',
+  'compareTableAria','compareStatColumn'];
+ for(const key of keys){
+  const id='guideedit.book.'+locale.fieldKey(key);
+  const found=manifest.records.filter(row=>row.recordKey===id);
+  assert.deepEqual(found.map(row=>row.field).sort(),['en','ru'],id);
+  for(const row of found)
+   assert.equal(row.value,locale.baseText(key,row.field),id);
+ }
+ for(const forbidden of ['compare-build-a','compare-build-b',
+  'compare-player-name','compare-calculated-attack','compare-hero-level'])
+  assert.equal(manifest.records.some(row=>row.recordKey.endsWith(forbidden)),false);
+});
+
 test('issue #390: all exact Wiki label field identities enter the physical D1 defaults plan',()=>{
  const scope={};scope.window=scope;
  runInNewContext(read('pandora-studio-wiki-labels.js'),scope);

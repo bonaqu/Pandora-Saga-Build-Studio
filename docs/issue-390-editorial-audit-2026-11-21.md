@@ -241,3 +241,9 @@ Reviewed rendered profile DOM: the live copy sits on `.ps-profile-copy`, with no
 ## #390 Profile direct-caption acceptance: 409, Undo and mobile
 
 Extended the isolated Chromium Profile scenario beyond RU/EN happy-path: a stale expectedValue returns 409 and preserves the full unsaved EN draft; Escape cancels without a D1 write, and Undo reverses only the last successful EN edit without recreating the selected Profile tab or touching the user's hero input fields. At a 390px viewport, Enter opens only a non-interactive profile caption and its long text draft remains within visible horizontal bounds with `pre-wrap` rather than clipped. No true Cloudflare D1 access, game-client verification, or physical touchscreen is involved.
+
+## #390 · Build comparison A/B editorial source, 22.11.2026
+
+- The compact comparison now uses five stable `PandoraUILocale` D1/CAS RU/EN fields for its authored A/B selector prefix, default chooser option, swap accessible label/title, A/B statistics table ARIA description and repeated “Характеристика” column headers.
+- Visible selector prefixes and both column headings are directly editable by dblclick/F2 through the established owner-only inline editor; there are no caption pencils. Fixed A/B letters and private player build names, selections, calculated metrics, numeric values and game identities remain separate uneditable nodes.
+- Save, Undo and reset patch the existing selector accessible names, picker placeholder options and table/swap labels without remounting the selected builds. Added Node, source manifest/CAS, and RU/EN Chromium assertions; physical Cloudflare staging D1 import and hardware touch tests remain separately outstanding.

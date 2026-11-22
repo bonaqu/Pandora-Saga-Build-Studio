@@ -7968,7 +7968,6 @@ function renderBuildComparison(host,onSelection=()=>{}){
  host.replaceChildren();
  host.className='build-compare-panel';
  host.setAttribute('data-build-compare','');
- const translate=(ru,en)=>lang==='en'?en:ru;
  const copy=key=>window.PandoraUILocale.text(key,lang);
  // Only the authored label changes; editor state, IDs and derived numbers
  // never become author-editable. Keep a pending inline CAS draft in the DOM.
