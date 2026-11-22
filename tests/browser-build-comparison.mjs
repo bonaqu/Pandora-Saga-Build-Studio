@@ -28,8 +28,42 @@ export async function runBuildComparisonSmoke(browser,base){
   localStorage.setItem('ps-build-owner-scope.v1','account:'+username);
   localStorage.setItem('ps-build-library.v1',JSON.stringify(library));
  },{secret,library,token,username});
- await context.route('**/*',route=>
-  route.request().url().startsWith(base+'/')?route.continue():route.abort());
+ // Actual owner D1 CAS over a strict in-memory fake. No production traffic.
+ const api='https://ps-build-studio-cloud.bonaqu.workers.dev';
+ const copyValues={},copyWrites=[],copyResets=[],copyConflicts=new Set();
+ await context.route('**/*',route=>{
+  const request=route.request(),url=request.url();
+  if(url.startsWith(base+'/'))return route.continue();
+  if(!url.startsWith(api+'/api/'))return route.abort();
+  const target=new URL(url).pathname;
+  const headers={'access-control-allow-origin':'*',
+   'access-control-allow-methods':'GET,POST,OPTIONS',
+   'access-control-allow-headers':'Authorization,Content-Type'};
+  const reply=(body,status=200)=>route.fulfill({status,headers,
+   contentType:'application/json',body:JSON.stringify(body)});
+  if(request.method()==='OPTIONS')return route.fulfill({status:204,headers});
+  if(target==='/api/overrides')return reply({values:copyValues});
+  if(target==='/api/admin/login')
+   return reply({token:'z'.repeat(43),expires:Date.now()+7200000});
+  if(target==='/api/admin/catalog/test-write')return reply({
+   ok:true,readback:true,cleaned:true,overrideReadback:true,
+   overrideCleaned:true,activeCatalogUnchanged:true
+  });
+  if(target==='/api/admin/override'||target==='/api/admin/reset'){
+   const data=request.postDataJSON(),existing=copyValues[data.key]??null;
+   assert.equal(request.headers().authorization,'Bearer '+'z'.repeat(43));
+   assert.equal(data.expectedValue,existing,'Owner CAS requires expected value');
+   if(copyConflicts.delete(data.key))
+    return reply({code:'OWNER_EDIT_CONFLICT',error:'Stale metric edit'},409);
+   if(target==='/api/admin/reset'){
+    delete copyValues[data.key];copyResets.push(data);
+    return reply({ok:true,key:data.key,deleted:true,conditional:true});
+   }
+   copyValues[data.key]=data.value;copyWrites.push(data);
+   return reply({ok:true,key:data.key,value:data.value,conditional:true});
+  }
+  return route.abort();
+ });
  const page=await context.newPage(),errors=[];
  page.on('pageerror',e=>errors.push(e.message));
  try{
@@ -103,6 +137,59 @@ export async function runBuildComparisonSmoke(browser,base){
   const firstA=(await hpA.innerText()).trim();
   const firstB=(await hpB.innerText()).trim();
   assert.notEqual(firstA,firstB,'Different calculated health must be visible');
+  // #390: real source-authored A/B metric name editor; no extra pencil.
+  assert.equal(await hp.locator('[data-owner-text-field]').count(),0);
+  await page.keyboard.press('Control+Alt+Shift+P');
+  await page.getByRole('dialog',{name:'Служебный вход'}).waitFor({state:'visible'});
+  await page.locator('input[placeholder="Пароль администратора"]')
+   .fill('Correct admin password!');
+  await page.locator('.modal').getByRole('button',{name:'Войти',exact:true}).click();
+  await page.locator('#ownerDock').waitFor({state:'visible',timeout:15000});
+  await hp.waitFor({state:'visible'});
+  assert.equal(await hp.getAttribute('data-owner-copy-section'),'compare-metric');
+  assert.equal(await hp.getAttribute('data-owner-copy-id'),'hp');
+  assert.equal(await hp.getAttribute('aria-keyshortcuts'),'F2 Enter');
+  assert.equal(await panel.locator('.build-compare-table .ui-content-pencil').count(),0);
+  const beforeNumbers=[await hpA.textContent(),await hpB.textContent()];
+  const metricKey='guideedit.book.compare-metric.hp';
+  const mountedMetric=await hp.elementHandle();
+  await hp.dblclick();
+  const metricInput=hp.locator('[data-owner-text-field]');
+  await metricInput.waitFor({state:'visible'});
+  await metricInput.fill('ОЗ · редактура QA');
+  await metricInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '[data-compare-row="stat.hp"]')?.textContent==='ОЗ · редактура QA',
+   null,{timeout:15000});
+  assert.equal(JSON.parse(copyValues[metricKey]).ru,'ОЗ · редактура QA');
+  assert.deepEqual([await hpA.textContent(),await hpB.textContent()],beforeNumbers);
+  assert.equal(await mountedMetric.evaluate(node=>node.isConnected),true);
+  // The mock 409 must retain the full failed draft without clobbering CAS.
+  copyConflicts.add(metricKey);
+  await hp.focus();await hp.press('F2');
+  const failedMetric=hp.locator('[data-owner-text-field]');
+  await failedMetric.fill('Не сохранено после конфликта');
+  await failedMetric.press('Tab');
+  await hp.locator('.ui-content-inline-error').waitFor({
+   state:'visible',timeout:15000});
+  assert.equal(await failedMetric.textContent(),'Не сохранено после конфликта');
+  assert.equal(JSON.parse(copyValues[metricKey]).ru,'ОЗ · редактура QA');
+  await failedMetric.press('Escape');
+  assert.equal((await hp.innerText()).trim(),'ОЗ · редактура QA');
+  if(await page.locator('#ownerDock').evaluate(el=>el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
+  await page.locator('#ownerDock [data-owner-undo]').click();
+  await page.waitForFunction(()=>document.querySelector(
+   '[data-compare-row="stat.hp"]')?.textContent==='ОЗ',
+   null,{timeout:15000});
+  assert.equal(copyResets.at(-1)?.key,metricKey);
+  assert.equal(Object.hasOwn(copyValues,metricKey),false);
+  assert.deepEqual([await hpA.textContent(),await hpB.textContent()],beforeNumbers);
+  assert.equal(await mountedMetric.evaluate(node=>node.isConnected),true,
+   'Undo should patch the mounted A/B caption, not rebuild the result table');
+  await mountedMetric.dispose();
+  if(!await page.locator('#ownerDock').evaluate(el=>el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
   assert.equal(await hpB.getAttribute('data-compare-advantage'),'',
    'Higher HP in B should be bold');
   assert.equal(await hpA.getAttribute('data-compare-advantage'),null);
