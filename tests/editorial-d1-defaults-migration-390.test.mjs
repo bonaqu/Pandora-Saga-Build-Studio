@@ -586,6 +586,26 @@ test('#390 encyclopedia footer authorial D1 words stay separate from real catalo
  assert.equal(manifest.records.some(r=>r.recordKey==='guideedit.book.catalog-sync.catalog-count-total'),false);
 });
 
+test('#390 profile owner copy defaults mirror live source labels, never player data',()=>{
+ const source=read('pandora-studio-app.js');
+ const match=source.match(/const profileAuthorialCopy=Object\.freeze\((\{[\s\S]*?\})\);/);
+ assert.ok(match);
+ const pairs=runInNewContext('('+match[1]+')',{});
+ assert.equal(Object.keys(pairs).length,12);
+ assert.equal(manifest.stats.cohorts['profile-authorial'],24);
+ assert.match(source,/const authored=profileAuthorialCopy\[key\]/);
+ assert.match(source,/\["name",\.\.\.profileAuthorialCopy\['field-name'\]/);
+ assert.match(source,/placeholder:ownerCopy\('profile','bio-placeholder',\s*\.\.\.profileAuthorialCopy\['bio-placeholder'\]/);
+ for(const [key,pair] of Object.entries(pairs)){
+  const id='guideedit.book.profile.'+key;
+  for(const [i,lang] of ['ru','en'].entries())
+   assert.equal(manifest.records.find(row=>row.recordKey===id&&row.field===lang)?.value,pair[i],id);
+ }
+ for(const name of ['name','guild','nation','rank','about','level','racialPassiveId'])
+  assert.equal(manifest.records.some(r=>r.recordKey==='guideedit.book.profile.'+name),
+   false,'Profile data cannot become a static D1 authorial default: '+name);
+});
+
 test('issue 390: migration never materializes runtime values or rewrites an override',()=>{
  assert.equal(manifest.records.some(r=>
   /(?:^|\.)(?:character|item|soul|account|formula|amount|gold|points|chance)\.[0-9]+/.test(r.recordKey)),false);

@@ -113,6 +113,30 @@ export function buildEditorialDefaultsManifest(){
  // Extract only the audited literal dictionary, never execute the app's
  // startup logic, inspect player state, or guess text keys from a game UI.
  const app=read('pandora-studio-app.js');
+ // Profile labels have real owner CAS keys, but their values are strictly
+ // authored captions. The editable hero profile itself is never D1 copy.
+ const profileSource=app.match(
+  /const profileAuthorialCopy=Object\.freeze\((\{[\s\S]*?\})\);/);
+ if(!profileSource)throw Error('Missing profile authorial registry');
+ const profile=runInNewContext('('+profileSource[1]+')',{},{
+  filename:'profileAuthorialCopy',timeout:5000
+ });
+ const expectedProfile=[
+  'field-name','field-guild','field-nation','field-rank',
+  'bio-label','bio-placeholder','profile-notes',
+  'overview-race','overview-class','overview-level',
+  'racial-heading','overview-help'
+ ];
+ if(Object.keys(profile).sort().join('|')!==expectedProfile.sort().join('|'))
+  throw Error('Profile source keys drifted; review migration');
+ for(const key of expectedProfile){
+  const pair=profile[key];
+  if(!Array.isArray(pair)||pair.length!==2)
+   throw Error('Invalid profile bilingual copy: '+key);
+  for(const [i,lang] of ['ru','en'].entries())
+   append('guideedit.book.profile.'+key,lang,pair[i],'profile-authorial');
+ }
+
  const match=app.match(/const ownerDockText=Object\.freeze\((\{[\s\S]*?\})\);/);
  if(!match)throw Error('Missing audited owner dock authorial source registry');
  const dock=runInNewContext('('+match[1]+')',{},{

@@ -7696,7 +7696,31 @@ function renderWiki(root){
 // Stable author-copy keys are separate from player-authored profile values.
 // Only labels and help text are editable; typed names/bios and saved build
 // properties never enter the D1 editorial namespace.
+// The static RU/EN text already editable under profile.* owner CAS.
+// No hero names, guild/nation/rank values, stats or saved biography are copy.
+const profileAuthorialCopy=Object.freeze({
+ 'field-name':['Имя героя','Hero name'],
+ 'field-guild':['Гильдия','Guild'],
+ 'field-nation':['Нация','Nation'],
+ 'field-rank':['Ранг','Rank'],
+ 'bio-label':['О себе','About'],
+ 'bio-placeholder':['Описание героя — сохраняется в билде',
+  'Hero bio — saved with the build'],
+ 'profile-notes':[
+  'Поля профиля — пользовательские заметки в билде. Нация, честь и ранг не сверяются с игровым сервером и не участвуют в расчётах.',
+  'Profile fields are notes saved with the build. Nation, honor and rank are not verified against the game server and do not affect calculations.'
+ ],
+ 'overview-race':['Раса','Race'],
+ 'overview-class':['Профессия','Class'],
+ 'overview-level':['Уровень','Level'],
+ 'racial-heading':['Расовая пассивка — выбери одну из трёх',
+  'Racial passive — choose one'],
+ 'overview-help':['Развивай умения в «Пути героя», а характеристики — в «Происхождении».',
+  'Train skills in Hero Path and allocate attributes in Origin.']
+});
 function profileCopyLabel(key,ru,en,{as='span',forId=null}={}){
+ const authored=profileAuthorialCopy[key];
+ if(authored)[ru,en]=authored;
  const label=ownerCopy('profile',key,ru,en);
  const node=h(as,{text:label,class:'ps-profile-copy',
   'data-profile-copy-key':key,'data-profile-copy-ru':ru,
@@ -7742,10 +7766,12 @@ function renderProfile(root){
  left.append(h("img",{src:raceSource(state.race,state.gender),alt:tr("Облик расы ","Race appearance: ")+raceName}),
  h("strong",{text:state.name||tr("Без имени","Unnamed hero")}),h("small",{text:(raceName||tr('Раса не выбрана','Race not selected'))+" · "+(jobs[state.job]||tr('Профессия не выбрана','Class not selected'))+" · "+state.level+tr(" ур."," lvl.")}));
  const right=h("section",{class:"ps-profile-info"});
- const fields=[["name","Имя героя","Hero name",state.name||"",64],
- ["guild","Гильдия","Guild",profile.guild||"",80],
- ["nation","Нация","Nation",profile.nation||"",80],
- ["rank","Ранг","Rank",profile.rank||"",80]];
+ const fields=[
+ ["name",...profileAuthorialCopy['field-name'],state.name||"",64],
+ ["guild",...profileAuthorialCopy['field-guild'],profile.guild||"",80],
+ ["nation",...profileAuthorialCopy['field-nation'],profile.nation||"",80],
+ ["rank",...profileAuthorialCopy['field-rank'],profile.rank||"",80]
+];
  for(const [key,ru,en,value,max]of fields){
    const label=ownerCopy('profile','field-'+key,ru,en);
    const inputId='ps-profile-field-'+key;
@@ -7764,22 +7790,19 @@ function renderProfile(root){
  const descriptionId='ps-profile-description';
  const description=h("textarea",{id:descriptionId,rows:"5",maxLength:"500",
   placeholder:ownerCopy('profile','bio-placeholder',
-   "Описание героя — сохраняется в билде","Hero bio — saved with the build"),
-  "aria-label":ownerCopy('profile','bio-label',"О себе","About")});
+   ...profileAuthorialCopy['bio-placeholder']),
+  "aria-label":ownerCopy('profile','bio-label',...profileAuthorialCopy['bio-label'])});
  description.value=typeof profile.about==="string"?profile.about:"";
  description.addEventListener("input",()=>{state.profile??={};state.profile.about=description.value;persist()});
- bio.append(profileCopyLabel('bio-label','О себе','About',
+ bio.append(profileCopyLabel('bio-label',...profileAuthorialCopy['bio-label'],
   {as:'label',forId:descriptionId}),description);right.append(bio);
  // The placeholder is an accessible input attribute, never a text node.
  if(adminEditing&&adminToken){
-  const placeholder=profileCopyLabel('bio-placeholder',
-   'Описание героя — сохраняется в билде','Hero bio — saved with the build');
+  const placeholder=profileCopyLabel('bio-placeholder',...profileAuthorialCopy['bio-placeholder']);
   const help=h('div',{class:'ps-profile-placeholder-editor'},[placeholder]);
   right.append(help);
  }
- right.append(profileCopyNote('profile-notes',
-  'Поля профиля — пользовательские заметки в билде. Нация, честь и ранг не сверяются с игровым сервером и не участвуют в расчётах.',
-  'Profile fields are notes saved with the build. Nation, honor and rank are not verified against the game server and do not affect calculations.'));
+ right.append(profileCopyNote('profile-notes',...profileAuthorialCopy['profile-notes']));
  view.append(left,right);root.append(view);
 }
 function renderCharacter(root){
@@ -7798,18 +7821,17 @@ function renderCharacter(root){
   const cards=h("div",{class:"ps-overview-grid"});
   cards.append(
    h('div',{class:'ps-overview-card'},[
-    profileCopyLabel('overview-race','Раса','Race'),
+    profileCopyLabel('overview-race',...profileAuthorialCopy['overview-race']),
     h('strong',{text:races[state.race]?.[lang==='en'?1:0]||tr('Не выбрана','Not selected')})]),
    h('div',{class:'ps-overview-card'},[
-    profileCopyLabel('overview-class','Профессия','Class'),
+    profileCopyLabel('overview-class',...profileAuthorialCopy['overview-class']),
     h('strong',{text:jobs[state.job]||tr('Не выбрана','Not selected')})]),
    h('div',{class:'ps-overview-card'},[
-    profileCopyLabel('overview-level','Уровень','Level'),
+    profileCopyLabel('overview-level',...profileAuthorialCopy['overview-level']),
     h('strong',{text:String(state.level)})]));
   body.append(cards);
   const racialTitle=h('div',{class:'subhead'});
-  racialTitle.append(h('span',{text:'✦'}),profileCopyLabel('racial-heading',
-   'Расовая пассивка — выбери одну из трёх','Racial passive — choose one'));
+  racialTitle.append(h('span',{text:'✦'}),profileCopyLabel('racial-heading',...profileAuthorialCopy['racial-heading']));
   const passivePicker=h('div',{class:'race-passive-picker'});
   const passives=window.PandoraGameNavigation.racePassiveIds(catalog.racialPassives,state.race);
   if(!passives.length)passivePicker.append(h('p',{class:'muted',text:Number.isInteger(state.race)?tr('Загружаю расовые способности…','Loading racial abilities…'):tr('Выберите расу','Choose a race')}));
@@ -7827,9 +7849,7 @@ function renderCharacter(root){
     passivePicker.append(button);
   }
   body.append(racialTitle,passivePicker);
-  body.append(profileCopyNote('overview-help',
-   'Развивай умения в «Пути героя», а характеристики — в «Происхождении».',
-   'Train skills in Hero Path and allocate attributes in Origin.'));
+  body.append(profileCopyNote('overview-help',...profileAuthorialCopy['overview-help']));
   const jump=h("div",{class:"ps-overview-actions"});
   jump.append(h("button",{class:"button-action",text:tr("⚔ Путь героя · умения","⚔ Hero Path · skills"),onclick:()=>{
    closeWorkbench();heroPathPage='skills';renderPathPages();saveView();

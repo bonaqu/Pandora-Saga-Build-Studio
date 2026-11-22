@@ -114,3 +114,7 @@ Each snapshot is keyed by `release + digest` and inserted without overwriting a 
 ## Completion truthfulness
 
 Creating this plan materially reduces migration risk, but **does not complete the physical D1 migration**. #390 and Draft PR #809 remain open until full authorial coverage, versioned D1 loading, physical touch acceptance and release verification have actually passed.
+
+## Profile authorial RU/EN defaults · #390
+
+The 12 existing owner CAS-backed Profile/Character captions now share one `profileAuthorialCopy` source dictionary, including field labels and accessible input placeholders, profile help, character headings and overview hints. The versioned staging-only migration extracts exactly 24 RU/EN rows from this live source, preserving CAS precedence and failing on an unexpected key inventory. Neither user-entered name/guild/nation/rank/about nor the computed hero level/passive is placed into D1 defaults. No Cloudflare D1 import is implied.
