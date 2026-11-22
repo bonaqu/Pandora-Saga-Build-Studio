@@ -188,24 +188,24 @@ export async function runUIContentInlineSmoke(browser,base){
    .fill('Correct admin password!');
   await page.locator('.modal').getByRole('button',{name:'Войти',exact:true}).click();
   await page.locator('#ownerDock').waitFor({state:'visible',timeout:15000});
-  // Real owner save and CAS Undo of dynamic Origin and Workbench captions.
-  // The saved hero's race name and the dialog aria-labelledby are not editable.
+  // Test a real visible Origin heading, not a hidden legacy gender control.
+  // Only its authored caption enters CAS, never the source portrait/race name.
   await page.locator('#originTabs [data-origin-tab="race"]').click();
-  const genderNote=page.locator('#raceSexInfo .origin-gender-caption');
-  await genderNote.waitFor({state:'visible',timeout:15000});
-  assert.equal((await genderNote.innerText()).trim(),'Пол по выбранному образу');
-  assert.equal(await genderNote.getAttribute('data-origin-copy-key'),
-   'genderFollowAppearance');
-  await genderNote.dblclick();
-  const genderInput=genderNote.locator('[data-owner-text-field]');
-  await genderInput.waitFor({state:'visible'});
-  await genderInput.fill('Внешний вид выбирается · QA');
-  await genderInput.press('Tab');
+  const raceCaption=page.locator('#originPanelRace [data-origin-copy-static="race"]');
+  await raceCaption.waitFor({state:'visible',timeout:15000});
+  assert.equal((await raceCaption.innerText()).trim(),'Раса');
+  const raceAltBefore=await page.locator('#raceGrid img').getAttribute('alt');
+  await raceCaption.dblclick();
+  const raceInput=raceCaption.locator('[data-owner-text-field]');
+  await raceInput.waitFor({state:'visible'});
+  await raceInput.fill('Выбор расы · QA');
+  await raceInput.press('Tab');
   await page.waitForFunction(()=>
-   document.querySelector('#raceSexInfo .origin-gender-caption')?.textContent===
-   'Внешний вид выбирается · QA',null,{timeout:15000});
-  assert.equal(JSON.parse(values['guideedit.book.origin.gender-follow-appearance']).ru,
-   'Внешний вид выбирается · QA');
+   document.querySelector('[data-origin-copy-static="race"]')?.textContent===
+   'Выбор расы · QA',null,{timeout:15000});
+  assert.equal(JSON.parse(values['guideedit.book.origin.race-heading']).ru,
+   'Выбор расы · QA');
+  assert.equal(await page.locator('#raceGrid img').getAttribute('alt'),raceAltBefore);
   const originalHeroAlt=await page.locator('#hero').getAttribute('alt');
   await page.locator('#nav [data-tab="wiki"]').click();
   const workbenchTitle=page.locator('#detailTitle');
@@ -232,6 +232,11 @@ export async function runUIContentInlineSmoke(browser,base){
    document.querySelector('#detailTitle')?.textContent==='Энциклопедия Pandora Saga',
    null,{timeout:15000});
   assert.equal(Object.hasOwn(values,'guideedit.book.ui.label.workbench-title-wiki'),false);
+  await page.locator('#ownerDock [data-owner-undo]').click();
+  await page.waitForFunction(()=>
+   document.querySelector('[data-origin-copy-static="race"]')?.textContent==='Раса',
+   null,{timeout:15000});
+  assert.equal(Object.hasOwn(values,'guideedit.book.origin.race-heading'),false);
   assert.equal(await page.locator('#hero').getAttribute('alt'),originalHeroAlt);
   if(!await page.locator('#ownerDock').evaluate(el=>el.classList.contains('owner-dock-collapsed')))
    await page.locator('#ownerDock [data-owner-collapse]').click();

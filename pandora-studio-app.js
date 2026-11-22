@@ -1765,30 +1765,6 @@ const originFixedLabels=[
  ['#originPanelStats [data-i18n="baseStats"]','baseHeading','Базовые характеристики','Base attributes'],
  ['#originPanelStats [data-i18n="distributePoints"]','distributeHeading','Распредели очки','Distribute points']
 ];
-// Only the explanatory fragment is authorial. Race names remain immutable source text.
-const originGenderNoteRows=Object.freeze([
- ['genderFollowAppearance','Пол по выбранному образу','Gender follows the selected appearance'],
- ['genderSelectionUnavailable','выбор пола недоступен','gender selection unavailable'],
- ['genderFemale','женский','female'],
- ['genderMale','мужской','male'],
- ['genderGenderless','бесполый','genderless'],
- ['genderChooseRace','Сначала выберите расу','Choose a race first']
-]);
-function renderOriginGenderNote(){
- const note=$('raceSexInfo');if(!note)return;
- if(note.querySelector?.('.wiki-inline-input,[data-owner-text-field]'))return;
- const race=Number.isInteger(state.race)&&state.race>=0&&state.race<races.length?
-  state.race:-1;
- const index=race<0?5:race<2?0:race-1;
- const [key,ru,en]=originGenderNoteRows[index];
- const caption=h('span',{class:'origin-gender-caption'});
- note.replaceChildren();
- if(race>=2)
-  note.append(h('span',{class:'origin-race-source-name',
-   text:races[race][lang==='en'?1:0]}),document.createTextNode(' · '));
- note.append(caption);
- originCopyLabel(caption,key,ru,en);
-}
 function originCopyLabel(node,key,ru,en){
  if(!node)return node;
  if(!node.querySelector?.('.wiki-inline-input,[data-owner-editor]'))
@@ -1851,8 +1827,6 @@ function editOriginCopyLabel(node,key,ru,en){
   onFinished:()=>{
    node.dataset.originEditing='0';
    if(isButton){node.hidden=false;mount.remove()}
-   // A changed race/locale is reconciled after the original CAS editor exits.
-   if(node.classList?.contains?.('origin-gender-caption'))renderOriginGenderNote();
   }});
 }
 function renderOriginCopyLabels(){
@@ -1870,7 +1844,6 @@ function renderOriginCopyLabels(){
   const text=lang==='en'?n+' classes':n+' '+plural;
   if(classNode.textContent!==text)classNode.textContent=text;
  }
- renderOriginGenderNote();
 }
 function editAttr(el,key){el.dataset.editKey=key;if(adminEditing&&adminToken)el.classList.add('admin-edit');return el}
 function raceSource(i,gender){
@@ -3656,6 +3629,12 @@ function renderPathPages(){
 function render(){state.gender=window.PandoraUIPlanner.normalizeGender(races,state.race,state.gender);const hasRace=Number.isInteger(state.race)&&state.race>=0&&state.race<races.length;
  const hasJob=Number.isInteger(state.job)&&state.job>=0&&state.job<jobKeys.length;
  const logo=document.querySelector('.brand img');if(logo)logo.src=override['visual.logo']||'assets/pandora-logo.png';renderRaces();renderJobs();renderOriginTabs();$('genderF').classList.toggle('chosen',state.gender===0);
+ const genderNotes=lang==='en'?
+  ['Gender follows the selected appearance','Gender follows the selected appearance',
+   'Dwarf · gender selection unavailable','Myrine · female','Enkidu · male','Lapin · genderless']:
+  ['Пол по выбранному образу','Пол по выбранному образу',
+   'Цверг · выбор пола недоступен','Мирина · женский','Энкиду · мужской','Кролль · бесполый'];
+ $('raceSexInfo').textContent=genderNotes[state.race]||(lang==='en'?'Choose a race first':'Сначала выберите расу');
  $('genderM').classList.toggle('chosen',state.gender===1);
  const genderAllowed=window.PandoraUIPlanner.raceHasGender(races,state.race);
  $('genderF').disabled=!genderAllowed;$('genderM').disabled=!genderAllowed;

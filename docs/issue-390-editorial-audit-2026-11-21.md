@@ -323,11 +323,10 @@ pencil controls. Full Node+Chromium required on the exact new PR SHA.
 - [x] Extended existing Node reference tests and real Chromium material-link smoke with both-language fallback, ambiguous-name rejection and overlapping linked-name checks. No new test suites or pencils, game-client / Cloudflare changes, or D1 writes.
 - [ ] Accept only after **both full Node + Chromium CI** succeed on the exact new PR head. This narrow correction does not complete the rare/dynamic RU/EN audit, physical touch QA, isolated staging D1 procedure, or owner release approval. Keep PR #809 Draft and issue #390 open.
 
-## 23.11.2026 — #390 dynamic Origin guidance and Workbench headings
+## 23.11.2026 — #390 visible Workbench titles and Origin owner-only keyboard lifecycle
 
-- [x] Split six gender guidance states from the source-race names: only the visible authorial fragment has a `guideedit.book.origin.gender-*` CAS identity, without editing race names, selection, numbers or hero data.
-- [x] Added five Workbench headings to `PandoraUILocale` (fixed RU/EN semantic keys). They use the original H2 / dialog `aria-labelledby`, direct owner double-click/F2/Enter and same-node CAS/Undo; switching dock tabs during an edit cannot replace the new tab caption with the old one.
-- [x] Guests no longer inherit Origin's owner-only tabindex and keyboard shortcut markers.
-- [x] Added 12 original RU/EN rows to the **staging-only** D1 defaults manifest. This is not a physical Cloudflare migration.
-- [x] Extended existing Node and Chromium mock-CAS suites with key uniqueness, source-name separation, live save and Undo. Both CI required on final SHA.
-- [ ] Remaining: rare/dynamic RU/EN audit, physical isolated staging D1 readback/rollback, real touch hardware QA, separately authorized release and read-only production acceptance. PR #809 Draft, issue #390 Open.
+- [x] Five true **visible** Workbench chapter H2 headings are now semantic `PandoraUILocale` RU/EN D1 CAS fields; the existing `aria-labelledby` and open draft survive save/Undo and tab switches.
+- [x] The visible Origin header retains its original source-backed `origin.race-heading` D1 key. Owner-only F2/tabindex hints no longer appear to guests; new Chromium tests cover direct double-click, D1 CAS, Undo and unchanged race identity.
+- [x] Removed the proposed contextual gender guidance records and physical migration rows after discovering that `#raceSexInfo` belongs to the intentionally **hidden legacy gender controls**. No editorial keys are seeded for a hidden, obsolete panel. Original hidden legacy source behavior remains unchanged.
+- [x] Updated the three pre-existing Node contract tests to assert the new semantic titles and existing Wiki event cleanup instead of obsolete one-line/hardcoded string shapes. Browser test uses only actually visible controls.
+- [ ] Full Node + Chromium must pass on the next exact head before acceptance. Remaining: rare/dynamic RU/EN coverage, isolated Cloudflare staging D1 with rollback, real touch device QA, release acceptance. PR #809 Draft, issue #390 Open.
