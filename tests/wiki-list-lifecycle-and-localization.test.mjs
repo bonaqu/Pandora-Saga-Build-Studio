@@ -8,7 +8,9 @@ const app=read('pandora-studio-app.js');
 const wiki=app.slice(app.indexOf('function renderWiki(root)'),app.indexOf('function renderProfile(root)'));
 
 test('temporary encyclopedia picker listeners are cleaned on view change and detail redraw',()=>{
- assert.match(app,/function renderDetails\(\)\{wikiOutsideCleanup\?\.\(\);wikiOutsideCleanup=null/);
+ // A multiline title editor must not remove the picker disposer.
+ assert.match(app,/function renderDetails\(\)\{\s*wikiOutsideCleanup\?\.\(\);\s*wikiOutsideCleanup=null/);
+ assert.match(app,/bindAccountCopyEditors\(heading\.parentElement\)/);
  assert.match(wiki,/const outsidePickers=new Set\(\)/);
  assert.match(wiki,/const cleanupOutsidePickers=\(\)=>\{/);
  assert.match(wiki,/for\(const onOutside of outsidePickers\)/);

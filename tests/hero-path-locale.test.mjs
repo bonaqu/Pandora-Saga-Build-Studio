@@ -33,7 +33,10 @@ test('skill detail fields and workspace labels translate without rewriting game 
  assert.ok(source.includes("api.copyLabel?.(key,ru,en)||tr(api,ru,en)"));
  assert.ok(source.includes("const ru='Показать ещё',en='Show more',key='skillShowMore'"));
  assert.ok(source.includes("class:'path-more-count'"));
- assert.ok(app.includes('Hero Workshop'));
+ // The title is now source-authored UI copy, not an app-side raw string.
+ const locale=readFileSync(new URL('../pandora-studio-ui-locale.js',import.meta.url),'utf8');
+ assert.match(locale,/workbenchTitleCharacter:\['Мастерская героя','Hero Workshop'\]/);
+ assert.match(app,/heading\.dataset\.ownerCopyKey=titleKey/);
  assert.ok(app.includes('Full encyclopedia entry'));
 });
 
