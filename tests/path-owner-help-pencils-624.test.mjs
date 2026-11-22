@@ -30,7 +30,17 @@ test('D1 editing never replaces source-backed skill values or invalid requiremen
  }
  assert.match(hero,/skill\.desc\?make\('p',\{text:skill\.desc\}\):/);
  assert.match(hero,/gate\.learned\?\s*authored\(api,'skillReady'/);
- assert.match(hero,/make\('p',\{class:'path-skill-no',text:'🔒 '\+gate\.problems\.join\(' · '\)\}\)/);
+ // The formerly monolithic locked status is now structured, so editing its
+ // authorial reason never sends class/skill names or game points to D1.
+ assert.match(hero,/class:'path-skill-no'/);
+ assert.match(hero,/class:'path-skill-lock-symbol',text:'🔒 '/);
+ assert.match(hero,/for\(const \[i,parts\] of gate\.problemParts\.entries\(\)\)/);
+ assert.match(hero,/class:'path-skill-reason-separator',text:' · '/);
+ assert.match(hero,/authored\(api,part\.key,part\.ru,part\.en,'span','path-skill-reason-copy'\)/);
+ assert.match(hero,/class:'path-skill-reason-source',text:part\.text/);
+ assert.match(hero,/const runtime=value=>\(\{text:String\(value\)\}\)/);
+ assert.match(hero,/const problems=\[\],problemParts=\[\],state=api\.state,job=api\.job/);
+ assert.doesNotMatch(hero,/make\('p',\{class:'path-skill-no',text:'🔒 '\+gate\.problems\.join/);
  assert.match(hero,/const dd=make\('dd',\{text:String\(value\)\}\)/);
  assert.match(hero,/if\(valueCopy\)bindPathCopy\(api,dd,\.\.\.valueCopy\)/);
  assert.match(hero,/stats\.append\(label,dd\)/);
