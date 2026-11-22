@@ -862,10 +862,15 @@ export async function runAdminEntrySmoke(browser,base){
    expectedCalls,'Editing the button must not start a catalog download');
   assert.equal(await dialog.locator('.os-sync-main-check').count(),1);
   const liveSource=dialog.getByRole('button',{name:'Проверить изменения в текущей игре'});
+  // Previous inline-edit actions can leave the pointer already inside this
+  // button with a pending hint. Actually leave it first, cancelling that
+  // timer, then measure the delay from a fresh user pointerenter.
+  await page.mouse.move(2,2);
+  await page.getByRole('tooltip').waitFor({state:'hidden',timeout:3500});
   await liveSource.hover();
   await page.waitForTimeout(330);
   assert.equal(await page.getByRole('tooltip').isVisible(),false,
-   'Admin hints must not appear immediately after pointer entry');
+   'Admin hints must not appear immediately after a fresh pointer entry');
   await page.getByRole('tooltip').filter({hasText:/17 разделов доступных игровых данных/}).waitFor({state:'visible',timeout:3500});
   await page.mouse.move(2,2);
   await page.getByRole('tooltip').waitFor({state:'hidden'});
