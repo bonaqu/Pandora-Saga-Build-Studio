@@ -146,7 +146,9 @@ test('ordinary dynamic searches request Yandex no-login autofill, never readonly
 
 test('Honor location search is a gameplay search, not a credential entry',()=>{
  const honor=read('pandora-studio-honor-view.js');
- assert.match(honor,/Найти локацию…','Find a location…'\),\s*autocomplete:'none'/);
+ assert.match(honor,/const search=make\('input',\{type:'search',\s*autocomplete:'none','aria-autocomplete':'none'/);
+ assert.match(honor,/ownerNativeCopy\(search,'locationSearchPlaceholder','Найти локацию…',\s*'Find a location…','placeholder','F2'\)/);
+ assert.match(honor,/ownerNativeCopy\(search,'locationSearchAria','Поиск существующей локации',\s*'Search existing locations','aria-label','Shift\+F2'\)/);
  assert.match(honor,/'data-lpignore':'true','data-1p-ignore':'true'/);
  assert.match(honor,/'data-bwignore':'true','data-form-type':'other'/);
 });

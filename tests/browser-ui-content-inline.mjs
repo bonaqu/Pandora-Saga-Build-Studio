@@ -1159,6 +1159,7 @@ export async function runUIContentInlineSmoke(browser,base){
   await linkAction.click();
   await zoneList.locator('.wiki-honor-new').waitFor({state:'visible',timeout:6000});
   const zoneSearch=zoneList.locator('.wiki-honor-new input[type="search"]');
+  await zoneSearch.evaluate(node=>node.dataset.qaStableHonorSearch='1');
   await zoneSearch.fill('Черновик поиска');
   await zoneSearch.press('F2');
   let nativeEditor=zoneList.locator('.wiki-honor-native-copy-editor [contenteditable]');
@@ -1169,6 +1170,8 @@ export async function runUIContentInlineSmoke(browser,base){
    '#honor-gain .wiki-honor-new input[type="search"]')?.placeholder==='Найти область QA…',
    null,{timeout:15000});
   assert.equal(await zoneSearch.inputValue(),'Черновик поиска');
+  assert.equal(await zoneSearch.getAttribute('data-qa-stable-honor-search'),'1',
+   'Honor source-only CAS must not destroy the current native form');
   assert.equal(JSON.parse(values['guideedit.book.honor-view.location-search-placeholder']).ru,
    'Найти область QA…');
   await zoneSearch.press('Shift+F2');
@@ -1178,6 +1181,18 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(await zoneSearch.inputValue(),'Черновик поиска');
   assert.equal(await zoneSearch.getAttribute('aria-label'),'Поиск существующей локации');
   assert.equal(values['guideedit.book.honor-view.location-search-aria'],undefined);
+  // Undo updates the same mounted search field; user query remains untouched.
+  const collapsedBefore=await page.locator('#ownerDock').evaluate(el=>
+   el.classList.contains('owner-dock-collapsed'));
+  if(collapsedBefore)await page.locator('#ownerDock [data-owner-collapse]').click();
+  await page.locator('#ownerDock [data-owner-undo]').click();
+  await page.waitForFunction(()=>document.querySelector(
+   '#honor-gain .wiki-honor-new input[type="search"]')?.placeholder==='Найти локацию…',
+   null,{timeout:15000});
+  assert.equal(await zoneSearch.inputValue(),'Черновик поиска');
+  assert.equal(await zoneSearch.getAttribute('data-qa-stable-honor-search'),'1');
+  assert.equal(values['guideedit.book.honor-view.location-search-placeholder'],undefined);
+  if(collapsedBefore)await page.locator('#ownerDock [data-owner-collapse]').click();
   const cancelAction=zoneList.locator('.wiki-honor-new .wiki-owner-remove').first();
   await cancelAction.focus();await cancelAction.press('F2');
   const cancelEditor=cancelAction.locator('[contenteditable]');

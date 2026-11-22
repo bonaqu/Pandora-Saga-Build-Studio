@@ -67,6 +67,15 @@ function render({browse,detail,make,lang='ru',article,editable=false,
    };
    paint(copy(key,ru,english));
    if(!editable)return;
+   // Register native attributes in the existing shared in-place copy system.
+   // This lets both successful CAS and Undo patch text without recreating
+   // the transient form, its typed value, selection, or active input.
+   let bindings={};
+   try{bindings=JSON.parse(field.dataset.ownerInterfaceBindings||'{}')}catch{}
+   const binding={section:'honor-view',key,ru,en:english,prefix:'',suffix:''};
+   bindings[attribute]=binding;
+   if(mirrorAria)bindings['aria-label']=binding;
+   field.dataset.ownerInterfaceBindings=JSON.stringify(bindings);
    const previous=field.getAttribute('aria-keyshortcuts')||'';
    field.setAttribute('aria-keyshortcuts',(previous+' '+shortcut).trim());
    field.addEventListener('keydown',event=>{

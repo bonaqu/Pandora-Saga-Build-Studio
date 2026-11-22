@@ -10937,7 +10937,11 @@ async function saveGuidePatchNow(key,fields){
      /^book\.wiki\.(?:map\.text|monster\.text|npc\.trade|chest\.text|item\.text)\.[a-z][a-z0-9-]*$/.test(key))
    refreshVisibleOwnerCopy('guideedit.'+key);
   if(activeTab==='wiki'&&wikiSelection.type==='honor'&&
-     !key.startsWith('book.catalog-sync.')){
+     !key.startsWith('book.catalog-sync.')&&
+     !key.startsWith('book.honor-view.')){
+   // Only data/list changes need a full Honor rerender. Source-authored
+   // labels update in place; remounting would discard active owner drafts.
+
    const pane=$('detailContent'),position=pane?.scrollTop||0;
    wikiRenderSelected?.();
    if(pane)pane.scrollTop=position;

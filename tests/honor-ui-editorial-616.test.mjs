@@ -125,6 +125,9 @@ test('#390 Honor native field F2 uses CAS with original value untouched',()=>{
  assert.ok(view.includes("const ownerNativeCopy=(field,key,ru,english,attribute,shortcut,mirrorAria=false)=>"));
  assert.ok(view.includes("event.shiftKey!==(shortcut==='Shift+F2')"));
  assert.ok(view.includes("onCommitted:paint"));
+ assert.ok(view.includes("field.dataset.ownerInterfaceBindings=JSON.stringify(bindings)"));
+ assert.match(app,/!key\.startsWith\('book\.honor-view\.'\)/);
+ assert.match(app,/document\.querySelectorAll\('\[data-owner-interface-bindings\]'\)/);
  assert.ok(view.includes("if(field.isConnected)field.focus({preventScroll:true})"));
  assert.doesNotMatch(view,/wiki-honor-native-copy-pencil/);
 });

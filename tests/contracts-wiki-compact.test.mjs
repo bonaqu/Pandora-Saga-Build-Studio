@@ -18,10 +18,10 @@ test('Honor unavailable-war message reuses normal inline RU/EN D1 editor',()=>{
  assert.match(view,/if\(editable\)editCopy\(element,key,ru,english\)/);
 });
 test('Honor create-war form localizes both input names without confusing their actual language',()=>{
- assert.match(view,/placeholder:tr\('Название на русском','Russian name'\)/);
- assert.match(view,/placeholder:tr\('Название на английском','English name'\)/);
- assert.match(view,/'aria-label':tr\('Название на русском','Russian name'\)/);
- assert.match(view,/'aria-label':tr\('Название на английском','English name'\)/);
+ assert.match(view,/ownerNativeCopy\(ru,'warNameRu','Название на русском',\s*'Russian name','placeholder','F2',true\)/);
+ assert.match(view,/ownerNativeCopy\(english,'warNameEn','Название на английском',\s*'English name','placeholder','F2',true\)/);
+ assert.match(view,/if\(mirrorAria\)field\.setAttribute\('aria-label',value\)/);
+ assert.match(view,/field\.dataset\.ownerInterfaceBindings=JSON\.stringify\(bindings\)/);
  assert.match(view,/const nameRu=ru\.value\.trim\(\),nameEn=english\.value\.trim\(\)/);
 });
 test('Honor owner remove aria label follows currently displayed RU/EN record name',()=>{
