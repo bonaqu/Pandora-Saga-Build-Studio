@@ -5385,7 +5385,7 @@ function renderWiki(root){
      'aria-label':wt('Добавить доступный класс','Add eligible class')});
     plus.onclick=()=>{
      const select=h('select',{class:'wiki-inline-select','aria-label':wt('Выбери класс','Choose class')});
-     select.append(h('option',{value:'',text:'Выбери класс'}));
+     select.append(h('option',{value:'',text:wt('Выбери класс','Choose class')}));
      for(const key of jobKeys.filter(x=>!keys.includes(x)))
       select.append(h('option',{value:key,text:classLabel(key)||key}));
      plus.replaceWith(select);
@@ -5719,14 +5719,17 @@ function renderWiki(root){
        const materialIndex=(trade.mats||[]).findIndex(row=>String(row.i)===String(id));
        if(materialIndex>=0){
         const current=trade.mats[materialIndex];
-        const quantity=h('span',{class:'wiki-edit-value',text:' ×'+(current.n??1),
-         title:'Двойной клик — изменить количество материала'});
+        const quantity=h('span',{class:'wiki-edit-value',text:' ×'+(current.n??1)});
+        // The edited number remains a trade value. Reuse the same existing
+        // RU/EN D1-authored quantity hint as the NPC exchange editor.
+        npcTradeBind(quantity,'materialQuantityHint','title');
         quantity.ondblclick=e=>{e.preventDefault();editWikiValue(quantity,current.n??1,
          {type:'number',min:1,max:999999,integer:true,onCommit:n=>
           saveWikiTradeRecipe({...trade,mats:trade.mats.map((x,i)=>
            i===materialIndex?{...x,n}:x)})})};
         entry.append(quantity,h('button',{type:'button',class:'wiki-owner-remove',
-         text:'×','aria-label':'Исключить материал из обмена NPC',
+         text:'×','aria-label':wt('Исключить материал из обмена NPC',
+          'Remove material from NPC trade'),
          onclick:()=>void saveWikiTradeRecipe({...trade,
           mats:trade.mats.filter((_,i)=>i!==materialIndex)})
           .catch(err=>showStudioToast(err.message,'warning'))}));
@@ -5749,12 +5752,13 @@ function renderWiki(root){
      plus.onclick=()=>{
       if(detail.querySelector('.wiki-owner-trade-npc'))return;
       const panel=h('div',{class:'wiki-owner-source-picker wiki-owner-trade-npc'});
-      const pick=h('select',{class:'wiki-inline-select','aria-label':'Выбери NPC для обмена'});
-      pick.append(h('option',{value:'',text:'Выбери NPC'}));
+      const pick=h('select',{class:'wiki-inline-select',
+       'aria-label':wt('Выбери NPC для обмена','Choose an NPC for a trade')});
+      pick.append(h('option',{value:'',text:wt('Выбери NPC','Choose NPC')}));
       for(const [npcId] of Object.entries(wikiData.trades.npcs||{}))
        pick.append(h('option',{value:npcId,text:dataName('npc',npcId)}));
       panel.append(pick,h('button',{type:'button',class:'wiki-owner-cancel',
-        text:'Отмена',onclick:()=>panel.remove()}));plus.after(panel);
+        text:wt('Отмена','Cancel'),onclick:()=>panel.remove()}));plus.after(panel);
       pick.onchange=()=>{
        if(!pick.value)return;
        const npcId=Number(pick.value);
@@ -5765,7 +5769,8 @@ function renderWiki(root){
          if(!(wikiData.trades.trades||[]).some(x=>x.id===candidate)&&
           !Object.hasOwn(override,'tradeedit.'+candidate)){unique=candidate;break}
         }
-        if(unique===null)throw Error('Не удалось назначить уникальный номер');
+        if(unique===null)throw Error(wt('Не удалось назначить уникальный номер',
+         'Could not reserve a unique trade ID'));
         await saveWikiTradeRecipe({id:unique,i:rewardId,npc:[npcId],
          mats:[{i:Number(id),n:1}],gold:0,honor:0,exp:0});
        });
@@ -5898,7 +5903,8 @@ function renderWiki(root){
       ]));
      if(adminEditing&&adminToken){
       target.classList.add('wiki-edit-value');
-      target.title='Двойной клик — изменить требование ветки';
+      target.title=wt('Двойной клик — изменить требование ветки',
+       'Double-click to edit branch requirement');
       target.ondblclick=e=>{
        e.preventDefault();e.stopPropagation();
        editWikiValue(target,required,{type:'number',min:0,max:1000,integer:true,
@@ -5917,7 +5923,7 @@ function renderWiki(root){
       text:wt('+ Требование ветки','+ Branch requirement'),onclick:()=>{
        if(reqs.querySelector('.wiki-inline-select'))return;
        const select=h('select',{class:'wiki-inline-select','aria-label':wt('Выбери ветку','Choose branch')});
-       select.append(h('option',{value:'',text:'Выбери ветку'}));
+       select.append(h('option',{value:'',text:wt('Выбери ветку','Choose branch')}));
        for(const branch of branches.filter(x=>!(rec.reqs||[]).some(req=>req.branch===x.id)))
         select.append(h('option',{value:branch.id,text:branchLabel(branch.id)}));
        add.replaceWith(select);
@@ -5961,12 +5967,13 @@ function renderWiki(root){
        select.onchange=()=>{if(select.value)void saveWikiRecordField('skill',id,'prereq',
         Number(select.value)).catch(error=>showStudioToast(error.message,'warning'))};
        panel.append(search,select,
-        h('button',{type:'button',class:'wiki-owner-cancel',text:'Отмена',onclick:()=>panel.remove()}));
+        h('button',{type:'button',class:'wiki-owner-cancel',
+         text:wt('Отмена','Cancel'),onclick:()=>panel.remove()}));
        add.after(panel);fill();search.focus();
       }});
      prereqPane.append(add);
      if(rec.prereq!=null)prereqPane.append(h('button',{type:'button',class:'wiki-owner-remove',
-      text:'×','aria-label':'Убрать предыдущее умение',
+      text:'×','aria-label':wt('Убрать предыдущее умение','Remove prerequisite skill'),
       onclick:()=>void saveWikiRecordField('skill',id,'prereq',null)
        .catch(error=>showStudioToast(error.message,'warning'))}));
     }
