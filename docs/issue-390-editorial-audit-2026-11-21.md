@@ -310,3 +310,8 @@ pencil controls. Full Node+Chromium required on the exact new PR SHA.
 
 - The same icon-only account trigger now binds `profileAccess` for a guest and the existing `accountProfileTitle` for a signed-in user to both `data-i18n-title` and `data-i18n-aria-label`. Its F2 owner editor already reads the current key at activation, so an authenticated Profile prefix no longer edits the guest Sign-in label. The live account name stays outside D1 owner text; logout restores guest semantics and its RU/EN override.
 - Existing Node contract and actual Chromium browser account registration/logout flows check the bound keys and the source-backed runtime name, with normal actions unchanged. No pencils or redundant editor widgets were added. Exact-HEAD full Node+Chromium required.
+
+## 22.11.2026 · Wiki skill count bootstrap race
+
+- Full Chromium on `6d4c01b` observed 18 correctly rendered racial skills but an early native option caption `Расовая пассивка` missing ` · 18`. The selector may mount before its source-backed index/model is ready. The existing list draw now refreshes native option counts after the real skill model arrives, without replacing the select, the selected filter, or its D1-authored RU/EN caption.
+- The count is a separate source-computed number and updates existing `data-label-count` for future CAS/Undo. Original game IDs and data remain untouched. Node source lifecycle test and existing Chromium skill-filter smoke verify behavior; both complete CI required on this new SHA. No staging/production D1 writes or deployment.

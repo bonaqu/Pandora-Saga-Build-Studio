@@ -85,3 +85,17 @@ test('Wiki results and actions preserve live numbers beside independent owner-ed
  assert.match(app,/bindOwnerInterfaceText\(button,'wiki-ui','backLabel'/);
  assert.doesNotMatch(wiki,/text:lang==='en'\?'Showing '/);
 });
+
+test('#390 late Wiki skill source readiness reconciles real counts without changing owner captions',()=>{
+ const begin=wiki.indexOf("const filterModel=type==='skill'?skillModel():null;");
+ const end=wiki.indexOf("if(type==='skill'&&wikiSelection.id!=null",begin);
+ assert.ok(begin>=0&&end>begin,'Skill count reconciliation must run with a ready index');
+ const code=wiki.slice(begin,end);
+ assert.match(code,/controls\.querySelector\('\.wiki-skill-type'\)/);
+ assert.match(code,/filterModel\.counts\?\.\[id\]/);
+ assert.match(code,/PandoraWikiLabels\.value\(override,'skillFilter',id,lang\)/);
+ assert.match(code,/option\.dataset\.labelCount=value/);
+ assert.match(code,/option\.textContent=caption/);
+ assert.doesNotMatch(code,/skillPicker\.value=|skillPicker\.replaceChildren\(/,
+  'Do not replace the user's selected native filter');
+});

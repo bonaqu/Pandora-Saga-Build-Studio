@@ -4982,6 +4982,21 @@ function renderWiki(root){
    }
   }
   const filterModel=type==='skill'?skillModel():null;
+  // Native filter options can mount before the game-source index is ready.
+  // Reconcile counts when the real skill model arrives, without rebuilding
+  // the select or losing the player's current choice or D1 RU/EN captions.
+  if(type==='skill'&&filterModel){
+   const skillPicker=controls.querySelector('.wiki-skill-type');
+   for(const option of skillPicker?.options||[]){
+    const id=option.value,count=filterModel.counts?.[id];
+    if(!Number.isSafeInteger(count)||count<0)continue;
+    if(!Object.hasOwn(window.PandoraWikiSkillFilters.names,id))continue;
+    const label=window.PandoraWikiLabels.value(override,'skillFilter',id,lang);
+    const value=String(count),caption=label+' · '+value;
+    if(option.dataset.labelCount!==value)option.dataset.labelCount=value;
+    if(option.textContent!==caption)option.textContent=caption;
+   }
+  }
   if(type==='skill'&&wikiSelection.id!=null&&records?.[wikiSelection.id]&&
    !filterModel.matches(wikiSelection.id,wikiSkillFilter)){
    wikiSkillFilter=filterModel.group(wikiSelection.id);
