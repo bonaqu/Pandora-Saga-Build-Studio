@@ -107,7 +107,10 @@ export async function runProfileCaption390Smoke(browser,base){
   await panel.locator('.ps-overview-actions button').last().click();
   await panel.locator('#ps-profile-field-name').waitFor({state:'visible',timeout:12000});
   assert.equal(await panel.locator('#ps-profile-field-guild').inputValue(),'Player data QA');
-  await page.locator('#locale [data-locale="en"]').click();
+  // A modal workbench intercepts background pointer clicks by design.
+  // Use its existing keyboard-accessible language action (no force click).
+  await page.locator('#locale [data-locale="en"]').focus();
+  await page.keyboard.press('Enter');
   await page.waitForFunction(()=>document.documentElement.lang==='en');
   const english=panel.locator('[data-profile-copy-key="tab-profile"]');
   assert.equal((await english.textContent()).trim(),'Profile');
