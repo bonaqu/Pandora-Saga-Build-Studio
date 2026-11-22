@@ -77,6 +77,8 @@ export async function runWikiSkillLabelEditorSmoke(browser,base){
   assert.equal(await disclosure.locator('[data-skill-filter-label]').count(),8,
    'Owner must be able to edit every filter without opening a native option');
   assert.equal(await disclosure.locator('[data-skill-filter-label="racial"]').count(),1);
+  assert.equal(await disclosure.locator('button').count(),0,
+   'The text list must not recreate a pencil for every editable label');
 
   const target=disclosure.locator('[data-skill-filter-label="unknown"]');
   await target.locator('.wiki-skill-label-caption').dblclick();
@@ -110,6 +112,36 @@ export async function runWikiSkillLabelEditorSmoke(browser,base){
    skill_filter_player_ru:'Умения героев'
   },'Subsequent inline saves must merge the previous changes');
 
+  // The standalone caption is keyboard-editable without an extra pencil.
+  const racialCaption=disclosure.locator(
+   '[data-skill-filter-label="racial"] .wiki-skill-label-caption');
+  await racialCaption.focus();
+  await racialCaption.press('F2');
+  const racialDraft=disclosure.locator(
+   '[data-skill-filter-label="racial"] [contenteditable]');
+  await racialDraft.waitFor({state:'visible',timeout:6000});
+  await racialDraft.press('Escape');
+  assert.equal(writes.length,2,'Escape from F2 must not write D1');
+  assert.equal(await racialCaption.textContent(),'Расовая пассивка');
+
+  // Touch uses the same direct editor; cancel leaves category/selection intact.
+  const guildCaption=disclosure.locator(
+   '[data-skill-filter-label="guild"] .wiki-skill-label-caption');
+  await guildCaption.dispatchEvent('pointerdown',{
+   pointerType:'touch',isPrimary:true,button:0,pointerId:283,
+   clientX:22,clientY:22
+  });
+  await page.waitForTimeout(570);
+  const guildDraft=disclosure.locator(
+   '[data-skill-filter-label="guild"] [contenteditable]');
+  await guildDraft.waitFor({state:'visible',timeout:6000});
+  await guildDraft.press('Escape');
+  await guildCaption.dispatchEvent('pointerup',{
+   pointerType:'touch',isPrimary:true,pointerId:283
+  });
+  assert.equal(writes.length,2,'Touch Escape must not write D1');
+  assert.equal(await control.inputValue(),'player');
+
   await control.selectOption('unknown');
   assert.equal(await control.inputValue(),'unknown');
   assert.equal(await disclosure.isVisible(),false,
@@ -142,7 +174,41 @@ export async function runWikiSkillLabelEditorSmoke(browser,base){
    'Undo of the first owner label change must delete the new override');
   assert.deepEqual(resets,[{key:'guideedit.wiki.labels',
    expectedValue:JSON.stringify({skill_filter_unknown_ru:'Дополнительные навыки'})}]);
+
+  // Reopen in English: a saved EN caption must use its own D1 field,
+  // leaving the original RU label and the selected skill filter untouched.
+  await page.locator('#locale [data-locale="en"]').click();
+  await page.waitForFunction(()=>
+   document.querySelector('.wiki-skill-type option[value="unknown"]')
+    ?.textContent.startsWith('Unresolved'),null,{timeout:12000});
+  const enFilter=page.locator('.wiki-skill-type');
+  assert.equal(await enFilter.inputValue(),'unknown');
+  const enToggle=page.locator('.wiki-skill-edit-toggle');
+  await enToggle.click();
+  const enTarget=page.locator(
+   '.wiki-skill-edit-list [data-skill-filter-label="unknown"]');
+  const enCaption=enTarget.locator('.wiki-skill-label-caption');
+  await enCaption.focus();
+  await enCaption.press('F2');
+  const enDraft=enTarget.locator('[contenteditable]');
+  await enDraft.waitFor({state:'visible',timeout:6000});
+  await enDraft.fill('Needs icon review');
+  await enDraft.press('Enter');
+  await page.waitForFunction(()=>
+   document.querySelector('.wiki-skill-type option[value="unknown"]')
+    ?.textContent.startsWith('Needs icon review'),null,{timeout:10000});
+  assert.equal(writes.length,3);
+  assert.deepEqual(JSON.parse(values['guideedit.wiki.labels']),{
+   skill_filter_unknown_en:'Needs icon review'
+  },'English save must not write a stale Russian field');
+  assert.equal(await enFilter.inputValue(),'unknown');
+  await undo.click();
+  await page.waitForFunction(()=>
+   document.querySelector('.wiki-skill-type option[value="unknown"]')
+    ?.textContent.startsWith('Unresolved'),null,{timeout:10000});
+  assert.equal(Object.hasOwn(values,'guideedit.wiki.labels'),false);
+  assert.equal(resets.length,2);
   assert.deepEqual(errors,[]);
-  console.log('Chromium skill labels: reused Encyclopedia category UI, 7 editable labels, autosave, stable selection, mobile');
+  console.log('Chromium skill labels: RU/EN CAS and Undo, F2/Escape, long-press, no pencils, mobile');
  }finally{await context.close()}
 }
