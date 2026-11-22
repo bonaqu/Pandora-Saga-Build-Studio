@@ -122,7 +122,7 @@ test('issue 390: PvP rewards and schedules expose D1 headings but not reward or 
 });
 
 test('#390 Honor native field F2 uses CAS with original value untouched',()=>{
- assert.ok(view.includes("const ownerNativeCopy=(field,key,ru,english,attribute,shortcut,mirrorAria=false)=>"));
+ assert.ok(view.includes("const ownerNativeCopy=(field,key,ru,english,attribute,shortcut,mirrorAria=false,suffix='')=>"));
  assert.ok(view.includes("event.shiftKey!==(shortcut==='Shift+F2')"));
  assert.ok(view.includes("onCommitted:paint"));
  assert.ok(view.includes("field.dataset.ownerInterfaceBindings=JSON.stringify(bindings)"));
@@ -177,4 +177,40 @@ test('legacy authored rank requirements retain the original fields without alter
  assert.equal(rank.points,3000);
  assert.equal(rank.gold,20000);
  assert.match(view,/if\(authoredRequirement\)/);
+});
+
+
+test('#390 Honor owner form captions support live D1 direct editing while preserving map/war state',()=>{
+ const source=view.match(
+  /const honorOwnerFormCopyRows=Object\\.freeze\\((\\[[\\s\\S]*?\\])\\);/);
+ assert.ok(source,'Audited Honor form registry must remain source-backed');
+ const rows=runInNewContext('('+source[1]+')',{},{timeout:5000});
+ const keys=['zoneChooseOption','zoneNoMatches','zoneSelectRequired',
+  'warNamesRequired','zoneRemovePrefix','locationNameHint','rankFilterAria'];
+ assert.equal(rows.length,keys.length);
+ assert.equal([...rows].map(row=>row[0]).sort().join('|'),keys.sort().join('|'));
+ for(const [key,ru,en] of rows){
+  assert.ok(ru.trim()&&en.trim(),'Missing bilingual source copy: '+key);
+  const slug=key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  assert.equal(scope.PandoraHonorGuide.validOverride('book.honor-view.'+slug,
+   JSON.stringify({ru:'Проверенная надпись',en:'Reviewed caption'})),true,key);
+ }
+ assert.match(view,/bindFormOptions\(select\)/,
+  'Native select must expose separate Alt+F2 edit without a pencil');
+ assert.match(view,/event\.altKey\|\|event\.ctrlKey\|\|event\.metaKey/,
+  'Native F2 must not swallow the Alt+F2 option-editor shortcut');
+ assert.match(view,/event\.key!=='F2'\|\|!event\.altKey/,
+  'Alt+F2 must open only source-authored native option copy');
+ assert.match(view,/formOption\(found\.length\?\s*'zoneChooseOption':'zoneNoMatches'\)/);
+ assert.doesNotMatch(view,/text:tr\('Без привязки','Unlinked'\)/,
+  'A nonexistent unlink action must not appear as a valid selector option');
+ assert.match(view,/if\(!selected\)\{formNote\(note,'zoneSelectRequired'\);return\}/);
+ assert.match(view,/if\(!nameRu\|\|!nameEn\)\{formNote\(note,'warNamesRequired'\);return\}/);
+ assert.match(view,/ownerNativeCopy\(remove,'zoneRemovePrefix',ru,english,'aria-label',/,
+  'Remove affordance needs owner-authored prefix plus read-only location name');
+ assert.match(view,/suffix\};/,
+  'The dynamic location name must remain outside the D1 authorial prefix');
+ assert.match(view,/ownerNativeCopy\(rankFilters,'rankFilterAria'/);
+ assert.match(view,/ownerNativeCopy\(name,'locationNameHint'/);
+ assert.doesNotMatch(view,/wiki-honor-native-copy-pencil/);
 });
