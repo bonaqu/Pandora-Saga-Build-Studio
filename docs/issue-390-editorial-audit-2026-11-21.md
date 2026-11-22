@@ -299,3 +299,9 @@ pencil controls. Full Node+Chromium required on the exact new PR SHA.
 - The actual rank-filter button now accepts F2 without a second focusable caption; Enter remains its normal filter action, and Escape restores focus. Authored PvP illustration alt and rank-emblem label prefix now use the existing owner-only native D1/CAS editor. Game rank names, IDs, artwork assets and numeric rank thresholds are not owner-copy values.
 - Exactly two new source-reviewed semantic accessibility keys enter the offline staging D1 manifest (four RU/EN rows), guarded by a closed source inventory and existing Node tests. Existing real Chromium owner integration now tests cancel/save, rank-filter action, and original image/rank-name preservation.
 - Both complete CI workflows are required on the new exact PR SHA; no staging D1 import, production write, release, physical touch check, merge or issue closure is implied.
+
+## 22.11.2026 · Account trigger D1 copy versus live account identity
+
+- The icon-only account trigger has an existing owner-editable `profileAccess` RU/EN key. Its account module used to overwrite the accessible guest title with its static source after refreshing; it now reads that semantic D1 value in both initial render and locale refresh. Signed-in title remains separate: localized authorial `Профиль`/`Profile` prefix followed by the current user's account name, which is never a D1 owner-editable string.
+- After direct F2 save/Escape of this icon copy, the general static editor also reconciles the real account module's title and aria without remounting the account form or touching credentials/recovery codes. Node and real Chromium regressions exercise the exact D1 title across account refresh, and the guest/signed-in source split.
+- Both full CI workflows are required on the new SHA. No production account data, D1, Worker or Pages write is performed.

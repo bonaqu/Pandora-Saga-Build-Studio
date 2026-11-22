@@ -9635,6 +9635,9 @@ function bindStaticUICopyEditors(){
       ['placeholder','i18nPlaceholder']])
       if(node.dataset[dataKey])
        node.setAttribute(attribute,locale.text(node.dataset[dataKey],lang));
+     // This icon's guest copy is authorial, but a signed-in title includes
+     // the live account name. Reconcile it without replacing the account form.
+     if(node.id==='profileTrigger')window.PandoraAccountUI?.refresh?.();
     }
    });
   });

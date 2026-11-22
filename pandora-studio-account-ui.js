@@ -46,6 +46,12 @@ const tr=value=>{
  return pair?pair[lang==='en'?1:0]:
   (root.PandoraUILocale?.ui(value,lang)||value);
 };
+// The guest trigger uses the exact semantic D1 profileAccess label, not a
+// separate hardcoded tooltip. For signed-in owners keep the real username
+// as a non-editorial suffix of the independent Profile title.
+const triggerLabel=()=>session?tr('Профиль')+' · '+session.username:
+ (root.PandoraUILocale?.text?.('profileAccess',document.documentElement.lang)||
+  tr('Войти или зарегистрироваться'));
 // Only exact human-readable messages emitted by the account API are allowed
 // through. Raw server exceptions, SQL details and arbitrary HTML are never
 // rendered in the guest/profile UI or offered to the D1 text editor.
@@ -244,7 +250,7 @@ function render(){
  if(bootstrapPhase==='pending'&&session)
   panel.append(node('p','account-lead account-bootstrap-pending',
    'Проверяем учётную запись…'));
- trigger.title=session?tr('Профиль')+' · '+session.username:tr('Войти или зарегистрироваться');
+ trigger.title=triggerLabel();
  trigger.setAttribute('aria-label',trigger.title);
  const title=node('h3','account-title',session?'Профиль':'Аккаунт');
  panel.append(title);
@@ -635,7 +641,7 @@ function refresh(){
   }
   return;
  }
- trigger.title=session?tr('Профиль')+' · '+session.username:tr('Войти или зарегистрироваться');
+ trigger.title=triggerLabel();
  trigger.setAttribute('aria-label',trigger.title);
  for(const node of (panel.querySelectorAll?.('[data-account-copy-source]')||[])){
   const value=tr(node.getAttribute('data-account-copy-source'));

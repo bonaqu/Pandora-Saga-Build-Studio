@@ -208,6 +208,11 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(await profileButton.getAttribute('aria-label'),'Профиль или регистрация QA');
   assert.equal(JSON.parse(values['guideedit.book.ui.label.profile-access']).ru,
    'Профиль или регистрация QA');
+  // Account's own redraw previously overwrote this D1 title with the
+  // hardcoded guest string, although the icon editor had saved successfully.
+  await page.evaluate(()=>window.PandoraAccountUI?.refresh?.());
+  assert.equal(await profileButton.getAttribute('title'),'Профиль или регистрация QA');
+  assert.equal(await profileButton.getAttribute('aria-label'),'Профиль или регистрация QA');
   assert.equal(await page.locator('#profileTrigger + .ui-content-pencil').count(),0);
   // Escape cancels a second edit without changing the saved D1 value.
   const profileWrites=writes.filter(entry=>entry.key==='guideedit.book.ui.label.profile-access').length;
