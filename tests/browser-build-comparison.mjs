@@ -200,6 +200,7 @@ export async function runBuildComparisonSmoke(browser,base){
   await page.waitForFunction(()=>document.documentElement.lang==='en'&&
    document.querySelector('[data-compare-row="stat.hp"]')?.textContent==='HP',
    null,{timeout:15000});
+  await page.locator('#startupOverlay').waitFor({state:'hidden',timeout:15000});
   const numbersEn=[await hpA.textContent(),await hpB.textContent()];
   const englishCaptionState=await hp.evaluate(node=>({
    visible:node.getBoundingClientRect().width>0&&
