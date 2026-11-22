@@ -158,6 +158,9 @@ export async function runBuildComparisonSmoke(browser,base){
   await metricInput.waitFor({state:'visible'});
   await metricInput.fill('ОЗ · редактура QA');
   await metricInput.press('Tab');
+  // The filled draft is already visible before D1 confirms the write.
+  // A second editor can open only after the previous input is removed.
+  await metricInput.waitFor({state:'detached',timeout:15000});
   await page.waitForFunction(()=>document.querySelector(
    '[data-compare-row="stat.hp"]')?.textContent==='ОЗ · редактура QA',
    null,{timeout:15000});
@@ -203,6 +206,7 @@ export async function runBuildComparisonSmoke(browser,base){
   await enInput.waitFor({state:'visible'});
   await enInput.fill('Health · English QA');
   await enInput.press('Tab');
+  await enInput.waitFor({state:'detached',timeout:15000});
   await page.waitForFunction(()=>document.querySelector(
    '[data-compare-row="stat.hp"]')?.textContent==='Health · English QA',
    null,{timeout:15000});
