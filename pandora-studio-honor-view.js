@@ -480,9 +480,16 @@ function render({browse,detail,make,lang='ru',article,editable=false,
     en?row.costEn:row.costRu,row.limit]));
   paragraph(victories,en?o.pvpWeeklyEn:o.pvpWeeklyRu,'honor.overview',
    en?'pvpWeeklyEn':'pvpWeeklyRu');
-  victories.append(editorial('h5','wiki-honor-pvp-label',
-   'pvpDoubleRewards','Двойные награды: вторник и четверг',
-   'Double rewards: Tuesday and Thursday'));
+  // The RU/EN heading is authorial text; the source-defined event days
+  // must never be part of an editable D1/CAS caption.
+  victories.append(make('h5',{
+   class:'wiki-honor-pvp-label wiki-honor-double-rewards'
+  },[
+   editorial('span','wiki-honor-pvp-heading-copy','pvpDoubleHeading',
+    'Двойные награды','Double rewards'),
+   node('span','wiki-honor-fixed-schedule',
+    en?': Tuesday and Thursday':': вторник и четверг')
+  ]));
   paragraph(victories,en?o.pvpHuntEn:o.pvpHuntRu,'honor.overview',
    en?'pvpHuntEn':'pvpHuntRu');
   addTable('pvpHunt','Расписание охоты (МСК)','Hunt schedule (Moscow time)',

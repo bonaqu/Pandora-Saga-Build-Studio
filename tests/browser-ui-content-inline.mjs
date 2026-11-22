@@ -1166,6 +1166,26 @@ export async function runUIContentInlineSmoke(browser,base){
   await cancelAction.press('Enter');
   await zoneList.locator('.wiki-honor-new').waitFor({state:'detached',timeout:6000});
   assert.equal(await zoneList.locator('.wiki-honor-list-row').count(),linkedRows);
+  // Only the authorial heading is editable; no owner override may replace
+  // the source-defined PvP weekdays in its immutable sibling node.
+  const doubleRewards=honorPane.locator('#honor-victories .wiki-honor-double-rewards');
+  const fixedDays=doubleRewards.locator('.wiki-honor-fixed-schedule');
+  const daysBefore=await fixedDays.textContent();
+  assert.equal(daysBefore,': вторник и четверг');
+  assert.equal(await fixedDays.getAttribute('data-owner-copy-id'),null);
+  const rewardHeading=doubleRewards.locator('[data-owner-copy-id="pvpDoubleHeading"]');
+  await rewardHeading.dblclick();
+  const headingEditor=rewardHeading.locator('[contenteditable]');
+  await headingEditor.waitFor({state:'visible',timeout:8000});
+  await headingEditor.fill('Бонусные награды');
+  await headingEditor.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '.wiki-honor-pvp-heading-copy[data-owner-copy-id="pvpDoubleHeading"]')
+   ?.textContent==='Бонусные награды',null,{timeout:15000});
+  assert.equal(JSON.parse(values['guideedit.book.honor-view.pvp-double-heading']).ru,
+   'Бонусные награды');
+  assert.equal(await fixedDays.textContent(),daysBefore);
+  assert.equal(await fixedDays.locator('[contenteditable]').count(),0);
   const tableHead=honorPane.locator(
    '.wiki-honor-pvp-label[data-owner-copy-id="pvpDailyHeading"]');
   await tableHead.waitFor({state:'visible',timeout:20000});

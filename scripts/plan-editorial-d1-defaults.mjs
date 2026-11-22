@@ -448,7 +448,7 @@ export function buildEditorialDefaultsManifest(){
    ['sellerMissing','deleteTrade','deleteAria','deleteConfirm',
     'deleteRecordButton','deleteRecordLinked','deleteRecordConfirm',
     'deleteRecordFailure']],
-  ['wikiChestDisplayRows','wiki.chest.text','wiki-chest-authorial',35,
+  ['wikiChestDisplayRows','wiki.chest.text','wiki-chest-authorial',36,
    ['certainHeading','oneGold','oneItem','keyUnlisted','contentsMissing',
     'contentsUnlisted','goldMissing','rewardMissing','deleteGroup',
     'removeReward']],
@@ -518,7 +518,7 @@ export function buildEditorialDefaultsManifest(){
  )].map(match=>[match[1],match[2],match[3]]);
  const expectedHonor=[
   'warsHeading','warEyebrow','warNotFound','searchEmpty',
-  'sectionsHeading','subtitle','pvpDoubleRewards','rewardsHeading'
+  'sectionsHeading','subtitle','pvpDoubleHeading','rewardsHeading'
  ];
  const uniqueHonor=new Map();
  for(const [key,ru,en] of honorRows){
@@ -531,7 +531,6 @@ export function buildEditorialDefaultsManifest(){
   [...uniqueHonor.keys()].sort().join('|')!==expectedHonor.sort().join('|'))
   throw Error('Honor static editorial inventory changed: review before staging');
  for(const [key,[ru,en]] of uniqueHonor){
-  if(key==='pvpDoubleRewards')continue;
   if(!ru.trim()||!en.trim())throw Error('Empty Honor view translation: '+key);
   const slug=key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
   append('guideedit.book.honor-view.'+slug,'ru',ru,'honor-view-authorial');

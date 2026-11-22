@@ -101,7 +101,7 @@ test('Honor captions edit at their text, never via neighboring pencil',()=>{
 test('issue 390: PvP rewards and schedules expose D1 headings but not reward or count data',()=>{
  const fields=['sectionsHeading','pvpDailyHeading','pvpDailyColumn0',
   'pvpDailyColumn1','pvpWeeklyHeading','pvpWeeklyColumn0',
-  'pvpWeeklyColumn1','pvpWeeklyColumn2','pvpDoubleRewards',
+  'pvpWeeklyColumn1','pvpWeeklyColumn2','pvpDoubleHeading',
   'pvpHuntHeading','pvpHuntColumn0','pvpHuntColumn1','pvpHuntColumn2'];
  for(const field of fields){
   const key='book.honor-view.'+field.replace(/[A-Z]/g,c=>'-'+c.toLowerCase());
@@ -111,6 +111,9 @@ test('issue 390: PvP rewards and schedules expose D1 headings but not reward or 
  assert.match(view,/editorial\('span','','sectionsHeading','Разделы','Sections'\)/);
  assert.match(view,/wiki-honor-live-count',' · '\+sidebar\.length/);
  assert.match(view,/group\.append\(editorial\('h5','wiki-honor-pvp-label'/);
+ assert.match(view,/editorial\('span','wiki-honor-pvp-heading-copy','pvpDoubleHeading'/);
+ assert.match(view,/wiki-honor-fixed-schedule/);
+ assert.doesNotMatch(view,/editorial\('h5','wiki-honor-pvp-label',\s*'pvpDoubleRewards'/);
  assert.match(view,/cell\.append\(editorial\('span','wiki-honor-table-caption'/);
  assert.match(view,/key\+'Column'\+index/);
  assert.match(view,/key\+'Heading'/);

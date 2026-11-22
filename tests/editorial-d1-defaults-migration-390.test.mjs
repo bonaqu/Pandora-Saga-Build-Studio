@@ -362,19 +362,15 @@ test('#390 Hero Path and Honor source-authored labels have pinned semantic D1 de
   unique.set(key,[ru,en]);
  }
  assert.equal(unique.size,8,'Search-empty key is reused by two routes');
- assert.equal(manifest.stats.cohorts['honor-view-authorial'],14);
+ assert.equal(manifest.stats.cohorts['honor-view-authorial'],16);
  assert.match(app,/copy:\(key,ru,en\)=>ownerCopy\('honor-view',key,ru,en\)/);
  for(const [key,[ru,en]] of unique){
   const id='guideedit.book.honor-view.'+
    key.replace(/[A-Z]/g,ch=>'-'+ch.toLowerCase());
   const stored=manifest.records.filter(r=>r.recordKey===id);
-  if(key==='pvpDoubleRewards'){
-   assert.equal(stored.length,0,'Source-defined PvP schedule is not authorial content');
-  }else{
-   assert.equal(stored.length,2,id);
-   assert.equal(stored.find(r=>r.field==='ru')?.value,ru);
-   assert.equal(stored.find(r=>r.field==='en')?.value,en);
-  }
+  assert.equal(stored.length,2,id);
+  assert.equal(stored.find(r=>r.field==='ru')?.value,ru);
+  assert.equal(stored.find(r=>r.field==='en')?.value,en);
  }
  const ownerActions=[...honor.matchAll(
   /\bownerActionLabel\(\s*[a-z]+\s*,\s*'([^']+)'\s*,\s*'([^']*)'\s*,\s*'([^']*)'\s*\)/g
@@ -397,6 +393,11 @@ test('#390 Hero Path and Honor source-authored labels have pinned semantic D1 de
   assert.equal(manifest.records.find(r=>r.recordKey===recordKey&&r.field==='en')?.value,en);
  }
 
+ assert.equal(manifest.records.some(row=>row.recordKey===
+  'guideedit.book.honor-view.pvp-double-rewards'),false,
+  'Legacy complete schedule is not staged as editable game copy');
+ assert.match(honor,/wiki-honor-fixed-schedule/);
+ assert.match(honor,/editorial\('span','wiki-honor-pvp-heading-copy','pvpDoubleHeading'/);
  for(const term of ['guideedit.book.path.skill.32001','guideedit.book.honor-view.rank.5'])
   assert.ok(!manifest.records.some(r=>r.recordKey===term),
    'Skill IDs and Honor rank mechanics never enter source-authored copy');

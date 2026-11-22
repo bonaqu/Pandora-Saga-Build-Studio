@@ -254,3 +254,9 @@ Extended the isolated Chromium Profile scenario beyond RU/EN happy-path: a stale
 - The comparison module's original RU metric names remain its exclusive source lookup, and winner/max/min/delta and saved A/B identifiers are not altered by a textual owner override. The UI reads `compare-metric.<key>` via existing `PandoraHonorGuide` CAS and stages **72 immutable bilingual D1-defaults rows** from the very same fixed source registry.
 - An open/failed caption edit defers A/B table re-render until the editor closes, keeping drafts intact across a swap/selection. Numeric cells remain protected. Static Node tests cover the source key inventory and CAS precedence, browser acceptance must be green on the final PR SHA.
 - The D1 manifest is still offline staging-only: no Cloudflare staging import, production D1 write or deployment is implied.
+
+## #390 · Boundaries for source gameplay rules (22.11.2026)
+
+- Split Honor double rewards into an authorial RU/EN D1/CAS heading (`book.honor-view.pvp-double-heading`) and a separate immutable Tuesday/Thursday schedule DOM node. Old full-schedule D1 overrides remain stored but cannot replace the live game-rule wording. Staged authorial defaults gain exactly one bilingual heading pair.
+- Chest source gold intervals are separate numeric DOM nodes beside the editable `book.wiki.chest.text.gold-amount-prefix` caption. The actual deterministic generator now recognizes 36 audited chest source captions; it continues to reject unreviewed keys and gameplay data.
+- Node and browser regression on the exact new SHA must pass before accepting this packet. No staging/production D1 migration, deployment or game-client verification occurred.
