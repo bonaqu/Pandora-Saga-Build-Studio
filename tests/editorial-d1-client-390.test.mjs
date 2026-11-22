@@ -51,6 +51,32 @@ test('#390 staged D1 client is inert until explicit verified version activation'
  assert.deepEqual(expectPlain(stage.status()),{active:false,snapshot:null});
 });
 
+test('#390 profile field captions prefer CAS over verified staging text without touching hero data',async()=>{
+ const root=context(),stage=root.PandoraEditorialDefaults,guide=root.PandoraHonorGuide;
+ const name='guideedit.book.profile.field-name';
+ const bio='guideedit.book.profile.bio-placeholder';
+ const payload=fixture([
+  [name,'ru','Позывной · staging'],
+  [name,'en','Call sign · staging'],
+  [bio,'en','Your character notes · staging']
+ ]);
+ assert.equal(await stage.installVerified(payload,payload.snapshot,webcrypto.subtle),true);
+ assert.equal(guide.field({},'profile.field-name','Имя героя','Hero name').ru,
+  'Позывной · staging');
+ assert.equal(guide.field({},'profile.field-name','Имя героя','Hero name').en,
+  'Call sign · staging');
+ assert.equal(guide.field({},'profile.bio-placeholder',
+  'Описание героя — сохраняется в билде',
+  'Hero bio — saved with the build').en,'Your character notes · staging');
+ const override={[name]:JSON.stringify({ru:'Имя · владелец'})};
+ assert.equal(guide.field(override,'profile.field-name','Имя героя','Hero name').ru,
+  'Имя · владелец');
+ assert.equal(guide.field(override,'profile.field-name','Имя героя','Hero name').en,
+  'Call sign · staging');
+ stage.reset();
+ assert.equal(guide.field({},'profile.field-name','Имя героя','Hero name').ru,'Имя героя');
+});
+
 test('#390 verified equipment summary defaults are below existing owner CAS',async()=>{
  const root=context(),stage=root.PandoraEditorialDefaults,guide=root.PandoraHonorGuide;
  const key='guideedit.book.equipment.field.soul-compatible';
