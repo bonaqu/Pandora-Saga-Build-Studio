@@ -592,6 +592,38 @@ export function buildEditorialDefaultsManifest(){
   append('guideedit.book.path.'+slug,'en',en,'hero-path-authorial');
  }
 
+
+ // The 16 authored reasons for blocked skill requirements are independent
+ // of original skill names, class/branch identity and computed thresholds.
+ // These rows are staging-only source fallbacks, not a production D1 write.
+ const readinessMatch=pathSource.match(
+  /const heroSkillReadinessCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ if(!readinessMatch)throw Error('Missing source skill-readiness RU/EN registry');
+ const readinessRows=runInNewContext('('+readinessMatch[1]+')',{},{
+  filename:'heroSkillReadinessCopyRows',timeout:5000
+ });
+ const expectedReadinessKeys=[
+  'skillGateCycle','skillGateWrongClass','skillGateUnknownLevel',
+  'skillGateRequiredLevel','skillGateBadRequirements',
+  'skillGateUnknownRequirement','skillGateClassMaximum',
+  'skillGateTrained','skillGateClassUnavailable','skillGateAllocated',
+  'skillGatePreviousMissing','skillGatePreviousRequired',
+  'skillGateLearningMethod','skillGateUnknownMethod',
+  'skillGateUnknownAdditional','skillGateAdditionalRequirement'
+ ];
+ if(!Array.isArray(readinessRows)||
+  readinessRows.length!==expectedReadinessKeys.length||
+  readinessRows.map(row=>row?.[0]).sort().join('|')!==expectedReadinessKeys.sort().join('|'))
+  throw Error('Hero Path blocked-skill copy set changed: audit staging first');
+ for(const [key,ru,en] of readinessRows){
+  if(typeof ru!=='string'||!ru.trim()||ru!==ru.trim()||
+   typeof en!=='string'||!en.trim()||en!==en.trim())
+   throw Error('Readiness RU/EN source phrase must be nonempty and whitespace-free: '+key);
+  const slug=key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  append('guideedit.book.path.'+slug,'ru',ru,'hero-path-readiness');
+  append('guideedit.book.path.'+slug,'en',en,'hero-path-readiness');
+ }
+
  // Honor uses the same ownerCopy('honor-view',key,ru,en) for its visible
  // static captions. One search-empty label renders in two branches with
  // exactly the same semantic key. Treat duplicate usage as one D1 identity.

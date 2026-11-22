@@ -8,6 +8,31 @@ const ELEMENT_LABELS=Object.freeze({
  LIGHTNING:['Молния','Lightning'],CHARM:['Чары','Charm'],
  DARK:['Тьма','Dark'],POISON:['Яд','Poison']
 });
+// A blocked-skill reason is built from audited authorial RU/EN copy AND
+// separate runtime source data. No original class/skill names, points or
+// numerical thresholds are owned by these keys.
+const heroSkillReadinessCopyRows=Object.freeze([
+ ['skillGateCycle','Циклическая зависимость навыков','Cyclic skill prerequisite'],
+ ['skillGateWrongClass','Не подходит профессии','Unavailable to this class'],
+ ['skillGateUnknownLevel','Неизвестный уровень изучения','Unknown character level requirement'],
+ ['skillGateRequiredLevel','Требуется уровень','Requires level'],
+ ['skillGateBadRequirements','Неизвестные требования навыка','Unknown skill requirements'],
+ ['skillGateUnknownRequirement','Неизвестное условие','Unknown requirement'],
+ ['skillGateClassMaximum','предел профессии','class maximum'],
+ ['skillGateTrained','освоено','trained'],
+ ['skillGateClassUnavailable','недоступно для профессии','unavailable to this class'],
+ ['skillGateAllocated','вложено','allocated'],
+ ['skillGatePreviousMissing','Предыдущее умение не найдено','Required previous skill not found'],
+ ['skillGatePreviousRequired','Требуется предыдущее умение','Requires previous skill'],
+ ['skillGateLearningMethod','Особый способ изучения','Special learning method required'],
+ ['skillGateUnknownMethod','Неизвестный способ изучения','Unknown learning method'],
+ ['skillGateUnknownAdditional','Неизвестное дополнительное условие','Unknown additional requirement'],
+ ['skillGateAdditionalRequirement','Дополнительное условие','Unverified additional requirement']
+]);
+const heroSkillReadinessCopyByKey=new Map(
+ heroSkillReadinessCopyRows.map(([key,ru,en])=>[key,{key,ru,en}])
+);
+
 const elementLabel=(element,api)=>{
  if(typeof element!=='string')return null;
  const code=element.trim().toUpperCase();
@@ -183,17 +208,33 @@ function validSourceLevel(raw){
 }
 function readiness(skill,api,seen=new Set(),skillIndex){
  const byId=skillIndex||indexSkills(api.skillCatalog);
- const problems=[],state=api.state,job=api.job;
- if(seen.has(String(skill.id)))return {learned:false,problems:[tr(api,'Циклическая зависимость навыков','Cyclic skill prerequisite')]};
+ const problems=[],problemParts=[],state=api.state,job=api.job;
+ // Public 'problems' keeps the existing locale-specific plain strings used
+ // by callers and regression checks. problemParts is presentation metadata:
+ // only a {key,ru,en} part is authorial and D1-editable, never a runtime part.
+ const reason=key=>{
+  const row=heroSkillReadinessCopyByKey.get(key);
+  if(!row)throw Error('Unknown Hero Path skill reason: '+key);
+  return row;
+ };
+ const runtime=value=>({text:String(value)});
+ const add=(...parts)=>{
+  problemParts.push(parts);
+  problems.push(parts.map(part=>part.key?
+   tr(api,part.ru,part.en):part.text).join(''));
+ };
+ if(seen.has(String(skill.id))){
+  add(reason('skillGateCycle'));
+  return {learned:false,problems,problemParts};
+ }
  const chain=new Set(seen);chain.add(String(skill.id));
- if(!allowedForJob(skill,job))
-  problems.push(tr(api,'Не подходит профессии','Unavailable to this class'));
+ if(!allowedForJob(skill,job))add(reason('skillGateWrongClass'));
  if(skill.charLevel!==undefined&&!validSourceLevel(skill.charLevel))
-  problems.push(tr(api,'Неизвестный уровень изучения','Unknown character level requirement'));
+  add(reason('skillGateUnknownLevel'));
  else if(Number(skill.charLevel)>state.level)
-  problems.push(tr(api,'Требуется уровень ','Requires level ')+skill.charLevel);
+  add(reason('skillGateRequiredLevel'),runtime(' '),runtime(skill.charLevel));
  if(skill.reqs!==undefined&&!Array.isArray(skill.reqs))
-  problems.push(tr(api,'Неизвестные требования навыка','Unknown skill requirements'));
+  add(reason('skillGateBadRequirements'));
  const required=Array.isArray(skill.reqs)?skill.reqs:[];
  for(const req of required){
   const raw=req?.amount,need=Number(raw);
@@ -201,17 +242,17 @@ function readiness(skill,api,seen=new Set(),skillIndex){
    (typeof raw!=='number'&&typeof raw!=='string')||
    (typeof raw==='string'&&!/^\+?\d+(?:\.0+)?$/.test(raw.trim()))||
    !Number.isSafeInteger(need)||need<=0){
-   problems.push(tr(api,'Неизвестное условие','Unknown requirement'));continue;
+   add(reason('skillGateUnknownRequirement'));continue;
   }
   // The MELEE parent uses trained proficiency across five child branches,
   // rather than allocated points in the non-allocatable martial branch.
   if(req.branch==='martial'&&skill.branchRaw==='MELEE'){
    const name=api.branchName('melee'),cap=M.meleeGroupCap(api.branchCaps);
    const trained=M.meleeGroupTrained(state,api.innate,api.branchCaps);
-   if(cap<need)problems.push(name+tr(api,
-    ': предел профессии ',': class maximum ')+cap+'/'+need);
-   if(trained<need)problems.push(name+tr(api,
-    ': освоено ',': trained ')+trained+'/'+need);
+   if(cap<need)add(runtime(name),runtime(': '),reason('skillGateClassMaximum'),
+    runtime(' '),runtime(cap),runtime('/'),runtime(need));
+   if(trained<need)add(runtime(name),runtime(': '),reason('skillGateTrained'),
+    runtime(' '),runtime(trained),runtime('/'),runtime(need));
    continue;
   }
   const name=api.branchName(req.branch);
@@ -220,29 +261,33 @@ function readiness(skill,api,seen=new Set(),skillIndex){
   if(typeof api.cap==='function'){
    const cap=api.cap(req.branch);
    if(!Number.isInteger(cap)||cap===0)
-    problems.push(name+tr(api,': недоступно для профессии',': unavailable to this class'));
+    add(runtime(name),runtime(': '),reason('skillGateClassUnavailable'));
   }
   const points=M.branchPotential(state,req.branch,api.innate,api.branchCaps);
   // Unlocking a skill requires allocated branch points, not green proficiency:
   // otherwise the first skill could never be used to start training green.
-  if(points<need)problems.push(name+tr(api,': вложено ',' : allocated ')+points+'/'+need);
+  if(points<need)add(runtime(name),runtime(api.lang==='en'?' : ':': '),
+   reason('skillGateAllocated'),runtime(' '),runtime(points),runtime('/'),runtime(need));
  }
  if(skill.prereq){
   const previous=byId.get(String(skill.prereq));
-  if(!previous)problems.push(tr(api,'Предыдущее умение не найдено','Required previous skill not found'));
+  if(!previous)add(reason('skillGatePreviousMissing'));
   else{
    const prerequisite=readiness(previous,api,chain,byId);
-   if(!prerequisite.learned)problems.push(tr(api,'Требуется предыдущее умение «','Requires previous skill “')+previous.name+tr(api,'»','”'));
+   if(!prerequisite.learned)
+    add(reason('skillGatePreviousRequired'),runtime(' '),
+     runtime(api.lang==='en'?'“':'«'),runtime(previous.name),
+     runtime(api.lang==='en'?'”':'»'));
   }
  }
- if(skill.learnable===false)problems.push(tr(api,'Особый способ изучения','Special learning method required'));
+ if(skill.learnable===false)add(reason('skillGateLearningMethod'));
  else if(skill.learnable!==undefined&&skill.learnable!==true)
-  problems.push(tr(api,'Неизвестный способ изучения','Unknown learning method'));
+  add(reason('skillGateUnknownMethod'));
  if(skill.reqLevel!==undefined&&!validSourceLevel(skill.reqLevel))
-  problems.push(tr(api,'Неизвестное дополнительное условие','Unknown additional requirement'));
+  add(reason('skillGateUnknownAdditional'));
  else if(Number(skill.reqLevel)>0&&!required.length)
-  problems.push(tr(api,'Дополнительное условие ','Unverified additional requirement ')+skill.reqLevel);
- return {learned:!problems.length,problems};
+  add(reason('skillGateAdditionalRequirement'),runtime(' '),runtime(skill.reqLevel));
+ return {learned:!problems.length,problems,problemParts};
 }
 // A linked 50-level version is the same skill family in the character
 // planner, never a second simultaneous skill effect. A level threshold alone
@@ -899,7 +944,17 @@ function viewSkills(target,details,api){
    gate.learned?
     authored(api,'skillReady','✓ Условия выполнены','✓ Requirements met',
      'p','path-skill-yes'):
-    make('p',{class:'path-skill-no',text:'🔒 '+gate.problems.join(' · ')}));
+    (()=>{// No gameplay string enters the D1 editor: only authorial spans do.
+     const line=make('p',{class:'path-skill-no'});
+     line.append(make('span',{class:'path-skill-lock-symbol',text:'🔒 '}));
+     for(const [i,parts] of gate.problemParts.entries()){
+      if(i)line.append(make('span',{class:'path-skill-reason-separator',text:' · '}));
+      for(const part of parts)line.append(part.key?
+       authored(api,part.key,part.ru,part.en,'span','path-skill-reason-copy'):
+       make('span',{class:'path-skill-reason-source',text:part.text}));
+     }
+     return line;
+    })());
   const stats=make('dl',{class:'path-skill-metadata'});
   const field=(key,ru,en,value,valueCopy=null)=>{
    if(value===null||value===undefined||value==='')return;
