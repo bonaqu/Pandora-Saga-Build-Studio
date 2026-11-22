@@ -182,7 +182,7 @@ test('legacy authored rank requirements retain the original fields without alter
 
 test('#390 Honor owner form captions support live D1 direct editing while preserving map/war state',()=>{
  const source=view.match(
-  /const honorOwnerFormCopyRows=Object\\.freeze\\((\\[[\\s\\S]*?\\])\\);/);
+  /const honorOwnerFormCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
  assert.ok(source,'Audited Honor form registry must remain source-backed');
  const rows=runInNewContext('('+source[1]+')',{},{timeout:5000});
  const keys=['zoneChooseOption','zoneNoMatches','zoneSelectRequired',
