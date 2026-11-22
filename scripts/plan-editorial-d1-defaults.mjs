@@ -435,6 +435,30 @@ export function buildEditorialDefaultsManifest(){
   append(id,'en',en,'origin-class-wizard');
  }
 
+
+ // The wizard's actual ARIA names use distinct authorial CAS fields from
+ // the immutable profession names, selected source job and specialization.
+ const ariaMatch=app.match(
+  /const originClassWizardAriaRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ if(!ariaMatch)throw Error('Missing class-wizard accessibility defaults');
+ const ariaRows=runInNewContext('('+ariaMatch[1]+')',{},{
+  filename:'originClassWizardAriaRows',timeout:5000
+ });
+ const ariaExpected=['classStageNavAria','classBreadcrumbNavAria',
+  'classSelectedSpecializationAria','classChosenAria',
+  'classViewSpecializationsAria','classSelectClassAria'];
+ if(!Array.isArray(ariaRows)||ariaRows.length!==ariaExpected.length||
+  ariaRows.map(row=>row[0]).sort().join('|')!==ariaExpected.sort().join('|'))
+  throw Error('Class wizard ARIA source set changed: review migration');
+ for(const [key,ru,en] of ariaRows){
+  if(typeof ru!=='string'||!ru.trim()||typeof en!=='string'||!en.trim())
+   throw Error('Missing RU/EN class wizard ARIA authorial text');
+  const id='guideedit.book.origin.'+
+   key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  append(id,'ru',ru,'origin-class-wizard-aria');
+  append(id,'en',en,'origin-class-wizard-aria');
+ }
+
  // The two owner equipment picker surfaces reuse one frozen source catalog
  // for static labels. This selection-only half is separate from metadata,
  // source gear names, player-entered search queries and live item counts.

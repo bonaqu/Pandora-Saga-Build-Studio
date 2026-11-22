@@ -1782,6 +1782,16 @@ const originClassWizardCopyRows=Object.freeze([
  ['classCurrentChoose','Выбрать ','Choose '],
  ['classSelectionHint','Выберите специализацию или вернитесь назад.','Choose the specialization or go back.']
 ]);
+// Screen-reader copy belongs in the same reviewed, versioned bilingual CAS
+// namespace. Unlike a class name, these phrases are authorial UI guidance.
+const originClassWizardAriaRows=Object.freeze([
+ ['classStageNavAria','Этап выбора профессии','Class selection stages'],
+ ['classBreadcrumbNavAria','Вернуться на предыдущий уровень','Return to a previous class selection stage'],
+ ['classSelectedSpecializationAria',' — выбранная специализация ',' — selected specialization '],
+ ['classChosenAria',' — выбрано',' — selected'],
+ ['classViewSpecializationsAria',' — перейти к специализациям',' — view specializations'],
+ ['classSelectClassAria',' — выбрать профессию',' — select class']
+]);
 function originCopyLabel(node,key,ru,en){
  if(!node)return node;
  if(!node.querySelector?.('.wiki-inline-input,[data-owner-editor]'))
@@ -1861,6 +1871,23 @@ function renderOriginCopyLabels(){
   const text=lang==='en'?n+' classes':n+' '+plural;
   if(classNode.textContent!==text)classNode.textContent=text;
  }
+ const grid=$('classGrid'),existing=$('ownerOriginClassAria');
+ if(!grid)return;
+ if(!adminEditing||!adminToken){existing?.remove();return}
+ // Class choice rerenders must not destroy an unfinished accessible-copy
+ // edit; the panel lives beside the grid, not inside its replaceChildren().
+ if(existing?.querySelector('.wiki-inline-input,[data-owner-text-field]'))return;
+ if(existing?.dataset.originAriaLang===lang)return;
+ const wasOpen=Boolean(existing?.open);
+ existing?.remove();
+ const panel=ownerInterfaceEditor('origin',originClassWizardAriaRows,
+  'Доступность выбора профессии','Class selection accessibility');
+ if(panel){
+  panel.id='ownerOriginClassAria';
+  panel.dataset.originAriaLang=lang;
+  panel.open=wasOpen;
+  grid.after(panel);
+ }
 }
 function editAttr(el,key){el.dataset.editKey=key;if(adminEditing&&adminToken)el.classList.add('admin-edit');return el}
 function raceSource(i,gender){
@@ -1937,7 +1964,8 @@ function renderJobs(){
  const onChosenRoute=!path.length||path.every((node,i)=>chosenRoute[i]?.key===node.key);
  const navigationPath=onChosenRoute?chosenRoute:path;
  const stageTargets=[null,navigationPath[0]?.key||null,navigationPath[1]?.key||null];
- const progress=h('div',{class:'class-wizard-progress','aria-label':tr('Этап выбора профессии','Class selection stages')});
+ const progress=bindOwnerInterfaceText(h('div',{class:'class-wizard-progress'}),
+  'origin','classStageNavAria','Этап выбора профессии','Class selection stages','aria-label');
  const stepNames=originClassWizardCopyRows.slice(0,3);
  for(let i=0;i<3;i++){
   const [key,ru,en]=stepNames[i],available=i===0||Boolean(stageTargets[i]);
@@ -1946,14 +1974,16 @@ function renderJobs(){
    'aria-current':i===depth?'step':null};
   if(available){
    attrs.type='button';
-   attrs.onclick=event=>{
-    // The owner double-click editor must win on the caption itself.
-    if(adminEditing&&adminToken&&event.target?.closest?.('[data-origin-copy-key]'))return;
+   attrs.onclick=()=>{
     jobPathKey=stageTargets[i];renderJobs();saveView();
    };
   }
   const step=h(available?'button':'span',attrs);
-  step.append(h('span',{text:(i+1)+'. '}),originCopyLabel(h('span'),key,ru,en));
+  const caption=originCopyLabel(h('span'),key,ru,en);
+  step.append(h('span',{text:(i+1)+'. '}),caption);
+  // One click navigates (after the dblclick window); a real double click
+  // edits the caption. Keyboard/programmatic click remains immediate.
+  if(available&&adminEditing&&adminToken)ownerCaptionActionGuard(step,caption);
   progress.append(step);
  }
  grid.append(progress);
@@ -1977,7 +2007,9 @@ function renderJobs(){
  }
  grid.append(top);
  if(path.length){
-  const crumbs=h('div',{class:'class-wizard-breadcrumbs','aria-label':tr('Вернуться на предыдущий уровень','Return to a previous class selection stage')});
+  const crumbs=bindOwnerInterfaceText(h('div',{class:'class-wizard-breadcrumbs'}),
+   'origin','classBreadcrumbNavAria','Вернуться на предыдущий уровень',
+   'Return to a previous class selection stage','aria-label');
   const all=h('button',{type:'button',
    onclick:()=>{jobPathKey=null;renderJobs();saveView()}});
   originCopyLabel(all,'classAllDirections','Все направления','All directions');
@@ -2013,17 +2045,15 @@ function renderJobs(){
   else if(hasChildren)originCopyLabel(statusLabel,'classSpecializations',
    'Специализации ›','Specializations ›');
   else originCopyLabel(statusLabel,'classChoose','Выбрать','Select');
-  const choiceExplanation=selectedOnPath?
-   tr(' — выбранная специализация ',' — selected specialization ')+selectedProfession.name:
-   state.job===node.i?tr(' — выбрано',' — selected'):
-   hasChildren?tr(' — перейти к специализациям',' — view specializations'):
-   tr(' — выбрать профессию',' — select class');
+  const ariaSource=selectedOnPath?originClassWizardAriaRows[2]:
+   state.job===node.i?originClassWizardAriaRows[3]:
+   hasChildren?originClassWizardAriaRows[4]:originClassWizardAriaRows[5];
+  const [ariaKey,ariaRu,ariaEn]=ariaSource;
   const specialties=Object.entries(catalog.classes?.[node.key]?.branchCaps||{})
    .filter(([,cap])=>Number(cap)>0).sort((a,b)=>Number(b[1])-Number(a[1]))
    .slice(0,2).map(([key])=>catalog.meta?.branchLabels?.[key]||key);
   const choice=h('button',{type:'button',class:'class-wizard-choice'+
     (state.job===node.i?' active':'')+(activeAncestors.has(node.key)?' on-path':''),
-    'aria-label':node.name+choiceExplanation,
     'aria-pressed':String(state.job===node.i),
     onclick:()=>{
      if(hasChildren){jobPathKey=node.key;renderJobs();saveView();return}
@@ -2033,6 +2063,10 @@ function renderJobs(){
       ...(specialties.length?[h('small',{class:'class-wizard-specialties',
        text:specialties.join(' · ')})]:[])
     ]);
+  // Source name and specialization identity are runtime data, not editable
+  // D1 text. Only the intervening authorial ARIA phrase is owner copy.
+  bindOwnerInterfaceText(choice,'origin',ariaKey,ariaRu,ariaEn,'aria-label',
+   selectedOnPath?selectedProfession.name:'',node.name);
   if(adminEditing&&adminToken&&statusLabel.dataset.originCopyKey)
    ownerCaptionActionGuard(choice,statusLabel);
   choices.append(choice);
@@ -10468,7 +10502,9 @@ function refreshVisibleOriginCopy(recordKey){
    node.querySelector?.('.wiki-inline-input,[data-owner-editor]'))continue;
   ownerDockPatchText(node,originCopy(key,node.dataset.originCopyRu,node.dataset.originCopyEn));
  }
-
+ // Attribute-bound ARIA text shares the same origin.* CAS identity.
+ // Patch accessible names in place; never rebuild a live class picker.
+ refreshVisibleOwnerCopy(recordKey);
 }
 // Copy-only Undo/saves must not unmount the Soul search or Path card.
 // Five reviewed Wiki editorial families use exact keys, not gameplay data.
@@ -11076,9 +11112,10 @@ async function saveGuidePatchNow(key,fields){
   await apiRequest('/api/admin/override',{key:overrideKey,value:serialized});
   override[overrideKey]=serialized;ownerEdits.push({key:overrideKey,before,after:serialized});
   if(key==='wiki.labels')refreshVisibleWikiLabels();
+  if(key.startsWith('book.origin.'))refreshVisibleOriginCopy('guideedit.'+key);
   if(key.startsWith('book.ui.label.'))
    refreshVisibleUICopy('guideedit.'+key);
-  if(key.startsWith('book.origin.hint')||key.startsWith('book.equipment.')||key.startsWith('book.path.')||
+  if(key.startsWith('book.origin.')||key.startsWith('book.equipment.')||key.startsWith('book.path.')||
      key.startsWith('book.catalog-sync.')||key.startsWith('book.honor-view.')||
      key.startsWith('book.owner-dock.')||key.startsWith('book.owner-history.')||
      key.startsWith('book.owner-dialog.')||key.startsWith('book.wiki-ui.')||
