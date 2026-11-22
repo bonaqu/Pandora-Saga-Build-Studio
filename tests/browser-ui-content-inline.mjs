@@ -1301,6 +1301,16 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(values['guideedit.book.honor-view.war-names-required'],undefined);
   await warList.locator('.wiki-honor-new .wiki-owner-remove').first().press('Enter');
   await warList.locator('.wiki-honor-new').waitFor({state:'detached',timeout:6000});
+  // Undo was intentionally expanded for the added CAS scenarios. Restore
+  // the ORIGINAL drawer state before older Honor headings are double-clicked:
+  // otherwise the fixed drawer intercepts an unrelated reader/editor action.
+  if(collapsedBefore){
+   if(await page.locator('#ownerDock [data-owner-collapse]')
+    .getAttribute('aria-expanded')==='true')
+    await page.locator('#ownerDock [data-owner-collapse]').click();
+   assert.equal(await page.locator('#ownerDock [data-owner-collapse]')
+    .getAttribute('aria-expanded'),'false');
+  }
   // Only the authorial heading is editable; no owner override may replace
   // the source-defined PvP weekdays in its immutable sibling node.
   const doubleRewards=honorPane.locator('#honor-victories .wiki-honor-double-rewards');
