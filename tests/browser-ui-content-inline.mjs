@@ -351,6 +351,54 @@ export async function runUIContentInlineSmoke(browser,base){
   if(!await page.locator('#ownerDock').evaluate(el=>el.classList.contains('owner-dock-collapsed')))
    await page.locator('#ownerDock [data-owner-collapse]').click();
   await page.locator('#dockClose').click();
+  // Real Hero Path gating: preserve the live selected skill and numerical
+  // requirement while only an authored reason fragment is written to CAS.
+  await page.locator('#pathSkillsTab').click();
+  await page.locator('#pathSkillStatus').selectOption('locked');
+  const lockedSkill=page.locator('#pathSkillGallery .path-skill-card.locked').first();
+  await lockedSkill.waitFor({state:'visible',timeout:15000});
+  const skillId=await lockedSkill.getAttribute('data-skill-id');
+  await lockedSkill.click();
+  const detail=page.locator('#pathSkillDetails');
+  const originalSkillName=await detail.locator('h3').innerText();
+  const sourceParts=detail.locator('.path-skill-no .path-skill-reason-source');
+  const originalRuntimeParts=await sourceParts.allTextContents();
+  const reason=detail.locator('.path-skill-no .path-skill-reason-copy').first();
+  await reason.waitFor({state:'visible',timeout:15000});
+  const originalReason=await reason.innerText();
+  const reasonKey=await reason.getAttribute('data-owner-copy-id');
+  assert.match(reasonKey,/^skillGate[A-Z]/);
+  const reasonSlug=reasonKey.replace(/[A-Z]/g,c=>'-'+c.toLowerCase());
+  const reasonRecord='guideedit.book.path.'+reasonSlug;
+  assert.equal(await detail.locator('.path-skill-no .ui-content-pencil').count(),0,
+   'No duplicate editing pencils on a blocked skill');
+  await reason.dblclick();
+  const reasonInput=reason.locator('[data-owner-text-field]');
+  await reasonInput.waitFor({state:'visible',timeout:15000});
+  await reasonInput.fill('Требование умения · QA');
+  await reasonInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#pathSkillDetails .path-skill-reason-copy')?.textContent===
+   'Требование умения · QA',null,{timeout:15000});
+  assert.equal(JSON.parse(values[reasonRecord]).ru,'Требование умения · QA');
+  assert.equal(await detail.locator('h3').innerText(),originalSkillName);
+  assert.equal(await page.locator('#pathSkillGallery .path-skill-card.active')
+   .getAttribute('data-skill-id'),skillId);
+  assert.deepEqual(await sourceParts.allTextContents(),originalRuntimeParts,
+   'Level thresholds, branch names and computed amounts must not change');
+  if(await page.locator('#ownerDock').evaluate(el=>el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
+  await page.locator('#ownerDock [data-owner-undo]').click();
+  await page.waitForFunction(expected=>document.querySelector(
+   '#pathSkillDetails .path-skill-reason-copy')?.textContent===expected,
+   originalReason,{timeout:15000});
+  assert.equal(Object.hasOwn(values,reasonRecord),false);
+  assert.deepEqual(await sourceParts.allTextContents(),originalRuntimeParts);
+  assert.equal(await detail.locator('h3').innerText(),originalSkillName);
+  await page.locator('#pathSkillStatus').selectOption('all');
+  await page.locator('#pathGrowthTab').click();
+  if(!await page.locator('#ownerDock').evaluate(el=>el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
   // A title duplicating a button's ARIA is not a distinct hover-hint.
   const profileButton=page.locator('#profileTrigger');
   assert.equal(await profileButton.getAttribute('title'),'Войти или зарегистрироваться');

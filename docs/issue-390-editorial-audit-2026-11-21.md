@@ -353,3 +353,12 @@ pencil controls. Full Node+Chromium required on the exact new PR SHA.
 - [x] Fixed the same risk in two actual *visible* class selection prefixes (`classSelectedPrefix`, `classCurrentChoose`): authorial RU/EN defaults have no trailing spaces; visible separating spaces are own, non-editable text nodes. Original guest-visible wording is unchanged.
 - [x] Updated the two old Node source-structure tests to verify the new bilingual source registry and restored owner single-click contract, with no deleted testing of profession stages or source name integrity.
 - [ ] Browser scenario must verify class-visible CAS compositing and ARIA roundtrip; both Node and Chromium required on a final SHA. PR stays Draft, issue remains Open; no staging remote or production mutation.
+
+## 23.11.2026 — Hero Path blocked skill readiness: 16 dynamic authorial fragments
+
+- [x] Audited all 16 canonical blocked-skill explanations, including wrong class, unavailable branch, missing invested points, required character level, predecessor, exceptional training, malformed conditions and unknown extra requirements.
+- [x] Preserved \`PandoraHeroPath.readiness().learned\` and its source-locale \`problems\` strings as the original game-logic API; added \`problemParts\` containing authorial RU/EN identity versus immutable class/branch/skill names and runtime numbers.
+- [x] Replaced the single noneditable \`🔒 + gate.problems.join(' · ')\` UI string with individual direct dblclick/F2/Enter editable authorial spans. The \`🔒\`, separators, source identity, numeric thresholds and raw game requirements stay separate nodes. Same existing \`path.*\` D1 CAS/Undo lifecycle; no pencils, no invented game names.
+- [x] Staged exactly 32 source-authored bilingual defaults under 16 reviewed \`guideedit.book.path.skill-gate-*\` keys, strictly staging-only (no remote Cloudflare writes).
+- [x] Added source audit and game-logic compatibility tests for both locales, malformed prerequisites and immutable source segments. Added real Chromium owner CAS Save/Undo regression for locked skill reasons with source/numeric value and selection preservation.
+- [ ] Both full Node and Chromium CI are required on the final exact SHA. Remote isolated staging D1 import/readback/rollback, real hardware touch, further rare RU/EN audit, release authorisation and production read-only acceptance are still outstanding.
