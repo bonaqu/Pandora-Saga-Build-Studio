@@ -239,6 +239,24 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(JSON.parse(values['guideedit.book.origin.step-direction']).ru,
    'Направление героя · QA');
   assert.equal(await page.locator('#raceGrid img').getAttribute('alt'),raceAltBefore);
+  // The generic owner text editor trims strings on CAS. Source profession
+  // names must NOT become adjacent to an edited prefix after that trim.
+  const selectedBanner=page.locator('#classGrid .class-wizard-selected');
+  const selectedSource=await selectedBanner.locator('.class-wizard-source-name').innerText();
+  const selectedPrefix=selectedBanner.locator(
+   '[data-origin-copy-key="classSelectedPrefix"]');
+  await selectedPrefix.dblclick();
+  const selectedInput=selectedPrefix.locator('[data-owner-text-field]');
+  await selectedInput.waitFor({state:'visible'});
+  await selectedInput.fill('✓ ВЫБРАНО QA:');
+  await selectedInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#classGrid .class-wizard-selected [data-origin-copy-key="classSelectedPrefix"]')
+    ?.textContent==='✓ ВЫБРАНО QA:',null,{timeout:15000});
+  assert.equal(await selectedBanner.textContent(),'✓ ВЫБРАНО QA: '+selectedSource,
+   'The separator is independent of the trimmed authorial D1 value');
+  assert.equal(JSON.parse(values['guideedit.book.origin.class-selected-prefix']).ru,
+   '✓ ВЫБРАНО QA:');
   // A collapsed owner-only accessibility inventory edits invisible ARIA
   // phrasing without adding pencil buttons to every profession card.
   const ariaPanel=page.locator('#ownerOriginClassAria');
@@ -262,7 +280,7 @@ export async function runUIContentInlineSmoke(browser,base){
   await choiceAria.dblclick();
   const choiceInput=choiceAria.locator('[data-owner-text-field]');
   await choiceInput.waitFor({state:'visible'});
-  await choiceInput.fill(' — открыть специализации · QA');
+  await choiceInput.fill('открыть специализации · QA');
   await choiceInput.press('Tab');
   await page.waitForFunction(()=>document.querySelector(
    '#classGrid button.class-wizard-choice')?.getAttribute('aria-label')
@@ -273,7 +291,8 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(await choice.getAttribute('aria-label'),
    chosenName+' — открыть специализации · QA');
   assert.equal(JSON.parse(values['guideedit.book.origin.class-view-specializations-aria']).ru,
-   ' — открыть специализации · QA');
+   'открыть специализации · QA',
+   'D1 stores only words; a separate, uneditable prefix keeps accessible spacing');
   await page.locator('#nav [data-tab="wiki"]').click();
   const workbenchTitle=page.locator('#detailTitle');
   await workbenchTitle.waitFor({state:'visible',timeout:15000});
@@ -312,6 +331,12 @@ export async function runUIContentInlineSmoke(browser,base){
    '#classGrid .class-wizard-progress')?.getAttribute('aria-label')===
    'Этап выбора профессии',null,{timeout:15000});
   assert.equal(Object.hasOwn(values,'guideedit.book.origin.class-stage-nav-aria'),false);
+  await page.locator('#ownerDock [data-owner-undo]').click();
+  await page.waitForFunction(()=>document.querySelector(
+   '#classGrid .class-wizard-selected [data-origin-copy-key="classSelectedPrefix"]')
+    ?.textContent==='✓ Выбрано:',null,{timeout:15000});
+  assert.equal(await selectedBanner.textContent(),'✓ Выбрано: '+selectedSource);
+  assert.equal(Object.hasOwn(values,'guideedit.book.origin.class-selected-prefix'),false);
   await page.locator('#ownerDock [data-owner-undo]').click();
   await page.waitForFunction(()=>
    document.querySelector('#classGrid [data-origin-copy-key="stepDirection"]')
