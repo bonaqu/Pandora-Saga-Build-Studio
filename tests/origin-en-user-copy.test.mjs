@@ -23,16 +23,28 @@ test('Origin and shared skill previews translate UI controls while preserving ga
  assert.match(code,/const STATS=/);
 });
 
-test('class wizard screen-reader labels follow RU and EN language state',()=>{
+test('class wizard screen-reader labels follow the same RU/EN owner-copy contract',()=>{
  const start=code.indexOf('function renderJobs(){');
  const end=code.indexOf('let workbenchReturnFocus=',start);
  assert.ok(start>=0&&end>start);
  const ui=code.slice(start,end);
- for(const value of [
-  "class:'class-wizard-progress','aria-label':tr('Этап выбора профессии','Class selection stages')",
-  "class:'class-wizard-breadcrumbs','aria-label':tr('Вернуться на предыдущий уровень','Return to a previous class selection stage')",
-  "tr(' — выбранная специализация ',' — selected specialization ')",
-  "tr(' — перейти к специализациям',' — view specializations')",
-  "'aria-label':node.name+choiceExplanation"
- ])assert.ok(ui.includes(value),'Missing localized accessibility text: '+value);
+ const source=code.match(/const originClassWizardAriaRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ assert.ok(source,'Six auditable original aria phrase identities are required');
+ const rows=Function('return '+source[1])();
+ const expected=[
+  ['classStageNavAria','Этап выбора профессии','Class selection stages'],
+  ['classBreadcrumbNavAria','Вернуться на предыдущий уровень','Return to a previous class selection stage'],
+  ['classSelectedSpecializationAria','выбранная специализация','selected specialization'],
+  ['classChosenAria','выбрано','selected'],
+  ['classViewSpecializationsAria','перейти к специализациям','view specializations'],
+  ['classSelectClassAria','выбрать профессию','select class']
+ ];
+ assert.deepEqual(rows,expected);
+ assert.match(ui,/bindOwnerInterfaceText\(h\('div',\{class:'class-wizard-progress'\}\)/);
+ assert.match(ui,/'origin','classStageNavAria'/);
+ assert.match(ui,/'origin','classBreadcrumbNavAria'/);
+ assert.match(ui,/bindOwnerInterfaceText\(choice,'origin',ariaKey,ariaRu,ariaEn,'aria-label'/);
+ assert.match(ui,/selectedOnPath\?' '\+selectedProfession\.name:'',node\.name\+' — '/);
+ assert.doesNotMatch(ui,/'aria-label':node\.name\+choiceExplanation/);
 });
+

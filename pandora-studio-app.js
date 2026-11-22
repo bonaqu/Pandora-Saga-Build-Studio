@@ -1772,14 +1772,14 @@ const originClassWizardCopyRows=Object.freeze([
  ['stepProfession','Профессия','Profession'],
  ['stepSpecialization','Специализация','Specialization'],
  ['classPrompt','Выберите направление','Choose a direction'],
- ['classSelectedPrefix','✓ Выбрано: ','✓ Selected: '],
+ ['classSelectedPrefix','✓ Выбрано:','✓ Selected:'],
  ['classChosen','✓ Выбрано','✓ Selected'],
  ['classSpecializations','Специализации ›','Specializations ›'],
  ['classChoose','Выбрать','Select'],
  ['classBack','← Назад','← Back'],
  ['classAllDirections','Все направления','All directions'],
  ['classCurrentChosen','выбрано','selected'],
- ['classCurrentChoose','Выбрать ','Choose '],
+ ['classCurrentChoose','Выбрать','Choose'],
  ['classSelectionHint','Выберите специализацию или вернитесь назад.','Choose the specialization or go back.']
 ]);
 // Screen-reader copy belongs in the same reviewed, versioned bilingual CAS
@@ -1787,10 +1787,10 @@ const originClassWizardCopyRows=Object.freeze([
 const originClassWizardAriaRows=Object.freeze([
  ['classStageNavAria','Этап выбора профессии','Class selection stages'],
  ['classBreadcrumbNavAria','Вернуться на предыдущий уровень','Return to a previous class selection stage'],
- ['classSelectedSpecializationAria',' — выбранная специализация ',' — selected specialization '],
- ['classChosenAria',' — выбрано',' — selected'],
- ['classViewSpecializationsAria',' — перейти к специализациям',' — view specializations'],
- ['classSelectClassAria',' — выбрать профессию',' — select class']
+ ['classSelectedSpecializationAria','выбранная специализация','selected specialization'],
+ ['classChosenAria','выбрано','selected'],
+ ['classViewSpecializationsAria','перейти к специализациям','view specializations'],
+ ['classSelectClassAria','выбрать профессию','select class']
 ]);
 function originCopyLabel(node,key,ru,en){
  if(!node)return node;
@@ -2001,7 +2001,8 @@ function renderJobs(){
  top.append(classTitle);
  if(selectedProfession){
   const selected=h('span',{class:'class-wizard-selected',role:'status'});
-  selected.append(originCopyLabel(h('span'),'classSelectedPrefix','✓ Выбрано: ','✓ Selected: '),
+  selected.append(originCopyLabel(h('span'),'classSelectedPrefix','✓ Выбрано:','✓ Selected:'),
+   document.createTextNode(' '),
    h('span',{class:'class-wizard-source-name',text:selectedProfession.name}));
   top.append(selected);
  }
@@ -2025,10 +2026,10 @@ function renderJobs(){
    class:'class-current-select'+(selectedCurrent?' selected':''),
    'aria-pressed':String(state.job===current.i),onclick:()=>selectJob(current.i)});
   const currentCaption=originCopyLabel(h('span'),'classCurrent'+(selectedCurrent?'Chosen':'Choose'),
-   selectedCurrent?'выбрано':'Выбрать ',selectedCurrent?'selected':'Choose ');
+   selectedCurrent?'выбрано':'Выбрать',selectedCurrent?'selected':'Choose');
   if(selectedCurrent)currentSelect.append(
    h('span',{class:'class-wizard-source-name',text:'✓ '+current.name+' · '}),currentCaption);
-  else currentSelect.append(currentCaption,
+  else currentSelect.append(currentCaption,document.createTextNode(' '),
    h('span',{class:'class-wizard-source-name',text:current.name}));
   if(adminEditing&&adminToken)ownerCaptionActionGuard(currentSelect,currentCaption);
   grid.append(currentSelect);
@@ -2065,8 +2066,10 @@ function renderJobs(){
     ]);
   // Source name and specialization identity are runtime data, not editable
   // D1 text. Only the intervening authorial ARIA phrase is owner copy.
+  // The editor trims text before CAS. Keep spaces and punctuation in the
+  // immutable composition, never as fragile leading/trailing D1 characters.
   bindOwnerInterfaceText(choice,'origin',ariaKey,ariaRu,ariaEn,'aria-label',
-   selectedOnPath?selectedProfession.name:'',node.name);
+   selectedOnPath?' '+selectedProfession.name:'',node.name+' — ');
   if(adminEditing&&adminToken&&statusLabel.dataset.originCopyKey)
    ownerCaptionActionGuard(choice,statusLabel);
   choices.append(choice);
@@ -11115,7 +11118,7 @@ async function saveGuidePatchNow(key,fields){
   if(key.startsWith('book.origin.'))refreshVisibleOriginCopy('guideedit.'+key);
   if(key.startsWith('book.ui.label.'))
    refreshVisibleUICopy('guideedit.'+key);
-  if(key.startsWith('book.origin.')||key.startsWith('book.equipment.')||key.startsWith('book.path.')||
+  if(key.startsWith('book.origin.hint')||key.startsWith('book.equipment.')||key.startsWith('book.path.')||
      key.startsWith('book.catalog-sync.')||key.startsWith('book.honor-view.')||
      key.startsWith('book.owner-dock.')||key.startsWith('book.owner-history.')||
      key.startsWith('book.owner-dialog.')||key.startsWith('book.wiki-ui.')||

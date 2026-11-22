@@ -142,6 +142,8 @@ test('#390 13 class-wizard authorial keys support direct bilingual CAS and versi
   assert.equal(guide.validOverride('book.origin.'+
    key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase()),
    JSON.stringify({ru:'Новая подпись',en:'New caption'})),true);
+  assert.equal(ru,ru.trim(),'Authorial RU copy must not rely on trailing whitespace: '+key);
+  assert.equal(en,en.trim(),'Authorial EN copy must not rely on trailing whitespace: '+key);
   assert.doesNotMatch(ru,/Цверг|Мирина|Энкиду|Кролль|Эльф|Человек/,
    'Never put a source race name inside authorial defaults');
  }
@@ -174,6 +176,8 @@ test('#390 class wizard accessibility has six independent original RU/EN D1 fiel
   assert.equal(guide.validOverride('book.origin.'+
    key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase()),
    JSON.stringify({ru:'Подсказка доступности',en:'Accessible wording'})),true);
+  assert.equal(ru,ru.trim(),'ARIA RU phrase must be safely trimmed: '+key);
+  assert.equal(en,en.trim(),'ARIA EN phrase must be safely trimmed: '+key);
  }
  assert.match(app,/bindOwnerInterfaceText\(choice,'origin',ariaKey,ariaRu,ariaEn,'aria-label'/);
  assert.match(app,/selectedOnPath\?selectedProfession\.name:'',node\.name\)/);

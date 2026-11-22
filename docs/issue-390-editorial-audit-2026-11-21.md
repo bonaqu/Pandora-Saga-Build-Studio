@@ -346,3 +346,10 @@ pencil controls. Full Node+Chromium required on the exact new PR SHA.
 - [x] One owner-only collapsed ARIA editor lives **outside** the class grid's `replaceChildren()`, preserving active drafts during class choice redraw. Save/Undo patch the mounted aria-label attributes via the existing owner-copy binding and no pencil icons.
 - [x] Added 12 source-verified fields to the **staging-only** versioned D1 defaults manifest, updated real source-bound Node class wizard harness and added contract regression tests.
 - [ ] New Chromium save/Undo/single-click integration scenario and BOTH full CI required on final SHA before the packet is accepted. No physical remote staging D1, real touch hardware, deployment, merge or production write.
+
+### Follow-up — trimmed D1 fragments must never glue canonical class names
+
+- [x] Audited `editWikiValue()` which intentionally trims owner text before CAS. Removed leading/trailing whitespace from the six original class-wizard ARIA phrases; owner D1 now stores only words, while class name, separator ` · ` / ` — ` and spaces are composed outside the edit.
+- [x] Fixed the same risk in two actual *visible* class selection prefixes (`classSelectedPrefix`, `classCurrentChoose`): authorial RU/EN defaults have no trailing spaces; visible separating spaces are own, non-editable text nodes. Original guest-visible wording is unchanged.
+- [x] Updated the two old Node source-structure tests to verify the new bilingual source registry and restored owner single-click contract, with no deleted testing of profession stages or source name integrity.
+- [ ] Browser scenario must verify class-visible CAS compositing and ARIA roundtrip; both Node and Chromium required on a final SHA. PR stays Draft, issue remains Open; no staging remote or production mutation.
