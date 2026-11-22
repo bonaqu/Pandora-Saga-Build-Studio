@@ -67,8 +67,8 @@ The manifest contains the source release, exact existing D1 record keys, field i
 - All five original right-click context actions (`equipment.context.*`), 15 picker/menu accessibility and status prefixes from `equipmentPickerMetaCopyRows` (`equipment.*`), and 13 existing `origin.*` editable captions from `originFixedLabels`. The authored string `classCount` containing **28 classes** is explicitly excluded as game-dependent counter copy. The actual Origin class badge now uses the real `jobKeys.length` with RU pluralization/EN label, has no `data-i18n` or double-click owner editor, and ignores old D1 overrides; derived counts never become authorial defaults.
 - Fifteen independently editable equipment picker selection/status labels from the existing owner editor (`equipmentPickerSelectionCopyRows`), consolidated into one live source registry and 30 additional RU/EN defaults. Counts, item names, search text and player plans are never copied into this registry.
 - Forty-four safe Wiki map/dungeon authorial labels (88 RU/EN defaults) from the existing `wikiMapRows` and `wiki.map.text.*` owner CAS keys. Fourteen intentionally excluded fields cover validation limits, source-uncertain chance explanation, D1 deletion confirmation/failure and form errors. A new or removed Wiki key stops the offline planner until the inventory is reviewed.
-- Another **262** reviewed RU/EN labels from the existing Wiki monster, NPC trade, chest and item dictionaries. Static stat captions, search controls, selectors and copy prefixes are included; actual monster stats, NPC trade contents, drop probabilities, item IDs and equipped values are not. Source-dependent empty data claims, hard-coded 100%/singular reward assertions, validation limits, raw failures and destructive confirmations are explicitly excluded. New source registry lengths or an unreviewed field shape make the offline generator fail closed.
-- Fourteen already editable Hero Path copy fragments (28 RU/EN defaults) extracted from source `authored(api,key,ru,en)` calls, plus **20 conditional Path state/skill metadata fields (40 RU/EN rows)**, **18 Path accessible/help fields (36 RU/EN rows)**, **six branch requirement captions (12 RU/EN rows)** and **two unlock-state phrases (4 RU/EN rows)**. The source's repeated requirement key is deduplicated and checked for identical text. The unlock unit's shared identity is checked for consistency and seeded once. Group/skill counts, numerical thresholds, readiness calculations, composed accessible names and character/game record values remain immutable. Seven safe Honor-view labels (14 RU/EN defaults) extracted from actual `editorial()` calls; duplicate `searchEmpty` uses the same D1 key. The factual Tuesday/Thursday rewards schedule is **excluded** as game mechanics, not customizable copy. New source calls or changed semantic keys make the generator fail closed for explicit review.
+- Another **264** reviewed RU/EN labels from the existing Wiki monster, NPC trade, chest and item dictionaries. Static stat captions, search controls, selectors and copy prefixes are included; actual monster stats, NPC trade contents, drop probabilities, item IDs and equipped values are not. Source-dependent empty data claims, hard-coded 100%/singular reward assertions, validation limits, raw failures and destructive confirmations are explicitly excluded. New source registry lengths or an unreviewed field shape make the offline generator fail closed.
+- Fourteen already editable Hero Path copy fragments (28 RU/EN defaults) extracted from source `authored(api,key,ru,en)` calls, plus **20 conditional Path state/skill metadata fields (40 RU/EN rows)**, **18 Path accessible/help fields (36 RU/EN rows)**, **six branch requirement captions (12 RU/EN rows)** and **two unlock-state phrases (4 RU/EN rows)**. The source's repeated requirement key is deduplicated and checked for identical text. The unlock unit's shared identity is checked for consistency and seeded once. Group/skill counts, numerical thresholds, readiness calculations, composed accessible names and character/game record values remain immutable. Eight safe Honor-view labels (16 RU/EN defaults) extracted from actual `editorial()` calls; duplicate `searchEmpty` uses the same D1 key. The factual Tuesday/Thursday rewards schedule is **excluded** as game mechanics, not customizable copy. New source calls or changed semantic keys make the generator fail closed for explicit review.
 - The source-authored Honor PvP daily/weekly/hunt table headings and columns (11 bilingual keys), seven generated rank-requirement prose fragments, and one unique PvP-locations heading: **38 exact additional RU/EN rows**, parsed from the existing mounted renderer. The repeated `warsHeading` shares its original D1 key. Real win counts, rank points, gold, weekly limits, map names and time entries never enter this migration.
 - Existing static owner-dock RU/EN headings, button copy, group explanations and instructions via the original `owner-dock.*` key family; runtime save/error states and dynamic D1 operation hints are excluded.
 - Exactly five actually mounted Workbench hover hints — four equipment actions and the Path Reset action — supply 10 RU/EN defaults from their original source/CAS keys. Five self-explanatory Origin/Path tabs without a real hover explanation are excluded from the manifest and the owner hint panel, without erasing historical overrides.
@@ -120,3 +120,54 @@ Creating this plan materially reduces migration risk, but **does not complete th
 The 12 existing owner CAS-backed Profile/Character captions now share one `profileAuthorialCopy` source dictionary, including field labels and accessible input placeholders, profile help, character headings and overview hints. The versioned staging-only migration extracts exactly 24 RU/EN rows from this live source, preserving CAS precedence and failing on an unexpected key inventory. Neither user-entered name/guild/nation/rank/about nor the computed hero level/passive is placed into D1 defaults. No Cloudflare D1 import is implied.
 
 Five extra original RU/EN labels are now editable directly in the Character/Profile navigation and three action buttons. The owner double-click/long press edits a caption without a duplicate pencil; native keyboard Enter and single-click actions retain their semantics, while F2 on the containing button enters the editor. The original hero navigation callbacks and selected-tab states remain unchanged. These labels share the existing owner CAS profile namespace and raise the staging-only default inventory to **34 source-authored RU/EN rows**, 17 captions total. Full Node+Chromium must pass on the published PR SHA before this change is accepted.
+
+## Dedicated remote staging gate · #390 (prepared, NOT executed)
+
+The Draft PR contains a **manual-only** staging workflow at
+`.github/workflows/editorial-staging-d1-manual.yml` and its independently tested
+`scripts/guard-editorial-staging-d1.mjs` target checker. This is an additional
+safety gate for a future **operator-approved** remote Cloudflare staging run,
+not a production deployment or evidence that D1 was actually imported.
+
+**Prerequisites, all external to this PR:** create a new empty D1 database whose
+name matches `ps-editorial-staging-*`, configure a GitHub environment named
+`editorial-staging` with required reviewer approval, and provision three
+dedicated secrets: `EDITORIAL_STAGING_CF_TOKEN` (least-privilege staging-only
+token), `EDITORIAL_STAGING_CF_ACCOUNT_ID`, and
+`EDITORIAL_STAGING_CF_DATABASE_ID`. **Never reuse
+`CLOUDFLARE_API_TOKEN` from production.** A staging database in the same
+account must still be explicitly isolated by its own name, UUID and token
+scope. Existing production D1 UUID `0f8fbcd8-be06-414c-844b-a2091fdf6784`
+is denied.
+
+**GitHub limitation:** a newly added `workflow_dispatch` file in this Draft
+PR branch may not be directly dispatchable from Actions until its workflow
+definition exists on the repository default branch. Do **not** merge #809,
+publish or weaken branch guards just to activate this workflow. An authorized
+operator can independently check out the PR branch and follow the approved
+local staging runbook with dedicated credentials before any eventual release.
+
+The staging operations are:
+1. `preflight` (read-only): strict branch/repository/target checks, Wrangler
+   remote D1 list lookup matching **both name and UUID**, then a SELECT-only
+   schema inventory. Unknown tables (including accounts, builds, catalog and
+   overrides) cause an immediate stop.
+2. `import`: requires
+   `CONFIRM-EDITORIAL-STAGING-<database_name>-import`. Exports a full independent
+   D1 SQL backup and uploads it as an Actions artifact **before** executing
+   generated SQL. After import, runs the pinned one-statement readback and the
+   existing strict 100%-row-count plus SHA-256 verifier. No Worker preview or
+   default snapshot is auto-activated.
+3. `rollback`: requires
+   `CONFIRM-EDITORIAL-STAGING-<database_name>-rollback`. Exports a backup,
+   deletes only the current pinned release/digest snapshot marker and rows,
+   then executes an *independent query against that exact snapshot*. Success
+   requires **zero markers and zero rows**; checking the latest remaining
+   marker after deletion would be falsely reassuring and is prohibited.
+
+These commands and argument shapes are described in
+[official Cloudflare D1 Wrangler documentation](https://developers.cloudflare.com/d1/wrangler-commands/).
+The new local Node tests validate rejection of wrong targets, production D1,
+missing confirmation, unknown tables, malformed JSON and incomplete rollback.
+**No staging credentials were provided, no remote SQL was run, and no
+physical D1 readback/rollback is claimed.**
