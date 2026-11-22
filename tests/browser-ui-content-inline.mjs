@@ -1624,6 +1624,54 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(JSON.parse(values['guideedit.book.ui.label.compare-title']).en,'Build comparison QA');
   assert.equal(Object.hasOwn(values,compareKey),false,
    'Undo removes the new comparison caption instead of inventing an empty JSON record');
+
+  // #390: the real A/B prefix is inline authorial text, not the immutable
+  // A/B selector identities or another player's saved-build name.
+  if(await compareOwnerDock.locator('[data-owner-collapse]')
+   .getAttribute('aria-expanded')==='true')
+   await compareOwnerDock.locator('[data-owner-collapse]').click();
+  const prefixes=compare.locator(
+   '.build-compare-select-label [data-owner-copy-key="compareBuildCaption"]');
+  assert.deepEqual(await prefixes.allTextContents(),['Build','Build']);
+  assert.deepEqual(await compare.locator('[data-compare-letter]').allTextContents(),
+   [' A',' B']);
+  const selectionBefore=await compare.locator('[data-compare-select]').evaluateAll(
+   fields=>fields.map(field=>field.value));
+  await prefixes.first().dblclick();
+  const editPrefix=compare.locator(
+   '.build-compare-select-label .account-copy-edit-host [contenteditable]');
+  await editPrefix.waitFor({state:'visible'});
+  await editPrefix.fill('Saved character');
+  await editPrefix.press('Tab');
+  await page.waitForFunction(()=>[...document.querySelectorAll(
+   '#detailContent [data-build-compare] [data-owner-copy-key="compareBuildCaption"]')]
+   .every(node=>node.textContent==='Saved character'),null,{timeout:12000});
+  const prefixKey='guideedit.book.ui.label.compare-build-caption';
+  assert.equal(JSON.parse(values[prefixKey]).en,'Saved character');
+  assert.deepEqual(await compare.locator('[data-compare-select]').evaluateAll(
+   fields=>fields.map(field=>field.getAttribute('aria-label'))),
+   ['Saved character A','Saved character B']);
+  assert.deepEqual(await compare.locator('[data-compare-select]').evaluateAll(
+   fields=>fields.map(field=>field.value)),selectionBefore);
+  assert.equal(await activeName.inputValue(),comparisonName);
+  assert.equal(await comparePanel.evaluate(node=>node.isConnected),true);
+  assert.equal(await compare.locator('.ui-content-pencil').count(),0);
+  if(await compareOwnerDock.locator('[data-owner-collapse]')
+   .getAttribute('aria-expanded')==='false')
+   await compareOwnerDock.locator('[data-owner-collapse]').click();
+  await compareOwnerDock.locator('[data-owner-undo]').click();
+  await page.waitForFunction(()=>[...document.querySelectorAll(
+   '#detailContent [data-build-compare] [data-owner-copy-key="compareBuildCaption"]')]
+   .every(node=>node.textContent==='Build'),null,{timeout:12000});
+  assert.equal(Object.hasOwn(values,prefixKey),false);
+  assert.equal(resets.at(-1)?.key,prefixKey);
+  assert.deepEqual(await compare.locator('[data-compare-select]').evaluateAll(
+   fields=>fields.map(field=>field.getAttribute('aria-label'))),
+   ['Build A','Build B']);
+  assert.deepEqual(await compare.locator('[data-compare-select]').evaluateAll(
+   fields=>fields.map(field=>field.value)),selectionBefore);
+  assert.equal(await activeName.inputValue(),comparisonName);
+  assert.equal(await comparePanel.evaluate(node=>node.isConnected),true);
   if(await compareOwnerDock.locator('[data-owner-collapse]')
    .getAttribute('aria-expanded')==='true')
    await compareOwnerDock.locator('[data-owner-collapse]').click();
