@@ -637,6 +637,23 @@ export function buildEditorialDefaultsManifest(){
   append('guideedit.book.honor-view.'+slug,'en',en,'honor-owner-form-captions');
  }
 
+ // Only source-authorial image and rank-accessibility copy is staged.
+ // Actual game rank names, IDs and image paths remain separate.
+ const accessibleMatch=honorViewSource.match(
+  /const honorAccessibilityCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ if(!accessibleMatch)throw Error('Missing Honor accessibility registry');
+ const accessible=runInNewContext('('+accessibleMatch[1]+')',{},{timeout:5000});
+ const expectedAccessible=['pvpEventImageAlt','rankEmblemLabel'];
+ if(!Array.isArray(accessible)||accessible.length!==expectedAccessible.length||
+  accessible.map(row=>row?.[0]).sort().join('|')!==expectedAccessible.sort().join('|'))
+  throw Error('Unreviewed Honor accessible source keys');
+ for(const [key,ru,en] of accessible){
+  if(!ru?.trim?.()||!en?.trim?.())throw Error('Invalid Honor accessible label');
+  const slug=key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase());
+  append('guideedit.book.honor-view.'+slug,'ru',ru,'honor-accessibility');
+  append('guideedit.book.honor-view.'+slug,'en',en,'honor-accessibility');
+ }
+
  // The same Honor renderer already exposes D1/CAS captions for each
  // PvP table heading/column and generated rank requirement phrase.
  // Extract its literal source *arguments*, never the numeric row values.

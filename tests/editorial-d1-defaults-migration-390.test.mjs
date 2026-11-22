@@ -452,6 +452,22 @@ test('#390 Hero Path and Honor source-authored labels have pinned semantic D1 de
   ['locationPickerAria','locationSearchAria','locationSearchPlaceholder',
    'warNameEn','warNameRu','zoneReplaceAria']);
  assert.equal(manifest.stats.cohorts['honor-native-fields'],12);
+ assert.equal(manifest.stats.cohorts['honor-accessibility'],4);
+ const sourceAccessible=honor.match(
+  /const honorAccessibilityCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ assert.ok(sourceAccessible);
+ const accessible=runInNewContext('('+sourceAccessible[1]+')',{});
+ assert.deepEqual(accessible.map(row=>row[0]).sort(),
+  ['pvpEventImageAlt','rankEmblemLabel']);
+ for(const [key,ru,en] of accessible){
+  const id='guideedit.book.honor-view.'+
+   key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase());
+  assert.equal(manifest.records.find(row=>row.recordKey===id&&row.field==='ru')?.value,ru);
+  assert.equal(manifest.records.find(row=>row.recordKey===id&&row.field==='en')?.value,en);
+ }
+ assert.match(honor,/ownerNativeCopy\(eventImage,key,ru,english,'alt','F2'\)/);
+ assert.match(honor,/ownerNativeCopy\(marker,emblemKey,emblemRu,emblemEn,/);
+ assert.match(honor,/const emblemSuffix=': '\+\(en\?rank\.nameEn:rank\.nameRu\)/);
  for(const [key,ru,en,attribute,shortcut] of native){
   const record='guideedit.book.honor-view.'+key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase());
   assert.equal(manifest.records.find(r=>r.recordKey===record&&r.field==='ru')?.value,ru);

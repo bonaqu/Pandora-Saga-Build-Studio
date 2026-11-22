@@ -20,6 +20,13 @@ const honorOwnerFormCopyRows=Object.freeze([
  ['rankFilterAria','Фильтр рангов','Rank filter']
 ]);
 const honorOwnerFormCopy=new Map(honorOwnerFormCopyRows.map(row=>[row[0],row]));
+// Accessibility copy is authorial; rank IDs and source names never are.
+const honorAccessibilityCopyRows=Object.freeze([
+ ['pvpEventImageAlt','Окно постоянного события «Победы в PvP»',
+  'Permanent PvP Victories event window'],
+ ['rankEmblemLabel','Эмблема ранга','Rank emblem']
+]);
+const honorAccessibilityCopy=new Map(honorAccessibilityCopyRows.map(row=>[row[0],row]));
 let removeHonorScrollListener=()=>{};
 function stopObserving(){
  removeHonorScrollListener();
@@ -116,8 +123,10 @@ function render({browse,detail,make,lang='ru',article,editable=false,
    button.replaceChildren(caption);
    if(editable){
     editCopy(caption,key,ru,english);
+    button.setAttribute('aria-keyshortcuts','F2');
     button.addEventListener('keydown',event=>{
-     if(event.target!==button||event.key!=='F2')return;
+     if(event.target!==button||event.key!=='F2'||event.altKey||
+      event.shiftKey||event.ctrlKey||event.metaKey)return;
      event.preventDefault();event.stopPropagation();
      caption.dispatchEvent(new KeyboardEvent('keydown',{
       key:'F2',bubbles:true,cancelable:true
@@ -561,9 +570,13 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  const eventImage=make('img',{
   class:'wiki-honor-pvp-illustration',
   src:'assets/wiki/honor-victories.jpg',
-  alt:tr('Окно постоянного события «Победы в PvP»',
-         'Permanent PvP Victories event window'),
+  alt:copy(...honorAccessibilityCopy.get('pvpEventImageAlt')),
   loading:'lazy',decoding:'async'});
+ if(editable){
+  const [key,ru,english]=honorAccessibilityCopy.get('pvpEventImageAlt');
+  eventImage.tabIndex=0;
+  ownerNativeCopy(eventImage,key,ru,english,'alt','F2');
+ }
  // A gameplay illustration is not a navigation action. Never expose the
  // image host, external game server, or provenance in the player-facing Wiki.
  eventImage.addEventListener('error',()=>eventImage.remove());
@@ -658,7 +671,10 @@ function render({browse,detail,make,lang='ru',article,editable=false,
   wrap.append(button);
   if(editable){
    const host=make('span',{class:'wiki-honor-filter-edit-host',hidden:true,text:label});
-   const restore=()=>{button.hidden=false;host.hidden=true};
+   const restore=()=>{
+    button.hidden=false;host.hidden=true;
+    if(button.isConnected)button.focus({preventScroll:true});
+   };
    editCopy(host,copyKey,ru,english,{
     onCommitted:visible=>{caption.textContent=visible},onFinished:restore
    });
@@ -669,8 +685,12 @@ function render({browse,detail,make,lang='ru',article,editable=false,
     host.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
    };
    caption.addEventListener('dblclick',edit);
-   caption.tabIndex=0;caption.setAttribute('aria-keyshortcuts','F2');
-   caption.addEventListener('keydown',event=>{if(event.key==='F2')edit(event)});
+   // Native button owns the F2 action; nested captions have no tab stop.
+   button.setAttribute('aria-keyshortcuts','F2');
+   button.addEventListener('keydown',event=>{
+    if(event.target===button&&event.key==='F2'&&!event.altKey&&
+       !event.shiftKey&&!event.ctrlKey&&!event.metaKey)edit(event);
+   });
    guardAction(button,caption);
    wrap.append(host);
   }
@@ -683,8 +703,15 @@ function render({browse,detail,make,lang='ru',article,editable=false,
   card.dataset.rankType=rank.top!=null?'monthly':'standard';
   card.id='honor-rank-'+rank.id;
   const header=make('div',{class:'wiki-honor-rank-head'});
+  const [emblemKey,emblemRu,emblemEn]=honorAccessibilityCopy.get('rankEmblemLabel');
+  const emblemSuffix=': '+(en?rank.nameEn:rank.nameRu);
   const marker=make('span',{class:'wiki-honor-rank-number wiki-honor-emblem',
-   role:'img','aria-label':tr('Эмблема ранга ','Rank emblem: ')+(en?rank.nameEn:rank.nameRu)});
+   role:'img','aria-label':copy(emblemKey,emblemRu,emblemEn)+emblemSuffix});
+  if(editable){
+   marker.tabIndex=0;
+   ownerNativeCopy(marker,emblemKey,emblemRu,emblemEn,
+    'aria-label','F2',false,emblemSuffix);
+  }
   const src=honorIconSrc(rank.id);
   if(src)marker.append(make('img',{
    class:'wiki-honor-emblem-source',src,alt:'','aria-hidden':'true',
