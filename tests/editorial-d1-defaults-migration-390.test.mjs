@@ -457,8 +457,9 @@ test('#390 Hero Path and Honor source-authored labels have pinned semantic D1 de
   /const honorAccessibilityCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
  assert.ok(sourceAccessible);
  const accessible=runInNewContext('('+sourceAccessible[1]+')',{});
- assert.deepEqual(accessible.map(row=>row[0]).sort(),
-  ['pvpEventImageAlt','rankEmblemLabel']);
+ assert.deepEqual(Array.from(accessible,row=>row[0]).sort(),
+  ['pvpEventImageAlt','rankEmblemLabel'],
+  'Cross-VM source registry is compared by values, not foreign Array prototype');
  for(const [key,ru,en] of accessible){
   const id='guideedit.book.honor-view.'+
    key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase());
