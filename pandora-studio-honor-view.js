@@ -7,6 +7,19 @@
 // files; the game's original silhouettes stay intact on any theme.
 const honorIconSrc=id=>Number.isInteger(id)&&id>=0&&id<12?
  'assets/wiki/honor-ranks/'+id+'.svg':null;
+// Seven exact source-authored owner-form captions; game locations, war names,
+// validation outcomes and identifiers are never part of these D1 defaults.
+const honorOwnerFormCopyRows=Object.freeze([
+ ['zoneChooseOption','Выбери локацию','Choose location'],
+ ['zoneNoMatches','Локации не найдены','No locations found'],
+ ['zoneSelectRequired','Выбери локацию','Choose a location'],
+ ['warNamesRequired','Заполни RU и EN','Enter RU and EN'],
+ ['zoneRemovePrefix','Удалить','Remove'],
+ ['locationNameHint','Название изменяется в разделе «Локации»',
+  'Edit the name in Locations'],
+ ['rankFilterAria','Фильтр рангов','Rank filter']
+]);
+const honorOwnerFormCopy=new Map(honorOwnerFormCopyRows.map(row=>[row[0],row]));
 let removeHonorScrollListener=()=>{};
 function stopObserving(){
  removeHonorScrollListener();
@@ -42,6 +55,62 @@ function render({browse,detail,make,lang='ru',article,editable=false,
    return element;
   };
   // Direct owner caption; native Enter/Space keep their action, F2 edits.
+  const formPair=key=>{
+   const row=honorOwnerFormCopy.get(key);
+   if(!row)throw Error('Unreviewed Honor form copy key: '+key);
+   return [row[1],row[2]];
+  };
+  const formText=key=>{
+   const [ru,english]=formPair(key);
+   return copy(key,ru,english);
+  };
+  const formNote=(holder,key)=>{
+   const [ru,english]=formPair(key);
+   holder.replaceChildren(editorial('span','wiki-honor-owner-note',key,ru,english));
+  };
+  // Native options cannot be edited by double-click inside the OS dropdown.
+  // Owner Alt+F2 edits the *visible placeholder* on its original selector;
+  // ordinary F2 continues editing its independent accessible name.
+  const formOption=key=>{
+   const [ru,english]=formPair(key);
+   const option=make('option',{value:'',text:copy(key,ru,english)});
+   if(editable){
+    Object.assign(option.dataset,{
+     ownerCopySection:'honor-view',ownerCopyId:key,
+     ownerCopyRu:ru,ownerCopyEn:english
+    });
+   }
+   return option;
+  };
+  const bindFormOptions=select=>{
+   if(!editable)return;
+   select.setAttribute('aria-keyshortcuts',
+    ((select.getAttribute('aria-keyshortcuts')||'')+' Alt+F2').trim());
+   select.addEventListener('keydown',event=>{
+    if(event.target!==select||event.key!=='F2'||!event.altKey||
+      event.shiftKey||event.ctrlKey||event.metaKey)return;
+    const placeholder=select.querySelector('option[value=""]');
+    if(!placeholder||select.parentElement?.querySelector(
+       '.wiki-honor-native-copy-editor'))return;
+    const key=placeholder.dataset.ownerCopyId;
+    if(!honorOwnerFormCopy.has(key))return;
+    event.preventDefault();event.stopPropagation();
+    const [ru,english]=formPair(key);
+    const host=node('span','wiki-honor-native-copy-editor',formText(key));
+    select.after(host);
+    editCopy(host,key,ru,english,{
+     onCommitted:value=>{
+      const current=select.querySelector('option[value=""]');
+      if(current?.dataset.ownerCopyId===key)current.textContent=value;
+     },
+     onFinished:()=>{
+      host.remove();
+      if(select.isConnected)select.focus({preventScroll:true});
+     }
+    });
+    host.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
+   });
+  };
   const ownerActionLabel=(button,key,ru,english)=>{
    const caption=node('span','wiki-honor-action-caption',copy(key,ru,english));
    button.replaceChildren(caption);
@@ -60,10 +129,10 @@ function render({browse,detail,make,lang='ru',article,editable=false,
   };
   // Native controls retain real user input/selection. F2 edits authored
   // placeholders or aria text with the regular CAS editor, no extra pencil.
-  const ownerNativeCopy=(field,key,ru,english,attribute,shortcut,mirrorAria=false)=>{
+  const ownerNativeCopy=(field,key,ru,english,attribute,shortcut,mirrorAria=false,suffix='')=>{
    const paint=value=>{
-    field.setAttribute(attribute,value);
-    if(mirrorAria)field.setAttribute('aria-label',value);
+    field.setAttribute(attribute,value+suffix);
+    if(mirrorAria)field.setAttribute('aria-label',value+suffix);
    };
    paint(copy(key,ru,english));
    if(!editable)return;
@@ -72,7 +141,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
    // the transient form, its typed value, selection, or active input.
    let bindings={};
    try{bindings=JSON.parse(field.dataset.ownerInterfaceBindings||'{}')}catch{}
-   const binding={section:'honor-view',key,ru,en:english,prefix:'',suffix:''};
+   const binding={section:'honor-view',key,ru,en:english,prefix:'',suffix};
    bindings[attribute]=binding;
    if(mirrorAria)bindings['aria-label']=binding;
    field.dataset.ownerInterfaceBindings=JSON.stringify(bindings);
@@ -80,7 +149,8 @@ function render({browse,detail,make,lang='ru',article,editable=false,
    field.setAttribute('aria-keyshortcuts',(previous+' '+shortcut).trim());
    field.addEventListener('keydown',event=>{
     if(event.target!==field||event.key!=='F2'||
-     event.shiftKey!==(shortcut==='Shift+F2'))return;
+     event.shiftKey!==(shortcut==='Shift+F2')||
+     event.altKey||event.ctrlKey||event.metaKey)return;
     event.preventDefault();event.stopPropagation();
     if(field.parentElement?.querySelector('.wiki-honor-native-copy-editor'))return;
     const host=node('span','wiki-honor-native-copy-editor',copy(key,ru,english));
@@ -320,9 +390,11 @@ function render({browse,detail,make,lang='ru',article,editable=false,
       'aria-hidden':'true',text:'◈'}));
      names.append(anchor);
     }else{
-     if(editable)name.setAttribute('title',tr(
-      'Название изменяется в разделе «Локации»',
-      'Edit the name in Locations'));
+     if(editable){
+      name.tabIndex=0;
+      const [ru,english]=formPair('locationNameHint');
+      ownerNativeCopy(name,'locationNameHint',ru,english,'title','F2');
+     }
      names.append(name);
     }
    }else{
@@ -367,7 +439,10 @@ function render({browse,detail,make,lang='ru',article,editable=false,
       }});
      ownerNativeCopy(select,'zoneReplaceAria','Заменить локацию',
       'Replace location','aria-label','F2');
-     select.append(make('option',{value:'',text:tr('Без привязки','Unlinked')}));
+     // Unlinking is not supported by saveList: do not advertise a false
+     // "Unlinked" action on an otherwise valid location selector.
+     select.append(formOption('zoneChooseOption'));
+     bindFormOptions(select);
      for(const candidate of mapOptions){
       const opt=make('option',{value:candidate.id,
        text:en?candidate.nameEn:candidate.nameRu});
@@ -378,10 +453,14 @@ function render({browse,detail,make,lang='ru',article,editable=false,
      }
      row.append(select);
     }
-    row.append(make('button',{type:'button',class:'wiki-owner-remove',
-     text:'×','aria-label':tr('Удалить','Remove')+' '+(value||item.nameRu),
-     onclick:()=>void Promise.resolve(saveList(key,items.filter((_,i)=>i!==index)))
-      .catch(error=>showError(row,error))}));
+    const remove=make('button',{type:'button',class:'wiki-owner-remove',
+     text:'×',onclick:()=>void Promise.resolve(
+      saveList(key,items.filter((_,i)=>i!==index)))
+      .catch(error=>showError(row,error))});
+    const [ru,english]=formPair('zoneRemovePrefix');
+    ownerNativeCopy(remove,'zoneRemovePrefix',ru,english,'aria-label',
+     'F2',false,' '+(value||item.nameRu));
+    row.append(remove);
    }
    content.append(row);
   }
@@ -407,6 +486,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
       const select=make('select',{class:'wiki-honor-location-select'});
       ownerNativeCopy(select,'locationPickerAria','Выбери существующую локацию',
        'Choose an existing location','aria-label','F2');
+      bindFormOptions(select);
       const fill=()=>{
        const matchesLocation=root.PandoraSearchField.compile(search.value);
        const selected=new Set(items.map(item=>item.mapId));
@@ -414,17 +494,18 @@ function render({browse,detail,make,lang='ru',article,editable=false,
         !selected.has(option.id)&&
         matchesLocation([option.nameRu,option.nameEn].filter(Boolean).join(' ')))
         .slice(0,100);
-       select.replaceChildren(make('option',{value:'',text:found.length?
-        tr('Выбери локацию','Choose location'):
-        tr('Локации не найдены','No locations found')}));
+       select.replaceChildren(formOption(found.length?
+        'zoneChooseOption':'zoneNoMatches'));
        for(const entry of found)select.append(make('option',{
         value:entry.id,text:en?entry.nameEn:entry.nameRu}));
-       select.disabled=!found.length;
+       // Keep the no-match placeholder focusable for owner Alt+F2;
+       // the submit handler still refuses any missing selection.
+       select.disabled=!found.length&&!editable;
       };
       const submit=make('button',{type:'button',class:'wiki-owner-plus',
        onclick:async()=>{
         const selected=mapOptions.find(entry=>entry.id===select.value);
-        if(!selected){note.textContent=tr('Выбери локацию','Choose a location');return}
+        if(!selected){formNote(note,'zoneSelectRequired');return}
         let id='custom-1',n=1;
         while(items.some(item=>item.id===id))id='custom-'+(++n);
         try{await saveList(key,[...items,{id,mapId:selected.id,
@@ -448,7 +529,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
       const submit=make('button',{type:'button',class:'wiki-owner-plus',
        onclick:async()=>{
         const nameRu=ru.value.trim(),nameEn=english.value.trim();
-        if(!nameRu||!nameEn){note.textContent=tr('Заполни RU и EN','Enter RU and EN');return}
+        if(!nameRu||!nameEn){formNote(note,'warNamesRequired');return}
         let id='custom-1',n=1;
         while(items.some(item=>item.id===id))id='custom-'+(++n);
         try{await saveList(key,[...items,{id,nameRu,nameEn}])}
@@ -542,8 +623,10 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  const ranks=section('ranks','Ранги и привилегии','Honor ranks and privileges');
  paragraph(ranks,en?o.ranksEn:o.ranksRu,'honor.overview',
   en?'ranksEn':'ranksRu');
- const rankFilters=make('div',{class:'wiki-honor-rank-filters',role:'group',
-  'aria-label':tr('Фильтр рангов','Rank filter')});
+ const rankFilters=make('div',{class:'wiki-honor-rank-filters',role:'group'});
+ if(editable)rankFilters.tabIndex=0;
+ const [rankRu,rankEn]=formPair('rankFilterAria');
+ ownerNativeCopy(rankFilters,'rankFilterAria',rankRu,rankEn,'aria-label','F2');
  const rankGrid=make('div',{class:'wiki-honor-rank-list'});
  // Counts come from actual rank records; only captions are authored D1 copy.
  const filters=[
