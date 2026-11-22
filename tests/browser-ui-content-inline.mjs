@@ -188,6 +188,54 @@ export async function runUIContentInlineSmoke(browser,base){
    .fill('Correct admin password!');
   await page.locator('.modal').getByRole('button',{name:'Войти',exact:true}).click();
   await page.locator('#ownerDock').waitFor({state:'visible',timeout:15000});
+  // Real owner save and CAS Undo of dynamic Origin and Workbench captions.
+  // The saved hero's race name and the dialog aria-labelledby are not editable.
+  await page.locator('#originTabs [data-origin-tab="race"]').click();
+  const genderNote=page.locator('#raceSexInfo .origin-gender-caption');
+  await genderNote.waitFor({state:'visible',timeout:15000});
+  assert.equal((await genderNote.innerText()).trim(),'Пол по выбранному образу');
+  assert.equal(await genderNote.getAttribute('data-origin-copy-key'),
+   'genderFollowAppearance');
+  await genderNote.dblclick();
+  const genderInput=genderNote.locator('[data-owner-text-field]');
+  await genderInput.waitFor({state:'visible'});
+  await genderInput.fill('Внешний вид выбирается · QA');
+  await genderInput.press('Tab');
+  await page.waitForFunction(()=>
+   document.querySelector('#raceSexInfo .origin-gender-caption')?.textContent===
+   'Внешний вид выбирается · QA',null,{timeout:15000});
+  assert.equal(JSON.parse(values['guideedit.book.origin.gender-follow-appearance']).ru,
+   'Внешний вид выбирается · QA');
+  const originalHeroAlt=await page.locator('#hero').getAttribute('alt');
+  await page.locator('#nav [data-tab="wiki"]').click();
+  const workbenchTitle=page.locator('#detailTitle');
+  await workbenchTitle.waitFor({state:'visible',timeout:15000});
+  assert.equal(await workbenchTitle.getAttribute('data-owner-copy-key'),
+   'workbenchTitleWiki');
+  assert.equal((await workbenchTitle.innerText()).trim(),'Энциклопедия Pandora Saga');
+  await workbenchTitle.dblclick();
+  const titleInput=page.locator('#detailTitle + .ui-content-edit-host [data-owner-text-field]');
+  await titleInput.waitFor({state:'visible'});
+  await titleInput.fill('Энциклопедия · QA');
+  await titleInput.press('Tab');
+  await page.waitForFunction(()=>
+   document.querySelector('#detailTitle')?.textContent==='Энциклопедия · QA',
+   null,{timeout:15000});
+  assert.equal(JSON.parse(values['guideedit.book.ui.label.workbench-title-wiki']).ru,
+   'Энциклопедия · QA');
+  assert.equal(await page.locator('#detailPanel').getAttribute('aria-labelledby'),
+   'detailTitle');
+  if(await page.locator('#ownerDock').evaluate(el=>el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
+  await page.locator('#ownerDock [data-owner-undo]').click();
+  await page.waitForFunction(()=>
+   document.querySelector('#detailTitle')?.textContent==='Энциклопедия Pandora Saga',
+   null,{timeout:15000});
+  assert.equal(Object.hasOwn(values,'guideedit.book.ui.label.workbench-title-wiki'),false);
+  assert.equal(await page.locator('#hero').getAttribute('alt'),originalHeroAlt);
+  if(!await page.locator('#ownerDock').evaluate(el=>el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
+  await page.locator('#dockClose').click();
   // A title duplicating a button's ARIA is not a distinct hover-hint.
   const profileButton=page.locator('#profileTrigger');
   assert.equal(await profileButton.getAttribute('title'),'Войти или зарегистрироваться');

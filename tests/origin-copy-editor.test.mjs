@@ -88,3 +88,56 @@ test('guest receives approved custom caption but no editor pencil or editing aff
  assert.equal(adminHost.children.length,0);
  assert.equal(admin.classList.state,true);
 });
+
+test('#390 contextual Origin gender guidance is not the canonical race name',async()=>{
+ const found=app.match(/const originGenderNoteRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ assert.ok(found);
+ const rows=Function('return '+found[1])();
+ assert.equal(rows.length,6);
+ assert.equal(new Set(rows.map(row=>row[0])).size,6);
+ for(const [key,ru,en] of rows){
+  assert.match(key,/^gender[A-Z]/);
+  assert.ok(ru&&en);
+  assert.doesNotMatch(ru,/Цверг|Мирина|Энкиду|Кролль|Эльф|Человек/);
+  assert.doesNotMatch(en,/Dwarf|Myrine|Enkidu|Lapin|Elf|Human/);
+  assert.equal(guide.validOverride('book.origin.'+
+   key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase()),
+   JSON.stringify({ru:'Текст владельца',en:'Owner copy'})),true);
+ }
+ const manifest=(await import('../scripts/plan-editorial-d1-defaults.mjs'))
+  .buildEditorialDefaultsManifest();
+ assert.equal(manifest.stats.cohorts['origin-gender-guidance'],12);
+ assert.equal(manifest.records.some(row=>
+  row.recordKey==='guideedit.book.origin.gender-selection-unavailable'&&
+  row.field==='ru'&&row.value==='выбор пола недоступен'),true);
+ assert.match(app,/text:races\[race\]\[lang==='en'\?1:0\]/);
+ assert.match(app,/originCopyLabel\(caption,key,ru,en\)/);
+ assert.match(app,/originCopyShortcutAdded/);
+ assert.match(app,/originCopyTabAdded/);
+});
+
+test('#390 Workbench H2 is independent of the dynamic tab and supports RU/EN CAS Undo',()=>{
+ const scope={};
+ Function('window',read('pandora-studio-ui-locale.js'))(scope);
+ const locale=scope.PandoraUILocale;
+ for(const [key,ru,en] of [
+  ['workbenchTitleCharacter','Мастерская героя','Hero Workshop'],
+  ['workbenchTitleSkills','Дерево умений','Skill Tree'],
+  ['workbenchTitleStats','Характеристики','Attributes'],
+  ['workbenchTitleBuilds','Библиотека билдов','Build Library'],
+  ['workbenchTitleWiki','Энциклопедия Pandora Saga','Pandora Saga Encyclopedia']
+ ]){
+  assert.equal(locale.baseText(key,'ru'),ru);
+  assert.equal(locale.baseText(key,'en'),en);
+  assert.match(locale.fieldKey(key),/^ui\.label\.workbench-title-/);
+  const record='guideedit.book.'+locale.fieldKey(key);
+  locale.setOverrides({[record]:JSON.stringify({ru:'QA '+ru,en:'QA '+en})});
+  assert.equal(locale.text(key,'en'),'QA '+en);
+  assert.equal(locale.text(key,'ru'),'QA '+ru);
+  locale.setOverrides({});
+ }
+ assert.match(app,/heading\.dataset\.ownerCopyKey=titleKey/);
+ assert.match(app,/bindAccountCopyEditors\(heading\.parentElement\)/);
+ assert.match(app,/isWorkbench\?'#detailPanel \.detail-title/);
+ assert.match(app,/if\(node\.id==='detailTitle'\)/);
+});
