@@ -210,6 +210,21 @@ export async function runUIContentInlineSmoke(browser,base){
   // A wizard's stage caption is source-authored but its class ID, selected
   // profession and branch route are not. Keep the real navigation button.
   await page.locator('#originTabs [data-origin-tab="class"]').click();
+  // Prior owner-mode stage captions swallowed every ordinary single click.
+  // Exercise actual pointer navigation: delayed single click, then an
+  // independent double click that must open the D1 editor instead of routing.
+  const stageProfession=page.locator(
+   '#classGrid button.class-wizard-step [data-origin-copy-key="stepProfession"]');
+  await stageProfession.waitFor({state:'visible',timeout:15000});
+  await stageProfession.click();
+  await page.waitForFunction(()=>Boolean(document.querySelector(
+   '#classGrid .class-wizard-step.current [data-origin-copy-key="stepProfession"]')),
+   null,{timeout:5000});
+  await page.locator(
+   '#classGrid button.class-wizard-step [data-origin-copy-key="stepDirection"]').click();
+  await page.waitForFunction(()=>Boolean(document.querySelector(
+   '#classGrid .class-wizard-step.current [data-origin-copy-key="stepDirection"]')),
+   null,{timeout:5000});
   const stageCaption=page.locator('#classGrid [data-origin-copy-key="stepDirection"]');
   await stageCaption.waitFor({state:'visible',timeout:15000});
   assert.equal((await stageCaption.innerText()).trim(),'Направление');
@@ -224,6 +239,41 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(JSON.parse(values['guideedit.book.origin.step-direction']).ru,
    'Направление героя · QA');
   assert.equal(await page.locator('#raceGrid img').getAttribute('alt'),raceAltBefore);
+  // A collapsed owner-only accessibility inventory edits invisible ARIA
+  // phrasing without adding pencil buttons to every profession card.
+  const ariaPanel=page.locator('#ownerOriginClassAria');
+  await ariaPanel.waitFor({state:'attached',timeout:15000});
+  await ariaPanel.locator('summary').click();
+  const progressAria=ariaPanel.locator('[data-owner-copy-id="classStageNavAria"]');
+  await progressAria.dblclick();
+  const progressInput=progressAria.locator('[data-owner-text-field]');
+  await progressInput.waitFor({state:'visible'});
+  await progressInput.fill('Выбор направления · QA');
+  await progressInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#classGrid .class-wizard-progress')?.getAttribute('aria-label')===
+   'Выбор направления · QA',null,{timeout:15000});
+  assert.equal(JSON.parse(values['guideedit.book.origin.class-stage-nav-aria']).ru,
+   'Выбор направления · QA');
+  const choice=page.locator('#classGrid button.class-wizard-choice').first();
+  const chosenName=await choice.locator('strong').innerText();
+  assert.match(await choice.getAttribute('aria-label'),/ — перейти к специализациям/);
+  const choiceAria=ariaPanel.locator('[data-owner-copy-id="classViewSpecializationsAria"]');
+  await choiceAria.dblclick();
+  const choiceInput=choiceAria.locator('[data-owner-text-field]');
+  await choiceInput.waitFor({state:'visible'});
+  await choiceInput.fill(' — открыть специализации · QA');
+  await choiceInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#classGrid button.class-wizard-choice')?.getAttribute('aria-label')
+    ?.endsWith(' — открыть специализации · QA'),
+   null,{timeout:15000});
+  assert.equal(await choice.locator('strong').innerText(),chosenName,
+   'Source-backed profession name is never edited through ARIA');
+  assert.equal(await choice.getAttribute('aria-label'),
+   chosenName+' — открыть специализации · QA');
+  assert.equal(JSON.parse(values['guideedit.book.origin.class-view-specializations-aria']).ru,
+   ' — открыть специализации · QA');
   await page.locator('#nav [data-tab="wiki"]').click();
   const workbenchTitle=page.locator('#detailTitle');
   await workbenchTitle.waitFor({state:'visible',timeout:15000});
@@ -249,6 +299,19 @@ export async function runUIContentInlineSmoke(browser,base){
    document.querySelector('#detailTitle')?.textContent==='Энциклопедия Pandora Saga',
    null,{timeout:15000});
   assert.equal(Object.hasOwn(values,'guideedit.book.ui.label.workbench-title-wiki'),false);
+  // Undo of both independent ARIA patches must preserve the class picker
+  // nodes, dynamic names, active route and original editor defaults.
+  await page.locator('#ownerDock [data-owner-undo]').click();
+  await page.waitForFunction(()=>document.querySelector(
+   '#classGrid button.class-wizard-choice')?.getAttribute('aria-label')
+    ?.endsWith(' — перейти к специализациям'),null,{timeout:15000});
+  assert.equal(Object.hasOwn(values,'guideedit.book.origin.class-view-specializations-aria'),false);
+  assert.equal(await choice.locator('strong').innerText(),chosenName);
+  await page.locator('#ownerDock [data-owner-undo]').click();
+  await page.waitForFunction(()=>document.querySelector(
+   '#classGrid .class-wizard-progress')?.getAttribute('aria-label')===
+   'Этап выбора профессии',null,{timeout:15000});
+  assert.equal(Object.hasOwn(values,'guideedit.book.origin.class-stage-nav-aria'),false);
   await page.locator('#ownerDock [data-owner-undo]').click();
   await page.waitForFunction(()=>
    document.querySelector('#classGrid [data-origin-copy-key="stepDirection"]')
