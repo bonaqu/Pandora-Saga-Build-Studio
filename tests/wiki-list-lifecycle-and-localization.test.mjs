@@ -97,5 +97,5 @@ test('#390 late Wiki skill source readiness reconciles real counts without chang
  assert.match(code,/option\.dataset\.labelCount=value/);
  assert.match(code,/option\.textContent=caption/);
  assert.doesNotMatch(code,/skillPicker\.value=|skillPicker\.replaceChildren\(/,
-  'Do not replace the user's selected native filter');
+  'Do not replace the selected native filter');
 });
