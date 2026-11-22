@@ -1128,6 +1128,35 @@ export async function runUIContentInlineSmoke(browser,base){
   await search.fill('');
   await chooseWikiChapter('honor');
   const honorPane=page.locator('.wiki-page');
+  // Honor owner actions retain native Enter/Space behavior, with F2 and
+  // double-click editing only their caption using the existing D1/CAS path.
+  const zoneList=honorPane.locator('#honor-gain .wiki-honor-list-section').first();
+  const linkAction=zoneList.locator('.wiki-honor-add');
+  await linkAction.waitFor({state:'visible'});
+  const linkCaption=linkAction.locator('[data-owner-copy-id="linkZoneAction"]');
+  assert.equal(await linkCaption.innerText(),'+ Связать локацию');
+  const linkedRows=await zoneList.locator('.wiki-honor-list-row').count();
+  await linkCaption.dblclick();
+  const linkEditor=linkCaption.locator('[contenteditable]');
+  await linkEditor.waitFor({state:'visible',timeout:8000});
+  await linkEditor.fill('+ Связать локацию QA');
+  await linkEditor.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#honor-gain .wiki-honor-add [data-owner-copy-id="linkZoneAction"]')
+   ?.textContent==='+ Связать локацию QA',null,{timeout:15000});
+  assert.equal(JSON.parse(values['guideedit.book.honor-view.link-zone-action']).ru,
+   '+ Связать локацию QA');
+  assert.equal(await zoneList.locator('.wiki-honor-list-row').count(),linkedRows);
+  await linkAction.click();
+  await zoneList.locator('.wiki-honor-new').waitFor({state:'visible',timeout:6000});
+  const cancelAction=zoneList.locator('.wiki-honor-new .wiki-owner-remove').first();
+  await cancelAction.focus();await cancelAction.press('F2');
+  const cancelEditor=cancelAction.locator('[contenteditable]');
+  await cancelEditor.waitFor({state:'visible',timeout:8000});
+  await cancelEditor.press('Escape');
+  await cancelAction.press('Enter');
+  await zoneList.locator('.wiki-honor-new').waitFor({state:'detached',timeout:6000});
+  assert.equal(await zoneList.locator('.wiki-honor-list-row').count(),linkedRows);
   const tableHead=honorPane.locator(
    '.wiki-honor-pvp-label[data-owner-copy-id="pvpDailyHeading"]');
   await tableHead.waitFor({state:'visible',timeout:20000});

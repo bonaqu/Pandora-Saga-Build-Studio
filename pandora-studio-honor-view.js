@@ -44,11 +44,33 @@ function render({browse,detail,make,lang='ru',article,editable=false,
   const guardCaptionAction=(action,caption)=>{
    let pending=null;
    action.addEventListener('click',event=>{
-    if(!event.detail||!caption.contains(event.target)||event.target.closest?.('input,textarea,select'))return;
+    if(!event.detail||!caption.contains(event.target))return;
+     // An inline text draft must not trigger the native action underneath it.
+     if(event.target.closest?.('[data-owner-text-field],.wiki-inline-input')){
+      event.preventDefault();event.stopImmediatePropagation();return;
+     }
+     if(event.target.closest?.('input,textarea,select'))return;
     event.preventDefault();event.stopImmediatePropagation();
     if(pending){clearTimeout(pending);pending=null;return}
     pending=setTimeout(()=>{pending=null;if(action.isConnected)action.click()},500);
    },true);
+  };
+  // Direct owner caption; native Enter/Space keep their action, F2 edits.
+  const ownerActionLabel=(button,key,ru,english)=>{
+   const caption=node('span','wiki-honor-action-caption',copy(key,ru,english));
+   button.replaceChildren(caption);
+   if(editable){
+    editCopy(caption,key,ru,english);
+    button.addEventListener('keydown',event=>{
+     if(event.target!==button||event.key!=='F2')return;
+     event.preventDefault();event.stopPropagation();
+     caption.dispatchEvent(new KeyboardEvent('keydown',{
+      key:'F2',bubbles:true,cancelable:true
+     }));
+    });
+    guardCaptionAction(button,caption);
+   }
+   return button;
   };
   // Wars are Honor records, not OS map IDs. Give every existing and
  // owner-created entry its own page without inventing location records.
@@ -342,14 +364,13 @@ function render({browse,detail,make,lang='ru',article,editable=false,
   wrapper.append(content);
   if(editable){
    const add=make('button',{type:'button',class:'wiki-owner-plus wiki-honor-add',
-    text:isZone?tr('+ Связать локацию','+ Link location'):
-     tr('+ Добавить войну','+ Add war'),
     onclick:()=>{
      if(wrapper.querySelector('.wiki-honor-new'))return;
      const form=make('div',{class:'wiki-honor-new'});
      const note=node('small','wiki-honor-error','');
      const cancel=make('button',{type:'button',class:'wiki-owner-remove',
-      text:tr('Отмена','Cancel'),onclick:()=>form.remove()});
+      onclick:()=>form.remove()});
+     ownerActionLabel(cancel,'cancelAction','Отмена','Cancel');
      if(isZone){
       const search=make('input',{type:'search',
        'aria-label':tr('Поиск существующей локации','Search existing locations'),
@@ -374,7 +395,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
        select.disabled=!found.length;
       };
       const submit=make('button',{type:'button',class:'wiki-owner-plus',
-       text:tr('Добавить','Add'),onclick:async()=>{
+
         const selected=mapOptions.find(entry=>entry.id===select.value);
         if(!selected){note.textContent=tr('Выбери локацию','Choose a location');return}
         let id='custom-1',n=1;
@@ -383,10 +404,11 @@ function render({browse,detail,make,lang='ru',article,editable=false,
          nameRu:selected.nameRu,nameEn:selected.nameEn}])}
         catch(error){note.textContent=error?.message||String(error)}
        }});
+      ownerActionLabel(submit,'submitAction','Добавить','Add');
       const create=make('button',{type:'button',class:'wiki-honor-create-location',
-       text:tr('Нет в списке? Создать в «Локациях»',
-        'Not listed? Create it in Locations'),
        onclick:()=>onOpenLocations()});
+      ownerActionLabel(create,'createLocationAction',
+       'Нет в списке? Создать в «Локациях»','Not listed? Create it in Locations');
       form.append(search,select,submit,cancel,create,note);
       search.addEventListener('input',fill);fill();search.focus();
      }else{
@@ -397,7 +419,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
        placeholder:tr('Название на английском','English name'),
        'aria-label':tr('Название на английском','English name')});
       const submit=make('button',{type:'button',class:'wiki-owner-plus',
-       text:tr('Добавить','Add'),onclick:async()=>{
+
         const nameRu=ru.value.trim(),nameEn=english.value.trim();
         if(!nameRu||!nameEn){note.textContent=tr('Заполни RU и EN','Enter RU and EN');return}
         let id='custom-1',n=1;
@@ -405,10 +427,13 @@ function render({browse,detail,make,lang='ru',article,editable=false,
         try{await saveList(key,[...items,{id,nameRu,nameEn}])}
         catch(error){note.textContent=error?.message||String(error)}
        }});
+      ownerActionLabel(submit,'submitAction','Добавить','Add');
       form.append(ru,english,submit,cancel,note);ru.focus();
      }
      wrapper.append(form);
     }});
+   if(isZone)ownerActionLabel(add,'linkZoneAction','+ Связать локацию','+ Link location');
+   else ownerActionLabel(add,'addWarAction','+ Добавить войну','+ Add war');
    // Keep Add immediately beside the final row's remove action.
    const destination=content.lastElementChild||content;
    destination.append(add);

@@ -538,6 +538,29 @@ export function buildEditorialDefaultsManifest(){
   append('guideedit.book.honor-view.'+slug,'en',en,'honor-view-authorial');
  }
 
+ // Owner-only Honor form actions are source-authored UI, not gameplay data.
+ // Require the exact rendered key inventory and preserve unique D1 defaults.
+ const ownerActionCalls=[...honorViewSource.matchAll(
+  /\bownerActionLabel\(\s*[a-z]+\s*,\s*'([^']+)'\s*,\s*'([^']*)'\s*,\s*'([^']*)'\s*\)/g
+ )].map(m=>[m[1],m[2],m[3]]);
+ const expectedActions=['addWarAction','cancelAction','createLocationAction',
+  'linkZoneAction','submitAction'];
+ const uniqueActions=new Map();
+ for(const [key,ru,en] of ownerActionCalls){
+  if(uniqueActions.has(key)&&uniqueActions.get(key).join('|')!==[ru,en].join('|'))
+   throw Error('Conflicting Honor owner action source: '+key);
+  uniqueActions.set(key,[ru,en]);
+ }
+ if(ownerActionCalls.length!==6||uniqueActions.size!==expectedActions.length||
+  [...uniqueActions.keys()].sort().join('|')!==expectedActions.sort().join('|'))
+  throw Error('Honor owner actions changed: review before staging');
+ for(const [key,[ru,en]] of uniqueActions){
+  if(!ru.trim()||!en.trim())throw Error('Empty Honor owner action: '+key);
+  const slug=key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  append('guideedit.book.honor-view.'+slug,'ru',ru,'honor-owner-actions');
+  append('guideedit.book.honor-view.'+slug,'en',en,'honor-owner-actions');
+ }
+
  // The same Honor renderer already exposes D1/CAS captions for each
  // PvP table heading/column and generated rank requirement phrase.
  // Extract its literal source *arguments*, never the numeric row values.

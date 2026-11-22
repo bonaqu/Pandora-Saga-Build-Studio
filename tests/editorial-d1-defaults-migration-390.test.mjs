@@ -376,6 +376,27 @@ test('#390 Hero Path and Honor source-authored labels have pinned semantic D1 de
    assert.equal(stored.find(r=>r.field==='en')?.value,en);
   }
  }
+ const ownerActions=[...honor.matchAll(
+  /\bownerActionLabel\(\s*[a-z]+\s*,\s*'([^']+)'\s*,\s*'([^']*)'\s*,\s*'([^']*)'\s*\)/g
+ )].map(m=>[m[1],m[2],m[3]]);
+ assert.equal(ownerActions.length,6);
+ const actions=new Map();
+ for(const [key,ru,en] of ownerActions){
+  if(actions.has(key))assert.deepEqual(actions.get(key),[ru,en]);
+  actions.set(key,[ru,en]);
+ }
+ assert.deepEqual([...actions.keys()].sort(),
+  ['addWarAction','cancelAction','createLocationAction','linkZoneAction','submitAction']);
+ assert.equal(manifest.stats.cohorts['honor-owner-actions'],10);
+ assert.match(honor,/button\.addEventListener\('keydown',event=>\{/);
+ assert.match(honor,/guardCaptionAction\(button,caption\)/);
+ for(const [key,[ru,en]] of actions){
+  const recordKey='guideedit.book.honor-view.'+
+   key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase());
+  assert.equal(manifest.records.find(r=>r.recordKey===recordKey&&r.field==='ru')?.value,ru);
+  assert.equal(manifest.records.find(r=>r.recordKey===recordKey&&r.field==='en')?.value,en);
+ }
+
  for(const term of ['guideedit.book.path.skill.32001','guideedit.book.honor-view.rank.5'])
   assert.ok(!manifest.records.some(r=>r.recordKey===term),
    'Skill IDs and Honor rank mechanics never enter source-authored copy');
