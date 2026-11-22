@@ -1568,6 +1568,7 @@ const wikiChestDisplayRows=Object.freeze([
  ["variantsPrefix","Вариантов: ","Options: "],
  ["nested","↳ Следующая шкатулка","↳ Next chest"],
  ["goldMissing","Золото · сумма не указана","Gold · amount not listed"],
+ ["goldAmountPrefix","Золото:","Gold:"],
  ["rewardMissing","Награда не указана","Reward not listed"],
  ["quantityAria","Количество. Двойной клик — изменить","Quantity. Double-click to edit"],
  ["quantityHint","Двойной клик — изменить количество","Double-click to edit quantity"],
@@ -7354,14 +7355,24 @@ function renderWiki(root){
        'data-roll-group':String(i+1),'data-reward-type':facet.type,
        'data-reward-slot':facet.slot||''});
       const goldReward=Array.isArray(row.gold);
+      const goldAmount=goldReward?
+       window.PandoraStudioChestPresentation.goldAmount(row,lang):null;
+      let goldNode=null;
+      if(goldAmount!==null){
+       // The source range is numeric/game data, not part of a D1 caption.
+       const goldPrefix=chestBind(h('span',{class:'wiki-chest-gold-prefix'}),
+        'goldAmountPrefix');
+       if(adminEditing&&adminToken)ownerCopyLabel(goldPrefix,'wiki.chest.text',
+        'goldAmountPrefix','Золото:','Gold:');
+       goldNode=h('span',{class:'wiki-chest-gold-reward'},[
+        goldPrefix,h('span',{class:'wiki-chest-gold-amount',text:' '+goldAmount})
+       ]);
+      }
       const rewardMain=h('div',{class:'wiki-chest-reward-main'},[
        row.i!=null?itemLink(row.i,dataName('item',row.i),id):
-        (goldReward&&window.PandoraStudioChestPresentation.goldLabel(row,lang)?
-         h('span',{class:'wiki-chest-gold-reward',
-          text:window.PandoraStudioChestPresentation.goldLabel(row,lang)}):
-         chestBind(h('span',{class:goldReward?
-          'wiki-chest-gold-reward':'wiki-chest-unlisted-reward'}),
-          goldReward?'goldMissing':'rewardMissing'))
+        goldNode||chestBind(h('span',{class:goldReward?
+         'wiki-chest-gold-reward':'wiki-chest-unlisted-reward'}),
+         goldReward?'goldMissing':'rewardMissing')
       ]);
       if(nextChest)rewardMain.append(chestBind(h('small',{class:'wiki-chest-nested-note'}),'nested'));
       option.append(rewardMain);

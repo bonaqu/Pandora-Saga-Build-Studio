@@ -65,13 +65,14 @@ test('all category and slot labels are bound but runtime counts and identifiers 
  assert.match(app,/wikiChestRewardFilter\.type=typeFilter\.value/);
 });
 
-test('chest contents render 35 D1-authored RU/EN captions with numeric data separate',()=>{
+test('chest contents render 36 D1-authored RU/EN captions with numeric data separate',()=>{
  const block=app.slice(app.indexOf('const wikiChestDisplayRows='),app.indexOf('const wikiItemDisplayRows='));
  const found=[...block.matchAll(/^ \["([^"]+)","([^"]+)","([^"]+)"\],?$/gm)];
- assert.equal(found.length,35);
- assert.equal(new Set(found.map(row=>row[1])).size,35);
+ assert.equal(found.length,36);
+ assert.equal(new Set(found.map(row=>row[1])).size,36);
  for(const [key,ru,en] of [
   ['contentsHeading','Содержимое сундука','Chest contents'],
+  ['goldAmountPrefix','Золото:','Gold:'],
   ['groupShowing','Показано: ','Showing: '],
   ['removeReward','Удалить награду из сундука','Remove chest reward'],
   ['addItem','+ Предмет','+ Item']

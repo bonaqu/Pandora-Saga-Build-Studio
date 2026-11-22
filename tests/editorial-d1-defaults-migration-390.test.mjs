@@ -288,7 +288,7 @@ test('#390 actual monster, NPC trade, chest and item owner registries exclude un
    ['sellerMissing','deleteTrade','deleteAria','deleteConfirm',
     'deleteRecordButton','deleteRecordLinked','deleteRecordConfirm',
     'deleteRecordFailure']],
-  ['wikiChestDisplayRows','wiki.chest.text','wiki-chest-authorial',35,50,
+  ['wikiChestDisplayRows','wiki.chest.text','wiki-chest-authorial',36,52,
    ['certainHeading','oneGold','oneItem','keyUnlisted','contentsMissing',
     'contentsUnlisted','goldMissing','rewardMissing','deleteGroup',
     'removeReward']],

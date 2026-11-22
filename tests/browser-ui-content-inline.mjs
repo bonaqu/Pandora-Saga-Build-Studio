@@ -1385,6 +1385,29 @@ export async function runUIContentInlineSmoke(browser,base){
   await fingerRank.dispatchEvent('pointerup',{pointerType:'touch',isPrimary:true});
   assert.deepEqual((await page.locator('#honor-rank-2 .wiki-honor-runtime-value')
    .allTextContents()).map(s=>s.replace(/\D/g,'')),['3000','20000']);
+  // Authorial prefix and source gold range must never share editable DOM.
+  await chooseWikiChapter('chest');
+  await page.locator('[data-wiki-record="52002"]').click();
+  const goldReward=page.locator('.wiki-chest-gold-reward').first();
+  await goldReward.waitFor({state:'visible',timeout:15000});
+  const goldValue=goldReward.locator('.wiki-chest-gold-amount');
+  const goldNumberBefore=await goldValue.textContent();
+  const goldCaption=goldReward.locator('[data-owner-copy-id="goldAmountPrefix"]');
+  assert.equal((await goldCaption.textContent()).trim(),'Золото:');
+  assert.equal(await goldValue.getAttribute('data-owner-copy-id'),null);
+  await goldCaption.dblclick();
+  const goldEditor=goldCaption.locator('[contenteditable]');
+  await goldEditor.waitFor({state:'visible',timeout:8000});
+  await goldEditor.fill('Монеты:');
+  await goldEditor.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '.wiki-chest-gold-prefix[data-owner-copy-id="goldAmountPrefix"]')
+   ?.textContent==='Монеты:',null,{timeout:15000});
+  assert.equal(JSON.parse(values['guideedit.book.wiki.chest.text.gold-amount-prefix']).ru,
+   'Монеты:');
+  assert.equal(await goldValue.textContent(),goldNumberBefore,
+   'Owner label cannot change the source gold interval');
+  assert.equal(await goldValue.locator('[contenteditable]').count(),0);
   // Leave the existing Encyclopedia detail workbench before opening the
   // account UI: a modal workbench correctly intercepts background clicks.
   if(await page.locator('#detailPanel.is-open').count())
