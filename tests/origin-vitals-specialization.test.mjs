@@ -63,11 +63,19 @@ function chosenProfession(){
  const state={job:jobKeys.indexOf('JUGGERNAUT')},grid=new El('div');
  assert.ok(state.job>=0);
  let saves=0;
- const runtime=Function('h','$','jobKeys','jobs','catalog','state','editableValue','saveView','lang','originCopy','originCopyLabel',
+ // The unit harness extracts renderJobs rather than the whole application.
+ // Import its REAL static registry, and preserve the original class routing.
+ const source=app.match(/const originClassWizardCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ assert.ok(source,'Missing source-authorial class wizard registry');
+ const rows=Function('return '+source[1])();
+ const runtime=Function('h','$','jobKeys','jobs','catalog','state','editableValue',
+  'saveView','lang','originCopy','originCopyLabel','originClassWizardCopyRows',
+  'adminEditing','adminToken','ownerCaptionActionGuard',
   fallback+'\nlet jobPathKey=null;\nfunction selectJob(index){state.job=index;renderJobs()}\n'+
   app.slice(start,end)+'\nreturn {renderJobs,state,get:()=>jobPathKey};')(
   h,()=>grid,jobKeys,jobs,{classes},state,(_,v)=>v,()=>saves++,'ru',
-  (_key,ru)=>ru,(node,_key,ru)=>{node.textContent=ru;return node});
+  (_key,ru)=>ru,(node,_key,ru)=>{node.textContent=ru;return node},
+  rows,false,'',()=>{});
  const buttons=()=>walk(grid).filter(x=>x.tag==='button');
  const matching=key=>buttons().find(x=>x.className.includes('class-wizard-choice')&&
   x.children[0]?.textContent===jobs[jobKeys.indexOf(key)]);
@@ -82,7 +90,9 @@ test('after selecting final class, root directions display the actual specializa
  assert.equal(root.attributes['aria-pressed'],'false','ancestor is not the actual selected leaf');
  assert.match(root.attributes['aria-label'],/выбранная специализация/);
  assert.ok(walk(f.grid).some(x=>x.className==='class-wizard-selected'&&
-  x.textContent.includes('Джаггернаут')));
+  x.children.some(child=>child instanceof El&&
+   child.className==='class-wizard-source-name'&&child.textContent==='Джаггернаут')),
+  'The actual selected profession must remain in a separate source-only node');
 });
 test('Back navigation retains the selection at every parent level',()=>{
  const f=chosenProfession();f.runtime.renderJobs();
