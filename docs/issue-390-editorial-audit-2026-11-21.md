@@ -305,3 +305,8 @@ pencil controls. Full Node+Chromium required on the exact new PR SHA.
 - The icon-only account trigger has an existing owner-editable `profileAccess` RU/EN key. Its account module used to overwrite the accessible guest title with its static source after refreshing; it now reads that semantic D1 value in both initial render and locale refresh. Signed-in title remains separate: localized authorial `Профиль`/`Profile` prefix followed by the current user's account name, which is never a D1 owner-editable string.
 - After direct F2 save/Escape of this icon copy, the general static editor also reconciles the real account module's title and aria without remounting the account form or touching credentials/recovery codes. Node and real Chromium regressions exercise the exact D1 title across account refresh, and the guest/signed-in source split.
 - Both full CI workflows are required on the new SHA. No production account data, D1, Worker or Pages write is performed.
+
+## 22.11.2026 · Account icon guest versus signed-in editor selection
+
+- The same icon-only account trigger now binds `profileAccess` for a guest and the existing `accountProfileTitle` for a signed-in user to both `data-i18n-title` and `data-i18n-aria-label`. Its F2 owner editor already reads the current key at activation, so an authenticated Profile prefix no longer edits the guest Sign-in label. The live account name stays outside D1 owner text; logout restores guest semantics and its RU/EN override.
+- Existing Node contract and actual Chromium browser account registration/logout flows check the bound keys and the source-backed runtime name, with normal actions unchanged. No pencils or redundant editor widgets were added. Exact-HEAD full Node+Chromium required.

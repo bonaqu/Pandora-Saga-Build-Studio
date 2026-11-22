@@ -301,3 +301,15 @@ test('compiled D1 UI text is parsed once, then invalidated on save, Undo and res
  assert.equal(ui.literalKey('Неверный пароль.'),null,
   'Runtime security errors cannot become editor fields');
 });
+
+test('#390 account icon F2 selects the actual guest or signed-in semantic D1 identity',()=>{
+ const account=source('pandora-studio-account-ui.js');
+ const app=source('pandora-studio-app.js');
+ assert.equal(locale.fieldKey('accountProfileTitle'),'ui.label.account-profile-title');
+ assert.match(account,/const key=session\?'accountProfileTitle':'profileAccess'/);
+ assert.match(account,/trigger\.dataset\.i18nTitle=key/);
+ assert.match(account,/trigger\.dataset\.i18nAriaLabel=key/);
+ assert.equal((account.match(/syncTriggerCopy\(\);/g)||[]).length,2);
+ assert.match(app,/const currentKey=node\.dataset\.i18nTitle,id=locale\.fieldKey\(currentKey\)/);
+ assert.match(account,/session\?tr\('Профиль'\)\+' · '\+session\.username/);
+});

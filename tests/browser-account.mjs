@@ -79,6 +79,8 @@ export async function runAccountSmoke(browser,base){
   await page.locator('#profileTrigger').click();
   await page.locator('#accountPanel').waitFor({state:'visible'});
   assert.equal(await page.locator('#profileTrigger').getAttribute('aria-label'),'Sign in or register');
+  assert.equal(await page.locator('#profileTrigger').getAttribute('data-i18n-title'),
+   'profileAccess','Guest F2 uses only guest authorial copy');
   assert.ok(await page.getByRole('button',{name:'Register',exact:true}).isVisible());
   await page.locator('#locale [data-locale="ru"]').click();
   // Choosing a language outside the account popover intentionally closes it.
@@ -138,6 +140,12 @@ export async function runAccountSmoke(browser,base){
   await page.locator('.account-recovery input').waitFor({state:'visible',timeout:15000});
   assert.equal(await page.locator('.account-recovery input').inputValue(),'r'.repeat(43));
   assert.match(await page.locator('.account-user').innerText(),/testplayer_01/);
+  assert.equal(await page.locator('#profileTrigger').getAttribute('data-i18n-title'),
+   'accountProfileTitle','Authenticated F2 edits the Profile prefix, not guest Sign-in');
+  assert.equal(await page.locator('#profileTrigger').getAttribute('data-i18n-aria-label'),
+   'accountProfileTitle');
+  assert.equal(await page.locator('#profileTrigger').getAttribute('aria-label'),
+   'Профиль · testplayer_01','User identity is a non-D1 runtime suffix');
   // One-time secret is not lost on popover close and can be dismissed by its owner.
   await page.locator('#profileTrigger').click();
   await page.locator('#accountPanel').waitFor({state:'hidden'});
@@ -276,6 +284,8 @@ export async function runAccountSmoke(browser,base){
   assert.match(await page.locator('#accountPanel .account-feedback').innerText(),
    /Пароли не совпадают/,'Same-identity remount preserves feedback');
   await page.getByRole('button',{name:'Выйти из аккаунта'}).click();
+  assert.equal(await page.locator('#profileTrigger').getAttribute('data-i18n-title'),
+   'profileAccess','Logout restores guest owner-copy key');
   await page.getByRole('button',{name:'Войти',exact:true}).first().click();
   const login=page.locator('#accountPanel .account-form input');
   await login.nth(0).fill('testplayer_01');

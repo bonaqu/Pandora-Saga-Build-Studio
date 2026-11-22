@@ -52,6 +52,16 @@ const tr=value=>{
 const triggerLabel=()=>session?tr('Профиль')+' · '+session.username:
  (root.PandoraUILocale?.text?.('profileAccess',document.documentElement.lang)||
   tr('Войти или зарегистрироваться'));
+// The icon-only F2 editor reads the current D1 key at invocation time.
+// A guest and an authenticated account have different authorial captions.
+// The account username is appended separately and is never owner-copy D1.
+const syncTriggerCopy=()=>{
+ const key=session?'accountProfileTitle':'profileAccess';
+ trigger.dataset.i18nTitle=key;
+ trigger.dataset.i18nAriaLabel=key;
+ trigger.title=triggerLabel();
+ trigger.setAttribute('aria-label',trigger.title);
+};
 // Only exact human-readable messages emitted by the account API are allowed
 // through. Raw server exceptions, SQL details and arbitrary HTML are never
 // rendered in the guest/profile UI or offered to the D1 text editor.
@@ -250,8 +260,7 @@ function render(){
  if(bootstrapPhase==='pending'&&session)
   panel.append(node('p','account-lead account-bootstrap-pending',
    'Проверяем учётную запись…'));
- trigger.title=triggerLabel();
- trigger.setAttribute('aria-label',trigger.title);
+ syncTriggerCopy();
  const title=node('h3','account-title',session?'Профиль':'Аккаунт');
  panel.append(title);
  const sub=node('p','account-lead',session?'Сохранённые билды доступны после входа на другом устройстве.':
@@ -641,8 +650,7 @@ function refresh(){
   }
   return;
  }
- trigger.title=triggerLabel();
- trigger.setAttribute('aria-label',trigger.title);
+ syncTriggerCopy();
  for(const node of (panel.querySelectorAll?.('[data-account-copy-source]')||[])){
   const value=tr(node.getAttribute('data-account-copy-source'));
   if(node.textContent!==value)node.textContent=value;
