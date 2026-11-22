@@ -301,13 +301,22 @@ export async function runBuildComparisonSmoke(browser,base){
    JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')));
   assert.equal(persisted,original,'Comparison cannot rewrite saved builds');
   await panel.getByRole('button',{name:'Скрыть сравнение'}).click();
+  // Owner captions guard the first pointer click for 500ms so a second
+  // click can edit the label. Confirm the REAL action eventually completes,
+  // rather than asserting synchronously while that guarded click is queued.
+  await panel.locator('.build-compare-content').waitFor({state:'hidden',timeout:4000});
+  assert.equal(await panel.locator('.build-compare-expand').getAttribute('aria-expanded'),'false');
   assert.equal(await panel.locator('.build-compare-table').isVisible(),false);
+  assert.equal(await panel.locator('.ui-content-edit-host').count(),0);
   assert.equal(await page.locator('.build-card').count(),3);
   await page.setViewportSize({width:390,height:780});
   await assertCardGeometry();
   await page.screenshot({path:'artifacts/layout/saved-build-cards-mobile.jpg',
    type:'jpeg',quality:76,animations:'disabled'});
   await panel.getByRole('button',{name:'Развернуть сравнение'}).click();
+  await panel.locator('.build-compare-content').waitFor({state:'visible',timeout:4000});
+  assert.equal(await panel.locator('.build-compare-expand').getAttribute('aria-expanded'),'true');
+  assert.equal(await panel.locator('.ui-content-edit-host').count(),0);
   const overflow=await page.evaluate(()=>
    Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-
    document.documentElement.clientWidth);
