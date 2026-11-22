@@ -1732,6 +1732,10 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(await summaryHistory.locator('.owner-history-pencil').count(),0);
   const compareCopy=history.locator('.owner-history-comparison-copy').first();
   if(await compareCopy.count()){
+   const card=compareCopy.locator('xpath=ancestor::details[1]');
+   if(!await card.evaluate(node=>node.open))
+    await card.locator('.owner-review-heading').click();
+   await compareCopy.waitFor({state:'visible',timeout:9000});
    const firstBefore=await history.locator('.owner-review-before p').first().textContent();
    const firstAfter=await history.locator('.owner-review-after p').first().textContent();
    await compareCopy.dblclick();
