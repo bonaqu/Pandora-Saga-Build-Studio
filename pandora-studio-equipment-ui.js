@@ -49,6 +49,7 @@ const equipmentSummaryCopy=Object.freeze({
  'field.gemType':['Тип самоцвета','Gemstone type'],
  'field.element':['Стихия улучшения','Refinement element'],
  'field.specialEffect':['Особый эффект','Special effect'],
+ unavailable:['Данные о предмете пока не загружены','Item information is not loaded yet'],
  wearableBy:['Подходит','Wearable by'],
  outfitNote:['Броня + штаны · одна вещь','Armor + pants · one item'],
  socketedSoulHeading:['Вставленные души','Socketed Souls']
@@ -56,8 +57,13 @@ const equipmentSummaryCopy=Object.freeze({
 const summaryCopyField=id=>[id,...equipmentSummaryCopy['field.'+id]];
 
 function summary(record,icon,kind='item',context=null){
- if(!record)return el('p',{class:'muted',text:document.documentElement?.lang==='en'?
-  'Item information is not loaded yet':'Данные о предмете пока не загружены'});
+ if(!record){
+  const [ru,en]=equipmentSummaryCopy.unavailable;
+  const missing=el('p',{class:'muted',text:context?.copyLabel?.('unavailable',ru,en)||
+   (document.documentElement?.lang==='en'?en:ru)});
+  context?.editLabel?.(missing,'unavailable',ru,en);
+  return missing;
+ }
  const presenter=root.PandoraItemPresentation,english=document.documentElement?.lang==='en';
  const locale=english?'en':'ru',tr=(ru,en)=>english?en:ru;
  const wrap=el('div',{class:'stage-rich-summary'}),head=el('div',{class:'stage-rich-head'});
@@ -400,6 +406,7 @@ const equipmentInterfaceCopy=Object.freeze({
  pickerSlotHeading:['Слот','Slot'],
  pickerItemClose:['Закрыть настройку','Close item settings'],
  pickerItemSettings:['Настройка предмета','Item settings'],
+ pickerPropertiesGroup:['Свойства предмета','Item properties'],
  chooseItemEmpty:['Сначала выбери предмет.','Choose an item first.'],
  socketCapacityHeading:['Слоты душ','Soul slots'],
  socketOverflowHint:['Сначала извлеките души из лишних слотов','Remove Souls from extra sockets first'],
@@ -503,8 +510,8 @@ function render(root,api){
  // Choosing gear opens the separate item picker. Properties/Souls are one
  // settings surface with a shared frame and a visible divider.
  const chooseGroup=el('div',{class:'stage-rich-choose-group'});
- const settingsGroup=el('div',{class:'stage-rich-settings-group',role:'group',
-  'aria-label':tr('Свойства предмета','Item properties')});
+ const settingsGroup=bind(el('div',{class:'stage-rich-settings-group',role:'group'}),
+  'pickerPropertiesGroup','Свойства предмета','Item properties','aria-label');
  tabs.append(chooseGroup,settingsGroup);
  const sections=['choose','details'];
  if(hasSouls)sections.push('souls');
@@ -643,8 +650,13 @@ function render(root,api){
    const value=souls[i],soul=value&&api.catalog.souls?.[String(value.id)],selected=i===api.selectedSocket;
    const button=el('button',{type:'button',class:selected?'selected':'','aria-pressed':String(selected),
     'data-socket-index':String(i),onclick:()=>api.openSocket(i)});
+   // Dynamic Soul names come from the source's real RU/EN presentation,
+   // never from a hardcoded owner caption or an item ID.
+   const soulName=soul?(root.PandoraItemPresentation?.displayName(soul,
+    tr('Душа','Soul'),english?'en':'ru')||soul.name||tr('Душа','Soul')):
+    copy('pickerEmptySoul','пусто','empty');
    bind(button,'pickerSoulSlotAria','Слот души','Soul slot','aria-label',
-    ' '+(i+1)+': '+(soul?.name||copy('pickerEmptySoul','пусто','empty')));
+    ' '+(i+1)+': '+soulName);
    if(!soul)button.dataset.soulEmptySlot=String(i+1);
    const src=soul&&icons(soul,'soul');
    if(src){const image=el('img',{src,alt:''});image.onerror=()=>image.replaceWith(el('span',{text:'✦'}));button.append(image)}

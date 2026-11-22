@@ -2660,6 +2660,7 @@ function renderStagePicker(focusSearch=false){
     ...equipmentPickerMetaCopyRows,
     ['pickerItemClose','Закрыть настройку','Close item settings','Закрытие настроек','Close settings'],
     ['pickerItemSettings','Настройка предмета','Item settings','Название вкладок','Tabs accessible name'],
+    ['pickerPropertiesGroup','Свойства предмета','Item properties','Группа свойств','Properties group'],
     ['pickerSoulSearchAria','Поиск души','Find Soul','Поиск душ','Soul search'],
     ['pickerSoulSlotAria','Слот души','Soul slot','Название слота','Soul slot name'],
     ['pickerSoulSlotCaption','Слот','Slot','Подпись слота','Slot caption'],

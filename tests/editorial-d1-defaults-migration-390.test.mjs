@@ -167,11 +167,13 @@ test('#390 actual equipment captions and independent hover hints are pinned to c
  assert.ok(match&&hint,'Rendered equipment source copy registries are required');
  const summary=runInNewContext('('+match[1]+')',{});
  const hints=runInNewContext('('+hint[1]+')',{});
- assert.equal(Object.keys(summary).length,15);
- assert.equal(manifest.stats.cohorts['equipment-summary'],30);
+ assert.equal(Object.keys(summary).length,16);
+ assert.equal(manifest.stats.cohorts['equipment-summary'],32);
  assert.equal(manifest.stats.cohorts['equipment-hints'],6);
  assert.match(source,/\.map\(summaryCopyField\)/);
  assert.match(source,/const hints=equipmentTabHints/);
+ assert.match(source,/context\?\.editLabel\?\.\(missing,'unavailable',ru,en\)/,
+  'Empty state copy uses the same direct owner editor as equipment stat captions');
  assert.match(source,/context\?\.editLabel\?\.\(dt,'field\.'\+field\[0\]/);
  for(const [key,pair] of Object.entries(summary)){
   const recordKey='guideedit.book.equipment.'+
@@ -195,8 +197,8 @@ test('#390 equipment controls and exact Soul unavailable states use existing CAS
  const registry=source.match(/const equipmentInterfaceCopy=Object\.freeze\((\{[\s\S]*?\})\);/);
  assert.ok(registry);
  const pairs=runInNewContext('('+registry[1]+')',{});
- assert.equal(Object.keys(pairs).length,19);
- assert.equal(manifest.stats.cohorts['equipment-interface'],38);
+ assert.equal(Object.keys(pairs).length,20);
+ assert.equal(manifest.stats.cohorts['equipment-interface'],40);
  assert.equal(manifest.stats.cohorts['equipment-soul-unavailable'],32);
  for(const [key,pair] of Object.entries(pairs)){
   const recordKey='guideedit.book.equipment.'+
@@ -215,6 +217,12 @@ test('#390 equipment controls and exact Soul unavailable states use existing CAS
  }
  assert.match(source,/if\(equipmentInterfaceCopy\[key\]\)\[ru,en\]=equipmentInterfaceCopy\[key\]/);
  assert.match(source,/const key=\(zero\?'soulUnavailableZero\.':'soulUnavailableUnknown\.'\)\+slot/);
+ assert.match(source,/const settingsGroup=bind\(el\('div',\{class:'stage-rich-settings-group',role:'group'\}\),/,
+  'The settings accessible name must be bound to an owner-editable source key');
+ assert.match(source,/PandoraItemPresentation\?\.displayName\(soul,/,
+  'Use original locale-aware Soul names rather than only saved RU fallback');
+ assert.doesNotMatch(source,/' '\+\(i\+1\)\+': '\+\(soul\?\.name/,
+  'Untranslated source names must not bypass the locale-aware presenter');
  assert.equal(manifest.records.some(r=>r.recordKey.includes('item.13041')),false);
 });
 

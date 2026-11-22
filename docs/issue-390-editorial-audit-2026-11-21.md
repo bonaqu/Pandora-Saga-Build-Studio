@@ -281,3 +281,10 @@ A real Chromium owner-history scenario exercises double-click Save on a summary
 caption, preserves both current numeric counters, edits a before-heading
 without changing D1 before/after values, and confirms the absence of extraneous
 pencil controls. Full Node+Chromium required on the exact new PR SHA.
+
+## 22.11.2026 · Equipment source-authorial and accessibility follow-up
+
+- A previously hardcoded empty item-preview message now uses the bounded owner RU/EN D1/CAS `guideedit.book.equipment.unavailable` key; when an owner edit context is available, its visible copy is directly editable. Actual item data remains immutable.
+- The equipment settings group's native `aria-label` now binds to an independent owner-copy key `pickerPropertiesGroup`, exposed through the existing compact owner text panel, so Save/Undo updates mounted accessible text without rerendering the gear.
+- Equipped Soul socket accessible names use the original locale-aware item presenter (not a raw potentially RU-only `soul.name`). The source name, socket number and ID are never writable editorial text.
+- Exactly two new reviewed RU/EN source identities (four rows) are admitted to the deterministic offline staging default manifest. Source-key inventory checks and browser regression verify RU/EN group/socket names and preserve the actual gear actions. Physical staging D1 import, hardware touch acceptance, and production release still require separate validation; do not merge the Draft PR on this packet alone.

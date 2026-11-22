@@ -253,7 +253,7 @@ export function buildEditorialDefaultsManifest(){
   'field.soulCompatible','field.type','field.level','field.attack',
   'field.magicAttack','field.defense','field.slots','field.speed',
   'field.range','field.gemType','field.element','field.specialEffect',
-  'wearableBy','outfitNote','socketedSoulHeading'
+  'unavailable','wearableBy','outfitNote','socketedSoulHeading'
  ];
  if(Object.keys(summary).sort().join('|')!==expectedSummary.sort().join('|'))
   throw Error('Equipment summary registry has new or missing keys');
@@ -292,7 +292,7 @@ export function buildEditorialDefaultsManifest(){
   filename:'equipmentInterfaceCopy',timeout:5000
  });
  const expectedControls=[
-  'pickerSlotHeading','pickerItemClose','pickerItemSettings','chooseItemEmpty',
+  'pickerSlotHeading','pickerItemClose','pickerItemSettings','pickerPropertiesGroup','chooseItemEmpty',
   'socketCapacityHeading','socketOverflowHint','refinementHeading',
   'gemTypeLabel','gemElementLabel','pickerSoulSlotAria','pickerEmptySoul',
   'pickerSoulSlotCaption','soulSlotsHeading','soulSearch','pickerSoulSearchAria',
