@@ -284,6 +284,9 @@ export async function runAccountSmoke(browser,base){
   assert.match(await page.locator('#accountPanel .account-feedback').innerText(),
    /Пароли не совпадают/,'Same-identity remount preserves feedback');
   await page.getByRole('button',{name:'Выйти из аккаунта'}).click();
+  // Logout completes after an asynchronous account API reply.
+  await page.waitForFunction(()=>document.querySelector('#profileTrigger')
+   ?.getAttribute('data-i18n-title')==='profileAccess',null,{timeout:15000});
   assert.equal(await page.locator('#profileTrigger').getAttribute('data-i18n-title'),
    'profileAccess','Logout restores guest owner-copy key');
   await page.getByRole('button',{name:'Войти',exact:true}).first().click();
