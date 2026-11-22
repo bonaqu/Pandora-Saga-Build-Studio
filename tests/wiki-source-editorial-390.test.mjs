@@ -85,3 +85,28 @@ test('owner acquisition source UI separates editable missing-chance wording from
  assert.equal(pair.ru,'Неизвестная вероятность');
  assert.equal(pair.en,'Chance not specified');
 });
+
+test('Wiki owner picker and trade-source copy stays bilingual without editing gameplay numbers',()=>{
+ const app=read('pandora-studio-app.js');
+ const start=app.indexOf('const renderClassEligibility=(keys,isItem=false)=>{');
+ const end=app.indexOf('const evidence=window.PandoraWikiSkillInsights',start);
+ assert.ok(start>=0&&end>start,'Inspect real Wiki class, NPC trade and skill pickers');
+ const source=app.slice(start,end);
+ for(const label of [
+  "wt('Выбери класс','Choose class')",
+  "wt('Выбери NPC','Choose NPC')",
+  "wt('Выбери ветку','Choose branch')",
+  "wt('Отмена','Cancel')",
+  "wt('Убрать предыдущее умение','Remove prerequisite skill')",
+  "wt('Исключить материал из обмена NPC',"
+ ])assert.ok(source.includes(label),'Missing bilingual owner control: '+label);
+ assert.match(source,/npcTradeBind\(quantity,'materialQuantityHint','title'\)/,
+  'Material count tooltip uses the existing owner-editable trade instruction');
+ assert.match(source,/text:' ×'\+\(current\.n\?\?1\)/,
+  'Material count continues to display the actual source quantity');
+ assert.match(source,/type:'number',min:1,max:999999,integer:true/,
+  'Trade material quantity editing retains its numeric validation');
+ assert.match(source,/target\.title=wt\('Двойной клик — изменить требование ветки',/,
+  'Branch numeric requirement instructions must not be Russian-only');
+ assert.doesNotMatch(source,/text:'Выбери класс'|text:'Выбери NPC'|text:'Выбери ветку'/);
+});
