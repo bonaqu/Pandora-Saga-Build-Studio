@@ -166,6 +166,12 @@ export async function runWikiSkillLabelEditorSmoke(browser,base){
   assert.deepEqual(JSON.parse(values['guideedit.wiki.labels']),{
    skill_filter_unknown_ru:'Дополнительные навыки'
   });
+  // Undo of the SECOND patch is itself a third, CAS-guarded override:
+  // restore the previous RU JSON before deleting the original D1 record.
+  assert.equal(writes.length,3,'Undo must restore prior JSON through CAS');
+  assert.deepEqual(JSON.parse(writes[2].value),{
+   skill_filter_unknown_ru:'Дополнительные навыки'
+  });
   await undo.click();
   await page.waitForFunction(()=>document.querySelector(
    '.wiki-skill-type option[value="unknown"]')?.textContent
@@ -212,11 +218,15 @@ export async function runWikiSkillLabelEditorSmoke(browser,base){
   await page.waitForFunction(()=>
    document.querySelector('.wiki-skill-type option[value="unknown"]')
     ?.textContent.startsWith('Needs icon review'),null,{timeout:10000});
-  assert.equal(writes.length,3,'Unexpected D1 writes after EN edit: '+
+  assert.equal(writes.length,4,'Expected RU saves, CAS Undo restore and EN save: '+
    JSON.stringify(writes.map((post,index)=>({
     index,key:post.key,fields:post.key==='guideedit.wiki.labels'?
      Object.keys(JSON.parse(post.value)):undefined
    }))));
+  assert.equal(writes[3].key,'guideedit.wiki.labels');
+  assert.deepEqual(JSON.parse(writes[3].value),{
+   skill_filter_unknown_en:'Needs icon review'
+  },'The fourth write must be the isolated English caption, not a duplicate RU save');
   assert.deepEqual(JSON.parse(values['guideedit.wiki.labels']),{
    skill_filter_unknown_en:'Needs icon review'
   },'English save must not write a stale Russian field');
