@@ -26,15 +26,13 @@ test('Path reset is a localized inline two-step choice, not native confirm',()=>
  assert.match(app,/function renderBranches\(\)\{[\s\S]*?closePathResetConfirm\(\)/);
 });
 test('Origin portrait notices and item-loading fallback are bilingual without changing game data',()=>{
- // The race name comes from canonical races[], while the independent
- // guidance is bilingual owner copy. No game race can be renamed through D1.
- assert.match(app,/const originGenderNoteRows=Object\.freeze\(/);
- assert.match(app,/\['genderSelectionUnavailable','выбор пола недоступен','gender selection unavailable'\]/);
- assert.match(app,/\['genderFemale','женский','female'\]/);
- assert.match(app,/\['genderMale','мужской','male'\]/);
- assert.match(app,/\['genderGenderless','бесполый','genderless'\]/);
- assert.match(app,/text:races\[race\]\[lang==='en'\?1:0\]/);
- assert.doesNotMatch(app,/const genderNotes=lang==='en'\?/);
+ // Legacy hidden gender controls preserve their original RU/EN labels;
+ // this is not a new owner-editable surface or a staging D1 default.
+ assert.match(app,/const genderNotes=lang==='en'\?/);
+ assert.match(app,/Dwarf · gender selection unavailable/);
+ assert.match(app,/Myrine · female/);
+ assert.match(app,/Enkidu · male/);
+ assert.match(app,/Lapin · genderless/);
  assert.match(app,/No alternate portraits for this race/);
  assert.match(equipment,/Item information is not loaded yet/);
  assert.match(equipment,/Данные о предмете пока не загружены/);
