@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 // Isolated owner CAS smoke; no real accounts or Cloudflare D1 mutation.
 export async function runProfileCaption390Smoke(browser,base){
  const api='https://ps-build-studio-cloud.bonaqu.workers.dev';
- const token='a'.repeat(43),values={},writes=[],errors=[];
+ const token='a'.repeat(43),values={},writes=[],errors=[],nextConflicts=new Set();
  const context=await browser.newContext({viewport:{width:1200,height:840}});
  await context.addInitScript(()=>{
   localStorage.setItem('ps-build-studio.v1',JSON.stringify({
@@ -37,6 +37,8 @@ export async function runProfileCaption390Smoke(browser,base){
    const data=req.postDataJSON();
    assert.match(data.key,/^guideedit\.book\.profile\./);
    assert.equal(data.expectedValue,Object.hasOwn(values,data.key)?values[data.key]:null);
+   if(nextConflicts.delete(data.key))
+    return send({code:'OWNER_EDIT_CONFLICT',error:'Mock stale owner version'},409);
    values[data.key]=data.value;writes.push(data);
    return send({ok:true,key:data.key,value:data.value,conditional:true});
   }
@@ -118,9 +120,72 @@ export async function runProfileCaption390Smoke(browser,base){
   await page.waitForFunction(()=>document.querySelector(
    '#detailContent [data-profile-copy-key="tab-profile"]')?.textContent==='My profile QA',
    null,{timeout:15000});
-  assert.deepEqual(JSON.parse(values['guideedit.book.profile.tab-profile']),
+  const profileKey='guideedit.book.profile.tab-profile';
+  assert.deepEqual(JSON.parse(values[profileKey]),
    {ru:'Мой профиль QA',en:'My profile QA'});
+  // A concurrent CAS failure must retain the draft in the current mounted
+  // caption. Escape must not submit a second write or lose the last EN value.
+  nextConflicts.add(profileKey);
+  await english.dblclick();
+  const conflict=english.locator('[data-owner-text-field]');
+  await conflict.waitFor({state:'visible'});
+  await conflict.fill('Conflicting English profile draft');
+  await conflict.press('Tab');
+  await english.locator('.ui-content-inline-error').waitFor({
+   state:'visible',timeout:15000
+  });
+  assert.equal((await conflict.textContent()).trim(),'Conflicting English profile draft');
+  assert.deepEqual(JSON.parse(values[profileKey]),
+   {ru:'Мой профиль QA',en:'My profile QA'});
+  await conflict.press('Escape');
+  await conflict.waitFor({state:'detached'});
+  assert.equal(writes.length,3);
+
+  // Undo of the last English change must restore only the EN copy field and
+  // keep the selected Profile tab, real hero inputs and existing DOM mounted.
+  const mounted=await english.elementHandle();
+  const dock=page.locator('#ownerDock');
+  if(await dock.evaluate(el=>el.classList.contains('owner-dock-collapsed')))
+   await dock.locator('[data-owner-collapse]').click();
+  await dock.locator('[data-owner-undo]').click();
+  await page.waitForFunction(()=>document.querySelector(
+   '#detailContent [data-profile-copy-key="tab-profile"]')?.textContent==='Profile',
+   null,{timeout:15000});
+  assert.deepEqual(JSON.parse(values[profileKey]),{ru:'Мой профиль QA'});
+  assert.equal(await mounted.evaluate(node=>node.isConnected),true,
+   'Undo should not replace the selected profile caption');
+  await mounted.dispose();
+  assert.equal(await panel.locator('#ps-profile-field-name').inputValue(),
+   'Profile smoke hero');
+  assert.equal(await panel.locator('#ps-profile-field-guild').inputValue(),'Player data QA');
+
+  // Narrow viewport: a long draft remains visible/readable in the actual
+  // text node. Enter is an editor shortcut only for non-interactive copy.
+  if(!await dock.evaluate(el=>el.classList.contains('owner-dock-collapsed')))
+   await dock.locator('[data-owner-collapse]').click();
+  await page.setViewportSize({width:390,height:780});
+  const notes=panel.locator('[data-profile-copy-key="profile-notes"]');
+  await notes.waitFor({state:'visible'});
+  await notes.focus();
+  await notes.press('Enter');
+  const mobile=notes.locator('[data-owner-text-field][contenteditable="plaintext-only"]');
+  await mobile.waitFor({state:'visible'});
+  await mobile.fill('Long Profile editorial note that must wrap safely on mobile. '.repeat(8));
+  const geometry=await mobile.evaluate(el=>{
+   const rect=el.getBoundingClientRect(),css=getComputedStyle(el);
+   return {left:rect.left,right:rect.right,width:rect.width,
+    viewport:document.documentElement.clientWidth,
+    overflowY:css.overflowY,whiteSpace:css.whiteSpace};
+  });
+  assert.ok(geometry.width>0&&geometry.left>=-2&&geometry.right<=geometry.viewport+2,
+   'Owner Profile editor overflows mobile: '+JSON.stringify(geometry));
+  assert.equal(geometry.whiteSpace,'pre-wrap');
+  assert.notEqual(geometry.overflowY,'hidden');
+  await mobile.press('Escape');
+  assert.equal(writes.length,4,'409 and mobile Escape must not create CAS writes');
+  assert.equal(await panel.locator('#ps-profile-field-name').inputValue(),
+   'Profile smoke hero');
   assert.deepEqual(errors,[]);
-  console.log('Chromium #390: profile tabs and actions, direct copy, F2/Esc, RU/EN owner CAS and hero-data safety passed');
+  console.log('Chromium #390: profile guest, direct tabs/actions, F2/Esc, 409 CAS, Undo, RU/EN, mobile and hero preservation passed');
  }finally{await context.close()}
 }
