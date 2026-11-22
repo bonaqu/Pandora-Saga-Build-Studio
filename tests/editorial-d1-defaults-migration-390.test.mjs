@@ -979,3 +979,30 @@ test('issue 390: readback and rollback CLI emit the matching version-only SQL',(
   assert.ok(result.stdout.includes(manifest.snapshot),option);
  }
 });
+
+
+test('#390 Honor form placeholders and validation captions stage exactly 14 safe RU/EN defaults',()=>{
+ const source=read('pandora-studio-honor-view.js').match(
+  /const honorOwnerFormCopyRows=Object\\.freeze\\((\\[[\\s\\S]*?\\])\\);/);
+ assert.ok(source,'Honor owner forms must expose the audited immutable source list');
+ const rows=runInNewContext('('+source[1]+')',{},{timeout:5000});
+ const exact=['zoneChooseOption','zoneNoMatches','zoneSelectRequired',
+  'warNamesRequired','zoneRemovePrefix','locationNameHint','rankFilterAria'];
+ assert.equal(rows.length,7);
+ assert.equal([...rows].map(row=>row[0]).sort().join('|'),exact.sort().join('|'));
+ assert.equal(manifest.stats.cohorts['honor-owner-form-captions'],14);
+ for(const [key,ru,en] of rows){
+  const name='guideedit.book.honor-view.'+
+   key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  const found=manifest.records.filter(row=>row.recordKey===name);
+  assert.deepEqual(found.map(row=>row.field).sort(),['en','ru'],name);
+  assert.equal(found.find(row=>row.field==='ru')?.value,ru);
+  assert.equal(found.find(row=>row.field==='en')?.value,en);
+ }
+ for(const unsafe of ['guideedit.book.honor-view.map-id',
+  'guideedit.book.honor-view.war-name-value',
+  'guideedit.book.honor-view.rank-points',
+  'guideedit.book.honor-view.location-search-query',
+  'guideedit.book.honor-view.worker-error'])
+  assert.equal(manifest.records.some(row=>row.recordKey===unsafe),false,unsafe);
+});
