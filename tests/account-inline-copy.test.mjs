@@ -307,8 +307,8 @@ test('#390 account icon F2 selects the actual guest or signed-in semantic D1 ide
  const app=source('pandora-studio-app.js');
  assert.equal(locale.fieldKey('accountProfileTitle'),'ui.label.account-profile-title');
  assert.match(account,/const key=session\?'accountProfileTitle':'profileAccess'/);
- assert.match(account,/trigger\.dataset\.i18nTitle=key/);
- assert.match(account,/trigger\.dataset\.i18nAriaLabel=key/);
+ assert.match(account,/trigger\.setAttribute\('data-i18n-title',key\)/);
+ assert.match(account,/trigger\.setAttribute\('data-i18n-aria-label',key\)/);
  assert.equal((account.match(/syncTriggerCopy\(\);/g)||[]).length,2);
  assert.match(app,/const currentKey=node\.dataset\.i18nTitle,id=locale\.fieldKey\(currentKey\)/);
  assert.match(account,/session\?tr\('Профиль'\)\+' · '\+session\.username/);
