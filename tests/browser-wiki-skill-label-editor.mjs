@@ -182,13 +182,21 @@ export async function runWikiSkillLabelEditorSmoke(browser,base){
   await page.setViewportSize({width:1040,height:780});
   if(await dock.locator('[data-owner-collapse]').getAttribute('aria-expanded')==='true')
    await dock.locator('[data-owner-collapse]').click();
-  // Reopen in English: a saved EN caption must use its own D1 field,
-  // leaving the original RU label and the selected skill filter untouched.
+  // The native detail dialog intentionally intercepts background clicks.
+  // Close it before changing locale, as a real reader must; after switching,
+  // reopen the Wiki chapter and make the selected category explicit.
+  await page.locator('#dockClose').click();
+  await page.locator('#detailPanel.is-open').waitFor({state:'hidden',timeout:10000});
+  // Reopen in English: a saved EN caption must use its own D1 field.
   await page.locator('#locale [data-locale="en"]').click();
+  await page.locator('#nav [data-tab="wiki"]').click();
+  await page.locator('[data-wiki-chapter="skill"]').click();
+  const enFilter=page.locator('.wiki-skill-type');
+  await enFilter.waitFor({state:'visible',timeout:12000});
+  if(await enFilter.inputValue()!=='unknown')await enFilter.selectOption('unknown');
   await page.waitForFunction(()=>
    document.querySelector('.wiki-skill-type option[value="unknown"]')
     ?.textContent.startsWith('Unresolved'),null,{timeout:12000});
-  const enFilter=page.locator('.wiki-skill-type');
   assert.equal(await enFilter.inputValue(),'unknown');
   const enToggle=page.locator('.wiki-skill-edit-toggle');
   await enToggle.click();
