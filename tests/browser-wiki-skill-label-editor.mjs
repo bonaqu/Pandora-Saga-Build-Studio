@@ -175,6 +175,13 @@ export async function runWikiSkillLabelEditorSmoke(browser,base){
   assert.deepEqual(resets,[{key:'guideedit.wiki.labels',
    expectedValue:JSON.stringify({skill_filter_unknown_ru:'Дополнительные навыки'})}]);
 
+  // The preceding mobile-width Undo deliberately expands the fixed owner
+  // drawer. Restore an ordinary desktop viewport and collapse the drawer
+  // before clicking the REAL locale switch: no forced pointer bypass.
+  // Mobile scrolling and overflow have already been asserted above.
+  await page.setViewportSize({width:1040,height:780});
+  if(await dock.locator('[data-owner-collapse]').getAttribute('aria-expanded')==='true')
+   await dock.locator('[data-owner-collapse]').click();
   // Reopen in English: a saved EN caption must use its own D1 field,
   // leaving the original RU label and the selected skill filter untouched.
   await page.locator('#locale [data-locale="en"]').click();
