@@ -330,3 +330,11 @@ pencil controls. Full Node+Chromium required on the exact new PR SHA.
 - [x] Removed the proposed contextual gender guidance records and physical migration rows after discovering that `#raceSexInfo` belongs to the intentionally **hidden legacy gender controls**. No editorial keys are seeded for a hidden, obsolete panel. Original hidden legacy source behavior remains unchanged.
 - [x] Updated the three pre-existing Node contract tests to assert the new semantic titles and existing Wiki event cleanup instead of obsolete one-line/hardcoded string shapes. Browser test uses only actually visible controls.
 - [ ] Full Node + Chromium must pass on the next exact head before acceptance. Remaining: rare/dynamic RU/EN coverage, isolated Cloudflare staging D1 with rollback, real touch device QA, release acceptance. PR #809 Draft, issue #390 Open.
+
+## 23.11.2026 — #390 visible class-selection wizard authorial captions
+
+- [x] Centralized 13 existing source-authored RU/EN class-wizard fragments in a closed `originClassWizardCopyRows` registry. The 26 corresponding D1 defaults are **versioned, staging-only** and keyed by the existing `guideedit.book.origin.*` CAS identities.
+- [x] Changed the actual rendered Back / All directions buttons, source stage captions, selected profession banner, current selection, card labels and empty-route instruction to use the existing direct dblclick/F2/Enter owner editor. Button navigation and accessible class identity remain separate from editable captions; native single-click/keyboard action stays meaningful. No new pencil icons.
+- [x] Dynamic profession name/ID, current selection, class-tree route and mastery caps stay outside D1 editorial content. The selected badge and action labels split static authorial fragments from source job names rather than serializing composite text.
+- [x] Extended existing Node manifest/identity tests and Chromium mock-CAS scenario: stage caption save/Undo alongside visible Origin and live Workbench H2, preserving race and hero identity. No actual Cloudflare writes or deploys.
+- [ ] Require both full CI on the final commit before raising #390 progress. Staging D1 physical readback/rollback, hardware touch QA and release acceptance still pending; PR #809 OPEN DRAFT, issue #390 OPEN.

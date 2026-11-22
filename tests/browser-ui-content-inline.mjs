@@ -207,6 +207,23 @@ export async function runUIContentInlineSmoke(browser,base){
    'Выбор расы · QA');
   assert.equal(await page.locator('#raceGrid img').getAttribute('alt'),raceAltBefore);
   const originalHeroAlt=await page.locator('#hero').getAttribute('alt');
+  // A wizard's stage caption is source-authored but its class ID, selected
+  // profession and branch route are not. Keep the real navigation button.
+  await page.locator('#originTabs [data-origin-tab="class"]').click();
+  const stageCaption=page.locator('#classGrid [data-origin-copy-key="stepDirection"]');
+  await stageCaption.waitFor({state:'visible',timeout:15000});
+  assert.equal((await stageCaption.innerText()).trim(),'Направление');
+  await stageCaption.dblclick();
+  const stageInput=stageCaption.locator('[data-owner-text-field]');
+  await stageInput.waitFor({state:'visible'});
+  await stageInput.fill('Направление героя · QA');
+  await stageInput.press('Tab');
+  await page.waitForFunction(()=>
+   document.querySelector('#classGrid [data-origin-copy-key="stepDirection"]')
+    ?.textContent==='Направление героя · QA',null,{timeout:15000});
+  assert.equal(JSON.parse(values['guideedit.book.origin.step-direction']).ru,
+   'Направление героя · QA');
+  assert.equal(await page.locator('#raceGrid img').getAttribute('alt'),raceAltBefore);
   await page.locator('#nav [data-tab="wiki"]').click();
   const workbenchTitle=page.locator('#detailTitle');
   await workbenchTitle.waitFor({state:'visible',timeout:15000});
@@ -232,6 +249,11 @@ export async function runUIContentInlineSmoke(browser,base){
    document.querySelector('#detailTitle')?.textContent==='Энциклопедия Pandora Saga',
    null,{timeout:15000});
   assert.equal(Object.hasOwn(values,'guideedit.book.ui.label.workbench-title-wiki'),false);
+  await page.locator('#ownerDock [data-owner-undo]').click();
+  await page.waitForFunction(()=>
+   document.querySelector('#classGrid [data-origin-copy-key="stepDirection"]')
+    ?.textContent==='Направление',null,{timeout:15000});
+  assert.equal(Object.hasOwn(values,'guideedit.book.origin.step-direction'),false);
   await page.locator('#ownerDock [data-owner-undo]').click();
   await page.waitForFunction(()=>
    document.querySelector('[data-origin-copy-static="race"]')?.textContent==='Раса',

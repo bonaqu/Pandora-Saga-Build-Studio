@@ -124,3 +124,34 @@ test('#390 Workbench H2 is independent of the dynamic tab and supports RU/EN CAS
  assert.match(app,/isWorkbench\?'#detailPanel \.detail-title/);
  assert.match(app,/if\(node\.id==='detailTitle'\)/);
 });
+
+test('#390 13 class-wizard authorial keys support direct bilingual CAS and versioned defaults',async()=>{
+ const registry=app.match(/const originClassWizardCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ assert.ok(registry,'One reviewed source registry for the actual class wizard');
+ const rows=Function('return '+registry[1])();
+ assert.equal(rows.length,13);
+ assert.equal(new Set(rows.map(row=>row[0])).size,13);
+ const manifest=(await import('../scripts/plan-editorial-d1-defaults.mjs'))
+  .buildEditorialDefaultsManifest();
+ assert.equal(manifest.stats.cohorts['origin-class-wizard'],26);
+ for(const [key,ru,en] of rows){
+  const id='guideedit.book.origin.'+
+   key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  assert.equal(manifest.records.find(row=>row.recordKey===id&&row.field==='ru')?.value,ru);
+  assert.equal(manifest.records.find(row=>row.recordKey===id&&row.field==='en')?.value,en);
+  assert.equal(guide.validOverride('book.origin.'+
+   key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase()),
+   JSON.stringify({ru:'Новая подпись',en:'New caption'})),true);
+  assert.doesNotMatch(ru,/Цверг|Мирина|Энкиду|Кролль|Эльф|Человек/,
+   'Never put a source race name inside authorial defaults');
+ }
+ assert.match(app,/const stepNames=originClassWizardCopyRows\.slice\(0,3\)/);
+ assert.match(app,/originCopyLabel\(back,'classBack'/);
+ assert.match(app,/originCopyLabel\(all,'classAllDirections'/);
+ assert.match(app,/originCopyLabel\(statusLabel,'classChosen'/);
+ assert.match(app,/originCopyLabel\(statusLabel,'classChoose'/);
+ assert.match(app,/ownerCaptionActionGuard\(choice,statusLabel\)/);
+ assert.match(app,/class:'class-wizard-source-name',text:selectedProfession\.name/);
+ assert.match(app,/class:'class-wizard-source-name',text:current\.name/);
+ assert.doesNotMatch(app,/originCopyLabel\(h\('span'\),'className'/);
+});
