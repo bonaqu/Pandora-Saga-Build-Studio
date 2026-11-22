@@ -222,7 +222,20 @@ export async function runBuildComparisonSmoke(browser,base){
   assert.equal(englishCaptionState.ownerId,'hp');
   assert.equal(englishCaptionState.shortcuts,'F2 Enter');
   await hp.focus();
-  assert.equal(await hp.evaluate(node=>document.activeElement===node),true,
+  const englishFocus=await hp.evaluate(node=>({
+   focused:document.activeElement===node,
+   connected:node.isConnected,
+   active:document.activeElement?.outerHTML?.slice(0,240),
+   inertAncestor:node.closest('[inert]')?.id||null,
+   hiddenAncestor:node.closest('[hidden]')?.id||null,
+   renderedRow:document.querySelector('[data-compare-row="stat.hp"]')===node,
+   tableVisible:node.closest('.build-compare-table')?.getBoundingClientRect().height>0,
+   dialogOpen:!document.getElementById('modalRoot')?.hidden,
+   ownerDockCollapsed:document.getElementById('ownerDock')?.classList.contains('owner-dock-collapsed')
+  }));
+  if(!englishFocus.focused)
+   console.error('#390 A/B English focus diagnostic:',JSON.stringify(englishFocus));
+  assert.equal(englishFocus.focused,true,
    'English metric label must remain keyboard-focusable');
   await hp.press('F2');
   const enInput=hp.locator('[data-owner-text-field]');
