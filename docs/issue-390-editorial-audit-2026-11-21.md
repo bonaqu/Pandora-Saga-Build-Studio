@@ -315,3 +315,10 @@ pencil controls. Full Node+Chromium required on the exact new PR SHA.
 
 - Full Chromium on `6d4c01b` observed 18 correctly rendered racial skills but an early native option caption `Расовая пассивка` missing ` · 18`. The selector may mount before its source-backed index/model is ready. The existing list draw now refreshes native option counts after the real skill model arrives, without replacing the select, the selected filter, or its D1-authored RU/EN caption.
 - The count is a separate source-computed number and updates existing `data-label-count` for future CAS/Undo. Original game IDs and data remain untouched. Node source lifecycle test and existing Chromium skill-filter smoke verify behavior; both complete CI required on this new SHA. No staging/production D1 writes or deployment.
+
+## 23.11.2026 — #390 item-reference validation / EN fallback audit
+
+- [x] Audited the existing `PandoraItemPresentation` reference-restoration boundary. Ambiguous duplicate or overlapping source item names previously produced Russian validation copy in EN mode; these are **non-editable safety messages**, not D1 authorial fields. Error messages now follow the selected language while preserving strict item-link rejection and source IDs.
+- [x] A source item without a usable name now receives `Unnamed item` in EN instead of the RU-only `Без названия`. Explicit caller-provided fallbacks (including empty strings) are unchanged; source item names and identifiers remain untouched.
+- [x] Extended existing Node reference tests and real Chromium material-link smoke with both-language fallback, ambiguous-name rejection and overlapping linked-name checks. No new test suites or pencils, game-client / Cloudflare changes, or D1 writes.
+- [ ] Accept only after **both full Node + Chromium CI** succeed on the exact new PR head. This narrow correction does not complete the rare/dynamic RU/EN audit, physical touch QA, isolated staging D1 procedure, or owner release approval. Keep PR #809 Draft and issue #390 open.
