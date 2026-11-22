@@ -614,6 +614,29 @@ export function buildEditorialDefaultsManifest(){
   append('guideedit.book.honor-view.'+slug,'en',en,'honor-native-fields');
  }
 
+ // Seven finite, owner-visible Honor form labels are stored separately from
+ // the map list, war names, selected IDs and numeric rank data. In particular
+ // the option shown on an unlinked row is a *selection prompt*, not a
+ // fictitious "Unlinked" save action.
+ const honorFormMatch=honorViewSource.match(
+  /const honorOwnerFormCopyRows=Object\\.freeze\\((\\[[\\s\\S]*?\\])\\);/);
+ if(!honorFormMatch)throw Error('Missing audited Honor owner-form copy registry');
+ const honorFormRows=runInNewContext('('+honorFormMatch[1]+')',{},{timeout:5000});
+ const honorFormKeys=['zoneChooseOption','zoneNoMatches',
+  'zoneSelectRequired','warNamesRequired','zoneRemovePrefix',
+  'locationNameHint','rankFilterAria'];
+ if(!Array.isArray(honorFormRows)||honorFormRows.length!==honorFormKeys.length||
+  honorFormRows.map(row=>row?.[0]).sort().join('|')!==honorFormKeys.sort().join('|'))
+  throw Error('Honor owner form source labels changed: deliberate review required');
+ for(const [key,ru,en] of honorFormRows){
+  if(!/^[a-z][a-zA-Z]+$/.test(key)||typeof ru!=='string'||!ru.trim()||
+    typeof en!=='string'||!en.trim())
+   throw Error('Invalid bilingual Honor owner form label: '+key);
+  const slug=key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  append('guideedit.book.honor-view.'+slug,'ru',ru,'honor-owner-form-captions');
+  append('guideedit.book.honor-view.'+slug,'en',en,'honor-owner-form-captions');
+ }
+
  // The same Honor renderer already exposes D1/CAS captions for each
  // PvP table heading/column and generated rank requirement phrase.
  // Extract its literal source *arguments*, never the numeric row values.
