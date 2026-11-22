@@ -70,6 +70,9 @@ export async function runProfileCaption390Smoke(browser,base){
   await input.waitFor({state:'visible'});
   await input.fill('Мой профиль QA');
   await input.press('Tab');
+  // The caption shows typed text *during* its asynchronous CAS write. Wait
+  // for editor removal, not only matching text, before sending another F2.
+  await input.waitFor({state:'detached',timeout:15000});
   await page.waitForFunction(()=>document.querySelector(
    '#detailContent [data-profile-copy-key="tab-profile"]')?.textContent==='Мой профиль QA',
    null,{timeout:15000});
@@ -78,6 +81,8 @@ export async function runProfileCaption390Smoke(browser,base){
   await tabButton.focus();await tabButton.press('F2');
   const cancelled=profileCaption.locator('[data-owner-text-field]');
   await cancelled.waitFor({state:'visible'});
+  assert.equal(await cancelled.getAttribute('contenteditable'),'plaintext-only',
+   'After save completes, F2 must open an editable new draft');
   await cancelled.fill('Не сохранять');
   await cancelled.press('Escape');
   assert.equal(writes.length,1);
@@ -89,6 +94,7 @@ export async function runProfileCaption390Smoke(browser,base){
   await actionInput.waitFor({state:'visible'});
   await actionInput.fill('Открыть профиль QA');
   await actionInput.press('Tab');
+  await actionInput.waitFor({state:'detached',timeout:15000});
   await page.waitForFunction(()=>document.querySelector(
    '#detailContent [data-profile-copy-key="action-edit-profile"]')?.textContent==='Открыть профиль QA',
    null,{timeout:15000});
@@ -108,6 +114,7 @@ export async function runProfileCaption390Smoke(browser,base){
   await enInput.waitFor({state:'visible'});
   await enInput.fill('My profile QA');
   await enInput.press('Tab');
+  await enInput.waitFor({state:'detached',timeout:15000});
   await page.waitForFunction(()=>document.querySelector(
    '#detailContent [data-profile-copy-key="tab-profile"]')?.textContent==='My profile QA',
    null,{timeout:15000});
