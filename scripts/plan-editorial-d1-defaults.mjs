@@ -410,6 +410,31 @@ export function buildEditorialDefaultsManifest(){
  }
 
 
+
+ // Class wizard labels already share origin.* CAS keys; the original
+ // authorial fragment is distinct from IDs, status conditions, and job names.
+ const classMatch=app.match(
+  /const originClassWizardCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ if(!classMatch)throw Error('Missing audited class-wizard RU/EN source registry');
+ const wizardRows=runInNewContext('('+classMatch[1]+')',{},{
+  filename:'originClassWizardCopyRows',timeout:5000
+ });
+ const expectedWizardKeys=['stepDirection','stepProfession','stepSpecialization',
+  'classPrompt','classSelectedPrefix','classChosen','classSpecializations',
+  'classChoose','classBack','classAllDirections','classCurrentChosen',
+  'classCurrentChoose','classSelectionHint'];
+ if(!Array.isArray(wizardRows)||wizardRows.length!==expectedWizardKeys.length||
+  wizardRows.map(x=>x[0]).sort().join('|')!==expectedWizardKeys.sort().join('|'))
+  throw Error('Class wizard authorial set changed: review D1 migration');
+ for(const [key,ru,en] of wizardRows){
+  if(typeof ru!=='string'||!ru.trim()||typeof en!=='string'||!en.trim())
+   throw Error('Missing original bilingual wizard caption');
+  const id='guideedit.book.origin.'+
+   key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase());
+  append(id,'ru',ru,'origin-class-wizard');
+  append(id,'en',en,'origin-class-wizard');
+ }
+
  // The two owner equipment picker surfaces reuse one frozen source catalog
  // for static labels. This selection-only half is separate from metadata,
  // source gear names, player-entered search queries and live item counts.

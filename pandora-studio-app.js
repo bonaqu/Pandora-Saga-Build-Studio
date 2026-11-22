@@ -1765,6 +1765,23 @@ const originFixedLabels=[
  ['#originPanelStats [data-i18n="baseStats"]','baseHeading','Базовые характеристики','Base attributes'],
  ['#originPanelStats [data-i18n="distributePoints"]','distributeHeading','Распредели очки','Distribute points']
 ];
+// Actual source-authored class-wizard captions: stable keys, no job names,
+ // chosen profession IDs or dynamic stage numbers in editorial D1.
+const originClassWizardCopyRows=Object.freeze([
+ ['stepDirection','Направление','Direction'],
+ ['stepProfession','Профессия','Profession'],
+ ['stepSpecialization','Специализация','Specialization'],
+ ['classPrompt','Выберите направление','Choose a direction'],
+ ['classSelectedPrefix','✓ Выбрано: ','✓ Selected: '],
+ ['classChosen','✓ Выбрано','✓ Selected'],
+ ['classSpecializations','Специализации ›','Specializations ›'],
+ ['classChoose','Выбрать','Select'],
+ ['classBack','← Назад','← Back'],
+ ['classAllDirections','Все направления','All directions'],
+ ['classCurrentChosen','выбрано','selected'],
+ ['classCurrentChoose','Выбрать ','Choose '],
+ ['classSelectionHint','Выберите специализацию или вернитесь назад.','Choose the specialization or go back.']
+]);
 function originCopyLabel(node,key,ru,en){
  if(!node)return node;
  if(!node.querySelector?.('.wiki-inline-input,[data-owner-editor]'))
@@ -1921,9 +1938,7 @@ function renderJobs(){
  const navigationPath=onChosenRoute?chosenRoute:path;
  const stageTargets=[null,navigationPath[0]?.key||null,navigationPath[1]?.key||null];
  const progress=h('div',{class:'class-wizard-progress','aria-label':tr('Этап выбора профессии','Class selection stages')});
- const stepNames=[['stepDirection','Направление','Direction'],
-  ['stepProfession','Профессия','Profession'],
-  ['stepSpecialization','Специализация','Specialization']];
+ const stepNames=originClassWizardCopyRows.slice(0,3);
  for(let i=0;i<3;i++){
   const [key,ru,en]=stepNames[i],available=i===0||Boolean(stageTargets[i]);
   const attrs={class:'class-wizard-step'+(i===depth?' current':'')+(i<depth?' completed':'')+
@@ -1944,20 +1959,29 @@ function renderJobs(){
  grid.append(progress);
  const top=h('div',{class:'class-wizard-header'});
  if(current){
-  top.append(h('button',{type:'button',class:'class-back',text:tr('← Назад','← Back'),onclick:()=>{
+  const back=h('button',{type:'button',class:'class-back',onclick:()=>{
    jobPathKey=parentOf(jobPathKey);renderJobs();saveView();
-  }}));
+  }});
+  originCopyLabel(back,'classBack','← Назад','← Back');
+  top.append(back);
  }
  const classTitle=h('strong',{class:'class-wizard-title',text:current?current.name:
   originCopy('classPrompt','Выберите направление','Choose a direction')});
  if(!current)originCopyLabel(classTitle,'classPrompt','Выберите направление','Choose a direction');
  top.append(classTitle);
- if(selectedProfession)top.append(h('span',{class:'class-wizard-selected',role:'status',
-  text:originCopy('classSelectedPrefix','✓ Выбрано: ','✓ Selected: ')+selectedProfession.name}));
+ if(selectedProfession){
+  const selected=h('span',{class:'class-wizard-selected',role:'status'});
+  selected.append(originCopyLabel(h('span'),'classSelectedPrefix','✓ Выбрано: ','✓ Selected: '),
+   h('span',{class:'class-wizard-source-name',text:selectedProfession.name}));
+  top.append(selected);
+ }
  grid.append(top);
  if(path.length){
   const crumbs=h('div',{class:'class-wizard-breadcrumbs','aria-label':tr('Вернуться на предыдущий уровень','Return to a previous class selection stage')});
-  crumbs.append(h('button',{type:'button',text:tr('Все направления','All directions'),onclick:()=>{jobPathKey=null;renderJobs();saveView()}}));
+  const all=h('button',{type:'button',
+   onclick:()=>{jobPathKey=null;renderJobs();saveView()}});
+  originCopyLabel(all,'classAllDirections','Все направления','All directions');
+  crumbs.append(all);
   for(const node of path)crumbs.append(h('button',{type:'button',text:node.name,
    class:selectedProfession?.key===node.key?'selected':'','aria-current':node.key===jobPathKey?'step':null,
     onclick:()=>{jobPathKey=node.key;renderJobs();saveView()}}));
@@ -1965,21 +1989,30 @@ function renderJobs(){
  }
  if(path.length){
   grid.append(h('p',{class:'class-wizard-path',text:path.map(x=>x.name).join(' › ')}));
-  grid.append(h('button',{type:'button',class:'class-current-select'+(selectedCurrent?' selected':''),
-    text:selectedCurrent?'✓ '+current.name+' · '+tr('выбрано','selected'):tr('Выбрать ','Choose ')+current.name,
-    'aria-pressed':String(state.job===current.i),onclick:()=>{
-     selectJob(current.i);
-    }}));
+  const currentSelect=h('button',{type:'button',
+   class:'class-current-select'+(selectedCurrent?' selected':''),
+   'aria-pressed':String(state.job===current.i),onclick:()=>selectJob(current.i)});
+  const currentCaption=originCopyLabel(h('span'),'classCurrent'+(selectedCurrent?'Chosen':'Choose'),
+   selectedCurrent?'выбрано':'Выбрать ',selectedCurrent?'selected':'Choose ');
+  if(selectedCurrent)currentSelect.append(
+   h('span',{class:'class-wizard-source-name',text:'✓ '+current.name+' · '}),currentCaption);
+  else currentSelect.append(currentCaption,
+   h('span',{class:'class-wizard-source-name',text:current.name}));
+  if(adminEditing&&adminToken)ownerCaptionActionGuard(currentSelect,currentCaption);
+  grid.append(currentSelect);
  }
  const next=records.filter(x=>x.parent===(jobPathKey||null));
  const choices=h('div',{class:'class-wizard-choices'});
  for(const node of next){
   const hasChildren=records.some(x=>x.parent===node.key);
   const selectedOnPath=Boolean(hasChildren&&activeAncestors.has(node.key)&&selectedProfession);
-  const status=state.job===node.i?originCopy('classChosen','✓ Выбрано','✓ Selected'):
-   selectedOnPath?'✓ '+selectedProfession.name:
-   hasChildren?originCopy('classSpecializations','Специализации ›','Specializations ›'):
-   originCopy('classChoose','Выбрать','Select');
+  const statusLabel=h('span',{class:selectedOnPath?
+   'class-wizard-choice-current':'class-wizard-choice-caption'});
+  if(state.job===node.i)originCopyLabel(statusLabel,'classChosen','✓ Выбрано','✓ Selected');
+  else if(selectedOnPath)statusLabel.textContent='✓ '+selectedProfession.name;
+  else if(hasChildren)originCopyLabel(statusLabel,'classSpecializations',
+   'Специализации ›','Specializations ›');
+  else originCopyLabel(statusLabel,'classChoose','Выбрать','Select');
   const choiceExplanation=selectedOnPath?
    tr(' — выбранная специализация ',' — selected specialization ')+selectedProfession.name:
    state.job===node.i?tr(' — выбрано',' — selected'):
@@ -1988,22 +2021,27 @@ function renderJobs(){
   const specialties=Object.entries(catalog.classes?.[node.key]?.branchCaps||{})
    .filter(([,cap])=>Number(cap)>0).sort((a,b)=>Number(b[1])-Number(a[1]))
    .slice(0,2).map(([key])=>catalog.meta?.branchLabels?.[key]||key);
-  choices.append(h('button',{type:'button',class:'class-wizard-choice'+(state.job===node.i?' active':'')+
-    (activeAncestors.has(node.key)?' on-path':''),
+  const choice=h('button',{type:'button',class:'class-wizard-choice'+
+    (state.job===node.i?' active':'')+(activeAncestors.has(node.key)?' on-path':''),
     'aria-label':node.name+choiceExplanation,
     'aria-pressed':String(state.job===node.i),
     onclick:()=>{
      if(hasChildren){jobPathKey=node.key;renderJobs();saveView();return}
      jobPathKey=node.key;selectJob(node.i);
     }},[
-      h('strong',{text:node.name}),
-      h('span',{class:selectedOnPath?'class-wizard-choice-current':'class-wizard-choice-caption',text:status}),
-      ...(specialties.length?[h('small',{class:'class-wizard-specialties',text:specialties.join(' · ')})]:[])
-    ]));
+      h('strong',{text:node.name}),statusLabel,
+      ...(specialties.length?[h('small',{class:'class-wizard-specialties',
+       text:specialties.join(' · ')})]:[])
+    ]);
+  if(adminEditing&&adminToken&&statusLabel.dataset.originCopyKey)
+   ownerCaptionActionGuard(choice,statusLabel);
+  choices.append(choice);
  }
  grid.append(choices);
- if(!next.length&&current&&!selectedCurrent)grid.append(h('p',{class:'class-wizard-hint',
-  text:tr('Выберите специализацию или вернитесь назад.','Choose the specialization or go back.')}));
+ if(!next.length&&current&&!selectedCurrent)
+  grid.append(originCopyLabel(h('p',{class:'class-wizard-hint'}),'classSelectionHint',
+   'Выберите специализацию или вернитесь назад.',
+   'Choose the specialization or go back.'));
 }
 let workbenchReturnFocus=null;
 function showWorkbench(){
