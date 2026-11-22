@@ -191,7 +191,15 @@ const libraryCopy=Object.freeze({
  compareAwaitData:['Итоговые характеристики появятся после загрузки игровых данных.','Calculated stats will appear once game data have loaded.'],
  compareCalculationFailed:['Не удалось рассчитать один из билдов. Сохранения не изменены.','One of the builds could not be calculated. Saved builds were not changed.'],
  compareNoDifferences:['Среди рассчитанных характеристик отличий нет.','No differences in the calculated stats.'],
- compareDifferencePrefix:['Отличий:','Differences:']
+ compareDifferencePrefix:['Отличий:','Differences:'],
+ // Edit only static compare chrome. Letters, player names, source IDs and
+ // computed character results never become D1-authored UI text.
+ compareBuildCaption:['Билд','Build'],
+ compareChooseSavedBuild:['Выбери сохранённый билд','Choose a saved build'],
+ compareSwapAction:['Поменять билды A и B местами','Swap builds A and B'],
+ compareTableAria:['Различающиеся итоговые характеристики билдов',
+  'Different calculated stats of saved builds'],
+ compareStatColumn:['Характеристика','Stat']
 });
 // Fixed toast notifications are safe authored copy. Exclude runtime details,
  // player build names, network errors and security diagnostics.

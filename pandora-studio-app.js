@@ -8000,13 +8000,16 @@ function renderBuildComparison(host,onSelection=()=>{}){
  const controls=h('div',{class:'build-compare-controls'});
  const pick=(letter,index)=>{
   const select=h('select',{class:'build-compare-select',
-   'aria-label':translate('Билд ','Build ')+letter,
+   'aria-label':copy('compareBuildCaption')+' '+letter,
    'data-compare-select':letter});
+  // Visible authored text is separate from the immutable A/B identifier.
   const field=h('label',{class:'build-compare-select-label'},[
-   h('span',{text:translate('Билд ','Build ')+letter}),select]);
+   h('span',{'data-owner-copy-key':'compareBuildCaption',
+    text:copy('compareBuildCaption')}),
+   h('span',{'data-compare-letter':letter,text:' '+letter}),select]);
   const options=()=>{
-   select.replaceChildren(h('option',{value:'',text:translate(
-    'Выбери сохранённый билд','Choose a saved build')}));
+   select.replaceChildren(h('option',{value:'',
+    text:copy('compareChooseSavedBuild')}));
    for(const build of builds)
     select.append(h('option',{value:build.id,text:build.name}));
    select.value=compareIds[index]||'';
@@ -8025,8 +8028,8 @@ function renderBuildComparison(host,onSelection=()=>{}){
  };
  const A=pick('A',0),B=pick('B',1);
  const swap=h('button',{type:'button',class:'build-compare-swap',
-  text:'⇄','aria-label':translate('Поменять билды A и B местами','Swap builds A and B'),
-  title:translate('Поменять A и B местами','Swap A and B'),
+  text:'⇄','aria-label':copy('compareSwapAction'),
+  title:copy('compareSwapAction'),
   onclick:()=>{compareIds=[compareIds[1]||'',compareIds[0]||''];
    onSelection();update()}});
  controls.append(A.field,swap,B.field);
@@ -8041,15 +8044,17 @@ function renderBuildComparison(host,onSelection=()=>{}){
   if(adminEditing&&adminToken)bindAccountCopyEditors(summary);
  };
  const wrap=h('div',{class:'build-compare-table-wrap'});
- const table=h('table',{class:'build-compare-table','aria-label':translate(
-  'Различающиеся итоговые характеристики билдов','Different calculated stats of saved builds')});
+ const table=h('table',{class:'build-compare-table',
+  'aria-label':copy('compareTableAria')});
  const head=h('thead');
  // Two stat/A/B groups use the available drawer width without a delta column.
  head.append(h('tr',{},[
-  h('th',{scope:'col',text:translate('Характеристика','Stat')}),
+  h('th',{scope:'col','data-owner-copy-key':'compareStatColumn',
+   text:copy('compareStatColumn')}),
   h('th',{scope:'col',text:'A'}),
   h('th',{scope:'col',text:'B'}),
-  h('th',{scope:'col',text:translate('Характеристика','Stat')}),
+  h('th',{scope:'col','data-owner-copy-key':'compareStatColumn',
+   text:copy('compareStatColumn')}),
   h('th',{scope:'col',text:'A'}),
   h('th',{scope:'col',text:'B'})
  ]));
@@ -8060,7 +8065,7 @@ function renderBuildComparison(host,onSelection=()=>{}){
   syncCompareCopy(collapse,comparisonOpen?'compareCollapse':'compareExpand');
   update();
  });
- if(adminEditing&&adminToken)bindAccountCopyEditors(header);
+ if(adminEditing&&adminToken)bindAccountCopyEditors(host);
  function update(){
   A.options();B.options();tbody.replaceChildren();
   const [a,b]=compareIds.map(id=>builds.find(x=>x.id===id));
@@ -10267,6 +10272,28 @@ function refreshVisibleUICopy(recordKey){
    const draft=document.querySelector('#detailContent .new-build-choice input[type="text"]');
    ownerDockPatchAttr(draft,'aria-label',locale.text('libraryDraftNameAria',lang));
   }
+  // Refresh compare chrome on CAS Save/Undo without remounting the A/B table.
+  if(id===locale.fieldKey('compareBuildCaption')){
+   const prefix=locale.text('compareBuildCaption',lang);
+   for(const select of document.querySelectorAll(
+    '#detailContent [data-build-compare] [data-compare-select]'))
+    ownerDockPatchAttr(select,'aria-label',prefix+' '+select.dataset.compareSelect);
+  }
+  if(id===locale.fieldKey('compareChooseSavedBuild'))
+   for(const option of document.querySelectorAll(
+    '#detailContent [data-build-compare] [data-compare-select] option[value=""]'))
+    ownerDockPatchText(option,locale.text('compareChooseSavedBuild',lang));
+  if(id===locale.fieldKey('compareSwapAction'))
+   for(const swap of document.querySelectorAll(
+    '#detailContent [data-build-compare] .build-compare-swap')){
+    const label=locale.text('compareSwapAction',lang);
+    ownerDockPatchAttr(swap,'aria-label',label);
+    ownerDockPatchAttr(swap,'title',label);
+   }
+  if(id===locale.fieldKey('compareTableAria'))
+   for(const table of document.querySelectorAll(
+    '#detailContent [data-build-compare] .build-compare-table'))
+    ownerDockPatchAttr(table,'aria-label',locale.text('compareTableAria',lang));
   if(id===locale.fieldKey('libraryCompare')){
    const label=locale.text('libraryCompare',lang);
    for(const row of document.querySelectorAll('#detailContent .build-card-compare')){
