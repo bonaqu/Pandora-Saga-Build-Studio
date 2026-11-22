@@ -4749,8 +4749,11 @@ function renderWiki(root){
   if(row.manual&&adminEditing&&adminToken){
    if(row.type==='monster'){
     const chance=h('small',{class:'wiki-source-chance wiki-edit-value',
-     text:row.percent==null?'Шанс не указан':row.percent+'%',
-     title:'Двойной клик — изменить шанс выпадения'});
+     text:row.percent==null?monsterCopy('chanceMissing'):row.percent+'%'});
+    // The missing-chance explanation is D1 authorial text; the percent and
+    // the double-click numeric editor are game/source values, never copy.
+    if(row.percent==null)monsterBind(chance,'chanceMissing');
+    monsterBind(chance,'chanceHint','title');
     chance.ondblclick=e=>{
      e.preventDefault();e.stopPropagation();
      editWikiValue(chance,row.percent??0,{type:'number',min:0,max:100,
@@ -4762,8 +4765,9 @@ function renderWiki(root){
     line.append(chance);
    }
    const remove=h('button',{type:'button',class:'wiki-owner-remove',
-    text:'×','aria-label':'Удалить источник '+dataName(row.type,row.id),
-    title:'Убрать источник получения'});
+    text:'×','aria-label':wt('Удалить источник ','Remove source ')+
+     dataName(row.type,row.id),
+    title:wt('Убрать источник получения','Remove acquisition source')});
    remove.onclick=()=>void saveWikiAcquisitions(itemId,
     (wikiData.ownerAcquisitions?.[itemId]||[]).filter(x=>
      !(x.type===row.type&&String(x.id)===String(row.id))))
