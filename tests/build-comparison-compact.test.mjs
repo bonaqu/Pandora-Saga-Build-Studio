@@ -86,6 +86,9 @@ test('#390 compare labels are D1-authored without modifying A/B identities or co
   assert.ok(ui.includes("copy('"+key+"')"),'Comparison not source-backed: '+key);
  }
  assert.match(ui,/'data-owner-copy-key':'compareBuildCaption'/);
+ assert.match(ui,/h\('span',\{class:'build-compare-label-text'\},\[/);
+ assert.match(read('pandora-studio-build-comparison.css'),
+  /\.build-compare-label-text\{display:block;min-width:0;overflow-wrap:anywhere\}/);
  assert.match(ui,/'data-compare-letter':letter,text:' '\+letter/);
  assert.equal((ui.match(/'data-owner-copy-key':'compareStatColumn'/g)||[]).length,2);
  assert.match(ui,/bindAccountCopyEditors\(host\)/);

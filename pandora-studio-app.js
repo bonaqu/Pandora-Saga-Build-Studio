@@ -8003,9 +8003,13 @@ function renderBuildComparison(host,onSelection=()=>{}){
    'data-compare-select':letter});
   // Visible authored text is separate from the immutable A/B identifier.
   const field=h('label',{class:'build-compare-select-label'},[
-   h('span',{'data-owner-copy-key':'compareBuildCaption',
-    text:copy('compareBuildCaption')}),
-   h('span',{'data-compare-letter':letter,text:' '+letter}),select]);
+   // The source-authored word and fixed A/B suffix are independent fields,
+   // but form ONE grid row above the chooser rather than two stacked rows.
+   h('span',{class:'build-compare-label-text'},[
+    h('span',{'data-owner-copy-key':'compareBuildCaption',
+     text:copy('compareBuildCaption')}),
+    h('span',{'data-compare-letter':letter,text:' '+letter})]),
+   select]);
   const options=()=>{
    select.replaceChildren(h('option',{value:'',
     text:copy('compareChooseSavedBuild')}));
