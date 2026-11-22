@@ -201,7 +201,30 @@ export async function runBuildComparisonSmoke(browser,base){
    document.querySelector('[data-compare-row="stat.hp"]')?.textContent==='HP',
    null,{timeout:15000});
   const numbersEn=[await hpA.textContent(),await hpB.textContent()];
-  await hp.focus();await hp.press('F2');
+  const englishCaptionState=await hp.evaluate(node=>({
+   visible:node.getBoundingClientRect().width>0&&
+    getComputedStyle(node).visibility!=='hidden',
+   tabIndex:node.tabIndex,
+   shortcuts:node.getAttribute('aria-keyshortcuts'),
+   ownerSection:node.dataset.ownerCopySection,
+   ownerId:node.dataset.ownerCopyId,
+   compareOpen:node.closest('[data-build-compare]')?.querySelector(
+    '.build-compare-content')?.hidden,
+   activeLocale:document.documentElement.lang,
+   editorPresent:Boolean(node.querySelector('[data-owner-text-field]'))
+  }));
+  console.log('#390 A/B English caption owner state:',
+   JSON.stringify(englishCaptionState));
+  assert.equal(englishCaptionState.compareOpen,false,
+   'Language switch must preserve the expanded comparison');
+  assert.equal(englishCaptionState.ownerSection,'compare-metric',
+   'Language switch must rebind the owner caption editor');
+  assert.equal(englishCaptionState.ownerId,'hp');
+  assert.equal(englishCaptionState.shortcuts,'F2 Enter');
+  await hp.focus();
+  assert.equal(await hp.evaluate(node=>document.activeElement===node),true,
+   'English metric label must remain keyboard-focusable');
+  await hp.press('F2');
   const enInput=hp.locator('[data-owner-text-field]');
   await enInput.waitFor({state:'visible'});
   await enInput.fill('Health · English QA');
