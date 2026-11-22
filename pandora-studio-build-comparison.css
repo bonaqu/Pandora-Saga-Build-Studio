@@ -187,3 +187,11 @@
 .build-library-sort-select:focus-visible{outline:2px solid #eac184;outline-offset:2px}
 @media(max-width:550px){.build-library-sort{flex:1 1 100%;max-width:none}
  .build-library-controls>.build-library-search{flex-basis:100%}}
+
+/* Owner labels wrap inside the original scrollable A/B metric cells, not in
+   a new action or an extra column. */
+.build-compare-table th[data-compare-row].origin-copy-editable{cursor:text}
+.build-compare-table th[data-compare-row] .wiki-inline-input[data-owner-text-field]{
+ display:block;width:100%;max-width:100%;min-width:0;
+ box-sizing:border-box;white-space:pre-wrap;overflow-wrap:anywhere;
+}

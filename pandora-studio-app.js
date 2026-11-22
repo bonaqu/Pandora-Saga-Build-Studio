@@ -8062,6 +8062,7 @@ function renderBuildComparison(host,onSelection=()=>{}){
   h('th',{scope:'col',text:'B'})
  ]));
  const tbody=h('tbody');table.append(head,tbody);wrap.append(table);
+ let deferredMetricUpdate=false;
  content.append(controls,summary,wrap);
  host.append(header,content);
  host.addEventListener('pandora:comparison-copy-finished',()=>{
@@ -8070,6 +8071,10 @@ function renderBuildComparison(host,onSelection=()=>{}){
  });
  if(adminEditing&&adminToken)bindAccountCopyEditors(host);
  function update(){
+  // Do not detach a saving, conflicting or unsaved owner caption draft.
+  if(tbody.querySelector('[data-owner-text-field]')){
+   deferredMetricUpdate=true;return;
+  }
   A.options();B.options();tbody.replaceChildren();
   const [a,b]=compareIds.map(id=>builds.find(x=>x.id===id));
   if(!a||!b||a.id===b.id){
@@ -8100,15 +8105,25 @@ function renderBuildComparison(host,onSelection=()=>{}){
   // Every metric has exactly one A/B pair, even when an odd number of
   // differences leaves the last cell group empty. Only favorable values
   // get emphasis; the two input builds and their saves stay untouched.
-  const metricCells=item=>!item?[
-   h('th',{scope:'row',text:''}),h('td',{}),h('td',{})
-  ]:[
-   h('th',{scope:'row','data-compare-row':item.key,text:item.label}),
-   h('td',{'data-compare-a':item.key,text:item.a,
-    ...(item.advantage==='a'?{'data-compare-advantage':''}:{})}),
-   h('td',{'data-compare-b':item.key,text:item.b,
-    ...(item.advantage==='b'?{'data-compare-advantage':''}:{})})
-  ];
+  const metricCells=item=>{
+   if(!item)return [h('th',{scope:'row',text:''}),h('td',{}),h('td',{})];
+   const id=item.key.slice('stat.'.length);
+   const caption=h('th',{scope:'row','data-compare-row':item.key,
+    text:ownerCopy('compare-metric',id,item.labelRu,item.labelEn)});
+   if(adminEditing&&adminToken)
+    ownerCopyLabel(caption,'compare-metric',id,item.labelRu,item.labelEn,{
+     onFinished:()=>{
+      if(deferredMetricUpdate){deferredMetricUpdate=false;update()}
+     }
+    });
+   return [
+    caption,
+    h('td',{'data-compare-a':item.key,text:item.a,
+     ...(item.advantage==='a'?{'data-compare-advantage':''}:{})}),
+    h('td',{'data-compare-b':item.key,text:item.b,
+     ...(item.advantage==='b'?{'data-compare-advantage':''}:{})})
+   ];
+  };
   const half=Math.ceil(rows.length/2);
   for(let i=0;i<half;i++){
    tbody.append(h('tr',{},[
@@ -10334,7 +10349,7 @@ function refreshVisibleOwnerCopy(recordKey){
  if(key.startsWith('owner-dock.')){refreshOwnerUI();return}
  if(/^(origin|equipment|path)\.hint/.test(key))refreshWorkbenchHints();
  if(!/^wiki\.(?:map\.text|monster\.text|npc\.trade|chest\.text|item\.text)\.[a-z][a-z0-9-]*$/.test(key)&&
-  !/^(origin|equipment|path|catalog-sync|honor-view|owner-history|owner-dialog|wiki-ui|skill-ui|stats-ui)\./.test(key))return;
+  !/^(origin|equipment|path|catalog-sync|honor-view|owner-history|owner-dialog|wiki-ui|skill-ui|stats-ui|compare-metric)\./.test(key))return;
  for(const node of document.querySelectorAll('[data-owner-copy-section][data-owner-copy-id]')){
   const {ownerCopySection:section,ownerCopyId:id,ownerCopyRu:ru,ownerCopyEn:en}=node.dataset;
   if(ownerCopyKey(section,id)!==key||node.querySelector('.wiki-inline-input'))continue;
@@ -10474,7 +10489,7 @@ async function undoOwnerEdit(){
      // Account copy is patched in place; rebuilding the form loses unsent values.
      // UI copy does not affect catalogs or builds; preserve active inputs.
      saveView();
-    }else if(/^guideedit\.book\.(equipment|path|catalog-sync|honor-view|owner-dock|owner-history|owner-dialog|wiki-ui|skill-ui|stats-ui)\./.test(last.key)||
+    }else if(/^guideedit\.book\.(equipment|path|catalog-sync|honor-view|owner-dock|owner-history|owner-dialog|wiki-ui|skill-ui|stats-ui|compare-metric)\./.test(last.key)||
       /^guideedit\.book\.wiki\.(?:map\.text|monster\.text|npc\.trade|chest\.text|item\.text)\.[a-z][a-z0-9-]*$/.test(last.key)){
      refreshVisibleOwnerCopy(last.key);saveView();
     }else await refreshOwnerCatalog();
@@ -10905,6 +10920,7 @@ async function saveGuidePatchNow(key,fields){
      key.startsWith('book.owner-dock.')||key.startsWith('book.owner-history.')||
      key.startsWith('book.owner-dialog.')||key.startsWith('book.wiki-ui.')||
      key.startsWith('book.skill-ui.')||key.startsWith('book.stats-ui.')||
+     key.startsWith('book.compare-metric.')||
      /^book\.wiki\.(?:map\.text|monster\.text|npc\.trade|chest\.text|item\.text)\.[a-z][a-z0-9-]*$/.test(key))
    refreshVisibleOwnerCopy('guideedit.'+key);
   if(activeTab==='wiki'&&wikiSelection.type==='honor'&&
