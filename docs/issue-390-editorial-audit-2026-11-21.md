@@ -338,3 +338,11 @@ pencil controls. Full Node+Chromium required on the exact new PR SHA.
 - [x] Dynamic profession name/ID, current selection, class-tree route and mastery caps stay outside D1 editorial content. The selected badge and action labels split static authorial fragments from source job names rather than serializing composite text.
 - [x] Extended existing Node manifest/identity tests and Chromium mock-CAS scenario: stage caption save/Undo alongside visible Origin and live Workbench H2, preserving race and hero identity. No actual Cloudflare writes or deploys.
 - [ ] Require both full CI on the final commit before raising #390 progress. Staging D1 physical readback/rollback, hardware touch QA and release acceptance still pending; PR #809 OPEN DRAFT, issue #390 OPEN.
+
+## 23.11.2026 — Class wizard single-click and ARIA authorial parity
+
+- [x] Fixed a real owner-mode navigation defect: the editable stage caption previously suppressed **every** normal click. It now uses the shared 500ms guard so one click selects the stage and a genuine double-click edits its authorial RU/EN caption.
+- [x] Six screen-reader authorial RU/EN phrases now use original `origin.*` CAS keys. Stage progress, breadcrumbs and each class-choice accessible name use `bindOwnerInterfaceText`; class names, chosen specialization and IDs remain uneditable runtime prefixes/suffixes.
+- [x] One owner-only collapsed ARIA editor lives **outside** the class grid's `replaceChildren()`, preserving active drafts during class choice redraw. Save/Undo patch the mounted aria-label attributes via the existing owner-copy binding and no pencil icons.
+- [x] Added 12 source-verified fields to the **staging-only** versioned D1 defaults manifest, updated real source-bound Node class wizard harness and added contract regression tests.
+- [ ] New Chromium save/Undo/single-click integration scenario and BOTH full CI required on final SHA before the packet is accepted. No physical remote staging D1, real touch hardware, deployment, merge or production write.

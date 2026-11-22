@@ -155,3 +155,40 @@ test('#390 13 class-wizard authorial keys support direct bilingual CAS and versi
  assert.match(app,/class:'class-wizard-source-name',text:current\.name/);
  assert.doesNotMatch(app,/originCopyLabel\(h\('span'\),'className'/);
 });
+
+test('#390 class wizard accessibility has six independent original RU/EN D1 fields',async()=>{
+ const source=app.match(/const originClassWizardAriaRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ assert.ok(source,'Source-authored screen-reader registry required');
+ const rows=Function('return '+source[1])();
+ assert.equal(rows.length,6);
+ assert.equal(new Set(rows.map(row=>row[0])).size,6);
+ const manifest=(await import('../scripts/plan-editorial-d1-defaults.mjs'))
+  .buildEditorialDefaultsManifest();
+ assert.equal(manifest.stats.cohorts['origin-class-wizard-aria'],12);
+ for(const [key,ru,en] of rows){
+  assert.ok(key.endsWith('Aria'),key);
+  const id='guideedit.book.origin.'+
+   key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  assert.equal(manifest.records.find(r=>r.recordKey===id&&r.field==='ru')?.value,ru);
+  assert.equal(manifest.records.find(r=>r.recordKey===id&&r.field==='en')?.value,en);
+  assert.equal(guide.validOverride('book.origin.'+
+   key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase()),
+   JSON.stringify({ru:'Подсказка доступности',en:'Accessible wording'})),true);
+ }
+ assert.match(app,/bindOwnerInterfaceText\(choice,'origin',ariaKey,ariaRu,ariaEn,'aria-label'/);
+ assert.match(app,/selectedOnPath\?selectedProfession\.name:'',node\.name\)/);
+ assert.match(app,/ownerInterfaceEditor\('origin',originClassWizardAriaRows/);
+ assert.match(app,/refreshVisibleOwnerCopy\(recordKey\)/);
+ assert.match(app,/key\.startsWith\('book\.origin\.'\)\)refreshVisibleOriginCopy/);
+});
+
+test('#390 a single stage caption click navigates while a double click edits',()=>{
+ const begin=app.indexOf('function renderJobs(){');
+ const end=app.indexOf('let workbenchReturnFocus',begin);
+ assert.ok(begin>0&&end>begin);
+ const wizard=app.slice(begin,end);
+ assert.doesNotMatch(wizard,/if\(adminEditing&&adminToken&&event\.target\?\.closest\?\.\('\[data-origin-copy-key\]'\)\)return/);
+ assert.match(wizard,/if\(available&&adminEditing&&adminToken\)ownerCaptionActionGuard\(step,caption\)/);
+ assert.match(wizard,/jobPathKey=stageTargets\[i\];renderJobs\(\);saveView\(\)/);
+ assert.match(app,/if\(!event\.detail\)\{/);
+});

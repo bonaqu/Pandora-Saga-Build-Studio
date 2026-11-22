@@ -66,16 +66,24 @@ function chosenProfession(){
  // The unit harness extracts renderJobs rather than the whole application.
  // Import its REAL static registry, and preserve the original class routing.
  const source=app.match(/const originClassWizardCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
- assert.ok(source,'Missing source-authorial class wizard registry');
- const rows=Function('return '+source[1])();
+ const aria=app.match(/const originClassWizardAriaRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ assert.ok(source&&aria,'The real class wizard bilingual source registries must be available');
+ const rows=Function('return '+source[1])(),ariaRows=Function('return '+aria[1])();
+ const bind=(node,_section,_key,ru,_en,attr='text',suffix='',prefix='')=>{
+  const value=prefix+ru+suffix;
+  if(attr==='text')node.textContent=value;
+  else node.attributes[attr]=value;
+  return node;
+ };
  const runtime=Function('h','$','jobKeys','jobs','catalog','state','editableValue',
   'saveView','lang','originCopy','originCopyLabel','originClassWizardCopyRows',
+  'originClassWizardAriaRows','bindOwnerInterfaceText',
   'adminEditing','adminToken','ownerCaptionActionGuard',
   fallback+'\nlet jobPathKey=null;\nfunction selectJob(index){state.job=index;renderJobs()}\n'+
   app.slice(start,end)+'\nreturn {renderJobs,state,get:()=>jobPathKey};')(
   h,()=>grid,jobKeys,jobs,{classes},state,(_,v)=>v,()=>saves++,'ru',
   (_key,ru)=>ru,(node,_key,ru)=>{node.textContent=ru;return node},
-  rows,false,'',()=>{});
+  rows,ariaRows,bind,false,'',()=>{});
  const buttons=()=>walk(grid).filter(x=>x.tag==='button');
  const matching=key=>buttons().find(x=>x.className.includes('class-wizard-choice')&&
   x.children[0]?.textContent===jobs[jobKeys.indexOf(key)]);
