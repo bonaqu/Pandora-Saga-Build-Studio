@@ -1063,11 +1063,57 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(calls.filter(x=>x.startsWith('game-source:')).length,originalCompareCalls);
   assert.equal(await banner.locator('.os-sync-state-pencil').count(),0);
   assert.equal(await state.locator('.os-sync-state-pencil').count(),0);
-  await dialog.getByRole('button',{name:/Новые · 0/}).click();
+  // Owner filters distinguish a delayed single click from direct caption
+  // dblclick; wait for actual selected filter instead of inspecting the DOM
+  // before the first click's ordinary action has run.
+  const clickCatalogFilter=async id=>{
+   const control=dialog.locator('.os-sync-filter[data-review-filter="'+id+'"]');
+   await control.click();
+   await page.waitForFunction(value=>document.querySelector(
+    '.os-sync-filter[data-review-filter="'+value+'"]')?.getAttribute('aria-pressed')==='true',
+    id,{timeout:12000});
+  };
+  await clickCatalogFilter('added');
   assert.equal(await dialog.locator('.os-sync-record').count(),0,'No added records');
-  await dialog.getByRole('button',{name:/Изменённые · 1/}).click();
+  await clickCatalogFilter('changed');
   assert.equal(await dialog.locator('.os-sync-record').count(),1,'Only changed records');
-  await dialog.getByRole('button',{name:/Все · 1/}).click();
+  await clickCatalogFilter('all');
+  // #390: edit the visible name of a filter, not the live result count.
+  // Double click may not accidentally select this category; a real single
+  // click must still work, and F2/Escape must never write to D1.
+  const addedButton=dialog.locator('.os-sync-filter[data-review-filter="added"]');
+  const addedCaption=addedButton.locator('.os-sync-filter-caption');
+  assert.equal(await addedButton.locator('.os-sync-filter-count').innerText(),'· 0');
+  assert.equal(await dialog.locator('.os-sync-filter-pencil').count(),0);
+  await addedCaption.dblclick();
+  const addedEditor=addedButton.locator('[data-owner-text-field]');
+  await addedEditor.waitFor({state:'visible',timeout:12000});
+  assert.equal(await dialog.locator('.os-sync-filter[data-review-filter="all"]')
+   .getAttribute('aria-pressed'),'true','double click cannot switch filters');
+  await addedEditor.fill('Добавления QA');
+  await addedEditor.press('Tab');
+  await addedEditor.waitFor({state:'detached',timeout:15000});
+  const filterKey='guideedit.book.catalog-sync.review-filter-added';
+  for(let n=0;n<300&&!townOverrides.has(filterKey);n++)
+   await page.waitForTimeout(40);
+  assert.equal(JSON.parse(townOverrides.get(filterKey)).ru,'Добавления QA');
+  assert.equal(await addedCaption.innerText(),'Добавления QA');
+  assert.equal(await addedButton.locator('.os-sync-filter-count').innerText(),'· 0',
+   'D1 copy cannot change the number of matching records');
+  await clickCatalogFilter('added');
+  assert.equal(await dialog.locator('.os-sync-record').count(),0);
+  await clickCatalogFilter('all');
+  const allFilter=dialog.locator('.os-sync-filter[data-review-filter="all"]');
+  await allFilter.focus();
+  await page.keyboard.press('F2');
+  const allEditor=allFilter.locator('[data-owner-text-field]');
+  await allEditor.waitFor({state:'visible',timeout:12000});
+  await allEditor.press('Escape');
+  await allEditor.waitFor({state:'detached',timeout:12000});
+  assert.equal(townOverrides.has('guideedit.book.catalog-sync.review-filter-all'),false,
+   'Escape cancels filter caption without writing an override');
+  assert.equal(await allFilter.locator('.os-sync-filter-count').innerText(),'· 1');
+  assert.equal(await dialog.locator('.os-sync-record').count(),1);
   assert.equal(await dialog.locator('.os-sync-source-banner .os-sync-state-caption').textContent(),
    'Архивный источник проверен отдельно.',
    'After D1 edit, the authored archive message must remain visible');
@@ -1104,13 +1150,13 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(await dialog.locator('.os-sync-record').count(),1);
   assert.equal(await dialog.locator('.os-sync-raw-details').isVisible(),false,
     'raw IDs and JSON are hidden until owner explicitly opens details');
-  await dialog.getByRole('button',{name:/Расшифрованы · 1/}).click();
+  await clickCatalogFilter('readable');
   assert.equal(await dialog.locator('.os-sync-record').count(),1,
     'readable changes can be shown independently');
-  await dialog.getByRole('button',{name:/Требует проверки · 0/}).click();
+  await clickCatalogFilter('needsReview');
   assert.equal(await dialog.locator('.os-sync-record').count(),0,
     'unknown fields have an independent review filter');
-  await dialog.getByRole('button',{name:/Все · 1/}).click();
+  await clickCatalogFilter('all');
   const groups=dialog.locator('.os-sync-group');
   assert.equal(await groups.count(),1,'Exactly one intentionally changed D1 item');
   await groups.locator('summary.os-sync-group-heading').click();
@@ -1202,7 +1248,7 @@ export async function runAdminEntrySmoke(browser,base){
     'all 17 datasets and one final meta revision check are required');
   assert.equal(await dialog.locator('.os-sync-review-steps button').filter({hasText:'Применить выбранные изменения'}).isDisabled(),true,
     'a fresh live comparison must reject all changes by default');
-  await dialog.getByRole('button',{name:/Игровые ссылки · 1/}).click();
+  await clickCatalogFilter('links');
   assert.equal(await dialog.locator('.os-sync-record').count(),1,
    'A changed item reference has its own review filter');
   await dialog.locator('.os-sync-group-heading').click();
@@ -1219,14 +1265,14 @@ export async function runAdminEntrySmoke(browser,base){
   const goto=linked.locator('.os-sync-reference-open').first();
   assert.equal(await goto.getAttribute('href'),'#wiki/item/300001');
   assert.equal(await goto.getAttribute('target'),'_blank');
-  await dialog.getByRole('button',{name:/Требует проверки · 1/}).click();
+  await clickCatalogFilter('needsReview');
   assert.equal(await dialog.locator('.os-sync-record').count(),1);
-  await dialog.getByRole('button',{name:/Игровые ссылки · 1/}).click();
+  await clickCatalogFilter('links');
   await dialog.locator('.os-sync-search').fill('Билет испытаний');
   assert.equal(await dialog.locator('.os-sync-record').count(),1,
    'A source reference is searchable by its resolved item name');
   await dialog.locator('.os-sync-search').fill('');
-  await dialog.getByRole('button',{name:/Все · 2/}).click();
+  await clickCatalogFilter('all');
   // 0.793: reproduce the actual owner sequence with an isolated source:
   // Check the current game, Select all, review risks, and cancel publish.
   assert.equal(await dialog.locator('.os-sync-source-banner').getAttribute('data-source'),'server');
