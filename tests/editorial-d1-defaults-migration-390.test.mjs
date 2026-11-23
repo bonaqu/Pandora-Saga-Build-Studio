@@ -45,6 +45,28 @@ test('#390 owner history seven source captions are staged without any dynamic re
  }
 });
 
+test('#390 history control defaults are RU/EN authorial; runtime values never staged',()=>{
+ const app=read('pandora-studio-app.js');
+ const match=app.match(/const ownerHistoryControlCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ assert.ok(match);
+ const rows=runInNewContext('('+match[1]+')',{});
+ assert.deepEqual([...rows].map(row=>row[0]).sort(),
+  ['allSections','clear','clearAria','searchAria','searchPlaceholder','sectionAria','session']);
+ assert.equal(manifest.stats.cohorts['owner-history-controls'],14);
+ for(const [key,ru,en] of rows){
+  const id='guideedit.book.owner-history.'+
+   key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  const selected=manifest.records.filter(row=>row.recordKey===id);
+  assert.deepEqual(selected.map(row=>row.field).sort(),['en','ru'],id);
+  assert.equal(selected.find(row=>row.field==='ru').value,ru);
+  assert.equal(selected.find(row=>row.field==='en').value,en);
+ }
+ for(const unsafe of ['guideedit.book.owner-history.search-query',
+  'guideedit.book.owner-history.session-checked',
+  'guideedit.book.owner-history.record-key','guideedit.book.owner-history.result-count'])
+  assert.equal(manifest.records.some(row=>row.recordKey===unsafe),false,unsafe);
+});
+
 test('issue 390: source-authored D1 default snapshot is stable and uses exact existing keys',()=>{
  const repeated=buildEditorialDefaultsManifest();
  assert.equal(manifest.schema,1);
