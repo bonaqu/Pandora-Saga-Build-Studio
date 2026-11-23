@@ -107,3 +107,64 @@ test('#390 manual staging workflow never runs on push, uses new staging-only cre
  assert.ok(backup>0&&importStep>backup,'Backup MUST precede any mutation');
  assert.match(workflow,/concurrency:/);
 });
+
+test('#390 premerge staging CLI is import-inert, SHA-pinned and requires a separate approved backup',async()=>{
+ const {tmpdir}=await import('node:os');
+ const {
+  assertPremergeSource,checkedBackupDirectory,validateCliInputs,plannedStagingCommands
+ }=await import('../scripts/run-editorial-staging-d1-premerge.mjs');
+ const head='a'.repeat(40),branch='work/947-issue390-editorial-parity';
+ assert.equal(assertPremergeSource(branch,head,head,''),head);
+ for(const [actualBranch,actualSha,expected,dirty] of [
+  ['main',head,head,''],[branch,head,'b'.repeat(40),''],
+  [branch,head,'not-a-sha',''],[branch,head,head,' M changed.txt']
+ ])assert.throws(()=>assertPremergeSource(actualBranch,actualSha,expected,dirty));
+ const env={
+  CLOUDFLARE_API_TOKEN:'dedicated-staging-fixture-token',
+  CLOUDFLARE_ACCOUNT_ID:accountId,
+  PS_EDITORIAL_STAGING_NAME:name,PS_EDITORIAL_STAGING_ID:id,
+  PS_EDITORIAL_BACKUP_DIR:'/independent/operator-owned-backups',
+  PS_EDITORIAL_CONFIRMATION:'CONFIRM-EDITORIAL-STAGING-'+name+'-import'
+ };
+ assert.equal(validateCliInputs('preflight',env).id,id);
+ assert.equal(validateCliInputs('import',env).name,name);
+ for(const bad of [
+  {...env,CLOUDFLARE_API_TOKEN:''},
+  {...env,PS_EDITORIAL_STAGING_ID:PRODUCTION_D1_ID},
+  {...env,PS_EDITORIAL_STAGING_NAME:'ps-build-studio-db'},
+  {...env,PS_EDITORIAL_BACKUP_DIR:''},
+  {...env,PS_EDITORIAL_CONFIRMATION:'wrong'},
+ ])assert.throws(()=>validateCliInputs('import',bad));
+ assert.throws(()=>validateCliInputs('rollback',env),'rollback needs distinct confirmation');
+ assert.throws(()=>validateCliInputs('deploy',env));
+ assert.throws(()=>checkedBackupDirectory(process.cwd()));
+ assert.throws(()=>checkedBackupDirectory(tmpdir()));
+ const command=plannedStagingCommands(target('preflight'),
+  '/tmp/only-staging.toml','/tmp/staging-only.sql');
+ assert.deepEqual(command.list,['list','--json']);
+ assert.ok(command.schema.includes('--remote'));
+ assert.ok(command.schema.includes('sqlite_master'));
+ assert.ok(command.executeFile.includes('--yes'));
+ assert.ok(command.readFile.includes('--json'));
+ assert.ok(command.export('/outside/backup.sql').includes('--skip-confirmation'));
+ for(const args of [command.schema,command.executeFile,command.readFile,
+  command.export('/outside/backup.sql')]){
+  assert.ok(args.includes('--config'),'commands must isolate the staging config');
+  assert.ok(!args.includes('ps-build-studio-db'),'never target production name');
+ }
+ const source=readFileSync(new URL('../scripts/run-editorial-staging-d1-premerge.mjs',
+  import.meta.url),'utf8');
+ const docs=readFileSync(new URL('../docs/issue-390-premerge-d1-staging.md',
+  import.meta.url),'utf8');
+ assert.match(source,/assertDatabaseIdentity\(wrangler\(cmd.list\),target\)/);
+ assert.match(source,/const backupRoot=checkedBackupDirectory/);
+ assert.ok(source.indexOf('const backupRoot=checkedBackupDirectory')<
+  source.indexOf('wrangler(cmd.executeFile)'),
+  'independent backup validation precedes every write');
+ assert.match(source,/verifyEditorialDefaultsReadback\(manifest,parsed.metadata,parsed.rows\)/);
+ assert.match(source,/assertRolledBack\(wrangler\(cmd.readFile\)\)/);
+ assert.match(docs,/workflow_dispatch/);
+ assert.match(docs,/read-only/);
+ assert.match(docs,/PS_EDITORIAL_EXPECTED_SHA/);
+ assert.match(docs,/PS_EDITORIAL_BACKUP_DIR/);
+});
