@@ -653,6 +653,12 @@ function describe(change,ctx={}){
   const readableSlotsEn=x=>x==null?'not specified':Number.isFinite(x)?
    new Intl.NumberFormat('en-US').format(x)+' extra socket'+(x===1?'':'s'):
    value(x);
+  // Translate known display sentinels by the original value type, not by
+  // fuzzy matching against a game description that might contain the same word.
+  const valueEn=x=>x===undefined?'missing':x===null?'not specified':
+   typeof x==='boolean'?(x?'yes':'no'):
+   Array.isArray(x)?x.length+' records':
+   plain(x)?'record structure changed':null;
   const sourceLinks=text=>typeof text==='string'?
    [...text.matchAll(/<item\s+([0-9]{1,12})\s*\/?>/gi)].map(match=>match[1]).join(','):'';
   const beforeLinks=sourceLinks(a),afterLinks=sourceLinks(b);
@@ -671,8 +677,8 @@ function describe(change,ctx={}){
   rows.push({label,labelEn,
    before:isSlots?readableSlots(a):beforeText===null?value(a):shortened(beforeText),
    after:isSlots?readableSlots(b):afterText===null?value(b):shortened(afterText),
-   beforeEn:isSlots?readableSlotsEn(a):null,
-   afterEn:isSlots?readableSlotsEn(b):null,
+   beforeEn:isSlots?readableSlotsEn(a):beforeText===null?valueEn(a):null,
+   afterEn:isSlots?readableSlotsEn(b):afterText===null?valueEn(b):null,
    numeric,delta,note,noteEn,linkChanged,sameVisible,
    sourceBefore:/описани/i.test(label)&&typeof a==='string'?a:null,
    sourceAfter:/описани/i.test(label)&&typeof b==='string'?b:null,
@@ -748,7 +754,8 @@ function describe(change,ctx={}){
       }
      };
      if(!aa[i]||!bb[i]){
-      add(item,aa[i]?'есть':'нет',bb[i]?'есть':'нет',groupNameEn+' · '+itemTitle);
+      const row=add(item,aa[i]?'есть':'нет',bb[i]?'есть':'нет',groupNameEn+' · '+itemTitle);
+      if(row){row.beforeEn=aa[i]?'present':'absent';row.afterEn=bb[i]?'present':'absent';}
       attachItem();
      }else for(const field of new Set([...Object.keys(aa[i]),...Object.keys(bb[i])])){
       if(field==='i'||field==='t'||same(aa[i][field],bb[i][field]))continue;
@@ -773,7 +780,10 @@ function describe(change,ctx={}){
    if(same(a.get(id),b.get(id)))continue;
    const old=a.get(id),next=b.get(id);
    const name=next?.name||old?.name||'Задание №'+id;
-   if(!old||!next)add(name,old?'есть':'нет',next?'есть':'нет');
+   if(!old||!next){
+    const row=add(name,old?'есть':'нет',next?'есть':'нет',name);
+    if(row){row.beforeEn=old?'present':'absent';row.afterEn=next?'present':'absent';}
+   }
    else{
     for(const key of ['name','blurbRu','blurb','kind','quest','mobs'])if(!same(old[key],next[key])){
      const render=v=>key==='mobs'?(v||[]).map(x=>monsterName(x,ctx)).join(', '):v;
@@ -947,7 +957,16 @@ function describe(change,ctx={}){
   if(!notes.length)notes.push('Manual review is required before publishing this section.');
   cautionEn=notes.join(' ');
  }
- return {title,summary,summaryEn,rows,impacts,technical,uncertain,unexplained,
+ // Only translate fixed category chrome; a monster, item, player or quest
+ // name is still taken verbatim from the source and never machine-guessed.
+ const titleEn=kind==='meta'?'Catalog metadata':
+  kind==='drops'?'Loot · '+monsterName(change.key,ctx):
+  kind==='instances'?'Dungeons and quests':
+  change.key==='@dataset'?({
+   trades:'NPC trades',tables:'Game formulas',expertise:'Mastery',
+   chests:'Chest contents'
+  }[kind]||title):title;
+ return {title,titleEn,summary,summaryEn,rows,impacts,technical,uncertain,unexplained,
   caution,cautionEn,service:kind==='meta'};
 }
 root.PandoraCatalogHumanReview=Object.freeze({describe});
