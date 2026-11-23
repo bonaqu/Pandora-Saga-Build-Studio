@@ -404,8 +404,25 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   assert.deepEqual(actualAria.slice().sort(),expectedAria.slice().sort(),
    'One owner-only panel for accessibility, visible stats edit directly');
   const originalSummary=await page.locator('#originStatSummary').innerText();
-  await edit('stats-ui','remainingPrefix','Осталось:');
-  await edit('stats-ui','spentPrefix','Распределено:');
+  // Both values are plain text inside the actual summary, not in the
+  // owner-only accessibility panel. Dblclick/blur must save the visible word.
+  const editSummary=async(key,value)=>{
+   const node=page.locator('#originStatSummary [data-owner-copy-id="'+key+'"]');
+   await node.dblclick();
+   const field=node.locator('[data-owner-text-field]');
+   await field.waitFor({state:'visible'});
+   await field.fill(value);
+   await field.press('Tab');
+   await field.waitFor({state:'detached',timeout:15000});
+   await page.waitForFunction(({key,value})=>
+    document.querySelector('#originStatSummary [data-owner-copy-id="'+key+'"]')
+     ?.textContent===value,{key,value},{timeout:15000});
+   const recordKey='guideedit.book.stats-ui.'+
+    key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase());
+   assert.equal(JSON.parse(values[recordKey]).ru,value);
+  };
+  await editSummary('remainingPrefix','Осталось:');
+  await editSummary('spentPrefix','Распределено:');
   const updatedSummary=await page.locator('#originStatSummary').innerText();
   assert.match(updatedSummary,/Осталось:/);
   assert.match(updatedSummary,/Распределено:/);
