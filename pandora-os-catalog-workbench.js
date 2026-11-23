@@ -813,7 +813,7 @@
         .replace(/<br\s*\/?>/gi,' ');
       const text=[
         review.labels[change.dataset]||change.dataset,
-        change.title,description.title,description.summary,description.summaryEn,
+        change.title,description.title,description.titleEn,description.summary,description.summaryEn,
         ...description.rows.flatMap(field=>[
           field.label,field.labelEn||'',field.noteEn||'',field.linkedItemName||'',
           field.beforeFull??field.before,field.afterFull??field.after
@@ -1122,8 +1122,9 @@
             helper.textContent+=tr(' · Вариант ',' · Variant ')+variantOrder.get(change.id)+
               tr(' из ',' of ')+variantTotal.get(description.title)+
               tr(' с этим названием',' with this name');
+          const visibleTitle=lang==='en'?description.titleEn||description.title:description.title;
           const input = h('input',{type:'checkbox',checked:checked(change),disabled:busy,
-            'aria-label':tr('Выбрать изменение ','Select change ')+description.title+
+            'aria-label':tr('Выбрать изменение ','Select change ')+visibleTitle+
               (hasLinks||visuallySame?tr(' — требуется отдельная проверка',' — requires separate review'):'')});
           input.addEventListener('change',()=>{
             setChoice(change,input.checked);
@@ -1134,7 +1135,7 @@
           row.append(h('label',{class:'os-sync-record-label'},[
             input,
             h('span',{class:'os-sync-record-title'},[
-              h('strong',{text:description.title}),helper
+              h('strong',{text:visibleTitle}),helper
             ]),
             h('span',{class:'os-sync-kind '+change.kind,text:indicator})
            ]));
@@ -1612,7 +1613,8 @@
        tr('\nЭто расчётная оценка; фактический результат на игровом сервере не проверен.',
           '\nThese are estimates; actual game-server results have not been verified.'):'';
       const otherPreview=selectedDescriptions.filter(d=>!(d.impacts||[]).length)
-       .slice(0,2).map(d=>'\n• '+d.title+': '+(lang==='en'&&d.summaryEn?d.summaryEn:d.summary).slice(0,200)).join('');
+       .slice(0,2).map(d=>'\n• '+(lang==='en'?d.titleEn||d.title:d.title)+
+     ': '+(lang==='en'&&d.summaryEn?d.summaryEn:d.summary).slice(0,200)).join('');
       const atomicWarning=selectedChanges.some(e=>e.dataset==='tables')?
        tr('\n\nВАЖНО: выбран весь набор «Игровые формулы», не один предмет. '+
           'После подтверждения обновятся все таблицы этого раздела в D1. '+
