@@ -123,54 +123,65 @@ Five extra original RU/EN labels are now editable directly in the Character/Prof
 
 ## Dedicated remote staging gate · #390 (prepared, NOT executed)
 
-The Draft PR contains a **manual-only** staging workflow at
-`.github/workflows/editorial-staging-d1-manual.yml` and its independently tested
-`scripts/guard-editorial-staging-d1.mjs` target checker. This is an additional
-safety gate for a future **operator-approved** remote Cloudflare staging run,
-not a production deployment or evidence that D1 was actually imported.
+The Draft PR contains a **read-only** GitHub Actions preflight workflow at
+`.github/workflows/editorial-staging-d1-manual.yml`, the strict validation
+module `scripts/guard-editorial-staging-d1.mjs`, and the operator-local
+`scripts/run-editorial-staging-d1-premerge.mjs` runner. None of these constitute
+a production deployment, or evidence of a physical Cloudflare staging import.
 
-**Prerequisites, all external to this PR:** create a new empty D1 database whose
-name matches `ps-editorial-staging-*`, configure a GitHub environment named
-`editorial-staging` with required reviewer approval, and provision three
-dedicated secrets: `EDITORIAL_STAGING_CF_TOKEN` (least-privilege staging-only
-token), `EDITORIAL_STAGING_CF_ACCOUNT_ID`, and
-`EDITORIAL_STAGING_CF_DATABASE_ID`. **Never reuse
-`CLOUDFLARE_API_TOKEN` from production.** A staging database in the same
-account must still be explicitly isolated by its own name, UUID and token
-scope. Existing production D1 UUID `0f8fbcd8-be06-414c-844b-a2091fdf6784`
-is denied.
+**Prerequisites, external to this PR:** create a dedicated D1 database named
+`ps-editorial-staging-*`, confirm a UUID different from production
+(`0f8fbcd8-be06-414c-844b-a2091fdf6784`), and provision a
+least-privilege **staging-only** Cloudflare token and account ID. Do not reuse
+a production token. Operators must never paste staging credentials into PR
+comments. For the optional GitHub preflight, the `editorial-staging` GitHub
+environment uses `EDITORIAL_STAGING_CF_TOKEN`,
+`EDITORIAL_STAGING_CF_ACCOUNT_ID` and
+`EDITORIAL_STAGING_CF_DATABASE_ID`.
 
-**GitHub limitation:** a newly added `workflow_dispatch` file in this Draft
-PR branch may not be directly dispatchable from Actions until its workflow
-definition exists on the repository default branch. Do **not** merge #809,
-publish or weaken branch guards just to activate this workflow. An authorized
-operator can independently check out the PR branch and follow the approved
-local staging runbook with dedicated credentials before any eventual release.
+**GitHub workflow is intentionally READ-ONLY.** It can check name, UUID,
+all non-internal tables/views/triggers/indexes and exact allowed SQLite
+column/primary-key layouts. The schema inventory uses a literal-underscore
+GLOB predicate, not `LIKE 'sqlite_%'` (which incorrectly hides
+`sqliteX...` objects). It has **no import, rollback, remote SQL export, or
+raw backup artifact upload**. An ephemeral Actions runner cannot satisfy the
+independent, durable private backup required for writes. This workflow is
+not dispatchable directly from an unmerged PR unless its definition also
+exists on the default branch; do not merge unfinished work just to run it.
 
-The staging operations are:
-1. `preflight` (read-only): strict branch/repository/target checks, Wrangler
-   remote D1 list lookup matching **both name and UUID**, then a SELECT-only
-   schema inventory. Unknown tables (including accounts, builds, catalog and
-   overrides) cause an immediate stop.
-2. `import`: requires
-   `CONFIRM-EDITORIAL-STAGING-<database_name>-import`. Exports a full independent
-   D1 SQL backup and uploads it as an Actions artifact **before** executing
-   generated SQL. After import, runs the pinned one-statement readback and the
-   existing strict 100%-row-count plus SHA-256 verifier. No Worker preview or
-   default snapshot is auto-activated.
-3. `rollback`: requires
-   `CONFIRM-EDITORIAL-STAGING-<database_name>-rollback`. Exports a backup,
-   deletes only the current pinned release/digest snapshot marker and rows,
-   then executes an *independent query against that exact snapshot*. Success
-   requires **zero markers and zero rows**; checking the latest remaining
-   marker after deletion would be falsely reassuring and is prohibited.
+**Import and rollback are local-only, with separate explicit approvals.**
+Follow [the independent staging runbook](issue-390-premerge-d1-staging.md)
+from a clean, exact-SHA-pinned PR branch checkout on Linux/WSL (Node 22).
+The complete operator sequence is:
 
-These commands and argument shapes are described in
-[official Cloudflare D1 Wrangler documentation](https://developers.cloudflare.com/d1/wrangler-commands/).
-The new local Node tests validate rejection of wrong targets, production D1,
-missing confirmation, unknown tables, malformed JSON and incomplete rollback.
-**No staging credentials were provided, no remote SQL was run, and no
-physical D1 readback/rollback is claimed.**
+1. **Preflight (read-only):** verify the repository branch, pinned source SHA,
+   Cloudflare account, isolated database name and UUID, all non-internal
+   SQLite schema objects, and exact allowed column/key layouts. Unexpected
+   objects or layouts cause a hard stop.
+2. **Import (explicit approval):** require
+   `CONFIRM-EDITORIAL-STAGING-<database_name>-import`. Export the **entire
+   staging D1** into an independently retained operator-owned directory
+   outside the repository/system temp with mode 0700. Verify the nonempty
+   regular SQL file on one no-symlink descriptor, chmod 0600, SHA-256 hash,
+   fsync the SQL, checksum and backup directory **before any D1 write**.
+   Import pinned source-authored defaults, then read back **every row** and
+   compare exact metadata, row count and SHA-256. No snapshot is automatically
+   activated by production.
+3. **Rollback (separate approval):** require
+   `CONFIRM-EDITORIAL-STAGING-<database_name>-rollback` and the **same
+   pinned source SHA**. First check, via read-only SQL, that the exact
+   target snapshot has at least one existing marker or row; an empty/no-op
+   rollback must not pass. A partially imported snapshot without its marker
+   can still be rolled back. Export another independent private backup, then
+   delete only that exact release/digest snapshot. Verify **zero remaining
+   rows and zero markers**. If an import stopped before both staging tables
+   existed, stop and recover manually from the independent SQL backup.
+
+The SQL/readback command behavior is documented in
+[Cloudflare D1 Wrangler commands](https://developers.cloudflare.com/d1/wrangler-commands/).
+Local SQLite, Node and mocked browser checks do **not** establish real remote
+staging acceptance. **No staging credentials were provided here, no remote
+D1 SQL has been executed, and no physical import/readback/rollback is claimed.**
 
 ## Owner change-history source labels · #390
 
