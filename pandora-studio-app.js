@@ -1797,8 +1797,44 @@ const originClassWizardAriaRows=Object.freeze([
 const originRacePortraitAriaRows=Object.freeze([
  ['racePortraitPreviousAria','Предыдущий портрет','Previous portrait'],
  ['racePortraitNextAria','Следующий портрет','Next portrait'],
+
  ['racePortraitChooseAria','Выбрать','Choose']
 ]);
+// Original RU/EN guidance, not selected skill identity or game data.
+const originPassiveDynamicRows=Object.freeze([
+ ['passiveChooseRaceHelp','Выберите расу, чтобы увидеть её пассивные способности.','Choose a race to see its passives.'],
+ ['passiveLoadingHelp','Расовые способности появятся после загрузки каталога.','Racial passives will appear when the game catalog loads.'],
+ ['passiveSelectCaption','Выбрать','Select'],
+ ['passiveSelectedCaption','✓ Выбрано','✓ Selected'],
+ ['passiveSelectAria','— выбрать','— select'],
+ ['passiveSelectedAria','— выбрано','— selected']
+]);
+function originPassiveRow(key){
+ const row=originPassiveDynamicRows.find(item=>item[0]===key);
+ if(!row)throw Error('Unknown racial passive copy');
+ return row;
+}
+function originPassiveCaption(key,tag='span'){
+ const [id,ru,en]=originPassiveRow(key);
+ const node=h(tag,{text:ownerCopy('origin',id,ru,en)});
+ ownerCopyLabel(node,'origin',id,ru,en);
+ return node;
+}
+function renderOriginPassiveAriaPanel(root){
+ const previous=$('ownerOriginPassiveAria');
+ if(!adminEditing||!adminToken){previous?.remove();return}
+ if(previous?.querySelector('.wiki-inline-input,[data-owner-text-field]'))return;
+ if(previous?.dataset.originAriaLang===lang)return;
+ const wasOpen=Boolean(previous?.open);
+ previous?.remove();
+ const panel=ownerInterfaceEditor('origin',
+  originPassiveDynamicRows.filter(row=>row[0].endsWith('Aria')),
+  'Доступность расовых пассивок','Racial passive accessibility');
+ if(panel){
+  panel.id='ownerOriginPassiveAria';panel.dataset.originAriaLang=lang;
+  panel.open=wasOpen;root.after(panel);
+ }
+}
 function originCopyLabel(node,key,ru,en){
  if(!node)return node;
  if(!node.querySelector?.('.wiki-inline-input,[data-owner-editor]'))
@@ -3166,11 +3202,12 @@ function renderOriginStats(calculated=undefined){
 function renderOriginPassives(){
  const root=$('originPassives');if(!root)return;
  dismissSkillPreview();
+ renderOriginPassiveAriaPanel(root);
  root.replaceChildren();
  const raceName=$('originRaceName');
  if(!Number.isInteger(state.race)||state.race<0||state.race>=races.length){
   if(raceName)raceName.textContent=lang==='en'?'Race not selected':'Раса не выбрана';
-  root.append(h('p',{class:'muted',text:lang==='en'?'Choose a race to see its passives.':'Выберите расу, чтобы увидеть её пассивные способности.'}));
+  root.append(h('p',{class:'muted'},[originPassiveCaption('passiveChooseRaceHelp')]));
   return;
  }
  const ids=window.PandoraGameNavigation.racePassiveIds(catalog.racialPassives,state.race);
@@ -3181,37 +3218,46 @@ function renderOriginPassives(){
   state.racialPassiveId=null;persist();
  }
  if(raceName)raceName.textContent=races[state.race][lang==='en'?1:0];
- if(!ids.length){root.append(h('p',{class:'muted',text:lang==='en'?
-  'Racial passives will appear when the game catalog loads.':
-  'Расовые способности появятся после загрузки каталога.'}));return}
+ if(!ids.length){
+  root.append(h('p',{class:'muted'},[originPassiveCaption('passiveLoadingHelp')]));
+  return;
+ }
  for(const id of ids){
   const skill=catalog.skills?.[String(id)];if(!skill)continue;
   const selected=String(state.racialPassiveId)===String(id);
-  const btn=h('button',{type:'button',class:'origin-passive'+(selected?' selected':''),'aria-pressed':String(selected),
-   'aria-label':skill.name+(selected?
-    (lang==='en'?' — selected':' — выбрано'):
-    (lang==='en'?' — select':' — выбрать')),
-   onclick:()=>{state.racialPassiveId=selected?null:id;persist();renderOriginPassives();
-    renderOriginVitals();renderOriginStats();
-    if(activeTab==='character'&&characterPanelTab==='character')renderDetails()}});
+  const ariaKey=selected?'passiveSelectedAria':'passiveSelectAria',
+   ariaRow=originPassiveRow(ariaKey);
+  const btn=bindOwnerInterfaceText(
+   h('button',{type:'button',class:'origin-passive'+(selected?' selected':''),
+    'aria-pressed':String(selected),
+    onclick:()=>{state.racialPassiveId=selected?null:id;persist();renderOriginPassives();
+     renderOriginVitals();renderOriginStats();
+     if(activeTab==='character'&&characterPanelTab==='character')renderDetails()}}),
+   'origin',ariaKey,ariaRow[1],ariaRow[2],'aria-label','',skill.name+' ');
   const src=skillIcon('race',id,skill);
   if(src){const img=h('img',{src,alt:'',loading:'lazy'});img.onerror=()=>img.replaceWith(h('span',{text:'✦'}));btn.append(img)}
   else btn.append(h('span',{text:'✦'}));
   const label=h('b',{text:skill.name,
     ...(adminEditing&&lang==='ru'?{'data-edit-key':'skill.race.'+id}:{})});
-  btn.append(h('span',{},[label,
-    h('small',{text:selected?(lang==='en'?'✓ Selected':'✓ Выбрано'):
-      (lang==='en'?'Select':'Выбрать')})]));
-  if(adminEditing&&adminToken&&lang==='ru'){
-   // Names of racial skills edit on the same visible label: no extra pencil.
-   // Keep the underlying selection action working on a single click.
-   ownerCaptionActionGuard(btn,label);
+  const badge=originPassiveCaption(
+   selected?'passiveSelectedCaption':'passiveSelectCaption','small');
+  btn.append(h('span',{},[label,badge]));
+  if(adminEditing&&adminToken){
+   // Direct dblclick/long-press edits the badge, no standalone pencil.
+   // F2 retains its original verified RU skill-name edit; Shift+F2 edits
+   // only the separate authorial status from the parent button.
+   ownerCaptionActionGuard(btn,badge);
+   if(lang==='ru')ownerCaptionActionGuard(btn,label);
    btn.addEventListener('keydown',event=>{
-    if(event.key==='F2'){
+    if(event.key!=='F2')return;
+    if(event.shiftKey){
+     event.preventDefault();event.stopPropagation();
+     badge.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
+    }else if(lang==='ru'){
      event.preventDefault();event.stopPropagation();inlineWikiText(label);
     }
    });
-   btn.setAttribute('aria-keyshortcuts','F2');
+   btn.setAttribute('aria-keyshortcuts',lang==='ru'?'F2 Shift+F2':'Shift+F2');
   }
   root.append(btn);
   skillHover(btn,skill);
