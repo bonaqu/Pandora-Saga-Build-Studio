@@ -57,7 +57,9 @@ test('history copy save, Undo and reset share D1 CAS and keep the current modal 
  assert.match(app,/ownerCopyLabel\(clearCaption,'owner-history','clear'/);
  assert.match(app,/ownerCaptionActionGuard\(clearSearch,clearCaption\)/);
  assert.match(app,/bindHistoryControl\(allOption,'allSections','text'\)/);
- assert.match(app,/ownerInterfaceEditor\('owner-history',ownerHistoryControlCopyRows/);
+ assert.match(app,/const controlEditor=ownerInterfaceEditor\('owner-history',\s*\[\.\.\.ownerHistoryControlCopyRows,/);
+ assert.match(app,/\.\.\.ownerHistoryAuxCopyRows\.filter\(row=>row\[0\]!=='dialogTitle'\)/,
+  'The same collapsed history panel includes distinct hover copy but not the direct title');
  assert.match(app,/const ownerHistoryRowCopyRows=Object\.freeze/);
  for(const key of ['pendingError','pendingSaving','fieldsChanged',
   'openEncyclopedia','restoreOriginal']){
