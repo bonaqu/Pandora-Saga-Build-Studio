@@ -67,6 +67,31 @@ test('#390 history control defaults are RU/EN authorial; runtime values never st
   assert.equal(manifest.records.some(row=>row.recordKey===unsafe),false,unsafe);
 });
 
+test('#390 history row status/action labels stage as source copy, not user records',()=>{
+ const app=read('pandora-studio-app.js');
+ const source=app.match(/const ownerHistoryRowCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ assert.ok(source);
+ const rows=runInNewContext('('+source[1]+')',{});
+ assert.deepEqual([...rows].map(row=>row[0]).sort(),
+  ['fieldsChanged','openEncyclopedia','pendingError','pendingSaving','restoreOriginal']);
+ assert.equal(manifest.stats.cohorts['owner-history-rows'],10);
+ for(const [key,ru,en] of rows){
+  const id='guideedit.book.owner-history.'+
+   key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase());
+  const selected=manifest.records.filter(row=>row.recordKey===id);
+  assert.deepEqual(selected.map(row=>row.field).sort(),['en','ru'],id);
+  assert.equal(selected.find(row=>row.field==='ru').value,ru);
+  assert.equal(selected.find(row=>row.field==='en').value,en);
+ }
+ for(const excluded of ['guideedit.book.owner-history.live-count',
+  'guideedit.book.owner-history.record-title',
+  'guideedit.book.owner-history.record-before',
+  'guideedit.book.owner-history.record-after',
+  'guideedit.book.owner-history.server-error']){
+  assert.equal(manifest.records.some(row=>row.recordKey===excluded),false);
+ }
+});
+
 test('issue 390: source-authored D1 default snapshot is stable and uses exact existing keys',()=>{
  const repeated=buildEditorialDefaultsManifest();
  assert.equal(manifest.schema,1);
