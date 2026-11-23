@@ -2570,6 +2570,9 @@ function renderStageAttributes(calculated=undefined){
   englishBranches:officialEnglish?.branches||{},
   selected:state.attributeBuffs?.remakedSkillIds||[]})||[];
  const bookEn=lang==='en';
+ // Exact literal-only source match; class/skill/number reasons stay unedited.
+ const buffReasonCopyKey=reason=>window.PandoraStageAttributes?.buffStatusCopyRows
+  ?.find(row=>row[bookEn?2:1]===reason)?.[0]||null;
  const levelReason=n=>bookEn?'Available at level '+n:'Откроется на '+n+' уровне';
  const missingCombatMastery=ability=>{
   const req=ability?.reqs?.find(req=>(branchMasteries[req.branch]??0)<req.amount);
@@ -2618,6 +2621,7 @@ function renderStageAttributes(calculated=undefined){
    desc:ability.desc,
    descEn:officialEnglish?.skills?.[String(id)]?.d||ability.desc,
    level:ability.charLevel,summary,reason,
+   reasonCopyKey:buffReasonCopyKey(reason),
    icon:skillIcon(ability.branch,0,ability)
   }:null;
  }
@@ -2646,6 +2650,7 @@ function renderStageAttributes(calculated=undefined){
    desc:ability.desc,
    descEn:officialEnglish?.skills?.[String(combatSkillCatalog.supportSkillIds[kind])]?.d||ability.desc,
    level:ability.charLevel,summary,reason,
+   reasonCopyKey:buffReasonCopyKey(reason),
    icon:skillIcon(ability.branch,0,ability)
   }:null;
  }
@@ -10984,6 +10989,9 @@ async function undoOwnerEdit(){
      window.PandoraStageAttributes?.refreshAccessibility?.(
       $('stageAttributes'),override,stageAttributesPage||'summary');
      saveView();
+    }else if(last.key.startsWith('guideedit.book.buffs.reason.')){
+     // A source-only reason cannot change the current hero/skill legality.
+     renderStageAttributes();saveView();
     }else if(last.key.startsWith('guideedit.book.ui.label.')){
      refreshVisibleUICopy(last.key);
      // Account copy is patched in place; rebuilding the form loses unsent values.
@@ -11143,6 +11151,8 @@ function showOverrideManager(){
         window.PandoraStageAttributes?.refreshAccessibility?.(
          $('stageAttributes'),override,stageAttributesPage||'summary');
         saveView();
+       }else if(record.key.startsWith('guideedit.book.buffs.reason.')){
+        renderStageAttributes();saveView();
        }else if(record.key.startsWith('guideedit.book.ui.label.')){
         refreshVisibleUICopy(record.key);
         // A text reset never rebuilds the live login or password form.

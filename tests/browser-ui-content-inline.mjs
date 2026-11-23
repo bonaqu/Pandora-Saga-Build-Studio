@@ -876,6 +876,46 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(JSON.parse(values[buffD1]).ru,'Активные усиления QA');
   assert.equal(await overview.locator('strong').innerText(),originalCount);
   assert.equal(await overview.locator('.account-copy-pencil').count(),0);
+
+  // Real disabled source skill: the pure authorial reason may be directly
+  // changed without editing a source class, skill or current combat flags.
+  const buffReason=page.locator('#stageBookPanel .stage-buff-reason-copy').first();
+  // The Book's chosen default may keep its buff sections collapsed.
+  // Reveal the existing source reason without toggling any game buff.
+  await buffReason.evaluate(node=>{
+   for(let parent=node.parentElement;parent;parent=parent.parentElement)
+    if(parent.tagName==='DETAILS')parent.open=true;
+  });
+  await buffReason.waitFor({state:'visible',timeout:15000});
+  const reasonKey=await buffReason.getAttribute('data-guide-key');
+  assert.match(reasonKey,/^buffs\.reason\.(?:unavailableClass|shieldRequired|weaponUnavailable|supportUnavailable)$/);
+  const originalReason=await buffReason.innerText();
+  const reasonCheck=buffReason.locator('xpath=ancestor::label[1] input[type="checkbox"]');
+  const checkedReasonBefore=await reasonCheck.isChecked();
+  assert.equal(await buffReason.getAttribute('tabindex'),'0');
+  await buffReason.dblclick();
+  const dismissReason=buffReason.locator('[contenteditable]');
+  await dismissReason.waitFor({state:'visible'});
+  assert.equal(await reasonCheck.isChecked(),checkedReasonBefore,
+   'Owner double-click on a disabled reason must not activate the skill');
+  await dismissReason.fill('Не сохранять этот статус');
+  await dismissReason.press('Escape');
+  assert.equal(await buffReason.innerText(),originalReason);
+  assert.equal(Object.hasOwn(values,'guideedit.book.'+reasonKey),false);
+  await buffReason.focus();
+  await buffReason.press('F2');
+  const reasonEditor=buffReason.locator('[contenteditable]');
+  await reasonEditor.waitFor({state:'visible'});
+  await reasonEditor.fill('Недоступность QA');
+  await reasonEditor.press('Tab');
+  await page.waitForFunction(({key,text})=>
+   document.querySelector('[data-guide-key="'+key+'"]')?.textContent===text,
+   {key:reasonKey,text:'Недоступность QA'},{timeout:15000});
+  assert.equal(JSON.parse(values['guideedit.book.'+reasonKey]).ru,'Недоступность QA');
+  assert.equal(await reasonCheck.isChecked(),checkedReasonBefore);
+  assert.equal(await buffReason.locator('.stage-guide-edit-hint').count(),0);
+  console.log('Chromium #390 Book buff status RU direct dblclick/F2 CAS, Escape and unchanged skill passed');
+
   const guildLabel=page.locator('#stageBookPanel summary [data-guide-key="buffs.guild"]').first();
   await guildLabel.waitFor({state:'visible',timeout:15000});
   const guildSummary=guildLabel.locator('xpath=ancestor::summary[1]');

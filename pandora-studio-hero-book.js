@@ -399,6 +399,27 @@ function guardBookSummaryCaption(node){
   },500);
  },true);
 }
+// A caption nested in <label> must not toggle the checkbox twice during
+// the owner double-click that opens its editor. Keep ordinary single-click
+// checkbox operation intact after the same short action guard used by tabs.
+function guardBookCheckCaption(caption){
+ const label=caption.closest?.('label');
+ if(!label||label.dataset.bookCheckCopyGuard==='1')return;
+ label.dataset.bookCheckCopyGuard='1';
+ let pending=null;
+ label.addEventListener('click',event=>{
+  if(!event.detail||event.target.closest?.('input,textarea,select,[data-owner-text-field]'))
+   return;
+  if(!caption.contains(event.target))return;
+  event.preventDefault();event.stopImmediatePropagation();
+  if(pending){clearTimeout(pending);pending=null;return}
+  pending=setTimeout(()=>{
+   pending=null;
+   const checkbox=label.querySelector('input[type="checkbox"]');
+   if(label.isConnected&&checkbox&&!checkbox.disabled)checkbox.click();
+  },500);
+ },true);
+}
 function guideLabel(node,key,ru,en,options={},fallbackRu='',fallbackEn=''){
  if(!node)return node;
  const guide=root.PandoraHonorGuide;
@@ -458,6 +479,14 @@ const bookRegionCopyRows=Object.freeze([
 // Existing Book captions and their D1 record keys MUST be reused, not reseeded.
 // Accessible actions are source-authored verbs followed by immutable
 // game item/skill names. The entire composite is never a CAS override.
+// Pure authorial Book buff availability states. Runtime class, mastery,
+// equipment and numeric conditions stay in the OS calculator/app, not D1.
+const buffStatusCopyRows=Object.freeze([
+ ['unavailableClass','Недоступно для этой профессии','Unavailable to this class'],
+ ['shieldRequired','Необходимо экипировать щит','Equip a shield'],
+ ['weaponUnavailable','Недоступно с выбранным оружием','Unavailable with current weapon'],
+ ['supportUnavailable','Умение недоступно','This skill is unavailable']
+]);
 const bookSourceActionCopyRows=Object.freeze([
  ['skillEncyclopediaPrefix','Энциклопедия:','Encyclopedia:'],
  ['itemEncyclopediaPrefix','Открыть в энциклопедии:','Open in encyclopedia:'],
@@ -812,9 +841,19 @@ function buffsPage(body,options){
    root.PandoraGuideTooltip?.attach(info,description,{hoverDelay:650});
   // An external-priest checkbox is grey while not enabled, but its benefit
   // stays readable. It is NOT a profession restriction of the recipient.
-  if(skill&&!allowed&&!skill.externalPriest)
-   info.append(make('small',{text:(english?skill.reasonEn:skill.reason)||
+  if(skill&&!allowed&&!skill.externalPriest){
+   const source=buffStatusCopyRows.find(row=>row[0]===skill.reasonCopyKey);
+   if(source){
+    const [key,ru,en]=source;
+    const reason=make('span',{class:'stage-buff-reason-copy',text:english?en:ru});
+    reason.tabIndex=options.editable?0:-1;
+    guideLabel(reason,'buffs.reason.'+key,ru,en,options);
+    const small=make('small',{class:'stage-buff-reason'},[reason]);
+    info.append(small);
+    if(options.editable)guardBookCheckCaption(reason);
+   }else info.append(make('small',{text:(english?skill.reasonEn:skill.reason)||
     (english?'Unavailable to this hero':'Недоступно для героя')}));
+  }
   if(skill?.summary)
    info.append(make('small',{text:skill.summary}));
   node.append(info);
@@ -2837,7 +2876,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
  refreshBookAccessibility(target,copy,chosen);
 }
 root.PandoraStageAttributes=Object.freeze({render,bookPages,bookText,bookEditorialKey,
- bookEditorialDefaults:bookEnglish,bookRegionCopyRows,bookSourceActionCopyRows,
+ bookEditorialDefaults:bookEnglish,buffStatusCopyRows,bookRegionCopyRows,bookSourceActionCopyRows,
  bookAccessibleAliasRows,
  refreshAccessibility:refreshBookAccessibility,resetDisclosureState,
  summaryRows,attackChapterGroups,defenseChapterGroups,

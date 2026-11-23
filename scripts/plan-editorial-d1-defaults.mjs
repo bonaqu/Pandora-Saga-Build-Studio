@@ -108,6 +108,23 @@ export function buildEditorialDefaultsManifest(){
    append('guideedit.book.'+id,lang,ui.baseText(key,lang),'ui-locale');
  }
 
+ // Pure Book buff status copy only. The actual availability boolean,
+ // canonical skill/class data, mastery and level prerequisites are runtime.
+ const buffStatuses=book.buffStatusCopyRows;
+ const expectedBuffStatuses=[
+  'unavailableClass','shieldRequired','weaponUnavailable','supportUnavailable'
+ ];
+ if(!Array.isArray(buffStatuses)||buffStatuses.length!==expectedBuffStatuses.length||
+  buffStatuses.map(row=>row?.[0]).sort().join('|')!==expectedBuffStatuses.sort().join('|'))
+  throw Error('Hero Book pure buff status inventory drift');
+ for(const [key,ru,en] of buffStatuses){
+  if(!/^[a-z][a-zA-Z]+$/.test(key)||typeof ru!=='string'||!ru.trim()||
+   ru!==ru.trim()||typeof en!=='string'||!en.trim()||en!==en.trim())
+   throw Error('Invalid Book authored buff status: '+key);
+  append('guideedit.book.buffs.reason.'+key,'ru',ru,'hero-book-buff-status');
+  append('guideedit.book.buffs.reason.'+key,'en',en,'hero-book-buff-status');
+ }
+
  // The original Book's four navigation strings already exist in the
  // shared UI locale dictionary. Seed only three new authorial fragments
  // for the dynamic chapter region; never snapshot a numeric page position.

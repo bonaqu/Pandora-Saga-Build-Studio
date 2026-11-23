@@ -322,3 +322,37 @@ test('#390: Book dynamic accessible action prefixes never store skill/item names
   else globalThis.document=previous;
  }
 });
+
+test('#390: Book buff statuses have five direct RU/EN captions, not editable game eligibility',async()=>{
+ const {buildEditorialDefaultsManifest}=await import('../scripts/plan-editorial-d1-defaults.mjs');
+ const manifest=buildEditorialDefaultsManifest(),rows=book.buffStatusCopyRows;
+ const names=['unavailableClass','shieldRequired','weaponUnavailable','supportUnavailable'];
+ assert.deepEqual(rows.map(row=>row[0]),names);
+ assert.equal(manifest.stats.cohorts['hero-book-buff-status'],8);
+ for(const [key,ru,en] of rows){
+  const record='guideedit.book.buffs.reason.'+key;
+  const entries=manifest.records.filter(row=>row.recordKey===record);
+  assert.deepEqual(entries.map(row=>row.field).sort(),['en','ru']);
+  assert.equal(entries.find(row=>row.field==='ru').value,ru);
+  assert.equal(entries.find(row=>row.field==='en').value,en);
+  assert.ok(ru.length>4&&en.length>4);
+  assert.doesNotMatch(ru,/[0-9]/);
+  assert.doesNotMatch(en,/[0-9]/);
+ }
+ const source=file('pandora-studio-hero-book.js'),app=file('pandora-studio-app.js');
+ assert.match(source,/buffStatusCopyRows\.find\(row=>row\[0\]===skill\.reasonCopyKey\)/);
+ assert.match(source,/guideLabel\(reason,'buffs\.reason\.'\+key,ru,en,options\)/);
+ assert.equal(rows.some(row=>row[1]==='Недоступно для героя'),false,
+  'Historical Hero Book fallback retains its original ui.label.* D1 key');
+ assert.ok(locale.bookFieldKey('Недоступно для героя'));
+
+ assert.match(source,/reason\.tabIndex=options\.editable\?0:-1/);
+ assert.match(source,/if\(options\.editable\)guardBookCheckCaption\(reason\)/);
+ assert.match(source,/event\.preventDefault\(\);event\.stopImmediatePropagation\(\)/);
+ assert.match(source,/checkbox\.click\(\)/);
+ assert.doesNotMatch(source,/buffStatusCopyRows.*?reason.*?Number\(/);
+ assert.match(app,/buffReasonCopyKey=reason=>window\.PandoraStageAttributes\?\.buffStatusCopyRows/);
+ assert.equal((app.match(/reasonCopyKey:buffReasonCopyKey\(reason\)/g)||[]).length,2);
+ assert.match(app,/last\.key\.startsWith\('guideedit\.book\.buffs\.reason\.'\)/);
+ assert.match(app,/record\.key\.startsWith\('guideedit\.book\.buffs\.reason\.'\)/);
+});
