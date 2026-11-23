@@ -3168,7 +3168,7 @@ function refreshOriginStatAccessibility(){
    name+' '+statsUiText('excludeBonusesAria'));
   ownerDockPatchAttr(wrap.querySelector('.stat-step-increment'),'aria-label',
    statsUiText('increaseAria')+' '+name+'. '+statsUiText('costAria')+' '+
-    (cost??statsUiText('maximumAria')));
+    (cost||statsUiText('maximumAria')));
   ownerDockPatchAttr(wrap.querySelector('.origin-stat-result strong'),'aria-label',
    statsUiText('baseAria')+' '+base+' '+statsUiText('pointsAria')+' '+spent+
    ' '+statsUiText('knownBonusesAria')+' '+delta+' = '+total);
