@@ -270,3 +270,46 @@ test('English human-review summaries preserve source meaning and safety classifi
  assert.match(link.cautionEn,/Verify its destination/);
  assert.match(link.caution,/Изменилась игровая связь/);
 });
+
+test('English human-review fields translate only verified authorial labels, not game values',()=>{
+ const before={name:'Караван Союза',life:30000,resists:{fire:25,magic:30}};
+ const afterState={name:'Караван Союза',life:60000,resists:{fire:15,magic:15}};
+ const review=describe(change('monsters','43601',before,afterState),context);
+ assert.equal(review.rows.find(r=>r.label==='Очки здоровья (ОЗ)').labelEn,'Health points (HP)');
+ assert.equal(review.rows.find(r=>r.label==='Сопротивление огню').labelEn,'Resistance to fire');
+ assert.equal(review.rows.find(r=>r.label==='Сопротивление магии').labelEn,'Resistance to magic');
+ assert.equal(review.rows.find(r=>r.label==='Сопротивление огню').after,'15');
+ assert.equal(review.uncertain,false);
+ const unknown=describe(change('monsters','43601',{resists:{mystery:1}},
+  {resists:{mystery:2}}),context);
+ assert.equal(unknown.uncertain,true);
+ assert.equal(unknown.rows.length,0,'unverified mechanics must not become localized gameplay facts');
+});
+test('English detail labels preserve item identities, item links and independent extra socket values',()=>{
+ const old={d:[{i:53002,p:30,slotAdd:1}]};
+ const next={d:[{i:53002,p:45,slotAdd:2}]};
+ const review=describe(change('drops','43601',old,next),context);
+ const chance=review.rows.find(r=>r.label.endsWith('Шанс в таблице'));
+ const slots=review.rows.find(r=>r.label.endsWith('Доп. слоты'));
+ assert.ok(chance.labelEn.startsWith('Regular loot · '));
+ assert.ok(chance.labelEn.endsWith(' · Listed chance'));
+ assert.equal(chance.linkedItemId,'53002');
+ assert.equal(chance.after,'45');
+ assert.equal(slots.labelEn.endsWith(' · Extra sockets'),true);
+ assert.equal(slots.beforeEn,'1 extra socket');
+ assert.equal(slots.afterEn,'2 extra sockets');
+ assert.equal(slots.after,'2 дополнительных слота');
+ assert.equal(review.uncertain,false);
+});
+test('English detail captions use safe prefixes for named quest fields and checksum metadata',()=>{
+ const prev=[{id:1,name:'Известное задание',blurb:'Old description'}];
+ const next=[{id:1,name:'Известное задание',blurb:'New description'}];
+ const quest=describe(change('instances','@dataset',prev,next),context);
+ assert.equal(quest.rows.length,1);
+ assert.equal(quest.rows[0].labelEn,'Известное задание · English description');
+ const metadata=describe(change('meta','@dataset',{sha:{'a.csv':'old'}},
+  {sha:{'a.csv':'new'}}),context);
+ assert.equal(metadata.rows[0].labelEn,'File checksums');
+ assert.equal(metadata.service,true);
+ assert.equal(metadata.uncertain,true);
+});
