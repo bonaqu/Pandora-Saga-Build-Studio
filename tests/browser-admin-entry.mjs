@@ -2015,7 +2015,11 @@ export async function runAdminEntrySmoke(browser,base){
    'Экспорт каталога · QA',null,{timeout:15000});
   assert.equal(JSON.parse(townOverrides.get('guideedit.book.owner-dialog.github-title')).ru,
    'Экспорт каталога · QA');
-  assert.equal((await export390ExportCountValue.textContent()).trim(),'2');
+  // The old role/name locator intentionally stops matching after a D1
+  // edit of the modal's accessible name. Inspect the SAME mounted count node.
+  assert.equal((await page.locator('#modalRoot .modal[role="dialog"] '+
+   '.owner-dialog-live-count .owner-dialog-runtime-number').textContent()).trim(),'2',
+   'Changing a dialog title does not alter server-provided export counts');
   await page.locator('#modalRoot .modal button.close').click();
   // EN localization is independent; editing the RU copy must not overwrite it.
   await page.locator('#locale [data-locale="en"]').click();
