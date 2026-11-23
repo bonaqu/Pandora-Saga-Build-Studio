@@ -1123,11 +1123,11 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(await hintWrap.locator('.os-sync-filter-caption').innerText(),'Изменённые');
   await hintWrap.locator('.os-sync-filter').hover();
   await hintWrap.locator('.os-sync-secondary-pencil').click();
-  const hintEditor=hintWrap.locator('.os-sync-secondary-host [contenteditable]');
-  await hintEditor.waitFor({state:'visible',timeout:12000});
-  await hintEditor.fill('Проверка изменений без публикации QA.');
-  await hintEditor.press('Tab');
-  await hintEditor.waitFor({state:'detached',timeout:15000});
+  const filterHintEditor=hintWrap.locator('.os-sync-secondary-host [contenteditable]');
+  await filterHintEditor.waitFor({state:'visible',timeout:12000});
+  await filterHintEditor.fill('Проверка изменений без публикации QA.');
+  await filterHintEditor.press('Tab');
+  await filterHintEditor.waitFor({state:'detached',timeout:15000});
   const savedHintKey='guideedit.book.catalog-sync.hint-review-filter-changed';
   for(let n=0;n<300&&!townOverrides.has(savedHintKey);n++)
    await page.waitForTimeout(40);
