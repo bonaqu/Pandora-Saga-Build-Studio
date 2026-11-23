@@ -456,3 +456,10 @@ pencil controls. Full Node+Chromium required on the exact new PR SHA.
 - [x] Общий обработчик прямой редакции принимает необязательный DOM scope. Динамически вставленный блок сравнения привязывает только собственные элементы, сохраняя общий документный режим и гостевые ограничения.
 - [x] Дополнен существующий Node-контракт и настоящий Chromium-сценарий: F2, CAS, Escape, Undo, синхронизация ARIA/title, сохранение A/B ID, отсутствие карандаша; штатный обмен проверяется существующей частью сценария.
 - [ ] До принятия необходимы оба полных CI на точном новом SHA. Реальная remote staging D1 и touch hardware не проверены. PR #809 Draft, issue #390 Open, production без изменений.
+
+## 23.11.2026 — Owner history controls and no-pencil CSS cleanup (#390)
+
+- [x] Seven formerly hard-coded RU/EN authorial controls in the manual D1 change-history dialog now have stable semantic `guideedit.book.owner-history.*` identities: editable search placeholder/ARIA, section-select ARIA, session checkbox caption, clear-action caption/ARIA and All sections option. The same D1 CAS/Undo mechanism applies; native non-text controls are grouped in one collapsed owner-only editor, with direct double-click on visible captions.
+- [x] Existing checkbox and clear action keep their native behavior through the delayed first-click guard; a double-click edits only the source caption. Typed search text, selected section, checked state, runtime D1 records, before/after values and totals are never translated or stored as authorial copy.
+- [x] Source-staging manifest explicitly recognizes exactly these seven new bilingual keys and fails closed on registry drift; Node and real Chromium coverage added to existing suites. Removed obsolete CSS for historical `owner-history-pencil` and `owner-history-edit-row` while preserving actual caption layout.
+- [ ] Require BOTH full CI checks on exactly the next HEAD. Cloudflare isolated remote D1 preflight/import/hash readback/rollback, physical-touch acceptance and authorized release remain pending. PR #809 stays Draft; issue #390 Open.
