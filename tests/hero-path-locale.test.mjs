@@ -168,3 +168,11 @@ test('#390: Path budget source captions are CAS-editable without remounting nume
  assert.match(source,/if\(!stats\)/);
  assert.doesNotMatch(source,/root\.replaceChildren\(/);
 });
+
+test('#390 Path budget CSS keeps loading state full-width and hides game-data rows',()=>{
+ const css=readFileSync(new URL('../pandora-studio-theme.css',import.meta.url),'utf8');
+ assert.match(css,/#budgetState \[hidden\]\{display:none!important\}/,
+  'Author-level flex/grid display must not expose hidden budget values');
+ assert.match(css,/\.path-budget-values>\.path-budget-loading\{grid-column:1\/-1;/,
+  'The loading announcement should span the compact three-column budget');
+});
