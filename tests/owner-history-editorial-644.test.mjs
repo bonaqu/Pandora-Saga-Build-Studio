@@ -58,6 +58,22 @@ test('history copy save, Undo and reset share D1 CAS and keep the current modal 
  assert.match(app,/ownerCaptionActionGuard\(clearSearch,clearCaption\)/);
  assert.match(app,/bindHistoryControl\(allOption,'allSections','text'\)/);
  assert.match(app,/ownerInterfaceEditor\('owner-history',ownerHistoryControlCopyRows/);
+ assert.match(app,/const ownerHistoryRowCopyRows=Object\.freeze/);
+ for(const key of ['pendingError','pendingSaving','fieldsChanged',
+  'openEncyclopedia','restoreOriginal']){
+  assert.equal(guideRoot.PandoraHonorGuide.validOverride(
+   'book.owner-history.'+key.replace(/[A-Z]/g,s=>'-'+s.toLowerCase()),
+   JSON.stringify({ru:'Изменено',en:'Edited'})),true);
+ }
+ assert.match(app,/pendingNote\.append\(pendingError,pendingSaving\)/);
+ assert.match(app,/pendingError\.hidden=ownerSaveState!=='error'/);
+ assert.match(app,/pendingSaving\.hidden=ownerSaveState==='error'/);
+ assert.doesNotMatch(app,/pendingNote\.textContent=ownerSaveState/);
+ assert.match(app,/class:'owner-history-field-count',text:String\(record\.changes\.length\)/);
+ assert.match(app,/historyRowCaption\('span','owner-history-fields-copy','fieldsChanged'\)/);
+ assert.match(app,/ownerCaptionActionGuard\(openButton,openCaption\)/);
+ assert.match(app,/ownerCaptionActionGuard\(resetAction,resetCaption\)/);
+ assert.match(app,/ownerHistoryRowCopyRows\.filter\(row=>row\[0\]\.startsWith\('pending'\)\)/);
  assert.match(browser,/guideedit\.book\.owner-history\.intro/);
  assert.match(browser,/beforeCatalogCalls/);
 });
