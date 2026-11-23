@@ -10853,6 +10853,8 @@ function refreshVisibleOwnerCopy(recordKey){
   if(section==='owner-history'&&id==='dialogTitle')
    ownerDockPatchAttr(node.closest('.modal[role="dialog"]'),'aria-label',value);
   if(section==='owner-dialog'){
+   if(node.matches('h2'))
+    ownerDockPatchAttr(node.closest('.modal[role="dialog"]'),'aria-label',value);
    const action=node.closest('.owner-dialog-action-editor')?.querySelector('.owner-dialog-action');
    ownerDockPatchText(action,value);
   }
@@ -11985,6 +11987,67 @@ function inlineWikiText(el){
 /* Editorial copy for administrative dialogs uses the same authenticated
    inline D1 CAS path as the Book. No JSON values, counts, tokens or callbacks
    are ever passed to this generic text editor. */
+
+ // Pure source-owned owner-dialog words only. Keep record identifiers, live
+ // counters, D1 server error text, URLs and conditional operations outside CAS.
+ const ownerDialogStatusCopyRows=Object.freeze([
+  ['translationsNoPending','Все подготовленные английские переводы уже сохранены.',
+   'All prepared English translations have already been saved.'],
+  ['translationsReadyCount','К сохранению:','To save:'],
+  ['translationsSuccessLead','Готово:','Done:'],
+  ['translationsSuccessSuffix','переводов сохранены в D1.','translations saved in D1.'],
+  ['translationsPartialLead','Сохранено','Saved'],
+  ['translationsPartialOf','из','of'],
+  ['translationsPartialSuffix','записей.','entries.'],
+  ['translationsTitle','Английские переводы','English translations'],
+  ['translationsSaveHint','Сохранит проверенные EN-переводы в D1. Перед записью проверит, не изменилось ли содержимое облака.',
+   'Save reviewed English translations to D1, after checking for concurrent cloud changes.'],
+  ['githubMissingToken','GitHub-токен пока недоступен Worker.',
+   'The GitHub token is currently unavailable in the Worker.'],
+  ['githubCount','Записей для копии:','Records in copy:'],
+  ['githubProposed','Копия предложена, но ещё НЕ добавлена в GitHub. Проверки PR не объединяют его автоматически.',
+   'The copy has been proposed, but is NOT yet merged into GitHub. PR checks do not merge it automatically.'],
+  ['githubLink','Открыть PR и проверить содержимое','Open PR and review the contents'],
+  ['githubFollowup','Если копия нужна, после успешных проверок нажми Merge pull request. Для обычной правки энциклопедии это необязательно.',
+   'If you want the copy, select Merge pull request after successful checks. This is optional for editing the live encyclopedia.'],
+  ['githubUnchanged','Изменений относительно GitHub нет.','No changes compared with GitHub.'],
+  ['githubNoLink','PR создан, но адрес не указан.','PR created, but no URL was returned.'],
+  ['githubTitle','Необязательная копия энциклопедии в GitHub',
+   'Optional GitHub encyclopedia copy'],
+  ['githubCreateHint','Создаст необязательный PR с копией уже сохранённых D1-правок. На сайте ничего не изменится.',
+   'Create an optional GitHub PR copying already saved D1 edits. This does not change the live site.']
+ ]);
+ const ownerDialogStatusByKey=new Map(ownerDialogStatusCopyRows.map(row=>[row[0],row]));
+ function ownerDialogStatusText(key){
+  const row=ownerDialogStatusByKey.get(key);
+  if(!row)throw Error('Unknown owner-dialog source text');
+  return ownerCopy('owner-dialog',key,row[1],row[2]);
+ }
+ function ownerDialogStatusCaption(tag,key,className='owner-dialog-status-copy'){
+  const row=ownerDialogStatusByKey.get(key);
+  if(!row)throw Error('Unknown owner-dialog caption key');
+  const node=h(tag,{class:className,text:ownerDialogStatusText(key)});
+  ownerCopyLabel(node,'owner-dialog',key,row[1],row[2]);
+  return node;
+ }
+ function ownerDialogStatusPanel(keys,ru,en){
+  const rows=keys.map(key=>{
+   const row=ownerDialogStatusByKey.get(key);
+   if(!row)throw Error('Unknown owner-dialog inventory key');
+   return row;
+  });
+  return ownerInterfaceEditor('owner-dialog',rows,ru,en);
+ }
+ function ownerDialogSourceModal(key,body){
+  const row=ownerDialogStatusByKey.get(key);
+  if(!row)throw Error('Unknown owner-dialog modal title');
+  const dialog=modal(ownerDialogStatusText(key),body);
+  const heading=dialog.querySelector('h2');
+  ownerCopyLabel(heading,'owner-dialog',key,row[1],row[2],{
+   onCommitted:value=>ownerDockPatchAttr(dialog,'aria-label',value)
+  });
+  return dialog;
+ }
 function ownerDialogHelp(key,ru,en){
  const caption=h('p',{class:'muted owner-dialog-help',
   id:'owner-dialog-copy-'+key,text:ownerCopy('owner-dialog',key,ru,en)});
@@ -11995,14 +12058,15 @@ function ownerDialogHelp(key,ru,en){
 function ownerDialogAction(button,key,ru,en){
  button.textContent=ownerCopy('owner-dialog',key,ru,en);
  button.classList.add('owner-dialog-action');
- const hints={
-  translationsSaveButton:['Сохранит проверенные EN-переводы в D1. Перед записью проверит, не изменилось ли содержимое облака.',
-   'Save reviewed English translations to D1, after checking for concurrent cloud changes.'],
-  githubCreateButton:['Создаст необязательный PR с копией уже сохранённых D1-правок. На сайте ничего не изменится.',
-   'Create an optional GitHub PR copying already saved D1 edits. This does not change the live site.']
- };
- if(hints[key])window.PandoraGuideTooltip?.attach(button,
-  hints[key][lang==='en'?1:0],{hoverDelay:350});
+ const hintKey=key==='translationsSaveButton'?'translationsSaveHint':
+  key==='githubCreateButton'?'githubCreateHint':null;
+ if(hintKey){
+  const row=ownerDialogStatusByKey.get(hintKey);
+  bindOwnerInterfaceText(button,'owner-dialog',hintKey,row[1],row[2],
+   'aria-description');
+  window.PandoraGuideTooltip?.attach(button,
+   ownerDialogStatusText(hintKey),{hoverDelay:350});
+ }
  if(!adminEditing||!adminToken)return button;
  const wrapper=h('span',{class:'owner-dialog-action-editor'});
  const host=h('span',{class:'owner-dialog-action-host',hidden:true});
@@ -12031,7 +12095,7 @@ function showOwnerEnglishReview(){
  const helper=window.PandoraOwnerBilingual;
  const planned=helper?.pending(override)||[];
  if(!planned.length){
-  showStudioToast('Все подготовленные английские переводы уже сохранены.','success');return;
+  showStudioToast(ownerDialogStatusText('translationsNoPending'),'success');return;
  }
  const fields=planned.reduce((sum,entry)=>sum+entry.fields.length,0);
  const body=h('div',{class:'owner-manager owner-dialog-translations'});
@@ -12068,25 +12132,45 @@ function showOwnerEnglishReview(){
     saved++;
    }
    refreshVisibleWikiLabels();
-   status.textContent=tr('Готово: ','Done: ')+fields+
-    tr(' переводов сохранены в D1.',' translations saved in D1.');
+   status.replaceChildren(
+    ownerDialogStatusCaption('span','translationsSuccessLead'),
+    document.createTextNode(' '),
+    h('span',{class:'owner-dialog-runtime-number',text:String(fields)}),
+    document.createTextNode(' '),
+    ownerDialogStatusCaption('span','translationsSuccessSuffix'));
    await refreshOwnerCatalog();
    save.hidden=true;
   }catch(error){
-   status.textContent=tr('Сохранено ','Saved ')+saved+
-    tr(' из ',' of ')+planned.length+
-    tr(' записей. ',' entries. ')+error.message;
+   status.replaceChildren(
+    ownerDialogStatusCaption('span','translationsPartialLead'),
+    document.createTextNode(' '),
+    h('span',{class:'owner-dialog-runtime-number',text:String(saved)}),
+    document.createTextNode(' '),
+    ownerDialogStatusCaption('span','translationsPartialOf'),
+    document.createTextNode(' '),
+    h('span',{class:'owner-dialog-runtime-number',text:String(planned.length)}),
+    document.createTextNode(' '),
+    ownerDialogStatusCaption('span','translationsPartialSuffix'),
+    document.createTextNode(' '),
+    h('span',{class:'owner-dialog-server-error',text:error.message}));
    if(!saved)save.disabled=false;
   }finally{editIsSaving=false;refreshOwnerUI()}
  };
  const toolbar=h('div',{class:'owner-dialog-save-row'},[
   ownerDialogAction(save,'translationsSaveButton',
    'Сохранить EN-переводы','Save English translations'),
-  h('small',{class:'owner-dialog-live-count',
-   text:tr('К сохранению: ','To save: ')+fields})
+  h('small',{class:'owner-dialog-live-count'},[
+   ownerDialogStatusCaption('span','translationsReadyCount'),
+   document.createTextNode(' '),
+   h('span',{class:'owner-dialog-runtime-number',text:String(fields)})
+  ])
  ]);
  body.append(list,toolbar,status);
- modal(tr('Английские переводы','English translations'),body);
+ const translationOptions=ownerDialogStatusPanel(
+  ['translationsSaveHint','translationsNoPending'],
+  'Дополнительные подписи переводов','Additional translation captions');
+ if(translationOptions)body.append(translationOptions);
+ ownerDialogSourceModal('translationsTitle',body);
 }
 async function showOwnerGitHubExport(){
  if(!adminToken)return;
@@ -12094,17 +12178,20 @@ async function showOwnerGitHubExport(){
  if(!ownerCanStartAdminOperation())return;
  try{
   const info=await apiRequest('/api/admin/catalog/owner-review');
-  if(!info.configured){showStudioToast('GitHub-токен пока недоступен Worker.','warning');return}
+  if(!info.configured){showStudioToast(ownerDialogStatusText('githubMissingToken'),'warning');return}
   const panel=h('div',{class:'owner-github-review'});
   panel.append(
    ownerDialogHelp('githubPrompt',
     'Необязательная копия правок энциклопедии в GitHub',
     'Optional copy of encyclopedia edits in GitHub'),
-   h('p',{class:'owner-dialog-live-count',
-    text:tr('Записей для копии: ','Records in copy: ')+info.count}),
+   h('p',{class:'owner-dialog-live-count'},[
+    ownerDialogStatusCaption('span','githubCount'),
+    document.createTextNode(' '),
+    h('span',{class:'owner-dialog-runtime-number',text:String(info.count)})
+   ]),
    ownerDialogHelp('githubExplanation',
-    'Изменения через ✎ уже сохраняются в D1 и работают на сайте. Копия в GitHub НЕ обязательна. Эта кнопка создаст публичный PR — предложение добавить текстовую копию в репозиторий. Зелёные проверки означают, что тесты прошли, но не объединяют PR. Если нужна копия, проверь её содержимое и нажми Merge pull request в GitHub.',
-    'Edits made with ✎ already save to D1 and work on the site. GitHub export is OPTIONAL. This creates a public PR to add a text copy to the repository. Green checks mean tests passed, not that the PR was merged. To keep the copy, review its contents and select Merge pull request in GitHub.'));
+    'Правки энциклопедии уже сохраняются в D1 и работают на сайте. Копия в GitHub НЕ обязательна. Кнопка создаёт публичный PR с текстовой копией, но не объединяет его. Если нужен резервный экземпляр, проверь изменения и отдельно нажми Merge pull request в GitHub.',
+    'Encyclopedia edits already save to D1 and work on the site. GitHub export is OPTIONAL. The button creates a public PR with a text copy; it does not merge it. If you want a backup, review changes and separately select Merge pull request in GitHub.'));
   const feedback=h('p',{class:'inline-owner-error',role:'status'});
   const go=h('button',{type:'button',class:'button-action primary',disabled:!info.count});
   go.onclick=async()=>{
@@ -12115,21 +12202,24 @@ async function showOwnerGitHubExport(){
      expectedFingerprint:info.fingerprint});
     if(result.url&&/^https:\/\/github\.com\/bonaqu\/Pandora-Saga-Build-Studio\/pull\/\d+$/.test(result.url)){
      feedback.replaceChildren(
-      h('span',{text:tr('Копия предложена, но ещё НЕ добавлена в GitHub. Проверки PR не объединяют его автоматически. ',
-       'The copy has been proposed, but is NOT yet merged into GitHub. PR checks do not merge it automatically. ')}),
-      h('a',{href:result.url,target:'_blank',rel:'noopener noreferrer',
-       text:tr('Открыть PR и проверить содержимое','Open PR and review the contents')}),
-      h('span',{text:tr(' Если копия нужна, после успешных проверок нажми Merge pull request. Для обычной правки энциклопедии это необязательно.',
-       ' If you want the copy, select Merge pull request after successful checks. This is optional for editing the live encyclopedia.')})
+      ownerDialogStatusCaption('span','githubProposed'),
+      document.createTextNode(' '),
+      h('a',{href:result.url,target:'_blank',rel:'noopener noreferrer'},
+       [ownerDialogStatusCaption('span','githubLink')]),
+      document.createTextNode(' '),
+      ownerDialogStatusCaption('span','githubFollowup')
      );
-    }else feedback.textContent=result.unchanged?
-     tr('Изменений относительно GitHub нет.','No changes compared with GitHub.'):
-     tr('PR создан, но адрес не указан.','PR created, but no URL was returned.');
+    }else feedback.replaceChildren(ownerDialogStatusCaption('span',
+     result.unchanged?'githubUnchanged':'githubNoLink'));
    }catch(error){feedback.textContent=error.message;go.disabled=false}
   };
   panel.append(ownerDialogAction(go,'githubCreateButton',
    'Подготовить PR для копии','Prepare copy PR'),feedback);
-  modal(tr('Необязательная копия энциклопедии в GitHub','Optional GitHub encyclopedia copy'),panel);
+  const githubOptions=ownerDialogStatusPanel(
+   ['githubCreateHint','githubUnchanged','githubNoLink','githubMissingToken'],
+   'Дополнительные подписи экспорта','Additional export captions');
+  if(githubOptions)panel.append(githubOptions);
+  ownerDialogSourceModal('githubTitle',panel);
  }catch(error){showStudioToast('Не удалось подготовить экспорт: '+error.message,'warning')}
 }
 async function showOwnerLevelProgression(){
