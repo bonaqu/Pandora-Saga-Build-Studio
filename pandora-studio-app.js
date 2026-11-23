@@ -859,6 +859,22 @@ function previewBaseStats(snap=state){
     exorcism:26},...masteries}
  });
 }
+// Compose screen-reader text from the ORIGINAL visible HP/MP labels and
+// computed numbers. No character stat, level or derived value is owner text.
+function refreshOriginVitalsAccessible(){
+ const holder=$('originVitals');
+ if(!holder)return;
+ const hp=$('originHp')?.textContent||'',mp=$('originMp')?.textContent||'';
+ const hpLabel=holder.querySelector('[data-i18n="hpShort"]')?.textContent?.trim()||
+  (lang==='en'?'HP':'ОЗ');
+ const mpLabel=holder.querySelector('[data-i18n="mpShort"]')?.textContent?.trim()||
+  (lang==='en'?'MP':'ОМ');
+ const ready=hp!==''&&mp!==''&&hp!=='—'&&mp!=='—'&&
+  Number.isFinite(Number(hp))&&Number.isFinite(Number(mp));
+ ownerDockPatchAttr(holder,'aria-label',ready?
+  hpLabel+' '+hp+', '+mpLabel+' '+mp:statsUiText('vitalsLoadingAria'));
+ holder.title=''; // No duplicate browser tooltip over the game UI.
+}
 function renderOriginVitals(calculated=undefined){
  // The supported calculator returns rounded numeric totals. Parity with all server
  // buffs, sets and conditional effects is still unverified; don't imply otherwise.
@@ -869,16 +885,7 @@ function renderOriginVitals(calculated=undefined){
  if(hp)hp.textContent=hpReady?String(calculated.hp):'—';
  if(mp)mp.textContent=mpReady?String(calculated.mp):'—';
  
- const holder=$('originVitals');
- if(holder){
-  const notice=hpReady&&mpReady?
-   (lang==='en'?'HP '+calculated.hp+', MP '+calculated.mp:
-    'ОЗ '+calculated.hp+', ОМ '+calculated.mp):
-   (lang==='en'?'HP and MP will appear when game data have loaded.':
-    'ОЗ и ОМ появятся после загрузки игровых данных.');
-  holder.setAttribute('aria-label',notice);
-  holder.title=''; // Never show a second browser tooltip above game UI.
- }
+ refreshOriginVitalsAccessible();
  // The Book shares this exact derived snapshot with the vitals panel.
  // Recalculating here would add a full combat pass to every input change.
  refreshOpenHeroBook(calculated);
@@ -1671,9 +1678,39 @@ function refreshEquipmentPickerItemAria(one=null){
 // and the offline immutable defaults plan. Never include user-entered queries,
 // game totals or the currently selected filter/skill identity.
 const statsUiCopyRows=Object.freeze([
-['remainingPrefix','Свободно:','Available:','Свободные очки','Available points'],
-  ['spentPrefix','Потрачено:','Spent:','Вложенные очки','Spent points']
+ ['remainingPrefix','Свободно:','Available:','Свободные очки','Available points'],
+ ['spentPrefix','Потрачено:','Spent:','Вложенные очки','Spent points'],
+ ['chooseRaceClass','Выберите расу и профессию','Choose a race and class','Выбор героя','Choose hero'],
+ ['levelBudgetPrefix','Бюджет уровня:','Level budget:','Бюджет уровня','Level budget'],
+ ['totalCaption','Итог','Total','Итог характеристики','Stat total'],
+ ['bonusSuffix','бонус','bonus','Бонус характеристики','Stat bonus'],
+ ['vitalsLoadingAria','ОЗ и ОМ появятся после загрузки игровых данных.',
+  'HP and MP will appear when game data have loaded.','ОЗ/ОМ: загрузка','HP/MP loading'],
+ ['holdStepAria','Нажмите для изменения на один; удерживайте для повторения.',
+  'Press once to adjust by one; hold to repeat.','Удержание ±','Hold to repeat'],
+ ['decreaseAria','Уменьшить','Decrease','Уменьшение характеристики','Decrease stat'],
+ ['increaseAria','Увеличить','Increase','Увеличение характеристики','Increase stat'],
+ ['excludeBonusesAria','— без бонусов снаряжения и умений',
+  '— excluding equipment and skill bonuses','Ввод без бонусов','Input without bonuses'],
+ ['baseAria','База','Base','Расчёт · базовое значение','Base explanation'],
+ ['pointsAria','+ очки','+ allocated points','Расчёт · вложенные очки','Invested points'],
+ ['knownBonusesAria','+ известные бонусы','+ known bonuses',
+  'Расчёт · известные бонусы','Known bonuses'],
+ ['costAria','Стоимость:','Cost:','Стоимость следующего очка','Next point cost'],
+ ['maximumAria','максимум','maximum','Достигнут максимум','Maximum reached']
 ]);
+// A single owner-only panel for non-visible controls. Visible authorial words
+// are edited directly; numeric budgets and original stat names never enter D1.
+const statsUiAriaKeys=Object.freeze([
+ 'vitalsLoadingAria','holdStepAria','decreaseAria','increaseAria',
+ 'excludeBonusesAria','baseAria','pointsAria','knownBonusesAria',
+ 'costAria','maximumAria'
+]);
+function statsUiText(key){
+ const row=statsUiCopyRows.find(item=>item[0]===key);
+ if(!row)throw Error('Unreviewed Origin stats copy identity');
+ return ownerCopy('stats-ui',key,row[1],row[2]);
+}
 const skillUiCopyRows=Object.freeze([
 ['searchPlaceholder','Найти умение','Find skill','Поле поиска','Search placeholder'],
   ['filterAria','Фильтр навыков','Skill filter','Фильтр умений','Skill filter']
@@ -3094,8 +3131,11 @@ function bindHoldStep(button,step){
  button.addEventListener('lostpointercapture',stop);
  button.addEventListener('blur',stop);
  button.addEventListener('keydown',event=>{if(event.key==='Escape')stop()});
- button.setAttribute('aria-description',lang==='en'?
-  'Press once to adjust by one; hold to repeat.':'Нажмите для изменения на один; удерживайте для повторения.');
+ const hintRu='Нажмите для изменения на один; удерживайте для повторения.';
+ const hintEn='Press once to adjust by one; hold to repeat.';
+ button.setAttribute('aria-description',typeof ownerCopy==='function'?
+  ownerCopy('stats-ui','holdStepAria',hintRu,hintEn):
+  lang==='en'?hintEn:hintRu);
 }
 function setAttributePoints(index,added){
  if(!window.PandoraAttributeProgression.allowed(attributeSnapshot(),index,added))return false;
@@ -3110,19 +3150,51 @@ const ORIGIN_STAT_LABELS=[
  {short:'ИНТ',name:'Интеллект',nameEn:'Intelligence',code:'int'}
 ];
 // Legacy save keys remain unchanged: AGI was stored under «Ловкость», DEX under «Сноровка».
+// Recompose only *accessible copy*, not the stat allocations or rendered rows,
+// when an owner RU/EN CAS edit or Undo changes these source-only words.
+function refreshOriginStatAccessibility(){
+ for(const wrap of document.querySelectorAll('#originStats [data-origin-stat-index]')){
+  const i=Number(wrap.dataset.originStatIndex),info=ORIGIN_STAT_LABELS[i];
+  if(!info)continue;
+  const name=lang==='en'?info.nameEn:info.name;
+  const base=wrap.dataset.originStatBase||'—',
+   spent=wrap.dataset.originStatSpent||'0',
+   delta=wrap.dataset.originStatDelta||'0',
+   cost=wrap.dataset.originStatCost;
+  const total=wrap.querySelector('.origin-stat-result strong')?.textContent||'—';
+  ownerDockPatchAttr(wrap.querySelector('.stat-step-decrement'),'aria-label',
+   statsUiText('decreaseAria')+' '+name);
+  ownerDockPatchAttr(wrap.querySelector('.origin-stat-input'),'aria-label',
+   name+' '+statsUiText('excludeBonusesAria'));
+  ownerDockPatchAttr(wrap.querySelector('.stat-step-increment'),'aria-label',
+   statsUiText('increaseAria')+' '+name+'. '+statsUiText('costAria')+' '+
+    (cost??statsUiText('maximumAria')));
+  ownerDockPatchAttr(wrap.querySelector('.origin-stat-result strong'),'aria-label',
+   statsUiText('baseAria')+' '+base+' '+statsUiText('pointsAria')+' '+spent+
+   ' '+statsUiText('knownBonusesAria')+' '+delta+' = '+total);
+ }
+ for(const button of document.querySelectorAll(
+  '#originStats .stat-step-decrement,#originStats .stat-step-increment'))
+  ownerDockPatchAttr(button,'aria-description',statsUiText('holdStepAria'));
+}
 function renderOriginStats(calculated=undefined){
  const root=$('originStats'),summary=$('originStatSummary');
  if(!root||!summary)return;
  root.replaceChildren();
  const list=h('div',{class:'origin-stat-list'}),entries=[];
  const tr=(ru,en)=>lang==='en'?en:ru;
- // Keep the legacy standalone computation fixture executable without its
- // workbench context; the real app injects the shared D1 copy binder.
- const statCaption=(key,ru,en)=> {
-  const node=h('span',{text:tr(ru,en)+' '});
-  return typeof bindOwnerInterfaceText==='function'?
-   bindOwnerInterfaceText(node,'stats-ui',key,ru,en,'text',' '):node;
+ const copy=(key,ru,en)=>typeof ownerCopy==='function'?
+  ownerCopy('stats-ui',key,ru,en):tr(ru,en);
+ // The browser binds the EXACT visible word to CAS. Lightweight formula
+ // fixtures can still execute this renderer without the workbench/editor.
+ const visibleCaption=(key,ru,en)=>{
+  const node=h('span',{text:copy(key,ru,en)});
+  if(typeof ownerCopyLabel==='function')ownerCopyLabel(node,'stats-ui',key,ru,en);
+  return node;
  };
+ const statCaption=(key,ru,en)=>h('span',{},[
+  visibleCaption(key,ru,en),h('span',{text:' '})
+ ]);
  // Saved stats remain invested-only. The input is the absolute race/class baseline + investment.
  function refresh(known=undefined){
   // Interactive handlers call refresh() without a snapshot so edits always
@@ -3136,10 +3208,12 @@ function renderOriginStats(calculated=undefined){
     statCaption('spentPrefix','Потрачено:','Spent:'),
     h('span',{text:String(snap.spent)})
    );
-  }else summary.textContent=
-   tr('Выберите расу и профессию · ','Choose a race and class · ')+
-   tr('Бюджет уровня: ','Level budget: ')+
-   (window.PandoraAttributeProgression.budget(state.level)??'—');
+  }else summary.replaceChildren(
+   visibleCaption('chooseRaceClass','Выберите расу и профессию','Choose a race and class'),
+   h('span',{text:' · '}),
+   visibleCaption('levelBudgetPrefix','Бюджет уровня:','Level budget:'),
+   h('span',{text:' '+(window.PandoraAttributeProgression.budget(state.level)??'—')})
+  );
   summary.classList.toggle('over-budget',!!snap?.overBudget);
   for(const row of entries){
    const base=snap?.base[row.i],spent=Number(state.stats[STATS[row.i]]||0);
@@ -3153,31 +3227,47 @@ function renderOriginStats(calculated=undefined){
    const shown=Number.isFinite(effective)?effective:allocated;
    row.result.textContent=shown===null?'—':String(shown);
    const delta=shown===null||allocated===null?0:shown-allocated;
-   row.caption.textContent=delta?(delta>0?'+':'')+delta+tr(' бонус',' bonus'):
-    tr('Итог','Total');
-   row.result.setAttribute('aria-label',tr('База ','Base ')+(base??'—')+
-    tr(' + очки ',' + allocated points ')+spent+
-    tr(' + известные бонусы ',' + known bonuses ')+delta+' = '+row.result.textContent);
+   row.bonusNumber.textContent=delta?(delta>0?'+':'')+delta:'';
+   row.bonusNumber.hidden=!delta;row.bonusSpace.hidden=!delta;
+   row.bonusLabel.hidden=!delta;row.totalLabel.hidden=!!delta;
+   const nextCost=window.PandoraAttributeProgression.nextCost(snap,row.i);
+   row.result.setAttribute('aria-label',
+    copy('baseAria','База','Base')+' '+(base??'—')+' '+
+    copy('pointsAria','+ очки','+ allocated points')+' '+spent+' '+
+    copy('knownBonusesAria','+ известные бонусы','+ known bonuses')+
+    ' '+delta+' = '+row.result.textContent);
    row.minus.disabled=!snap||spent<=0;
    row.plus.disabled=!window.PandoraAttributeProgression.allowed(snap,row.i,spent+1);
-   row.plus.setAttribute('aria-label',tr('Увеличить ','Increase ')+row.name+
-    tr('. Стоимость: ','. Cost: ')+(window.PandoraAttributeProgression.nextCost(snap,row.i)??tr('максимум','maximum')));
+   row.plus.setAttribute('aria-label',
+    copy('increaseAria','Увеличить','Increase')+' '+row.name+'. '+
+    copy('costAria','Стоимость:','Cost:')+' '+
+    (nextCost??copy('maximumAria','максимум','maximum')));
+   if(row.wrap.dataset)Object.assign(row.wrap.dataset,{
+    originStatBase:String(base??'—'),originStatSpent:String(spent),
+    originStatDelta:String(delta),
+    originStatCost:nextCost===null||nextCost===undefined?'':String(nextCost)
+   });
   }
  }
  ORIGIN_STAT_LABELS.forEach((info,i)=>{
   const name=tr(info.name,info.nameEn),short=lang==='en'?info.code.toUpperCase():info.short;
-  const wrap=h('div',{class:'origin-stat-row'});
+  const wrap=h('div',{class:'origin-stat-row','data-origin-stat-index':String(i)});
   const title=h('div',{class:'origin-stat-title'},[
    h('b',{text:short}),h('span',{text:name})]);
   const minus=h('button',{type:'button',class:'stat-step-decrement',text:'−',
-   'aria-label':tr('Уменьшить ','Decrease ')+name});
+   'aria-label':copy('decreaseAria','Уменьшить','Decrease')+' '+name});
   const input=h('input',{type:'number',min:'0',max:'99',step:'1',class:'origin-stat-input',
-   'aria-label':name+tr(' — без бонусов снаряжения и умений',
-    ' — excluding equipment and skill bonuses')});
+   'aria-label':name+' '+copy('excludeBonusesAria',
+    '— без бонусов снаряжения и умений',
+    '— excluding equipment and skill bonuses')});
   const plus=h('button',{type:'button',class:'stat-step-increment',text:'+',
-   'aria-label':tr('Увеличить ','Increase ')+name});
+   'aria-label':copy('increaseAria','Увеличить','Increase')+' '+name});
   const box=h('div',{class:'origin-stat-result'}),result=h('strong',{text:'—'}),
-   caption=h('small',{text:tr('Итог','Total')});
+   caption=h('small');
+  const bonusNumber=h('span',{text:''}),bonusSpace=h('span',{text:' '});
+  const bonusLabel=visibleCaption('bonusSuffix','бонус','bonus');
+  const totalLabel=visibleCaption('totalCaption','Итог','Total');
+  caption.append(bonusNumber,bonusSpace,bonusLabel,totalLabel);
   box.append(result,caption);
   const commit=absolute=>{
    const snap=attributeSnapshot();
@@ -3192,11 +3282,28 @@ function renderOriginStats(calculated=undefined){
   bindHoldStep(plus,()=>commit((attributeSnapshot()?.values[i]??0)+1));
   input.addEventListener('change',()=>commit(input.value));
   wrap.append(title,minus,input,plus,box);
-  list.append(wrap);entries.push({i,input,result,caption,minus,plus,name});
+  list.append(wrap);entries.push({i,wrap,input,result,caption,minus,plus,name,
+   bonusNumber,bonusSpace,bonusLabel,totalLabel});
  });
  root.append(list);
- if(typeof adminEditing!=='undefined'&&adminEditing&&adminToken)
-  root.append(ownerInterfaceEditor('stats-ui',statsUiCopyRows,'Подписи очков героя','Hero point labels'));
+ // Keep the owner-only ARIA editor OUTSIDE the frequently rerendered stat
+ // list. Changes to game values must not destroy an in-flight CAS draft.
+ if(typeof adminEditing!=='undefined'){
+  const existing=$('ownerOriginStatsCopy');
+  if(!adminEditing||!adminToken)existing?.remove();
+  else if(!existing?.querySelector?.('[data-owner-text-field]')&&
+   existing?.dataset?.statsCopyLocale!==lang){
+   const opened=Boolean(existing?.open);
+   existing?.remove();
+   const editor=ownerInterfaceEditor('stats-ui',
+    statsUiCopyRows.filter(row=>statsUiAriaKeys.includes(row[0])),
+    'Доступность характеристик','Attribute accessibility');
+   if(editor){
+    editor.id='ownerOriginStatsCopy';editor.dataset.statsCopyLocale=lang;
+    editor.open=opened;root.after(editor);
+   }
+  }
+ }
  refresh(calculated);
 }
 function renderOriginPassives(){
@@ -10512,6 +10619,8 @@ function refreshVisibleUICopy(recordKey){
  const locale=window.PandoraUILocale;
  locale.setOverrides(override);
  locale.apply(lang);
+ if([locale.fieldKey('hpShort'),locale.fieldKey('mpShort')].some(id=>
+  id&&recordKey==='guideedit.book.'+id))refreshOriginVitalsAccessible();
  if(recordKey.startsWith('guideedit.book.ui.label.site-update-')){
   window.PandoraStudioUpdateBanner?.refresh?.();
   return; // No renderer or game-state mutation for release-banner copy.
@@ -10704,6 +10813,10 @@ function refreshVisibleOwnerCopy(recordKey){
      ownerDockPatchData(node,'guideHint',value);
    }
   }
+ }
+ if(key.startsWith('stats-ui.')){
+  refreshOriginStatAccessibility();
+  refreshOriginVitalsAccessible();
  }
  // Exact equipment item aria sentences contain game level and name, which
  // are recomposed from the untouched source record on Undo/reset.
