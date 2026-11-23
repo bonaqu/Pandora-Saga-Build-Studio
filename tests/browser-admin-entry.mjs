@@ -1114,6 +1114,33 @@ export async function runAdminEntrySmoke(browser,base){
    'Escape cancels filter caption without writing an override');
   assert.equal((await allFilter.locator('.os-sync-filter-count').innerText()).trim(),'· 1');
   assert.equal(await dialog.locator('.os-sync-record').count(),1);
+  // A real hover tooltip on each filter has ONE separate pencil. Editing
+  // the hint must neither edit the visible label nor select the category.
+  const hintWrap=dialog.locator(
+   '.os-sync-filter-hint:has(> .os-sync-filter[data-review-filter="changed"])');
+  assert.equal(await dialog.locator('.os-sync-filter-hint').count(),10);
+  assert.equal(await hintWrap.locator('.os-sync-secondary-pencil').count(),1);
+  assert.equal(await hintWrap.locator('.os-sync-filter-caption').innerText(),'Изменённые');
+  await hintWrap.locator('.os-sync-filter').hover();
+  await hintWrap.locator('.os-sync-secondary-pencil').click();
+  const hintEditor=hintWrap.locator('.os-sync-secondary-host [contenteditable]');
+  await hintEditor.waitFor({state:'visible',timeout:12000});
+  await hintEditor.fill('Проверка изменений без публикации QA.');
+  await hintEditor.press('Tab');
+  await hintEditor.waitFor({state:'detached',timeout:15000});
+  const savedHintKey='guideedit.book.catalog-sync.hint-review-filter-changed';
+  for(let n=0;n<300&&!townOverrides.has(savedHintKey);n++)
+   await page.waitForTimeout(40);
+  assert.equal(JSON.parse(townOverrides.get(savedHintKey)).ru,
+   'Проверка изменений без публикации QA.');
+  assert.equal(await hintWrap.locator('.os-sync-filter').getAttribute('data-guide-hint'),
+   'Проверка изменений без публикации QA.');
+  assert.equal(await hintWrap.locator('.os-sync-filter-caption').innerText(),'Изменённые');
+  assert.equal((await hintWrap.locator('.os-sync-filter-count').innerText()).trim(),'· 1');
+  assert.equal(await allFilter.getAttribute('aria-pressed'),'true',
+   'Tooltip edit must not change selected filter');
+  assert.equal(await dialog.locator('.os-sync-record').count(),1,
+   'Tooltip edit must not affect displayed game records');
   assert.equal(await dialog.locator('.os-sync-source-banner .os-sync-state-caption').textContent(),
    'Архивный источник проверен отдельно.',
    'After D1 edit, the authored archive message must remain visible');
