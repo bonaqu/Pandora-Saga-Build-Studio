@@ -667,7 +667,7 @@ test('#390 actual Wiki, Skill and Stats owner editors seed their exact fixed cop
  const sets=[
   ['wikiCoreCopyRows','wiki-ui','wiki-core-authorial',17,34],
   ['skillUiCopyRows','skill-ui','skill-controls-authorial',2,4],
-  ['statsUiCopyRows','stats-ui','hero-stats-authorial',2,4]
+  ['statsUiCopyRows','stats-ui','hero-stats-authorial',16,32]
  ];
  for(const [name,section,cohort,count,rowsExpected] of sets){
   const match=app.match(new RegExp('const '+name+
@@ -688,7 +688,26 @@ test('#390 actual Wiki, Skill and Stats owner editors seed their exact fixed cop
   }
  }
  assert.match(app,/ownerInterfaceEditor\('wiki-ui',wikiCoreCopyRows/);
- assert.match(app,/ownerInterfaceEditor\('stats-ui',statsUiCopyRows/);
+ assert.match(app,/ownerInterfaceEditor\('stats-ui',\s*statsUiCopyRows\.filter/);
+ const ariaKeys=['vitalsLoadingAria','holdStepAria','decreaseAria','increaseAria',
+  'excludeBonusesAria','baseAria','pointsAria','knownBonusesAria',
+  'costAria','maximumAria'];
+ assert.match(app,/const statsUiAriaKeys=Object\.freeze/);
+ const array=app.match(/const statsUiAriaKeys=Object\.freeze\((\[[\s\S]*?\])\);/);
+ assert.ok(array,'Only a closed source-only accessibility panel is allowed');
+ assert.deepEqual([...runInNewContext('('+array[1]+')',{})].sort(),ariaKeys.sort());
+ assert.match(app,/function refreshOriginStatAccessibility\(/);
+ assert.match(app,/function refreshOriginVitalsAccessible\(/);
+ assert.match(app,/ownerDockPatchAttr\(holder,'aria-label',ready\?/);
+ assert.match(app,/if\(key\.startsWith\('stats-ui\.'\)\)/);
+ assert.match(app,/visibleCaption\('chooseRaceClass'/);
+ assert.match(app,/visibleCaption\('levelBudgetPrefix'/);
+ assert.match(app,/visibleCaption\('totalCaption'/);
+ assert.match(app,/visibleCaption\('bonusSuffix'/);
+ assert.doesNotMatch(app,/row\.caption\.textContent=delta/,
+  'Computed delta cannot be serialized into an inline authorial caption');
+ assert.doesNotMatch(app,/summary\.textContent=\s*tr\('Выберите расу/,
+  'Runtime budget must not share one immutable uneditable UI string');
  assert.match(app,/reconcilePanel\('ownerSkillSearchCopy','skill-ui',skillUiCopyRows/);
  assert.match(app,/String\(visible\.length\)/);
  assert.match(app,/String\(results\.length\)/);
