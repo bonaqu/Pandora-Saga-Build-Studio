@@ -25,7 +25,11 @@ game JSON or player builds**. These instructions alone are not remote evidence.
    Chromium** checks into PS_EDITORIAL_EXPECTED_SHA. Never approve by branch
    name alone. The CLI refuses a dirty checkout or wrong SHA.
 4. Provide a persistent, operator-restricted backup directory **outside**
-   the repo and system temp. Do not upload raw SQL backups as public artifacts.
+   the repo and system temp, owned by the operator with exact mode 0700.
+   The CLI refuses group/world-accessible folders and symlink/empty exports;
+   it restricts exported SQL to 0600, syncs both SQL and checksum to disk
+   before the first import/rollback write. Never upload raw SQL backups as
+   public artifacts.
 
 Example shell session (all values below are placeholders):
 
@@ -62,8 +66,9 @@ unset PS_EDITORIAL_CONFIRMATION
 ~~~
 
 The runner re-checks the remote target, exports **full remote staging D1**
-to the independent directory, verifies a nonempty backup and writes an
-adjacent SHA-256 checksum file **before any write**. It imports only the
+to the independent directory, verifies a nonempty regular owner-owned backup, restricts SQL
+permissions to 0600, and flushes the backup and adjacent SHA-256 checksum
+to disk **before any write**. It imports only the
 versioned authorial defaults, then reads every row and verifies metadata,
 record count and SHA-256, failing closed on any mismatch. It does not
 activate or publish an unverified snapshot.

@@ -168,3 +168,38 @@ test('#390 premerge staging CLI is import-inert, SHA-pinned and requires a separ
  assert.match(docs,/PS_EDITORIAL_EXPECTED_SHA/);
  assert.match(docs,/PS_EDITORIAL_BACKUP_DIR/);
 });
+
+test('#390 staging export must be private, nonempty and not a symlink',async()=>{
+ const {mkdtempSync,mkdirSync,chmodSync,writeFileSync,statSync,symlinkSync,rmSync}=
+  await import('node:fs');
+ const {join}=await import('node:path');
+ const {tmpdir}=await import('node:os');
+ const {checkedBackupDirectory,verifyIndependentStagingBackup}=
+  await import('../scripts/run-editorial-staging-d1-premerge.mjs');
+ const sandbox=mkdtempSync(join(tmpdir(),'ps390-backup-test-'));
+ try{
+  const repoDir=join(sandbox,'repo');
+  const systemTemp=join(sandbox,'temp');
+  const backupDir=join(sandbox,'private');
+  for(const path of [repoDir,systemTemp,backupDir])
+   mkdirSync(path,{mode:0o700});
+  assert.equal(checkedBackupDirectory(backupDir,repoDir,systemTemp),backupDir);
+  chmodSync(backupDir,0o750);
+  assert.throws(()=>checkedBackupDirectory(backupDir,repoDir,systemTemp),
+   /private mode 0700/);
+  chmodSync(backupDir,0o707);
+  assert.throws(()=>checkedBackupDirectory(backupDir,repoDir,systemTemp),
+   /private mode 0700/);
+  chmodSync(backupDir,0o700);
+  const exportPath=join(backupDir,'source.sql');
+  writeFileSync(exportPath,'-- isolated staging export',{mode:0o644});
+  assert.match(verifyIndependentStagingBackup(exportPath),/^[0-9a-f]{64}$/);
+  assert.equal(statSync(exportPath).mode&0o777,0o600);
+  const emptyPath=join(backupDir,'empty.sql');
+  writeFileSync(emptyPath,'');
+  assert.throws(()=>verifyIndependentStagingBackup(emptyPath),/nonempty regular/);
+  const linkPath=join(backupDir,'link.sql');
+  symlinkSync(exportPath,linkPath);
+  assert.throws(()=>verifyIndependentStagingBackup(linkPath),/nonempty regular/);
+ }finally{rmSync(sandbox,{recursive:true,force:true})}
+});

@@ -5,8 +5,8 @@
 // Importing this module never invokes Wrangler or writes anything remotely.
 import {spawnSync} from 'node:child_process';
 import {createHash,randomUUID} from 'node:crypto';
-import {existsSync,mkdtempSync,readFileSync,realpathSync,rmSync,
- statSync,writeFileSync} from 'node:fs';
+import {chmodSync,closeSync,existsSync,fsyncSync,lstatSync,mkdtempSync,
+ openSync,readFileSync,realpathSync,rmSync,statSync,writeFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {basename,dirname,isAbsolute,join,resolve,sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -36,12 +36,36 @@ export function checkedBackupDirectory(directory,repoDir=repo,tempDir=tmpdir()){
  if(typeof directory!=='string'||!isAbsolute(directory))
   throw Error('Provide an existing absolute PS_EDITORIAL_BACKUP_DIR for independent backup');
  const destination=realpathSync(directory);
- if(!statSync(destination).isDirectory())throw Error('Backup location is not a directory');
+ const details=statSync(destination);
+ if(!details.isDirectory())throw Error('Backup location is not a directory');
+ // A complete staging SQL export is sensitive, including pre-existing data.
+ // Forbid shared directories even when the Cloudflare target is isolated.
+ if(typeof process.getuid==='function'&&details.uid!==process.getuid())
+  throw Error('Staging backup directory must belong to the current operator');
+ if((details.mode&0o777)!==0o700)
+  throw Error('Staging backup directory must have private mode 0700');
  const inDir=(root,path)=>path===root||path.startsWith(root+sep);
  if(inDir(realpathSync(repoDir),destination)||
   inDir(realpathSync(tempDir),destination))
   throw Error('Independent backup must be outside repository and system temp');
  return destination;
+}
+
+// An export is a durable backup only when it is a private regular file
+// flushed to disk. Check this before ANY remote staging import/rollback.
+export function verifyIndependentStagingBackup(path){
+ const details=lstatSync(path);
+ if(!details.isFile()||details.isSymbolicLink()||details.size===0)
+  throw Error('Staging backup must be a nonempty regular SQL file');
+ if(typeof process.getuid==='function'&&details.uid!==process.getuid())
+  throw Error('Staging backup is not owned by the operator');
+ chmodSync(path,0o600);
+ syncBackupFile(path);
+ return createHash('sha256').update(readFileSync(path)).digest('hex');
+}
+function syncBackupFile(path){
+ const fd=openSync(path,'r');
+ try{fsyncSync(fd)}finally{closeSync(fd)}
 }
 
 function run(command,args,{env=process.env}={}){
@@ -120,12 +144,11 @@ async function main(){
    manifest.snapshot+'-'+randomUUID()+'.sql');
   if(existsSync(backup))throw Error('Refusing to overwrite a staging backup');
   wrangler(cmd.export(backup));
-  if(!existsSync(backup)||statSync(backup).size===0)
-   throw Error('Remote backup is missing or empty; no staging writes allowed');
-  const hash=createHash('sha256').update(readFileSync(backup)).digest('hex');
+  const hash=verifyIndependentStagingBackup(backup);
   writeFileSync(backup+'.sha256',hash+'  '+basename(backup)+'\n',{
    flag:'wx',mode:0o600
   });
+  syncBackupFile(backup+'.sha256');
   // This is safe to display: never print a token, account secret or SQL data.
   process.stdout.write('Independent staging export retained: '+backup+
    ' (SHA-256 '+hash+')\n');
