@@ -55,7 +55,12 @@ test('catalog filters and linked item review keep English defaults while game va
  assert.match(source,/statusCaption\(key\)/);
  assert.doesNotMatch(source,/summary\.textContent\s*=/);
  assert.match(source,/tr\('Связь с предметом изменилась · проверить вручную'/);
- assert.match(source,/tr\('Предмет пока не опубликован в энциклопедии\.'/);
+ // This is now authored RU/EN copy, not a hardcoded code path. The
+ // "published?" decision and original game item reference remain read-only.
+ assert.match(source,/\['unpublishedReference','Предмет пока не опубликован в энциклопедии\.'/);
+ assert.match(source,/reviewCaption\('small',\{\},'unpublishedReference'\)/);
+ assert.match(source,/reviewCaption\('small',\{\},'linkedReferenceContext'\)/);
+ assert.match(source,/results\.append\(reviewCaption\('p',\{class:'os-sync-empty'\},'emptyReviewFilter'\)\)/);
  assert.match(source,/const record=upstream\?\.items\?\.\[segment\.id\]\|\|baseline\?\.items\?\.\[segment\.id\]/);
  assert.match(source,/input\.addEventListener\('change',\(\)=>\{/);
  assert.match(source,/setChoice\(change,input\.checked\)/);
