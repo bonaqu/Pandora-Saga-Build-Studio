@@ -1283,7 +1283,7 @@ export function buildEditorialDefaultsManifest(){
  // display captions. The clickable open state, source diagnostics and
  // independent hover hints must NEVER enter these D1 source-only fields.
  const disclosureSource=read('pandora-os-catalog-workbench.js').match(
-  /const catalogDisclosureCopyRows=Object\\.freeze\\((\\[[\\s\\S]*?\\])\\);/);
+  /const catalogDisclosureCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
  if(!disclosureSource)throw Error('Missing catalog disclosure caption inventory');
  const disclosureRows=runInNewContext('('+disclosureSource[1]+')',{},{timeout:5000});
  const expectedDisclosure=['archiveSummary','advancedSummary',
