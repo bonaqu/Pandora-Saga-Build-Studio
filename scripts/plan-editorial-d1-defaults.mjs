@@ -246,6 +246,27 @@ export function buildEditorialDefaultsManifest(){
   append('guideedit.book.owner-history.'+slug,'en',en,'owner-history-controls');
  }
 
+ // The five exact history row captions contain only source RU/EN words.
+ // Open record titles, numeric change counters, error payloads and live
+ // before/after data must never become authored D1 defaults.
+ const historyRowSource=app.match(
+  /const ownerHistoryRowCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ if(!historyRowSource)throw Error('Missing owner-history row source inventory');
+ const historyRowTexts=runInNewContext('('+historyRowSource[1]+')',{},{timeout:5000});
+ const expectedHistoryRow=['fieldsChanged','openEncyclopedia','pendingError',
+  'pendingSaving','restoreOriginal'];
+ if(!Array.isArray(historyRowTexts)||
+  historyRowTexts.map(row=>row?.[0]).sort().join('|')!==expectedHistoryRow.join('|'))
+  throw Error('Unreviewed owner-history row caption source');
+ for(const row of historyRowTexts){
+  if(!Array.isArray(row)||row.length!==3||row.some(text=>
+   typeof text!=='string'||!text.trim()))
+   throw Error('Invalid bilingual history row source');
+  const [key,ru,en]=row,slug=key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  append('guideedit.book.owner-history.'+slug,'ru',ru,'owner-history-rows');
+  append('guideedit.book.owner-history.'+slug,'en',en,'owner-history-rows');
+ }
+
  // Profile labels have real owner CAS keys, but their values are strictly
  // authored captions. The editable hero profile itself is never D1 copy.
  const profileSource=app.match(
