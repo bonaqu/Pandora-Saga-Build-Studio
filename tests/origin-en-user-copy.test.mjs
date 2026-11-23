@@ -15,8 +15,10 @@ test('Origin and advanced editor share canonical RU/EN stat labels',()=>{
 });
 
 test('Origin and shared skill previews translate UI controls while preserving game records',()=>{
- assert.match(origin,/lang==='en'\?'✓ Selected':'✓ Выбрано'/);
- assert.match(origin,/lang==='en'\?' — selected':' — выбрано'/);
+ assert.match(code,/\['passiveSelectedCaption','✓ Выбрано','✓ Selected'\]/);
+ assert.match(code,/\['passiveSelectedAria','— выбрано','— selected'\]/);
+ assert.match(origin,/originPassiveCaption\(/);
+ assert.match(origin,/bindOwnerInterfaceText\(/);
  assert.match(code,/lang==='en'\?'Level ':'Уровень '/);
  assert.match(code,/lang==='en'\?'Skill':'Умение'/);
  assert.match(origin,/Racial passives will appear when the game catalog loads/);
