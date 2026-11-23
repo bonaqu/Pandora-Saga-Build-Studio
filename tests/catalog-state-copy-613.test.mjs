@@ -177,9 +177,9 @@ test('#390 review captions use exact bilingual CAS keys while live counts stay o
   assert.equal(manifest.records.find(r=>r.recordKey===id&&r.field==='ru')?.value,ru);
   assert.equal(manifest.records.find(r=>r.recordKey===id&&r.field==='en')?.value,en);
  }
- assert.match(workbench,/groupAction\(take,'groupTake'\)/);
- assert.match(workbench,/groupAction\(reject,'groupReject'\)/);
- assert.match(workbench,/groupAction\(takeVisible,'groupMatching',\{count:filtered\.filter\(safe\)\.length\}\)/);
+ assert.match(workbench,/groupAction\(take,'groupTake',name\)/);
+ assert.match(workbench,/groupAction\(reject,'groupReject',name\)/);
+ assert.match(workbench,/groupAction\(takeVisible,'groupMatching',name,\{count:filtered\.filter\(safe\)\.length\}\)/);
  assert.match(workbench,/class:'os-sync-action-runtime-number'/);
  assert.doesNotMatch(workbench,/os-sync-review-pencil/);
  // Only authorial text is serialized. These expressions still depend on the

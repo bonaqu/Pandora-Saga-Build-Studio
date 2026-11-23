@@ -263,9 +263,14 @@
       wrap.append(button,host);
       return wrap;
     };
-    const groupAction=(button,key,options)=>{
+    const groupAction=(button,key,dataset,options)=>{
       const row=catalogGroupActionByKey.get(key);
       if(!row)throw Error('Unreviewed catalog group action: '+key);
+      // A group action is rendered once PER dataset. Do not reuse the same
+      // document id for all sections; the editorial D1 key stays shared.
+      if(typeof dataset!=='string'||!dataset||/\s/.test(dataset))
+        throw Error('Invalid catalog group identity');
+      button.id='os-sync-copy-'+key+'-'+dataset;
       return action(button,key,row[1],row[2],options);
     };
     // Reuse the game's hover/focus helper. All hints remain plain text;
@@ -1351,9 +1356,9 @@
           for(const item of filtered)if(safe(item))chosen.add(item.id);
           render();
         };
-        toolbar.append(groupAction(take,'groupTake'),groupAction(reject,'groupReject'));
+        toolbar.append(groupAction(take,'groupTake',name),groupAction(reject,'groupReject',name));
         if(query||filterKind!=='all')toolbar.append(
-          groupAction(takeVisible,'groupMatching',{count:filtered.filter(safe).length}));
+          groupAction(takeVisible,'groupMatching',name,{count:filtered.filter(safe).length}));
         panel.append(toolbar);
         const variantTotal=new Map(),variantIndex=new Map(),variantOrder=new Map();
         for(const entry of group){

@@ -38,6 +38,10 @@ test('catalog editor edits real captions directly and never activates publish on
  assert.match(view,/host\.dispatchEvent\(new MouseEvent\('dblclick'/);
  assert.match(view,/onFinished:\(\)=>\{button\.hidden=false;host\.hidden=true\}/);
  assert.match(view,/const action=\(button,key,ru,en,\{count=null\}=\{\}\)=>/);
+ assert.match(view,/const groupAction=\(button,key,dataset,options\)=>/);
+ assert.match(view,/button\.id='os-sync-copy-'\+key\+'-'\+dataset/);
+ assert.match(view,/if\(typeof dataset!=='string'\|\|!dataset\|\|/);
+
  assert.match(view,/const number=count===null\?null:h\('span'/);
  assert.match(view,/if\(number\)button\.append\(number\)/);
  assert.match(view,/if\(number&&button\.firstChild\?\.nodeType===3\)button\.firstChild\.nodeValue=next/);
