@@ -444,3 +444,8 @@ pencil controls. Full Node+Chromium required on the exact new PR SHA.
 - [x] Reused the already corrected disabled-skill DIV/editor: direct dblclick/F2/blur, Escape and normal skill-checkbox gating without pencil buttons. Exactly eight additional source-only defaults in the deterministic, fail-closed **offline staging** manifest at `guideedit.book.buffs.reason.*`; existing source status keys remain unchanged.
 - [x] Added Node source/manifest/game-fact boundary assertions and an actual Chromium Book DOM-only RU/EN fixture: verify original sentences, original game branch/threshold, double-click/F2 owner callbacks and simulated CAS override changing only words. No real game skill IDs or production data are impersonated; test fixture is explicitly synthetic.
 - [ ] Final complete Node + Chromium on one exact HEAD required before accepting. Physical isolated Cloudflare staging D1 backup/import/readback/rollback, real touch hardware and authorized protected release/read-only production are still pending. Leave PR #809 Draft and issue #390 Open.
+
+### Follow-up · preserve Book inspector regression after metadata extraction
+
+- [x] The first complete Chromium on `f08f3235` passed, including the synthetic Book requirement fixture, direct RU/EN edits, immutable level 46 and source mastery branch. The parallel Node suite caught only an obsolete source regex that assumed a `branchName` scalar instead of the same original name under `req.branchName`. Updated the regression to verify both the original English wording and source-owned requirement metadata; did **not** remove any test or game rule.
+- [ ] Re-run both full Node + Chromium on the final HEAD before acceptance. Remote Cloudflare staging, touch hardware and authorized release remain pending.
