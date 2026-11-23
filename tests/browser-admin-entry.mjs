@@ -1733,7 +1733,8 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(await history.locator('.owner-manager-search-clear').getAttribute('aria-description'),
    'Подсказка очистки истории · QA');
   assert.equal(await history.locator('.owner-history-clear-copy').textContent(),'Очистить');
-  assert.equal(await historySearch.inputValue(),'Поиск не должен исчезнуть при правке подсказки');
+  assert.equal((await historySearch.textContent()).trim(),
+   'Поиск не должен исчезнуть при правке подсказки');
   const sessionCaption=history.locator('.owner-history-session-copy');
   assert.equal(await history.locator('.owner-manager-session input').isChecked(),false);
   await sessionCaption.dblclick();
