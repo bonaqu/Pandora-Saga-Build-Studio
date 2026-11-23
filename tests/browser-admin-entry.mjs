@@ -1906,21 +1906,21 @@ export async function runAdminEntrySmoke(browser,base){
   const exportModal=page.getByRole('dialog',{name:'Необязательная копия энциклопедии в GitHub'});
   await exportModal.waitFor({state:'visible'});
   assert.match(await exportModal.locator('.owner-dialog-live-count').innerText(),/2/);
-  const exportCountValue=exportModal.locator('.owner-dialog-live-count .owner-dialog-runtime-number');
-  assert.equal((await exportCountValue.textContent()).trim(),'2');
-  const countCopy=exportModal.locator('.owner-dialog-live-count '+
+  const export390ExportCountValue=exportModal.locator('.owner-dialog-live-count .owner-dialog-runtime-number');
+  assert.equal((await export390ExportCountValue.textContent()).trim(),'2');
+  const export390CountCopy=exportModal.locator('.owner-dialog-live-count '+
    '[data-owner-copy-id="githubCount"]');
-  await countCopy.dblclick();
-  const countInput=countCopy.locator('[data-owner-text-field]');
-  await countInput.waitFor({state:'visible'});
-  await countInput.fill('Записей для резервной копии · QA:');
-  await countInput.press('Tab');
+  await export390CountCopy.dblclick();
+  const export390CountInput=export390CountCopy.locator('[data-owner-text-field]');
+  await export390CountInput.waitFor({state:'visible'});
+  await export390CountInput.fill('Записей для резервной копии · QA:');
+  await export390CountInput.press('Tab');
   await page.waitForFunction(()=>document.querySelector(
    '.owner-dialog-live-count [data-owner-copy-id="githubCount"]')
    ?.textContent==='Записей для резервной копии · QA:',null,{timeout:15000});
   assert.equal(JSON.parse(townOverrides.get('guideedit.book.owner-dialog.github-count')).ru,
    'Записей для резервной копии · QA:');
-  assert.equal((await exportCountValue.textContent()).trim(),'2',
+  assert.equal((await export390ExportCountValue.textContent()).trim(),'2',
    'The real server record count is not included in D1 authorial text');
   const exportIntro=exportModal.locator('[data-owner-copy-section="owner-dialog"]'+
    '[data-owner-copy-id="githubExplanation"]');
@@ -1953,15 +1953,15 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(calls.filter(x=>x==='owner-pr').length,beforePRCalls,
    'Editing an action label must never invoke the publication endpoint');
   // A real independent hint is distinct from the visible Create-PR button.
-  const hintPanel=exportModal.locator(
+  const export390HintPanel=exportModal.locator(
    '.studio-owner-interface-editor:has([data-owner-copy-id="githubCreateHint"])');
-  await hintPanel.locator(':scope > summary').click();
-  const hintCaption=hintPanel.locator('[data-owner-copy-id="githubCreateHint"]');
-  await hintCaption.dblclick();
-  const hintInput=hintCaption.locator('[data-owner-text-field]');
-  await hintInput.waitFor({state:'visible'});
-  await hintInput.fill('Создаст необязательный PR · QA');
-  await hintInput.press('Tab');
+  await export390HintPanel.locator(':scope > summary').click();
+  const export390HintCaption=export390HintPanel.locator('[data-owner-copy-id="githubCreateHint"]');
+  await export390HintCaption.dblclick();
+  const export390HintInput=export390HintCaption.locator('[data-owner-text-field]');
+  await export390HintInput.waitFor({state:'visible'});
+  await export390HintInput.fill('Создаст необязательный PR · QA');
+  await export390HintInput.press('Tab');
   await page.waitForFunction(()=>
    document.querySelector('.owner-dialog-action')?.dataset.guideHint===
    'Создаст необязательный PR · QA',null,{timeout:15000});
@@ -1977,45 +1977,45 @@ export async function runAdminEntrySmoke(browser,base){
   // Only an explicit ordinary click may invoke the mocked publication
   // endpoint; the real PR URL stays immutable even when its text changes.
   await exportAction.locator('button.owner-dialog-action').click();
-  const createdLink=exportModal.locator('.inline-owner-error a[href]');
-  await createdLink.waitFor({state:'visible',timeout:15000});
+  const export390CreatedLink=exportModal.locator('.inline-owner-error a[href]');
+  await export390CreatedLink.waitFor({state:'visible',timeout:15000});
   assert.equal(calls.filter(x=>x==='owner-pr').length,beforePRCalls+1,
    'Exactly one explicit click submits the export');
-  const originalHref=await createdLink.getAttribute('href');
-  assert.equal(originalHref,'https://github.com/bonaqu/Pandora-Saga-Build-Studio/pull/246');
-  const textLink=createdLink.locator('[data-owner-copy-id="githubLink"]');
-  const pageCountBefore=context.pages().length;
-  await textLink.dblclick();
-  const linkEditor=textLink.locator('[data-owner-text-field]');
-  await linkEditor.waitFor({state:'visible'});
-  await linkEditor.fill('Проверить предложенную копию · QA');
-  await linkEditor.press('Tab');
+  const export390OriginalHref=await export390CreatedLink.getAttribute('href');
+  assert.equal(export390OriginalHref,'https://github.com/bonaqu/Pandora-Saga-Build-Studio/pull/246');
+  const export390TextLink=export390CreatedLink.locator('[data-owner-copy-id="githubLink"]');
+  const export390PageCountBefore=context.pages().length;
+  await export390TextLink.dblclick();
+  const export390LinkEditor=export390TextLink.locator('[data-owner-text-field]');
+  await export390LinkEditor.waitFor({state:'visible'});
+  await export390LinkEditor.fill('Проверить предложенную копию · QA');
+  await export390LinkEditor.press('Tab');
   await page.waitForFunction(()=>document.querySelector(
    '.owner-dialog-status-copy[data-owner-copy-id="githubLink"]')
    ?.textContent==='Проверить предложенную копию · QA',
    null,{timeout:15000});
   assert.equal(JSON.parse(townOverrides.get('guideedit.book.owner-dialog.github-link')).ru,
    'Проверить предложенную копию · QA');
-  assert.equal(await createdLink.getAttribute('href'),originalHref,
+  assert.equal(await export390CreatedLink.getAttribute('href'),export390OriginalHref,
    'Editing link words must never edit a returned GitHub URL');
-  assert.equal(context.pages().length,pageCountBefore,
+  assert.equal(context.pages().length,export390PageCountBefore,
    'Double-click on owner link caption must not open the PR');
   assert.equal(calls.filter(x=>x==='owner-pr').length,beforePRCalls+1);
 
   // The real modal title edits by double-click. Keep its ARIA name in sync
   // on the mounted dialog rather than replacing its native focus trap.
-  const titleCopy=page.locator('#modalRoot .modal[role="dialog"] h2');
-  await titleCopy.dblclick();
-  const titleInput=titleCopy.locator('[data-owner-text-field]');
-  await titleInput.waitFor({state:'visible'});
-  await titleInput.fill('Экспорт каталога · QA');
-  await titleInput.press('Tab');
+  const export390TitleCopy=page.locator('#modalRoot .modal[role="dialog"] h2');
+  await export390TitleCopy.dblclick();
+  const export390TitleInput=export390TitleCopy.locator('[data-owner-text-field]');
+  await export390TitleInput.waitFor({state:'visible'});
+  await export390TitleInput.fill('Экспорт каталога · QA');
+  await export390TitleInput.press('Tab');
   await page.waitForFunction(()=>document.querySelector(
    '#modalRoot .modal[role="dialog"]')?.getAttribute('aria-label')===
    'Экспорт каталога · QA',null,{timeout:15000});
   assert.equal(JSON.parse(townOverrides.get('guideedit.book.owner-dialog.github-title')).ru,
    'Экспорт каталога · QA');
-  assert.equal((await exportCountValue.textContent()).trim(),'2');
+  assert.equal((await export390ExportCountValue.textContent()).trim(),'2');
   await page.locator('#modalRoot .modal button.close').click();
   // EN localization is independent; editing the RU copy must not overwrite it.
   await page.locator('#locale [data-locale="en"]').click();
