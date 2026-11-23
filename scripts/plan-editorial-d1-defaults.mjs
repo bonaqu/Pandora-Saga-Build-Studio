@@ -267,6 +267,26 @@ export function buildEditorialDefaultsManifest(){
   append('guideedit.book.owner-history.'+slug,'en',en,'owner-history-rows');
  }
 
+ // History dialog phrases and *independent* hover hints are audited as
+ // source text; D1 record names, counters and raw server errors remain out.
+ const auxSource=app.match(
+  /const ownerHistoryAuxCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ if(!auxSource)throw Error('Missing history auxiliary source');
+ const auxRows=runInNewContext('('+auxSource[1]+')',{},{timeout:5000});
+ const expectedAux=['catalogUnavailable','clearHelp','confirmRestore','dialogTitle',
+  'openHelp','restoreFailure','restoreHelp'];
+ if(!Array.isArray(auxRows)||
+  auxRows.map(row=>row?.[0]).sort().join('|')!==expectedAux.join('|'))
+  throw Error('Unreviewed owner-history dialog or hover source');
+ for(const row of auxRows){
+  if(!Array.isArray(row)||row.length!==3||row.some(x=>
+   typeof x!=='string'||!x.trim()))
+   throw Error('Invalid bilingual history auxiliary copy');
+  const [key,ru,en]=row,slug=key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase());
+  append('guideedit.book.owner-history.'+slug,'ru',ru,'owner-history-aux');
+  append('guideedit.book.owner-history.'+slug,'en',en,'owner-history-aux');
+ }
+
  // Profile labels have real owner CAS keys, but their values are strictly
  // authored captions. The editable hero profile itself is never D1 copy.
  const profileSource=app.match(
