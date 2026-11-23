@@ -43,11 +43,19 @@ export async function runProfileCaption390Smoke(browser,base){
    return send({ok:true,key:data.key,value:data.value,conditional:true});
   }
   if(path==='/api/admin/reset'){
+   assert.equal(req.method(),'POST');
    assert.equal(req.headers().authorization,'Bearer '+token);
    const data=req.postDataJSON();
    assert.match(data.key,/^guideedit\.book\.profile\./);
+   assert.equal(data.expectedValue,
+    Object.hasOwn(values,data.key)?values[data.key]:null,
+    'Even Undo reset must preserve the D1 CAS precondition');
+   assert.equal(typeof data.expectedValue,'string',
+    'A reset is only valid for an existing override');
    delete values[data.key];resets.push(data.key);
-   return send({ok:true,key:data.key});
+   // Mirror the strict real Worker acknowledgement. HTTP 200 alone is NOT
+   // proof a conditional D1 delete occurred; missing fields must fail closed.
+   return send({ok:true,conditional:true,key:data.key,deleted:true});
   }
   return route.abort();
  });
