@@ -734,7 +734,14 @@ test('#390 profile owner copy defaults mirror live source labels, never player d
   'passive-select','panel-accessibility'];
  assert.deepEqual(Object.keys(pairs).filter(key=>dynamic.includes(key)).sort(),
   dynamic.sort(),'Closed source-only dynamic Profile copy inventory');
- assert.match(source,/profileDynamicKeys\.map\(key=>\[key,\.\.\.profileAuthorialCopy\[key\]\]\)/);
+ assert.match(source,/profileDynamicKeys\.filter\(key=>key!=='level-suffix'\)/);
+ assert.match(source,/function profileTextOrCopy\(/);
+ assert.match(source,/profileCopyLabel\('level-suffix',\.\.\.profileAuthorialCopy\['level-suffix'\]\)/);
+ assert.match(source,/profileTextOrCopy\('hero-unnamed',state\.name,'strong'\)/);
+ assert.match(source,/profileTextOrCopy\('overview-missing'/);
+ assert.match(source,/profileCopyLabel\(key,\.\.\.profileAuthorialCopy\[key\]\)/);
+ assert.doesNotMatch(source,/setText\('\[data-profile-live="hero-summary"\]'/,
+  'Live Save/Undo must never replace a composite parent and destroy a direct caption editor');
  assert.match(source,/if\(key\.startsWith\('book\.profile\.'\)\)refreshVisibleProfileCopy\(\)/);
  assert.match(source,/ownerDockPatchAttr\(portrait,'alt'/);
  assert.match(source,/node\.dataset\.profileSelected==='true'/);
