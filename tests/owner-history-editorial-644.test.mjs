@@ -97,3 +97,75 @@ test('history copy save, Undo and reset share D1 CAS and keep the current modal 
  assert.match(browser,/guideedit\.book\.owner-history\.intro/);
  assert.match(browser,/beforeCatalogCalls/);
 });
+
+
+test('#390: owner history shows RU/EN book captions as distinct readable fields, not raw JSON',()=>{
+ const target={};target.window=target;
+ Function('window',read('pandora-studio-owner-change-review.js'))(target);
+ const review=target.PandoraOwnerChangeReview;
+ assert.equal(typeof review.inspect,'function');
+ const key='guideedit.book.catalog-sync.summary-selected';
+ const stored=JSON.stringify({ru:'Отобрано QA:',en:'Selected QA:'});
+ const ru=review.inspect(key,stored,{lang:'ru'});
+ assert.equal(ru.key,key,'Owner history reset must retain the exact original CAS key');
+ assert.equal(ru.section,'Интерфейс');
+ assert.match(ru.title,/Проверка каталога · Надпись «Отобрано QA:»/);
+ assert.ok(!ru.title.includes('catalog-sync'),'Raw D1 namespace is not a row heading');
+ assert.equal(ru.target,null,'UI captions never open unrelated game records');
+ assert.deepEqual(ru.changes.map(row=>row.field),['Текст RU','Текст EN']);
+ assert.deepEqual(ru.changes.map(row=>row.after),['Отобрано QA:','Selected QA:']);
+ assert.deepEqual(ru.changes.map(row=>row.before),
+  ['Исходное значение неизвестно','Исходное значение неизвестно'],
+  'Do not misrepresent the edited override as its original source');
+ const en=review.inspect(key,stored,{lang:'en'});
+ assert.equal(en.section,'Interface');
+ assert.match(en.title,/Catalog review · Caption «Selected QA:»/);
+ assert.deepEqual(en.changes.map(row=>row.field),['Russian text','English text']);
+ assert.deepEqual(en.changes.map(row=>row.before),
+  ['Original value unknown','Original value unknown']);
+ assert.equal(stored,JSON.stringify({ru:'Отобрано QA:',en:'Selected QA:'}),
+  'Read-only inspector cannot mutate the stored bilingual override');
+});
+
+test('#390: owner history distinguishes real hint copy and verified staged baselines',()=>{
+ const requested=[];
+ const target={PandoraEditorialDefaults:{value:(key,field)=>{
+  requested.push([key,field]);
+  if(key!=='guideedit.book.catalog-sync.hint-review-filter-added')
+   throw Error('Unrelated staged key');
+  if(field==='ru')return 'Объекты, добавленные в проверяемом источнике.';
+  if(field==='en')return 'Entries added in the checked source.';
+  return null;
+ }}};
+ target.window=target;
+ Function('window',read('pandora-studio-owner-change-review.js'))(target);
+ const original={ru:'Новый фильтр QA',en:'New filter QA'};
+ const row=target.PandoraOwnerChangeReview.inspect(
+  'guideedit.book.catalog-sync.hint-review-filter-added',
+  JSON.stringify(original),{lang:'ru'});
+ assert.match(row.title,/Проверка каталога · Подсказка «Новый фильтр QA»/);
+ assert.equal(row.section,'Интерфейс');
+ assert.deepEqual(row.changes.map(field=>field.before),
+  ['Объекты, добавленные в проверяемом источнике.',
+   'Entries added in the checked source.']);
+ assert.deepEqual(row.changes.map(field=>field.after),
+  [original.ru,original.en]);
+ assert.deepEqual(requested,[
+  ['guideedit.book.catalog-sync.hint-review-filter-added','ru'],
+  ['guideedit.book.catalog-sync.hint-review-filter-added','en']
+ ]);
+ const other=target.PandoraOwnerChangeReview.inspect(
+  'guideedit.book.owner-history.intro',
+  JSON.stringify({ru:'История QA',en:'History QA'}),{lang:'en'});
+ assert.match(other.title,/Change history · Caption «History QA»/);
+ assert.deepEqual(other.changes.map(x=>x.before),
+  ['Original value unknown','Original value unknown'],
+  'Failed optional staging reads are not fabricated as defaults');
+ // Existing item data must retain its own target and read-only game fields.
+ const item=target.PandoraOwnerChangeReview.inspect(
+  'itemdesc.99','Текст предмета',{lang:'ru',items:{'99':{name:'Шлем',desc:'До'}}});
+ assert.equal(item.section,'Предмет');
+ assert.deepEqual(item.target,{type:'item',id:'99'});
+ assert.equal(item.changes[0].before,'До');
+ assert.equal(item.changes[0].after,'Текст предмета');
+});
