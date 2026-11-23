@@ -1698,6 +1698,52 @@ export async function runAdminEntrySmoke(browser,base){
   await historyButton.click();
   const history=page.getByRole('dialog',{name:'Все ручные правки'});
   await history.waitFor({state:'visible'});
+  // History controls are owned RU/EN copy, not live record names or values.
+  const historySearch=history.locator('.owner-manager-search');
+  assert.equal(await historySearch.getAttribute('aria-label'),'Поиск среди ручных изменений');
+  assert.equal(await history.locator('.owner-manager-section').getAttribute('aria-label'),
+   'Раздел ручных правок');
+  await history.locator('.studio-owner-interface-editor > summary').click();
+  const placeholderCaption=history.locator('.studio-owner-interface-editor '+
+   '[data-owner-copy-id="searchPlaceholder"]');
+  await placeholderCaption.dblclick();
+  const placeholderInput=placeholderCaption.locator('[data-owner-text-field]');
+  await placeholderInput.waitFor({state:'visible'});
+  await placeholderInput.fill('Найти запись истории · QA');
+  await placeholderInput.press('Tab');
+  await page.waitForFunction(()=>
+   document.querySelector('.owner-manager-search')?.dataset.placeholder===
+   'Найти запись истории · QA',null,{timeout:15000});
+  assert.equal(JSON.parse(townOverrides.get('guideedit.book.owner-history.search-placeholder')).ru,
+   'Найти запись истории · QA');
+  const sessionCaption=history.locator('.owner-history-session-copy');
+  assert.equal(await history.locator('.owner-manager-session input').isChecked(),false);
+  await sessionCaption.dblclick();
+  const sessionEditor=sessionCaption.locator('[data-owner-text-field]');
+  await sessionEditor.waitFor({state:'visible'});
+  await sessionEditor.fill('Правки этого сеанса · QA');
+  await sessionEditor.press('Tab');
+  await page.waitForFunction(()=>
+   document.querySelector('.owner-history-session-copy')?.textContent===
+   'Правки этого сеанса · QA',null,{timeout:15000});
+  assert.equal(JSON.parse(townOverrides.get('guideedit.book.owner-history.session')).ru,
+   'Правки этого сеанса · QA');
+  assert.equal(await history.locator('.owner-manager-session input').isChecked(),false,
+   'Double-click editing must not change the native checkbox');
+  assert.equal(await history.locator('.owner-manager-search-clear').getAttribute('aria-label'),
+   'Очистить поиск по правкам');
+  assert.equal(await history.locator('.owner-manager-section option[value=""]').textContent(),
+   'Все разделы');
+  // A normal click on the same authored caption must still toggle the filter.
+  await sessionCaption.click();
+  await page.waitForFunction(()=>document.querySelector('.owner-manager-session input')
+   ?.checked===true,null,{timeout:4000});
+  await history.locator('.owner-manager-session input').uncheck();
+  // Native search query remains editable and the button still clears it.
+  await historySearch.fill('Проверка настоящего поискового значения');
+  await history.locator('.owner-history-clear-copy').click();
+  await page.waitForFunction(()=>!document.querySelector('.owner-manager-search')
+   ?.value,null,{timeout:4500});
   const sections=history.locator('.owner-manager-section');
   const sessionFilter=history.locator('.owner-manager-session input');
   assert.ok(await sections.locator('option').count()>=1,
