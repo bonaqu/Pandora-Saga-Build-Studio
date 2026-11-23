@@ -1277,6 +1277,31 @@ export function buildEditorialDefaultsManifest(){
   append('guideedit.book.catalog-sync.'+slug,'en',en,'catalog-review-details');
  }
 
+ // The 10 live catalog filter captions are source-authored. The associated
+ // result counts, selection sets, game-source values and hover explanations
+ // have separate identities and NEVER belong to these label rows.
+ const filterMatch=read('pandora-os-catalog-workbench.js').match(
+  /const filterChoices=(\[[\s\S]*?\]);/);
+ if(!filterMatch)throw Error('Missing catalog filter caption source');
+ const filterRows=runInNewContext('('+filterMatch[1]+')',{},{
+  filename:'filterChoices',timeout:5000
+ });
+ const expectedFilters=['all','added','changed','removed','accepted','declined',
+  'needsReview','links','sameVisible','readable'];
+ if(!Array.isArray(filterRows)||filterRows.length!==expectedFilters.length||
+  filterRows.map(row=>row?.[0]).sort().join('|')!==expectedFilters.sort().join('|'))
+  throw Error('Unreviewed catalog filter caption inventory');
+ for(const row of filterRows){
+  if(!Array.isArray(row)||row.length!==3||row.some(value=>
+   typeof value!=='string'||!value.trim()||value!==value.trim()))
+   throw Error('Invalid source catalog filter caption');
+  const [id,ru,en]=row;
+  const key='reviewFilter'+id[0].toUpperCase()+id.slice(1);
+  const slug=key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  append('guideedit.book.catalog-sync.'+slug,'ru',ru,'catalog-review-filter-captions');
+  append('guideedit.book.catalog-sync.'+slug,'en',en,'catalog-review-filter-captions');
+ }
+
  // Footer source copy is four static RU/EN fragments around three
  // immutable, current-catalog counts. Never materialize numeric values.
  const footerMatch=app.match(
