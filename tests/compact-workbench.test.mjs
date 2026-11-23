@@ -23,7 +23,8 @@ test('HP and MP render in the Origin area and refresh when allocation/equipment 
  const fake={
   originHp:{textContent:''},
   originMp:{textContent:''},
-  originVitals:{attrs:{},setAttribute(k,v){this.attrs[k]=v}}
+  originVitals:{attrs:{},setAttribute(k,v){this.attrs[k]=v},
+   querySelector(key){return {textContent:key.includes('hpShort')?'ОЗ':'ОМ'}}}
  };
  let estimate={hp:1630,mp:420};
  const render=Function('$','previewBaseStats','lang','refreshOpenHeroBook',fn+'\nreturn renderOriginVitals;')(
