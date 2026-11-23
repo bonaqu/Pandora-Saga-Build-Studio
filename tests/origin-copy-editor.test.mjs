@@ -236,3 +236,44 @@ test('#390 race gallery exposes source-authored bilingual ARIA without changing 
    r.recordKey==='guideedit.book.origin.'+unsafe),false,
    'Original race identity must not be an owner D1 field: '+unsafe);
 });
+
+test('#390 Origin racial-passive dynamic RU/EN captions never become source game data',async()=>{
+ const source=app.match(/const originPassiveDynamicRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ assert.ok(source,'One closed bilingual source registry is required');
+ const rows=Function('return '+source[1])();
+ assert.deepEqual(rows.map(row=>row[0]),[
+  'passiveChooseRaceHelp','passiveLoadingHelp','passiveSelectCaption',
+  'passiveSelectedCaption','passiveSelectAria','passiveSelectedAria']);
+ const manifest=(await import('../scripts/plan-editorial-d1-defaults.mjs'))
+  .buildEditorialDefaultsManifest();
+ assert.equal(manifest.stats.cohorts['origin-racial-passive-dynamic'],12);
+ for(const [key,ru,en] of rows){
+  const id='guideedit.book.origin.'+
+   key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase());
+  assert.deepEqual(manifest.records.filter(row=>row.recordKey===id)
+   .map(row=>row.field).sort(),['en','ru'],key);
+  assert.equal(manifest.records.find(row=>row.recordKey===id&&row.field==='ru').value,ru);
+  assert.equal(manifest.records.find(row=>row.recordKey===id&&row.field==='en').value,en);
+  assert.equal(guide.validOverride('book.origin.'+
+   key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase()),
+   JSON.stringify({ru:'Выбрать вариант',en:'Select a trait'})),true);
+ }
+ const start=app.indexOf('function renderOriginPassives(){'),
+  end=app.indexOf('// One controller for all rich skill previews',start);
+ const live=app.slice(start,end);
+ assert.match(live,/originPassiveCaption\('passiveChooseRaceHelp'\)/);
+ assert.match(live,/originPassiveCaption\('passiveLoadingHelp'\)/);
+ assert.match(live,/bindOwnerInterfaceText\(/);
+ assert.match(live,/,'aria-label','',skill\.name\+' '\)/);
+ assert.match(live,/ownerCaptionActionGuard\(btn,badge\)/);
+ assert.match(live,/ownerCaptionActionGuard\(btn,label\)/);
+ assert.match(live,/event\.shiftKey/);
+ assert.doesNotMatch(live,/lang==='en'\?' — selected':' — выбрано'/);
+ assert.doesNotMatch(live,/lang==='en'\?'✓ Selected':'✓ Выбрано'/);
+ assert.match(app,/ownerInterfaceEditor\('origin',\s*originPassiveDynamicRows\.filter/);
+ for(const invalid of ['skill-id','skill-name','racial-passive-id','selected-id']){
+  assert.equal(manifest.records.some(row=>
+   row.recordKey==='guideedit.book.origin.'+invalid),false,
+   'Original source identity cannot be owner copy: '+invalid);
+ }
+});
