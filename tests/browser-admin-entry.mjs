@@ -1351,6 +1351,29 @@ export async function runAdminEntrySmoke(browser,base){
   const goto=linked.locator('.os-sync-reference-open').first();
   assert.equal(await goto.getAttribute('href'),'#wiki/item/300001');
   assert.equal(await goto.getAttribute('target'),'_blank');
+  // This help describes the link; it must be independently editable without
+  // changing the source item's ID, href, preview open-state or safety review.
+  const linkedCopy=linked.locator('.os-sync-reference-preview '+
+   '[data-owner-copy-id="linkedReferenceContext"]').first();
+  await linkedCopy.waitFor({state:'visible',timeout:12000});
+  assert.equal(await linkedCopy.locator('.os-sync-copy-pencil').count(),0);
+  await linkedCopy.dblclick();
+  const linkedCopyEditor=linkedCopy.locator('[contenteditable]');
+  await linkedCopyEditor.waitFor({state:'visible',timeout:12000});
+  await linkedCopyEditor.fill('Связанная игровая вещь · редактор QA.');
+  await linkedCopyEditor.press('Tab');
+  await linkedCopyEditor.waitFor({state:'detached',timeout:15000});
+  const referenceContextKey='guideedit.book.catalog-sync.linked-reference-context';
+  for(let n=0;n<300&&!townOverrides.has(referenceContextKey);n++)
+   await page.waitForTimeout(40);
+  assert.equal(JSON.parse(townOverrides.get(referenceContextKey)).ru,
+   'Связанная игровая вещь · редактор QA.');
+  assert.equal(await linkedCopy.innerText(),'Связанная игровая вещь · редактор QA.');
+  assert.equal(await reference.getAttribute('aria-expanded'),'true');
+  assert.equal(await goto.getAttribute('href'),'#wiki/item/300001');
+  assert.equal(await goto.getAttribute('target'),'_blank');
+  assert.equal(await linked.locator('input[type="checkbox"]').isChecked(),false,
+   'Editing reference help cannot select an unsafe linked-item change');
   await clickCatalogFilter('needsReview');
   assert.equal(await dialog.locator('.os-sync-record').count(),1);
   await clickCatalogFilter('links');
