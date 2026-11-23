@@ -188,6 +188,48 @@ export async function runUIContentInlineSmoke(browser,base){
    .fill('Correct admin password!');
   await page.locator('.modal').getByRole('button',{name:'Войти',exact:true}).click();
   await page.locator('#ownerDock').waitFor({state:'visible',timeout:15000});
+  // A real native catalog disclosure: single pointer click toggles details;
+  // direct dblclick edits only the RU D1 caption, without a caption pencil.
+  const catalogDock=page.locator('#ownerDock .owner-dock-catalog');
+  if(await page.locator('#ownerDock').evaluate(node=>
+    node.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
+  await catalogDock.click();
+  const archiveDetails=page.locator('.os-sync-archive-choice');
+  await archiveDetails.waitFor({state:'visible',timeout:15000});
+  const archiveCaption=archiveDetails.locator('summary .os-sync-disclosure-caption');
+  const archiveKey='guideedit.book.catalog-sync.archive-summary';
+  assert.equal(await archiveCaption.innerText(),'Если сайт игры не отдаёт данные');
+  assert.equal(await page.locator('.os-sync-archive-choice + .os-sync-secondary-pencil').count(),1);
+  assert.equal(await archiveCaption.locator('button').count(),0);
+  await archiveCaption.click();
+  await page.waitForFunction(()=>document.querySelector('.os-sync-archive-choice')?.open,
+   null,{timeout:5000});
+  await archiveCaption.dblclick();
+  const archiveInput=archiveCaption.locator('[data-owner-text-field]');
+  await archiveInput.waitFor({state:'visible'});
+  assert.equal(await archiveDetails.evaluate(node=>node.open),true,
+   'Double-click editing must not collapse the disclosure');
+  await archiveInput.fill('Архив — заголовок QA');
+  await archiveInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '.os-sync-archive-choice summary .os-sync-disclosure-caption'
+  )?.textContent==='Архив — заголовок QA',null,{timeout:15000});
+  assert.equal(JSON.parse(values[archiveKey]).ru,'Архив — заголовок QA');
+  assert.equal(await archiveDetails.evaluate(node=>node.open),true);
+  await page.locator('.modal .button-action.close').click();
+  await page.locator('.os-sync').waitFor({state:'detached'});
+  await page.locator('#ownerDock [data-owner-undo]').click();
+  await catalogDock.click();
+  await page.locator('.os-sync-archive-choice').waitFor({state:'visible'});
+  assert.equal(await page.locator(
+   '.os-sync-archive-choice summary .os-sync-disclosure-caption'
+  ).innerText(),'Если сайт игры не отдаёт данные');
+  assert.equal(Object.hasOwn(values,archiveKey),false);
+  assert.equal(resets.at(-1)?.key,archiveKey);
+  await page.locator('.modal .button-action.close').click();
+  await page.locator('.os-sync').waitFor({state:'detached'});
+  console.log('Chromium #390: native disclosure click, D1 CAS, blur and Undo passed');
   // Test a real visible Origin heading, not a hidden legacy gender control.
   // Only its authored caption enters CAS, never the source portrait/race name.
   await page.locator('#originTabs [data-origin-tab="race"]').click();
