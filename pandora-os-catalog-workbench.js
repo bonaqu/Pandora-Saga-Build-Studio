@@ -64,6 +64,14 @@
     ['diagnosticsSummary','Технические сведения об ошибке','Technical error details']
   ]);
   const catalogDisclosureByKey=new Map(catalogDisclosureCopyRows.map(row=>[row[0],row]));
+  // The same three authorial action names recur in every dataset panel.
+  // Filtered counts and selection state are NOT source-authored D1 values.
+  const catalogGroupActionCopyRows=Object.freeze([
+    ['groupTake','Выбрать понятные изменения раздела','Select understood changes in section'],
+    ['groupReject','Снять выбор раздела','Clear section selection'],
+    ['groupMatching','Выбрать найденное','Select matching']
+  ]);
+  const catalogGroupActionByKey=new Map(catalogGroupActionCopyRows.map(row=>[row[0],row]));
   // Dynamic review summaries have independently authored words AND immutable
   // runtime counts. This inventory is strictly authorial: no game records,
   // IDs, numbers, error diagnostics or publication approvals.
@@ -204,8 +212,12 @@
     // An action's visible caption is editable even when the action is
     // disabled. The wrapper provides an F2 target in that case; ordinary
     // single clicks still execute the action after dblclick disambiguation.
-    const action=(button,key,ru,en)=>{
+    const action=(button,key,ru,en,{count=null}={})=>{
+      // The count is a separate DOM child: a D1 CAS edit updates only words.
+      const number=count===null?null:h('span',{
+        class:'os-sync-action-runtime-number',text:' · '+String(count)});
       button.textContent=copy(key,ru,en);
+      if(number)button.append(number);
       if(!canEdit||typeof editLabel!=='function')return button;
       const wrap=h('span',{class:'os-sync-action-editor',
         'aria-keyshortcuts':'F2'});
@@ -213,7 +225,10 @@
       if(button.disabled)wrap.tabIndex=0;
       button.id||='os-sync-copy-'+key;
       editLabel(host,key,ru,en,{
-        onCommitted:next=>{button.textContent=next},
+        onCommitted:next=>{
+          if(number&&button.firstChild?.nodeType===3)button.firstChild.nodeValue=next;
+          else button.textContent=next;
+        },
         onFinished:()=>{button.hidden=false;host.hidden=true}
       });
       for(const [keyName,value] of Object.entries({
@@ -247,6 +262,11 @@
       });
       wrap.append(button,host);
       return wrap;
+    };
+    const groupAction=(button,key,options)=>{
+      const row=catalogGroupActionByKey.get(key);
+      if(!row)throw Error('Unreviewed catalog group action: '+key);
+      return action(button,key,row[1],row[2],options);
     };
     // Reuse the game's hover/focus helper. All hints remain plain text;
     // owner-authored copy updates the existing tooltip, never HTML.
@@ -1312,10 +1332,8 @@
         ]));
         const toolbar = h('div',{class:'os-sync-group-actions'});
         const take = h('button',{type:'button',class:'button-action',
-          text:tr('Выбрать понятные изменения раздела','Select understood changes in section'),
           disabled:busy||!group.some(safe)});
-        const reject = h('button',{type:'button',class:'button-action',
-          text:tr('Снять выбор раздела','Clear section selection'),disabled:busy});
+        const reject = h('button',{type:'button',class:'button-action',disabled:busy});
         take.addEventListener('click',()=> {
           if (busy) return;
           for (const item of group)if(safe(item))chosen.add(item.id);
@@ -1327,15 +1345,15 @@
           refreshActions(); render();
         });
         const takeVisible=h('button',{type:'button',class:'button-action',
-          text:tr('Выбрать найденное · ','Select matching · ')+filtered.filter(safe).length,
           disabled:busy||!filtered.some(safe)});
         takeVisible.onclick=()=>{
           if(busy)return;
           for(const item of filtered)if(safe(item))chosen.add(item.id);
           render();
         };
-        toolbar.append(take,reject);
-        if(query||filterKind!=='all')toolbar.append(takeVisible);
+        toolbar.append(groupAction(take,'groupTake'),groupAction(reject,'groupReject'));
+        if(query||filterKind!=='all')toolbar.append(
+          groupAction(takeVisible,'groupMatching',{count:filtered.filter(safe).length}));
         panel.append(toolbar);
         const variantTotal=new Map(),variantIndex=new Map(),variantOrder=new Map();
         for(const entry of group){

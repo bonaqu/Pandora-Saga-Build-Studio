@@ -10,6 +10,12 @@
 .os-sync-group-heading strong{font-size:13px}
 .os-sync-count{font-size:11px;color:#d5b98d}
 .os-sync-group-actions{display:flex;flex-wrap:wrap;gap:6px;padding:0 10px 10px}
+/* The per-dataset action is still a real button in either mode.
+   Its live filtered count is not part of the editable caption. */
+.os-sync-group-actions>.os-sync-action-editor{min-width:0;max-width:100%}
+.os-sync-group-actions .os-sync-action-runtime-number{
+ white-space:nowrap;font-variant-numeric:tabular-nums
+}
 .os-sync-list{display:grid;gap:6px;padding:0 10px 10px}
 .os-sync-record{border:1px solid #57432f;border-radius:4px;padding:9px;background:#2a2018}
 .os-sync-record-label{display:flex;gap:9px;align-items:center;cursor:pointer}

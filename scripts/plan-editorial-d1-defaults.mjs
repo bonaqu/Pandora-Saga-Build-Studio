@@ -1301,6 +1301,25 @@ export function buildEditorialDefaultsManifest(){
   append('guideedit.book.catalog-sync.'+slug,'en',en,'catalog-review-disclosures');
  }
 
+ // Repeated per-dataset review action WORDS have three common owner CAS
+ // keys; counts, dataset identities and the chosen set are runtime-only.
+ const groupSource=read('pandora-os-catalog-workbench.js').match(
+  /const catalogGroupActionCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ if(!groupSource)throw Error('Missing catalog group action source registry');
+ const groupRows=runInNewContext('('+groupSource[1]+')',{},{timeout:5000});
+ const expectedGroup=['groupTake','groupReject','groupMatching'];
+ if(!Array.isArray(groupRows)||groupRows.length!==expectedGroup.length||
+  groupRows.map(row=>row?.[0]).sort().join('|')!==expectedGroup.sort().join('|'))
+  throw Error('Unreviewed catalog group action source inventory');
+ for(const row of groupRows){
+  if(!Array.isArray(row)||row.length!==3||row.some(value=>
+   typeof value!=='string'||!value.trim()||value!==value.trim()))
+   throw Error('Invalid bilingual catalog group action caption');
+  const [key,ru,en]=row,slug=key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase());
+  append('guideedit.book.catalog-sync.'+slug,'ru',ru,'catalog-review-group-actions');
+  append('guideedit.book.catalog-sync.'+slug,'en',en,'catalog-review-group-actions');
+ }
+
  // Live comparison counters are NOT authorial content. Source-only
  // fragments are separately reviewed and staged under semantic D1 keys,
  // preserving in-progress owner inline edits when runtime data changes.

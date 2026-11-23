@@ -10849,7 +10849,14 @@ function refreshVisibleOwnerCopy(recordKey){
   const {ownerCopySection:section,ownerCopyId:id,ownerCopyRu:ru,ownerCopyEn:en}=node.dataset;
   if(ownerCopyKey(section,id)!==key||node.querySelector('.wiki-inline-input'))continue;
   const value=ownerCopy(section,id,ru,en);
-  ownerDockPatchText(node,value);
+  // A catalog group action can display a computed matching-item count.
+  // Save/Undo changes only the authored words, never deleting that live node
+  // or rewriting its number into the bilingual D1 record.
+  const runtimeNumber=section==='catalog-sync'?
+   node.querySelector(':scope > .os-sync-action-runtime-number'):null;
+  if(runtimeNumber&&node.firstChild?.nodeType===3){
+   if(node.firstChild.nodeValue!==value)node.firstChild.nodeValue=value;
+  }else ownerDockPatchText(node,value);
   if(section==='owner-history'&&id==='dialogTitle')
    ownerDockPatchAttr(node.closest('.modal[role="dialog"]'),'aria-label',value);
   if(section==='owner-dialog'){
