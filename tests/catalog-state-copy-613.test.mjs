@@ -220,3 +220,40 @@ test('#390: ten independent catalog filter hover hints have bilingual CAS and ze
  assert.match(css,/\.os-sync-filter-hint:focus-within>\.os-sync-secondary-pencil/);
  assert.match(css,/@media\(hover:hover\) and \(pointer:fine\)/);
 });
+
+test('#390: catalog summary is D1-editable RU/EN text with persistent count siblings',async()=>{
+ const match=workbench.match(/const catalogReviewStatusCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ assert.ok(match,'Status vocabulary must have one reviewed source registry');
+ const rows=runInNewContext('('+match[1]+')');
+ const keys=['affectedSections','selectionTotal','selectionRemaining',
+  'selectionNeedsReview','selectionSettings','lineBreaksIncluded',
+  'foundChanges','summaryTechnical','summarySelected','summaryUnselected',
+  'summaryNeedsReview','noChanges'];
+ assert.deepEqual(Array.from(rows,row=>String(row[0])).sort(),keys.sort());
+ const {buildEditorialDefaultsManifest}=await import('../scripts/plan-editorial-d1-defaults.mjs');
+ const manifest=buildEditorialDefaultsManifest();
+ assert.equal(manifest.stats.cohorts['catalog-review-runtime-labels'],24);
+ for(const [key,ru,en] of rows){
+  const slug=key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase());
+  const id='guideedit.book.catalog-sync.'+slug;
+  assert.equal(manifest.records.find(v=>v.recordKey===id&&v.field==='ru')?.value,ru);
+  assert.equal(manifest.records.find(v=>v.recordKey===id&&v.field==='en')?.value,en);
+  assert.equal(root.PandoraHonorGuide.validOverride('book.catalog-sync.'+slug,
+   JSON.stringify({ru:'Проверка',en:'Test'})),true,key);
+ }
+ assert.match(workbench,/const statusCaption=key=>/);
+ assert.match(workbench,/editLabel\(node,key,row\[1\],row\[2\]\)/);
+ assert.match(workbench,/const countPart=\(key,separator=''\)=>/);
+ assert.match(workbench,/wrap\.append\(statusCaption\(key\),value\)/);
+ assert.match(workbench,/const value=' '\+String\(count\)/);
+ assert.match(workbench,/setCountPart\(summaryParts\.found,changes\.length,hasChanges\)/);
+ assert.match(workbench,/setCountPart\(selectionParts\.total,acceptedChanges\+' \/ '\+changes\.length\)/);
+ assert.match(workbench,/overview\.append\(overviewCaption,overviewValues\)/);
+ assert.match(workbench,/overviewValues\.textContent=ordered\.length/);
+ assert.match(workbench,/for\(const part of Object\.values\(summaryParts\)\)part\.wrap\.hidden=true/);
+ assert.match(workbench,/summaryEmpty\.hidden=hasChanges\|\|!baseline/);
+ assert.doesNotMatch(workbench,/(?:selectionGuidance|summary|overview)\.textContent\s*=/);
+ const css=read('pandora-os-catalog-workbench.css');
+ assert.match(css,/\.os-sync-status-copy\.origin-copy-editable::after\{content:none\}/);
+ assert.doesNotMatch(workbench,/os-sync-status-pencil/);
+});
