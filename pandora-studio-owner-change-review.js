@@ -216,6 +216,54 @@ function inspect(key,stored,{base=null,items=null,classes=null,lang='ru',english
   patch=toObject(stored);
   source=key?{ru:root.PandoraUILocale.baseText(key,'ru'),
    en:root.PandoraUILocale.baseText(key,'en')}:{};
+ }else if(type==='guideedit'&&parts[1]==='book'){
+  // Owner history is the READ-ONLY view of D1 CAS records. Treat every
+  // validated bilingual book override as authorial UI copy, rather than
+  // dumping its RU/EN JSON under "Other settings". Keep the original key
+  // intact for search, reset, Undo and exact server-side CAS operations.
+  section='Интерфейс';
+  const data=toObject(stored);
+  const authored=data&&typeof data==='object'&&!Array.isArray(data)?data:null;
+  patch=authored||{value:stored};
+  const families={
+   'catalog-sync':['Проверка каталога','Catalog review'],
+   'owner-history':['История изменений','Change history'],
+   'owner-dialog':['Диалог владельца','Owner dialog'],
+   'owner-dock':['Панель владельца','Owner panel'],
+   'origin':['Происхождение','Origin'],
+   'path':['Путь героя','Hero path'],
+   'equipment':['Образ героя','Equipment'],
+   'honor-view':['Честь','Honor'],
+   'profile':['Профиль','Profile'],
+   'wiki':['Энциклопедия','Encyclopedia'],
+   'book-aria':['Книга героя','Hero book']
+  };
+  const sectionName=families[parts[2]]||['Интерфейс','Interface'];
+  const isHint=Object.keys(authored||{}).some(field=>/^hint(?:Ru|En)$/.test(field))||
+   parts.at(-1)?.startsWith('hint-');
+  const preferred=english?['en','hintEn','ru','hintRu']:['ru','hintRu','en','hintEn'];
+  const headline=preferred.map(field=>authored?.[field])
+   .find(value=>typeof value==='string'&&value.trim());
+  // Show a clipped *saved* caption as the row title. Never pretend an
+  // edited caption is the original version or expose a fabricated baseline.
+  const kind=isHint?tr('Подсказка','Tooltip'):tr('Надпись','Caption');
+  name=tr(...sectionName)+' · '+kind+
+   (headline?' «'+preview(headline.replace(/\s+/g,' ').trim(),75)+'»':'');
+  // Only a trusted, explicitly loaded and versioned staging default may
+  // act as "before". Without one, report the original as unknown. The
+  // stored override must NEVER be used as its own baseline.
+  const staged=root.PandoraEditorialDefaults;
+  if(typeof staged?.value==='function'){
+   source={};
+   const recordKey='guideedit.'+parts.slice(1).join('.');
+   for(const field of Object.keys(patch)){
+    if(!['ru','en','hintRu','hintEn'].includes(field))continue;
+    try{
+     const baseline=staged.value(recordKey,field);
+     if(typeof baseline==='string'&&baseline.trim())source[field]=baseline;
+    }catch{/* An optional staging reader cannot block owner history. */}
+   }
+  }
  }else if(type==='spawnedit'){
   target={type:'monster',id};name=lookup('monster',id);section='Появление монстра';
   const spawn=[];
