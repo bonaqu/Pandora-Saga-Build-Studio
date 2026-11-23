@@ -242,9 +242,9 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   const mpSource=await page.locator('#originMp').textContent();
   assert.equal(await page.locator('#originVitals').getAttribute('aria-label'),
    'ОЗ '+hpSource+', ОМ '+mpSource);
-  await page.locator('#originTabs [data-origin-tab="race"]').click();
   const statLabel=statSummary.locator('[data-owner-copy-id="remainingPrefix"]');
   assert.equal(await statLabel.textContent(),'Свободно:');
+  await page.locator('#originTabs [data-origin-tab="race"]').click();
   // Source-backed caps are not authorial copy. Edit the visible caption
   // directly while keeping the cap number and the growth state untouched.
   await openEditableTrack();
