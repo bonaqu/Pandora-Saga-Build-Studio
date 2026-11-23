@@ -586,12 +586,44 @@
     ];
     const filterButtons=new Map();
     for(const [id,ru,en]of filterChoices){
+      // Split the authorial filter word from the live category count.
+      // The D1 key is stable and never contains source data or the number.
+      const key='reviewFilter'+id[0].toUpperCase()+id.slice(1);
       const button=h('button',{type:'button',class:'os-sync-filter',
-       'aria-pressed':String(id===filterKind),text:tr(ru,en)});
-      button.onclick=()=>{
-        if(busy)return;
-        filterKind=id;render();
-      };
+       'data-review-filter':id,'aria-pressed':String(id===filterKind),
+       'aria-keyshortcuts':canEdit?'F2':null});
+      const caption=h('span',{class:'os-sync-filter-caption',
+       text:copy(key,ru,en)});
+      const total=h('span',{class:'os-sync-filter-count',
+       text:' · 0'});
+      button.append(caption,total);
+      if(canEdit&&typeof editLabel==='function')editLabel(caption,key,ru,en);
+      const choose=()=>{if(busy)return;filterKind=id;render();};
+      let pending=null;
+      button.addEventListener('click',event=>{
+        if(busy||event.target.closest?.('[data-owner-text-field],.wiki-inline-input'))
+          return;
+        // Owner double-click on the written caption enters the editor.
+        // The first of those two clicks must not silently change the filter.
+        // Guest clicks, keyboard activation, and clicks on the numeric
+        // counter retain their immediate original action.
+        if(!canEdit||!event.detail||!caption.contains(event.target)){
+          choose();return;
+        }
+        event.preventDefault();event.stopPropagation();
+        if(pending){clearTimeout(pending);pending=null;return}
+        pending=setTimeout(()=>{
+          pending=null;
+          if(button.isConnected&&!button.disabled)choose();
+        },500);
+      });
+      button.addEventListener('keydown',event=>{
+        if(canEdit&&event.target===button&&event.key==='F2'){
+          event.preventDefault();event.stopPropagation();
+          caption.dispatchEvent(new KeyboardEvent('keydown',{
+           key:'F2',bubbles:true,cancelable:true}));
+        }
+      });
       const tips={
         all:['Все найденные изменения.','All detected changes.'],
         added:['Объекты, добавленные в проверяемом источнике.','Entries added in the checked source.'],
@@ -787,7 +819,17 @@
       };
       for(const [id,ru,en]of filterChoices){
         const button=filterButtons.get(id);
-        button.textContent=tr(ru,en)+' · '+byKind[id];
+        const caption=button.querySelector('.os-sync-filter-caption');
+        // D1 save, re-filtering and count changes must never remove an
+        // owner input that is still being edited or replace a live count.
+        if(!caption.querySelector('[data-owner-text-field],.wiki-inline-input')){
+          const key='reviewFilter'+id[0].toUpperCase()+id.slice(1);
+          const value=copy(key,ru,en);
+          if(caption.textContent!==value)caption.textContent=value;
+        }
+        const count=button.querySelector('.os-sync-filter-count');
+        const value=' · '+byKind[id];
+        if(count.textContent!==value)count.textContent=value;
         button.classList.toggle('active',id===filterKind);
         button.setAttribute('aria-pressed',String(id===filterKind));
       }
