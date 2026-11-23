@@ -1935,6 +1935,36 @@ export async function runAdminEntrySmoke(browser,base){
    /Интерфейс · Проверка каталога · Подсказка/);
   assert.equal(await history.locator('.owner-review-row').count(),allHistory,
    'Viewing history must not add or reset any saved D1 records');
+  // Existing real Honor/Wiki inline editor saves happened earlier in this
+  // same Chromium journey. Inspect them without faking new D1 records or
+  // opening a game editor from the owner history.
+  assert.ok(townOverrides.has('guideedit.wiki.labels'));
+  const wikiHistoryRow=history.locator('.owner-review-row')
+   .filter({hasText:'Честь и ранги'}).first();
+  assert.equal(await wikiHistoryRow.count(),1);
+  assert.match(await wikiHistoryRow.locator('.owner-review-heading strong').innerText(),
+   /Энциклопедия · Подписи разделов/);
+  if(!await wikiHistoryRow.evaluate(node=>node.open))
+   await wikiHistoryRow.locator('.owner-review-heading').click();
+  const wikiHistoryFields=await wikiHistoryRow.locator('.owner-review-field').allTextContents();
+  assert.ok(wikiHistoryFields.includes('Глава · Честь · RU'));
+  assert.ok(wikiHistoryFields.includes('Честь · Получение · RU'));
+  assert.ok((await wikiHistoryRow.locator('.owner-review-after').allTextContents())
+   .some(text=>text.includes('Честь и ранги')));
+  assert.ok(townOverrides.has('guideedit.honor.rank.8'));
+  const rankHistoryRow=history.locator('.owner-review-row')
+   .filter({hasText:updatedBenefit}).first();
+  assert.equal(await rankHistoryRow.count(),1);
+  assert.match(await rankHistoryRow.locator('.owner-review-heading strong').innerText(),
+   /Честь · Ранг · Маркграф/);
+  if(!await rankHistoryRow.evaluate(node=>node.open))
+   await rankHistoryRow.locator('.owner-review-heading').click();
+  assert.deepEqual(await rankHistoryRow.locator('.owner-review-field').allTextContents(),
+   ['Преимущество RU'],'Rank points, gold and other game thresholds are not editable history fields');
+  assert.equal(await rankHistoryRow.locator('.owner-review-after p').innerText(),
+   updatedBenefit);
+  assert.equal(await history.locator('.owner-review-row').count(),allHistory,
+   'Browsing authorial Honor and Wiki history must not mutate saved D1 records');
   await sessionFilter.check();
   assert.ok(await history.locator('.owner-review-row').count()<=allHistory,
    'Session filter cannot add unrelated D1 edits');
