@@ -16,7 +16,7 @@ test('unused hero HUD, dummy name and experience disappear from the actual page'
 });
 
 test('HP and MP render in the Origin area and refresh when allocation/equipment changes',()=>{
- const first=app.indexOf('function renderOriginVitals(calculated=undefined){');
+ const first=app.indexOf('function refreshOriginVitalsAccessible(){');
  const last=app.indexOf('\nfunction setVitalsEnhancement(key,value){',first);
  assert.ok(first>0&&last>first);
  const fn=app.slice(first,last);
