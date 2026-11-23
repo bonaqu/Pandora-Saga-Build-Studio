@@ -69,7 +69,16 @@ test('typing below racial base keeps the base; typing 100 caps at 99 without cla
  assert.equal(dex[2].value,'99');
  assert.equal(f.state.stats['Сноровка'],92,'saved state remains invested-only');
  assert.equal(dex[4].children[0].textContent,'110','effective DEX = 99 + 11');
- assert.equal(dex[4].children[1].textContent,'+11 бонус');
+ // Numeric effective delta and user-authored RU/EN suffix are two
+ // different nodes; editing the suffix must never touch derived values.
+ const [delta,space,bonus,total]=dex[4].children[1].children;
+ assert.equal(delta.textContent,'+11');
+ assert.equal(delta.hidden,false);
+ assert.equal(space.hidden,false);
+ assert.equal(bonus.textContent,'бонус');
+ assert.equal(bonus.hidden,false);
+ assert.equal(total.textContent,'Итог');
+ assert.equal(total.hidden,true);
  dex[1].listeners.click();assert.equal(dex[2].value,'98');
  dex[3].listeners.click();assert.equal(dex[2].value,'99');
 });
