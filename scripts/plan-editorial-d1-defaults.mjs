@@ -287,6 +287,48 @@ export function buildEditorialDefaultsManifest(){
   append('guideedit.book.owner-history.'+slug,'en',en,'owner-history-aux');
  }
 
+ // Two owner-only dialogs have fixed authorial source copy AND separate
+ // runtime D1 records, counts, original translations, URLs, worker errors.
+ // Extract precisely the reviewed 18 presentation messages and five existing
+ // help/action captions. Abort on new identities until editorial review.
+ const ownerDialogStatusSource=app.match(
+  /const ownerDialogStatusCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ if(!ownerDialogStatusSource)throw Error('Missing owner-dialog source registry');
+ const ownerDialogRows=runInNewContext('('+ownerDialogStatusSource[1]+')',{},{timeout:5000});
+ const expectedOwnerDialog=[
+  'translationsNoPending','translationsReadyCount','translationsSuccessLead',
+  'translationsSuccessSuffix','translationsPartialLead','translationsPartialOf',
+  'translationsPartialSuffix','translationsTitle','translationsSaveHint',
+  'githubMissingToken','githubCount','githubProposed','githubLink','githubFollowup',
+  'githubUnchanged','githubNoLink','githubTitle','githubCreateHint'
+ ];
+ if(!Array.isArray(ownerDialogRows)||
+  ownerDialogRows.map(row=>row?.[0]).sort().join('|')!==
+   expectedOwnerDialog.sort().join('|'))throw Error('Unreviewed owner-dialog status source');
+ const seenOwnerDialog=new Set();
+ for(const row of ownerDialogRows){
+  if(!Array.isArray(row)||row.length!==3||row.some(value=>
+    typeof value!=='string'||!value.trim())||seenOwnerDialog.has(row[0]))
+   throw Error('Invalid owner-dialog bilingual source caption');
+  const [key,ru,en]=row;seenOwnerDialog.add(key);
+  const slug=key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  append('guideedit.book.owner-dialog.'+slug,'ru',ru,'owner-dialog-states');
+  append('guideedit.book.owner-dialog.'+slug,'en',en,'owner-dialog-states');
+ }
+ const ownerDialogExisting=[...app.matchAll(
+  /ownerDialog(?:Help|Action)\((?:save,|go,)?\s*'([a-zA-Z]+)',\s*'([^']+)',\s*'([^']+)'\)/g
+ )].map(row=>[row[1],row[2],row[3]]);
+ const expectedExisting=['githubCreateButton','githubExplanation','githubPrompt',
+  'translationsIntro','translationsSaveButton'];
+ if(ownerDialogExisting.length!==expectedExisting.length||
+  ownerDialogExisting.map(row=>row[0]).sort().join('|')!==
+   expectedExisting.join('|'))throw Error('Unreviewed existing owner-dialog copy');
+ for(const [key,ru,en] of ownerDialogExisting){
+  const slug=key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  append('guideedit.book.owner-dialog.'+slug,'ru',ru,'owner-dialog-helpers');
+  append('guideedit.book.owner-dialog.'+slug,'en',en,'owner-dialog-helpers');
+ }
+
  // Profile labels have real owner CAS keys, but their values are strictly
  // authored captions. The editable hero profile itself is never D1 copy.
  const profileSource=app.match(
