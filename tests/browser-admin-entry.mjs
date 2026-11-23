@@ -1716,6 +1716,24 @@ export async function runAdminEntrySmoke(browser,base){
    'Найти запись истории · QA',null,{timeout:15000});
   assert.equal(JSON.parse(townOverrides.get('guideedit.book.owner-history.search-placeholder')).ru,
    'Найти запись истории · QA');
+  // Owner-authored independent hover text must not mutate button caption
+  // or the user's actual search. Its accessible description tracks D1 CAS.
+  const hoverCopy=history.locator('.studio-owner-interface-editor '+
+   '[data-owner-copy-id="clearHelp"]');
+  await historySearch.fill('Поиск не должен исчезнуть при правке подсказки');
+  await hoverCopy.dblclick();
+  const hoverInput=hoverCopy.locator('[data-owner-text-field]');
+  await hoverInput.waitFor({state:'visible'});
+  await hoverInput.fill('Подсказка очистки истории · QA');
+  await hoverInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector('.owner-manager-search-clear')
+   ?.dataset.guideHint==='Подсказка очистки истории · QA',null,{timeout:15000});
+  assert.equal(JSON.parse(townOverrides.get('guideedit.book.owner-history.clear-help')).ru,
+   'Подсказка очистки истории · QA');
+  assert.equal(await history.locator('.owner-manager-search-clear').getAttribute('aria-description'),
+   'Подсказка очистки истории · QA');
+  assert.equal(await history.locator('.owner-history-clear-copy').textContent(),'Очистить');
+  assert.equal(await historySearch.inputValue(),'Поиск не должен исчезнуть при правке подсказки');
   const sessionCaption=history.locator('.owner-history-session-copy');
   assert.equal(await history.locator('.owner-manager-session input').isChecked(),false);
   await sessionCaption.dblclick();
@@ -1775,6 +1793,8 @@ export async function runAdminEntrySmoke(browser,base){
   const originalFieldCount=await fieldCount.textContent();
   const changedCaption=historyRow.locator('.owner-history-fields-copy');
   await changedCaption.dblclick();
+  assert.equal(await historyRow.evaluate(node=>node.open),true,
+   'Editing count caption inside native summary must not collapse the row');
   const changedInput=changedCaption.locator('[data-owner-text-field]');
   await changedInput.waitFor({state:'visible'});
   await changedInput.fill('Изменённые поля · QA');
@@ -1861,7 +1881,20 @@ export async function runAdminEntrySmoke(browser,base){
    historyCopy,'History copy saves via the established D1 override path');
   assert.equal(calls.filter(x=>x==='d1-import'||x.startsWith('game-source:')).length,
    beforeCatalogCalls,'History copy editing must not publish the game catalog');
-  await history.locator('button.close').click();
+  // A direct double click on the actual modal title must save D1 copy and
+  // synchronize the native dialog accessible name without remounting the form.
+  const titleCaption=page.locator('#modalRoot .modal h2').first();
+  await titleCaption.dblclick();
+  const titleInput=titleCaption.locator('[data-owner-text-field]');
+  await titleInput.waitFor({state:'visible'});
+  await titleInput.fill('История сохранённых правок · QA');
+  await titleInput.press('Tab');
+  await page.waitForFunction(()=>
+   document.querySelector('#modalRoot .modal[role="dialog"]')?.getAttribute('aria-label')===
+   'История сохранённых правок · QA',null,{timeout:15000});
+  assert.equal(JSON.parse(townOverrides.get('guideedit.book.owner-history.dialog-title')).ru,
+   'История сохранённых правок · QA');
+  await page.locator('#modalRoot .modal button.close').click();
   // Issue #390: real owner-export modal, with independent pencil and D1 save.
   // The publication endpoint must not run when the owner edits its caption.
   await ownerPanel.locator('.owner-dock-export').click();
