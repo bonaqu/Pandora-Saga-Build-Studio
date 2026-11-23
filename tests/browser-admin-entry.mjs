@@ -1764,6 +1764,44 @@ export async function runAdminEntrySmoke(browser,base){
   const historyTotals=summaryHistory.locator('.owner-history-live-count');
   const beforeTotalValues=await historyTotals.allTextContents();
   assert.equal(beforeTotalValues.length,2);
+  // One real history record: edit only source captions, never counts or
+  // original before/after values. Dblclick on reset cannot delete the record.
+  const historyRow=history.locator('.owner-review-row').first();
+  assert.ok(await historyRow.count()>0,'History fixture must include an actual edit');
+  if(!await historyRow.evaluate(node=>node.open))
+   await historyRow.locator('.owner-review-heading').click();
+  const originalRowCount=await history.locator('.owner-review-row').count();
+  const fieldCount=historyRow.locator('.owner-history-field-count');
+  const originalFieldCount=await fieldCount.textContent();
+  const changedCaption=historyRow.locator('.owner-history-fields-copy');
+  await changedCaption.dblclick();
+  const changedInput=changedCaption.locator('[data-owner-text-field]');
+  await changedInput.waitFor({state:'visible'});
+  await changedInput.fill('Изменённые поля · QA');
+  await changedInput.press('Tab');
+  await page.waitForFunction(()=>
+   document.querySelector('.owner-history-fields-copy')?.textContent==='Изменённые поля · QA',
+   null,{timeout:15000});
+  assert.equal(JSON.parse(townOverrides.get('guideedit.book.owner-history.fields-changed')).ru,
+   'Изменённые поля · QA');
+  assert.equal(await fieldCount.textContent(),originalFieldCount);
+  const resetCaption=historyRow.locator('.owner-history-reset-copy');
+  await resetCaption.dblclick();
+  const resetInput=resetCaption.locator('[data-owner-text-field]');
+  await resetInput.waitFor({state:'visible'});
+  await resetInput.fill('Восстановить запись · QA');
+  await resetInput.press('Tab');
+  await page.waitForFunction(()=>
+   document.querySelector('.owner-history-reset-copy')?.textContent==='Восстановить запись · QA',
+   null,{timeout:15000});
+  assert.equal(JSON.parse(townOverrides.get('guideedit.book.owner-history.restore-original')).ru,
+   'Восстановить запись · QA');
+  assert.equal(await history.locator('.owner-review-row').count(),originalRowCount,
+   'Editing a reset caption must not reset any real D1 override');
+  assert.deepEqual(await historyTotals.allTextContents(),beforeTotalValues);
+  assert.equal(await history.locator('.owner-history-pencil').count(),0);
+  assert.equal(await history.locator('.owner-history-pending-saving').count(),1);
+  assert.equal(await history.locator('.owner-history-pending-error').count(),1);
   const historyLead=summaryHistory.locator('[data-owner-copy-id="shownLead"]');
   const historyLeadOriginal=await historyLead.textContent();
   assert.equal(historyLeadOriginal,'Показано');
