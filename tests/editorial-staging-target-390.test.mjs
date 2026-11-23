@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {DatabaseSync} from 'node:sqlite';
 import {
  PRODUCTION_D1_ID,STAGING_SCHEMA_SQL,validateEditorialStagingTarget,
  assertDatabaseIdentity,
@@ -55,6 +56,8 @@ test('#390 D1 list requires unique matching database name AND UUID',()=>{
 
 test('#390 staging schema rejects unrelated tables, views, triggers and manual indexes',()=>{
  assert.ok(STAGING_SCHEMA_SQL.includes("type IN ('table','view','trigger','index')"));
+ assert.ok(STAGING_SCHEMA_SQL.includes("lower(name) NOT GLOB 'sqlite_*'"));
+ assert.ok(!STAGING_SCHEMA_SQL.includes("name NOT LIKE 'sqlite_%'"));
  assert.deepEqual(assertStagingSchema(query([])),{tables:[]});
  assert.deepEqual(assertStagingSchema(query([
   {type:'table',name:'editorial_default_rows'},
@@ -77,6 +80,28 @@ test('#390 staging schema rejects unrelated tables, views, triggers and manual i
   JSON.stringify([{success:false,results:[]}]),
   JSON.stringify([{success:true,results:[]},{success:true,results:[]}])
  ])assert.throws(()=>assertStagingSchema(raw));
+});
+
+test('#390 staging schema sees sqliteX names that SQL LIKE used to hide',()=>{
+ const db=new DatabaseSync(':memory:');
+ try{
+  // This is an actual SQLite sqlite_master query, not mocked JSON: SQL LIKE
+  // underscore is wildcard. Reserved sqlite_ system names are not counted.
+  db.exec('CREATE TABLE editorial_default_rows (value TEXT);');
+  db.exec('CREATE TABLE "sqliteXshadow" (value TEXT);');
+  const rows=db.prepare(STAGING_SCHEMA_SQL).all();
+  assert.ok(rows.some(row=>row.name==='sqliteXshadow'&&row.type==='table'));
+  assert.throws(()=>assertStagingSchema(query(rows)),
+   'An unrelated table that begins sqlite and one other character must stop import');
+  db.exec('DROP TABLE "sqliteXshadow"; CREATE TABLE "SQLiteXshadow" (value TEXT);');
+  assert.ok(db.prepare(STAGING_SCHEMA_SQL).all().some(row=>row.name==='SQLiteXshadow'));
+  db.exec('DROP TABLE "SQLiteXshadow";');
+  const safe=db.prepare(STAGING_SCHEMA_SQL).all();
+  assert.deepEqual(safe.map(row=>row.name),['editorial_default_rows']);
+  db.exec('CREATE TABLE seqtest (id INTEGER PRIMARY KEY AUTOINCREMENT);');
+  assert.ok(db.prepare("SELECT name FROM sqlite_master WHERE name='sqlite_sequence'").get());
+  assert.ok(!db.prepare(STAGING_SCHEMA_SQL).all().some(row=>row.name==='sqlite_sequence'));
+ }finally{db.close()}
 });
 
 test('#390 staging table names must also have exact expected column types and keys',()=>{
@@ -147,6 +172,8 @@ test('#390 manual staging workflow never runs on push, uses new staging-only cre
  assert.match(workflow,/--verify-columns editorial_default_rows/);
  assert.match(workflow,/--verify-columns editorial_default_snapshots/);
  assert.ok(workflow.includes("type IN ('table','view','trigger','index')"));
+ assert.ok(workflow.includes("lower(name) NOT GLOB 'sqlite_*'"));
+ assert.ok(!workflow.includes("name NOT LIKE 'sqlite_%'"));
  assert.ok(workflow.indexOf('--verify-columns editorial_default_snapshots')<
   workflow.indexOf('d1 export "$PS_EDITORIAL_STAGING_NAME" --remote'),
   'Manual workflow must check columns before backup and writes');

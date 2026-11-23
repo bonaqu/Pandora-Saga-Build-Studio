@@ -57,7 +57,10 @@ Preflight performs **read-only** remote UUID/name, complete SQLite
 object inventory (tables, views, triggers and user-created indexes), and
 full column/key-layout checks for the two permitted staging tables
 (including both absent tables on an empty staging DB). It rejects all
-views, triggers and manual indexes, same-named tables with unexpected fields,
+views, triggers and manual indexes, including confusing names such as
+`sqliteXshadow` (SQL `LIKE` treats `_` as a wildcard, so the preflight uses
+literal-underscore, case-normalized `GLOB` to omit only SQLite's internal
+`sqlite_*` objects), same-named tables with unexpected fields,
 types or primary keys, unrelated tables, production UUID, malformed
 parameters and an unclean or wrong source checkout. The manual workflow
 shares these object/column validation rules, but cannot run pre-merge while
