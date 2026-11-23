@@ -132,7 +132,7 @@ test('#390 review captions use exact bilingual CAS keys while live counts stay o
  const expected=['changedParametersLead','decisionHeading','formulaTitle',
   'heroMoreChangesLead','heroNoChange','heroSelectHelp','impactHeading',
   'moreImpactsLead','moreImpactsSuffix'];
- assert.deepEqual(rows.map(row=>row[0]).sort(),expected.sort());
+ assert.deepEqual(Array.from(rows,row=>String(row[0])).sort(),expected.sort());
  const {buildEditorialDefaultsManifest}=await import('../scripts/plan-editorial-d1-defaults.mjs');
  const manifest=buildEditorialDefaultsManifest();
  assert.equal(manifest.stats.cohorts['catalog-review-details'],18);
