@@ -226,6 +226,26 @@ export function buildEditorialDefaultsManifest(){
   append('guideedit.book.owner-history.'+key,'en',en,'owner-history-authorial');
  }
 
+ // Only the seven reviewed source strings of history controls are
+ // staged. Runtime queries, selected sections, counts and D1 records are not.
+ const controlRegistry=app.match(
+  /const ownerHistoryControlCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ if(!controlRegistry)throw Error('Missing owner-history control registry');
+ const controlRows=runInNewContext('('+controlRegistry[1]+')',{},{timeout:5000});
+ const expectedControlKeys=['allSections','clear','clearAria','searchAria',
+  'searchPlaceholder','sectionAria','session'];
+ if(!Array.isArray(controlRows)||
+  controlRows.map(row=>row?.[0]).sort().join('|')!==expectedControlKeys.sort().join('|'))
+  throw Error('Unreviewed owner-history control caption inventory');
+ for(const row of controlRows){
+  if(!Array.isArray(row)||row.length!==3||row.some(x=>
+   typeof x!=='string'||!x.trim()))
+   throw Error('Invalid bilingual history control caption');
+  const [key,ru,en]=row,slug=key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  append('guideedit.book.owner-history.'+slug,'ru',ru,'owner-history-controls');
+  append('guideedit.book.owner-history.'+slug,'en',en,'owner-history-controls');
+ }
+
  // Profile labels have real owner CAS keys, but their values are strictly
  // authored captions. The editable hero profile itself is never D1 copy.
  const profileSource=app.match(
