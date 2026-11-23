@@ -219,7 +219,17 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(await archiveDetails.evaluate(node=>node.open),true);
   await page.locator('.modal .button-action.close').click();
   await page.locator('.os-sync').waitFor({state:'detached'});
+  // Owner dock actions defer single-clicks to distinguish them from direct
+  // caption dblclick. Do NOT open a different action before Undo's own
+  // delayed click and acknowledged CAS reset have finished.
+  const resetResponse=page.waitForResponse(response=>
+   response.url().endsWith('/api/admin/reset')&&response.status()===200,
+   {timeout:15000});
   await page.locator('#ownerDock [data-owner-undo]').click();
+  await resetResponse;
+  assert.equal(resets.at(-1)?.key,archiveKey,
+   'Native catalog caption Undo must issue a confirmed D1 reset');
+  assert.equal(Object.hasOwn(values,archiveKey),false);
   await catalogDock.click();
   await page.locator('.os-sync-archive-choice').waitFor({state:'visible'});
   assert.equal(await page.locator(
