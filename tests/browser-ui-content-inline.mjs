@@ -191,8 +191,9 @@ export async function runUIContentInlineSmoke(browser,base){
   // A real native catalog disclosure: single pointer click toggles details;
   // direct dblclick edits only the RU D1 caption, without a caption pencil.
   const catalogDock=page.locator('#ownerDock .owner-dock-catalog');
-  if(await page.locator('#ownerDock').evaluate(node=>
-    node.classList.contains('owner-dock-collapsed')))
+  const catalogDockWasCollapsed=await page.locator('#ownerDock').evaluate(node=>
+   node.classList.contains('owner-dock-collapsed'));
+  if(catalogDockWasCollapsed)
    await page.locator('#ownerDock [data-owner-collapse]').click();
   await catalogDock.click();
   const archiveDetails=page.locator('.os-sync-archive-choice');
@@ -239,6 +240,10 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(resets.at(-1)?.key,archiveKey);
   await page.locator('.modal .button-action.close').click();
   await page.locator('.os-sync').waitFor({state:'detached'});
+  // Preserve the pre-existing dock layout; otherwise its title covers
+  // actual hero navigation targets in the next independent UI scenario.
+  if(catalogDockWasCollapsed)
+   await page.locator('#ownerDock [data-owner-collapse]').click();
   console.log('Chromium #390: native disclosure click, D1 CAS, blur and Undo passed');
   // Test a real visible Origin heading, not a hidden legacy gender control.
   // Only its authored caption enters CAS, never the source portrait/race name.
