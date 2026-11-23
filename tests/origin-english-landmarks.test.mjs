@@ -59,12 +59,13 @@ test('EN race image and portrait arrow descriptions follow the chosen race/gende
 });
 
 test('calculated origin vitals use locale-specific HP/MP announcements',()=>{
- const from=app.indexOf('function renderOriginVitals(calculated=undefined){');
+ const from=app.indexOf('function refreshOriginVitalsAccessible(){');
  const to=app.indexOf('\nfunction setVitalsEnhancement(key,value){',from);
  assert.ok(from>=0&&to>from);
  const code=app.slice(from,to);
- assert.match(code,/lang==='en'\?'HP '\+calculated\.hp/);
- assert.match(code,/lang==='en'\?'HP and MP will appear when game data have loaded\.'/);
+ assert.match(code,/hpLabel\+' '\+hp\+', '\+mpLabel\+' '\+mp/);
+ assert.match(code,/statsUiText\('vitalsLoadingAria'\)/);
+ assert.match(app,/\['vitalsLoadingAria','ОЗ и ОМ появятся после загрузки игровых данных\.'/);
  assert.match(html,/<span data-i18n="hpShort">ОЗ<\/span>/);
  assert.match(html,/<span data-i18n="mpShort">ОМ<\/span>/);
 });
