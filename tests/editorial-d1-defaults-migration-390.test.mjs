@@ -119,6 +119,38 @@ test('#390 history auxiliary hover, dialog and prompt source defaults are exact'
   assert.equal(manifest.records.some(row=>row.recordKey===invalid),false);
 });
 
+test('#390 owner EN-translation/export dialogs stage only reviewed RU/EN copy',()=>{
+ const app=read('pandora-studio-app.js');
+ const source=app.match(/const ownerDialogStatusCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ assert.ok(source);
+ const rows=runInNewContext('('+source[1]+')',{});
+ assert.equal(rows.length,18);
+ assert.equal(manifest.stats.cohorts['owner-dialog-states'],36);
+ const literal=[...app.matchAll(
+  /ownerDialog(?:Help|Action)\((?:save,|go,)?\s*'([a-zA-Z]+)',\s*'([^']+)',\s*'([^']+)'\)/g
+ )].map(row=>[row[1],row[2],row[3]]);
+ assert.deepEqual(literal.map(row=>row[0]).sort(),
+  ['githubCreateButton','githubExplanation','githubPrompt',
+   'translationsIntro','translationsSaveButton']);
+ assert.equal(manifest.stats.cohorts['owner-dialog-helpers'],10);
+ for(const [key,ru,en] of [...rows,...literal]){
+  const id='guideedit.book.owner-dialog.'+
+   key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase());
+  const actual=manifest.records.filter(row=>row.recordKey===id);
+  assert.deepEqual(actual.map(row=>row.field).sort(),['en','ru'],id);
+  assert.equal(actual.find(row=>row.field==='ru').value,ru);
+  assert.equal(actual.find(row=>row.field==='en').value,en);
+ }
+ for(const unsafe of ['guideedit.book.owner-dialog.record-title',
+   'guideedit.book.owner-dialog.actual-count',
+   'guideedit.book.owner-dialog.plan-values',
+   'guideedit.book.owner-dialog.pr-url',
+   'guideedit.book.owner-dialog.expected-fingerprint',
+   'guideedit.book.owner-dialog.server-error']){
+  assert.equal(manifest.records.some(row=>row.recordKey===unsafe),false,unsafe);
+ }
+});
+
 test('issue 390: source-authored D1 default snapshot is stable and uses exact existing keys',()=>{
  const repeated=buildEditorialDefaultsManifest();
  assert.equal(manifest.schema,1);
