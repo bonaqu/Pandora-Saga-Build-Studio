@@ -399,27 +399,8 @@ function guardBookSummaryCaption(node){
   },500);
  },true);
 }
-// A caption nested in <label> must not toggle the checkbox twice during
-// the owner double-click that opens its editor. Keep ordinary single-click
-// checkbox operation intact after the same short action guard used by tabs.
-function guardBookCheckCaption(caption){
- const label=caption.closest?.('label');
- if(!label||label.dataset.bookCheckCopyGuard==='1')return;
- label.dataset.bookCheckCopyGuard='1';
- let pending=null;
- label.addEventListener('click',event=>{
-  if(!event.detail||event.target.closest?.('input,textarea,select,[data-owner-text-field]'))
-   return;
-  if(!caption.contains(event.target))return;
-  event.preventDefault();event.stopImmediatePropagation();
-  if(pending){clearTimeout(pending);pending=null;return}
-  pending=setTimeout(()=>{
-   pending=null;
-   const checkbox=label.querySelector('input[type="checkbox"]');
-   if(label.isConnected&&checkbox&&!checkbox.disabled)checkbox.click();
-  },500);
- },true);
-}
+// Disabled skill rows use DIV, not LABEL, so authorial copy stays editable.
+// Native LABEL remains for enabled checkbox activation.
 function guideLabel(node,key,ru,en,options={},fallbackRu='',fallbackEn=''){
  if(!node)return node;
  const guide=root.PandoraHonorGuide;
@@ -821,7 +802,8 @@ function buffsPage(body,options){
     (Array.isArray(buffs.remakedSkillIds)&&buffs.remakedSkillIds.includes(Number(key.slice(12)))||
      (key==='legacySkill:330004001'&&buffs.resistanceSkillIds?.includes(330004001))):
     (vital?vitalsBuffs:buffs)[key]===true;
-  const node=make('label',{class:'stage-book-check'+(skill?' stage-combat-buff':'')});
+  const node=make(allowed?'label':'div',{class:'stage-book-check'+
+   (skill?' stage-combat-buff':'')});
   const checkbox=make('input',{type:'checkbox','data-book-setting':key,
    checked:selected&&allowed,disabled:!allowed,
    onchange:event=>(vital?onVital:onBuff)(key,event.target.checked)});
@@ -834,6 +816,8 @@ function buffsPage(body,options){
   // A real source-backed skill always wins over a hand-written toggle label.
   const displayName=skill?(english?(skill.nameEn||skill.name||bookText(name)):
     (skill.name||name)):bookText(name);
+  // A disabled checkbox in a DIV needs the original source-skill name.
+  if(!allowed)checkbox.setAttribute('aria-label',displayName);
   const info=make('span',{class:'stage-combat-buff-copy',text:displayName});
   const description=english?skill?.descEn||skill?.desc:skill?.desc;
   const rich=skill?.id!=null&&root.PandoraSkillPreview?.attach(info,skill.id);
@@ -850,7 +834,6 @@ function buffsPage(body,options){
     guideLabel(reason,'buffs.reason.'+key,ru,en,options);
     const small=make('small',{class:'stage-buff-reason'},[reason]);
     info.append(small);
-    if(options.editable)guardBookCheckCaption(reason);
    }else info.append(make('small',{text:(english?skill.reasonEn:skill.reason)||
     (english?'Unavailable to this hero':'Недоступно для героя')}));
   }

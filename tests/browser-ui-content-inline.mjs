@@ -890,8 +890,13 @@ export async function runUIContentInlineSmoke(browser,base){
   const buffGateKey=await buffReason.getAttribute('data-guide-key');
   assert.match(buffGateKey,/^buffs\.reason\.(?:unavailableClass|shieldRequired|weaponUnavailable|supportUnavailable)$/);
   const buffReasonBefore=await buffReason.innerText();
-  const reasonCheck=buffReason.locator('xpath=ancestor::label[1]')
-   .locator('input[type="checkbox"]');
+  const disabledBuffRow=buffReason.locator('xpath=ancestor::*[contains(concat(" ", normalize-space(@class), " "), " stage-book-check ")][1]');
+  assert.equal(await disabledBuffRow.evaluate(node=>node.tagName),'DIV',
+   'A disabled checkbox must not disable its adjacent owner-editable caption');
+  const reasonCheck=disabledBuffRow.locator('input[type="checkbox"]');
+  assert.equal(await reasonCheck.isDisabled(),true);
+  assert.ok(await reasonCheck.getAttribute('aria-label'),
+   'Disabled checkbox preserves its original source-skill accessible name');
   const checkedReasonBefore=await reasonCheck.isChecked();
   assert.equal(await buffReason.getAttribute('tabindex'),'0');
   await buffReason.dblclick();

@@ -1330,6 +1330,10 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 .stage-combat-buff-copy small{font-size:10px;font-weight:450;color:#bea783;
  overflow-wrap:anywhere;line-height:1.35}
 .stage-book-check.stage-combat-buff:has(input:disabled){opacity:.7}
+/* A disabled gameplay checkbox does not disable editable source captions. */
+.stage-book-check:has(input:disabled) .stage-buff-reason-copy.stage-guide-editable{
+ cursor:text;pointer-events:auto;text-decoration:underline dotted;text-underline-offset:2px
+}
 .stage-book-check.stage-combat-buff input[type=checkbox]{margin-right:2px}
 
 /* Read-only Remaked support-skill predictions, deliberately never toggled by inspection. */

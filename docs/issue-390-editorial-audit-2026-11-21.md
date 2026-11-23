@@ -430,3 +430,9 @@ pencil controls. Full Node+Chromium required on the exact new PR SHA.
 - [x] Visible pure reason spans use the established direct dblclick/F2/blur D1/CAS owner editor with no pencil. Owner double-click over a native checkbox label is delayed/guarded to avoid triggering an unintended game toggle; an ordinary single click remains available. Save/Undo/Reset updates the current Book without replacing live player data.
 - [x] Extended the existing Book Node/manifest assertions and real owner Chromium scenario for direct RU status edit, F2, Escape, source-skill unchanged, and native buff checkbox integrity.
 - [ ] Final full Node + Chromium both SUCCESS on the same exact HEAD required before accepting this packet. Real isolated Cloudflare staging D1 import/readback/rollback, physical touch hardware and authorized release/production read-only remain **NOT** done; keep PR #809 OPEN DRAFT and #390 OPEN.
+
+### Follow-up · disabled buff label accessibility regression (23.11.2026)
+
+- [x] Real Chromium on `494727dc` found an interaction bug: owner caption inside a disabled checkbox `label` cannot be double-clicked. Enabled skills retain native `label`; disabled skill rows use class-identical `div`, with source-skill accessible name on the disabled checkbox and independent focusable CAS caption.
+- [x] Removed the dead deferred checkbox guard, updated focus styling and strengthened source/Chromium tests to verify disabled-row semantics, double-click/F2, Escape and unchanged checkbox state. Gameplay predicates unchanged.
+- [ ] Accept only after both full CI SUCCESS on the exact final SHA. No remote staging D1, physical touch QA, release, merge or production writes.

@@ -347,9 +347,12 @@ test('#390: Book buff statuses have five direct RU/EN captions, not editable gam
  assert.ok(locale.bookFieldKey('Недоступно для героя'));
 
  assert.match(source,/reason\.tabIndex=options\.editable\?0:-1/);
- assert.match(source,/if\(options\.editable\)guardBookCheckCaption\(reason\)/);
+ assert.match(source,/make\(allowed\?'label':'div'/,
+  'Native label for enabled buffs; editable DIV for disabled skill rows');
+ assert.match(source,/if\(!allowed\)checkbox\.setAttribute\('aria-label',displayName\)/);
  assert.match(source,/event\.preventDefault\(\);event\.stopImmediatePropagation\(\)/);
- assert.match(source,/checkbox\.click\(\)/);
+ assert.doesNotMatch(source,/function guardBookCheckCaption/,
+  'Dead delayed-checkbox handler must not remain');
  assert.doesNotMatch(source,/buffStatusCopyRows.*?reason.*?Number\(/);
  assert.match(app,/buffReasonCopyKey=reason=>window\.PandoraStageAttributes\?\.buffStatusCopyRows/);
  assert.equal((app.match(/reasonCopyKey:buffReasonCopyKey\(reason\)/g)||[]).length,2);
