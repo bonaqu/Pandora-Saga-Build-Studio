@@ -1,0 +1,159 @@
+#!/usr/bin/env node
+// #390: explicitly approved PRE-MERGE remote staging D1 rehearsal.
+// GitHub workflow_dispatch requires its YAML on the default branch, so this
+// alternative can be run from a clean PR checkout without merging the PR.
+// Importing this module never invokes Wrangler or writes anything remotely.
+import {spawnSync} from 'node:child_process';
+import {createHash,randomUUID} from 'node:crypto';
+import {existsSync,mkdtempSync,readFileSync,realpathSync,rmSync,
+ statSync,writeFileSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {basename,dirname,isAbsolute,join,resolve,sep} from 'node:path';
+import {fileURLToPath} from 'node:url';
+import {
+ validateEditorialStagingTarget,assertDatabaseIdentity,assertStagingSchema,
+ assertRolledBack,renderStagingWranglerConfig,renderStagingRollbackCheckSQL
+} from './guard-editorial-staging-d1.mjs';
+import {
+ buildEditorialDefaultsManifest,renderEditorialDefaultsSQL,
+ renderEditorialDefaultsReadbackSQL,renderEditorialDefaultsRollbackSQL,
+ parseWranglerEditorialReadback,verifyEditorialDefaultsReadback
+} from './plan-editorial-d1-defaults.mjs';
+
+const repo=resolve(dirname(fileURLToPath(import.meta.url)),'..');
+const PR_BRANCH='work/947-issue390-editorial-parity';
+const schemaSQL="SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name;";
+
+export function assertPremergeSource(actualBranch,actualSha,expectedSha,dirty){
+ if(actualBranch!==PR_BRANCH)throw Error('Not on the approved #390 PR branch');
+ if(typeof expectedSha!=='string'||!/^[a-f0-9]{40}$/i.test(expectedSha)||
+  actualSha!==expectedSha)throw Error('Explicit pinned PR HEAD SHA does not match');
+ if(dirty)throw Error('Uncommitted or untracked files: source snapshot is not clean');
+ return actualSha;
+}
+
+export function checkedBackupDirectory(directory,repoDir=repo,tempDir=tmpdir()){
+ if(typeof directory!=='string'||!isAbsolute(directory))
+  throw Error('Provide an existing absolute PS_EDITORIAL_BACKUP_DIR for independent backup');
+ const destination=realpathSync(directory);
+ if(!statSync(destination).isDirectory())throw Error('Backup location is not a directory');
+ const inDir=(root,path)=>path===root||path.startsWith(root+sep);
+ if(inDir(realpathSync(repoDir),destination)||
+  inDir(realpathSync(tempDir),destination))
+  throw Error('Independent backup must be outside repository and system temp');
+ return destination;
+}
+
+function run(command,args,{env=process.env}={}){
+ const result=spawnSync(command,args,{
+  cwd:repo,encoding:'utf8',maxBuffer:16*1024*1024,
+  env,windowsHide:true,stdio:['ignore','pipe','pipe']
+ });
+ if(result.error||result.status!==0){
+  const token=env.CLOUDFLARE_API_TOKEN||'';
+  const safe=String(result.stderr||result.error?.message||'')
+   .replaceAll(token||'\u0000','[redacted]').slice(-850);
+  throw Error(command+' failed (exit '+String(result.status)+'): '+safe);
+ }
+ return result.stdout;
+}
+const git=(args)=>run('git',args).trim();
+
+export function validateCliInputs(operation,env){
+ if(!['preflight','import','rollback'].includes(operation))
+  throw Error('Usage: node scripts/run-editorial-staging-d1-premerge.mjs preflight|import|rollback');
+ if(typeof env.CLOUDFLARE_API_TOKEN!=='string'||!env.CLOUDFLARE_API_TOKEN.trim())
+  throw Error('A dedicated staging-only CLOUDFLARE_API_TOKEN is required');
+ const target=validateEditorialStagingTarget({
+  name:env.PS_EDITORIAL_STAGING_NAME,id:env.PS_EDITORIAL_STAGING_ID,
+  operation,confirmation:env.PS_EDITORIAL_CONFIRMATION,
+  accountId:env.CLOUDFLARE_ACCOUNT_ID
+ });
+ if(operation!=='preflight'&&!env.PS_EDITORIAL_BACKUP_DIR)
+  throw Error('Writes require an independent staging backup directory');
+ return target;
+}
+
+export function plannedStagingCommands(target,config,sqlFile){
+ const execute=['execute',target.name,'--remote','--config',config];
+ return Object.freeze({
+  list:['list','--json'],
+  schema:[...execute,'--command',schemaSQL,'--json'],
+  export:output=>['export',target.name,'--remote','--config',config,
+   '--output',output,'--skip-confirmation'],
+  executeFile:[...execute,'--file',sqlFile,'--yes'],
+  readFile:[...execute,'--file',sqlFile,'--json']
+ });
+}
+
+async function main(){
+ if(process.platform==='win32')
+  throw Error('Run staging preflight under Linux or WSL with Node 22; no Windows shell execution');
+ const operation=process.argv[2];
+ if(process.argv.length!==3)throw Error('Specify exactly one staging operation');
+ const target=validateCliInputs(operation,process.env);
+ assertPremergeSource(git(['branch','--show-current']),git(['rev-parse','HEAD']),
+  process.env.PS_EDITORIAL_EXPECTED_SHA,git(['status','--porcelain']));
+ const manifest=buildEditorialDefaultsManifest();
+ const stagingDir=mkdtempSync(join(tmpdir(),'ps-editorial-staging-390-'));
+ const stagingConfig=join(stagingDir,'wrangler.toml');
+ const stagingSQL=join(stagingDir,'staging.sql');
+ const cmd=plannedStagingCommands(target,stagingConfig,stagingSQL);
+ const wrangler=args=>run('npx',['--yes','wrangler@4','d1',...args]);
+ try{
+  writeFileSync(stagingConfig,renderStagingWranglerConfig(target),{mode:0o600});
+  // Every path, including preflight, checks the API's exact remote UUID and
+  // fails closed when unrelated tables exist. No SQL write before this.
+  assertDatabaseIdentity(wrangler(cmd.list),target);
+  const schema=assertStagingSchema(wrangler(cmd.schema));
+  process.stdout.write('Remote staging UUID confirmed; allowed tables: '+
+   schema.tables.length+'; pinned source '+process.env.PS_EDITORIAL_EXPECTED_SHA+'\n');
+  if(operation==='preflight'){
+   process.stdout.write('READ-ONLY preflight complete. No D1 records changed.\n');
+   return;
+  }
+
+  // Independent persistent backup is mandatory before ANY import/rollback.
+  // Backups are deliberately not stored in the checkout or system temp.
+  const backupRoot=checkedBackupDirectory(process.env.PS_EDITORIAL_BACKUP_DIR);
+  const backup=join(backupRoot,'editorial-before-'+target.name+'-'+
+   manifest.snapshot+'-'+randomUUID()+'.sql');
+  if(existsSync(backup))throw Error('Refusing to overwrite a staging backup');
+  wrangler(cmd.export(backup));
+  if(!existsSync(backup)||statSync(backup).size===0)
+   throw Error('Remote backup is missing or empty; no staging writes allowed');
+  const hash=createHash('sha256').update(readFileSync(backup)).digest('hex');
+  writeFileSync(backup+'.sha256',hash+'  '+basename(backup)+'\n',{
+   flag:'wx',mode:0o600
+  });
+  // This is safe to display: never print a token, account secret or SQL data.
+  process.stdout.write('Independent staging export retained: '+backup+
+   ' (SHA-256 '+hash+')\n');
+
+  if(operation==='import'){
+   writeFileSync(stagingSQL,renderEditorialDefaultsSQL(manifest),{mode:0o600});
+   wrangler(cmd.executeFile);
+   writeFileSync(stagingSQL,renderEditorialDefaultsReadbackSQL(manifest),{mode:0o600});
+   const parsed=parseWranglerEditorialReadback(wrangler(cmd.readFile));
+   const check=verifyEditorialDefaultsReadback(manifest,parsed.metadata,parsed.rows);
+   if(!check.ok)throw Error('Remote staging D1 SHA-256 readback FAILED: '+check.reason+
+    '. Do not activate; inspect the backup and perform separately confirmed rollback.');
+   process.stdout.write('Verified remote staging rows '+check.checkedRows+
+    ', snapshot '+check.snapshot+', SHA-256 '+check.digest+'\n');
+  }else{
+   writeFileSync(stagingSQL,renderEditorialDefaultsRollbackSQL(manifest),{mode:0o600});
+   wrangler(cmd.executeFile);
+   writeFileSync(stagingSQL,renderStagingRollbackCheckSQL(manifest.snapshot),{mode:0o600});
+   assertRolledBack(wrangler(cmd.readFile));
+   process.stdout.write('Verified exact snapshot rollback: '+manifest.snapshot+'\n');
+  }
+ }finally{
+  rmSync(stagingDir,{recursive:true,force:true});
+ }
+}
+if(process.argv[1]&&fileURLToPath(import.meta.url)===resolve(process.argv[1])){
+ main().catch(error=>{
+  process.stderr.write('STAGING STOPPED: '+String(error.message||error)+'\n');
+  process.exitCode=1;
+ });
+}
