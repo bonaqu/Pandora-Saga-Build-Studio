@@ -889,7 +889,7 @@ export async function runUIContentInlineSmoke(browser,base){
   await buffReason.waitFor({state:'visible',timeout:15000});
   const buffGateKey=await buffReason.getAttribute('data-guide-key');
   assert.match(buffGateKey,/^buffs\.reason\.(?:unavailableClass|shieldRequired|weaponUnavailable|supportUnavailable)$/);
-  const originalReason=await buffReason.innerText();
+  const buffReasonBefore=await buffReason.innerText();
   const reasonCheck=buffReason.locator('xpath=ancestor::label[1] input[type="checkbox"]');
   const checkedReasonBefore=await reasonCheck.isChecked();
   assert.equal(await buffReason.getAttribute('tabindex'),'0');
@@ -900,7 +900,7 @@ export async function runUIContentInlineSmoke(browser,base){
    'Owner double-click on a disabled reason must not activate the skill');
   await dismissReason.fill('Не сохранять этот статус');
   await dismissReason.press('Escape');
-  assert.equal(await buffReason.innerText(),originalReason);
+  assert.equal(await buffReason.innerText(),buffReasonBefore);
   assert.equal(Object.hasOwn(values,'guideedit.book.'+buffGateKey),false);
   await buffReason.focus();
   await buffReason.press('F2');
