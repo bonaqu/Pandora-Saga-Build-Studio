@@ -1703,7 +1703,12 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(await historySearch.getAttribute('aria-label'),'Поиск среди ручных изменений');
   assert.equal(await history.locator('.owner-manager-section').getAttribute('aria-label'),
    'Раздел ручных правок');
-  await history.locator('.studio-owner-interface-editor > summary').click();
+  // Two distinct owner panels are legitimate. Select the actual search
+  // caption panel by its semantic field, not whichever summary is first.
+  const historySourcePanel=history.locator('.studio-owner-interface-editor').filter({
+   has:history.locator('[data-owner-copy-id="searchPlaceholder"]')
+  });
+  await historySourcePanel.locator(':scope > summary').click();
   const placeholderCaption=history.locator('.studio-owner-interface-editor '+
    '[data-owner-copy-id="searchPlaceholder"]');
   await placeholderCaption.dblclick();
