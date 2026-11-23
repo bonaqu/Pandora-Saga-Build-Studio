@@ -231,6 +231,7 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   assert.equal(JSON.parse(await page.evaluate(()=>
    localStorage.getItem('ps-build-studio.v1'))).race,raceBefore,
    'Preview navigation cannot change the selected race');
+  // Origin Stats owner captions are source-only; live point totals remain game data.
   // Source-backed caps are not authorial copy. Edit the visible caption
   // directly while keeping the cap number and the growth state untouched.
   await openEditableTrack();
