@@ -52,12 +52,15 @@ export PS_EDITORIAL_BACKUP_DIR="$HOME/ps-editorial-staging-backups"
 node scripts/run-editorial-staging-d1-premerge.mjs preflight
 ~~~
 
-Preflight performs **read-only** remote UUID/name, table allowlist and
-full SQLite column/key-layout checks (including both absent tables on an
-empty staging DB). It rejects same-named tables with unexpected fields,
-types or primary keys, unapproved tables (only editorial_default_rows and
-editorial_default_snapshots are allowed), production UUID, malformed
-parameters and an unclean or wrong source checkout.
+Preflight performs **read-only** remote UUID/name, complete SQLite
+object inventory (tables, views, triggers and user-created indexes), and
+full column/key-layout checks for the two permitted staging tables
+(including both absent tables on an empty staging DB). It rejects all
+views, triggers and manual indexes, same-named tables with unexpected fields,
+types or primary keys, unrelated tables, production UUID, malformed
+parameters and an unclean or wrong source checkout. The manual workflow
+shares these object/column validation rules, but cannot run pre-merge while
+its workflow_dispatch file is absent from the default branch.
 
 ## Separate explicit import approval
 

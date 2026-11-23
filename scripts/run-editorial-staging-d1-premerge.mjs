@@ -11,8 +11,9 @@ import {tmpdir} from 'node:os';
 import {basename,dirname,isAbsolute,join,resolve,sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {
- validateEditorialStagingTarget,assertDatabaseIdentity,assertStagingSchema,
- assertStagingTableColumns,assertRolledBack,renderStagingWranglerConfig,
+ STAGING_SCHEMA_SQL,validateEditorialStagingTarget,assertDatabaseIdentity,
+ assertStagingSchema,assertStagingTableColumns,assertRolledBack,
+ renderStagingWranglerConfig,
  renderStagingRollbackCheckSQL
 } from './guard-editorial-staging-d1.mjs';
 import {
@@ -23,7 +24,6 @@ import {
 
 const repo=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const PR_BRANCH='work/947-issue390-editorial-parity';
-const schemaSQL="SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name;";
 
 export function assertPremergeSource(actualBranch,actualSha,expectedSha,dirty){
  if(actualBranch!==PR_BRANCH)throw Error('Not on the approved #390 PR branch');
@@ -103,7 +103,7 @@ export function plannedStagingCommands(target,config,sqlFile){
  const execute=['execute',target.name,'--remote','--config',config];
  return Object.freeze({
   list:['list','--json'],
-  schema:[...execute,'--command',schemaSQL,'--json'],
+  schema:[...execute,'--command',STAGING_SCHEMA_SQL,'--json'],
   columns:table=>{
    if(!['editorial_default_rows','editorial_default_snapshots'].includes(table))
     throw Error('Unallowlisted staging schema inspection');

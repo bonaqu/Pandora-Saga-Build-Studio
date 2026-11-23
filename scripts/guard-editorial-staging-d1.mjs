@@ -8,6 +8,11 @@ import {fileURLToPath} from 'node:url';
 export const PRODUCTION_D1_ID='0f8fbcd8-be06-414c-844b-a2091fdf6784';
 const UUID=/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i;
 const NAME=/^ps-editorial-staging-[a-z0-9](?:[a-z0-9-]{0,40}[a-z0-9])?$/;
+// A view, trigger or additional user-created index is not isolated staging.
+export const STAGING_SCHEMA_SQL=
+ "SELECT type,name FROM sqlite_master WHERE type IN "+
+ "('table','view','trigger','index') AND name NOT LIKE 'sqlite_%' "+
+ "ORDER BY type,name;";
 
 export function validateEditorialStagingTarget({name,id,operation,confirmation,accountId}){
  if(!['preflight','import','rollback'].includes(operation))
@@ -51,9 +56,10 @@ export function assertStagingSchema(raw){
  const allowed=new Set(['editorial_default_rows','editorial_default_snapshots']);
  for(const row of rows){
   if(!row||typeof row!=='object'||Array.isArray(row)||
-     Object.keys(row).join('|')!=='name'||typeof row.name!=='string'||
+     Object.keys(row).sort().join('|')!=='name|type'||
+     row.type!=='table'||typeof row.name!=='string'||
      !allowed.has(row.name)||seen.has(row.name))
-   throw Error('Target contains an unknown or duplicated non-staging table');
+   throw Error('Target contains unexpected schema objects, tables or duplicates');
   seen.add(row.name);
  }
  return {tables:[...seen].sort()};
@@ -129,7 +135,7 @@ if(process.argv[1]&&fileURLToPath(import.meta.url)===resolve(process.argv[1])){
   confirmation:process.env.PS_EDITORIAL_CONFIRMATION,
   accountId:process.env.CLOUDFLARE_ACCOUNT_ID
  });
- const [operation,file]=process.argv.slice(2);
+ const [operation,file,second,third]=process.argv.slice(2);
  if(operation==='--validate'&&!file){
   process.stdout.write('Isolated staging D1 target approved by strict preflight\n');
  }else if(operation==='--write-config'&&file){
@@ -144,6 +150,12 @@ if(process.argv[1]&&fileURLToPath(import.meta.url)===resolve(process.argv[1])){
  }else if(file&&operation==='--verify-schema'){
   const result=assertStagingSchema(readFileSync(resolve(file),'utf8'));
   process.stdout.write('Isolated staging schema confirmed: '+result.tables.length+' tables\n');
+ }else if(operation==='--verify-columns'&&file&&second&&third){
+  // Verify BOTH inventory and layout before allowing the manual workflow.
+  const schema=assertStagingSchema(readFileSync(resolve(second),'utf8'));
+  assertStagingTableColumns(readFileSync(resolve(third),'utf8'),file,
+   schema.tables.includes(file));
+  process.stdout.write('Exact staging columns confirmed: '+file+'\n');
  }else if(file&&operation==='--verify-rollback'){
   assertRolledBack(readFileSync(resolve(file),'utf8'));
   process.stdout.write('Exact remote staging snapshot rollback confirmed\n');

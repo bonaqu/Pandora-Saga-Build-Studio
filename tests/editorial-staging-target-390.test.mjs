@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {
- PRODUCTION_D1_ID,validateEditorialStagingTarget,assertDatabaseIdentity,
+ PRODUCTION_D1_ID,STAGING_SCHEMA_SQL,validateEditorialStagingTarget,
+ assertDatabaseIdentity,
  assertStagingSchema,assertStagingTableColumns,assertRolledBack,
  renderStagingWranglerConfig,
  renderStagingRollbackCheckSQL
@@ -52,16 +53,27 @@ test('#390 D1 list requires unique matching database name AND UUID',()=>{
  ])assert.throws(()=>assertDatabaseIdentity(raw,target('import')));
 });
 
-test('#390 staging schema denies any account/build/overrides/catalog tables',()=>{
+test('#390 staging schema rejects unrelated tables, views, triggers and manual indexes',()=>{
+ assert.ok(STAGING_SCHEMA_SQL.includes("type IN ('table','view','trigger','index')"));
  assert.deepEqual(assertStagingSchema(query([])),{tables:[]});
  assert.deepEqual(assertStagingSchema(query([
-  {name:'editorial_default_rows'},{name:'editorial_default_snapshots'}
+  {type:'table',name:'editorial_default_rows'},
+  {type:'table',name:'editorial_default_snapshots'}
  ])),{tables:['editorial_default_rows','editorial_default_snapshots']});
  for(const raw of [
-  query([{name:'accounts'}]),query([{name:'builds'}]),
-  query([{name:'overrides'}]),query([{name:'catalogs'}]),
-  query([{name:'editorial_default_rows'},{name:'editorial_default_rows'}]),
-  query([{name:'editorial_default_rows',value:'unexpected'}]),
+  query([{type:'table',name:'accounts'}]),
+  query([{type:'table',name:'builds'}]),
+  query([{type:'table',name:'overrides'}]),
+  query([{type:'table',name:'catalogs'}]),
+  query([{type:'view',name:'editorial_default_rows'}]),
+  query([{type:'view',name:'editorial_preview'}]),
+  query([{type:'trigger',name:'unexpected_write_trigger'}]),
+  query([{type:'index',name:'manual_secondary_index'}]),
+  query([{type:'table',name:'editorial_default_rows'},
+   {type:'table',name:'editorial_default_rows'}]),
+  query([{type:'table',name:'editorial_default_rows',value:'unexpected'}]),
+  query([{name:'editorial_default_rows'}]),
+  query([{type:'table',name:'editorial_default_rows',extra:1}]),
   JSON.stringify([{success:false,results:[]}]),
   JSON.stringify([{success:true,results:[]},{success:true,results:[]}])
  ])assert.throws(()=>assertStagingSchema(raw));
@@ -132,6 +144,12 @@ test('#390 manual staging workflow never runs on push, uses new staging-only cre
  assert.doesNotMatch(workflow,/secrets\.CLOUDFLARE_API_TOKEN/);
  assert.match(workflow,/--verify-list/);
  assert.match(workflow,/--verify-schema/);
+ assert.match(workflow,/--verify-columns editorial_default_rows/);
+ assert.match(workflow,/--verify-columns editorial_default_snapshots/);
+ assert.ok(workflow.includes("type IN ('table','view','trigger','index')"));
+ assert.ok(workflow.indexOf('--verify-columns editorial_default_snapshots')<
+  workflow.indexOf('d1 export "$PS_EDITORIAL_STAGING_NAME" --remote'),
+  'Manual workflow must check columns before backup and writes');
  assert.match(workflow,/editorial:defaults:verify-wrangler/);
  assert.match(workflow,/--verify-rollback/);
  assert.match(workflow,/--write-rollback-check/);
@@ -176,7 +194,7 @@ test('#390 premerge staging CLI is import-inert, SHA-pinned and requires a separ
   '/tmp/only-staging.toml','/tmp/staging-only.sql');
  assert.deepEqual(command.list,['list','--json']);
  assert.ok(command.schema.includes('--remote'));
- assert.ok(command.schema.some(arg=>arg.includes('sqlite_master')));
+ assert.ok(command.schema.includes(STAGING_SCHEMA_SQL));
  assert.ok(command.columns('editorial_default_rows').some(arg=>
   arg.includes('PRAGMA table_info(editorial_default_rows)')));
  assert.ok(command.columns('editorial_default_snapshots').includes('--remote'));
