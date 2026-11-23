@@ -117,7 +117,7 @@ test('#390 native catalog disclosures edit RU/EN caption without double-click to
  const source=view.match(/const catalogDisclosureCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
  assert.ok(source);
  const rows=runInNewContext('('+source[1]+')',{});
- const expected=['archiveSummary','advancedSummary','russianPreviewSummary','diagnosticsSummary'];
+ const expected=['archiveSummary','advancedSummary','russianPreviewSummary','diagnosticsSummary','fieldDetailsSummary'];
  assert.deepEqual(Array.from(rows,row=>String(row[0])).sort(),expected.sort());
  for(const [key,ru,en] of rows){
   assert.equal(guideRoot.PandoraHonorGuide.validOverride(
@@ -126,6 +126,11 @@ test('#390 native catalog disclosures edit RU/EN caption without double-click to
   assert.ok(view.includes("disclosureCaption('"+key+"')"),key);
  }
  assert.match(view,/const summary=h\('summary',\{\},\[caption\]\)/);
+ assert.match(view,/const disclosureCaption=\(key,\{count=null\}=\{\}\)=>/);
+ assert.match(view,/class:'os-sync-disclosure-runtime-count'/);
+ assert.match(view,/disclosureCaption\('fieldDetailsSummary',\{\s*count:description\.rows\.length\}\)/);
+ assert.match(view,/groupAction\(more,'groupMore',name,\{\s*count:filtered\.length-limit\}\)/);
+ assert.match(css,/\.os-sync-disclosure-runtime-count/);
  assert.match(view,/editLabel\(caption,key,row\[1\],row\[2\]\)/);
  assert.match(view,/if\(!event\.detail\|\|!caption\.contains\(event\.target\)\)return/);
  assert.match(view,/event\.preventDefault\(\);event\.stopPropagation\(\)/);

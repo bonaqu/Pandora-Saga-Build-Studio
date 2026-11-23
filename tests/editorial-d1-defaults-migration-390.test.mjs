@@ -24,9 +24,9 @@ test('#390 all native catalog disclosure captions are versioned without open-sta
  const match=source.match(/const catalogDisclosureCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
  assert.ok(match);
  const rows=runInNewContext('('+match[1]+')',{});
- const expected=['archiveSummary','advancedSummary','russianPreviewSummary','diagnosticsSummary'];
+ const expected=['archiveSummary','advancedSummary','russianPreviewSummary','diagnosticsSummary','fieldDetailsSummary'];
  assert.deepEqual(Array.from(rows,row=>String(row[0])).sort(),expected.sort());
- assert.equal(manifest.stats.cohorts['catalog-review-disclosures'],8);
+ assert.equal(manifest.stats.cohorts['catalog-review-disclosures'],10);
  for(const [key,ru,en] of rows){
   const id='guideedit.book.catalog-sync.'+
    key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());

@@ -1287,7 +1287,7 @@ export function buildEditorialDefaultsManifest(){
  if(!disclosureSource)throw Error('Missing catalog disclosure caption inventory');
  const disclosureRows=runInNewContext('('+disclosureSource[1]+')',{},{timeout:5000});
  const expectedDisclosure=['archiveSummary','advancedSummary',
-  'russianPreviewSummary','diagnosticsSummary'];
+  'russianPreviewSummary','diagnosticsSummary','fieldDetailsSummary'];
  if(!Array.isArray(disclosureRows)||
   disclosureRows.length!==expectedDisclosure.length||
   disclosureRows.map(r=>r?.[0]).sort().join('|')!==expectedDisclosure.sort().join('|'))
@@ -1307,7 +1307,7 @@ export function buildEditorialDefaultsManifest(){
   /const catalogGroupActionCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
  if(!groupSource)throw Error('Missing catalog group action source registry');
  const groupRows=runInNewContext('('+groupSource[1]+')',{},{timeout:5000});
- const expectedGroup=['groupTake','groupReject','groupMatching'];
+ const expectedGroup=['groupTake','groupReject','groupMatching','groupMore'];
  if(!Array.isArray(groupRows)||groupRows.length!==expectedGroup.length||
   groupRows.map(row=>row?.[0]).sort().join('|')!==expectedGroup.sort().join('|'))
   throw Error('Unreviewed catalog group action source inventory');

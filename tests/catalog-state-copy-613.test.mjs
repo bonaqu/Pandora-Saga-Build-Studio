@@ -169,8 +169,8 @@ test('#390 review captions use exact bilingual CAS keys while live counts stay o
  assert.ok(groupSource);
  const groupRows=runInNewContext('('+groupSource[1]+')');
  assert.deepEqual(Array.from(groupRows,row=>String(row[0])).sort(),
-  ['groupTake','groupReject','groupMatching'].sort());
- assert.equal(manifest.stats.cohorts['catalog-review-group-actions'],6);
+  ['groupTake','groupReject','groupMatching','groupMore'].sort());
+ assert.equal(manifest.stats.cohorts['catalog-review-group-actions'],8);
  for(const [key,ru,en] of groupRows){
   const id='guideedit.book.catalog-sync.'+
    key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase());
@@ -181,6 +181,10 @@ test('#390 review captions use exact bilingual CAS keys while live counts stay o
  assert.match(workbench,/groupAction\(reject,'groupReject',name\)/);
  assert.match(workbench,/groupAction\(takeVisible,'groupMatching',name,\{count:filtered\.filter\(safe\)\.length\}\)/);
  assert.match(workbench,/class:'os-sync-action-runtime-number'/);
+ assert.match(workbench,/groupAction\(more,'groupMore',name,\{/);
+ assert.ok(!manifest.records.some(row=>row.recordKey.endsWith('group-more-count')||
+  row.recordKey.endsWith('field-details-summary-count')),
+  'Display counts must not be staged as authored text');
  assert.doesNotMatch(workbench,/os-sync-review-pencil/);
  // Only authorial text is serialized. These expressions still depend on the
  // current calculated count and the selected game-source result.

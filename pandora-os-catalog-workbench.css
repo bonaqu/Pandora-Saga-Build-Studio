@@ -243,6 +243,8 @@
 .os-sync-disclosure-caption.origin-copy-editable:focus-visible{
  outline:2px solid #edc485;outline-offset:3px;border-radius:2px}
 .os-sync-disclosure-caption .wiki-inline-input{max-width:100%;min-width:145px}
+/* Per-item expansion counts are model results and cannot be edited in D1. */
+.os-sync-disclosure-runtime-count{white-space:nowrap;font-variant-numeric:tabular-nums}
 .os-sync-reference-open-editor{display:inline-flex;align-items:baseline;gap:6px;flex-wrap:wrap}
 .os-sync-reference-open-copy{color:#f4cc85;cursor:text;text-decoration:underline dotted;
  text-underline-offset:3px}

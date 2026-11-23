@@ -61,7 +61,8 @@
     ['archiveSummary','Если сайт игры не отдаёт данные','When the game site is unavailable'],
     ['advancedSummary','Дополнительные инструменты','Additional tools'],
     ['russianPreviewSummary','Посмотреть русские тексты','Preview Russian texts'],
-    ['diagnosticsSummary','Технические сведения об ошибке','Technical error details']
+    ['diagnosticsSummary','Технические сведения об ошибке','Technical error details'],
+    ['fieldDetailsSummary','Посмотреть подробно','View details']
   ]);
   const catalogDisclosureByKey=new Map(catalogDisclosureCopyRows.map(row=>[row[0],row]));
   // The same three authorial action names recur in every dataset panel.
@@ -69,7 +70,8 @@
   const catalogGroupActionCopyRows=Object.freeze([
     ['groupTake','Выбрать понятные изменения раздела','Select understood changes in section'],
     ['groupReject','Снять выбор раздела','Clear section selection'],
-    ['groupMatching','Выбрать найденное','Select matching']
+    ['groupMatching','Выбрать найденное','Select matching'],
+    ['groupMore','Показать остальные изменения','Show remaining changes']
   ]);
   const catalogGroupActionByKey=new Map(catalogGroupActionCopyRows.map(row=>[row[0],row]));
   // Dynamic review summaries have independently authored words AND immutable
@@ -149,12 +151,14 @@
     // Native <details>/<summary> must still toggle on a real single click.
     // Owner double-click on ONLY the authored wording opens the D1 editor;
     // its first click cannot accidentally collapse a panel or hide a draft.
-    const disclosureCaption=key=>{
+    const disclosureCaption=(key,{count=null}={})=>{
       const row=catalogDisclosureByKey.get(key);
       if(!row)throw Error('Unreviewed catalog disclosure: '+key);
       const caption=h('span',{class:'os-sync-disclosure-caption',
         text:copy(key,row[1],row[2])});
       const summary=h('summary',{},[caption]);
+      if(count!==null)summary.append(h('span',{
+        class:'os-sync-disclosure-runtime-count',text:' · '+String(count)}));
       if(!canEdit||typeof editLabel!=='function')return summary;
       editLabel(caption,key,row[1],row[2]);
       let pending=null;
@@ -1227,8 +1231,8 @@
         if(details.open)expandedDetails.add(change.id);
         else expandedDetails.delete(change.id);
       });
-      details.append(h('summary',{
-        text:tr('Посмотреть подробно · ','View details · ')+description.rows.length}));
+      details.append(disclosureCaption('fieldDetailsSummary',{
+        count:description.rows.length}));
       if(description.rows.length){
         for(const field of description.rows){
           const language=change.dataset==='strings.en'?'en':'ru';
@@ -1428,11 +1432,10 @@
         }
         panel.append(list);
         if (limit<filtered.length) {
-          const more=h('button',{type:'button',class:'button-action',
-            text:tr('Показать остальные ','Show remaining ')+(filtered.length-limit)+
-             tr(' изменений',' changes')});
+          const more=h('button',{type:'button',class:'button-action'});
           more.onclick=()=>{full.add(name);expanded.add(name);render()};
-          panel.append(more);
+          panel.append(groupAction(more,'groupMore',name,{
+            count:filtered.length-limit}));
         }
         results.append(panel);
       }
