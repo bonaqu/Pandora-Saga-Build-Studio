@@ -92,6 +92,13 @@ test('#390 compare labels are D1-authored without modifying A/B identities or co
  assert.match(ui,/'data-compare-letter':letter,text:' '\+letter/);
  assert.equal((ui.match(/'data-owner-copy-key':'compareStatColumn'/g)||[]).length,2);
  assert.match(ui,/bindAccountCopyEditors\(host\)/);
+ assert.match(ui,/'data-i18n-title':'compareSwapAction'/);
+ assert.match(ui,/'data-i18n-aria-label':'compareSwapAction'/);
+ assert.match(ui,/bindStaticUICopyEditors\(host\)/);
+ const iconBinder=app.slice(app.indexOf('function bindStaticUICopyEditors('),
+  app.indexOf('// Edit only semantically keyed authored labels'));
+ assert.match(iconBinder,/function bindStaticUICopyEditors\(scope=document\)/);
+ assert.equal((iconBinder.match(/scope\.querySelectorAll/g)||[]).length,2);
  assert.match(ui,/'data-compare-select':letter/);
  assert.match(ui,/text:build\.name/);
  const refresh=app.slice(app.indexOf('function refreshVisibleUICopy('),
