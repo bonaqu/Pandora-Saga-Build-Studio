@@ -362,3 +362,10 @@ pencil controls. Full Node+Chromium required on the exact new PR SHA.
 - [x] Staged exactly 32 source-authored bilingual defaults under 16 reviewed \`guideedit.book.path.skill-gate-*\` keys, strictly staging-only (no remote Cloudflare writes).
 - [x] Added source audit and game-logic compatibility tests for both locales, malformed prerequisites and immutable source segments. Added real Chromium owner CAS Save/Undo regression for locked skill reasons with source/numeric value and selection preservation.
 - [ ] Both full Node and Chromium CI are required on the final exact SHA. Remote isolated staging D1 import/readback/rollback, real hardware touch, further rare RU/EN audit, release authorisation and production read-only acceptance are still outstanding.
+
+## 23.11.2026 — Origin visible race-carousel accessibility, #390 continuation
+
+- [x] The **visible** portrait carousel now exposes three separate RU/EN authorial accessible actions (previous, next, select) via the original `origin.*` D1/CAS key family. Its small, owner-only collapsed accessible-copy editor sits in the visible Race tab. No generic pencil or new editing backend.
+- [x] Canonical race names, gender suffixes, portrait indices, image paths and the actual chosen race stay outside owner-editable data. The source action remains usable and correctly named when gallery artwork fails to load. Hidden legacy gender controls were **not** promoted to editorial content.
+- [x] Exactly three reviewed bilingual identities (six fields) enter the deterministic offline, **staging-only** default manifest, with source-key protection in an existing Node test. Existing real Chromium owner-racial-path regression covers RU CAS, cancellation by Escape, EN separation, gallery re-render and unchanged hero race.
+- [ ] Final acceptance requires BOTH complete Node+Chromium CI on the exact new HEAD. Physical isolated Cloudflare staging D1 import/readback/rollback, real hardware touch, separately approved release and production read-only acceptance remain incomplete. Keep PR #809 Draft and issue #390 open.
