@@ -7911,8 +7911,33 @@ const profileAuthorialCopy=Object.freeze({
  'tab-profile':['Профиль','Profile'],
  'action-hero-path':['⚔ Путь героя · умения','⚔ Hero Path · skills'],
  'action-attributes':['✥ Базовые характеристики','✥ Base attributes'],
- 'action-edit-profile':['✎ Изменить профиль','✎ Edit profile']
+ 'action-edit-profile':['✎ Изменить профиль','✎ Edit profile'],
+ // Source-authored words only: race/class/skill names, numeric level and
+ // a player's own biography never enter owner D1 copy.
+ 'portrait-race-prefix':['Облик расы','Race appearance:'],
+ 'portrait-race-missing':['Раса не выбрана','Race not selected'],
+ 'hero-unnamed':['Без имени','Unnamed hero'],
+ 'class-missing':['Профессия не выбрана','Class not selected'],
+ 'level-suffix':['ур.','lvl.'],
+ 'overview-missing':['Не выбрана','Not selected'],
+ 'passive-loading':['Загружаю расовые способности…','Loading racial abilities…'],
+ 'passive-choose-race':['Выберите расу','Choose a race'],
+ 'passive-no-description':['Описание отсутствует','No description'],
+ 'passive-selected':['✓ Выбрано','✓ Selected'],
+ 'passive-select':['Выбрать','Select'],
+ 'panel-accessibility':['Окно персонажа','Character panel']
 });
+const profileDynamicKeys=Object.freeze([
+ 'portrait-race-prefix','portrait-race-missing','hero-unnamed',
+ 'class-missing','level-suffix','overview-missing','passive-loading',
+ 'passive-choose-race','passive-no-description','passive-selected',
+ 'passive-select','panel-accessibility'
+]);
+function profileDynamicText(key){
+ if(!profileDynamicKeys.includes(key))throw Error('Unreviewed profile copy identity');
+ const [ru,en]=profileAuthorialCopy[key];
+ return ownerCopy('profile',key,ru,en);
+}
 function profileCopyLabel(key,ru,en,{as='span',forId=null,action=false}={}){
  const authored=profileAuthorialCopy[key];
  if(authored)[ru,en]=authored;
@@ -7959,8 +7984,20 @@ function renderProfile(root){
  const profile=state.profile&&typeof state.profile==="object"?state.profile:{};
  const view=h("div",{class:"ps-profile-grid"});
  const left=h("section",{class:"ps-profile-art"});
- left.append(h("img",{src:raceSource(state.race,state.gender),alt:tr("Облик расы ","Race appearance: ")+raceName}),
- h("strong",{text:state.name||tr("Без имени","Unnamed hero")}),h("small",{text:(raceName||tr('Раса не выбрана','Race not selected'))+" · "+(jobs[state.job]||tr('Профессия не выбрана','Class not selected'))+" · "+state.level+tr(" ур."," lvl.")}));
+ // Keep mutable authorial phrases separate from immutable race/job/name and
+ // the derived numeric level, including after a D1 CAS save or Undo.
+ left.append(
+  h("img",{src:raceSource(state.race,state.gender),
+   alt:profileDynamicText('portrait-race-prefix')+' '+
+    (raceName||profileDynamicText('portrait-race-missing')),
+   'data-profile-live':'portrait-art'}),
+  h("strong",{'data-profile-live':'hero-name',
+   text:state.name||profileDynamicText('hero-unnamed')}),
+  h("small",{'data-profile-live':'hero-summary',
+   text:(raceName||profileDynamicText('portrait-race-missing'))+' · '+
+    (jobs[state.job]||profileDynamicText('class-missing'))+' · '+
+    state.level+' '+profileDynamicText('level-suffix')})
+ );
  const right=h("section",{class:"ps-profile-info"});
  const fields=[
  ["name",...profileAuthorialCopy['field-name'],state.name||"",64],
@@ -8004,7 +8041,8 @@ function renderProfile(root){
 function renderCharacter(root){
  const tr=(ru,en)=>lang==='en'?en:ru;
  if(characterPanelTab!=='profile')characterPanelTab='character';
- const tabs=h("div",{class:"ps-character-tabs",role:"tablist","aria-label":tr("Окно персонажа","Character panel")});
+ const tabs=h("div",{class:"ps-character-tabs",role:"tablist",
+  "aria-label":profileDynamicText('panel-accessibility')});
  const selection=[['character','tab-character'],['profile','tab-profile']];
  const authoredAction=(key,activate,{tab=false,selected=false}={})=>{
   const caption=profileCopyLabel(key,...profileAuthorialCopy[key],{action:true});
@@ -8035,10 +8073,12 @@ function renderCharacter(root){
   cards.append(
    h('div',{class:'ps-overview-card'},[
     profileCopyLabel('overview-race',...profileAuthorialCopy['overview-race']),
-    h('strong',{text:races[state.race]?.[lang==='en'?1:0]||tr('Не выбрана','Not selected')})]),
+    h('strong',{'data-profile-live':'overview-race',
+     text:races[state.race]?.[lang==='en'?1:0]||profileDynamicText('overview-missing')})]),
    h('div',{class:'ps-overview-card'},[
     profileCopyLabel('overview-class',...profileAuthorialCopy['overview-class']),
-    h('strong',{text:jobs[state.job]||tr('Не выбрана','Not selected')})]),
+    h('strong',{'data-profile-live':'overview-class',
+     text:jobs[state.job]||profileDynamicText('overview-missing')})]),
    h('div',{class:'ps-overview-card'},[
     profileCopyLabel('overview-level',...profileAuthorialCopy['overview-level']),
     h('strong',{text:String(state.level)})]));
@@ -8047,7 +8087,11 @@ function renderCharacter(root){
   racialTitle.append(h('span',{text:'✦'}),profileCopyLabel('racial-heading',...profileAuthorialCopy['racial-heading']));
   const passivePicker=h('div',{class:'race-passive-picker'});
   const passives=window.PandoraGameNavigation.racePassiveIds(catalog.racialPassives,state.race);
-  if(!passives.length)passivePicker.append(h('p',{class:'muted',text:Number.isInteger(state.race)?tr('Загружаю расовые способности…','Loading racial abilities…'):tr('Выберите расу','Choose a race')}));
+  if(!passives.length)passivePicker.append(h('p',{
+   class:'muted','data-profile-live':'passive-empty',
+   text:Number.isInteger(state.race)?profileDynamicText('passive-loading'):
+    profileDynamicText('passive-choose-race')
+  }));
   for(const id of passives){
     const skill=catalog.skills?.[id],selected=String(state.racialPassiveId)===String(id);
     if(!skill)continue;
@@ -8058,7 +8102,13 @@ function renderCharacter(root){
     const image=src?h('img',{src,alt:'',loading:'lazy'}):
      h('span',{text:'✦',class:'skill-fallback'});
     if(src)image.onerror=()=>image.replaceWith(h('span',{text:'✦',class:'skill-fallback'}));
-    button.append(image,h('strong',{text:skill.name}),h('span',{text:skill.desc||tr('Описание отсутствует','No description')}),h('small',{text:selected?tr('✓ Выбрано','✓ Selected'):tr('Выбрать','Select')}));
+    button.append(image,h('strong',{text:skill.name}),
+     h('span',{...(!skill.desc?{'data-profile-live':'passive-no-description'}:{}),
+      text:skill.desc||profileDynamicText('passive-no-description')}),
+     h('small',{'data-profile-live':'passive-choice',
+      'data-profile-selected':String(selected),
+      text:profileDynamicText(selected?'passive-selected':'passive-select')}));
+
     passivePicker.append(button);
   }
   body.append(racialTitle,passivePicker);
@@ -8077,6 +8127,14 @@ function renderCharacter(root){
   body.append(jump);
  }
  root.append(body);
+ // One compact owner-only list for non-visible and rare status strings.
+ // Ordinary visible captions keep their original direct text editing.
+ if(adminEditing&&adminToken){
+  const editor=ownerInterfaceEditor('profile',
+   profileDynamicKeys.map(key=>[key,...profileAuthorialCopy[key]]),
+   'Динамические подписи персонажа','Character state and accessibility copy');
+  if(editor){editor.id='ownerProfileDynamicCopy';root.append(editor)}
+ }
 }
 // Legacy duplicate skill editor retired; all changes happen in the live Hero Path.
 function renderSkills(root){
@@ -10667,6 +10725,37 @@ function refreshVisibleProfileCopy(){
     if(key.startsWith('field-'))input.placeholder=value;}
   }
  }
+ // Profile text updates MUST NOT remount input elements, portrait or hero.
+ const root=document.getElementById('detailContent');
+ if(!root)return;
+ const race=races[state.race]?.[lang==='en'?1:0]||races[state.race]?.[0]||'';
+ const resolvedRace=race||profileDynamicText('portrait-race-missing');
+ const setText=(selector,value)=>{
+  for(const node of root.querySelectorAll(selector))ownerDockPatchText(node,value);
+ };
+ const portrait=root.querySelector('[data-profile-live="portrait-art"]');
+ if(portrait)ownerDockPatchAttr(portrait,'alt',
+  profileDynamicText('portrait-race-prefix')+' '+resolvedRace);
+ setText('[data-profile-live="hero-name"]',
+  state.name||profileDynamicText('hero-unnamed'));
+ setText('[data-profile-live="hero-summary"]',
+  resolvedRace+' · '+(jobs[state.job]||profileDynamicText('class-missing'))+
+  ' · '+state.level+' '+profileDynamicText('level-suffix'));
+ setText('[data-profile-live="overview-race"]',
+  race||profileDynamicText('overview-missing'));
+ setText('[data-profile-live="overview-class"]',
+  jobs[state.job]||profileDynamicText('overview-missing'));
+ setText('[data-profile-live="passive-empty"]',
+  Number.isInteger(state.race)?profileDynamicText('passive-loading'):
+   profileDynamicText('passive-choose-race'));
+ setText('[data-profile-live="passive-no-description"]',
+  profileDynamicText('passive-no-description'));
+ for(const node of root.querySelectorAll('[data-profile-live="passive-choice"]'))
+  ownerDockPatchText(node,profileDynamicText(
+   node.dataset.profileSelected==='true'?'passive-selected':'passive-select'));
+ const tabs=root.querySelector('.ps-character-tabs');
+ if(tabs)ownerDockPatchAttr(tabs,'aria-label',
+  profileDynamicText('panel-accessibility'));
 }
 async function undoOwnerEdit(){
   if(!adminToken||!ownerEdits.length||ownerSaveInFlight())return;
@@ -11145,6 +11234,7 @@ async function saveGuidePatchNow(key,fields){
   override[overrideKey]=serialized;ownerEdits.push({key:overrideKey,before,after:serialized});
   if(key==='wiki.labels')refreshVisibleWikiLabels();
   if(key.startsWith('book.origin.'))refreshVisibleOriginCopy('guideedit.'+key);
+  if(key.startsWith('book.profile.'))refreshVisibleProfileCopy();
   if(key.startsWith('book.ui.label.'))
    refreshVisibleUICopy('guideedit.'+key);
   if(key.startsWith('book.origin.hint')||key.startsWith('book.equipment.')||key.startsWith('book.path.')||
