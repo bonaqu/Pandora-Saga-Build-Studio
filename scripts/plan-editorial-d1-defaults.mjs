@@ -1277,6 +1277,29 @@ export function buildEditorialDefaultsManifest(){
   append('guideedit.book.catalog-sync.'+slug,'en',en,'catalog-review-details');
  }
 
+ // Live comparison counters are NOT authorial content. Source-only
+ // fragments are separately reviewed and staged under semantic D1 keys,
+ // preserving in-progress owner inline edits when runtime data changes.
+ const summarySource=read('pandora-os-catalog-workbench.js').match(
+  /const catalogReviewStatusCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ if(!summarySource)throw Error('Missing dynamic catalog summary copy inventory');
+ const summaryRows=runInNewContext('('+summarySource[1]+')',{},{timeout:5000});
+ const expectedSummary=['affectedSections','selectionTotal','selectionRemaining',
+  'selectionNeedsReview','selectionSettings','lineBreaksIncluded',
+  'foundChanges','summaryTechnical','summarySelected','summaryUnselected',
+  'summaryNeedsReview','noChanges'];
+ if(!Array.isArray(summaryRows)||summaryRows.length!==expectedSummary.length||
+  summaryRows.map(row=>row?.[0]).sort().join('|')!==expectedSummary.sort().join('|'))
+  throw Error('Unknown dynamic catalog summary source labels');
+ for(const row of summaryRows){
+  if(!Array.isArray(row)||row.length!==3||row.some(v=>
+   typeof v!=='string'||!v.trim()||v!==v.trim()))
+   throw Error('Invalid bilingual catalog summary authorial text');
+  const [key,ru,en]=row,slug=key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase());
+  append('guideedit.book.catalog-sync.'+slug,'ru',ru,'catalog-review-runtime-labels');
+  append('guideedit.book.catalog-sync.'+slug,'en',en,'catalog-review-runtime-labels');
+ }
+
  // Existing filter tooltips describe how to review data, independently of
  // each editable filter name and its calculated count. A tooltip is the only
  // reason the filter has a separate owner pencil. Closed 10-key RU/EN set.
