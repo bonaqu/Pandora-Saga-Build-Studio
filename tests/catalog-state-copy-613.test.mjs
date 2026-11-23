@@ -131,11 +131,12 @@ test('#390 review captions use exact bilingual CAS keys while live counts stay o
  const rows=runInNewContext('('+match[1]+')');
  const expected=['changedParametersLead','decisionHeading','formulaTitle',
   'heroMoreChangesLead','heroNoChange','heroSelectHelp','impactHeading',
-  'moreImpactsLead','moreImpactsSuffix'];
+  'moreImpactsLead','moreImpactsSuffix',
+  'linkedReferenceContext','unpublishedReference','emptyReviewFilter'];
  assert.deepEqual(Array.from(rows,row=>String(row[0])).sort(),expected.sort());
  const {buildEditorialDefaultsManifest}=await import('../scripts/plan-editorial-d1-defaults.mjs');
  const manifest=buildEditorialDefaultsManifest();
- assert.equal(manifest.stats.cohorts['catalog-review-details'],18);
+ assert.equal(manifest.stats.cohorts['catalog-review-details'],24);
  for(const [key,ru,en] of rows){
   const slug=key.replace(/[A-Z]/g,ch=>'-'+ch.toLowerCase());
   const id='guideedit.book.catalog-sync.'+slug;
@@ -151,6 +152,15 @@ test('#390 review captions use exact bilingual CAS keys while live counts stay o
  assert.match(workbench,/reviewCaption\('strong',\{\},'formulaTitle'\)/);
  assert.match(workbench,/reviewCaption\('strong',\{\},'impactHeading'\)/);
  assert.match(workbench,/reviewCaption\('p',\{\},'heroSelectHelp'\)/);
+ assert.match(workbench,/reviewCaption\('small',\{\},'linkedReferenceContext'\)/);
+ assert.match(workbench,/reviewCaption\('small',\{\},'unpublishedReference'\)/);
+ assert.match(workbench,/results\.append\(reviewCaption\('p',\{class:'os-sync-empty'\},'emptyReviewFilter'\)\)/);
+ assert.doesNotMatch(workbench,/text:tr\('По этому фильтру изменений нет/);
+ // Read-only source facts and game mechanics may not be masked by owner copy.
+ assert.match(workbench,/Нет подтверждённой расшифровки. Эти изменения требуют отдельной проверки/);
+ assert.match(workbench,/Это параметр дополнительных слотов конкретного предмета/);
+ for(const key of ['unverifiedExplanation','extraSocketsHelp'])
+  assert.ok(!rows.some(row=>row[0]===key),key);
  assert.doesNotMatch(workbench,/os-sync-review-pencil/);
  // Only authorial text is serialized. These expressions still depend on the
  // current calculated count and the selected game-source result.
