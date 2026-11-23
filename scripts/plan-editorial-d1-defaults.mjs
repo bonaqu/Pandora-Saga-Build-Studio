@@ -459,6 +459,28 @@ export function buildEditorialDefaultsManifest(){
   append(id,'en',en,'origin-class-wizard-aria');
  }
 
+ // Race-gallery accessible action words are owner-authored; race names,
+ // gender variants, artwork sources and preview indices are NOT D1 defaults.
+ const raceMatch=app.match(
+  /const originRacePortraitAriaRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ if(!raceMatch)throw Error('Missing original race portrait ARIA source');
+ const raceRows=runInNewContext('('+raceMatch[1]+')',{},{
+  filename:'originRacePortraitAriaRows',timeout:5000
+ });
+ const expectedRace=['racePortraitPreviousAria','racePortraitNextAria',
+  'racePortraitChooseAria'];
+ if(!Array.isArray(raceRows)||raceRows.length!==expectedRace.length||
+  raceRows.map(row=>row[0]).sort().join('|')!==expectedRace.sort().join('|'))
+  throw Error('Origin race portrait source keys changed: review migration');
+ for(const [key,ru,en] of raceRows){
+  if(typeof ru!=='string'||!ru.trim()||typeof en!=='string'||!en.trim())
+   throw Error('Missing bilingual race-gallery accessibility copy');
+  const id='guideedit.book.origin.'+
+   key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  append(id,'ru',ru,'origin-race-portrait-aria');
+  append(id,'en',en,'origin-race-portrait-aria');
+ }
+
  // The two owner equipment picker surfaces reuse one frozen source catalog
  // for static labels. This selection-only half is separate from metadata,
  // source gear names, player-entered search queries and live item counts.
