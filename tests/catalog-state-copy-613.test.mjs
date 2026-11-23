@@ -206,8 +206,10 @@ test('#390: ten independent catalog filter hover hints have bilingual CAS and ze
   assert.equal(manifest.records.find(v=>v.recordKey===recordKey&&v.field==='en')?.value,en);
   assert.equal(root.PandoraHonorGuide.validOverride('book.catalog-sync.'+slug,
    JSON.stringify({ru:'Подсказка',en:'Hover help'})),true);
-  assert.ok(!manifest.records.some(v=>v.recordKey===recordKey.replace('hint-review-filter','review-filter')),
-   'Every hover hint key must remain independent of the visible caption');
+  const captionKey=recordKey.replace('hint-review-filter','review-filter');
+  assert.notEqual(recordKey,captionKey,'Tooltip and visible caption have independent CAS keys');
+  assert.ok(manifest.records.some(v=>v.recordKey===captionKey&&v.field==='ru'),
+   'The original visible filter caption must keep its separate RU/EN source key');
  }
  assert.match(workbench,/const wrapper=secondaryHint\(button,'hintReviewFilter'/);
  assert.match(workbench,/wrapper\.classList\.add\('os-sync-filter-hint'\)/);
