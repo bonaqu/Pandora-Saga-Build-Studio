@@ -12201,12 +12201,15 @@ async function showOwnerGitHubExport(){
     const result=await apiRequest('/api/admin/catalog/owner-pr',{
      expectedFingerprint:info.fingerprint});
     if(result.url&&/^https:\/\/github\.com\/bonaqu\/Pandora-Saga-Build-Studio\/pull\/\d+$/.test(result.url)){
+     const link=h('a',{href:result.url,target:'_blank',rel:'noopener noreferrer'});
+     const linkCaption=ownerDialogStatusCaption('span','githubLink');
+     link.append(linkCaption);
+     // Double-click edits the link wording; an ordinary single click still
+     // opens the exact server-provided PR URL after the action guard delay.
+     ownerCaptionActionGuard(link,linkCaption);
      feedback.replaceChildren(
       ownerDialogStatusCaption('span','githubProposed'),
-      document.createTextNode(' '),
-      h('a',{href:result.url,target:'_blank',rel:'noopener noreferrer'},
-       [ownerDialogStatusCaption('span','githubLink')]),
-      document.createTextNode(' '),
+      document.createTextNode(' '),link,document.createTextNode(' '),
       ownerDialogStatusCaption('span','githubFollowup')
      );
     }else feedback.replaceChildren(ownerDialogStatusCaption('span',
