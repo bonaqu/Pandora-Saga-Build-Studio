@@ -148,6 +148,50 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   assert.equal(await passive.getAttribute('aria-pressed'),selectedPassive,
    'Editing a racial skill name must not select a passive');
   assert.equal(writes.length,0,'Escape must not write a D1 skill name');
+  // Visible Origin portrait accessibility is authorial D1 copy; a carousel
+  // preview must never mutate the hero's source race, gender or game ID.
+  const racePanel=page.locator('#ownerOriginRaceAria');
+  await racePanel.locator('summary').click();
+  assert.equal(await racePanel.locator('.studio-owner-interface-pencil').count(),0);
+  const originalAlt=await page.locator('#raceGrid img').getAttribute('alt');
+  const raceBefore=JSON.parse(await page.evaluate(()=>
+   localStorage.getItem('ps-build-studio.v1'))).race;
+  const editRaceAria=async(key,value)=>{
+   await racePanel.locator('[data-owner-copy-id="'+key+'"]').dblclick();
+   const field=racePanel.locator('[data-owner-text-field]');
+   await field.waitFor({state:'visible',timeout:10000});
+   await field.fill(value);
+   await field.press('Tab');
+   await field.waitFor({state:'detached',timeout:15000});
+  };
+  await editRaceAria('racePortraitPreviousAria','Предыдущий облик QA');
+  await savedOverride('guideedit.book.origin.race-portrait-previous-aria',
+   {ru:'Предыдущий облик QA'});
+  assert.equal(await page.locator('#raceGrid .race-slide-arrow.previous')
+   .getAttribute('aria-label'),'Предыдущий облик QA');
+  await editRaceAria('racePortraitChooseAria','Выбрать облик QA');
+  await savedOverride('guideedit.book.origin.race-portrait-choose-aria',
+   {ru:'Выбрать облик QA'});
+  assert.equal(await page.locator('#raceGrid img').getAttribute('alt'),originalAlt,
+   'Editing accessible copy must not edit the source race/gender');
+  assert.equal(await page.locator('#raceGrid img').getAttribute('aria-label'),
+   'Выбрать облик QA '+originalAlt);
+  const countBeforeCancel=writes.length;
+  await racePanel.locator('[data-owner-copy-id="racePortraitNextAria"]').dblclick();
+  const canceled=racePanel.locator('[data-owner-text-field]');
+  await canceled.fill('Отмена QA');
+  await canceled.press('Escape');
+  assert.equal(writes.length,countBeforeCancel,'Escape cannot write new CAS');
+  await page.locator('#raceGrid .race-slide-arrow.next').click();
+  assert.equal(await page.locator('#raceGrid .race-slide-arrow.previous')
+   .getAttribute('aria-label'),'Предыдущий облик QA');
+  const nextAlt=await page.locator('#raceGrid img').getAttribute('alt');
+  assert.notEqual(nextAlt,originalAlt);
+  assert.equal(await page.locator('#raceGrid img').getAttribute('aria-label'),
+   'Выбрать облик QA '+nextAlt);
+  assert.equal(JSON.parse(await page.evaluate(()=>
+   localStorage.getItem('ps-build-studio.v1'))).race,raceBefore,
+   'Preview navigation cannot change the selected race');
   // Source-backed caps are not authorial copy. Edit the visible caption
   // directly while keeping the cap number and the growth state untouched.
   await openEditableTrack();
@@ -215,6 +259,20 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   assert.equal(await group.locator('button.path-group-pencil').count(),0);
   await page.locator('#locale [data-locale="en"]').click();
   await page.waitForFunction(()=>document.documentElement.lang==='en');
+  assert.equal(await page.locator('#raceGrid .race-slide-arrow.previous')
+   .getAttribute('aria-label'),'Previous portrait',
+   'RU CAS must not change the EN default');
+  const racePanelEn=page.locator('#ownerOriginRaceAria');
+  if(!await racePanelEn.evaluate(node=>node.open))
+   await racePanelEn.locator('summary').click();
+  await racePanelEn.locator('[data-owner-copy-id="racePortraitChooseAria"]').dblclick();
+  const raceEnEdit=racePanelEn.locator('[data-owner-text-field]');
+  await raceEnEdit.fill('Select portrait QA');
+  await raceEnEdit.press('Tab');
+  await savedOverride('guideedit.book.origin.race-portrait-choose-aria',
+   {ru:'Выбрать облик QA',en:'Select portrait QA'});
+  assert.match(await page.locator('#raceGrid img').getAttribute('aria-label'),
+   /^Select portrait QA /);
   assert.equal((await page.locator('#classCount').textContent()).trim(),'28 classes');
   assert.equal(await page.locator('#classCount [data-owner-text-field]').count(),0);
   await openSpecial();
