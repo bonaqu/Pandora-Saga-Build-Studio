@@ -584,6 +584,22 @@
       ['sameVisible','Текст совпадает','Same visible text'],
       ['readable','Расшифрованы','Explained']
     ];
+    // Each filter has a separate authored hover explanation; its own CAS
+    // key never aliases the visible label or the calculated result count.
+    // An owner pencil edits ONLY this tooltip, not the filter name.
+    const filterHintRows=Object.freeze([
+      ['all','Все найденные изменения.','All detected changes.'],
+      ['added','Объекты, добавленные в проверяемом источнике.','Entries added in the checked source.'],
+      ['changed','Объекты, чьи параметры отличаются.','Entries with changed parameters.'],
+      ['removed','Объекты, которых нет в проверяемом источнике.','Entries missing from the checked source.'],
+      ['accepted','Только изменения с поставленной галочкой.','Only selected changes.'],
+      ['declined','Изменения без галочки, не выбранные для применения.','Changes not selected for publication.'],
+      ['needsReview','Неоднозначные или неизвестные параметры — требуют ручного анализа.','Ambiguous or unknown fields require manual review.'],
+      ['links','Изменилась привязка ссылок на предметы. Такие записи нужно выбирать вручную.','Item reference links changed; review and select these manually.'],
+      ['sameVisible','Видимый текст одинаков, но исходные записи отличаются. Требуется ручная проверка.','Displayed text is the same, but the source differs. Review manually.'],
+      ['readable','Изменения, для которых доступны понятные названия и описания.','Changes with readable labels and descriptions.']
+    ]);
+    const filterHintMap=new Map(filterHintRows.map(row=>[row[0],row]));
     const filterButtons=new Map();
     for(const [id,ru,en]of filterChoices){
       // Split the authorial filter word from the live category count.
@@ -624,20 +640,12 @@
            key:'F2',bubbles:true,cancelable:true}));
         }
       });
-      const tips={
-        all:['Все найденные изменения.','All detected changes.'],
-        added:['Объекты, добавленные в проверяемом источнике.','Entries added in the checked source.'],
-        changed:['Объекты, чьи параметры отличаются.','Entries with changed parameters.'],
-        removed:['Объекты, которых нет в проверяемом источнике.','Entries missing from the checked source.'],
-        accepted:['Только изменения с поставленной галочкой.','Only selected changes.'],
-        declined:['Изменения без галочки, не выбранные для применения.','Changes not selected for publication.'],
-        needsReview:['Неоднозначные или неизвестные параметры — требуют ручного анализа.','Ambiguous or unknown fields require manual review.'],
-        links:['Изменилась привязка ссылок на предметы. Такие записи нужно выбирать вручную.','Item reference links changed; review and select these manually.'],
-        sameVisible:['Видимый текст одинаков, но исходные записи отличаются. Требуется ручная проверка.','Displayed text is the same, but the source differs. Review manually.'],
-        readable:['Изменения, для которых доступны понятные названия и описания.','Changes with readable labels and descriptions.']
-      };
-      hint(button,tr(...tips[id]));
-      filters.append(button);filterButtons.set(id,button);
+      const hintRow=filterHintMap.get(id);
+      if(!hintRow)throw Error('Missing reviewed filter tooltip '+id);
+      const wrapper=secondaryHint(button,'hintReviewFilter'+id[0].toUpperCase()+id.slice(1),
+       hintRow[1],hintRow[2]);
+      wrapper.classList.add('os-sync-filter-hint');
+      filters.append(wrapper);filterButtons.set(id,button);
     }
     function matchesFilter(change){
       if(filterKind==='accepted')return chosen.has(change.id);
