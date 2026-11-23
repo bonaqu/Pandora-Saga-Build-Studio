@@ -196,3 +196,43 @@ test('#390 a single stage caption click navigates while a double click edits',()
  assert.match(wizard,/jobPathKey=stageTargets\[i\];renderJobs\(\);saveView\(\)/);
  assert.match(app,/if\(!event\.detail\)\{/);
 });
+
+test('#390 race gallery exposes source-authored bilingual ARIA without changing game identity',async()=>{
+ const source=app.match(/const originRacePortraitAriaRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ assert.ok(source,'The live gallery needs one closed source registry');
+ const rows=Function('return '+source[1])();
+ assert.deepEqual(rows,[
+  ['racePortraitPreviousAria','Предыдущий портрет','Previous portrait'],
+  ['racePortraitNextAria','Следующий портрет','Next portrait'],
+  ['racePortraitChooseAria','Выбрать','Choose']
+ ]);
+ const manifest=(await import('../scripts/plan-editorial-d1-defaults.mjs'))
+  .buildEditorialDefaultsManifest();
+ assert.equal(manifest.stats.cohorts['origin-race-portrait-aria'],6);
+ for(const [key,ru,en] of rows){
+  const id='guideedit.book.origin.'+
+   key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase());
+  assert.deepEqual(manifest.records.filter(r=>r.recordKey===id)
+   .map(r=>r.field).sort(),['en','ru']);
+  assert.equal(manifest.records.find(r=>r.recordKey===id&&r.field==='ru').value,ru);
+  assert.equal(manifest.records.find(r=>r.recordKey===id&&r.field==='en').value,en);
+  assert.equal(guide.validOverride('book.origin.'+
+   key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase()),
+   JSON.stringify({ru:'Проверка',en:'Accessibility check'})),true);
+  assert.equal(ru,ru.trim(),'No invisible spaces in editable RU: '+key);
+  assert.equal(en,en.trim(),'No invisible spaces in editable EN: '+key);
+ }
+ const start=app.indexOf('function renderRaces(){'),
+  end=app.indexOf('const CLASS_PARENT_FALLBACK',start);
+ const carousel=app.slice(start,end);
+ assert.match(carousel,/bindOwnerInterfaceText\(img,'origin','racePortraitChooseAria'/);
+ assert.match(carousel,/'aria-label',' '\+raceName\+sexSuffix/);
+ assert.match(carousel,/'racePortraitPreviousAria'/);
+ assert.match(carousel,/'racePortraitNextAria'/);
+ assert.match(app,/ownerInterfaceEditor\('origin',originRacePortraitAriaRows/);
+ assert.doesNotMatch(carousel,/img\.setAttribute\('aria-label'/);
+ for(const unsafe of ['race-name','race-gender','portrait-index','race-image-url'])
+  assert.equal(manifest.records.some(r=>
+   r.recordKey==='guideedit.book.origin.'+unsafe),false,
+   'Original race identity must not be an owner D1 field: '+unsafe);
+});
