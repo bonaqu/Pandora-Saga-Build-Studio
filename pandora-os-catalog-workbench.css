@@ -365,6 +365,23 @@
  display:block;box-sizing:border-box;min-width:0;width:100%;max-width:100%;
  min-height:31px;padding:5px 7px;font-size:11px
 }
+/* #390: filter captions stay compact; the only adjacent pencil belongs to
+   the independent hover explanation, never the visible name or count.
+   Reveal on pointer hover/focus; keep it visible on touch-only devices. */
+.os-sync-filters>.os-sync-filter-hint{
+ display:inline-grid;grid-template-columns:minmax(0,max-content) 22px;
+ gap:3px;align-items:center;width:auto;max-width:100%;
+}
+.os-sync-filter-hint>.os-sync-filter{min-width:0;max-width:100%}
+.os-sync-filter-hint>.os-sync-secondary-pencil{margin:0;height:26px}
+.os-sync-filter-hint>.os-sync-secondary-host{grid-column:1/-1}
+@media(hover:hover) and (pointer:fine){
+ .os-sync-filter-hint>.os-sync-secondary-pencil{
+  opacity:0;transition:opacity .13s ease;
+ }
+ .os-sync-filter-hint:hover>.os-sync-secondary-pencil,
+ .os-sync-filter-hint:focus-within>.os-sync-secondary-pencil{opacity:1}
+}
 .os-sync-search-field>.os-sync-secondary-pencil{margin-top:6px}
 @media(max-width:580px){
  .os-sync-secondary-hint{grid-template-columns:minmax(0,1fr) 22px;gap:4px}
