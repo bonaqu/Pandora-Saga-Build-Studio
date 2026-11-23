@@ -1191,6 +1191,27 @@ export async function runAdminEntrySmoke(browser,base){
   await dialog.locator('.os-sync-search').fill('no-matching-catalog-entry-792');
   assert.equal(await catalogClear.isEnabled(),true);
   assert.equal(await dialog.locator('.os-sync-record').count(),0);
+  const emptyFilterCaption=dialog.locator('.os-sync-empty');
+  await emptyFilterCaption.waitFor({state:'visible',timeout:12000});
+  assert.equal(await emptyFilterCaption.locator('.os-sync-copy-pencil').count(),0,
+   'No redundant pencil belongs to a directly editable empty-state caption');
+  await emptyFilterCaption.dblclick();
+  const emptyReviewEditor=emptyFilterCaption.locator('[contenteditable]');
+  await emptyReviewEditor.waitFor({state:'visible',timeout:12000});
+  await emptyReviewEditor.fill('По выбранному запросу пока пусто · QA.');
+  await emptyReviewEditor.press('Tab');
+  await emptyReviewEditor.waitFor({state:'detached',timeout:15000});
+  const emptyKey='guideedit.book.catalog-sync.empty-review-filter';
+  for(let n=0;n<300&&!townOverrides.has(emptyKey);n++)
+   await page.waitForTimeout(40);
+  assert.equal(JSON.parse(townOverrides.get(emptyKey)).ru,
+   'По выбранному запросу пока пусто · QA.');
+  assert.equal(await dialog.locator('.os-sync-empty').innerText(),
+   'По выбранному запросу пока пусто · QA.');
+  assert.equal(await dialog.locator('.os-sync-record').count(),0,
+   'Editing a safe empty-state caption cannot make source records appear');
+  assert.equal(await dialog.locator('.os-sync-search').inputValue(),
+   'no-matching-catalog-entry-792','Direct D1 editor cannot change the search');
   await catalogClear.click();
   assert.equal(await dialog.locator('.os-sync-search').inputValue(),'');
   assert.equal(await dialog.locator('.os-sync-record').count(),1,
