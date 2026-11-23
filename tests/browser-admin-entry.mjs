@@ -1922,9 +1922,10 @@ export async function runAdminEntrySmoke(browser,base){
   if(!await catalogHistoryRow.evaluate(node=>node.open))
    await catalogHistoryRow.locator('.owner-review-heading').click();
   assert.deepEqual(await catalogHistoryRow.locator(
-   '.owner-review-field').allTextContents(),['Текст RU','Текст EN']);
+   '.owner-review-field').allTextContents(),['Текст RU'],
+   'The real D1 save stores ONLY the edited RU field, never a fabricated EN override');
   assert.deepEqual(await catalogHistoryRow.locator(
-   '.owner-review-after p').allTextContents(),['Отобрано QA:','Selected:']);
+   '.owner-review-after p').allTextContents(),['Отобрано QA:']);
   assert.ok(!(await catalogHistoryRow.locator('.owner-review-after').innerText())
    .includes('{"ru"'),'The underlying JSON override must not be dumped as a value');
   const catalogHintHistoryRow=history.locator('.owner-review-row')
