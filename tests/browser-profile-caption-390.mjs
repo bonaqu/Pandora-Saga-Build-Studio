@@ -227,10 +227,24 @@ export async function runProfileCaption390Smoke(browser,base){
    null,{timeout:15000});
   assert.deepEqual(JSON.parse(values['guideedit.book.profile.portrait-race-prefix']),
    {en:'Race portrait QA'});
-  await editDynamic('level-suffix','level QA');
+  // This source-only suffix is visible, so it must have direct dblclick/F2,
+  // not require the owner inventory. The adjacent level remains game data.
+  const levelCaption=panel.locator(
+   '[data-profile-live="hero-summary"] [data-profile-copy-key="level-suffix"]');
+  assert.equal(await levelCaption.count(),1,'One direct level-unit caption, no pencil');
+  assert.equal(await levelCaption.getAttribute('aria-keyshortcuts'),'F2 Enter');
+  const immutableLevel=await panel.locator('[data-profile-live="hero-level-number"]').textContent();
+  await levelCaption.dblclick();
+  const levelEditor=levelCaption.locator('[data-owner-text-field]');
+  await levelEditor.waitFor({state:'visible',timeout:12000});
+  await levelEditor.fill('level QA');
+  await levelEditor.press('Tab');
+  await levelEditor.waitFor({state:'detached',timeout:15000});
   await page.waitForFunction(()=>document.querySelector(
    '#detailContent [data-profile-live="hero-summary"]')?.textContent.endsWith('45 level QA'),
    null,{timeout:15000});
+  assert.equal(await panel.locator('[data-profile-live="hero-level-number"]').textContent(),
+   immutableLevel,'Editing the unit cannot modify the actual level');
   assert.equal(await portrait.getAttribute('src'),originalSrc);
   assert.equal(await portraitHandle.evaluate(node=>node.isConnected),true,
    'Live author copy must not remount the race artwork');
