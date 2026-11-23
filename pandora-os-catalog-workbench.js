@@ -815,7 +815,7 @@
         review.labels[change.dataset]||change.dataset,
         change.title,description.title,description.summary,description.summaryEn,
         ...description.rows.flatMap(field=>[
-          field.label,field.linkedItemName||'',
+          field.label,field.labelEn||'',field.noteEn||'',field.linkedItemName||'',
           field.beforeFull??field.before,field.afterFull??field.after
         ])
       ].map(readable).join(' ').toLocaleLowerCase();
@@ -964,10 +964,12 @@
           const newValue=h('span',{class:'os-sync-full-value os-sync-new'});
           oldValue.append(field.sourceBefore!==null&&field.sourceBefore!==undefined?
             linkedDescription(field.sourceBefore,language,change.id+'|'+field.label+'|old'):
-            document.createTextNode(String(field.beforeFull??field.before)));
+            document.createTextNode(String(lang==='en'&&field.beforeEn!==null&&field.beforeEn!==undefined?
+              field.beforeEn:(field.beforeFull??field.before))));
           newValue.append(field.sourceAfter!==null&&field.sourceAfter!==undefined?
             linkedDescription(field.sourceAfter,language,change.id+'|'+field.label+'|new'):
-            document.createTextNode(String(field.afterFull??field.after)));
+            document.createTextNode(String(lang==='en'&&field.afterEn!==null&&field.afterEn!==undefined?
+              field.afterEn:(field.afterFull??field.after))));
           if(field.difference){
             const delta=h('small',{class:'os-sync-value-delta',
               text:(field.delta>0?'▲ ':'▼ ')+field.difference});
@@ -975,14 +977,15 @@
            'Change relative to the published version. The sign does not imply that the change is beneficial or harmful.'));
             newValue.append(delta);
           }
-          const label=h('strong',{text:field.label});
+          const displayLabel=lang==='en'&&field.labelEn?field.labelEn:field.label;
+          const label=h('strong',{text:displayLabel});
           if(/^[0-9]{1,12}$/.test(field.linkedItemId||'')&&field.linkedItemName){
-            const start=field.label.indexOf(field.linkedItemName);
+            const start=displayLabel.indexOf(field.linkedItemName);
             if(start>=0){
               label.replaceChildren(
-                document.createTextNode(field.label.slice(0,start)),
+                document.createTextNode(displayLabel.slice(0,start)),
                 linkedDescription('<item '+field.linkedItemId+'>','ru',change.id+'|'+field.label+'|label'),
-                document.createTextNode(field.label.slice(start+field.linkedItemName.length))
+                document.createTextNode(displayLabel.slice(start+field.linkedItemName.length))
               );
             }
           }
@@ -993,7 +996,8 @@
             h('span',{class:'os-sync-field-arrow',text:'→'}),
             newValue
           ]);
-          if(field.note)line.append(h('p',{class:'os-sync-field-note',text:field.note}));
+          if(field.note)line.append(h('p',{class:'os-sync-field-note',
+            text:lang==='en'&&field.noteEn?field.noteEn:field.note}));
           if(/Доп\. слоты$/.test(field.label))line.append(h('p',{
             class:'os-sync-field-note',
             text:tr('Это параметр дополнительных слотов конкретного предмета в таблице добычи. «Не указаны» означает отсутствие поля в старом источнике, а не подтверждённый ноль.',
