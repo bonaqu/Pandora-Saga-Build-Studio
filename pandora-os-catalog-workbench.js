@@ -1119,7 +1119,9 @@
             opener.append(
               reviewCaption('span',{class:'os-sync-reference-open-copy'},'linkedReferenceOpen'),
               h('a',{href:itemHref,target:'_blank',rel:'noopener noreferrer',
-                class:'os-sync-reference-open-icon',
+                // Preserve the original stable link selector/API; the new
+                // icon class is only for the split owner-edit presentation.
+                class:'os-sync-reference-open os-sync-reference-open-icon',
                 'aria-label':tr('Открыть связанный предмет: ','Open linked item: ')+segment.text,
                 text:'↗'})
             );
