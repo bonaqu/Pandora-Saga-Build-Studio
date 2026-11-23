@@ -339,6 +339,10 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   assert.equal(await group.locator('button.path-group-pencil').count(),0);
   await page.locator('#locale [data-locale="en"]').click();
   await page.waitForFunction(()=>document.documentElement.lang==='en');
+  assert.equal(await page.locator('#originStatSummary [data-owner-copy-id="remainingPrefix"]')
+   .textContent(),'Available:');
+  assert.match(await page.locator('#originStats .stat-step-increment').first()
+   .getAttribute('aria-label'),/^Increase Vitality/);
   const enPassive=page.locator('#originPassives .origin-passive').first();
   assert.equal((await enPassive.locator('small').textContent()).trim(),'Select');
   assert.match(await enPassive.getAttribute('aria-label'),/ — select$/,
