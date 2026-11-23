@@ -63,6 +63,16 @@ const sectionNames={
  zoneDrops:'Добыча по локациям',limit:'Пределы мастерства',
  expCurve:'Опыт мастерства',get:'Начисление мастерства',branchNames:'Названия веток'
 };
+const sectionNamesEn={
+ weaponPlus:'Weapon refinement',magicPlus:'Magic refinement',
+ raceInit:'Race starting attributes',jobInit:'Class starting attributes',
+ abilityPoint:'Attribute points',exp:'Character experience',
+ lvModify:'Level adjustments',dropModify:'Loot adjustments',
+ levelCap:'Level cap',expCap:'Experience cap',
+ premium:'Premium parameters',forge:'Item upgrade settings',afk:'AFK settings',
+ zoneDrops:'Loot by location',limit:'Mastery limits',
+ expCurve:'Mastery experience',get:'Mastery gains',branchNames:'Branch names'
+};
 
 
 // The public OS calculator (sp/Nl/JR in pandorasaga-os.com assets, 2026-11-13)
@@ -381,6 +391,13 @@ function describeNestedTable(section,a,b,add,unknown){
   mod:'Поправка',atk:'Атака',def:'Защита',magicDef:'Магическая защита',
   plus:'Уровень заточки',weapon:'Оружие',armor:'Броня',
   thresholdSec:'Порог времени (секунды)',...names};
+ const labelsEn={ratio:'Relative parameter (ratio)',flat:'Flat modifier (flat)',
+  ability:'Attribute points',skill:'Skill points',skillLimit:'Skill cap',
+  expReq:'Experience to level',req:'Required value',cumulative:'Accumulated value',
+  normal:'Normal mode',special:'Special mode',diff:'Level difference',
+  mod:'Adjustment',atk:'Attack',def:'Defense',magicDef:'Magic defense',
+  plus:'Refinement level',weapon:'Weapon',armor:'Armor',
+  thresholdSec:'Time threshold (seconds)',...namesEn};
  const valueOf=x=>x===undefined?'не указано':x!==null&&typeof x==='object'?JSON.stringify(x):x;
  const labelFor=(key,position)=>key.startsWith('diff=')?'Разница уровней '+key.slice(5):
   key.startsWith('plus=')?'Заточка +'+key.slice(5):
@@ -391,9 +408,19 @@ function describeNestedTable(section,a,b,add,unknown){
   position===0&&['exp','abilityPoint'].includes(section)?'Уровень '+key:
   'Запись '+(Number(key)+1):'Исходный код «'+key+'»');
  const label=path=>[sectionNames[section]||section,...path.map((k,i)=>labelFor(String(k),i))].join(' · ');
+ const labelForEn=(key,position)=>key.startsWith('diff=')?'Level difference '+key.slice(5):
+  key.startsWith('plus=')?'Refinement +'+key.slice(5):
+  key.startsWith('map=')?'Location #'+key.slice(4):
+  key.startsWith('id=')?'Record #'+key.slice(3):
+  labelsEn[key]||(/^\d+$/.test(key)?
+   position===0&&['weaponPlus','magicPlus'].includes(section)?'Refinement +'+key:
+   position===0&&['exp','abilityPoint'].includes(section)?'Level '+key:
+   'Record '+(Number(key)+1):'Source code «'+key+'»');
+ const labelEn=path=>[sectionNamesEn[section]||section,
+  ...path.map((k,i)=>labelForEn(String(k),i))].join(' · ');
  const walk=(x,y,path=[],depth=0)=>{
   if(same(x,y))return;
-  if(depth>7){unknown(label(path)+': слишком глубокая структура');add(label(path),valueOf(x),valueOf(y));return}
+  if(depth>7){unknown(label(path)+': слишком глубокая структура');add(label(path),valueOf(x),valueOf(y),labelEn(path));return}
   if(plain(x)&&plain(y)){
    for(const k of new Set([...Object.keys(x),...Object.keys(y)]))
     walk(x[k],y[k],[...path,k],depth+1);
@@ -410,7 +437,8 @@ function describeNestedTable(section,a,b,add,unknown){
      walk(before.get(id),after.get(id),[...path,identity+'='+id],depth+1);
     if(![...before.keys()].every((id,i)=>[...after.keys()][i]===id)){
      unknown(label(path)+': порядок записей изменился; значение порядка не подтверждено');
-     add(label(path)+' · Порядок записей','прежний порядок','новый порядок');
+     add(label(path)+' · Порядок записей','прежний порядок','новый порядок',
+      labelEn(path)+' · Row order');
     }
    }else if(x.length===y.length&&x.every((entry,i)=>
     (entry===null||typeof entry!=='object')&&
@@ -418,7 +446,8 @@ function describeNestedTable(section,a,b,add,unknown){
     for(let i=0;i<x.length;i++)walk(x[i],y[i],[...path,String(i)],depth+1);
    }else{
     unknown(label(path)+': невозможно однозначно сопоставить строки массива');
-    add(label(path)+' · Состав записей',valueOf(x),valueOf(y));
+    add(label(path)+' · Состав записей',valueOf(x),valueOf(y),
+     labelEn(path)+' · Row composition');
    }
   }else{
    if(Array.isArray(x)||Array.isArray(y)||plain(x)||plain(y))
@@ -427,7 +456,7 @@ function describeNestedTable(section,a,b,add,unknown){
     !/^(diff|plus|map|id)=/.test(String(k))&&
     !['WARRIOR','SCOUT','MAGE','ACOLYTE','HUMAN','ELF','DWARF','MYLIN','ENKIDU','LAPIN'].includes(k))
      unknown(label(path)+': значение исходного кода «'+k+'» не подтверждено');
-   add(label(path),valueOf(x),valueOf(y));
+   add(label(path),valueOf(x),valueOf(y),labelEn(path));
   }
  };
  walk(a,b);
@@ -446,9 +475,9 @@ function describeCompound(kind,before,after,ctx,add,unknown){
  };
  const fields=(left,right)=>new Set([...Object.keys(left||{}),...Object.keys(right||{})]);
  let touched=0;
- const safeAdd=(title,a,b)=>{const limit=kind==='tables'&&old?.zoneDrops&&next?.zoneDrops?3000:60;
+ const safeAdd=(title,a,b,titleEn='')=>{const limit=kind==='tables'&&old?.zoneDrops&&next?.zoneDrops?3000:60;
    if(touched>=limit){if(touched===limit)unknown('Слишком много изменений: показаны первые '+limit+' строк');touched++;return}
-   const row=add(title,a,b);touched++;return row};
+   const row=add(title,a,b,titleEn);touched++;return row};
  const shortItem=id=>{
   const result=itemName(id,ctx);
   if(result==='Предмет без подтверждённого названия')
@@ -890,6 +919,19 @@ function describe(change,ctx={}){
   summaryEn='Game formula tables changed. Estimated drop chances differ in '+
    impacts.length+' modeled sources (decreased: '+down+', increased: '+up+
    '). Inspect all changes in this atomic section.';
+ }
+ // Fallback for legitimate but source-generated diffs without a dedicated
+ // authored English summary. State only the change and review requirement:
+ // never invent a mechanic, hide a caution or translate a game record name.
+ if(!summaryEn){
+  const verified=rows.map(row=>row.labelEn).filter(Boolean);
+  const sampled=verified.slice(0,3);
+  const kindIntro=change.kind==='added'?'A record was added. ':
+   change.kind==='removed'?'A record was removed. ':'';
+  summaryEn=kindIntro+(sampled.length?
+   'Changed fields: '+sampled.join('; ')+(verified.length>3?'; …':'')+'. ':
+   'Source records differ. ')+
+   (uncertain?'Manual review is required.':'See the detailed source values below.');
  }
  let cautionEn='';
  if(caution){
