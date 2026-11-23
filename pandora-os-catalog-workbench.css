@@ -314,6 +314,14 @@
 .os-sync-meta-detail{overflow-wrap:anywhere;white-space:normal;
  font-size:11px;line-height:1.45}
 
+/* #390: summary and selection guidance are direct authorial RU/EN text.
+   Each number and source record stays in a sibling, never a CAS payload. */
+.os-sync-status-copy{display:inline;min-width:0;overflow-wrap:anywhere}
+.os-sync-status-copy.origin-copy-editable::after{content:none}
+.os-sync-status-copy.origin-copy-editable:focus-visible{
+ outline:2px solid #edc485;outline-offset:3px;border-radius:2px
+}
+.os-sync-count-piece[hidden],.os-sync-status-copy[hidden]{display:none}
 /* Fixed source notices and status messages can be edited independently.
    Live progress/errors stay ordinary text and never expose an editor. */
 .os-sync-state-caption{display:inline-block;min-width:0;overflow-wrap:anywhere}
