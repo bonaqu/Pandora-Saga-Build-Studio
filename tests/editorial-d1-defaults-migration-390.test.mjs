@@ -92,6 +92,33 @@ test('#390 history row status/action labels stage as source copy, not user recor
  }
 });
 
+test('#390 history auxiliary hover, dialog and prompt source defaults are exact',()=>{
+ const app=read('pandora-studio-app.js');
+ const match=app.match(/const ownerHistoryAuxCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ assert.ok(match);
+ const rows=runInNewContext('('+match[1]+')',{});
+ assert.deepEqual([...rows].map(row=>row[0]).sort(),
+  ['catalogUnavailable','clearHelp','confirmRestore','dialogTitle',
+   'openHelp','restoreFailure','restoreHelp']);
+ assert.equal(manifest.stats.cohorts['owner-history-aux'],14);
+ for(const [key,ru,en] of rows){
+  const id='guideedit.book.owner-history.'+
+   key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase());
+  const actual=manifest.records.filter(row=>row.recordKey===id);
+  assert.deepEqual(actual.map(row=>row.field).sort(),['en','ru'],id);
+  assert.equal(actual.find(row=>row.field==='ru').value,ru);
+  assert.equal(actual.find(row=>row.field==='en').value,en);
+ }
+ const clearHelp=manifest.records.find(r=>
+  r.recordKey==='guideedit.book.owner-history.clear-help'&&r.field==='ru');
+ const clearCaption=manifest.records.find(r=>
+  r.recordKey==='guideedit.book.owner-history.clear'&&r.field==='ru');
+ assert.notEqual(clearHelp?.value,clearCaption?.value,'Hover help != visible caption');
+ for(const invalid of ['guideedit.book.owner-history.record-title',
+  'guideedit.book.owner-history.record-before','guideedit.book.owner-history.server-error'])
+  assert.equal(manifest.records.some(row=>row.recordKey===invalid),false);
+});
+
 test('issue 390: source-authored D1 default snapshot is stable and uses exact existing keys',()=>{
  const repeated=buildEditorialDefaultsManifest();
  assert.equal(manifest.schema,1);
