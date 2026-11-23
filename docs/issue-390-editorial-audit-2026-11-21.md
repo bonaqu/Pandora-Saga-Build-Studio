@@ -449,3 +449,10 @@ pencil controls. Full Node+Chromium required on the exact new PR SHA.
 
 - [x] The first complete Chromium on `f08f3235` passed, including the synthetic Book requirement fixture, direct RU/EN edits, immutable level 46 and source mastery branch. The parallel Node suite caught only an obsolete source regex that assumed a `branchName` scalar instead of the same original name under `req.branchName`. Updated the regression to verify both the original English wording and source-owned requirement metadata; did **not** remove any test or game rule.
 - [ ] Re-run both full Node + Chromium on the final HEAD before acceptance. Remote Cloudflare staging, touch hardware and authorized release remain pending.
+
+## 23.11.2026 — F2 для пиктограммы обмена билдов (#390)
+
+- [x] Кнопка обмена A/B использует уже существующий RU/EN D1-ключ `compareSwapAction` для `title` и `aria-label`. В режиме владельца F2 правит текст через прежний CAS/Undo, не заменяя видимую пиктограмму и не создавая ✎.
+- [x] Общий обработчик прямой редакции принимает необязательный DOM scope. Динамически вставленный блок сравнения привязывает только собственные элементы, сохраняя общий документный режим и гостевые ограничения.
+- [x] Дополнен существующий Node-контракт и настоящий Chromium-сценарий: F2, CAS, Escape, Undo, синхронизация ARIA/title, сохранение A/B ID, отсутствие карандаша; штатный обмен проверяется существующей частью сценария.
+- [ ] До принятия необходимы оба полных CI на точном новом SHA. Реальная remote staging D1 и touch hardware не проверены. PR #809 Draft, issue #390 Open, production без изменений.
