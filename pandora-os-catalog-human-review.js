@@ -11,6 +11,20 @@ quest:'Задание',kind:'Тип',mobs:'Монстры',p:'Значение �
 slotAdd:'Дополнительные слоты',lo:'Нижняя граница',hi:'Верхняя граница'};
 const elements={physical:'физическому урону',fire:'огню',cold:'холоду',
 lightning:'молнии',poison:'яду',charm:'очарованию',magic:'магии',holy:'свету',dark:'тьме'};
+// EN review metadata is keyed to known source fields only. Do not translate
+// game item names, arbitrary source paths, player records or unknown fields.
+const namesEn={life:'Health points (HP)',level:'Level',vit:'Vitality',str:'Strength',
+ agi:'AGI (agility)',dex:'DEX (dexterity)',spi:'Spirit',int:'Intelligence',
+ warding:'Evasion',ac:'Defense',magicProtection:'Magic defense',
+ name:'Name',desc:'Description',nameEn:'English name',descEn:'English description',
+ d:'English description',classes:'Available classes',effects:'Effects',
+ slot:'Equipment slot',W:'Attack',PEN:'Penetration',n:'English name',
+ blurbRu:'Description',blurb:'English description',quest:'Quest',kind:'Type',
+ mobs:'Monsters',p:'Listed chance',slotAdd:'Extra sockets',
+ lo:'Lower bound',hi:'Upper bound'};
+const elementsEn={physical:'physical damage',fire:'fire',cold:'cold',
+ lightning:'lightning',poison:'poison',charm:'charm',magic:'magic',
+ holy:'holy',dark:'dark'};
 const plain=x=>x&&typeof x==='object'&&!Array.isArray(x);
 const plural=(count,one,few,many)=>{
  const n=Math.abs(count)%100,units=n%10;
@@ -35,6 +49,9 @@ const monsterName=(id,ctx)=>ctx?.upstream?.monsters?.[id]?.name||
 const fieldName=path=>path.startsWith('resists.')?
  (elements[path.slice(8)]?'Сопротивление '+elements[path.slice(8)]:null):
  names[path]||null;
+const fieldNameEn=path=>path.startsWith('resists.')?
+ (elementsEn[path.slice(8)]?'Resistance to '+elementsEn[path.slice(8)]:null):
+ namesEn[path]||null;
 
 const sectionNames={
  weaponPlus:'Усиление оружия',magicPlus:'Усиление магии',
@@ -595,7 +612,7 @@ function describe(change,ctx={}){
    lookup(id)||(en?'Unknown item':'Неизвестный предмет'));
  };
  const shortened=text=>typeof text==='string'&&text.length>160?text.slice(0,157)+'…':text;
- const add=(label,a,b)=>{if(same(a,b))return;
+ const add=(label,a,b,labelEn='')=>{if(same(a,b))return;
   const beforeText=typeof a==='string'?readable(a,label):null;
   const afterText=typeof b==='string'?readable(b,label):null;
   const numeric=typeof a==='number'&&Number.isFinite(a)&&typeof b==='number'&&Number.isFinite(b);
@@ -603,6 +620,9 @@ function describe(change,ctx={}){
   const isSlots=/Доп\. слоты$/.test(label);
   const readableSlots=x=>x==null?'не указаны':Number.isFinite(x)?
    value(x)+' '+plural(x,'дополнительный слот','дополнительных слота','дополнительных слотов'):
+   value(x);
+  const readableSlotsEn=x=>x==null?'not specified':Number.isFinite(x)?
+   new Intl.NumberFormat('en-US').format(x)+' extra socket'+(x===1?'':'s'):
    value(x);
   const sourceLinks=text=>typeof text==='string'?
    [...text.matchAll(/<item\s+([0-9]{1,12})\s*\/?>/gi)].map(match=>match[1]).join(','):'';
@@ -614,9 +634,17 @@ function describe(change,ctx={}){
     beforeLinks&&!afterLinks?'Игровая ссылка на предмет удалена.':
     'Изменилась привязка игровой ссылки к предмету.'):
    sameVisible?'Видимый текст совпадает. Различие осталось только в исходной записи.':'';
-  rows.push({label,before:isSlots?readableSlots(a):beforeText===null?value(a):shortened(beforeText),
+  const noteEn=linkChanged?
+   (afterLinks&&!beforeLinks?'A game item reference was added to the source text.':
+    beforeLinks&&!afterLinks?'A game item reference was removed from the source text.':
+    'The game item reference now points to a different item.'):
+   sameVisible?'Visible text is unchanged, but the source records differ.':'';
+  rows.push({label,labelEn,
+   before:isSlots?readableSlots(a):beforeText===null?value(a):shortened(beforeText),
    after:isSlots?readableSlots(b):afterText===null?value(b):shortened(afterText),
-   numeric,delta,note,linkChanged,sameVisible,
+   beforeEn:isSlots?readableSlotsEn(a):null,
+   afterEn:isSlots?readableSlotsEn(b):null,
+   numeric,delta,note,noteEn,linkChanged,sameVisible,
    sourceBefore:/описани/i.test(label)&&typeof a==='string'?a:null,
    sourceAfter:/описани/i.test(label)&&typeof b==='string'?b:null,
    beforeFull:beforeText===null?undefined:beforeText,
@@ -638,7 +666,7 @@ function describe(change,ctx={}){
   const label=fieldName(prefix);
   if(!label){unknown(prefix||'неизвестные данные');return}
   if(plain(a)||plain(b)||Array.isArray(a)||Array.isArray(b))uncertain=true;
-  add(label,a,b);
+  add(label,a,b,fieldNameEn(prefix));
  }
  const kind=change.dataset;
  if(kind==='meta'){
@@ -647,7 +675,7 @@ function describe(change,ctx={}){
   const sha=new Set([...Object.keys(old.sha||{}),...Object.keys(next.sha||{})]);
   const changed=[...sha].filter(k=>old.sha?.[k]!==next.sha?.[k]);
   if(changed.length)add('Проверочные сведения файлов',changed.length+' изменились',
-   changed.length+' файлов требуют проверки');
+   changed.length+' файлов требуют проверки','File checksums');
   for(const key of new Set([...Object.keys(old),...Object.keys(next)])){
    if(key!=='sha'&&!same(old[key],next[key]))walk(old[key],next[key],key);
   }
@@ -662,7 +690,9 @@ function describe(change,ctx={}){
   const old=change.before||{},next=change.after||{};
   if(title.includes('без подтверждённого названия'))
    unknown('Монстр отсутствует в каталоге: '+change.key);
-  for(const [group,groupName] of [['d','Обычная добыча'],['s','Дополнительная добыча']]){
+  for(const [group,groupName,groupNameEn] of [
+   ['d','Обычная добыча','Regular loot'],['s','Дополнительная добыча','Additional loot']
+  ]){
    const a=old[group]||[],b=next[group]||[];
    const byItem=list=>{const out=new Map();for(const entry of list){
     const key=String(entry?.i)+' / '+String(entry?.t||'');
@@ -689,13 +719,16 @@ function describe(change,ctx={}){
       }
      };
      if(!aa[i]||!bb[i]){
-      add(item,aa[i]?'есть':'нет',bb[i]?'есть':'нет');
+      add(item,aa[i]?'есть':'нет',bb[i]?'есть':'нет',groupNameEn+' · '+itemTitle);
       attachItem();
      }else for(const field of new Set([...Object.keys(aa[i]),...Object.keys(bb[i])])){
       if(field==='i'||field==='t'||same(aa[i][field],bb[i][field]))continue;
       const label={p:'Шанс в таблице',n:'Количество',slotAdd:'Доп. слоты',
        lo:'Нижняя граница',hi:'Верхняя граница'}[field];
-      if(label){add(item+' · '+label,aa[i][field],bb[i][field]);attachItem();}
+      const fieldEn={p:'Listed chance',n:'Quantity',slotAdd:'Extra sockets',
+       lo:'Lower bound',hi:'Upper bound'}[field];
+      if(label){add(item+' · '+label,aa[i][field],bb[i][field],
+       groupNameEn+' · '+itemTitle+' · '+fieldEn);attachItem();}
       else unknown(group+'.'+field);
      }
     }
@@ -715,7 +748,8 @@ function describe(change,ctx={}){
    else{
     for(const key of ['name','blurbRu','blurb','kind','quest','mobs'])if(!same(old[key],next[key])){
      const render=v=>key==='mobs'?(v||[]).map(x=>monsterName(x,ctx)).join(', '):v;
-     add(name+' · '+(names[key]||key),render(old[key]),render(next[key]));
+     add(name+' · '+(names[key]||key),render(old[key]),render(next[key]),
+      name+' · '+(namesEn[key]||key));
     }
     for(const key of new Set([...Object.keys(old),...Object.keys(next)]))
      if(!['id','name','blurbRu','blurb','kind','quest','mobs'].includes(key)&&!same(old[key],next[key]))
