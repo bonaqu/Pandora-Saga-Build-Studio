@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 // Isolated owner CAS smoke; no real accounts or Cloudflare D1 mutation.
 export async function runProfileCaption390Smoke(browser,base){
  const api='https://ps-build-studio-cloud.bonaqu.workers.dev';
- const token='a'.repeat(43),values={},writes=[],errors=[],nextConflicts=new Set();
+ const token='a'.repeat(43),values={},writes=[],resets=[],errors=[],nextConflicts=new Set();
  const context=await browser.newContext({viewport:{width:1200,height:840}});
  await context.addInitScript(()=>{
   localStorage.setItem('ps-build-studio.v1',JSON.stringify({
@@ -41,6 +41,13 @@ export async function runProfileCaption390Smoke(browser,base){
     return send({code:'OWNER_EDIT_CONFLICT',error:'Mock stale owner version'},409);
    values[data.key]=data.value;writes.push(data);
    return send({ok:true,key:data.key,value:data.value,conditional:true});
+  }
+  if(path==='/api/admin/reset'){
+   assert.equal(req.headers().authorization,'Bearer '+token);
+   const data=req.postDataJSON();
+   assert.match(data.key,/^guideedit\.book\.profile\./);
+   delete values[data.key];resets.push(data.key);
+   return send({ok:true,key:data.key});
   }
   return route.abort();
  });
@@ -188,6 +195,75 @@ export async function runProfileCaption390Smoke(browser,base){
   assert.equal(writes.length,4,'409 and mobile Escape must not create CAS writes');
   assert.equal(await panel.locator('#ps-profile-field-name').inputValue(),
    'Profile smoke hero');
+  // The 12 dynamic authorial phrases are edited in one owner-only panel,
+  // never through player values or noisy per-caption pencil controls.
+  const dynamicPanel=panel.locator('#ownerProfileDynamicCopy');
+  await dynamicPanel.locator('summary').click();
+  assert.equal(await dynamicPanel.locator('.studio-owner-interface-pencil').count(),0);
+  const portrait=panel.locator('[data-profile-live="portrait-art"]');
+  const originalSrc=await portrait.getAttribute('src');
+  const portraitHandle=await portrait.elementHandle();
+  assert.equal(await portrait.getAttribute('alt'),'Race appearance: Elf');
+  const editDynamic=async(key,value)=>{
+   const caption=panel.locator('#ownerProfileDynamicCopy [data-owner-copy-id="'+key+'"]');
+   await caption.dblclick();
+   const field=caption.locator('[data-owner-text-field]');
+   await field.waitFor({state:'visible',timeout:12000});
+   await field.fill(value);
+   await field.press('Tab');
+   await field.waitFor({state:'detached',timeout:15000});
+  };
+  await editDynamic('portrait-race-prefix','Race portrait QA');
+  await page.waitForFunction(()=>document.querySelector(
+   '#detailContent [data-profile-live="portrait-art"]')?.alt==='Race portrait QA Elf',
+   null,{timeout:15000});
+  assert.deepEqual(JSON.parse(values['guideedit.book.profile.portrait-race-prefix']),
+   {en:'Race portrait QA'});
+  await editDynamic('level-suffix','level QA');
+  await page.waitForFunction(()=>document.querySelector(
+   '#detailContent [data-profile-live="hero-summary"]')?.textContent.endsWith('45 level QA'),
+   null,{timeout:15000});
+  assert.equal(await portrait.getAttribute('src'),originalSrc);
+  assert.equal(await portraitHandle.evaluate(node=>node.isConnected),true,
+   'Live author copy must not remount the race artwork');
+  await portraitHandle.dispose();
+  assert.equal(await panel.locator('#ps-profile-field-name').inputValue(),'Profile smoke hero');
+  assert.equal(await panel.locator('#ps-profile-field-guild').inputValue(),'Player data QA');
+  assert.equal(await panel.locator('#ps-profile-description').inputValue(),'Biography draft');
+  // Undo a newly created EN-only override uses the real reset route and
+  // restores only the source unit, not the independently CAS-ed alt prefix.
+  if(await dock.evaluate(el=>el.classList.contains('owner-dock-collapsed')))
+   await dock.locator('[data-owner-collapse]').click();
+  await dock.locator('[data-owner-undo]').click();
+  await page.waitForFunction(()=>document.querySelector(
+   '#detailContent [data-profile-live="hero-summary"]')?.textContent.endsWith('45 lvl.'),
+   null,{timeout:15000});
+  assert.deepEqual(resets,['guideedit.book.profile.level-suffix']);
+  assert.equal(await portrait.getAttribute('alt'),'Race portrait QA Elf');
+  assert.equal(values['guideedit.book.profile.level-suffix'],undefined);
+  // Switching to Russian must not leak English author copy into the source
+  // race label; the original game race remains a separate immutable suffix.
+  await page.locator('#locale [data-locale="ru"]').focus();
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(()=>document.documentElement.lang==='ru');
+  assert.equal(await portrait.getAttribute('alt'),'Облик расы Эльф');
+  assert.match(await panel.locator('[data-profile-live="hero-summary"]').textContent(),
+   /45 ур\.$/);
+  const ruEditor=panel.locator('#ownerProfileDynamicCopy');
+  if(!await ruEditor.evaluate(node=>node.open))
+   await ruEditor.locator('summary').click();
+  await editDynamic('portrait-race-prefix','Портрет расы QA');
+  await page.waitForFunction(()=>document.querySelector(
+   '#detailContent [data-profile-live="portrait-art"]')?.alt==='Портрет расы QA Эльф',
+   null,{timeout:15000});
+  assert.deepEqual(JSON.parse(values['guideedit.book.profile.portrait-race-prefix']),
+   {en:'Race portrait QA',ru:'Портрет расы QA'});
+  await page.locator('#locale [data-locale="en"]').focus();
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(()=>document.documentElement.lang==='en');
+  assert.equal(await portrait.getAttribute('alt'),'Race portrait QA Elf');
+  assert.equal(await panel.locator('#ps-profile-field-name').inputValue(),'Profile smoke hero');
+  assert.equal(await panel.locator('#ps-profile-field-guild').inputValue(),'Player data QA');
   assert.deepEqual(errors,[]);
   console.log('Chromium #390: profile guest, direct tabs/actions, F2/Esc, 409 CAS, Undo, RU/EN, mobile and hero preservation passed');
  }finally{await context.close()}
