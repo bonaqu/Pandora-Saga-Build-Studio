@@ -158,3 +158,31 @@ test('#390 review captions use exact bilingual CAS keys while live counts stay o
   'comparison.changes.length-10'])
   assert.ok(workbench.includes(dynamic),dynamic);
 });
+
+test('#390: catalog review filters edit captions without turning calculated counts into D1 copy',async()=>{
+ const source=workbench.match(/const filterChoices=(\[[\s\S]*?\]);/);
+ assert.ok(source,'Filter source must be a literal reviewed bilingual inventory');
+ const filters=runInNewContext('('+source[1]+')');
+ const ids=['all','added','changed','removed','accepted','declined',
+  'needsReview','links','sameVisible','readable'];
+ assert.deepEqual(Array.from(filters,row=>String(row[0])).sort(),ids.sort());
+ const {buildEditorialDefaultsManifest}=await import('../scripts/plan-editorial-d1-defaults.mjs');
+ const manifest=buildEditorialDefaultsManifest();
+ assert.equal(manifest.stats.cohorts['catalog-review-filter-captions'],20);
+ for(const [id,ru,en] of filters){
+  const key='reviewFilter'+id[0].toUpperCase()+id.slice(1);
+  const slug=key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase());
+  const record='guideedit.book.catalog-sync.'+slug;
+  assert.equal(manifest.records.find(r=>r.recordKey===record&&r.field==='ru')?.value,ru);
+  assert.equal(manifest.records.find(r=>r.recordKey===record&&r.field==='en')?.value,en);
+  assert.equal(root.PandoraHonorGuide.validOverride('book.catalog-sync.'+slug,
+   JSON.stringify({ru:'Подпись QA',en:'QA label'})),true);
+ }
+ assert.match(workbench,/const caption=h\('span',\{class:'os-sync-filter-caption'/);
+ assert.match(workbench,/const total=h\('span',\{class:'os-sync-filter-count'/);
+ assert.match(workbench,/editLabel\(caption,key,ru,en\)/);
+ assert.match(workbench,/caption.dispatchEvent\(new KeyboardEvent\('keydown'/);
+ assert.match(workbench,/if\(pending\)\{clearTimeout\(pending\);pending=null;return\}/);
+ assert.match(workbench,/if\(count.textContent!==value\)count.textContent=value/);
+ assert.doesNotMatch(workbench,/button.textContent=tr\(ru,en\)\+' · '\+byKind\[id\]/);
+});
