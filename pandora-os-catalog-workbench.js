@@ -40,7 +40,13 @@
       'The selected changes do not alter these modeled values for the current hero.'],
     ['heroMoreChangesLead','Ещё изменений:','More changes:'],
     ['heroSelectHelp','Выбери расу и профессию на главном экране, чтобы увидеть изменения именно своего героя.',
-      'Choose a race and class on the main screen to compare your own hero.']
+      'Choose a race and class on the main screen to compare your own hero.'],
+    ['linkedReferenceContext','Связанный предмет · игровая ссылка в описании',
+      'Linked item · in-game description reference'],
+    ['unpublishedReference','Предмет пока не опубликован в энциклопедии.',
+      'This item has not yet been published in the encyclopedia.'],
+    ['emptyReviewFilter','По этому фильтру изменений нет. Измени запрос или выбери «Все».',
+      'No changes match this filter. Change the search or select “All”.']
   ]);
   const catalogReviewDetailByKey=new Map(catalogReviewDetailCopyRows.map(row=>[row[0],row]));
   // Dynamic review summaries have independently authored words AND immutable
@@ -1011,8 +1017,7 @@
          'Linked game item. Click to preview its description and open the encyclopedia entry.'));
         const preview=h('span',{class:'os-sync-reference-preview',hidden:!wasExpanded});
         preview.append(h('strong',{text:segment.text}),
-          h('small',{text:tr('Связанный предмет · игровая ссылка в описании',
-           'Linked item · in-game description reference')}));
+          reviewCaption('small',{},'linkedReferenceContext'));
         const record=upstream?.items?.[segment.id]||baseline?.items?.[segment.id];
         const sourceDesc=language==='en'?
           upstream?.['strings.en']?.items?.[segment.id]?.d||
@@ -1029,8 +1034,7 @@
             rel:'noopener noreferrer',class:'os-sync-reference-open',
             text:tr('Открыть в энциклопедии (новая вкладка) ↗',
              'Open encyclopedia (new tab) ↗')}));
-        }else preview.append(h('small',{text:tr('Предмет пока не опубликован в энциклопедии.',
-          'This item has not yet been published in the encyclopedia.')}));
+        }else preview.append(reviewCaption('small',{},'unpublishedReference'));
         button.onclick=()=>{
           const expanded=preview.hidden;
           preview.hidden=!expanded;
@@ -1311,9 +1315,8 @@
         }
         results.append(panel);
       }
-      if(!results.childElementCount&&baseline)results.append(h('p',{class:'os-sync-empty',
-        text:tr('По этому фильтру изменений нет. Измени запрос или выбери «Все».',
-         'No changes match this filter. Change the search or select “All”.')}));
+      if(!results.childElementCount&&baseline)
+        results.append(reviewCaption('p',{class:'os-sync-empty'},'emptyReviewFilter'));
       refreshActions();
       // Keep the reviewer's place after selection; only a new search or
       // category filter intentionally starts at the beginning.
