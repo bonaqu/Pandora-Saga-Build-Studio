@@ -8512,6 +8512,8 @@ function renderBuildComparison(host,onSelection=()=>{}){
  const A=pick('A',0),B=pick('B',1);
  const swap=h('button',{type:'button',class:'build-compare-swap',
   text:'⇄','aria-label':copy('compareSwapAction'),
+  'data-i18n-title':'compareSwapAction',
+  'data-i18n-aria-label':'compareSwapAction',
   title:copy('compareSwapAction'),
   onclick:()=>{compareIds=[compareIds[1]||'',compareIds[0]||''];
    onSelection();update()}});
@@ -8549,7 +8551,11 @@ function renderBuildComparison(host,onSelection=()=>{}){
   syncCompareCopy(collapse,comparisonOpen?'compareCollapse':'compareExpand');
   update();
  });
- if(adminEditing&&adminToken)bindAccountCopyEditors(host);
+ if(adminEditing&&adminToken){
+  bindAccountCopyEditors(host);
+  // Dynamically mounted icon: F2 edits authorial ARIA/title, never the action.
+  bindStaticUICopyEditors(host);
+ }
  function update(){
   // Do not detach a saving, conflicting or unsaved owner caption draft.
   if(tbody.querySelector('[data-owner-text-field]')){
@@ -9960,9 +9966,9 @@ function ownerCaptionActionGuard(button,caption){
   },500);
  },true);
 }
-function bindStaticUICopyEditors(){
+function bindStaticUICopyEditors(scope=document){
  const locale=window.PandoraUILocale,canEdit=Boolean(adminEditing&&adminToken);
- for(const node of document.querySelectorAll('[data-i18n]')){
+ for(const node of scope.querySelectorAll('[data-i18n]')){
   const key=node.dataset.i18n,id=locale.fieldKey(key);
   if(!id||node.matches('option')||node.id==='originRaceName'||
    node.id==='pathGrowthTab'||node.id==='pathSkillsTab'||
@@ -10030,7 +10036,7 @@ function bindStaticUICopyEditors(){
  // accessible name, not an independent authorial hover explanation. Owners
  // can edit that SAME semantic RU/EN string via F2 on the focused control.
  // Never add a pencil or hijack the control's native Enter/Space/click.
- for(const node of document.querySelectorAll('[data-i18n-title]')){
+ for(const node of scope.querySelectorAll('[data-i18n-title]')){
   const next=node.nextElementSibling;
   if(next?.dataset?.uiContentFor===node.dataset.i18nTitle)next.remove();
   const key=node.dataset.i18nTitle;
