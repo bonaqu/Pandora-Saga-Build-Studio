@@ -11,7 +11,12 @@ test('Origin and advanced editor share canonical RU/EN stat labels',()=>{
  assert.match(origin,/name:'Сила духа',nameEn:'Spirit',code:'spi'/);
  assert.match(code,/ORIGIN_STAT_LABELS\[i\]\.nameEn:ORIGIN_STAT_LABELS\[i\]\.name/);
  assert.match(origin,/statCaption\('remainingPrefix','Свободно:','Available:'\)/);
- assert.match(origin,/tr\('Итог','Total'\)/);
+ assert.match(origin,/visibleCaption\('totalCaption','Итог','Total'\)/);
+ assert.match(origin,/visibleCaption\('bonusSuffix','бонус','bonus'\)/);
+ assert.match(origin,/visibleCaption\('chooseRaceClass','Выберите расу и профессию'/);
+ assert.match(origin,/visibleCaption\('levelBudgetPrefix','Бюджет уровня:'/);
+ assert.match(origin,/statsUiCopyRows\.filter\(row=>statsUiAriaKeys\.includes\(row\[0\]\)\)/);
+ assert.doesNotMatch(origin,/row\.caption\.textContent=delta/);
 });
 
 test('Origin and shared skill previews translate UI controls while preserving game records',()=>{
