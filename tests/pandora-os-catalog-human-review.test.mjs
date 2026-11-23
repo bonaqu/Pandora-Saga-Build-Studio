@@ -313,3 +313,26 @@ test('English detail captions use safe prefixes for named quest fields and check
  assert.equal(metadata.service,true);
  assert.equal(metadata.uncertain,true);
 });
+
+test('nested formula and mastery captions render known English schema without changing arithmetic',()=>{
+ const formula=describe(change('tables','@dataset',
+  {weaponPlus:{1:{ratio:2,flat:1}}},{weaponPlus:{1:{ratio:3,flat:2}}}),context);
+ assert.equal(formula.rows.length,2);
+ assert.ok(formula.rows.some(row=>row.labelEn===
+  'Weapon refinement · Refinement +1 · Relative parameter (ratio)'&&row.difference==='+1'));
+ assert.ok(formula.rows.some(row=>row.labelEn.endsWith(' · Flat modifier (flat)')));
+ assert.equal(formula.uncertain,true,'atomic formula publication remains manually reviewed');
+ const mastery=describe(change('expertise','@dataset',
+  {limit:{WARRIOR:{slash:2}}},{limit:{WARRIOR:{slash:3}}}),context);
+ assert.ok(mastery.rows.some(row=>row.labelEn.startsWith('Mastery limits · ')));
+ assert.equal(mastery.uncertain,true,'unknown class/source fields still require review');
+});
+test('unmapped source labels receive neutral English review summary without fictional mechanics',()=>{
+ const result=describe(change('items','555',
+  {unknownMechanic:1},{unknownMechanic:2}),context);
+ assert.equal(result.uncertain,true);
+ assert.equal(result.rows.length,0);
+ assert.match(result.summaryEn,/Source records differ/);
+ assert.match(result.summaryEn,/Manual review is required/);
+ assert.ok(result.technical.some(x=>x.includes('unknownMechanic')));
+});
