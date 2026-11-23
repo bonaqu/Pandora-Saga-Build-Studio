@@ -162,7 +162,11 @@ export function buildEditorialDefaultsManifest(){
   'overview-race','overview-class','overview-level',
   'racial-heading','overview-help',
   'tab-character','tab-profile','action-hero-path','action-attributes',
-  'action-edit-profile'
+  'action-edit-profile',
+  'portrait-race-prefix','portrait-race-missing','hero-unnamed',
+  'class-missing','level-suffix','overview-missing','passive-loading',
+  'passive-choose-race','passive-no-description','passive-selected',
+  'passive-select','panel-accessibility'
  ];
  if(Object.keys(profile).sort().join('|')!==expectedProfile.sort().join('|'))
   throw Error('Profile source keys drifted; review migration');
