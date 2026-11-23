@@ -124,3 +124,37 @@ test('English human-review cautions are displayed but game-model safety remains 
  assert.match(workbench,/const uncertain=changes\.filter\(x=>checked\(x\)&&describe\(x\)\.uncertain\)\.length/);
  assert.match(workbench,/const riskApproval=/);
 });
+
+test('#390 review captions use exact bilingual CAS keys while live counts stay outside D1',async()=>{
+ const match=workbench.match(/const catalogReviewDetailCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ assert.ok(match,'one source dictionary for visible catalog details');
+ const rows=runInNewContext('('+match[1]+')');
+ const expected=['changedParametersLead','decisionHeading','formulaTitle',
+  'heroMoreChangesLead','heroNoChange','heroSelectHelp','impactHeading',
+  'moreImpactsLead','moreImpactsSuffix'];
+ assert.deepEqual(rows.map(row=>row[0]).sort(),expected.sort());
+ const {buildEditorialDefaultsManifest}=await import('../scripts/plan-editorial-d1-defaults.mjs');
+ const manifest=buildEditorialDefaultsManifest();
+ assert.equal(manifest.stats.cohorts['catalog-review-details'],18);
+ for(const [key,ru,en] of rows){
+  const slug=key.replace(/[A-Z]/g,ch=>'-'+ch.toLowerCase());
+  const id='guideedit.book.catalog-sync.'+slug;
+  assert.equal(manifest.records.find(r=>r.recordKey===id&&r.field==='ru')?.value,ru);
+  assert.equal(manifest.records.find(r=>r.recordKey===id&&r.field==='en')?.value,en);
+  assert.equal(root.PandoraHonorGuide.validOverride('book.catalog-sync.'+slug,
+   JSON.stringify({ru:'Тест',en:'Test'})),true);
+ }
+ assert.match(workbench,/const reviewCaption=\(tag,attrs,key\)=>/);
+ assert.match(workbench,/editLabel\(node,key,row\[1\],row\[2\]\)/);
+ assert.match(workbench,/class:'os-sync-runtime-count'/);
+ assert.match(workbench,/reviewCaption\('strong',\{\},'decisionHeading'\)/);
+ assert.match(workbench,/reviewCaption\('strong',\{\},'formulaTitle'\)/);
+ assert.match(workbench,/reviewCaption\('strong',\{\},'impactHeading'\)/);
+ assert.match(workbench,/reviewCaption\('p',\{\},'heroSelectHelp'\)/);
+ assert.doesNotMatch(workbench,/os-sync-review-pencil/);
+ // Only authorial text is serialized. These expressions still depend on the
+ // current calculated count and the selected game-source result.
+ for(const dynamic of ['description.rows.length','impacts.length-4',
+  'comparison.changes.length-10'])
+  assert.ok(workbench.includes(dynamic),dynamic);
+});
