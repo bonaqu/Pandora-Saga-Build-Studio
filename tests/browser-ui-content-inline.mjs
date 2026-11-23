@@ -887,8 +887,8 @@ export async function runUIContentInlineSmoke(browser,base){
     if(parent.tagName==='DETAILS')parent.open=true;
   });
   await buffReason.waitFor({state:'visible',timeout:15000});
-  const reasonKey=await buffReason.getAttribute('data-guide-key');
-  assert.match(reasonKey,/^buffs\.reason\.(?:unavailableClass|shieldRequired|weaponUnavailable|supportUnavailable)$/);
+  const buffGateKey=await buffReason.getAttribute('data-guide-key');
+  assert.match(buffGateKey,/^buffs\.reason\.(?:unavailableClass|shieldRequired|weaponUnavailable|supportUnavailable)$/);
   const originalReason=await buffReason.innerText();
   const reasonCheck=buffReason.locator('xpath=ancestor::label[1] input[type="checkbox"]');
   const checkedReasonBefore=await reasonCheck.isChecked();
@@ -901,7 +901,7 @@ export async function runUIContentInlineSmoke(browser,base){
   await dismissReason.fill('Не сохранять этот статус');
   await dismissReason.press('Escape');
   assert.equal(await buffReason.innerText(),originalReason);
-  assert.equal(Object.hasOwn(values,'guideedit.book.'+reasonKey),false);
+  assert.equal(Object.hasOwn(values,'guideedit.book.'+buffGateKey),false);
   await buffReason.focus();
   await buffReason.press('F2');
   const reasonEditor=buffReason.locator('[contenteditable]');
@@ -910,8 +910,8 @@ export async function runUIContentInlineSmoke(browser,base){
   await reasonEditor.press('Tab');
   await page.waitForFunction(({key,text})=>
    document.querySelector('[data-guide-key="'+key+'"]')?.textContent===text,
-   {key:reasonKey,text:'Недоступность QA'},{timeout:15000});
-  assert.equal(JSON.parse(values['guideedit.book.'+reasonKey]).ru,'Недоступность QA');
+   {key:buffGateKey,text:'Недоступность QA'},{timeout:15000});
+  assert.equal(JSON.parse(values['guideedit.book.'+buffGateKey]).ru,'Недоступность QA');
   assert.equal(await reasonCheck.isChecked(),checkedReasonBefore);
   assert.equal(await buffReason.locator('.stage-guide-edit-hint').count(),0);
   console.log('Chromium #390 Book buff status RU direct dblclick/F2 CAS, Escape and unchanged skill passed');
