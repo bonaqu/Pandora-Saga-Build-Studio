@@ -43,7 +43,13 @@ test('catalog filters and linked item review keep English defaults while game va
   'Game links','Same visible text','Explained'])
   assert.ok(source.includes("'"+name+"'"),name);
  assert.match(source,/for\(const \[id,ru,en\]of filterChoices\)/);
- assert.match(source,/button\.textContent=tr\(ru,en\)\+' · '\+byKind\[id\]/);
+ assert.match(source,/const caption=h\('span',\{class:'os-sync-filter-caption'/);
+ assert.match(source,/const total=h\('span',\{class:'os-sync-filter-count'/);
+ assert.match(source,/text:copy\(key,ru,en\)/);
+ assert.match(source,/if\(canEdit&&typeof editLabel==='function'\)editLabel\(caption,key,ru,en\)/);
+ assert.match(source,/const value=' · '\+byKind\[id\]/);
+ assert.match(source,/if\(count.textContent!==value\)count.textContent=value/);
+ assert.doesNotMatch(source,/button\.textContent=tr\(ru,en\)\+' · '\+byKind\[id\]/);
  assert.match(source,/tr\('Найдено изменений: ','Changes found: '\)/);
  assert.match(source,/tr\('Связь с предметом изменилась · проверить вручную'/);
  assert.match(source,/tr\('Предмет пока не опубликован в энциклопедии\.'/);
