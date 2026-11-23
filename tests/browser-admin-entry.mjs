@@ -1083,7 +1083,7 @@ export async function runAdminEntrySmoke(browser,base){
   // click must still work, and F2/Escape must never write to D1.
   const addedButton=dialog.locator('.os-sync-filter[data-review-filter="added"]');
   const addedCaption=addedButton.locator('.os-sync-filter-caption');
-  assert.equal(await addedButton.locator('.os-sync-filter-count').innerText(),'· 0');
+  assert.equal((await addedButton.locator('.os-sync-filter-count').innerText()).trim(),'· 0');
   assert.equal(await dialog.locator('.os-sync-filter-pencil').count(),0);
   await addedCaption.dblclick();
   const addedEditor=addedButton.locator('[data-owner-text-field]');
@@ -1098,7 +1098,7 @@ export async function runAdminEntrySmoke(browser,base){
    await page.waitForTimeout(40);
   assert.equal(JSON.parse(townOverrides.get(filterKey)).ru,'Добавления QA');
   assert.equal(await addedCaption.innerText(),'Добавления QA');
-  assert.equal(await addedButton.locator('.os-sync-filter-count').innerText(),'· 0',
+  assert.equal((await addedButton.locator('.os-sync-filter-count').innerText()).trim(),'· 0',
    'D1 copy cannot change the number of matching records');
   await clickCatalogFilter('added');
   assert.equal(await dialog.locator('.os-sync-record').count(),0);
@@ -1112,7 +1112,7 @@ export async function runAdminEntrySmoke(browser,base){
   await allEditor.waitFor({state:'detached',timeout:12000});
   assert.equal(townOverrides.has('guideedit.book.catalog-sync.review-filter-all'),false,
    'Escape cancels filter caption without writing an override');
-  assert.equal(await allFilter.locator('.os-sync-filter-count').innerText(),'· 1');
+  assert.equal((await allFilter.locator('.os-sync-filter-count').innerText()).trim(),'· 1');
   assert.equal(await dialog.locator('.os-sync-record').count(),1);
   assert.equal(await dialog.locator('.os-sync-source-banner .os-sync-state-caption').textContent(),
    'Архивный источник проверен отдельно.',
