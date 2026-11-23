@@ -726,8 +726,18 @@ test('#390 profile owner copy defaults mirror live source labels, never player d
  const match=source.match(/const profileAuthorialCopy=Object\.freeze\((\{[\s\S]*?\})\);/);
  assert.ok(match);
  const pairs=runInNewContext('('+match[1]+')',{});
- assert.equal(Object.keys(pairs).length,17);
- assert.equal(manifest.stats.cohorts['profile-authorial'],34);
+ assert.equal(Object.keys(pairs).length,29);
+ assert.equal(manifest.stats.cohorts['profile-authorial'],58);
+ const dynamic=['portrait-race-prefix','portrait-race-missing','hero-unnamed',
+  'class-missing','level-suffix','overview-missing','passive-loading',
+  'passive-choose-race','passive-no-description','passive-selected',
+  'passive-select','panel-accessibility'];
+ assert.deepEqual(Object.keys(pairs).filter(key=>dynamic.includes(key)).sort(),
+  dynamic.sort(),'Closed source-only dynamic Profile copy inventory');
+ assert.match(source,/profileDynamicKeys\.map\(key=>\[key,\.\.\.profileAuthorialCopy\[key\]\]\)/);
+ assert.match(source,/if\(key\.startsWith\('book\.profile\.'\)\)refreshVisibleProfileCopy\(\)/);
+ assert.match(source,/ownerDockPatchAttr\(portrait,'alt'/);
+ assert.match(source,/node\.dataset\.profileSelected==='true'/);
  assert.match(source,/const authored=profileAuthorialCopy\[key\]/);
  assert.match(source,/\["name",\.\.\.profileAuthorialCopy\['field-name'\]/);
  assert.match(source,/placeholder:ownerCopy\('profile','bio-placeholder',\s*\.\.\.profileAuthorialCopy\['bio-placeholder'\]/);
