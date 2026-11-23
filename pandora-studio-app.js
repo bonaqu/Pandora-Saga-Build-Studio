@@ -3514,21 +3514,65 @@ document.addEventListener('visibilitychange',()=>{
 });
 for(const event of ['blur','popstate','hashchange'])
  window.addEventListener(event,dismissSkillPreview);
+// Stable Hero Path budget captions: owner text is never the character budget.
+// Retain the mounted DOM through recalculations so an inline draft survives.
+const pathBudgetCopyRows=Object.freeze([
+ ['budgetLoading','Загружаются очки умений…','Loading skill points…'],
+ ['budgetAvailable','Свободно','Available'],
+ ['budgetSpent','Вложено','Spent'],
+ ['budgetTotal','Всего','Total'],
+ ['budgetExcess','Сохранённый билд превышает бюджет. Прежние вложения не удалены.',
+  'Saved build exceeds the point budget. Existing points were preserved.']
+]);
 function refreshBudgetLabel(){
  const data=budgetSummary(),root=$('budgetState');if(!root)return;
- const heading=root.querySelector('.path-overview-head');
- root.replaceChildren();if(heading)root.append(heading);
- const stats=h('div',{class:'path-budget-values'});
- if(data.total===null)stats.append(h('p',{text:lang==='en'?'Loading skill points…':'Загружаются очки умений…'}));
- else{
-  for(const [title,value,css]of[
-    [(lang==='en'?'Available':'Свободно'),data.remaining,'path-free'],[(lang==='en'?'Spent':'Вложено'),data.spent,''],[(lang==='en'?'Total':'Всего'),data.total,'']]){
-   stats.append(h('div',{},[h('strong',{class:css,text:String(value)}),h('span',{text:title})]));
-  }
-  if(data.remaining<0)root.append(h('small',{class:'budget-excess',
-   text:lang==='en'?'Saved build exceeds the point budget. Existing points were preserved.':'Сохранённый билд превышает бюджет. Прежние вложения не удалены.'}));
+ const makeCaption=key=>{
+  const [,ru,en]=pathBudgetCopyRows.find(row=>row[0]===key);
+  const node=h('span',{class:'path-budget-copy','data-path-budget-copy':key,
+   text:ownerCopy('path',key,ru,en)});
+  if(adminEditing&&adminToken)ownerCopyLabel(node,'path',key,ru,en);
+  return node;
+ };
+ let stats=root.querySelector('.path-budget-values');
+ if(!stats){
+  // The current profession remains canonical game data.
+  for(const child of [...root.children])
+   if(!child.classList.contains('path-overview-head'))child.remove();
+  stats=h('div',{class:'path-budget-values'});
+  stats.append(h('p',{class:'path-budget-loading'},[makeCaption('budgetLoading')]));
+  for(const [key,css] of [
+   ['budgetAvailable','path-free'],['budgetSpent',''],['budgetTotal','']
+  ])stats.append(h('div',{'data-path-budget-row':key},[
+   h('strong',{class:css,text:'—'}),makeCaption(key)
+  ]));
+  root.append(stats,h('small',{class:'budget-excess'},[makeCaption('budgetExcess')]));
  }
- root.append(stats);
+ for(const [key,ru,en] of pathBudgetCopyRows){
+  const caption=root.querySelector('[data-path-budget-copy="'+key+'"]');
+  if(!caption)continue;
+  const owner=Boolean(adminEditing&&adminToken);
+  if(owner&&!caption.dataset.ownerCopySection)
+   ownerCopyLabel(caption,'path',key,ru,en);
+  if(!caption.querySelector('.wiki-inline-input'))
+   caption.textContent=ownerCopy('path',key,ru,en);
+  caption.classList.toggle('origin-copy-editable',owner);
+  if(owner&&caption.dataset.ownerCopySection){
+   caption.tabIndex=0;caption.setAttribute('aria-keyshortcuts','F2 Enter');
+  }else{
+   caption.removeAttribute('tabindex');caption.removeAttribute('aria-keyshortcuts');
+  }
+ }
+ const ready=data.total!==null;
+ stats.querySelector('.path-budget-loading').hidden=ready;
+ for(const [key,value] of [
+  ['budgetAvailable',data.remaining],['budgetSpent',data.spent],
+  ['budgetTotal',data.total]
+ ]){
+  const row=stats.querySelector('[data-path-budget-row="'+key+'"]');
+  row.hidden=!ready;
+  if(ready)row.querySelector('strong').textContent=String(value);
+ }
+ root.querySelector('.budget-excess').hidden=!ready||data.remaining>=0;
 }
 // Reusing a stable source snapshot avoids rematerializing 569 skill records
 // for each growth redraw or skill gallery query. Locale changes replace the

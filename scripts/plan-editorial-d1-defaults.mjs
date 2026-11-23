@@ -643,6 +643,29 @@ export function buildEditorialDefaultsManifest(){
  }
 
 
+ // Path budget: exact authorial words only; values and names stay game data.
+ const budgetMatch=app.match(
+  /const pathBudgetCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ if(!budgetMatch)throw Error('Missing mounted Path budget source captions');
+ const budgetRows=runInNewContext('('+budgetMatch[1]+')',{},{
+  filename:'pathBudgetCopyRows',timeout:5000
+ });
+ const expectedBudget=[
+  'budgetLoading','budgetAvailable','budgetSpent','budgetTotal','budgetExcess'
+ ];
+ if(!Array.isArray(budgetRows)||budgetRows.length!==expectedBudget.length||
+  budgetRows.map(row=>row?.[0]).sort().join('|')!==expectedBudget.sort().join('|'))
+  throw Error('Path budget source caption inventory drift');
+ for(const [key,ru,en] of budgetRows){
+  if(!/^[a-z][a-zA-Z]+$/.test(key)||
+   typeof ru!=='string'||!ru.trim()||ru!==ru.trim()||
+   typeof en!=='string'||!en.trim()||en!==en.trim())
+   throw Error('Invalid Path budget authorial phrase: '+key);
+  const slug=key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  append('guideedit.book.path.'+slug,'ru',ru,'hero-path-budget');
+  append('guideedit.book.path.'+slug,'en',en,'hero-path-budget');
+ }
+
  // The 16 authored reasons for blocked skill requirements are independent
  // of original skill names, class/branch identity and computed thresholds.
  // These rows are staging-only source fallbacks, not a production D1 write.

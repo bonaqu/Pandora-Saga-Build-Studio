@@ -554,6 +554,52 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   assert.equal(await prereq.locator('.path-skill-previous-value').innerText(),requiredName,
    'D1 text changes must not rename the required source skill');
   console.log('Chromium 0.650 bilingual prerequisite caption and game-data separation passed');
+  // The mounted Path budget may not discard its inline editor on a rerender.
+  const budget=page.locator('#budgetState');
+  const budgetCopy=budget.locator('[data-path-budget-copy="budgetAvailable"]');
+  await budgetCopy.waitFor({state:'visible',timeout:15000});
+  assert.equal(await budgetCopy.innerText(),'Available');
+  assert.equal(await budget.locator('.studio-owner-interface-pencil').count(),0);
+  const budgetNumbers=await budget.locator('[data-path-budget-row] strong').allTextContents();
+  const professionBefore=await budget.locator('#activeJob').innerText();
+  await budgetCopy.dblclick();
+  const budgetEditor=budgetCopy.locator('[data-owner-text-field]');
+  await budgetEditor.waitFor({state:'visible'});
+  await budgetEditor.fill('Free allocation QA');
+  await page.locator('#level').evaluate(node=>
+   node.dispatchEvent(new Event('input',{bubbles:true})));
+  assert.equal(await budgetEditor.count(),1,'Stat re-render lost open budget edit');
+  assert.deepEqual(await budget.locator('[data-path-budget-row] strong').allTextContents(),
+   budgetNumbers);
+  await budgetEditor.press('Tab');
+  await budgetEditor.waitFor({state:'detached',timeout:15000});
+  await savedOverride('guideedit.book.path.budget-available',{en:'Free allocation QA'});
+  assert.equal(await budgetCopy.innerText(),'Free allocation QA');
+  assert.equal(await budget.locator('#activeJob').innerText(),professionBefore);
+  await page.locator('#locale [data-locale="ru"]').click();
+  assert.equal(await budgetCopy.innerText(),'Свободно');
+  await budgetCopy.dblclick();
+  const cancelBudget=budgetCopy.locator('[data-owner-text-field]');
+  await cancelBudget.waitFor({state:'visible'});
+  await cancelBudget.fill('Не сохранять');
+  await cancelBudget.press('Escape');
+  assert.equal(await budgetCopy.innerText(),'Свободно');
+  assert.deepEqual(JSON.parse(values['guideedit.book.path.budget-available']),
+   {en:'Free allocation QA'});
+  await budgetCopy.dblclick();
+  const saveBudget=budgetCopy.locator('[data-owner-text-field]');
+  await saveBudget.waitFor({state:'visible'});
+  await saveBudget.fill('Свободные очки QA');
+  await saveBudget.press('Tab');
+  await saveBudget.waitFor({state:'detached',timeout:15000});
+  await savedOverride('guideedit.book.path.budget-available',
+   {en:'Free allocation QA',ru:'Свободные очки QA'});
+  await page.locator('#locale [data-locale="en"]').click();
+  assert.equal(await budgetCopy.innerText(),'Free allocation QA');
+  assert.deepEqual(await budget.locator('[data-path-budget-row] strong').allTextContents(),
+   budgetNumbers);
+  assert.equal(await budget.locator('#activeJob').innerText(),professionBefore);
+  console.log('Chromium #390 Path budget RU/EN CAS, Escape, numeric integrity passed');
   assert.equal(writes.filter(x=>x.key==='guideedit.book.path.racial-branch').length,2);
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('ps-build-studio.v1')));
   assert.ok(Object.values(saved.points||{}).every(value=>Number(value)===0),

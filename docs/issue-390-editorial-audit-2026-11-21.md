@@ -400,3 +400,10 @@ pencil controls. Full Node+Chromium required on the exact new PR SHA.
 - [x] Owner-only ARIA copy panel sits **outside** the frequently replaced stat list to preserve active editor drafts. Source-only keys remain separate from gamer-entered stat investments; established original number controls and hold interaction stay intact.
 - [x] Extended existing Node manifest/source-contract, absolute-stat fixture and real Chromium racial-owner scenario for direct RU save, source totals, original HP/MP, increment ARIA and EN isolation. No new test suite added.
 - [ ] Full Node+Chromium CI acceptance on exact final SHA, physical isolated remote D1 import/readback/rollback, real hardware touch QA and separately authorized release remain pending. PR #809 stays OPEN DRAFT; issue #390 OPEN.
+
+## 23.11.2026 — Hero Path visible skill budget (#390)
+
+- [x] Five original source-authorial RU/EN states (loading, available, spent, total, over-budget preservation) are now `guideedit.book.path.budget-*` CAS copy identities; staged ten **offline-only** defaults without any character point values.
+- [x] The mounted budget rows preserve an open direct dblclick/F2/blur editor during real level and point recalculations. Live totals and the selected canonical class stay in separate DOM elements; no caption pencils or guest editors.
+- [x] Added source/staging Node assertions and expanded real Chromium owner Path regression for RU/EN CAS, Escape, stable numbers and inline draft preservation.
+- [ ] Required full Node + Chromium CI on final HEAD pending; isolated remote Cloudflare staging, real hardware touch and separately authorized release not yet accepted. Keep PR #809 Draft and issue #390 open.

@@ -138,3 +138,33 @@ test('issue 390: Path baseline/limit captions are editable separately from value
  assert.match(src,/bindPathCopy\(api,baseline,'innateBaselineAria'/);
  assert.match(src,/'aria-hidden':api\.canEdit\?null:'true'/);
 });
+
+test('#390: Path budget source captions are CAS-editable without remounting numeric data',async()=>{
+ const app=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
+ const registry=app.match(/const pathBudgetCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ assert.ok(registry);
+ const rows=Function('return '+registry[1])();
+ assert.deepEqual(rows.map(row=>row[0]),[
+  'budgetLoading','budgetAvailable','budgetSpent','budgetTotal','budgetExcess'
+ ]);
+ const {buildEditorialDefaultsManifest}=await import('../scripts/plan-editorial-d1-defaults.mjs');
+ const manifest=buildEditorialDefaultsManifest();
+ assert.equal(manifest.stats.cohorts['hero-path-budget'],10);
+ for(const [key,ru,en] of rows){
+  const recordKey='guideedit.book.path.'+
+   key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  const records=manifest.records.filter(row=>row.recordKey===recordKey);
+  assert.deepEqual(records.map(row=>row.field).sort(),['en','ru']);
+  assert.equal(records.find(row=>row.field==='ru').value,ru);
+  assert.equal(records.find(row=>row.field==='en').value,en);
+  assert.equal(ru,ru.trim());assert.equal(en,en.trim());
+  assert.doesNotMatch(ru,/[0-9]/);
+ }
+ const source=app.split('function refreshBudgetLabel(){')[1]
+  .split('// Reusing a stable source snapshot')[0];
+ assert.match(source,/ownerCopyLabel\(caption,'path',key,ru,en\)/);
+ assert.match(source,/caption\.querySelector\('\.wiki-inline-input'\)/);
+ assert.match(source,/row\.querySelector\('strong'\)\.textContent=String\(value\)/);
+ assert.match(source,/if\(!stats\)/);
+ assert.doesNotMatch(source,/root\.replaceChildren\(/);
+});
