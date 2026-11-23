@@ -11047,6 +11047,26 @@ function showOverrideManager(){
   ['beforeHeading','Было','Before'],
   ['afterHeading','Стало','After']
  ]);
+ const ownerHistoryControlCopyRows=Object.freeze([
+  ['searchPlaceholder','Найти предмет, NPC или изменённое поле…','Find an item, NPC or edited field…'],
+  ['searchAria','Поиск среди ручных изменений','Search manual edits'],
+  ['sectionAria','Раздел ручных правок','Manual edit section'],
+  ['session','За этот сеанс','This session'],
+  ['clear','Очистить','Clear'],
+  ['clearAria','Очистить поиск по правкам','Clear edits search'],
+  ['allSections','Все разделы','All sections']
+ ]);
+ const historyControlByKey=new Map(ownerHistoryControlCopyRows.map(row=>[row[0],row]));
+ const historyControl=key=>{
+  const row=historyControlByKey.get(key);
+  if(!row)throw Error('Unknown authorial history control');
+  return ownerCopy('owner-history',key,row[1],row[2]);
+ };
+ const bindHistoryControl=(node,key,attribute)=>{
+  const row=historyControlByKey.get(key);
+  if(!row)throw Error('Unknown history control binding');
+  return bindOwnerInterfaceText(node,'owner-history',key,row[1],row[2],attribute);
+ };
  const ownerHistoryTextByKey=new Map(ownerHistoryTextRows.map(row=>[row[0],row]));
  const historyCaption=(tag,className,key)=>{
   const source=ownerHistoryTextByKey.get(key);
@@ -11060,14 +11080,18 @@ function showOverrideManager(){
  body.append(authoredHistory('intro',
   'Ручные изменения, сохранённые в Cloudflare D1. Для каждой записи показаны раздел, поле, исходное значение игрового каталога и текущая правка. Неизвестные исходные значения отмечены отдельно.',
   'Manual changes saved in Cloudflare D1. Every entry shows its section, field, original game-catalog value, and your edit. Unknown original values are marked.'));
- const search=ownerPlainTextField({placeholder:tr('Найти предмет, NPC или изменённое поле…','Find an item, NPC or edited field…'),
-  class:'owner-manager-search wiki-owner-search','aria-label':tr('Поиск среди ручных изменений','Search manual edits')});
+ const search=ownerPlainTextField({placeholder:historyControl('searchPlaceholder'),
+  class:'owner-manager-search wiki-owner-search','aria-label':historyControl('searchAria')});
+ bindHistoryControl(search,'searchPlaceholder','placeholder');
+ bindHistoryControl(search,'searchAria','aria-label');
  const sectionFilter=h('select',{class:'owner-manager-section',
-  'aria-label':tr('Раздел ручных правок','Manual edit section')});
+  'aria-label':historyControl('sectionAria')});
+ bindHistoryControl(sectionFilter,'sectionAria','aria-label');
  const sessionOnly=h('input',{type:'checkbox'});
- const sessionLabel=h('label',{class:'owner-manager-session'},[
-  sessionOnly,h('span',{text:tr('За этот сеанс','This session')})
- ]);
+ const sessionCaption=h('span',{class:'owner-history-session-copy',text:historyControl('session')});
+ const sessionLabel=h('label',{class:'owner-manager-session'},[sessionOnly,sessionCaption]);
+ ownerCopyLabel(sessionCaption,'owner-history','session','За этот сеанс','This session');
+ ownerCaptionActionGuard(sessionLabel,sessionCaption);
  const pendingNote=h('p',{class:'owner-manager-pending-note',role:'status',hidden:true});
  const count=h('p',{class:'owner-manager-summary',role:'status'});
  const shownValue=h('span',{class:'owner-history-live-count',text:'0'});
@@ -11083,10 +11107,14 @@ function showOverrideManager(){
  );
  const list=h('div',{class:'owner-manager-list'});
  const clearSearch=h('button',{type:'button',class:'button-action owner-manager-search-clear',
-  text:tr('Очистить','Clear'),disabled:true,
-  'aria-label':tr('Очистить поиск по правкам','Clear edits search'),
+  disabled:true,'aria-label':historyControl('clearAria'),
   onclick:()=>{search.value='';globalThis.PandoraNonCredentialGuard?.sync(search);
     draw();search.focus({preventScroll:true})}});
+ const clearCaption=h('span',{class:'owner-history-clear-copy',text:historyControl('clear')});
+ clearSearch.append(clearCaption);
+ ownerCopyLabel(clearCaption,'owner-history','clear','Очистить','Clear');
+ ownerCaptionActionGuard(clearSearch,clearCaption);
+ bindHistoryControl(clearSearch,'clearAria','aria-label');
  window.PandoraGuideTooltip?.attach(clearSearch,
   tr('Очищает только поиск. Сохранённые правки D1 не меняются.',
    'Clear the search only. Saved D1 edits stay unchanged.'),{hoverDelay:350});
@@ -11101,8 +11129,9 @@ function showOverrideManager(){
   const sections=[...new Set(allEntries.map(record=>record.section))]
    .sort((a,b)=>a.localeCompare(b,lang));
   const previousSection=sectionFilter.value;
-  sectionFilter.replaceChildren(h('option',{value:'',
-   text:tr('Все разделы','All sections')}));
+  const allOption=h('option',{value:'',text:historyControl('allSections')});
+  bindHistoryControl(allOption,'allSections','text');
+  sectionFilter.replaceChildren(allOption);
   for(const section of sections)sectionFilter.append(h('option',{value:section,text:section}));
   sectionFilter.value=sections.includes(previousSection)?previousSection:'';
   const recentKeys=new Set(ownerEdits.map(edit=>edit.key));
@@ -11231,6 +11260,11 @@ function showOverrideManager(){
   h('div',{class:'owner-manager-search-row'},[search,clearSearch]),
   h('div',{class:'owner-manager-filters'},[sectionFilter,sessionLabel]),
   pendingNote,count,list);
+ // Search placeholder, accessible names and native options are not direct
+ // text targets. Their captions live in this single collapsed owner editor.
+ const controlEditor=ownerInterfaceEditor('owner-history',ownerHistoryControlCopyRows,
+  'Подписи истории правок','History control captions');
+ if(controlEditor)body.append(controlEditor);
  draw();
  modal(tr('Все ручные правки','All manual edits'),body);
  if(!wikiBaseData)void loadWiki().then(()=>{if(body.isConnected)draw()})
