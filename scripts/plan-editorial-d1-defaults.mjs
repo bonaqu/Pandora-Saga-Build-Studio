@@ -1265,6 +1265,7 @@ export function buildEditorialDefaultsManifest(){
  const expectedReview=['changedParametersLead','decisionHeading','formulaTitle',
   'heroMoreChangesLead','heroNoChange','heroSelectHelp','impactHeading',
   'moreImpactsLead','moreImpactsSuffix','linkedReferenceContext',
+  'linkedReferenceOpen','hintLinkedReference',
   'unpublishedReference','emptyReviewFilter'];
  if(!Array.isArray(reviewRows)||reviewRows.length!==expectedReview.length||
   reviewRows.map(r=>r?.[0]).sort().join('|')!==expectedReview.sort().join('|'))

@@ -227,6 +227,34 @@
   max-height:8em;overflow:auto}
 .os-sync-reference-open{color:#f4cc85;text-decoration:underline;text-underline-offset:3px}
 .os-sync-reference-open:hover{color:#ffeaad}
+/* Owner's visible link caption is editable without navigating on the first
+   double-click. The adjacent real anchor alone performs navigation. */
+.os-sync-reference-open-editor{display:inline-flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+.os-sync-reference-open-copy{color:#f4cc85;cursor:text;text-decoration:underline dotted;
+ text-underline-offset:3px}
+.os-sync-reference-open-copy.origin-copy-editable::after{content:none}
+.os-sync-reference-open-icon{color:#f4cc85;font-weight:700;text-decoration:underline;
+ text-underline-offset:3px}
+.os-sync-reference-open-icon:hover,.os-sync-reference-open-icon:focus-visible{color:#ffeaad}
+/* Only the genuine hover explanation has a pencil. Hide it until the linked
+   item is hovered/focused; always expose it to keyboard/touch users. */
+.os-sync-reference-hint-pencil{display:none;vertical-align:middle;margin:0 3px;
+ width:20px;min-width:20px;height:20px;padding:0;
+ border:1px solid #776044;border-radius:4px;background:#2a2018;
+ color:#d6bd98;font-size:11px;cursor:pointer}
+.os-sync-reference:hover>.os-sync-reference-hint-pencil,
+.os-sync-reference:focus-within>.os-sync-reference-hint-pencil{display:inline-flex;
+ justify-content:center;align-items:center}
+.os-sync-reference-hint-pencil:hover,.os-sync-reference-hint-pencil:focus-visible{
+ background:#573920;border-color:#efc181;color:#ffe5b3}
+.os-sync-reference-hint-host{display:inline-flex;max-width:100%;min-width:145px}
+.os-sync-reference-hint-host.origin-copy-editable::after{content:none}
+.os-sync-reference-hint-host .wiki-inline-input{max-width:100%;min-width:145px}
+.os-sync-reference-hint-pencil[hidden],.os-sync-reference-hint-host[hidden]{display:none!important}
+@media(hover:none){
+ .os-sync-reference>.os-sync-reference-hint-pencil{display:inline-flex;
+  justify-content:center;align-items:center}
+}
 @media(max-width:670px){
   .os-sync-human-field{grid-template-columns:minmax(0,1fr) 16px minmax(0,1fr)}
   .os-sync-human-field>strong{grid-column:1/-1}

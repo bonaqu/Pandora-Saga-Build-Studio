@@ -64,3 +64,39 @@ test('catalog copy Undo refreshes only authored text and cannot rewrite D1 catal
  assert.match(view,/if\(!confirm\(tr\(\s*'Создать отдельный GitHub PR/);
  assert.match(view,/if\(!confirm\(tr\(\s*'Проверить конфликты правок/);
 });
+
+
+test('#390 linked-item hover help and opening caption have independent owner D1 editors',()=>{
+ const source=view.match(/const catalogReviewDetailCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ assert.ok(source,'Reviewed RU/EN source registry is present');
+ const rows=runInNewContext('('+source[1]+')',{});
+ const found=rows.filter(([key])=>['linkedReferenceOpen','hintLinkedReference'].includes(key));
+ assert.equal(found.length,2);
+ for(const [key,ru,en] of found){
+  const slug=key.replace(/[A-Z]/g,ch=>'-'+ch.toLowerCase());
+  assert.equal(guideRoot.PandoraHonorGuide.validOverride('book.catalog-sync.'+slug,
+   JSON.stringify({ru,en})),true);
+ }
+ // Player click remains an ordinary encoded in-app anchor; owner caption is
+ // a sibling, not inside an anchor that would open a new tab on first click.
+ assert.match(view,/const itemHref='#wiki\/item\/'\+encodeURIComponent\(segment.id\)/);
+ assert.match(view,/if\(canEdit&&typeof editLabel==='function'\)\{\s*const opener=h\('span',\{class:'os-sync-reference-open-editor'\}\)/);
+ assert.match(view,/reviewCaption\('span',\{class:'os-sync-reference-open-copy'\},'linkedReferenceOpen'\)/);
+ assert.match(view,/h\('a',\{href:itemHref,target:'_blank',rel:'noopener noreferrer',/);
+ assert.match(view,/text:copy\(openRow\[0\],openRow\[1\],openRow\[2\]\)\+' ↗'/);
+ assert.match(view,/preview\.append\(opener\)/);
+ // The only owner pencil is for the genuine, separately authored tooltip.
+ assert.match(view,/hint\(button,copy\(tooltipKey,tooltipRu,tooltipEn\)\)/);
+ assert.match(view,/button\.dataset\.guideOwnerKey=tooltipKey/);
+ assert.match(view,/editLabel\(host,tooltipKey,tooltipRu,tooltipEn,\{/);
+ assert.match(view,/onCommitted:next=>\{button\.dataset\.guideHint=next\}/);
+ assert.match(view,/reference\.append\(pencil,host\)/);
+ assert.match(view,/reference\.append\(button\);/);
+ assert.ok(view.indexOf('reference.append(button);')<
+  view.indexOf('reference.append(pencil,host);'),
+  'Tab order must reach source button before revealing its tooltip pencil');
+ assert.match(css,/\.os-sync-reference:hover>\.os-sync-reference-hint-pencil/);
+ assert.match(css,/@media\(hover:none\)/);
+ assert.match(css,/\.os-sync-reference-hint-pencil\[hidden\]/);
+ assert.doesNotMatch(view,/class:'os-sync-reference-caption-pencil'/);
+});

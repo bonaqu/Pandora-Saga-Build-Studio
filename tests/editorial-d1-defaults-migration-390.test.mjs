@@ -18,6 +18,32 @@ const read=name=>readFileSync(new URL('../'+name,import.meta.url),'utf8');
 const manifest=buildEditorialDefaultsManifest();
 
 
+
+test('#390 linked item caption and true hover help are separately versioned, never source IDs',()=>{
+ const source=read('pandora-os-catalog-workbench.js');
+ const registry=source.match(
+  /const catalogReviewDetailCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ assert.ok(registry);
+ const rows=runInNewContext('('+registry[1]+')',{});
+ assert.equal(rows.length,14,'Only reviewed safe editorial labels are migrated');
+ assert.equal(manifest.stats.cohorts['catalog-review-details'],28);
+ for(const key of ['linkedReferenceOpen','hintLinkedReference']){
+  const entry=rows.find(row=>row[0]===key);
+  assert.ok(entry,'Missing independent bilingual linked-item copy: '+key);
+  const id='guideedit.book.catalog-sync.'+
+   key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase());
+  const actual=manifest.records.filter(row=>row.recordKey===id);
+  assert.equal(actual.length,2,id);
+  assert.equal(actual.find(row=>row.field==='ru')?.value,entry[1]);
+  assert.equal(actual.find(row=>row.field==='en')?.value,entry[2]);
+ }
+ for(const unsafe of [
+  'guideedit.book.catalog-sync.linked-item-id',
+  'guideedit.book.catalog-sync.linked-item-href',
+  'guideedit.book.catalog-sync.linked-item-count'
+ ])assert.equal(manifest.records.some(row=>row.recordKey===unsafe),false);
+});
+
 test('#390 owner history seven source captions are staged without any dynamic records',()=>{
  const app=read('pandora-studio-app.js');
  const source=app.match(/const ownerHistoryTextRows=Object\.freeze\((\[[\s\S]*?\])\);/);

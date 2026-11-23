@@ -43,6 +43,11 @@
       'Choose a race and class on the main screen to compare your own hero.'],
     ['linkedReferenceContext','Связанный предмет · игровая ссылка в описании',
       'Linked item · in-game description reference'],
+    ['linkedReferenceOpen','Открыть в энциклопедии (новая вкладка)',
+      'Open encyclopedia (new tab)'],
+    ['hintLinkedReference',
+      'Ссылка на связанный игровой предмет. Нажми, чтобы посмотреть его описание и открыть карточку энциклопедии.',
+      'Linked game item. Click to preview its description and open the encyclopedia entry.'],
     ['unpublishedReference','Предмет пока не опубликован в энциклопедии.',
       'This item has not yet been published in the encyclopedia.'],
     ['emptyReviewFilter','По этому фильтру изменений нет. Измени запрос или выбери «Все».',
@@ -1013,8 +1018,34 @@
         const button=h('button',{type:'button',class:'os-sync-item-ref',
           'aria-label':tr('Показать связанный предмет: ','Show linked item: ')+segment.text,
           'aria-expanded':String(wasExpanded),text:segment.text});
-        hint(button,tr('Ссылка на связанный игровой предмет. Нажми, чтобы посмотреть его описание и открыть карточку энциклопедии.',
-         'Linked game item. Click to preview its description and open the encyclopedia entry.'));
+        // The tooltip is independently authored. Its editor pencil is NEVER
+        // a caption pencil, and never enters the source item button's click.
+        const tooltipRow=catalogReviewDetailByKey.get('hintLinkedReference');
+        const [tooltipKey,tooltipRu,tooltipEn]=tooltipRow;
+        hint(button,copy(tooltipKey,tooltipRu,tooltipEn));
+        button.dataset.guideOwnerKey=tooltipKey;
+        // Keyboard focus must encounter the source button before its help
+        // pencil: a focused button reveals the adjacent pencil for next Tab.
+        reference.append(button);
+        if(canEdit&&typeof editLabel==='function'){
+          const pencil=h('button',{type:'button',class:'os-sync-reference-hint-pencil',
+            text:'✎',title:tr('Изменить подсказку','Edit tooltip'),
+            'aria-label':tr('Изменить подсказку связанного предмета',
+              'Edit linked item tooltip')});
+          const host=h('span',{class:'os-sync-reference-hint-host',hidden:true});
+          editLabel(host,tooltipKey,tooltipRu,tooltipEn,{
+            onCommitted:next=>{button.dataset.guideHint=next},
+            onFinished:()=>{pencil.hidden=false;host.hidden=true}
+          });
+          pencil.addEventListener('click',event=>{
+            event.preventDefault();event.stopPropagation();
+            if(!button.isConnected)return;
+            pencil.hidden=true;host.hidden=false;
+            host.textContent=copy(tooltipKey,tooltipRu,tooltipEn);
+            host.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
+          });
+          reference.append(pencil,host);
+        }
         const preview=h('span',{class:'os-sync-reference-preview',hidden:!wasExpanded});
         preview.append(h('strong',{text:segment.text}),
           reviewCaption('small',{},'linkedReferenceContext'));
@@ -1028,12 +1059,28 @@
             text:root.PandoraItemPresentation.descriptionText(
               sourceDesc,names,language).slice(0,280)}));
         if(baseline?.items?.[segment.id]){
-          // A fresh tab preserves the current selection and scroll position.
-          preview.append(h('a',{
-            href:'#wiki/item/'+encodeURIComponent(segment.id),target:'_blank',
-            rel:'noopener noreferrer',class:'os-sync-reference-open',
-            text:tr('Открыть в энциклопедии (новая вкладка) ↗',
-             'Open encyclopedia (new tab) ↗')}));
+          // The player retains a normal clickable label. In owner mode, an
+          // editable label must not navigate on the FIRST click of dblclick:
+          // keep the direct D1/CAS caption beside a separate real link.
+          // Both paths preserve the same trusted, encoded in-app item URL.
+          const itemHref='#wiki/item/'+encodeURIComponent(segment.id);
+          const openRow=catalogReviewDetailByKey.get('linkedReferenceOpen');
+          if(canEdit&&typeof editLabel==='function'){
+            const opener=h('span',{class:'os-sync-reference-open-editor'});
+            opener.append(
+              reviewCaption('span',{class:'os-sync-reference-open-copy'},'linkedReferenceOpen'),
+              h('a',{href:itemHref,target:'_blank',rel:'noopener noreferrer',
+                class:'os-sync-reference-open-icon',
+                'aria-label':tr('Открыть связанный предмет: ','Open linked item: ')+segment.text,
+                text:'↗'})
+            );
+            preview.append(opener);
+          }else{
+            preview.append(h('a',{
+              href:itemHref,target:'_blank',rel:'noopener noreferrer',
+              class:'os-sync-reference-open',
+              text:copy(openRow[0],openRow[1],openRow[2])+' ↗'}));
+          }
         }else preview.append(reviewCaption('small',{},'unpublishedReference'));
         button.onclick=()=>{
           const expanded=preview.hidden;
@@ -1044,7 +1091,7 @@
             else expandedReferences.delete(refKey);
           }
         };
-        reference.append(button,preview);
+        reference.append(preview);
         wrap.append(reference);
       }
       return wrap;
