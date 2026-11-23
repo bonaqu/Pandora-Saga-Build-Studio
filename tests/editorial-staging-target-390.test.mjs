@@ -143,7 +143,7 @@ test('#390 premerge staging CLI is import-inert, SHA-pinned and requires a separ
   '/tmp/only-staging.toml','/tmp/staging-only.sql');
  assert.deepEqual(command.list,['list','--json']);
  assert.ok(command.schema.includes('--remote'));
- assert.ok(command.schema.includes('sqlite_master'));
+ assert.ok(command.schema.some(arg=>arg.includes('sqlite_master')));
  assert.ok(command.executeFile.includes('--yes'));
  assert.ok(command.readFile.includes('--json'));
  assert.ok(command.export('/outside/backup.sql').includes('--skip-confirmation'));
