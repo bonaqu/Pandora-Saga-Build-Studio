@@ -74,6 +74,24 @@ test('history copy save, Undo and reset share D1 CAS and keep the current modal 
  assert.match(app,/ownerCaptionActionGuard\(openButton,openCaption\)/);
  assert.match(app,/ownerCaptionActionGuard\(resetAction,resetCaption\)/);
  assert.match(app,/ownerHistoryRowCopyRows\.filter\(row=>row\[0\]\.startsWith\('pending'\)\)/);
+ assert.match(app,/ownerCaptionActionGuard\(head,countCaption\)/);
+ assert.match(app,/const ownerHistoryAuxCopyRows=Object\.freeze/);
+ assert.match(app,/bindHistoryHelp\(clearSearch,'clearHelp'\)/);
+ assert.match(app,/bindHistoryHelp\(reset,'restoreHelp'\)/);
+ assert.match(app,/bindHistoryHelp\(openAction,'openHelp'\)/);
+ assert.match(app,/ownerHistoryAuxCopyRows\.filter\(row=>row\[0\]!=='dialogTitle'\)/);
+ assert.match(app,/ownerCopyLabel\(title,'owner-history','dialogTitle'/);
+ assert.match(app,/ownerDockPatchAttr\(dialog,'aria-label',value\)/);
+ assert.match(app,/historyAux\('confirmRestore'\)/);
+ assert.match(app,/historyAux\('restoreFailure'\)/);
+ assert.match(app,/historyAux\('catalogUnavailable'\)/);
+ assert.match(app,/section==='owner-history'&&id==='dialogTitle'/);
+ for(const key of ['catalogUnavailable','clearHelp','confirmRestore','dialogTitle',
+   'openHelp','restoreFailure','restoreHelp']){
+  assert.equal(guideRoot.PandoraHonorGuide.validOverride(
+   'book.owner-history.'+key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase()),
+   JSON.stringify({ru:'Текст',en:'Text'})),true,key);
+ }
  assert.match(browser,/guideedit\.book\.owner-history\.intro/);
  assert.match(browser,/beforeCatalogCalls/);
 });
