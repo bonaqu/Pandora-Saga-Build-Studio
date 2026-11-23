@@ -994,7 +994,7 @@ export async function runAdminEntrySmoke(browser,base){
   await dialog.locator('.os-sync-archive-choice>summary').click();
   await dialog.getByRole('button',{name:'Сверить с сохранённой копией'}).click();
   await waitForCatalogResult('archive comparison',
-   () => document.querySelector('.os-sync [role=status]')?.textContent?.includes('Найдено изменений:'));
+   () => document.querySelector('.os-sync-summary')?.innerText?.includes('Найдено изменений:'));
   // #390: stable RU D1 summary words must keep their runtime number sibling
   // when edited. Refilter and comparison status remain separate and safe.
   const summaryLabel=dialog.locator('.os-sync-summary [data-owner-copy-id="summarySelected"]');
@@ -1306,7 +1306,7 @@ export async function runAdminEntrySmoke(browser,base){
   for(let n=0;n<240&&calls.filter(x=>x==='game-source:meta').length<liveMetaBefore+2;n++)
    await page.waitForTimeout(50);
   await waitForCatalogResult('live source comparison',
-   () => document.querySelector('.os-sync [role=status]')?.textContent?.includes('Найдено изменений:'));
+   () => document.querySelector('.os-sync-summary')?.innerText?.includes('Найдено изменений:'));
   assert.equal(calls.filter(x=>x==='game-source:meta').length,2,
     'meta must be fetched twice to detect mixed server revisions');
   assert.equal(calls.filter(x=>x.startsWith('game-source:')).length,18,
