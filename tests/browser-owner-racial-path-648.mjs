@@ -351,6 +351,10 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   assert.equal(await page.locator('#raceGrid .race-slide-arrow.previous')
    .getAttribute('aria-label'),'Previous portrait',
    'RU CAS must not change the EN default');
+  // This smoke visited Origin Stats earlier. Return through the actual
+  // tab before editing Race-only accessibility, never force-click hidden UI.
+  await page.locator('#originTabs [data-origin-tab="race"]').click();
+  await page.locator('#originPanelRace').waitFor({state:'visible'});
   const racePanelEn=page.locator('#ownerOriginRaceAria');
   if(!await racePanelEn.evaluate(node=>node.open))
    await racePanelEn.locator('summary').click();
