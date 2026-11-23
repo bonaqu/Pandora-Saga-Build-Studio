@@ -125,6 +125,12 @@ test('#390: owner history shows RU/EN book captions as distinct readable fields,
   ['Original value unknown','Original value unknown']);
  assert.equal(stored,JSON.stringify({ru:'Отобрано QA:',en:'Selected QA:'}),
   'Read-only inspector cannot mutate the stored bilingual override');
+ const partial=review.inspect(key,JSON.stringify({ru:'Только русский текст'}),{lang:'en'});
+ assert.deepEqual(partial.changes.map(row=>row.field),['Russian text'],
+  'Partial D1 CAS only stores one field; do not invent an EN edit');
+ assert.deepEqual(partial.changes.map(row=>row.after),['Только русский текст']);
+ assert.match(partial.title,/Catalog review · Caption «Только русский текст»/,
+  'A row title may fall back to the only saved language without writing another field');
 });
 
 test('#390: owner history distinguishes real hint copy and verified staged baselines',()=>{
