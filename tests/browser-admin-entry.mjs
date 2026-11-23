@@ -1127,6 +1127,30 @@ export async function runAdminEntrySmoke(browser,base){
    'Archived sources must require an explicit caution acknowledgement');
   await dialog.locator('.os-sync-risk-approval input').check();
   assert.equal(await dialog.locator('.os-sync-review-steps button').filter({hasText:'Применить выбранные изменения'}).isEnabled(),true);
+  // #390: the authorial heading edits directly, but the selected counts
+  // and high-risk approval are separate game/runtime values. A label-only
+  // CAS save must never invoke catalog publication.
+  const reviewHeading=dialog.locator(
+   '.os-sync-decision-preview [data-owner-copy-id="decisionHeading"]');
+  assert.equal(await reviewHeading.count(),1);
+  assert.equal(await dialog.locator('.os-sync-decision-preview .os-sync-review-pencil').count(),0);
+  const selectionBefore=await dialog.locator('.os-sync-decision-summary').innerText();
+  await reviewHeading.dblclick();
+  const reviewEdit=dialog.locator('.os-sync-decision-preview [data-owner-text-field]');
+  await reviewEdit.waitFor({state:'visible',timeout:10000});
+  await reviewEdit.fill('Проверено перед публикацией');
+  await reviewEdit.press('Tab');
+  await reviewEdit.waitFor({state:'detached',timeout:15000});
+  const reviewHeadingKey='guideedit.book.catalog-sync.decision-heading';
+  for(let n=0;n<300&&!townOverrides.has(reviewHeadingKey);n++)
+   await page.waitForTimeout(40);
+  assert.equal(JSON.parse(townOverrides.get(reviewHeadingKey)).ru,
+   'Проверено перед публикацией');
+  assert.equal(await reviewHeading.innerText(),'Проверено перед публикацией');
+  assert.equal(await dialog.locator('.os-sync-decision-summary').innerText(),selectionBefore,
+   'Owner review caption cannot change numeric selected counts');
+  assert.equal(await dialog.locator('.os-sync-review-steps button')
+   .filter({hasText:'Применить выбранные изменения'}).isEnabled(),true);
   // Owner copy actions defer one pointer click to distinguish it from
   // a double-click edit gesture. The browser confirmation is asynchronous:
   // do not inspect an empty variable before the 500 ms action fires.
