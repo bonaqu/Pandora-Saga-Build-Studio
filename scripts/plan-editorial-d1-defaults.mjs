@@ -1277,6 +1277,31 @@ export function buildEditorialDefaultsManifest(){
   append('guideedit.book.catalog-sync.'+slug,'en',en,'catalog-review-details');
  }
 
+ // Existing filter tooltips describe how to review data, independently of
+ // each editable filter name and its calculated count. A tooltip is the only
+ // reason the filter has a separate owner pencil. Closed 10-key RU/EN set.
+ const hintSource=read('pandora-os-catalog-workbench.js').match(
+  /const filterHintRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ if(!hintSource)throw Error('Missing catalog filter hover-copy registry');
+ const filterHints=runInNewContext('('+hintSource[1]+')',{},{
+  filename:'filterHintRows',timeout:5000
+ });
+ const expectedHintIds=['all','added','changed','removed','accepted',
+  'declined','needsReview','links','sameVisible','readable'];
+ if(!Array.isArray(filterHints)||filterHints.length!==expectedHintIds.length||
+  filterHints.map(row=>row?.[0]).sort().join('|')!==expectedHintIds.sort().join('|'))
+  throw Error('Unexpected catalog filter hover-copy keys');
+ for(const row of filterHints){
+  if(!Array.isArray(row)||row.length!==3||row.some(v=>
+   typeof v!=='string'||!v.trim()||v!==v.trim()))
+   throw Error('Invalid bilingual filter hover explanation');
+  const [id,ru,en]=row;
+  const key='hintReviewFilter'+id[0].toUpperCase()+id.slice(1);
+  const slug=key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  append('guideedit.book.catalog-sync.'+slug,'ru',ru,'catalog-review-filter-hover');
+  append('guideedit.book.catalog-sync.'+slug,'en',en,'catalog-review-filter-hover');
+ }
+
  // The 10 live catalog filter captions are source-authored. The associated
  // result counts, selection sets, game-source values and hover explanations
  // have separate identities and NEVER belong to these label rows.
