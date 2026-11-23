@@ -1022,7 +1022,10 @@ export function buildEditorialDefaultsManifest(){
   ['skillUiCopyRows','skill-ui','skill-controls-authorial',
    ['searchPlaceholder','filterAria']],
   ['statsUiCopyRows','stats-ui','hero-stats-authorial',
-   ['remainingPrefix','spentPrefix']]
+   ['remainingPrefix','spentPrefix','chooseRaceClass','levelBudgetPrefix',
+    'totalCaption','bonusSuffix','vitalsLoadingAria','holdStepAria',
+    'decreaseAria','increaseAria','excludeBonusesAria','baseAria',
+    'pointsAria','knownBonusesAria','costAria','maximumAria']]
  ];
  for(const [registry,section,cohort,keys] of coreCopySets){
   const re=new RegExp('const '+registry+
