@@ -250,6 +250,12 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   await copyEdit.fill('Свободные очки QA:');
   await copyEdit.press('Tab');
   await copyEdit.waitFor({state:'detached',timeout:15000});
+  await savedOverride('guideedit.book.stats-ui.remaining-prefix',
+   {ru:'Свободные очки QA:'});
+  assert.equal(await statLabel.textContent(),'Свободные очки QA:');
+  assert.equal(await statInput.inputValue(),originalStatInput);
+  assert.equal((await statSummary.textContent()).replace('Свободные очки QA:',
+   'Свободно:'),originalStatSummary);
   await page.locator('#originTabs [data-origin-tab="race"]').click();
   // Source-backed caps are not authorial copy. Edit the visible caption
   // directly while keeping the cap number and the growth state untouched.
