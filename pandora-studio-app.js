@@ -2574,14 +2574,28 @@ function renderStageAttributes(calculated=undefined){
  const buffReasonCopyKey=reason=>window.PandoraStageAttributes?.buffStatusCopyRows
   ?.find(row=>row[bookEn?2:1]===reason)?.[0]||null;
  const levelReason=n=>bookEn?'Available at level '+n:'Откроется на '+n+' уровне';
- const missingCombatMastery=ability=>{
+ const missingCombatMasteryParts=ability=>{
   const req=ability?.reqs?.find(req=>(branchMasteries[req.branch]??0)<req.amount);
   if(!req)return null;
   const branchName=(bookEn?officialEnglish?.branches?.[req.branch]:
    catalog.meta?.branchLabels?.[req.branch])||
    catalog.meta?.branchLabels?.[req.branch]||req.branch;
-  return bookEn?'Requires '+req.amount+' '+branchName+' mastery':
-   'Требуется мастерство «'+branchName+'»: '+req.amount;
+  return {kind:'mastery',amount:req.amount,branchName};
+ };
+ const missingCombatMastery=ability=>{
+  const req=missingCombatMasteryParts(ability);
+  return req?(bookEn?'Requires '+req.amount+' '+req.branchName+' mastery':
+   'Требуется мастерство «'+req.branchName+'»: '+req.amount):null;
+ };
+ // The original game requirement is the classifier. D1 receives only
+ // bilingual words, never class names, branch names or numeric thresholds.
+ const buffRequirementParts=(ability,reason)=>{
+  if(!ability||!reason||!ability.classes?.[cls])return null;
+  if(state.level<Number(ability.charLevel||0))
+   return reason===levelReason(ability.charLevel)?
+    {kind:'level',amount:ability.charLevel}:null;
+  const parts=missingCombatMasteryParts(ability);
+  return parts&&reason===missingCombatMastery(ability)?parts:null;
  };
  const unavailableReason=(ability,hasMastery=true)=>{
   if(!ability)return bookEn?'Skill missing from catalog':'Умение отсутствует в каталоге';
@@ -2622,6 +2636,7 @@ function renderStageAttributes(calculated=undefined){
    descEn:officialEnglish?.skills?.[String(id)]?.d||ability.desc,
    level:ability.charLevel,summary,reason,
    reasonCopyKey:buffReasonCopyKey(reason),
+   reasonParts:buffRequirementParts(ability,reason),
    icon:skillIcon(ability.branch,0,ability)
   }:null;
  }

@@ -359,3 +359,43 @@ test('#390: Book buff statuses have five direct RU/EN captions, not editable gam
  assert.match(app,/last\.key\.startsWith\('guideedit\.book\.buffs\.reason\.'\)/);
  assert.match(app,/record\.key\.startsWith\('guideedit\.book\.buffs\.reason\.'\)/);
 });
+
+test('#390 Book dynamic level/mastery blockers edit only words, not source thresholds',async()=>{
+ const {buildEditorialDefaultsManifest}=await import('../scripts/plan-editorial-d1-defaults.mjs');
+ const manifest=buildEditorialDefaultsManifest(),rows=book.buffRequirementCopyRows;
+ assert.deepEqual(rows.map(row=>row[0]),[
+  'levelLead','levelUnit','masteryLead','masteryTerm'
+ ]);
+ assert.deepEqual(rows.map(row=>[row[1],row[2]]),[
+  ['Откроется на','Available'],
+  ['уровне','at level'],
+  ['Требуется','Requires'],
+  ['мастерство','mastery']
+ ]);
+ assert.equal(manifest.stats.cohorts['hero-book-buff-requirements'],8);
+ for(const [key,ru,en] of rows){
+  const recordKey='guideedit.book.buffs.reason.'+key;
+  const actual=manifest.records.filter(row=>row.recordKey===recordKey);
+  assert.deepEqual(actual.map(row=>row.field).sort(),['en','ru']);
+  assert.equal(actual.find(row=>row.field==='ru')?.value,ru);
+  assert.equal(actual.find(row=>row.field==='en')?.value,en);
+  assert.doesNotMatch(ru+en,/[0-9]/);
+ }
+ const app=file('pandora-studio-app.js'),source=file('pandora-studio-hero-book.js');
+ assert.match(app,/return \{kind:'mastery',amount:req\.amount,branchName\}/);
+ assert.match(app,/reason===levelReason\(ability\.charLevel\)/);
+ assert.match(app,/reason===missingCombatMastery\(ability\)/);
+ assert.match(app,/reasonParts:buffRequirementParts\(ability,reason\)/);
+ assert.equal((app.match(/reasonParts:buffRequirementParts/g)||[]).length,1,
+  'Party support buffs must not be subjected to recipient class restrictions');
+ assert.match(source,/if\(english\)status\.append\(term\('levelLead'\),' ',term\('levelUnit'\),' ',value\)/);
+ assert.match(source,/else status\.append\(term\('levelLead'\),' ',value,' ',term\('levelUnit'\)\)/);
+ assert.match(source,/if\(english\)status\.append\(term\('masteryLead'\),' ',value,' ',branch,' '/);
+ assert.match(source,/else status\.append\(term\('masteryLead'\),' ',term\('masteryTerm'\),' «'/);
+ assert.match(source,/branch\.textContent=parts\.branchName/);
+ assert.match(source,/value\.textContent=String\(parts\.amount\)/);
+ assert.match(source,/guideLabel\(node,'buffs\.reason\.'\+id,ru,en,options\)/);
+ assert.match(source,/!Number\.isFinite\(Number\(parts\.amount\)\)/);
+ assert.match(source,/!renderBuffRequirement\(info,skill\.reasonParts,options\)/);
+ assert.equal(manifest.records.some(row=>/QA source branch|QA source level/.test(row.value)),false);
+});

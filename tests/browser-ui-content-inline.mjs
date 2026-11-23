@@ -1062,6 +1062,75 @@ export async function runUIContentInlineSmoke(browser,base){
     field:i===0?'ru':'en',label:i===0?'Прибавка к дальности':'Range bonus'}]);
   }
 
+  // #390: true Book renderer, synthetic only. Current numeric thresholds
+  // and original source branch must survive separate RU/EN CAS text overrides.
+  const requirementFixtures=await page.evaluate(()=>{
+   const original=document.documentElement.lang,out=[];
+   try{
+    for(const language of ['ru','en']){
+     document.documentElement.lang=language;
+     const host=document.createElement('div');document.body.append(host);
+     const edits=[];
+     const args={page:'buffs',canEdit:true,modifiers:{},
+      availability:{combatLunge:false,combatRage:false},
+      gameTerms:{skills:{},englishSkills:{}},
+      combatSkillCards:{
+       combatLunge:{id:910900100,name:'QA level skill',nameEn:'QA level skill',
+        reasonParts:{kind:'level',amount:46}},
+       combatRage:{id:910900101,name:'QA mastery skill',nameEn:'QA mastery skill',
+        reasonParts:{kind:'mastery',amount:25,branchName:'QA branch'}}
+      },
+      onTextEdit:(_node,key,field,initial)=>edits.push({key,field,initial})
+     };
+     try{
+      const book=window.PandoraStageAttributes;
+      book.render(host,args);
+      const row=key=>host.querySelector(
+       '.stage-book-check:has(input[data-book-setting="'+key+'"])');
+      const levelRow=row('combatLunge'),masteryRow=row('combatRage');
+      const level=levelRow?.querySelector('.stage-buff-requirement');
+      const mastery=masteryRow?.querySelector('.stage-buff-requirement');
+      const sourceValue=level?.querySelector('.stage-buff-reason-value')?.textContent;
+      const branch=mastery?.querySelector('.stage-buff-reason-source-branch')?.textContent;
+      const name=levelRow?.querySelector('.stage-combat-buff-copy')?.firstChild?.textContent;
+      level?.querySelector('[data-guide-key="buffs.reason.levelLead"]')
+       ?.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true,detail:2}));
+      mastery?.querySelector('[data-guide-key="buffs.reason.masteryTerm"]')
+       ?.dispatchEvent(new KeyboardEvent('keydown',{key:'F2',bubbles:true,cancelable:true}));
+      book.render(host,{...args,copy:{
+       'guideedit.book.buffs.reason.levelLead':JSON.stringify({
+        ru:'Разрешено на',en:'Unlocked'})
+      }});
+      out.push({language,level:level?.textContent,mastery:mastery?.textContent,
+       sourceValue,branch,name,kind:levelRow?.tagName,
+       disabled:levelRow?.querySelector('input')?.disabled,
+       edited:row('combatLunge')?.querySelector('.stage-buff-requirement')?.textContent,
+       edits});
+     }finally{host.remove()}
+    }
+   }finally{document.documentElement.lang=original}
+   return out;
+  });
+  assert.deepEqual(requirementFixtures.map(x=>[
+   x.language,x.level,x.mastery,x.sourceValue,x.branch,x.edited]),[
+   ['ru','Откроется на 46 уровне','Требуется мастерство «QA branch»: 25',
+    '46','QA branch','Разрешено на 46 уровне'],
+   ['en','Available at level 46','Requires 25 QA branch mastery',
+    '46','QA branch','Unlocked at level 46']
+  ]);
+  for(const fixture of requirementFixtures){
+   assert.equal(fixture.name,'QA level skill');
+   assert.equal(fixture.kind,'DIV');
+   assert.equal(fixture.disabled,true);
+   assert.deepEqual(fixture.edits,[
+    {key:'buffs.reason.levelLead',field:fixture.language,
+     initial:fixture.language==='ru'?'Откроется на':'Available'},
+    {key:'buffs.reason.masteryTerm',field:fixture.language,
+     initial:fixture.language==='ru'?'мастерство':'mastery'}
+   ]);
+  }
+  console.log('Chromium #390 Book source-safe dynamic level/mastery RU/EN direct editing passed');
+
   await page.locator('#stageAttributes [data-book-page="summary"]').click();
   await page.locator('#stageBookPanel[data-book-visible="summary"]')
    .waitFor({state:'visible',timeout:15000});

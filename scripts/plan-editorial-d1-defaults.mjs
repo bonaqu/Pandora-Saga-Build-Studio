@@ -125,6 +125,23 @@ export function buildEditorialDefaultsManifest(){
   append('guideedit.book.buffs.reason.'+key,'en',en,'hero-book-buff-status');
  }
 
+ // The level and mastery blockers preserve the original RU/EN wording
+ // order while splitting the game-owned number and branch into live DOM nodes.
+ // The four bilingual authorial fragments below never store those game facts.
+ const buffRequirements=book.buffRequirementCopyRows;
+ const requiredParts=['levelLead','levelUnit','masteryLead','masteryTerm'];
+ if(!Array.isArray(buffRequirements)||buffRequirements.length!==requiredParts.length||
+  buffRequirements.map(row=>row?.[0]).sort().join('|')!==requiredParts.sort().join('|'))
+  throw Error('Hero Book dynamic buff requirement inventory drift');
+ for(const [key,ru,en] of buffRequirements){
+  if(!/^[a-z][a-zA-Z]+$/.test(key)||typeof ru!=='string'||
+   typeof en!=='string'||ru!==ru.trim()||en!==en.trim()||
+   !ru.trim()||!en.trim()||/[0-9]/.test(ru+en))
+   throw Error('Invalid Book requirement authorial fragment: '+key);
+  append('guideedit.book.buffs.reason.'+key,'ru',ru,'hero-book-buff-requirements');
+  append('guideedit.book.buffs.reason.'+key,'en',en,'hero-book-buff-requirements');
+ }
+
  // The original Book's four navigation strings already exist in the
  // shared UI locale dictionary. Seed only three new authorial fragments
  // for the dynamic chapter region; never snapshot a numeric page position.

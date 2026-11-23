@@ -462,6 +462,44 @@ const bookRegionCopyRows=Object.freeze([
 // game item/skill names. The entire composite is never a CAS override.
 // Pure authorial Book buff availability states. Runtime class, mastery,
 // equipment and numeric conditions stay in the OS calculator/app, not D1.
+// Author-only fragments of level and mastery blockers. The live requirement
+// number and original game branch name remain separate, noneditorial nodes.
+const buffRequirementCopyRows=Object.freeze([
+ ['levelLead','Откроется на','Available'],
+ ['levelUnit','уровне','at level'],
+ ['masteryLead','Требуется','Requires'],
+ ['masteryTerm','мастерство','mastery']
+]);
+function renderBuffRequirement(info,parts,options){
+ if(!parts||!['level','mastery'].includes(parts.kind)||
+  !Number.isFinite(Number(parts.amount))||
+  (parts.kind==='mastery'&&
+   (typeof parts.branchName!=='string'||!parts.branchName.trim())))return false;
+ const english=document.documentElement?.lang==='en';
+ const term=id=>{
+  const [,ru,en]=buffRequirementCopyRows.find(row=>row[0]===id);
+  const node=make('span',{class:'stage-buff-reason-copy',text:english?en:ru});
+  node.tabIndex=options.editable?0:-1;
+  guideLabel(node,'buffs.reason.'+id,ru,en,options);
+  return node;
+ };
+ const value=make('span',{class:'stage-buff-reason-value'});
+ value.textContent=String(parts.amount);
+ const status=make('small',{class:'stage-buff-reason stage-buff-requirement',
+  'data-requirement-kind':parts.kind});
+ if(parts.kind==='level'){
+  if(english)status.append(term('levelLead'),' ',term('levelUnit'),' ',value);
+  else status.append(term('levelLead'),' ',value,' ',term('levelUnit'));
+ }else{
+  const branch=make('span',{class:'stage-buff-reason-source-branch'});
+  branch.textContent=parts.branchName; // Preserve exact catalog identity.
+  if(english)status.append(term('masteryLead'),' ',value,' ',branch,' ',
+   term('masteryTerm'));
+  else status.append(term('masteryLead'),' ',term('masteryTerm'),' «',
+   branch,'»: ',value);
+ }
+ info.append(status);return true;
+}
 const buffStatusCopyRows=Object.freeze([
  ['unavailableClass','Недоступно для этой профессии','Unavailable to this class'],
  ['shieldRequired','Необходимо экипировать щит','Equip a shield'],
@@ -834,8 +872,9 @@ function buffsPage(body,options){
     guideLabel(reason,'buffs.reason.'+key,ru,en,options);
     const small=make('small',{class:'stage-buff-reason'},[reason]);
     info.append(small);
-   }else info.append(make('small',{text:(english?skill.reasonEn:skill.reason)||
-    (english?'Unavailable to this hero':'Недоступно для героя')}));
+   }else if(!renderBuffRequirement(info,skill.reasonParts,options))
+    info.append(make('small',{text:(english?skill.reasonEn:skill.reason)||
+     (english?'Unavailable to this hero':'Недоступно для героя')}));
   }
   if(skill?.summary)
    info.append(make('small',{text:skill.summary}));
@@ -2859,7 +2898,8 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
  refreshBookAccessibility(target,copy,chosen);
 }
 root.PandoraStageAttributes=Object.freeze({render,bookPages,bookText,bookEditorialKey,
- bookEditorialDefaults:bookEnglish,buffStatusCopyRows,bookRegionCopyRows,bookSourceActionCopyRows,
+ bookEditorialDefaults:bookEnglish,buffStatusCopyRows,buffRequirementCopyRows,
+ bookRegionCopyRows,bookSourceActionCopyRows,
  bookAccessibleAliasRows,
  refreshAccessibility:refreshBookAccessibility,resetDisclosureState,
  summaryRows,attackChapterGroups,defenseChapterGroups,
