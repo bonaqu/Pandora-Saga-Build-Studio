@@ -43,6 +43,24 @@
       'Choose a race and class on the main screen to compare your own hero.']
   ]);
   const catalogReviewDetailByKey=new Map(catalogReviewDetailCopyRows.map(row=>[row[0],row]));
+  // Dynamic review summaries have independently authored words AND immutable
+  // runtime counts. This inventory is strictly authorial: no game records,
+  // IDs, numbers, error diagnostics or publication approvals.
+  const catalogReviewStatusCopyRows=Object.freeze([
+    ['affectedSections','Затронутые разделы:','Affected sections:'],
+    ['selectionTotal','Всего выбрано:','Selected:'],
+    ['selectionRemaining','Осталось:','Remaining:'],
+    ['selectionNeedsReview','Требуют проверки:','Need review:'],
+    ['selectionSettings','Настроек игры найдено:','Game settings found:'],
+    ['lineBreaksIncluded','Переносы строк включены','Source line breaks included'],
+    ['foundChanges','Найдено изменений:','Changes found:'],
+    ['summaryTechnical','Служебных:','Technical:'],
+    ['summarySelected','Выбрано:','Selected:'],
+    ['summaryUnselected','Не выбрано:','Not selected:'],
+    ['summaryNeedsReview','Нужна проверка:','Needs review:'],
+    ['noChanges','Различий в игровых данных нет','No differences in game data']
+  ]);
+  const catalogReviewStatusByKey=new Map(catalogReviewStatusCopyRows.map(row=>[row[0],row]));
 
   // Administrator-only review. UI selection is never a D1 write.
   // The Worker validates the auth token and the expected active snapshot.
@@ -78,6 +96,14 @@
       const row=catalogReviewDetailByKey.get(key);
       if(!row)throw Error('Unreviewed catalog caption: '+key);
       const node=h(tag,{...attrs,text:copy(key,row[1],row[2])});
+      if(canEdit&&typeof editLabel==='function')
+        editLabel(node,key,row[1],row[2]);
+      return node;
+    };
+    const statusCaption=key=>{
+      const row=catalogReviewStatusByKey.get(key);
+      if(!row)throw Error('Unreviewed catalog status copy: '+key);
+      const node=h('span',{class:'os-sync-status-copy',text:copy(key,row[1],row[2])});
       if(canEdit&&typeof editLabel==='function')
         editLabel(node,key,row[1],row[2]);
       return node;
@@ -299,6 +325,46 @@
     // The main comparison summary is the sole live status region; avoid
     // shadowing it in the accessibility tree and established review flows.
     const selectionGuidance=h('p',{class:'os-sync-selection-guidance'});
+    // Mount the label nodes ONCE. A redraw of selected counts can update only
+    // numeric siblings; it must never blur, overwrite or unmount an active
+    // direct inline editor. Each prefix has a separate D1/CAS identity.
+    const countPart=(key,separator='')=>{
+      const wrap=h('span',{class:'os-sync-count-piece'});
+      if(separator)wrap.append(h('span',{text:separator}));
+      const value=h('span',{class:'os-sync-runtime-count',text:' 0'});
+      wrap.append(statusCaption(key),value);
+      return {wrap,value};
+    };
+    const setCountPart=(part,count,show=true)=>{
+      part.wrap.hidden=!show;
+      const value=' '+String(count);
+      if(part.value.textContent!==value)part.value.textContent=value;
+    };
+    const overviewCaption=statusCaption('affectedSections');
+    const overviewValues=h('span',{class:'os-sync-runtime-data'});
+    overview.append(overviewCaption,overviewValues);
+    const selectionParts={
+      total:countPart('selectionTotal'),
+      remaining:countPart('selectionRemaining',' · '),
+      needsReview:countPart('selectionNeedsReview',' · '),
+      settings:countPart('selectionSettings',' · ')
+    };
+    const selectionFormatting=h('span',{},[
+      h('span',{text:' · '}),statusCaption('lineBreaksIncluded')
+    ]);
+    selectionGuidance.append(...Object.values(selectionParts).map(row=>row.wrap),
+      selectionFormatting);
+    const summaryParts={
+      found:countPart('foundChanges'),
+      technical:countPart('summaryTechnical',' · '),
+      selected:countPart('summarySelected',' · '),
+      unselected:countPart('summaryUnselected',' · '),
+      needsReview:countPart('summaryNeedsReview',' · ')
+    };
+    const summaryEmpty=statusCaption('noChanges');
+    summary.append(...Object.values(summaryParts).map(row=>row.wrap),summaryEmpty);
+    for(const part of Object.values(summaryParts))part.wrap.hidden=true;
+    summaryEmpty.hidden=true;
     // One concise review of what the selected changes will actually affect.
     const decisionPreview=h('div',{class:'os-sync-decision-preview',hidden:true});
     const decisionHeading=reviewCaption('strong',{},'decisionHeading');
@@ -845,7 +911,7 @@
       // inside a large dashboard of decorative statistics.
       const groups=importer.files.filter(name=>changes.some(row=>row.dataset===name));
       const ordered=[...groups.filter(name=>name!=='meta'),...groups.filter(name=>name==='meta')];
-      overview.textContent=ordered.length?tr('Затронутые разделы: ','Affected sections: ')+
+      overviewValues.textContent=ordered.length?' '+
         ordered.map(name=>(review.labels[name]||name)+' · '+
           changes.filter(row=>row.dataset===name).length).join('   •   '):'';
       overview.hidden=!reviewing||!changes.length;
@@ -860,19 +926,19 @@
       const acceptedChanges=changes.filter(row=>chosen.has(row.id)).length;
       const remainingChanges=changes.length-acceptedChanges;
       const cautionSelected=changes.filter(row=>chosen.has(row.id)&&describe(row).uncertain).length;
-      selectionGuidance.textContent=tr('Всего выбрано: ','Selected: ')+
-        acceptedChanges+' / '+changes.length+
-        (remainingChanges?tr(' · Осталось: ',' · Remaining: ')+remainingChanges:'')+
-        (cautionSelected?tr(' · Требуют проверки: ',' · Need review: ')+cautionSelected:'')+
-        (service?tr(' · Настроек игры найдено: ',' · Game settings found: ')+service:'')+
-        (mode==='server'&&formattingToggle.checked?tr(' · Переносы строк включены',' · Source line breaks included'):'');
-      summary.textContent = changes.length
-        ? tr('Найдено изменений: ','Changes found: ')+changes.length+
-          (service?tr(' · Служебных: ',' · Technical: ')+service:'')+
-          tr(' · Выбрано: ',' · Selected: ')+selected+
-          tr(' · Не выбрано: ',' · Not selected: ')+(changes.length-selected)+
-          (byKind.needsReview?tr(' · Нужна проверка: ',' · Needs review: ')+byKind.needsReview:'')
-        : baseline ? tr('Различий в игровых данных нет','No differences in game data') : '';
+      setCountPart(selectionParts.total,acceptedChanges+' / '+changes.length);
+      setCountPart(selectionParts.remaining,remainingChanges,remainingChanges>0);
+      setCountPart(selectionParts.needsReview,cautionSelected,cautionSelected>0);
+      setCountPart(selectionParts.settings,service,service>0);
+      selectionFormatting.hidden=!(mode==='server'&&formattingToggle.checked);
+      const hasChanges=changes.length>0;
+      setCountPart(summaryParts.found,changes.length,hasChanges);
+      setCountPart(summaryParts.technical,service,hasChanges&&service>0);
+      setCountPart(summaryParts.selected,selected,hasChanges);
+      setCountPart(summaryParts.unselected,changes.length-selected,hasChanges);
+      setCountPart(summaryParts.needsReview,byKind.needsReview,
+        hasChanges&&byKind.needsReview>0);
+      summaryEmpty.hidden=hasChanges||!baseline;
     }
     const checked = change => chosen.has(change.id);
     // Search resolved descriptions and item names without exposing source IDs.
@@ -1302,7 +1368,9 @@
       formattingCount=0;formattingToggle.checked=false;
       verifiedRussian=[];localInstances=null;russianToggle.checked=false;
       russianDetails.open=false;russianList.replaceChildren();
-      results.replaceChildren();summary.textContent='';
+      results.replaceChildren();
+      for(const part of Object.values(summaryParts))part.wrap.hidden=true;
+      summaryEmpty.hidden=true;
       progress.value=0;
       metaStatusDetail.textContent='';
       metaStatusDetail.hidden=true;
