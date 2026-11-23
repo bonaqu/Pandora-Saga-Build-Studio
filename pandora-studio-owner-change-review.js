@@ -2,7 +2,9 @@
 'use strict';
 // Read-only descriptions of owner overrides; never change the stored D1 values.
 const labels={
- name:'Название',nameEn:'Название EN',desc:'Описание',descEn:'Описание EN',
+ name:'Название',nameRu:'Название RU',nameEn:'Название EN',desc:'Описание',descEn:'Описание EN',
+ benefitRu:'Преимущество RU',benefitEn:'Преимущество EN',
+ requirementRu:'Требование RU',requirementEn:'Требование EN',
  ru:'Текст RU',en:'Текст EN',hintRu:'Подсказка RU',hintEn:'Подсказка EN',
  service:'Назначение',serviceEn:'Назначение EN',grid:'Координаты',
  blurb:'Описание',blurbRu:'Описание',
@@ -26,7 +28,9 @@ const labels={
  acquisitions:'Источники получения',spawn:'Места появления',deleted:'Удалено',value:'Значение'
 };
 const labelsEn={
- name:'Name',nameEn:'English name',desc:'Description',descEn:'English description',
+ name:'Name',nameRu:'Russian name',nameEn:'English name',desc:'Description',descEn:'English description',
+ benefitRu:'Russian benefit',benefitEn:'English benefit',
+ requirementRu:'Russian requirement',requirementEn:'English requirement',
  ru:'Russian text',en:'English text',hintRu:'Russian hint',hintEn:'English hint',
  service:'Service',serviceEn:'English service',grid:'Coordinates',
  blurb:'Description',blurbRu:'Russian description',
@@ -49,7 +53,7 @@ const labelsEn={
 const sectionEn={
  'Интерфейс':'Interface','Предмет':'Item','Монстр':'Monster','Локация':'Location',
  'NPC':'NPC','Подземелье':'Dungeon','Навык':'Skill','Душа':'Soul',
- 'Энциклопедия':'Encyclopedia','Добыча монстра':'Monster drops',
+ 'Энциклопедия':'Encyclopedia','Честь':'Honor','Добыча монстра':'Monster drops',
  'Сундук':'Chest','Обмен NPC':'NPC exchange',
  'Источники получения':'Item sources','Появление монстра':'Monster locations',
  'Изображение сайта':'Site artwork','Оформление сайта':'Site appearance',
@@ -57,6 +61,34 @@ const sectionEn={
 };
 const friendly=(key,lang='ru')=>(lang==='en'?labelsEn:labels)[key]||
  key.replaceAll('_',' ');
+// These are verified source keys in wiki.labels, not editable game IDs.
+// Render human section/category names while retaining the exact D1 fields.
+const wikiHistoryField=(field,lang)=>{
+ const match=/^(chapter|honor|skill_filter)_([a-z]+)_(ru|en)$/.exec(field);
+ if(!match)return friendly(field,lang);
+ const english=lang==='en';
+ const groups={
+  chapter:['Глава','Chapter'],honor:['Честь','Honor'],
+  skill_filter:['Фильтр навыков','Skill filter']
+ };
+ const names={
+  item:['Предметы','Items'],utility:['Полезное','Utilities'],
+  monster:['Монстры','Monsters'],map:['Локации','Locations'],
+  honor:['Честь','Honor'],npc:['NPC','NPC'],chest:['Сундуки','Chests'],
+  instance:['Подземелья','Dungeons'],skill:['Умения','Skills'],
+  soul:['Души','Souls'],overview:['Обзор','Overview'],
+  gain:['Получение','Earning'],victories:['Победы','Victories'],
+  ranks:['Ранги','Ranks'],monthly:['Месячный рейтинг','Monthly ranking'],
+  player:['Классовые','Class skills'],racial:['Расовые','Racial'],
+  guild:['Гильдейские','Guild'],special:['Особые','Special'],
+  variants:['Варианты','Variants'],other:['Прочие','Other'],
+  unknown:['Неизвестные','Unknown'],all:['Все','All']
+ };
+ const group=groups[match[1]],subject=names[match[2]];
+ return group&&subject?(english?group[1]:group[0])+' · '+
+  (english?subject[1]:subject[0])+' · '+match[3].toUpperCase():
+  friendly(field,lang);
+};
 const toObject=value=>{try{return JSON.parse(value)}catch{return null}};
 const preview=(value,max=650)=>{
  const str=typeof value==='string'?value:JSON.stringify(value);
@@ -239,14 +271,17 @@ function inspect(key,stored,{base=null,items=null,classes=null,lang='ru',english
    'book-aria':['Книга героя','Hero book']
   };
   const sectionName=families[parts[2]]||['Интерфейс','Interface'];
-  const isHint=Object.keys(authored||{}).some(field=>/^hint(?:Ru|En)$/.test(field))||
-   parts.at(-1)?.startsWith('hint-');
+  const hasHint=Object.keys(authored||{}).some(field=>/^hint(?:Ru|En)$/.test(field));
+  const hasCaption=Object.keys(authored||{}).some(field=>/^(?:ru|en)$/.test(field));
+  const isHint=parts.at(-1)?.startsWith('hint-')||(hasHint&&!hasCaption);
   const preferred=english?['en','hintEn','ru','hintRu']:['ru','hintRu','en','hintEn'];
   const headline=preferred.map(field=>authored?.[field])
    .find(value=>typeof value==='string'&&value.trim());
   // Show a clipped *saved* caption as the row title. Never pretend an
   // edited caption is the original version or expose a fabricated baseline.
-  const kind=isHint?tr('Подсказка','Tooltip'):tr('Надпись','Caption');
+  const kind=isHint?tr('Подсказка','Tooltip'):
+   hasHint&&hasCaption?tr('Надпись и подсказка','Caption and tooltip'):
+   tr('Надпись','Caption');
   name=tr(...sectionName)+' · '+kind+
    (headline?' «'+preview(headline.replace(/\s+/g,' ').trim(),75)+'»':'');
   // Only a trusted, explicitly loaded and versioned staging default may
@@ -262,6 +297,43 @@ function inspect(key,stored,{base=null,items=null,classes=null,lang='ru',english
      const baseline=staged.value(recordKey,field);
      if(typeof baseline==='string'&&baseline.trim())source[field]=baseline;
     }catch{/* An optional staging reader cannot block owner history. */}
+   }
+  }
+ }else if(type==='guideedit'&&(
+  (parts[1]==='honor'&&['rank','overview'].includes(parts[2]))||
+  (parts[1]==='wiki'&&parts[2]==='labels'))&&
+  root.PandoraHonorGuide?.validOverride?.(parts.slice(1).join('.'),stored)){
+  // Only source-validated, authorial Honor and Wiki strings are displayed as
+  // editable history fields. The game's rank points/gold and source entities
+  // never become inferred D1 labels or baseline values.
+  patch=toObject(stored);
+  if(parts[1]==='honor'){
+   section='Честь';
+   if(parts[2]==='rank'){
+    const rank=root.PandoraHonorGuide.defaultRanks?.find(value=>
+     String(value.id)===parts[3]);
+    const rankTitle=english?(rank?.nameEn||rank?.nameRu):
+     (rank?.nameRu||rank?.nameEn);
+    name=tr('Ранг','Rank')+(rankTitle?' · '+rankTitle:'');
+    source=rank||null;
+   }else{
+    name=tr('Обзор Чести','Honor overview');
+    source=root.PandoraHonorGuide.intro||null;
+   }
+  }else{
+   section='Энциклопедия';
+   name=tr('Подписи разделов','Section captions');
+   source={};
+   // Wiki labels may have a source-only D1 baseline. Do not confuse an
+   // edited override with the original when no verified snapshot is loaded.
+   const staged=root.PandoraEditorialDefaults;
+   if(typeof staged?.value==='function'){
+    for(const field of Object.keys(patch)){
+     try{
+      const baseline=staged.value('guideedit.wiki.labels',field);
+      if(typeof baseline==='string'&&baseline.trim())source[field]=baseline;
+     }catch{/* Source snapshot is optional, history remains read-only. */}
+    }
    }
   }
  }else if(type==='spawnedit'){
@@ -286,7 +358,9 @@ function inspect(key,stored,{base=null,items=null,classes=null,lang='ru',english
    const before=source?.[field];
    const oldText=before===undefined?tr('Исходное значение неизвестно','Original value unknown'):fmt(before,field);
    const newText=fmt(after,field);
-   return{field:friendly(field,lang),before:oldText,after:newText,changed:before===undefined||oldText!==newText};
+   const authorialWiki=type==='guideedit'&&parts[1]==='wiki'&&parts[2]==='labels';
+   return{field:authorialWiki?wikiHistoryField(field,lang):friendly(field,lang),
+    before:oldText,after:newText,changed:before===undefined||oldText!==newText};
   }).filter(row=>row.changed);
  const translatedSection=english?sectionEn[section]||section:section;
  return{key,title:translatedSection+' · '+(name||key),section:translatedSection,target,
