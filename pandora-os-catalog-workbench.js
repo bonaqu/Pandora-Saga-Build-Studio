@@ -26,6 +26,24 @@
       hits.some(row=>row.kind==='verified')?'verified':'sourceOnly';
   }
 
+  // Fixed editorial captions only. Never seed values, probabilities, source
+  // errors, game mechanics, risk approvals or any publish action as D1 copy.
+  // The versioned staging planner extracts this same closed source registry.
+  const catalogReviewDetailCopyRows=Object.freeze([
+    ['decisionHeading','Перед применением','Before publishing'],
+    ['formulaTitle','Как обновление повлияет на персонажа','How this update affects a character'],
+    ['changedParametersLead','Изменено параметров:','Changed parameters:'],
+    ['impactHeading','Как изменится расчётный шанс выпадения','How estimated drop chances change'],
+    ['moreImpactsLead','Ещё','And'],
+    ['moreImpactsSuffix','изменений — открой подробности ниже.','more changes — see details below.'],
+    ['heroNoChange','У текущего героя выбранные изменения не меняют перечисленные расчётные показатели.',
+      'The selected changes do not alter these modeled values for the current hero.'],
+    ['heroMoreChangesLead','Ещё изменений:','More changes:'],
+    ['heroSelectHelp','Выбери расу и профессию на главном экране, чтобы увидеть изменения именно своего героя.',
+      'Choose a race and class on the main screen to compare your own hero.']
+  ]);
+  const catalogReviewDetailByKey=new Map(catalogReviewDetailCopyRows.map(row=>[row[0],row]));
+
   // Administrator-only review. UI selection is never a D1 write.
   // The Worker validates the auth token and the expected active snapshot.
   async function open({request, apiBase, modal, h, afterPublish, getHero=()=>null,
@@ -53,6 +71,17 @@
        tr('Игровая связь по каталогу','Catalog source relationship');
     };
     const copy=(key,ru,en)=>copyLabel?.(key,ru,en)||tr(ru,en);
+    // Direct caption dblclick/F2/blur uses the existing D1 CAS and Undo.
+    // An ordinary guest only sees text; dynamic numeric values live in
+    // independent siblings rather than inside a D1-edited string.
+    const reviewCaption=(tag,attrs,key)=>{
+      const row=catalogReviewDetailByKey.get(key);
+      if(!row)throw Error('Unreviewed catalog caption: '+key);
+      const node=h(tag,{...attrs,text:copy(key,row[1],row[2])});
+      if(canEdit&&typeof editLabel==='function')
+        editLabel(node,key,row[1],row[2]);
+      return node;
+    };
     const permitMutation=()=>typeof canCommit!=='function'||canCommit();
     // Only fixed author text is editable. The caption itself is the target:
     // a separate ✎ is reserved for independently authored hover tooltips.
@@ -272,12 +301,11 @@
     const selectionGuidance=h('p',{class:'os-sync-selection-guidance'});
     // One concise review of what the selected changes will actually affect.
     const decisionPreview=h('div',{class:'os-sync-decision-preview',hidden:true});
-    const decisionHeading=h('strong',{text:tr('Перед применением','Before publishing')});
+    const decisionHeading=reviewCaption('strong',{},'decisionHeading');
     const decisionSummary=h('p',{class:'os-sync-decision-summary'});
     const decisionWarnings=h('p',{class:'os-sync-decision-warnings'});
     const formulaPreview=h('div',{class:'os-sync-formula-preview',hidden:true});
-    const formulaTitle=h('strong',{text:tr(
-      'Как обновление повлияет на персонажа','How this update affects a character')});
+    const formulaTitle=reviewCaption('strong',{},'formulaTitle');
     const formulaStatus=h('p',{class:'os-sync-formula-status'});
     const formulaRows=h('div',{class:'os-sync-formula-rows'});
     const formulaNote=h('small',{class:'os-sync-formula-note',text:tr(
@@ -722,20 +750,19 @@
              text:comparison.warning}));
           else if(comparison?.hasHero){
             if(!comparison.changes.length)
-              formulaRows.append(h('p',{text:tr(
-               'У текущего героя выбранные изменения не меняют перечисленные расчётные показатели.',
-               'The selected changes do not alter these modeled values for the current hero.')}));
+              formulaRows.append(reviewCaption('p',{},'heroNoChange'));
             for(const row of comparison.changes.slice(0,10))
               formulaRows.append(h('p',{class:'os-sync-formula-row'},[
                 h('span',{text:lang==='en'?row.en:row.ru}),
                 h('strong',{text:String(row.before??'—')+' → '+String(row.after??'—')})
               ]));
             if(comparison.changes.length>10)
-              formulaRows.append(h('small',{text:tr('Ещё изменений: ',
-               'More changes: ')+(comparison.changes.length-10)}));
-          }else formulaRows.append(h('p',{text:tr(
-           'Выбери расу и профессию на главном экране, чтобы увидеть изменения именно своего героя.',
-           'Choose a race and class on the main screen to compare your own hero.')}));
+              formulaRows.append(h('small',{},[
+                reviewCaption('span',{},'heroMoreChangesLead'),
+                h('span',{class:'os-sync-runtime-count',
+                  text:' '+(comparison.changes.length-10)})
+              ]));
+          }else formulaRows.append(reviewCaption('p',{},'heroSelectHelp'));
         }
       }
       publish.disabled=!ready||!acknowledged||preview?.validation?.ok!==true;
@@ -925,22 +952,24 @@
     function fieldPreview(change,description) {
       const content=h('div',{class:'os-sync-explanation'});
       if(description.rows.length>1)content.append(h('small',{
-        class:'os-sync-result-count',
-        text:tr('Изменено параметров: ','Changed parameters: ')+description.rows.length}));
+        class:'os-sync-result-count'},[
+        reviewCaption('span',{},'changedParametersLead'),
+        h('span',{class:'os-sync-runtime-count',text:' '+description.rows.length})
+      ]));
       content.append(h('p',{class:'os-sync-change-summary',text:lang==='en'&&description.summaryEn?description.summaryEn:description.summary}));
       // Show the game-level meaning up front, not only technical field changes.
       const impacts=description.impacts||[];
       const notable=impactSamples(impacts);
       if(impacts.length){
         const panel=h('div',{class:'os-sync-impact-preview'});
-        panel.append(h('strong',{text:tr(
-          'Как изменится расчётный шанс выпадения',
-          'How estimated drop chances change')}));
+        panel.append(reviewCaption('strong',{},'impactHeading'));
         for(const effect of notable)
           panel.append(h('p',{class:'os-sync-impact-line',text:lang==='en'?effect.previewEn||effect.preview:effect.preview}));
-        if(impacts.length>4)panel.append(h('small',{class:'muted',
-          text:tr('Ещё ','And ')+(impacts.length-4)+
-            tr(' изменений — открой подробности ниже.',' more changes — see details below.')}));
+        if(impacts.length>4)panel.append(h('small',{class:'muted'},[
+          reviewCaption('span',{},'moreImpactsLead'),
+          h('span',{class:'os-sync-runtime-count',text:' '+(impacts.length-4)+' '}),
+          reviewCaption('span',{},'moreImpactsSuffix')
+        ]));
         panel.append(h('small',{class:'muted',text:tr(
           'Соло / 4 / 8 активных участников на карте. Только этот источник дропа; не подтверждение работы игрового сервера.',
           'Solo / 4 / 8 active party members on this map. This loot source only; not verified game-server behavior.')}));
