@@ -393,10 +393,16 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
 
   // Live Origin stats: D1 controls edit captions only, not remaining points.
   await page.locator('#originTabs [data-origin-tab="stats"]').click();
-  const stats=page.locator('#originStats .studio-owner-interface-editor');
+  const stats=page.locator('#ownerOriginStatsCopy');
   await stats.waitFor({state:'visible'});
   await stats.locator('summary').click();
-  assert.equal(await stats.locator('.studio-owner-interface-row').count(),2);
+  const expectedAria=['vitalsLoadingAria','holdStepAria','decreaseAria',
+   'increaseAria','excludeBonusesAria','baseAria','pointsAria',
+   'knownBonusesAria','costAria','maximumAria'];
+  const actualAria=await stats.locator('[data-owner-copy-id]')
+   .evaluateAll(nodes=>nodes.map(node=>node.dataset.ownerCopyId));
+  assert.deepEqual(actualAria.slice().sort(),expectedAria.slice().sort(),
+   'One owner-only panel for accessibility, visible stats edit directly');
   const originalSummary=await page.locator('#originStatSummary').innerText();
   await edit('stats-ui','remainingPrefix','Осталось:');
   await edit('stats-ui','spentPrefix','Распределено:');
