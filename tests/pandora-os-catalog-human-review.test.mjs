@@ -336,3 +336,31 @@ test('unmapped source labels receive neutral English review summary without fict
  assert.match(result.summaryEn,/Manual review is required/);
  assert.ok(result.technical.some(x=>x.includes('unknownMechanic')));
 });
+
+test('English review titles translate only source-owned category chrome',()=>{
+ const loot=describe(change('drops','43601',{d:[{i:53002,p:20}]},
+  {d:[{i:53002,p:30}]}),context);
+ assert.match(loot.title,/^Добыча · /);
+ assert.match(loot.titleEn,/^Loot · /);
+ assert.equal(loot.titleEn.slice(7),loot.title.slice(9),
+  'game monster name is not guessed or rewritten');
+ const instances=describe(change('instances','@dataset',[],[{id:1,name:'Задание'}]),context);
+ assert.equal(instances.titleEn,'Dungeons and quests');
+ const formulas=describe(change('tables','@dataset',{weaponPlus:{1:{ratio:1}}},
+  {weaponPlus:{1:{ratio:2}}}),context);
+ assert.equal(formulas.titleEn,'Game formulas');
+ assert.equal(formulas.uncertain,true);
+});
+test('English review membership and typed sentinels keep actual source data unchanged',()=>{
+ const added=describe(change('drops','43601',{d:[]},{d:[{i:53002,p:30}]}),context);
+ const membership=added.rows.find(row=>row.linkedItemId==='53002');
+ assert.equal(membership.before,'нет');
+ assert.equal(membership.after,'есть');
+ assert.equal(membership.beforeEn,'absent');
+ assert.equal(membership.afterEn,'present');
+ const monster=describe(change('monsters','43601',{life:null},{life:30}),context);
+ assert.equal(monster.rows[0].before,'не указано');
+ assert.equal(monster.rows[0].beforeEn,'not specified');
+ assert.equal(monster.rows[0].after,'30');
+ assert.equal(monster.rows[0].afterEn,null);
+});
