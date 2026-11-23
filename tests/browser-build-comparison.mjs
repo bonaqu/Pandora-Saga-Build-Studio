@@ -152,6 +152,39 @@ export async function runBuildComparisonSmoke(browser,base){
   assert.equal(await panel.locator('.build-compare-table .ui-content-pencil').count(),0);
   const beforeNumbers=[await hpA.textContent(),await hpB.textContent()];
   const metricKey='guideedit.book.compare-metric.hp';
+  // Existing icon copy is F2-editable, with no caption pencil or A/B swap.
+  const swapIcon=panel.locator('.build-compare-swap');
+  assert.equal(await swapIcon.getAttribute('aria-keyshortcuts'),'F2');
+  const savedChoices=await selects.evaluateAll(nodes=>nodes.map(n=>n.value));
+  await swapIcon.focus();await swapIcon.press('F2');
+  const iconInput=panel.locator('.build-compare-controls .ui-content-edit-host [contenteditable]');
+  await iconInput.waitFor({state:'visible'});
+  await iconInput.fill('Поменять билды · редактура QA');
+  await iconInput.press('Tab');
+  await iconInput.waitFor({state:'detached',timeout:15000});
+  await page.waitForFunction(()=>document.querySelector('.build-compare-swap')?.title===
+   'Поменять билды · редактура QA',null,{timeout:15000});
+  const iconKey=await page.evaluate(()=>
+   'guideedit.book.'+window.PandoraUILocale.fieldKey('compareSwapAction'));
+  assert.equal(JSON.parse(copyValues[iconKey]).ru,'Поменять билды · редактура QA');
+  assert.equal(await swapIcon.getAttribute('aria-label'),'Поменять билды · редактура QA');
+  assert.equal((await swapIcon.textContent()).trim(),'⇄');
+  assert.equal(await panel.locator('.build-compare-controls .ui-content-pencil').count(),0);
+  assert.deepEqual(await selects.evaluateAll(nodes=>nodes.map(n=>n.value)),savedChoices);
+  await swapIcon.focus();await swapIcon.press('F2');
+  const cancelled=panel.locator('.build-compare-controls .ui-content-edit-host [contenteditable]');
+  await cancelled.waitFor({state:'visible'});await cancelled.fill('Не сохранять');
+  await cancelled.press('Escape');await cancelled.waitFor({state:'detached'});
+  assert.equal(JSON.parse(copyValues[iconKey]).ru,'Поменять билды · редактура QA');
+  if(await page.locator('#ownerDock').evaluate(el=>el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
+  await page.locator('#ownerDock [data-owner-undo]').click();
+  await page.waitForFunction(()=>document.querySelector('.build-compare-swap')?.title===
+   'Поменять билды A и B местами',null,{timeout:15000});
+  assert.equal(Object.hasOwn(copyValues,iconKey),false);
+  assert.deepEqual(await selects.evaluateAll(nodes=>nodes.map(n=>n.value)),savedChoices);
+  if(!await page.locator('#ownerDock').evaluate(el=>el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
   const mountedMetric=await hp.elementHandle();
   await hp.dblclick();
   const metricInput=hp.locator('[data-owner-text-field]');
