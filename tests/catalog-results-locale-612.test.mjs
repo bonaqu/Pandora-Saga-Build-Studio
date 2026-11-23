@@ -50,7 +50,10 @@ test('catalog filters and linked item review keep English defaults while game va
  assert.match(source,/const value=' · '\+byKind\[id\]/);
  assert.match(source,/if\(count.textContent!==value\)count.textContent=value/);
  assert.doesNotMatch(source,/button\.textContent=tr\(ru,en\)\+' · '\+byKind\[id\]/);
- assert.match(source,/tr\('Найдено изменений: ','Changes found: '\)/);
+ assert.match(source,/\['foundChanges','Найдено изменений:','Changes found:'\]/);
+ assert.match(source,/setCountPart\(summaryParts\.found,changes\.length,hasChanges\)/);
+ assert.match(source,/statusCaption\(key\)/);
+ assert.doesNotMatch(source,/summary\.textContent\s*=/);
  assert.match(source,/tr\('Связь с предметом изменилась · проверить вручную'/);
  assert.match(source,/tr\('Предмет пока не опубликован в энциклопедии\.'/);
  assert.match(source,/const record=upstream\?\.items\?\.\[segment\.id\]\|\|baseline\?\.items\?\.\[segment\.id\]/);
