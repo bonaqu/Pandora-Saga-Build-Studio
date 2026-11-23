@@ -890,7 +890,8 @@ export async function runUIContentInlineSmoke(browser,base){
   const buffGateKey=await buffReason.getAttribute('data-guide-key');
   assert.match(buffGateKey,/^buffs\.reason\.(?:unavailableClass|shieldRequired|weaponUnavailable|supportUnavailable)$/);
   const buffReasonBefore=await buffReason.innerText();
-  const reasonCheck=buffReason.locator('xpath=ancestor::label[1] input[type="checkbox"]');
+  const reasonCheck=buffReason.locator('xpath=ancestor::label[1]')
+   .locator('input[type="checkbox"]');
   const checkedReasonBefore=await reasonCheck.isChecked();
   assert.equal(await buffReason.getAttribute('tabindex'),'0');
   await buffReason.dblclick();
