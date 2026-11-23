@@ -313,8 +313,14 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   const raceEnEdit=racePanelEn.locator('[data-owner-text-field]');
   await raceEnEdit.fill('Select portrait QA');
   await raceEnEdit.press('Tab');
+  await raceEnEdit.waitFor({state:'detached',timeout:15000});
   await savedOverride('guideedit.book.origin.race-portrait-choose-aria',
    {ru:'Выбрать облик QA',en:'Select portrait QA'});
+  // The mock sees D1 CAS before the client finishes patching the mounted
+  // ARIA name. Assert actual DOM reconciliation, not only the remote mock.
+  await page.waitForFunction(()=>
+   document.querySelector('#raceGrid img')?.getAttribute('aria-label')
+    ?.startsWith('Select portrait QA '),null,{timeout:15000});
   assert.match(await page.locator('#raceGrid img').getAttribute('aria-label'),
    /^Select portrait QA /);
   assert.equal((await page.locator('#classCount').textContent()).trim(),'28 classes');
