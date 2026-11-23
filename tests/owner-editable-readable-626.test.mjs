@@ -32,7 +32,7 @@ test('long labels and descriptions expand rather than hide or ellipsize text',()
  assert.match(ownerCss,/overflow-y:auto;overflow-x:hidden/);
 });
 test('a locale switch cannot change the language of the one direct-caption editor',()=>{
- const from=app.indexOf('function bindStaticUICopyEditors(){');
+ const from=app.indexOf('function bindStaticUICopyEditors(');
  const to=app.indexOf('// Edit only semantically keyed authored labels',from);
  const code=app.slice(from,to);
  assert.ok(from>=0&&to>from);
