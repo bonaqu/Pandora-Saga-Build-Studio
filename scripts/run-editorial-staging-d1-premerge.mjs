@@ -12,7 +12,8 @@ import {basename,dirname,isAbsolute,join,resolve,sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {
  validateEditorialStagingTarget,assertDatabaseIdentity,assertStagingSchema,
- assertRolledBack,renderStagingWranglerConfig,renderStagingRollbackCheckSQL
+ assertStagingTableColumns,assertRolledBack,renderStagingWranglerConfig,
+ renderStagingRollbackCheckSQL
 } from './guard-editorial-staging-d1.mjs';
 import {
  buildEditorialDefaultsManifest,renderEditorialDefaultsSQL,
@@ -103,6 +104,11 @@ export function plannedStagingCommands(target,config,sqlFile){
  return Object.freeze({
   list:['list','--json'],
   schema:[...execute,'--command',schemaSQL,'--json'],
+  columns:table=>{
+   if(!['editorial_default_rows','editorial_default_snapshots'].includes(table))
+    throw Error('Unallowlisted staging schema inspection');
+   return [...execute,'--command','PRAGMA table_info('+table+');','--json'];
+  },
   export:output=>['export',target.name,'--remote','--config',config,
    '--output',output,'--skip-confirmation'],
   executeFile:[...execute,'--file',sqlFile,'--yes'],
@@ -130,6 +136,11 @@ async function main(){
   // fails closed when unrelated tables exist. No SQL write before this.
   assertDatabaseIdentity(wrangler(cmd.list),target);
   const schema=assertStagingSchema(wrangler(cmd.schema));
+  // A same-named legacy/spoofed table is not safe to reuse; audit each
+  // existing table's exact SQLite column types and key ordering as read-only.
+  for(const table of ['editorial_default_rows','editorial_default_snapshots'])
+   assertStagingTableColumns(wrangler(cmd.columns(table)),table,
+    schema.tables.includes(table));
   process.stdout.write('Remote staging UUID confirmed; allowed tables: '+
    schema.tables.length+'; pinned source '+process.env.PS_EDITORIAL_EXPECTED_SHA+'\n');
   if(operation==='preflight'){

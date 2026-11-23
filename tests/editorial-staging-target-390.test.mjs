@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {
  PRODUCTION_D1_ID,validateEditorialStagingTarget,assertDatabaseIdentity,
- assertStagingSchema,assertRolledBack,renderStagingWranglerConfig,
+ assertStagingSchema,assertStagingTableColumns,assertRolledBack,
+ renderStagingWranglerConfig,
  renderStagingRollbackCheckSQL
 } from '../scripts/guard-editorial-staging-d1.mjs';
 const repo=new URL('../',import.meta.url);
@@ -64,6 +65,38 @@ test('#390 staging schema denies any account/build/overrides/catalog tables',()=
   JSON.stringify([{success:false,results:[]}]),
   JSON.stringify([{success:true,results:[]},{success:true,results:[]}])
  ])assert.throws(()=>assertStagingSchema(raw));
+});
+
+test('#390 staging table names must also have exact expected column types and keys',()=>{
+ const rows=[
+  {cid:0,name:'snapshot',type:'TEXT',notnull:1,dflt_value:null,pk:1},
+  {cid:1,name:'record_key',type:'TEXT',notnull:1,dflt_value:null,pk:2},
+  {cid:2,name:'field',type:'TEXT',notnull:1,dflt_value:null,pk:3},
+  {cid:3,name:'value',type:'TEXT',notnull:1,dflt_value:null,pk:0}
+ ];
+ const snapshots=[
+  {cid:0,name:'snapshot',type:'TEXT',notnull:0,dflt_value:null,pk:1},
+  {cid:1,name:'source_release',type:'TEXT',notnull:1,dflt_value:null,pk:0},
+  {cid:2,name:'sha256',type:'TEXT',notnull:1,dflt_value:null,pk:0},
+  {cid:3,name:'expected_rows',type:'INTEGER',notnull:1,dflt_value:null,pk:0},
+  {cid:4,name:'installed_at',type:'INTEGER',notnull:1,dflt_value:null,pk:0}
+ ];
+ assert.equal(assertStagingTableColumns(query(rows),'editorial_default_rows',true),true);
+ assert.equal(assertStagingTableColumns(query(snapshots),'editorial_default_snapshots',true),true);
+ assert.equal(assertStagingTableColumns(query([]),'editorial_default_rows',false),true);
+ assert.equal(assertStagingTableColumns(query([]),'editorial_default_snapshots',false),true);
+ for(const changed of [
+  rows.slice(1),rows.concat({...rows[0],cid:4,name:'extra'}),
+  rows.map((row,i)=>i===1?{...row,type:'INTEGER'}:row),
+  rows.map((row,i)=>i===0?{...row,pk:0}:row),
+  rows.map((row,i)=>i===2?{...row,notnull:0}:row),
+  rows.map((row,i)=>i===2?{...row,dflt_value:"'text'"}:row),
+  rows.map((row,i)=>i===3?{...row,unexpected:'extra'}:row)
+ ])assert.throws(()=>assertStagingTableColumns(
+  query(changed),'editorial_default_rows',true));
+ assert.throws(()=>assertStagingTableColumns(query(rows),'editorial_default_rows',false));
+ assert.throws(()=>assertStagingTableColumns(query([]),'other_table',false));
+ assert.throws(()=>assertStagingTableColumns(query([]),'editorial_default_rows','false'));
 });
 
 test('#390 independent rollback checks exact snapshot, both row classes, and JSON success',()=>{
@@ -144,11 +177,16 @@ test('#390 premerge staging CLI is import-inert, SHA-pinned and requires a separ
  assert.deepEqual(command.list,['list','--json']);
  assert.ok(command.schema.includes('--remote'));
  assert.ok(command.schema.some(arg=>arg.includes('sqlite_master')));
+ assert.ok(command.columns('editorial_default_rows').some(arg=>
+  arg.includes('PRAGMA table_info(editorial_default_rows)')));
+ assert.ok(command.columns('editorial_default_snapshots').includes('--remote'));
+ assert.throws(()=>command.columns('users'));
  assert.ok(command.executeFile.includes('--yes'));
  assert.ok(command.readFile.includes('--json'));
  assert.ok(command.export('/outside/backup.sql').includes('--skip-confirmation'));
- for(const args of [command.schema,command.executeFile,command.readFile,
-  command.export('/outside/backup.sql')]){
+ for(const args of [command.schema,command.columns('editorial_default_rows'),
+  command.columns('editorial_default_snapshots'),
+  command.executeFile,command.readFile,command.export('/outside/backup.sql')]){
   assert.ok(args.includes('--config'),'commands must isolate the staging config');
   assert.ok(!args.includes('ps-build-studio-db'),'never target production name');
  }
@@ -157,6 +195,7 @@ test('#390 premerge staging CLI is import-inert, SHA-pinned and requires a separ
  const docs=readFileSync(new URL('../docs/issue-390-premerge-d1-staging.md',
   import.meta.url),'utf8');
  assert.match(source,/assertDatabaseIdentity\(wrangler\(cmd.list\),target\)/);
+ assert.match(source,/assertStagingTableColumns\(wrangler\(cmd.columns\(table\)\),table,/);
  assert.match(source,/const backupRoot=checkedBackupDirectory/);
  assert.ok(source.indexOf('const backupRoot=checkedBackupDirectory')<
   source.indexOf('wrangler(cmd.executeFile)'),

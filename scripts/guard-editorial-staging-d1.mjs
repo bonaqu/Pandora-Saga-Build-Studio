@@ -58,6 +58,41 @@ export function assertStagingSchema(raw){
  }
  return {tables:[...seen].sort()};
 }
+// A table with the right NAME but unexpected columns must not be written to.
+// SQLite PRAGMA table_info yields cid/name/type/notnull/dflt_value/pk.
+const stagingColumns=Object.freeze({
+ editorial_default_rows:[
+  ['snapshot','TEXT',1,1],['record_key','TEXT',1,2],
+  ['field','TEXT',1,3],['value','TEXT',1,0]
+ ],
+ editorial_default_snapshots:[
+  ['snapshot','TEXT',0,1],['source_release','TEXT',1,0],
+  ['sha256','TEXT',1,0],['expected_rows','INTEGER',1,0],
+  ['installed_at','INTEGER',1,0]
+ ]
+});
+export function assertStagingTableColumns(raw,table,present){
+ if(!Object.hasOwn(stagingColumns,table)||typeof present!=='boolean')
+  throw Error('Unknown staging table requested for column audit');
+ const rows=oneQuery(raw);
+ if(!present){
+  if(rows.length!==0)throw Error('Unexpected columns in absent staging table');
+  return true;
+ }
+ const expected=stagingColumns[table];
+ if(rows.length!==expected.length)
+  throw Error('Unexpected staging D1 column count for '+table);
+ for(const [index,[name,type,notnull,pk]] of expected.entries()){
+  const row=rows[index];
+  if(!row||typeof row!=='object'||Array.isArray(row)||
+   Object.keys(row).sort().join('|')!=='cid|dflt_value|name|notnull|pk|type'||
+   row.cid!==index||row.name!==name||row.type!==type||
+   row.notnull!==notnull||row.pk!==pk||row.dflt_value!==null)
+   throw Error('Staging D1 column layout differs from reviewed schema: '+table);
+ }
+ return true;
+}
+
 export function assertRolledBack(raw){
  const rows=oneQuery(raw);
  if(rows.length!==1||!rows[0]||typeof rows[0]!=='object'||

@@ -52,8 +52,10 @@ export PS_EDITORIAL_BACKUP_DIR="$HOME/ps-editorial-staging-backups"
 node scripts/run-editorial-staging-d1-premerge.mjs preflight
 ~~~
 
-Preflight performs **read-only** remote UUID/name and schema checks. It
-rejects unapproved tables (only editorial_default_rows and
+Preflight performs **read-only** remote UUID/name, table allowlist and
+full SQLite column/key-layout checks (including both absent tables on an
+empty staging DB). It rejects same-named tables with unexpected fields,
+types or primary keys, unapproved tables (only editorial_default_rows and
 editorial_default_snapshots are allowed), production UUID, malformed
 parameters and an unclean or wrong source checkout.
 
