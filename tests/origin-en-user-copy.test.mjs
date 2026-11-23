@@ -21,7 +21,7 @@ test('Origin and shared skill previews translate UI controls while preserving ga
  assert.match(origin,/bindOwnerInterfaceText\(/);
  assert.match(code,/lang==='en'\?'Level ':'Уровень '/);
  assert.match(code,/lang==='en'\?'Skill':'Умение'/);
- assert.match(origin,/Racial passives will appear when the game catalog loads/);
+ assert.match(code,/\['passiveLoadingHelp','Расовые способности появятся после загрузки каталога\.','Racial passives will appear when the game catalog loads\.'\]/);
  assert.match(code,/const STATS=/);
 });
 
