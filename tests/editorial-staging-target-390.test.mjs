@@ -215,6 +215,13 @@ test('#390 premerge staging CLI is import-inert, SHA-pinned and requires a separ
  assert.match(source,/assertDatabaseIdentity\(wrangler\(cmd.list\),target\)/);
  assert.match(source,/assertStagingTableColumns\(wrangler\(cmd.columns\(table\)\),table,/);
  assert.match(source,/const backupRoot=checkedBackupDirectory/);
+ assert.match(source,/openSync\(path,constants\.O_RDONLY\|constants\.O_NOFOLLOW\)/);
+ assert.match(source,/const opened=fstatSync\(fd\)/);
+ assert.match(source,/fchmodSync\(fd,0o600\)/);
+ assert.match(source,/syncBackupDirectory\(backupRoot\)/);
+ assert.ok(source.indexOf('syncBackupDirectory(backupRoot)')<
+  source.indexOf('wrangler(cmd.executeFile)'),
+  'both backup and directory entries MUST be durable before mutation');
  assert.ok(source.indexOf('const backupRoot=checkedBackupDirectory')<
   source.indexOf('wrangler(cmd.executeFile)'),
   'independent backup validation precedes every write');
@@ -249,8 +256,11 @@ test('#390 staging export must be private, nonempty and not a symlink',async()=>
    /private mode 0700/);
   chmodSync(backupDir,0o700);
   const exportPath=join(backupDir,'source.sql');
-  writeFileSync(exportPath,'-- isolated staging export',{mode:0o644});
-  assert.match(verifyIndependentStagingBackup(exportPath),/^[0-9a-f]{64}$/);
+  const contents='-- isolated staging export';
+  writeFileSync(exportPath,contents,{mode:0o644});
+  const {createHash}=await import('node:crypto');
+  const expected=createHash('sha256').update(contents).digest('hex');
+  assert.equal(verifyIndependentStagingBackup(exportPath),expected);
   assert.equal(statSync(exportPath).mode&0o777,0o600);
   const emptyPath=join(backupDir,'empty.sql');
   writeFileSync(emptyPath,'');

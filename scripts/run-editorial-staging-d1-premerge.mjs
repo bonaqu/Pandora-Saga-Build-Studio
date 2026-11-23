@@ -5,8 +5,9 @@
 // Importing this module never invokes Wrangler or writes anything remotely.
 import {spawnSync} from 'node:child_process';
 import {createHash,randomUUID} from 'node:crypto';
-import {chmodSync,closeSync,existsSync,fsyncSync,lstatSync,mkdtempSync,
- openSync,readFileSync,realpathSync,rmSync,statSync,writeFileSync} from 'node:fs';
+import {constants,closeSync,existsSync,fchmodSync,fstatSync,fsyncSync,
+ lstatSync,mkdtempSync,openSync,readFileSync,realpathSync,rmSync,
+ statSync,writeFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {basename,dirname,isAbsolute,join,resolve,sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -58,14 +59,29 @@ export function verifyIndependentStagingBackup(path){
  const details=lstatSync(path);
  if(!details.isFile()||details.isSymbolicLink()||details.size===0)
   throw Error('Staging backup must be a nonempty regular SQL file');
- if(typeof process.getuid==='function'&&details.uid!==process.getuid())
-  throw Error('Staging backup is not owned by the operator');
- chmodSync(path,0o600);
- syncBackupFile(path);
- return createHash('sha256').update(readFileSync(path)).digest('hex');
+ // Keep the same inode open from verification through chmod, flush and hash.
+ // O_NOFOLLOW prevents a symlink swap between lstat and open on Linux/WSL.
+ const fd=openSync(path,constants.O_RDONLY|constants.O_NOFOLLOW);
+ try{
+  const opened=fstatSync(fd);
+  if(!opened.isFile()||opened.size===0||opened.ino!==details.ino||
+   opened.dev!==details.dev)
+   throw Error('Staging backup changed while opening the verified export');
+  if(typeof process.getuid==='function'&&opened.uid!==process.getuid())
+   throw Error('Staging backup is not owned by the operator');
+  fchmodSync(fd,0o600);
+  fsyncSync(fd);
+  return createHash('sha256').update(readFileSync(fd)).digest('hex');
+ }finally{closeSync(fd)}
 }
 function syncBackupFile(path){
  const fd=openSync(path,'r');
+ try{fsyncSync(fd)}finally{closeSync(fd)}
+}
+function syncBackupDirectory(path){
+ // Persist directory entries for both newly created backup and checksum:
+ // fsync(file) alone does not guarantee crash-safe file creation on Linux.
+ const fd=openSync(path,constants.O_RDONLY);
  try{fsyncSync(fd)}finally{closeSync(fd)}
 }
 
@@ -160,6 +176,7 @@ async function main(){
    flag:'wx',mode:0o600
   });
   syncBackupFile(backup+'.sha256');
+  syncBackupDirectory(backupRoot);
   // This is safe to display: never print a token, account secret or SQL data.
   process.stdout.write('Independent staging export retained: '+backup+
    ' (SHA-256 '+hash+')\n');

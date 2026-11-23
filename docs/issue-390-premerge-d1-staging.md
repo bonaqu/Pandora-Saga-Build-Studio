@@ -27,9 +27,10 @@ game JSON or player builds**. These instructions alone are not remote evidence.
 4. Provide a persistent, operator-restricted backup directory **outside**
    the repo and system temp, owned by the operator with exact mode 0700.
    The CLI refuses group/world-accessible folders and symlink/empty exports;
-   it restricts exported SQL to 0600, syncs both SQL and checksum to disk
-   before the first import/rollback write. Never upload raw SQL backups as
-   public artifacts.
+   it restricts exported SQL to 0600, checks and hashes the same
+   no-symlink file descriptor, then syncs SQL, checksum and backup directory
+   metadata to disk before the first import/rollback write (Linux/WSL).
+   Never upload raw SQL backups as public artifacts.
 
 Example shell session (all values below are placeholders):
 
