@@ -1264,7 +1264,8 @@ export function buildEditorialDefaultsManifest(){
  });
  const expectedReview=['changedParametersLead','decisionHeading','formulaTitle',
   'heroMoreChangesLead','heroNoChange','heroSelectHelp','impactHeading',
-  'moreImpactsLead','moreImpactsSuffix'];
+  'moreImpactsLead','moreImpactsSuffix','linkedReferenceContext',
+  'unpublishedReference','emptyReviewFilter'];
  if(!Array.isArray(reviewRows)||reviewRows.length!==expectedReview.length||
   reviewRows.map(r=>r?.[0]).sort().join('|')!==expectedReview.sort().join('|'))
   throw Error('Unreviewed catalog detail editorial keys');
