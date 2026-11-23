@@ -123,7 +123,10 @@ test('#390 native catalog disclosures edit RU/EN caption without double-click to
   assert.equal(guideRoot.PandoraHonorGuide.validOverride(
    'book.catalog-sync.'+key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase()),
    JSON.stringify({ru,en})),true,key);
-  assert.ok(view.includes("disclosureCaption('"+key+"')"),key);
+  // Item details attach their immutable runtime row count as an option;
+  // ordinary native disclosures have the simple one-argument signature.
+  if(key!=='fieldDetailsSummary')
+   assert.ok(view.includes("disclosureCaption('"+key+"')"),key);
  }
  assert.match(view,/const summary=h\('summary',\{\},\[caption\]\)/);
  assert.match(view,/const disclosureCaption=\(key,\{count=null\}=\{\}\)=>/);
