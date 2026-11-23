@@ -249,6 +249,8 @@ export async function runProfileCaption390Smoke(browser,base){
   assert.deepEqual(resets,['guideedit.book.profile.level-suffix']);
   assert.equal(await portrait.getAttribute('alt'),'Race portrait QA Elf');
   assert.equal(values['guideedit.book.profile.level-suffix'],undefined);
+  if(!await dock.evaluate(node=>node.classList.contains('owner-dock-collapsed')))
+   await dock.locator('[data-owner-collapse]').click();
   // Switching to Russian must not leak English author copy into the source
   // race label; the original game race remains a separate immutable suffix.
   await page.locator('#locale [data-locale="ru"]').focus();
