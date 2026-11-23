@@ -132,11 +132,12 @@ test('#390 review captions use exact bilingual CAS keys while live counts stay o
  const expected=['changedParametersLead','decisionHeading','formulaTitle',
   'heroMoreChangesLead','heroNoChange','heroSelectHelp','impactHeading',
   'moreImpactsLead','moreImpactsSuffix',
-  'linkedReferenceContext','unpublishedReference','emptyReviewFilter'];
+  'linkedReferenceContext','linkedReferenceOpen','hintLinkedReference',
+   'unpublishedReference','emptyReviewFilter'];
  assert.deepEqual(Array.from(rows,row=>String(row[0])).sort(),expected.sort());
  const {buildEditorialDefaultsManifest}=await import('../scripts/plan-editorial-d1-defaults.mjs');
  const manifest=buildEditorialDefaultsManifest();
- assert.equal(manifest.stats.cohorts['catalog-review-details'],24);
+ assert.equal(manifest.stats.cohorts['catalog-review-details'],28);
  for(const [key,ru,en] of rows){
   const slug=key.replace(/[A-Z]/g,ch=>'-'+ch.toLowerCase());
   const id='guideedit.book.catalog-sync.'+slug;
