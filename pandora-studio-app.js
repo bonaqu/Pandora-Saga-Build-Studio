@@ -7974,6 +7974,12 @@ function profileCopyLabel(key,ru,en,{as='span',forId=null,action=false}={}){
  });
  return node;
 }
+// A pure fallback has an original owner-editable caption; canonical player
+// and game text has NO owner-copy identity and must never get a CAS editor.
+function profileTextOrCopy(key,source,as='span'){
+ return source?h(as,{text:source}):
+  profileCopyLabel(key,...profileAuthorialCopy[key],{as});
+}
 function profileCopyNote(key,ru,en){
  const note=h('p',{class:'muted'});
  note.append(profileCopyLabel(key,ru,en));return note;
@@ -7984,19 +7990,25 @@ function renderProfile(root){
  const profile=state.profile&&typeof state.profile==="object"?state.profile:{};
  const view=h("div",{class:"ps-profile-grid"});
  const left=h("section",{class:"ps-profile-art"});
- // Keep mutable authorial phrases separate from immutable race/job/name and
- // the derived numeric level, including after a D1 CAS save or Undo.
+ // Source race, profession, player name and level are separate DOM nodes.
+ // Only the authored level suffix or a genuine missing-value fallback
+ // becomes a direct inline owner caption; no string of game data is editable.
+ const summary=h('small',{'data-profile-live':'hero-summary'},[
+  profileTextOrCopy('portrait-race-missing',raceName),
+  h('span',{text:' · '}),
+  profileTextOrCopy('class-missing',jobs[state.job]||''),
+  h('span',{text:' · '}),
+  h('span',{'data-profile-live':'hero-level-number',text:String(state.level)}),
+  h('span',{text:' '}),
+  profileCopyLabel('level-suffix',...profileAuthorialCopy['level-suffix'])
+ ]);
  left.append(
   h("img",{src:raceSource(state.race,state.gender),
    alt:profileDynamicText('portrait-race-prefix')+' '+
     (raceName||profileDynamicText('portrait-race-missing')),
    'data-profile-live':'portrait-art'}),
-  h("strong",{'data-profile-live':'hero-name',
-   text:state.name||profileDynamicText('hero-unnamed')}),
-  h("small",{'data-profile-live':'hero-summary',
-   text:(raceName||profileDynamicText('portrait-race-missing'))+' · '+
-    (jobs[state.job]||profileDynamicText('class-missing'))+' · '+
-    state.level+' '+profileDynamicText('level-suffix')})
+  profileTextOrCopy('hero-unnamed',state.name,'strong'),
+  summary
  );
  const right=h("section",{class:"ps-profile-info"});
  const fields=[
@@ -8073,12 +8085,10 @@ function renderCharacter(root){
   cards.append(
    h('div',{class:'ps-overview-card'},[
     profileCopyLabel('overview-race',...profileAuthorialCopy['overview-race']),
-    h('strong',{'data-profile-live':'overview-race',
-     text:races[state.race]?.[lang==='en'?1:0]||profileDynamicText('overview-missing')})]),
+    profileTextOrCopy('overview-missing',races[state.race]?.[lang==='en'?1:0],'strong')]),
    h('div',{class:'ps-overview-card'},[
     profileCopyLabel('overview-class',...profileAuthorialCopy['overview-class']),
-    h('strong',{'data-profile-live':'overview-class',
-     text:jobs[state.job]||profileDynamicText('overview-missing')})]),
+    profileTextOrCopy('overview-missing',jobs[state.job]||'','strong')]),
    h('div',{class:'ps-overview-card'},[
     profileCopyLabel('overview-level',...profileAuthorialCopy['overview-level']),
     h('strong',{text:String(state.level)})]));
@@ -8087,11 +8097,12 @@ function renderCharacter(root){
   racialTitle.append(h('span',{text:'✦'}),profileCopyLabel('racial-heading',...profileAuthorialCopy['racial-heading']));
   const passivePicker=h('div',{class:'race-passive-picker'});
   const passives=window.PandoraGameNavigation.racePassiveIds(catalog.racialPassives,state.race);
-  if(!passives.length)passivePicker.append(h('p',{
-   class:'muted','data-profile-live':'passive-empty',
-   text:Number.isInteger(state.race)?profileDynamicText('passive-loading'):
-    profileDynamicText('passive-choose-race')
-  }));
+  if(!passives.length){
+   const key=Number.isInteger(state.race)?'passive-loading':'passive-choose-race';
+   passivePicker.append(h('p',{class:'muted'},[
+    profileCopyLabel(key,...profileAuthorialCopy[key])
+   ]));
+  }
   for(const id of passives){
     const skill=catalog.skills?.[id],selected=String(state.racialPassiveId)===String(id);
     if(!skill)continue;
@@ -8131,7 +8142,8 @@ function renderCharacter(root){
  // Ordinary visible captions keep their original direct text editing.
  if(adminEditing&&adminToken){
   const editor=ownerInterfaceEditor('profile',
-   profileDynamicKeys.map(key=>[key,...profileAuthorialCopy[key]]),
+   profileDynamicKeys.filter(key=>key!=='level-suffix')
+    .map(key=>[key,...profileAuthorialCopy[key]]),
    'Динамические подписи персонажа','Character state and accessibility copy');
   if(editor){editor.id='ownerProfileDynamicCopy';root.append(editor)}
  }
@@ -10736,18 +10748,10 @@ function refreshVisibleProfileCopy(){
  const portrait=root.querySelector('[data-profile-live="portrait-art"]');
  if(portrait)ownerDockPatchAttr(portrait,'alt',
   profileDynamicText('portrait-race-prefix')+' '+resolvedRace);
- setText('[data-profile-live="hero-name"]',
-  state.name||profileDynamicText('hero-unnamed'));
- setText('[data-profile-live="hero-summary"]',
-  resolvedRace+' · '+(jobs[state.job]||profileDynamicText('class-missing'))+
-  ' · '+state.level+' '+profileDynamicText('level-suffix'));
- setText('[data-profile-live="overview-race"]',
-  race||profileDynamicText('overview-missing'));
- setText('[data-profile-live="overview-class"]',
-  jobs[state.job]||profileDynamicText('overview-missing'));
- setText('[data-profile-live="passive-empty"]',
-  Number.isInteger(state.race)?profileDynamicText('passive-loading'):
-   profileDynamicText('passive-choose-race'));
+ // The source number is a standalone node, while direct editable caption
+ // spans are handled above by their own profile-copy keys. Do not overwrite
+ // a parent <small> or a draft under it when another CAS field changes.
+ setText('[data-profile-live="hero-level-number"]',String(state.level));
  setText('[data-profile-live="passive-no-description"]',
   profileDynamicText('passive-no-description'));
  for(const node of root.querySelectorAll('[data-profile-live="passive-choice"]'))
