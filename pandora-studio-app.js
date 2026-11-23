@@ -10850,6 +10850,8 @@ function refreshVisibleOwnerCopy(recordKey){
   if(ownerCopyKey(section,id)!==key||node.querySelector('.wiki-inline-input'))continue;
   const value=ownerCopy(section,id,ru,en);
   ownerDockPatchText(node,value);
+  if(section==='owner-history'&&id==='dialogTitle')
+   ownerDockPatchAttr(node.closest('.modal[role="dialog"]'),'aria-label',value);
   if(section==='owner-dialog'){
    const action=node.closest('.owner-dialog-action-editor')?.querySelector('.owner-dialog-action');
    ownerDockPatchText(action,value);
@@ -11078,6 +11080,33 @@ function showOverrideManager(){
   ['openEncyclopedia','Открыть в энциклопедии','Open in Encyclopedia'],
   ['restoreOriginal','Вернуть оригинал','Restore original']
  ]);
+
+ // These authorial hover texts are independent from their visible captions.
+ // Runtime D1 record data, names and errors never enter this copy registry.
+ const ownerHistoryAuxCopyRows=Object.freeze([
+  ['clearHelp','Очищает только поиск. Сохранённые правки D1 не меняются.',
+   'Clear the search only. Saved D1 edits stay unchanged.'],
+  ['restoreHelp','После подтверждения удаляет только эту ручную правку из D1 и возвращает исходное значение.',
+   'After confirmation removes just this D1 edit and restores the original value.'],
+  ['openHelp','Показывает объект в энциклопедии без изменения его данных.',
+   'Open the matching encyclopedia record without modifying it.'],
+  ['dialogTitle','Все ручные правки','All manual edits'],
+  ['confirmRestore','Вернуть исходные данные для','Restore original data for'],
+  ['restoreFailure','Не удалось отменить правку:','Could not restore edit:'],
+  ['catalogUnavailable','Исходный каталог временно недоступен','Game catalog temporarily unavailable']
+ ]);
+ const historyAuxByKey=new Map(ownerHistoryAuxCopyRows.map(row=>[row[0],row]));
+ const historyAux=key=>{
+  const row=historyAuxByKey.get(key);
+  if(!row)throw Error('Unknown history authorial message');
+  return ownerCopy('owner-history',key,row[1],row[2]);
+ };
+ const bindHistoryHelp=(node,key)=>{
+  const row=historyAuxByKey.get(key);
+  if(!row||!key.endsWith('Help'))throw Error('Unknown genuine hover source');
+  bindOwnerInterfaceText(node,'owner-history',key,row[1],row[2],'aria-description');
+  window.PandoraGuideTooltip?.attach(node,historyAux(key),{hoverDelay:350});
+ };
  const historyRowCopyByKey=new Map(ownerHistoryRowCopyRows.map(row=>[row[0],row]));
  const historyRowCaption=(tag,className,key)=>{
   const source=historyRowCopyByKey.get(key);
@@ -11139,9 +11168,7 @@ function showOverrideManager(){
  ownerCopyLabel(clearCaption,'owner-history','clear','Очистить','Clear');
  ownerCaptionActionGuard(clearSearch,clearCaption);
  bindHistoryControl(clearSearch,'clearAria','aria-label');
- window.PandoraGuideTooltip?.attach(clearSearch,
-  tr('Очищает только поиск. Сохранённые правки D1 не меняются.',
-   'Clear the search only. Saved D1 edits stay unchanged.'),{hoverDelay:350});
+ bindHistoryHelp(clearSearch,'clearHelp');
  const draw=()=>{
   list.replaceChildren();
   const q=String(search.value||'').trim().toLocaleLowerCase('ru');
@@ -11183,6 +11210,9 @@ function showOverrideManager(){
      h('span',{class:'owner-history-field-count',text:String(record.changes.length)})
     ])
    ]);
+   // A summary's source caption edits directly; double click never toggles it.
+   const countCaption=head.querySelector('.owner-history-fields-copy');
+   if(countCaption)ownerCaptionActionGuard(head,countCaption);
    const edits=h('div',{class:'owner-review-changes'});
    for(const entry of record.changes){
     const change=h('div',{class:'owner-review-change'});
@@ -11212,7 +11242,8 @@ function showOverrideManager(){
    const resetAction=h('button',{type:'button',class:'owner-review-reset',
     onclick:async event=>{
      if(!ownerCanStartAdminOperation())return;
-     if(!confirm(tr('Вернуть исходные данные для «','Restore original data for “')+record.title+tr('»?','”?')))return;
+     if(!confirm(historyAux('confirmRestore')+
+      (lang==='en'?' “':' «')+record.title+(lang==='en'?'”?':'»?')))return;
      editIsSaving=true;
      const resetButton=event.currentTarget;
      resetButton.disabled=true;refreshOwnerUI();
@@ -11243,7 +11274,7 @@ function showOverrideManager(){
         refreshVisibleOwnerCopy(record.key);saveView();
        }else void refreshOwnerCatalog();
        refreshOwnerUI();
-     }catch(error){showStudioToast(tr('Не удалось отменить правку: ','Could not restore edit: ')+error.message,'warning')}
+     }catch(error){showStudioToast(historyAux('restoreFailure')+' '+error.message,'warning')}
      finally{
       editIsSaving=false;refreshOwnerUI();
       if(resetButton.isConnected)resetButton.disabled=false;
@@ -11256,15 +11287,9 @@ function showOverrideManager(){
    actions.append(resetAction);
    row.append(head,edits,actions);list.append(row);
    const reset=actions.querySelector('.owner-review-reset');
-   if(reset)window.PandoraGuideTooltip?.attach(reset,tr(
-    'После подтверждения удаляет только эту ручную правку из D1 и возвращает исходное значение.',
-    'After confirmation removes just this D1 edit and restores the original value.'
-   ),{hoverDelay:350});
+   if(reset)bindHistoryHelp(reset,'restoreHelp');
    const openAction=actions.querySelector('button:not(.owner-review-reset)');
-   if(openAction)window.PandoraGuideTooltip?.attach(openAction,tr(
-    'Показывает объект в энциклопедии без изменения его данных.',
-    'Open the matching encyclopedia record without modifying it.'
-   ),{hoverDelay:350});
+   if(openAction)bindHistoryHelp(openAction,'openHelp');
   }
  };
  function wikiDataOrCatalogHasRecord(target){
@@ -11294,8 +11319,10 @@ function showOverrideManager(){
   pendingNote,count,list);
  // Search placeholder, accessible names and native options are not direct
  // text targets. Their captions live in this single collapsed owner editor.
- const controlEditor=ownerInterfaceEditor('owner-history',ownerHistoryControlCopyRows,
-  'Подписи истории правок','History control captions');
+ const controlEditor=ownerInterfaceEditor('owner-history',
+  [...ownerHistoryControlCopyRows,
+   ...ownerHistoryAuxCopyRows.filter(row=>row[0]!=='dialogTitle')],
+  'Подписи и подсказки истории','History captions and hints');
  if(controlEditor)body.append(controlEditor);
  // Hidden transient status messages are not ordinarily visible to double-click;
  // expose just those two source strings in the existing collapsed owner UI.
@@ -11304,9 +11331,12 @@ function showOverrideManager(){
   'Подписи состояний сохранения','Save status captions');
  if(statusEditor)body.append(statusEditor);
  draw();
- modal(tr('Все ручные правки','All manual edits'),body);
+ const dialog=modal(historyAux('dialogTitle'),body);
+ const title=dialog.querySelector('h2');
+ ownerCopyLabel(title,'owner-history','dialogTitle','Все ручные правки',
+  'All manual edits',{onCommitted:value=>ownerDockPatchAttr(dialog,'aria-label',value)});
  if(!wikiBaseData)void loadWiki().then(()=>{if(body.isConnected)draw()})
-  .catch(()=>{if(body.isConnected)showStudioToast(tr('Исходный каталог временно недоступен','Game catalog temporarily unavailable'),'warning')});
+  .catch(()=>{if(body.isConnected)showStudioToast(historyAux('catalogUnavailable'),'warning')});
 }
 
 function allowedArtwork(value){return localArtwork(value); }
