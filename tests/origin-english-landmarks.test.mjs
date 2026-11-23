@@ -40,7 +40,7 @@ test('EN race image and portrait arrow descriptions follow the chosen race/gende
  assert.match(races,/lang==='en'\?' · female':' · женщина'/);
  // Three authorial action phrases now come from the same bilingual D1/CAS
  // registry, not a static inline lang ternary. Race/gender remain source data.
- const registry=app.match(/const originRacePortraitAriaRows=Object\\.freeze\\((\\[[\\s\\S]*?\\])\\);/);
+ const registry=app.match(/const originRacePortraitAriaRows=Object\.freeze\((\[[\s\S]*?\])\);/);
  assert.ok(registry,'Source-backed bilingual race ARIA registry must exist');
  const rows=Function('return '+registry[1])();
  assert.deepEqual(rows,[
@@ -52,9 +52,9 @@ test('EN race image and portrait arrow descriptions follow the chosen race/gende
   assert.ok(races.includes("'"+key+"'"),'Live race gallery binds '+key);
   assert.notEqual(ru,en,'Both languages must be explicit: '+key);
  }
- assert.match(races,/bindOwnerInterfaceText\\(img,'origin','racePortraitChooseAria'/);
- assert.match(races,/'aria-label',' '\\+raceName\\+sexSuffix/);
- assert.match(races,/\['visual\\.race\\.'\\+i\\+'\\.'\\+\\(gender\\?'m':'f'\\)\]/);
+ assert.match(races,/bindOwnerInterfaceText\(img,'origin','racePortraitChooseAria'/);
+ assert.match(races,/'aria-label',' '\+raceName\+sexSuffix/);
+ assert.match(races,/'visual\.race\.'\+i\+'\.'\+\(gender\?'m':'f'\)/);
  assert.match(app,/window\.PandoraUILocale\.apply\(lang\)/);
 });
 
