@@ -69,7 +69,7 @@ test('real Worker D1 override path authenticates, CAS checks, and serves saved U
 
 test('#390 generic text editing and mirrored profile title use distinct authorial rules',()=>{
  const app=read('pandora-studio-app.js'),html=read('index.html');
- const bind=app.slice(app.indexOf('function bindStaticUICopyEditors(){'),
+ const bind=app.slice(app.indexOf('function bindStaticUICopyEditors('),
   app.indexOf('// Edit only semantically keyed authored labels'));
  assert.match(html,/id="profileTrigger"[\s\S]*?data-i18n-title="profileAccess"/);
  assert.match(html,/data-i18n-aria-label="profileAccess"/);
