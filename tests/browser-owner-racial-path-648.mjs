@@ -267,6 +267,9 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   await plusCopyEdit.waitFor({state:'detached',timeout:15000});
   await savedOverride('guideedit.book.stats-ui.increase-aria',
    {ru:'Увеличить характеристику QA'});
+  const statPlus=page.locator('#originStats .stat-step-increment').first();
+  assert.match(await statPlus.getAttribute('aria-label'),
+   /^Увеличить характеристику QA Выносливость/);
   assert.equal(await statInput.inputValue(),originalStatInput);
   await page.locator('#originTabs [data-origin-tab="race"]').click();
   // Source-backed caps are not authorial copy. Edit the visible caption
