@@ -1792,6 +1792,13 @@ const originClassWizardAriaRows=Object.freeze([
  ['classViewSpecializationsAria','перейти к специализациям','view specializations'],
  ['classSelectClassAria','выбрать профессию','select class']
 ]);
+// Source-only gallery accessibility text: race, gender, and artwork are not
+// owner-editable D1 content.
+const originRacePortraitAriaRows=Object.freeze([
+ ['racePortraitPreviousAria','Предыдущий портрет','Previous portrait'],
+ ['racePortraitNextAria','Следующий портрет','Next portrait'],
+ ['racePortraitChooseAria','Выбрать','Choose']
+]);
 function originCopyLabel(node,key,ru,en){
  if(!node)return node;
  if(!node.querySelector?.('.wiki-inline-input,[data-owner-editor]'))
@@ -1871,6 +1878,23 @@ function renderOriginCopyLabels(){
   const text=lang==='en'?n+' classes':n+' '+plural;
   if(classNode.textContent!==text)classNode.textContent=text;
  }
+ // Gallery accessibility lives in the visible Race tab, not the hidden
+ // legacy gender controls. Do not remount its active inline CAS editor.
+ const raceGrid=$('raceGrid'),raceExisting=$('ownerOriginRaceAria');
+ if(raceGrid){
+  if(!adminEditing||!adminToken)raceExisting?.remove();
+  else if(!raceExisting?.querySelector('.wiki-inline-input,[data-owner-text-field]')&&
+   raceExisting?.dataset.originAriaLang!==lang){
+   const wasOpen=Boolean(raceExisting?.open);
+   raceExisting?.remove();
+   const panel=ownerInterfaceEditor('origin',originRacePortraitAriaRows,
+    'Доступность выбора расы','Race selection accessibility');
+   if(panel){
+    panel.id='ownerOriginRaceAria';panel.dataset.originAriaLang=lang;
+    panel.open=wasOpen;raceGrid.after(panel);
+   }
+  }
+ }
  const grid=$('classGrid'),existing=$('ownerOriginClassAria');
  if(!grid)return;
  if(!adminEditing||!adminToken){existing?.remove();return}
@@ -1908,11 +1932,13 @@ function renderRaces(){
  img.onerror=()=>{img.onerror=null;img.alt=lang==='en'?
    'Portrait of '+races[i][1]+' is currently unavailable':
    'Изображение '+races[i][0]+' временно недоступно'};
- const arrow=(text,step,alt)=>h('button',{type:'button',class:'race-slide-arrow '+(step<0?'previous':'next'),text,'aria-label':alt,
-  onclick:()=>{racePreviewIndex=(racePreviewIndex+step+portraitOptions.length)%portraitOptions.length;renderRaces();
-    grid.querySelector('.race-slide-arrow.'+(step<0?'previous':'next'))?.focus({preventScroll:true})}});
- frame.append(img,arrow('❮',-1,lang==='en'?'Previous portrait':'Предыдущий портрет'),
-  arrow('❯',1,lang==='en'?'Next portrait':'Следующий портрет'));
+ const arrow=(text,step,key,ru,en)=>bindOwnerInterfaceText(
+  h('button',{type:'button',class:'race-slide-arrow '+(step<0?'previous':'next'),text,
+   onclick:()=>{racePreviewIndex=(racePreviewIndex+step+portraitOptions.length)%portraitOptions.length;renderRaces();
+    grid.querySelector('.race-slide-arrow.'+(step<0?'previous':'next'))?.focus({preventScroll:true})}}),
+  'origin',key,ru,en,'aria-label');
+ frame.append(img,arrow('❮',-1,'racePortraitPreviousAria','Предыдущий портрет','Previous portrait'),
+  arrow('❯',1,'racePortraitNextAria','Следующий портрет','Next portrait'));
  const chooseRace=()=>{
   if(chosen)return;
   state=window.PandoraOriginModel.selectRace(state,i,gender);
@@ -1920,7 +1946,10 @@ function renderRaces(){
   persist();render();saveView();
  };
  img.tabIndex=0;img.setAttribute('role','button');
- img.setAttribute('aria-label',(lang==='en'?'Choose ':'Выбрать ')+img.alt);
+ // Copy is only the authorial verb. Race name and gender stay source-backed
+ // even when image.onError replaces the alt with a localized error.
+ bindOwnerInterfaceText(img,'origin','racePortraitChooseAria',
+  'Выбрать','Choose','aria-label',' '+raceName+sexSuffix);
  img.addEventListener('click',chooseRace);
  img.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();chooseRace()}});
  const actions=h('div',{class:'race-slide-actions'});
