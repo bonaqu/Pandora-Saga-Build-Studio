@@ -623,6 +623,18 @@ export async function runOwnerRacialPath648Smoke(browser,base){
    {en:'Hero dossier QA.'});
   assert.match(await heroBook.getAttribute('aria-label'),/^Hero dossier QA\./);
   assert.equal(await heroBook.locator('.stage-book-title-count').innerText(),originalCount);
+  // The collapsed non-pointer panel must support F2 and Escape on a
+  // genuinely focusable caption, without producing another D1 CAS write.
+  await ariaLead.focus();
+  assert.equal(await ariaLead.getAttribute('tabindex'),'0');
+  await ariaLead.press('F2');
+  const cancelledBook=ariaLead.locator('[data-owner-text-field]');
+  await cancelledBook.waitFor({state:'visible'});
+  await cancelledBook.fill('Discard accessibility draft');
+  await cancelledBook.press('Escape');
+  assert.match(await heroBook.getAttribute('aria-label'),/^Hero dossier QA\./);
+  assert.deepEqual(JSON.parse(values['guideedit.book.book-aria.region-lead']),
+   {en:'Hero dossier QA.'});
   const oldField=await page.evaluate(()=>{
    const locale=window.PandoraUILocale;
    return locale.fieldKey(locale.bookFieldKey('Предыдущая страница'));

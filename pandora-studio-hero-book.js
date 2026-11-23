@@ -2795,6 +2795,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
    for(const spec of bookAccessibilitySpecs()){
     const caption=make('span',{class:'studio-owner-interface-value',
      'data-book-a11y-owner':spec.id});
+    caption.tabIndex=0; // F2 must be reachable without a pointer.
     guideLabel(caption,spec.key,spec.ru,spec.en,copyOptions);
     rows.append(make('div',{class:'studio-owner-interface-row'},[
      make('span',{class:'studio-owner-interface-name',

@@ -257,6 +257,7 @@ test('#390: Hero Book accessible chapter names reuse original D1 actions and iso
  assert.match(bookSource,/child!==stablePanel&&child!==pinnedOwnerPanel/);
  assert.match(bookSource,/ownerPanel\.querySelector\('\.wiki-inline-input,\[data-owner-text-field\]'\)/);
  assert.match(bookSource,/data-book-aria-action/);
+ assert.match(bookSource,/caption\.tabIndex=0;.*F2/);
  assert.match(app,/if\(isBook\)window\.PandoraStageAttributes\?\.refreshAccessibility/);
  assert.match(app,/key\.startsWith\('book\.book-aria\.'\)/);
  assert.match(app,/last\.key\.startsWith\('guideedit\.book\.book-aria\.'\)/);
