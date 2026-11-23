@@ -118,7 +118,8 @@ test('English human-review cautions are displayed but game-model safety remains 
   'description.summaryEn','description.cautionEn',
   'lang===\'en\'&&description.summaryEn',
   'lang===\'en\'&&description.cautionEn',
-  'change.title,description.title,description.summary,description.summaryEn'
+  'change.title,description.title,description.titleEn,description.summary,description.summaryEn',
+  'field.label,field.labelEn', 'field.beforeFull??field.before,field.afterFull??field.after'
  ])assert.ok(workbench.includes(label),label);
  assert.match(workbench,/const uncertain=changes\.filter\(x=>checked\(x\)&&describe\(x\)\.uncertain\)\.length/);
  assert.match(workbench,/const riskApproval=/);
