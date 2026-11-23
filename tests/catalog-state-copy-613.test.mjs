@@ -186,3 +186,35 @@ test('#390: catalog review filters edit captions without turning calculated coun
  assert.match(workbench,/if\(count.textContent!==value\)count.textContent=value/);
  assert.doesNotMatch(workbench,/button.textContent=tr\(ru,en\)\+' · '\+byKind\[id\]/);
 });
+
+test('#390: ten independent catalog filter hover hints have bilingual CAS and zero caption overlap',async()=>{
+ const source=workbench.match(/const filterHintRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ assert.ok(source,'review hints must have a closed bilingual source inventory');
+ const rows=runInNewContext('('+source[1]+')');
+ const ids=['all','added','changed','removed','accepted','declined',
+  'needsReview','links','sameVisible','readable'];
+ assert.deepEqual(Array.from(rows,row=>String(row[0])).sort(),ids.sort());
+ const {buildEditorialDefaultsManifest}=await import('../scripts/plan-editorial-d1-defaults.mjs');
+ const manifest=buildEditorialDefaultsManifest();
+ assert.equal(manifest.stats.cohorts['catalog-review-filter-hover'],20);
+ assert.equal(manifest.stats.cohorts['catalog-review-filter-captions'],20);
+ for(const [id,ru,en] of rows){
+  const key='hintReviewFilter'+id[0].toUpperCase()+id.slice(1);
+  const slug=key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase());
+  const recordKey='guideedit.book.catalog-sync.'+slug;
+  assert.equal(manifest.records.find(v=>v.recordKey===recordKey&&v.field==='ru')?.value,ru);
+  assert.equal(manifest.records.find(v=>v.recordKey===recordKey&&v.field==='en')?.value,en);
+  assert.equal(root.PandoraHonorGuide.validOverride('book.catalog-sync.'+slug,
+   JSON.stringify({ru:'Подсказка',en:'Hover help'})),true);
+  assert.ok(!manifest.records.some(v=>v.recordKey===recordKey.replace('hint-review-filter','review-filter')),
+   'Every hover hint key must remain independent of the visible caption');
+ }
+ assert.match(workbench,/const wrapper=secondaryHint\(button,'hintReviewFilter'/);
+ assert.match(workbench,/wrapper\.classList\.add\('os-sync-filter-hint'\)/);
+ assert.match(workbench,/filters\.append\(wrapper\);filterButtons\.set\(id,button\)/);
+ assert.doesNotMatch(workbench,/hint\(button,tr\(\.\.\.tips\[id\]\)\)/);
+ const css=read('pandora-os-catalog-workbench.css');
+ assert.match(css,/\.os-sync-filters>\.os-sync-filter-hint/);
+ assert.match(css,/\.os-sync-filter-hint:focus-within>\.os-sync-secondary-pencil/);
+ assert.match(css,/@media\(hover:hover\) and \(pointer:fine\)/);
+});
