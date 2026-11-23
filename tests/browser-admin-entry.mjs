@@ -995,6 +995,44 @@ export async function runAdminEntrySmoke(browser,base){
   await dialog.getByRole('button',{name:'Сверить с сохранённой копией'}).click();
   await waitForCatalogResult('archive comparison',
    () => document.querySelector('.os-sync [role=status]')?.textContent?.includes('Найдено изменений:'));
+  // #390: stable RU D1 summary words must keep their runtime number sibling
+  // when edited. Refilter and comparison status remain separate and safe.
+  const summaryLabel=dialog.locator('.os-sync-summary [data-owner-copy-id="summarySelected"]');
+  assert.equal(await summaryLabel.count(),1);
+  const summarySelectedCount=dialog.locator('.os-sync-summary .os-sync-count-piece')
+   .nth(2).locator('.os-sync-runtime-count');
+  const summaryCountBefore=await summarySelectedCount.innerText();
+  await summaryLabel.dblclick();
+  const summaryEditor=dialog.locator('.os-sync-summary [data-owner-text-field]');
+  await summaryEditor.waitFor({state:'visible',timeout:12000});
+  await summaryEditor.fill('Отобрано QA:');
+  await summaryEditor.press('Tab');
+  await summaryEditor.waitFor({state:'detached',timeout:15000});
+  const summaryKey='guideedit.book.catalog-sync.summary-selected';
+  for(let n=0;n<300&&!townOverrides.has(summaryKey);n++)
+   await page.waitForTimeout(40);
+  assert.equal(JSON.parse(townOverrides.get(summaryKey)).ru,'Отобрано QA:');
+  assert.equal(await summaryLabel.innerText(),'Отобрано QA:');
+  assert.equal(await summarySelectedCount.innerText(),summaryCountBefore,
+   'D1 caption edit may not alter current numeric selected result');
+  assert.match(await dialog.locator('.os-sync-summary').innerText(),/Найдено изменений:/);
+  const overviewCopy=dialog.locator('.os-sync-overview [data-owner-copy-id="affectedSections"]');
+  assert.equal(await overviewCopy.count(),1);
+  const overviewGameCount=dialog.locator('.os-sync-overview .os-sync-runtime-data');
+  const sourceCountBefore=await overviewGameCount.innerText();
+  await overviewCopy.dblclick();
+  const overviewEditor=dialog.locator('.os-sync-overview [data-owner-text-field]');
+  await overviewEditor.waitFor({state:'visible',timeout:12000});
+  await overviewEditor.fill('Разделы QA:');
+  await overviewEditor.press('Tab');
+  await overviewEditor.waitFor({state:'detached',timeout:15000});
+  const overviewKey='guideedit.book.catalog-sync.affected-sections';
+  for(let n=0;n<300&&!townOverrides.has(overviewKey);n++)
+   await page.waitForTimeout(40);
+  assert.equal(JSON.parse(townOverrides.get(overviewKey)).ru,'Разделы QA:');
+  assert.equal(await overviewCopy.innerText(),'Разделы QA:');
+  assert.equal(await overviewGameCount.innerText(),sourceCountBefore,
+   'Current game sections and counts must stay immutable while editing words');
   // 0.612: reloading results may update checksum evidence but must not
   // erase the directly editable D1 explanation.
   const checksumRow=dialog.locator(
