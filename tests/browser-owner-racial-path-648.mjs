@@ -148,6 +148,45 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   assert.equal(await passive.getAttribute('aria-pressed'),selectedPassive,
    'Editing a racial skill name must not select a passive');
   assert.equal(writes.length,0,'Escape must not write a D1 skill name');
+  // Edit the visible original status without altering the source skill or
+  // selecting the passive. F2 remains the RU skill-name shortcut while
+  // Shift+F2 opens the distinct authorial status copy.
+  const badge=passive.locator('small').first();
+  const originalSkillName=await passiveLabel.textContent();
+  assert.equal((await badge.textContent()).trim(),'Выбрать');
+  await badge.dblclick();
+  const badgeEditor=badge.locator('[data-owner-text-field]');
+  await badgeEditor.waitFor({state:'visible',timeout:12000});
+  await badgeEditor.fill('Выбрать пассивку QA');
+  await badgeEditor.press('Tab');
+  await badgeEditor.waitFor({state:'detached',timeout:15000});
+  await savedOverride('guideedit.book.origin.passive-select-caption',
+   {ru:'Выбрать пассивку QA'});
+  assert.equal((await badge.textContent()).trim(),'Выбрать пассивку QA');
+  assert.equal(await passiveLabel.textContent(),originalSkillName);
+  assert.equal(await passive.getAttribute('aria-pressed'),selectedPassive);
+  await passive.focus();
+  await passive.press('Shift+F2');
+  const cancelBadge=badge.locator('[data-owner-text-field]');
+  await cancelBadge.waitFor({state:'visible'});
+  await cancelBadge.fill('Не сохраняем статус QA');
+  await cancelBadge.press('Escape');
+  assert.equal(await passive.getAttribute('aria-pressed'),selectedPassive);
+  const passiveAriaPanel=page.locator('#ownerOriginPassiveAria');
+  await passiveAriaPanel.locator('summary').click();
+  const beforeAria=await passive.getAttribute('aria-label');
+  assert.ok(beforeAria.startsWith(originalSkillName+' '));
+  await passiveAriaPanel.locator('[data-owner-copy-id="passiveSelectAria"]').dblclick();
+  const passiveAriaEdit=passiveAriaPanel.locator('[data-owner-text-field]');
+  await passiveAriaEdit.waitFor({state:'visible'});
+  await passiveAriaEdit.fill('— назначить QA');
+  await passiveAriaEdit.press('Tab');
+  await passiveAriaEdit.waitFor({state:'detached',timeout:15000});
+  await savedOverride('guideedit.book.origin.passive-select-aria',
+   {ru:'— назначить QA'});
+  assert.equal(await passive.getAttribute('aria-label'),
+   originalSkillName+' — назначить QA');
+  assert.equal(await passive.getAttribute('aria-pressed'),selectedPassive);
   // Visible Origin portrait accessibility is authorial D1 copy; a carousel
   // preview must never mutate the hero's source race, gender or game ID.
   const racePanel=page.locator('#ownerOriginRaceAria');
@@ -259,6 +298,11 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   assert.equal(await group.locator('button.path-group-pencil').count(),0);
   await page.locator('#locale [data-locale="en"]').click();
   await page.waitForFunction(()=>document.documentElement.lang==='en');
+  const enPassive=page.locator('#originPassives .origin-passive').first();
+  assert.equal((await enPassive.locator('small').textContent()).trim(),'Select');
+  assert.match(await enPassive.getAttribute('aria-label'),/ — select$/,
+   'A Russian D1 override must not replace English accessible source copy');
+  assert.equal(await enPassive.getAttribute('aria-pressed'),selectedPassive);
   assert.equal(await page.locator('#raceGrid .race-slide-arrow.previous')
    .getAttribute('aria-label'),'Previous portrait',
    'RU CAS must not change the EN default');
