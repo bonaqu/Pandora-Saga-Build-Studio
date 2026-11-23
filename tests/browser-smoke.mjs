@@ -490,7 +490,9 @@ async function main(){
  assert.equal(await page.locator('#stageBookPanel .stage-result-section-head button').count(),0);
  assert.equal((await page.locator('#stageAttributes [data-book-page="recovery"]').innerText()).trim(),'Potion effects');
  assert.match(await page.locator('#stageAttributes').getAttribute('aria-label'),/Hero Book.*Chapter 1 of 6/);
- assert.equal(await page.locator('#stageAttributes .stage-book-arrow').first().getAttribute('aria-label'),'Previous page');
+ // Book arrows now share the published bilingual owner-copy keys.
+ assert.equal(await page.locator('#stageAttributes .stage-book-arrow').first().getAttribute('aria-label'),'Previous chapter');
+ assert.equal(await page.locator('#stageAttributes .stage-book-arrow').nth(1).getAttribute('aria-label'),'Next chapter');
  assert.equal(await page.locator('#stageAttributes .stage-book-close').getAttribute('aria-label'),'Return to portrait');
  await page.locator('#stageAttributes [data-book-page="buffs"]').click();
  assert.equal((await page.locator('#stageBookPanel').innerText()).includes('Settings apply to this build'),false,
