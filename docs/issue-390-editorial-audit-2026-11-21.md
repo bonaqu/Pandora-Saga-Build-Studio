@@ -407,3 +407,11 @@ pencil controls. Full Node+Chromium required on the exact new PR SHA.
 - [x] The mounted budget rows preserve an open direct dblclick/F2/blur editor during real level and point recalculations. Live totals and the selected canonical class stay in separate DOM elements; no caption pencils or guest editors.
 - [x] Added source/staging Node assertions and expanded real Chromium owner Path regression for RU/EN CAS, Escape, stable numbers and inline draft preservation.
 - [ ] Required full Node + Chromium CI on final HEAD pending; isolated remote Cloudflare staging, real hardware touch and separately authorized release not yet accepted. Keep PR #809 Draft and issue #390 open.
+
+## 23.11.2026 — Hero Book accessible chapter navigation (#390)
+
+- [x] Audited the six-page live Book region. Existing "Previous/Next/Return/Chapters" authorial RU/EN actions intentionally reuse original `ui.label.book-*` CAS records; no duplicate identities or source game records.
+- [x] Added three reviewed `guideedit.book.book-aria.region-*` RU/EN fragments for the composed region accessible sentence, with **six source-only, deterministic offline staging D1 defaults**. The chapter name comes from the established editable `chapter.*` identity; current page index and total stay immutable runtime numbers.
+- [x] Added one compact owner-only collapsed accessibility panel without pencil icons. In-place `dblclick/F2/blur` uses existing D1/CAS and preserves the mounted editor through normal Book redraw and chapter changes. Save/Undo/Reset refreshes mounted navigation and region accessible names without rebuilding player data or rewriting character state.
+- [x] Extended existing Node source/manifest and real Chromium mock-CAS owner flows for old-key compatibility, RU/EN separation, dynamic chapter index, no duplicate accessibility panel and unchanged gameplay.
+- [ ] Full Node + Chromium must both pass on the final exact commit before this batch is accepted. Physical, isolated remote Cloudflare staging D1 backup/import/digest readback/rollback; hardware touch and explicitly approved release are still **NOT** complete. Keep PR #809 OPEN DRAFT and issue #390 OPEN.

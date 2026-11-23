@@ -108,6 +108,33 @@ export function buildEditorialDefaultsManifest(){
    append('guideedit.book.'+id,lang,ui.baseText(key,lang),'ui-locale');
  }
 
+ // The original Book's four navigation strings already exist in the
+ // shared UI locale dictionary. Seed only three new authorial fragments
+ // for the dynamic chapter region; never snapshot a numeric page position.
+ const bookRegion=book.bookRegionCopyRows;
+ const expectedBookRegion=['regionLead','regionPage','regionOf'];
+ if(!Array.isArray(bookRegion)||bookRegion.length!==expectedBookRegion.length||
+  bookRegion.map(row=>row?.[0]).sort().join('|')!==expectedBookRegion.sort().join('|'))
+  throw Error('Book source-only region caption inventory drift');
+ for(const [key,ru,en] of bookRegion){
+  if(!/^[a-z][a-zA-Z]+$/.test(key)||
+   typeof ru!=='string'||ru!==ru.trim()||!ru.trim()||
+   typeof en!=='string'||en!==en.trim()||!en.trim())
+   throw Error('Invalid Book region RU/EN authorial copy: '+key);
+  const slug=key.replace(/[A-Z]/g,ch=>'-'+ch.toLowerCase());
+  append('guideedit.book.book-aria.'+slug,'ru',ru,'hero-book-accessibility');
+  append('guideedit.book.book-aria.'+slug,'en',en,'hero-book-accessibility');
+ }
+ const bookAliases=book.bookAccessibleAliasRows;
+ if(!Array.isArray(bookAliases)||bookAliases.length!==4||
+  bookAliases.map(row=>row?.[0]).sort().join('|')!=='close|next|previous|tabs')
+  throw Error('Hero Book action alias source inventory drift');
+ for(const [,ru,en] of bookAliases){
+  const key=ui.bookFieldKey(ru);
+  if(!key||ui.baseText(key,'ru')!==ru||ui.baseText(key,'en')!==en)
+   throw Error('Accessible action must reuse a prior Book D1 identity: '+ru);
+ }
+
  // The owner dock's fixed visible action captions, group headings and
  // instructions are also already editable via ownerCopy('owner-dock').
  // Extract only the audited literal dictionary, never execute the app's

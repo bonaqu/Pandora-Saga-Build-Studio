@@ -224,3 +224,41 @@ test('touch long press preserves delayed-action suppression after unrelated clic
  assert.match(browser,/Unrelated clicks are not blocked by touch editor/);
  assert.match(browser,/Unrelated click must not consume delayed synthetic tab suppression/);
 });
+
+test('#390: Hero Book accessible chapter names reuse original D1 actions and isolate numeric position',async()=>{
+ const app=file('pandora-studio-app.js'),bookSource=file('pandora-studio-hero-book.js');
+ const {buildEditorialDefaultsManifest}=await import('../scripts/plan-editorial-d1-defaults.mjs');
+ const manifest=buildEditorialDefaultsManifest();
+ const words=book.bookRegionCopyRows,aliases=book.bookAccessibleAliasRows;
+ assert.equal(words.length,3);
+ assert.deepEqual(words.map(row=>row[0]),['regionLead','regionPage','regionOf']);
+ assert.equal(manifest.stats.cohorts['hero-book-accessibility'],6);
+ for(const [key,ru,en] of words){
+  const id='guideedit.book.book-aria.'+
+   key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  const records=manifest.records.filter(row=>row.recordKey===id);
+  assert.deepEqual(records.map(row=>row.field).sort(),['en','ru']);
+  assert.equal(records.find(row=>row.field==='ru').value,ru);
+  assert.equal(records.find(row=>row.field==='en').value,en);
+  assert.doesNotMatch(ru,/[0-9]/,'Live page position is not a D1 caption');
+ }
+ assert.equal(aliases.length,4);
+ for(const [,ru,en] of aliases){
+  const key=locale.bookFieldKey(ru),id='guideedit.book.'+locale.fieldKey(key);
+  assert.ok(key,ru+' must be an existing Book bilingual field');
+  assert.equal(locale.baseText(key,'en'),en);
+  assert.equal(manifest.records.filter(row=>row.recordKey===id).length,2);
+  assert.equal(manifest.records.some(row=>
+   row.recordKey.startsWith('guideedit.book.book-aria.')&&row.value===ru),
+   false,'Do not add a duplicate alias default for '+ru);
+ }
+ assert.match(bookSource,/bookChapterTitle\(chapter,chapterRu,copy\)/);
+ assert.match(bookSource,/authored\('regionPage'\)\+' '\+\(index\+1\)/);
+ assert.match(bookSource,/child!==stablePanel&&child!==pinnedOwnerPanel/);
+ assert.match(bookSource,/ownerPanel\.querySelector\('\.wiki-inline-input,\[data-owner-text-field\]'\)/);
+ assert.match(bookSource,/data-book-aria-action/);
+ assert.match(app,/if\(isBook\)window\.PandoraStageAttributes\?\.refreshAccessibility/);
+ assert.match(app,/key\.startsWith\('book\.book-aria\.'\)/);
+ assert.match(app,/last\.key\.startsWith\('guideedit\.book\.book-aria\.'\)/);
+ assert.match(app,/record\.key\.startsWith\('guideedit\.book\.book-aria\.'\)/);
+});

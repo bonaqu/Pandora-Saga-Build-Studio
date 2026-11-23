@@ -447,6 +447,67 @@ function guideLabel(node,key,ru,en,options={},fallbackRu='',fallbackEn=''){
  }
  return node;
 }
+// Three authorial fragments, not the current chapter name or page numbers.
+const bookRegionCopyRows=Object.freeze([
+ ['regionLead','Книга героя.','Hero Book.'],
+ ['regionPage','Страница','Chapter'],
+ ['regionOf','из','of']
+]);
+// Existing Book captions and their D1 record keys MUST be reused, not reseeded.
+const bookAccessibleAliasRows=Object.freeze([
+ ['previous','Предыдущая страница','Previous chapter'],
+ ['next','Следующая страница','Next chapter'],
+ ['close','Вернуть портрет','Return to portrait'],
+ ['tabs','Разделы книги героя','Hero Book chapters']
+]);
+function bookAccessibilitySpecs(){
+ const locale=root.PandoraUILocale;
+ return [
+  ...bookRegionCopyRows.map(([id,ru,en])=>({
+   id,ru,en,key:'book-aria.'+id.replace(/[A-Z]/g,ch=>'-'+ch.toLowerCase())
+  })),
+  ...bookAccessibleAliasRows.map(([id,ru,en])=>({
+   id,ru,en,key:locale?.fieldKey?.(locale?.bookFieldKey?.(ru))
+  })).filter(row=>row.key)
+ ];
+}
+function bookAccessibilityText(spec,copy){
+ const english=document.documentElement?.lang==='en';
+ const info=root.PandoraHonorGuide?.field(copy,spec.key,spec.ru,spec.en);
+ return english?(info?.en||spec.en):(info?.ru||spec.ru);
+}
+function bookChapterTitle(key,ru,copy){
+ const en=bookEnglish[ru]||ru;
+ const localized=root.PandoraHonorGuide?.field(copy,'chapter.'+key,ru,en);
+ return document.documentElement?.lang==='en'?(localized?.en||en):(localized?.ru||ru);
+}
+// Recompose accessible sentences only; never serialize page numbers, chapter
+// identities or user data. This can run on Save/Undo/Reset without remounting.
+function refreshBookAccessibility(target,copy={},page='summary'){
+ if(!target||!target.querySelector)return;
+ const specs=bookAccessibilitySpecs();
+ const authored=id=>{
+  const spec=specs.find(entry=>entry.id===id);
+  return spec?bookAccessibilityText(spec,copy):'';
+ };
+ const index=Math.max(0,bookPages.findIndex(([key])=>key===page));
+ const [chapter,chapterRu]=bookPages[index];
+ target.setAttribute('aria-label',authored('regionLead')+' '+
+  bookChapterTitle(chapter,chapterRu,copy)+'. '+
+  authored('regionPage')+' '+(index+1)+' '+
+  authored('regionOf')+' '+bookPages.length);
+ for(const id of ['previous','next','close','tabs']){
+  const element=target.querySelector('[data-book-aria-action="'+id+'"]');
+  if(element)element.setAttribute('aria-label',authored(id));
+ }
+ const owner=target.querySelector('#ownerBookAccessibilityCopy');
+ if(!owner)return;
+ for(const spec of specs){
+  const node=owner.querySelector('[data-book-a11y-owner="'+spec.id+'"]');
+  if(node&&!node.querySelector('.wiki-inline-input,[data-owner-text-field]'))
+   node.textContent=bookAccessibilityText(spec,copy);
+ }
+}
 const bookPages=Object.freeze([
  ['summary','Результаты расчёта'],['attack','Атака'],['defense','Защита'],
  ['buffs','Усиления'],['effects','Эффекты умений'],['recovery','Эффекты зелий']
@@ -2441,6 +2502,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
  // Keep the same scrolling pane mounted on ordinary value changes: re-attaching
  // a newly animated pane used to reset scroll/focus and visibly flash the Book.
  const stablePanel=target.querySelector?.('.stage-book-page');
+ const pinnedOwnerPanel=target.querySelector?.('#ownerBookAccessibilityCopy');
  const reusePanel=stablePanel?.dataset.bookVisible===page;
  if(reusePanel&&page==='summary')
   for(const node of stablePanel.querySelectorAll?.('details.stage-result-section')||[]){
@@ -2463,36 +2525,31 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
   }
  const storedScroll=reusePanel?stablePanel.scrollTop:0;
  if(reusePanel){
-  for(const child of [...target.children])if(child!==stablePanel)child.remove();
+  for(const child of [...target.children])if(child!==stablePanel&&child!==pinnedOwnerPanel)child.remove();
+ }else if(pinnedOwnerPanel){
+  for(const child of [...target.children])if(child!==pinnedOwnerPanel)child.remove();
  }else target.replaceChildren();
  const copyOptions={overrides:copy,editable:canEdit,onTextEdit,onHonor};
- const chapterTitle=(key,ru)=>{
-  const en=bookEnglish[ru]||ru;
-  const localized=root.PandoraHonorGuide?.field(copy,'chapter.'+key,ru,en);
-  return document.documentElement?.lang==='en'?(localized?.en||en):(localized?.ru||ru);
- };
+ const chapterTitle=(key,ru)=>bookChapterTitle(key,ru,copy);
  const index=Math.max(0,bookPages.findIndex(([name])=>name===page));
  const chosen=bookPages[index][0],prior=bookPages[(index+bookPages.length-1)%bookPages.length][0],
   next=bookPages[(index+1)%bookPages.length][0];
  target.setAttribute('role','region');
- target.setAttribute('aria-label',document.documentElement?.lang==='en'?
-  'Hero Book. '+chapterTitle(chosen,bookPages[index][1])+'. Chapter '+(index+1)+' of 6':
-  'Книга героя. '+chapterTitle(chosen,bookPages[index][1])+'. Страница '+(index+1)+' из 6');
  // The chapter count is generated state, not part of an editable D1 label.
  const bookTitleText=make('span',{class:'stage-book-title-text',
   text:document.documentElement?.lang==='en'?'HERO BOOK':'КНИГА ГЕРОЯ'});
  if(bookTitleText.dataset?.bookEditorialKey)
   bookTitleText.dataset.ownerCopyKey=bookTitleText.dataset.bookEditorialKey;
  const bookHeader=make('div',{class:'stage-attribute-head'},[
-  make('button',{type:'button',class:'stage-book-arrow',text:'‹',
+  make('button',{type:'button',class:'stage-book-arrow',text:'‹','data-book-aria-action':'previous',
    onclick:()=>onPage(prior),'aria-label':document.documentElement?.lang==='en'?'Previous page':'Предыдущая страница'}),
   make('div',{class:'stage-book-heading'},[
    make('span',{class:'stage-book-title-line'},[bookTitleText,
     make('span',{class:'stage-book-title-count',text:' · '+(index+1)+' / 6'})]),
    make('strong',{text:chapterTitle(chosen,bookPages[index][1])})]),
-  make('button',{type:'button',class:'stage-book-arrow',text:'›',
+  make('button',{type:'button',class:'stage-book-arrow',text:'›','data-book-aria-action':'next',
    onclick:()=>onPage(next),'aria-label':document.documentElement?.lang==='en'?'Next page':'Следующая страница'}),
-  make('button',{type:'button',text:'✕',class:'stage-book-close',onclick:onClose,
+  make('button',{type:'button',text:'✕',class:'stage-book-close','data-book-aria-action':'close',onclick:onClose,
    'aria-label':document.documentElement?.lang==='en'?'Return to portrait':'Вернуть портрет'})
  ]);
  if(reusePanel)target.insertBefore(bookHeader,stablePanel);
@@ -2501,7 +2558,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
  if(headingTitle)guideLabel(headingTitle,'chapter.'+chosen,
   bookPages[index][1],bookEnglish[bookPages[index][1]]||bookPages[index][1],
   copyOptions);
- const nav=make('nav',{class:'stage-attribute-tabs',role:'tablist','aria-label':document.documentElement?.lang==='en'?'Hero Book chapters':'Разделы книги героя'});
+ const nav=make('nav',{class:'stage-attribute-tabs',role:'tablist','data-book-aria-action':'tabs','aria-label':document.documentElement?.lang==='en'?'Hero Book chapters':'Разделы книги героя'});
  for(const [name,label] of bookPages){
   const button=make('button',{
    type:'button',role:'tab',text:chapterTitle(name,label),id:'stageBookTab_'+name,
@@ -2719,9 +2776,40 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
   stablePanel.replaceChildren(...body.childNodes);
   stablePanel.scrollTop=storedScroll;
  }else target.append(body);
+ // Owner-only, collapsed accessibility editing; no label pencils or
+ // duplicate D1 action keys. Keep open drafts mounted on page/rerender.
+ let ownerPanel=pinnedOwnerPanel;
+ if(canEdit&&typeof onTextEdit==='function'){
+  const language=document.documentElement?.lang==='en'?'en':'ru';
+  if(ownerPanel&&ownerPanel.dataset.bookAriaLocale!==language&&
+   !ownerPanel.querySelector('.wiki-inline-input,[data-owner-text-field]')){
+   ownerPanel.remove();ownerPanel=null;
+  }
+  if(!ownerPanel){
+   ownerPanel=make('details',{class:'studio-owner-interface-editor stage-book-a11y-owner'});
+   ownerPanel.id='ownerBookAccessibilityCopy';
+   ownerPanel.dataset.bookAriaLocale=language;
+   ownerPanel.append(make('summary',{text:language==='en'?
+    'Accessible Book labels':'Доступные названия книги'}));
+   const rows=make('div',{class:'studio-owner-interface-fields'});
+   for(const spec of bookAccessibilitySpecs()){
+    const caption=make('span',{class:'studio-owner-interface-value',
+     'data-book-a11y-owner':spec.id});
+    guideLabel(caption,spec.key,spec.ru,spec.en,copyOptions);
+    rows.append(make('div',{class:'studio-owner-interface-row'},[
+     make('span',{class:'studio-owner-interface-name',
+      text:language==='en'?spec.en:spec.ru}),caption
+    ]));
+   }
+   ownerPanel.append(rows);
+  }
+  target.append(ownerPanel);
+ }else ownerPanel?.remove();
+ refreshBookAccessibility(target,copy,chosen);
 }
 root.PandoraStageAttributes=Object.freeze({render,bookPages,bookText,bookEditorialKey,
- bookEditorialDefaults:bookEnglish,resetDisclosureState,
+ bookEditorialDefaults:bookEnglish,bookRegionCopyRows,bookAccessibleAliasRows,
+ refreshAccessibility:refreshBookAccessibility,resetDisclosureState,
  summaryRows,attackChapterGroups,defenseChapterGroups,
  gameSkillName,gameBranchName,gameClassName});
 })(typeof window==='undefined'?globalThis:window);

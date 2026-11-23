@@ -600,6 +600,56 @@ export async function runOwnerRacialPath648Smoke(browser,base){
    budgetNumbers);
   assert.equal(await budget.locator('#activeJob').innerText(),professionBefore);
   console.log('Chromium #390 Path budget RU/EN CAS, Escape, numeric integrity passed');
+
+  // Book navigation keeps original source-backed D1 keys; ARIA numbers and
+  // current chapter are composed from runtime state, never an owner string.
+  await page.locator('#hero').click();
+  const heroBook=page.locator('#stageAttributes');
+  await heroBook.waitFor({state:'visible',timeout:12000});
+  const originalCount=await heroBook.locator('.stage-book-title-count').innerText();
+  assert.match(await heroBook.getAttribute('aria-label'),
+   /^Hero Book\. .*\. Chapter 1 of 6$/);
+  const ariaPanel=heroBook.locator('#ownerBookAccessibilityCopy');
+  await ariaPanel.locator('summary').click();
+  assert.equal(await ariaPanel.locator('.stage-guide-edit-hint').count(),0);
+  const ariaLead=ariaPanel.locator('[data-book-a11y-owner="regionLead"]');
+  await ariaLead.dblclick();
+  const introInput=ariaLead.locator('[data-owner-text-field]');
+  await introInput.waitFor({state:'visible'});
+  await introInput.fill('Hero dossier QA.');
+  await introInput.press('Tab');
+  await introInput.waitFor({state:'detached',timeout:15000});
+  await savedOverride('guideedit.book.book-aria.region-lead',
+   {en:'Hero dossier QA.'});
+  assert.match(await heroBook.getAttribute('aria-label'),/^Hero dossier QA\./);
+  assert.equal(await heroBook.locator('.stage-book-title-count').innerText(),originalCount);
+  const oldField=await page.evaluate(()=>{
+   const locale=window.PandoraUILocale;
+   return locale.fieldKey(locale.bookFieldKey('Предыдущая страница'));
+  });
+  assert.match(oldField,/^ui\.label\.book-/);
+  const previousCopy=ariaPanel.locator('[data-book-a11y-owner="previous"]');
+  await previousCopy.dblclick();
+  const previousInput=previousCopy.locator('[data-owner-text-field]');
+  await previousInput.waitFor({state:'visible'});
+  await previousInput.fill('Earlier chapter QA');
+  await previousInput.press('Tab');
+  await previousInput.waitFor({state:'detached',timeout:15000});
+  await savedOverride('guideedit.book.'+oldField,{en:'Earlier chapter QA'});
+  assert.equal(await heroBook.locator('[data-book-aria-action="previous"]')
+   .getAttribute('aria-label'),'Earlier chapter QA');
+  await heroBook.locator('[data-book-aria-action="next"]').click();
+  assert.match(await heroBook.getAttribute('aria-label'),
+   /^Hero dossier QA\. .*\. Chapter 2 of 6$/);
+  assert.equal(await heroBook.locator('#ownerBookAccessibilityCopy').count(),1,
+   'Book page change must preserve the single owner accessibility panel');
+  await page.locator('#locale [data-locale="ru"]').click();
+  assert.match(await heroBook.getAttribute('aria-label'),
+   /^Книга героя\. .*\. Страница 2 из 6$/);
+  assert.equal(await heroBook.locator('[data-book-aria-action="previous"]')
+   .getAttribute('aria-label'),'Предыдущая страница');
+  console.log('Chromium #390 Book accessible D1 aliases and dynamic page index passed');
+
   assert.equal(writes.filter(x=>x.key==='guideedit.book.path.racial-branch').length,2);
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('ps-build-studio.v1')));
   assert.ok(Object.values(saved.points||{}).every(value=>Number(value)===0),

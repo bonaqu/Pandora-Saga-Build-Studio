@@ -10673,6 +10673,8 @@ function refreshVisibleUICopy(recordKey){
   recordKey.startsWith('guideedit.book.ui.label.compare-');
  const isStatus=recordKey.startsWith('guideedit.book.ui.label.status-');
  const isBook=recordKey.startsWith('guideedit.book.ui.label.book-');
+ if(isBook)window.PandoraStageAttributes?.refreshAccessibility?.(
+  $('stageAttributes'),override,stageAttributesPage||'summary');
  const isAccount=recordKey.startsWith('guideedit.book.ui.label.account-');
  const isWorkbench=recordKey.startsWith('guideedit.book.ui.label.workbench-title-');
  if(!isLibrary&&!isStatus&&!isBook&&!isAccount&&!isWorkbench)return;
@@ -10978,6 +10980,10 @@ async function undoOwnerEdit(){
      }else if(last.key.startsWith('guideedit.book.profile.')){
      refreshVisibleProfileCopy();
      saveView();
+    }else if(last.key.startsWith('guideedit.book.book-aria.')){
+     window.PandoraStageAttributes?.refreshAccessibility?.(
+      $('stageAttributes'),override,stageAttributesPage||'summary');
+     saveView();
     }else if(last.key.startsWith('guideedit.book.ui.label.')){
      refreshVisibleUICopy(last.key);
      // Account copy is patched in place; rebuilding the form loses unsent values.
@@ -11133,6 +11139,10 @@ function showOverrideManager(){
         refreshVisibleOriginCopy(record.key);saveView();
        }else if(record.key.startsWith('guideedit.book.profile.')){
         refreshVisibleProfileCopy();saveView();
+       }else if(record.key.startsWith('guideedit.book.book-aria.')){
+        window.PandoraStageAttributes?.refreshAccessibility?.(
+         $('stageAttributes'),override,stageAttributesPage||'summary');
+        saveView();
        }else if(record.key.startsWith('guideedit.book.ui.label.')){
         refreshVisibleUICopy(record.key);
         // A text reset never rebuilds the live login or password form.
@@ -11444,6 +11454,9 @@ async function saveGuidePatchNow(key,fields){
   if(key.startsWith('book.profile.'))refreshVisibleProfileCopy();
   if(key.startsWith('book.ui.label.'))
    refreshVisibleUICopy('guideedit.'+key);
+  if(key.startsWith('book.book-aria.'))
+   window.PandoraStageAttributes?.refreshAccessibility?.(
+    $('stageAttributes'),override,stageAttributesPage||'summary');
   if(key.startsWith('book.origin.hint')||key.startsWith('book.equipment.')||key.startsWith('book.path.')||
      key.startsWith('book.catalog-sync.')||key.startsWith('book.honor-view.')||
      key.startsWith('book.owner-dock.')||key.startsWith('book.owner-history.')||
