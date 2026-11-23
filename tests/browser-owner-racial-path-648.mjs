@@ -232,6 +232,17 @@ export async function runOwnerRacialPath648Smoke(browser,base){
    localStorage.getItem('ps-build-studio.v1'))).race,raceBefore,
    'Preview navigation cannot change the selected race');
   // Origin Stats owner captions are source-only; live point totals remain game data.
+  await page.locator('#originTabs [data-origin-tab="stats"]').click();
+  const statSummary=page.locator('#originStatSummary');
+  await statSummary.waitFor({state:'visible'});
+  const originalStatSummary=await statSummary.textContent();
+  const statInput=page.locator('#originStats .origin-stat-input').first();
+  const originalStatInput=await statInput.inputValue();
+  const hpSource=await page.locator('#originHp').textContent();
+  const mpSource=await page.locator('#originMp').textContent();
+  assert.equal(await page.locator('#originVitals').getAttribute('aria-label'),
+   'ОЗ '+hpSource+', ОМ '+mpSource);
+  await page.locator('#originTabs [data-origin-tab="race"]').click();
   // Source-backed caps are not authorial copy. Edit the visible caption
   // directly while keeping the cap number and the growth state untouched.
   await openEditableTrack();
