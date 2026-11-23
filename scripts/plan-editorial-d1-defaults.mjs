@@ -1253,6 +1253,30 @@ export function buildEditorialDefaultsManifest(){
   }
  }
 
+ // Reviewed catalog human-review copy is strictly authorial and dynamic
+ // count values remain independent DOM nodes. Mechanic caveats, game records,
+ // source errors, and publication confirmations are never imported.
+ const reviewDetails=read('pandora-os-catalog-workbench.js').match(
+  /const catalogReviewDetailCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ if(!reviewDetails)throw Error('Missing original catalog review caption registry');
+ const reviewRows=runInNewContext('('+reviewDetails[1]+')',{},{
+  filename:'catalogReviewDetailCopyRows',timeout:5000
+ });
+ const expectedReview=['changedParametersLead','decisionHeading','formulaTitle',
+  'heroMoreChangesLead','heroNoChange','heroSelectHelp','impactHeading',
+  'moreImpactsLead','moreImpactsSuffix'];
+ if(!Array.isArray(reviewRows)||reviewRows.length!==expectedReview.length||
+  reviewRows.map(r=>r?.[0]).sort().join('|')!==expectedReview.sort().join('|'))
+  throw Error('Unreviewed catalog detail editorial keys');
+ for(const row of reviewRows){
+  if(!Array.isArray(row)||row.length!==3||row.some(value=>
+   typeof value!=='string'||!value.trim()||value!==value.trim()))
+   throw Error('Invalid catalog review bilingual source caption');
+  const [key,ru,en]=row,slug=key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  append('guideedit.book.catalog-sync.'+slug,'ru',ru,'catalog-review-details');
+  append('guideedit.book.catalog-sync.'+slug,'en',en,'catalog-review-details');
+ }
+
  // Footer source copy is four static RU/EN fragments around three
  // immutable, current-catalog counts. Never materialize numeric values.
  const footerMatch=app.match(
