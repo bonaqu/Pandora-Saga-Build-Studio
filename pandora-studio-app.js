@@ -11067,6 +11067,26 @@ function showOverrideManager(){
   if(!row)throw Error('Unknown history control binding');
   return bindOwnerInterfaceText(node,'owner-history',key,row[1],row[2],attribute);
  };
+ // Audit only fixed authorial row chrome: status copy, an action caption
+ // and a count prefix. Never record source field values, entry titles or totals.
+ const ownerHistoryRowCopyRows=Object.freeze([
+  ['pendingError','Есть ошибка сохранения. Исправь её перед изменением записей.',
+   'A save failed. Resolve it before modifying records.'],
+  ['pendingSaving','Идёт сохранение. Возврат исходных значений пока недоступен.',
+   'Saving is in progress. Restoring original values is temporarily unavailable.'],
+  ['fieldsChanged','Изменено полей:','Changed fields:'],
+  ['openEncyclopedia','Открыть в энциклопедии','Open in Encyclopedia'],
+  ['restoreOriginal','Вернуть оригинал','Restore original']
+ ]);
+ const historyRowCopyByKey=new Map(ownerHistoryRowCopyRows.map(row=>[row[0],row]));
+ const historyRowCaption=(tag,className,key)=>{
+  const source=historyRowCopyByKey.get(key);
+  if(!source)throw Error('Unknown history row authorial copy');
+  const [,ru,en]=source;
+  const node=h(tag,{class:className,text:ownerCopy('owner-history',key,ru,en)});
+  ownerCopyLabel(node,'owner-history',key,ru,en);
+  return node;
+ };
  const ownerHistoryTextByKey=new Map(ownerHistoryTextRows.map(row=>[row[0],row]));
  const historyCaption=(tag,className,key)=>{
   const source=ownerHistoryTextByKey.get(key);
@@ -11093,6 +11113,10 @@ function showOverrideManager(){
  ownerCopyLabel(sessionCaption,'owner-history','session','За этот сеанс','This session');
  ownerCaptionActionGuard(sessionLabel,sessionCaption);
  const pendingNote=h('p',{class:'owner-manager-pending-note',role:'status',hidden:true});
+ // Status nodes survive a live history redraw and retain an open D1 editor.
+ const pendingError=historyRowCaption('span','owner-history-pending-error','pendingError');
+ const pendingSaving=historyRowCaption('span','owner-history-pending-saving','pendingSaving');
+ pendingNote.append(pendingError,pendingSaving);
  const count=h('p',{class:'owner-manager-summary',role:'status'});
  const shownValue=h('span',{class:'owner-history-live-count',text:'0'});
  const totalValue=h('span',{class:'owner-history-live-count',text:'0'});
@@ -11144,11 +11168,8 @@ function showOverrideManager(){
   shownValue.textContent=String(entries.length);
   totalValue.textContent=String(allEntries.length);
   pendingNote.hidden=!ownerSaveInFlight()&&ownerSaveState!=='error';
-  if(!pendingNote.hidden)pendingNote.textContent=ownerSaveState==='error'?
-   tr('Есть ошибка сохранения. Исправь её перед изменением записей.',
-    'A save failed. Resolve it before modifying records.'):
-   tr('Идёт сохранение. Возврат исходных значений пока недоступен.',
-    'Saving is in progress. Restoring original values is temporarily unavailable.');
+  pendingError.hidden=ownerSaveState!=='error';
+  pendingSaving.hidden=ownerSaveState==='error';
   if(!entries.length)list.append(authoredHistory('empty',
    'Не найдено правок по выбранному запросу.','No edits match your search.'));
   for(const record of entries){
@@ -11156,7 +11177,11 @@ function showOverrideManager(){
    row.open=Boolean(q)||entries.length<=4;
    const head=h('summary',{class:'owner-review-heading'},[
     h('strong',{text:record.title}),
-    h('small',{text:tr('Изменено полей: ','Changed fields: ')+record.changes.length})
+    h('small',{class:'owner-history-fields-summary'},[
+     historyRowCaption('span','owner-history-fields-copy','fieldsChanged'),
+     document.createTextNode(' '),
+     h('span',{class:'owner-history-field-count',text:String(record.changes.length)})
+    ])
    ]);
    const edits=h('div',{class:'owner-review-changes'});
    for(const entry of record.changes){
@@ -11174,15 +11199,18 @@ function showOverrideManager(){
    }
    const actions=h('div',{class:'owner-review-actions'});
    if(record.target&&record.target.id&&wikiDataOrCatalogHasRecord(record.target)){
-    actions.append(h('button',{type:'button',text:tr('Открыть в энциклопедии','Open in Encyclopedia'),
-     onclick:()=>{
-      $('modalRoot').hidden=true;$('modalRoot').replaceChildren();
-      openWiki(record.target.type,record.target.id);
-      showWorkbench();
-     }}));
+    const openButton=h('button',{type:'button',onclick:()=>{
+     $('modalRoot').hidden=true;$('modalRoot').replaceChildren();
+     openWiki(record.target.type,record.target.id);
+     showWorkbench();
+    }});
+    const openCaption=historyRowCaption('span','owner-history-open-copy','openEncyclopedia');
+    openButton.append(openCaption);
+    ownerCaptionActionGuard(openButton,openCaption);
+    actions.append(openButton);
    }
-   actions.append(h('button',{type:'button',class:'owner-review-reset',
-    text:tr('Вернуть оригинал','Restore original'),onclick:async event=>{
+   const resetAction=h('button',{type:'button',class:'owner-review-reset',
+    onclick:async event=>{
      if(!ownerCanStartAdminOperation())return;
      if(!confirm(tr('Вернуть исходные данные для «','Restore original data for “')+record.title+tr('»?','”?')))return;
      editIsSaving=true;
@@ -11221,7 +11249,11 @@ function showOverrideManager(){
       if(resetButton.isConnected)resetButton.disabled=false;
       if(body.isConnected)draw();
      }
-    }}));
+    }});
+   const resetCaption=historyRowCaption('span','owner-history-reset-copy','restoreOriginal');
+   resetAction.append(resetCaption);
+   ownerCaptionActionGuard(resetAction,resetCaption);
+   actions.append(resetAction);
    row.append(head,edits,actions);list.append(row);
    const reset=actions.querySelector('.owner-review-reset');
    if(reset)window.PandoraGuideTooltip?.attach(reset,tr(
@@ -11265,6 +11297,12 @@ function showOverrideManager(){
  const controlEditor=ownerInterfaceEditor('owner-history',ownerHistoryControlCopyRows,
   'Подписи истории правок','History control captions');
  if(controlEditor)body.append(controlEditor);
+ // Hidden transient status messages are not ordinarily visible to double-click;
+ // expose just those two source strings in the existing collapsed owner UI.
+ const statusEditor=ownerInterfaceEditor('owner-history',
+  ownerHistoryRowCopyRows.filter(row=>row[0].startsWith('pending')),
+  'Подписи состояний сохранения','Save status captions');
+ if(statusEditor)body.append(statusEditor);
  draw();
  modal(tr('Все ручные правки','All manual edits'),body);
  if(!wikiBaseData)void loadWiki().then(()=>{if(body.isConnected)draw()})
