@@ -125,6 +125,23 @@ export function buildEditorialDefaultsManifest(){
   append('guideedit.book.book-aria.'+slug,'ru',ru,'hero-book-accessibility');
   append('guideedit.book.book-aria.'+slug,'en',en,'hero-book-accessibility');
  }
+ // The three reviewed navigation-action verbs are authorial, but the
+ // item/skill names appended after them are source data, never D1 rows.
+ const bookActionRows=book.bookSourceActionCopyRows;
+ const expectedBookActions=[
+  'skillEncyclopediaPrefix','itemEncyclopediaPrefix','itemOpenPrefix'
+ ];
+ if(!Array.isArray(bookActionRows)||bookActionRows.length!==expectedBookActions.length||
+  bookActionRows.map(row=>row?.[0]).sort().join('|')!==expectedBookActions.sort().join('|'))
+  throw Error('Book dynamic source-action copy inventory drift');
+ for(const [key,ru,en] of bookActionRows){
+  if(!/^[a-z][a-zA-Z]+$/.test(key)||!ru.trim()||ru!==ru.trim()||
+   !en.trim()||en!==en.trim())
+   throw Error('Invalid Book source-action RU/EN phrase: '+key);
+  const slug=key.replace(/[A-Z]/g,ch=>'-'+ch.toLowerCase());
+  append('guideedit.book.book-aria.'+slug,'ru',ru,'hero-book-source-actions');
+  append('guideedit.book.book-aria.'+slug,'en',en,'hero-book-source-actions');
+ }
  const bookAliases=book.bookAccessibleAliasRows;
  if(!Array.isArray(bookAliases)||bookAliases.length!==4||
   bookAliases.map(row=>row?.[0]).sort().join('|')!=='close|next|previous|tabs')

@@ -263,3 +263,62 @@ test('#390: Hero Book accessible chapter names reuse original D1 actions and iso
  assert.match(app,/last\.key\.startsWith\('guideedit\.book\.book-aria\.'\)/);
  assert.match(app,/record\.key\.startsWith\('guideedit\.book\.book-aria\.'\)/);
 });
+
+test('#390: Book dynamic accessible action prefixes never store skill/item names in D1',async()=>{
+ const {buildEditorialDefaultsManifest}=await import('../scripts/plan-editorial-d1-defaults.mjs');
+ const manifest=buildEditorialDefaultsManifest();
+ const rows=book.bookSourceActionCopyRows;
+ assert.deepEqual(rows.map(row=>row[0]),[
+  'skillEncyclopediaPrefix','itemEncyclopediaPrefix','itemOpenPrefix'
+ ]);
+ assert.equal(manifest.stats.cohorts['hero-book-source-actions'],6);
+ for(const [key,ru,en] of rows){
+  const id='guideedit.book.book-aria.'+
+   key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  assert.equal(manifest.records.find(row=>row.recordKey===id&&row.field==='ru')?.value,ru);
+  assert.equal(manifest.records.find(row=>row.recordKey===id&&row.field==='en')?.value,en);
+  assert.equal(ru.trim(),ru);assert.equal(en.trim(),en);
+ }
+ assert.equal(manifest.records.some(row=>/SOURCE SKILL|SOURCE ITEM 13041/.test(row.value)),false);
+ const source=file('pandora-studio-hero-book.js');
+ assert.equal([...source.matchAll(/'data-book-source-aria':/g)].length,6,
+  'One skill badge, four source item encyclopedia actions and one direct item link');
+ assert.match(source,/'data-book-source-name':skillName/);
+ assert.match(source,/'data-book-source-name':displayName/);
+ assert.match(source,/key==='data-book-source-name'&&value!==null&&value!==undefined/);
+ assert.match(source,/action\.dataset\.bookSourceAria,name=action\.dataset\.bookSourceName/);
+ assert.match(source,/action\.setAttribute\('aria-label',authored\(id\)\+' '\+name\)/);
+ // The same actual Book refresh recomposes accessible words from immutable
+ // game-source names, even after a CAS override. No fake game stat values.
+ if(!root.PandoraHonorGuide)
+  Function('window',file('pandora-studio-honor-guide.js'))(root);
+ const previous=globalThis.document,buttons=[
+  {dataset:{bookSourceAria:'skillEncyclopediaPrefix',bookSourceName:'SOURCE SKILL'},
+   attrs:{},setAttribute(key,v){this.attrs[key]=v}},
+  {dataset:{bookSourceAria:'itemOpenPrefix',bookSourceName:'SOURCE ITEM 13041'},
+   attrs:{},setAttribute(key,v){this.attrs[key]=v}}
+ ];
+ const target={
+  attrs:{},setAttribute(key,v){this.attrs[key]=v},
+  querySelector(){return null},
+  querySelectorAll(selector){return selector==='[data-book-source-aria]'?buttons:[]}
+ };
+ try{
+  globalThis.document={documentElement:{lang:'en'}};
+  const patch={'guideedit.book.book-aria.item-open-prefix':JSON.stringify({
+   en:'Open source item QA:'
+  })};
+  book.refreshAccessibility(target,patch,'recovery');
+  assert.equal(buttons[0].attrs['aria-label'],'Encyclopedia: SOURCE SKILL');
+  assert.equal(buttons[1].attrs['aria-label'],'Open source item QA: SOURCE ITEM 13041');
+  assert.equal(buttons[1].dataset.bookSourceName,'SOURCE ITEM 13041');
+  assert.match(target.attrs['aria-label'],/^Hero Book\. .*\. Chapter 6 of 6$/);
+  globalThis.document.documentElement.lang='ru';
+  book.refreshAccessibility(target,patch,'recovery');
+  assert.equal(buttons[0].attrs['aria-label'],'Энциклопедия: SOURCE SKILL');
+  assert.equal(buttons[1].attrs['aria-label'],'Открыть предмет: SOURCE ITEM 13041');
+ }finally{
+  if(previous===undefined)delete globalThis.document;
+  else globalThis.document=previous;
+ }
+});

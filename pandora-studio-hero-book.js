@@ -336,6 +336,8 @@ function make(tag,attrs={},children=[]){
   else if(key.startsWith('on'))n.addEventListener(key.slice(2),value);
   else if(['disabled','checked','selected','hidden','required','readOnly','multiple'].includes(key))
    n[key]=Boolean(value);
+  else if(key==='data-book-source-name'&&value!==null&&value!==undefined)
+   n.setAttribute(key,String(value)); // Current catalog name stays source data.
   else if(value!==null&&value!==undefined)n.setAttribute(key,bookText(String(value)));
 
  }
@@ -454,6 +456,13 @@ const bookRegionCopyRows=Object.freeze([
  ['regionOf','из','of']
 ]);
 // Existing Book captions and their D1 record keys MUST be reused, not reseeded.
+// Accessible actions are source-authored verbs followed by immutable
+// game item/skill names. The entire composite is never a CAS override.
+const bookSourceActionCopyRows=Object.freeze([
+ ['skillEncyclopediaPrefix','Энциклопедия:','Encyclopedia:'],
+ ['itemEncyclopediaPrefix','Открыть в энциклопедии:','Open in encyclopedia:'],
+ ['itemOpenPrefix','Открыть предмет:','Open item:']
+]);
 const bookAccessibleAliasRows=Object.freeze([
  ['previous','Предыдущая страница','Previous chapter'],
  ['next','Следующая страница','Next chapter'],
@@ -464,6 +473,9 @@ function bookAccessibilitySpecs(){
  const locale=root.PandoraUILocale;
  return [
   ...bookRegionCopyRows.map(([id,ru,en])=>({
+   id,ru,en,key:'book-aria.'+id.replace(/[A-Z]/g,ch=>'-'+ch.toLowerCase())
+  })),
+  ...bookSourceActionCopyRows.map(([id,ru,en])=>({
    id,ru,en,key:'book-aria.'+id.replace(/[A-Z]/g,ch=>'-'+ch.toLowerCase())
   })),
   ...bookAccessibleAliasRows.map(([id,ru,en])=>({
@@ -499,6 +511,10 @@ function refreshBookAccessibility(target,copy={},page='summary'){
  for(const id of ['previous','next','close','tabs']){
   const element=target.querySelector('[data-book-aria-action="'+id+'"]');
   if(element)element.setAttribute('aria-label',authored(id));
+ }
+ for(const action of target.querySelectorAll?.('[data-book-source-aria]')||[]){
+  const id=action.dataset.bookSourceAria,name=action.dataset.bookSourceName;
+  if(name&&id)action.setAttribute('aria-label',authored(id)+' '+name);
  }
  const owner=target.querySelector('#ownerBookAccessibilityCopy');
  if(!owner)return;
@@ -1433,6 +1449,8 @@ function gameSkillBadge(id,ru,en,terms,english,skillIconForId,onSkill=null){
  const label=make(interactive?'button':'span',{
   class:'stage-effect-skill-label'+(interactive?' stage-effect-skill-link':''),
   ...(interactive?{type:'button',
+   'data-book-source-aria':'skillEncyclopediaPrefix',
+   'data-book-source-name':skillName,
    'aria-label':(english?'Encyclopedia: ':'Энциклопедия: ')+skillName,
    onclick:()=>onSkill(id)}:{})});
  const source=skillIconForId?.(id);
@@ -2628,7 +2646,9 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
   for(const entry of shown){
    const item=entry.id==null?null:itemById(entry.id);
    const row=make(item?'button':'div',{class:'stage-potion-item',
-    ...(item?{type:'button','aria-label':(english?'Open in encyclopedia: ':'Открыть в энциклопедии: ')+(item.name||entry.ru),
+    ...(item?{type:'button','data-book-source-aria':'itemEncyclopediaPrefix',
+     'data-book-source-name':item.name||entry.ru,
+     'aria-label':(english?'Open in encyclopedia: ':'Открыть в энциклопедии: ')+(item.name||entry.ru),
      onclick:()=>onItem(entry.id)}:{})});
    const label=make('span',{class:'stage-potion-name',text:item?.name||(english?(entry.en||entry.ru):(entry.ru||entry.en))||(english?'Potion':'Зелье')});
    if(item){
@@ -2653,7 +2673,9 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
    for(const entry of manaItems){
     const item=itemById(entry.id);
     const row=make(item?'button':'div',{class:'stage-potion-item',
-     ...(item?{type:'button','aria-label':(english?'Open in encyclopedia: ':'Открыть в энциклопедии: ')+(item?.name||entry.name),
+     ...(item?{type:'button','data-book-source-aria':'itemEncyclopediaPrefix',
+      'data-book-source-name':item?.name||entry.name,
+      'aria-label':(english?'Open in encyclopedia: ':'Открыть в энциклопедии: ')+(item?.name||entry.name),
       onclick:()=>onItem(entry.id)}:{})});
     if(item){
      const src=icon(item);
@@ -2675,7 +2697,9 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
    for(const entry of lifeItems){
     const item=itemById(entry.id);
     const row=make(item?'button':'div',{class:'stage-potion-item',
-     ...(item?{type:'button','aria-label':(english?'Open in encyclopedia: ':'Открыть в энциклопедии: ')+(item?.name||entry.name),
+     ...(item?{type:'button','data-book-source-aria':'itemEncyclopediaPrefix',
+      'data-book-source-name':item?.name||entry.name,
+      'aria-label':(english?'Open in encyclopedia: ':'Открыть в энциклопедии: ')+(item?.name||entry.name),
       onclick:()=>onItem(entry.id)}:{})});
     if(item){
      const src=icon(item);
@@ -2698,7 +2722,9 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
    for(const entry of cures){
     const item=itemById(entry.id);
     const row=make(item?'button':'div',{class:'stage-potion-item',
-     ...(item?{type:'button','aria-label':(english?'Open in encyclopedia: ':'Открыть в энциклопедии: ')+(item?.name||entry.name),
+     ...(item?{type:'button','data-book-source-aria':'itemEncyclopediaPrefix',
+      'data-book-source-name':item?.name||entry.name,
+      'aria-label':(english?'Open in encyclopedia: ':'Открыть в энциклопедии: ')+(item?.name||entry.name),
       onclick:()=>onItem(entry.id)}:{})});
     if(item){
      const source=icon(item);
@@ -2723,7 +2749,9 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
     const row=make('div',{class:'stage-potion-item'});
     const itemLink=make(item?'button':'span',{
      class:'stage-potion-source',
-     ...(item?{type:'button','aria-label':(english?'Open item: ':
+     ...(item?{type:'button','data-book-source-aria':'itemOpenPrefix',
+      'data-book-source-name':displayName,
+      'aria-label':(english?'Open item: ':
       'Открыть предмет: ')+displayName,onclick:()=>onItem(entry.id)}:{})
     });
     if(item){
@@ -2809,7 +2837,8 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
  refreshBookAccessibility(target,copy,chosen);
 }
 root.PandoraStageAttributes=Object.freeze({render,bookPages,bookText,bookEditorialKey,
- bookEditorialDefaults:bookEnglish,bookRegionCopyRows,bookAccessibleAliasRows,
+ bookEditorialDefaults:bookEnglish,bookRegionCopyRows,bookSourceActionCopyRows,
+ bookAccessibleAliasRows,
  refreshAccessibility:refreshBookAccessibility,resetDisclosureState,
  summaryRows,attackChapterGroups,defenseChapterGroups,
  gameSkillName,gameBranchName,gameClassName});

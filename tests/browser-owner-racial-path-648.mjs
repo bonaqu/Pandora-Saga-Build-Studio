@@ -655,6 +655,24 @@ export async function runOwnerRacialPath648Smoke(browser,base){
    /^Hero dossier QA\. .*\. Chapter 2 of 6$/);
   assert.equal(await heroBook.locator('#ownerBookAccessibilityCopy').count(),1,
    'Book page change must preserve the single owner accessibility panel');
+
+  // Source action names are NOT editable; only the reusable accessible
+  // introductory verb is an authorial D1/CAS value.
+  const itemAction=heroBook.locator('#ownerBookAccessibilityCopy '+
+   '[data-book-a11y-owner="itemOpenPrefix"]');
+  assert.equal(await itemAction.count(),1);
+  await itemAction.dblclick();
+  const itemActionInput=itemAction.locator('[data-owner-text-field]');
+  await itemActionInput.waitFor({state:'visible'});
+  await itemActionInput.fill('Open source item QA:');
+  await itemActionInput.press('Tab');
+  await itemActionInput.waitFor({state:'detached',timeout:15000});
+  await savedOverride('guideedit.book.book-aria.item-open-prefix',
+   {en:'Open source item QA:'});
+  assert.equal(await itemAction.innerText(),'Open source item QA:');
+  assert.match(await heroBook.getAttribute('aria-label'),
+   /^Hero dossier QA\. .*\. Chapter 2 of 6$/);
+
   await page.locator('#locale [data-locale="ru"]').click();
   assert.match(await heroBook.getAttribute('aria-label'),
    /^Книга героя\. .*\. Страница 2 из 6$/);
