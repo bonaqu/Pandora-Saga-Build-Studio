@@ -1908,6 +1908,32 @@ export async function runAdminEntrySmoke(browser,base){
    'History needs a native section filter, even with an empty archive');
   assert.equal(await sessionFilter.isChecked(),false);
   const allHistory=await history.locator('.owner-review-row').count();
+  // #390: the real RU/EN catalog summary and the separately edited hover
+  // explanation must appear as *human-readable* owner history, not as
+  // "Other settings" or a raw JSON value. This is read-only: no reset/Undo.
+  assert.ok(townOverrides.has('guideedit.book.catalog-sync.summary-selected'));
+  const catalogHistoryRow=history.locator('.owner-review-row')
+   .filter({hasText:'Отобрано QA:'}).first();
+  assert.equal(await catalogHistoryRow.count(),1);
+  const catalogTitle=await catalogHistoryRow.locator(
+   '.owner-review-heading strong').innerText();
+  assert.match(catalogTitle,/Интерфейс · Проверка каталога · Надпись/);
+  assert.ok(!catalogTitle.includes('catalog-sync'));
+  if(!await catalogHistoryRow.evaluate(node=>node.open))
+   await catalogHistoryRow.locator('.owner-review-heading').click();
+  assert.deepEqual(await catalogHistoryRow.locator(
+   '.owner-review-field').allTextContents(),['Текст RU','Текст EN']);
+  assert.deepEqual(await catalogHistoryRow.locator(
+   '.owner-review-after p').allTextContents(),['Отобрано QA:','Selected:']);
+  assert.ok(!(await catalogHistoryRow.locator('.owner-review-after').innerText())
+   .includes('{"ru"'),'The underlying JSON override must not be dumped as a value');
+  const catalogHintHistoryRow=history.locator('.owner-review-row')
+   .filter({hasText:'Проверка изменений без публикации QA.'}).first();
+  assert.equal(await catalogHintHistoryRow.count(),1);
+  assert.match(await catalogHintHistoryRow.locator('.owner-review-heading strong').innerText(),
+   /Интерфейс · Проверка каталога · Подсказка/);
+  assert.equal(await history.locator('.owner-review-row').count(),allHistory,
+   'Viewing history must not add or reset any saved D1 records');
   await sessionFilter.check();
   assert.ok(await history.locator('.owner-review-row').count()<=allHistory,
    'Session filter cannot add unrelated D1 edits');
