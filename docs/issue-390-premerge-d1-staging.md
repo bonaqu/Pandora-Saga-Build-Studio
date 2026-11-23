@@ -14,6 +14,15 @@ The runner uses the existing verified manifest, identity guard and
 readback/rollback algorithms. It changes **no production D1, Worker, Pages,
 game JSON or player builds**. These instructions alone are not remote evidence.
 
+**GitHub-hosted staging workflow is intentionally READ-ONLY.** Only a
+`preflight` choice is exposed, with schema/UUID checks, no import, rollback,
+D1 export or upload of raw SQL. An ephemeral Actions runner cannot retain the
+required independent durable private staging backup: uploading the raw SQL
+as an artifact would expose unreviewed existing staging records and does not
+meet the operator-local 0700 backup requirement. Even once the workflow is
+merged onto the default branch, all *writes* must use the approved local
+Linux/WSL runner below with an independently retained backup.
+
 ## Preconditions
 
 1. Create an independently isolated D1 database whose name starts with
@@ -62,9 +71,10 @@ views, triggers and manual indexes, including confusing names such as
 literal-underscore, case-normalized `GLOB` to omit only SQLite's internal
 `sqlite_*` objects), same-named tables with unexpected fields,
 types or primary keys, unrelated tables, production UUID, malformed
-parameters and an unclean or wrong source checkout. The manual workflow
-shares these object/column validation rules, but cannot run pre-merge while
-its workflow_dispatch file is absent from the default branch.
+parameters and an unclean or wrong source checkout. The manual read-only preflight shares these object/column
+validation rules; its workflow_dispatch cannot run pre-merge while the file
+is absent from the default branch. Manual GitHub Actions *writes* remain
+explicitly disabled (no raw backup artifacts).
 
 ## Separate explicit import approval
 
@@ -94,8 +104,14 @@ unset PS_EDITORIAL_CONFIRMATION
 unset CLOUDFLARE_API_TOKEN
 ~~~
 
-Another independent backup precedes rollback. Only the pinned source
+Before backup or mutation, a separate **read-only SELECT** must prove that
+this exact pinned snapshot contains a marker and/or at least one row. An empty
+staging D1 is rejected: otherwise a no-op could be mislabeled as a successful
+rollback. A partially failed import with unmarked rows is still recoverable.
+Another independent backup then precedes deletion. Only the pinned source
 snapshot marker and rows are deleted; both remaining counts must equal zero.
+If import never created both staging tables, use the independent SQL backup for
+manual recovery instead of claiming snapshot rollback was proven.
 A failed import is **not automatically rolled back**: assess the evidence
 and separately authorize this rollback.
 

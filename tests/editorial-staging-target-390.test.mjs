@@ -6,8 +6,8 @@ import {
  PRODUCTION_D1_ID,STAGING_SCHEMA_SQL,validateEditorialStagingTarget,
  assertDatabaseIdentity,
  assertStagingSchema,assertStagingTableColumns,assertRolledBack,
- renderStagingWranglerConfig,
- renderStagingRollbackCheckSQL
+ assertStagingRollbackPresent,renderStagingRollbackPresenceSQL,
+ renderStagingWranglerConfig,renderStagingRollbackCheckSQL
 } from '../scripts/guard-editorial-staging-d1.mjs';
 const repo=new URL('../',import.meta.url);
 const name='ps-editorial-staging-390';
@@ -154,7 +154,48 @@ test('#390 independent rollback checks exact snapshot, both row classes, and JSO
  ])assert.throws(()=>assertRolledBack(bad));
 });
 
-test('#390 manual staging workflow never runs on push, uses new staging-only credentials and prior export',()=>{
+test('#390 rollback requires existing pinned rows or marker before deletion',()=>{
+ const snapshot='0.947.0-'+'f'.repeat(16);
+ const sql=renderStagingRollbackPresenceSQL(snapshot);
+ assert.equal((sql.match(/WHERE snapshot=/g)||[]).length,2);
+ assert.ok(sql.includes("WHERE snapshot='"+snapshot+"'"));
+ assert.ok(sql.startsWith('SELECT '),'presence is SELECT-only');
+ assert.throws(()=>renderStagingRollbackPresenceSQL(snapshot+"' OR 1=1"));
+ for(const [markers,rows] of [[1,345],[1,0],[0,18]]){
+  assert.deepEqual(assertStagingRollbackPresent(query([{
+   existing_markers:markers,existing_rows:rows
+  }])),{markers,rows});
+ }
+ for(const raw of [
+  query([{existing_markers:0,existing_rows:0}]),
+  query([{existing_markers:2,existing_rows:1}]),
+  query([{existing_markers:1,existing_rows:-1}]),
+  query([{existing_markers:'1',existing_rows:2}]),
+  query([{existing_markers:1,existing_rows:'2'}]),
+  query([{existing_markers:1,existing_rows:0,unexpected:1}]),
+  query([]),query([{existing_markers:1}]),
+  JSON.stringify([{success:false,results:[{
+   existing_markers:1,existing_rows:1
+  }]}])
+ ])assert.throws(()=>assertStagingRollbackPresent(raw));
+ const db=new DatabaseSync(':memory:');
+ try{
+  db.exec('CREATE TABLE editorial_default_rows (snapshot TEXT, value TEXT);'+
+   'CREATE TABLE editorial_default_snapshots (snapshot TEXT);');
+  const runPresence=()=>query(db.prepare(sql).all());
+  assert.throws(()=>assertStagingRollbackPresent(runPresence()),
+   'Never treat an empty staging DB as a successful rollback');
+  db.prepare('INSERT INTO editorial_default_rows(snapshot,value) VALUES (?,?)')
+   .run(snapshot,'partial');
+  assert.deepEqual(assertStagingRollbackPresent(runPresence()),{markers:0,rows:1},
+   'Partial failed import remains recoverable');
+  db.prepare('INSERT INTO editorial_default_snapshots(snapshot) VALUES (?)')
+   .run(snapshot);
+  assert.deepEqual(assertStagingRollbackPresent(runPresence()),{markers:1,rows:1});
+ }finally{db.close()}
+});
+
+test('#390 GitHub staging workflow is preflight-only and never uploads raw SQL',()=>{
  const config=renderStagingWranglerConfig(target('import'));
  assert.match(config,/binding = "EDITORIAL_STAGING_DB"/);
  assert.match(config,/database_name = "ps-editorial-staging-390"/);
@@ -163,7 +204,8 @@ test('#390 manual staging workflow never runs on push, uses new staging-only cre
  const workflow=readFileSync(new URL('.github/workflows/editorial-staging-d1-manual.yml',repo),'utf8');
  assert.match(workflow,/workflow_dispatch:/);
  assert.doesNotMatch(workflow,/^\s+(?:push|pull_request|schedule):/m);
- assert.match(workflow,/refs\/heads\/work\/947-issue390-editorial-parity/);
+ assert.match(workflow,/options: \[preflight\]/);
+ assert.match(workflow,/inputs.operation == 'preflight'/);
  assert.match(workflow,/secrets\.EDITORIAL_STAGING_CF_TOKEN/);
  assert.match(workflow,/secrets\.EDITORIAL_STAGING_CF_DATABASE_ID/);
  assert.doesNotMatch(workflow,/secrets\.CLOUDFLARE_API_TOKEN/);
@@ -174,15 +216,20 @@ test('#390 manual staging workflow never runs on push, uses new staging-only cre
  assert.ok(workflow.includes("type IN ('table','view','trigger','index')"));
  assert.ok(workflow.includes("lower(name) NOT GLOB 'sqlite_*'"));
  assert.ok(!workflow.includes("name NOT LIKE 'sqlite_%'"));
- assert.ok(workflow.indexOf('--verify-columns editorial_default_snapshots')<
-  workflow.indexOf('d1 export "$PS_EDITORIAL_STAGING_NAME" --remote'),
-  'Manual workflow must check columns before backup and writes');
- assert.match(workflow,/editorial:defaults:verify-wrangler/);
- assert.match(workflow,/--verify-rollback/);
- assert.match(workflow,/--write-rollback-check/);
- const backup=workflow.indexOf('d1 export "$PS_EDITORIAL_STAGING_NAME" --remote');
- const importStep=workflow.indexOf('d1 execute "$PS_EDITORIAL_STAGING_NAME" --remote --config "$STAGING_CONFIG" --file "$RUNNER_TEMP/editorial-import.sql"');
- assert.ok(backup>0&&importStep>backup,'Backup MUST precede any mutation');
+ const executed=workflow.split('\n').filter(line=>line.includes('wrangler@4 d1 execute'));
+ assert.equal(executed.length,3,'Only read-only schema + two PRAGMA queries allowed');
+ for(const line of executed){
+  assert.ok(line.includes('--command'),line);
+  assert.ok(line.includes('--json'),line);
+  assert.ok(!line.includes('--file'),line);
+ }
+ for(const unsafe of [
+  'd1 export','upload-artifact','d1 import','editorial-import.sql',
+  'editorial-rollback.sql','--skip-confirmation',
+  'retention-days','--verify-rollback','--write-rollback-check'
+ ])assert.ok(!workflow.includes(unsafe),'Unsafe staging workflow operation: '+unsafe);
+ assert.doesNotMatch(workflow,/d1 execute[^\n]* --yes(?:\s|$)/m,
+  'Remote D1 execution may not use a write-mode confirmation flag');
  assert.match(workflow,/concurrency:/);
 });
 
@@ -242,6 +289,10 @@ test('#390 premerge staging CLI is import-inert, SHA-pinned and requires a separ
  assert.match(source,/assertDatabaseIdentity\(wrangler\(cmd.list\),target\)/);
  assert.match(source,/assertStagingTableColumns\(wrangler\(cmd.columns\(table\)\),table,/);
  assert.match(source,/const backupRoot=checkedBackupDirectory/);
+ assert.match(source,/assertStagingRollbackPresent\(wrangler\(cmd\.readFile\)\)/);
+ assert.ok(source.indexOf('assertStagingRollbackPresent(wrangler(cmd.readFile))')<
+  source.indexOf('const backupRoot=checkedBackupDirectory'),
+  'A nonexistent snapshot cannot count as verified rollback');
  assert.match(source,/openSync\(path,constants\.O_RDONLY\|constants\.O_NOFOLLOW\)/);
  assert.match(source,/const opened=fstatSync\(fd\)/);
  assert.match(source,/fchmodSync\(fd,0o600\)/);

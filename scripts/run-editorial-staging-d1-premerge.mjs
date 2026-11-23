@@ -14,8 +14,8 @@ import {fileURLToPath} from 'node:url';
 import {
  STAGING_SCHEMA_SQL,validateEditorialStagingTarget,assertDatabaseIdentity,
  assertStagingSchema,assertStagingTableColumns,assertRolledBack,
- renderStagingWranglerConfig,
- renderStagingRollbackCheckSQL
+ assertStagingRollbackPresent,renderStagingRollbackPresenceSQL,
+ renderStagingWranglerConfig,renderStagingRollbackCheckSQL
 } from './guard-editorial-staging-d1.mjs';
 import {
  buildEditorialDefaultsManifest,renderEditorialDefaultsSQL,
@@ -162,6 +162,16 @@ async function main(){
   if(operation==='preflight'){
    process.stdout.write('READ-ONLY preflight complete. No D1 records changed.\n');
    return;
+  }
+  // An empty database also passes a zero-row post-rollback check. Before
+  // destructive rollback, prove the exact pinned snapshot has at least a
+  // row or marker. Partial imports remain recoverable (marker may be absent).
+  if(operation==='rollback'){
+   writeFileSync(stagingSQL,renderStagingRollbackPresenceSQL(manifest.snapshot),
+    {mode:0o600});
+   const found=assertStagingRollbackPresent(wrangler(cmd.readFile));
+   process.stdout.write('Read-only rollback target confirmed: '+
+    found.markers+' marker / '+found.rows+' rows\n');
   }
 
   // Independent persistent backup is mandatory before ANY import/rollback.

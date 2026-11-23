@@ -122,10 +122,33 @@ export function renderStagingWranglerConfig(target){
   ''
  ].join('\n');
 }
-export function renderStagingRollbackCheckSQL(snapshot){
+function rollbackSnapshotLiteral(snapshot){
  if(typeof snapshot!=='string'||!/^0\.947\.0-[a-f0-9]{16}$/.test(snapshot))
   throw Error('Rollback must target a pinned release and digest snapshot');
- const name="'"+snapshot+"'";
+ return "'"+snapshot+"'";
+}
+export function renderStagingRollbackPresenceSQL(snapshot){
+ const name=rollbackSnapshotLiteral(snapshot);
+ // Read-only existence check BEFORE exporting or mutating the target.
+ // Partial imports may contain only rows, or only a marker: both qualify.
+ return 'SELECT (SELECT COUNT(*) FROM editorial_default_snapshots WHERE snapshot='+
+  name+') AS existing_markers, (SELECT COUNT(*) FROM editorial_default_rows WHERE snapshot='+
+  name+') AS existing_rows;\n';
+}
+export function assertStagingRollbackPresent(raw){
+ const rows=oneQuery(raw);
+ if(rows.length!==1||!rows[0]||typeof rows[0]!=='object'||
+  Array.isArray(rows[0])||
+  Object.keys(rows[0]).sort().join('|')!=='existing_markers|existing_rows')
+  throw Error('Missing or malformed read-only staging rollback presence');
+ const markers=rows[0].existing_markers,values=rows[0].existing_rows;
+ if(!Number.isSafeInteger(markers)||markers<0||markers>1||
+  !Number.isSafeInteger(values)||values<0||!(markers||values))
+  throw Error('No exact staging snapshot exists to roll back');
+ return {markers,rows:values};
+}
+export function renderStagingRollbackCheckSQL(snapshot){
+ const name=rollbackSnapshotLiteral(snapshot);
  return 'SELECT (SELECT COUNT(*) FROM editorial_default_snapshots WHERE snapshot='+
   name+') AS remaining_markers, (SELECT COUNT(*) FROM editorial_default_rows WHERE snapshot='+
   name+') AS remaining_rows;\n';
@@ -159,6 +182,14 @@ if(process.argv[1]&&fileURLToPath(import.meta.url)===resolve(process.argv[1])){
   assertStagingTableColumns(readFileSync(resolve(third),'utf8'),file,
    schema.tables.includes(file));
   process.stdout.write('Exact staging columns confirmed: '+file+'\n');
+ }else if(operation==='--write-rollback-presence-check'&&file){
+  const {buildEditorialDefaultsManifest}=await import('./plan-editorial-d1-defaults.mjs');
+  writeFileSync(resolve(file),
+   renderStagingRollbackPresenceSQL(buildEditorialDefaultsManifest().snapshot));
+ }else if(file&&operation==='--verify-rollback-presence'){
+  const found=assertStagingRollbackPresent(readFileSync(resolve(file),'utf8'));
+  process.stdout.write('Existing exact staging snapshot confirmed: '+
+   found.markers+' marker / '+found.rows+' rows\n');
  }else if(file&&operation==='--verify-rollback'){
   assertRolledBack(readFileSync(resolve(file),'utf8'));
   process.stdout.write('Exact remote staging snapshot rollback confirmed\n');

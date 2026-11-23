@@ -1,23 +1,22 @@
-# #390: manual isolated staging ONLY. No production Worker, Pages or D1.
-name: Review isolated editorial D1 staging (manual only)
+# #390: READ-ONLY isolated staging inventory. No production Worker, Pages or D1.
+# GitHub-hosted runners cannot retain an independent private durable SQL
+# backup. They must NEVER import/rollback or upload staging SQL artifacts.
+# Approved writes use the guarded operator-local premerge runner.
+name: Inspect isolated editorial D1 staging (read only)
 
 on:
   workflow_dispatch:
     inputs:
       operation:
-        description: 'Read-only preflight, stage import with hash readback, or exact rollback'
+        description: 'Read-only preflight only; writes require the backed-up local runner'
         type: choice
-        options: [preflight, import, rollback]
+        options: [preflight]
         default: preflight
         required: true
       database_name:
         description: 'Dedicated ps-editorial-staging-* D1 database name'
         type: string
         required: true
-      confirmation:
-        description: 'For writes: CONFIRM-EDITORIAL-STAGING-<database_name>-<operation>'
-        type: string
-        required: false
 
 permissions:
   contents: read
@@ -28,7 +27,7 @@ concurrency:
 
 jobs:
   staging:
-    if: github.repository == 'bonaqu/Pandora-Saga-Build-Studio' && github.ref == 'refs/heads/work/947-issue390-editorial-parity'
+    if: github.repository == 'bonaqu/Pandora-Saga-Build-Studio' && inputs.operation == 'preflight'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     environment: editorial-staging
@@ -38,22 +37,17 @@ jobs:
       PS_EDITORIAL_STAGING_ID: ${{ secrets.EDITORIAL_STAGING_CF_DATABASE_ID }}
       PS_EDITORIAL_STAGING_NAME: ${{ inputs.database_name }}
       PS_EDITORIAL_OPERATION: ${{ inputs.operation }}
-      PS_EDITORIAL_CONFIRMATION: ${{ inputs.confirmation }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
         with:
           node-version: '22'
-      - name: Refuse production, unverified target, and unconfirmed writes
+      - name: Refuse production and verify read-only isolated target
         run: |
           test -n "$CLOUDFLARE_API_TOKEN"
           node scripts/guard-editorial-staging-d1.mjs --validate
           node scripts/guard-editorial-staging-d1.mjs --write-config "$RUNNER_TEMP/editorial-wrangler.toml"
           node scripts/plan-editorial-d1-defaults.mjs --report
-          node scripts/plan-editorial-d1-defaults.mjs --sql > "$RUNNER_TEMP/editorial-import.sql"
-          node scripts/plan-editorial-d1-defaults.mjs --readback-sql > "$RUNNER_TEMP/editorial-readback.sql"
-          node scripts/plan-editorial-d1-defaults.mjs --staging-rollback-sql > "$RUNNER_TEMP/editorial-rollback.sql"
-          node scripts/guard-editorial-staging-d1.mjs --write-rollback-check "$RUNNER_TEMP/editorial-rollback-check.sql"
       - name: Confirm remote D1 name, UUID and isolated table inventory
         env:
           STAGING_CONFIG: ${{ runner.temp }}/editorial-wrangler.toml
@@ -66,39 +60,3 @@ jobs:
           node scripts/guard-editorial-staging-d1.mjs --verify-columns editorial_default_rows "$RUNNER_TEMP/editorial-schema.json" "$RUNNER_TEMP/editorial-rows-layout.json"
           npx --yes wrangler@4 d1 execute "$PS_EDITORIAL_STAGING_NAME" --remote --config "$STAGING_CONFIG" --command "PRAGMA table_info(editorial_default_snapshots);" --json > "$RUNNER_TEMP/editorial-snapshots-layout.json"
           node scripts/guard-editorial-staging-d1.mjs --verify-columns editorial_default_snapshots "$RUNNER_TEMP/editorial-schema.json" "$RUNNER_TEMP/editorial-snapshots-layout.json"
-      - name: Export full independent staging backup BEFORE any write
-        if: inputs.operation == 'import' || inputs.operation == 'rollback'
-        env:
-          STAGING_CONFIG: ${{ runner.temp }}/editorial-wrangler.toml
-        run: |
-          npx --yes wrangler@4 d1 export "$PS_EDITORIAL_STAGING_NAME" --remote --config "$STAGING_CONFIG" --output "$RUNNER_TEMP/editorial-staging-before.sql" --skip-confirmation
-          test -s "$RUNNER_TEMP/editorial-staging-before.sql"
-      - name: Retain immutable pre-operation staging export
-        if: inputs.operation == 'import' || inputs.operation == 'rollback'
-        uses: actions/upload-artifact@v4
-        with:
-          name: editorial-staging-before-${{ github.run_id }}
-          path: ${{ runner.temp }}/editorial-staging-before.sql
-          if-no-files-found: error
-          retention-days: 7
-      - name: Import authored defaults into confirmed isolated staging D1
-        if: inputs.operation == 'import'
-        env:
-          STAGING_CONFIG: ${{ runner.temp }}/editorial-wrangler.toml
-        run: |
-          npx --yes wrangler@4 d1 execute "$PS_EDITORIAL_STAGING_NAME" --remote --config "$STAGING_CONFIG" --file "$RUNNER_TEMP/editorial-import.sql" --yes > "$RUNNER_TEMP/editorial-import-log.txt"
-      - name: Read back and verify full staged row count and SHA-256
-        if: inputs.operation == 'import'
-        env:
-          STAGING_CONFIG: ${{ runner.temp }}/editorial-wrangler.toml
-        run: |
-          npx --yes wrangler@4 d1 execute "$PS_EDITORIAL_STAGING_NAME" --remote --config "$STAGING_CONFIG" --file "$RUNNER_TEMP/editorial-readback.sql" --json > "$RUNNER_TEMP/editorial-readback.json"
-          npm run editorial:defaults:verify-wrangler -- "$RUNNER_TEMP/editorial-readback.json"
-      - name: Roll back ONLY the versioned snapshot named by current manifest
-        if: inputs.operation == 'rollback'
-        env:
-          STAGING_CONFIG: ${{ runner.temp }}/editorial-wrangler.toml
-        run: |
-          npx --yes wrangler@4 d1 execute "$PS_EDITORIAL_STAGING_NAME" --remote --config "$STAGING_CONFIG" --file "$RUNNER_TEMP/editorial-rollback.sql" --yes > "$RUNNER_TEMP/editorial-rollback-log.txt"
-          npx --yes wrangler@4 d1 execute "$PS_EDITORIAL_STAGING_NAME" --remote --config "$STAGING_CONFIG" --file "$RUNNER_TEMP/editorial-rollback-check.sql" --json > "$RUNNER_TEMP/editorial-rollback-readback.json"
-          node scripts/guard-editorial-staging-d1.mjs --verify-rollback "$RUNNER_TEMP/editorial-rollback-readback.json"
