@@ -229,6 +229,14 @@
 .os-sync-reference-open:hover{color:#ffeaad}
 /* Owner's visible link caption is editable without navigating on the first
    double-click. The adjacent real anchor alone performs navigation. */
+/* Owner edits the text INSIDE the native disclosure; no caption pencil.
+   Preserve the native marker, keyboard activation and open/closed state. */
+.os-sync-disclosure-caption{display:inline-block;vertical-align:baseline;
+ max-width:100%;overflow-wrap:anywhere}
+.os-sync-disclosure-caption.origin-copy-editable::after{content:none}
+.os-sync-disclosure-caption.origin-copy-editable:focus-visible{
+ outline:2px solid #edc485;outline-offset:3px;border-radius:2px}
+.os-sync-disclosure-caption .wiki-inline-input{max-width:100%;min-width:145px}
 .os-sync-reference-open-editor{display:inline-flex;align-items:baseline;gap:6px;flex-wrap:wrap}
 .os-sync-reference-open-copy{color:#f4cc85;cursor:text;text-decoration:underline dotted;
  text-underline-offset:3px}

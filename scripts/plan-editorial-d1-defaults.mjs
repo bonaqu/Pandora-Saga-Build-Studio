@@ -1279,6 +1279,28 @@ export function buildEditorialDefaultsManifest(){
   append('guideedit.book.catalog-sync.'+slug,'en',en,'catalog-review-details');
  }
 
+ // The four native <details> disclosures also have stable authorial
+ // display captions. The clickable open state, source diagnostics and
+ // independent hover hints must NEVER enter these D1 source-only fields.
+ const disclosureSource=read('pandora-os-catalog-workbench.js').match(
+  /const catalogDisclosureCopyRows=Object\\.freeze\\((\\[[\\s\\S]*?\\])\\);/);
+ if(!disclosureSource)throw Error('Missing catalog disclosure caption inventory');
+ const disclosureRows=runInNewContext('('+disclosureSource[1]+')',{},{timeout:5000});
+ const expectedDisclosure=['archiveSummary','advancedSummary',
+  'russianPreviewSummary','diagnosticsSummary'];
+ if(!Array.isArray(disclosureRows)||
+  disclosureRows.length!==expectedDisclosure.length||
+  disclosureRows.map(r=>r?.[0]).sort().join('|')!==expectedDisclosure.sort().join('|'))
+  throw Error('Unreviewed catalog disclosure source captions');
+ for(const row of disclosureRows){
+  if(!Array.isArray(row)||row.length!==3||row.some(text=>
+   typeof text!=='string'||!text.trim()||text!==text.trim()))
+   throw Error('Invalid RU/EN catalog disclosure caption');
+  const [key,ru,en]=row,slug=key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase());
+  append('guideedit.book.catalog-sync.'+slug,'ru',ru,'catalog-review-disclosures');
+  append('guideedit.book.catalog-sync.'+slug,'en',en,'catalog-review-disclosures');
+ }
+
  // Live comparison counters are NOT authorial content. Source-only
  // fragments are separately reviewed and staged under semantic D1 keys,
  // preserving in-progress owner inline edits when runtime data changes.

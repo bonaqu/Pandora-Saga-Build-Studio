@@ -100,3 +100,28 @@ test('#390 linked-item hover help and opening caption have independent owner D1 
  assert.match(css,/\.os-sync-reference-hint-pencil\[hidden\]/);
  assert.doesNotMatch(view,/class:'os-sync-reference-caption-pencil'/);
 });
+
+test('#390 native catalog disclosures edit RU/EN caption without double-click toggling',()=>{
+ const source=view.match(/const catalogDisclosureCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ assert.ok(source);
+ const rows=runInNewContext('('+source[1]+')',{});
+ const expected=['archiveSummary','advancedSummary','russianPreviewSummary','diagnosticsSummary'];
+ assert.deepEqual(Array.from(rows,row=>String(row[0])).sort(),expected.sort());
+ for(const [key,ru,en] of rows){
+  assert.equal(guideRoot.PandoraHonorGuide.validOverride(
+   'book.catalog-sync.'+key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase()),
+   JSON.stringify({ru,en})),true,key);
+  assert.ok(view.includes("disclosureCaption('"+key+"')"),key);
+ }
+ assert.match(view,/const summary=h\('summary',\{\},\[caption\]\)/);
+ assert.match(view,/editLabel\(caption,key,row\[1\],row\[2\]\)/);
+ assert.match(view,/if\(!event\.detail\|\|!caption\.contains\(event\.target\)\)return/);
+ assert.match(view,/event\.preventDefault\(\);event\.stopPropagation\(\)/);
+ assert.match(view,/if\(pending\)\{clearTimeout\(pending\);pending=null;return\}/);
+ assert.match(view,/details\.open=!details\.open/);
+ assert.match(view,/caption\.addEventListener\('dblclick'/);
+ assert.match(view,/if\(event\.target===summary&&event\.key==='F2'\)/);
+ assert.match(css,/\.os-sync-disclosure-caption\.origin-copy-editable::after\{content:none\}/);
+ assert.match(view,/secondaryHint\(advanced,'hintAdvancedDisclosure'/);
+ assert.match(view,/secondaryHint\(archiveChoice,'hintArchiveDisclosure'/);
+});

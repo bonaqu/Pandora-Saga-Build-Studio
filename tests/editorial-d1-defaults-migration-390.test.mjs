@@ -19,6 +19,28 @@ const manifest=buildEditorialDefaultsManifest();
 
 
 
+test('#390 all native catalog disclosure captions are versioned without open-state data',()=>{
+ const source=read('pandora-os-catalog-workbench.js');
+ const match=source.match(/const catalogDisclosureCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ assert.ok(match);
+ const rows=runInNewContext('('+match[1]+')',{});
+ const expected=['archiveSummary','advancedSummary','russianPreviewSummary','diagnosticsSummary'];
+ assert.deepEqual(Array.from(rows,row=>String(row[0])).sort(),expected.sort());
+ assert.equal(manifest.stats.cohorts['catalog-review-disclosures'],8);
+ for(const [key,ru,en] of rows){
+  const id='guideedit.book.catalog-sync.'+
+   key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  const records=manifest.records.filter(row=>row.recordKey===id);
+  assert.equal(records.length,2,id);
+  assert.equal(records.find(row=>row.field==='ru')?.value,ru);
+  assert.equal(records.find(row=>row.field==='en')?.value,en);
+ }
+ for(const unsafe of ['guideedit.book.catalog-sync.disclosure-open',
+  'guideedit.book.catalog-sync.diagnostics-response',
+  'guideedit.book.catalog-sync.archive-snapshot-id'])
+  assert.equal(manifest.records.some(row=>row.recordKey===unsafe),false);
+});
+
 test('#390 linked item caption and true hover help are separately versioned, never source IDs',()=>{
  const source=read('pandora-os-catalog-workbench.js');
  const registry=source.match(

@@ -54,6 +54,16 @@
       'No changes match this filter. Change the search or select “All”.']
   ]);
   const catalogReviewDetailByKey=new Map(catalogReviewDetailCopyRows.map(row=>[row[0],row]));
+  // These are literal display captions of native <summary> controls.
+  // A visible caption belongs to D1/CAS, while any attached hover hint has
+  // its own key/pencil and the native disclosure stays fully functional.
+  const catalogDisclosureCopyRows=Object.freeze([
+    ['archiveSummary','Если сайт игры не отдаёт данные','When the game site is unavailable'],
+    ['advancedSummary','Дополнительные инструменты','Additional tools'],
+    ['russianPreviewSummary','Посмотреть русские тексты','Preview Russian texts'],
+    ['diagnosticsSummary','Технические сведения об ошибке','Technical error details']
+  ]);
+  const catalogDisclosureByKey=new Map(catalogDisclosureCopyRows.map(row=>[row[0],row]));
   // Dynamic review summaries have independently authored words AND immutable
   // runtime counts. This inventory is strictly authorial: no game records,
   // IDs, numbers, error diagnostics or publication approvals.
@@ -127,6 +137,46 @@
       if(!canEdit||typeof editLabel!=='function')return node;
       editLabel(node,key,ru,en);
       return h('div',{class:'os-sync-copy-field'},[node]);
+    };
+    // Native <details>/<summary> must still toggle on a real single click.
+    // Owner double-click on ONLY the authored wording opens the D1 editor;
+    // its first click cannot accidentally collapse a panel or hide a draft.
+    const disclosureCaption=key=>{
+      const row=catalogDisclosureByKey.get(key);
+      if(!row)throw Error('Unreviewed catalog disclosure: '+key);
+      const caption=h('span',{class:'os-sync-disclosure-caption',
+        text:copy(key,row[1],row[2])});
+      const summary=h('summary',{},[caption]);
+      if(!canEdit||typeof editLabel!=='function')return summary;
+      editLabel(caption,key,row[1],row[2]);
+      let pending=null;
+      summary.addEventListener('click',event=>{
+        if(event.target.closest?.('.wiki-inline-input,[data-owner-text-field],[contenteditable]'))
+          return;
+        // Non-pointer (keyboard) activation and clicks on the native arrow
+        // are kept immediate. Only the literal label needs disambiguation.
+        if(!event.detail||!caption.contains(event.target))return;
+        event.preventDefault();event.stopPropagation();
+        if(pending){clearTimeout(pending);pending=null;return}
+        pending=setTimeout(()=>{
+          pending=null;
+          const details=summary.parentElement;
+          if(summary.isConnected&&details?.tagName==='DETAILS')
+            details.open=!details.open;
+        },500);
+      });
+      caption.addEventListener('dblclick',()=>{
+        if(pending){clearTimeout(pending);pending=null}
+      });
+      summary.addEventListener('keydown',event=>{
+        if(event.target===summary&&event.key==='F2'){
+          event.preventDefault();event.stopPropagation();
+          caption.dispatchEvent(new KeyboardEvent('keydown',{
+            key:'F2',bubbles:true,cancelable:true
+          }));
+        }
+      });
+      return summary;
     };
     // In player mode the caption stays inside a native label. In owner mode,
     // the same text is independent of a disabled checkbox, otherwise browsers
@@ -281,7 +331,7 @@
     const archive = h('button', {type:'button',class:'button-action',
       text:'Сверить с сохранённой копией'});
     const archiveChoice=h('details',{class:'os-sync-archive-choice'},[
-      h('summary',{text:copy('archiveSummary','Если сайт игры не отдаёт данные','When the game site is unavailable')}),
+      disclosureCaption('archiveSummary'),
       authored('p',{},'archiveExplanation',
        'Архивная сверка берёт файлы из репозитория Build Studio, а не текущие данные игры. Она не проверяет свежесть игрового сервера: архив может быть старее. Не применяй изменения без отдельной проверки.',
        'Archive comparison uses a saved project snapshot, not current game data. It may be older: do not publish archived changes without verifying them.'),
@@ -326,8 +376,7 @@
      'Начни с проверки текущей игры. Если данные недоступны, используй сохранённую копию.',
      'Check the current game first. If it is unavailable, use the saved snapshot.');
     const diagnostic=h('details',{class:'os-sync-diagnostics'},[
-      h('summary',{text:copy('diagnosticsSummary',
-       'Технические сведения об ошибке','Technical error details')})
+      disclosureCaption('diagnosticsSummary')
     ]);
     diagnostic.hidden=true;
     const diagnosticText=h('p',{class:'muted'});
@@ -442,7 +491,7 @@
      'These descriptions come from the saved Build Studio snapshot and are offered only when the other fields match both the live game and D1. Other translations remain unchanged.');
     const russianList=h('div',{class:'os-sync-russian-list'});
     const russianDetails=h('details',{class:'os-sync-russian-preview'},[
-      h('summary',{text:copy('russianPreviewSummary','Посмотреть русские тексты','Preview Russian texts')}),russianList
+      disclosureCaption('russianPreviewSummary'),russianList
     ]);
     const russianOption=h(canEdit?'div':'label',{class:'os-sync-formatting-option'},
       [russianToggle,russianLabel,russianCountLabel]);
@@ -458,7 +507,7 @@
     // Never replace the pencil-containing explanation wrapper with textContent.
     const metaStatusDetail=h('p',{class:'muted os-sync-meta-detail',hidden:true});
     const advanced=h('details',{class:'os-sync-advanced'},[
-      h('summary',{text:copy('advancedSummary','Дополнительные инструменты','Additional tools')}),
+      disclosureCaption('advancedSummary'),
       metaStatus,metaStatusDetail,
       authored('p',{},'advancedExplanation',
        'Проверка сохранения не обновляет данные игры. GitHub нужен для фиксации уже опубликованной версии, а скачивание — для ручной работы с данными.',
