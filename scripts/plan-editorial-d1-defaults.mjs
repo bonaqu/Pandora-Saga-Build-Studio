@@ -485,6 +485,30 @@ export function buildEditorialDefaultsManifest(){
   append(id,'en',en,'origin-race-portrait-aria');
  }
 
+ // Racial passive authorial words are separate from source skill identities,
+ // chosen game skill and live catalog readiness/selection state.
+ const passiveMatch=app.match(
+  /const originPassiveDynamicRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ if(!passiveMatch)throw Error('Missing original racial passive copy source');
+ const passiveRows=runInNewContext('('+passiveMatch[1]+')',{},{
+  filename:'originPassiveDynamicRows',timeout:5000
+ });
+ const expectedPassive=['passiveChooseRaceHelp','passiveLoadingHelp',
+  'passiveSelectCaption','passiveSelectedCaption',
+  'passiveSelectAria','passiveSelectedAria'];
+ if(!Array.isArray(passiveRows)||passiveRows.length!==expectedPassive.length||
+  passiveRows.map(row=>row[0]).sort().join('|')!==expectedPassive.sort().join('|'))
+  throw Error('Racial passive authorial keys changed: review migration');
+ for(const [key,ru,en] of passiveRows){
+  if(typeof ru!=='string'||!ru.trim()||typeof en!=='string'||!en.trim()||
+   ru!==ru.trim()||en!==en.trim())
+   throw Error('Racial passive phrases cannot depend on surrounding whitespace');
+  const id='guideedit.book.origin.'+
+   key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  append(id,'ru',ru,'origin-racial-passive-dynamic');
+  append(id,'en',en,'origin-racial-passive-dynamic');
+ }
+
  // The two owner equipment picker surfaces reuse one frozen source catalog
  // for static labels. This selection-only half is separate from metadata,
  // source gear names, player-entered search queries and live item counts.
