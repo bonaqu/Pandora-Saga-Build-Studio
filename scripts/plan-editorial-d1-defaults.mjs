@@ -1283,15 +1283,15 @@ export function buildEditorialDefaultsManifest(){
  const summarySource=read('pandora-os-catalog-workbench.js').match(
   /const catalogReviewStatusCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
  if(!summarySource)throw Error('Missing dynamic catalog summary copy inventory');
- const summaryRows=runInNewContext('('+summarySource[1]+')',{},{timeout:5000});
- const expectedSummary=['affectedSections','selectionTotal','selectionRemaining',
+ const catalogStatusRows=runInNewContext('('+summarySource[1]+')',{},{timeout:5000});
+ const expectedCatalogStatus=['affectedSections','selectionTotal','selectionRemaining',
   'selectionNeedsReview','selectionSettings','lineBreaksIncluded',
   'foundChanges','summaryTechnical','summarySelected','summaryUnselected',
   'summaryNeedsReview','noChanges'];
- if(!Array.isArray(summaryRows)||summaryRows.length!==expectedSummary.length||
-  summaryRows.map(row=>row?.[0]).sort().join('|')!==expectedSummary.sort().join('|'))
+ if(!Array.isArray(catalogStatusRows)||catalogStatusRows.length!==expectedCatalogStatus.length||
+  catalogStatusRows.map(row=>row?.[0]).sort().join('|')!==expectedCatalogStatus.sort().join('|'))
   throw Error('Unknown dynamic catalog summary source labels');
- for(const row of summaryRows){
+ for(const row of catalogStatusRows){
   if(!Array.isArray(row)||row.length!==3||row.some(v=>
    typeof v!=='string'||!v.trim()||v!==v.trim()))
    throw Error('Invalid bilingual catalog summary authorial text');
