@@ -1330,7 +1330,7 @@ export function buildEditorialDefaultsManifest(){
  const expectedCatalogStatus=['affectedSections','selectionTotal','selectionRemaining',
   'selectionNeedsReview','selectionSettings','lineBreaksIncluded',
   'foundChanges','summaryTechnical','summarySelected','summaryUnselected',
-  'summaryNeedsReview','noChanges'];
+  'summaryNeedsReview','noChanges','groupSelectedSuffix'];
  if(!Array.isArray(catalogStatusRows)||catalogStatusRows.length!==expectedCatalogStatus.length||
   catalogStatusRows.map(row=>row?.[0]).sort().join('|')!==expectedCatalogStatus.sort().join('|'))
   throw Error('Unknown dynamic catalog summary source labels');

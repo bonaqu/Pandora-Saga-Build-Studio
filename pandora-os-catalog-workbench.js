@@ -92,7 +92,8 @@
     ['summarySelected','Выбрано:','Selected:'],
     ['summaryUnselected','Не выбрано:','Not selected:'],
     ['summaryNeedsReview','Нужна проверка:','Needs review:'],
-    ['noChanges','Различий в игровых данных нет','No differences in game data']
+    ['noChanges','Различий в игровых данных нет','No differences in game data'],
+    ['groupSelectedSuffix','выбрано','selected']
   ]);
   const catalogReviewStatusByKey=new Map(catalogReviewStatusCopyRows.map(row=>[row[0],row]));
 
@@ -162,7 +163,13 @@
       const summary=h('summary',{},[caption]);
       if(count!==null)summary.append(h('span',{
         class:'os-sync-disclosure-runtime-count',text:' · '+String(count)}));
-      if(!canEdit||typeof editLabel!=='function')return summary;
+      bindDisclosureCaption(summary,caption,key,row);
+      return summary;
+    };
+    // Shared native disclosure guard for both simple headings and the
+    // independently editable suffix of a per-dataset selection count.
+    const bindDisclosureCaption=(summary,caption,key,row)=>{
+      if(!canEdit||typeof editLabel!=='function')return;
       let pending=null;
       const cancelPending=()=>{if(pending){clearTimeout(pending);pending=null}};
       editLabel(caption,key,row[1],row[2],{onStarted:cancelPending});
@@ -192,7 +199,6 @@
           }));
         }
       });
-      return summary;
     };
     // In player mode the caption stays inside a native label. In owner mode,
     // the same text is independent of a disabled checkbox, otherwise browsers
@@ -1020,8 +1026,9 @@
         const name=panel.getAttribute('data-game-dataset');
         const count=changes.filter(row=>row.dataset===name&&chosen.has(row.id)).length;
         const total=changes.filter(row=>row.dataset===name).length;
-        const label=panel.querySelector('.os-sync-count');
-        if(label)label.textContent=count+' / '+total+tr(' выбрано',' selected');
+        const label=panel.querySelector('.os-sync-count > .os-sync-group-runtime-count');
+        const value=count+' / '+total;
+        if(label&&label.textContent!==value)label.textContent=value;
       }
       const service=changes.filter(row=>describe(row).service).length;
       const acceptedChanges=changes.filter(row=>chosen.has(row.id)).length;
@@ -1346,11 +1353,19 @@
           else expanded.delete(name);
         });
         const selected = group.filter(checked).length;
-        panel.append(h('summary',{class:'os-sync-group-heading'},[
+        const groupStatusKey='groupSelectedSuffix';
+        const groupStatusRow=catalogReviewStatusByKey.get(groupStatusKey);
+        const groupCaption=h('span',{class:'os-sync-status-copy',
+          text:copy(groupStatusKey,groupStatusRow[1],groupStatusRow[2])});
+        const groupHeading=h('summary',{class:'os-sync-group-heading'},[
           h('strong',{text:review.labels[name]||name}),
-          h('span',{class:'os-sync-count',
-            text:selected+' / '+group.length+tr(' выбрано',' selected')})
-        ]));
+          h('span',{class:'os-sync-count'},[
+            h('span',{class:'os-sync-group-runtime-count',text:selected+' / '+group.length}),
+            document.createTextNode(' '),groupCaption
+          ])
+        ]);
+        bindDisclosureCaption(groupHeading,groupCaption,groupStatusKey,groupStatusRow);
+        panel.append(groupHeading);
         const toolbar = h('div',{class:'os-sync-group-actions'});
         const take = h('button',{type:'button',class:'button-action',
           disabled:busy||!group.some(safe)});

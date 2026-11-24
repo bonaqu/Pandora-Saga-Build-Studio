@@ -266,11 +266,11 @@ test('#390: catalog summary is D1-editable RU/EN text with persistent count sibl
  const keys=['affectedSections','selectionTotal','selectionRemaining',
   'selectionNeedsReview','selectionSettings','lineBreaksIncluded',
   'foundChanges','summaryTechnical','summarySelected','summaryUnselected',
-  'summaryNeedsReview','noChanges'];
+  'summaryNeedsReview','noChanges','groupSelectedSuffix'];
  assert.deepEqual(Array.from(rows,row=>String(row[0])).sort(),keys.sort());
  const {buildEditorialDefaultsManifest}=await import('../scripts/plan-editorial-d1-defaults.mjs');
  const manifest=buildEditorialDefaultsManifest();
- assert.equal(manifest.stats.cohorts['catalog-review-runtime-labels'],24);
+ assert.equal(manifest.stats.cohorts['catalog-review-runtime-labels'],26);
  for(const [key,ru,en] of rows){
   const slug=key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase());
   const id='guideedit.book.catalog-sync.'+slug;
@@ -288,6 +288,11 @@ test('#390: catalog summary is D1-editable RU/EN text with persistent count sibl
  assert.match(workbench,/setCountPart\(selectionParts\.total,acceptedChanges\+' \/ '\+changes\.length\)/);
  assert.match(workbench,/overview\.append\(overviewCaption,overviewValues\)/);
  assert.match(workbench,/overviewValues\.textContent=ordered\.length/);
+ assert.match(workbench,/const groupStatusKey='groupSelectedSuffix'/);
+ assert.match(workbench,/bindDisclosureCaption\(groupHeading,groupCaption,groupStatusKey,groupStatusRow\)/);
+ assert.match(workbench,/const label=panel\.querySelector\('\.os-sync-count > \.os-sync-group-runtime-count'\)/);
+ assert.match(workbench,/if\(label&&label\.textContent!==value\)label\.textContent=value/);
+ assert.doesNotMatch(workbench,/label\.textContent=count\+' \/ '\+total\+tr/);
  assert.match(workbench,/for\(const part of Object\.values\(summaryParts\)\)part\.wrap\.hidden=true/);
  assert.match(workbench,/summaryEmpty\.hidden=hasChanges\|\|!baseline/);
  assert.doesNotMatch(workbench,/(?:selectionGuidance|summary|overview)\.textContent\s*=/);

@@ -1064,6 +1064,32 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(await overviewCopy.innerText(),'Разделы QA:');
   assert.equal(await overviewGameCount.innerText(),sourceCountBefore,
    'Current game sections and counts must stay immutable while editing words');
+  // #390: group disclosure count has independent authorial suffix. Editing
+  // it must not toggle the native details element or change numeric counts.
+  const group=dialog.locator('.os-sync-group').first();
+  const groupHeading=group.locator('summary.os-sync-group-heading');
+  const groupLabel=groupHeading.locator('[data-owner-copy-id="groupSelectedSuffix"]');
+  const groupCount=groupHeading.locator('.os-sync-group-runtime-count');
+  const groupCountBefore=await groupCount.innerText();
+  const groupOpenBefore=await group.evaluate(node=>node.open);
+  await groupLabel.dblclick();
+  const groupEditor=groupHeading.locator('[data-owner-text-field]');
+  await groupEditor.waitFor({state:'visible',timeout:12000});
+  await groupEditor.fill('отмечено QA');
+  await groupEditor.press('Tab');
+  await groupEditor.waitFor({state:'detached',timeout:15000});
+  const groupKey='guideedit.book.catalog-sync.group-selected-suffix';
+  for(let n=0;n<300&&!townOverrides.has(groupKey);n++)await page.waitForTimeout(40);
+  assert.equal(JSON.parse(townOverrides.get(groupKey)).ru,'отмечено QA');
+  assert.equal(await groupCount.innerText(),groupCountBefore);
+  assert.equal(await group.evaluate(node=>node.open),groupOpenBefore);
+  assert.equal(await groupLabel.innerText(),'отмечено QA');
+  // The native summary still toggles immediately from its unedited dataset
+  // title, with runtime counts and the saved caption left intact.
+  await groupHeading.locator('strong').click();
+  assert.equal(await group.evaluate(node=>node.open),!groupOpenBefore);
+  await groupHeading.locator('strong').click();
+  assert.equal(await group.evaluate(node=>node.open),groupOpenBefore);
   // 0.612: reloading results may update checksum evidence but must not
   // erase the directly editable D1 explanation.
   const checksumRow=dialog.locator(
