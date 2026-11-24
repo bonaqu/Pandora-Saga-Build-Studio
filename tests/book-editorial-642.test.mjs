@@ -399,3 +399,31 @@ test('#390 Book dynamic level/mastery blockers edit only words, not source thres
  assert.match(source,/!renderBuffRequirement\(info,skill\.reasonParts,options\)/);
  assert.equal(manifest.records.some(row=>/QA source branch|QA source level/.test(row.value)),false);
 });
+
+test('#390 Healing action explanations split eight bilingual captions from live numbers',()=>{
+ const expected={
+  inspirationLead:['С «Воодушевлением» от союзника:','With Inspiration from an ally:'],
+  inspirationTail:['сек. применения (вдвое быстрее)','s of casting (half the usual time)'],
+  manaCostLead:['Расход ОМ:','MP cost:'],
+  manaCostTail:['от базового','of base'],
+  cooldownLead:['Перезарядка:','Cooldown:'],
+  cooldownTail:['от базовой','of base'],
+  nextManaLead:['Для ещё одного применения нужно','One more cast needs'],
+  nextManaTail:['ОМ к запасу','MP capacity']
+ };
+ assert.deepEqual(book.bookHealingActionCopyRows.map(row=>row[0]).sort(),Object.keys(expected).sort());
+ for(const [key,ru,en] of book.bookHealingActionCopyRows)
+  assert.deepEqual([ru,en],expected[key]);
+ const source=file('pandora-studio-hero-book.js');
+ assert.match(source,/guideLabel\(node,'effects\.healing\.'\+key,row\[1\],row\[2\],editorial\)/);
+ assert.match(source,/if\(editable&&typeof onTextEdit==='function'\)node\.tabIndex=0/);
+ assert.match(source,/heroHasShield,onItem,onSkill,\.\.\.copyOptions\}\)/);
+ for(const key of Object.keys(expected))
+  assert.ok(source.includes("healingCaption('"+key+"')"));
+ for(const key of ['mana-needed','cast-seconds','mana-percent','cooldown-percent'])
+  assert.ok(source.includes(",'"+key+"')"));
+ assert.match(source,/class:'stage-heal-computed'/);
+ assert.doesNotMatch(source,/text:en\?\s*'MP cost: '\+/);
+ assert.doesNotMatch(source,/text:en\?\s*'Cooldown: '\+/);
+ assert.doesNotMatch(source,/text:en\?\s*'With Inspiration from an ally: '\+/);
+});

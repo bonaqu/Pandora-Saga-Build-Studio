@@ -176,6 +176,21 @@ export function buildEditorialDefaultsManifest(){
   append('guideedit.book.book-aria.'+slug,'ru',ru,'hero-book-source-actions');
   append('guideedit.book.book-aria.'+slug,'en',en,'hero-book-source-actions');
  }
+ // Healing action prose is separate from live mana, seconds and percentages.
+ const healRows=book.bookHealingActionCopyRows;
+ const expectedHeal=['inspirationLead','inspirationTail','manaCostLead',
+  'manaCostTail','cooldownLead','cooldownTail','nextManaLead','nextManaTail'];
+ if(!Array.isArray(healRows)||healRows.length!==expectedHeal.length||
+  healRows.map(row=>row?.[0]).sort().join('|')!==expectedHeal.sort().join('|'))
+  throw Error('Hero Book dynamic Healing action inventory drift');
+ for(const [key,ru,en] of healRows){
+  if(!/^[a-z][a-zA-Z]+$/.test(key)||typeof ru!=='string'||!ru.trim()||
+   ru!==ru.trim()||typeof en!=='string'||!en.trim()||en!==en.trim()||
+   /[0-9]/.test(ru+en))
+   throw Error('Invalid Healing authorial RU/EN caption: '+key);
+  append('guideedit.book.effects.healing.'+key,'ru',ru,'hero-book-healing-actions');
+  append('guideedit.book.effects.healing.'+key,'en',en,'hero-book-healing-actions');
+ }
  const bookAliases=book.bookAccessibleAliasRows;
  if(!Array.isArray(bookAliases)||bookAliases.length!==4||
   bookAliases.map(row=>row?.[0]).sort().join('|')!=='close|next|previous|tabs')

@@ -1241,3 +1241,22 @@ test('#390 Honor form placeholders and validation captions stage exactly 14 safe
   'guideedit.book.honor-view.worker-error'])
   assert.equal(manifest.records.some(row=>row.recordKey===unsafe),false,unsafe);
 });
+
+test('#390 staging Healing action phrases are allowlisted, not live skill results',()=>{
+ const rows=manifest.records.filter(row=>row.recordKey.startsWith(
+  'guideedit.book.effects.healing.'));
+ assert.equal(rows.length,16);
+ assert.equal(manifest.stats.cohorts['hero-book-healing-actions'],16);
+ const bookRoot={};
+ Function('window',read('pandora-studio-hero-book.js'))(bookRoot);
+ const expected=bookRoot.PandoraStageAttributes.bookHealingActionCopyRows;
+ for(const [key,ru,en] of expected){
+  const id='guideedit.book.effects.healing.'+key;
+  assert.deepEqual(rows.filter(row=>row.recordKey===id).map(row=>[row.field,row.value])
+   .sort((a,b)=>a[0].localeCompare(b[0])),
+   [['en',en],['ru',ru]]);
+ }
+ for(const notAuthorial of ['mana-needed','cast-seconds','mana-percent',
+  'cooldown-percent','mana','mp','amount','skill-id'])
+  assert.equal(rows.some(row=>row.recordKey.endsWith('.'+notAuthorial)),false);
+});

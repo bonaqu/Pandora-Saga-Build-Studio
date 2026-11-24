@@ -511,6 +511,18 @@ const bookSourceActionCopyRows=Object.freeze([
  ['itemEncyclopediaPrefix','Открыть в энциклопедии:','Open in encyclopedia:'],
  ['itemOpenPrefix','Открыть предмет:','Open item:']
 ]);
+// Four dynamic Healing explanations expose eight independently authored
+// RU/EN fragments; computed amounts, times and percentages are immutable.
+const bookHealingActionCopyRows=Object.freeze([
+ ['inspirationLead','С «Воодушевлением» от союзника:','With Inspiration from an ally:'],
+ ['inspirationTail','сек. применения (вдвое быстрее)','s of casting (half the usual time)'],
+ ['manaCostLead','Расход ОМ:','MP cost:'],
+ ['manaCostTail','от базового','of base'],
+ ['cooldownLead','Перезарядка:','Cooldown:'],
+ ['cooldownTail','от базовой','of base'],
+ ['nextManaLead','Для ещё одного применения нужно','One more cast needs'],
+ ['nextManaTail','ОМ к запасу','MP capacity']
+]);
 const bookAccessibleAliasRows=Object.freeze([
  ['previous','Предыдущая страница','Previous chapter'],
  ['next','Следующая страница','Next chapter'],
@@ -1568,11 +1580,26 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
  remakedBuffRows=[],availability={},combatSkillCards={},
  heroJobKey=null,heroLevel=1,heroMasteries={},heroBranchCaps={},
  heroWeaponKind='BARE_HAND',heroHasShield=false,
- onItem=()=>{},onSkill=null}={}){
+ onItem=()=>{},onSkill=null,editable=false,onTextEdit=null,overrides={}}={}){
  const en=document.documentElement?.lang==='en';
+ const editorial={editable,onTextEdit,overrides};
  const gates=root.PandoraBookSkillThresholds;
  const healingNumber=new Intl.NumberFormat(en?'en-US':'ru-RU',
   {maximumFractionDigits:2});
+ const healingActionCopy=new Map(bookHealingActionCopyRows.map(row=>[row[0],row]));
+ const healingCaption=key=>{
+  const row=healingActionCopy.get(key);
+  if(!row)throw Error('Unreviewed Healing action caption: '+key);
+  const node=make('span',{class:'stage-heal-editorial',text:en?row[2]:row[1]});
+  guideLabel(node,'effects.healing.'+key,row[1],row[2],editorial);
+  if(editable&&typeof onTextEdit==='function')node.tabIndex=0;
+  return node;
+ };
+ // Every source-calculated number/percent lives outside the owner CAS key.
+ const healingValue=(value,kind)=>make('span',{
+  class:'stage-heal-computed',...(kind?{'data-heal-value':kind}:{}),
+  text:String(value)
+ });
  const showBaseManaBudget=(node,action)=>{
   const budget=gates?.baseManaBudget?.({maxMana:modifiers?.mp,
    baseCost:action?.mana});
@@ -1587,32 +1614,35 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   const next=gates?.nextManaUse?.({maxMana:budget.maxMana,
    baseCost:budget.baseCost});
   if(next?.missing>0)node.append(make('small',{
-   class:'stage-heal-mana-next',text:en?
-    'One more cast needs +'+healingNumber.format(next.missing)+' MP capacity':
-    'Для ещё одного применения нужно +'+
-     healingNumber.format(next.missing)+' ОМ к запасу'
-  }));
+   class:'stage-heal-mana-next'},[
+   healingCaption('nextManaLead'),' ',
+   healingValue('+'+healingNumber.format(next.missing),'mana-needed'),' ',
+   healingCaption('nextManaTail')
+  ]));
  };
  const skillAction=id=>root.PandoraOSCalculator?.healingActionPreview?.({
   skillCatalog:gameTerms.skills,skillId:id,combat:modifiers?.combat});
  const appendActionEffects=(node,action)=>{
   if(!action)return;
   if(action.castModel?.inspiration&&action.cast>0)
-   node.append(make('small',{class:'stage-heal-cast-preview',text:en?
-    'With Inspiration from an ally: '+healingNumber.format(action.castModel.seconds)+
-     ' s of casting (half the usual time)':
-    'С «Воодушевлением» от союзника: '+
-     healingNumber.format(action.castModel.seconds)+
-     ' сек. применения (вдвое быстрее)'}));
+   node.append(make('small',{class:'stage-heal-cast-preview'},[
+    healingCaption('inspirationLead'),' ',
+    healingValue(healingNumber.format(action.castModel.seconds),'cast-seconds'),' ',
+    healingCaption('inspirationTail')
+   ]));
   if(Number.isFinite(action.manaRemainingIndex)&&
    action.manaRemainingIndex!==100)
-   node.append(make('small',{class:'stage-attribute-note',text:en?
-    'MP cost: '+healingNumber.format(action.manaRemainingIndex)+'% of base':
-    'Расход ОМ: '+healingNumber.format(action.manaRemainingIndex)+'% от базового'}));
+   node.append(make('small',{class:'stage-attribute-note'},[
+    healingCaption('manaCostLead'),' ',
+    healingValue(healingNumber.format(action.manaRemainingIndex)+'%','mana-percent'),' ',
+    healingCaption('manaCostTail')
+   ]));
   if(Number.isFinite(action.cooldownIndex)&&action.cooldownIndex!==100)
-   node.append(make('small',{class:'stage-attribute-note',text:en?
-    'Cooldown: '+healingNumber.format(action.cooldownIndex)+'% of base':
-    'Перезарядка: '+healingNumber.format(action.cooldownIndex)+'% от базовой'}));
+   node.append(make('small',{class:'stage-attribute-note'},[
+    healingCaption('cooldownLead'),' ',
+    healingValue(healingNumber.format(action.cooldownIndex)+'%','cooldown-percent'),' ',
+    healingCaption('cooldownTail')
+   ]));
  };
  const appendHealingBreakdown=(node,row,pulse)=>{
   const parts=row?.breakdown;
@@ -2688,7 +2718,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
   gameTerms,remakedBuffRows,skillIconForId,nextMagicConcentrationPreview,...copyOptions});
  if(chosen==='effects')skillEffectsPage(body,{modifiers,gameTerms,skillIconForId,
   remakedBuffRows,availability,combatSkillCards,heroJobKey,heroLevel,heroMasteries,
-   heroBranchCaps,heroWeaponKind,heroHasShield,onItem,onSkill});
+   heroBranchCaps,heroWeaponKind,heroHasShield,onItem,onSkill,...copyOptions});
  if(chosen==='recovery'){
   const english=document.documentElement?.lang==='en';
   const percent=modifiers?.potion?.percent;
@@ -2899,7 +2929,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
 }
 root.PandoraStageAttributes=Object.freeze({render,bookPages,bookText,bookEditorialKey,
  bookEditorialDefaults:bookEnglish,buffStatusCopyRows,buffRequirementCopyRows,
- bookRegionCopyRows,bookSourceActionCopyRows,
+ bookRegionCopyRows,bookSourceActionCopyRows,bookHealingActionCopyRows,
  bookAccessibleAliasRows,
  refreshAccessibility:refreshBookAccessibility,resetDisclosureState,
  summaryRows,attackChapterGroups,defenseChapterGroups,
