@@ -13,6 +13,9 @@ test('full Book copy catalog includes additional static player-facing explanatio
  for(const [ru,en] of [
   ['Выбранные усиления','Configured enhancements'],
   ['Сохраняются с этим героем','Saved with this character'],
+  ['Восстановление ОМ умениями','Skill MP recovery'],
+  ['Вклад предметов и душ','Bonuses from equipment and Souls'],
+  ['Эффекты стихийных оружий','Elemental weapon effects'],
   ['Бонусы ОЗ и ОМ зависят от уровня гильдии.','HP and MP passives depend on guild level.'],
   ['Эффекты песен действуют после применения в игре. Бонусы не прибавляются к билду автоматически.','Song effects apply only when activated in the game. No bonus is added to this build automatically.'],
   ['Для текущих зелий ещё нет доступных значений.','No potion values are available yet.'],

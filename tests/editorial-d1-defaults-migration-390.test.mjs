@@ -1336,3 +1336,23 @@ test('#390 Phoenix authorial defaults are exactly four RU/EN words, not live OS 
   'refinement','equipment','skill-name'])
   assert.equal(rows.some(row=>row.recordKey.endsWith('.'+value)),false);
 });
+
+
+test('#390 rare native Book disclosures seed exact bilingual source-only defaults',()=>{
+ const root={};Function('window',read('pandora-studio-hero-book.js'))(root);
+ Function('window',read('pandora-studio-ui-locale.js'))(root);
+ const ui=root.PandoraUILocale;
+ for(const [ru,en] of [
+  ['Восстановление ОМ умениями','Skill MP recovery'],
+  ['Вклад предметов и душ','Bonuses from equipment and Souls'],
+  ['Эффекты стихийных оружий','Elemental weapon effects']
+ ]){
+  const key=ui.bookFieldKey(ru),id=key&&'guideedit.book.'+ui.fieldKey(key);
+  assert.ok(id&&ui.bookFieldKey(en)===key,'Missing canonical bilingual Book key for '+ru);
+  assert.deepEqual(manifest.records.filter(row=>row.recordKey===id)
+   .map(row=>[row.field,row.value]).sort((a,b)=>a[0].localeCompare(b[0])),
+   [['en',en],['ru',ru]],'Versioned source-only snapshot for '+ru);
+ }
+ for(const forbidden of ['5 MP every 2 sec','Источник предмета 1432','15%','sourceSkillId'])
+  assert.equal(ui.bookFieldKey(forbidden),null,'Game values cannot become D1 editorial keys');
+});

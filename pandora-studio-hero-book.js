@@ -199,6 +199,10 @@ const bookEnglish=Object.freeze({
  'Условные эффекты стихийного оружия': "Conditional elemental weapons",
  'Пламя феникса · расчётный урон': "Phoenix Flame · estimated damage",
  'Эффекты плащей на военных картах': "Battle-map cloak effects",
+ // Native disclosure headings are authored text; values and game IDs remain separate.
+ 'Восстановление ОМ умениями': 'Skill MP recovery',
+ 'Вклад предметов и душ': 'Bonuses from equipment and Souls',
+ 'Эффекты стихийных оружий': 'Elemental weapon effects',
  'Расовая стойкость цверга': "Dwarven racial survival",
  'Бонусы к опыту': "Experience gain bonuses",
  // Source-backed numbers and item IDs remain separate from author-copy spans.
