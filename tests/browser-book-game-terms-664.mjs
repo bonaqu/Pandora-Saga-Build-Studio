@@ -405,9 +405,11 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   assert.equal(await manaSummary.innerText(),'Skill MP recovery');
   assert.ok(await manaSummary.getAttribute('data-owner-copy-key'),
    'Native summary needs canonical owner key even in guest DOM');
-  assert.match(await manaDisclosure.innerText(),/5 MP every 2 sec/);
+  assert.match(await manaDisclosure.textContent(),/5 MP every 2 sec/);
   await manaSummary.click();
   assert.equal(await manaDisclosure.getAttribute('open'),'','Guest native disclosure must open');
+  assert.equal(await manaDisclosure.locator('.stage-periodic-row').first().isVisible(),true,
+   'Opening the native disclosure must reveal the live MP recovery row');
   await page.evaluate(()=>{
    const ui=window.PandoraUILocale,key=ui.bookFieldKey('Восстановление ОМ умениями');
    ui.setOverrides({['guideedit.book.'+ui.fieldKey(key)]:JSON.stringify({
@@ -415,7 +417,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   });
   await render({lang:'en',chapter:'effects',includeMana:true});
   assert.equal(await manaSummary.innerText(),'Show skill MP recovery');
-  assert.match(await manaDisclosure.innerText(),/5 MP every 2 sec/,
+  assert.match(await manaDisclosure.textContent(),/5 MP every 2 sec/,
    'Changing authorial copy must not change an OS MP amount');
   await render({lang:'ru',chapter:'effects',includeMana:true});
   assert.equal(await manaSummary.innerText(),'Показать восстановление ОМ');
