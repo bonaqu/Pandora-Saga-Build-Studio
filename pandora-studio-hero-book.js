@@ -584,6 +584,10 @@ const bookScalingActionCopyRows=Object.freeze([
 // This authorial word already has a stable ui.label.book-* CAS identity.
 // Inventory the alias; NEVER create a second effects.detail.more D1 key.
 const bookSkillDetailCopyRows=Object.freeze([['more','Подробнее','More details']]);
+// Separate owner-only panel heading from spoken ARIA chapter/pages and counts.
+const bookA11yPanelCopyRows=Object.freeze([
+ ['heading','Доступные названия книги','Accessible Book labels']
+]);
 const bookAccessibleAliasRows=Object.freeze([
  ['previous','Предыдущая страница','Previous chapter'],
  ['next','Следующая страница','Next chapter'],
@@ -639,6 +643,13 @@ function refreshBookAccessibility(target,copy={},page='summary'){
  }
  const owner=target.querySelector('#ownerBookAccessibilityCopy');
  if(!owner)return;
+ const heading=owner.querySelector('[data-guide-key="book-aria.owner-panel-heading"]');
+ if(heading&&!heading.querySelector('.wiki-inline-input,[data-owner-text-field]')){
+  const [,ru,en]=bookA11yPanelCopyRows[0];
+  const caption=root.PandoraHonorGuide?.field(copy,'book-aria.owner-panel-heading',ru,en);
+  heading.textContent=document.documentElement?.lang==='en'?
+   (caption?.en||en):(caption?.ru||ru);
+ }
  for(const spec of specs){
   const node=owner.querySelector('[data-book-a11y-owner="'+spec.id+'"]');
   if(node&&!node.querySelector('.wiki-inline-input,[data-owner-text-field]'))
@@ -3065,8 +3076,13 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
    ownerPanel=make('details',{class:'studio-owner-interface-editor stage-book-a11y-owner'});
    ownerPanel.id='ownerBookAccessibilityCopy';
    ownerPanel.dataset.bookAriaLocale=language;
-   ownerPanel.append(make('summary',{text:language==='en'?
-    'Accessible Book labels':'Доступные названия книги'}));
+   const [,headingRu,headingEn]=bookA11yPanelCopyRows[0];
+   const ownerHeading=make('span',{class:'stage-book-a11y-panel-heading',
+    text:language==='en'?headingEn:headingRu});
+   ownerPanel.append(make('summary',{},[ownerHeading]));
+   guideLabel(ownerHeading,'book-aria.owner-panel-heading',
+    headingRu,headingEn,copyOptions);
+   ownerHeading.tabIndex=0;
    const rows=make('div',{class:'studio-owner-interface-fields'});
    for(const spec of bookAccessibilitySpecs()){
     const caption=make('span',{class:'studio-owner-interface-value',
@@ -3087,7 +3103,8 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
 root.PandoraStageAttributes=Object.freeze({render,bookPages,bookText,bookEditorialKey,
  bookEditorialDefaults:bookEnglish,buffStatusCopyRows,buffRequirementCopyRows,
  bookRegionCopyRows,bookSourceActionCopyRows,bookHealingActionCopyRows,
- bookScalingActionCopyRows,bookSkillDetailCopyRows,bookAccessibleAliasRows,
+ bookScalingActionCopyRows,bookSkillDetailCopyRows,
+ bookA11yPanelCopyRows,bookAccessibleAliasRows,
  refreshAccessibility:refreshBookAccessibility,resetDisclosureState,
  summaryRows,attackChapterGroups,defenseChapterGroups,
  gameSkillName,gameBranchName,gameClassName});

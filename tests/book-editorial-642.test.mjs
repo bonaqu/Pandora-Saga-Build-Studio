@@ -530,3 +530,17 @@ test('#390 nested skill details reuse a single owner caption and preserve expans
  assert.match(source,/detail\.open=skillMoreOpen\.get\(detail\.dataset\.bookSkillMore\)/);
  assert.doesNotMatch(source,/make\('summary',\{text:en\?'More details':'Подробнее'\}\)/);
 });
+
+test('#390 owner-only accessible Book panel title directly edits without rewriting spoken page ARIA',()=>{
+ assert.deepEqual(book.bookA11yPanelCopyRows,[
+  ['heading','Доступные названия книги','Accessible Book labels']
+ ]);
+ const source=file('pandora-studio-hero-book.js');
+ assert.match(source,/guideLabel\(ownerHeading,'book-aria\.owner-panel-heading',\s*headingRu,headingEn,copyOptions\)/);
+ assert.match(source,/ownerHeading\.tabIndex=0/);
+ assert.match(source,/owner\.querySelector\('\[data-guide-key="book-aria\.owner-panel-heading"\]'\)/);
+ assert.match(source,/heading\.textContent=document\.documentElement\?\.lang==='en'\?/);
+ assert.match(source,/heading&&!heading\.querySelector\('\.wiki-inline-input,\[data-owner-text-field\]'\)/);
+ assert.doesNotMatch(source,/ownerPanel\.append\(make\('summary',\{text:language==='en'\?/);
+ assert.match(source,/target\.setAttribute\('aria-label',authored\('regionLead'\)/);
+});

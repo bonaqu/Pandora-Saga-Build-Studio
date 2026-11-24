@@ -1306,3 +1306,13 @@ test('#390 nested Skill disclosure reuses existing ui-locale D1 identity',()=>{
   'Never seed duplicate D1 records for an existing Book caption');
  assert.equal(manifest.stats.cohorts['hero-book-skill-details']||0,0);
 });
+
+test('#390 staging-only owner Book accessibility title is separate from live ARIA and page numbers',()=>{
+ const records=manifest.records.filter(v=>v.recordKey==='guideedit.book.book-aria.owner-panel-heading');
+ assert.equal(manifest.stats.cohorts['hero-book-a11y-panel'],2);
+ assert.deepEqual(records.map(x=>[x.field,x.value]).sort((a,b)=>a[0].localeCompare(b[0])),
+  [['en','Accessible Book labels'],['ru','Доступные названия книги']]);
+ for(const forbidden of ['page-count','chapter-index','skill-id'])
+  assert.equal(manifest.records.some(v=>
+   v.recordKey==='guideedit.book.book-aria.'+forbidden),false);
+});

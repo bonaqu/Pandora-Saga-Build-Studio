@@ -231,6 +231,18 @@ export function buildEditorialDefaultsManifest(){
   ui.baseText(existingDetailKey,'ru')!=='Подробнее'||
   ui.baseText(existingDetailKey,'en')!=='More details')
   throw Error('Hero Book skill disclosure existing D1 alias drift');
+ // Authored title of the owner-only Book accessibility field panel.
+ // This is not the spoken region label or any live page/skill data.
+ const panelRows=book.bookA11yPanelCopyRows;
+ if(!Array.isArray(panelRows)||panelRows.length!==1||
+  panelRows[0]?.[0]!=='heading'||
+  panelRows[0]?.[1]!=='Доступные названия книги'||
+  panelRows[0]?.[2]!=='Accessible Book labels')
+  throw Error('Book accessibility panel title RU/EN inventory drift');
+ append('guideedit.book.book-aria.owner-panel-heading','ru',panelRows[0][1],
+  'hero-book-a11y-panel');
+ append('guideedit.book.book-aria.owner-panel-heading','en',panelRows[0][2],
+  'hero-book-a11y-panel');
  const bookAliases=book.bookAccessibleAliasRows;
  if(!Array.isArray(bookAliases)||bookAliases.length!==4||
   bookAliases.map(row=>row?.[0]).sort().join('|')!=='close|next|previous|tabs')
