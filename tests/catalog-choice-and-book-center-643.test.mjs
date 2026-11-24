@@ -12,7 +12,7 @@ test('catalog checkbox captions edit directly without changing native input beha
  assert.match(catalog,/const choiceEditor=\(caption,key,ru,en\)=>/);
  assert.match(catalog,/editLabel\(caption,key,ru,en,\{onStarted:cancelPending\}\)/);
  assert.match(catalog,/caption\.addEventListener\('click'/);
- assert.match(catalog,/if\(pending\)\{clearTimeout\(pending\);pending=null;return\}/);
+ assert.match(catalog,/actionQueue\.defer\(caption,/);
  assert.match(catalog,/box\.click\(\)/);
  assert.match(catalog,/caption\.closest\('\.os-sync-formatting-option'\)/);
  assert.match(catalog,/const formattingOption=h\(canEdit\?'div':'label'/);

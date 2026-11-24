@@ -140,11 +140,44 @@ test('#390 native catalog disclosures edit RU/EN caption without double-click to
  assert.match(view,/const startEdit=event=>\{[\s\S]*?cancelPending\(\);/);
  assert.match(view,/if\(!event\.detail\|\|!caption\.contains\(event\.target\)\)\{cancelPending\(\);return\}/);
  assert.match(view,/event\.preventDefault\(\);event\.stopPropagation\(\)/);
- assert.match(view,/if\(pending\)\{clearTimeout\(pending\);pending=null;return\}/);
+ assert.match(view,/actionQueue\.defer\(summary,/);
  assert.match(view,/details\.open=!details\.open/);
  assert.match(view,/caption\.addEventListener\('dblclick'/);
  assert.match(view,/if\(event\.target===summary&&event\.key==='F2'\)/);
  assert.match(css,/\.os-sync-disclosure-caption\.origin-copy-editable::after\{content:none\}/);
  assert.match(view,/secondaryHint\(advanced,'hintAdvancedDisclosure'/);
  assert.match(view,/secondaryHint\(archiveChoice,'hintArchiveDisclosure'/);
+});
+
+test('#390 one catalog owner click queue rejects stale callbacks across all controls',()=>{
+ const sandbox={};sandbox.window=sandbox;
+ runInNewContext(view,sandbox);
+ const tasks=new Map();let next=0,executed=[];
+ const queue=sandbox.PandoraOSCatalogWorkbench.createReviewActionQueue(
+  (fn,ms)=>{assert.equal(ms,500);tasks.set(++next,fn);return next},
+  id=>tasks.delete(id)
+ );
+ const mk=()=>({isConnected:true,hidden:false,disabled:false,contains(x){return x===this}});
+ const filter=mk(),button=mk(),summary=mk();
+ const fire=()=>{for(const [id,fn]of [...tasks]){tasks.delete(id);fn()}};
+ queue.defer(filter,()=>executed.push('filter'));
+ const stale=[...tasks.values()][0];
+ queue.defer(button,()=>executed.push('button'));
+ stale();fire();
+ assert.deepEqual(executed,['button'],'The older filter callback cannot run');
+ queue.defer(summary,()=>executed.push('summary'));
+ queue.defer(summary,()=>executed.push('summary double'));
+ fire();assert.deepEqual(executed,['button'],'Same target double-click edits without toggling');
+ queue.defer(filter,()=>executed.push('filter'));
+ queue.cancelOutside(filter);assert.equal(tasks.size,1);
+ queue.cancelOutside(button);fire();
+ queue.defer(button,()=>executed.push('disabled'));button.disabled=true;fire();
+ queue.defer(summary,()=>executed.push('detached'));summary.isConnected=false;fire();
+ queue.defer(filter,()=>executed.push('cancelled by editor'));queue.cancel();fire();
+ assert.deepEqual(executed,['button']);
+ assert.match(view,/bindEditor\(node,key,ru,en,\{\.\.\.callbacks,onStarted:\(\)=>\{/);
+ assert.match(view,/actionQueue\.cancelOutside\(event.target\)/);
+ assert.match(view,/if\(value\)cancelPending\(\)/);
+ assert.match(view,/if\(!event.detail\|\|number\?\.contains\(event.target\)\)/);
+ assert.match(view,/os-sync-action-runtime-number,\.wiki-inline-input/);
 });

@@ -1190,6 +1190,19 @@ export async function runAdminEntrySmoke(browser,base){
   await page.waitForTimeout(650);
   assert.equal(await dialog.locator('.os-sync-filter[data-review-filter="all"]').getAttribute('aria-pressed'),'true',
    'F2 followed by Escape cancels a queued filter click');
+  // Cross-control race: an earlier filter click must not redraw a second
+  // filter's editor, even when the second action is keyboard-only.
+  await addedCaption.click();
+  const otherFilter=dialog.locator('.os-sync-filter[data-review-filter="changed"]');
+  await otherFilter.press('F2');
+  const otherEditor=otherFilter.locator('[data-owner-text-field]');
+  await otherEditor.waitFor({state:'visible',timeout:12000});
+  await page.waitForTimeout(650);
+  assert.equal(await dialog.locator('.os-sync-filter[data-review-filter="all"]')
+   .getAttribute('aria-pressed'),'true');
+  assert.equal(await otherEditor.isVisible(),true);
+  await otherEditor.press('Escape');
+  await otherEditor.waitFor({state:'detached',timeout:12000});
   await addedCaption.dblclick();
   const addedEditor=addedButton.locator('[data-owner-text-field]');
   await addedEditor.waitFor({state:'visible',timeout:12000});

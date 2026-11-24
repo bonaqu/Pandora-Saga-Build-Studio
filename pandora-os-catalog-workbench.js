@@ -26,6 +26,36 @@
       hits.some(row=>row.kind==='verified')?'verified':'sourceOnly';
   }
 
+  // One pending owner click for the entire catalog dialog. A new action,
+  // another caption editor, or an unrelated pointer gesture cancels it.
+  // The queue owns no remote operation and never outlives its DOM target.
+  function createReviewActionQueue(schedule=setTimeout,unschedule=clearTimeout){
+    let pending=null;
+    const cancel=()=>{
+      if(!pending)return;
+      unschedule(pending.timer);
+      pending=null;
+    };
+    const cancelOutside=target=>{
+      if(pending&&!pending.target.contains(target))cancel();
+    };
+    const defer=(target,run)=>{
+      if(pending){
+        const same=pending.target===target;
+        cancel();
+        if(same)return;
+      }
+      const task={target,timer:null};
+      pending=task;
+      task.timer=schedule(()=>{
+        if(pending!==task)return;
+        pending=null;
+        if(target.isConnected&&!target.hidden&&!target.disabled)run();
+      },500);
+    };
+    return {cancel,cancelOutside,defer};
+  }
+
   // Fixed editorial captions only. Never seed values, probabilities, source
   // errors, game mechanics, risk approvals or any publish action as D1 copy.
   // The versioned staging planner extracts this same closed source registry.
@@ -100,8 +130,16 @@
   // Administrator-only review. UI selection is never a D1 write.
   // The Worker validates the auth token and the expected active snapshot.
   async function open({request, apiBase, modal, h, afterPublish, getHero=()=>null,
-    lang='ru',canEdit=false,copyLabel,editLabel,canCommit=()=>true}) {
+    lang='ru',canEdit=false,copyLabel,editLabel:bindEditor,canCommit=()=>true}) {
     const tr=(ru,en)=>lang==='en'?en:ru;
+    const actionQueue=createReviewActionQueue();
+    const cancelPending=()=>actionQueue.cancel();
+    // Every editor, including a separate hover hint, cancels any queued UI
+    // action before creating its editable control. Preserve its callbacks.
+    const editLabel=typeof bindEditor==='function'?(node,key,ru,en,callbacks={})=>
+      bindEditor(node,key,ru,en,{...callbacks,onStarted:()=>{
+        cancelPending();callbacks.onStarted?.();
+      }}):null;
     // Reports only confirmed source identity and availability. A source
     // preview is NOT a verified combat result on the live game server.
     const replaySourceLabel=module=>{
@@ -170,8 +208,6 @@
     // independently editable suffix of a per-dataset selection count.
     const bindDisclosureCaption=(summary,caption,key,row)=>{
       if(!canEdit||typeof editLabel!=='function')return;
-      let pending=null;
-      const cancelPending=()=>{if(pending){clearTimeout(pending);pending=null}};
       editLabel(caption,key,row[1],row[2],{onStarted:cancelPending});
       summary.addEventListener('click',event=>{
         if(event.target.closest?.('.wiki-inline-input,[data-owner-text-field],[contenteditable]'))
@@ -180,16 +216,10 @@
         // are kept immediate. Only the literal label needs disambiguation.
         if(!event.detail||!caption.contains(event.target)){cancelPending();return}
         event.preventDefault();event.stopPropagation();
-        if(pending){clearTimeout(pending);pending=null;return}
-        pending=setTimeout(()=>{
-          pending=null;
+        actionQueue.defer(summary,()=>{
           const details=summary.parentElement;
-          if(summary.isConnected&&details?.tagName==='DETAILS')
-            details.open=!details.open;
-        },500);
-      });
-      caption.addEventListener('dblclick',()=>{
-        if(pending){clearTimeout(pending);pending=null}
+          if(details?.tagName==='DETAILS')details.open=!details.open;
+        });
       });
       summary.addEventListener('keydown',event=>{
         if(event.target===summary&&event.key==='F2'){
@@ -207,20 +237,16 @@
     // both toggles from a genuine owner double-click on its written caption.
     const choiceEditor=(caption,key,ru,en)=>{
       if(!canEdit||typeof editLabel!=='function')return null;
-      let pending=null;
-      const cancelPending=()=>{if(pending){clearTimeout(pending);pending=null}};
       editLabel(caption,key,ru,en,{onStarted:cancelPending});
       caption.tabIndex=0;
       caption.setAttribute('aria-keyshortcuts','F2');
       caption.addEventListener('click',event=>{
         if(!event.detail||event.target.closest?.('.wiki-inline-input,[data-owner-text-field]'))return;
         event.preventDefault();event.stopPropagation();
-        if(pending){clearTimeout(pending);pending=null;return}
-        pending=setTimeout(()=>{
-          pending=null;
+        actionQueue.defer(caption,()=>{
           const box=caption.closest('.os-sync-formatting-option')?.querySelector('input[type="checkbox"]');
-          if(caption.isConnected&&box&&!box.disabled)box.click();
-        },500);
+          if(box&&!box.disabled)box.click();
+        });
       },true);
       return null; // no caption pencil
     };
@@ -249,8 +275,6 @@
       for(const [keyName,value] of Object.entries({
         ownerCopySection:'catalog-sync',ownerCopyId:key,
         ownerCopyRu:ru,ownerCopyEn:en}))button.dataset[keyName]=value;
-      let pending=null;
-      const cancelPending=()=>{if(pending){clearTimeout(pending);pending=null}};
       const startEdit=event=>{
         if(!button.isConnected||!host.hidden||wrap.classList.contains('editing-hint'))return;
         cancelPending();
@@ -260,17 +284,13 @@
         host.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
       };
       button.addEventListener('click',event=>{
-        if(!event.detail){cancelPending();return}
+        if(!event.detail||number?.contains(event.target)){cancelPending();return}
         if(event.target.closest?.('.wiki-inline-input,[data-owner-text-field]'))return;
         event.preventDefault();event.stopImmediatePropagation();
-        if(pending){clearTimeout(pending);pending=null;return}
-        pending=setTimeout(()=>{
-          pending=null;
-          if(button.isConnected&&!button.hidden&&!button.disabled)button.click();
-        },500);
+        actionQueue.defer(button,()=>button.click());
       },true);
       wrap.addEventListener('dblclick',event=>{
-        if(event.target.closest?.('.os-sync-hint-pencil,.os-sync-hint-edit-host,.os-sync-secondary-pencil,.wiki-inline-input,[data-owner-text-field]'))return;
+        if(event.target.closest?.('.os-sync-hint-pencil,.os-sync-hint-edit-host,.os-sync-secondary-pencil,.os-sync-action-runtime-number,.wiki-inline-input,[data-owner-text-field]'))return;
         startEdit(event);
       });
       wrap.addEventListener('keydown',event=>{
@@ -362,6 +382,8 @@
       throw Error('Catalog review modules are missing');
 
     const view = h('div', {class:'os-sync'});
+    if(canEdit)view.addEventListener('pointerdown',event=>
+      actionQueue.cancelOutside(event.target),true);
     const intro = h('div',{class:'os-sync-intro'},[
       authored('strong',{},'title','Обновление игрового каталога','Game catalog updates'),
       authored('p',{},'introExplanation',
@@ -785,8 +807,6 @@
       const total=h('span',{class:'os-sync-filter-count',
        text:' · 0'});
       button.append(caption,total);
-      let pending=null;
-      const cancelPending=()=>{if(pending){clearTimeout(pending);pending=null}};
       if(canEdit&&typeof editLabel==='function')editLabel(caption,key,ru,en,{onStarted:cancelPending});
       const choose=()=>{if(busy)return;filterKind=id;render();};
       button.addEventListener('click',event=>{
@@ -800,11 +820,7 @@
           cancelPending();choose();return;
         }
         event.preventDefault();event.stopPropagation();
-        if(pending){clearTimeout(pending);pending=null;return}
-        pending=setTimeout(()=>{
-          pending=null;
-          if(button.isConnected&&!button.disabled)choose();
-        },500);
+        actionQueue.defer(button,choose);
       });
       button.addEventListener('keydown',event=>{
         if(canEdit&&event.target===button&&event.key==='F2'){
@@ -831,6 +847,7 @@
       return filterKind==='all'||change.kind===filterKind;
     }
     function setBusy(value) {
+      if(value)cancelPending();
       busy = value;
       live.disabled = value;
       archive.disabled = value;
@@ -2242,5 +2259,5 @@
     return {...check,verifiedDatasets:files.length};
   }
 
-  root.PandoraOSCatalogWorkbench=Object.freeze({open,verifyPublishedSnapshot,statusForSelection});
+  root.PandoraOSCatalogWorkbench=Object.freeze({open,verifyPublishedSnapshot,statusForSelection,createReviewActionQueue});
 })(typeof window === 'undefined' ? globalThis : window);
