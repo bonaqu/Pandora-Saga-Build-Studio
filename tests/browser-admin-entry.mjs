@@ -846,6 +846,20 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(await liveAction.count(),1,
    'The live catalog button remains in a direct-edit wrapper');
   const expectedCalls=calls.filter(value=>value.startsWith('game-source:')).length;
+  // The real enabled download action must not fire after a fast keyboard
+  // edit/cancel, including when Escape restores the original button before
+  // the delayed pointer activation would have executed.
+  const queuedLiveButton=liveAction.locator('.os-sync-main-check');
+  await queuedLiveButton.click();
+  await queuedLiveButton.press('F2');
+  const queuedLiveEditor=liveAction.locator('.os-sync-action-edit-host [contenteditable]');
+  await queuedLiveEditor.waitFor({state:'visible',timeout:12000});
+  await queuedLiveEditor.press('Escape');
+  await queuedLiveEditor.waitFor({state:'detached',timeout:12000});
+  await page.waitForTimeout(650);
+  assert.equal(calls.filter(value=>value.startsWith('game-source:')).length,expectedCalls,
+   'F2/Escape must cancel a queued enabled catalog download action');
+  assert.equal(await queuedLiveButton.isVisible(),true);
   for(const caption of ['Проверить игровой источник QA','Проверить изменения в текущей игре']){
    await liveAction.locator('.os-sync-main-check').dblclick();
    const input=liveAction.locator('.os-sync-action-edit-host [contenteditable]');
