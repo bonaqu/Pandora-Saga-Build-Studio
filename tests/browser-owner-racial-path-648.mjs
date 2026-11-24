@@ -429,7 +429,31 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   const classLimitRow=metricsPanel.locator('.studio-owner-interface-row').filter({hasText:'Class limit on track'});
   const railLimit=page.locator('#pathGrowthPage .inline-mastery-locked').first();
   const originalLimit=await railLimit.getAttribute('aria-label');
-  assert.match(originalLimit,/^Class limit: \d+$/);
+  assert.match(originalLimit,/^Class limit: \d+ \/ 90$/);
+  // The real branch count exposes one D1-editable RU/EN caption and
+  // three immutable source values (innate/invested/mastery).
+  const branchStats=page.locator(
+   '#pathGrowthPage .branch-row[data-path-branch][aria-expanded="true"] .count').first();
+  await branchStats.waitFor({state:'visible',timeout:12000});
+  const originalStats=await branchStats.getAttribute('aria-label');
+  assert.match(originalStats,/^Innate \/ invested \/ mastery: \d+ \/ \d+ \/ \d+$/);
+  const sourceCount=await branchStats.textContent();
+  const statsRow=metricsPanel.locator('.studio-owner-interface-row')
+   .filter({hasText:'Accessible branch stats'});
+  await statsRow.locator('.studio-owner-interface-value').dblclick();
+  const statsEditor=statsRow.locator('[data-owner-text-field]');
+  await statsEditor.waitFor({state:'visible'});
+  await statsEditor.fill('Branch stats QA:');await statsEditor.press('Tab');
+  await savedOverride('guideedit.book.path.path-branch-stats-aria',
+   {en:'Branch stats QA:'});
+  await page.waitForFunction(()=>document.querySelector(
+   '#pathGrowthPage .branch-row[data-path-branch][aria-expanded="true"] .count')
+    ?.getAttribute('aria-label')?.startsWith('Branch stats QA:'),
+   null,{timeout:12000});
+  assert.equal(await branchStats.getAttribute('aria-label'),
+   originalStats.replace('Innate / invested / mastery:','Branch stats QA:'));
+  assert.equal(await branchStats.textContent(),sourceCount,
+   'D1 caption changes must not alter the numeric branch summary');
   await classLimitRow.locator('.studio-owner-interface-value').dblclick();
   const classLimitEditor=classLimitRow.locator('[data-owner-text-field]');
   await classLimitEditor.waitFor({state:'visible'});
