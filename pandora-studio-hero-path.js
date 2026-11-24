@@ -80,20 +80,8 @@ const authored=(api,key,ru,en,tag='p',cls='muted')=>{
   api.editLabel(node,key,ru,en);
  return node;
 };
-// For disclosure/navigation buttons in owner mode, distinguish a real double
-// click on the caption from a single click that opens the section.
-const guardCaptionAction=(button,caption)=>{
- if(!button||!caption)return;
- let pending=null;
- button.addEventListener('click',event=>{
-  if(!event.detail||!caption.contains(event.target)||
-     event.target.closest?.('input,textarea,select'))return;
-  event.preventDefault();event.stopImmediatePropagation();
-  if(pending){clearTimeout(pending);pending=null;return}
-  pending=setTimeout(()=>{pending=null;if(button.isConnected&&!button.disabled)
-   button.click()},500);
- },true);
-};
+// Native action guards are shared with the other owner surfaces through
+// heroPathApi. One pending action per app, not one timer per caption.
 // Bind only author-written copy. Game levels and skill names are immutable
 // suffixes, never sent to the owner D1 string editor.
 const bindPathCopy=(api,node,key,ru,en,attribute='text',suffix='',prefix='')=>{
@@ -422,7 +410,7 @@ function viewGrowth(target,api){
    groupCount.append(make('span',{text:groupValues.length?' · ':''}),
     caption,make('span',{text:' '}),value);
    groupValues.push(value);
-   if(api.canEdit)guardCaptionAction(groupButton,caption);
+   if(api.canEdit)api.guardAction?.(groupButton,caption);
   }
   const refreshGroupSummary=()=>{
    groupValues[0].textContent=String(branchKeys.reduce((total,key)=>total+M.branchMastery(state,key,innate,caps),0));
@@ -435,7 +423,7 @@ function viewGrowth(target,api){
    (api.lang==='en'?group.en:group.ru);
   const caption=make('strong',{text:name});
   api.editLabel?.(caption,captionKey,group.ru,group.en);
-  if(api.canEdit)guardCaptionAction(groupButton,caption);
+  if(api.canEdit)api.guardAction?.(groupButton,caption);
   groupButton.append(caption,groupCount);
   head.append(groupButton);
   wrap.append(head);
@@ -686,7 +674,7 @@ function viewGrowth(target,api){
      unlockSummary.append(unlockCaption,make('span',{
       class:'path-unlock-count',
       text:' · '+marks.reduce((total,mark)=>total+mark.skills.length,0)}));
-     if(api.canEdit)guardCaptionAction(unlockSummary,unlockCaption);
+     if(api.canEdit)api.guardAction?.(unlockSummary,unlockCaption);
      unlockDetails.append(unlockSummary);
      const list=make('div',{class:'path-unlock-list'});
      for(const mark of [...marks].sort((a,b)=>a.threshold-b.threshold)){
@@ -719,8 +707,8 @@ function viewGrowth(target,api){
        copy.append(make('strong',{text:skill.name||tr(api,'Умение','Skill')}),status);
        button.append(copy);list.append(button);
        if(api.canEdit){
-        guardCaptionAction(button,unit);
-        if(word)guardCaptionAction(button,word);
+        api.guardAction?.(button,unit);
+        if(word)api.guardAction?.(button,word);
        }
       }
      }
@@ -904,7 +892,7 @@ function viewSkills(target,details,api){
    }},[caption,remain]);
   if(api.canEdit&&typeof api.editLabel==='function'){
    api.editLabel(caption,key,ru,en);
-   guardCaptionAction(showMore,caption);
+   api.guardAction?.(showMore,caption);
    target.append(showMore);
   }else target.append(showMore);
  }
@@ -1091,7 +1079,7 @@ function viewSkills(target,details,api){
      'Next →','span','path-skill-lineage-caption');
     button.append(nextCaption,make('span',{
      class:'path-skill-lineage-name',text:' '+label}));
-    if(api.canEdit)guardCaptionAction(button,nextCaption);
+    if(api.canEdit)api.guardAction?.(button,nextCaption);
     lineage.append(button);
    }
    details.append(lineage);

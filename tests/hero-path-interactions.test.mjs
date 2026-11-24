@@ -95,6 +95,27 @@ test('Hero Path owner group has one disclosure and directly editable caption',()
  assert.ok(keys.some(x=>x.key.startsWith('group.')));
 });
 
+test('#390 Hero Path delegates every owner action caption to one shared app guard',()=>{
+ const {target,api}=fixture();api.canEdit=true;
+ const edits=[],guards=[];
+ api.editLabel=(node,key)=>edits.push({node,key});
+ api.guardAction=(button,caption)=>guards.push({button,caption});
+ root.PandoraHeroPath.viewGrowth(target,api);
+ const groups=walk(target).filter(node=>node.attributes?.['data-path-group']);
+ assert.equal(groups.length,5);
+ for(const group of groups){
+  const registered=guards.filter(row=>row.button===group);
+  assert.equal(registered.length,4,'One group title and three metric captions');
+  assert.equal(new Set(registered.map(row=>row.caption)).size,4);
+  assert.ok(registered.every(row=>edits.some(edit=>edit.node===row.caption)));
+ }
+ const app=sources['pandora-studio-app.js'];
+ assert.match(app,/guardAction:\(button,caption\)=>ownerCaptionActionGuard\(button,caption\)/);
+ assert.match(app,/onStarted:\(\)=>\{\s*pendingOwnerCaptionAction\?\.cancel\(\)/);
+ assert.match(app,/const sameCaption=queuedCaption===activeCaption/);
+ assert.doesNotMatch(sources['pandora-studio-hero-path.js'],/const guardCaptionAction=/);
+});
+
 test('45-level Cleric with 104 available points has actually ENABLED skill range',()=>{
  const {range,budget}=fixture();
  assert.equal(budget().remaining,104);assert.ok(range);
@@ -651,7 +672,7 @@ test('Path Show More edits the caption without changing live count or adding a p
  assert.ok(!walk(gallery).some(x=>x.className==='path-more-pencil'));
  // The fixture stores the last click listener; native DOM runs both the
  // owner click guard and its original action callback (real Chromium checks it).
- assert.match(sources['pandora-studio-hero-path.js'],/guardCaptionAction\(showMore,caption\)/);
+ assert.match(sources['pandora-studio-hero-path.js'],/api\.guardAction\?\.\(showMore,caption\)/);
  assert.equal(button.children[1].textContent,' (2)');
  const plain=new BrowserElement('div');f.api.canEdit=false;
  root.PandoraHeroPath.viewSkills(plain,new BrowserElement('div'),f.api);

@@ -433,8 +433,17 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   const expandedBefore=await groupButton.getAttribute('aria-expanded');
   const groupMetric=groupCount.locator('.path-group-summary-copy').first();
   assert.equal(await groupMetric.innerText(),'trained');
-  await groupMetric.dblclick();
+  // F2 after the first owner pointer click must cancel the pending action
+  // across every caption in this same native group button.
+  await groupMetric.click();
+  await groupMetric.press('F2');
   const groupMetricEditor=groupMetric.locator('[data-owner-text-field]');
+  await groupMetricEditor.waitFor({state:'visible'});
+  await page.waitForTimeout(600);
+  assert.equal(await groupButton.getAttribute('aria-expanded'),expandedBefore);
+  await groupMetricEditor.press('Escape');
+  await groupMetricEditor.waitFor({state:'detached'});
+  await groupMetric.dblclick();
   await groupMetricEditor.waitFor({state:'visible'});
   await groupMetricEditor.fill('mastered QA');
   await groupMetricEditor.press('Tab');
@@ -452,8 +461,15 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   const openBefore=await unlock.evaluate(el=>el.parentElement.open);
   const railCaption=unlock.locator('.path-unlock-heading');
   assert.equal(await railCaption.innerText(),'Skills on track');
-  await railCaption.dblclick();
+  await railCaption.click();
+  await railCaption.press('F2');
   const railEditor=railCaption.locator('[data-owner-text-field]');
+  await railEditor.waitFor({state:'visible'});
+  await page.waitForTimeout(600);
+  assert.equal(await unlock.evaluate(el=>el.parentElement.open),openBefore);
+  await railEditor.press('Escape');
+  await railEditor.waitFor({state:'detached'});
+  await railCaption.dblclick();
   await railEditor.waitFor({state:'visible'});
   await railEditor.fill('Skills on this rail QA');
   await railEditor.press('Tab');
@@ -505,8 +521,16 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   const before=Number((await more.locator('.path-more-count').innerText()).match(/[0-9]+/)?.[0]);
   assert.ok(before>0,'Fixture must have more than the initial 24 future-learnable skills');
   assert.equal(await page.locator('#pathSkillGallery .path-more-pencil').count(),0);
-  await more.locator('.path-more-copy').dblclick();
+  const moreCaption=more.locator('.path-more-copy');
+  await moreCaption.click();
+  await moreCaption.press('F2');
   const moreEditor=more.locator('.path-more-copy [data-owner-text-field]');
+  await moreEditor.waitFor({state:'visible'});
+  await page.waitForTimeout(600);
+  assert.equal(Number((await more.locator('.path-more-count').innerText()).match(/[0-9]+/)?.[0]),before);
+  await moreEditor.press('Escape');
+  await moreEditor.waitFor({state:'detached'});
+  await moreCaption.dblclick();
   await moreEditor.waitFor({state:'visible'});
   await moreEditor.fill('More skills QA');await moreEditor.press('Tab');
   await page.waitForFunction(()=>document.querySelector(

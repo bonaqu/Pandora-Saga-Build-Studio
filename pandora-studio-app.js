@@ -3633,8 +3633,13 @@ function heroPathApi(){
   cap:branchCap,
   canEdit:Boolean(adminEditing&&adminToken),
   copyLabel:(key,ru,en)=>ownerCopy('path',key,ru,en),
+  guardAction:(button,caption)=>ownerCaptionActionGuard(button,caption),
   editLabel:(node,key,ru,en,callbacks)=>ownerCopyLabel(node,'path',key,ru,en,{
    ...callbacks,
+   onStarted:()=>{
+    pendingOwnerCaptionAction?.cancel();
+    callbacks?.onStarted?.();
+   },
    onCommitted:visible=>{
     // Inline edits must immediately refresh any companion aria/placeholder
     // using the same D1 key, without rerendering the character or skills.
@@ -9936,9 +9941,10 @@ function ownerCaptionActionGuard(button,caption){
  captions.add(caption);
  if(button.dataset.ownerCaptionActionGuard==='1')return;
  button.dataset.ownerCaptionActionGuard='1';
- let timer=null;
+ let timer=null,queuedCaption=null;
  const cancel=()=>{
   if(timer!==null){clearTimeout(timer);timer=null}
+  queuedCaption=null;
   delete button.dataset.ownerCaptionPending;
   if(pendingOwnerCaptionAction?.button===button)pendingOwnerCaptionAction=null;
  };
@@ -9950,14 +9956,24 @@ function ownerCaptionActionGuard(button,caption){
   }
   if(!adminEditing||!adminToken)return;
   const activeCaption=[...captions].find(item=>item.contains(event.target));
-  if(!activeCaption)return;
+  if(!activeCaption){
+   // Runtime numbers/markers remain immediate native actions. Cancel the
+   // older delayed caption click before it can run a second time.
+   if(pendingOwnerCaptionAction)pendingOwnerCaptionAction.cancel();
+   return;
+  }
   if(event.target.closest?.('[data-owner-text-field],.wiki-inline-input')){
-   event.preventDefault();event.stopImmediatePropagation();return;
+   cancel();event.preventDefault();event.stopImmediatePropagation();return;
   }
   if(event.target.closest?.('input,textarea,select'))return;
   event.preventDefault();event.stopImmediatePropagation();
-  if(timer!==null){cancel();return} // Actual double-click, not an action.
+  if(timer!==null){
+   const sameCaption=queuedCaption===activeCaption;
+   cancel();
+   if(sameCaption)return; // Actual double-click, not an action.
+  }
   if(pendingOwnerCaptionAction)pendingOwnerCaptionAction.cancel();
+  queuedCaption=activeCaption;
   button.dataset.ownerCaptionPending='1';
   pendingOwnerCaptionAction={button,cancel};
   timer=setTimeout(()=>{

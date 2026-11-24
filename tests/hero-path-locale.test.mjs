@@ -101,10 +101,10 @@ test('issue 390: milestone and successor labels are edited directly without rena
  assert.match(source,/authored\(api,'pathUnlockPoints','оч\.','pts'/);
  assert.match(source,/'span','path-unlock-unit'/);
  assert.match(source,/'span','path-unlock-state'/);
- assert.match(source,/guardCaptionAction\(button,unit\)/);
+ assert.match(source,/api\.guardAction\?\.\(button,unit\)/);
  assert.match(source,/'span','path-skill-lineage-caption'/);
  assert.match(source,/class:'path-skill-lineage-name',text:' '\+label/);
- assert.match(source,/guardCaptionAction\(button,nextCaption\)/);
+ assert.match(source,/api\.guardAction\?\.\(button,nextCaption\)/);
  assert.doesNotMatch(source,/bindPathCopy\(api,button,'skillNextLink'/);
  const app=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
  assert.match(app,/applyOwnerInterfaceEditedValue\('path',key,visible\)/);
@@ -115,7 +115,7 @@ test('issue 390: Path group and requirement captions are direct-edit and keep nu
  assert.match(source,/class:'path-requirement-value',text:String\(value\)/);
  assert.match(source,/authored\(api,copyKey,ru,en,'span','path-group-summary-copy'\)/);
  assert.match(source,/class:'path-group-summary-value'/);
- assert.match(source,/guardCaptionAction\(groupButton,caption\)/);
+ assert.match(source,/api\.guardAction\?\.\(groupButton,caption\)/);
  assert.doesNotMatch(source,/bindPathCopy\(api,caption,key,ru,en,'text',' ',' · '\)/);
 });
 
@@ -125,7 +125,7 @@ test('issue 390: skill rail summary edits only author copy and not the live coun
  assert.match(source,/PandoraUILocale\?\.text\('skillsOnTrack','en'\)/);
  assert.match(source,/class:'path-unlock-count'/);
  assert.match(source,/marks\.reduce\(\(total,mark\)=>total\+mark\.skills\.length,0\)/);
- assert.match(source,/guardCaptionAction\(unlockSummary,unlockCaption\)/);
+ assert.match(source,/api\.guardAction\?\.\(unlockSummary,unlockCaption\)/);
  assert.doesNotMatch(source,/text:\(root\.PandoraUILocale\?\.text\('skillsOnTrack'/);
 });
 
