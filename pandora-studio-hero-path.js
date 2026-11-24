@@ -473,9 +473,9 @@ function viewGrowth(target,api){
      // One bilingual D1 caption describes three independent live values.
      // Rebinding on hold/drag updates only numbers, never the saved copy.
      bindPathCopy(api,branchCount,'pathBranchStatsAria',
-      'Старт / вложено / мастерство: ',
-      'Innate / invested / mastery: ','aria-label',
-      base+' / '+invested+' / '+mastery);
+      'Старт / вложено / мастерство:',
+      'Innate / invested / mastery:','aria-label',
+      ' '+base+' / '+invested+' / '+mastery);
     };
     refreshBranchCountAria(points,trained);
     info.append(make('strong',{text:api.branchName(key)}));
