@@ -29,7 +29,7 @@ export function validateEditorialStagingTarget({name,id,operation,confirmation,a
   throw Error('Production/invalid D1 database UUID is forbidden');
  if(typeof accountId!=='string'||!/^[a-f0-9]{32}$/i.test(accountId))
   throw Error('Explicit staging Cloudflare account ID is required');
- if(operation!=='preflight'&&confirmation!==
+ if(['import','rollback'].includes(operation)&&confirmation!==
    'CONFIRM-EDITORIAL-STAGING-'+name+'-'+operation)
   throw Error('Operation-specific manual staging confirmation is missing');
  return Object.freeze({name,id:id.toLowerCase(),accountId,operation});
