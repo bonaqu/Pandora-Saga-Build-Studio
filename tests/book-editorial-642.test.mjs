@@ -470,3 +470,44 @@ test('#390 Healing explanations split 37 bilingual authorial fragments from all 
  assert.doesNotMatch(source,/text:en\?\s*'Cooldown: '\+/);
  assert.doesNotMatch(source,/text:en\?\s*'With Inspiration from an ally: '\+/);
 });
+
+test('#390 skill scaling authorial phrases are separate from source coefficients and skill names',()=>{
+ const rows=book.bookScalingActionCopyRows;
+ const expected={
+  effectsLead:['Эффекты:','Effects:'],
+  calculationLead:['Расчёт (с округлением вниз):','Calculation (rounded down):'],
+  calculationMastery:['мастерство','mastery'],
+  nextIntLead:['Следующий прирост силы заклинания:','Next spell strength'],
+  nextIntAt:['при','at'],nextIntRemaining:['ещё','+'],
+  nextMasteryLead:['Следующий прирост','Next'],
+  nextMasteryStrike:['силы удара:','strike strength'],
+  nextMasterySpell:['силы заклинания:','spell strength'],
+  nextMasteryAt:['при мастерстве','at'],nextMasteryRemaining:['ещё','+'],
+  inspiredLead:['С «Воодушевлением» от союзника:','With allied Inspiration:'],
+  inspiredBefore:['сек. применения (вместо','s casting (instead of'],
+  inspiredAfter:['сек.)','s)']
+ };
+ assert.deepEqual(rows.map(row=>row[0]).sort(),Object.keys(expected).sort());
+ for(const [key,ru,en] of rows)assert.deepEqual([ru,en],expected[key]);
+ const src=file('pandora-studio-hero-book.js');
+ assert.match(src,/guideLabel\(node,'effects\.scaling\.'\+key,row\[1\],row\[2\],editorial\)/);
+ assert.match(src,/const scalingActionCopy=new Map\(bookScalingActionCopyRows\.map/);
+ assert.match(src,/class:'stage-scaling-source-effects',text:parts/);
+ assert.match(src,/class:'stage-scaling-source-branch',text:branch/);
+ assert.match(src,/class:'stage-scaling-source-stat',text:stat/);
+ assert.match(src,/const phrase=next\.effect==='strike'\?'nextMasteryStrike':'nextMasterySpell'/);
+ for(const key of Object.keys(expected)){
+  if(['nextMasteryStrike','nextMasterySpell'].includes(key)){
+   assert.match(src,/scalingCaption\(phrase\)/);continue;
+  }
+  assert.ok(src.includes("scalingCaption('"+key+"')"),
+   'Missing direct owner label binding: '+key);
+ }
+ for(const key of ['scaling-base','scaling-int','scaling-mastery',
+  'scaling-total','scaling-next-int-gain','scaling-next-int-value',
+  'scaling-next-int-remaining','scaling-mastery-gain',
+  'scaling-mastery-target','scaling-mastery-remaining',
+  'scaling-inspired-seconds','scaling-base-seconds'])
+  assert.ok(src.includes(",'"+key+"')"));
+ assert.doesNotMatch(src,/class:'stage-skill-coefficient-next',text:en\?/);
+});

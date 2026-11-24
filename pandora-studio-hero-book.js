@@ -562,6 +562,24 @@ const bookHealingActionCopyRows=Object.freeze([
   'эффективности лечения, затем результат один раз округляется вниз.',
   'healing effectiveness to the sum, then round down once.']
 ]);
+// Source-safe authorial narration for OS skill scaling. The skill names,
+// coefficients, requirements and exact mastery boundaries remain immutable.
+const bookScalingActionCopyRows=Object.freeze([
+ ['effectsLead','Эффекты:','Effects:'],
+ ['calculationLead','Расчёт (с округлением вниз):','Calculation (rounded down):'],
+ ['calculationMastery','мастерство','mastery'],
+ ['nextIntLead','Следующий прирост силы заклинания:','Next spell strength'],
+ ['nextIntAt','при','at'],
+ ['nextIntRemaining','ещё','+'],
+ ['nextMasteryLead','Следующий прирост','Next'],
+ ['nextMasteryStrike','силы удара:','strike strength'],
+ ['nextMasterySpell','силы заклинания:','spell strength'],
+ ['nextMasteryAt','при мастерстве','at'],
+ ['nextMasteryRemaining','ещё','+'],
+ ['inspiredLead','С «Воодушевлением» от союзника:','With allied Inspiration:'],
+ ['inspiredBefore','сек. применения (вместо','s casting (instead of'],
+ ['inspiredAfter','сек.)','s)']
+]);
 const bookAccessibleAliasRows=Object.freeze([
  ['previous','Предыдущая страница','Previous chapter'],
  ['next','Следующая страница','Next chapter'],
@@ -1634,6 +1652,15 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   if(editable&&typeof onTextEdit==='function')node.tabIndex=0;
   return node;
  };
+ const scalingActionCopy=new Map(bookScalingActionCopyRows.map(row=>[row[0],row]));
+ const scalingCaption=key=>{
+  const row=scalingActionCopy.get(key);
+  if(!row)throw Error('Unreviewed skill scaling authorial caption: '+key);
+  const node=make('span',{class:'stage-scaling-editorial',text:en?row[2]:row[1]});
+  guideLabel(node,'effects.scaling.'+key,row[1],row[2],editorial);
+  if(editable&&typeof onTextEdit==='function')node.tabIndex=0;
+  return node;
+ };
  // Every source-calculated number/percent lives outside the owner CAS key.
  const healingValue=(value,kind)=>make('span',{
   class:'stage-heal-computed',...(kind?{'data-heal-value':kind}:{}),
@@ -1954,17 +1981,23 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
      const parts=modelParts.map(part=>
       (en?part.labelEn:part.labelRu)+' '+
       (part.amount>0?'+':'')+part.amount+part.unit).join(' · ');
-     preview.append(make('small',{class:'stage-skill-os-coefficient-model',
-      text:(en?'Effects: ':'Эффекты: ')+parts}));
+     preview.append(make('small',{class:'stage-skill-os-coefficient-model'},[
+      scalingCaption('effectsLead'),' ',
+      make('span',{class:'stage-scaling-source-effects',text:parts})
+     ]));
     }
     for(const part of modelParts){
      const p=part.roundingParts;
      if(p?.method!=='floor-components')continue;
-     more.append(make('small',{class:'stage-skill-os-coefficient-model',text:en?
-      'Calculation (rounded down): '+p.base+' + INT '+p.int+
-       ' + mastery '+p.mastery+' = '+part.amount:
-      'Расчёт (с округлением вниз): '+
-       p.base+' + ИНТ '+p.int+' + мастерство '+p.mastery+' = '+part.amount}));
+     more.append(make('small',{class:'stage-skill-os-coefficient-model'},[
+      scalingCaption('calculationLead'),' ',
+      healingValue(p.base,'scaling-base'),' + ',
+      make('span',{class:'stage-scaling-source-stat',text:en?'INT':'ИНТ'}),' ',
+      healingValue(p.int,'scaling-int'),' + ',
+      scalingCaption('calculationMastery'),' ',
+      healingValue(p.mastery,'scaling-mastery'),' = ',
+      healingValue(part.amount,'scaling-total')
+     ]));
     }
    }
    // One next-step hint inside the existing disclosure, never a new panel.
@@ -1972,22 +2005,36 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     Number.isSafeInteger(skill.nextStat.value)&&
     Number.isSafeInteger(skill.nextStat.remaining)){
     const next=skill.nextStat;
-    more.append(make('small',{class:'stage-skill-coefficient-next',text:en?
-     'Next spell strength +'+next.gain+' at INT '+next.value+
-      ' (+'+next.remaining+' INT)':
-     'Следующий прирост силы заклинания: +'+next.gain+
-      ' при ИНТ '+next.value+' (ещё '+next.remaining+' ИНТ)'}));
+    const stat=en?'INT':'ИНТ';
+    const sourceStat=()=>make('span',{class:'stage-scaling-source-stat',text:stat});
+    more.append(make('small',{class:'stage-skill-coefficient-next'},[
+     scalingCaption('nextIntLead'),' ',
+     healingValue('+'+next.gain,'scaling-next-int-gain'),' ',
+     scalingCaption('nextIntAt'),' ',sourceStat(),' ',
+     healingValue(next.value,'scaling-next-int-value'),' (',
+     scalingCaption('nextIntRemaining'),...(en?[]:[' ']),
+     healingValue(next.remaining,'scaling-next-int-remaining'),' ',
+     sourceStat(),')'
+    ]));
    }
    if(skill.nextMastery&&Number.isSafeInteger(skill.nextMastery.value)&&
     Number.isSafeInteger(skill.nextMastery.remaining)){
     const next=skill.nextMastery;
     const branch=gameBranchName(next.branch,gameTerms,en);
-    more.append(make('small',{class:'stage-skill-coefficient-next',text:en?
-     'Next '+(next.effect==='strike'?'strike strength +1%':'spell strength +1')+
-      ' at '+branch+' '+next.value+' (+'+next.remaining+')':
-     'Следующий прирост '+(next.effect==='strike'?'силы удара: +1%':
-      'силы заклинания: +1')+' при мастерстве «'+branch+'» '+
-       next.value+' (ещё '+next.remaining+')'}));
+    const bonus=next.effect==='strike'?'+1%':'+1';
+    const phrase=next.effect==='strike'?'nextMasteryStrike':'nextMasterySpell';
+    more.append(make('small',{class:'stage-skill-coefficient-next'},[
+     scalingCaption('nextMasteryLead'),' ',
+     scalingCaption(phrase),' ',
+     healingValue(bonus,'scaling-mastery-gain'),' ',
+     scalingCaption('nextMasteryAt'),' ',
+     ...(en?[]:['«']),
+     make('span',{class:'stage-scaling-source-branch',text:branch}),
+     ...(en?[]:['»']),' ',
+     healingValue(next.value,'scaling-mastery-target'),' (',
+     scalingCaption('nextMasteryRemaining'),...(en?[]:[' ']),
+     healingValue(next.remaining,'scaling-mastery-remaining'),')'
+    ]));
    }
    const action=gates?.sourceAction?.({
     skillCatalog:gameTerms.skills,skillId:skill.id,
@@ -2002,13 +2049,13 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
      action,castTime:modifiers?.combat?.castTime
     });
     if(inspired)more.append(make('small',{
-     class:'stage-heal-cast-preview',text:en?
-      'With allied Inspiration: '+healingNumber.format(inspired.seconds)+
-       ' s casting (instead of '+healingNumber.format(inspired.baseSeconds)+' s)':
-      'С «Воодушевлением» от союзника: '+
-       healingNumber.format(inspired.seconds)+' сек. применения (вместо '+
-       healingNumber.format(inspired.baseSeconds)+' сек.)'
-    }));
+     class:'stage-heal-cast-preview'},[
+     scalingCaption('inspiredLead'),' ',
+     healingValue(healingNumber.format(inspired.seconds),'scaling-inspired-seconds'),' ',
+     scalingCaption('inspiredBefore'),' ',
+     healingValue(healingNumber.format(inspired.baseSeconds),'scaling-base-seconds'),' ',
+     scalingCaption('inspiredAfter')
+    ]));
    }
    // The same full-MP/base-cost calculation already used by healing:
    // show how many casts the CURRENT hero can afford, in this disclosure.
@@ -3018,7 +3065,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
 root.PandoraStageAttributes=Object.freeze({render,bookPages,bookText,bookEditorialKey,
  bookEditorialDefaults:bookEnglish,buffStatusCopyRows,buffRequirementCopyRows,
  bookRegionCopyRows,bookSourceActionCopyRows,bookHealingActionCopyRows,
- bookAccessibleAliasRows,
+ bookScalingActionCopyRows,bookAccessibleAliasRows,
  refreshAccessibility:refreshBookAccessibility,resetDisclosureState,
  summaryRows,attackChapterGroups,defenseChapterGroups,
  gameSkillName,gameBranchName,gameClassName});

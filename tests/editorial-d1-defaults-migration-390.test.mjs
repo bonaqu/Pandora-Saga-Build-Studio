@@ -1267,3 +1267,24 @@ test('#390 staging Healing action phrases are allowlisted, not live skill result
   'mana','mp','amount','skill-id'])
   assert.equal(rows.some(row=>row.recordKey.endsWith('.'+notAuthorial)),false);
 });
+
+test('#390 source-only staging seeds skill scaling wording but never source coefficients',()=>{
+ const root={};Function('window',read('pandora-studio-hero-book.js'))(root);
+ const rows=root.PandoraStageAttributes.bookScalingActionCopyRows;
+ const records=manifest.records.filter(x=>x.recordKey.startsWith(
+  'guideedit.book.effects.scaling.'));
+ assert.equal(rows.length,14);
+ assert.equal(records.length,28);
+ assert.equal(manifest.stats.cohorts['hero-book-scaling-actions'],28);
+ for(const [key,ru,en] of rows){
+  const id='guideedit.book.effects.scaling.'+key;
+  assert.deepEqual(records.filter(x=>x.recordKey===id)
+   .map(x=>[x.field,x.value]).sort((a,b)=>a[0].localeCompare(b[0])),
+   [['en',en],['ru',ru]]);
+ }
+ for(const numeric of ['scaling-base','scaling-int','scaling-mastery',
+  'scaling-total','scaling-next-int-value','scaling-next-int-gain',
+  'scaling-mastery-target','scaling-mastery-remaining',
+  'scaling-inspired-seconds','skill-id','branch-name'])
+  assert.equal(records.some(x=>x.recordKey.endsWith('.'+numeric)),false);
+});

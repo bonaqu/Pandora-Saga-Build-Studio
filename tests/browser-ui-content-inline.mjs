@@ -1435,6 +1435,134 @@ export async function runUIContentInlineSmoke(browser,base){
   }
   console.log('Chromium #390 periodic HP/MP formula prose and source numbers isolated');
 
+  const scalingCases=await page.evaluate(()=>{
+   const oldLang=document.documentElement.lang,oldCalc=window.PandoraOSCalculator,
+    oldGates=window.PandoraBookSkillThresholds,out=[];
+   const effect=(amount,base,int,mastery)=>({
+    amount,confidence:'coefficient-model',unit:' pts',
+    labelRu:'QA source effect',labelEn:'QA source effect',
+    ep:'EP_ONHIT_DAMAGE_SCALE',
+    roundingParts:{method:'floor-components',base,int,mastery}
+   });
+   window.PandoraOSCalculator={...oldCalc,
+    scalingSkillPreview:()=>({offense:[{
+     id:999880001,name:'QA source skill',available:true,hostile:false,
+     recipient:false,amount:null,
+     coefficientModels:[effect(11,4,3,4),effect(20,10,5,5)],
+     nextStat:{stat:'int',gain:2,value:80,remaining:5},
+     nextMastery:{effect:'strike',branch:'archery',value:65,remaining:5}
+    }],defense:[],movement:[],utility:[]})
+   };
+   window.PandoraBookSkillThresholds={...oldGates,
+    sourceAction:()=>({mana:7,cast:1}),
+    inspiredCastTime:()=>({seconds:0.75,baseSeconds:1.5}),
+    baseManaBudget:()=>null
+   };
+   try{
+    for(const lang of ['ru','en']){
+     document.documentElement.lang=lang;
+     const host=document.createElement('div');document.body.append(host);
+     const edits=[],args={page:'effects',canEdit:true,
+      onTextEdit:(_node,key,field,initial)=>edits.push({key,field,initial}),
+      modifiers:{mp:100,healingSpells:{rows:[]},periodicRecovery:{rows:[]}},
+      gameTerms:{
+       skills:{'999880001':{id:999880001,name:'QA source skill'}},
+       englishSkills:{'999880001':{n:'QA source skill'}},
+       branchLabels:{archery:'Стрельба'},
+       englishBranches:{archery:'Archery'}
+      }
+     };
+     const text=selector=>host.querySelector(selector)?.textContent;
+     const values=()=>[...host.querySelectorAll('[data-heal-value^="scaling-"]')]
+      .map(node=>[node.dataset.healValue,node.textContent])
+      .sort((a,b)=>a[0].localeCompare(b[0]));
+     try{
+      window.PandoraStageAttributes.render(host,args);
+      const numericBefore=values(),original={
+       effects:text('.stage-scaling-source-effects'),
+       calculations:[...host.querySelectorAll('.stage-attacking-skills .stage-skill-os-coefficient-model')]
+        .filter(el=>el.querySelector('[data-guide-key="effects.scaling.calculationLead"]'))
+        .map(el=>el.textContent),
+       milestones:[...host.querySelectorAll('.stage-attacking-skills .stage-skill-coefficient-next')]
+        .map(el=>el.textContent),
+       inspired:text('.stage-attacking-skills .stage-heal-cast-preview'),
+       sourceSkill:text('.stage-attacking-skills .stage-effect-skill-label')
+      };
+      const selectors=[...new Set([...host.querySelectorAll(
+       '[data-guide-key^="effects.scaling."]')].map(node=>node.dataset.guideKey))].sort();
+      const edit=key=>host.querySelector('[data-guide-key="effects.scaling.'+key+'"]');
+      edit('calculationLead')?.dispatchEvent(new MouseEvent('dblclick',{
+       bubbles:true,cancelable:true,detail:2}));
+      edit('nextMasteryStrike')?.dispatchEvent(new KeyboardEvent('keydown',{
+       key:'F2',bubbles:true,cancelable:true}));
+      window.PandoraStageAttributes.render(host,{...args,copy:{
+       'guideedit.book.effects.scaling.calculationLead':JSON.stringify({
+        ru:'Проверенный расчёт:',en:'Verified calculation:'
+       }),
+       'guideedit.book.effects.scaling.nextMasteryStrike':JSON.stringify({
+        ru:'силы особого удара:',en:'special strike power'
+       })
+      }});
+      out.push({lang,original,numericBefore,numericAfter:values(),
+       changedCalc:[...host.querySelectorAll(
+        '.stage-attacking-skills [data-guide-key="effects.scaling.calculationLead"]')]
+        .map(n=>n.textContent),
+       changedMastery:[...host.querySelectorAll(
+        '.stage-attacking-skills .stage-skill-coefficient-next')]
+        .map(n=>n.textContent).find(t=>t.includes('65')),
+       selectedKeys:selectors,edits,
+       pencils:host.querySelectorAll('.stage-attacking-skills .stage-guide-edit-hint').length});
+     }finally{host.remove()}
+    }
+   }finally{
+    window.PandoraOSCalculator=oldCalc;
+    window.PandoraBookSkillThresholds=oldGates;
+    document.documentElement.lang=oldLang;
+   }
+   return out;
+  });
+  for(const row of scalingCases){
+   const en=row.lang==='en';
+   assert.deepEqual(row.numericAfter,row.numericBefore);
+   assert.equal(row.numericBefore.length,18);
+   assert.equal(row.pencils,0);
+   assert.equal(row.original.sourceSkill,'QA source skill');
+   assert.equal(row.original.effects,
+    'QA source effect +11 pts · QA source effect +20 pts');
+   assert.equal(row.original.calculations.length,2);
+   assert.equal(row.original.calculations[0],en?
+    'Calculation (rounded down): 4 + INT 3 + mastery 4 = 11':
+    'Расчёт (с округлением вниз): 4 + ИНТ 3 + мастерство 4 = 11');
+   assert.deepEqual(row.original.milestones,en?[
+    'Next spell strength +2 at INT 80 (+5 INT)',
+    'Next strike strength +1% at Archery 65 (+5)'
+   ]:[
+    'Следующий прирост силы заклинания: +2 при ИНТ 80 (ещё 5 ИНТ)',
+    'Следующий прирост силы удара: +1% при мастерстве «Стрельба» 65 (ещё 5)'
+   ]);
+   assert.equal(row.original.inspired,en?
+    'With allied Inspiration: 0.75 s casting (instead of 1.5 s)':
+    'С «Воодушевлением» от союзника: 0,75 сек. применения (вместо 1,5 сек.)');
+   assert.ok(row.selectedKeys.includes('effects.scaling.effectsLead'));
+   assert.ok(row.selectedKeys.includes('effects.scaling.inspiredBefore'));
+   assert.ok(row.selectedKeys.includes('effects.scaling.nextMasteryStrike'));
+   assert.deepEqual(row.changedCalc,[
+    en?'Verified calculation:':'Проверенный расчёт:',
+    en?'Verified calculation:':'Проверенный расчёт:'
+   ]);
+   assert.equal(row.changedMastery,en?
+    'Next special strike power +1% at Archery 65 (+5)':
+    'Следующий прирост силы особого удара: +1% при мастерстве «Стрельба» 65 (ещё 5)');
+   assert.deepEqual(row.edits,[
+    {key:'effects.scaling.calculationLead',field:row.lang,
+     initial:en?'Calculation (rounded down):':'Расчёт (с округлением вниз):'},
+    {key:'effects.scaling.nextMasteryStrike',field:row.lang,
+     initial:en?'strike strength':'силы удара:'}
+   ]);
+  }
+  console.log('Chromium #390 scaling source values and owner bilingual captions isolated');
+
+
 
 
   await page.locator('#stageAttributes [data-book-page="summary"]').click();

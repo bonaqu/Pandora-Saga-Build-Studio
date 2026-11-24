@@ -200,6 +200,25 @@ export function buildEditorialDefaultsManifest(){
   append('guideedit.book.effects.healing.'+key,'ru',ru,'hero-book-healing-actions');
   append('guideedit.book.effects.healing.'+key,'en',en,'hero-book-healing-actions');
  }
+ // Skill scaling prose is authored; the OS source coefficients, numerical
+ // projections, skill/branch names and player-specific requirements are not.
+ const scalingRows=book.bookScalingActionCopyRows;
+ const expectedScaling=['effectsLead','calculationLead','calculationMastery',
+  'nextIntLead','nextIntAt','nextIntRemaining',
+  'nextMasteryLead','nextMasteryStrike','nextMasterySpell',
+  'nextMasteryAt','nextMasteryRemaining',
+  'inspiredLead','inspiredBefore','inspiredAfter'];
+ if(!Array.isArray(scalingRows)||scalingRows.length!==expectedScaling.length||
+  scalingRows.map(row=>row?.[0]).sort().join('|')!==expectedScaling.sort().join('|'))
+  throw Error('Hero Book dynamic scaling narrative inventory drift');
+ for(const [key,ru,en] of scalingRows){
+  if(!/^[a-z][a-zA-Z]+$/.test(key)||typeof ru!=='string'||!ru.trim()||
+   ru!==ru.trim()||typeof en!=='string'||!en.trim()||en!==en.trim()||
+   /[0-9]/.test(ru+en))
+   throw Error('Invalid pure skill scaling RU/EN prose: '+key);
+  append('guideedit.book.effects.scaling.'+key,'ru',ru,'hero-book-scaling-actions');
+  append('guideedit.book.effects.scaling.'+key,'en',en,'hero-book-scaling-actions');
+ }
  const bookAliases=book.bookAccessibleAliasRows;
  if(!Array.isArray(bookAliases)||bookAliases.length!==4||
   bookAliases.map(row=>row?.[0]).sort().join('|')!=='close|next|previous|tabs')
