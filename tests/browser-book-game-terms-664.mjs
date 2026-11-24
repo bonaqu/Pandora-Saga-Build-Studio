@@ -34,7 +34,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   });
   assert.deepEqual(source,{l10:'Лечение',hymn:'Песнопения',adept:'Адепт'});
 
-  const render=async({lang,chapter,includeMana=false})=>page.evaluate(({lang,chapter,includeMana})=>{
+  const render=async({lang,chapter,includeMana=false,guildLevel=0})=>page.evaluate(({lang,chapter,includeMana,guildLevel})=>{
    document.documentElement.lang=lang;
    const terms=window.__bookGameTermsQA,host=window.__bookHostQA;
    const skillRows=[
@@ -96,7 +96,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
     onSkill:id=>{window.__bookLastSkill=String(id);},
     skillIconForId:id=>terms.skills[String(id)]?.iconId?
      'assets/skills/icons/skill_'+terms.skills[String(id)].iconId+'.webp':null,
-    buffs:{priestEnabled:true,priestSpi:134,priestBlessing:90,priestHymn:30},
+    buffs:{priestEnabled:true,priestSpi:134,priestBlessing:90,priestHymn:30,guildLevel},
     combatSkillCards:{combatLunge:{
      name:terms.skills['100051001'].name,
      nameEn:terms.englishSkills['100051001'].n,
@@ -105,7 +105,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
     availability:{combatLunge:true}
    });
    return host.querySelector('.stage-book-page')?.textContent||'';
-  },{lang,chapter,includeMana});
+  },{lang,chapter,includeMana,guildLevel});
   const ru=await render({lang:'ru',chapter:'effects'});
   for(const name of ['Первая помощь','Массовое исцеление','Песнь поэта'])
    assert.ok(ru.includes(name),'Book effects need OS/Remaked RU '+name+'; seen '+ru.slice(0,600));
@@ -427,6 +427,41 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   assert.match(await manaDisclosure.textContent(),/5 ОМ каждые 2 сек\./);
   await page.evaluate(()=>{delete window.__bookCopyQA;delete window.__bookCanEditQA;
    delete window.__bookEditRequestQA});
+  // Source-backed guild skills must not become owner caption editors. Their
+  // official OS names, source-only hints and live guild bonuses are separate.
+  await page.evaluate(()=>{window.__bookCanEditQA=true});
+  for(const language of ['ru','en']){
+   await render({lang:language,chapter:'buffs',guildLevel:12});
+   const rows=page.locator('#book-source-qa .stage-guild-passive-row');
+   assert.ok(await rows.count()>0,'Guild level 12 exposes real passive skills');
+   assert.equal(await rows.locator('[data-guide-key],[data-book-editorial-key],.stage-guide-edit-hint').count(),0,
+    'OS passive names and source tooltips must have no owner edit targets');
+   const inspected=await page.evaluate(lang=>{
+    const ids={guildHp:600000001,guildMp:600000011,
+     guildLifeRecovery:600000021,guildManaRecovery:600000031,
+     physicalReduction:600000071,magicReduction:600000081,
+     experience:600000061};
+    const preview=window.PandoraOSCalculator.guildPassiveAtLevel(12);
+    return [...document.querySelectorAll('#book-source-qa .stage-guild-passive-row')]
+     .map(row=>{
+      const key=row.dataset.guildPassive;
+      const level=key==='physicalReduction'||key==='magicReduction'?
+       [0,3,6,10].indexOf(preview[key]||0):key==='experience'?
+       Math.max(0,(preview.experience||0)-1):(preview[key]||0);
+      const id=ids[key]+level-1;
+      const expected=lang==='en'?
+       window.__bookGameTermsQA.englishSkills[String(id)]?.n:
+       window.__bookGameTermsQA.skills[String(id)]?.name;
+      return {id,actual:row.querySelector('.stage-guild-passive-name')?.textContent,
+       expected,bonus:row.querySelector('strong')?.textContent};
+     });
+   },language);
+   for(const entry of inspected.filter(x=>typeof x.expected==='string'))
+    assert.equal(entry.actual,entry.expected,'Unedited OS source skill '+entry.id);
+   for(const entry of inspected)assert.match(entry.bonus||'',/^[+−]\d+%$/,
+    'Current guild bonus stays a separate uneditable number');
+  }
+  await page.evaluate(()=>{delete window.__bookCanEditQA});
   assert.deepEqual(errors,[]);
   console.log('Chromium Book 664: OS/Remaked RU+EN skills, Hymn/Песнопения, Адепт, buffs and defense');
  }finally{await context.close()}

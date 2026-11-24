@@ -594,3 +594,17 @@ test('#390 native Book captions reuse existing semantic keys, not duplicate gene
   assert.equal(locale.bookFieldKey(en),null,'Avoid duplicate default for '+en);
  }
 });
+
+
+test('#390 OS guild passive and buff skill names never become owner Book text',()=>{
+ const src=file('pandora-studio-hero-book.js');
+ assert.match(src,/const name=make\('span',\{class:'stage-guild-passive-name'\}\);/);
+ assert.match(src,/name\.textContent=title;/,
+  'Source names must bypass the editable general Book copy dictionary');
+ assert.doesNotMatch(src,/guideLabel\(name,'buffs\.guild\.passive\.'/,
+  'Source-derived skill names must not be owner CAS captions');
+ assert.match(src,/PandoraGuideTooltip\?\.attach\(name,originalDescription/,
+  'Official passive skill description remains available as hover-only source');
+ assert.match(src,/if\(skill\)info\.textContent=displayName;/,
+  'Buff source names must not accidentally match an editable generic UI key');
+});

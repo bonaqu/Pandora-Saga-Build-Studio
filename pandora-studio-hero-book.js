@@ -987,7 +987,12 @@ function buffsPage(body,options){
     (skill.name||name)):bookText(name);
   // A disabled checkbox in a DIV needs the original source-skill name.
   if(!allowed)checkbox.setAttribute('aria-label',displayName);
-  const info=make('span',{class:'stage-combat-buff-copy',text:displayName});
+  // The name of a source skill is game data. Never pass it through generic
+  // UI caption matching, which could turn a future overlapping skill name
+  // into an accidental editable Book label or change its translation.
+  const info=make('span',{class:'stage-combat-buff-copy',
+   ...(skill?{}:{text:displayName})});
+  if(skill)info.textContent=displayName;
   const description=english?skill?.descEn||skill?.desc:skill?.desc;
   const rich=skill?.id!=null&&root.PandoraSkillPreview?.attach(info,skill.id);
   if(!rich&&typeof description==='string'&&description.trim())
@@ -1127,13 +1132,17 @@ function buffsPage(body,options){
   const suffix=['','I','II','III','IV','V','VI','VII','VIII'][spec.rank]||spec.rank;
   const title=(english?recordEn:record?.name)||
    ((english?source.sourceNameEn:source.nameRu)||spec.key)+' '+suffix;
-  const name=make('span',{class:'stage-guild-passive-name',text:title});
+  // Guild passive name and hover description come from the OS/Remaked
+  // game catalog. They are not independent authorial D1/CAS copy: do not
+  // expose synthetic buffs.guild.passive.* keys or tooltip-edit pencils.
+  const name=make('span',{class:'stage-guild-passive-name'});
+  name.textContent=title;
   line.append(name,make('strong',{text:
    (spec.key==='physicalReduction'||spec.key==='magicReduction'?'−':'+')+
    spec.rate+'%'}));
-  guideLabel(name,'buffs.guild.passive.'+spec.key+'.'+spec.rank,
-   record?.name||source.nameRu+' '+suffix,recordEn||source.sourceNameEn+' '+suffix,options,
-   description.ru||'',description.en||'');
+  const originalDescription=english?description.en:description.ru;
+  if(typeof originalDescription==='string'&&originalDescription.trim())
+   root.PandoraGuideTooltip?.attach(name,originalDescription,{hoverDelay:650});
   passiveGroup.append(line);
  }
 
