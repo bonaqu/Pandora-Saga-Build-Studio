@@ -216,7 +216,7 @@ test('#390: catalog review filters edit captions without turning calculated coun
  }
  assert.match(workbench,/const caption=h\('span',\{class:'os-sync-filter-caption'/);
  assert.match(workbench,/const total=h\('span',\{class:'os-sync-filter-count'/);
- assert.match(workbench,/editLabel\(caption,key,ru,en\)/);
+ assert.match(workbench,/editLabel\(caption,key,ru,en,\{onStarted:cancelPending\}\)/);
  assert.match(workbench,/caption.dispatchEvent\(new KeyboardEvent\('keydown'/);
  assert.match(workbench,/if\(pending\)\{clearTimeout\(pending\);pending=null;return\}/);
  assert.match(workbench,/if\(count.textContent!==value\)count.textContent=value/);

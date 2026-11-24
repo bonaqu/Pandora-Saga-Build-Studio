@@ -138,7 +138,7 @@ test('#390 native catalog disclosures edit RU/EN caption without double-click to
  assert.match(app,/onStarted\?\.\(\);/);
  assert.match(view,/editLabel\(caption,key,ru,en,\{onStarted:cancelPending\}\)/);
  assert.match(view,/const startEdit=event=>\{[\s\S]*?cancelPending\(\);/);
- assert.match(view,/if\(!event\.detail\|\|!caption\.contains\(event\.target\)\)return/);
+ assert.match(view,/if\(!event\.detail\|\|!caption\.contains\(event\.target\)\)\{cancelPending\(\);return\}/);
  assert.match(view,/event\.preventDefault\(\);event\.stopPropagation\(\)/);
  assert.match(view,/if\(pending\)\{clearTimeout\(pending\);pending=null;return\}/);
  assert.match(view,/details\.open=!details\.open/);

@@ -10,7 +10,7 @@ const visual=file('tests/browser-visual-coverage.mjs');
 
 test('catalog checkbox captions edit directly without changing native input behavior',()=>{
  assert.match(catalog,/const choiceEditor=\(caption,key,ru,en\)=>/);
- assert.match(catalog,/editLabel\(caption,key,ru,en\)/);
+ assert.match(catalog,/editLabel\(caption,key,ru,en,\{onStarted:cancelPending\}\)/);
  assert.match(catalog,/caption\.addEventListener\('click'/);
  assert.match(catalog,/if\(pending\)\{clearTimeout\(pending\);pending=null;return\}/);
  assert.match(catalog,/box\.click\(\)/);

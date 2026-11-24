@@ -46,7 +46,7 @@ test('catalog filters and linked item review keep English defaults while game va
  assert.match(source,/const caption=h\('span',\{class:'os-sync-filter-caption'/);
  assert.match(source,/const total=h\('span',\{class:'os-sync-filter-count'/);
  assert.match(source,/text:copy\(key,ru,en\)/);
- assert.match(source,/if\(canEdit&&typeof editLabel==='function'\)editLabel\(caption,key,ru,en\)/);
+ assert.match(source,/if\(canEdit&&typeof editLabel==='function'\)editLabel\(caption,key,ru,en,\{onStarted:cancelPending\}\)/);
  assert.match(source,/const value=' · '\+byKind\[id\]/);
  assert.match(source,/if\(count.textContent!==value\)count.textContent=value/);
  assert.doesNotMatch(source,/button\.textContent=tr\(ru,en\)\+' · '\+byKind\[id\]/);
