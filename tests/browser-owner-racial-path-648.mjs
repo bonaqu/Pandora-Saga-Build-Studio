@@ -595,6 +595,34 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   assert.equal(await prereq.locator('.path-skill-previous-value').innerText(),requiredName,
    'D1 text changes must not rename the required source skill');
   console.log('Chromium 0.650 bilingual prerequisite caption and game-data separation passed');
+  // Review the exact source-authored pager connector, not selected-skill
+  // index or count. Clearing search leaves the current skill pinned.
+  await search.fill('');
+  const pathPager=page.locator('#pathSkillDetails .path-skill-list-nav');
+  await pathPager.waitFor({state:'visible',timeout:12000});
+  const pagerCurrent=pathPager.locator('.path-skill-list-current');
+  const pagerTotal=pathPager.locator('.path-skill-list-total');
+  const currentBefore=await pagerCurrent.innerText();
+  const totalBefore=await pagerTotal.innerText();
+  assert.ok(Number(totalBefore.trim())>1);
+  const pagerWord=pathPager.locator('.path-skill-pager-separator');
+  assert.equal(await pagerWord.innerText(),'/');
+  assert.equal(await pathPager.locator('.path-owner-pencil').count(),0);
+  await pagerWord.dblclick();
+  const pagerEditor=pagerWord.locator('[data-owner-text-field]');
+  await pagerEditor.waitFor({state:'visible',timeout:12000});
+  await pagerEditor.fill('of QA');
+  await pagerEditor.press('Tab');
+  await pagerEditor.waitFor({state:'detached',timeout:15000});
+  await savedOverride('guideedit.book.path.skill-pager-separator',{en:'of QA'});
+  assert.equal(await pagerWord.innerText(),'of QA');
+  assert.equal(await pagerCurrent.innerText(),currentBefore);
+  assert.equal(await pagerTotal.innerText(),totalBefore);
+  // A successfully saved caption must not cause the selected skill to
+  // navigate, reorder, or lose its independent prerequisite value.
+  assert.equal(await prereq.locator('.path-skill-previous-value').innerText(),requiredName);
+  console.log('Chromium #390 Path pager RU/EN D1 author words separated from live counts');
+
   // The mounted Path budget may not discard its inline editor on a rerender.
   const budget=page.locator('#budgetState');
   const budgetCopy=budget.locator('[data-path-budget-copy="budgetAvailable"]');

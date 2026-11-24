@@ -796,7 +796,8 @@ test('Skill results pager uses stable filtered order, pins selection and keeps t
  assert.equal(api.filter,'all');
  assert.equal(api.shown,2);
  api.lang='en';render();
- assert.equal(position().textContent,'2 / 3');
+ assert.equal(positionText(),'2 / 3');
+ assert.equal(pagerWord()?.textContent,'/');
  assert.match(button('next').attributes['aria-label'],/Next in list: Гамма удар/);
  api.query='отсутствует';render();
  assert.equal(walk(details).some(n=>n.className==='path-skill-list-nav'),false);
