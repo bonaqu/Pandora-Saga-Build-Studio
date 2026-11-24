@@ -470,9 +470,12 @@ function viewGrowth(target,api){
     const branchCount=make('b',{class:'count',
      text:cap>0?level+' / '+cap:points>0?points+' / 0':'—'});
     const refreshBranchCountAria=(invested,mastery)=>{
-     branchCount.setAttribute('aria-label',tr(api,'Старт ','Innate ')+base+
-      tr(api,', вложено ', ', invested ')+invested+
-      tr(api,', мастерство ', ', mastery ')+mastery);
+     // One bilingual D1 caption describes three independent live values.
+     // Rebinding on hold/drag updates only numbers, never the saved copy.
+     bindPathCopy(api,branchCount,'pathBranchStatsAria',
+      'Старт / вложено / мастерство: ',
+      'Innate / invested / mastery: ','aria-label',
+      base+' / '+invested+' / '+mastery);
     };
     refreshBranchCountAria(points,trained);
     info.append(make('strong',{text:api.branchName(key)}));
@@ -487,9 +490,7 @@ function viewGrowth(target,api){
     const visualMax=90; // fixed game-wide scale, never cap + budget
     const bed=make('div',{class:'inline-mastery-bed'}),gold=make('div',{class:'inline-mastery-fill'}),
           green=make('div',{class:'inline-mastery-green'}),
-          locked=make('div',{class:'inline-mastery-locked',
-           'aria-label':tr(api,'Предел профессии: ','Class branch limit: ')+cap+
-            tr(api,' из ',' of ')+visualMax});
+          locked=make('div',{class:'inline-mastery-locked'});
     // The active fill, class limit, value marker and native thumb all share
     // the same 21px rail inset (range inset 12px + 18px thumb / 2).
     const railInset=21;
@@ -505,8 +506,9 @@ function viewGrowth(target,api){
      locked.style.left=positionOnRail(Math.max(0,Math.min(1,cap/visualMax)));
      // The D1-bound caption and constant cap are not reset during a drag.
     };
+    // Retain both source numbers after owner D1 binding, not only the cap.
     bindPathCopy(api,locked,'pathClassLimitAria','Предел профессии:',
-     'Class limit:','aria-label',' '+cap);
+     'Class limit:','aria-label',' '+cap+' / '+visualMax);
     setPotentialEdge();
     const currentNotch=make('span',{class:'path-current-notch','aria-hidden':'true'});
     const milestonesOnTrack=[];
