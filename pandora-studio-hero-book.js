@@ -394,6 +394,20 @@ function guardBookSummaryCaption(node){
  captions.add(node);
  if(summary.dataset.bookCaptionGuard==='1')return;
  summary.dataset.bookCaptionGuard='1';
+ // Native <summary> is the actual keyboard focus stop; its authored
+ // <strong>/<span> caption normally is not. F2 on the focused disclosure
+ // must reach the SAME direct-text editor rather than collapse later.
+ summary.addEventListener('keydown',event=>{
+  if(event.key!=='F2'||event.target!==summary)return;
+  const caption=[...captions].find(item=>
+   item.isConnected&&!item.hidden&&summary.contains(item));
+  if(!caption)return;
+  cancelBookSummaryPending();
+  event.preventDefault();event.stopPropagation();
+  caption.dispatchEvent(new KeyboardEvent('keydown',{
+   key:'F2',bubbles:false,cancelable:true
+  }));
+ });
  summary.addEventListener('click',event=>{
   // Keep native keyboard activation (detail=0) and noncaption controls
   // immediate, but invalidate any earlier queued pointer caption action.

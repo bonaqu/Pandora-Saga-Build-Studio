@@ -551,6 +551,10 @@ test('#390 Book owner disclosure F2 and cross-summary clicks cancel delayed stal
  assert.match(source,/function cancelBookSummaryPending\(\)/);
  assert.match(source,/clearTimeout\(old\.timer\);bookSummaryPending=null/);
  assert.match(source,/const prior=cancelBookSummaryPending\(\)/);
+ assert.match(source,/summary\.addEventListener\('keydown',event=>\{/);
+ assert.match(source,/if\(event\.key!=='F2'\|\|event\.target!==summary\)return/);
+ assert.match(source,/caption\.dispatchEvent\(new KeyboardEvent\('keydown',\{/);
+ assert.match(source,/key:'F2',bubbles:false,cancelable:true/);
  assert.match(source,/if\(prior\?\.summary===summary&&prior\.caption===caption\)return/);
  assert.match(source,/if\(bookSummaryPending!==queued\)return/);
  assert.match(source,/!summary\.querySelector\('\[data-owner-text-field\],\[contenteditable\]'\)/);

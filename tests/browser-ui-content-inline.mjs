@@ -1835,7 +1835,11 @@ export async function runUIContentInlineSmoke(browser,base){
   // Reproduces: click authorial summary word -> F2 before 500 ms -> edit.
   const beforeRaceOpen=await firstGroup.getAttribute('open');
   await groupTitle.dispatchEvent('click',{bubbles:true,cancelable:true,detail:1});
-  await groupTitle.dispatchEvent('keydown',{bubbles:true,cancelable:true,key:'F2'});
+  // Real keyboard focus lands on the native disclosure, not its <strong>.
+  const focusedSummary=firstGroup.locator('summary');
+  await focusedSummary.focus();
+  assert.equal(await focusedSummary.evaluate(node=>node===document.activeElement),true);
+  await page.keyboard.press('F2');
   const raceDraft=groupTitle.locator('[data-owner-text-field]');
   await raceDraft.waitFor({state:'visible',timeout:5000});
   await page.waitForTimeout(640);
