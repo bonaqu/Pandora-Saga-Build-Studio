@@ -1207,7 +1207,8 @@ export function buildEditorialDefaultsManifest(){
   'pathMilestoneMana','pathUnlockPoints','pathMasteryAria',
   'pathDecreaseAria','pathIncreaseAria','innateBaselineAria',
   'skillBrowseAria','skillPreviousAria','skillLineageAria','skillNextAria',
-  'pathClassLimitAria','skillCardAvailableAria','skillCardUnavailableAria',
+  'pathClassLimitAria','pathBranchStatsAria',
+  'skillCardAvailableAria','skillCardUnavailableAria',
   'skillListPreviousAria','skillListNextAria'
  ];
  const pathHelpRows=[...dynamicPathSource.matchAll(
