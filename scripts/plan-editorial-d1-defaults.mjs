@@ -811,7 +811,7 @@ export function buildEditorialDefaultsManifest(){
   'pathPointsPreserved','skillCatalogLoading','skillSearchEmpty',
   'skillDescriptionUnavailable','skillReady','skillUpgradeCastBefore',
   'skillUpgradeCastAfter','skillRequirementsHeading','skillPreviousLabel',
-  'skillPrerequisiteMissing','skillNextLink'
+  'skillPrerequisiteMissing','skillNextLink','skillPagerSeparator'
  ];
  if(pathRows.length!==expectedPath.length||
   pathRows.map(row=>row[0]).sort().join('|')!==expectedPath.sort().join('|'))

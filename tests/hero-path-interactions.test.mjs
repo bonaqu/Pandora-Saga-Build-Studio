@@ -763,16 +763,21 @@ test('Skill results pager uses stable filtered order, pins selection and keeps t
  const button=direction=>walk(details).find(node=>
   node.attributes?.['data-skill-list-direction']===direction);
  const position=()=>walk(details).find(node=>node.className==='path-skill-list-position');
+ const positionText=()=>position().children.map(node=>node.textContent).join('');
  const pinned=()=>walk(gallery).find(node=>node.attributes?.['data-skill-id'])?.attributes?.['data-skill-id'];
  render();
- assert.equal(position().textContent,'2 из 3');
+ assert.equal(positionText(),'2 из 3');
+ const pagerWord=()=>walk(position()).find(node=>node.className==='path-skill-pager-separator');
+ assert.equal(pagerWord()?.textContent,'из');
  assert.equal(pinned(),'910100002');
  assert.equal(walk(gallery).filter(n=>n.className?.includes('path-skill-card')).length,2);
  assert.match(button('previous').attributes['aria-label'],/Альфа удар/);
- api.copyLabel=(key,ru)=>({skillListPreviousAria:'Назад QA:',skillListNextAria:'Далее QA:',
+ api.copyLabel=(key,ru)=>({skillPagerSeparator:'между QA',skillListPreviousAria:'Назад QA:',skillListNextAria:'Далее QA:',
   skillCardAvailableAria:'доступно QA',skillCardUnavailableAria:'недоступно QA'}[key]||ru);
  render();
  assert.equal(button('previous').attributes['aria-label'],'Назад QA: Альфа удар');
+ assert.equal(pagerWord()?.textContent,'между QA');
+ assert.equal(positionText(),'2 между QA 3');
  assert.equal(button('next').attributes['aria-label'],'Далее QA: Гамма удар');
  const card=walk(gallery).find(n=>n.attributes?.['data-skill-id']==='910100002');
  assert.match(card.attributes['aria-label'],/^Бета удар · (?:не)?доступно QA$/);
@@ -781,7 +786,8 @@ test('Skill results pager uses stable filtered order, pins selection and keeps t
  assert.equal(api.lastPagerDirection,'next');
  assert.equal(api.selectedSkill.id,910100003);
  assert.equal(pinned(),'910100003','a result beyond the first two is pinned, not lost');
- assert.equal(position().textContent,'3 из 3');
+ assert.equal(positionText(),'3 из 3');
+ assert.equal(pagerWord()?.textContent,'из');
  assert.equal(button('next').disabled,true);
  button('previous').listeners.click();
  assert.equal(api.lastPagerDirection,'previous');

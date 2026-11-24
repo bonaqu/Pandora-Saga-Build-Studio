@@ -544,7 +544,7 @@ test('#390 Hero Path and Honor source-authored labels have pinned semantic D1 de
   /\bauthored\(\s*api\s*,\s*'([^']+)'\s*,\s*'([^']*)'\s*,\s*'([^']*)'/g
  )].map(m=>[m[1],m[2],m[3]]);
  assert.equal(authored.length,14);
- assert.equal(manifest.stats.cohorts['hero-path-authorial'],28);
+ assert.equal(manifest.stats.cohorts['hero-path-authorial'],30);
  assert.match(app,/copyLabel:\(key,ru,en\)=>ownerCopy\('path',key,ru,en\)/);
  for(const [key,ru,en] of authored){
   const id='guideedit.book.path.'+
@@ -679,6 +679,18 @@ test('#390 real Honor PvP tables and generated rank phrases are copied without g
  for(const suffix of ['pvp-daily-wins','rank-1-total-honor','pvp-weekly-limit-value'])
   assert.equal(manifest.records.some(row=>
    row.recordKey==='guideedit.book.honor-view.'+suffix),false);
+});
+
+test('#390 Path pager connector uses own RU/EN D1 key, never index or total',()=>{
+ const key='guideedit.book.path.skill-pager-separator';
+ const rows=manifest.records.filter(row=>row.recordKey===key);
+ assert.deepEqual(rows.map(row=>[row.field,row.value]).sort((a,b)=>a[0].localeCompare(b[0])),
+  [['en','/'],['ru','из']]);
+ const path=read('pandora-studio-hero-path.js');
+ assert.match(path,/authored\(api,'skillPagerSeparator','из','\/'/);
+ assert.match(path,/class:'path-skill-list-current',text:String\(listIndex\+1\)/);
+ assert.match(path,/class:'path-skill-list-total',text:' '\+String\(ordered.length\)/);
+ assert.doesNotMatch(path,/\+\x27 из \x27\+ordered.length/);
 });
 
 test('#390 Path group, skill count, loading and metadata prose are versioned but numbers are not',()=>{

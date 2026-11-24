@@ -943,10 +943,17 @@ function viewSkills(target,details,api){
       bindPathCopy(api,button,'skillListNextAria','Следующее в списке:',
        'Next in list:','aria-label',suffix);
    };
+   // Only the connecting word is authored copy; selected index and total
+   // remain immutable live search results. Keep the exact RU/EN visual
+   // defaults ('из' and '/') while enabling direct owner D1/CAS on the span.
+   const pager=make('span',{class:'path-skill-list-position'},[
+    make('span',{class:'path-skill-list-current',text:String(listIndex+1)}),
+    make('span',{text:' '}),
+    authored(api,'skillPagerSeparator','из','/','span','path-skill-pager-separator'),
+    make('span',{class:'path-skill-list-total',text:' '+String(ordered.length)})
+   ]);
    listNav.append(move(-1,'←','Предыдущее в списке:','Previous in list:'),
-    make('span',{class:'path-skill-list-position',text:
-     tr(api,(listIndex+1)+' из '+ordered.length,(listIndex+1)+' / '+ordered.length)}),
-    move(1,'→','Следующее в списке:','Next in list:'));
+    pager,move(1,'→','Следующее в списке:','Next in list:'));
    details.append(listNav);
   }
   details.append(skill.desc?make('p',{text:skill.desc}):

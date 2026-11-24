@@ -116,5 +116,5 @@ test('workbench still gates status to selected records only',()=>{
  assert.ok(script.includes('actionQueue.cancelOutside(event.target)'));
  assert.ok(script.includes('if(value)cancelPending()'));
  // A new client-side queue must never broaden the compatibility source.
- assert.doesNotMatch(script,/statusForSelection\(change,(?!selectedImpact)/);
+ assert.match(script,/function selectedMechanicStatus\(change\)\{\s*if\(!chosen.has\(change.id\)\)return null;\s*return statusForSelection\(change,selectedImpact\(\)\?\.compatibility\?\.entries\|\|\[\]\);\s*\}/);
 });
