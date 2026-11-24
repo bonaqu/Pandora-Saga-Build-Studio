@@ -1,0 +1,45 @@
+# #390 PR-only READ-ONLY remote staging preflight. Remove after evidence.
+# Never imports, rolls back, or uploads SQL; production UUID is rejected.
+name: Editorial D1 staging preflight (one shot)
+on:
+  push:
+    branches: [work/947-issue390-editorial-parity]
+    paths: [.github/workflows/editorial-staging-preflight-once.yml]
+permissions:
+  contents: read
+jobs:
+  inspect:
+    if: github.repository == 'bonaqu/Pandora-Saga-Build-Studio' && github.ref == 'refs/heads/work/947-issue390-editorial-parity'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: '57ac934cd0f0a7f5e8533177d612f893'
+      PS_EDITORIAL_STAGING_NAME: 'ps-editorial-staging-390'
+      PS_EDITORIAL_STAGING_ID: '56757608-3492-4fae-b698-27c76918cdc1'
+      PS_EDITORIAL_OPERATION: 'preflight'
+      WRANGLER_SEND_METRICS: 'false'
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Pin isolated account and source migration snapshot
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN"
+          node scripts/guard-editorial-staging-d1.mjs --validate
+          node scripts/guard-editorial-staging-d1.mjs --write-config "$RUNNER_TEMP/editorial-staging.toml"
+          node scripts/plan-editorial-d1-defaults.mjs --report
+      - name: Validate real remote staging UUID and complete schema read-only
+        env:
+          STAGING_CONFIG: ${{ runner.temp }}/editorial-staging.toml
+        run: |
+          npx --yes wrangler@4 d1 list --json > "$RUNNER_TEMP/staging-list.json"
+          node scripts/guard-editorial-staging-d1.mjs --verify-list "$RUNNER_TEMP/staging-list.json"
+          npx --yes wrangler@4 d1 execute "$PS_EDITORIAL_STAGING_NAME" --remote --config "$STAGING_CONFIG" --command "SELECT type,name FROM sqlite_master WHERE type IN ('table','view','trigger','index') AND lower(name) NOT GLOB 'sqlite_*' ORDER BY type,name;" --json > "$RUNNER_TEMP/staging-schema.json"
+          node scripts/guard-editorial-staging-d1.mjs --verify-schema "$RUNNER_TEMP/staging-schema.json"
+          npx --yes wrangler@4 d1 execute "$PS_EDITORIAL_STAGING_NAME" --remote --config "$STAGING_CONFIG" --command "PRAGMA table_xinfo(editorial_default_rows);" --json > "$RUNNER_TEMP/staging-rows.json"
+          node scripts/guard-editorial-staging-d1.mjs --verify-columns editorial_default_rows "$RUNNER_TEMP/staging-schema.json" "$RUNNER_TEMP/staging-rows.json"
+          npx --yes wrangler@4 d1 execute "$PS_EDITORIAL_STAGING_NAME" --remote --config "$STAGING_CONFIG" --command "PRAGMA table_xinfo(editorial_default_snapshots);" --json > "$RUNNER_TEMP/staging-snapshots.json"
+          node scripts/guard-editorial-staging-d1.mjs --verify-columns editorial_default_snapshots "$RUNNER_TEMP/staging-schema.json" "$RUNNER_TEMP/staging-snapshots.json"
+          echo 'READ-ONLY isolated D1 preflight passed; no remote write or production mutation.'
