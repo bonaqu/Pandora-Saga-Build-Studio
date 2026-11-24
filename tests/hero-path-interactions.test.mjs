@@ -290,6 +290,27 @@ test('skill progress slider does not show a duplicate native text tooltip',()=>{
  assert.match(f.range.attributes['aria-valuetext'],/вложено/);
 });
 
+test('#390 path branch accessibility keeps current live counts and authored class limit',()=>{
+ const f=fixture('CLERIC','prayer','benevolence');
+ f.api.copyLabel=(key,ru)=>key==='pathClassLimitAria'?'Лимит QA:':ru;
+ root.PandoraHeroPath.viewGrowth(f.target,f.api);
+ const branch=walk(f.target).find(n=>n.attributes?.['data-path-branch']==='benevolence');
+ const count=walk(branch).find(n=>n.className==='count');
+ const locked=walk(f.target).find(n=>n.className==='inline-mastery-locked');
+ const range=walk(f.target).find(n=>n.tag==='input'&&n.attributes.type==='range');
+ assert.ok(count&&locked&&range);
+ assert.match(locked.attributes['aria-label'],/^Лимит QA: \d+$/);
+ const limit=locked.attributes['aria-label'];
+ const before=count.attributes['aria-label'];
+ range.value='15';range.listeners.input();
+ assert.match(count.attributes['aria-label'],/вложено 10/);
+ assert.notEqual(count.attributes['aria-label'],before);
+ assert.equal(locked.attributes['aria-label'],limit);
+ range.value='5';range.listeners.input();
+ assert.match(count.attributes['aria-label'],/вложено 0/);
+ assert.equal(locked.attributes['aria-label'],limit);
+});
+
 test('class-limited skills keep individual numbers in the separate details list',()=>{
  const f=fixture('CLERIC','melee','brush');
  const skills=[8,12].map((threshold,index)=>({
@@ -746,6 +767,14 @@ test('Skill results pager uses stable filtered order, pins selection and keeps t
  assert.equal(pinned(),'910100002');
  assert.equal(walk(gallery).filter(n=>n.className?.includes('path-skill-card')).length,2);
  assert.match(button('previous').attributes['aria-label'],/Альфа удар/);
+ api.copyLabel=(key,ru)=>({skillListPreviousAria:'Назад QA:',skillListNextAria:'Далее QA:',
+  skillCardAvailableAria:'доступно QA',skillCardUnavailableAria:'недоступно QA'}[key]||ru);
+ render();
+ assert.equal(button('previous').attributes['aria-label'],'Назад QA: Альфа удар');
+ assert.equal(button('next').attributes['aria-label'],'Далее QA: Гамма удар');
+ const card=walk(gallery).find(n=>n.attributes?.['data-skill-id']==='910100002');
+ assert.match(card.attributes['aria-label'],/^Бета удар · (?:не)?доступно QA$/);
+ api.copyLabel=undefined;
  button('next').listeners.click();
  assert.equal(api.lastPagerDirection,'next');
  assert.equal(api.selectedSkill.id,910100003);

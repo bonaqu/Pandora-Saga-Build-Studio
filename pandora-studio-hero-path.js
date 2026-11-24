@@ -468,10 +468,13 @@ function viewGrowth(target,api){
     // Duplicating it in the header adds/removes a whole line at zero -> one.
 
     const branchCount=make('b',{class:'count',
-     text:cap>0?level+' / '+cap:points>0?points+' / 0':'—',
-     'aria-label':tr(api,'Старт ','Innate ')+base+
-      tr(api,', вложено ', ', invested ')+points+
-      tr(api,', мастерство ', ', mastery ')+trained});
+     text:cap>0?level+' / '+cap:points>0?points+' / 0':'—'});
+    const refreshBranchCountAria=(invested,mastery)=>{
+     branchCount.setAttribute('aria-label',tr(api,'Старт ','Innate ')+base+
+      tr(api,', вложено ', ', invested ')+invested+
+      tr(api,', мастерство ', ', mastery ')+mastery);
+    };
+    refreshBranchCountAria(points,trained);
     info.append(make('strong',{text:api.branchName(key)}));
     branch.append(info,branchCount);wrap.append(branch);
     if(!isOpen)continue;
@@ -500,14 +503,17 @@ function viewGrowth(target,api){
     const setPotentialEdge=()=>{
      locked.hidden=cap>=visualMax;
      locked.style.left=positionOnRail(Math.max(0,Math.min(1,cap/visualMax)));
-     locked.setAttribute('aria-label',tr(api,'Предел профессии: ','Class limit: ')+cap);
+     // The D1-bound caption and constant cap are not reset during a drag.
     };
+    bindPathCopy(api,locked,'pathClassLimitAria','Предел профессии:',
+     'Class limit:','aria-label',' '+cap);
     setPotentialEdge();
     const currentNotch=make('span',{class:'path-current-notch','aria-hidden':'true'});
     const milestonesOnTrack=[];
     const paint=()=>{
      const invested=M.potential(state,key),level=M.branchPotential(state,key,innate,caps);
      const mastery=M.branchMastery(state,key,innate,caps);
+     refreshBranchCountAria(invested,mastery);
      const goldFraction=Math.max(0,Math.min(1,level/visualMax));
      const greenFraction=Math.max(0,Math.min(1,mastery/visualMax));
      // Gold marks D + extra allocations, green marks actual learned
@@ -861,10 +867,14 @@ function viewSkills(target,details,api){
  for(const {skill,gate}of rows.slice(0,api.shown||24)){
   const item=make('button',{type:'button',class:'path-skill-card'+(gate.learned?' learned':' locked')+
     (selectedId===String(skill.id)?' active':''),
-      'aria-label':(skill.name||tr(api,'Умение без названия','Unnamed skill'))+' · '+(gate.learned?tr(api,'доступно','available'):tr(api,'недоступно','unavailable')),
    'data-skill-id':String(skill.id),
    'aria-current':String(skill.id)===selectedId?'true':'false',
    onclick:()=>api.onInspect(skill)});
+  const skillAriaPrefix=(skill.name||tr(api,'Умение без названия','Unnamed skill'))+' · ';
+  if(gate.learned)bindPathCopy(api,item,'skillCardAvailableAria','доступно','available',
+   'aria-label','',skillAriaPrefix);
+  else bindPathCopy(api,item,'skillCardUnavailableAria','недоступно','unavailable',
+   'aria-label','',skillAriaPrefix);
   const src=api.icon(skill.branch,skill);
   if(src){const img=make('img',{src,alt:''});img.onerror=()=>img.replaceWith(make('span',{text:'✦'}));item.append(img)}
   else item.append(make('span',{text:'✦'}));
@@ -917,8 +927,11 @@ function viewSkills(target,details,api){
       disabled:!next,text:icon,
       onclick:()=>{if(next)api.onInspect(next,{pagerDirection:delta<0?'previous':'next'})}});
      // Skill names are current catalog data, not owner-edited descriptions.
-     return bindPathCopy(api,button,delta<0?'skillListPreviousAria':'skillListNextAria',
-      ru,en,'aria-label',next?' '+next.name:'');
+     const suffix=next?' '+next.name:'';
+     return delta<0?bindPathCopy(api,button,'skillListPreviousAria','Предыдущее в списке:',
+      'Previous in list:','aria-label',suffix):
+      bindPathCopy(api,button,'skillListNextAria','Следующее в списке:',
+       'Next in list:','aria-label',suffix);
    };
    listNav.append(move(-1,'←','Предыдущее в списке:','Previous in list:'),
     make('span',{class:'path-skill-list-position',text:

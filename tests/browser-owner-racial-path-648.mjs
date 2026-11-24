@@ -424,6 +424,21 @@ export async function runOwnerRacialPath648Smoke(browser,base){
    {ru:'Лимит ветки:',en:'Branch ceiling:'});
   assert.equal(await page.locator('#pathGrowthPage .path-limit-number').first()
    .textContent(),enCapNumber);
+  const metricsPanel=page.locator('#ownerPathMetricsCopy');
+  if(!await metricsPanel.evaluate(el=>el.open))await metricsPanel.locator('summary').click();
+  const classLimitRow=metricsPanel.locator('.studio-owner-interface-row').filter({hasText:'Class limit on track'});
+  const railLimit=page.locator('#pathGrowthPage .inline-mastery-locked').first();
+  const originalLimit=await railLimit.getAttribute('aria-label');
+  assert.match(originalLimit,/^Class limit: \d+$/);
+  await classLimitRow.locator('.studio-owner-interface-value').dblclick();
+  const classLimitEditor=classLimitRow.locator('[data-owner-text-field]');
+  await classLimitEditor.waitFor({state:'visible'});
+  await classLimitEditor.fill('Class rail limit QA:');await classLimitEditor.press('Tab');
+  await savedOverride('guideedit.book.path.path-class-limit-aria',{en:'Class rail limit QA:'});
+  await page.waitForFunction(()=>document.querySelector('#pathGrowthPage .inline-mastery-locked')
+   ?.getAttribute('aria-label')?.startsWith('Class rail limit QA:'),null,{timeout:12000});
+  assert.equal(await railLimit.getAttribute('aria-label'),originalLimit.replace('Class limit:','Class rail limit QA:'));
+  assert.equal(await page.locator('#pathGrowthPage .path-limit-number').first().textContent(),enCapNumber);
   // Shared group metric captions can now be edited where the owner sees
   // them, while all three numbers and the group disclosure remain intact.
   const groupCount=page.locator('#pathGrowthPage .path-group-summary').first();
