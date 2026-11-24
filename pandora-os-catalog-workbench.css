@@ -484,6 +484,11 @@
 .os-sync-search-clear:hover:not(:disabled){background:#49321f;border-color:#d9af71}
 .os-sync-search-clear:disabled{opacity:.43;cursor:default}
 .os-sync-search-clear:focus-visible{outline:2px solid #efc784;outline-offset:2px}
+.os-sync-search-clear-editor{min-width:0;max-width:100%}
+.os-sync-search-clear-editor>.os-sync-search-clear:disabled{pointer-events:none}
+.os-sync-search-clear-editor:has(>.os-sync-search-clear:disabled){cursor:text}
+.os-sync-search-clear-editor>.os-sync-action-edit-host{min-width:0}
+.os-sync-search-clear-editor>.os-sync-action-edit-host .wiki-inline-input{min-width:0;width:100%}
 .os-sync-source-banner[data-source="archive"]{border-left:3px solid #d09962;
  background:#39281c;color:#f5d3a4}
 .os-sync-source-banner[data-source="server"]{border-left:3px solid #849e78;

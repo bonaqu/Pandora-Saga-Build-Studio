@@ -47,8 +47,8 @@ test('#390 linked item caption and true hover help are separately versioned, nev
   /const catalogReviewDetailCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
  assert.ok(registry);
  const rows=runInNewContext('('+registry[1]+')',{});
- assert.equal(rows.length,15,'Only reviewed safe editorial labels are migrated');
- assert.equal(manifest.stats.cohorts['catalog-review-details'],30);
+ assert.equal(rows.length,16,'Only reviewed safe editorial labels are migrated');
+ assert.equal(manifest.stats.cohorts['catalog-review-details'],32);
  for(const key of ['linkedReferenceOpen','hintLinkedReference']){
   const entry=rows.find(row=>row[0]===key);
   assert.ok(entry,'Missing independent bilingual linked-item copy: '+key);

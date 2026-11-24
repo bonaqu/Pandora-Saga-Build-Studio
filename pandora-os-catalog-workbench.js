@@ -52,7 +52,8 @@
       'This item has not yet been published in the encyclopedia.'],
     ['emptyReviewFilter','По этому фильтру изменений нет. Измени запрос или выбери «Все».',
       'No changes match this filter. Change the search or select “All”.'],
-    ['githubPrepared','Проверенный каталог подготовлен.','Verified catalog prepared.']
+    ['githubPrepared','Проверенный каталог подготовлен.','Verified catalog prepared.'],
+    ['searchClear','Очистить','Clear']
   ]);
   const catalogReviewDetailByKey=new Map(catalogReviewDetailCopyRows.map(row=>[row[0],row]));
   // These are literal display captions of native <summary> controls.
@@ -602,10 +603,13 @@
        'Search changes by game-object names. Searching never changes selection or publishes data.');
     searchField.classList.add('os-sync-search-field');
     const clearSearch=h('button',{type:'button',class:'os-sync-search-clear',
-     text:tr('Очистить','Clear'),disabled:true,
-     'aria-label':tr('Очистить поиск по игровым изменениям','Clear game changes search'),
+     disabled:true,
+     'aria-description':tr('Очистить поиск по игровым изменениям','Clear game changes search'),
      onclick:()=>{search.value='';render();search.focus({preventScroll:true})}});
-    searchField.insertBefore(clearSearch,
+    const clearRow=catalogReviewDetailByKey.get('searchClear');
+    const clearControl=action(clearSearch,clearRow[0],clearRow[1],clearRow[2]);
+    if(clearControl!==clearSearch)clearControl.classList.add('os-sync-search-clear-editor');
+    searchField.insertBefore(clearControl,
      searchField.querySelector('.os-sync-secondary-pencil'));
     view.append(intro,actions,sourceBanner,summary,status,diagnostic,progress,
       filters,overview,searchField,results);
@@ -1320,6 +1324,7 @@
 
     function render() {
       clearSearch.disabled=busy||!search.value.trim();
+      if(clearControl!==clearSearch)clearControl.tabIndex=clearSearch.disabled?0:-1;
       results.replaceChildren();
       const query = search.value.trim().toLocaleLowerCase().replaceAll('ё','е');
       // The review uses the main modal's scrollbar, not a nested list.

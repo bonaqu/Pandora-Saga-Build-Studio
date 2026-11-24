@@ -1253,7 +1253,22 @@ export async function runAdminEntrySmoke(browser,base){
    'Editing a safe empty-state caption cannot make source records appear');
   assert.equal(await dialog.locator('.os-sync-search').inputValue(),
    'no-matching-catalog-entry-792','Direct D1 editor cannot change the search');
+  const clearEditorWrap=searchBlock.locator('.os-sync-search-clear-editor');
+  await catalogClear.dblclick();
+  const clearEditor=clearEditorWrap.locator('.os-sync-action-edit-host [contenteditable]');
+  await clearEditor.waitFor({state:'visible',timeout:12000});
+  await clearEditor.fill('Очистить запрос · QA');
+  await clearEditor.press('Tab');
+  await clearEditor.waitFor({state:'detached',timeout:15000});
+  const clearKey='guideedit.book.catalog-sync.search-clear';
+  for(let n=0;n<300&&!townOverrides.has(clearKey);n++)
+   await page.waitForTimeout(40);
+  assert.equal(JSON.parse(townOverrides.get(clearKey)).ru,'Очистить запрос · QA');
+  assert.equal(await catalogClear.innerText(),'Очистить запрос · QA');
+  assert.equal(await dialog.locator('.os-sync-search').inputValue(),
+   'no-matching-catalog-entry-792','Editing Clear must not erase the search');
   await catalogClear.click();
+  await page.waitForFunction(()=>document.querySelector('.os-sync-search')?.value==='');
   assert.equal(await dialog.locator('.os-sync-search').inputValue(),'');
   assert.equal(await dialog.locator('.os-sync-record').count(),1,
    'Clearing catalog search must restore the review without changing selection');
