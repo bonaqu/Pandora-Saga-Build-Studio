@@ -534,7 +534,15 @@ const bookHealingActionCopyRows=Object.freeze([
  ['nextLevelPulse','за срабатывание','per pulse'],
  ['nextLevelCast','за применение','per cast'],
  ['nextLevelAt','на уровне','at level'],
- ['nextLevelUnit','ур.','levels']
+ ['nextLevelUnit','ур.','levels'],
+ // The source-calculated healed total and the future INT/SPR milestone
+ // are not part of these D1 author-owned RU/EN fragments.
+ ['totalLead','До','Up to'],
+ ['totalPerTarget','ОЗ на одну цель за','HP per target for'],
+ ['totalCasts','применений','casts'],
+ ['attributeLead','Следующий прирост от','Next'],
+ ['attributeAt','при','at'],
+ ['attributeOutcome','получится','increase:']
 ]);
 const bookAccessibleAliasRows=Object.freeze([
  ['previous','Предыдущая страница','Previous chapter'],
@@ -1719,11 +1727,23 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   const next=row.nextAttribute;
   if(next&&Number.isSafeInteger(next.value)){
    const stat=en?(periodic?'SPR':'INT'):(periodic?'СД':'ИНТ');
-   node.append(make('small',{class:'stage-heal-mastery-next',text:en?
-    'Next +'+next.gain+' HP at '+stat+' '+next.value+
-     ' (+'+next.remaining+' '+stat+')':
-    'Следующий прирост от '+stat+': при '+next.value+
-     ' (ещё '+next.remaining+') получится +'+next.gain+' ОЗ'}));
+   const statText=()=>make('span',{class:'stage-heal-source-stat',text:stat});
+   const line=en?[
+    healingCaption('attributeLead'),' ',healingCaption('attributeOutcome'),' ',
+    healingValue('+'+next.gain,'attribute-gain'),' HP ',
+    healingCaption('attributeAt'),' ',statText(),' ',
+    healingValue(next.value,'attribute-value'),' (+',
+    healingValue(next.remaining,'attribute-remaining'),' ',statText(),')'
+   ]:[
+    healingCaption('attributeLead'),' ',statText(),': ',
+    healingCaption('attributeAt'),' ',
+    healingValue(next.value,'attribute-value'),' (',
+    healingCaption('nextRemaining'),' ',
+    healingValue(next.remaining,'attribute-remaining'),') ',
+    healingCaption('attributeOutcome'),' ',
+    healingValue('+'+next.gain,'attribute-gain'),' ОЗ'
+   ];
+   node.append(make('small',{class:'stage-heal-mastery-next'},line));
   }
   if(row.nextLevel&&Number.isSafeInteger(row.nextLevel.value)){
    const next=row.nextLevel;
@@ -1786,14 +1806,15 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    const totalHeal=!pulse?gates?.directHealingBudget?.({
     row,action,maxMana:modifiers?.mp}):null;
    if(totalHeal)more.append(make('small',{
-    class:'stage-heal-total-capacity',text:en?
-     'Up to '+healingNumber.format(totalHeal.total)+
-      ' HP per target for '+totalHeal.casts+' casts ('+
-      totalHeal.amount+' × '+totalHeal.casts+')':
-     'До '+healingNumber.format(totalHeal.total)+
-      ' ОЗ на одну цель за '+totalHeal.casts+' применений ('+
-      totalHeal.amount+' × '+totalHeal.casts+')'
-   }));
+    class:'stage-heal-total-capacity'},[
+    healingCaption('totalLead'),' ',
+    healingValue(healingNumber.format(totalHeal.total),'healing-total'),' ',
+    healingCaption('totalPerTarget'),' ',
+    healingValue(totalHeal.casts,'healing-casts'),' ',
+    healingCaption('totalCasts'),' (',
+    healingValue(totalHeal.amount,'healing-amount'),' × ',
+    healingValue(totalHeal.casts,'healing-expression-casts'),')'
+   ]));
    appendHealingMilestones(more,row,pulse);
    appendHealingBreakdown(more,row,pulse);
    if(more.childElementCount>1)preview.append(more);

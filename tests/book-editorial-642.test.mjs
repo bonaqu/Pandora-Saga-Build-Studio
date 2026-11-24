@@ -400,7 +400,7 @@ test('#390 Book dynamic level/mastery blockers edit only words, not source thres
  assert.equal(manifest.records.some(row=>/QA source branch|QA source level/.test(row.value)),false);
 });
 
-test('#390 Healing explanations split 19 bilingual authorial fragments from all live numbers',()=>{
+test('#390 Healing explanations split 25 bilingual authorial fragments from all live numbers',()=>{
  const expected={
   inspirationLead:['С «Воодушевлением» от союзника:','With Inspiration from an ally:'],
   inspirationTail:['сек. применения (вдвое быстрее)','s of casting (half the usual time)'],
@@ -420,7 +420,13 @@ test('#390 Healing explanations split 19 bilingual authorial fragments from all 
   nextLevelPulse:['за срабатывание','per pulse'],
   nextLevelCast:['за применение','per cast'],
   nextLevelAt:['на уровне','at level'],
-  nextLevelUnit:['ур.','levels']
+  nextLevelUnit:['ур.','levels'],
+  totalLead:['До','Up to'],
+  totalPerTarget:['ОЗ на одну цель за','HP per target for'],
+  totalCasts:['применений','casts'],
+  attributeLead:['Следующий прирост от','Next'],
+  attributeAt:['при','at'],
+  attributeOutcome:['получится','increase:']
  };
  assert.deepEqual(book.bookHealingActionCopyRows.map(row=>row[0]).sort(),Object.keys(expected).sort());
  for(const [key,ru,en] of book.bookHealingActionCopyRows)
@@ -437,7 +443,9 @@ test('#390 Healing explanations split 19 bilingual authorial fragments from all 
  }
  for(const key of ['mana-needed','cast-seconds','mana-percent','cooldown-percent',
   'mana-pool','mana-casts','mana-remaining','mastery-rank','mastery-remaining',
-  'mastery-gain','level-gain','level-value','level-remaining'])
+  'mastery-gain','level-gain','level-value','level-remaining',
+  'attribute-gain','attribute-value','attribute-remaining',
+  'healing-total','healing-casts','healing-amount','healing-expression-casts'])
   assert.ok(source.includes(",'"+key+"')"));
  assert.match(source,/class:'stage-heal-computed'/);
  assert.doesNotMatch(source,/text:en\?\s*'MP cost: '\+/);
