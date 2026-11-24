@@ -20,7 +20,7 @@ const target=operation=>validateEditorialStagingTarget({
 const query=rows=>JSON.stringify([{success:true,results:rows}]);
 
 test('#390 staging gate refuses production D1, wrong operation and unconfirmed writes',()=>{
- for(const operation of ['preflight','import','rollback']){
+ for(const operation of ['preflight','verify','import','rollback']){
   const value=target(operation);
   assert.equal(value.id,id);
   assert.equal(value.name,name);
@@ -388,6 +388,9 @@ test('#390 premerge staging CLI is import-inert, SHA-pinned and requires a separ
   PS_EDITORIAL_CONFIRMATION:'CONFIRM-EDITORIAL-STAGING-'+name+'-import'
  };
  assert.equal(validateCliInputs('preflight',env).id,id);
+ assert.equal(validateCliInputs('verify',{
+  ...env,PS_EDITORIAL_BACKUP_DIR:'',PS_EDITORIAL_CONFIRMATION:''
+ }).id,id,'read-only verification needs neither backup nor write confirmation');
  assert.equal(validateCliInputs('import',env).name,name);
  for(const bad of [
   {...env,CLOUDFLARE_API_TOKEN:''},
@@ -450,6 +453,15 @@ test('#390 premerge staging CLI is import-inert, SHA-pinned and requires a separ
   'independent backup validation precedes every write');
  assert.match(source,/verifyEditorialDefaultsReadback\(manifest,parsed.metadata,parsed.rows\)/);
  assert.match(source,/assertRolledBack\(wrangler\(cmd.readFile\)\)/);
+ assert.match(source,/if\(operation==='verify'\)/);
+ const verifyBranch=source.slice(source.indexOf("if(operation==='verify'){"),
+  source.indexOf('// An empty database',source.indexOf("if(operation==='verify'){")));
+ assert.match(verifyBranch,/renderEditorialDefaultsReadbackSQL\(manifest\)/);
+ assert.match(verifyBranch,/parseWranglerEditorialReadback\(wrangler\(cmd.readFile\)\)/);
+ assert.match(verifyBranch,/verifyEditorialDefaultsReadback\(manifest,parsed.metadata,parsed.rows\)/);
+ assert.match(verifyBranch,/schema.tables.join\('\|'\)/);
+ assert.doesNotMatch(verifyBranch,/wrangler\(cmd.executeFile\)|cmd.export|backupRoot/,
+  'read-only verification may not import, export or delete staging SQL');
  assert.match(source,/renderStagingRollbackMutationSQL\(manifest.snapshot,schema.tables\)/);
  assert.match(source,/renderStagingRollbackCheckSQL\(manifest.snapshot,afterRollback.tables\)/);
  assert.match(docs,/workflow_dispatch/);
