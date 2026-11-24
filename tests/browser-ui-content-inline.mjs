@@ -1348,6 +1348,96 @@ export async function runUIContentInlineSmoke(browser,base){
   }
   console.log('Chromium #390 Healing action RU/EN editor and live numeric isolation passed');
 
+  // Two distinct source skills share ONE bilingual D1 action caption. An
+  // ordinary same-page rerender must preserve their separate native disclosure
+  // states, without moving either underlying computed HP value into D1.
+  const skillDetailFixtures=await page.evaluate(()=>{
+   const savedLang=document.documentElement.lang;
+   const savedCalc=window.PandoraOSCalculator,fixtures=[];
+   window.PandoraOSCalculator={...savedCalc,
+    healingActionPreview:()=>null,
+    scalingSkillPreview:()=>({offense:[],defense:[],movement:[],utility:[]})
+   };
+   try{
+    for(const lang of ['ru','en']){
+     document.documentElement.lang=lang;
+     const host=document.createElement('div');document.body.append(host);
+     const edits=[],args={page:'effects',canEdit:true,heroLevel:45,
+      onTextEdit:(_node,key,field,initial)=>edits.push({key,field,initial}),
+      modifiers:{healingSpells:{rows:[
+       {available:true,skillId:310001001,name:'QA First Aid',amount:42,
+        nextLevel:{value:46,remaining:1,gain:2}},
+       {available:true,skillId:310004001,name:'QA Heal',amount:28,
+        nextLevel:{value:47,remaining:2,gain:3}}
+      ]},periodicRecovery:{rows:[]}},
+      gameTerms:{skills:{
+       '310001001':{id:310001001,name:'QA First Aid'},
+       '310004001':{id:310004001,name:'QA Heal'}
+      },englishSkills:{}}};
+     const allDetails=()=>[...host.querySelectorAll(
+      '.stage-heal-row details[data-book-skill-more]')];
+     const state=()=>allDetails().map(d=>[d.dataset.bookSkillMore,d.open]);
+     const values=()=>[...host.querySelectorAll('.stage-heal-row > strong')]
+      .map(d=>d.textContent);
+     try{
+      window.PandoraStageAttributes.render(host,args);
+      const details=allDetails(),initialValues=values();
+      const before=state();
+      if(details.length!==2)throw Error('Expected two distinct source skill disclosures');
+      details[0].open=true;
+      const caption=details[0].querySelector('[data-guide-key="effects.detail.more"]');
+      const defaultCopy=caption?.textContent;
+      caption?.dispatchEvent(new MouseEvent('dblclick',{
+       bubbles:true,cancelable:true,detail:2}));
+      caption?.dispatchEvent(new KeyboardEvent('keydown',{
+       key:'F2',bubbles:true,cancelable:true}));
+      window.PandoraStageAttributes.render(host,args);
+      const afterRerender=state();
+      window.PandoraStageAttributes.render(host,{...args,copy:{
+       'guideedit.book.effects.detail.more':JSON.stringify({
+        ru:'Развернуть сведения',en:'Expand details'
+       })
+      }});
+      fixtures.push({lang,before,afterRerender,afterCopy:state(),
+       initialValues,finalValues:values(),defaultCopy,edits,
+       changedCaptions:allDetails().map(d=>d.querySelector(
+        '[data-guide-key="effects.detail.more"]')?.textContent),
+       pencilCount:host.querySelectorAll(
+        '.stage-skill-more .stage-guide-edit-hint').length,
+       numericIds:allDetails().map(d=>d.dataset.bookSkillMore)});
+     }finally{host.remove()}
+    }
+   }finally{
+    window.PandoraOSCalculator=savedCalc;
+    document.documentElement.lang=savedLang;
+   }
+   return fixtures;
+  });
+  assert.equal(skillDetailFixtures.length,2);
+  for(const fixture of skillDetailFixtures){
+   const en=fixture.lang==='en';
+   assert.equal(fixture.defaultCopy,en?'More details':'Подробнее');
+   assert.deepEqual(fixture.before,[
+    ['healing:310001001',false],['healing:310004001',false]
+   ]);
+   assert.deepEqual(fixture.afterRerender,[
+    ['healing:310001001',true],['healing:310004001',false]
+   ]);
+   assert.deepEqual(fixture.afterCopy,fixture.afterRerender);
+   assert.deepEqual(fixture.initialValues,en?['42 HP','28 HP']:['42 ОЗ','28 ОЗ']);
+   assert.deepEqual(fixture.finalValues,fixture.initialValues);
+   assert.deepEqual(fixture.numericIds,['healing:310001001','healing:310004001']);
+   assert.deepEqual(fixture.changedCaptions,
+    en?['Expand details','Expand details']:['Развернуть сведения','Развернуть сведения']);
+   assert.equal(fixture.pencilCount,0,'Native detail captions need no pencil');
+   assert.deepEqual(fixture.edits,[
+    {key:'effects.detail.more',field:fixture.lang,initial:fixture.defaultCopy},
+    {key:'effects.detail.more',field:fixture.lang,initial:fixture.defaultCopy}
+   ]);
+  }
+  console.log('Chromium #390 Skill details source identity, RU/EN CAS and open-state persistence passed');
+
+
   // Special MP recovery formula and periodic HP healing share the same
   // authorial tokens but retain exact source coefficients and values.
   const periodicCopy=await page.evaluate(()=>{
