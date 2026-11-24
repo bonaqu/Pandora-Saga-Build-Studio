@@ -1,5 +1,8 @@
 # #390 — Editorial RU/EN completion matrix · 21.11.2026
 
+> **Current status · 24 November 2026.** This is a cumulative historical audit; earlier entries referring to mandatory owner physical-touch QA have been superseded by the owner's desktop-only editor acceptance scope. Existing mobile guest/synthetic gesture regressions remain required. A separate Cloudflare D1 staging database was [created](https://github.com/bonaqu/Pandora-Saga-Build-Studio/actions/runs/45379974380) and its empty application schema was [verified remotely](https://github.com/bonaqu/Pandora-Saga-Build-Studio/actions/runs/45380662619). Cloudflare-owned reserved `_cf_KV` is excluded by exact name only. The independently retained full backup, remote defaults import/full SHA-256 readback/exact rollback, protected release and production read-only acceptance are **still pending**. Do not mistake historical checked boxes or green CI on an earlier SHA for final acceptance. Keep #809 Draft and #390 open.
+
+
 **Источник:** фактические исходники Pandora Saga Build Studio после squash PR #803 и изменения draft PR #809. Цель — завершать функционал пакетами, не подменять требования подсчётом коммитов.
 
 ## Актуальное уточнение владельца · 24.11.2026

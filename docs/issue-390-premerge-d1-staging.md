@@ -1,6 +1,6 @@
 # #390 — Pre-merge isolated Cloudflare D1 rehearsal
 
-**Operator instructions only. No remote migration has been performed by this document.**
+**Remote staging exists and the complete read-only staging preflight is successful; no remote import, rollback, or production migration has been performed.**
 
 A failed import with only one of the two reviewed staging tables is recoverable: the rollback checks the audited schema inventory, requires actual pinned rows/marker, retains the independent backup, deletes only the exact snapshot from existing tables (marker first), and verifies absence without creating the missing table. Unexpected schema drift stops rollback rather than silently treating it as success.
 
@@ -10,7 +10,7 @@ A failed import with only one of the two reviewed staging tables is recoverable:
 
 ## Cloudflare-owned sqlite_master object on fresh staging D1
 
-The first remote [read-only schema preflight](https://github.com/bonaqu/Pandora-Saga-Build-Studio/actions/runs/45380175706) rejected the otherwise empty newly created staging database. A separate, narrowly scoped [read-only metadata inspection](https://github.com/bonaqu/Pandora-Saga-Build-Studio/actions/runs/45380364467) established that its sole schema object was `table _cf_KV`. [Cloudflare's official D1 import/export documentation](https://developers.cloudflare.com/d1/best-practices/import-export-data/) explicitly identifies `_cf_KV` as a reserved internal storage-system table. The shared schema query now excludes **only the exact name `_cf_KV`**, while continuing to reject every unknown table, view, index or trigger (including `_cf_KVX`); SQLite's `sqlite_*` system exclusion remains literal via GLOB.
+The first remote [read-only schema preflight](https://github.com/bonaqu/Pandora-Saga-Build-Studio/actions/runs/45380175706) rejected the otherwise empty newly created staging database. A separate, narrowly scoped [read-only metadata inspection](https://github.com/bonaqu/Pandora-Saga-Build-Studio/actions/runs/45380364467) established that its sole schema object was `table _cf_KV`. [Cloudflare's official D1 import/export documentation](https://developers.cloudflare.com/d1/best-practices/import-export-data/) explicitly identifies `_cf_KV` as a reserved internal storage-system table. The shared schema query now excludes **only the exact name `_cf_KV`**, while continuing to reject every unknown table, view, index or trigger (including `_cf_KVX`); SQLite's `sqlite_*` system exclusion remains literal via GLOB. [The third real remote preflight](https://github.com/bonaqu/Pandora-Saga-Build-Studio/actions/runs/45380662619) **PASSED** with the pinned staging UUID, zero non-system schema objects, and both absent editorial tables confirmed by PRAGMA table_xinfo. No D1 SQL writes, imports, rollbacks or deployments were performed.
 
 This is a schema-introspection exemption, **not permission to query or mutate** the internal table. The approved user-owned staging tables and exact columns remain unchanged.
 

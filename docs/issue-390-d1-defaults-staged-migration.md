@@ -1,6 +1,6 @@
 # #390 · Verifiable authorial RU/EN defaults in D1 — migration staging
 
-**Status: planning, deterministic generation and an optional read-only Worker endpoint in Draft PR. NO deployment, D1 writes, client activation, or production migration.** This document describes an opt-in future migration, not a completed conversion.
+**Status (24 Nov 2026): isolated Cloudflare D1 staging database created and remotely verified read-only; no editorial SQL import, row readback, rollback, Worker/Pages deployment, default-client activation, or production migration.** [Creation evidence](https://github.com/bonaqu/Pandora-Saga-Build-Studio/actions/runs/45379974380), [real staging schema/UUID preflight](https://github.com/bonaqu/Pandora-Saga-Build-Studio/actions/runs/45380662619). This document describes an opt-in future migration, not a completed conversion.
 
 ## Why a separate versioned table is required
 
