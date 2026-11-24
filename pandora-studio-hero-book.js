@@ -1692,7 +1692,7 @@ function renderSongSkills(body,modifiers,gameTerms={},skillIconForId=()=>null){
    const card=make('div',{class:'stage-song-skill-row'});
    card.append(make('strong',{class:'stage-effect-skill-heading'},[
     gameSkillBadge(entry.id,entry.name,entry.nameEn,gameTerms,english,skillIconForId)]),
-    make('small',{text:english?entry.descriptionEn:entry.description}),
+    sourceText('small',english?entry.descriptionEn:entry.description),
     make('span',{class:entry.available?'stage-song-skill-ready':'stage-song-skill-locked',
      text:(entry.available?
       (english?'Requirements met':'Требования выполнены'):
@@ -2535,15 +2535,15 @@ function appendWeaponConditions(body,calc,items,english,options={}){
    'На экипированном оружии нет активных подтверждённых стихийных эффектов.'}));
  for(const {row,bonus}of active){
   const rec=row.record||{},name=rec.name||'Оружие';
-  panel.append(make('strong',{text:name+' · '+(english?'Fire +':'Огонь +')+
-   row.refinement}));
+  panel.append(sourceText('strong',name+' · '+(english?'Fire +':'Огонь +')+
+   row.refinement));
   // An itemForth fire-magic entry is already listed in Attack/Elemental Magic.
   const alreadyShown=(calc?.elementalRefinement?.entries||[])
    .some(e=>e.itemId===rec.id&&e.grade===row.refinement);
   for(const effect of bonus.rows){
    if(alreadyShown&&effect.name==='Магическая атака огнём')continue;
-   panel.append(make('p',{text:effect.name+': +'+effect.value+
-    (effect.unit==='%'?'%':'')}));
+   panel.append(sourceText('p',effect.name+': +'+effect.value+
+    (effect.unit==='%'?'%':'')));
   }
   if(bonus.phoenix){
    const outcome=root.PandoraConditionalItemBonuses.phoenixDamage(
@@ -2703,7 +2703,7 @@ function defensePage(body,calc,english,options={}){
    if(entry.magic)line.push(english?
     'Magic resistance +'+entry.magic:
     'Сопротивление магии +'+entry.magic);
-   panel.append(make('p',{text:entry.source+' · '+line.join(' · ')}));
+   panel.append(sourceText('p',entry.source+' · '+line.join(' · ')));
   }
   body.append(panel);
  }
@@ -2726,8 +2726,8 @@ function defensePage(body,calc,english,options={}){
  expPanel.append(make('summary',{text:english?'Experience gain bonuses':
   'Бонусы к опыту'}));
  if(exp.length){
-  for(const e of exp)expPanel.append(make('p',{text:e.source+': '+
-   (e.percent>0?'+':'')+e.percent+'%'}));
+  for(const e of exp)expPanel.append(sourceText('p',e.source+': '+
+   (e.percent>0?'+':'')+e.percent+'%'));
  }else expPanel.append(make('p',{class:'stage-attribute-note',
   text:english?'No experience bonuses are currently active.':
    'Сейчас нет активных бонусов к опыту.'}));

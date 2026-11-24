@@ -34,7 +34,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   });
   assert.deepEqual(source,{l10:'Лечение',hymn:'Песнопения',adept:'Адепт'});
 
-  const render=async({lang,chapter,includeMana=false,guildLevel=0})=>page.evaluate(({lang,chapter,includeMana,guildLevel})=>{
+  const render=async({lang,chapter,includeMana=false,guildLevel=0,experienceSource=null})=>page.evaluate(({lang,chapter,includeMana,guildLevel,experienceSource})=>{
    document.documentElement.lang=lang;
    const terms=window.__bookGameTermsQA,host=window.__bookHostQA;
    const skillRows=[
@@ -62,6 +62,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
    skillRows[0].nextLevel=firstAidLevel.nextLevel;
    const calc={
     mp:450,
+    experienceBonus:{entries:experienceSource?[{source:experienceSource,percent:12}]:[]},
     healingSpells:{rows:skillRows},
     stats:{vit:50,str:70,agi:70,dex:55,spi:80,int:35},
     combat:{incredibleStrength:{applies:true,id:910110001},
@@ -105,7 +106,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
     availability:{combatLunge:true}
    });
    return host.querySelector('.stage-book-page')?.textContent||'';
-  },{lang,chapter,includeMana,guildLevel});
+  },{lang,chapter,includeMana,guildLevel,experienceSource});
   const ru=await render({lang:'ru',chapter:'effects'});
   for(const name of ['Первая помощь','Массовое исцеление','Песнь поэта'])
    assert.ok(ru.includes(name),'Book effects need OS/Remaked RU '+name+'; seen '+ru.slice(0,600));
@@ -481,6 +482,16 @@ export async function runHeroBookGameNames664Smoke(browser,base){
    delete window.__bookOriginalSkillNameQA;
    delete window.__bookCanEditQA;
   });
+  // A catalog source with the exact spelling of an authored RU UI label
+  // must remain the original source in EN, not become a translatable/owner
+  // D1 caption. The percentage remains game-derived.
+  await page.evaluate(()=>{window.__bookCanEditQA=true});
+  await render({lang:'en',chapter:'defense',experienceSource:'Подробнее'});
+  const experienceRow=page.locator('#book-source-qa .stage-experience-effects p').first();
+  assert.equal(await experienceRow.textContent(),'Подробнее: +12%');
+  assert.equal(await experienceRow.getAttribute('data-book-editorial-key'),null);
+  assert.equal(await experienceRow.getAttribute('data-guide-key'),null);
+  await page.evaluate(()=>{delete window.__bookCanEditQA});
   assert.deepEqual(errors,[]);
   console.log('Chromium Book 664: OS/Remaked RU+EN skills, Hymn/Песнопения, Адепт, buffs and defense');
  }finally{await context.close()}

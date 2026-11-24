@@ -619,3 +619,14 @@ test('#390 source skill and item names bypass generic editable Book dictionary',
  assert.match(src,/sourceText\('div',source\.label\+': '\+display\+' · '\+source\.name/);
  assert.match(src,/sourceText\('strong',\(english\?entry\.conditionsEn/);
 });
+
+test('#390 source-only equipped effects, experience and cloak names bypass Book copy D1',()=>{
+ const source=file('pandora-studio-hero-book.js');
+ assert.match(source,/sourceText\('strong',name\+' · '\+\(english\?'Fire \+'/);
+ assert.match(source,/sourceText\('p',effect\.name\+': \+'/);
+ assert.match(source,/sourceText\('p',entry\.source\+' · '\+line\.join/);
+ assert.match(source,/expPanel\.append\(sourceText\('p',e\.source\+': '/);
+ assert.match(source,/sourceText\('small',english\?entry\.descriptionEn:entry\.description/);
+ assert.doesNotMatch(source,/expPanel\.append\(make\('p',\{text:e\.source/,
+  'Source labels cannot enter the generic editable Book text transformer');
+});
