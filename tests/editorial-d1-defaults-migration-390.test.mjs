@@ -543,7 +543,9 @@ test('#390 Hero Path and Honor source-authored labels have pinned semantic D1 de
  const authored=[...path.matchAll(
   /\bauthored\(\s*api\s*,\s*'([^']+)'\s*,\s*'([^']*)'\s*,\s*'([^']*)'/g
  )].map(m=>[m[1],m[2],m[3]]);
- assert.equal(authored.length,14);
+ assert.equal(authored.length,15);
+ assert.ok(authored.some(([key,ru,en])=>key==='skillPagerSeparator'&&ru==='из'&&en==='/'),
+  'The fifteenth Path caption is a bounded authorial pager word, not a computed count');
  assert.equal(manifest.stats.cohorts['hero-path-authorial'],30);
  assert.match(app,/copyLabel:\(key,ru,en\)=>ownerCopy\('path',key,ru,en\)/);
  for(const [key,ru,en] of authored){
