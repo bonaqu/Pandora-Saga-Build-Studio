@@ -581,6 +581,8 @@ const bookScalingActionCopyRows=Object.freeze([
  ['inspiredAfter','сек.)','s)']
 ]);
 // Repeated action wording is source-authorial, never one D1 row per skill.
+// This authorial word already has a stable ui.label.book-* CAS identity.
+// Inventory the alias; NEVER create a second effects.detail.more D1 key.
 const bookSkillDetailCopyRows=Object.freeze([['more','Подробнее','More details']]);
 const bookAccessibleAliasRows=Object.freeze([
  ['previous','Предыдущая страница','Previous chapter'],
@@ -1649,10 +1651,15 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   const detail=make('details',{class:'stage-skill-gate-help stage-skill-more',
    'data-book-skill-more':kind+':'+String(id)});
   const summary=make('summary');
-  const caption=make('span',{class:'stage-skill-more-copy'});
+  const caption=make('span',{class:'stage-skill-more-copy',text:'Подробнее'});
   summary.append(caption);detail.append(summary);
-  guideLabel(caption,'effects.detail.more','Подробнее','More details',editorial);
-  if(editable&&typeof onTextEdit==='function')caption.tabIndex=0;
+  const locale=root.PandoraUILocale;
+  const ownerKey=locale?.fieldKey?.(locale?.bookFieldKey?.('Подробнее'));
+  // Reuse the globally seeded Book caption rather than duplicating D1.
+  if(ownerKey){
+   guideLabel(caption,ownerKey,'Подробнее','More details',editorial);
+   if(editable&&typeof onTextEdit==='function')caption.tabIndex=0;
+  }
   return detail;
  };
  const healingActionCopy=new Map(bookHealingActionCopyRows.map(row=>[row[0],row]));

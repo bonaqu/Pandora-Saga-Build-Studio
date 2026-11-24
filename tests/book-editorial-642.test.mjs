@@ -516,7 +516,12 @@ test('#390 skill scaling authorial phrases are separate from source coefficients
 test('#390 nested skill details reuse a single owner caption and preserve expansion on rerenders',()=>{
  assert.deepEqual(book.bookSkillDetailCopyRows,[['more','Подробнее','More details']]);
  const source=file('pandora-studio-hero-book.js');
- assert.match(source,/guideLabel\(caption,'effects\.detail\.more','Подробнее','More details',editorial\)/);
+ assert.match(source,/const ownerKey=locale\?\.fieldKey\?\.\(locale\?\.bookFieldKey\?\.\('Подробнее'\)\)/);
+ assert.match(source,/guideLabel\(caption,ownerKey,'Подробнее','More details',editorial\)/);
+ const canonical=locale.bookFieldKey('Подробнее');
+ assert.equal(locale.baseText(canonical,'ru'),'Подробнее');
+ assert.equal(locale.baseText(canonical,'en'),'More details');
+ assert.equal(locale.fieldKey(canonical).startsWith('ui.label.book-'),true);
  assert.match(source,/const more=skillMore\('healing',sourceId\)/);
  assert.match(source,/const more=skillMore\('mp',entry\.id\)/);
  assert.match(source,/const more=skillMore\('scaling-'\+groupName,skill\.id\)/);

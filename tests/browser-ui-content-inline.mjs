@@ -1374,6 +1374,8 @@ export async function runUIContentInlineSmoke(browser,base){
        '310001001':{id:310001001,name:'QA First Aid'},
        '310004001':{id:310004001,name:'QA Heal'}
       },englishSkills:{}}};
+     const copyKey=window.PandoraUILocale.fieldKey(
+      window.PandoraUILocale.bookFieldKey('Подробнее'));
      const allDetails=()=>[...host.querySelectorAll(
       '.stage-heal-row details[data-book-skill-more]')];
      const state=()=>allDetails().map(d=>[d.dataset.bookSkillMore,d.open]);
@@ -1385,7 +1387,7 @@ export async function runUIContentInlineSmoke(browser,base){
       const before=state();
       if(details.length!==2)throw Error('Expected two distinct source skill disclosures');
       details[0].open=true;
-      const caption=details[0].querySelector('[data-guide-key="effects.detail.more"]');
+      const caption=details[0].querySelector('[data-guide-key="'+copyKey+'"]');
       const defaultCopy=caption?.textContent;
       caption?.dispatchEvent(new MouseEvent('dblclick',{
        bubbles:true,cancelable:true,detail:2}));
@@ -1394,14 +1396,14 @@ export async function runUIContentInlineSmoke(browser,base){
       window.PandoraStageAttributes.render(host,args);
       const afterRerender=state();
       window.PandoraStageAttributes.render(host,{...args,copy:{
-       'guideedit.book.effects.detail.more':JSON.stringify({
+       ['guideedit.book.'+copyKey]:JSON.stringify({
         ru:'Развернуть сведения',en:'Expand details'
        })
       }});
-      fixtures.push({lang,before,afterRerender,afterCopy:state(),
+      fixtures.push({lang,copyKey,before,afterRerender,afterCopy:state(),
        initialValues,finalValues:values(),defaultCopy,edits,
        changedCaptions:allDetails().map(d=>d.querySelector(
-        '[data-guide-key="effects.detail.more"]')?.textContent),
+        '[data-guide-key="'+copyKey+'"]')?.textContent),
        pencilCount:host.querySelectorAll(
         '.stage-skill-more .stage-guide-edit-hint').length,
        numericIds:allDetails().map(d=>d.dataset.bookSkillMore)});
@@ -1431,8 +1433,8 @@ export async function runUIContentInlineSmoke(browser,base){
     en?['Expand details','Expand details']:['Развернуть сведения','Развернуть сведения']);
    assert.equal(fixture.pencilCount,0,'Native detail captions need no pencil');
    assert.deepEqual(fixture.edits,[
-    {key:'effects.detail.more',field:fixture.lang,initial:fixture.defaultCopy},
-    {key:'effects.detail.more',field:fixture.lang,initial:fixture.defaultCopy}
+    {key:fixture.copyKey,field:fixture.lang,initial:fixture.defaultCopy},
+    {key:fixture.copyKey,field:fixture.lang,initial:fixture.defaultCopy}
    ]);
   }
   console.log('Chromium #390 Skill details source identity, RU/EN CAS and open-state persistence passed');
