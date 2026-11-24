@@ -355,6 +355,13 @@ function make(tag,attrs={},children=[]){
  }
  return n;
 }
+// Source game names are never editorial UI copy; exact matches with authored
+// Book words must not translate, acquire D1 keys, or render as HTML.
+function sourceText(tag,text,attrs={}){
+ const node=make(tag,attrs);
+ node.textContent=String(text??'');
+ return node;
+}
 
 // One visual metadata owner per chapter field. D1 changes affect copy only,
 // never IDs, numerical formulas, current equipment, or stored build settings.
@@ -990,9 +997,8 @@ function buffsPage(body,options){
   // The name of a source skill is game data. Never pass it through generic
   // UI caption matching, which could turn a future overlapping skill name
   // into an accidental editable Book label or change its translation.
-  const info=make('span',{class:'stage-combat-buff-copy',
-   ...(skill?{}:{text:displayName})});
-  if(skill)info.textContent=displayName;
+  const info=skill?sourceText('span',displayName,{class:'stage-combat-buff-copy'}):
+   make('span',{class:'stage-combat-buff-copy',text:displayName});
   const description=english?skill?.descEn||skill?.desc:skill?.desc;
   const rich=skill?.id!=null&&root.PandoraSkillPreview?.attach(info,skill.id);
   if(!rich&&typeof description==='string'&&description.trim())
@@ -1135,8 +1141,7 @@ function buffsPage(body,options){
   // Guild passive name and hover description come from the OS/Remaked
   // game catalog. They are not independent authorial D1/CAS copy: do not
   // expose synthetic buffs.guild.passive.* keys or tooltip-edit pencils.
-  const name=make('span',{class:'stage-guild-passive-name'});
-  name.textContent=title;
+  const name=sourceText('span',title,{class:'stage-guild-passive-name'});
   line.append(name,make('strong',{text:
    (spec.key==='physicalReduction'||spec.key==='magicReduction'?'−':'+')+
    spec.rate+'%'}));
@@ -1669,7 +1674,7 @@ function gameSkillBadge(id,ru,en,terms,english,skillIconForId,onSkill=null){
   };
   label.append(picture);
  }
- label.append(make('span',{text:skillName}));
+ label.append(sourceText('span',skillName));
  root.PandoraSkillPreview?.attach(label,id);
  return label;
 }
@@ -2447,8 +2452,8 @@ function appendChapterGroups(body,groups,english,emptyRu,emptyEn,options={}){
       'Здесь только прямые бонусы вещей и душ. Титулы, пассивные умения, комплекты и другие эффекты тоже могут влиять на итоговые значения выше.'}));
      for(const source of sources){
       const display=(source.amount>0?'+':'')+number.format(source.amount)+'%';
-      breakdown.append(make('div',{class:'stage-status-source-row',
-       text:source.label+': '+display+' · '+source.name}));
+      breakdown.append(sourceText('div',source.label+': '+display+' · '+source.name,
+       {class:'stage-status-source-row'}));
      }
      section.append(breakdown);
     }
@@ -2490,7 +2495,7 @@ function appendItemEvents(body,calc,english,kind,gameTerms={}){
   const valid=Number.isSafeInteger(row.skillId)&&row.skillId>0&&
    skill?.id===row.skillId;
   if(!valid){
-   panel.append(make('p',{text:row.source+' · '+(english?row.en:row.ru)}));
+   panel.append(sourceText('p',row.source+' · '+(english?row.en:row.ru)));
    continue;
   }
   const line=make('p',{class:'stage-source-proc-skill'});
@@ -2499,7 +2504,7 @@ function appendItemEvents(body,calc,english,kind,gameTerms={}){
   const translated=gameTerms.englishSkills?.[String(row.skillId)];
   const name=english?(translated?.n||row.skillNameEn||skill.name):
    (skill.name||row.skillName);
-  const skillLink=make('span',{class:'stage-consumable-skill-name',text:name});
+  const skillLink=sourceText('span',name,{class:'stage-consumable-skill-name'});
   // Identical icon, level, mastery and description to Path; no new style.
   root.PandoraSkillPreview?.attach(skillLink,row.skillId);
   line.append(skillLink);
@@ -2978,7 +2983,9 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
      'data-book-source-name':item.name||entry.ru,
      'aria-label':(english?'Open in encyclopedia: ':'Открыть в энциклопедии: ')+(item.name||entry.ru),
      onclick:()=>onItem(entry.id)}:{})});
-   const label=make('span',{class:'stage-potion-name',text:item?.name||(english?(entry.en||entry.ru):(entry.ru||entry.en))||(english?'Potion':'Зелье')});
+   const label=sourceText('span',item?.name||
+    (english?(entry.en||entry.ru):(entry.ru||entry.en))||
+    (english?'Potion':'Зелье'),{class:'stage-potion-name'});
    if(item){
     const source=icon(item);
     if(source){
@@ -3010,7 +3017,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
      if(src){const picture=make('img',{src,alt:'',loading:'lazy'});
       picture.onerror=()=>picture.remove();row.append(picture);}
     }
-    row.append(make('span',{class:'stage-potion-name',text:item?.name||entry.name}),
+    row.append(sourceText('span',item?.name||entry.name,{class:'stage-potion-name'}),
      make('strong',{text:(entry.hp>0?entry.hp+(english?' HP + ':' ОЗ + '):'')+entry.mp+(english?' MP':' ОМ')}));
     mana.append(row);
    }
@@ -3034,7 +3041,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
      if(src){const picture=make('img',{src,alt:'',loading:'lazy'});
       picture.onerror=()=>picture.remove();row.append(picture)}
     }
-    row.append(make('span',{class:'stage-potion-name',text:item?.name||entry.name}),
+    row.append(sourceText('span',item?.name||entry.name,{class:'stage-potion-name'}),
      make('strong',{text:entry.hp+(english?' HP':' ОЗ')}));
     health.append(row);
    }
@@ -3059,8 +3066,8 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
      if(source){const picture=make('img',{src:source,alt:'',loading:'lazy'});
       picture.onerror=()=>picture.remove();row.append(picture);}
     }
-    row.append(make('span',{class:'stage-potion-name',text:item?.name||entry.name}),
-     make('strong',{text:(english?entry.conditionsEn:entry.conditions).join(', ')}));
+    row.append(sourceText('span',item?.name||entry.name,{class:'stage-potion-name'}),
+     sourceText('strong',(english?entry.conditionsEn:entry.conditions).join(', ')));
     panel.append(row);
    }
    body.append(panel);
@@ -3087,7 +3094,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
      if(src){const picture=make('img',{src,alt:'',loading:'lazy'});
       picture.onerror=()=>picture.remove();itemLink.append(picture);}
     }
-    itemLink.append(make('span',{class:'stage-potion-name',text:displayName}));
+    itemLink.append(sourceText('span',displayName,{class:'stage-potion-name'}));
     // Each activated skill has its own OS source tooltip. A single
     // concatenated string cannot reveal individual descriptions on hover.
     const skillNames=make('strong',{class:'stage-consumable-skill-names'});
@@ -3097,8 +3104,8 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
      const translated=gameTerms.englishSkills?.[String(skill.id)];
      const name=english?(translated?.n||source?.name||skill.name):
       (source?.name||skill.name);
-     const badge=make('span',{class:'stage-consumable-skill-name',
-      tabindex:0,'data-triggered-skill-id':skill.id,text:name});
+     const badge=sourceText('span',name,{class:'stage-consumable-skill-name',
+      tabindex:0,'data-triggered-skill-id':skill.id});
      const description=english?(translated?.d||source?.desc):(source?.desc);
      if(!root.PandoraSkillPreview?.attach(badge,skill.id))
       root.PandoraGuideTooltip?.attach(badge,

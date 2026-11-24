@@ -598,13 +598,24 @@ test('#390 native Book captions reuse existing semantic keys, not duplicate gene
 
 test('#390 OS guild passive and buff skill names never become owner Book text',()=>{
  const src=file('pandora-studio-hero-book.js');
- assert.match(src,/const name=make\('span',\{class:'stage-guild-passive-name'\}\);/);
- assert.match(src,/name\.textContent=title;/,
-  'Source names must bypass the editable general Book copy dictionary');
+ assert.match(src,/const name=sourceText\('span',title,\{class:'stage-guild-passive-name'\}\);/);
+ assert.match(src,/function sourceText\(tag,text,attrs=\{\}\)\{/,
+  'Source names never receive generic Book translation and D1 identities');
  assert.doesNotMatch(src,/guideLabel\(name,'buffs\.guild\.passive\.'/,
   'Source-derived skill names must not be owner CAS captions');
  assert.match(src,/PandoraGuideTooltip\?\.attach\(name,originalDescription/,
   'Official passive skill description remains available as hover-only source');
- assert.match(src,/if\(skill\)info\.textContent=displayName;/,
+ assert.match(src,/const info=skill\?sourceText\('span',displayName/,
   'Buff source names must not accidentally match an editable generic UI key');
+});
+
+test('#390 source skill and item names bypass generic editable Book dictionary',()=>{
+ const src=file('pandora-studio-hero-book.js');
+ assert.match(src,/label\.append\(sourceText\('span',skillName\)\)/);
+ assert.match(src,/const skillLink=sourceText\('span',name/);
+ assert.match(src,/const badge=sourceText\('span',name/);
+ assert.match(src,/itemLink\.append\(sourceText\('span',displayName/);
+ assert.equal((src.match(/sourceText\('span',item\?\.name\|\|entry\.name/g)||[]).length,3);
+ assert.match(src,/sourceText\('div',source\.label\+': '\+display\+' · '\+source\.name/);
+ assert.match(src,/sourceText\('strong',\(english\?entry\.conditionsEn/);
 });

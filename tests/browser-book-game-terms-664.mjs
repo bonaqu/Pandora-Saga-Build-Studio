@@ -462,6 +462,25 @@ export async function runHeroBookGameNames664Smoke(browser,base){
     'Current guild bonus stays a separate uneditable number');
   }
   await page.evaluate(()=>{delete window.__bookCanEditQA});
+  // Synthetic source-name collision, without modifying the actual game files:
+  // a real OS skill name equal to an editable Book label is still source data.
+  await page.evaluate(()=>{
+   const skill=window.__bookGameTermsQA.skills['310001001'];
+   window.__bookOriginalSkillNameQA=skill.name;
+   skill.name='Подробнее';
+   window.__bookCanEditQA=true;
+  });
+  await render({lang:'ru',chapter:'effects'});
+  const sourceBadge=page.locator('#book-source-qa [data-healing-skill-id="310001001"] .stage-effect-skill-label span').first();
+  assert.equal(await sourceBadge.textContent(),'Подробнее');
+  assert.equal(await sourceBadge.getAttribute('data-book-editorial-key'),null,
+   'OS game name must not acquire a Book D1 editor when matching authored UI copy');
+  assert.equal(await sourceBadge.getAttribute('data-owner-copy-key'),null);
+  await page.evaluate(()=>{
+   window.__bookGameTermsQA.skills['310001001'].name=window.__bookOriginalSkillNameQA;
+   delete window.__bookOriginalSkillNameQA;
+   delete window.__bookCanEditQA;
+  });
   assert.deepEqual(errors,[]);
   console.log('Chromium Book 664: OS/Remaked RU+EN skills, Hymn/Песнопения, Адепт, buffs and defense');
  }finally{await context.close()}
