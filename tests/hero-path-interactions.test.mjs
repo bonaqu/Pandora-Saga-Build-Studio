@@ -319,10 +319,10 @@ test('#390 Path accessible RU/EN copy keeps three live branch numbers and full s
  assert.equal(locked.attributes['aria-label'],limit);
  const last=applied.filter(v=>v.key==='pathBranchStatsAria').at(-1);
  assert.deepEqual({ru:last.ru,en:last.en,attribute:last.attribute,prefix:last.prefix},{
-  ru:'Старт / вложено / мастерство: ',
-  en:'Innate / invested / mastery: ',attribute:'aria-label',prefix:''
+  ru:'Старт / вложено / мастерство:',
+  en:'Innate / invested / mastery:',attribute:'aria-label',prefix:''
  });
- assert.match(last.suffix,/^\d+ \/ 0 \/ \d+$/);
+ assert.match(last.suffix,/^ \d+ \/ 0 \/ \d+$/);
  // Actual invested points, trained mastery and 90-point visual scale are
  // never part of the saved D1 RU/EN value or gameplay source.
  assert.ok(!applied.some(v=>v.ru.includes('90')||v.en.includes('90')));
