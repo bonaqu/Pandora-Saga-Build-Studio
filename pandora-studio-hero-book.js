@@ -521,7 +521,20 @@ const bookHealingActionCopyRows=Object.freeze([
  ['cooldownLead','Перезарядка:','Cooldown:'],
  ['cooldownTail','от базовой','of base'],
  ['nextManaLead','Для ещё одного применения нужно','One more cast needs'],
- ['nextManaTail','ОМ к запасу','MP capacity']
+ ['nextManaTail','ОМ к запасу','MP capacity'],
+ // Full-MP budget: the actual mana, cast count and remainder are live values.
+ ['budgetLead','Полный запас','Full'],
+ ['budgetUpTo','ОМ: до','MP: up to'],
+ ['budgetCasts','применений по базовой стоимости','casts at the base cost'],
+ ['budgetLeft','остаток','left at the regular cost'],
+ // Verified next-milestone phrases, never the character's current rank/level.
+ ['nextMasteryLead','Следующий прирост от Исцеления:','Next Healing mastery increase at'],
+ ['nextRemaining','ещё','+'],
+ ['nextLevelLead','Следующий прирост','Next'],
+ ['nextLevelPulse','за срабатывание','per pulse'],
+ ['nextLevelCast','за применение','per cast'],
+ ['nextLevelAt','на уровне','at level'],
+ ['nextLevelUnit','ур.','levels']
 ]);
 const bookAccessibleAliasRows=Object.freeze([
  ['previous','Предыдущая страница','Previous chapter'],
@@ -1604,13 +1617,22 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   const budget=gates?.baseManaBudget?.({maxMana:modifiers?.mp,
    baseCost:action?.mana});
   if(!budget)return;
-  node.append(make('small',{class:'stage-heal-mana-budget',text:en?
-   'Full '+budget.maxMana+' MP: up to '+budget.casts+
-    ' casts at the base cost ('+budget.remainder+
-    ' MP left at the regular cost).':
-   'Полный запас '+budget.maxMana+' ОМ: до '+budget.casts+
-    ' применений по базовой стоимости (остаток '+budget.remainder+
-    ' ОМ).'}));
+  const parts=[
+   healingCaption('budgetLead'),' ',
+   healingValue(budget.maxMana,'mana-pool'),' ',
+   healingCaption('budgetUpTo'),' ',
+   healingValue(budget.casts,'mana-casts'),' ',
+   healingCaption('budgetCasts'),' ('
+  ];
+  if(en)parts.push(
+   healingValue(budget.remainder,'mana-remaining'),' MP ',
+   healingCaption('budgetLeft'),').'
+  );
+  else parts.push(
+   healingCaption('budgetLeft'),' ',
+   healingValue(budget.remainder,'mana-remaining'),' ОМ).'
+  );
+  node.append(make('small',{class:'stage-heal-mana-budget'},parts));
   const next=gates?.nextManaUse?.({maxMana:budget.maxMana,
    baseCost:budget.baseCost});
   if(next?.missing>0)node.append(make('small',{
@@ -1684,12 +1706,16 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     contributions+' · '+rounding}));
  };
  const appendHealingMilestones=(node,row,periodic)=>{
-  if(row.nextMastery&&Number.isSafeInteger(row.nextMastery.rank))
-   node.append(make('small',{class:'stage-heal-mastery-next',text:en?
-    'Next Healing mastery increase at '+row.nextMastery.rank+
-     ' (+'+row.nextMastery.remaining+'): +'+row.nextMastery.gain+' HP':
-    'Следующий прирост от Исцеления: '+row.nextMastery.rank+
-     ' (ещё '+row.nextMastery.remaining+'): +'+row.nextMastery.gain+' ОЗ'}));
+  if(row.nextMastery&&Number.isSafeInteger(row.nextMastery.rank)){
+   const mastery=row.nextMastery;
+   node.append(make('small',{class:'stage-heal-mastery-next'},[
+    healingCaption('nextMasteryLead'),' ',
+    healingValue(mastery.rank,'mastery-rank'),' (',
+    healingCaption('nextRemaining'),...(en?[]:[' ']),
+    healingValue(mastery.remaining,'mastery-remaining'),'): ',
+    healingValue('+'+mastery.gain,'mastery-gain'),en?' HP':' ОЗ'
+   ]));
+  }
   const next=row.nextAttribute;
   if(next&&Number.isSafeInteger(next.value)){
    const stat=en?(periodic?'SPR':'INT'):(periodic?'СД':'ИНТ');
@@ -1703,12 +1729,25 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    const next=row.nextLevel;
    const pulse=periodic||row.kind==='hp'||row.kind==='mp';
    const unit=en?(row.kind==='mp'?'MP':'HP'):(row.kind==='mp'?'ОМ':'ОЗ');
-   node.append(make('small',{class:'stage-heal-mastery-next',text:en?
-    'Next +'+next.gain+' '+unit+(pulse?' per pulse':' per cast')+
-     ' at level '+next.value+' (+'+next.remaining+' levels)':
-    'Следующий прирост '+(pulse?'за срабатывание':'за применение')+
-     ': +'+next.gain+' '+unit+' на уровне '+next.value+
-     ' (ещё '+next.remaining+' ур.)'}));
+   const mode=healingCaption(pulse?'nextLevelPulse':'nextLevelCast');
+   const line=[healingCaption('nextLevelLead')];
+   if(en)line.push(
+    ' ',healingValue('+'+next.gain,'level-gain'),' '+unit+' ',
+    mode,' ',healingCaption('nextLevelAt'),' ',
+    healingValue(next.value,'level-value'),' (',
+    healingCaption('nextRemaining'),
+    healingValue(next.remaining,'level-remaining'),' ',
+    healingCaption('nextLevelUnit'),')'
+   );
+   else line.push(
+    ' ',mode,': ',healingValue('+'+next.gain,'level-gain'),
+    ' '+unit+' ',healingCaption('nextLevelAt'),' ',
+    healingValue(next.value,'level-value'),' (',
+    healingCaption('nextRemaining'),' ',
+    healingValue(next.remaining,'level-remaining'),' ',
+    healingCaption('nextLevelUnit'),')'
+   );
+   node.append(make('small',{class:'stage-heal-mastery-next'},line));
   }
  };
  const spells=(modifiers?.healingSpells?.rows||[]).filter(row=>row?.available===true);

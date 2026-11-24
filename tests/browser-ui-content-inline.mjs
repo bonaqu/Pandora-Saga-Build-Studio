@@ -1211,7 +1211,9 @@ export async function runUIContentInlineSmoke(browser,base){
      const edits=[],args={page:'effects',canEdit:true,
       onTextEdit:(_node,key,field,initial)=>edits.push({key,field,initial}),
       modifiers:{mp:101,healingSpells:{rows:[{
-       available:true,skillId:310001001,name:'QA Heal',amount:42
+       available:true,skillId:310001001,name:'QA Heal',amount:42,
+       nextMastery:{rank:61,remaining:3,gain:2},
+       nextLevel:{value:46,remaining:1,gain:3}
       }]},periodicRecovery:{rows:[]}},
       gameTerms:{skills:{'310001001':{id:310001001,name:'QA Heal'}},
        englishSkills:{'310001001':{n:'QA Heal'}}}};
@@ -1224,9 +1226,13 @@ export async function runUIContentInlineSmoke(browser,base){
      try{
       window.PandoraStageAttributes.render(host,args);
       const all=[...host.querySelectorAll(selector)];
+      const visibleKeys=[...new Set(all.map(node=>node.dataset.guideKey))].sort();
       const before=numberValues();
       const lines={
        cast:read('.stage-heal-cast-preview'),next:read('.stage-heal-mana-next'),
+       budget:read('.stage-heal-mana-budget'),
+       milestones:[...host.querySelectorAll('.stage-heal-mastery-next')]
+        .map(node=>node.textContent),
        mana:read('.stage-attribute-note:has([data-heal-value="mana-percent"])'),
        cooldown:read('.stage-attribute-note:has([data-heal-value="cooldown-percent"])')
       };
@@ -1241,7 +1247,7 @@ export async function runUIContentInlineSmoke(browser,base){
       }});
       fixtures.push({lang,lines,before,after:numberValues(),
        changed:read('.stage-attribute-note:has([data-heal-value="mana-percent"])'),
-       keys:all.map(n=>n.dataset.guideKey).sort(),
+       keys:visibleKeys,
        tabStops:all.every(n=>n.tabIndex===0),
        pencils:host.querySelectorAll('.stage-heal-row .stage-guide-edit-hint').length,
        edits});
@@ -1255,7 +1261,10 @@ export async function runUIContentInlineSmoke(browser,base){
    return fixtures;
   });
   const healingKeys=['inspirationLead','inspirationTail','manaCostLead',
-   'manaCostTail','cooldownLead','cooldownTail','nextManaLead','nextManaTail']
+   'manaCostTail','cooldownLead','cooldownTail','nextManaLead','nextManaTail',
+   'budgetLead','budgetUpTo','budgetCasts','budgetLeft',
+   'nextMasteryLead','nextRemaining','nextLevelLead','nextLevelCast',
+   'nextLevelAt','nextLevelUnit']
    .map(key=>'effects.healing.'+key).sort();
   for(const data of healFixtures){
    const en=data.lang==='en';
@@ -1265,13 +1274,25 @@ export async function runUIContentInlineSmoke(browser,base){
    assert.deepEqual(data.after,data.before,'Edited copy must not mutate computed numbers');
    assert.deepEqual(data.before,[
     ['cast-seconds',en?'1.25':'1,25'],['cooldown-percent','75%'],
-    ['mana-needed','+19'],['mana-percent','80%']
+    ['level-gain','+3'],['level-remaining','1'],['level-value','46'],
+    ['mana-casts','5'],['mana-needed','+19'],['mana-percent','80%'],
+    ['mana-pool','101'],['mana-remaining','1'],['mastery-gain','+2'],
+    ['mastery-rank','61'],['mastery-remaining','3']
    ]);
    assert.deepEqual(data.lines,{
     cast:en?'With Inspiration from an ally: 1.25 s of casting (half the usual time)':
      'С «Воодушевлением» от союзника: 1,25 сек. применения (вдвое быстрее)',
     next:en?'One more cast needs +19 MP capacity':
      'Для ещё одного применения нужно +19 ОМ к запасу',
+    budget:en?'Full 101 MP: up to 5 casts at the base cost (1 MP left at the regular cost).':
+     'Полный запас 101 ОМ: до 5 применений по базовой стоимости (остаток 1 ОМ).',
+    milestones:en?[
+     'Next Healing mastery increase at 61 (+3): +2 HP',
+     'Next +3 HP per cast at level 46 (+1 levels)'
+    ]:[
+     'Следующий прирост от Исцеления: 61 (ещё 3): +2 ОЗ',
+     'Следующий прирост за применение: +3 ОЗ на уровне 46 (ещё 1 ур.)'
+    ],
     mana:en?'MP cost: 80% of base':'Расход ОМ: 80% от базового',
     cooldown:en?'Cooldown: 75% of base':'Перезарядка: 75% от базовой'
    });

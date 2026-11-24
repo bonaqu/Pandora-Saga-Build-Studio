@@ -179,7 +179,10 @@ export function buildEditorialDefaultsManifest(){
  // Healing action prose is separate from live mana, seconds and percentages.
  const healRows=book.bookHealingActionCopyRows;
  const expectedHeal=['inspirationLead','inspirationTail','manaCostLead',
-  'manaCostTail','cooldownLead','cooldownTail','nextManaLead','nextManaTail'];
+  'manaCostTail','cooldownLead','cooldownTail','nextManaLead','nextManaTail',
+  'budgetLead','budgetUpTo','budgetCasts','budgetLeft',
+  'nextMasteryLead','nextRemaining','nextLevelLead','nextLevelPulse',
+  'nextLevelCast','nextLevelAt','nextLevelUnit'];
  if(!Array.isArray(healRows)||healRows.length!==expectedHeal.length||
   healRows.map(row=>row?.[0]).sort().join('|')!==expectedHeal.sort().join('|'))
   throw Error('Hero Book dynamic Healing action inventory drift');

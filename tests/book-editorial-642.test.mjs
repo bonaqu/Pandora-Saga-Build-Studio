@@ -409,7 +409,18 @@ test('#390 Healing action explanations split eight bilingual captions from live 
   cooldownLead:['Перезарядка:','Cooldown:'],
   cooldownTail:['от базовой','of base'],
   nextManaLead:['Для ещё одного применения нужно','One more cast needs'],
-  nextManaTail:['ОМ к запасу','MP capacity']
+  nextManaTail:['ОМ к запасу','MP capacity'],
+  budgetLead:['Полный запас','Full'],
+  budgetUpTo:['ОМ: до','MP: up to'],
+  budgetCasts:['применений по базовой стоимости','casts at the base cost'],
+  budgetLeft:['остаток','left at the regular cost'],
+  nextMasteryLead:['Следующий прирост от Исцеления:','Next Healing mastery increase at'],
+  nextRemaining:['ещё','+'],
+  nextLevelLead:['Следующий прирост','Next'],
+  nextLevelPulse:['за срабатывание','per pulse'],
+  nextLevelCast:['за применение','per cast'],
+  nextLevelAt:['на уровне','at level'],
+  nextLevelUnit:['ур.','levels']
  };
  assert.deepEqual(book.bookHealingActionCopyRows.map(row=>row[0]).sort(),Object.keys(expected).sort());
  for(const [key,ru,en] of book.bookHealingActionCopyRows)
@@ -420,7 +431,9 @@ test('#390 Healing action explanations split eight bilingual captions from live 
  assert.match(source,/heroHasShield,onItem,onSkill,\.\.\.copyOptions\}\)/);
  for(const key of Object.keys(expected))
   assert.ok(source.includes("healingCaption('"+key+"')"));
- for(const key of ['mana-needed','cast-seconds','mana-percent','cooldown-percent'])
+ for(const key of ['mana-needed','cast-seconds','mana-percent','cooldown-percent',
+  'mana-pool','mana-casts','mana-remaining','mastery-rank','mastery-remaining',
+  'mastery-gain','level-gain','level-value','level-remaining'])
   assert.ok(source.includes(",'"+key+"')"));
  assert.match(source,/class:'stage-heal-computed'/);
  assert.doesNotMatch(source,/text:en\?\s*'MP cost: '\+/);
