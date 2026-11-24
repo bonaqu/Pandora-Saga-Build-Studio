@@ -142,7 +142,12 @@ test('#390 native catalog disclosures edit RU/EN caption without double-click to
  assert.match(view,/event\.preventDefault\(\);event\.stopPropagation\(\)/);
  assert.match(view,/actionQueue\.defer\(summary,/);
  assert.match(view,/details\.open=!details\.open/);
- assert.match(view,/caption\.addEventListener\('dblclick'/);
+ // The second pointer click is cancelled by the shared queue. The actual
+ // owner editor starts on dblclick (or F2/long press) and cancels any other
+ // queued action via its onStarted contract instead of a duplicate listener.
+ assert.match(view,/bindEditor\(node,key,ru,en,\{\.\.\.callbacks,onStarted:\(\)=>\{\s*cancelPending\(\);callbacks\.onStarted\?\.\(\);/);
+ assert.match(app,/node\.addEventListener\('dblclick',edit\)/);
+ assert.doesNotMatch(view,/caption\.addEventListener\('dblclick'/);
  assert.match(view,/if\(event\.target===summary&&event\.key==='F2'\)/);
  assert.match(css,/\.os-sync-disclosure-caption\.origin-copy-editable::after\{content:none\}/);
  assert.match(view,/secondaryHint\(advanced,'hintAdvancedDisclosure'/);
