@@ -290,25 +290,48 @@ test('skill progress slider does not show a duplicate native text tooltip',()=>{
  assert.match(f.range.attributes['aria-valuetext'],/вложено/);
 });
 
-test('#390 path branch accessibility keeps current live counts and authored class limit',()=>{
+test('#390 Path accessible RU/EN copy keeps three live branch numbers and full scale',()=>{
  const f=fixture('CLERIC','prayer','benevolence');
- f.api.copyLabel=(key,ru)=>key==='pathClassLimitAria'?'Лимит QA:':ru;
+ const applied=[];
+ f.api.bindCopy=(node,key,ru,en,attribute='text',suffix='',prefix='')=>{
+  applied.push({key,ru,en,attribute,suffix,prefix});
+  const copy=key==='pathBranchStatsAria'?'Статистика QA: ':
+   key==='pathClassLimitAria'?'Лимит QA:':ru;
+  if(attribute==='text')node.textContent=prefix+copy+suffix;
+  else node.setAttribute(attribute,prefix+copy+suffix);
+ };
  root.PandoraHeroPath.viewGrowth(f.target,f.api);
  const branch=walk(f.target).find(n=>n.attributes?.['data-path-branch']==='benevolence');
  const count=walk(branch).find(n=>n.className==='count');
  const locked=walk(f.target).find(n=>n.className==='inline-mastery-locked');
  const range=walk(f.target).find(n=>n.tag==='input'&&n.attributes.type==='range');
  assert.ok(count&&locked&&range);
- assert.match(locked.attributes['aria-label'],/^Лимит QA: \d+$/);
+ assert.match(locked.attributes['aria-label'],/^Лимит QA: \d+ \/ 90$/);
  const limit=locked.attributes['aria-label'];
  const before=count.attributes['aria-label'];
+ assert.match(before,/^Статистика QA: \d+ \/ 0 \/ \d+$/);
  range.value='15';range.listeners.input();
- assert.match(count.attributes['aria-label'],/вложено 10/);
+ assert.match(count.attributes['aria-label'],/^Статистика QA: \d+ \/ 10 \/ \d+$/);
  assert.notEqual(count.attributes['aria-label'],before);
  assert.equal(locked.attributes['aria-label'],limit);
  range.value='5';range.listeners.input();
- assert.match(count.attributes['aria-label'],/вложено 0/);
+ assert.match(count.attributes['aria-label'],/^Статистика QA: \d+ \/ 0 \/ \d+$/);
  assert.equal(locked.attributes['aria-label'],limit);
+ const last=applied.filter(v=>v.key==='pathBranchStatsAria').at(-1);
+ assert.deepEqual({ru:last.ru,en:last.en,attribute:last.attribute,prefix:last.prefix},{
+  ru:'Старт / вложено / мастерство: ',
+  en:'Innate / invested / mastery: ',attribute:'aria-label',prefix:''
+ });
+ assert.match(last.suffix,/^\d+ \/ 0 \/ \d+$/);
+ // Actual invested points, trained mastery and 90-point visual scale are
+ // never part of the saved D1 RU/EN value or gameplay source.
+ assert.ok(!applied.some(v=>v.ru.includes('90')||v.en.includes('90')));
+ const en={...f.api,lang:'en',bindCopy:undefined,copyLabel:undefined};
+ const english=new BrowserElement('root');
+ root.PandoraHeroPath.viewGrowth(english,en);
+ const enBranch=walk(english).find(n=>n.attributes?.['data-path-branch']==='benevolence');
+ const enCount=walk(enBranch).find(n=>n.className==='count');
+ assert.match(enCount.attributes['aria-label'],/^Innate \/ invested \/ mastery: \d+ \/ \d+ \/ \d+$/);
 });
 
 test('class-limited skills keep individual numbers in the separate details list',()=>{
