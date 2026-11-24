@@ -128,13 +128,32 @@ function rollbackSnapshotLiteral(snapshot){
   throw Error('Rollback must target a pinned release and digest snapshot');
  return "'"+snapshot+"'";
 }
-export function renderStagingRollbackPresenceSQL(snapshot){
+const rollbackTables=Object.freeze(['editorial_default_snapshots','editorial_default_rows']);
+function checkedRollbackTables(tables){
+ if(!Array.isArray(tables)||new Set(tables).size!==tables.length||
+  tables.some(table=>!rollbackTables.includes(table)))
+  throw Error('Invalid staging rollback table inventory');
+ return rollbackTables.filter(table=>tables.includes(table));
+}
+function rollbackCountSQL(snapshot,tables,prefix){
  const name=rollbackSnapshotLiteral(snapshot);
- // Read-only existence check BEFORE exporting or mutating the target.
- // Partial imports may contain only rows, or only a marker: both qualify.
- return 'SELECT (SELECT COUNT(*) FROM editorial_default_snapshots WHERE snapshot='+
-  name+') AS existing_markers, (SELECT COUNT(*) FROM editorial_default_rows WHERE snapshot='+
-  name+') AS existing_rows;\n';
+ const present=checkedRollbackTables(tables);
+ const count=table=>present.includes(table)?
+  '(SELECT COUNT(*) FROM '+table+' WHERE snapshot='+name+')':'0';
+ return 'SELECT '+count(rollbackTables[0])+' AS '+prefix+'_markers, '+
+  count(rollbackTables[1])+' AS '+prefix+'_rows;\n';
+}
+export function renderStagingRollbackPresenceSQL(snapshot,tables=rollbackTables){
+ // Use only the verified schema inventory. A failed import may have
+ // created just one table; missing tables are not queried or created.
+ return rollbackCountSQL(snapshot,tables,'existing');
+}
+export function renderStagingRollbackMutationSQL(snapshot,tables){
+ const name=rollbackSnapshotLiteral(snapshot);
+ const present=checkedRollbackTables(tables);
+ if(!present.length)throw Error('No staging tables available for rollback');
+ // Marker first; delete only the pinned snapshot, never other releases.
+ return present.map(table=>'DELETE FROM '+table+' WHERE snapshot='+name+';').join('\n')+'\n';
 }
 export function assertStagingRollbackPresent(raw){
  const rows=oneQuery(raw);
@@ -148,11 +167,8 @@ export function assertStagingRollbackPresent(raw){
   throw Error('No exact staging snapshot exists to roll back');
  return {markers,rows:values};
 }
-export function renderStagingRollbackCheckSQL(snapshot){
- const name=rollbackSnapshotLiteral(snapshot);
- return 'SELECT (SELECT COUNT(*) FROM editorial_default_snapshots WHERE snapshot='+
-  name+') AS remaining_markers, (SELECT COUNT(*) FROM editorial_default_rows WHERE snapshot='+
-  name+') AS remaining_rows;\n';
+export function renderStagingRollbackCheckSQL(snapshot,tables=rollbackTables){
+ return rollbackCountSQL(snapshot,tables,'remaining');
 }
 if(process.argv[1]&&fileURLToPath(import.meta.url)===resolve(process.argv[1])){
  const target=validateEditorialStagingTarget({

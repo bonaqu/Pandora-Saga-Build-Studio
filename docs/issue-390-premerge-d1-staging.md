@@ -2,6 +2,8 @@
 
 **Operator instructions only. No remote migration has been performed by this document.**
 
+A failed import with only one of the two reviewed staging tables is recoverable: the rollback checks the audited schema inventory, requires actual pinned rows/marker, retains the independent backup, deletes only the exact snapshot from existing tables (marker first), and verifies absence without creating the missing table. Unexpected schema drift stops rollback rather than silently treating it as success.
+
 ## Why a local runner is required
 
 GitHub [requires a workflow_dispatch file on the default branch](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflow_dispatch).

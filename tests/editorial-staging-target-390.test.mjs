@@ -7,7 +7,7 @@ import {
  assertDatabaseIdentity,
  assertStagingSchema,assertStagingTableColumns,assertRolledBack,
  assertStagingRollbackPresent,renderStagingRollbackPresenceSQL,
- renderStagingWranglerConfig,renderStagingRollbackCheckSQL
+ renderStagingRollbackMutationSQL,renderStagingWranglerConfig,renderStagingRollbackCheckSQL
 } from '../scripts/guard-editorial-staging-d1.mjs';
 const repo=new URL('../',import.meta.url);
 const name='ps-editorial-staging-390';
@@ -220,6 +220,39 @@ test('#390 rollback requires existing pinned rows or marker before deletion',()=
  }finally{db.close()}
 });
 
+test('#390 interrupted one-table staging import can be rolled back without creating tables',()=>{
+ const snapshot='0.947.0-'+'f'.repeat(16),other='0.947.0-'+'e'.repeat(16);
+ for(const table of ['editorial_default_rows','editorial_default_snapshots']){
+  const db=new DatabaseSync(':memory:');
+  try{
+   db.exec('CREATE TABLE '+table+' (snapshot TEXT, value TEXT);');
+   const schema=assertStagingSchema(query(db.prepare(STAGING_SCHEMA_SQL).all()));
+   const presence=renderStagingRollbackPresenceSQL(snapshot,schema.tables);
+   const read=()=>query(db.prepare(presence).all());
+   assert.throws(()=>assertStagingRollbackPresent(read()));
+   for(const key of [snapshot,other])
+    db.prepare('INSERT INTO '+table+' (snapshot,value) VALUES (?,?)').run(key,'keep exact');
+   assert.deepEqual(assertStagingRollbackPresent(read()),table.endsWith('_rows')?
+    {markers:0,rows:1}:{markers:1,rows:0});
+   const mutation=renderStagingRollbackMutationSQL(snapshot,schema.tables);
+   assert.equal((mutation.match(/DELETE FROM/g)||[]).length,1);
+   assert.doesNotMatch(mutation,/CREATE|DROP|UPDATE/);
+   db.exec(mutation);
+   assert.equal(assertRolledBack(query(db.prepare(
+    renderStagingRollbackCheckSQL(snapshot,schema.tables)).all())),true);
+   assert.equal(db.prepare('SELECT snapshot FROM '+table).get().snapshot,other);
+   assert.deepEqual(assertStagingSchema(query(db.prepare(STAGING_SCHEMA_SQL).all())),schema);
+  }finally{db.close()}
+ }
+ for(const invalid of [[],['overrides'],['editorial_default_rows','editorial_default_rows'],null])
+  assert.throws(()=>renderStagingRollbackMutationSQL(snapshot,invalid));
+ const empty=new DatabaseSync(':memory:');
+ try{
+  assert.throws(()=>assertStagingRollbackPresent(query(empty.prepare(
+   renderStagingRollbackPresenceSQL(snapshot,[])).all())));
+ }finally{empty.close()}
+});
+
 test('#390 GitHub staging workflow is preflight-only and never uploads raw SQL',()=>{
  const config=renderStagingWranglerConfig(target('import'));
  assert.match(config,/binding = "EDITORIAL_STAGING_DB"/);
@@ -332,6 +365,8 @@ test('#390 premerge staging CLI is import-inert, SHA-pinned and requires a separ
   'independent backup validation precedes every write');
  assert.match(source,/verifyEditorialDefaultsReadback\(manifest,parsed.metadata,parsed.rows\)/);
  assert.match(source,/assertRolledBack\(wrangler\(cmd.readFile\)\)/);
+ assert.match(source,/renderStagingRollbackMutationSQL\(manifest.snapshot,schema.tables\)/);
+ assert.match(source,/renderStagingRollbackCheckSQL\(manifest.snapshot,afterRollback.tables\)/);
  assert.match(docs,/workflow_dispatch/);
  assert.match(docs,/read-only/);
  assert.match(docs,/PS_EDITORIAL_EXPECTED_SHA/);

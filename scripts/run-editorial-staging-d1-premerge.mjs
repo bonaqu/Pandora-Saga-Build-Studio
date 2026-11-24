@@ -15,11 +15,11 @@ import {
  STAGING_SCHEMA_SQL,validateEditorialStagingTarget,assertDatabaseIdentity,
  assertStagingSchema,assertStagingTableColumns,assertRolledBack,
  assertStagingRollbackPresent,renderStagingRollbackPresenceSQL,
- renderStagingWranglerConfig,renderStagingRollbackCheckSQL
+ renderStagingRollbackMutationSQL,renderStagingWranglerConfig,renderStagingRollbackCheckSQL
 } from './guard-editorial-staging-d1.mjs';
 import {
  buildEditorialDefaultsManifest,renderEditorialDefaultsSQL,
- renderEditorialDefaultsReadbackSQL,renderEditorialDefaultsRollbackSQL,
+ renderEditorialDefaultsReadbackSQL,
  parseWranglerEditorialReadback,verifyEditorialDefaultsReadback
 } from './plan-editorial-d1-defaults.mjs';
 
@@ -167,7 +167,7 @@ async function main(){
   // destructive rollback, prove the exact pinned snapshot has at least a
   // row or marker. Partial imports remain recoverable (marker may be absent).
   if(operation==='rollback'){
-   writeFileSync(stagingSQL,renderStagingRollbackPresenceSQL(manifest.snapshot),
+   writeFileSync(stagingSQL,renderStagingRollbackPresenceSQL(manifest.snapshot,schema.tables),
     {mode:0o600});
    const found=assertStagingRollbackPresent(wrangler(cmd.readFile));
    process.stdout.write('Read-only rollback target confirmed: '+
@@ -202,9 +202,18 @@ async function main(){
    process.stdout.write('Verified remote staging rows '+check.checkedRows+
     ', snapshot '+check.snapshot+', SHA-256 '+check.digest+'\n');
   }else{
-   writeFileSync(stagingSQL,renderEditorialDefaultsRollbackSQL(manifest),{mode:0o600});
+   // Re-read the schema after backup, refuse any drift before mutation.
+   const beforeRollback=assertStagingSchema(wrangler(cmd.schema));
+   if(beforeRollback.tables.join('|')!==schema.tables.join('|'))
+    throw Error('Staging schema changed during backup; rollback stopped');
+   for(const table of beforeRollback.tables)
+    assertStagingTableColumns(wrangler(cmd.columns(table)),table,true);
+   writeFileSync(stagingSQL,renderStagingRollbackMutationSQL(manifest.snapshot,schema.tables),{mode:0o600});
    wrangler(cmd.executeFile);
-   writeFileSync(stagingSQL,renderStagingRollbackCheckSQL(manifest.snapshot),{mode:0o600});
+   const afterRollback=assertStagingSchema(wrangler(cmd.schema));
+   if(afterRollback.tables.join('|')!==schema.tables.join('|'))
+    throw Error('Staging schema changed during rollback; verify manually');
+   writeFileSync(stagingSQL,renderStagingRollbackCheckSQL(manifest.snapshot,afterRollback.tables),{mode:0o600});
    assertRolledBack(wrangler(cmd.readFile));
    process.stdout.write('Verified exact snapshot rollback: '+manifest.snapshot+'\n');
   }
