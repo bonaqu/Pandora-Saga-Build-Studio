@@ -743,7 +743,7 @@ test('#390 Hero Path aria/help source captions exclude dynamic branch names and 
  assert.equal(binds.length,21);
  assert.equal(help.length,2);
  assert.equal(weapon.length,1);
- assert.equal(manifest.stats.cohorts['hero-path-accessible'],46);
+ assert.equal(manifest.stats.cohorts['hero-path-accessible'],48);
  for(const [key,ru,en] of [...binds,...help,...weapon]){
   const id='guideedit.book.path.'+
    key.replace(/[A-Z]/g,ch=>'-'+ch.toLowerCase());
