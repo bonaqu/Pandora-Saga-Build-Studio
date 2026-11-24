@@ -239,7 +239,10 @@ export async function runHeroBookGameNames664Smoke(browser,base){
    await offenseEn.locator(':scope > summary').click();
   const singerEn=offenseEn.locator('[data-skill-action-id="340001001"]');
   assert.equal(await singerEn.count(),1);
-  await singerEn.locator('summary').click();
+  // This native detail can already be open after a RU → EN rerender.
+  if(await singerEn.getAttribute('open')===null)
+   await singerEn.locator(':scope > summary').click();
+  assert.equal(await singerEn.getAttribute('open')!==null,true);
   assert.match(await singerEn.innerText(),/Full 450 MP: up to 15 casts/);
   assert.match(await singerEn.innerText(),/One more cast needs \+30 MP capacity/);
   assert.doesNotMatch(await singerEn.innerText(),/Base casting:|Base cooldown:/);

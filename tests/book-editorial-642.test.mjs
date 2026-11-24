@@ -39,7 +39,8 @@ test('issue #390: Book proc headline separates the authorial D1 key from source-
  assert.doesNotMatch(src,/panel\.append\(make\('summary',\{text:\(english\?'Item and Soul triggers'/);
  assert.match(src,/function guardBookSummaryCaption\(node\)/);
  assert.match(src,/guardBookSummaryCaption\(node\)/);
- assert.match(src,/collapseBookSections\(body,chosen\);\s*\/\/[^\n]+\n[^\n]+\n if\(canEdit\)for\(const caption of body\.querySelectorAll\?\.\('summary \[data-guide-key\]'\)/);
+ assert.match(src,/collapseBookSections\(body,chosen\);\s*if\(skillMoreOpen\)for\(/);
+ assert.match(src,/if\(canEdit\)for\(const caption of body\.querySelectorAll\?\.\('summary \[data-guide-key\]'\)/);
  assert.match(app,/node\.closest\('button,summary,\[role="button"\]'\)/);
  assert.match(app,/ownerCaptionActionGuard\(action,node\)/);
  for(const label of ['42','Sword +9','Source ID 123','ОЗ: 4900'])

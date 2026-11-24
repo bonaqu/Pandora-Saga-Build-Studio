@@ -42,6 +42,8 @@ test('Hero Book adds current full MP budget in existing single details',()=>{
  const stage=book.slice(begin,end);
  assert.match(stage,/gates\?\.sourceAction/);
  assert.match(stage,/showBaseManaBudget\(more,action\)/);
- assert.match(stage,/stage-skill-more/);
+ assert.match(stage,/const more=skillMore\('scaling-'\+groupName,skill\.id\)/);
+ assert.match(book,/class:'stage-skill-gate-help stage-skill-more'/);
+ assert.match(book,/const skillMore=\(kind,id\)=>/);
  assert.match(book,/maxMana:modifiers\?\.mp/);
 });
