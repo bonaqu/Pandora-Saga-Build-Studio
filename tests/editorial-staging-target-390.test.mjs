@@ -57,6 +57,8 @@ test('#390 D1 list requires unique matching database name AND UUID',()=>{
 test('#390 staging schema rejects unrelated tables, views, triggers and manual indexes',()=>{
  assert.ok(STAGING_SCHEMA_SQL.includes("type IN ('table','view','trigger','index')"));
  assert.ok(STAGING_SCHEMA_SQL.includes("lower(name) NOT GLOB 'sqlite_*'"));
+ assert.ok(STAGING_SCHEMA_SQL.includes("name != '_cf_KV'"));
+ assert.ok(!STAGING_SCHEMA_SQL.includes("name NOT GLOB '_cf_*'"));
  assert.ok(!STAGING_SCHEMA_SQL.includes("name NOT LIKE 'sqlite_%'"));
  assert.deepEqual(assertStagingSchema(query([])),{tables:[]});
  assert.deepEqual(assertStagingSchema(query([
@@ -88,6 +90,16 @@ test('#390 staging schema sees sqliteX names that SQL LIKE used to hide',()=>{
   // This is an actual SQLite sqlite_master query, not mocked JSON: SQL LIKE
   // underscore is wildcard. Reserved sqlite_ system names are not counted.
   db.exec('CREATE TABLE editorial_default_rows (value TEXT);');
+  // Cloudflare D1's reserved _cf_KV is present even in an otherwise empty
+  // REMOTE database; only its exact name is exempt from the user-table audit.
+  db.exec('CREATE TABLE "_cf_KV" (key TEXT PRIMARY KEY, value BLOB);');
+  assert.ok(db.prepare("SELECT name FROM sqlite_master WHERE name='_cf_KV'").get());
+  assert.ok(!db.prepare(STAGING_SCHEMA_SQL).all().some(row=>row.name==='_cf_KV'));
+  db.exec('CREATE TABLE "_cf_KVX" (value TEXT);');
+  assert.ok(db.prepare(STAGING_SCHEMA_SQL).all().some(row=>row.name==='_cf_KVX'));
+  assert.throws(()=>assertStagingSchema(query(db.prepare(STAGING_SCHEMA_SQL).all())),
+   'Only the exact Cloudflare-owned _cf_KV may be omitted');
+  db.exec('DROP TABLE "_cf_KVX";');
   db.exec('CREATE TABLE "sqliteXshadow" (value TEXT);');
   const rows=db.prepare(STAGING_SCHEMA_SQL).all();
   assert.ok(rows.some(row=>row.name==='sqliteXshadow'&&row.type==='table'));
@@ -296,6 +308,8 @@ test('#390 GitHub staging workflow is preflight-only and never uploads raw SQL',
  assert.match(workflow,/--verify-columns editorial_default_snapshots/);
  assert.ok(workflow.includes("type IN ('table','view','trigger','index')"));
  assert.ok(workflow.includes("lower(name) NOT GLOB 'sqlite_*'"));
+ assert.ok(workflow.includes("name != '_cf_KV'"));
+ assert.ok(!workflow.includes("name NOT GLOB '_cf_*'"));
  assert.ok(!workflow.includes("name NOT LIKE 'sqlite_%'"));
  const executed=workflow.split('\n').filter(line=>line.includes('wrangler@4 d1 execute'));
  assert.equal(executed.length,3,'Only read-only schema + two PRAGMA queries allowed');

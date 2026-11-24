@@ -54,7 +54,7 @@ jobs:
         run: |
           npx --yes wrangler@4 d1 list --json > "$RUNNER_TEMP/editorial-d1-list.json"
           node scripts/guard-editorial-staging-d1.mjs --verify-list "$RUNNER_TEMP/editorial-d1-list.json"
-          npx --yes wrangler@4 d1 execute "$PS_EDITORIAL_STAGING_NAME" --remote --config "$STAGING_CONFIG" --command "SELECT type,name FROM sqlite_master WHERE type IN ('table','view','trigger','index') AND lower(name) NOT GLOB 'sqlite_*' ORDER BY type,name;" --json > "$RUNNER_TEMP/editorial-schema.json"
+          npx --yes wrangler@4 d1 execute "$PS_EDITORIAL_STAGING_NAME" --remote --config "$STAGING_CONFIG" --command "SELECT type,name FROM sqlite_master WHERE type IN ('table','view','trigger','index') AND lower(name) NOT GLOB 'sqlite_*' AND name != '_cf_KV' ORDER BY type,name;" --json > "$RUNNER_TEMP/editorial-schema.json"
           node scripts/guard-editorial-staging-d1.mjs --verify-schema "$RUNNER_TEMP/editorial-schema.json"
           npx --yes wrangler@4 d1 execute "$PS_EDITORIAL_STAGING_NAME" --remote --config "$STAGING_CONFIG" --command "PRAGMA table_xinfo(editorial_default_rows);" --json > "$RUNNER_TEMP/editorial-rows-layout.json"
           node scripts/guard-editorial-staging-d1.mjs --verify-columns editorial_default_rows "$RUNNER_TEMP/editorial-schema.json" "$RUNNER_TEMP/editorial-rows-layout.json"

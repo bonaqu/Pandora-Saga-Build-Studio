@@ -9,13 +9,16 @@ export const PRODUCTION_D1_ID='0f8fbcd8-be06-414c-844b-a2091fdf6784';
 const UUID=/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i;
 const NAME=/^ps-editorial-staging-[a-z0-9](?:[a-z0-9-]{0,40}[a-z0-9])?$/;
 // A view, trigger or additional user-created index is not isolated staging.
+// Cloudflare D1 always exposes its reserved _cf_KV table in sqlite_master.
+// Exclude ONLY that exact documented system table; keep every other _cf_*
+// table visible to the strict allowlist, including a spoofed _cf_KVX.
 // SQLite LIKE '_' matches ANY character: LIKE 'sqlite_%' accidentally hides
 // user-created names such as sqliteXshadow. Use literal '_' with GLOB, after
 // lower() for case-insensitive reserved sqlite_ internal entries only.
 export const STAGING_SCHEMA_SQL=
  "SELECT type,name FROM sqlite_master WHERE type IN "+
  "('table','view','trigger','index') AND lower(name) NOT GLOB 'sqlite_*' "+
- "ORDER BY type,name;";
+ "AND name != '_cf_KV' ORDER BY type,name;";
 
 export function validateEditorialStagingTarget({name,id,operation,confirmation,accountId}){
  if(!['preflight','import','rollback'].includes(operation))

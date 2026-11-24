@@ -6,7 +6,13 @@ A failed import with only one of the two reviewed staging tables is recoverable:
 
 ## Verified Cloudflare metadata access · 24 November 2026
 
-[Temporary read-only GitHub Actions probe](https://github.com/bonaqu/Pandora-Saga-Build-Studio/actions/runs/45373602653) succeeded using the existing repository Cloudflare secret: known production database visible, zero matching isolated staging databases visible to this token. No SQL was executed and no database or Worker changed. D1 write permission and separate staging access are not established. The temporary probe is removed from the release branch after recording this result.
+[Temporary read-only GitHub Actions probe](https://github.com/bonaqu/Pandora-Saga-Build-Studio/actions/runs/45373602653) initially confirmed Cloudflare metadata access before staging existed. Subsequently [isolated staging bootstrap](https://github.com/bonaqu/Pandora-Saga-Build-Studio/actions/runs/45379974380) **created** `ps-editorial-staging-390` with UUID `56757608-3492-4fae-b698-27c76918cdc1`. Independent Cloudflare metadata readback verified that this UUID is distinct from production. The bootstrap did not execute D1 SQL or touch production. Cloudflare account access to *create staging* is therefore confirmed; dedicated staging write rehearsals and a durable backup are still unproven. These one-time workflows are removed from the release branch after diagnosis.
+
+## Cloudflare-owned sqlite_master object on fresh staging D1
+
+The first remote [read-only schema preflight](https://github.com/bonaqu/Pandora-Saga-Build-Studio/actions/runs/45380175706) rejected the otherwise empty newly created staging database. A separate, narrowly scoped [read-only metadata inspection](https://github.com/bonaqu/Pandora-Saga-Build-Studio/actions/runs/45380364467) established that its sole schema object was `table _cf_KV`. [Cloudflare's official D1 import/export documentation](https://developers.cloudflare.com/d1/best-practices/import-export-data/) explicitly identifies `_cf_KV` as a reserved internal storage-system table. The shared schema query now excludes **only the exact name `_cf_KV`**, while continuing to reject every unknown table, view, index or trigger (including `_cf_KVX`); SQLite's `sqlite_*` system exclusion remains literal via GLOB.
+
+This is a schema-introspection exemption, **not permission to query or mutate** the internal table. The approved user-owned staging tables and exact columns remain unchanged.
 
 ## Why a local runner is required
 
@@ -31,9 +37,11 @@ Linux/WSL runner below with an independently retained backup.
 
 ## Preconditions
 
-1. Create an independently isolated D1 database whose name starts with
-   ps-editorial-staging- and whose UUID differs from production D1.
-   Create a staging-only scoped API token, never paste it into PR comments.
+1. The isolated `ps-editorial-staging-390` D1 database has been created and its
+   nonproduction UUID confirmed as `56757608-3492-4fae-b698-27c76918cdc1`.
+   Use a staging-scoped API token for the guarded write rehearsal; never paste it
+   into PR comments. Existing GitHub account-level access must not be mistaken
+   for a staging-only token.
 2. Use a **clean** checkout of work/947-issue390-editorial-parity in Linux
    or WSL, with Node 22, Git, npx/Wrangler 4 and network access.
 3. Copy the exact 40-character HEAD SHA with **both full green Node and
