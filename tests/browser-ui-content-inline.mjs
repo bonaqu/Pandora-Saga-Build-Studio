@@ -1188,6 +1188,102 @@ export async function runUIContentInlineSmoke(browser,base){
   }
   console.log('Chromium #390 Book source-safe dynamic level/mastery RU/EN direct editing passed');
 
+  // True Book DOM, controlled non-production healing results. Owner words are
+  // independently editable with dblclick/F2 and cannot replace source numbers.
+  const healFixtures=await page.evaluate(()=>{
+   const oldLang=document.documentElement.lang,oldCalc=window.PandoraOSCalculator,
+    oldGates=window.PandoraBookSkillThresholds,fixtures=[];
+   window.PandoraOSCalculator={...oldCalc,
+    healingActionPreview:()=>({
+     mana:20,cast:2,castModel:{inspiration:true,seconds:1.25},
+     manaRemainingIndex:80,cooldownIndex:75
+    }),
+    scalingSkillPreview:()=>({offense:[],defense:[],movement:[],utility:[]})
+   };
+   window.PandoraBookSkillThresholds={...oldGates,
+    baseManaBudget:()=>({maxMana:101,baseCost:20,casts:5,remainder:1}),
+    nextManaUse:()=>({missing:19}),directHealingBudget:()=>null
+   };
+   try{
+    for(const lang of ['ru','en']){
+     document.documentElement.lang=lang;
+     const host=document.createElement('div');document.body.append(host);
+     const edits=[],args={page:'effects',canEdit:true,
+      onTextEdit:(_node,key,field,initial)=>edits.push({key,field,initial}),
+      modifiers:{mp:101,healingSpells:{rows:[{
+       available:true,skillId:310001001,name:'QA Heal',amount:42
+      }]},periodicRecovery:{rows:[]}},
+      gameTerms:{skills:{'310001001':{id:310001001,name:'QA Heal'}},
+       englishSkills:{'310001001':{n:'QA Heal'}}}};
+     const selector='[data-guide-key^="effects.healing."]';
+     const numberValues=()=>[...host.querySelectorAll('[data-heal-value]')]
+      .map(n=>[n.dataset.healValue,n.textContent])
+      .sort((a,b)=>a[0].localeCompare(b[0]));
+     const get=key=>host.querySelector('[data-guide-key="effects.healing.'+key+'"]');
+     const read=(cls)=>host.querySelector(cls)?.textContent;
+     try{
+      window.PandoraStageAttributes.render(host,args);
+      const all=[...host.querySelectorAll(selector)];
+      const before=numberValues();
+      const lines={
+       cast:read('.stage-heal-cast-preview'),next:read('.stage-heal-mana-next'),
+       mana:read('.stage-attribute-note:has([data-heal-value="mana-percent"])'),
+       cooldown:read('.stage-attribute-note:has([data-heal-value="cooldown-percent"])')
+      };
+      get('manaCostLead')?.dispatchEvent(new MouseEvent('dblclick',{
+       bubbles:true,cancelable:true,detail:2}));
+      get('cooldownTail')?.dispatchEvent(new KeyboardEvent('keydown',{
+       key:'F2',bubbles:true,cancelable:true}));
+      window.PandoraStageAttributes.render(host,{...args,copy:{
+       'guideedit.book.effects.healing.manaCostLead':JSON.stringify({
+        ru:'Стоимость ОМ:',en:'MP expense:'
+       })
+      }});
+      fixtures.push({lang,lines,before,after:numberValues(),
+       changed:read('.stage-attribute-note:has([data-heal-value="mana-percent"])'),
+       keys:all.map(n=>n.dataset.guideKey).sort(),
+       tabStops:all.every(n=>n.tabIndex===0),
+       pencils:host.querySelectorAll('.stage-heal-row .stage-guide-edit-hint').length,
+       edits});
+     }finally{host.remove()}
+    }
+   }finally{
+    window.PandoraOSCalculator=oldCalc;
+    window.PandoraBookSkillThresholds=oldGates;
+    document.documentElement.lang=oldLang;
+   }
+   return fixtures;
+  });
+  const healingKeys=['inspirationLead','inspirationTail','manaCostLead',
+   'manaCostTail','cooldownLead','cooldownTail','nextManaLead','nextManaTail']
+   .map(key=>'effects.healing.'+key).sort();
+  for(const data of healFixtures){
+   const en=data.lang==='en';
+   assert.deepEqual(data.keys,healingKeys);
+   assert.equal(data.tabStops,true);
+   assert.equal(data.pencils,0,'Healing text should not have caption pencils');
+   assert.deepEqual(data.after,data.before,'Edited copy must not mutate computed numbers');
+   assert.deepEqual(data.before,[
+    ['cast-seconds',en?'1.25':'1,25'],['cooldown-percent','75%'],
+    ['mana-needed','+19'],['mana-percent','80%']
+   ]);
+   assert.deepEqual(data.lines,{
+    cast:en?'With Inspiration from an ally: 1.25 s of casting (half the usual time)':
+     'С «Воодушевлением» от союзника: 1,25 сек. применения (вдвое быстрее)',
+    next:en?'One more cast needs +19 MP capacity':
+     'Для ещё одного применения нужно +19 ОМ к запасу',
+    mana:en?'MP cost: 80% of base':'Расход ОМ: 80% от базового',
+    cooldown:en?'Cooldown: 75% of base':'Перезарядка: 75% от базовой'
+   });
+   assert.equal(data.changed,en?'MP expense: 80% of base':'Стоимость ОМ: 80% от базового');
+   assert.deepEqual(data.edits,[
+    {key:'effects.healing.manaCostLead',field:data.lang,initial:en?'MP cost:':'Расход ОМ:'},
+    {key:'effects.healing.cooldownTail',field:data.lang,initial:en?'of base':'от базовой'}
+   ]);
+  }
+  console.log('Chromium #390 Healing action RU/EN editor and live numeric isolation passed');
+
+
   await page.locator('#stageAttributes [data-book-page="summary"]').click();
   await page.locator('#stageBookPanel[data-book-visible="summary"]')
    .waitFor({state:'visible',timeout:15000});
