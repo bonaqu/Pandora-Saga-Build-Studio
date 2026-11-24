@@ -37,6 +37,15 @@ jobs:
           npx --yes wrangler@4 d1 list --json > "$RUNNER_TEMP/staging-list.json"
           node scripts/guard-editorial-staging-d1.mjs --verify-list "$RUNNER_TEMP/staging-list.json"
           npx --yes wrangler@4 d1 execute "$PS_EDITORIAL_STAGING_NAME" --remote --config "$STAGING_CONFIG" --command "SELECT type,name FROM sqlite_master WHERE type IN ('table','view','trigger','index') AND lower(name) NOT GLOB 'sqlite_*' ORDER BY type,name;" --json > "$RUNNER_TEMP/staging-schema.json"
+          # Read-only diagnostics: reveal ONLY SQLite object TYPE and NAME,
+          # never SQL definitions, contents, remote tokens or raw API metadata.
+          node --input-type=module <<'JS'
+          import {readFileSync} from 'node:fs';
+          const parsed=JSON.parse(readFileSync(process.env.RUNNER_TEMP+'/staging-schema.json','utf8'));
+          const rows=Array.isArray(parsed)?parsed.flatMap(value=>value?.results||[]):[];
+          console.log('Staging sqlite_master types and names: '+
+            JSON.stringify(rows.map(value=>({type:value?.type,name:value?.name}))));
+          JS
           node scripts/guard-editorial-staging-d1.mjs --verify-schema "$RUNNER_TEMP/staging-schema.json"
           npx --yes wrangler@4 d1 execute "$PS_EDITORIAL_STAGING_NAME" --remote --config "$STAGING_CONFIG" --command "PRAGMA table_xinfo(editorial_default_rows);" --json > "$RUNNER_TEMP/staging-rows.json"
           node scripts/guard-editorial-staging-d1.mjs --verify-columns editorial_default_rows "$RUNNER_TEMP/staging-schema.json" "$RUNNER_TEMP/staging-rows.json"
