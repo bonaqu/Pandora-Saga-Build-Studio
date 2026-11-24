@@ -24,9 +24,9 @@ test('#390 all native catalog disclosure captions are versioned without open-sta
  const match=source.match(/const catalogDisclosureCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
  assert.ok(match);
  const rows=runInNewContext('('+match[1]+')',{});
- const expected=['archiveSummary','advancedSummary','russianPreviewSummary','diagnosticsSummary','fieldDetailsSummary'];
+ const expected=['archiveSummary','advancedSummary','russianPreviewSummary','diagnosticsSummary','fieldDetailsSummary','rawDetailsSummary'];
  assert.deepEqual(Array.from(rows,row=>String(row[0])).sort(),expected.sort());
- assert.equal(manifest.stats.cohorts['catalog-review-disclosures'],10);
+ assert.equal(manifest.stats.cohorts['catalog-review-disclosures'],12);
  for(const [key,ru,en] of rows){
   const id='guideedit.book.catalog-sync.'+
    key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
@@ -47,8 +47,8 @@ test('#390 linked item caption and true hover help are separately versioned, nev
   /const catalogReviewDetailCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
  assert.ok(registry);
  const rows=runInNewContext('('+registry[1]+')',{});
- assert.equal(rows.length,14,'Only reviewed safe editorial labels are migrated');
- assert.equal(manifest.stats.cohorts['catalog-review-details'],28);
+ assert.equal(rows.length,15,'Only reviewed safe editorial labels are migrated');
+ assert.equal(manifest.stats.cohorts['catalog-review-details'],30);
  for(const key of ['linkedReferenceOpen','hintLinkedReference']){
   const entry=rows.find(row=>row[0]===key);
   assert.ok(entry,'Missing independent bilingual linked-item copy: '+key);

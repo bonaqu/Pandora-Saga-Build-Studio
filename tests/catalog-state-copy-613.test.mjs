@@ -133,11 +133,11 @@ test('#390 review captions use exact bilingual CAS keys while live counts stay o
   'heroMoreChangesLead','heroNoChange','heroSelectHelp','impactHeading',
   'moreImpactsLead','moreImpactsSuffix',
   'linkedReferenceContext','linkedReferenceOpen','hintLinkedReference',
-   'unpublishedReference','emptyReviewFilter'];
+   'unpublishedReference','emptyReviewFilter','githubPrepared'];
  assert.deepEqual(Array.from(rows,row=>String(row[0])).sort(),expected.sort());
  const {buildEditorialDefaultsManifest}=await import('../scripts/plan-editorial-d1-defaults.mjs');
  const manifest=buildEditorialDefaultsManifest();
- assert.equal(manifest.stats.cohorts['catalog-review-details'],28);
+ assert.equal(manifest.stats.cohorts['catalog-review-details'],30);
  for(const [key,ru,en] of rows){
   const slug=key.replace(/[A-Z]/g,ch=>'-'+ch.toLowerCase());
   const id='guideedit.book.catalog-sync.'+slug;
@@ -155,6 +155,8 @@ test('#390 review captions use exact bilingual CAS keys while live counts stay o
  assert.match(workbench,/reviewCaption\('p',\{\},'heroSelectHelp'\)/);
  assert.match(workbench,/reviewCaption\('small',\{\},'linkedReferenceContext'\)/);
  assert.match(workbench,/reviewCaption\('small',\{\},'unpublishedReference'\)/);
+ assert.match(workbench,/status\.replaceChildren\(reviewCaption\('span',\{\},'githubPrepared'\),\s*document\.createTextNode\(' '\),\s*h\('a',\{href:result\.url/);
+ assert.match(workbench,/text:tr\('Открыть PR #','Open PR #'\)\+result\.number/);
  assert.match(workbench,/results\.append\(reviewCaption\('p',\{class:'os-sync-empty'\},'emptyReviewFilter'\)\)/);
  assert.doesNotMatch(workbench,/text:tr\('По этому фильтру изменений нет/);
  // Read-only source facts and game mechanics may not be masked by owner copy.

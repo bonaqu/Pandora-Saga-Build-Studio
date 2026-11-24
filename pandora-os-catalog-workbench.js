@@ -51,7 +51,8 @@
     ['unpublishedReference','Предмет пока не опубликован в энциклопедии.',
       'This item has not yet been published in the encyclopedia.'],
     ['emptyReviewFilter','По этому фильтру изменений нет. Измени запрос или выбери «Все».',
-      'No changes match this filter. Change the search or select “All”.']
+      'No changes match this filter. Change the search or select “All”.'],
+    ['githubPrepared','Проверенный каталог подготовлен.','Verified catalog prepared.']
   ]);
   const catalogReviewDetailByKey=new Map(catalogReviewDetailCopyRows.map(row=>[row[0],row]));
   // These are literal display captions of native <summary> controls.
@@ -62,7 +63,8 @@
     ['advancedSummary','Дополнительные инструменты','Additional tools'],
     ['russianPreviewSummary','Посмотреть русские тексты','Preview Russian texts'],
     ['diagnosticsSummary','Технические сведения об ошибке','Technical error details'],
-    ['fieldDetailsSummary','Посмотреть подробно','View details']
+    ['fieldDetailsSummary','Посмотреть подробно','View details'],
+    ['rawDetailsSummary','Технические сведения (для разработчика)','Technical details (developers)']
   ]);
   const catalogDisclosureByKey=new Map(catalogDisclosureCopyRows.map(row=>[row[0],row]));
   // The same three authorial action names recur in every dataset panel.
@@ -1284,8 +1286,7 @@
         text:tr('Нет подтверждённой расшифровки. Эти изменения требуют отдельной проверки.',
           'No verified explanation is available. Review these changes separately.')}));
       const raw=h('details',{class:'os-sync-raw-details'});
-      raw.append(h('summary',{text:tr('Технические сведения (для разработчика)',
-        'Technical details (developers)')}));
+      raw.append(disclosureCaption('rawDetailsSummary'));
       raw.append(h('small',{class:'os-sync-technical-code',text:'ID: '+change.key}));
       const humanizeValue=value=>{
         const source=String(value);
@@ -2104,8 +2105,8 @@
            'Каталог в GitHub уже совпадает с опубликованным. PR не требуется.',
            'The GitHub catalog already matches the published catalog. No PR is needed.');
         }else if(/^https:\/\/github\.com\/bonaqu\/Pandora-Saga-Build-Studio\/pull\/\d+$/.test(result.url||'')){
-          status.replaceChildren(tr('Проверенный каталог подготовлен. ',
-            'Verified catalog prepared. '),
+          status.replaceChildren(reviewCaption('span',{},'githubPrepared'),
+            document.createTextNode(' '),
             h('a',{href:result.url,target:'_blank',rel:'noopener noreferrer',
               text:tr('Открыть PR #','Open PR #')+result.number}));
         }else throw Error('Некорректный ответ интеграции GitHub');

@@ -945,6 +945,23 @@ export async function runAdminEntrySmoke(browser,base){
   await prButton.click();
   await dialog.getByRole('link',{name:'Открыть PR #246'}).waitFor({state:'visible'});
   assert.deepEqual(calls.filter(x=>x==='github-pr'),['github-pr']);
+  const preparedCopy=dialog.locator('[data-owner-copy-id="githubPrepared"]');
+  const preparedLink=dialog.getByRole('link',{name:'Открыть PR #246'});
+  const originalPrHref=await preparedLink.getAttribute('href');
+  await preparedCopy.dblclick();
+  const preparedEditor=preparedCopy.locator('[contenteditable]');
+  await preparedEditor.waitFor({state:'visible',timeout:12000});
+  await preparedEditor.fill('Каталог подготовлен · QA.');
+  await preparedEditor.press('Tab');
+  await preparedEditor.waitFor({state:'detached',timeout:15000});
+  const preparedKey='guideedit.book.catalog-sync.github-prepared';
+  for(let n=0;n<300&&!townOverrides.has(preparedKey);n++)
+   await page.waitForTimeout(40);
+  assert.equal(JSON.parse(townOverrides.get(preparedKey)).ru,'Каталог подготовлен · QA.');
+  assert.equal(await preparedLink.getAttribute('href'),originalPrHref);
+  assert.equal(await preparedLink.getAttribute('target'),'_blank');
+  assert.deepEqual(calls.filter(x=>x==='github-pr'),['github-pr'],
+   'Editing the result caption must not request another PR');
   page.once('dialog',confirmation=>confirmation.accept());
   await dialog.getByRole('button',{name:'Проверить сохранение правок'}).click();
   await page.waitForFunction(()=>Array.from(document.querySelectorAll('.os-sync [role=status]'))
@@ -1345,6 +1362,27 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(await linked.locator('input[type="checkbox"]').isChecked(),false,
    'Bulk approval must not accept a changed item reference');
   await linked.locator('.os-sync-field-details>summary').click();
+  const rawDetails=linked.locator('.os-sync-raw-details');
+  const rawCaption=rawDetails.locator('[data-owner-copy-id="rawDetailsSummary"]');
+  await rawCaption.waitFor({state:'visible',timeout:12000});
+  const rawId=await rawDetails.locator('.os-sync-technical-code').textContent();
+  assert.equal(await rawDetails.evaluate(el=>el.open),false);
+  await rawCaption.dblclick();
+  const rawEditor=rawCaption.locator('[contenteditable]');
+  await rawEditor.waitFor({state:'visible',timeout:12000});
+  await rawEditor.fill('Исходные технические поля · QA.');
+  await rawEditor.press('Tab');
+  await rawEditor.waitFor({state:'detached',timeout:15000});
+  const rawKey='guideedit.book.catalog-sync.raw-details-summary';
+  for(let n=0;n<300&&!townOverrides.has(rawKey);n++)
+   await page.waitForTimeout(40);
+  assert.equal(JSON.parse(townOverrides.get(rawKey)).ru,'Исходные технические поля · QA.');
+  assert.equal(await rawDetails.evaluate(el=>el.open),false);
+  await rawDetails.locator('summary').press('Enter');
+  await page.waitForFunction(()=>document.querySelector('.os-sync-raw-details')?.open===true);
+  assert.equal(await rawDetails.locator('.os-sync-technical-code').textContent(),rawId);
+  assert.equal(await linked.locator('input[type="checkbox"]').isChecked(),false);
+  await rawDetails.locator('summary').press('Enter');
   const reference=linked.locator('.os-sync-item-ref').first();
   await reference.click();
   assert.equal(await reference.getAttribute('aria-expanded'),'true');

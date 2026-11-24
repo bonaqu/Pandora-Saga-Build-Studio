@@ -117,7 +117,7 @@ test('#390 native catalog disclosures edit RU/EN caption without double-click to
  const source=view.match(/const catalogDisclosureCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
  assert.ok(source);
  const rows=runInNewContext('('+source[1]+')',{});
- const expected=['archiveSummary','advancedSummary','russianPreviewSummary','diagnosticsSummary','fieldDetailsSummary'];
+ const expected=['archiveSummary','advancedSummary','russianPreviewSummary','diagnosticsSummary','fieldDetailsSummary','rawDetailsSummary'];
  assert.deepEqual(Array.from(rows,row=>String(row[0])).sort(),expected.sort());
  for(const [key,ru,en] of rows){
   assert.equal(guideRoot.PandoraHonorGuide.validOverride(

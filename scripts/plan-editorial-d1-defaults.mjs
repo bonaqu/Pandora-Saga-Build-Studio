@@ -1266,7 +1266,7 @@ export function buildEditorialDefaultsManifest(){
   'heroMoreChangesLead','heroNoChange','heroSelectHelp','impactHeading',
   'moreImpactsLead','moreImpactsSuffix','linkedReferenceContext',
   'linkedReferenceOpen','hintLinkedReference',
-  'unpublishedReference','emptyReviewFilter'];
+  'unpublishedReference','emptyReviewFilter','githubPrepared'];
  if(!Array.isArray(reviewRows)||reviewRows.length!==expectedReview.length||
   reviewRows.map(r=>r?.[0]).sort().join('|')!==expectedReview.sort().join('|'))
   throw Error('Unreviewed catalog detail editorial keys');
@@ -1279,7 +1279,7 @@ export function buildEditorialDefaultsManifest(){
   append('guideedit.book.catalog-sync.'+slug,'en',en,'catalog-review-details');
  }
 
- // The four native <details> disclosures also have stable authorial
+ // Reviewed native <details> disclosures also have stable authorial
  // display captions. The clickable open state, source diagnostics and
  // independent hover hints must NEVER enter these D1 source-only fields.
  const disclosureSource=read('pandora-os-catalog-workbench.js').match(
@@ -1287,7 +1287,7 @@ export function buildEditorialDefaultsManifest(){
  if(!disclosureSource)throw Error('Missing catalog disclosure caption inventory');
  const disclosureRows=runInNewContext('('+disclosureSource[1]+')',{},{timeout:5000});
  const expectedDisclosure=['archiveSummary','advancedSummary',
-  'russianPreviewSummary','diagnosticsSummary','fieldDetailsSummary'];
+  'russianPreviewSummary','diagnosticsSummary','fieldDetailsSummary','rawDetailsSummary'];
  if(!Array.isArray(disclosureRows)||
   disclosureRows.length!==expectedDisclosure.length||
   disclosureRows.map(r=>r?.[0]).sort().join('|')!==expectedDisclosure.sort().join('|'))
