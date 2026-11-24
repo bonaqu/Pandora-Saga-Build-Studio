@@ -106,6 +106,29 @@ versioned authorial defaults, then reads every row and verifies metadata,
 record count and SHA-256, failing closed on any mismatch. It does not
 activate or publish an unverified snapshot.
 
+## Independent read-only snapshot verification
+
+After a successful import, use the **same exact source SHA** and the existing
+dedicated staging credentials to audit the full remote snapshot again from
+a separate CLI invocation:
+
+~~~bash
+unset PS_EDITORIAL_CONFIRMATION
+node scripts/run-editorial-staging-d1-premerge.mjs verify
+~~~
+
+This mode requires a clean pinned PR checkout, remote UUID/name and strict
+schema/column validation. It refuses missing tables, absent or mismatched
+snapshot metadata, duplicate/missing rows, or any SHA-256/content mismatch.
+It reads the complete remote defaults rows and reports the verified snapshot,
+row count and digest. It does **not** export data, create a backup, execute
+an import/DELETE, or deploy Worker/Pages; it needs no write confirmation.
+The prior independently retained 0700/0600 SQL backup remains mandatory
+for import and rollback, and this verification cannot replace a separately
+approved, verified rollback. The read-only command will appropriately fail
+before the first actual staging import; its implementation and local tests
+are **not** evidence that remote import has occurred.
+
 ## Separately approved exact rollback
 
 Use the **same source SHA that created the snapshot**, not an updated
