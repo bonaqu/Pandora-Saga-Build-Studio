@@ -544,3 +544,18 @@ test('#390 owner-only accessible Book panel title directly edits without rewriti
  assert.doesNotMatch(source,/ownerPanel\.append\(make\('summary',\{text:language==='en'\?/);
  assert.match(source,/target\.setAttribute\('aria-label',authored\('regionLead'\)/);
 });
+
+test('#390 Book owner disclosure F2 and cross-summary clicks cancel delayed stale navigation',()=>{
+ const source=file('pandora-studio-hero-book.js');
+ assert.match(source,/let bookSummaryPending=null/);
+ assert.match(source,/function cancelBookSummaryPending\(\)/);
+ assert.match(source,/clearTimeout\(old\.timer\);bookSummaryPending=null/);
+ assert.match(source,/const prior=cancelBookSummaryPending\(\)/);
+ assert.match(source,/if\(prior\?\.summary===summary&&prior\.caption===caption\)return/);
+ assert.match(source,/if\(bookSummaryPending!==queued\)return/);
+ assert.match(source,/!summary\.querySelector\('\[data-owner-text-field\],\[contenteditable\]'\)/);
+ assert.match(source,/const editName=event=>\{\s*cancelBookSummaryPending\(\);/);
+ // Keep native keyboard and noncaption disclosure actions immediately usable.
+ assert.match(source,/if\(!event\.detail\|\|/);
+ assert.match(source,/if\(!caption\)\{\s*cancelBookSummaryPending\(\);\s*return/);
+});

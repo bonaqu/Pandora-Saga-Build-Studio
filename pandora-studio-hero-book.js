@@ -374,6 +374,15 @@ function guideDisplayText(value){
 // the Honor group name and the smaller "passive skill" phrase. Register all
 // of them under ONE capture guard rather than guarding only the first.
 const bookSummaryCaptionTargets=new WeakMap();
+// One pending owner caption click across the whole Book, not one per summary.
+// An F2 editor, a different disclosure, or a native control must cancel an
+// obsolete delayed action before it can collapse a mounted inline draft.
+let bookSummaryPending=null;
+function cancelBookSummaryPending(){
+ const old=bookSummaryPending;
+ if(old){clearTimeout(old.timer);bookSummaryPending=null}
+ return old;
+}
 function guardBookSummaryCaption(node){
  const summary=node.closest?.('summary');
  if(!summary)return;
@@ -385,18 +394,35 @@ function guardBookSummaryCaption(node){
  captions.add(node);
  if(summary.dataset.bookCaptionGuard==='1')return;
  summary.dataset.bookCaptionGuard='1';
- let pending=null;
  summary.addEventListener('click',event=>{
+  // Keep native keyboard activation (detail=0) and noncaption controls
+  // immediate, but invalidate any earlier queued pointer caption action.
   if(!event.detail||
-   event.target.closest?.('input,textarea,select,[data-owner-text-field]'))return;
+   event.target.closest?.('input,textarea,select,[data-owner-text-field]')){
+   cancelBookSummaryPending();
+   return;
+  }
   const caption=[...captions].find(item=>item.contains(event.target));
-  if(!caption)return; // Chevrons and all other native actions still work.
+  if(!caption){
+   cancelBookSummaryPending();
+   return; // Chevrons and native summary actions still work.
+  }
   event.preventDefault();event.stopImmediatePropagation();
-  if(pending){clearTimeout(pending);pending=null;return}
-  pending=setTimeout(()=>{
-   pending=null;
-   if(summary.isConnected&&!caption.hidden&&summary.closest('details'))summary.click();
+  const prior=cancelBookSummaryPending();
+  // The second click on this exact caption belongs to a double-click.
+  // Another caption is a new action; queue it instead of swallowing it.
+  if(prior?.summary===summary&&prior.caption===caption)return;
+  const queued={summary,caption,timer:null};
+  queued.timer=setTimeout(()=>{
+   if(bookSummaryPending!==queued)return;
+   bookSummaryPending=null;
+   // An editor can begin through F2 or a touch gesture between clicks.
+   // Never let an obsolete click collapse the current owner's draft.
+   if(summary.isConnected&&!caption.hidden&&summary.closest('details')&&
+      !summary.querySelector('[data-owner-text-field],[contenteditable]'))
+    summary.click();
   },500);
+  bookSummaryPending=queued;
  },true);
 }
 // Disabled skill rows use DIV, not LABEL, so authorial copy stays editable.
@@ -426,6 +452,7 @@ function guideLabel(node,key,ru,en,options={},fallbackRu='',fallbackEn=''){
  if(options.editable&&typeof options.onTextEdit==='function'){
   node.classList.add('stage-guide-editable');
   const editName=event=>{
+   cancelBookSummaryPending();
    event.stopPropagation();event.preventDefault();
    root.PandoraGuideTooltip?.dismiss();
    options.onTextEdit(node,key,english?'en':'ru',label);

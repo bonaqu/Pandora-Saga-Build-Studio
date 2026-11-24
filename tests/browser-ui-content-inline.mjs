@@ -1748,6 +1748,39 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(await firstGroup.getAttribute('open'),groupWasOpen);
   await groupTouch.press('Escape');
   await groupTitle.dispatchEvent('pointerup',{pointerType:'touch',isPrimary:true,pointerId:72});
+
+  // A queued single click must NOT fold the Book after F2 opens a draft.
+  // Reproduces: click authorial summary word -> F2 before 500 ms -> edit.
+  const beforeRaceOpen=await firstGroup.getAttribute('open');
+  await groupTitle.dispatchEvent('click',{bubbles:true,cancelable:true,detail:1});
+  await groupTitle.dispatchEvent('keydown',{bubbles:true,cancelable:true,key:'F2'});
+  const raceDraft=groupTitle.locator('[data-owner-text-field]');
+  await raceDraft.waitFor({state:'visible',timeout:5000});
+  await page.waitForTimeout(640);
+  assert.equal(await firstGroup.getAttribute('open'),beforeRaceOpen,
+   'Pending Book caption click must not collapse a live F2 draft');
+  assert.equal(await raceDraft.count(),1,
+   'F2 draft must remain mounted after the former 500ms pending click');
+  await raceDraft.press('Escape');
+  // Clicking a different summary must CANCEL the previous queued action,
+  // then open/collapse that second summary normally after the guard delay.
+  const secondGroup=page.locator('#stageBookPanel details.stage-result-section').nth(1);
+  const secondTitle=secondGroup.locator('summary [data-guide-key="summary.group.1"]');
+  await secondTitle.waitFor({state:'visible'});
+  const firstOpen=await firstGroup.getAttribute('open');
+  const secondOpen=await secondGroup.getAttribute('open');
+  await groupTitle.dispatchEvent('click',{bubbles:true,cancelable:true,detail:1});
+  await secondTitle.dispatchEvent('click',{bubbles:true,cancelable:true,detail:1});
+  await page.waitForTimeout(640);
+  assert.equal(await firstGroup.getAttribute('open'),firstOpen,
+   'First Book disclosure must not fire its cancelled stale click');
+  assert.notEqual(await secondGroup.getAttribute('open'),secondOpen,
+   'Second Book disclosure must honor its distinct caption click');
+  // Restore the section without testing any editor or source number.
+  await secondGroup.locator('summary').click({position:{x:3,y:3}});
+  assert.equal(await secondGroup.getAttribute('open'),secondOpen,
+   'Native summary chevron remains immediately interactive');
+
   const stat=firstGroup.locator('.stage-result-grid [data-guide-key="summary.0"]');
   assert.equal(await stat.count(),1,'The first result is the source-backed health stat');
   assert.match(await stat.innerText(),/ОЗ|HP/);
