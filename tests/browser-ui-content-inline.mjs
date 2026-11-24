@@ -3212,19 +3212,36 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.ok(match,'The live result counter keeps both numeric values');
   assert.equal(Number(match[1]),100);
   assert.ok(Number(match[2])>100);
-  const summaryEditor=page.locator(
-   '#detailContent .studio-owner-interface-editor:not(.wiki-filter-labels-editor)');
-  await summaryEditor.locator('summary').click();
-  const summaryCaption=summaryEditor.locator('[data-owner-copy-id="resultsShown"]');
-  await summaryCaption.dblclick();
-  await summaryCaption.locator('[contenteditable]').fill('Найдено:');
-  await summaryCaption.locator('[contenteditable]').press('Tab');
+  // The authorial word itself, not the separate owner inventory, is now
+  // the primary editor. Numbers remain siblings and do not acquire CAS keys.
+  const inlineSummary=resultStatus.locator(
+   '[data-owner-copy-section="wiki-ui"][data-owner-copy-id="resultsShown"]');
+  assert.equal(await inlineSummary.count(),1);
+  assert.equal(await inlineSummary.getAttribute('tabindex'),'0');
+  assert.equal(await resultStatus.locator('.ui-content-pencil,.wiki-label-pencil').count(),0,
+   'Plain visible result copy must never gain a caption pencil');
+  const liveCounts=await resultStatus.evaluate(node=>[...node.childNodes]
+   .filter(child=>child.nodeType===Node.TEXT_NODE)
+   .map(child=>child.nodeValue));
+  await inlineSummary.dblclick();
+  await inlineSummary.locator('[contenteditable]').fill('Найдено:');
+  await inlineSummary.locator('[contenteditable]').press('Tab');
   await page.waitForFunction(()=>document.querySelector(
    '#detailContent .wiki-list>p.muted')?.textContent?.startsWith('Найдено: '),
    null,{timeout:15000});
   assert.equal(await resultStatus.textContent(),
    'Найдено: '+match[1]+' из '+match[2]+' записей');
   assert.equal(JSON.parse(values['guideedit.book.wiki-ui.results-shown']).ru,'Найдено:');
+  assert.deepEqual(await resultStatus.evaluate(node=>[...node.childNodes]
+   .filter(child=>child.nodeType===Node.TEXT_NODE)
+   .map(child=>child.nodeValue)),liveCounts,
+   'Live numeric count text nodes retain their values and identities');
+  const summaryEditor=page.locator(
+   '#detailContent .studio-owner-interface-editor:not(.wiki-filter-labels-editor)');
+  await summaryEditor.locator('summary').click();
+  const summaryCaption=summaryEditor.locator('[data-owner-copy-id="resultsShown"]');
+  assert.equal(await summaryCaption.textContent(),'Найдено:',
+   'Existing owner inventory mirrors the same D1 field; no second key');
 
   // Real CAS conflict: do not overwrite the adjacent dynamic numbers, and
   // retain an unsaved draft until Esc cancels it.

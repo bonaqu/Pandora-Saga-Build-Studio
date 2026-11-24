@@ -1231,6 +1231,17 @@ function ownerCopyLabel(node,section,key,ru,en,{onCommitted,onFinished,onStarted
   if(event.target===node&&(event.key==='F2'||event.key==='Enter'))edit(event);
  });
 }
+// A deliberately small set of detached, plain-text, non-action DOM nodes.
+// These source-authored fragments should be edited where they are *visible*
+// rather than only in an owner inventory. Live result counts, item levels,
+// equipment names and navigation/action buttons must never become editors.
+// Expand only after auditing both the mounting context and numeric siblings.
+const ownerDirectPlainCopy=Object.freeze({
+ 'wiki-ui':new Set(['resultsShown','resultsOf','resultsUnits',
+  'noMatches','selectPrompt','placeCity','placeNation','placeOther']),
+ equipment:new Set(['pickerMatchSuffix','pickerShownSuffix',
+  'pickerLoading','pickerOriginFirst','pickerNoMatches','pickerOutfitNote'])
+});
 // Shared, explicit copy binding for labels, buttons and search attributes.
 // Each field has a static RU/EN source and a stable D1 key. Variable game
 // data (item names, active slot, levels, search queries) are never edited.
@@ -1259,6 +1270,18 @@ function bindOwnerInterfaceText(node,section,key,ru,en,attribute='text',suffix='
   /^(?:wiki\.map\.text|wiki\.monster\.text|wiki\.npc\.trade|wiki\.chest\.text|wiki\.item\.text)$/.test(section)&&
   !node.childElementCount&&!node.dataset.wikiDirectCaption){
   node.dataset.wikiDirectCaption='1';
+  ownerCopyLabel(node,section,key,ru,en,{
+   onCommitted:visible=>applyOwnerInterfaceEditedValue(section,key,visible)
+  });
+ }
+ else if(adminEditing&&adminToken&&!prefix&&!suffix&&
+  ownerDirectPlainCopy[section]?.has(key)&&
+  ['SPAN','P','SMALL','H4'].includes(node.tagName)&&
+  !node.childElementCount&&!node.dataset.ownerInterfaceDirectCaption){
+  // The reviewed nodes have no interactive descendants or action ancestors
+  // at mount, and no live count in their own text node. Use the SAME D1 key
+  // and callback as the owner inventory: no duplicate editor or pencil.
+  node.dataset.ownerInterfaceDirectCaption='1';
   ownerCopyLabel(node,section,key,ru,en,{
    onCommitted:visible=>applyOwnerInterfaceEditedValue(section,key,visible)
   });

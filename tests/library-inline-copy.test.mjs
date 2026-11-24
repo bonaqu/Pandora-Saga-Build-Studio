@@ -351,3 +351,24 @@ test('comparison labels bind to live owner UI without making inputs or stat resu
   app.indexOf('function refreshVisibleOriginCopy('));
  assert.match(refresh,/recordKey\.startsWith\('guideedit\.book\.ui\.label\.compare-'\)/);
 });
+
+test('#390 direct Wiki/result and Equipment empty-state owner text reuses semantic D1 keys',()=>{
+ const app=read('pandora-studio-app.js');
+ const head=app.slice(app.indexOf('const ownerDirectPlainCopy='),
+  app.indexOf('// Commit-time update uses'));
+ assert.match(head,/['"]wiki-ui['"]:new Set\(\['resultsShown','resultsOf','resultsUnits'/);
+ assert.match(head,/equipment:new Set\(\['pickerMatchSuffix','pickerShownSuffix'/);
+ for(const name of ['noMatches','selectPrompt','placeCity','placeNation','placeOther',
+  'pickerLoading','pickerOriginFirst','pickerNoMatches','pickerOutfitNote'])
+  assert.ok(head.includes("'"+name+"'"),name);
+ assert.match(head,/!prefix&&!suffix&&/,'Dynamic counts and item names are not authorial captions');
+ assert.match(head,/\['SPAN','P','SMALL','H4'\]\.includes\(node\.tagName\)/);
+ assert.match(head,/!node\.childElementCount&&!node\.dataset\.ownerInterfaceDirectCaption/);
+ assert.match(head,/ownerCopyLabel\(node,section,key,ru,en/);
+ assert.match(head,/applyOwnerInterfaceEditedValue\(section,key,visible\)/);
+ for(const unsafe of ['pickerMorePrefix','pickerItemLevel','pickerItemSlots',
+  'pickerUnequip','pickerAvailableLabel','backLabel','filterEquipmentTypeWeapon'])
+  assert.doesNotMatch(head.slice(0,head.indexOf('// Shared, explicit copy binding')),
+   new RegExp("'"+unsafe+"'"),
+   'Interactive/dynamic source '+unsafe+' must not be direct-editable');
+});
