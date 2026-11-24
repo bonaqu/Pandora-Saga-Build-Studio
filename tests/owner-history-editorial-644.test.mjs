@@ -263,3 +263,39 @@ test('#390: mixed visible caption/hover history is not mislabeled as tooltip onl
  assert.match(tooltipOnly.title,/Образ героя · Подсказка «Одна подсказка»/);
  assert.deepEqual(tooltipOnly.changes.map(row=>row.field),['Подсказка RU']);
 });
+
+test('#390 owner history identifies source-only Hero Book chapter captions without changing CAS data',()=>{
+ const root={};root.window=root;
+ Function('window',read('pandora-studio-owner-change-review.js'))(root);
+ const review=root.PandoraOwnerChangeReview;
+ const saved=JSON.stringify({ru:'Новая надпись QA',en:'New caption QA'});
+ const chapters=[
+  ['chapter.attack','Главы Книги героя','Hero Book chapters'],
+  ['summary.0','Итоги Книги героя','Hero Book summary'],
+  ['attack.skillRange.bonus','Атака Книги героя','Hero Book attack'],
+  ['defense.caption.sources','Защита Книги героя','Hero Book defense'],
+  ['buffs.reason.levelLead','Усиления Книги героя','Hero Book buffs'],
+  ['effects.healing.manaCostLead','Эффекты умений','Skill effects'],
+  ['recovery.caption.potions','Восстановление','Recovery']
+ ];
+ for(const [key,ruGroup,enGroup] of chapters){
+  assert.equal(guideRoot.PandoraHonorGuide.validOverride('book.'+key,saved),
+   true,'Source-only Book key must remain supported by the existing CAS schema');
+  const full='guideedit.book.'+key;
+  const ru=review.inspect(full,saved,{lang:'ru'});
+  const en=review.inspect(full,saved,{lang:'en'});
+  assert.equal(ru.key,full);
+  assert.equal(en.key,full);
+  assert.equal(ru.section,'Интерфейс');
+  assert.equal(en.section,'Interface');
+  assert.match(ru.title,new RegExp(ruGroup+' · Надпись «Новая надпись QA»'));
+  assert.match(en.title,new RegExp(enGroup+' · Caption «New caption QA»'));
+  assert.equal(ru.target,null,'History of authored labels must not select a game record');
+  assert.deepEqual(ru.changes.map(x=>[x.field,x.after]),
+   [['Текст RU','Новая надпись QA'],['Текст EN','New caption QA']]);
+  assert.deepEqual(en.changes.map(x=>x.before),
+   ['Original value unknown','Original value unknown'],
+   'Without a verified staging version there can be no invented before-value');
+ }
+ assert.equal(saved,JSON.stringify({ru:'Новая надпись QA',en:'New caption QA'}));
+});

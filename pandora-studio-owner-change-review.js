@@ -268,6 +268,16 @@ function inspect(key,stored,{base=null,items=null,classes=null,lang='ru',english
    'honor-view':['Честь','Honor'],
    'profile':['Профиль','Profile'],
    'wiki':['Энциклопедия','Encyclopedia'],
+   // Every Book chapter's source-only captions have their own semantic CAS
+   // families. Display the real chapter instead of a generic UI section.
+   // This is history metadata only: no game values or D1 keys are modified.
+   'chapter':['Главы Книги героя','Hero Book chapters'],
+   'summary':['Итоги Книги героя','Hero Book summary'],
+   'attack':['Атака Книги героя','Hero Book attack'],
+   'defense':['Защита Книги героя','Hero Book defense'],
+   'buffs':['Усиления Книги героя','Hero Book buffs'],
+   'effects':['Эффекты умений','Skill effects'],
+   'recovery':['Восстановление','Recovery'],
    'book-aria':['Книга героя','Hero book']
   };
   const sectionName=families[parts[2]]||['Интерфейс','Interface'];
