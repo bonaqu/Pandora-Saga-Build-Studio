@@ -21,7 +21,7 @@ export const STAGING_SCHEMA_SQL=
  "AND name != '_cf_KV' ORDER BY type,name;";
 
 export function validateEditorialStagingTarget({name,id,operation,confirmation,accountId}){
- if(!['preflight','import','rollback'].includes(operation))
+ if(!['preflight','verify','import','rollback'].includes(operation))
   throw Error('Invalid staging operation');
  if(typeof name!=='string'||!NAME.test(name))
   throw Error('Database name must explicitly identify isolated editorial staging');
