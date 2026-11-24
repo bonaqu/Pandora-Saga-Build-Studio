@@ -199,10 +199,6 @@ const bookEnglish=Object.freeze({
  'Условные эффекты стихийного оружия': "Conditional elemental weapons",
  'Пламя феникса · расчётный урон': "Phoenix Flame · estimated damage",
  'Эффекты плащей на военных картах': "Battle-map cloak effects",
- // Native disclosure headings are authored text; values and game IDs remain separate.
- 'Восстановление ОМ умениями': 'Skill MP recovery',
- 'Вклад предметов и душ': 'Bonuses from equipment and Souls',
- 'Эффекты стихийных оружий': 'Elemental weapon effects',
  'Расовая стойкость цверга': "Dwarven racial survival",
  'Бонусы к опыту': "Experience gain bonuses",
  // Source-backed numbers and item IDs remain separate from author-copy spans.
@@ -2804,6 +2800,10 @@ const chapterCaptionSpecs=Object.freeze([
  ['recovery','cures','.stage-status-cures > summary','Снятие состояний','Remove status effects'],
  ['recovery','skillItems','.stage-consumable-skills > summary','Предметы, активирующие умения','Items that activate skills']
 ]);
+// Source-only inventory of the ALREADY established guideedit.book keys.
+// A chapter heading must not receive a second generic ui-locale D1 identity.
+const bookChapterCaptionCopyRows=Object.freeze(chapterCaptionSpecs.map(
+ ([section,key,,ru,en])=>Object.freeze([section+'.caption.'+key,ru,en])));
 function decorateChapterCaptions(body,page,options){
  for(const [section,key,selector,ru,en] of chapterCaptionSpecs){
   if(page!==section)continue;
@@ -3168,7 +3168,7 @@ root.PandoraStageAttributes=Object.freeze({render,bookPages,bookText,bookEditori
  bookEditorialDefaults:bookEnglish,buffStatusCopyRows,buffRequirementCopyRows,
  bookRegionCopyRows,bookSourceActionCopyRows,bookPhoenixProcCopyRows,
  bookHealingActionCopyRows,
- bookScalingActionCopyRows,bookSkillDetailCopyRows,
+ bookScalingActionCopyRows,bookSkillDetailCopyRows,bookChapterCaptionCopyRows,
  bookA11yPanelCopyRows,bookAccessibleAliasRows,
  refreshAccessibility:refreshBookAccessibility,resetDisclosureState,
  summaryRows,attackChapterGroups,defenseChapterGroups,

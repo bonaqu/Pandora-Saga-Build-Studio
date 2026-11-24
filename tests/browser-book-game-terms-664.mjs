@@ -86,6 +86,8 @@ export async function runHeroBookGameNames664Smoke(browser,base){
    };
    window.PandoraStageAttributes.render(host,{
     page:chapter,modifiers:calc,gameTerms:terms,
+    copy:window.__bookCopyQA||{},canEdit:Boolean(window.__bookCanEditQA),
+    onTextEdit:(node,key,field,initial)=>{window.__bookEditRequestQA={key,field,initial}},
     honorTitles:window.PandoraOSCalculator.honorTitles,
     heroJobKey:'ENCHANTER',heroLevel:45,
     heroMasteries:{hymn:8,blessing:78,exorcism:26},
@@ -397,31 +399,34 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   await render({lang:'en',chapter:'effects'});
   assert.equal(await page.locator('#book-source-qa .stage-target-damage-row').count(),0);
 
-  // Native Book disclosure keeps guest click and source MP pulse independent
-  // from D1 editor overrides of its exact RU/EN authorial caption.
+  // The existing semantic guide key is the ONLY editor for this disclosure.
   await render({lang:'en',chapter:'effects',includeMana:true});
   const manaDisclosure=page.locator('#book-source-qa details.stage-periodic-recovery');
-  const manaSummary=manaDisclosure.locator(':scope > summary');
-  assert.equal(await manaSummary.innerText(),'Skill MP recovery');
-  assert.ok(await manaSummary.getAttribute('data-owner-copy-key'),
-   'Native summary needs canonical owner key even in guest DOM');
+  const summary=manaDisclosure.locator(':scope > summary');
+  const caption=summary.locator('[data-guide-key="effects.caption.periodic"]');
+  assert.equal(await caption.innerText(),'Skill MP recovery');
+  assert.equal(await summary.locator('[data-owner-copy-key]').count(),0);
   assert.match(await manaDisclosure.textContent(),/5 MP every 2 sec/);
-  await manaSummary.click();
-  assert.equal(await manaDisclosure.getAttribute('open'),'','Guest native disclosure must open');
-  assert.equal(await manaDisclosure.locator('.stage-periodic-row').first().isVisible(),true,
-   'Opening the native disclosure must reveal the live MP recovery row');
-  await page.evaluate(()=>{
-   const ui=window.PandoraUILocale,key=ui.bookFieldKey('Восстановление ОМ умениями');
-   ui.setOverrides({['guideedit.book.'+ui.fieldKey(key)]:JSON.stringify({
-    ru:'Показать восстановление ОМ',en:'Show skill MP recovery'})});
-  });
+  await summary.click();
+  assert.equal(await manaDisclosure.getAttribute('open'),'','Guest disclosure remains native');
+  assert.equal(await manaDisclosure.locator('.stage-periodic-row').first().isVisible(),true);
+  await page.evaluate(()=>{window.__bookCopyQA={
+   'guideedit.book.effects.caption.periodic':JSON.stringify({
+    ru:'Показать восстановление ОМ',en:'Show skill MP recovery'})
+  }});
   await render({lang:'en',chapter:'effects',includeMana:true});
-  assert.equal(await manaSummary.innerText(),'Show skill MP recovery');
-  assert.match(await manaDisclosure.textContent(),/5 MP every 2 sec/,
-   'Changing authorial copy must not change an OS MP amount');
+  assert.equal(await caption.innerText(),'Show skill MP recovery');
+  assert.match(await manaDisclosure.textContent(),/5 MP every 2 sec/);
   await render({lang:'ru',chapter:'effects',includeMana:true});
-  assert.equal(await manaSummary.innerText(),'Показать восстановление ОМ');
-  await page.evaluate(()=>window.PandoraUILocale.setOverrides({}));
+  assert.equal(await caption.innerText(),'Показать восстановление ОМ');
+  await page.evaluate(()=>{window.__bookCanEditQA=true});
+  await render({lang:'ru',chapter:'effects',includeMana:true});
+  await summary.focus();await page.keyboard.press('F2');
+  assert.deepEqual(await page.evaluate(()=>window.__bookEditRequestQA),
+   {key:'effects.caption.periodic',field:'ru',initial:'Показать восстановление ОМ'});
+  assert.match(await manaDisclosure.textContent(),/5 ОМ каждые 2 сек\./);
+  await page.evaluate(()=>{delete window.__bookCopyQA;delete window.__bookCanEditQA;
+   delete window.__bookEditRequestQA});
   assert.deepEqual(errors,[]);
   console.log('Chromium Book 664: OS/Remaked RU+EN skills, Hymn/Песнопения, Адепт, buffs and defense');
  }finally{await context.close()}

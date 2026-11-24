@@ -176,7 +176,21 @@ export function buildEditorialDefaultsManifest(){
   append('guideedit.book.book-aria.'+slug,'ru',ru,'hero-book-source-actions');
   append('guideedit.book.book-aria.'+slug,'en',en,'hero-book-source-actions');
  }
- // Real Phoenix Flame chance, cooldown and damage never enter D1.
+ // Seed original semantic Book chapter-caption keys, never duplicate aliases.
+  const chapterRows=book.bookChapterCaptionCopyRows;
+  const expectedChapterKeys=["attack.caption.elemental","defense.caption.experience","defense.caption.sources","effects.caption.defense","effects.caption.healing","effects.caption.offense","effects.caption.periodic","effects.caption.songs","recovery.caption.cures","recovery.caption.enabled","recovery.caption.health","recovery.caption.mana","recovery.caption.potions","recovery.caption.skillItems"];
+  if(!Array.isArray(chapterRows)||chapterRows.length!==expectedChapterKeys.length||
+   chapterRows.map(row=>row?.[0]).sort().join('|')!==expectedChapterKeys.sort().join('|'))
+   throw Error('Hero Book native chapter-caption registry drift');
+  for(const [key,ru,en] of chapterRows){
+   if(!/^(?:attack|defense|effects|recovery)\.caption\.[a-z][a-zA-Z]+$/.test(key)||
+    typeof ru!=='string'||!ru.trim()||ru!==ru.trim()||
+    typeof en!=='string'||!en.trim()||en!==en.trim())
+    throw Error('Invalid authored Book disclosure: '+key);
+   append('guideedit.book.'+key,'ru',ru,'hero-book-chapter-captions');
+   append('guideedit.book.'+key,'en',en,'hero-book-chapter-captions');
+  }
+  // Real Phoenix Flame chance, cooldown and damage never enter D1.
  // These two exact labels are written only as bilingual authorial defaults.
  const phoenixRows=book.bookPhoenixProcCopyRows;
  const expectedPhoenix=['triggerChance','cooldown'];

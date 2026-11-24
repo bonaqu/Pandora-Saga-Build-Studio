@@ -13,9 +13,6 @@ test('full Book copy catalog includes additional static player-facing explanatio
  for(const [ru,en] of [
   ['Выбранные усиления','Configured enhancements'],
   ['Сохраняются с этим героем','Saved with this character'],
-  ['Восстановление ОМ умениями','Skill MP recovery'],
-  ['Вклад предметов и душ','Bonuses from equipment and Souls'],
-  ['Эффекты стихийных оружий','Elemental weapon effects'],
   ['Бонусы ОЗ и ОМ зависят от уровня гильдии.','HP and MP passives depend on guild level.'],
   ['Эффекты песен действуют после применения в игре. Бонусы не прибавляются к билду автоматически.','Song effects apply only when activated in the game. No bonus is added to this build automatically.'],
   ['Для текущих зелий ещё нет доступных значений.','No potion values are available yet.'],
@@ -583,4 +580,17 @@ test('#390 Phoenix Flame label wording is owner-editable, chance and cooldown so
  assert.match(source,/data-weapon-proc-number':'cooldown'/);
  assert.match(source,/phoenixDamage\(\s*bonus\.phoenix,row\.refinement,calc\?\.stats\)/);
  assert.doesNotMatch(source,/text:english\?\s*'Trigger chance '\+format\(outcome\.chance\)/);
+});
+
+test('#390 native Book captions reuse existing semantic keys, not duplicate generic D1',()=>{
+ assert.equal(book.bookChapterCaptionCopyRows.length,14);
+ for(const [key,ru,en] of [
+  ['effects.caption.periodic','Восстановление ОМ умениями','Skill MP recovery'],
+  ['defense.caption.sources','Вклад предметов и душ','Bonuses from equipment and Souls'],
+  ['attack.caption.elemental','Эффекты стихийных оружий','Elemental weapon effects']
+ ]){
+  assert.deepEqual(book.bookChapterCaptionCopyRows.find(x=>x[0]===key),[key,ru,en]);
+  assert.equal(locale.bookFieldKey(ru),null,'Avoid duplicate default for '+ru);
+  assert.equal(locale.bookFieldKey(en),null,'Avoid duplicate default for '+en);
+ }
 });

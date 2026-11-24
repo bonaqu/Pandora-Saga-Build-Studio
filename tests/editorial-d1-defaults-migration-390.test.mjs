@@ -1338,21 +1338,19 @@ test('#390 Phoenix authorial defaults are exactly four RU/EN words, not live OS 
 });
 
 
-test('#390 rare native Book disclosures seed exact bilingual source-only defaults',()=>{
+test('#390 staging seeds all 14 original semantic Book chapter keys (28 RU/EN fields)',()=>{
  const root={};Function('window',read('pandora-studio-hero-book.js'))(root);
  Function('window',read('pandora-studio-ui-locale.js'))(root);
- const ui=root.PandoraUILocale;
- for(const [ru,en] of [
-  ['Восстановление ОМ умениями','Skill MP recovery'],
-  ['Вклад предметов и душ','Bonuses from equipment and Souls'],
-  ['Эффекты стихийных оружий','Elemental weapon effects']
- ]){
-  const key=ui.bookFieldKey(ru),id=key&&'guideedit.book.'+ui.fieldKey(key);
-  assert.ok(id&&ui.bookFieldKey(en)===key,'Missing canonical bilingual Book key for '+ru);
-  assert.deepEqual(manifest.records.filter(row=>row.recordKey===id)
-   .map(row=>[row.field,row.value]).sort((a,b)=>a[0].localeCompare(b[0])),
-   [['en',en],['ru',ru]],'Versioned source-only snapshot for '+ru);
+ const rows=root.PandoraStageAttributes.bookChapterCaptionCopyRows;
+ assert.equal(rows.length,14);
+ assert.equal(manifest.stats.cohorts['hero-book-chapter-captions'],28);
+ for(const [key,ru,en] of rows){
+  assert.deepEqual(manifest.records.filter(x=>x.recordKey==='guideedit.book.'+key)
+   .map(x=>[x.field,x.value]).sort((a,b)=>a[0].localeCompare(b[0])),
+   [['en',en],['ru',ru]],'Canonical D1 defaults for '+key);
  }
- for(const forbidden of ['5 MP every 2 sec','Источник предмета 1432','15%','sourceSkillId'])
-  assert.equal(ui.bookFieldKey(forbidden),null,'Game values cannot become D1 editorial keys');
+ for(const phrase of ['Восстановление ОМ умениями','Вклад предметов и душ',
+  'Эффекты стихийных оружий'])assert.equal(root.PandoraUILocale.bookFieldKey(phrase),null);
+ for(const value of ['5 MP every 2 sec','15%','sourceSkillId'])
+  assert.equal(root.PandoraUILocale.bookFieldKey(value),null);
 });
