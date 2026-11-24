@@ -511,8 +511,8 @@ const bookSourceActionCopyRows=Object.freeze([
  ['itemEncyclopediaPrefix','Открыть в энциклопедии:','Open in encyclopedia:'],
  ['itemOpenPrefix','Открыть предмет:','Open item:']
 ]);
-// Four dynamic Healing explanations expose eight independently authored
-// RU/EN fragments; computed amounts, times and percentages are immutable.
+// Source-authored RU/EN Healing explanations are independent of runtime
+// character values. The closed staging inventory checks every exact key.
 const bookHealingActionCopyRows=Object.freeze([
  ['inspirationLead','С «Воодушевлением» от союзника:','With Inspiration from an ally:'],
  ['inspirationTail','сек. применения (вдвое быстрее)','s of casting (half the usual time)'],
@@ -542,7 +542,25 @@ const bookHealingActionCopyRows=Object.freeze([
  ['totalCasts','применений','casts'],
  ['attributeLead','Следующий прирост от','Next'],
  ['attributeAt','при','at'],
- ['attributeOutcome','получится','increase:']
+ ['attributeOutcome','получится','increase:'],
+ // Pure formula narration; the source coefficients, rank and spell amount
+ // are separate uneditable numeric DOM nodes, not D1 editorial fields.
+ ['mpCalcLead','Как рассчитано восстановление ОМ: уровень героя',
+  'How MP recovery was calculated: hero level'],
+ ['mpCalcRounding','округление вниз =','rounded down ='],
+ ['periodEvery','каждые','every'],
+ ['periodSeconds','секунды.','seconds.'],
+ ['healingCalcLead','Как рассчитано лечение:','How the healing was calculated:'],
+ ['healingCalcBase','Основа','Base'],
+ ['healingCalcStat','от','from'],
+ ['healingCalcLevel','от уровня','from level'],
+ ['healingCalcMastery','от Исцеления','from Healing mastery'],
+ ['healingCalcPulse','Каждая прибавка округляется вниз отдельно. Результат:',
+  'Each part is rounded down separately. Result:'],
+ ['healingCalcPercentLead','К сумме применяется','Apply'],
+ ['healingCalcPercentTail',
+  'эффективности лечения, затем результат один раз округляется вниз.',
+  'healing effectiveness to the sum, then round down once.']
 ]);
 const bookAccessibleAliasRows=Object.freeze([
  ['previous','Предыдущая страница','Previous chapter'],
@@ -1678,40 +1696,50 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
   const parts=row?.breakdown;
   if(!parts||![parts.flat,parts.statPart,parts.levelPart,
    parts.masteryPart].every(Number.isFinite))return;
-  // Do not nest a second accordion inside the skill's single "More details".
+  // The exact source formula, source-derived stats and result values
+  // remain immutable. Only human narration uses existing D1/CAS labels.
+  // No second disclosure is nested inside this skill's More details.
   if(row.kind==='mp'&&row.id===330005001){
-   node.append(make('small',{class:'stage-heal-breakdown',text:en?
-    'How MP recovery was calculated: hero level '+heroLevel+
-     ' × 10%, rounded down = '+row.amount+
-     ' MP every 2 seconds.':
-    'Как рассчитано восстановление ОМ: уровень героя '+heroLevel+
-     ' × 10%, округление вниз = '+row.amount+
-     ' ОМ каждые 2 секунды.'}));
+   node.append(make('small',{class:'stage-heal-breakdown'},[
+    healingCaption('mpCalcLead'),' ',
+    healingValue(heroLevel,'mp-level'),' × ',
+    healingValue('10%','mp-coefficient'),', ',
+    healingCaption('mpCalcRounding'),' ',
+    healingValue(row.amount,'mp-result'),en?' MP ':' ОМ ',
+    healingCaption('periodEvery'),' ',
+    healingValue(2,'mp-period-seconds'),' ',
+    healingCaption('periodSeconds')
+   ]));
    return;
   }
   const stat=en?(parts.stat==='spi'?'SPR':'INT'):
    (parts.stat==='spi'?'СД':'ИНТ');
-  const contributions=en?
-   'Base '+healingNumber.format(parts.flat)+' + from '+stat+' '+
-    healingNumber.format(parts.statPart)+' + from level '+
-    healingNumber.format(parts.levelPart)+' + from Healing mastery '+
-    healingNumber.format(parts.masteryPart):
-   'Основа '+healingNumber.format(parts.flat)+' + от '+stat+' '+
-    healingNumber.format(parts.statPart)+' + от уровня '+
-    healingNumber.format(parts.levelPart)+' + от Исцеления '+
-    healingNumber.format(parts.masteryPart);
-  const rounding=pulse?(en?
-   'Each part is rounded down separately. Result: '+row.amount+
-    ' every 2 seconds.':
-   'Каждая прибавка округляется вниз отдельно. Результат: '+row.amount+
-    ' каждые 2 секунды.'):(en?
-   'Apply '+healingNumber.format(parts.healingPercent)+
-    '% healing effectiveness to the sum, then round down once.':
-   'К сумме применяется '+healingNumber.format(parts.healingPercent)+
-    '% эффективности лечения, затем результат один раз округляется вниз.');
-  node.append(make('small',{class:'stage-heal-breakdown',text:
-   (en?'How the healing was calculated: ':'Как рассчитано лечение: ')+
-    contributions+' · '+rounding}));
+  const elements=[
+   healingCaption('healingCalcLead'),' ',
+   healingCaption('healingCalcBase'),' ',
+   healingValue(healingNumber.format(parts.flat),'breakdown-base'),' + ',
+   healingCaption('healingCalcStat'),' ',
+   make('span',{class:'stage-heal-source-stat',text:stat}),' ',
+   healingValue(healingNumber.format(parts.statPart),'breakdown-stat'),' + ',
+   healingCaption('healingCalcLevel'),' ',
+   healingValue(healingNumber.format(parts.levelPart),'breakdown-level'),' + ',
+   healingCaption('healingCalcMastery'),' ',
+   healingValue(healingNumber.format(parts.masteryPart),'breakdown-mastery'),
+   ' · '
+  ];
+  if(pulse)elements.push(
+   healingCaption('healingCalcPulse'),' ',
+   healingValue(row.amount,'breakdown-result'),' ',
+   healingCaption('periodEvery'),' ',
+   healingValue(2,'breakdown-period-seconds'),' ',
+   healingCaption('periodSeconds')
+  );
+  else elements.push(
+   healingCaption('healingCalcPercentLead'),' ',
+   healingValue(healingNumber.format(parts.healingPercent)+'%','breakdown-percent'),' ',
+   healingCaption('healingCalcPercentTail')
+  );
+  node.append(make('small',{class:'stage-heal-breakdown'},elements));
  };
  const appendHealingMilestones=(node,row,periodic)=>{
   if(row.nextMastery&&Number.isSafeInteger(row.nextMastery.rank)){

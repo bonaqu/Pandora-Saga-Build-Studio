@@ -1245,8 +1245,8 @@ test('#390 Honor form placeholders and validation captions stage exactly 14 safe
 test('#390 staging Healing action phrases are allowlisted, not live skill results',()=>{
  const rows=manifest.records.filter(row=>row.recordKey.startsWith(
   'guideedit.book.effects.healing.'));
- assert.equal(rows.length,50);
- assert.equal(manifest.stats.cohorts['hero-book-healing-actions'],50);
+ assert.equal(rows.length,74);
+ assert.equal(manifest.stats.cohorts['hero-book-healing-actions'],74);
  const bookRoot={};
  Function('window',read('pandora-studio-hero-book.js'))(bookRoot);
  const expected=bookRoot.PandoraStageAttributes.bookHealingActionCopyRows;
@@ -1261,6 +1261,9 @@ test('#390 staging Healing action phrases are allowlisted, not live skill result
   'mastery-rank','mastery-gain','level-gain','level-value',
   'attribute-gain','attribute-value','attribute-remaining',
   'healing-total','healing-casts','healing-amount','healing-expression-casts',
+  'mp-level','mp-coefficient','mp-result','mp-period-seconds',
+  'breakdown-base','breakdown-stat','breakdown-level','breakdown-mastery',
+  'breakdown-result','breakdown-period-seconds','breakdown-percent',
   'mana','mp','amount','skill-id'])
   assert.equal(rows.some(row=>row.recordKey.endsWith('.'+notAuthorial)),false);
 });

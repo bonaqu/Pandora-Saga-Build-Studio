@@ -400,7 +400,7 @@ test('#390 Book dynamic level/mastery blockers edit only words, not source thres
  assert.equal(manifest.records.some(row=>/QA source branch|QA source level/.test(row.value)),false);
 });
 
-test('#390 Healing explanations split 25 bilingual authorial fragments from all live numbers',()=>{
+test('#390 Healing explanations split 37 bilingual authorial fragments from all live numbers',()=>{
  const expected={
   inspirationLead:['С «Воодушевлением» от союзника:','With Inspiration from an ally:'],
   inspirationTail:['сек. применения (вдвое быстрее)','s of casting (half the usual time)'],
@@ -426,7 +426,22 @@ test('#390 Healing explanations split 25 bilingual authorial fragments from all 
   totalCasts:['применений','casts'],
   attributeLead:['Следующий прирост от','Next'],
   attributeAt:['при','at'],
-  attributeOutcome:['получится','increase:']
+  attributeOutcome:['получится','increase:'],
+  mpCalcLead:['Как рассчитано восстановление ОМ: уровень героя',
+   'How MP recovery was calculated: hero level'],
+  mpCalcRounding:['округление вниз =','rounded down ='],
+  periodEvery:['каждые','every'],
+  periodSeconds:['секунды.','seconds.'],
+  healingCalcLead:['Как рассчитано лечение:','How the healing was calculated:'],
+  healingCalcBase:['Основа','Base'],
+  healingCalcStat:['от','from'],
+  healingCalcLevel:['от уровня','from level'],
+  healingCalcMastery:['от Исцеления','from Healing mastery'],
+  healingCalcPulse:['Каждая прибавка округляется вниз отдельно. Результат:',
+   'Each part is rounded down separately. Result:'],
+  healingCalcPercentLead:['К сумме применяется','Apply'],
+  healingCalcPercentTail:['эффективности лечения, затем результат один раз округляется вниз.',
+   'healing effectiveness to the sum, then round down once.']
  };
  assert.deepEqual(book.bookHealingActionCopyRows.map(row=>row[0]).sort(),Object.keys(expected).sort());
  for(const [key,ru,en] of book.bookHealingActionCopyRows)
@@ -445,7 +460,10 @@ test('#390 Healing explanations split 25 bilingual authorial fragments from all 
   'mana-pool','mana-casts','mana-remaining','mastery-rank','mastery-remaining',
   'mastery-gain','level-gain','level-value','level-remaining',
   'attribute-gain','attribute-value','attribute-remaining',
-  'healing-total','healing-casts','healing-amount','healing-expression-casts'])
+  'healing-total','healing-casts','healing-amount','healing-expression-casts',
+  'mp-level','mp-coefficient','mp-result','mp-period-seconds',
+  'breakdown-base','breakdown-stat','breakdown-level','breakdown-mastery',
+  'breakdown-result','breakdown-period-seconds','breakdown-percent'])
   assert.ok(source.includes(",'"+key+"')"));
  assert.match(source,/class:'stage-heal-computed'/);
  assert.doesNotMatch(source,/text:en\?\s*'MP cost: '\+/);

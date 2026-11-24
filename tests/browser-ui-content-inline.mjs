@@ -1215,7 +1215,9 @@ export async function runUIContentInlineSmoke(browser,base){
        available:true,skillId:310001001,name:'QA Heal',amount:42,
        nextMastery:{rank:61,remaining:3,gain:2},
        nextAttribute:{value:75,remaining:3,gain:5},
-       nextLevel:{value:46,remaining:1,gain:3}
+       nextLevel:{value:46,remaining:1,gain:3},
+       breakdown:{flat:10,stat:'int',statPart:12,levelPart:13,
+        masteryPart:7,healingPercent:100}
       }]},periodicRecovery:{rows:[]}},
       gameTerms:{skills:{'310001001':{id:310001001,name:'QA Heal'}},
        englishSkills:{'310001001':{n:'QA Heal'}}}};
@@ -1234,6 +1236,7 @@ export async function runUIContentInlineSmoke(browser,base){
        cast:read('.stage-heal-cast-preview'),next:read('.stage-heal-mana-next'),
        budget:read('.stage-heal-mana-budget'),
        total:read('.stage-heal-total-capacity'),
+       breakdown:read('.stage-heal-breakdown'),
        milestones:[...host.querySelectorAll('.stage-heal-mastery-next')]
         .map(node=>node.textContent),
        mana:read('.stage-attribute-note:has([data-heal-value="mana-percent"])'),
@@ -1246,18 +1249,25 @@ export async function runUIContentInlineSmoke(browser,base){
       get('attributeOutcome')?.dispatchEvent(new MouseEvent('dblclick',{
        bubbles:true,cancelable:true,detail:2
       }));
+      get('healingCalcBase')?.dispatchEvent(new KeyboardEvent('keydown',{
+       key:'F2',bubbles:true,cancelable:true
+      }));
       window.PandoraStageAttributes.render(host,{...args,copy:{
        'guideedit.book.effects.healing.manaCostLead':JSON.stringify({
         ru:'Стоимость ОМ:',en:'MP expense:'
        }),
        'guideedit.book.effects.healing.attributeOutcome':JSON.stringify({
         ru:'выйдет',en:'improvement:'
+       }),
+       'guideedit.book.effects.healing.healingCalcBase':JSON.stringify({
+        ru:'База',en:'Base value'
        })
       }});
       fixtures.push({lang,lines,before,after:numberValues(),
        changed:read('.stage-attribute-note:has([data-heal-value="mana-percent"])'),
        changedAttribute:[...host.querySelectorAll('.stage-heal-mastery-next')]
         .map(n=>n.textContent).find(t=>t.includes('75')),
+       changedBreakdown:read('.stage-heal-breakdown'),
        keys:visibleKeys,
        tabStops:all.every(n=>n.tabIndex===0),
        pencils:host.querySelectorAll('.stage-heal-row .stage-guide-edit-hint').length,
@@ -1276,7 +1286,9 @@ export async function runUIContentInlineSmoke(browser,base){
    'budgetLead','budgetUpTo','budgetCasts','budgetLeft',
    'nextMasteryLead','nextRemaining','nextLevelLead','nextLevelCast',
    'nextLevelAt','nextLevelUnit','totalLead','totalPerTarget',
-   'totalCasts','attributeLead','attributeAt','attributeOutcome']
+   'totalCasts','attributeLead','attributeAt','attributeOutcome',
+   'healingCalcLead','healingCalcBase','healingCalcStat','healingCalcLevel',
+   'healingCalcMastery','healingCalcPercentLead','healingCalcPercentTail']
    .map(key=>'effects.healing.'+key).sort();
   for(const data of healFixtures){
    const en=data.lang==='en';
@@ -1286,6 +1298,8 @@ export async function runUIContentInlineSmoke(browser,base){
    assert.deepEqual(data.after,data.before,'Edited copy must not mutate computed numbers');
    assert.deepEqual(data.before,[
     ['attribute-gain','+5'],['attribute-remaining','3'],['attribute-value','75'],
+    ['breakdown-base','10'],['breakdown-level','13'],['breakdown-mastery','7'],
+    ['breakdown-percent','100%'],['breakdown-stat','12'],
     ['cast-seconds',en?'1.25':'1,25'],['cooldown-percent','75%'],
     ['healing-amount','42'],['healing-casts','5'],
     ['healing-expression-casts','5'],['healing-total','210'],
@@ -1303,6 +1317,9 @@ export async function runUIContentInlineSmoke(browser,base){
      'Полный запас 101 ОМ: до 5 применений по базовой стоимости (остаток 1 ОМ).',
     total:en?'Up to 210 HP per target for 5 casts (42 × 5)':
      'До 210 ОЗ на одну цель за 5 применений (42 × 5)',
+    breakdown:en?
+     'How the healing was calculated: Base 10 + from INT 12 + from level 13 + from Healing mastery 7 · Apply 100% healing effectiveness to the sum, then round down once.':
+     'Как рассчитано лечение: Основа 10 + от ИНТ 12 + от уровня 13 + от Исцеления 7 · К сумме применяется 100% эффективности лечения, затем результат один раз округляется вниз.',
     milestones:en?[
      'Next Healing mastery increase at 61 (+3): +2 HP',
      'Next increase: +5 HP at INT 75 (+3 INT)',
@@ -1319,13 +1336,105 @@ export async function runUIContentInlineSmoke(browser,base){
    assert.equal(data.changedAttribute,
     en?'Next improvement: +5 HP at INT 75 (+3 INT)':
      'Следующий прирост от ИНТ: при 75 (ещё 3) выйдет +5 ОЗ');
+   assert.equal(data.changedBreakdown,en?
+    'How the healing was calculated: Base value 10 + from INT 12 + from level 13 + from Healing mastery 7 · Apply 100% healing effectiveness to the sum, then round down once.':
+    'Как рассчитано лечение: База 10 + от ИНТ 12 + от уровня 13 + от Исцеления 7 · К сумме применяется 100% эффективности лечения, затем результат один раз округляется вниз.');
    assert.deepEqual(data.edits,[
     {key:'effects.healing.manaCostLead',field:data.lang,initial:en?'MP cost:':'Расход ОМ:'},
     {key:'effects.healing.cooldownTail',field:data.lang,initial:en?'of base':'от базовой'},
-    {key:'effects.healing.attributeOutcome',field:data.lang,initial:en?'increase:':'получится'}
+    {key:'effects.healing.attributeOutcome',field:data.lang,initial:en?'increase:':'получится'},
+    {key:'effects.healing.healingCalcBase',field:data.lang,initial:en?'Base':'Основа'}
    ]);
   }
   console.log('Chromium #390 Healing action RU/EN editor and live numeric isolation passed');
+
+  // Special MP recovery formula and periodic HP healing share the same
+  // authorial tokens but retain exact source coefficients and values.
+  const periodicCopy=await page.evaluate(()=>{
+   const oldLang=document.documentElement.lang,oldCalc=window.PandoraOSCalculator,
+    fixture=[];
+   window.PandoraOSCalculator={...oldCalc,
+    healingActionPreview:()=>null,
+    scalingSkillPreview:()=>({offense:[],defense:[],movement:[],utility:[]})
+   };
+   try{
+    for(const lang of ['ru','en']){
+     document.documentElement.lang=lang;
+     const host=document.createElement('div');document.body.append(host);
+     const edits=[],rows=[
+      {id:310022001,kind:'hp',available:true,name:'QA HP pulse',amount:27,
+       breakdown:{flat:10,stat:'spi',statPart:5,levelPart:8,masteryPart:4}},
+      {id:330005001,kind:'mp',available:true,name:'QA MP pulse',amount:4,
+       breakdown:{flat:0,stat:'spi',statPart:0,levelPart:4,masteryPart:0}}
+     ];
+     const args={page:'effects',canEdit:true,heroLevel:45,
+      onTextEdit:(_node,key,field,initial)=>edits.push({key,field,initial}),
+      modifiers:{periodicRecovery:{rows},healingSpells:{rows:[]}},
+      gameTerms:{skills:{
+       '310022001':{id:310022001,name:'QA HP pulse'},
+       '330005001':{id:330005001,name:'QA MP pulse'}
+      },englishSkills:{}}};
+     try{
+      window.PandoraStageAttributes.render(host,args);
+      const get=selector=>host.querySelector(selector)?.textContent;
+      const numbers=()=>[...host.querySelectorAll('[data-heal-value]')]
+       .map(n=>[n.dataset.healValue,n.textContent])
+       .sort((a,b)=>a[0].localeCompare(b[0]));
+      const before=numbers();
+      const hp=get('.stage-heal-row .stage-heal-breakdown'),
+       mp=get('.stage-periodic-row .stage-heal-breakdown');
+      host.querySelector('[data-guide-key="effects.healing.mpCalcRounding"]')
+       ?.dispatchEvent(new MouseEvent('dblclick',{
+        bubbles:true,cancelable:true,detail:2}));
+      window.PandoraStageAttributes.render(host,{...args,copy:{
+       'guideedit.book.effects.healing.mpCalcRounding':JSON.stringify({
+        ru:'округлено вниз =',en:'floored ='
+       })
+      }});
+      fixture.push({lang,hp,mp,before,after:numbers(),
+       changedMp:get('.stage-periodic-row .stage-heal-breakdown'),
+       keys:[...new Set([...host.querySelectorAll(
+        '[data-guide-key^="effects.healing."]')].map(n=>n.dataset.guideKey))].sort(),
+       hasPencils:host.querySelectorAll('.stage-heal-breakdown .stage-guide-edit-hint').length,
+       edits});
+     }finally{host.remove()}
+    }
+   }finally{window.PandoraOSCalculator=oldCalc;document.documentElement.lang=oldLang}
+   return fixture;
+  });
+  for(const item of periodicCopy){
+   const en=item.lang==='en';
+   assert.deepEqual(item.after,item.before);
+   assert.deepEqual(item.before,[
+    ['breakdown-base','10'],['breakdown-level','8'],['breakdown-mastery','4'],
+    ['breakdown-period-seconds','2'],['breakdown-result','27'],
+    ['breakdown-stat','5'],['mp-coefficient','10%'],
+    ['mp-level','45'],['mp-period-seconds','2'],['mp-result','4']
+   ]);
+   assert.equal(item.hasPencils,0);
+   assert.deepEqual(item.keys,[
+    'effects.healing.healingCalcBase','effects.healing.healingCalcLead',
+    'effects.healing.healingCalcLevel','effects.healing.healingCalcMastery',
+    'effects.healing.healingCalcPulse','effects.healing.healingCalcStat',
+    'effects.healing.mpCalcLead','effects.healing.mpCalcRounding',
+    'effects.healing.periodEvery','effects.healing.periodSeconds'
+   ]);
+   assert.equal(item.hp,en?
+    'How the healing was calculated: Base 10 + from SPR 5 + from level 8 + from Healing mastery 4 · Each part is rounded down separately. Result: 27 every 2 seconds.':
+    'Как рассчитано лечение: Основа 10 + от СД 5 + от уровня 8 + от Исцеления 4 · Каждая прибавка округляется вниз отдельно. Результат: 27 каждые 2 секунды.');
+   assert.equal(item.mp,en?
+    'How MP recovery was calculated: hero level 45 × 10%, rounded down = 4 MP every 2 seconds.':
+    'Как рассчитано восстановление ОМ: уровень героя 45 × 10%, округление вниз = 4 ОМ каждые 2 секунды.');
+   assert.equal(item.changedMp,en?
+    'How MP recovery was calculated: hero level 45 × 10%, floored = 4 MP every 2 seconds.':
+    'Как рассчитано восстановление ОМ: уровень героя 45 × 10%, округлено вниз = 4 ОМ каждые 2 секунды.');
+   assert.deepEqual(item.edits,[{
+    key:'effects.healing.mpCalcRounding',field:item.lang,
+    initial:en?'rounded down =':'округление вниз ='
+   }]);
+  }
+  console.log('Chromium #390 periodic HP/MP formula prose and source numbers isolated');
+
 
 
   await page.locator('#stageAttributes [data-book-page="summary"]').click();

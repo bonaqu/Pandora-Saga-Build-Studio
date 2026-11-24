@@ -184,7 +184,11 @@ export function buildEditorialDefaultsManifest(){
   'nextMasteryLead','nextRemaining','nextLevelLead','nextLevelPulse',
   'nextLevelCast','nextLevelAt','nextLevelUnit',
   'totalLead','totalPerTarget','totalCasts',
-  'attributeLead','attributeAt','attributeOutcome'];
+  'attributeLead','attributeAt','attributeOutcome',
+  'mpCalcLead','mpCalcRounding','periodEvery','periodSeconds',
+  'healingCalcLead','healingCalcBase','healingCalcStat',
+  'healingCalcLevel','healingCalcMastery','healingCalcPulse',
+  'healingCalcPercentLead','healingCalcPercentTail'];
  if(!Array.isArray(healRows)||healRows.length!==expectedHeal.length||
   healRows.map(row=>row?.[0]).sort().join('|')!==expectedHeal.sort().join('|'))
   throw Error('Hero Book dynamic Healing action inventory drift');
