@@ -3953,6 +3953,8 @@ function renderPathCopyControls(){
   ['pathReqInnate','старт','innate','Требование: старт','Innate points'],
   ['pathReqPotential','доступно','potential','Требование: доступно','Available points'],
   ['pathClassLimitAria','Предел профессии:','Class limit:','Предел профессии на шкале','Class limit on track'],
+  ['pathBranchStatsAria','Старт / вложено / мастерство: ','Innate / invested / mastery: ',
+   'Доступные показатели ветки','Accessible branch stats'],
   ['skillCardAvailableAria','доступно','available','Карточка доступного умения','Available skill card'],
   ['skillCardUnavailableAria','недоступно','unavailable','Карточка недоступного умения','Unavailable skill card'],
   ['pathRangeAria','Прокачка ветки','Allocated branch level:','Ползунок ветки','Branch slider'],
