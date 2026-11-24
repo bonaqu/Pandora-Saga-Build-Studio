@@ -1195,7 +1195,7 @@ function bindOwnerTouchCaption(node,edit,{interactive=false}={}){
 }
 window.PandoraOwnerTouchEdit=bindOwnerTouchCaption;
 
-function ownerCopyLabel(node,section,key,ru,en,{onCommitted,onFinished}={}){
+function ownerCopyLabel(node,section,key,ru,en,{onCommitted,onFinished,onStarted}={}){
  if(!node||!adminEditing||!adminToken)return;
  node.dataset.ownerCopySection=section;
  node.dataset.ownerCopyId=key;
@@ -1212,6 +1212,7 @@ function ownerCopyLabel(node,section,key,ru,en,{onCommitted,onFinished}={}){
  const edit=event=>{
   if(!adminEditing||!adminToken||node.querySelector?.('.wiki-inline-input'))return;
   event.preventDefault();event.stopPropagation();
+  onStarted?.(); // Cancel any deferred host action before entering edit mode.
   const editLang=lang; // Never write an open RU editor to the EN D1 field.
   editWikiValue(node,ownerCopy(section,key,ru,en),{
    type:'text',

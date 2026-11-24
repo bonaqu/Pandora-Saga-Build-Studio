@@ -134,7 +134,10 @@ test('#390 native catalog disclosures edit RU/EN caption without double-click to
  assert.match(view,/disclosureCaption\('fieldDetailsSummary',\{\s*count:description\.rows\.length\}\)/);
  assert.match(view,/groupAction\(more,'groupMore',name,\{\s*count:filtered\.length-limit\}\)/);
  assert.match(css,/\.os-sync-disclosure-runtime-count/);
- assert.match(view,/editLabel\(caption,key,row\[1\],row\[2\]\)/);
+ assert.match(view,/editLabel\(caption,key,row\[1\],row\[2\],\{onStarted:cancelPending\}\)/);
+ assert.match(app,/onStarted\?\.\(\);/);
+ assert.match(view,/editLabel\(caption,key,ru,en,\{onStarted:cancelPending\}\)/);
+ assert.match(view,/const startEdit=event=>\{[\s\S]*?cancelPending\(\);/);
  assert.match(view,/if\(!event\.detail\|\|!caption\.contains\(event\.target\)\)return/);
  assert.match(view,/event\.preventDefault\(\);event\.stopPropagation\(\)/);
  assert.match(view,/if\(pending\)\{clearTimeout\(pending\);pending=null;return\}/);

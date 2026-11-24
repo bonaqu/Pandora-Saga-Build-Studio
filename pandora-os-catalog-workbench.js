@@ -162,14 +162,15 @@
       if(count!==null)summary.append(h('span',{
         class:'os-sync-disclosure-runtime-count',text:' · '+String(count)}));
       if(!canEdit||typeof editLabel!=='function')return summary;
-      editLabel(caption,key,row[1],row[2]);
       let pending=null;
+      const cancelPending=()=>{if(pending){clearTimeout(pending);pending=null}};
+      editLabel(caption,key,row[1],row[2],{onStarted:cancelPending});
       summary.addEventListener('click',event=>{
         if(event.target.closest?.('.wiki-inline-input,[data-owner-text-field],[contenteditable]'))
           return;
         // Non-pointer (keyboard) activation and clicks on the native arrow
         // are kept immediate. Only the literal label needs disambiguation.
-        if(!event.detail||!caption.contains(event.target))return;
+        if(!event.detail||!caption.contains(event.target)){cancelPending();return}
         event.preventDefault();event.stopPropagation();
         if(pending){clearTimeout(pending);pending=null;return}
         pending=setTimeout(()=>{
@@ -199,10 +200,11 @@
     // both toggles from a genuine owner double-click on its written caption.
     const choiceEditor=(caption,key,ru,en)=>{
       if(!canEdit||typeof editLabel!=='function')return null;
-      editLabel(caption,key,ru,en);
+      let pending=null;
+      const cancelPending=()=>{if(pending){clearTimeout(pending);pending=null}};
+      editLabel(caption,key,ru,en,{onStarted:cancelPending});
       caption.tabIndex=0;
       caption.setAttribute('aria-keyshortcuts','F2');
-      let pending=null;
       caption.addEventListener('click',event=>{
         if(!event.detail||event.target.closest?.('.wiki-inline-input,[data-owner-text-field]'))return;
         event.preventDefault();event.stopPropagation();
@@ -240,16 +242,19 @@
       for(const [keyName,value] of Object.entries({
         ownerCopySection:'catalog-sync',ownerCopyId:key,
         ownerCopyRu:ru,ownerCopyEn:en}))button.dataset[keyName]=value;
+      let pending=null;
+      const cancelPending=()=>{if(pending){clearTimeout(pending);pending=null}};
       const startEdit=event=>{
         if(!button.isConnected||!host.hidden||wrap.classList.contains('editing-hint'))return;
+        cancelPending();
         event?.preventDefault?.();event?.stopPropagation?.();
         button.hidden=true;host.hidden=false;
         host.textContent=copy(key,ru,en);
         host.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
       };
-      let pending=null;
       button.addEventListener('click',event=>{
-        if(!event.detail||event.target.closest?.('.wiki-inline-input,[data-owner-text-field]'))return;
+        if(!event.detail){cancelPending();return}
+        if(event.target.closest?.('.wiki-inline-input,[data-owner-text-field]'))return;
         event.preventDefault();event.stopImmediatePropagation();
         if(pending){clearTimeout(pending);pending=null;return}
         pending=setTimeout(()=>{
@@ -770,9 +775,10 @@
       const total=h('span',{class:'os-sync-filter-count',
        text:' · 0'});
       button.append(caption,total);
-      if(canEdit&&typeof editLabel==='function')editLabel(caption,key,ru,en);
-      const choose=()=>{if(busy)return;filterKind=id;render();};
       let pending=null;
+      const cancelPending=()=>{if(pending){clearTimeout(pending);pending=null}};
+      if(canEdit&&typeof editLabel==='function')editLabel(caption,key,ru,en,{onStarted:cancelPending});
+      const choose=()=>{if(busy)return;filterKind=id;render();};
       button.addEventListener('click',event=>{
         if(busy||event.target.closest?.('[data-owner-text-field],.wiki-inline-input'))
           return;
@@ -781,7 +787,7 @@
         // Guest clicks, keyboard activation, and clicks on the numeric
         // counter retain their immediate original action.
         if(!canEdit||!event.detail||!caption.contains(event.target)){
-          choose();return;
+          cancelPending();choose();return;
         }
         event.preventDefault();event.stopPropagation();
         if(pending){clearTimeout(pending);pending=null;return}

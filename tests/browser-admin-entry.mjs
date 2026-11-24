@@ -1140,6 +1140,16 @@ export async function runAdminEntrySmoke(browser,base){
   const addedCaption=addedButton.locator('.os-sync-filter-caption');
   assert.equal((await addedButton.locator('.os-sync-filter-count').innerText()).trim(),'· 0');
   assert.equal(await dialog.locator('.os-sync-filter-pencil').count(),0);
+  // A pending single click must not switch the category after F2/Escape.
+  await addedCaption.click();
+  await addedButton.press('F2');
+  const pendingFilterEditor=addedButton.locator('[data-owner-text-field]');
+  await pendingFilterEditor.waitFor({state:'visible',timeout:12000});
+  await pendingFilterEditor.press('Escape');
+  await pendingFilterEditor.waitFor({state:'detached',timeout:12000});
+  await page.waitForTimeout(650);
+  assert.equal(await dialog.locator('.os-sync-filter[data-review-filter="all"]').getAttribute('aria-pressed'),'true',
+   'F2 followed by Escape cancels a queued filter click');
   await addedCaption.dblclick();
   const addedEditor=addedButton.locator('[data-owner-text-field]');
   await addedEditor.waitFor({state:'visible',timeout:12000});
@@ -1367,6 +1377,15 @@ export async function runAdminEntrySmoke(browser,base){
   await rawCaption.waitFor({state:'visible',timeout:12000});
   const rawId=await rawDetails.locator('.os-sync-technical-code').textContent();
   assert.equal(await rawDetails.evaluate(el=>el.open),false);
+  await rawCaption.click();
+  await rawCaption.press('F2');
+  const pendingDisclosureEditor=rawCaption.locator('[contenteditable]');
+  await pendingDisclosureEditor.waitFor({state:'visible',timeout:12000});
+  await pendingDisclosureEditor.press('Escape');
+  await pendingDisclosureEditor.waitFor({state:'detached',timeout:12000});
+  await page.waitForTimeout(650);
+  assert.equal(await rawDetails.evaluate(el=>el.open),false,
+   'F2 followed by Escape must cancel a queued disclosure toggle');
   await rawCaption.dblclick();
   const rawEditor=rawCaption.locator('[contenteditable]');
   await rawEditor.waitFor({state:'visible',timeout:12000});
