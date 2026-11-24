@@ -540,6 +540,12 @@ const bookSourceActionCopyRows=Object.freeze([
 ]);
 // Source-authored RU/EN Healing explanations are independent of runtime
 // character values. The closed staging inventory checks every exact key.
+// Phoenix's actual chance and cooldown are OS results. Only the short
+// labels beside them are owner-authored, with independent RU/EN CAS fields.
+const bookPhoenixProcCopyRows=Object.freeze([
+ ['triggerChance','Шанс срабатывания','Trigger chance'],
+ ['cooldown','Откат','Cooldown']
+]);
 const bookHealingActionCopyRows=Object.freeze([
  ['inspirationLead','С «Воодушевлением» от союзника:','With Inspiration from an ally:'],
  ['inspirationTail','сек. применения (вдвое быстрее)','s of casting (half the usual time)'],
@@ -2479,7 +2485,16 @@ function appendItemEvents(body,calc,english,kind,gameTerms={}){
  }
  body.append(panel);
 }
-function appendWeaponConditions(body,calc,items,english){
+function appendWeaponConditions(body,calc,items,english,options={}){
+ const procLabel=key=>{
+  const pair=bookPhoenixProcCopyRows.find(row=>row[0]===key);
+  if(!pair)throw Error('Unreviewed Phoenix result caption: '+key);
+  const node=make('span',{class:'stage-weapon-proc-caption',
+   text:english?pair[2]:pair[1]});
+  if(options.editable&&typeof options.onTextEdit==='function')node.tabIndex=0;
+  guideLabel(node,'attack.phoenix.'+key,pair[1],pair[2],options);
+  return node;
+ };
  const active=items.map(row=>({row,
   bonus:root.PandoraConditionalItemBonuses?.activeFor?.(row)}))
   .filter(x=>x.bonus&&(x.bonus.phoenix||x.bonus.rows.length));
@@ -2512,11 +2527,15 @@ function appendWeaponConditions(body,calc,items,english){
      'Пламя феникса · расчётный урон'}),
     make('strong',{text:outcome?format(outcome.damage):'—'})
    ]));
-   if(outcome)panel.append(make('small',{text:english?
-    'Trigger chance '+format(outcome.chance)+'% · Cooldown '+
-     format(outcome.cooldown)+' s':
-    'Шанс срабатывания '+format(outcome.chance)+'% · Откат '+
-     format(outcome.cooldown)+' с'}));
+   if(outcome)panel.append(make('small',{class:'stage-weapon-proc-metadata'},[
+    procLabel('triggerChance'),' ',
+    make('span',{class:'stage-weapon-proc-number',
+     'data-weapon-proc-number':'chance',text:format(outcome.chance)+'%'}),
+    ' · ',procLabel('cooldown'),' ',
+    make('span',{class:'stage-weapon-proc-number',
+     'data-weapon-proc-number':'cooldown',
+     text:format(outcome.cooldown)+(english?' s':' с')})
+   ]));
   }
  }
  body.append(panel);
@@ -2630,7 +2649,7 @@ function attackPage(body,calc,items,english,options={}){
   'Для этого билда нет рассчитанных дополнительных атакующих показателей.',
   'No additional attack metrics calculated for this build.',{...options,page:'attack'});
  appendSkillAttackRange(body,calc,english,options);
- appendWeaponConditions(body,calc,items,english);
+ appendWeaponConditions(body,calc,items,english,options);
  appendItemEvents(body,calc,english,'attack',options.gameTerms);
 }
 function defensePage(body,calc,english,options={}){
@@ -3129,7 +3148,8 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
 }
 root.PandoraStageAttributes=Object.freeze({render,bookPages,bookText,bookEditorialKey,
  bookEditorialDefaults:bookEnglish,buffStatusCopyRows,buffRequirementCopyRows,
- bookRegionCopyRows,bookSourceActionCopyRows,bookHealingActionCopyRows,
+ bookRegionCopyRows,bookSourceActionCopyRows,bookPhoenixProcCopyRows,
+ bookHealingActionCopyRows,
  bookScalingActionCopyRows,bookSkillDetailCopyRows,
  bookA11yPanelCopyRows,bookAccessibleAliasRows,
  refreshAccessibility:refreshBookAccessibility,resetDisclosureState,

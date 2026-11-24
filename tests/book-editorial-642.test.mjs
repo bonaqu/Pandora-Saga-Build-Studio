@@ -559,3 +559,21 @@ test('#390 Book owner disclosure F2 and cross-summary clicks cancel delayed stal
  assert.match(source,/if\(!event\.detail\|\|/);
  assert.match(source,/if\(!caption\)\{\s*cancelBookSummaryPending\(\);\s*return/);
 });
+
+test('#390 Phoenix Flame label wording is owner-editable, chance and cooldown source-only',()=>{
+ const source=file('pandora-studio-hero-book.js');
+ assert.deepEqual(book.bookPhoenixProcCopyRows,[
+  ['triggerChance','Шанс срабатывания','Trigger chance'],
+  ['cooldown','Откат','Cooldown']
+ ]);
+ assert.equal(locale.bookFieldKey('Шанс срабатывания'),null,
+  'No existing D1 Book caption is duplicated for this phrase');
+ assert.equal(locale.bookFieldKey('Откат'),null);
+ assert.match(source,/function appendWeaponConditions\(body,calc,items,english,options=\{\}\)/);
+ assert.match(source,/guideLabel\(node,'attack\.phoenix\.'\+key,pair\[1\],pair\[2\],options\)/);
+ assert.match(source,/appendWeaponConditions\(body,calc,items,english,options\)/);
+ assert.match(source,/data-weapon-proc-number':'chance'/);
+ assert.match(source,/data-weapon-proc-number':'cooldown'/);
+ assert.match(source,/phoenixDamage\(\s*bonus\.phoenix,row\.refinement,calc\?\.stats\)/);
+ assert.doesNotMatch(source,/text:english\?\s*'Trigger chance '\+format\(outcome\.chance\)/);
+});

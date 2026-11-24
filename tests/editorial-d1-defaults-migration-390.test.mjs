@@ -1316,3 +1316,23 @@ test('#390 staging-only owner Book accessibility title is separate from live ARI
   assert.equal(manifest.records.some(v=>
    v.recordKey==='guideedit.book.book-aria.'+forbidden),false);
 });
+
+test('#390 Phoenix authorial defaults are exactly four RU/EN words, not live OS proc results',()=>{
+ const rows=manifest.records.filter(row=>
+  row.recordKey.startsWith('guideedit.book.attack.phoenix.'));
+ assert.equal(rows.length,4);
+ assert.equal(manifest.stats.cohorts['hero-book-phoenix-proc'],4);
+ const names={
+  triggerChance:{ru:'Шанс срабатывания',en:'Trigger chance'},
+  cooldown:{ru:'Откат',en:'Cooldown'}
+ };
+ for(const [key,pair] of Object.entries(names)){
+  assert.deepEqual(rows.filter(row=>row.recordKey===
+   'guideedit.book.attack.phoenix.'+key)
+   .map(row=>[row.field,row.value]).sort((a,b)=>a[0].localeCompare(b[0])),
+   [['en',pair.en],['ru',pair.ru]]);
+ }
+ for(const value of ['chance','damage','cooldown-seconds','item-id',
+  'refinement','equipment','skill-name'])
+  assert.equal(rows.some(row=>row.recordKey.endsWith('.'+value)),false);
+});

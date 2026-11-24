@@ -1119,6 +1119,88 @@ export async function runUIContentInlineSmoke(browser,base){
     field:i===0?'ru':'en',label:i===0?'Прибавка к дальности':'Range bonus'}]);
   }
 
+
+  // Phoenix's two authorial words are independent from the REAL source
+  // chance/cooldown and damage. Exercise both languages and owner F2/dblclick
+  // against the actual Book DOM with deterministic local calculator stubs.
+  const phoenixCopyFixtures=await page.evaluate(()=>{
+   const oldLanguage=document.documentElement.lang;
+   const original=window.PandoraConditionalItemBonuses,results=[];
+   window.PandoraConditionalItemBonuses={...original,
+    activeFor:()=>({phoenix:{},rows:[]}),
+    phoenixDamage:()=>({damage:360,chance:17.5,cooldown:2.25})
+   };
+   try{
+    for(const lang of ['ru','en']){
+     document.documentElement.lang=lang;
+     const host=document.createElement('div');document.body.append(host);
+     const edits=[];
+     const args={page:'attack',canEdit:true,
+      modifiers:{stats:{},combat:{}},
+      items:[{record:{id:252,name:'QA Phoenix source weapon'},refinement:7}],
+      onTextEdit:(_node,key,field,initial)=>edits.push({key,field,initial})
+     };
+     const get=key=>host.querySelector('[data-guide-key="attack.phoenix.'+key+'"]');
+     const values=()=>[...host.querySelectorAll('[data-weapon-proc-number]')]
+      .map(node=>[node.dataset.weaponProcNumber,node.textContent])
+      .sort((a,b)=>a[0].localeCompare(b[0]));
+     try{
+      window.PandoraStageAttributes.render(host,args);
+      const before=values();
+      const description=host.querySelector('.stage-weapon-proc-metadata');
+      if(!description)throw Error('Phoenix result missing from rendered Attack chapter');
+      const captions=[get('triggerChance'),get('cooldown')];
+      const titleBefore=description.textContent;
+      const damage=host.querySelector('.stage-skill-effect-row strong')?.textContent;
+      get('triggerChance').dispatchEvent(new MouseEvent('dblclick',{
+       bubbles:true,cancelable:true,detail:2}));
+      get('cooldown').dispatchEvent(new KeyboardEvent('keydown',{
+       key:'F2',bubbles:true,cancelable:true}));
+      window.PandoraStageAttributes.render(host,{...args,copy:{
+       'guideedit.book.attack.phoenix.triggerChance':JSON.stringify({
+        ru:'Шанс QA',en:'Chance QA'
+       })
+      }});
+      results.push({lang,before,after:values(),titleBefore,
+       changed:host.querySelector('.stage-weapon-proc-metadata')?.textContent,
+       damage,edits,tabbable:captions.every(n=>n.tabIndex===0),
+       pencils:description.querySelectorAll('.stage-guide-edit-hint').length,
+       allKeys:captions.map(n=>n.dataset.guideKey).sort()});
+     }finally{host.remove()}
+    }
+   }finally{
+    window.PandoraConditionalItemBonuses=original;
+    document.documentElement.lang=oldLanguage;
+   }
+   return results;
+  });
+  for(const fixture of phoenixCopyFixtures){
+   const en=fixture.lang==='en';
+   assert.deepEqual(fixture.allKeys,[
+    'attack.phoenix.cooldown','attack.phoenix.triggerChance']);
+   assert.equal(fixture.tabbable,true);
+   assert.equal(fixture.pencils,0,'Phoenix visible labels need no new pencils');
+   assert.equal(fixture.damage,'360');
+   assert.deepEqual(fixture.before,fixture.after);
+   assert.deepEqual(fixture.before,[
+    ['chance',en?'17.5%':'17,5%'],
+    ['cooldown',en?'2.25 s':'2,25 с']
+   ]);
+   assert.equal(fixture.titleBefore,en?
+    'Trigger chance 17.5% · Cooldown 2.25 s':
+    'Шанс срабатывания 17,5% · Откат 2,25 с');
+   assert.equal(fixture.changed,en?
+    'Chance QA 17.5% · Cooldown 2.25 s':
+    'Шанс QA 17,5% · Откат 2,25 с');
+   assert.deepEqual(fixture.edits,[
+    {key:'attack.phoenix.triggerChance',field:fixture.lang,
+     initial:en?'Trigger chance':'Шанс срабатывания'},
+    {key:'attack.phoenix.cooldown',field:fixture.lang,
+     initial:en?'Cooldown':'Откат'}
+   ]);
+  }
+  console.log('Chromium #390 Phoenix chance/cooldown author labels and immutable proc numbers passed');
+
   // #390: true Book renderer, synthetic only. Current numeric thresholds
   // and original source branch must survive separate RU/EN CAS text overrides.
   const requirementFixtures=await page.evaluate(()=>{

@@ -176,6 +176,21 @@ export function buildEditorialDefaultsManifest(){
   append('guideedit.book.book-aria.'+slug,'ru',ru,'hero-book-source-actions');
   append('guideedit.book.book-aria.'+slug,'en',en,'hero-book-source-actions');
  }
+ // Real Phoenix Flame chance, cooldown and damage never enter D1.
+ // These two exact labels are written only as bilingual authorial defaults.
+ const phoenixRows=book.bookPhoenixProcCopyRows;
+ const expectedPhoenix=['triggerChance','cooldown'];
+ if(!Array.isArray(phoenixRows)||phoenixRows.length!==expectedPhoenix.length||
+  phoenixRows.map(row=>row?.[0]).sort().join('|')!==expectedPhoenix.sort().join('|'))
+  throw Error('Book Phoenix proc authorial caption inventory drift');
+ for(const [key,ru,en] of phoenixRows){
+  if(!/^[a-z][a-zA-Z]+$/.test(key)||typeof ru!=='string'||
+   !ru.trim()||ru!==ru.trim()||typeof en!=='string'||
+   !en.trim()||en!==en.trim()||/[0-9]/.test(ru+en))
+   throw Error('Invalid Book Phoenix authorial label: '+key);
+  append('guideedit.book.attack.phoenix.'+key,'ru',ru,'hero-book-phoenix-proc');
+  append('guideedit.book.attack.phoenix.'+key,'en',en,'hero-book-phoenix-proc');
+ }
  // Healing action prose is separate from live mana, seconds and percentages.
  const healRows=book.bookHealingActionCopyRows;
  const expectedHeal=['inspirationLead','inspirationTail','manaCostLead',
