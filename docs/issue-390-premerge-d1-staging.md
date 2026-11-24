@@ -137,3 +137,7 @@ Physical owner-editor touchscreen acceptance was removed from scope on 24 Novemb
 
 Do **not** count local Node, Chromium or mock SQLite as remote D1 evidence;
 do not merge/close Draft PR #809 or close issue #390 on this basis.
+
+## Pinned manifest after the Healing authorial review · 24 November 2026
+
+The previously remotely reported `0.947.0-e4f26c02e2896e3c` manifest / 2,586-row digest describes **the older PR HEAD** prior to the 19 new Healing RU/EN authorial identities. It is audit history, NOT an authorization to import that stale snapshot after the later source changes. The source planner now admits 38 additional exact `guideedit.book.effects.healing.*` rows. Before any future staging import, require a **freshly generated exact snapshot ID, full SHA-256, row count, two green CI checks and the matching 40-character PR HEAD**. Never reuse the old digest or silently mix SQL from different commits. No remote SQL import or rollback has yet occurred.

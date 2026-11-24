@@ -56,7 +56,11 @@ test('Unavailable and altered game records cannot gain source-trusted milestones
 test('Book distinguishes improvement per cast versus per recovery pulse in both languages',()=>{
  const ui=read('pandora-studio-hero-book.js');
  assert.match(ui,/Следующий прирост /);
- assert.match(ui,/за срабатывание':'за применение/);
- assert.match(ui,/pulse\?' per pulse':' per cast'/);
- assert.match(ui,/row\.kind==='mp'\?'ОМ':'ОЗ'/);
+ assert.match(ui,/\['nextLevelPulse','за срабатывание','per pulse'\]/);
+ assert.match(ui,/\['nextLevelCast','за применение','per cast'\]/);
+ assert.match(ui,/const mode=healingCaption\(pulse\?'nextLevelPulse':'nextLevelCast'\)/);
+ assert.match(ui,/const unit=en\?\(row\.kind==='mp'\?'MP':'HP'\):\(row\.kind==='mp'\?'ОМ':'ОЗ'\)/);
+ assert.match(ui,/healingValue\('\+'\+next\.gain,'level-gain'\)/);
+ assert.match(ui,/healingValue\(next\.value,'level-value'\)/);
+ assert.match(ui,/healingValue\(next\.remaining,'level-remaining'\)/);
 });

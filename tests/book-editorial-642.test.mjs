@@ -400,7 +400,7 @@ test('#390 Book dynamic level/mastery blockers edit only words, not source thres
  assert.equal(manifest.records.some(row=>/QA source branch|QA source level/.test(row.value)),false);
 });
 
-test('#390 Healing action explanations split eight bilingual captions from live numbers',()=>{
+test('#390 Healing explanations split 19 bilingual authorial fragments from all live numbers',()=>{
  const expected={
   inspirationLead:['С «Воодушевлением» от союзника:','With Inspiration from an ally:'],
   inspirationTail:['сек. применения (вдвое быстрее)','s of casting (half the usual time)'],
@@ -429,8 +429,12 @@ test('#390 Healing action explanations split eight bilingual captions from live 
  assert.match(source,/guideLabel\(node,'effects\.healing\.'\+key,row\[1\],row\[2\],editorial\)/);
  assert.match(source,/if\(editable&&typeof onTextEdit==='function'\)node\.tabIndex=0/);
  assert.match(source,/heroHasShield,onItem,onSkill,\.\.\.copyOptions\}\)/);
- for(const key of Object.keys(expected))
-  assert.ok(source.includes("healingCaption('"+key+"')"));
+ for(const key of Object.keys(expected)){
+  if(key==='nextLevelPulse'||key==='nextLevelCast')
+   assert.match(source,/healingCaption\(pulse\?'nextLevelPulse':'nextLevelCast'\)/);
+  else assert.ok(source.includes("healingCaption('"+key+"')"),
+   'Missing independent owner caption usage: '+key);
+ }
  for(const key of ['mana-needed','cast-seconds','mana-percent','cooldown-percent',
   'mana-pool','mana-casts','mana-remaining','mastery-rank','mastery-remaining',
   'mastery-gain','level-gain','level-value','level-remaining'])
