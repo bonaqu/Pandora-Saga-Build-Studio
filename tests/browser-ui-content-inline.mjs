@@ -1524,7 +1524,18 @@ export async function runUIContentInlineSmoke(browser,base){
   for(const row of scalingCases){
    const en=row.lang==='en';
    assert.deepEqual(row.numericAfter,row.numericBefore);
-   assert.equal(row.numericBefore.length,18);
+   assert.deepEqual(row.numericBefore,[
+    ['scaling-base','4'],['scaling-base','10'],
+    ['scaling-base-seconds',en?'1.5':'1,5'],
+    ['scaling-inspired-seconds',en?'0.75':'0,75'],
+    ['scaling-int','3'],['scaling-int','5'],
+    ['scaling-mastery','4'],['scaling-mastery','5'],
+    ['scaling-mastery-gain','+1%'],['scaling-mastery-remaining','5'],
+    ['scaling-mastery-target','65'],
+    ['scaling-next-int-gain','+2'],['scaling-next-int-remaining','5'],
+    ['scaling-next-int-value','80'],
+    ['scaling-total','11'],['scaling-total','20']
+   ]);
    assert.equal(row.pencils,0);
    assert.equal(row.original.sourceSkill,'QA source skill');
    assert.equal(row.original.effects,

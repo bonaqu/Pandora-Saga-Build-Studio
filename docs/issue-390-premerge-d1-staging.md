@@ -159,3 +159,7 @@ outside the current source manifest are not rollback targets.
 The snapshot with 37 new Healing caption identities needs a new full SHA-256
 from the exact final PR checkout. Neither remote import nor remote rollback
 has been executed or accepted by this documentation change.
+
+### Additional reviewed dynamic source-only coverage (24 November 2026)
+
+Current code also includes **14 skill scaling authorial identities / 28 bilingual defaults** alongside **37 healing identities / 74 bilingual defaults**. The scaling values are still the original OS numerical coefficients and hero-specific thresholds, not editable D1 copy. Regenerate the final manifest only from the exact accepted PR SHA after all changes; the pre-existing `0.947.0-e4f26c02e2896e3c` snapshot is no longer current and must never be imported as the final acceptance artifact. No remote staging SQL writes are implied by these source and test updates.
