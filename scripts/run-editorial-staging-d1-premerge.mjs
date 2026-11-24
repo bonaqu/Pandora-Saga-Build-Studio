@@ -101,8 +101,8 @@ function run(command,args,{env=process.env}={}){
 const git=(args)=>run('git',args).trim();
 
 export function validateCliInputs(operation,env){
- if(!['preflight','import','rollback'].includes(operation))
-  throw Error('Usage: node scripts/run-editorial-staging-d1-premerge.mjs preflight|import|rollback');
+ if(!['preflight','verify','import','rollback'].includes(operation))
+  throw Error('Usage: node scripts/run-editorial-staging-d1-premerge.mjs preflight|verify|import|rollback');
  if(typeof env.CLOUDFLARE_API_TOKEN!=='string'||!env.CLOUDFLARE_API_TOKEN.trim())
   throw Error('A dedicated staging-only CLOUDFLARE_API_TOKEN is required');
  const target=validateEditorialStagingTarget({
@@ -110,7 +110,7 @@ export function validateCliInputs(operation,env){
   operation,confirmation:env.PS_EDITORIAL_CONFIRMATION,
   accountId:env.CLOUDFLARE_ACCOUNT_ID
  });
- if(operation!=='preflight'&&!env.PS_EDITORIAL_BACKUP_DIR)
+ if(['import','rollback'].includes(operation)&&!env.PS_EDITORIAL_BACKUP_DIR)
   throw Error('Writes require an independent staging backup directory');
  return target;
 }
@@ -161,6 +161,21 @@ async function main(){
    schema.tables.length+'; pinned source '+process.env.PS_EDITORIAL_EXPECTED_SHA+'\n');
   if(operation==='preflight'){
    process.stdout.write('READ-ONLY preflight complete. No D1 records changed.\n');
+   return;
+  }
+  // Independently repeat a complete remote row/digest verification after
+  // import, without taking another export or permitting any D1 mutation.
+  // This uses the pinned manifest from the exact approved source SHA.
+  if(operation==='verify'){
+   if(schema.tables.join('|')!=='editorial_default_rows|editorial_default_snapshots')
+    throw Error('Read-only verification requires both reviewed editorial staging tables');
+   writeFileSync(stagingSQL,renderEditorialDefaultsReadbackSQL(manifest),{mode:0o600});
+   const parsed=parseWranglerEditorialReadback(wrangler(cmd.readFile));
+   const check=verifyEditorialDefaultsReadback(manifest,parsed.metadata,parsed.rows);
+   if(!check.ok)throw Error('Remote staging D1 read-only SHA-256 verification FAILED: '+
+    check.reason);
+   process.stdout.write('READ-ONLY verified remote staging rows '+check.checkedRows+
+    ', snapshot '+check.snapshot+', SHA-256 '+check.digest+'\n');
    return;
   }
   // An empty database also passes a zero-row post-rollback check. Before
