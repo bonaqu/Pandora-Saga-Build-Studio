@@ -106,17 +106,17 @@ test('#390 staging schema sees sqliteX names that SQL LIKE used to hide',()=>{
 
 test('#390 staging table names must also have exact expected column types and keys',()=>{
  const rows=[
-  {cid:0,name:'snapshot',type:'TEXT',notnull:1,dflt_value:null,pk:1},
-  {cid:1,name:'record_key',type:'TEXT',notnull:1,dflt_value:null,pk:2},
-  {cid:2,name:'field',type:'TEXT',notnull:1,dflt_value:null,pk:3},
-  {cid:3,name:'value',type:'TEXT',notnull:1,dflt_value:null,pk:0}
+  {cid:0,name:'snapshot',type:'TEXT',notnull:1,dflt_value:null,hidden:0,pk:1},
+  {cid:1,name:'record_key',type:'TEXT',notnull:1,dflt_value:null,hidden:0,pk:2},
+  {cid:2,name:'field',type:'TEXT',notnull:1,dflt_value:null,hidden:0,pk:3},
+  {cid:3,name:'value',type:'TEXT',notnull:1,dflt_value:null,hidden:0,pk:0}
  ];
  const snapshots=[
-  {cid:0,name:'snapshot',type:'TEXT',notnull:0,dflt_value:null,pk:1},
-  {cid:1,name:'source_release',type:'TEXT',notnull:1,dflt_value:null,pk:0},
-  {cid:2,name:'sha256',type:'TEXT',notnull:1,dflt_value:null,pk:0},
-  {cid:3,name:'expected_rows',type:'INTEGER',notnull:1,dflt_value:null,pk:0},
-  {cid:4,name:'installed_at',type:'INTEGER',notnull:1,dflt_value:null,pk:0}
+  {cid:0,name:'snapshot',type:'TEXT',notnull:0,dflt_value:null,hidden:0,pk:1},
+  {cid:1,name:'source_release',type:'TEXT',notnull:1,dflt_value:null,hidden:0,pk:0},
+  {cid:2,name:'sha256',type:'TEXT',notnull:1,dflt_value:null,hidden:0,pk:0},
+  {cid:3,name:'expected_rows',type:'INTEGER',notnull:1,dflt_value:null,hidden:0,pk:0},
+  {cid:4,name:'installed_at',type:'INTEGER',notnull:1,dflt_value:null,hidden:0,pk:0}
  ];
  assert.equal(assertStagingTableColumns(query(rows),'editorial_default_rows',true),true);
  assert.equal(assertStagingTableColumns(query(snapshots),'editorial_default_snapshots',true),true);
@@ -128,12 +128,37 @@ test('#390 staging table names must also have exact expected column types and ke
   rows.map((row,i)=>i===0?{...row,pk:0}:row),
   rows.map((row,i)=>i===2?{...row,notnull:0}:row),
   rows.map((row,i)=>i===2?{...row,dflt_value:"'text'"}:row),
-  rows.map((row,i)=>i===3?{...row,unexpected:'extra'}:row)
+  rows.map((row,i)=>i===3?{...row,unexpected:'extra'}:row),
+  rows.map((row,i)=>i===3?{...row,hidden:2}:row),
+  rows.map((row,i)=>i===3?{...row,hidden:3}:row),
+  rows.map(({hidden,...row})=>row)
  ])assert.throws(()=>assertStagingTableColumns(
   query(changed),'editorial_default_rows',true));
  assert.throws(()=>assertStagingTableColumns(query(rows),'editorial_default_rows',false));
  assert.throws(()=>assertStagingTableColumns(query([]),'other_table',false));
  assert.throws(()=>assertStagingTableColumns(query([]),'editorial_default_rows','false'));
+});
+
+test('#390 full staging column inspection rejects generated columns missed by table_info',()=>{
+ const db=new DatabaseSync(':memory:');
+ try{
+  const ddl='CREATE TABLE editorial_default_rows ('+
+   'snapshot TEXT NOT NULL,record_key TEXT NOT NULL,field TEXT NOT NULL,value TEXT NOT NULL,';
+  db.exec(ddl+'PRIMARY KEY(snapshot,record_key,field));');
+  const inspect=()=>db.prepare('PRAGMA table_xinfo(editorial_default_rows)').all();
+  assert.equal(assertStagingTableColumns(query(inspect()),'editorial_default_rows',true),true);
+  for(const kind of ['VIRTUAL','STORED']){
+   db.exec('DROP TABLE editorial_default_rows;'+ddl+
+    'shadow TEXT GENERATED ALWAYS AS (value) '+kind+',PRIMARY KEY(snapshot,record_key,field));');
+   assert.equal(db.prepare('PRAGMA table_info(editorial_default_rows)').all().length,4,
+    'Old inspection would miss the generated column');
+   const actual=inspect();
+   assert.equal(actual.length,5);
+   assert.ok(actual.some(row=>row.name==='shadow'&&row.hidden!==0));
+   assert.throws(()=>assertStagingTableColumns(query(actual),'editorial_default_rows',true),
+    /Unexpected staging D1 column count/);
+  }
+ }finally{db.close()}
 });
 
 test('#390 independent rollback checks exact snapshot, both row classes, and JSON success',()=>{
@@ -218,6 +243,8 @@ test('#390 GitHub staging workflow is preflight-only and never uploads raw SQL',
  assert.ok(!workflow.includes("name NOT LIKE 'sqlite_%'"));
  const executed=workflow.split('\n').filter(line=>line.includes('wrangler@4 d1 execute'));
  assert.equal(executed.length,3,'Only read-only schema + two PRAGMA queries allowed');
+ assert.equal(executed.filter(line=>line.includes('PRAGMA table_xinfo(')).length,2);
+ assert.ok(!workflow.includes('PRAGMA table_info('));
  for(const line of executed){
   assert.ok(line.includes('--command'),line);
   assert.ok(line.includes('--json'),line);
@@ -270,7 +297,7 @@ test('#390 premerge staging CLI is import-inert, SHA-pinned and requires a separ
  assert.ok(command.schema.includes('--remote'));
  assert.ok(command.schema.includes(STAGING_SCHEMA_SQL));
  assert.ok(command.columns('editorial_default_rows').some(arg=>
-  arg.includes('PRAGMA table_info(editorial_default_rows)')));
+  arg.includes('PRAGMA table_xinfo(editorial_default_rows)')));
  assert.ok(command.columns('editorial_default_snapshots').includes('--remote'));
  assert.throws(()=>command.columns('users'));
  assert.ok(command.executeFile.includes('--yes'));

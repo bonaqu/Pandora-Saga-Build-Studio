@@ -123,7 +123,7 @@ export function plannedStagingCommands(target,config,sqlFile){
   columns:table=>{
    if(!['editorial_default_rows','editorial_default_snapshots'].includes(table))
     throw Error('Unallowlisted staging schema inspection');
-   return [...execute,'--command','PRAGMA table_info('+table+');','--json'];
+   return [...execute,'--command','PRAGMA table_xinfo('+table+');','--json'];
   },
   export:output=>['export',target.name,'--remote','--config',config,
    '--output',output,'--skip-confirmation'],

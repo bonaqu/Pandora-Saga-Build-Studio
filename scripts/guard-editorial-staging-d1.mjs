@@ -68,7 +68,8 @@ export function assertStagingSchema(raw){
  return {tables:[...seen].sort()};
 }
 // A table with the right NAME but unexpected columns must not be written to.
-// SQLite PRAGMA table_info yields cid/name/type/notnull/dflt_value/pk.
+// SQLite PRAGMA table_xinfo includes generated/hidden columns omitted by table_info.
+// Only the exact reviewed ordinary columns (hidden=0) are accepted.
 const stagingColumns=Object.freeze({
  editorial_default_rows:[
   ['snapshot','TEXT',1,1],['record_key','TEXT',1,2],
@@ -94,9 +95,9 @@ export function assertStagingTableColumns(raw,table,present){
  for(const [index,[name,type,notnull,pk]] of expected.entries()){
   const row=rows[index];
   if(!row||typeof row!=='object'||Array.isArray(row)||
-   Object.keys(row).sort().join('|')!=='cid|dflt_value|name|notnull|pk|type'||
+   Object.keys(row).sort().join('|')!=='cid|dflt_value|hidden|name|notnull|pk|type'||
    row.cid!==index||row.name!==name||row.type!==type||
-   row.notnull!==notnull||row.pk!==pk||row.dflt_value!==null)
+   row.notnull!==notnull||row.pk!==pk||row.dflt_value!==null||row.hidden!==0)
    throw Error('Staging D1 column layout differs from reviewed schema: '+table);
  }
  return true;
