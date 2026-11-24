@@ -1439,6 +1439,65 @@ export async function runUIContentInlineSmoke(browser,base){
   }
   console.log('Chromium #390 Skill details source identity, RU/EN CAS and open-state persistence passed');
 
+  // A separate owner-only panel heading has its own D1 authorial key.
+  // Dblclick/F2 edit the actual words, while read-only chapter/page ARIA,
+  // existing owner field rows and the panel's open state remain unchanged.
+  const ownerBookPanelTitles=await page.evaluate(()=>{
+   const beforeLang=document.documentElement.lang,out=[];
+   try{
+    for(const lang of ['ru','en']){
+     document.documentElement.lang=lang;
+     const host=document.createElement('div');document.body.append(host);
+     const edits=[];
+     try{
+      window.PandoraStageAttributes.render(host,{
+       page:'summary',canEdit:true,modifiers:null,
+       onTextEdit:(_node,key,field,initial)=>edits.push({key,field,initial})
+      });
+      const panel=host.querySelector('#ownerBookAccessibilityCopy');
+      const heading=panel?.querySelector(
+       '[data-guide-key="book-aria.owner-panel-heading"]');
+      if(!heading)throw Error('Missing owner Book accessibility panel heading');
+      const initial=heading.textContent,ariaBefore=host.getAttribute('aria-label');
+      const rowsBefore=panel.querySelectorAll('[data-book-a11y-owner]').length;
+      panel.open=true;
+      heading.dispatchEvent(new MouseEvent('dblclick',{
+       bubbles:true,cancelable:true,detail:2}));
+      heading.dispatchEvent(new KeyboardEvent('keydown',{
+       key:'F2',bubbles:true,cancelable:true}));
+      window.PandoraStageAttributes.refreshAccessibility(host,{
+       'guideedit.book.book-aria.owner-panel-heading':JSON.stringify({
+        ru:'Доступные подписи QA',en:'Accessible captions QA'
+       })
+      },'summary');
+      out.push({lang,initial,after:heading.textContent,edits,
+       rowsBefore,rowsAfter:panel.querySelectorAll('[data-book-a11y-owner]').length,
+       ariaBefore,ariaAfter:host.getAttribute('aria-label'),
+       open:panel.open,pencils:panel.querySelectorAll(
+        '.stage-book-a11y-panel-heading + .stage-guide-actions').length});
+     }finally{host.remove()}
+    }
+   }finally{document.documentElement.lang=beforeLang}
+   return out;
+  });
+  assert.equal(ownerBookPanelTitles.length,2);
+  for(const fixture of ownerBookPanelTitles){
+   const en=fixture.lang==='en';
+   assert.equal(fixture.initial,en?'Accessible Book labels':'Доступные названия книги');
+   assert.equal(fixture.after,en?'Accessible captions QA':'Доступные подписи QA');
+   assert.deepEqual(fixture.edits,[
+    {key:'book-aria.owner-panel-heading',field:fixture.lang,initial:fixture.initial},
+    {key:'book-aria.owner-panel-heading',field:fixture.lang,initial:fixture.initial}
+   ]);
+   assert.equal(fixture.rowsBefore,fixture.rowsAfter);
+   assert.ok(fixture.rowsBefore>=6);
+   assert.equal(fixture.ariaBefore,fixture.ariaAfter);
+   assert.equal(fixture.open,true);
+   assert.equal(fixture.pencils,0);
+  }
+  console.log('Chromium #390 independent owner accessibility panel heading direct RU/EN copy passed');
+
+
 
   // Special MP recovery formula and periodic HP healing share the same
   // authorial tokens but retain exact source coefficients and values.
