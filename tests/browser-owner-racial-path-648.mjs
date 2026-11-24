@@ -538,7 +538,9 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   assert.equal(await page.locator('#pathSkillGallery .path-more-pencil').count(),0);
   const moreCaption=more.locator('.path-more-copy');
   await moreCaption.click();
-  await moreCaption.press('F2');
+  // The caption lives inside a native button: send F2 to the focused button.
+  // Owner renderer forwards it to that exact caption without a second tab stop.
+  await more.press('F2');
   const moreEditor=more.locator('.path-more-copy [data-owner-text-field]');
   await moreEditor.waitFor({state:'visible'});
   await page.waitForTimeout(600);

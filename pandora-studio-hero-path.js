@@ -903,6 +903,16 @@ function viewSkills(target,details,api){
   if(api.canEdit&&typeof api.editLabel==='function'){
    api.editLabel(caption,key,ru,en);
    api.guardAction?.(showMore,caption);
+   // F2 belongs to the focused native button; the nested caption is not
+   // a separate tab stop. Forward just the owner edit shortcut to the same
+   // direct-caption editor and cancel any pending click via onStarted.
+   showMore.addEventListener('keydown',event=>{
+    if(event.target!==showMore||event.key!=='F2')return;
+    event.preventDefault();event.stopPropagation();
+    caption.dispatchEvent(new KeyboardEvent('keydown',{
+     key:'F2',bubbles:true,cancelable:true
+    }));
+   });
    target.append(showMore);
   }else target.append(showMore);
  }

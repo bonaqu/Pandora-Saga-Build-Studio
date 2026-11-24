@@ -40,7 +40,10 @@ test('mastery summary keeps source totals following three independent RU/EN labe
  assert.match(path,/groupValues\[0\]\.textContent=String/);
  assert.match(path,/groupCount\.append\(make\('span',\{text:groupValues\.length\?' · ':''\}\),/);
  assert.match(path,/authored\(api,copyKey,ru,en,'span','path-group-summary-copy'\)/);
- assert.match(path,/guardCaptionAction\(groupButton,caption\)/);
+ assert.match(path,/api\.guardAction\?\.\(groupButton,caption\)/);
+ const app=source('pandora-studio-app.js');
+ assert.match(app,/guardAction:\(button,caption\)=>ownerCaptionActionGuard\(button,caption\)/);
+ assert.doesNotMatch(path,/const guardCaptionAction=/);
 });
 test('approved segmented forge bar and compact Soul slots remain accessible',()=>{
  const css=source('pandora-studio-forge-controls.css');

@@ -110,5 +110,11 @@ test('workbench still gates status to selected records only',()=>{
  const script=read('pandora-os-catalog-workbench.js');
  assert.ok(script.includes('if(!chosen.has(change.id))return null'));
  assert.ok(script.includes('statusForSelection(change,selectedImpact()?.compatibility?.entries||[])'));
- assert.ok(script.includes('statusForSelection});'));
+ assert.ok(script.includes('statusForSelection,createReviewActionQueue});'));
+ assert.ok(script.includes('if(!chosen.has(change.id))return null'));
+ assert.ok(script.includes('const actionQueue=createReviewActionQueue()'));
+ assert.ok(script.includes('actionQueue.cancelOutside(event.target)'));
+ assert.ok(script.includes('if(value)cancelPending()'));
+ // A new client-side queue must never broaden the compatibility source.
+ assert.doesNotMatch(script,/statusForSelection\(change,(?!selectedImpact)/);
 });

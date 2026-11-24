@@ -694,6 +694,8 @@ test('Path Show More edits the caption without changing live count or adding a p
  // The fixture stores the last click listener; native DOM runs both the
  // owner click guard and its original action callback (real Chromium checks it).
  assert.match(sources['pandora-studio-hero-path.js'],/api\.guardAction\?\.\(showMore,caption\)/);
+ assert.match(sources['pandora-studio-hero-path.js'],/showMore\.addEventListener\('keydown'/);
+ assert.match(sources['pandora-studio-hero-path.js'],/caption\.dispatchEvent\(new KeyboardEvent\('keydown'/);
  assert.equal(button.children[1].textContent,' (2)');
  const plain=new BrowserElement('div');f.api.canEdit=false;
  root.PandoraHeroPath.viewSkills(plain,new BrowserElement('div'),f.api);
