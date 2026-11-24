@@ -4,6 +4,10 @@
 
 A failed import with only one of the two reviewed staging tables is recoverable: the rollback checks the audited schema inventory, requires actual pinned rows/marker, retains the independent backup, deletes only the exact snapshot from existing tables (marker first), and verifies absence without creating the missing table. Unexpected schema drift stops rollback rather than silently treating it as success.
 
+## Verified Cloudflare metadata access · 24 November 2026
+
+[Temporary read-only GitHub Actions probe](https://github.com/bonaqu/Pandora-Saga-Build-Studio/actions/runs/45373602653) succeeded using the existing repository Cloudflare secret: known production database visible, zero matching isolated staging databases visible to this token. No SQL was executed and no database or Worker changed. D1 write permission and separate staging access are not established. The temporary probe is removed from the release branch after recording this result.
+
 ## Why a local runner is required
 
 GitHub [requires a workflow_dispatch file on the default branch](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflow_dispatch).
@@ -86,10 +90,10 @@ node scripts/run-editorial-staging-d1-premerge.mjs import
 unset PS_EDITORIAL_CONFIRMATION
 ~~~
 
-The runner re-checks the remote target, exports **full remote staging D1**
+The runner first rejects an already existing exact snapshot, including partial rows without a marker, so a previous import cannot be mistaken for a fresh rehearsal and subsequently deleted. Other snapshots are not targeted. Use an exclusively operated staging database: the runner cannot lock out independent writers. It re-checks the remote target, exports **full remote staging D1**
 to the independent directory, verifies a nonempty regular owner-owned backup, restricts SQL
 permissions to 0600, and flushes the backup and adjacent SHA-256 checksum
-to disk **before any write**. It imports only the
+to disk **before any write**. After backup it revalidates remote identity, schema, column layout and exact snapshot presence before either write operation; drift stops the run. It imports only the
 versioned authorial defaults, then reads every row and verifies metadata,
 record count and SHA-256, failing closed on any mismatch. It does not
 activate or publish an unverified snapshot.
@@ -112,8 +116,7 @@ staging D1 is rejected: otherwise a no-op could be mislabeled as a successful
 rollback. A partially failed import with unmarked rows is still recoverable.
 Another independent backup then precedes deletion. Only the pinned source
 snapshot marker and rows are deleted; both remaining counts must equal zero.
-If import never created both staging tables, use the independent SQL backup for
-manual recovery instead of claiming snapshot rollback was proven.
+If import created only one reviewed table, the runner checks and deletes only that table's exact snapshot and verifies absence without creating the other table. If no exact snapshot rows or marker exist, it refuses rollback; use the independent backup to assess manual recovery, not to claim a successful rollback.
 A failed import is **not automatically rolled back**: assess the evidence
 and separately authorize this rollback.
 
@@ -122,8 +125,7 @@ and separately authorize this rollback.
 Record the exact source HEAD, green Node/Chromium links, staging name and
 nonproduction UUID, backup location and hash (never upload backup contents),
 remote snapshot ID, full readback count/hash, and verified zero-row rollback.
-Real physical touchscreen testing, a separately approved protected release,
-and subsequent **read-only** production audit remain independent gates.
+Physical owner-editor touchscreen acceptance was removed from scope on 24 November; existing touch regressions and ordinary mobile user scenarios remain. A separately approved protected release and subsequent **read-only** production audit remain independent gates.
 
 Do **not** count local Node, Chromium or mock SQLite as remote D1 evidence;
 do not merge/close Draft PR #809 or close issue #390 on this basis.

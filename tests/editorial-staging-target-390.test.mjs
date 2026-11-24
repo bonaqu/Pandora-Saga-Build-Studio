@@ -6,7 +6,7 @@ import {
  PRODUCTION_D1_ID,STAGING_SCHEMA_SQL,validateEditorialStagingTarget,
  assertDatabaseIdentity,
  assertStagingSchema,assertStagingTableColumns,assertRolledBack,
- assertStagingRollbackPresent,renderStagingRollbackPresenceSQL,
+ assertStagingRollbackPresent,assertStagingImportAbsent,renderStagingRollbackPresenceSQL,
  renderStagingRollbackMutationSQL,renderStagingWranglerConfig,renderStagingRollbackCheckSQL
 } from '../scripts/guard-editorial-staging-d1.mjs';
 const repo=new URL('../',import.meta.url);
@@ -220,6 +220,29 @@ test('#390 rollback requires existing pinned rows or marker before deletion',()=
  }finally{db.close()}
 });
 
+test('#390 import rehearsal must not reuse existing exact snapshot or partial rows',()=>{
+ const snapshot='0.947.0-'+'f'.repeat(16),other='0.947.0-'+'e'.repeat(16);
+ const db=new DatabaseSync(':memory:');
+ try{
+  const presence=tables=>query(db.prepare(renderStagingRollbackPresenceSQL(snapshot,tables)).all());
+  assert.deepEqual(assertStagingImportAbsent(presence([])),{markers:0,rows:0});
+  db.exec('CREATE TABLE editorial_default_rows (snapshot TEXT);'+
+   'CREATE TABLE editorial_default_snapshots (snapshot TEXT);');
+  const tables=['editorial_default_rows','editorial_default_snapshots'];
+  for(const table of tables)db.prepare('INSERT INTO '+table+' VALUES (?)').run(other);
+  assert.deepEqual(assertStagingImportAbsent(presence(tables)),{markers:0,rows:0});
+  db.prepare('INSERT INTO editorial_default_rows VALUES (?)').run(snapshot);
+  assert.throws(()=>assertStagingImportAbsent(presence(['editorial_default_rows'])),/already exists/);
+  assert.throws(()=>assertStagingImportAbsent(presence(tables)),/already exists/);
+  db.prepare('DELETE FROM editorial_default_rows WHERE snapshot=?').run(snapshot);
+  db.prepare('INSERT INTO editorial_default_snapshots VALUES (?)').run(snapshot);
+  assert.throws(()=>assertStagingImportAbsent(presence(['editorial_default_snapshots'])),/already exists/);
+  for(const bad of [query([]),query([{existing_markers:0,existing_rows:'0'}]),
+   query([{existing_markers:0,existing_rows:-1}]),query([{existing_markers:2,existing_rows:0}])])
+   assert.throws(()=>assertStagingImportAbsent(bad));
+ }finally{db.close()}
+});
+
 test('#390 interrupted one-table staging import can be rolled back without creating tables',()=>{
  const snapshot='0.947.0-'+'f'.repeat(16),other='0.947.0-'+'e'.repeat(16);
  for(const table of ['editorial_default_rows','editorial_default_snapshots']){
@@ -350,6 +373,15 @@ test('#390 premerge staging CLI is import-inert, SHA-pinned and requires a separ
  assert.match(source,/assertStagingTableColumns\(wrangler\(cmd.columns\(table\)\),table,/);
  assert.match(source,/const backupRoot=checkedBackupDirectory/);
  assert.match(source,/assertStagingRollbackPresent\(wrangler\(cmd\.readFile\)\)/);
+ assert.match(source,/assertStagingImportAbsent\(wrangler\(cmd\.readFile\)\)/);
+ assert.ok(source.indexOf('assertStagingImportAbsent(wrangler(cmd.readFile))')<
+  source.indexOf('const backupRoot=checkedBackupDirectory'));
+ const afterBackup=source.slice(source.indexOf('syncBackupDirectory(backupRoot)'));
+ const beforeMutation=afterBackup.slice(0,afterBackup.indexOf('wrangler(cmd.executeFile)'));
+ assert.match(beforeMutation,/assertDatabaseIdentity\(wrangler\(cmd.list\),target\)/);
+ assert.match(beforeMutation,/const beforeWrite=assertStagingSchema/);
+ assert.match(beforeMutation,/assertStagingImportAbsent\(wrangler\(cmd\.readFile\)\)/);
+ assert.match(beforeMutation,/currentPresence\.rows!==initialPresence\.rows/);
  assert.ok(source.indexOf('assertStagingRollbackPresent(wrangler(cmd.readFile))')<
   source.indexOf('const backupRoot=checkedBackupDirectory'),
   'A nonexistent snapshot cannot count as verified rollback');

@@ -14,7 +14,7 @@ import {fileURLToPath} from 'node:url';
 import {
  STAGING_SCHEMA_SQL,validateEditorialStagingTarget,assertDatabaseIdentity,
  assertStagingSchema,assertStagingTableColumns,assertRolledBack,
- assertStagingRollbackPresent,renderStagingRollbackPresenceSQL,
+ assertStagingRollbackPresent,assertStagingImportAbsent,renderStagingRollbackPresenceSQL,
  renderStagingRollbackMutationSQL,renderStagingWranglerConfig,renderStagingRollbackCheckSQL
 } from './guard-editorial-staging-d1.mjs';
 import {
@@ -166,13 +166,15 @@ async function main(){
   // An empty database also passes a zero-row post-rollback check. Before
   // destructive rollback, prove the exact pinned snapshot has at least a
   // row or marker. Partial imports remain recoverable (marker may be absent).
-  if(operation==='rollback'){
-   writeFileSync(stagingSQL,renderStagingRollbackPresenceSQL(manifest.snapshot,schema.tables),
-    {mode:0o600});
-   const found=assertStagingRollbackPresent(wrangler(cmd.readFile));
-   process.stdout.write('Read-only rollback target confirmed: '+
-    found.markers+' marker / '+found.rows+' rows\n');
-  }
+  // A rehearsal must start with a new exact snapshot; idempotent SQL alone
+  // could otherwise pass readback over pre-existing rows and rollback them.
+  writeFileSync(stagingSQL,renderStagingRollbackPresenceSQL(manifest.snapshot,schema.tables),
+   {mode:0o600});
+  const initialPresence=operation==='rollback'?
+   assertStagingRollbackPresent(wrangler(cmd.readFile)):
+   assertStagingImportAbsent(wrangler(cmd.readFile));
+  process.stdout.write('Read-only '+operation+' target confirmed: '+
+   initialPresence.markers+' marker / '+initialPresence.rows+' rows\n');
 
   // Independent persistent backup is mandatory before ANY import/rollback.
   // Backups are deliberately not stored in the checkout or system temp.
@@ -191,6 +193,22 @@ async function main(){
   process.stdout.write('Independent staging export retained: '+backup+
    ' (SHA-256 '+hash+')\n');
 
+  // Both writes must recheck identity, schema, columns and snapshot presence
+  // after the backup. Use an exclusively operated staging database; these
+  // read-only checks cannot lock out another independent Cloudflare writer.
+  assertDatabaseIdentity(wrangler(cmd.list),target);
+  const beforeWrite=assertStagingSchema(wrangler(cmd.schema));
+  if(beforeWrite.tables.join('|')!==schema.tables.join('|'))
+   throw Error('Staging schema changed during backup; '+operation+' stopped');
+  for(const table of beforeWrite.tables)
+   assertStagingTableColumns(wrangler(cmd.columns(table)),table,true);
+  writeFileSync(stagingSQL,renderStagingRollbackPresenceSQL(manifest.snapshot,beforeWrite.tables),
+   {mode:0o600});
+  const currentPresence=operation==='rollback'?
+   assertStagingRollbackPresent(wrangler(cmd.readFile)):
+   assertStagingImportAbsent(wrangler(cmd.readFile));
+  if(currentPresence.markers!==initialPresence.markers||currentPresence.rows!==initialPresence.rows)
+   throw Error('Staging snapshot counts changed during backup; '+operation+' stopped');
   if(operation==='import'){
    writeFileSync(stagingSQL,renderEditorialDefaultsSQL(manifest),{mode:0o600});
    wrangler(cmd.executeFile);
@@ -202,12 +220,6 @@ async function main(){
    process.stdout.write('Verified remote staging rows '+check.checkedRows+
     ', snapshot '+check.snapshot+', SHA-256 '+check.digest+'\n');
   }else{
-   // Re-read the schema after backup, refuse any drift before mutation.
-   const beforeRollback=assertStagingSchema(wrangler(cmd.schema));
-   if(beforeRollback.tables.join('|')!==schema.tables.join('|'))
-    throw Error('Staging schema changed during backup; rollback stopped');
-   for(const table of beforeRollback.tables)
-    assertStagingTableColumns(wrangler(cmd.columns(table)),table,true);
    writeFileSync(stagingSQL,renderStagingRollbackMutationSQL(manifest.snapshot,schema.tables),{mode:0o600});
    wrangler(cmd.executeFile);
    const afterRollback=assertStagingSchema(wrangler(cmd.schema));

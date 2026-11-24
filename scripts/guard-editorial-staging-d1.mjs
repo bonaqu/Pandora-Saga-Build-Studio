@@ -155,17 +155,29 @@ export function renderStagingRollbackMutationSQL(snapshot,tables){
  // Marker first; delete only the pinned snapshot, never other releases.
  return present.map(table=>'DELETE FROM '+table+' WHERE snapshot='+name+';').join('\n')+'\n';
 }
-export function assertStagingRollbackPresent(raw){
+function parseStagingSnapshotPresence(raw){
  const rows=oneQuery(raw);
  if(rows.length!==1||!rows[0]||typeof rows[0]!=='object'||
   Array.isArray(rows[0])||
   Object.keys(rows[0]).sort().join('|')!=='existing_markers|existing_rows')
-  throw Error('Missing or malformed read-only staging rollback presence');
+  throw Error('Missing or malformed read-only staging snapshot presence');
  const markers=rows[0].existing_markers,values=rows[0].existing_rows;
  if(!Number.isSafeInteger(markers)||markers<0||markers>1||
-  !Number.isSafeInteger(values)||values<0||!(markers||values))
-  throw Error('No exact staging snapshot exists to roll back');
+  !Number.isSafeInteger(values)||values<0)
+  throw Error('Invalid staging snapshot presence counts');
  return {markers,rows:values};
+}
+export function assertStagingRollbackPresent(raw){
+ const found=parseStagingSnapshotPresence(raw);
+ if(!(found.markers||found.rows))
+  throw Error('No exact staging snapshot exists to roll back');
+ return found;
+}
+export function assertStagingImportAbsent(raw){
+ const found=parseStagingSnapshotPresence(raw);
+ if(found.markers||found.rows)
+  throw Error('Exact staging snapshot already exists; refuse import rehearsal over existing data');
+ return found;
 }
 export function renderStagingRollbackCheckSQL(snapshot,tables=rollbackTables){
  return rollbackCountSQL(snapshot,tables,'remaining');
