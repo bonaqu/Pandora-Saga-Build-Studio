@@ -626,7 +626,18 @@ test('#390 source-only equipped effects, experience and cloak names bypass Book 
  assert.match(source,/sourceText\('p',effect\.name\+': \+'/);
  assert.match(source,/sourceText\('p',entry\.source\+' · '\+line\.join/);
  assert.match(source,/expPanel\.append\(sourceText\('p',e\.source\+': '/);
- assert.match(source,/sourceText\('small',english\?entry\.descriptionEn:entry\.description/);
+ assert.doesNotMatch(source,/function renderSongSkills\(/,
+  'Unused duplicate Song renderer must not resurrect stale editorial surfaces');
  assert.doesNotMatch(source,/expPanel\.append\(make\('p',\{text:e\.source/,
   'Source labels cannot enter the generic editable Book text transformer');
+});
+
+test('#390 unreachable guild options and duplicate Song previews stay absent from Book',()=>{
+ const src=file('pandora-studio-hero-book.js');
+ assert.doesNotMatch(src,/const opts=\(units\)=>/);
+ assert.doesNotMatch(src,/function renderSongSkills\(/);
+ assert.match(src,/function gameSkillBadge\(/);
+ assert.match(src,/function skillEffectsPage\(/);
+ assert.match(src,/\['effects','songs','\.stage-song-skills > summary'/,
+  'The active native Song disclosure retains its original D1 caption');
 });

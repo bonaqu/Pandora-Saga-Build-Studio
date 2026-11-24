@@ -1023,8 +1023,6 @@ function buffsPage(body,options){
   node.append(info);
   parent.append(node);
  };
- const opts=(units)=>units.map((n,i)=>[i,i===0?bookText('Выключено'):
-  (document.documentElement?.lang==='en'?'Level ':'Уровень ')+i+' · +'+n]);
  const guildLevel=Number(buffs.guildLevel)||0;
  const guildPreview=root.PandoraOSCalculator?.guildPassiveAtLevel(guildLevel);
  const guildSource=root.PandoraGuildSkillSource||[];
@@ -1678,35 +1676,6 @@ function gameSkillBadge(id,ru,en,terms,english,skillIconForId,onSkill=null){
  root.PandoraSkillPreview?.attach(label,id);
  return label;
 }
-function renderSongSkills(body,modifiers,gameTerms={},skillIconForId=()=>null){
- const english=document.documentElement?.lang==='en';
- const songRows=modifiers?.songSkills?.rows||[];
- if(songRows.length){
-  const details=make('details',{class:'stage-legacy-buff-previews stage-song-skills'});
-  details.append(make('summary',{text:english?'Songs available to this class':
-   'Песни для выбранного класса'}));
-  const rows=make('div',{class:'stage-song-skill-list'});
-  for(const entry of songRows){
-   const requirements=entry.requirements.map(req=>
-    gameBranchName(req.branch,gameTerms,english)+' '+req.amount).join(' · ');
-   const card=make('div',{class:'stage-song-skill-row'});
-   card.append(make('strong',{class:'stage-effect-skill-heading'},[
-    gameSkillBadge(entry.id,entry.name,entry.nameEn,gameTerms,english,skillIconForId)]),
-    sourceText('small',english?entry.descriptionEn:entry.description),
-    make('span',{class:entry.available?'stage-song-skill-ready':'stage-song-skill-locked',
-     text:(entry.available?
-      (english?'Requirements met':'Требования выполнены'):
-      (english?'Requires mastery':'Требуется мастерство'))+' · '+requirements}));
-   rows.append(card);
-  }
-  details.append(rows,make('p',{class:'stage-legacy-buff-intro',
-   text:english?
-    'Song effects apply only when activated in the game. No bonus is added to this build automatically.':
-    'Эффекты песен действуют после применения в игре. Бонусы не прибавляются к билду автоматически.'}));
-  body.append(details);
- }
-}
-
 // Mirrors Remaked SkillView: individual skill outcomes, never the selected
 // buff toggles or the 43 main result values.
 function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>null,
