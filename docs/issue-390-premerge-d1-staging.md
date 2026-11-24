@@ -140,4 +140,22 @@ do not merge/close Draft PR #809 or close issue #390 on this basis.
 
 ## Pinned manifest after the Healing authorial review · 24 November 2026
 
-The previously remotely reported `0.947.0-e4f26c02e2896e3c` manifest / 2,586-row digest describes **the older PR HEAD** prior to the 19 new Healing RU/EN authorial identities. It is audit history, NOT an authorization to import that stale snapshot after the later source changes. The source planner now admits 38 additional exact `guideedit.book.effects.healing.*` rows. Before any future staging import, require a **freshly generated exact snapshot ID, full SHA-256, row count, two green CI checks and the matching 40-character PR HEAD**. Never reuse the old digest or silently mix SQL from different commits. No remote SQL import or rollback has yet occurred.
+The previously remotely reported `0.947.0-e4f26c02e2896e3c` manifest / 2,586-row digest describes **the older PR HEAD** prior to the 19 new Healing RU/EN authorial identities. It is audit history, NOT an authorization to import that stale snapshot after the later source changes. The source planner's reviewed Healing cohort is now **37 authorial RU/EN keys / 74 exact `guideedit.book.effects.healing.*` rows**. The 2,586-row historical snapshot has NOT been replaced in remote staging. Before any future staging import, require a **freshly generated exact snapshot ID, full SHA-256, row count, two green CI checks and the matching 40-character PR HEAD**. Never reuse the old digest or silently mix SQL from different commits. No remote SQL import or rollback has yet occurred.
+
+### Version-safe snapshot SQL gate (24 November 2026)
+
+Rollback/presence SQL accepts only a strict release of three bounded numerical
+components followed by exactly 16 lowercase hexadecimal SHA-256 characters.
+The old hardcoded `0.947.0` guard would make an otherwise valid new
+`0.948.0-<digest>` release impossible to roll back. The schema guard now
+validates **shape**; it does **not** authorize a user-provided snapshot ID.
+The Linux/WSL premerge runner still obtains **both** import and rollback
+snapshots only from `buildEditorialDefaultsManifest()`, enforces the exact
+40-character expected PR SHA and branch, requires operation-specific manual
+confirmation, performs a distinct durable independent backup before each
+mutation, and rechecks the staging identity and schema. Old or forged records
+outside the current source manifest are not rollback targets.
+
+The snapshot with 37 new Healing caption identities needs a new full SHA-256
+from the exact final PR checkout. Neither remote import nor remote rollback
+has been executed or accepted by this documentation change.

@@ -127,7 +127,12 @@ export function renderStagingWranglerConfig(target){
  ].join('\n');
 }
 function rollbackSnapshotLiteral(snapshot){
- if(typeof snapshot!=='string'||!/^0\.947\.0-[a-f0-9]{16}$/.test(snapshot))
+ // Validate the *format* only; the guarded premerge runner supplies
+ // manifest.snapshot from its pinned source SHA, never an operator string.
+ // Hardcoding one release here would prevent a separately approved
+ // rollback when the site's semver advances beyond 0.947.0.
+ if(typeof snapshot!=='string'||
+  !/^[0-9]{1,6}\.[0-9]{1,6}\.[0-9]{1,6}-[a-f0-9]{16}$/.test(snapshot))
   throw Error('Rollback must target a pinned release and digest snapshot');
  return "'"+snapshot+"'";
 }

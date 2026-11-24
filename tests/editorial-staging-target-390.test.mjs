@@ -180,7 +180,10 @@ test('#390 independent rollback checks exact snapshot, both row classes, and JSO
  assert.equal((sql.match(/WHERE snapshot=/g)||[]).length,2);
  assert.ok(!sql.includes('ORDER BY installed_at'));
  assert.throws(()=>renderStagingRollbackCheckSQL("0.947.0-ffffffffffffffff' OR 1=1"));
- assert.throws(()=>renderStagingRollbackCheckSQL('0.945.0-ffffffffffffffff'));
+ // A syntactically valid *different* release may be the current pinned
+ // manifest in a future PR; only the CLI enforces the exact source SHA.
+ assert.ok(renderStagingRollbackCheckSQL('0.945.0-ffffffffffffffff')
+  .includes("WHERE snapshot='0.945.0-ffffffffffffffff'"));
  assert.equal(assertRolledBack(query([{remaining_markers:0,remaining_rows:0}])),true);
  for(const bad of [
   query([{remaining_markers:1,remaining_rows:0}]),
@@ -189,6 +192,42 @@ test('#390 independent rollback checks exact snapshot, both row classes, and JSO
   query([{remaining_markers:0,remaining_rows:0,other:1}]),
   JSON.stringify([{success:false,results:[{remaining_markers:0,remaining_rows:0}]}])
  ])assert.throws(()=>assertRolledBack(bad));
+});
+
+test('#390 staging rollback identifiers support future release only with exact safe digest suffix',()=>{
+ for(const release of ['0.947.0','0.948.0','1.0.0','2026.11.24']){
+  const snapshot=release+'-'+ 'a'.repeat(16);
+  const clause="WHERE snapshot='"+snapshot+"'";
+  for(const sql of [
+   renderStagingRollbackPresenceSQL(snapshot),
+   renderStagingRollbackCheckSQL(snapshot),
+   renderStagingRollbackMutationSQL(snapshot,
+    ['editorial_default_rows','editorial_default_snapshots'])
+  ])assert.ok(sql.includes(clause),'Missing exact pinned SQL match for '+snapshot);
+ }
+ const unsafe=[
+  '', '0.947.0', '0.947.0-'+ 'f'.repeat(15),
+  '0.947.0-'+ 'f'.repeat(17), '0.947.0-'+ 'F'.repeat(16),
+  '0.947.0-'+ 'f'.repeat(16)+"' OR 1=1",
+  '0.947.0-'+ 'f'.repeat(16)+';DROP TABLE accounts',
+  '0.947.0-'+'f'.repeat(16)+'\n',
+  '0.947.0-alpha-'+'f'.repeat(16),
+  '0.-1.0-'+'f'.repeat(16),
+  '9999999.1.0-'+'f'.repeat(16)
+ ];
+ for(const snapshot of unsafe){
+  assert.throws(()=>renderStagingRollbackPresenceSQL(snapshot),
+   'Unsafe snapshot must fail before any read SQL: '+snapshot);
+  assert.throws(()=>renderStagingRollbackMutationSQL(snapshot,
+   ['editorial_default_rows']),
+   'Unsafe snapshot must fail before any DELETE SQL: '+snapshot);
+ }
+ const runner=readFileSync(new URL('../scripts/run-editorial-staging-d1-premerge.mjs',
+  import.meta.url),'utf8');
+ assert.match(runner,/assertPremergeSource\(git\(\['branch','--show-current'\]\),git\(\['rev-parse','HEAD'\]\)/);
+ assert.match(runner,/process\.env\.PS_EDITORIAL_EXPECTED_SHA/);
+ assert.match(runner,/renderStagingRollbackMutationSQL\(manifest\.snapshot,schema\.tables\)/);
+ assert.match(runner,/renderStagingRollbackPresenceSQL\(manifest\.snapshot,schema\.tables\)/);
 });
 
 test('#390 rollback requires existing pinned rows or marker before deletion',()=>{
