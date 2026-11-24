@@ -133,7 +133,8 @@ test('consumable skill references do not nest inside item-opening buttons',()=>{
  const part=book.slice(begin,end);
  assert.ok(part.includes("const row=make('div',{class:'stage-potion-item'})"));
  assert.ok(part.includes("const itemLink=make(item?'button':'span'"));
- assert.ok(part.includes("itemLink.append(make('span',{class:'stage-potion-name',text:displayName}))"));
+ assert.ok(part.includes("itemLink.append(sourceText('span',displayName,{class:'stage-potion-name'}))"),
+  'Game-source item caption stays separate from the independent item button');
  assert.ok(part.includes("row.append(itemLink,skillNames)"));
  assert.ok(part.includes("PandoraSkillPreview?.attach(badge,skill.id)"));
  assert.ok(!part.includes("const row=make(item?'button':'div'"));

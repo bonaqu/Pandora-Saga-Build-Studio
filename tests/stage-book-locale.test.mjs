@@ -57,7 +57,10 @@ test('equipment sets and consumable recovery sections switch to RU/EN without to
  assert.match(code,/english\?'HP recovery items':'Предметы восстановления ОЗ'/);
  assert.match(code,/english\?'Remove status effects':'Снятие состояний'/);
  assert.match(code,/english\?entry\.conditionsEn:entry\.conditions/);
- assert.match(code,/text:item\?\.name\|\|entry\.name/);
+ assert.match(code,/sourceText\('span',item\?\.name\|\|entry\.name/,
+  'Game item names must stay literal source data in all recovery sections');
+ assert.doesNotMatch(code,/make\('span',\{class:'stage-potion-name',text:item\?\.name/,
+  'Source item captions must never acquire a generic UI edit identity');
  assert.doesNotMatch(code,/stage-combat-quick/);
 });
 
