@@ -580,6 +580,8 @@ const bookScalingActionCopyRows=Object.freeze([
  ['inspiredBefore','сек. применения (вместо','s casting (instead of'],
  ['inspiredAfter','сек.)','s)']
 ]);
+// Repeated action wording is source-authorial, never one D1 row per skill.
+const bookSkillDetailCopyRows=Object.freeze([['more','Подробнее','More details']]);
 const bookAccessibleAliasRows=Object.freeze([
  ['previous','Предыдущая страница','Previous chapter'],
  ['next','Следующая страница','Next chapter'],
@@ -1643,6 +1645,16 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
  const gates=root.PandoraBookSkillThresholds;
  const healingNumber=new Intl.NumberFormat(en?'en-US':'ru-RU',
   {maximumFractionDigits:2});
+ const skillMore=(kind,id)=>{
+  const detail=make('details',{class:'stage-skill-gate-help stage-skill-more',
+   'data-book-skill-more':kind+':'+String(id)});
+  const summary=make('summary');
+  const caption=make('span',{class:'stage-skill-more-copy'});
+  summary.append(caption);detail.append(summary);
+  guideLabel(caption,'effects.detail.more','Подробнее','More details',editorial);
+  if(editable&&typeof onTextEdit==='function')caption.tabIndex=0;
+  return detail;
+ };
  const healingActionCopy=new Map(bookHealingActionCopyRows.map(row=>[row[0],row]));
  const healingCaption=key=>{
   const row=healingActionCopy.get(key);
@@ -1851,9 +1863,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     gameSkillBadge(sourceId,row.name,row.nameEn,gameTerms,en,skillIconForId,onSkill),
     make('strong',{text:amount})
    ]);
-   const more=make('details',{class:'stage-skill-gate-help stage-skill-more'},[
-    make('summary',{text:en?'More details':'Подробнее'})
-   ]);
+   const more=skillMore('healing',sourceId);
    appendActionEffects(more,action);
    showBaseManaBudget(more,action);
    // Combined capacity is defined only for direct, verified own heals.
@@ -1888,9 +1898,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     gameSkillBadge(entry.id,entry.name,null,gameTerms,en,skillIconForId,onSkill),
     make('strong',{text:String(entry.amount)+' '+(en?'MP every 2 sec':'ОМ каждые 2 сек.')})
    ]);
-   const more=make('details',{class:'stage-skill-gate-help stage-skill-more'},[
-    make('summary',{text:en?'More details':'Подробнее'})
-   ]);
+   const more=skillMore('mp',entry.id);
    const action=skillAction(entry.id);
    if(action){
     appendActionEffects(more,action);
@@ -1970,9 +1978,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     ...(amount!==null?[make('strong',{class:singlePart?
      'stage-skill-primary-coefficient':'',text:amount})]:[])
    ]);
-   const more=make('details',{class:'stage-skill-gate-help stage-skill-more'},[
-    make('summary',{text:en?'More details':'Подробнее'})
-   ]);
+   const more=skillMore('scaling-'+groupName,skill.id);
    // General skill descriptions are available via its tooltip and Wiki.
    if(modelParts.length&&!Number.isFinite(skill.amount)){
     // A single source-checked result is already the main line;
@@ -2767,6 +2773,11 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
     else expandedBookGroups.delete(key);
    }
   }
+ // Outer chapter groups already retain their state; keep each nested
+ // source skill disclosure stable during live stats, CAS edits and localization.
+ const skillMoreOpen=reusePanel&&page==='effects'?
+  new Map([...stablePanel.querySelectorAll('details[data-book-skill-more]')]
+   .map(detail=>[detail.dataset.bookSkillMore,detail.open])):null;
  const storedScroll=reusePanel?stablePanel.scrollTop:0;
  if(reusePanel){
   for(const child of [...target.children])if(child!==stablePanel&&child!==pinnedOwnerPanel)child.remove();
@@ -3013,6 +3024,10 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
  }
  decorateChapterCaptions(body,chosen,copyOptions);
  collapseBookSections(body,chosen);
+ if(skillMoreOpen)for(const detail of body.querySelectorAll('details[data-book-skill-more]')){
+  if(skillMoreOpen.has(detail.dataset.bookSkillMore))
+   detail.open=skillMoreOpen.get(detail.dataset.bookSkillMore);
+ }
  // Section headings may have been bound before collapseBookSections moved
  // them into a native summary. Resolve ancestry after their final mount.
  if(canEdit)for(const caption of body.querySelectorAll?.('summary [data-guide-key]')||[])
@@ -3065,7 +3080,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
 root.PandoraStageAttributes=Object.freeze({render,bookPages,bookText,bookEditorialKey,
  bookEditorialDefaults:bookEnglish,buffStatusCopyRows,buffRequirementCopyRows,
  bookRegionCopyRows,bookSourceActionCopyRows,bookHealingActionCopyRows,
- bookScalingActionCopyRows,bookAccessibleAliasRows,
+ bookScalingActionCopyRows,bookSkillDetailCopyRows,bookAccessibleAliasRows,
  refreshAccessibility:refreshBookAccessibility,resetDisclosureState,
  summaryRows,attackChapterGroups,defenseChapterGroups,
  gameSkillName,gameBranchName,gameClassName});

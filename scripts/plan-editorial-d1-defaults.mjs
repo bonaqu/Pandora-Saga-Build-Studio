@@ -219,6 +219,17 @@ export function buildEditorialDefaultsManifest(){
   append('guideedit.book.effects.scaling.'+key,'ru',ru,'hero-book-scaling-actions');
   append('guideedit.book.effects.scaling.'+key,'en',en,'hero-book-scaling-actions');
  }
+ // One reviewed bilingual phrase for every nested skill disclosure.
+ // Game IDs, runtime counts and disclosure state are not editorial records.
+ const detailRows=book.bookSkillDetailCopyRows;
+ if(!Array.isArray(detailRows)||detailRows.length!==1||
+  detailRows[0]?.[0]!=='more'||detailRows[0]?.[1]!=='Подробнее'||
+  detailRows[0]?.[2]!=='More details')
+  throw Error('Hero Book skill disclosure editorial inventory drift');
+ for(const [key,ru,en] of detailRows){
+  append('guideedit.book.effects.detail.'+key,'ru',ru,'hero-book-skill-details');
+  append('guideedit.book.effects.detail.'+key,'en',en,'hero-book-skill-details');
+ }
  const bookAliases=book.bookAccessibleAliasRows;
  if(!Array.isArray(bookAliases)||bookAliases.length!==4||
   bookAliases.map(row=>row?.[0]).sort().join('|')!=='close|next|previous|tabs')

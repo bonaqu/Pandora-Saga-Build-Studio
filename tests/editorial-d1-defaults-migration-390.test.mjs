@@ -1288,3 +1288,16 @@ test('#390 source-only staging seeds skill scaling wording but never source coef
   'scaling-inspired-seconds','skill-id','branch-name'])
   assert.equal(records.some(x=>x.recordKey.endsWith('.'+numeric)),false);
 });
+
+test('#390 one bilingual source-owned Skill disclosure caption has no game IDs',()=>{
+ const records=manifest.records.filter(x=>x.recordKey.startsWith(
+  'guideedit.book.effects.detail.'));
+ assert.deepEqual(records.map(x=>[x.recordKey,x.field,x.value]).sort((a,b)=>
+  a[1].localeCompare(b[1])),[
+  ['guideedit.book.effects.detail.more','en','More details'],
+  ['guideedit.book.effects.detail.more','ru','Подробнее']
+ ]);
+ assert.equal(manifest.stats.cohorts['hero-book-skill-details'],2);
+ for(const forbidden of ['310001001','330005001','game','count','mastery'])
+  assert.equal(records.some(x=>x.recordKey.includes(forbidden)),false);
+});

@@ -511,3 +511,16 @@ test('#390 skill scaling authorial phrases are separate from source coefficients
   assert.ok(src.includes(",'"+key+"')"));
  assert.doesNotMatch(src,/class:'stage-skill-coefficient-next',text:en\?/);
 });
+
+test('#390 nested skill details reuse a single owner caption and preserve expansion on rerenders',()=>{
+ assert.deepEqual(book.bookSkillDetailCopyRows,[['more','Подробнее','More details']]);
+ const source=file('pandora-studio-hero-book.js');
+ assert.match(source,/guideLabel\(caption,'effects\.detail\.more','Подробнее','More details',editorial\)/);
+ assert.match(source,/const more=skillMore\('healing',sourceId\)/);
+ assert.match(source,/const more=skillMore\('mp',entry\.id\)/);
+ assert.match(source,/const more=skillMore\('scaling-'\+groupName,skill\.id\)/);
+ assert.match(source,/new Map\(\[\.\.\.stablePanel\.querySelectorAll\('details\[data-book-skill-more\]'\)\]/);
+ assert.match(source,/skillMoreOpen\.has\(detail\.dataset\.bookSkillMore\)/);
+ assert.match(source,/detail\.open=skillMoreOpen\.get\(detail\.dataset\.bookSkillMore\)/);
+ assert.doesNotMatch(source,/make\('summary',\{text:en\?'More details':'Подробнее'\}\)/);
+});
