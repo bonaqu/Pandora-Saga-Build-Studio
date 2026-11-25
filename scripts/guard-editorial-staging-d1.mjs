@@ -143,6 +143,27 @@ function checkedRollbackTables(tables){
   throw Error('Invalid staging rollback table inventory');
  return rollbackTables.filter(table=>tables.includes(table));
 }
+// Verify a complete source export, not merely the pinned release row counts.
+export function renderStagingBackupInventorySQL(tables){
+ const present=checkedRollbackTables(tables);
+ const count=table=>present.includes(table)?
+  '(SELECT COUNT(*) FROM '+table+')':'0';
+ return 'SELECT '+count('editorial_default_snapshots')+' AS total_markers, '+
+  count('editorial_default_rows')+' AS total_rows;\n';
+}
+export function assertStagingBackupInventory(raw){
+ const records=oneQuery(raw);
+ if(records.length!==1||!records[0]||typeof records[0]!=='object'||
+  Array.isArray(records[0])||
+  Object.keys(records[0]).sort().join('|')!=='total_markers|total_rows')
+  throw Error('Missing or malformed full staging backup row inventory');
+ const markers=records[0].total_markers,rows=records[0].total_rows;
+ if(!Number.isSafeInteger(markers)||markers<0||
+  !Number.isSafeInteger(rows)||rows<0)
+  throw Error('Invalid full staging backup counts');
+ return {markers,rows};
+}
+
 function rollbackCountSQL(snapshot,tables,prefix){
  const name=rollbackSnapshotLiteral(snapshot);
  const present=checkedRollbackTables(tables);

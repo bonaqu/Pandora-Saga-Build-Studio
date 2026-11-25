@@ -4,6 +4,7 @@
 // alternative can be run from a clean PR checkout without merging the PR.
 // Importing this module never invokes Wrangler or writes anything remotely.
 import {spawnSync} from 'node:child_process';
+import {DatabaseSync} from 'node:sqlite';
 import {createHash,randomUUID} from 'node:crypto';
 import {constants,closeSync,existsSync,fchmodSync,fstatSync,fsyncSync,
  lstatSync,mkdtempSync,openSync,readFileSync,realpathSync,rmSync,
@@ -15,6 +16,7 @@ import {
  STAGING_SCHEMA_SQL,validateEditorialStagingTarget,assertDatabaseIdentity,
  assertStagingSchema,assertStagingTableColumns,assertRolledBack,
  assertStagingRollbackPresent,assertStagingImportAbsent,renderStagingRollbackPresenceSQL,
+ renderStagingBackupInventorySQL,assertStagingBackupInventory,
  renderStagingRollbackMutationSQL,renderStagingWranglerConfig,renderStagingRollbackCheckSQL
 } from './guard-editorial-staging-d1.mjs';
 import {
@@ -57,14 +59,14 @@ export function checkedBackupDirectory(directory,repoDir=repo,tempDir=tmpdir()){
 // flushed to disk. Check this before ANY remote staging import/rollback.
 export function verifyIndependentStagingBackup(path){
  const details=lstatSync(path);
- if(!details.isFile()||details.isSymbolicLink()||details.size===0)
+ if(!details.isFile()||details.isSymbolicLink()||details.size===0||details.nlink!==1)
   throw Error('Staging backup must be a nonempty regular SQL file');
  // Keep the same inode open from verification through chmod, flush and hash.
  // O_NOFOLLOW prevents a symlink swap between lstat and open on Linux/WSL.
  const fd=openSync(path,constants.O_RDONLY|constants.O_NOFOLLOW);
  try{
   const opened=fstatSync(fd);
-  if(!opened.isFile()||opened.size===0||opened.ino!==details.ino||
+  if(!opened.isFile()||opened.size===0||opened.nlink!==1||opened.ino!==details.ino||
    opened.dev!==details.dev)
    throw Error('Staging backup changed while opening the verified export');
   if(typeof process.getuid==='function'&&opened.uid!==process.getuid())
@@ -73,6 +75,52 @@ export function verifyIndependentStagingBackup(path){
   fsyncSync(fd);
   return createHash('sha256').update(readFileSync(fd)).digest('hex');
  }finally{closeSync(fd)}
+}
+// Independent proof that the private, checksum-pinned SQL can be replayed.
+// The cloud backup itself is never uploaded to GitHub or any public service.
+export function verifyRestorableStagingBackup(path,expectedHash,tables,
+ expectedInventory,snapshot,expectedPresence){
+ if(typeof expectedHash!=='string'||!/^[a-f0-9]{64}$/.test(expectedHash))
+  throw Error('Missing exact backup SHA-256');
+ const inventorySQL=renderStagingBackupInventorySQL(tables);
+ const presenceSQL=renderStagingRollbackPresenceSQL(snapshot,tables);
+ const fd=openSync(path,constants.O_RDONLY|constants.O_NOFOLLOW);
+ let bytes;
+ try{
+  const details=fstatSync(fd);
+  if(!details.isFile()||details.size===0||details.nlink!==1||
+   (details.mode&0o777)!==0o600)
+   throw Error('Replay requires the same private, single-link SQL export');
+  bytes=readFileSync(fd);
+  if(createHash('sha256').update(bytes).digest('hex')!==expectedHash)
+   throw Error('SQL backup changed after its SHA-256 verification');
+ }finally{closeSync(fd)}
+ const db=new DatabaseSync(':memory:');
+ const asD1=rows=>JSON.stringify([{success:true,results:rows}]);
+ try{
+  db.exec(bytes.toString('utf8'));
+  if(db.prepare('PRAGMA integrity_check;').get()?.integrity_check!=='ok')
+   throw Error('SQLite integrity check failed after SQL replay');
+  const restored=assertStagingSchema(asD1(db.prepare(STAGING_SCHEMA_SQL).all()));
+  if(restored.tables.join('|')!==[...tables].sort().join('|'))
+   throw Error('Restored schema does not match remote staging inventory');
+  for(const table of restored.tables)
+   assertStagingTableColumns(asD1(db.prepare('PRAGMA table_xinfo('+table+');').all()),
+    table,true);
+  const actual=assertStagingBackupInventory(asD1(db.prepare(inventorySQL).all()));
+  if(actual.markers!==expectedInventory.markers||
+   actual.rows!==expectedInventory.rows)
+   throw Error('Restored total row counts differ from remote pre-export D1');
+  const rawPresence=asD1(db.prepare(presenceSQL).all());
+  const pinned=(expectedPresence.markers||expectedPresence.rows)?
+   assertStagingRollbackPresent(rawPresence):assertStagingImportAbsent(rawPresence);
+  if(pinned.markers!==expectedPresence.markers||
+   pinned.rows!==expectedPresence.rows)
+   throw Error('Restored pinned snapshot counts differ from remote D1');
+  return actual;
+ }catch(error){
+  throw Error('Independent staging SQL backup restore FAILED: '+error.message);
+ }finally{db.close()}
 }
 function syncBackupFile(path){
  const fd=openSync(path,'r');
@@ -191,6 +239,9 @@ async function main(){
   process.stdout.write('Read-only '+operation+' target confirmed: '+
    initialPresence.markers+' marker / '+initialPresence.rows+' rows\n');
 
+  // Snapshot counts alone cannot detect missing unrelated staging rows.
+  writeFileSync(stagingSQL,renderStagingBackupInventorySQL(schema.tables),{mode:0o600});
+  const initialInventory=assertStagingBackupInventory(wrangler(cmd.readFile));
   // Independent persistent backup is mandatory before ANY import/rollback.
   // Backups are deliberately not stored in the checkout or system temp.
   const backupRoot=checkedBackupDirectory(process.env.PS_EDITORIAL_BACKUP_DIR);
@@ -199,6 +250,8 @@ async function main(){
   if(existsSync(backup))throw Error('Refusing to overwrite a staging backup');
   wrangler(cmd.export(backup));
   const hash=verifyIndependentStagingBackup(backup);
+  verifyRestorableStagingBackup(backup,hash,schema.tables,initialInventory,
+   manifest.snapshot,initialPresence);
   writeFileSync(backup+'.sha256',hash+'  '+basename(backup)+'\n',{
    flag:'wx',mode:0o600
   });
@@ -224,6 +277,12 @@ async function main(){
    assertStagingImportAbsent(wrangler(cmd.readFile));
   if(currentPresence.markers!==initialPresence.markers||currentPresence.rows!==initialPresence.rows)
    throw Error('Staging snapshot counts changed during backup; '+operation+' stopped');
+  writeFileSync(stagingSQL,renderStagingBackupInventorySQL(beforeWrite.tables),
+   {mode:0o600});
+  const currentInventory=assertStagingBackupInventory(wrangler(cmd.readFile));
+  if(currentInventory.markers!==initialInventory.markers||
+   currentInventory.rows!==initialInventory.rows)
+   throw Error('Full staging row counts changed during backup; '+operation+' stopped');
   if(operation==='import'){
    writeFileSync(stagingSQL,renderEditorialDefaultsSQL(manifest),{mode:0o600});
    wrangler(cmd.executeFile);

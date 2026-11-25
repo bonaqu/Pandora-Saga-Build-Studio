@@ -90,6 +90,25 @@ validation rules; its workflow_dispatch cannot run pre-merge while the file
 is absent from the default branch. Manual GitHub Actions *writes* remain
 explicitly disabled (no raw backup artifacts).
 
+## Independently tested backup restore gate (25 November 2026)
+
+The guarded Linux/WSL runner now checks more than file existence, private
+0700/0600 permissions and SHA-256. **Before either remote write** it reads a
+complete remote staging row inventory, exports SQL into the operator's private
+durable directory, checks the single-link inode and exact file digest, and
+**replays the exported SQL in a fresh in-memory SQLite database**. The restored
+database must pass integrity checking, exact allowlisted tables/columns,
+whole-table row counts (including pre-existing snapshots) and exact target
+snapshot row counts. Any mismatch fails closed before import/rollback. Remote
+identity, schema and the full row inventory are checked again after backup.
+This replay proves local restorability of the export under the reviewed
+SQLite schema; it is **not** a real remote import/rollback or proof of backup
+survival after a machine failure. Store the SQL and its .sha256 file securely,
+outside the checkout and temporary directories.
+
+**Status:** Source and tests only. No actual isolated Cloudflare D1 export,
+import, readback, or rollback is claimed by this change.
+
 ## Separate explicit import approval
 
 ~~~bash

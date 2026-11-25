@@ -7,7 +7,8 @@ import {
  assertDatabaseIdentity,
  assertStagingSchema,assertStagingTableColumns,assertRolledBack,
  assertStagingRollbackPresent,assertStagingImportAbsent,renderStagingRollbackPresenceSQL,
- renderStagingRollbackMutationSQL,renderStagingWranglerConfig,renderStagingRollbackCheckSQL
+ renderStagingRollbackMutationSQL,renderStagingWranglerConfig,renderStagingRollbackCheckSQL,
+ renderStagingBackupInventorySQL,assertStagingBackupInventory
 } from '../scripts/guard-editorial-staging-d1.mjs';
 const repo=new URL('../',import.meta.url);
 const name='ps-editorial-staging-390';
@@ -327,6 +328,33 @@ test('#390 interrupted one-table staging import can be rolled back without creat
  }finally{empty.close()}
 });
 
+test('#390 complete backup inventory includes both allowlisted tables, never SQL writes',()=>{
+ const snapshot='0.947.0-'+'f'.repeat(16);
+ for(const tables of [[],['editorial_default_rows'],
+  ['editorial_default_snapshots'],['editorial_default_rows','editorial_default_snapshots']]){
+  const sql=renderStagingBackupInventorySQL(tables);
+  assert.match(sql,/^SELECT /);
+  assert.doesNotMatch(sql,/WHERE|DELETE|CREATE|DROP/);
+  const db=new DatabaseSync(':memory:');
+  try{
+   for(const table of tables)
+    db.exec('CREATE TABLE '+table+' (snapshot TEXT);'+
+     "INSERT INTO "+table+" VALUES ('"+snapshot+"');");
+   assert.deepEqual(assertStagingBackupInventory(query(db.prepare(sql).all())),{
+    markers:tables.includes('editorial_default_snapshots')?1:0,
+    rows:tables.includes('editorial_default_rows')?1:0
+   });
+  }finally{db.close()}
+ }
+ for(const tables of [['accounts'],['editorial_default_rows','editorial_default_rows'],null])
+  assert.throws(()=>renderStagingBackupInventorySQL(tables));
+ for(const raw of [query([]),query([{total_markers:'1',total_rows:0}]),
+  query([{total_markers:1,total_rows:-1}]),
+  query([{total_markers:0,total_rows:0,extra:1}]),
+  JSON.stringify([{success:false,results:[{total_markers:0,total_rows:0}]}])])
+  assert.throws(()=>assertStagingBackupInventory(raw));
+});
+
 test('#390 GitHub staging workflow is preflight-only and never uploads raw SQL',()=>{
  const config=renderStagingWranglerConfig(target('import'));
  assert.match(config,/binding = "EDITORIAL_STAGING_DB"/);
@@ -445,6 +473,11 @@ test('#390 premerge staging CLI is import-inert, SHA-pinned and requires a separ
  assert.match(source,/const opened=fstatSync\(fd\)/);
  assert.match(source,/fchmodSync\(fd,0o600\)/);
  assert.match(source,/syncBackupDirectory\(backupRoot\)/);
+ assert.match(source,/verifyRestorableStagingBackup\\(backup,hash,schema.tables/);
+ assert.match(source,/renderStagingBackupInventorySQL\\(beforeWrite.tables\\)/);
+ assert.ok(source.indexOf('verifyRestorableStagingBackup(backup,hash')<
+  source.indexOf('wrangler(cmd.executeFile)'),
+  'Full local SQL replay must precede remote writes');
  assert.ok(source.indexOf('syncBackupDirectory(backupRoot)')<
   source.indexOf('wrangler(cmd.executeFile)'),
   'both backup and directory entries MUST be durable before mutation');
@@ -506,4 +539,60 @@ test('#390 staging export must be private, nonempty and not a symlink',async()=>
   symlinkSync(exportPath,linkPath);
   assert.throws(()=>verifyIndependentStagingBackup(linkPath),/nonempty regular/);
  }finally{rmSync(sandbox,{recursive:true,force:true})}
+});
+
+
+test('#390 independent backup replay rejects partial exports, corrupt SQL and changed digest',async()=>{
+ const {mkdtempSync,writeFileSync,rmSync,linkSync}=await import('node:fs');
+ const {tmpdir}=await import('node:os');
+ const {join}=await import('node:path');
+ const {verifyIndependentStagingBackup,verifyRestorableStagingBackup}=
+  await import('../scripts/run-editorial-staging-d1-premerge.mjs');
+ const dir=mkdtempSync(join(tmpdir(),'ps390-replay-'));
+ const path=join(dir,'backup.sql'),snapshot='0.947.0-'+'f'.repeat(16);
+ const rows='editorial_default_rows',markers='editorial_default_snapshots';
+ const rowsDDL='CREATE TABLE '+rows+' ('+
+  'snapshot TEXT NOT NULL,record_key TEXT NOT NULL,field TEXT NOT NULL,'+
+  'value TEXT NOT NULL,PRIMARY KEY(snapshot,record_key,field));\n';
+ const markersDDL='CREATE TABLE '+markers+' ('+
+  'snapshot TEXT PRIMARY KEY,source_release TEXT NOT NULL,sha256 TEXT NOT NULL,'+
+  'expected_rows INTEGER NOT NULL,installed_at INTEGER NOT NULL);\n';
+ const exportSQL=rowsDDL+markersDDL+
+  "INSERT INTO "+rows+" VALUES ('"+snapshot+"','copy.demo','ru','hello');\n"+
+  "INSERT INTO "+markers+" VALUES ('"+snapshot+"','0.947.0','"+
+  'a'.repeat(64)+"',1,123);\n";
+ const replay=(sql,tables,inventory,presence)=>{
+  writeFileSync(path,sql,{mode:0o600});
+  const hash=verifyIndependentStagingBackup(path);
+  return verifyRestorableStagingBackup(path,hash,tables,inventory,snapshot,presence);
+ };
+ try{
+  const both=[rows,markers],expected={markers:1,rows:1};
+  assert.deepEqual(replay(exportSQL,both,expected,expected),expected);
+  assert.throws(()=>replay(exportSQL,both,{markers:1,rows:2},expected),
+   /total row counts differ/);
+  assert.throws(()=>replay(exportSQL,both,expected,{markers:0,rows:0}),
+   /already exists/);
+  assert.throws(()=>replay(exportSQL,both,expected,{markers:0,rows:1}),
+   /pinned snapshot counts differ/);
+  assert.throws(()=>replay(rowsDDL,both,{markers:0,rows:0},
+   {markers:0,rows:0}),/schema does not match/);
+  assert.throws(()=>replay(exportSQL+'INSERT INTO missing VALUES (1);',both,
+   expected,expected),/restore FAILED/);
+  assert.throws(()=>replay(exportSQL+'CREATE TABLE accounts (id TEXT);',both,
+   expected,expected),/unexpected schema objects/);
+  assert.throws(()=>replay('not SQL',[],{markers:0,rows:0},
+   {markers:0,rows:0}),/restore FAILED/);
+  assert.deepEqual(replay('-- empty remote staging',[],
+   {markers:0,rows:0},{markers:0,rows:0}),{markers:0,rows:0});
+  writeFileSync(path,exportSQL,{mode:0o600});
+  const hash=verifyIndependentStagingBackup(path);
+  writeFileSync(path,exportSQL+' -- changed after verification');
+  assert.throws(()=>verifyRestorableStagingBackup(path,hash,both,expected,
+   snapshot,expected),/changed after its SHA-256 verification/);
+  writeFileSync(path,exportSQL,{mode:0o600});
+  const linked=join(dir,'hardlink.sql');
+  linkSync(path,linked);
+  assert.throws(()=>verifyIndependentStagingBackup(path),/nonempty regular SQL file/);
+ }finally{rmSync(dir,{recursive:true,force:true})}
 });
