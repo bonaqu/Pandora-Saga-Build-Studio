@@ -1386,11 +1386,11 @@ export function buildEditorialDefaultsManifest(){
  const accessibleRows=runInNewContext('('+accessibleSource[1]+')',{},{
   filename:'catalogAccessibleCopyRows',timeout:5000
  });
- const expectedAccessible=['linkedPreviewAria','linkedOpenAria',
+ const expectedCatalogAccessible=['linkedPreviewAria','linkedOpenAria',
   'reviewSelectAria','clearSearchAriaDescription'];
  if(!Array.isArray(accessibleRows)||
-  accessibleRows.length!==expectedAccessible.length||
-  accessibleRows.map(r=>r?.[0]).sort().join('|')!==expectedAccessible.sort().join('|'))
+  accessibleRows.length!==expectedCatalogAccessible.length||
+  accessibleRows.map(r=>r?.[0]).sort().join('|')!==expectedCatalogAccessible.sort().join('|'))
   throw Error('Unreviewed catalog accessibility semantic keys');
  for(const row of accessibleRows){
   if(!Array.isArray(row)||row.length!==5||
