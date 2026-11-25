@@ -14,26 +14,13 @@ The first remote [read-only schema preflight](https://github.com/bonaqu/Pandora-
 
 This is a schema-introspection exemption, **not permission to query or mutate** the internal table. The approved user-owned staging tables and exact columns remain unchanged.
 
-## Why a local runner is required
+## Two pre-merge execution paths, neither requiring a PR merge
 
-GitHub [requires a workflow_dispatch file on the default branch](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflow_dispatch).
-The existing manual staging workflow is introduced only by Draft PR #809;
-default branch bonaqu_projects does not yet contain it. Therefore use the
-guarded PR-local scripts/run-editorial-staging-d1-premerge.mjs runner, rather
-than merging unfinished work just to expose the Run workflow button.
+[GitHub requires manual workflow_dispatch on the default branch](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#workflow_dispatch). The original [editorial-staging-d1-manual.yml](../.github/workflows/editorial-staging-d1-manual.yml) remains **strictly read-only**, and cannot be triggered pre-merge through the Run workflow button. The following local Linux/WSL commands remain a fully guarded option for an operator with a durable private backup directory.
 
-The runner uses the existing verified manifest, identity guard and
-readback/rollback algorithms. It changes **no production D1, Worker, Pages,
-game JSON or player builds**. These instructions alone are not remote evidence.
+**New browser-only alternative (25 November 2026):** [the separately protected, PR-label-only workflow](../.github/workflows/editorial-staging-d1-protected-phases.yml) uses the existing pinned local runner inside GitHub-hosted Ubuntu, but does **not** rely on runner storage for durable backup: a full staged SQL export is authenticated, encrypted, decrypt-tested and offered as an encrypted GitHub artifact. The owner **must download and independently retain** that encrypted ZIP **and the separately stored recovery key** before explicitly approving a write. Each stage has an isolated manual label and protected GitHub environment reviewer. The write phases also require a full matching artifact SHA/metadata receipt and two exact-source successful CI workflows. At no point does a public artifact contain raw SQL. The complete [step-by-step browser-only operator instructions](issue-390-browser-only-d1-rehearsal.md) are the recommended path for this owner; the CLI instructions below remain an alternative.
 
-**GitHub-hosted staging workflow is intentionally READ-ONLY.** Only a
-`preflight` choice is exposed, with schema/UUID checks, no import, rollback,
-D1 export or upload of raw SQL. An ephemeral Actions runner cannot retain the
-required independent durable private staging backup: uploading the raw SQL
-as an artifact would expose unreviewed existing staging records and does not
-meet the operator-local 0700 backup requirement. Even once the workflow is
-merged onto the default branch, all *writes* must use the approved local
-Linux/WSL runner below with an independently retained backup.
+**Limitations, not acceptance claims:** GitHub artifacts expire after 30 days; the independent operator download is not programmatically verifiable by this CI. A protected environment approval must never be interpreted as successful remote Cloudflare import/rollback, or proof that the owner actually retained the backup. GitHub backup encryption is only a confidentiality safeguard, and the operator must safeguard the recovery passphrase. Neither workflow touches production.
 
 ## Preconditions
 

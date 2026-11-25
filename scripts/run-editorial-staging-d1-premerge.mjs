@@ -161,8 +161,8 @@ function run(command,args,{env=process.env}={}){
 const git=(args)=>run('git',args).trim();
 
 export function validateCliInputs(operation,env){
- if(!['preflight','verify','import','rollback'].includes(operation))
-  throw Error('Usage: node scripts/run-editorial-staging-d1-premerge.mjs preflight|verify|import|rollback');
+ if(!['preflight','verify','backup','import','rollback'].includes(operation))
+  throw Error('Usage: node scripts/run-editorial-staging-d1-premerge.mjs preflight|verify|backup|import|rollback');
  if(typeof env.CLOUDFLARE_API_TOKEN!=='string'||!env.CLOUDFLARE_API_TOKEN.trim())
   throw Error('A dedicated staging-only CLOUDFLARE_API_TOKEN is required');
  const target=validateEditorialStagingTarget({
@@ -170,7 +170,7 @@ export function validateCliInputs(operation,env){
   operation,confirmation:env.PS_EDITORIAL_CONFIRMATION,
   accountId:env.CLOUDFLARE_ACCOUNT_ID
  });
- if(['import','rollback'].includes(operation)&&!env.PS_EDITORIAL_BACKUP_DIR)
+ if(['backup','import','rollback'].includes(operation)&&!env.PS_EDITORIAL_BACKUP_DIR)
   throw Error('Writes require an independent staging backup directory');
  return target;
 }
@@ -263,7 +263,12 @@ async function main(){
   // could otherwise pass readback over pre-existing rows and rollback them.
   writeFileSync(stagingSQL,renderStagingRollbackPresenceSQL(manifest.snapshot,schema.tables),
    {mode:0o600});
-  const initialPresence=operation==='rollback'?
+  const backupAfter=operation==='backup'&&
+   process.env.PS_EDITORIAL_BACKUP_PHASE==='after';
+  if(operation==='backup'&&
+   !['before','after'].includes(process.env.PS_EDITORIAL_BACKUP_PHASE))
+   throw Error('Backup operation requires an exact before/after phase');
+  const initialPresence=(operation==='rollback'||backupAfter)?
    assertStagingRollbackPresent(wrangler(cmd.readFile)):
    assertStagingImportAbsent(wrangler(cmd.readFile));
   process.stdout.write('Read-only '+operation+' target confirmed: '+
@@ -272,6 +277,8 @@ async function main(){
   // Snapshot counts alone cannot detect missing unrelated staging rows.
   writeFileSync(stagingSQL,renderStagingBackupInventorySQL(schema.tables),{mode:0o600});
   const initialInventory=assertStagingBackupInventory(wrangler(cmd.readFile));
+  if(operation==='import'&&(initialInventory.markers||initialInventory.rows))
+   throw Error('Import rehearsal requires entirely empty reviewed staging tables');
   const initialFingerprints=remoteStagingFingerprints(
    schema.tables,initialInventory,wrangler,cmd,stagingSQL);
   // Independent persistent backup is mandatory before ANY import/rollback.
@@ -292,6 +299,10 @@ async function main(){
   // This is safe to display: never print a token, account secret or SQL data.
   process.stdout.write('Independent staging export retained: '+backup+
    ' (SHA-256 '+hash+')\n');
+  if(operation==='backup'){
+   process.stdout.write('READ-ONLY SQL backup complete. No D1 records changed.\n');
+   return;
+  }
 
   // Both writes must recheck identity, schema, columns and snapshot presence
   // after the backup. Use an exclusively operated staging database; these

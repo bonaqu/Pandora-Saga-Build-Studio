@@ -22,7 +22,7 @@ const target=operation=>validateEditorialStagingTarget({
 const query=rows=>JSON.stringify([{success:true,results:rows}]);
 
 test('#390 staging gate refuses production D1, wrong operation and unconfirmed writes',()=>{
- for(const operation of ['preflight','verify','import','rollback']){
+ for(const operation of ['preflight','verify','backup','import','rollback']){
   const value=target(operation);
   assert.equal(value.id,id);
   assert.equal(value.name,name);
@@ -466,6 +466,12 @@ test('#390 premerge staging CLI is import-inert, SHA-pinned and requires a separ
   ...env,PS_EDITORIAL_BACKUP_DIR:'',PS_EDITORIAL_CONFIRMATION:''
  }).id,id,'read-only verification needs neither backup nor write confirmation');
  assert.equal(validateCliInputs('import',env).name,name);
+ assert.equal(validateCliInputs('backup',{
+  ...env,PS_EDITORIAL_CONFIRMATION:''
+ }).name,name,'read-only encrypted backup phase needs no write confirmation');
+ assert.throws(()=>validateCliInputs('backup',{
+  ...env,PS_EDITORIAL_BACKUP_DIR:''
+ }),/backup directory/);
  for(const bad of [
   {...env,CLOUDFLARE_API_TOKEN:''},
   {...env,PS_EDITORIAL_STAGING_ID:PRODUCTION_D1_ID},
@@ -522,6 +528,9 @@ test('#390 premerge staging CLI is import-inert, SHA-pinned and requires a separ
  assert.match(source,/verifyRestorableStagingBackup\(backup,hash,schema.tables/);
  assert.match(source,/renderStagingBackupInventorySQL\(beforeWrite.tables\)/);
  assert.match(source,/remoteStagingFingerprints\(/);
+ assert.match(source,/if\(operation==='backup'\)/);
+ assert.match(source,/process\.env\.PS_EDITORIAL_BACKUP_PHASE/);
+ assert.match(source,/Import rehearsal requires entirely empty reviewed staging tables/);
  assert.match(source,/assertSameStagingFingerprints\(/);
  assert.match(source,/assertStagingBackupRows\(/);
  assert.ok(source.indexOf('const initialFingerprints=remoteStagingFingerprints(')<
