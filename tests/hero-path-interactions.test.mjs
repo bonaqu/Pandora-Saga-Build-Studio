@@ -295,7 +295,7 @@ test('#390 Path accessible RU/EN copy keeps three live branch numbers and full s
  const applied=[];
  f.api.bindCopy=(node,key,ru,en,attribute='text',suffix='',prefix='')=>{
   applied.push({key,ru,en,attribute,suffix,prefix});
-  const copy=key==='pathBranchStatsAria'?'Статистика QA: ':
+  const copy=key==='pathBranchStatsAria'?'Статистика QA:':
    key==='pathClassLimitAria'?'Лимит QA:':ru;
   if(attribute==='text')node.textContent=prefix+copy+suffix;
   else node.setAttribute(attribute,prefix+copy+suffix);
