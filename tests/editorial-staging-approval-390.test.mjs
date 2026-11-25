@@ -26,7 +26,7 @@ test('#390 Cloudflare write phases require two successful exact-source CI workfl
 
 test('#390 retained encrypted artifact receipt must match source SHA and backup phase',()=>{
  const name=expectedStagingArtifactName('before',sha,digest);
- assert.equal(name,'ps390-before-'+('a'.repeat(12))+'-'+('b'.repeat(16)));
+ assert.equal(name,'ps390-before-'+('a'.repeat(40))+'-'+('b'.repeat(64)));
  const good={name,expired:false,size_in_bytes:456,
   workflow_run:{id:12345,head_sha:sha,head_branch:'work/947-issue390-editorial-parity'}};
  assert.equal(assertRetainedStagingArtifact([good],'before',sha,digest),name);

@@ -1,7 +1,8 @@
 # #390: READ-ONLY isolated staging inventory. No production Worker, Pages or D1.
-# GitHub-hosted runners cannot retain an independent private durable SQL
-# backup. They must NEVER import/rollback or upload staging SQL artifacts.
-# Approved writes use the guarded operator-local premerge runner.
+# THIS workflow is read-only and never uploads source SQL.
+# Separate PR-label-only protected phases use independently retained
+# owner-downloaded encrypted backup BEFORE any remote staging write.
+# Never run an import or rollback from this workflow.
 name: Inspect isolated editorial D1 staging (read only)
 
 on:

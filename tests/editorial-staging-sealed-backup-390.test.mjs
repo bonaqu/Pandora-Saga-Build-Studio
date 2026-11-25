@@ -33,7 +33,8 @@ test('#390 encrypts authenticated D1 SQL and proves exact local decryption befor
  assert.throws(()=>openEditorialBackup(Buffer.from(JSON.stringify(corrupted)),secret,context),
   /authentication/);
  corrupted.sqlSha256=sha256(sql);
- corrupted.ciphertext='AA'+corrupted.ciphertext.slice(2);
+ corrupted.ciphertext=(corrupted.ciphertext[0]==='A'?'B':'A')+
+  corrupted.ciphertext.slice(1);
  assert.throws(()=>openEditorialBackup(Buffer.from(JSON.stringify(corrupted)),secret,context),
   /authentication/);
 });
@@ -47,7 +48,7 @@ test('#390 only encrypted ciphertext and an unprivileged receipt enter upload di
   writeFileSync(file,sql,{mode:0o600});
   writeFileSync(file+'.sha256',sha256(sql)+'  only-source.sql\n',{mode:0o600});
   const receipt=packageEditorialBackup(root,out,secret,context);
-  assert.match(receipt.artifactName,/^ps390-before-a{12}-[a-f0-9]{16}$/);
+  assert.match(receipt.artifactName,/^ps390-before-a{40}-[a-f0-9]{64}$/);
   assert.equal(receipt.sqlSha256,sha256(sql));
   const contents=readdirSync(out).sort();
   assert.deepEqual(contents,['ps390-before-'+('a'.repeat(12))+'.enc','receipt.json']);

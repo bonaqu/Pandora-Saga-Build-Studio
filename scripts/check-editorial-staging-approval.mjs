@@ -32,7 +32,7 @@ export function expectedStagingArtifactName(phase,sha,cipherHash){
  if(!['before','after'].includes(phase)||typeof sha!=='string'||!SHA.test(sha)||
   typeof cipherHash!=='string'||!HASH.test(cipherHash))
   throw Error('Missing exact operator-retained encrypted backup receipt');
- return 'ps390-'+phase+'-'+sha.slice(0,12)+'-'+cipherHash.slice(0,16);
+ return 'ps390-'+phase+'-'+sha+'-'+cipherHash;
 }
 export function assertRetainedStagingArtifact(artifacts,phase,sha,cipherHash){
  const name=expectedStagingArtifactName(phase,sha,cipherHash);

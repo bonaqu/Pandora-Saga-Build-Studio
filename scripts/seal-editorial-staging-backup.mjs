@@ -104,7 +104,8 @@ export function packageEditorialBackup(backupDirectory,outputDirectory,passphras
  if((statSync(outputDirectory).mode&0o777)!==0o700)
   throw Error('Encrypted backup output directory must be private 0700');
  const stub='ps390-'+context.phase+'-'+context.sourceSha.slice(0,12);
- const filename=stub+'.enc',artifactName=stub+'-'+sealed.encryptedSha256.slice(0,16);
+ const filename=stub+'.enc',artifactName='ps390-'+context.phase+'-'+
+  context.sourceSha+'-'+sealed.encryptedSha256;
  const receipt={format:FORMAT,phase:context.phase,sourceSha:context.sourceSha,
   stagingId:context.stagingId,encryptedSha256:sealed.encryptedSha256,
   sqlSha256:plainHash,artifactName};
