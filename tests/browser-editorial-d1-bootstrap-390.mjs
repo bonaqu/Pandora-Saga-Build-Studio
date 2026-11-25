@@ -10,7 +10,8 @@ import worker from '../worker/index.js';
 export async function runEditorialD1Bootstrap390Smoke(browser,base){
  const manifest=buildEditorialDefaultsManifest();
  const api='https://ps-build-studio-cloud.bonaqu.workers.dev';
- const origin='http://pandora-editorial-bootstrap.test';
+ // HTTPS is mandatory: SubtleCrypto digest is unavailable on insecure origins.
+ const origin='https://pandora-editorial-bootstrap.test';
  const key='guideedit.book.ui.label.wiki';
  const sourceOnly='Исходный текст QA';
  const original=manifest.records.find(row=>row.recordKey===key&&row.field==='ru');
@@ -102,6 +103,7 @@ export async function runEditorialD1Bootstrap390Smoke(browser,base){
   await page.locator('#startupOverlay').waitFor({state:'hidden',timeout:30000});
   const state=()=>page.evaluate(()=>({
    status:window.PandoraEditorialDefaults?.status?.()||{active:false,snapshot:null},
+   secure:window.isSecureContext,subtle:typeof window.crypto?.subtle?.digest==='function',
    source:window.PandoraUILocale.baseText('wiki','ru'),
    rendered:window.PandoraUILocale.text('wiki','ru'),
    nav:document.querySelector('#nav [data-tab="wiki"]')?.textContent?.trim()
@@ -111,7 +113,10 @@ export async function runEditorialD1Bootstrap390Smoke(browser,base){
  const active=await runPage('enabled');
  try{
   const result=await active.state();
-  assert.equal(result.status.active,true,'Real browser must activate verified D1');
+  assert.equal(result.secure,true,'SHA verifier requires real browser secure context');
+  assert.equal(result.subtle,true,'SHA-256 must be available in Chromium');
+  assert.equal(result.status.active,true,'Real browser must activate verified D1: '+
+   JSON.stringify({result,fetches:active.hits(),errors:active.errors}));
   assert.equal(result.status.snapshot,manifest.snapshot);
   assert.equal(result.source,sourceOnly,'Synthetic code fallback must differ');
   assert.equal(result.rendered,original.value,'D1 caption must outrank code text');
