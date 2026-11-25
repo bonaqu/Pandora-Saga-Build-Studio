@@ -46,6 +46,9 @@ export async function runEditorialD1Bootstrap390Smoke(browser,base){
    const request=route.request(),url=request.url();
    if(url.startsWith(origin+'/')){
     const publicPath=url.slice(origin.length),target=base+publicPath;
+    if(mode==='missing-client'&&new URL(url).pathname.endsWith(
+     '/pandora-studio-editorial-defaults-client.js'))
+     return route.fulfill({status:404,body:''});
     const response=await route.fetch({url:target});
     if(new URL(url).pathname.endsWith('/pandora-studio-ui-locale.js')){
      const originalJS=await response.text();
@@ -98,7 +101,7 @@ export async function runEditorialD1Bootstrap390Smoke(browser,base){
   await page.goto(origin+'/',{waitUntil:'domcontentloaded',timeout:30000});
   await page.locator('#startupOverlay').waitFor({state:'hidden',timeout:30000});
   const state=()=>page.evaluate(()=>({
-   status:window.PandoraEditorialDefaults.status(),
+   status:window.PandoraEditorialDefaults?.status?.()||{active:false,snapshot:null},
    source:window.PandoraUILocale.baseText('wiki','ru'),
    rendered:window.PandoraUILocale.text('wiki','ru'),
    nav:document.querySelector('#nav [data-tab="wiki"]')?.textContent?.trim()
@@ -125,14 +128,15 @@ export async function runEditorialD1Bootstrap390Smoke(browser,base){
   assert.equal(result.nav,ownerLabel);
   assert.deepEqual(owner.errors,[]);
  }finally{await owner.context.close()}
- for(const mode of ['disabled','bad-digest']){
+ for(const mode of ['disabled','bad-digest','missing-client']){
   const fallback=await runPage(mode);
   try{
    const result=await fallback.state();
    assert.equal(result.status.active,false,'Unverified D1 must not activate: '+mode);
    assert.equal(result.rendered,sourceOnly,'Source must survive: '+mode);
    assert.equal(result.nav,sourceOnly,'Visible UI must survive: '+mode);
-   assert.equal(fallback.hits(),1,'Single bounded fetch: '+mode);
+   assert.equal(fallback.hits(),mode==='missing-client'?0:1,
+    'No optional fetch without client; exactly one otherwise: '+mode);
    assert.deepEqual(fallback.errors,[]);
   }finally{await fallback.context.close()}
  }

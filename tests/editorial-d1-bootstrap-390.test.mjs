@@ -48,7 +48,7 @@ test('#390 production startup pins exact current manifest before CAS and final r
  assert.ok(match,'Required reviewed exact snapshot pin must exist');
  assert.equal(match[1],manifest.snapshot,'A release change must review and re-pin defaults');
  const startup=app.slice(app.indexOf('async function startStudio('));
- assert.match(startup,/const editorialReady=archive\?Promise\.resolve\(false\)/);
+ assert.match(startup,/const editorialReady=archive\|\|typeof window\.PandoraEditorialDefaults\?\.loadPinned!=='function'/);
  assert.match(startup,/PandoraEditorialDefaults\.loadPinned\(EDITORIAL_DEFAULTS_PIN,/);
  assert.match(startup,/endpoint:API\+'\/api\/editorial-defaults'/);
  assert.match(startup,/signal:AbortSignal\.timeout\(6000\)/);

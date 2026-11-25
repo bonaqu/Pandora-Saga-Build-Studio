@@ -13298,7 +13298,8 @@ async function startStudio({archive=false}={}){
   // catalog request. Never wait for it after the game-data gate has opened.
   // On a disabled/missing/corrupt snapshot, loadPinned resolves false and the
   // existing source text + owner CAS remains unchanged.
-  const editorialReady=archive?Promise.resolve(false):
+  const editorialReady=archive||typeof window.PandoraEditorialDefaults?.loadPinned!=='function'?
+   Promise.resolve(false):
    window.PandoraEditorialDefaults.loadPinned(EDITORIAL_DEFAULTS_PIN,{
     endpoint:API+'/api/editorial-defaults',
     signal:AbortSignal.timeout(6000)
