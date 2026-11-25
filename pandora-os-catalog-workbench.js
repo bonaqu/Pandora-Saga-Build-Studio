@@ -86,6 +86,20 @@
     ['searchClear','Очистить','Clear']
   ]);
   const catalogReviewDetailByKey=new Map(catalogReviewDetailCopyRows.map(row=>[row[0],row]));
+  // Source-only accessible action words. The linked item or review title,
+  // live checkbox state, caution and target URL must NEVER become D1 copy.
+  // The standard owner interface editor handles dblclick/F2/CAS/Undo.
+  const catalogAccessibleCopyRows=Object.freeze([
+    ['linkedPreviewAria','Показать связанный предмет:','Show linked item:',
+      'Предпросмотр предмета','Linked item preview'],
+    ['linkedOpenAria','Открыть связанный предмет:','Open linked item:',
+      'Открытие предмета','Open linked item'],
+    ['reviewSelectAria','Выбрать изменение','Select change',
+      'Выбор изменения','Select reviewed change'],
+    ['clearSearchAriaDescription','Очистить поиск по игровым изменениям',
+      'Clear game changes search','Очистка поиска','Clear search']
+  ]);
+  const catalogAccessibleByKey=new Map(catalogAccessibleCopyRows.map(row=>[row[0],row]));
   // These are literal display captions of native <summary> controls.
   // A visible caption belongs to D1/CAS, while any attached hover hint has
   // its own key/pencil and the native disclosure stays fully functional.
@@ -130,7 +144,8 @@
   // Administrator-only review. UI selection is never a D1 write.
   // The Worker validates the auth token and the expected active snapshot.
   async function open({request, apiBase, modal, h, afterPublish, getHero=()=>null,
-    lang='ru',canEdit=false,copyLabel,editLabel:bindEditor,canCommit=()=>true}) {
+    lang='ru',canEdit=false,copyLabel,editLabel:bindEditor,
+    bindCopy:bindAccessibleCopy,createCopyEditor,canCommit=()=>true}) {
     const tr=(ru,en)=>lang==='en'?en:ru;
     const actionQueue=createReviewActionQueue();
     const cancelPending=()=>actionQueue.cancel();
@@ -162,6 +177,16 @@
        tr('Игровая связь по каталогу','Catalog source relationship');
     };
     const copy=(key,ru,en)=>copyLabel?.(key,ru,en)||tr(ru,en);
+    // Reuse the application's exact semantic binding for Save and Undo.
+    // Attribute-only copy does not make the source button itself editable.
+    const accessible=(node,key,attribute='aria-label',suffix='',prefix='')=>{
+      const row=catalogAccessibleByKey.get(key);
+      if(!row)throw Error('Unreviewed catalog accessible copy: '+key);
+      if(typeof bindAccessibleCopy==='function')
+        bindAccessibleCopy(node,key,row[1],row[2],attribute,suffix,prefix);
+      else node.setAttribute(attribute,prefix+copy(key,row[1],row[2])+suffix);
+      return node;
+    };
     // Direct caption dblclick/F2/blur uses the existing D1 CAS and Undo.
     // An ordinary guest only sees text; dynamic numeric values live in
     // independent siblings rather than inside a D1-edited string.
@@ -584,6 +609,12 @@
        action(exportButton,'exportButton','Скачать выбранное для GitHub','Download selected for GitHub')
       ])
     ]);
+    // Shared compact owner panel; no per-item pencil, no source game edits.
+    if(canEdit&&typeof createCopyEditor==='function'){
+      const editor=createCopyEditor(catalogAccessibleCopyRows,
+        'Доступные подписи сверки','Review accessibility labels');
+      if(editor)advanced.append(editor);
+    }
     actions.append(action(live,'liveButton','Проверить изменения в текущей игре','Check live game updates'),
      secondaryHint(archiveChoice,'hintArchiveDisclosure',
        'Открыть отдельную сверку с архивом GitHub Pages. Архивная копия не подтверждает актуальные параметры на игровом сайте.',
@@ -634,6 +665,7 @@
      disabled:true,
      'aria-description':tr('Очистить поиск по игровым изменениям','Clear game changes search'),
      onclick:()=>{search.value='';render();search.focus({preventScroll:true})}});
+    accessible(clearSearch,'clearSearchAriaDescription','aria-description');
     const clearRow=catalogReviewDetailByKey.get('searchClear');
     const clearControl=action(clearSearch,clearRow[0],clearRow[1],clearRow[2]);
     if(clearControl!==clearSearch)clearControl.classList.add('os-sync-search-clear-editor');
@@ -1129,9 +1161,9 @@
         const refKey=referenceContext?
           referenceContext+'|'+segment.id+'|'+(occurrence++):null;
         const wasExpanded=refKey?expandedReferences.has(refKey):false;
-        const button=h('button',{type:'button',class:'os-sync-item-ref',
-          'aria-label':tr('Показать связанный предмет: ','Show linked item: ')+segment.text,
-          'aria-expanded':String(wasExpanded),text:segment.text});
+        const button=accessible(h('button',{type:'button',class:'os-sync-item-ref',
+          'aria-expanded':String(wasExpanded),text:segment.text}),
+        'linkedPreviewAria','aria-label',' '+segment.text);
         // The tooltip is independently authored. Its editor pencil is NEVER
         // a caption pencil, and never enters the source item button's click.
         const tooltipRow=catalogReviewDetailByKey.get('hintLinkedReference');
@@ -1183,12 +1215,11 @@
             const opener=h('span',{class:'os-sync-reference-open-editor'});
             opener.append(
               reviewCaption('span',{class:'os-sync-reference-open-copy'},'linkedReferenceOpen'),
-              h('a',{href:itemHref,target:'_blank',rel:'noopener noreferrer',
+              accessible(h('a',{href:itemHref,target:'_blank',rel:'noopener noreferrer',
                 // Preserve the original stable link selector/API; the new
                 // icon class is only for the split owner-edit presentation.
                 class:'os-sync-reference-open os-sync-reference-open-icon',
-                'aria-label':tr('Открыть связанный предмет: ','Open linked item: ')+segment.text,
-                text:'↗'})
+                text:'↗'}),'linkedOpenAria','aria-label',' '+segment.text)
             );
             preview.append(opener);
           }else{
@@ -1441,9 +1472,10 @@
               tr(' из ',' of ')+variantTotal.get(description.title)+
               tr(' с этим названием',' with this name');
           const visibleTitle=lang==='en'?description.titleEn||description.title:description.title;
-          const input = h('input',{type:'checkbox',checked:checked(change),disabled:busy,
-            'aria-label':tr('Выбрать изменение ','Select change ')+visibleTitle+
-              (hasLinks||visuallySame?tr(' — требуется отдельная проверка',' — requires separate review'):'')});
+          const input = accessible(h('input',{type:'checkbox',checked:checked(change),
+            disabled:busy}),'reviewSelectAria','aria-label',' '+visibleTitle+
+              (hasLinks||visuallySame?tr(' — требуется отдельная проверка',
+                ' — requires separate review'):''));
           input.addEventListener('change',()=>{
             setChoice(change,input.checked);
             row.classList.toggle('os-sync-record-selected',input.checked);
