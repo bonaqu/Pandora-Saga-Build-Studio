@@ -740,10 +740,10 @@ test('#390 Hero Path aria/help source captions exclude dynamic branch names and 
  const weapon=[...path.matchAll(
   /\['(skillWeaponRange)','([^']+)','([^']+)'\]/g
  )].map(m=>[m[1],m[2],m[3]]);
- assert.equal(binds.length,22);
+ assert.equal(binds.length,23);
  assert.equal(help.length,2);
  assert.equal(weapon.length,1);
- assert.equal(manifest.stats.cohorts['hero-path-accessible'],48);
+ assert.equal(manifest.stats.cohorts['hero-path-accessible'],50);
  for(const [key,ru,en] of [...binds,...help,...weapon]){
   const id='guideedit.book.path.'+
    key.replace(/[A-Z]/g,ch=>'-'+ch.toLowerCase());
