@@ -300,3 +300,63 @@ test('#390: catalog summary is D1-editable RU/EN text with persistent count sibl
  assert.match(css,/\.os-sync-status-copy\.origin-copy-editable::after\{content:none\}/);
  assert.doesNotMatch(workbench,/os-sync-status-pencil/);
 });
+
+
+test('#390 catalog accessible copy updates live source-named controls through the same owner D1/CAS/Undo bindings',async()=>{
+ const source=workbench.match(/const catalogAccessibleCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ assert.ok(source,'Audited bilingual accessible copy registry required');
+ const rows=runInNewContext('('+source[1]+')');
+ const keys=['linkedPreviewAria','linkedOpenAria',
+  'reviewSelectAria','clearSearchAriaDescription'];
+ assert.deepEqual(Array.from(rows,row=>row[0]),keys);
+ const {buildEditorialDefaultsManifest}=await import('../scripts/plan-editorial-d1-defaults.mjs');
+ const manifest=buildEditorialDefaultsManifest();
+ assert.equal(manifest.stats.cohorts['catalog-review-accessible'],8);
+ for(const [key,ru,en,shortRu,shortEn] of rows){
+  assert.ok(ru.trim()&&en.trim()&&shortRu.trim()&&shortEn.trim());
+  assert.equal(ru,ru.trim());
+  assert.equal(en,en.trim(),'D1 copy cannot contain a dynamic separator');
+  const slug=key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase());
+  const recordKey='guideedit.book.catalog-sync.'+slug;
+  assert.equal(manifest.records.find(row=>row.recordKey===recordKey&&row.field==='ru')?.value,ru);
+  assert.equal(manifest.records.find(row=>row.recordKey===recordKey&&row.field==='en')?.value,en);
+  assert.equal(root.PandoraHonorGuide.validOverride('book.catalog-sync.'+slug,
+   JSON.stringify({ru:'Новая подпись',en:'Updated caption'})),true);
+  assert.doesNotMatch(recordKey,/skill-id|item-id|account|source-name|selected-count/);
+ }
+ const sourceFn=workbench.match(/const accessible=(\([\s\S]*?\n    \});\n    \/\/ Direct caption/);
+ assert.ok(sourceFn,'Actual accessible binding is used by reviewed items');
+ const bindings=[];
+ const bound=runInNewContext('('+sourceFn[1]+')',{
+  catalogAccessibleByKey:new Map(rows.map(row=>[row[0],row])),
+  bindAccessibleCopy:(node,key,ru,en,attribute,suffix,prefix)=>
+   bindings.push({node,key,ru,en,attribute,suffix,prefix}),
+  copy:()=>{throw Error('Must use shared owner binding')}
+ });
+ const label={setAttribute:()=>{throw Error('Shared binding must own live attributes')}};
+ assert.equal(bound(label,'linkedPreviewAria','aria-label',' Источник_предмет_123'),label);
+ assert.equal(bound(label,'reviewSelectAria','aria-label',' Сохранённый источник · требует проверки'),label);
+ assert.equal(bound(label,'clearSearchAriaDescription','aria-description'),label);
+ assert.deepEqual(bindings.map(b=>b.key),[
+  'linkedPreviewAria','reviewSelectAria','clearSearchAriaDescription'
+ ]);
+ assert.equal(bindings[0].ru,'Показать связанный предмет:');
+ assert.equal(bindings[0].suffix,' Источник_предмет_123');
+ assert.equal(bindings[1].ru,'Выбрать изменение');
+ assert.equal(bindings[1].suffix,' Сохранённый источник · требует проверки');
+ assert.equal(bindings[2].attribute,'aria-description');
+ assert.equal(bindings[2].suffix,'');
+ assert.ok(bindings.every(b=>b.prefix===''));
+ // Actual actions still use stable source names, real hrefs and immutable
+ // review caution; owner copy can only replace the authored prefix.
+ assert.match(workbench,/accessible\(h\('button',\{type:'button',class:'os-sync-item-ref'/);
+ assert.match(workbench,/'linkedPreviewAria','aria-label',' '\+segment\.text/);
+ assert.match(workbench,/'linkedOpenAria','aria-label',' '\+segment\.text/);
+ assert.match(workbench,/'reviewSelectAria','aria-label',' '\+visibleTitle\+/);
+ assert.match(workbench,/hasLinks\|\|visuallySame\?tr\(' — требуется отдельная проверка'/);
+ assert.match(workbench,/const itemHref='#wiki\/item\/'\+encodeURIComponent\(segment\.id\)/);
+ assert.match(app,/bindCopy:\(node,key,ru,en,attribute='aria-label',suffix='',prefix=''\)=>/);
+ assert.match(app,/ownerInterfaceEditor\('catalog-sync',rows,headingRu,headingEn\)/);
+ assert.match(app,/onCommitted:visible=>applyOwnerInterfaceEditedValue\(section,key,visible\)/);
+ assert.match(app,/if\(ownerCopyKey\(section,id\)!==key\)continue/);
+});
