@@ -527,7 +527,7 @@ test('#390 premerge staging CLI is import-inert, SHA-pinned and requires a separ
  assert.match(beforeMutation,/const beforeWrite=assertStagingSchema/);
  assert.match(beforeMutation,/assertStagingImportAbsent\(readStagingQuery\(\)\)/);
  assert.match(beforeMutation,/currentPresence\.rows!==initialPresence\.rows/);
- assert.ok(source.indexOf('assertStagingRollbackPresent(wrangler(cmd.readFile))')<
+ assert.ok(source.indexOf('assertStagingRollbackPresent(readStagingQuery())')<
   source.indexOf('const backupRoot=checkedBackupDirectory'),
   'A nonexistent snapshot cannot count as verified rollback');
  assert.match(source,/openSync\(path,constants\.O_RDONLY\|constants\.O_NOFOLLOW\)/);
@@ -556,12 +556,12 @@ test('#390 premerge staging CLI is import-inert, SHA-pinned and requires a separ
   source.indexOf('wrangler(cmd.executeFile)'),
   'independent backup validation precedes every write');
  assert.match(source,/verifyEditorialDefaultsReadback\(manifest,parsed.metadata,parsed.rows\)/);
- assert.match(source,/assertRolledBack\(wrangler\(cmd.readFile\)\)/);
+ assert.match(source,/assertRolledBack\(readStagingQuery\(\)\)/);
  assert.match(source,/if\(operation==='verify'\)/);
  const verifyBranch=source.slice(source.indexOf("if(operation==='verify'){"),
   source.indexOf('// An empty database',source.indexOf("if(operation==='verify'){")));
  assert.match(verifyBranch,/renderEditorialDefaultsReadbackSQL\(manifest\)/);
- assert.match(verifyBranch,/parseWranglerEditorialReadback\(wrangler\(cmd.readFile\)\)/);
+ assert.match(verifyBranch,/parseWranglerEditorialReadback\(readStagingQuery\(\)\)/);
  assert.match(verifyBranch,/verifyEditorialDefaultsReadback\(manifest,parsed.metadata,parsed.rows\)/);
  assert.match(verifyBranch,/schema.tables.join\('\|'\)/);
  assert.doesNotMatch(verifyBranch,/wrangler\(cmd.executeFile\)|cmd.export|backupRoot/,
