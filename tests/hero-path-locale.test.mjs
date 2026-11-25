@@ -194,4 +194,25 @@ test('issue 390: dynamic Path slider aria has D1 editable copy but never stores 
  const app=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
  assert.ok(app.includes("['pathRangeValueAria','Очки ветки"));
  assert.ok(app.includes("bindCopy:(node,key,ru,en,attribute='text',suffix='',prefix='')=>"));
+ assert.equal(app.split("'aria-label','aria-valuetext'").length,3,
+  'Save and Undo must both update the live slider accessible value');
+});
+
+
+test('issue 390: successful owner save updates slider aria-valuetext without changing four live numeric results',()=>{
+ const app=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
+ const start=app.indexOf('function applyOwnerInterfaceEditedValue(');
+ const end=app.indexOf('// Compact non-modal owner-only copy editor',start);
+ assert.ok(start>=0&&end>start);
+ const attrs={'aria-valuetext':'Original values: 17 / 14 / 12 / 90'};
+ const range={dataset:{ownerInterfaceBindings:JSON.stringify({
+  'aria-valuetext':{section:'path',key:'pathRangeValueAria',
+   ru:'Очки ветки / мастерство / вложено сверх старта / предел:',
+   en:'Branch points / mastery / extra invested / limit:',
+   prefix:'',suffix:' 17 / 14 / 12 / 90'}
+ })},querySelector:()=>null,setAttribute:(key,value)=>{attrs[key]=value}};
+ const update=Function('document',app.slice(start,end)+
+  '\\nreturn applyOwnerInterfaceEditedValue;')({querySelectorAll:()=>[range]});
+ update('path','pathRangeValueAria','Custom branch slider wording:');
+ assert.equal(attrs['aria-valuetext'],'Custom branch slider wording: 17 / 14 / 12 / 90');
 });

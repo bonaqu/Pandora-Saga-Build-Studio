@@ -1311,7 +1311,7 @@ function applyOwnerInterfaceEditedValue(section,key,visible){
    const value=(field.prefix||'')+visible+(field.suffix||'');
    if(attr==='text'){
     if(!editingText)node.textContent=value;
-   }else if(['placeholder','aria-label','title','aria-description','data-help'].includes(attr)){
+   }else if(['placeholder','aria-label','aria-valuetext','title','aria-description','data-help'].includes(attr)){
     node.setAttribute(attr,value);
     if(attr==='placeholder'&&node.getAttribute?.('contenteditable'))
      node.dataset.placeholder=value;
@@ -10942,7 +10942,7 @@ function refreshVisibleOwnerCopy(recordKey){
    const value=(prefix||'')+ownerCopy(section,id,ru,en)+(suffix||'');
    if(attr==='text'){
     if(!editingText)ownerDockPatchText(node,value);
-   }else if(['placeholder','aria-label','title','aria-description','data-help'].includes(attr)){
+   }else if(['placeholder','aria-label','aria-valuetext','title','aria-description','data-help'].includes(attr)){
     ownerDockPatchAttr(node,attr,value);
     if(attr==='aria-description'&&node.dataset.guideHint!==undefined)
      ownerDockPatchData(node,'guideHint',value);
