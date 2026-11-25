@@ -1378,6 +1378,29 @@ export function buildEditorialDefaultsManifest(){
   append('guideedit.book.catalog-sync.'+slug,'en',en,'catalog-review-details');
  }
 
+ // Four source-only accessibility fragments. Game object names, checkbox
+ // states, navigation targets and security cautions remain runtime-only.
+ const accessibleSource=read('pandora-os-catalog-workbench.js').match(
+  /const catalogAccessibleCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ if(!accessibleSource)throw Error('Missing catalog accessible source registry');
+ const accessibleRows=runInNewContext('('+accessibleSource[1]+')',{},{
+  filename:'catalogAccessibleCopyRows',timeout:5000
+ });
+ const expectedAccessible=['linkedPreviewAria','linkedOpenAria',
+  'reviewSelectAria','clearSearchAriaDescription'];
+ if(!Array.isArray(accessibleRows)||
+  accessibleRows.length!==expectedAccessible.length||
+  accessibleRows.map(r=>r?.[0]).sort().join('|')!==expectedAccessible.sort().join('|'))
+  throw Error('Unreviewed catalog accessibility semantic keys');
+ for(const row of accessibleRows){
+  if(!Array.isArray(row)||row.length!==5||
+   row.some(value=>typeof value!=='string'||!value.trim()||value!==value.trim()))
+   throw Error('Invalid catalog accessibility source-only RU/EN row');
+  const [key,ru,en]=row,slug=key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  append('guideedit.book.catalog-sync.'+slug,'ru',ru,'catalog-review-accessible');
+  append('guideedit.book.catalog-sync.'+slug,'en',en,'catalog-review-accessible');
+ }
+
  // Reviewed native <details> disclosures also have stable authorial
  // display captions. The clickable open state, source diagnostics and
  // independent hover hints must NEVER enter these D1 source-only fields.
