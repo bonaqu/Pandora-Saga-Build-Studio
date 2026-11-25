@@ -101,11 +101,11 @@ test('issue 390: missing Origin race shares reviewed Profile D1 copy, selected r
  assert.ok(render.includes("raceName.replaceChildren(profileCopyLabel("));
  assert.ok(render.includes("'portrait-race-missing','Раса не выбрана','Race not selected'"));
  assert.ok(render.includes("raceName.textContent=races[state.race][lang==='en'?1:0]"));
- assert.doesNotMatch(render,/ownerCopyLabel\\(raceName/);
+ assert.ok(!render.includes('ownerCopyLabel(raceName'));
  const planner=read('scripts/plan-editorial-d1-defaults.mjs');
  assert.match(planner,/profileAuthorialCopy/);
  const ui=read('pandora-studio-app.js');
- assert.match(ui,/'portrait-race-missing':\\['Раса не выбрана','Race not selected'\\]/);
+ assert.ok(ui.includes("'portrait-race-missing':['Раса не выбрана','Race not selected']"));
 });
 
 
