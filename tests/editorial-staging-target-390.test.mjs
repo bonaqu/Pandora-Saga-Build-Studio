@@ -653,7 +653,7 @@ test('#390 independent backup replay rejects partial exports, corrupt SQL and ch
   assert.throws(()=>replay(exportSQL+'CREATE TABLE accounts (id TEXT);',both,
    expected,expected),/unexpected schema objects/);
   assert.throws(()=>replay('not SQL',[],{markers:0,rows:0},
-   {markers:0,rows:0}),/restore FAILED/);
+   {markers:0,rows:0},{}),/restore FAILED/);
   assert.deepEqual(replay('-- empty remote staging',[],
    {markers:0,rows:0},{markers:0,rows:0},{}),{markers:0,rows:0});
   writeFileSync(path,exportSQL,{mode:0o600});
