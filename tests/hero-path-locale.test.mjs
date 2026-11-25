@@ -212,7 +212,7 @@ test('issue 390: successful owner save updates slider aria-valuetext without cha
    prefix:'',suffix:' 17 / 14 / 12 / 90'}
  })},querySelector:()=>null,setAttribute:(key,value)=>{attrs[key]=value}};
  const update=Function('document',app.slice(start,end)+
-  '\\nreturn applyOwnerInterfaceEditedValue;')({querySelectorAll:()=>[range]});
+  '\nreturn applyOwnerInterfaceEditedValue;')({querySelectorAll:()=>[range]});
  update('path','pathRangeValueAria','Custom branch slider wording:');
  assert.equal(attrs['aria-valuetext'],'Custom branch slider wording: 17 / 14 / 12 / 90');
 });
