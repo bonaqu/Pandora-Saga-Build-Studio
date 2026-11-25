@@ -949,7 +949,7 @@ export async function runAdminEntrySmoke(browser,base){
    ?.dataset.guideHint==='Подсказка дополнительных инструментов QA.',null,{timeout:12000});
   assert.equal(JSON.parse(townOverrides.get('guideedit.book.catalog-sync.hint-advanced-disclosure')).ru,
    'Подсказка дополнительных инструментов QA.');
-  assert.equal(await advancedBlock.locator('details').evaluate(el=>el.open),false);
+  assert.equal(await advancedBlock.locator(':scope > details.os-sync-advanced').evaluate(el=>el.open),false);
   await dialog.locator('.os-sync-advanced>summary').click();
   const prButton=dialog.getByRole('button',{name:'Создать PR в GitHub'});
   await prButton.waitFor({state:'visible'});
