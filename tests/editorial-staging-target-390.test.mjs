@@ -473,8 +473,8 @@ test('#390 premerge staging CLI is import-inert, SHA-pinned and requires a separ
  assert.match(source,/const opened=fstatSync\(fd\)/);
  assert.match(source,/fchmodSync\(fd,0o600\)/);
  assert.match(source,/syncBackupDirectory\(backupRoot\)/);
- assert.match(source,/verifyRestorableStagingBackup\\(backup,hash,schema.tables/);
- assert.match(source,/renderStagingBackupInventorySQL\\(beforeWrite.tables\\)/);
+ assert.match(source,/verifyRestorableStagingBackup\(backup,hash,schema.tables/);
+ assert.match(source,/renderStagingBackupInventorySQL\(beforeWrite.tables\)/);
  assert.ok(source.indexOf('verifyRestorableStagingBackup(backup,hash')<
   source.indexOf('wrangler(cmd.executeFile)'),
   'Full local SQL replay must precede remote writes');
