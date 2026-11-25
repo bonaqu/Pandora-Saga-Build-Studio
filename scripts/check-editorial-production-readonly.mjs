@@ -3,6 +3,7 @@
 // PRAGMA table_xinfo or D1 list; never export private rows or write to D1.
 // The independent normal production tables/accounts/builds are not read.
 import {spawnSync} from 'node:child_process';
+import {createHash} from 'node:crypto';
 import {mkdtempSync,rmSync,writeFileSync} from 'node:fs';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
@@ -109,6 +110,10 @@ export async function verifyProductionWorker(fetcher=fetch){
   data.release!==MANIFEST.release||!Array.isArray(data.records)||
   data.records.length!==MANIFEST.records.length)
   throw Error('Already enabled production reader is not pinned to the audited source');
+ const digest=createHash('sha256').update(JSON.stringify({schema:1,
+  release:data.release,records:data.records}),'utf8').digest('hex');
+ if(data.schema!==1||digest!==MANIFEST.digest)
+  throw Error('Public Worker editorial row content SHA-256 does not match reviewed source');
  // Do not log or persist the full source-authorial response.
  return 'enabled-and-pinned';
 }

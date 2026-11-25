@@ -68,10 +68,14 @@ test('#390 production Worker preflight checks health and disabled/pinned status'
  });
  assert.equal(await verifyProductionWorker(mock(404,{error:'Not found'})),'disabled');
  assert.equal(await verifyProductionWorker(mock(200,{
-  snapshot:manifest.snapshot,release:manifest.release,sha256:manifest.digest,
-  records:Array.from({length:manifest.records.length},()=>({}))
+  schema:1,snapshot:manifest.snapshot,release:manifest.release,sha256:manifest.digest,
+  records:manifest.records
  })),'enabled-and-pinned');
  await assert.rejects(()=>verifyProductionWorker(mock(503,{})),/Unexpected/);
+ await assert.rejects(()=>verifyProductionWorker(mock(200,{
+  schema:1,snapshot:manifest.snapshot,release:manifest.release,sha256:manifest.digest,
+  records:manifest.records.map((r,i)=>i===0?{...r,value:r.value+'tamper'}:r)
+ })),/SHA-256/);
  await assert.rejects(()=>verifyProductionWorker(mock(200,{
   snapshot:'0.947.0-0000000000000000',records:[]
  })),/not pinned/);

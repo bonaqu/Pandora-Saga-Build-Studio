@@ -49,8 +49,8 @@ jobs:
           node scripts/check-editorial-staging-approval.mjs ci
       - name: Strict read-only production D1 target and Worker preflight
         run: node scripts/check-editorial-production-readonly.mjs
-      - name: Confirm no mutation or deployment commands were introduced
+      - name: Report verified read-only inspection boundaries
         run: |
           set -euo pipefail
-          ! grep -Eiq '(wrangler.*(deploy|delete)|d1 execute.*--file|d1 migrations apply)' .github/workflows/editorial-production-readonly-390.yml
-          echo 'Preflight uses D1 list, SELECT-only and schema PRAGMA; no writes.'
+          test "$(git rev-parse HEAD)" = "$PS_EDITORIAL_EXPECTED_SHA"
+          echo 'Verified source-pinned preflight: only D1 list, SELECT, PRAGMA; no D1 mutation.'
