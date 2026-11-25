@@ -125,6 +125,10 @@ function saveView(){try{sessionStorage.setItem(VIEW_KEY,JSON.stringify({
  }))}catch{}}
 
 const API='https://ps-build-studio-cloud.bonaqu.workers.dev';
+// #390: exact release/digest only. The Worker endpoint is disabled unless the
+// operator enables its protected read-only preview AFTER a verified D1 seed.
+// A missing/invalid/slow snapshot never replaces authorial source or CAS edits.
+const EDITORIAL_DEFAULTS_PIN='0.948.0-5637e5c111eb4528';
 const STATS=['Выносливость','Сила','Ловкость','Сноровка','Дух','Интеллект'];
 const portraitOptions=[{"race":0,"gender":1},{"race":0,"gender":0},{"race":1,"gender":1},{"race":1,"gender":0},{"race":2,"gender":0},{"race":3,"gender":0},{"race":4,"gender":0},{"race":5,"gender":0}];
 function selectedPortraitIndex(race,gender){
@@ -13290,10 +13294,22 @@ async function startStudio({archive=false}={}){
   archive?'Открываем сохранённую копию игры…':'Загружаем игровые данные…',
   archive?'Opening saved game data…':'Loading game data…');
  try{
+  // Start the optional, read-only editorial fetch alongside the required live
+  // catalog request. Never wait for it after the game-data gate has opened.
+  // On a disabled/missing/corrupt snapshot, loadPinned resolves false and the
+  // existing source text + owner CAS remains unchanged.
+  const editorialReady=archive?Promise.resolve(false):
+   window.PandoraEditorialDefaults.loadPinned(EDITORIAL_DEFAULTS_PIN,{
+    endpoint:API+'/api/editorial-defaults',
+    signal:AbortSignal.timeout(6000)
+   });
   const loaded=await loadCatalog({archive,commit:false});
   if(attempt!==startupAttempt||!loaded)return;
   startupMessage('Проверяем игровые данные и переводы…','Validating game data and translations…');
   await skillLabelsReady;
+  // Install only a completely SHA-verified, explicitly pinned snapshot BEFORE
+  // applying owner overrides or the final locale/render pass.
+  await editorialReady;
   if(!archive)await loadOverrides({strict:true,commit:false});
   if(attempt!==startupAttempt)return;
   if(activeTab==='wiki')await loadWiki();
