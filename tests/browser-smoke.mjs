@@ -22,6 +22,7 @@ import {runGemOptionAria853Smoke} from './browser-gem-aria-853.mjs';
 import {runItemPropertiesArrow866Smoke} from './browser-item-properties-arrow-866.mjs';
 import {runZeroSoulTabs873Smoke} from './browser-zero-soul-tabs-873.mjs';
 import {runPublicD1Copy874Smoke} from './browser-public-d1-copy-874.mjs';
+import {runEditorialD1Bootstrap390Smoke} from './browser-editorial-d1-bootstrap-390.mjs';
 import {runOnlineD1Required878Smoke} from './browser-online-d1-required-878.mjs';
 import {runOnlineOwnerDraft879Smoke} from './browser-online-owner-draft-879.mjs';
 import {runOnlineStartupStorage880Smoke} from './browser-online-startup-storage-880.mjs';
@@ -111,6 +112,7 @@ const scenarios=[
   ['item-properties-arrow-866',runItemPropertiesArrow866Smoke],
   ['zero-soul-tabs-873',runZeroSoulTabs873Smoke],
   ['public-d1-copy-874',runPublicD1Copy874Smoke],
+  ['editorial-d1-bootstrap-390',runEditorialD1Bootstrap390Smoke],
   ['online-d1-required-878',runOnlineD1Required878Smoke],
   ['online-owner-draft-879',runOnlineOwnerDraft879Smoke],
   ['online-startup-storage-880',runOnlineStartupStorage880Smoke],
