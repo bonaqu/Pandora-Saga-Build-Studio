@@ -11017,7 +11017,10 @@ function refreshVisibleOwnerCopy(recordKey){
  }
 }
 function refreshVisibleProfileCopy(){
- for(const node of document.querySelectorAll('#detailContent [data-profile-copy-key]')){
+ // This source-only missing-race caption is also mounted in Origin,
+ // outside detailContent. Save/Undo refresh both locations by the same key.
+ for(const node of document.querySelectorAll(
+  '#detailContent [data-profile-copy-key], #originRaceName [data-profile-copy-key]')){
   if(node.querySelector('.wiki-inline-input'))continue;
   const key=node.dataset.profileCopyKey;
   const value=ownerCopy('profile',key,node.dataset.profileCopyRu,node.dataset.profileCopyEn);

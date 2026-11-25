@@ -107,3 +107,20 @@ test('issue 390: missing Origin race shares reviewed Profile D1 copy, selected r
  const ui=read('pandora-studio-app.js');
  assert.match(ui,/'portrait-race-missing':\\['Раса не выбрана','Race not selected'\\]/);
 });
+
+
+test('issue 390: shared Origin missing-race caption follows Profile CAS Save and Undo',()=>{
+ const app=read('pandora-studio-app.js');
+ const start=app.indexOf('function refreshVisibleProfileCopy(){');
+ const end=app.indexOf('async function undoOwnerEdit()',start);
+ assert.ok(start>0&&end>start);
+ const refresh=app.slice(start,end);
+ assert.ok(refresh.includes("'#detailContent [data-profile-copy-key], #originRaceName [data-profile-copy-key]'"));
+ assert.ok(refresh.includes("ownerCopy('profile',key,node.dataset.profileCopyRu,node.dataset.profileCopyEn)"));
+ const render=app.slice(app.indexOf('function renderOriginPassives(){'),
+  app.indexOf('function ',app.indexOf('function renderOriginPassives(){')+10));
+ assert.ok(render.includes("raceName.textContent=races[state.race][lang==='en'?1:0]"));
+ const undo=app.slice(end,app.indexOf('function ',end+20));
+ assert.ok(undo.includes("last.key.startsWith('guideedit.book.profile.')"));
+ assert.ok(undo.includes('refreshVisibleProfileCopy()'));
+});
