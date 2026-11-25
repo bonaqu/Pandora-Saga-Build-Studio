@@ -29,7 +29,7 @@ test('#390 complete production SQL export restores required tables without expos
  const sql=exportSQL();
  assert.equal(proveProductionExportCanRestore(sql).ok,true);
  assert.throws(()=>proveProductionExportCanRestore(Buffer.from(
-  'CREATE TABLE overrides(key TEXT);'.repeat(8))),/missing required table/);
+  'CREATE TABLE overrides(key TEXT);'+(' '.repeat(160)))),/missing required table/);
  assert.throws(()=>proveProductionExportCanRestore(Buffer.from('DROP TABLE accounts;'.repeat(20))),
   /RESTORE PROOF FAILED/);
 });
@@ -48,7 +48,8 @@ test('#390 production backup encryption authenticates exact SHA and D1 UUID',()=
  assert.throws(()=>decryptProductionSQL(sealed.bytes,pass,
   {...meta,sourceSha:'b'.repeat(40)}));
  const tampered=JSON.parse(sealed.bytes.toString());
- tampered.ciphertext='A'+tampered.ciphertext.slice(1);
+ tampered.ciphertext=(tampered.ciphertext[0]==='A'?'B':'A')+
+  tampered.ciphertext.slice(1);
  assert.throws(()=>decryptProductionSQL(Buffer.from(JSON.stringify(tampered)),pass,meta),
   /authentication/);
  assert.throws(()=>encryptProductionSQL(sql,'short',meta));
