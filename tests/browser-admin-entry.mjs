@@ -1476,6 +1476,50 @@ export async function runAdminEntrySmoke(browser,base){
   const goto=linked.locator('.os-sync-reference-open').first();
   assert.equal(await goto.getAttribute('href'),'#wiki/item/300001');
   assert.equal(await goto.getAttribute('target'),'_blank');
+  // #390: real owner D1 CAS edit of four attribute-only captions. None may
+  // mutate linked item names/URLs, safety cues or the checkbox selection.
+  const accessPanel=dialog.locator('.os-sync-advanced > .studio-owner-interface-editor');
+  await accessPanel.waitFor({state:'attached'});
+  if(!await accessPanel.evaluate(el=>el.open))await accessPanel.locator('summary').click();
+  const keys=await accessPanel.locator('[data-owner-copy-id]')
+   .evaluateAll(nodes=>nodes.map(el=>el.dataset.ownerCopyId));
+  assert.deepEqual(keys,['linkedPreviewAria','linkedOpenAria','reviewSelectAria',
+   'clearSearchAriaDescription']);
+  const editAccessible=async(key,value)=>{
+   const label=accessPanel.locator('[data-owner-copy-id="'+key+'"]');
+   await label.dblclick();
+   const field=label.locator('[data-owner-text-field]');
+   await field.waitFor({state:'visible'});
+   await field.fill(value);await field.press('Tab');
+   await field.waitFor({state:'detached',timeout:15000});
+   const recordKey='guideedit.book.catalog-sync.'+
+    key.replace(/[A-Z]/g,ch=>'-'+ch.toLowerCase());
+   for(let n=0;n<300&&!townOverrides.has(recordKey);n++)
+    await page.waitForTimeout(40);
+   assert.equal(JSON.parse(townOverrides.get(recordKey)).ru,value);
+  };
+  const sourceReferenceLabel=await reference.getAttribute('aria-label');
+  assert.match(sourceReferenceLabel,/^Показать связанный предмет: /);
+  await editAccessible('linkedPreviewAria','Показать карточку:');
+  assert.equal(await reference.getAttribute('aria-label'),
+   sourceReferenceLabel.replace('Показать связанный предмет:','Показать карточку:'));
+  const sourceLinkLabel=await goto.getAttribute('aria-label');
+  assert.match(sourceLinkLabel,/^Открыть связанный предмет: /);
+  await editAccessible('linkedOpenAria','Открыть игровую запись:');
+  assert.equal(await goto.getAttribute('aria-label'),
+   sourceLinkLabel.replace('Открыть связанный предмет:','Открыть игровую запись:'));
+  const reviewCheckbox=linked.locator('input[type="checkbox"]');
+  const originalReviewName=await reviewCheckbox.getAttribute('aria-label');
+  assert.match(originalReviewName,/^Выбрать изменение /);
+  await editAccessible('reviewSelectAria','Выбор записи');
+  assert.equal(await reviewCheckbox.getAttribute('aria-label'),
+   originalReviewName.replace('Выбрать изменение','Выбор записи'));
+  await editAccessible('clearSearchAriaDescription','Очистить поиск по изменениям');
+  assert.equal(await dialog.locator('.os-sync-search-clear').first()
+   .getAttribute('aria-description'),'Очистить поиск по изменениям');
+  assert.equal(await goto.getAttribute('href'),'#wiki/item/300001');
+  assert.equal(await reference.getAttribute('aria-expanded'),'true');
+  assert.equal(await reviewCheckbox.isChecked(),false);
   // This help describes the link; it must be independently editable without
   // changing the source item's ID, href, preview open-state or safety review.
   const linkedCopy=linked.locator('.os-sync-reference-preview '+
