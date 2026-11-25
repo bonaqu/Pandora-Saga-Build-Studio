@@ -2,6 +2,7 @@
 // Issue #390: fail-closed STAGING database target checks. This script never
 // talks to Cloudflare and never executes SQL; Wrangler is manual-only.
 import {readFileSync,writeFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
 import {resolve} from 'node:path';
 import {fileURLToPath} from 'node:url';
 
@@ -162,6 +163,52 @@ export function assertStagingBackupInventory(raw){
   !Number.isSafeInteger(rows)||rows<0)
   throw Error('Invalid full staging backup counts');
  return {markers,rows};
+}
+
+// A count-matched SQL dump may still silently replace a pre-existing value.
+// Fingerprint EVERY remote staging record (not only the proposed snapshot)
+// using stable SQLite binary ordering and exactly the reviewed column list.
+// Source values remain in memory; never print/upload them or write them to CI.
+const backupSourceFields=Object.freeze({
+ editorial_default_rows:['snapshot','record_key','field','value'],
+ editorial_default_snapshots:['snapshot','source_release','sha256',
+  'expected_rows','installed_at']
+});
+export function renderStagingBackupRowsSQL(table){
+ if(!Object.hasOwn(backupSourceFields,table))
+  throw Error('Unallowlisted staging backup content query');
+ const order=table==='editorial_default_rows'?
+  'snapshot COLLATE BINARY,record_key COLLATE BINARY,field COLLATE BINARY':
+  'snapshot COLLATE BINARY';
+ return 'SELECT '+backupSourceFields[table].join(',')+' FROM '+table+
+  ' ORDER BY '+order+';\n';
+}
+export function assertStagingBackupRows(raw,table,expectedCount){
+ if(!Object.hasOwn(backupSourceFields,table)||
+  !Number.isSafeInteger(expectedCount)||expectedCount<0)
+  throw Error('Invalid staging backup fingerprint request');
+ const rows=oneQuery(raw);
+ if(rows.length!==expectedCount)
+  throw Error('Full staging backup content count differs from inventory');
+ const fields=backupSourceFields[table],sortKeys=[...fields].sort().join('|');
+ for(const row of rows){
+  if(!row||typeof row!=='object'||Array.isArray(row)||
+   Object.keys(row).sort().join('|')!==sortKeys)
+   throw Error('Unexpected staging backup content columns');
+  for(const field of fields){
+   const value=row[field];
+   if(field==='expected_rows'||field==='installed_at'){
+    if(!Number.isSafeInteger(value)||value<0)
+     throw Error('Invalid staging backup numeric column');
+   }else if(typeof value!=='string'){
+    throw Error('Invalid staging backup text column');
+   }
+  }
+ }
+ const digest=createHash('sha256')
+  .update('ps390:staging-content:v1:'+table+'\n')
+  .update(JSON.stringify(rows)).digest('hex');
+ return {count:rows.length,digest};
 }
 
 function rollbackCountSQL(snapshot,tables,prefix){

@@ -17,6 +17,7 @@ import {
  assertStagingSchema,assertStagingTableColumns,assertRolledBack,
  assertStagingRollbackPresent,assertStagingImportAbsent,renderStagingRollbackPresenceSQL,
  renderStagingBackupInventorySQL,assertStagingBackupInventory,
+ renderStagingBackupRowsSQL,assertStagingBackupRows,
  renderStagingRollbackMutationSQL,renderStagingWranglerConfig,renderStagingRollbackCheckSQL
 } from './guard-editorial-staging-d1.mjs';
 import {
@@ -79,11 +80,14 @@ export function verifyIndependentStagingBackup(path){
 // Independent proof that the private, checksum-pinned SQL can be replayed.
 // The cloud backup itself is never uploaded to GitHub or any public service.
 export function verifyRestorableStagingBackup(path,expectedHash,tables,
- expectedInventory,snapshot,expectedPresence){
+ expectedInventory,snapshot,expectedPresence,expectedFingerprints){
  if(typeof expectedHash!=='string'||!/^[a-f0-9]{64}$/.test(expectedHash))
   throw Error('Missing exact backup SHA-256');
  const inventorySQL=renderStagingBackupInventorySQL(tables);
  const presenceSQL=renderStagingRollbackPresenceSQL(snapshot,tables);
+ if(!expectedFingerprints||typeof expectedFingerprints!=='object'||
+  Object.keys(expectedFingerprints).sort().join('|')!==[...tables].sort().join('|'))
+  throw Error('Complete remote content fingerprints required for SQL backup replay');
  const fd=openSync(path,constants.O_RDONLY|constants.O_NOFOLLOW);
  let bytes;
  try{
@@ -117,6 +121,14 @@ export function verifyRestorableStagingBackup(path,expectedHash,tables,
   if(pinned.markers!==expectedPresence.markers||
    pinned.rows!==expectedPresence.rows)
    throw Error('Restored pinned snapshot counts differ from remote D1');
+  for(const table of tables){
+   const count=table==='editorial_default_rows'?actual.rows:actual.markers;
+   const content=assertStagingBackupRows(
+    asD1(db.prepare(renderStagingBackupRowsSQL(table)).all()),table,count);
+   if(content.digest!==expectedFingerprints[table]?.digest||
+    content.count!==expectedFingerprints[table]?.count)
+    throw Error('Restored SQL backup content digest mismatch: '+table);
+  }
   return actual;
  }catch(error){
   throw Error('Independent staging SQL backup restore FAILED: '+error.message);
@@ -178,6 +190,24 @@ export function plannedStagingCommands(target,config,sqlFile){
   executeFile:[...execute,'--file',sqlFile,'--yes'],
   readFile:[...execute,'--file',sqlFile,'--json']
  });
+}
+
+// Compare every original D1 value, not only full table counts.
+// The deterministic content digest also detects same-count edits during export.
+function remoteStagingFingerprints(tables,inventory,wrangler,cmd,sqlPath){
+ const fingerprints=Object.create(null);
+ for(const table of tables){
+  writeFileSync(sqlPath,renderStagingBackupRowsSQL(table),{mode:0o600});
+  const count=table==='editorial_default_rows'?inventory.rows:inventory.markers;
+  fingerprints[table]=assertStagingBackupRows(wrangler(cmd.readFile),table,count);
+ }
+ return fingerprints;
+}
+function assertSameStagingFingerprints(before,after,tables){
+ for(const table of tables)
+  if(before[table]?.count!==after[table]?.count||
+   before[table]?.digest!==after[table]?.digest)
+   throw Error('Full staging row content changed before write: '+table);
 }
 
 async function main(){
@@ -242,6 +272,8 @@ async function main(){
   // Snapshot counts alone cannot detect missing unrelated staging rows.
   writeFileSync(stagingSQL,renderStagingBackupInventorySQL(schema.tables),{mode:0o600});
   const initialInventory=assertStagingBackupInventory(wrangler(cmd.readFile));
+  const initialFingerprints=remoteStagingFingerprints(
+   schema.tables,initialInventory,wrangler,cmd,stagingSQL);
   // Independent persistent backup is mandatory before ANY import/rollback.
   // Backups are deliberately not stored in the checkout or system temp.
   const backupRoot=checkedBackupDirectory(process.env.PS_EDITORIAL_BACKUP_DIR);
@@ -251,7 +283,7 @@ async function main(){
   wrangler(cmd.export(backup));
   const hash=verifyIndependentStagingBackup(backup);
   verifyRestorableStagingBackup(backup,hash,schema.tables,initialInventory,
-   manifest.snapshot,initialPresence);
+   manifest.snapshot,initialPresence,initialFingerprints);
   writeFileSync(backup+'.sha256',hash+'  '+basename(backup)+'\n',{
    flag:'wx',mode:0o600
   });
@@ -283,6 +315,10 @@ async function main(){
   if(currentInventory.markers!==initialInventory.markers||
    currentInventory.rows!==initialInventory.rows)
    throw Error('Full staging row counts changed during backup; '+operation+' stopped');
+  const currentFingerprints=remoteStagingFingerprints(
+   beforeWrite.tables,currentInventory,wrangler,cmd,stagingSQL);
+  assertSameStagingFingerprints(initialFingerprints,currentFingerprints,
+   beforeWrite.tables);
   if(operation==='import'){
    writeFileSync(stagingSQL,renderEditorialDefaultsSQL(manifest),{mode:0o600});
    wrangler(cmd.executeFile);

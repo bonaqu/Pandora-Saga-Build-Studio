@@ -8,7 +8,8 @@ import {
  assertStagingSchema,assertStagingTableColumns,assertRolledBack,
  assertStagingRollbackPresent,assertStagingImportAbsent,renderStagingRollbackPresenceSQL,
  renderStagingRollbackMutationSQL,renderStagingWranglerConfig,renderStagingRollbackCheckSQL,
- renderStagingBackupInventorySQL,assertStagingBackupInventory
+ renderStagingBackupInventorySQL,assertStagingBackupInventory,
+ renderStagingBackupRowsSQL,assertStagingBackupRows
 } from '../scripts/guard-editorial-staging-d1.mjs';
 const repo=new URL('../',import.meta.url);
 const name='ps-editorial-staging-390';
@@ -355,6 +356,51 @@ test('#390 complete backup inventory includes both allowlisted tables, never SQL
   assert.throws(()=>assertStagingBackupInventory(raw));
 });
 
+
+test('#390 content fingerprints cover every staging row and reject same-count edits',()=>{
+ const rows='editorial_default_rows',markers='editorial_default_snapshots';
+ assert.match(renderStagingBackupRowsSQL(rows),/^SELECT snapshot,record_key,field,value /);
+ assert.match(renderStagingBackupRowsSQL(markers),
+  /^SELECT snapshot,source_release,sha256,expected_rows,installed_at /);
+ assert.match(renderStagingBackupRowsSQL(rows),/COLLATE BINARY/);
+ for(const invalid of ['accounts','_cf_KV','editorial_default_rows;DROP TABLE x'])
+  assert.throws(()=>renderStagingBackupRowsSQL(invalid));
+ const db=new DatabaseSync(':memory:');
+ try{
+  db.exec('CREATE TABLE '+rows+' ('+
+   'snapshot TEXT,record_key TEXT,field TEXT,value TEXT);'+
+   'CREATE TABLE '+markers+' ('+
+   'snapshot TEXT,source_release TEXT,sha256 TEXT,'+
+   'expected_rows INTEGER,installed_at INTEGER);');
+  db.prepare('INSERT INTO '+rows+' VALUES (?,?,?,?)')
+   .run('release-a','copy.demo','ru','Первый текст');
+  db.prepare('INSERT INTO '+rows+' VALUES (?,?,?,?)')
+   .run('release-b','copy.other','en','Second text');
+  db.prepare('INSERT INTO '+markers+' VALUES (?,?,?,?,?)')
+   .run('release-a','1.0.0','a'.repeat(64),2,123);
+  const content=table=>query(db.prepare(renderStagingBackupRowsSQL(table)).all());
+  const sourceDigest=assertStagingBackupRows(content(rows),rows,2);
+  const markerDigest=assertStagingBackupRows(content(markers),markers,1);
+  assert.match(sourceDigest.digest,/^[a-f0-9]{64}$/);
+  assert.notEqual(sourceDigest.digest,markerDigest.digest);
+  db.prepare('UPDATE '+rows+' SET value=? WHERE snapshot=?')
+   .run('Другой текст','release-a');
+  assert.notEqual(assertStagingBackupRows(content(rows),rows,2).digest,
+   sourceDigest.digest,'same row count MUST NOT mask a different value');
+  assert.equal(assertStagingBackupRows(content(markers),markers,1).digest,
+   markerDigest.digest);
+  assert.throws(()=>assertStagingBackupRows(content(rows),rows,1),/count differs/);
+  assert.throws(()=>assertStagingBackupRows(query([{snapshot:'x'}]),rows,1),
+   /content columns/);
+  assert.throws(()=>assertStagingBackupRows(query([{
+   snapshot:'x',record_key:'y',field:'ru',value:123
+  }]),rows,1),/text column/);
+  assert.throws(()=>assertStagingBackupRows(query([{
+   snapshot:'x',source_release:'1',sha256:'a',expected_rows:1.5,installed_at:12
+  }]),markers,1),/numeric column/);
+ }finally{db.close()}
+});
+
 test('#390 GitHub staging workflow is preflight-only and never uploads raw SQL',()=>{
  const config=renderStagingWranglerConfig(target('import'));
  assert.match(config,/binding = "EDITORIAL_STAGING_DB"/);
@@ -475,6 +521,13 @@ test('#390 premerge staging CLI is import-inert, SHA-pinned and requires a separ
  assert.match(source,/syncBackupDirectory\(backupRoot\)/);
  assert.match(source,/verifyRestorableStagingBackup\(backup,hash,schema.tables/);
  assert.match(source,/renderStagingBackupInventorySQL\(beforeWrite.tables\)/);
+ assert.match(source,/remoteStagingFingerprints\(/);
+ assert.match(source,/assertSameStagingFingerprints\(/);
+ assert.match(source,/assertStagingBackupRows\(/);
+ assert.ok(source.indexOf('const initialFingerprints=remoteStagingFingerprints(')<
+  source.indexOf('wrangler(cmd.export(backup))'));
+ assert.ok(source.indexOf('const currentFingerprints=remoteStagingFingerprints(')<
+  source.indexOf('wrangler(cmd.executeFile)'));
  assert.ok(source.indexOf('verifyRestorableStagingBackup(backup,hash')<
   source.indexOf('wrangler(cmd.executeFile)'),
   'Full local SQL replay must precede remote writes');
@@ -561,14 +614,32 @@ test('#390 independent backup replay rejects partial exports, corrupt SQL and ch
   "INSERT INTO "+rows+" VALUES ('"+snapshot+"','copy.demo','ru','hello');\n"+
   "INSERT INTO "+markers+" VALUES ('"+snapshot+"','0.947.0','"+
   'a'.repeat(64)+"',1,123);\n";
- const replay=(sql,tables,inventory,presence)=>{
+ const expectedFingerprints=(()=>{
+  const restored=new DatabaseSync(':memory:');
+  try{
+   restored.exec(exportSQL);
+   const result={};
+   for(const table of [rows,markers])
+    result[table]=assertStagingBackupRows(
+     query(restored.prepare(renderStagingBackupRowsSQL(table)).all()),table,1);
+   return result;
+  }finally{restored.close()}
+ })();
+ const replay=(sql,tables,inventory,presence,fingerprints=expectedFingerprints)=>{
   writeFileSync(path,sql,{mode:0o600});
   const hash=verifyIndependentStagingBackup(path);
-  return verifyRestorableStagingBackup(path,hash,tables,inventory,snapshot,presence);
+  return verifyRestorableStagingBackup(path,hash,tables,inventory,
+   snapshot,presence,fingerprints);
  };
  try{
   const both=[rows,markers],expected={markers:1,rows:1};
   assert.deepEqual(replay(exportSQL,both,expected,expected),expected);
+  assert.throws(()=>replay(exportSQL.replace("'hello'","'hallo'"),
+   both,expected,expected),/content digest mismatch/,
+   'Same-count tampered source text must invalidate restored backup');
+  assert.throws(()=>replay(exportSQL.replace("'0.947.0'","'0.948.0'"),
+   both,expected,expected),/content digest mismatch/,
+   'Same-count changed snapshot metadata must invalidate restored backup');
   assert.throws(()=>replay(exportSQL,both,{markers:1,rows:2},expected),
    /total row counts differ/);
   assert.throws(()=>replay(exportSQL,both,expected,{markers:0,rows:0}),
@@ -584,12 +655,12 @@ test('#390 independent backup replay rejects partial exports, corrupt SQL and ch
   assert.throws(()=>replay('not SQL',[],{markers:0,rows:0},
    {markers:0,rows:0}),/restore FAILED/);
   assert.deepEqual(replay('-- empty remote staging',[],
-   {markers:0,rows:0},{markers:0,rows:0}),{markers:0,rows:0});
+   {markers:0,rows:0},{markers:0,rows:0},{}),{markers:0,rows:0});
   writeFileSync(path,exportSQL,{mode:0o600});
   const hash=verifyIndependentStagingBackup(path);
   writeFileSync(path,exportSQL+' -- changed after verification');
   assert.throws(()=>verifyRestorableStagingBackup(path,hash,both,expected,
-   snapshot,expected),/changed after its SHA-256 verification/);
+   snapshot,expected,expectedFingerprints),/changed after its SHA-256 verification/);
   writeFileSync(path,exportSQL,{mode:0o600});
   const linked=join(dir,'hardlink.sql');
   linkSync(path,linked);

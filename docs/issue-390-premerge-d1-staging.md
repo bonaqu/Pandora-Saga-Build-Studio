@@ -99,8 +99,15 @@ durable directory, checks the single-link inode and exact file digest, and
 **replays the exported SQL in a fresh in-memory SQLite database**. The restored
 database must pass integrity checking, exact allowlisted tables/columns,
 whole-table row counts (including pre-existing snapshots) and exact target
-snapshot row counts. Any mismatch fails closed before import/rollback. Remote
-identity, schema and the full row inventory are checked again after backup.
+snapshot row counts. Additionally, for **every existing staging row** in both
+allowlisted tables, a deterministic SHA-256 content fingerprint from a
+read-only ordered remote SELECT is compared with the SQL restored in memory;
+a same-count change to a string or snapshot metadata fails closed. A second
+complete remote fingerprint is obtained after backup, before either write, to
+catch concurrent same-count edits. The private record values are never logged,
+uploaded or embedded in an artifact. Large/unexpected remote result payloads
+fail closed rather than silently skipping content validation. Remote identity,
+schema and row inventory are also checked again after backup.
 This replay proves local restorability of the export under the reviewed
 SQLite schema; it is **not** a real remote import/rollback or proof of backup
 survival after a machine failure. Store the SQL and its .sha256 file securely,
