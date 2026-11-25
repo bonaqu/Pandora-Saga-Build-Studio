@@ -3357,7 +3357,11 @@ function renderOriginPassives(){
  root.replaceChildren();
  const raceName=$('originRaceName');
  if(!Number.isInteger(state.race)||state.race<0||state.race>=races.length){
-  if(raceName)raceName.textContent=lang==='en'?'Race not selected':'Раса не выбрана';
+  // The missing-race label is authorial UI copy, unlike the selected
+  // game's race name. Reuse the original Profile D1 key; detach the editor
+  // entirely when a real race is selected below.
+  if(raceName)raceName.replaceChildren(profileCopyLabel(
+   'portrait-race-missing','Раса не выбрана','Race not selected'));
   root.append(h('p',{class:'muted'},[originPassiveCaption('passiveChooseRaceHelp')]));
   return;
  }

@@ -91,3 +91,19 @@ test('profile and character button captions edit without a second action or tab 
  assert.match(label,/if\(!action\)node\.tabIndex=0/);
  assert.doesNotMatch(src,/class:'ps-profile-copy-pencil'/);
 });
+
+
+test('issue 390: missing Origin race shares reviewed Profile D1 copy, selected race stays source-owned',()=>{
+ const app=read('pandora-studio-app.js');
+ const start=app.indexOf('function renderOriginPassives(){');
+ const end=app.indexOf('function ',start+10);
+ const render=app.slice(start,end>start?end:undefined);
+ assert.ok(render.includes("raceName.replaceChildren(profileCopyLabel("));
+ assert.ok(render.includes("'portrait-race-missing','Раса не выбрана','Race not selected'"));
+ assert.ok(render.includes("raceName.textContent=races[state.race][lang==='en'?1:0]"));
+ assert.doesNotMatch(render,/ownerCopyLabel\\(raceName/);
+ const planner=read('scripts/plan-editorial-d1-defaults.mjs');
+ assert.match(planner,/profileAuthorialCopy/);
+ const ui=read('pandora-studio-app.js');
+ assert.match(ui,/'portrait-race-missing':\\['Раса не выбрана','Race not selected'\\]/);
+});
