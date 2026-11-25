@@ -502,6 +502,12 @@ test('#390 premerge staging CLI is import-inert, SHA-pinned and requires a separ
  assert.throws(()=>command.readQuery('/* select */ DELETE FROM editorial_default_rows;'));
  assert.throws(()=>command.readQuery('SELECT 1'));
  assert.throws(()=>command.readQuery('SELECT '+('x'.repeat(250_000))+';'));
+ const normalizedReadback=command.readQuery('-- STAGING READBACK ONLY. Returns one JSON document\nSELECT 1;');
+ assert.equal(normalizedReadback[normalizedReadback.indexOf('--command')+1],'SELECT 1;',
+  'Wrangler must receive executable SELECT without leading comment');
+ assert.ok(!normalizedReadback.includes('-- STAGING READBACK ONLY. Returns one JSON document'));
+ const normalizedOther=command.readQuery('  -- comment\n  SELECT 123;  ');
+ assert.equal(normalizedOther[normalizedOther.indexOf('--command')+1],'SELECT 123;');
  assert.ok(command.readQuery('-- read-only\nSELECT 1;').includes('--command'));
  assert.ok(command.export('/outside/backup.sql').includes('--skip-confirmation'));
  for(const args of [command.schema,command.columns('editorial_default_rows'),

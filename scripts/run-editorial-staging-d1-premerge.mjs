@@ -198,7 +198,8 @@ export function plannedStagingCommands(target,config,sqlFile){
    if(!/^SELECT\s/i.test(executable)||!executable.endsWith(';')||
     executable.indexOf(';')!==executable.length-1)
     throw Error('Only one pinned read-only SELECT is permitted through D1 query API');
-   return [...execute,'--command',sql,'--json'];
+   // Pass the validated statement, not a leading '-- comment' parsed by Wrangler as a flag.
+   return [...execute,'--command',executable,'--json'];
   }
  });
 }
