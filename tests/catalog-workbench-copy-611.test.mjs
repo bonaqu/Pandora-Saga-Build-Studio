@@ -94,7 +94,7 @@ test('#390 linked-item hover help and opening caption have independent owner D1 
  assert.match(view,/const itemHref='#wiki\/item\/'\+encodeURIComponent\(segment.id\)/);
  assert.match(view,/if\(canEdit&&typeof editLabel==='function'\)\{\s*const opener=h\('span',\{class:'os-sync-reference-open-editor'\}\)/);
  assert.match(view,/reviewCaption\('span',\{class:'os-sync-reference-open-copy'\},'linkedReferenceOpen'\)/);
- assert.match(view,/h\('a',\{href:itemHref,target:'_blank',rel:'noopener noreferrer',/);
+ assert.match(view,/accessible\(h\('a',\{href:itemHref,target:'_blank',rel:'noopener noreferrer',/);
  assert.match(view,/text:copy\(openRow\[0\],openRow\[1\],openRow\[2\]\)\+' ↗'/);
  assert.match(view,/preview\.append\(opener\)/);
  // The only owner pencil is for the genuine, separately authored tooltip.
