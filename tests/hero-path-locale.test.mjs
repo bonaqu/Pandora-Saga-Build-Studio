@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {buildEditorialDefaultsManifest} from '../scripts/plan-editorial-d1-defaults.mjs';
 
 const source=readFileSync(new URL('../pandora-studio-hero-path.js',import.meta.url),'utf8');
 function check(lang){
@@ -175,4 +176,22 @@ test('#390 Path budget CSS keeps loading state full-width and hides game-data ro
   'Author-level flex/grid display must not expose hidden budget values');
  assert.match(css,/\.path-budget-values>\.path-budget-loading\{grid-column:1\/-1;/,
   'The loading announcement should span the compact three-column budget');
+});
+
+
+test('issue 390: dynamic Path slider aria has D1 editable copy but never stores calculated values',()=>{
+ const manifest=buildEditorialDefaultsManifest();
+ const recordKey='guideedit.book.path.path-range-value-aria';
+ const records=manifest.records.filter(row=>row.recordKey===recordKey);
+ assert.equal(records.length,2,'Exactly one safe bilingual source caption');
+ assert.deepEqual(Object.fromEntries(records.map(row=>[row.field,row.value])),{
+  en:'Branch points / mastery / extra invested / limit:',
+  ru:'Очки ветки / мастерство / вложено сверх старта / предел:'
+ });
+ assert.ok(source.includes("bindPathCopy(api,range,'pathRangeValueAria'"));
+ assert.ok(source.includes("'aria-valuetext',' '+level+' / '+mastery+' / '+invested+' / '+cap"));
+ assert.equal(source.includes("range.setAttribute('aria-valuetext',level+"),false);
+ const app=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
+ assert.ok(app.includes("['pathRangeValueAria','Очки ветки"));
+ assert.ok(app.includes("bindCopy:(node,key,ru,en,attribute='text',suffix='',prefix='')=>"));
 });

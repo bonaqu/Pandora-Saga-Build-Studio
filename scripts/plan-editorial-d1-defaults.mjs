@@ -1203,7 +1203,7 @@ export function buildEditorialDefaultsManifest(){
  )].map(m=>[m[1],m[2],m[3]]);
  const expectedBound=[
   'pathHoldRepeatAria','racialUnavailableAria','branchTrackAria',
-  'pathRangeAria','pathExactAria','pathMilestoneNoDesc',
+  'pathRangeAria','pathRangeValueAria','pathExactAria','pathMilestoneNoDesc',
   'pathMilestoneMana','pathUnlockPoints','pathMasteryAria',
   'pathDecreaseAria','pathIncreaseAria','innateBaselineAria',
   'skillBrowseAria','skillPreviousAria','skillLineageAria','skillNextAria',

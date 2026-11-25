@@ -524,10 +524,12 @@ function viewGrowth(target,api){
      green.style.width=widthOnRail(greenFraction);
      currentNotch.style.left=positionOnRail(goldFraction);
      setPotentialEdge();
-     range.setAttribute('aria-valuetext',level+
-      tr(api,' очков ветки, ',' branch points, ')+mastery+
-      tr(api,' мастерство, ',' mastery, ')+invested+
-      tr(api,' вложено сверх старта, предел ',' extra spent, limit ')+cap);
+     // Preserve all four runtime numbers; only the source-authored prefix
+     // is eligible for RU/EN owner D1/CAS edits and undo.
+     bindPathCopy(api,range,'pathRangeValueAria',
+      'Очки ветки / мастерство / вложено сверх старта / предел:',
+      'Branch points / mastery / extra invested / limit:',
+      'aria-valuetext',' '+level+' / '+mastery+' / '+invested+' / '+cap);
      for(const entry of milestonesOnTrack)
       entry.tick.classList.toggle('reached',
        !entry.locked&&entry.skills.some(skill=>readiness(skill,api,new Set(),skillIndex).learned));
