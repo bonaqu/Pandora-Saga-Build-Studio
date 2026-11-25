@@ -33,7 +33,6 @@ jobs:
       CLOUDFLARE_ACCOUNT_ID: 57ac934cd0f0a7f5e8533177d612f893
       PS_D1_DATABASE_ID: 0f8fbcd8-be06-414c-844b-a2091fdf6784
       PS390_PRODUCTION_BACKUP_KEY: ${{ secrets.PS390_PRODUCTION_BACKUP_KEY }}
-      PS390_PRODUCTION_CIPHER_DIR: ${{ runner.temp }}/ps390-production-encrypted
     steps:
       - name: Checkout exact PR branch
         uses: actions/checkout@v5
@@ -58,6 +57,7 @@ jobs:
         run: |
           set -euo pipefail
           printf 'PS390_PRODUCTION_BACKUP_DIR=%s\n' "$HOME/.ps390-production-private" >> "$GITHUB_ENV"
+          printf 'PS390_PRODUCTION_CIPHER_DIR=%s\n' "$RUNNER_TEMP/ps390-production-encrypted" >> "$GITHUB_ENV"
       - name: Export ALL production D1 data, restore-test, seal with AES-GCM
         id: seal
         run: node scripts/production-editorial-sealed-backup-390.mjs
