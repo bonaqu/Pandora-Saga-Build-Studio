@@ -39,7 +39,7 @@ test('#390 production editorial-only schema detects absent/partial/altered table
 });
 test('#390 exact production metadata/readback fail closed without reading private rows',()=>{
  assert.equal(parseProductionPresence(query([absent])).status,'not_installed');
- assert.deepEqual(JSON.parse(JSON.stringify(parseProductionPresence(query([complete]))),{
+ assert.deepEqual(JSON.parse(JSON.stringify(parseProductionPresence(query([complete])))),{
   status:'installed',markers:1,rows:manifest.records.length,
   snapshot:manifest.snapshot,digest:manifest.digest
  });
