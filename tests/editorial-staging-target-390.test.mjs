@@ -493,11 +493,20 @@ test('#390 premerge staging CLI is import-inert, SHA-pinned and requires a separ
  assert.ok(command.columns('editorial_default_snapshots').includes('--remote'));
  assert.throws(()=>command.columns('users'));
  assert.ok(command.executeFile.includes('--yes'));
- assert.ok(command.readFile.includes('--json'));
+ assert.ok(command.readQuery('SELECT 1;').includes('--json'));
+ assert.ok(command.readQuery('SELECT 1;').includes('--command'));
+ assert.ok(!command.readQuery('SELECT 1;').includes('--file'));
+ assert.throws(()=>command.readQuery('DELETE FROM editorial_default_rows;'));
+ assert.throws(()=>command.readQuery('SELECT 1; DROP TABLE editorial_default_rows;'));
+ assert.throws(()=>command.readQuery('SELECT 1;\nSELECT 2;'));
+ assert.throws(()=>command.readQuery('/* select */ DELETE FROM editorial_default_rows;'));
+ assert.throws(()=>command.readQuery('SELECT 1'));
+ assert.throws(()=>command.readQuery('SELECT '+('x'.repeat(250_000))+';'));
+ assert.ok(command.readQuery('-- read-only\nSELECT 1;').includes('--command'));
  assert.ok(command.export('/outside/backup.sql').includes('--skip-confirmation'));
  for(const args of [command.schema,command.columns('editorial_default_rows'),
   command.columns('editorial_default_snapshots'),
-  command.executeFile,command.readFile,command.export('/outside/backup.sql')]){
+  command.executeFile,command.readQuery('SELECT 1;'),command.export('/outside/backup.sql')]){
   assert.ok(args.includes('--config'),'commands must isolate the staging config');
   assert.ok(!args.includes('ps-build-studio-db'),'never target production name');
  }
@@ -508,15 +517,15 @@ test('#390 premerge staging CLI is import-inert, SHA-pinned and requires a separ
  assert.match(source,/assertDatabaseIdentity\(wrangler\(cmd.list\),target\)/);
  assert.match(source,/assertStagingTableColumns\(wrangler\(cmd.columns\(table\)\),table,/);
  assert.match(source,/const backupRoot=checkedBackupDirectory/);
- assert.match(source,/assertStagingRollbackPresent\(wrangler\(cmd\.readFile\)\)/);
- assert.match(source,/assertStagingImportAbsent\(wrangler\(cmd\.readFile\)\)/);
- assert.ok(source.indexOf('assertStagingImportAbsent(wrangler(cmd.readFile))')<
+ assert.match(source,/assertStagingRollbackPresent\(readStagingQuery\(\)\)/);
+ assert.match(source,/assertStagingImportAbsent\(readStagingQuery\(\)\)/);
+ assert.ok(source.indexOf('assertStagingImportAbsent(readStagingQuery())')<
   source.indexOf('const backupRoot=checkedBackupDirectory'));
  const afterBackup=source.slice(source.indexOf('syncBackupDirectory(backupRoot)'));
  const beforeMutation=afterBackup.slice(0,afterBackup.indexOf('wrangler(cmd.executeFile)'));
  assert.match(beforeMutation,/assertDatabaseIdentity\(wrangler\(cmd.list\),target\)/);
  assert.match(beforeMutation,/const beforeWrite=assertStagingSchema/);
- assert.match(beforeMutation,/assertStagingImportAbsent\(wrangler\(cmd\.readFile\)\)/);
+ assert.match(beforeMutation,/assertStagingImportAbsent\(readStagingQuery\(\)\)/);
  assert.match(beforeMutation,/currentPresence\.rows!==initialPresence\.rows/);
  assert.ok(source.indexOf('assertStagingRollbackPresent(wrangler(cmd.readFile))')<
   source.indexOf('const backupRoot=checkedBackupDirectory'),

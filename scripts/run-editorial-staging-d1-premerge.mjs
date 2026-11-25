@@ -188,7 +188,18 @@ export function plannedStagingCommands(target,config,sqlFile){
   export:output=>['export',target.name,'--remote','--config',config,
    '--output',output,'--skip-confirmation'],
   executeFile:[...execute,'--file',sqlFile,'--yes'],
-  readFile:[...execute,'--file',sqlFile,'--json']
+  // --file routes remote commands into Cloudflare's SQL *ingestion* endpoint
+  // and does not return the query JSON the fail-closed validators require.
+  // Use ONLY --command for approved read-only SELECT statements.
+  readQuery:sql=>{
+   if(typeof sql!=='string'||sql.length>250_000)
+    throw Error('Invalid/oversized isolated staging read-only query');
+   const executable=sql.replace(/^\s*--[^\n]*(?:\n|$)/gm,'').trim();
+   if(!/^SELECT\s/i.test(executable)||!executable.endsWith(';')||
+    executable.indexOf(';')!==executable.length-1)
+    throw Error('Only one pinned read-only SELECT is permitted through D1 query API');
+   return [...execute,'--command',sql,'--json'];
+  }
  });
 }
 
@@ -197,9 +208,9 @@ export function plannedStagingCommands(target,config,sqlFile){
 function remoteStagingFingerprints(tables,inventory,wrangler,cmd,sqlPath){
  const fingerprints=Object.create(null);
  for(const table of tables){
-  writeFileSync(sqlPath,renderStagingBackupRowsSQL(table),{mode:0o600});
+  const sql=renderStagingBackupRowsSQL(table);
   const count=table==='editorial_default_rows'?inventory.rows:inventory.markers;
-  fingerprints[table]=assertStagingBackupRows(wrangler(cmd.readFile),table,count);
+  fingerprints[table]=assertStagingBackupRows(wrangler(cmd.readQuery(sql)),table,count);
  }
  return fingerprints;
 }
@@ -224,6 +235,7 @@ async function main(){
  const stagingSQL=join(stagingDir,'staging.sql');
  const cmd=plannedStagingCommands(target,stagingConfig,stagingSQL);
  const wrangler=args=>run('npx',['--yes','wrangler@4','d1',...args]);
+ const readStagingQuery=()=>wrangler(cmd.readQuery(readFileSync(stagingSQL,'utf8')));
  try{
   writeFileSync(stagingConfig,renderStagingWranglerConfig(target),{mode:0o600});
   // Every path, including preflight, checks the API's exact remote UUID and
@@ -248,7 +260,7 @@ async function main(){
    if(schema.tables.join('|')!=='editorial_default_rows|editorial_default_snapshots')
     throw Error('Read-only verification requires both reviewed editorial staging tables');
    writeFileSync(stagingSQL,renderEditorialDefaultsReadbackSQL(manifest),{mode:0o600});
-   const parsed=parseWranglerEditorialReadback(wrangler(cmd.readFile));
+   const parsed=parseWranglerEditorialReadback(readStagingQuery());
    const check=verifyEditorialDefaultsReadback(manifest,parsed.metadata,parsed.rows);
    if(!check.ok)throw Error('Remote staging D1 read-only SHA-256 verification FAILED: '+
     check.reason);
@@ -269,14 +281,14 @@ async function main(){
    !['before','after'].includes(process.env.PS_EDITORIAL_BACKUP_PHASE))
    throw Error('Backup operation requires an exact before/after phase');
   const initialPresence=(operation==='rollback'||backupAfter)?
-   assertStagingRollbackPresent(wrangler(cmd.readFile)):
-   assertStagingImportAbsent(wrangler(cmd.readFile));
+   assertStagingRollbackPresent(readStagingQuery()):
+   assertStagingImportAbsent(readStagingQuery());
   process.stdout.write('Read-only '+operation+' target confirmed: '+
    initialPresence.markers+' marker / '+initialPresence.rows+' rows\n');
 
   // Snapshot counts alone cannot detect missing unrelated staging rows.
   writeFileSync(stagingSQL,renderStagingBackupInventorySQL(schema.tables),{mode:0o600});
-  const initialInventory=assertStagingBackupInventory(wrangler(cmd.readFile));
+  const initialInventory=assertStagingBackupInventory(readStagingQuery());
   if(operation==='import'&&(initialInventory.markers||initialInventory.rows))
    throw Error('Import rehearsal requires entirely empty reviewed staging tables');
   const initialFingerprints=remoteStagingFingerprints(
@@ -316,13 +328,13 @@ async function main(){
   writeFileSync(stagingSQL,renderStagingRollbackPresenceSQL(manifest.snapshot,beforeWrite.tables),
    {mode:0o600});
   const currentPresence=operation==='rollback'?
-   assertStagingRollbackPresent(wrangler(cmd.readFile)):
-   assertStagingImportAbsent(wrangler(cmd.readFile));
+   assertStagingRollbackPresent(readStagingQuery()):
+   assertStagingImportAbsent(readStagingQuery());
   if(currentPresence.markers!==initialPresence.markers||currentPresence.rows!==initialPresence.rows)
    throw Error('Staging snapshot counts changed during backup; '+operation+' stopped');
   writeFileSync(stagingSQL,renderStagingBackupInventorySQL(beforeWrite.tables),
    {mode:0o600});
-  const currentInventory=assertStagingBackupInventory(wrangler(cmd.readFile));
+  const currentInventory=assertStagingBackupInventory(readStagingQuery());
   if(currentInventory.markers!==initialInventory.markers||
    currentInventory.rows!==initialInventory.rows)
    throw Error('Full staging row counts changed during backup; '+operation+' stopped');
@@ -334,7 +346,7 @@ async function main(){
    writeFileSync(stagingSQL,renderEditorialDefaultsSQL(manifest),{mode:0o600});
    wrangler(cmd.executeFile);
    writeFileSync(stagingSQL,renderEditorialDefaultsReadbackSQL(manifest),{mode:0o600});
-   const parsed=parseWranglerEditorialReadback(wrangler(cmd.readFile));
+   const parsed=parseWranglerEditorialReadback(readStagingQuery());
    const check=verifyEditorialDefaultsReadback(manifest,parsed.metadata,parsed.rows);
    if(!check.ok)throw Error('Remote staging D1 SHA-256 readback FAILED: '+check.reason+
     '. Do not activate; inspect the backup and perform separately confirmed rollback.');
@@ -347,7 +359,7 @@ async function main(){
    if(afterRollback.tables.join('|')!==schema.tables.join('|'))
     throw Error('Staging schema changed during rollback; verify manually');
    writeFileSync(stagingSQL,renderStagingRollbackCheckSQL(manifest.snapshot,afterRollback.tables),{mode:0o600});
-   assertRolledBack(wrangler(cmd.readFile));
+   assertRolledBack(readStagingQuery());
    process.stdout.write('Verified exact snapshot rollback: '+manifest.snapshot+'\n');
   }
  }finally{

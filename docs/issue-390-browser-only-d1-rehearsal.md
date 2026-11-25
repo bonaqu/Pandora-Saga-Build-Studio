@@ -2,6 +2,12 @@
 
 **Статус 25.11.2026:** Реальная удалённая репетиция ещё не выполнялась. В Draft PR #809 подготовлен [защищённый workflow](../.github/workflows/editorial-staging-d1-protected-phases.yml). Никакие изменения staging D1, production D1, Worker или Pages не подтверждаются одним лишь добавлением workflow.
 
+## Первый реальный запуск и исправление CLI (25.11.2026)
+
+[GitHub Actions run #45545964748](https://github.com/bonaqu/Pandora-Saga-Build-Studio/actions/runs/45545964748) получил подтверждение владельца, проверил exact HEAD/зелёные Node+Chromium, действующий Cloudflare API Token, staging имя/UUID и пустой список разрешённых пользовательских таблиц. Затем **read-only pre-import backup FAILED** с сообщением `Remote D1 JSON is malformed`: предыдущий runner использовал `wrangler d1 execute --remote --file <read-only SQL> --json`. По исходникам Wrangler `--file` направляет SQL через удалённый механизм импорта, не возвращающий обычный JSON результатов `SELECT`. Исправление: все read-only SQL используют **`--command` строго с одним `SELECT`**, а отдельные mutating `--file` доступны только подтверждённым стадиям import/rollback. Сырой ответ Cloudflare не логируется, поскольку позднее он может содержать авторские тексты. **В run #45545964748 отсутствуют SQL export, encrypted artifact и любые подтверждённые операции записи; ничего скачивать оттуда не нужно.**
+
+Для повторного запуска будет создан **новый** запуск GitHub Actions на исправленном exact HEAD после двух зелёных CI. Тот же пользователь должен ещё раз нажать **Review deployments → Approve and deploy**. До этого исходный PR нельзя сливать/закрывать. Ни импорт, ни rollback без отдельного разрешения не запустятся.
+
 ## Как устроена защита
 
 GitHub запускает workflow ТОЛЬКО когда к PR #809 добавляется специальная метка. Проверяются точная ветка, 40-символьный HEAD SHA, два успешных полных CI (Node и Chromium на том же SHA), отдельный staging UUID, разрешённые таблицы и явное подтверждение стадии. Для каждой стадии используется защищённое окружение editorial-staging-390 с Required reviewers.
