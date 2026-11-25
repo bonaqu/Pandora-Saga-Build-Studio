@@ -12324,6 +12324,12 @@ async function showCatalogImport(){
   canEdit:Boolean(adminEditing&&adminToken),
   canCommit:ownerCanStartAdminOperation,
   copyLabel:(key,ru,en)=>ownerCopy('catalog-sync',key,ru,en),
+  // One semantic binding updates live ARIA after D1 CAS Save or Undo; the
+  // record's item name/URL and current checkbox state stay out of owner copy.
+  bindCopy:(node,key,ru,en,attribute='aria-label',suffix='',prefix='')=>
+   bindOwnerInterfaceText(node,'catalog-sync',key,ru,en,attribute,suffix,prefix),
+  createCopyEditor:(rows,headingRu,headingEn)=>
+   ownerInterfaceEditor('catalog-sync',rows,headingRu,headingEn),
   editLabel:(node,key,ru,en,callbacks)=>ownerCopyLabel(
    node,'catalog-sync',key,ru,en,callbacks),
   // Compare the selected update against the character being planned.
