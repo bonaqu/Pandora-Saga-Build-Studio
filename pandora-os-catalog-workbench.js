@@ -2244,8 +2244,8 @@
       githubReady=settings.configured===true&&settings.connected===true&&settings.writeAccess===true;
       publishedSnapshot=current.active||null;
       github.setAttribute('aria-label',githubReady
-        ? tr('Проверить или повторить автоматический резерв GitHub',
-             'Check or retry the automatic GitHub backup')
+        ? tr('Проверить / повторить резерв GitHub',
+             'Check / retry GitHub backup')
         : tr('Резерв GitHub недоступен: требуется подключение',
              'GitHub backup unavailable: connection required'));
       refreshActions();
