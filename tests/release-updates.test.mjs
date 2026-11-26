@@ -6,7 +6,7 @@ import {runInNewContext} from 'node:vm';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const source=read('pandora-studio-update-manager.js');
 const localeSource=read('pandora-studio-ui-locale.js');
-function boot(local,remote,href='https://bonaqu.github.io/Pandora-Saga-Build-Studio/',locale='ru',ownerGuard=null,ownerState=null){
+function boot(local,remote,href='https://bonaqu.github.io/Pandora-Saga-Build-Studio/',locale='ru',ownerGuard=null,ownerState=null,store=null){
  let banner=null,check=null,normalized=null,navigated=null,saved=0,languageChanged=null;
  let currentRemote=remote,holdResponses=false,saveAllowed=true,lastEventCancelable=null;
  let guard=null,accountPanelOpen=false,heroBookOpen=false,onlineRecoveryOpen=false,
@@ -48,7 +48,8 @@ function boot(local,remote,href='https://bonaqu.github.io/Pandora-Saga-Build-Stu
  const history={state:null,replaceState:(_state,_title,url)=>{normalized=url}};
  const appWindow={PandoraAccountUI:{updateGuard:()=>guard},
   PandoraStudioAdminActive:ownerGuard||(()=>ownerMode),
-  PandoraStudioOwnerUpdateState:ownerState,PandoraUILocale:uiLocale};
+  PandoraStudioOwnerUpdateState:ownerState,PandoraUILocale:uiLocale,
+  sessionStorage:store};
  runInNewContext(source,{
   window:appWindow,document,location,history,URL,AbortController,Date:Clock,
   Event:class Event{constructor(_type,options){this.cancelable=!!options?.cancelable}},console,
@@ -540,4 +541,32 @@ test('rapid tab hide and show coalesces reconnect after an uncooperative fetch',
  page.banner.children[1].listeners.click();
  assert.match(page.navigated,/ps-revision=2026[.]11[.]20[.]945/);
  assert.equal(page.saved,1);
+});
+
+test('public site respects Later across same-tab navigation but still offers a NEW release',async()=>{
+ const saved=new Map();
+ const sessionStorage={
+  getItem:key=>saved.get(key)||null,
+  setItem:(key,value)=>saved.set(key,value)
+ };
+ const latest='2026.11.26.949',next='2026.11.27.950';
+ const first=boot('2026.11.25.948',latest,undefined,'ru',null,null,sessionStorage);
+ await first.check();
+ assert.ok(first.banner,'Published update should be offered');
+ first.banner.children[2].listeners.click();
+ assert.equal(saved.get('ps-update-dismissed-release'),latest);
+ const second=boot('2026.11.25.948',latest,undefined,'ru',null,null,sessionStorage);
+ await second.check();
+ assert.equal(second.banner,null,'Do not nag for the same version on reload');
+ second.setRemote(next);
+ await second.check();
+ assert.ok(second.banner,'A newer release is still offered');
+});
+test('public site tolerates blocked browser storage and keeps update notice usable',async()=>{
+ const storage={getItem(){throw Error('Storage disabled')},setItem(){throw Error('Storage disabled')}};
+ const page=boot('2026.11.25.948','2026.11.26.949',undefined,'ru',null,null,storage);
+ await page.check();
+ assert.ok(page.banner);
+ page.banner.children[2].listeners.click();
+ assert.equal(page.banner.removed,true);
 });

@@ -3084,6 +3084,9 @@ export async function runUIContentInlineSmoke(browser,base){
   // reaching into the private app module from Playwright.
   if(await page.locator('#ownerDock').evaluate(el=>el.classList.contains('owner-dock-collapsed')))
    await page.locator('#ownerDock [data-owner-collapse]').click();
+  const tools=page.locator('#ownerDock details[data-owner-group="tools"]');
+  if(await tools.getAttribute('open')===null)
+   await tools.locator(':scope > summary').click();
   await page.locator('#ownerDock .owner-dock-d1-check').click();
   const statusKey='guideedit.book.ui.label.status-owner-d1-check';
   const toastText=page.locator('#studioToast [data-owner-copy-key="statusOwnerD1Check"]');

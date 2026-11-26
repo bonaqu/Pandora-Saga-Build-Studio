@@ -25,7 +25,16 @@
     }
     return false;
   };
-  let latest = '', lastActivity = Date.now(), dismissedRelease = '', applying = false, blockedAutoUpdate = false, blockedReason = null;
+  // Respect "Later" for this published version across same-tab navigation,
+  // without persisting builds, credentials or game-data state.
+  const dismissedKey='ps-update-dismissed-release';
+  const readDismissed=()=>{
+    try{
+      const value=window.sessionStorage?.getItem(dismissedKey)||'';
+      return valid(value)?value:'';
+    }catch{return ''}
+  };
+  let latest = '', lastActivity = Date.now(), dismissedRelease = readDismissed(), applying = false, blockedAutoUpdate = false, blockedReason = null;
   const onActivity = () => { lastActivity = Date.now(); blockedAutoUpdate = false; };
   document.addEventListener('pointerdown', onActivity, { passive: true });
   document.addEventListener('keydown', onActivity, { passive: true });
@@ -175,6 +184,7 @@
       // The banner may have been created for an older published release.
       // Always dismiss the newest version actually offered to the user.
       dismissedRelease = latest;
+      try{window.sessionStorage?.setItem(dismissedKey,latest)}catch{}
       blockedReason = null;
       banner.remove();
       updateBannerNodes = null;

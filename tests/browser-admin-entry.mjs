@@ -419,6 +419,12 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(await ownerPanel.locator('.owner-workflow-guide[open]').count(),1);
   assert.match(await ownerPanel.locator('.owner-workflow-glossary').innerText(),/Игровой каталог/);
   await ownerPanel.locator('.owner-workflow-guide>summary').click();
+  // Optional diagnostics are hidden by default, but remain one keyboard-
+  // accessible native disclosure away; reopening the dock preserves state.
+  const toolsDisclosure=ownerPanel.locator('details[data-owner-group="tools"]');
+  assert.equal(await toolsDisclosure.getAttribute('open'),null);
+  await toolsDisclosure.locator(':scope > summary').click();
+  assert.equal(await toolsDisclosure.getAttribute('open'),'');
   assert.match(await ownerPanel.innerText(),/Копия в GitHub/);
   assert.match(await ownerPanel.innerText(),/Проверить сохранение/);
   assert.match(await ownerPanel.innerText(),/За этот сеанс: 0/);
