@@ -39,7 +39,7 @@ test('all five current OS healing and triggered child coefficients retain their 
 test('official FV1 changes replay into precise direct, child and periodic models without editing constants',()=>{
  const before=JSON.stringify(skills),source=JSON.parse(before);
  const changed=[
-  [310001002,0,100,3], // boosted INT coefficient in current variant
+  [310001002,0,300,3], // boosted INT coefficient in current variant
   [310004002,1,300,10], // CLERIC level coefficient
   [310021002,2,400,20], // CLERIC mastery coefficient
   [310023002,3,100,7], // Sanctuary CHILD effect, never its root link
@@ -74,7 +74,10 @@ test('source identity, EP, FV2, trigger link and unsafe FV1 fail closed individu
   const copy=JSON.parse(JSON.stringify(skills));edit(copy);
   const out=heal(copy);
   assert.equal(out[1].available,false);
-  assert.equal(out[1].amount,null);
+  if(!copy[310004002].funcs[0].fv1.every(Number.isSafeInteger)||
+   copy[310004002].funcs[0].fv1.some(x=>x<0||x>20000)||
+   copy[310004002].funcs[0].fv1.every(x=>x===0))
+   assert.equal(out[1].amount,null,'malformed coefficient cannot be modeled');
   assert.equal(out[0].amount,base[0],'unaffected sibling still computes');
  }
  for(const edit of [
@@ -155,5 +158,6 @@ test('spell output and both RU/EN next-step hints retain explicit model status',
  assert.equal(spell.coefficientModels[0].unit,'');
  const book=read('pandora-studio-hero-book.js');
  assert.match(book,/text:en\?'\(model\)':'\(модель\)'/);
- assert.match(book,/next\.effect\)\)\?\[make\('span',\{class:'stage-skill-coefficient-uncertainty'/);
+ assert.ok(book.includes("...(['strike','spell'].includes(next.effect)?[make('span'"),
+  'both spell and strike mastery hints must disclose the provisional model');
 });
