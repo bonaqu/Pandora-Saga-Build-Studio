@@ -13,7 +13,8 @@ import {
  assertDatabaseIdentity,assertStagingSchema,assertStagingTableColumns,
  PRODUCTION_D1_ID
 } from './guard-editorial-staging-d1.mjs';
-import {buildEditorialDefaultsManifest} from './plan-editorial-d1-defaults.mjs';
+import {buildEditorialDefaultsManifest,renderEditorialDefaultsReadbackSQL,
+ parseWranglerEditorialReadback,verifyEditorialDefaultsReadback} from './plan-editorial-d1-defaults.mjs';
 
 const ACCOUNT_ID='57ac934cd0f0a7f5e8533177d612f893';
 const DB_NAME='ps-build-studio-db';
@@ -73,6 +74,11 @@ export function productionPresenceSQL(manifest=MANIFEST){
 }
 export function checkedReadOnlySQL(query){
  const value=String(query||'').trim();
+ // Exact generated full-content query is the only extra SQL allowed.
+ // Reject caller-supplied alternative queries, even if read-only-looking.
+ const fullReadback=renderEditorialDefaultsReadbackSQL(MANIFEST)
+  .replace(/^\s*--[^\n]*(?:\n|$)/gm,'').trim();
+ if(value===fullReadback)return value;
  if(value.includes('--')||value.includes('/*')||value.includes('\n')||
   !/^(?:SELECT\s|PRAGMA table_xinfo\((?:editorial_default_rows|editorial_default_snapshots)\);$)/i.test(value)||
   value.split(';').length!==2||value.indexOf(';')!==value.length-1)
@@ -143,6 +149,17 @@ export async function main(){
   const state=tables.installed?
    parseProductionPresence(query(config,productionPresenceSQL())):
    {status:'tables_absent',markers:0,rows:0};
+  // A count/marker check cannot detect a same-count corrupted authorial row.
+  // Read every pinned D1 value and hash canonical content independently.
+  let readback=null;
+  if(tables.installed&&state.status==='installed'){
+   const fullSQL=checkedReadOnlySQL(renderEditorialDefaultsReadbackSQL(MANIFEST)
+    .replace(/^\s*--[^\n]*(?:\n|$)/gm,'').trim());
+   const parsed=parseWranglerEditorialReadback(query(config,fullSQL));
+   const verdict=verifyEditorialDefaultsReadback(MANIFEST,parsed.metadata,parsed.rows);
+   if(!verdict.ok)throw Error('Independent production full readback mismatch: '+verdict.reason);
+   readback={checkedRows:verdict.checkedRows,sha256:verdict.digest};
+  }
   const worker=await verifyProductionWorker();
   if(worker==='enabled-and-pinned'&&state.status!=='installed')
    throw Error('Public Worker advertises pinned editorial data without matching production D1 tables');
@@ -152,7 +169,7 @@ export async function main(){
    snapshot:MANIFEST.snapshot,digest:MANIFEST.digest,
    expected_rows:MANIFEST.records.length,tables:tables.tables,
    snapshot_status:state.status,markers:state.markers,rows:state.rows,
-   public_worker:worker,operation:'READ_ONLY_NO_D1_WRITE'
+   full_readback:readback,public_worker:worker,operation:'READ_ONLY_NO_D1_WRITE'
   }));
  }finally{rmSync(temp,{recursive:true,force:true})}
 }
