@@ -166,14 +166,14 @@ export function officialSourceSummaryMarkdown(report){
    ' | '+(row.localRecords??'-')+' | '+
    (row.localExtras?.formattedDescriptions??0)+' | '+
    (row.differences?.length??0)+' |';
- }).join('\\n');
+ }).join('\n');
  return ['### Original Pandora Saga OS source vs current Build Studio catalog',
   'Checked: '+report.checkedAt+' · **read-only**, no D1 SQL/write.',
   '| Dataset | Status | Official records | Local records | Local line-break formatting | Differences |',
   '|---|---|---:|---:|---:|---:|',table,
   'Summary: '+JSON.stringify(report.summary),
   'Confirmed source fields are authoritative; this does not prove hidden server hit/rounding mechanics.'
- ].join('\\n')+'\\n';
+ ].join('\n')+'\n';
 }
 
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
