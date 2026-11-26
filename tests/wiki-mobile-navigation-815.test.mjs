@@ -22,3 +22,16 @@ test('#815 owner edit tip describes autosave without infrastructure jargon',()=>
  assert.match(src,/Changes save automatically when you leave the field/);
  assert.doesNotMatch(src,/При выходе из поля — автосохранение в Cloudflare D1/);
 });
+
+
+test('#815 encyclopedia search reset is contextual, accessible and read-only',()=>{
+ const app=read('pandora-studio-app.js'),css=read('pandora-studio-wiki-polish.css');
+ assert.match(app,/const wikiSearchClear=h\('button'/);
+ assert.match(app,/Clear encyclopedia search/);
+ assert.match(app,/Очистить поиск по энциклопедии/);
+ assert.match(app,/wikiSearchClear\.hidden=!search\.value/);
+ assert.match(app,/search\.dispatchEvent\(new Event\('input',\{bubbles:true\}\)\)/);
+ assert.match(app,/search\.focus\(\{preventScroll:true\}\)/);
+ assert.match(app,/event\.key!=='Escape'\|\|!search\.value/);
+ assert.match(css,/\.wiki-controls \.wiki-search-clear\[hidden\]\{display:none!important\}/);
+});

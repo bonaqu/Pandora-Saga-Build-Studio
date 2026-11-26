@@ -10,6 +10,12 @@ export async function runWikiChapterNavigation815Smoke(browser,base){
   try{
    await page.goto(base+'/',{waitUntil:'domcontentloaded'});
    await page.locator('#startupOverlay').waitFor({state:'hidden',timeout:30000});
+   // Choose the locale while top-level navigation is available; the
+   // Encyclopedia is a modal, so clicking controls behind it is not valid UX.
+   if(width===1366){
+    await page.locator('#locale [data-locale="en"]').click();
+    await page.waitForFunction(()=>document.documentElement.lang==='en');
+   }
    await page.locator('#nav [data-tab="wiki"]').click();
    const chapters=page.locator('.wiki-controls>.wiki-categories [data-wiki-chapter]');
    await chapters.first().waitFor({state:'visible',timeout:30000});
@@ -37,6 +43,22 @@ export async function runWikiChapterNavigation815Smoke(browser,base){
     },null,{timeout:10000});
     await page.locator('.wiki-open-first').waitFor({state:'visible'});
    }
+   // A filter never traps the owner/player in an empty Wiki result set.
+   const wikiQuery=page.locator('.wiki-search-row input[type="search"]');
+   const clear=page.locator('.wiki-search-clear');
+   assert.equal(await clear.isHidden(),true);
+   await wikiQuery.fill('___missing_encyclopedia_record___');
+   await clear.waitFor({state:'visible'});
+   assert.equal(await clear.getAttribute('aria-label'),
+    width===1366?'Clear encyclopedia search':'Очистить поиск по энциклопедии');
+   await clear.click();
+   assert.equal(await wikiQuery.inputValue(),'');
+   assert.equal(await wikiQuery.evaluate(n=>document.activeElement===n),true);
+   await wikiQuery.fill('___missing_encyclopedia_record___');
+   await wikiQuery.press('Escape');
+   assert.equal(await wikiQuery.inputValue(),'');
+   assert.equal(await wikiQuery.evaluate(n=>document.activeElement===n),true);
+   await first.waitFor({state:'visible'});
    await first.click();
    await page.locator('.wiki-page h3').waitFor({state:'visible'});
    assert.match(new URL(page.url()).hash,/^#wiki\/(?:item|soul)\//);

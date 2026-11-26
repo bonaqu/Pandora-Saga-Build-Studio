@@ -605,3 +605,13 @@
 @media(prefers-reduced-motion:reduce){
  .wiki-controls>.wiki-categories{scroll-behavior:auto}
 }
+
+/* #815: contextual, keyboard-accessible search reset shared by RU and EN Wiki. */
+.wiki-controls .wiki-search-row{display:flex;align-items:stretch;gap:6px;min-width:0}
+.wiki-controls .wiki-search-row>input[type="search"]{flex:1;min-width:0;width:100%}
+.wiki-controls .wiki-search-clear{flex:0 0 38px;min-width:38px;min-height:37px;
+ padding:0;border:1px solid #947047;border-radius:5px;background:#302016;
+ color:#f0c990;font-size:23px;line-height:1;cursor:pointer}
+.wiki-controls .wiki-search-clear[hidden]{display:none!important}
+.wiki-controls .wiki-search-clear:hover{background:#50301d;border-color:#e0b471}
+.wiki-controls .wiki-search-clear:focus-visible{outline:2px solid #eaca8b;outline-offset:2px}
