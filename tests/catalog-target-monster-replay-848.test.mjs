@@ -27,8 +27,10 @@ const trap=snapshot=>T.crawlingTrap({
  stats:{dex:70,int:20},equipment:[],
  modifiers:{combat:{spellDamageEquipmentRate:0,priestSong:{}},priestApplied:{}}
 });
-test('unchanged 707-monster source snapshot has no fabricated target regression',()=>{
- assert.equal(Object.keys(current.monsters).length,707);
+test('unchanged current D1-backed monster snapshot has no fabricated target regression',()=>{
+ assert.equal(Object.keys(current.monsters).length,load('meta').counts.monsters);
+ assert.ok(Object.keys(current.monsters).length>=707,
+  'Previously reviewed monster records must not silently disappear');
  const report=S.replayMonsterTargets(current,current);
  assert.equal(report.ok,true);
  assert.equal(report.changedMonsters,0);

@@ -56,10 +56,13 @@ export async function runHeroBookMonsterPicker785Smoke(browser,base){
    };
    window.__retiredMonsterBookRender=render;
    render('ru');
-   return {count:available.length,ogre:[original.min,original.average,original.max],
+   return {count:available.length,rawMonsterCount:Object.keys(monsters).length,
+    ogre:[original.min,original.average,original.max],
     dingo:[changed.min,changed.average,changed.max]};
   });
-  assert.equal(source.count,707);
+  assert.equal(source.count,source.rawMonsterCount,
+   'Every valid D1-authored monster must be considered by the standalone target model');
+  assert.ok(source.count>=707,'Previously reviewed monster coverage must remain');
   assert.deepEqual(source.ogre,[34,148,194]);
   assert.notDeepEqual(source.dingo,source.ogre,
    'Standalone source model still respects selected game monster');
@@ -75,6 +78,7 @@ export async function runHeroBookMonsterPicker785Smoke(browser,base){
   assert.equal(await book.locator('.stage-target-damage-row').count(),0);
   assert.doesNotMatch(await book.innerText(),/Ogre Bouncer|Dingo|Average hit against/);
   assert.deepEqual(errors,[]);
-  console.log('Chromium Hero Book 785: 707 standalone source targets, no Book target picker in RU/EN');
+  console.log('Chromium Hero Book 785: '+source.count+
+   ' standalone source targets, no Book target picker in RU/EN');
  }finally{await context.close()}
 }

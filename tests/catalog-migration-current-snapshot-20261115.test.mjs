@@ -11,7 +11,8 @@ test('current published D1 source is accepted by the same strict catalog validat
  assert.equal(Object.keys(game.items).length,1140);
  assert.equal(Object.keys(game.skills).length,571);
  assert.equal(Object.keys(game.souls).length,115);
- assert.equal(Object.keys(game.monsters).length,707);
+ assert.equal(Object.keys(game.monsters).length,read('meta').counts.monsters,
+  'Current catalog count must agree with published source metadata');
  assert.equal(Object.keys(game.drops).length,180);
  assert.equal(game.trades.trades.length,212);
  assert.equal(Object.keys(read('itemForth')).length,172);
