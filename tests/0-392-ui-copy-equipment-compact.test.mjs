@@ -16,7 +16,8 @@ test('group summary keeps trained, learned and invested metrics independent of o
   assert.ok(path.includes(calculation),'Authorial caption must not replace game calculation');
  }
  assert.match(path,/const refreshGroupSummary=\(\)=>/);
- assert.match(path,/groupCount\.append\(caption,value\)/);
+ assert.match(path,/groupCount\.append\(make\('span',\{text:groupValues\.length\?' · ':''\}\),/);
+ assert.match(path,/authored\(api,copyKey,ru,en,'span','path-group-summary-copy'\)/);
  assert.doesNotMatch(path,/groupCount\.textContent=groupSummary\(\)/,
   'Changing points must never delete a live owner-copy binding');
 });
@@ -25,7 +26,7 @@ test('milestone labels consistently distinguish initial, invested, class cap and
   "'Начально (оч.): '","' · Вложено (оч.): '",
   "' оч. ветки'","'Лимит (оч.):'"
  ])assert.ok(path.includes(fragment),fragment);
- assert.match(path,/bindPathCopy\(api,unit,'pathUnlockPoints','оч\.','pts','text','',' '\)/);
+ assert.match(path,/authored\(api,'pathUnlockPoints','оч\.','pts',/);
  assert.ok(!path.includes("'Старт: '"),'Outdated start legend must not remain');
  assert.ok(!path.includes("'Предел: '"),'Outdated potential legend must not remain');
  assert.ok(!path.includes("' очков ветки'"),'Wrong long-form threshold must not remain');
@@ -78,10 +79,11 @@ test('site shell has clean title/footer, D1-grounded counters and no retired arc
  assert.ok(!html.includes('VINTAGE · CHARACTER PLANNER'));
  assert.match(html,/<span id="iconStatus" hidden aria-hidden="true"><\/span>/);
  assert.match(app,/function renderCatalogStatus\(\)/);
- assert.match(app,/В энциклопедии: /);
- assert.match(app,/data\.meta\.counts\.skills/);
- assert.match(app,/data\.meta\.counts\.items/);
- assert.match(app,/data\.meta\.counts\.souls/);
+ assert.match(app,/\['lead','В энциклопедии:','Encyclopedia:'\]/);
+ assert.match(app,/data-catalog-status-value/);
+ assert.match(app,/counts=catalogSource\?\.meta\?\.counts/);
+ assert.match(app,/data-catalog-status-value/);
+ assert.match(app,/String\(counts\[key\]\)/);
  assert.ok(!app.includes("'Cloudflare D1 · актуальный опубликованный каталог'"));
  assert.doesNotMatch(app,/function renderArchiveNotice/);
  assert.doesNotMatch(html,/id="siteNotice"/);

@@ -29,7 +29,9 @@ test('rank filter direct edit never triggers a filter action',()=>{
  assert.match(view,/wrap\.append\(button\)/);
  assert.match(view,/wrap\.append\(host\)/);
  assert.match(view,/caption\.addEventListener\('dblclick',edit\)/);
- assert.match(view,/guardCaptionAction\(button,caption\)/);
+ assert.match(view,/guardAction\(button,caption\)/);
+ assert.match(app,/guardAction:\(button,caption\)=>ownerCaptionActionGuard\(button,caption\)/);
+ assert.doesNotMatch(view,/let pending=null;\s*action\.addEventListener\('click'/);
  assert.match(view,/rankFilters\.querySelectorAll\('button\[data-honor-filter\]'\)/);
  assert.match(view,/button\.hidden=true;host\.hidden=false/);
  assert.match(view,/onFinished:restore/);

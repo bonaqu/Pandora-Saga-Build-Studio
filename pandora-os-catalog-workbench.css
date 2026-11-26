@@ -10,6 +10,12 @@
 .os-sync-group-heading strong{font-size:13px}
 .os-sync-count{font-size:11px;color:#d5b98d}
 .os-sync-group-actions{display:flex;flex-wrap:wrap;gap:6px;padding:0 10px 10px}
+/* The per-dataset action is still a real button in either mode.
+   Its live filtered count is not part of the editable caption. */
+.os-sync-group-actions>.os-sync-action-editor{min-width:0;max-width:100%}
+.os-sync-group-actions .os-sync-action-runtime-number{
+ white-space:nowrap;font-variant-numeric:tabular-nums
+}
 .os-sync-list{display:grid;gap:6px;padding:0 10px 10px}
 .os-sync-record{border:1px solid #57432f;border-radius:4px;padding:9px;background:#2a2018}
 .os-sync-record-label{display:flex;gap:9px;align-items:center;cursor:pointer}
@@ -227,6 +233,44 @@
   max-height:8em;overflow:auto}
 .os-sync-reference-open{color:#f4cc85;text-decoration:underline;text-underline-offset:3px}
 .os-sync-reference-open:hover{color:#ffeaad}
+/* Owner's visible link caption is editable without navigating on the first
+   double-click. The adjacent real anchor alone performs navigation. */
+/* Owner edits the text INSIDE the native disclosure; no caption pencil.
+   Preserve the native marker, keyboard activation and open/closed state. */
+.os-sync-disclosure-caption{display:inline-block;vertical-align:baseline;
+ max-width:100%;overflow-wrap:anywhere}
+.os-sync-disclosure-caption.origin-copy-editable::after{content:none}
+.os-sync-disclosure-caption.origin-copy-editable:focus-visible{
+ outline:2px solid #edc485;outline-offset:3px;border-radius:2px}
+.os-sync-disclosure-caption .wiki-inline-input{max-width:100%;min-width:145px}
+/* Per-item expansion counts are model results and cannot be edited in D1. */
+.os-sync-disclosure-runtime-count{white-space:nowrap;font-variant-numeric:tabular-nums}
+.os-sync-reference-open-editor{display:inline-flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+.os-sync-reference-open-copy{color:#f4cc85;cursor:text;text-decoration:underline dotted;
+ text-underline-offset:3px}
+.os-sync-reference-open-copy.origin-copy-editable::after{content:none}
+.os-sync-reference-open-icon{color:#f4cc85;font-weight:700;text-decoration:underline;
+ text-underline-offset:3px}
+.os-sync-reference-open-icon:hover,.os-sync-reference-open-icon:focus-visible{color:#ffeaad}
+/* Only the genuine hover explanation has a pencil. Hide it until the linked
+   item is hovered/focused; always expose it to keyboard/touch users. */
+.os-sync-reference-hint-pencil{display:none;vertical-align:middle;margin:0 3px;
+ width:20px;min-width:20px;height:20px;padding:0;
+ border:1px solid #776044;border-radius:4px;background:#2a2018;
+ color:#d6bd98;font-size:11px;cursor:pointer}
+.os-sync-reference:hover>.os-sync-reference-hint-pencil,
+.os-sync-reference:focus-within>.os-sync-reference-hint-pencil{display:inline-flex;
+ justify-content:center;align-items:center}
+.os-sync-reference-hint-pencil:hover,.os-sync-reference-hint-pencil:focus-visible{
+ background:#573920;border-color:#efc181;color:#ffe5b3}
+.os-sync-reference-hint-host{display:inline-flex;max-width:100%;min-width:145px}
+.os-sync-reference-hint-host.origin-copy-editable::after{content:none}
+.os-sync-reference-hint-host .wiki-inline-input{max-width:100%;min-width:145px}
+.os-sync-reference-hint-pencil[hidden],.os-sync-reference-hint-host[hidden]{display:none!important}
+@media(hover:none){
+ .os-sync-reference>.os-sync-reference-hint-pencil{display:inline-flex;
+  justify-content:center;align-items:center}
+}
 @media(max-width:670px){
   .os-sync-human-field{grid-template-columns:minmax(0,1fr) 16px minmax(0,1fr)}
   .os-sync-human-field>strong{grid-column:1/-1}
@@ -314,6 +358,14 @@
 .os-sync-meta-detail{overflow-wrap:anywhere;white-space:normal;
  font-size:11px;line-height:1.45}
 
+/* #390: summary and selection guidance are direct authorial RU/EN text.
+   Each number and source record stays in a sibling, never a CAS payload. */
+.os-sync-status-copy{display:inline;min-width:0;overflow-wrap:anywhere}
+.os-sync-status-copy.origin-copy-editable::after{content:none}
+.os-sync-status-copy.origin-copy-editable:focus-visible{
+ outline:2px solid #edc485;outline-offset:3px;border-radius:2px
+}
+.os-sync-count-piece[hidden],.os-sync-status-copy[hidden]{display:none}
 /* Fixed source notices and status messages can be edited independently.
    Live progress/errors stay ordinary text and never expose an editor. */
 .os-sync-state-caption{display:inline-block;min-width:0;overflow-wrap:anywhere}
@@ -365,6 +417,23 @@
  display:block;box-sizing:border-box;min-width:0;width:100%;max-width:100%;
  min-height:31px;padding:5px 7px;font-size:11px
 }
+/* #390: filter captions stay compact; the only adjacent pencil belongs to
+   the independent hover explanation, never the visible name or count.
+   Reveal on pointer hover/focus; keep it visible on touch-only devices. */
+.os-sync-filters>.os-sync-filter-hint{
+ display:inline-grid;grid-template-columns:minmax(0,max-content) 22px;
+ gap:3px;align-items:center;width:auto;max-width:100%;
+}
+.os-sync-filter-hint>.os-sync-filter{min-width:0;max-width:100%}
+.os-sync-filter-hint>.os-sync-secondary-pencil{margin:0;height:26px}
+.os-sync-filter-hint>.os-sync-secondary-host{grid-column:1/-1}
+@media(hover:hover) and (pointer:fine){
+ .os-sync-filter-hint>.os-sync-secondary-pencil{
+  opacity:0;transition:opacity .13s ease;
+ }
+ .os-sync-filter-hint:hover>.os-sync-secondary-pencil,
+ .os-sync-filter-hint:focus-within>.os-sync-secondary-pencil{opacity:1}
+}
 .os-sync-search-field>.os-sync-secondary-pencil{margin-top:6px}
 @media(max-width:580px){
  .os-sync-secondary-hint{grid-template-columns:minmax(0,1fr) 22px;gap:4px}
@@ -415,6 +484,11 @@
 .os-sync-search-clear:hover:not(:disabled){background:#49321f;border-color:#d9af71}
 .os-sync-search-clear:disabled{opacity:.43;cursor:default}
 .os-sync-search-clear:focus-visible{outline:2px solid #efc784;outline-offset:2px}
+.os-sync-search-clear-editor{min-width:0;max-width:100%}
+.os-sync-search-clear-editor>.os-sync-search-clear:disabled{pointer-events:none}
+.os-sync-search-clear-editor:has(>.os-sync-search-clear:disabled){cursor:text}
+.os-sync-search-clear-editor>.os-sync-action-edit-host{min-width:0}
+.os-sync-search-clear-editor>.os-sync-action-edit-host .wiki-inline-input{min-width:0;width:100%}
 .os-sync-source-banner[data-source="archive"]{border-left:3px solid #d09962;
  background:#39281c;color:#f5d3a4}
 .os-sync-source-banner[data-source="server"]{border-left:3px solid #849e78;

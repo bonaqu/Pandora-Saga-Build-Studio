@@ -90,15 +90,15 @@
  border-radius:4px;background:#271a12}
 .stage-rich-tabs.no-souls .stage-rich-settings-group{grid-template-columns:minmax(0,1fr)}
 .stage-rich-settings-group>:not(:first-child){border-left:1px solid #896542}
-.stage-rich-tabs .stage-rich-settings-group button:not(.stage-control-pencil){
+.stage-rich-tabs .stage-rich-settings-group button{
  min-width:0;min-height:31px;border:0;border-radius:0;background:transparent;
  overflow:hidden;line-height:1.2}
-.stage-rich-tabs .stage-rich-settings-group button:not(.stage-control-pencil).chosen{
+.stage-rich-tabs .stage-rich-settings-group button.chosen{
  background:#79502a;box-shadow:inset 0 -2px #f3c47e;color:#fff2d6}
-.stage-rich-tabs .stage-rich-settings-group button:not(.stage-control-pencil):hover{
+.stage-rich-tabs .stage-rich-settings-group button:hover{
  background:#50321d}
 .stage-rich-tabs .stage-rich-settings-group>.stage-action-edit-wrap{min-width:0}
-.stage-rich-tabs .stage-rich-settings-group>button:not(.stage-control-pencil):not(:first-child),
+.stage-rich-tabs .stage-rich-settings-group>button:not(:first-child),
 .stage-rich-tabs .stage-rich-settings-group>.stage-action-edit-wrap:not(:first-child){
  border-left:1px solid #896542}
 

@@ -481,6 +481,8 @@ const COMPACT_METRICS=Object.freeze([
  ['mentalConditions','Сопр. аном. дух.','Mental conditions'],
  ['magic','Сопр. магии','Magic resistance']
 ]);
+// Exact fixed A/B metric captions are authorial; numeric source lookup is not.
+const metricCopyRows=Object.freeze(COMPACT_METRICS.map(row=>Object.freeze([...row])));
 // For damage taken and cooldown modifiers a smaller percentage is favorable.
 const LOWER_IS_BETTER=new Set(['physicalResist','magicDamageResist','critDamageResist','cooldown']);
 function compactResults(summaryA=[],summaryB=[],{lang='ru'}={}){
@@ -532,7 +534,7 @@ function compactResults(summaryA=[],summaryB=[],{lang='ru'}={}){
     advantage=minA>minB?'a':'b';
   }
   changes.push({
-   key:'stat.'+key,label:english?en:ru,
+   key:'stat.'+key,label:english?en:ru,labelRu:ru,labelEn:en,
    a:shown(a,left,key,unitA),b:shown(b,right,key,unitB),
    advantage,
    delta:delta===null?'—':(delta>0?'+':'')+format.format(delta)+unitA,
@@ -543,5 +545,7 @@ function compactResults(summaryA=[],summaryB=[],{lang='ru'}={}){
  return changes;
 }
 
-root.PandoraBuildComparison=Object.freeze({describe,savedItemName,matrixRows,compactResults,calculatePair});
+root.PandoraBuildComparison=Object.freeze({
+ describe,savedItemName,matrixRows,compactResults,calculatePair,metricCopyRows
+});
 })(typeof window==='undefined'?globalThis:window);

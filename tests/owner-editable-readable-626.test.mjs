@@ -31,19 +31,24 @@ test('long labels and descriptions expand rather than hide or ellipsize text',()
  assert.match(ownerCss,/\.stage-attribute-head \.stage-book-heading:has\(\[data-owner-text-field\]\)/);
  assert.match(ownerCss,/overflow-y:auto;overflow-x:hidden/);
 });
-test('a later locale switch does not remap the ongoing copy edit',()=>{
- const from=app.indexOf('function bindStaticUICopyEditors(){');
+test('a locale switch cannot change the language of the one direct-caption editor',()=>{
+ const from=app.indexOf('function bindStaticUICopyEditors(');
  const to=app.indexOf('// Edit only semantically keyed authored labels',from);
  const code=app.slice(from,to);
  assert.ok(from>=0&&to>from);
- assert.equal((code.match(/const editLang=lang,current=locale\.text\(key,editLang\)/g)||[]).length,2);
- assert.equal((code.match(/saveGuidePatch\('book\.'\+id,\{\[editLang\]:next\}\)/g)||[]).length,2);
+ assert.equal((code.match(/const editLang=lang,current=locale\.text\(key,editLang\)/g)||[]).length,1);
+ assert.equal((code.match(/saveGuidePatch\('book\.'\+id,\{\[editLang\]:next\}\)/g)||[]).length,1);
  assert.doesNotMatch(code,/saveGuidePatch\('book\.'\+id,\{\[lang\]:next\}\)/);
- assert.match(code,/const syncPencil=\(pencil,key,hint=false\)=>/);
- assert.match(code,/syncPencil\(target\.nextElementSibling\.nextElementSibling,key\)/);
- assert.match(code,/syncPencil\(pencil\.nextElementSibling,key,true\)/);
- assert.match(code,/node\.dataset\[datasetKey\]/);
+ // The mirrored title was never independent hover copy. No second input
+ // means fewer opportunities to accidentally write RU after switching to EN.
+ assert.doesNotMatch(code,/class:'ui-content-pencil'/);
+ assert.match(code,/const interactive=node\.closest\('button,a,summary/);
+ assert.match(code,/next\.length>locale\.copyLimit\(key\)/);
+ assert.match(code,/onFinished:\(\)=>\{\s*target\.hidden=false;host\.remove\(\);/);
+ assert.match(code,/if\(next\?\.dataset\?\.uiContentFor===node\.dataset\.i18nTitle\)next\.remove\(\)/);
  assert.doesNotMatch(code,/locale\.apply\(lang\)/);
+ const locale=read('pandora-studio-ui-locale.js');
+ assert.match(locale,/for\(const \[attribute,dataKey\] of \[\['placeholder','i18nPlaceholder'\],\['aria-label','i18nAriaLabel'\],\['title','i18nTitle'\]\]\)/);
 });
 
 test('editing an equipment statistic spans the available row without hiding its value',()=>{

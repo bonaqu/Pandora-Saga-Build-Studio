@@ -34,9 +34,36 @@ function matchesSoulSearch(record,query){
   .filter(value=>typeof value==='string').join(' ');
  return root.PandoraSearchField.matches(names,query);
 }
+// Static authorial equipment summary copy, already using owner D1 CAS.
+// Values, game IDs, Soul capacities, and refinement numbers are NOT copy.
+const equipmentSummaryCopy=Object.freeze({
+ 'field.soulCompatible':['Подходящие слоты','Compatible slots'],
+ 'field.type':['Тип','Type'],
+ 'field.level':['Уровень','Level'],
+ 'field.attack':['Атака','Attack'],
+ 'field.magicAttack':['Магическая атака','Magic attack'],
+ 'field.defense':['Защита','Defense'],
+ 'field.slots':['Слоты душ','Soul slots'],
+ 'field.speed':['Скорость','Speed'],
+ 'field.range':['Дальность','Range'],
+ 'field.gemType':['Тип самоцвета','Gemstone type'],
+ 'field.element':['Стихия улучшения','Refinement element'],
+ 'field.specialEffect':['Особый эффект','Special effect'],
+ unavailable:['Данные о предмете пока не загружены','Item information is not loaded yet'],
+ wearableBy:['Подходит','Wearable by'],
+ outfitNote:['Броня + штаны · одна вещь','Armor + pants · one item'],
+ socketedSoulHeading:['Вставленные души','Socketed Souls']
+});
+const summaryCopyField=id=>[id,...equipmentSummaryCopy['field.'+id]];
+
 function summary(record,icon,kind='item',context=null){
- if(!record)return el('p',{class:'muted',text:document.documentElement?.lang==='en'?
-  'Item information is not loaded yet':'Данные о предмете пока не загружены'});
+ if(!record){
+  const [ru,en]=equipmentSummaryCopy.unavailable;
+  const missing=el('p',{class:'muted',text:context?.copyLabel?.('unavailable',ru,en)||
+   (document.documentElement?.lang==='en'?en:ru)});
+  context?.editLabel?.(missing,'unavailable',ru,en);
+  return missing;
+ }
  const presenter=root.PandoraItemPresentation,english=document.documentElement?.lang==='en';
  const locale=english?'en':'ru',tr=(ru,en)=>english?en:ru;
  const wrap=el('div',{class:'stage-rich-summary'}),head=el('div',{class:'stage-rich-head'});
@@ -113,19 +140,16 @@ function summary(record,icon,kind='item',context=null){
  // magical refinements and hidden Soul slots. Index drift formerly assigned
  // Defense the "Slots" editor key on magically enhanced weapons.
  const fieldNames=kind==='soul'?
-  [['soulCompatible','Подходящие слоты','Compatible slots']]:
-  [['type','Тип','Type'],['level','Уровень','Level'],
-   ['attack','Атака','Attack'],
-   ...(magicPlus?[['magicAttack','Магическая атака','Magic attack']]:[]),
-   ['defense','Защита','Defense'],
-   ...(showSoulSlots?[['slots','Слоты душ','Soul slots']]:[]),
-   ['speed','Скорость','Speed'],['range','Дальность','Range']];
+  [summaryCopyField('soulCompatible')]:
+  ['type','level','attack',...(magicPlus?['magicAttack']:[]),
+   'defense',...(showSoulSlots?['slots']:[]),'speed','range']
+   .map(summaryCopyField);
  if(gem&&grade>0){
   if((context.slot||record.slot)==='weapon'&&gemType)
-   fieldNames.push(['gemType','Тип самоцвета','Gemstone type']);
-  if(gemElement)fieldNames.push(['element','Стихия улучшения','Refinement element']);
+   fieldNames.push(summaryCopyField('gemType'));
+  if(gemElement)fieldNames.push(summaryCopyField('element'));
  }
- if(phoenix)fieldNames.push(['specialEffect','Особый эффект','Special effect']);
+ if(phoenix)fieldNames.push(summaryCopyField('specialEffect'));
  const dl=el('dl',{class:'stage-rich-fields'});
  rows.forEach(([key,value],index)=>{
   if(value===null||value===undefined||value==='')return;
@@ -154,7 +178,7 @@ function summary(record,icon,kind='item',context=null){
  // Keep the exact catalog order and RU/EN names, without a separate card,
  // extra border, clickable chips, or gameplay data changes.
  if(wearers?.length){
-  const labelRu='Подходит',labelEn='Wearable by';
+  const [labelRu,labelEn]=equipmentSummaryCopy.wearableBy;
   const labelNode=el('dt',{class:'stage-gear-wearers-label',
    text:context?.copyLabel?.('wearableBy',labelRu,labelEn)||tr(labelRu,labelEn)});
   context?.editLabel?.(labelNode,'wearableBy',labelRu,labelEn);
@@ -167,7 +191,7 @@ function summary(record,icon,kind='item',context=null){
  }
  if(dl.children.length)wrap.append(dl);
  if(kind==='item'&&root.PandoraUIPlanner?.occupiesBodyAndLegs?.(record))
-  {const ru='Броня + штаны · одна вещь',en='Armor + pants · one item';
+  {const [ru,en]=equipmentSummaryCopy.outfitNote;
    const note=el('small',{class:'stage-outfit-note',
     text:context?.copyLabel?.('outfitNote',ru,en)||tr(ru,en)});
    context?.editLabel?.(note,'outfitNote',ru,en);
@@ -180,7 +204,7 @@ function summary(record,icon,kind='item',context=null){
  if(kind==='item'&&Array.isArray(context?.souls)&&context.souls.length){
   const group=el('div',{class:'stage-gear-souls'});
   // Stable bilingual owner copy; never edit the equipped Soul IDs/names.
-  const titleRu='Вставленные души',titleEn='Socketed Souls';
+  const [titleRu,titleEn]=equipmentSummaryCopy.socketedSoulHeading;
   const title=el('strong',{text:context?.copyLabel?.('socketedSoulHeading',titleRu,titleEn)||
    tr(titleRu,titleEn)});
   context?.editLabel?.(title,'socketedSoulHeading',titleRu,titleEn);
@@ -370,6 +394,36 @@ const actionLabels=Object.freeze({
  souls:Object.freeze(['Управление душами','Manage Souls']),
  remove:Object.freeze(['Снять вещь','Unequip item'])
 });
+// Independent, already-editable tooltip copy for each equipment tab.
+const equipmentTabHints=Object.freeze({
+ choose:['Выбрать или сменить предмет в этом слоте.','Choose or replace gear in this slot.'],
+ details:['Посмотреть свойства, заточку и слоты душ.','View properties, refinement and Soul sockets.'],
+ souls:['Вставить, заменить или снять душу.','Insert, replace or remove a Soul.']
+});
+// Original static RU/EN equipment labels for controls and ARIA prefixes.
+// The live numbers, item/Soul names and slot capacities are never authored copy.
+const equipmentInterfaceCopy=Object.freeze({
+ pickerSlotHeading:['Слот','Slot'],
+ pickerItemClose:['Закрыть настройку','Close item settings'],
+ pickerItemSettings:['Настройка предмета','Item settings'],
+ pickerPropertiesGroup:['Свойства предмета','Item properties'],
+ chooseItemEmpty:['Сначала выбери предмет.','Choose an item first.'],
+ socketCapacityHeading:['Слоты душ','Soul slots'],
+ socketOverflowHint:['Сначала извлеките души из лишних слотов','Remove Souls from extra sockets first'],
+ refinementHeading:['Заточка: +0…+10','Refinement: +0…+10'],
+ gemTypeLabel:['Тип','Type'],
+ gemElementLabel:['Стихия','Element'],
+ pickerSoulSlotAria:['Слот души','Soul slot'],
+ pickerEmptySoul:['пусто','empty'],
+ pickerSoulSlotCaption:['Слот','Slot'],
+ soulSlotsHeading:['Слоты душ','Soul slots'],
+ soulSearch:['Поиск совместимой души','Find a compatible Soul'],
+ pickerSoulSearchAria:['Поиск души','Find Soul'],
+ soulShowMore:['Показать ещё души','Show more Souls'],
+ soulProgressLabel:['Душ','Souls'],
+ soulSearchEmpty:['Совместимых душ не найдено','No compatible Souls found'],
+ soulRemove:['Извлечь душу из выбранного слота','Remove Soul from selected slot']
+});
 // Genitive phrases keep the unavailable-state explanation natural in RU.
 const SOUL_SLOT_NOUNS=Object.freeze({
  weapon:['этого оружия','weapon'],shield:['этого щита','shield'],
@@ -396,17 +450,25 @@ function render(root,api){
  const hasSouls=plan.supportsSoulSlot(slot);
  if(mode==='gems'||mode==='souls'&&(!hasSouls||!record)){api.changeMode('details');return}
  const english=document.documentElement?.lang==='en',tr=(ru,en)=>english?en:ru;
- const copy=(key,ru,en)=>api.copyLabel?.(key,ru,en)||tr(ru,en);
+ const copy=(key,ru,en)=>{
+  const fixed=equipmentInterfaceCopy[key];
+  if(fixed)[ru,en]=fixed;
+  return api.copyLabel?.(key,ru,en)||tr(ru,en);
+ };
  // Bind only immutable user-facing prefixes; numeric slots, Soul names and
  // selected state stay outside the D1 editorial value.
  const bind=(node,key,ru,en,attribute='text',suffix='')=>{
+  if(equipmentInterfaceCopy[key])[ru,en]=equipmentInterfaceCopy[key];
   if(api.bindInterfaceText)return api.bindInterfaceText(node,key,ru,en,attribute,suffix);
   const value=copy(key,ru,en)+suffix;
   if(attribute==='text')node.textContent=value;
   else node.setAttribute(attribute,value);
   return node;
  };
- const editable=(node,key,ru,en,options)=>{api.editLabel?.(node,key,ru,en,options);return node};
+ const editable=(node,key,ru,en,options)=>{
+  if(equipmentInterfaceCopy[key])[ru,en]=equipmentInterfaceCopy[key];
+  api.editLabel?.(node,key,ru,en,options);return node;
+ };
  const guardCaptionAction=(button,caption)=>{
   if(!api.canEdit)return;
   let pending=null;
@@ -441,6 +503,18 @@ function render(root,api){
   button.replaceChildren(...(prefix?[el('span',{class:'stage-action-glyph',
    'aria-hidden':'true'},[prefix])]:[]),caption);
   guardCaptionAction(button,caption);
+  // The caption is nested in a native action: keyboard focus stays on the
+  // button, so F2 must forward to its existing inline D1/CAS editor.
+  // Enter/Space still activate the genuine gear control without editing.
+  button.setAttribute('aria-keyshortcuts','F2');
+  button.addEventListener('keydown',event=>{
+   if(event.target!==button||event.key!=='F2'||event.altKey||
+    event.ctrlKey||event.metaKey||event.shiftKey)return;
+   event.preventDefault();event.stopPropagation();
+   caption.dispatchEvent(new KeyboardEvent('keydown',{
+    key:'F2',bubbles:true,cancelable:true
+   }));
+  });
   return button;
  };
  const tabs=bind(el('nav',{class:'stage-rich-tabs'+(hasSouls?' has-souls':' no-souls'),
@@ -448,19 +522,15 @@ function render(root,api){
  // Choosing gear opens the separate item picker. Properties/Souls are one
  // settings surface with a shared frame and a visible divider.
  const chooseGroup=el('div',{class:'stage-rich-choose-group'});
- const settingsGroup=el('div',{class:'stage-rich-settings-group',role:'group',
-  'aria-label':tr('Свойства предмета','Item properties')});
+ const settingsGroup=bind(el('div',{class:'stage-rich-settings-group',role:'group'}),
+  'pickerPropertiesGroup','Свойства предмета','Item properties','aria-label');
  tabs.append(chooseGroup,settingsGroup);
  const sections=['choose','details'];
  if(hasSouls)sections.push('souls');
  for(const key of sections){
   const action=key==='choose'?'replace':key==='details'?'properties':'souls';
   const [ru,en]=actionLabels[action],text=copy('tab.'+key,ru,en);
-  const hints={
-   choose:['Выбрать или сменить предмет в этом слоте.','Choose or replace gear in this slot.'],
-   details:['Посмотреть свойства, заточку и слоты душ.','View properties, refinement and Soul sockets.'],
-   souls:['Вставить, заменить или снять душу.','Insert, replace or remove a Soul.']
-  };
+  const hints=equipmentTabHints;
   const returningToDetails=mode==='choose'&&key==='details'&&Boolean(record);
   const glyph=actionIcon(key,{forward:returningToDetails});
   const button=el('button',{type:'button',
@@ -468,7 +538,7 @@ function render(root,api){
    'aria-pressed':String(mode===key),
    'data-stage-tab':key,disabled:!record&&key!=='choose',
    onclick:event=>{
-    if(event?.target?.closest?.('.stage-control-pencil,.wiki-inline-input'))return;
+    if(event?.target?.closest?.('.wiki-inline-input'))return;
     api.changeMode(key);
    }});
   button.append(el('span',{class:'stage-tab-symbol','aria-hidden':'true'},[glyph]),
@@ -557,7 +627,7 @@ function render(root,api){
       'aria-pressed':String(choice?.[key]===option.id),
       'data-enchant-key':key,'data-enchant-value':option.id,
       onclick:event=>{
-       if(event?.target?.closest?.('.stage-control-pencil,.wiki-inline-input'))return;
+       if(event?.target?.closest?.('.wiki-inline-input'))return;
        api.assignGem({type:key==='type'?option.id:(choice?.type||'physical'),
         element:key==='element'?option.id:(choice?.element||'fire')});
       }});
@@ -592,8 +662,13 @@ function render(root,api){
    const value=souls[i],soul=value&&api.catalog.souls?.[String(value.id)],selected=i===api.selectedSocket;
    const button=el('button',{type:'button',class:selected?'selected':'','aria-pressed':String(selected),
     'data-socket-index':String(i),onclick:()=>api.openSocket(i)});
+   // Dynamic Soul names come from the source's real RU/EN presentation,
+   // never from a hardcoded owner caption or an item ID.
+   const soulName=soul?(root.PandoraItemPresentation?.displayName(soul,
+    tr('Душа','Soul'),english?'en':'ru')||soul.name||tr('Душа','Soul')):
+    copy('pickerEmptySoul','пусто','empty');
    bind(button,'pickerSoulSlotAria','Слот души','Soul slot','aria-label',
-    ' '+(i+1)+': '+(soul?.name||copy('pickerEmptySoul','пусто','empty')));
+    ' '+(i+1)+': '+soulName);
    if(!soul)button.dataset.soulEmptySlot=String(i+1);
    const src=soul&&icons(soul,'soul');
    if(src){const image=el('img',{src,alt:''});image.onerror=()=>image.replaceWith(el('span',{text:'✦'}));button.append(image)}
@@ -649,7 +724,7 @@ function render(root,api){
    for(const rec of results.slice(start,shown)){
     const button=el('button',{type:'button',class:'stage-rich-result',
      onclick:event=>{
-      if(event?.target?.closest?.('.stage-control-pencil,.wiki-inline-input'))return;
+      if(event?.target?.closest?.('.wiki-inline-input'))return;
       api.assignSoul(rec);
      }});
     const src=icons(rec,'soul');
@@ -709,7 +784,7 @@ function render(root,api){
   const remove=el('button',{type:'button',class:'stage-enchant-reset',
    text:'✕ '+copy('soulRemove',removeRu,removeEn),
    onclick:event=>{
-    if(event?.target?.closest?.('.stage-control-pencil,.wiki-inline-input'))return;
+    if(event?.target?.closest?.('.wiki-inline-input'))return;
     api.assignSoul(null);
    }});
   body.append(query,labeledAction(remove,'soulRemove',removeRu,removeEn,'✕'),list);

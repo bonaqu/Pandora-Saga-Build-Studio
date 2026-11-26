@@ -3,7 +3,12 @@
 // Partial source-backed combat preview. Do not claim current OS parity for missing buffs or procs.
 // Exact, player-interface labels only; source names and item descriptions stay untouched.
 const bookEnglish=Object.freeze({
+ '«Вольный ветер» и «Благословение ветра»: прибавки показаны отдельно.': 'Free Wind and Wind Blessing: bonuses are shown separately.',
+ 'У текущего билда нет рассчитанных эффектов умений. Описания и требования смотри в Энциклопедии → Навыки.': 'No calculated skill effects for this build. Skill descriptions and requirements are in Encyclopedia → Skills.',
+ 'На экипированном оружии нет активных подтверждённых стихийных эффектов.': 'No supported elemental weapon effect is active on the equipped weapon.',
+ 'Здесь только прямые бонусы вещей и душ. Титулы, пассивные умения, комплекты и другие эффекты тоже могут влиять на итоговые значения выше.': 'Direct item and Soul bonuses only. Titles, passives, sets and other effects may also change the totals above.',
  'Итоги': "Summary",
+ 'КНИГА ГЕРОЯ': 'HERO BOOK',
  'Атака': "Attack",
  'Защита': "Defense",
  'Зелья и умения': "Potions & skills",
@@ -196,6 +201,16 @@ const bookEnglish=Object.freeze({
  'Эффекты плащей на военных картах': "Battle-map cloak effects",
  'Расовая стойкость цверга': "Dwarven racial survival",
  'Бонусы к опыту': "Experience gain bonuses",
+ // Source-backed numbers and item IDs remain separate from author-copy spans.
+ 'Сейчас нет активных бонусов к опыту.': 'No experience bonuses are currently active.',
+ 'Уровень союзника': 'Ally level',
+ 'СД союзника': 'Ally SPR',
+ 'Песнопения союзника': 'Ally Hymn',
+ 'Союзник: Клирик · Исцеление': 'Ally: Cleric · Healing',
+ 'необходимо (учитывается автоматически)': 'required (automatic)',
+ 'Упрямое сердце': 'Stronghearted',
+ 'шанс по данным навыка': 'skill-source chance',
+ 'Подробнее': 'More details',
  'Показывать восстановление от зелий': "Show potion recovery",
  'Для текущих зелий ещё нет доступных значений.': "No potion values are available yet.",
  'Предметы восстановления ОМ': "MP recovery items",
@@ -321,6 +336,8 @@ function make(tag,attrs={},children=[]){
   else if(key.startsWith('on'))n.addEventListener(key.slice(2),value);
   else if(['disabled','checked','selected','hidden','required','readOnly','multiple'].includes(key))
    n[key]=Boolean(value);
+  else if(key==='data-book-source-name'&&value!==null&&value!==undefined)
+   n.setAttribute(key,String(value)); // Current catalog name stays source data.
   else if(value!==null&&value!==undefined)n.setAttribute(key,bookText(String(value)));
 
  }
@@ -338,6 +355,13 @@ function make(tag,attrs={},children=[]){
  }
  return n;
 }
+// Source game names are never editorial UI copy; exact matches with authored
+// Book words must not translate, acquire D1 keys, or render as HTML.
+function sourceText(tag,text,attrs={}){
+ const node=make(tag,attrs);
+ node.textContent=String(text??'');
+ return node;
+}
 
 // One visual metadata owner per chapter field. D1 changes affect copy only,
 // never IDs, numerical formulas, current equipment, or stored build settings.
@@ -351,6 +375,79 @@ function meaningfulGuideHint(value){
 function guideDisplayText(value){
  return typeof value==='string'?value.replace(/\\n/g,'\n'):value;
 }
+// Native disclosure headers need to distinguish owner double-click from
+// normal click. Never steal keyboard or guest disclosure navigation.
+// A native summary may contain several independent authored captions, e.g.
+// the Honor group name and the smaller "passive skill" phrase. Register all
+// of them under ONE capture guard rather than guarding only the first.
+const bookSummaryCaptionTargets=new WeakMap();
+// One pending owner caption click across the whole Book, not one per summary.
+// An F2 editor, a different disclosure, or a native control must cancel an
+// obsolete delayed action before it can collapse a mounted inline draft.
+let bookSummaryPending=null;
+function cancelBookSummaryPending(){
+ const old=bookSummaryPending;
+ if(old){clearTimeout(old.timer);bookSummaryPending=null}
+ return old;
+}
+function guardBookSummaryCaption(node){
+ const summary=node.closest?.('summary');
+ if(!summary)return;
+ let captions=bookSummaryCaptionTargets.get(summary);
+ if(!captions){
+  captions=new Set();
+  bookSummaryCaptionTargets.set(summary,captions);
+ }
+ captions.add(node);
+ if(summary.dataset.bookCaptionGuard==='1')return;
+ summary.dataset.bookCaptionGuard='1';
+ // Native <summary> is the actual keyboard focus stop; its authored
+ // <strong>/<span> caption normally is not. F2 on the focused disclosure
+ // must reach the SAME direct-text editor rather than collapse later.
+ summary.addEventListener('keydown',event=>{
+  if(event.key!=='F2'||event.target!==summary)return;
+  const caption=[...captions].find(item=>
+   item.isConnected&&!item.hidden&&summary.contains(item));
+  if(!caption)return;
+  cancelBookSummaryPending();
+  event.preventDefault();event.stopPropagation();
+  caption.dispatchEvent(new KeyboardEvent('keydown',{
+   key:'F2',bubbles:false,cancelable:true
+  }));
+ });
+ summary.addEventListener('click',event=>{
+  // Keep native keyboard activation (detail=0) and noncaption controls
+  // immediate, but invalidate any earlier queued pointer caption action.
+  if(!event.detail||
+   event.target.closest?.('input,textarea,select,[data-owner-text-field]')){
+   cancelBookSummaryPending();
+   return;
+  }
+  const caption=[...captions].find(item=>item.contains(event.target));
+  if(!caption){
+   cancelBookSummaryPending();
+   return; // Chevrons and native summary actions still work.
+  }
+  event.preventDefault();event.stopImmediatePropagation();
+  const prior=cancelBookSummaryPending();
+  // The second click on this exact caption belongs to a double-click.
+  // Another caption is a new action; queue it instead of swallowing it.
+  if(prior?.summary===summary&&prior.caption===caption)return;
+  const queued={summary,caption,timer:null};
+  queued.timer=setTimeout(()=>{
+   if(bookSummaryPending!==queued)return;
+   bookSummaryPending=null;
+   // An editor can begin through F2 or a touch gesture between clicks.
+   // Never let an obsolete click collapse the current owner's draft.
+   if(summary.isConnected&&!caption.hidden&&summary.closest('details')&&
+      !summary.querySelector('[data-owner-text-field],[contenteditable]'))
+    summary.click();
+  },500);
+  bookSummaryPending=queued;
+ },true);
+}
+// Disabled skill rows use DIV, not LABEL, so authorial copy stays editable.
+// Native LABEL remains for enabled checkbox activation.
 function guideLabel(node,key,ru,en,options={},fallbackRu='',fallbackEn=''){
  if(!node)return node;
  const guide=root.PandoraHonorGuide;
@@ -376,11 +473,14 @@ function guideLabel(node,key,ru,en,options={},fallbackRu='',fallbackEn=''){
  if(options.editable&&typeof options.onTextEdit==='function'){
   node.classList.add('stage-guide-editable');
   const editName=event=>{
+   cancelBookSummaryPending();
    event.stopPropagation();event.preventDefault();
    root.PandoraGuideTooltip?.dismiss();
    options.onTextEdit(node,key,english?'en':'ru',label);
   };
   node.addEventListener('dblclick',editName);
+  guardBookSummaryCaption(node);
+  root.PandoraOwnerTouchEdit?.(node,editName,{interactive:true});
   node.setAttribute('aria-keyshortcuts','F2');
   node.addEventListener('keydown',event=>{if(event.key==='F2')editName(event)});
   // Only an independently authored hover hint uses a pencil.
@@ -398,6 +498,217 @@ function guideLabel(node,key,ru,en,options={},fallbackRu='',fallbackEn=''){
   }
  }
  return node;
+}
+// Three authorial fragments, not the current chapter name or page numbers.
+const bookRegionCopyRows=Object.freeze([
+ ['regionLead','Книга героя.','Hero Book.'],
+ ['regionPage','Страница','Chapter'],
+ ['regionOf','из','of']
+]);
+// Existing Book captions and their D1 record keys MUST be reused, not reseeded.
+// Accessible actions are source-authored verbs followed by immutable
+// game item/skill names. The entire composite is never a CAS override.
+// Pure authorial Book buff availability states. Runtime class, mastery,
+// equipment and numeric conditions stay in the OS calculator/app, not D1.
+// Author-only fragments of level and mastery blockers. The live requirement
+// number and original game branch name remain separate, noneditorial nodes.
+const buffRequirementCopyRows=Object.freeze([
+ ['levelLead','Откроется на','Available'],
+ ['levelUnit','уровне','at level'],
+ ['masteryLead','Требуется','Requires'],
+ ['masteryTerm','мастерство','mastery']
+]);
+function renderBuffRequirement(info,parts,options){
+ if(!parts||!['level','mastery'].includes(parts.kind)||
+  !Number.isFinite(Number(parts.amount))||
+  (parts.kind==='mastery'&&
+   (typeof parts.branchName!=='string'||!parts.branchName.trim())))return false;
+ const english=document.documentElement?.lang==='en';
+ const term=id=>{
+  const [,ru,en]=buffRequirementCopyRows.find(row=>row[0]===id);
+  const node=make('span',{class:'stage-buff-reason-copy',text:english?en:ru});
+  node.tabIndex=options.editable?0:-1;
+  guideLabel(node,'buffs.reason.'+id,ru,en,options);
+  return node;
+ };
+ const value=make('span',{class:'stage-buff-reason-value'});
+ value.textContent=String(parts.amount);
+ const status=make('small',{class:'stage-buff-reason stage-buff-requirement',
+  'data-requirement-kind':parts.kind});
+ if(parts.kind==='level'){
+  if(english)status.append(term('levelLead'),' ',term('levelUnit'),' ',value);
+  else status.append(term('levelLead'),' ',value,' ',term('levelUnit'));
+ }else{
+  const branch=make('span',{class:'stage-buff-reason-source-branch'});
+  branch.textContent=parts.branchName; // Preserve exact catalog identity.
+  if(english)status.append(term('masteryLead'),' ',value,' ',branch,' ',
+   term('masteryTerm'));
+  else status.append(term('masteryLead'),' ',term('masteryTerm'),' «',
+   branch,'»: ',value);
+ }
+ info.append(status);return true;
+}
+const buffStatusCopyRows=Object.freeze([
+ ['unavailableClass','Недоступно для этой профессии','Unavailable to this class'],
+ ['shieldRequired','Необходимо экипировать щит','Equip a shield'],
+ ['weaponUnavailable','Недоступно с выбранным оружием','Unavailable with current weapon'],
+ ['supportUnavailable','Умение недоступно','This skill is unavailable']
+]);
+const bookSourceActionCopyRows=Object.freeze([
+ ['skillEncyclopediaPrefix','Энциклопедия:','Encyclopedia:'],
+ ['itemEncyclopediaPrefix','Открыть в энциклопедии:','Open in encyclopedia:'],
+ ['itemOpenPrefix','Открыть предмет:','Open item:']
+]);
+// Source-authored RU/EN Healing explanations are independent of runtime
+// character values. The closed staging inventory checks every exact key.
+// Phoenix's actual chance and cooldown are OS results. Only the short
+// labels beside them are owner-authored, with independent RU/EN CAS fields.
+const bookPhoenixProcCopyRows=Object.freeze([
+ ['triggerChance','Шанс срабатывания','Trigger chance'],
+ ['cooldown','Откат','Cooldown']
+]);
+const bookHealingActionCopyRows=Object.freeze([
+ ['inspirationLead','С «Воодушевлением» от союзника:','With Inspiration from an ally:'],
+ ['inspirationTail','сек. применения (вдвое быстрее)','s of casting (half the usual time)'],
+ ['manaCostLead','Расход ОМ:','MP cost:'],
+ ['manaCostTail','от базового','of base'],
+ ['cooldownLead','Перезарядка:','Cooldown:'],
+ ['cooldownTail','от базовой','of base'],
+ ['nextManaLead','Для ещё одного применения нужно','One more cast needs'],
+ ['nextManaTail','ОМ к запасу','MP capacity'],
+ // Full-MP budget: the actual mana, cast count and remainder are live values.
+ ['budgetLead','Полный запас','Full'],
+ ['budgetUpTo','ОМ: до','MP: up to'],
+ ['budgetCasts','применений по базовой стоимости','casts at the base cost'],
+ ['budgetLeft','остаток','left at the regular cost'],
+ // Verified next-milestone phrases, never the character's current rank/level.
+ ['nextMasteryLead','Следующий прирост от Исцеления:','Next Healing mastery increase at'],
+ ['nextRemaining','ещё','+'],
+ ['nextLevelLead','Следующий прирост','Next'],
+ ['nextLevelPulse','за срабатывание','per pulse'],
+ ['nextLevelCast','за применение','per cast'],
+ ['nextLevelAt','на уровне','at level'],
+ ['nextLevelUnit','ур.','levels'],
+ // The source-calculated healed total and the future INT/SPR milestone
+ // are not part of these D1 author-owned RU/EN fragments.
+ ['totalLead','До','Up to'],
+ ['totalPerTarget','ОЗ на одну цель за','HP per target for'],
+ ['totalCasts','применений','casts'],
+ ['attributeLead','Следующий прирост от','Next'],
+ ['attributeAt','при','at'],
+ ['attributeOutcome','получится','increase:'],
+ // Pure formula narration; the source coefficients, rank and spell amount
+ // are separate uneditable numeric DOM nodes, not D1 editorial fields.
+ ['mpCalcLead','Как рассчитано восстановление ОМ: уровень героя',
+  'How MP recovery was calculated: hero level'],
+ ['mpCalcRounding','округление вниз =','rounded down ='],
+ ['periodEvery','каждые','every'],
+ ['periodSeconds','секунды.','seconds.'],
+ ['healingCalcLead','Как рассчитано лечение:','How the healing was calculated:'],
+ ['healingCalcBase','Основа','Base'],
+ ['healingCalcStat','от','from'],
+ ['healingCalcLevel','от уровня','from level'],
+ ['healingCalcMastery','от Исцеления','from Healing mastery'],
+ ['healingCalcPulse','Каждая прибавка округляется вниз отдельно. Результат:',
+  'Each part is rounded down separately. Result:'],
+ ['healingCalcPercentLead','К сумме применяется','Apply'],
+ ['healingCalcPercentTail',
+  'эффективности лечения, затем результат один раз округляется вниз.',
+  'healing effectiveness to the sum, then round down once.']
+]);
+// Source-safe authorial narration for OS skill scaling. The skill names,
+// coefficients, requirements and exact mastery boundaries remain immutable.
+const bookScalingActionCopyRows=Object.freeze([
+ ['effectsLead','Эффекты:','Effects:'],
+ ['calculationLead','Расчёт (с округлением вниз):','Calculation (rounded down):'],
+ ['calculationMastery','мастерство','mastery'],
+ ['nextIntLead','Следующий прирост силы заклинания:','Next spell strength'],
+ ['nextIntAt','при','at'],
+ ['nextIntRemaining','ещё','+'],
+ ['nextMasteryLead','Следующий прирост','Next'],
+ ['nextMasteryStrike','силы удара:','strike strength'],
+ ['nextMasterySpell','силы заклинания:','spell strength'],
+ ['nextMasteryAt','при мастерстве','at'],
+ ['nextMasteryRemaining','ещё','+'],
+ ['inspiredLead','С «Воодушевлением» от союзника:','With allied Inspiration:'],
+ ['inspiredBefore','сек. применения (вместо','s casting (instead of'],
+ ['inspiredAfter','сек.)','s)']
+]);
+// Repeated action wording is source-authorial, never one D1 row per skill.
+// This authorial word already has a stable ui.label.book-* CAS identity.
+// Inventory the alias; NEVER create a second effects.detail.more D1 key.
+const bookSkillDetailCopyRows=Object.freeze([['more','Подробнее','More details']]);
+// Separate owner-only panel heading from spoken ARIA chapter/pages and counts.
+const bookA11yPanelCopyRows=Object.freeze([
+ ['heading','Доступные названия книги','Accessible Book labels']
+]);
+const bookAccessibleAliasRows=Object.freeze([
+ ['previous','Предыдущая страница','Previous chapter'],
+ ['next','Следующая страница','Next chapter'],
+ ['close','Вернуть портрет','Return to portrait'],
+ ['tabs','Разделы книги героя','Hero Book chapters']
+]);
+function bookAccessibilitySpecs(){
+ const locale=root.PandoraUILocale;
+ return [
+  ...bookRegionCopyRows.map(([id,ru,en])=>({
+   id,ru,en,key:'book-aria.'+id.replace(/[A-Z]/g,ch=>'-'+ch.toLowerCase())
+  })),
+  ...bookSourceActionCopyRows.map(([id,ru,en])=>({
+   id,ru,en,key:'book-aria.'+id.replace(/[A-Z]/g,ch=>'-'+ch.toLowerCase())
+  })),
+  ...bookAccessibleAliasRows.map(([id,ru,en])=>({
+   id,ru,en,key:locale?.fieldKey?.(locale?.bookFieldKey?.(ru))
+  })).filter(row=>row.key)
+ ];
+}
+function bookAccessibilityText(spec,copy){
+ const english=document.documentElement?.lang==='en';
+ const info=root.PandoraHonorGuide?.field(copy,spec.key,spec.ru,spec.en);
+ return english?(info?.en||spec.en):(info?.ru||spec.ru);
+}
+function bookChapterTitle(key,ru,copy){
+ const en=bookEnglish[ru]||ru;
+ const localized=root.PandoraHonorGuide?.field(copy,'chapter.'+key,ru,en);
+ return document.documentElement?.lang==='en'?(localized?.en||en):(localized?.ru||ru);
+}
+// Recompose accessible sentences only; never serialize page numbers, chapter
+// identities or user data. This can run on Save/Undo/Reset without remounting.
+function refreshBookAccessibility(target,copy={},page='summary'){
+ if(!target||!target.querySelector)return;
+ const specs=bookAccessibilitySpecs();
+ const authored=id=>{
+  const spec=specs.find(entry=>entry.id===id);
+  return spec?bookAccessibilityText(spec,copy):'';
+ };
+ const index=Math.max(0,bookPages.findIndex(([key])=>key===page));
+ const [chapter,chapterRu]=bookPages[index];
+ target.setAttribute('aria-label',authored('regionLead')+' '+
+  bookChapterTitle(chapter,chapterRu,copy)+'. '+
+  authored('regionPage')+' '+(index+1)+' '+
+  authored('regionOf')+' '+bookPages.length);
+ for(const id of ['previous','next','close','tabs']){
+  const element=target.querySelector('[data-book-aria-action="'+id+'"]');
+  if(element)element.setAttribute('aria-label',authored(id));
+ }
+ for(const action of target.querySelectorAll?.('[data-book-source-aria]')||[]){
+  const id=action.dataset.bookSourceAria,name=action.dataset.bookSourceName;
+  if(name&&id)action.setAttribute('aria-label',authored(id)+' '+name);
+ }
+ const owner=target.querySelector('#ownerBookAccessibilityCopy');
+ if(!owner)return;
+ const heading=owner.querySelector('[data-guide-key="book-aria.owner-panel-heading"]');
+ if(heading&&!heading.querySelector('.wiki-inline-input,[data-owner-text-field]')){
+  const [,ru,en]=bookA11yPanelCopyRows[0];
+  const caption=root.PandoraHonorGuide?.field(copy,'book-aria.owner-panel-heading',ru,en);
+  heading.textContent=document.documentElement?.lang==='en'?
+   (caption?.en||en):(caption?.ru||ru);
+ }
+ for(const spec of specs){
+  const node=owner.querySelector('[data-book-a11y-owner="'+spec.id+'"]');
+  if(node&&!node.querySelector('.wiki-inline-input,[data-owner-text-field]'))
+   node.textContent=bookAccessibilityText(spec,copy);
+ }
 }
 const bookPages=Object.freeze([
  ['summary','Результаты расчёта'],['attack','Атака'],['defense','Защита'],
@@ -541,7 +852,6 @@ function summaryPage(body,calc,options={}){
    ]);
    guideLabel(tile.firstChild,'summary.'+summaryIndex++,result.ru,result.en,options);
    grid.append(tile);
-   grid.append(tile);
   }
   section.append(heading,grid);
   body.append(section);
@@ -624,8 +934,15 @@ function buffsPage(body,options){
  body.append(status);
  let sectionIndex=0;
  const section=(ru,en,stableId=null)=>{
-  const node=make('section',{class:'stage-book-buff-group'},[make('strong',{text:english?en:ru})]);
-  guideLabel(node.firstChild,stableId==='guild'?'buffs.guild':
+  // Honor adds a second, separately editable phrase to the heading. The
+  // primary author label must therefore be its own SPAN, not the parent
+  // STRONG: editing the parent would swallow the nested term and fire both
+  // handlers on a double-click.
+  const caption=make('span',{class:'stage-book-buff-heading-copy',
+   text:english?en:ru});
+  const heading=make('strong',{},[caption]);
+  const node=make('section',{class:'stage-book-buff-group'},[heading]);
+  guideLabel(caption,stableId==='guild'?'buffs.guild':
    'buffs.section.'+(stableId||sectionIndex++),ru,en,options);
   body.append(node);
   return node;
@@ -661,7 +978,8 @@ function buffsPage(body,options){
     (Array.isArray(buffs.remakedSkillIds)&&buffs.remakedSkillIds.includes(Number(key.slice(12)))||
      (key==='legacySkill:330004001'&&buffs.resistanceSkillIds?.includes(330004001))):
     (vital?vitalsBuffs:buffs)[key]===true;
-  const node=make('label',{class:'stage-book-check'+(skill?' stage-combat-buff':'')});
+  const node=make(allowed?'label':'div',{class:'stage-book-check'+
+   (skill?' stage-combat-buff':'')});
   const checkbox=make('input',{type:'checkbox','data-book-setting':key,
    checked:selected&&allowed,disabled:!allowed,
    onchange:event=>(vital?onVital:onBuff)(key,event.target.checked)});
@@ -674,23 +992,37 @@ function buffsPage(body,options){
   // A real source-backed skill always wins over a hand-written toggle label.
   const displayName=skill?(english?(skill.nameEn||skill.name||bookText(name)):
     (skill.name||name)):bookText(name);
-  const info=make('span',{class:'stage-combat-buff-copy',text:displayName});
+  // A disabled checkbox in a DIV needs the original source-skill name.
+  if(!allowed)checkbox.setAttribute('aria-label',displayName);
+  // The name of a source skill is game data. Never pass it through generic
+  // UI caption matching, which could turn a future overlapping skill name
+  // into an accidental editable Book label or change its translation.
+  const info=skill?sourceText('span',displayName,{class:'stage-combat-buff-copy'}):
+   make('span',{class:'stage-combat-buff-copy',text:displayName});
   const description=english?skill?.descEn||skill?.desc:skill?.desc;
   const rich=skill?.id!=null&&root.PandoraSkillPreview?.attach(info,skill.id);
   if(!rich&&typeof description==='string'&&description.trim())
    root.PandoraGuideTooltip?.attach(info,description,{hoverDelay:650});
   // An external-priest checkbox is grey while not enabled, but its benefit
   // stays readable. It is NOT a profession restriction of the recipient.
-  if(skill&&!allowed&&!skill.externalPriest)
-   info.append(make('small',{text:(english?skill.reasonEn:skill.reason)||
-    (english?'Unavailable to this hero':'Недоступно для героя')}));
+  if(skill&&!allowed&&!skill.externalPriest){
+   const source=buffStatusCopyRows.find(row=>row[0]===skill.reasonCopyKey);
+   if(source){
+    const [key,ru,en]=source;
+    const reason=make('span',{class:'stage-buff-reason-copy',text:english?en:ru});
+    reason.tabIndex=options.editable?0:-1;
+    guideLabel(reason,'buffs.reason.'+key,ru,en,options);
+    const small=make('small',{class:'stage-buff-reason'},[reason]);
+    info.append(small);
+   }else if(!renderBuffRequirement(info,skill.reasonParts,options))
+    info.append(make('small',{text:(english?skill.reasonEn:skill.reason)||
+     (english?'Unavailable to this hero':'Недоступно для героя')}));
+  }
   if(skill?.summary)
    info.append(make('small',{text:skill.summary}));
   node.append(info);
   parent.append(node);
  };
- const opts=(units)=>units.map((n,i)=>[i,i===0?bookText('Выключено'):
-  (document.documentElement?.lang==='en'?'Level ':'Уровень ')+i+' · +'+n]);
  const guildLevel=Number(buffs.guildLevel)||0;
  const guildPreview=root.PandoraOSCalculator?.guildPassiveAtLevel(guildLevel);
  const guildSource=root.PandoraGuildSkillSource||[];
@@ -804,13 +1136,16 @@ function buffsPage(body,options){
   const suffix=['','I','II','III','IV','V','VI','VII','VIII'][spec.rank]||spec.rank;
   const title=(english?recordEn:record?.name)||
    ((english?source.sourceNameEn:source.nameRu)||spec.key)+' '+suffix;
-  const name=make('span',{class:'stage-guild-passive-name',text:title});
+  // Guild passive name and hover description come from the OS/Remaked
+  // game catalog. They are not independent authorial D1/CAS copy: do not
+  // expose synthetic buffs.guild.passive.* keys or tooltip-edit pencils.
+  const name=sourceText('span',title,{class:'stage-guild-passive-name'});
   line.append(name,make('strong',{text:
    (spec.key==='physicalReduction'||spec.key==='magicReduction'?'−':'+')+
    spec.rate+'%'}));
-  guideLabel(name,'buffs.guild.passive.'+spec.key+'.'+spec.rank,
-   record?.name||source.nameRu+' '+suffix,recordEn||source.sourceNameEn+' '+suffix,options,
-   description.ru||'',description.en||'');
+  const originalDescription=english?description.en:description.ru;
+  if(typeof originalDescription==='string'&&originalDescription.trim())
+   root.PandoraGuideTooltip?.attach(name,originalDescription,{hoverDelay:650});
   passiveGroup.append(line);
  }
 
@@ -1258,9 +1593,11 @@ function buffsPage(body,options){
    const requirements=Array.isArray(details?.reqs)?details.reqs:[];
    const minHymn=requirements.find(x=>x.branch==='hymn')?.amount??30;
    const minHealing=requirements.find(x=>x.branch==='benevolence')?.amount??61;
-   caster.append(make('small',{class:'stage-attribute-note stage-ally-peace-note',
-    text:(english?'Ally: Cleric · Healing ':'Союзник: Клирик · Исцеление ')+
-     minHealing+(english?' required (automatic)':' необходимо (учитывается автоматически)')}));
+   caster.append(make('small',{class:'stage-attribute-note stage-ally-peace-note'},[
+    make('span',{text:english?'Ally: Cleric · Healing':'Союзник: Клирик · Исцеление'}),
+    ' ',make('strong',{text:String(minHealing)}),' ',
+    make('span',{text:english?'required (automatic)':'необходимо (учитывается автоматически)'})
+   ]));
    for(const [key,ru,en,min,max,defaultValue] of [
     ['allyPeaceSpi','СД союзника','Ally SPR',0,500,134],
     ['allyPeaceHymn','Песнопения союзника','Ally Hymn',minHymn,maxHymn,30]
@@ -1316,6 +1653,8 @@ function gameSkillBadge(id,ru,en,terms,english,skillIconForId,onSkill=null){
  const label=make(interactive?'button':'span',{
   class:'stage-effect-skill-label'+(interactive?' stage-effect-skill-link':''),
   ...(interactive?{type:'button',
+   'data-book-source-aria':'skillEncyclopediaPrefix',
+   'data-book-source-name':skillName,
    'aria-label':(english?'Encyclopedia: ':'Энциклопедия: ')+skillName,
    onclick:()=>onSkill(id)}:{})});
  const source=skillIconForId?.(id);
@@ -1333,156 +1672,217 @@ function gameSkillBadge(id,ru,en,terms,english,skillIconForId,onSkill=null){
   };
   label.append(picture);
  }
- label.append(make('span',{text:skillName}));
+ label.append(sourceText('span',skillName));
  root.PandoraSkillPreview?.attach(label,id);
  return label;
 }
-function renderSongSkills(body,modifiers,gameTerms={},skillIconForId=()=>null){
- const english=document.documentElement?.lang==='en';
- const songRows=modifiers?.songSkills?.rows||[];
- if(songRows.length){
-  const details=make('details',{class:'stage-legacy-buff-previews stage-song-skills'});
-  details.append(make('summary',{text:english?'Songs available to this class':
-   'Песни для выбранного класса'}));
-  const rows=make('div',{class:'stage-song-skill-list'});
-  for(const entry of songRows){
-   const requirements=entry.requirements.map(req=>
-    gameBranchName(req.branch,gameTerms,english)+' '+req.amount).join(' · ');
-   const card=make('div',{class:'stage-song-skill-row'});
-   card.append(make('strong',{class:'stage-effect-skill-heading'},[
-    gameSkillBadge(entry.id,entry.name,entry.nameEn,gameTerms,english,skillIconForId)]),
-    make('small',{text:english?entry.descriptionEn:entry.description}),
-    make('span',{class:entry.available?'stage-song-skill-ready':'stage-song-skill-locked',
-     text:(entry.available?
-      (english?'Requirements met':'Требования выполнены'):
-      (english?'Requires mastery':'Требуется мастерство'))+' · '+requirements}));
-   rows.append(card);
-  }
-  details.append(rows,make('p',{class:'stage-legacy-buff-intro',
-   text:english?
-    'Song effects apply only when activated in the game. No bonus is added to this build automatically.':
-    'Эффекты песен действуют после применения в игре. Бонусы не прибавляются к билду автоматически.'}));
-  body.append(details);
- }
-}
-
 // Mirrors Remaked SkillView: individual skill outcomes, never the selected
 // buff toggles or the 43 main result values.
 function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>null,
  remakedBuffRows=[],availability={},combatSkillCards={},
  heroJobKey=null,heroLevel=1,heroMasteries={},heroBranchCaps={},
  heroWeaponKind='BARE_HAND',heroHasShield=false,
- onItem=()=>{},onSkill=null}={}){
+ onItem=()=>{},onSkill=null,editable=false,onTextEdit=null,overrides={}}={}){
  const en=document.documentElement?.lang==='en';
+ const editorial={editable,onTextEdit,overrides};
  const gates=root.PandoraBookSkillThresholds;
  const healingNumber=new Intl.NumberFormat(en?'en-US':'ru-RU',
   {maximumFractionDigits:2});
+ const skillMore=(kind,id)=>{
+  const detail=make('details',{class:'stage-skill-gate-help stage-skill-more',
+   'data-book-skill-more':kind+':'+String(id)});
+  const summary=make('summary');
+  const caption=make('span',{class:'stage-skill-more-copy',text:'Подробнее'});
+  summary.append(caption);detail.append(summary);
+  const locale=root.PandoraUILocale;
+  const ownerKey=locale?.fieldKey?.(locale?.bookFieldKey?.('Подробнее'));
+  // Reuse the globally seeded Book caption rather than duplicating D1.
+  if(ownerKey){
+   guideLabel(caption,ownerKey,'Подробнее','More details',editorial);
+   if(editable&&typeof onTextEdit==='function')caption.tabIndex=0;
+  }
+  return detail;
+ };
+ const healingActionCopy=new Map(bookHealingActionCopyRows.map(row=>[row[0],row]));
+ const healingCaption=key=>{
+  const row=healingActionCopy.get(key);
+  if(!row)throw Error('Unreviewed Healing action caption: '+key);
+  const node=make('span',{class:'stage-heal-editorial',text:en?row[2]:row[1]});
+  guideLabel(node,'effects.healing.'+key,row[1],row[2],editorial);
+  if(editable&&typeof onTextEdit==='function')node.tabIndex=0;
+  return node;
+ };
+ const scalingActionCopy=new Map(bookScalingActionCopyRows.map(row=>[row[0],row]));
+ const scalingCaption=key=>{
+  const row=scalingActionCopy.get(key);
+  if(!row)throw Error('Unreviewed skill scaling authorial caption: '+key);
+  const node=make('span',{class:'stage-scaling-editorial',text:en?row[2]:row[1]});
+  guideLabel(node,'effects.scaling.'+key,row[1],row[2],editorial);
+  if(editable&&typeof onTextEdit==='function')node.tabIndex=0;
+  return node;
+ };
+ // Every source-calculated number/percent lives outside the owner CAS key.
+ const healingValue=(value,kind)=>make('span',{
+  class:'stage-heal-computed',...(kind?{'data-heal-value':kind}:{}),
+  text:String(value)
+ });
  const showBaseManaBudget=(node,action)=>{
   const budget=gates?.baseManaBudget?.({maxMana:modifiers?.mp,
    baseCost:action?.mana});
   if(!budget)return;
-  node.append(make('small',{class:'stage-heal-mana-budget',text:en?
-   'Full '+budget.maxMana+' MP: up to '+budget.casts+
-    ' casts at the base cost ('+budget.remainder+
-    ' MP left at the regular cost).':
-   'Полный запас '+budget.maxMana+' ОМ: до '+budget.casts+
-    ' применений по базовой стоимости (остаток '+budget.remainder+
-    ' ОМ).'}));
+  const parts=[
+   healingCaption('budgetLead'),' ',
+   healingValue(budget.maxMana,'mana-pool'),' ',
+   healingCaption('budgetUpTo'),' ',
+   healingValue(budget.casts,'mana-casts'),' ',
+   healingCaption('budgetCasts'),' ('
+  ];
+  if(en)parts.push(
+   healingValue(budget.remainder,'mana-remaining'),' MP ',
+   healingCaption('budgetLeft'),').'
+  );
+  else parts.push(
+   healingCaption('budgetLeft'),' ',
+   healingValue(budget.remainder,'mana-remaining'),' ОМ).'
+  );
+  node.append(make('small',{class:'stage-heal-mana-budget'},parts));
   const next=gates?.nextManaUse?.({maxMana:budget.maxMana,
    baseCost:budget.baseCost});
   if(next?.missing>0)node.append(make('small',{
-   class:'stage-heal-mana-next',text:en?
-    'One more cast needs +'+healingNumber.format(next.missing)+' MP capacity':
-    'Для ещё одного применения нужно +'+
-     healingNumber.format(next.missing)+' ОМ к запасу'
-  }));
+   class:'stage-heal-mana-next'},[
+   healingCaption('nextManaLead'),' ',
+   healingValue('+'+healingNumber.format(next.missing),'mana-needed'),' ',
+   healingCaption('nextManaTail')
+  ]));
  };
  const skillAction=id=>root.PandoraOSCalculator?.healingActionPreview?.({
   skillCatalog:gameTerms.skills,skillId:id,combat:modifiers?.combat});
  const appendActionEffects=(node,action)=>{
   if(!action)return;
   if(action.castModel?.inspiration&&action.cast>0)
-   node.append(make('small',{class:'stage-heal-cast-preview',text:en?
-    'With Inspiration from an ally: '+healingNumber.format(action.castModel.seconds)+
-     ' s of casting (half the usual time)':
-    'С «Воодушевлением» от союзника: '+
-     healingNumber.format(action.castModel.seconds)+
-     ' сек. применения (вдвое быстрее)'}));
+   node.append(make('small',{class:'stage-heal-cast-preview'},[
+    healingCaption('inspirationLead'),' ',
+    healingValue(healingNumber.format(action.castModel.seconds),'cast-seconds'),' ',
+    healingCaption('inspirationTail')
+   ]));
   if(Number.isFinite(action.manaRemainingIndex)&&
    action.manaRemainingIndex!==100)
-   node.append(make('small',{class:'stage-attribute-note',text:en?
-    'MP cost: '+healingNumber.format(action.manaRemainingIndex)+'% of base':
-    'Расход ОМ: '+healingNumber.format(action.manaRemainingIndex)+'% от базового'}));
+   node.append(make('small',{class:'stage-attribute-note'},[
+    healingCaption('manaCostLead'),' ',
+    healingValue(healingNumber.format(action.manaRemainingIndex)+'%','mana-percent'),' ',
+    healingCaption('manaCostTail')
+   ]));
   if(Number.isFinite(action.cooldownIndex)&&action.cooldownIndex!==100)
-   node.append(make('small',{class:'stage-attribute-note',text:en?
-    'Cooldown: '+healingNumber.format(action.cooldownIndex)+'% of base':
-    'Перезарядка: '+healingNumber.format(action.cooldownIndex)+'% от базовой'}));
+   node.append(make('small',{class:'stage-attribute-note'},[
+    healingCaption('cooldownLead'),' ',
+    healingValue(healingNumber.format(action.cooldownIndex)+'%','cooldown-percent'),' ',
+    healingCaption('cooldownTail')
+   ]));
  };
  const appendHealingBreakdown=(node,row,pulse)=>{
   const parts=row?.breakdown;
   if(!parts||![parts.flat,parts.statPart,parts.levelPart,
    parts.masteryPart].every(Number.isFinite))return;
-  // Do not nest a second accordion inside the skill's single "More details".
+  // The exact source formula, source-derived stats and result values
+  // remain immutable. Only human narration uses existing D1/CAS labels.
+  // No second disclosure is nested inside this skill's More details.
   if(row.kind==='mp'&&row.id===330005001){
-   node.append(make('small',{class:'stage-heal-breakdown',text:en?
-    'How MP recovery was calculated: hero level '+heroLevel+
-     ' × 10%, rounded down = '+row.amount+
-     ' MP every 2 seconds.':
-    'Как рассчитано восстановление ОМ: уровень героя '+heroLevel+
-     ' × 10%, округление вниз = '+row.amount+
-     ' ОМ каждые 2 секунды.'}));
+   node.append(make('small',{class:'stage-heal-breakdown'},[
+    healingCaption('mpCalcLead'),' ',
+    healingValue(heroLevel,'mp-level'),' × ',
+    healingValue('10%','mp-coefficient'),', ',
+    healingCaption('mpCalcRounding'),' ',
+    healingValue(row.amount,'mp-result'),en?' MP ':' ОМ ',
+    healingCaption('periodEvery'),' ',
+    healingValue(2,'mp-period-seconds'),' ',
+    healingCaption('periodSeconds')
+   ]));
    return;
   }
   const stat=en?(parts.stat==='spi'?'SPR':'INT'):
    (parts.stat==='spi'?'СД':'ИНТ');
-  const contributions=en?
-   'Base '+healingNumber.format(parts.flat)+' + from '+stat+' '+
-    healingNumber.format(parts.statPart)+' + from level '+
-    healingNumber.format(parts.levelPart)+' + from Healing mastery '+
-    healingNumber.format(parts.masteryPart):
-   'Основа '+healingNumber.format(parts.flat)+' + от '+stat+' '+
-    healingNumber.format(parts.statPart)+' + от уровня '+
-    healingNumber.format(parts.levelPart)+' + от Исцеления '+
-    healingNumber.format(parts.masteryPart);
-  const rounding=pulse?(en?
-   'Each part is rounded down separately. Result: '+row.amount+
-    ' every 2 seconds.':
-   'Каждая прибавка округляется вниз отдельно. Результат: '+row.amount+
-    ' каждые 2 секунды.'):(en?
-   'Apply '+healingNumber.format(parts.healingPercent)+
-    '% healing effectiveness to the sum, then round down once.':
-   'К сумме применяется '+healingNumber.format(parts.healingPercent)+
-    '% эффективности лечения, затем результат один раз округляется вниз.');
-  node.append(make('small',{class:'stage-heal-breakdown',text:
-   (en?'How the healing was calculated: ':'Как рассчитано лечение: ')+
-    contributions+' · '+rounding}));
+  const elements=[
+   healingCaption('healingCalcLead'),' ',
+   healingCaption('healingCalcBase'),' ',
+   healingValue(healingNumber.format(parts.flat),'breakdown-base'),' + ',
+   healingCaption('healingCalcStat'),' ',
+   make('span',{class:'stage-heal-source-stat',text:stat}),' ',
+   healingValue(healingNumber.format(parts.statPart),'breakdown-stat'),' + ',
+   healingCaption('healingCalcLevel'),' ',
+   healingValue(healingNumber.format(parts.levelPart),'breakdown-level'),' + ',
+   healingCaption('healingCalcMastery'),' ',
+   healingValue(healingNumber.format(parts.masteryPart),'breakdown-mastery'),
+   ' · '
+  ];
+  if(pulse)elements.push(
+   healingCaption('healingCalcPulse'),' ',
+   healingValue(row.amount,'breakdown-result'),' ',
+   healingCaption('periodEvery'),' ',
+   healingValue(2,'breakdown-period-seconds'),' ',
+   healingCaption('periodSeconds')
+  );
+  else elements.push(
+   healingCaption('healingCalcPercentLead'),' ',
+   healingValue(healingNumber.format(parts.healingPercent)+'%','breakdown-percent'),' ',
+   healingCaption('healingCalcPercentTail')
+  );
+  node.append(make('small',{class:'stage-heal-breakdown'},elements));
  };
  const appendHealingMilestones=(node,row,periodic)=>{
-  if(row.nextMastery&&Number.isSafeInteger(row.nextMastery.rank))
-   node.append(make('small',{class:'stage-heal-mastery-next',text:en?
-    'Next Healing mastery increase at '+row.nextMastery.rank+
-     ' (+'+row.nextMastery.remaining+'): +'+row.nextMastery.gain+' HP':
-    'Следующий прирост от Исцеления: '+row.nextMastery.rank+
-     ' (ещё '+row.nextMastery.remaining+'): +'+row.nextMastery.gain+' ОЗ'}));
+  if(row.nextMastery&&Number.isSafeInteger(row.nextMastery.rank)){
+   const mastery=row.nextMastery;
+   node.append(make('small',{class:'stage-heal-mastery-next'},[
+    healingCaption('nextMasteryLead'),' ',
+    healingValue(mastery.rank,'mastery-rank'),' (',
+    healingCaption('nextRemaining'),...(en?[]:[' ']),
+    healingValue(mastery.remaining,'mastery-remaining'),'): ',
+    healingValue('+'+mastery.gain,'mastery-gain'),en?' HP':' ОЗ'
+   ]));
+  }
   const next=row.nextAttribute;
   if(next&&Number.isSafeInteger(next.value)){
    const stat=en?(periodic?'SPR':'INT'):(periodic?'СД':'ИНТ');
-   node.append(make('small',{class:'stage-heal-mastery-next',text:en?
-    'Next +'+next.gain+' HP at '+stat+' '+next.value+
-     ' (+'+next.remaining+' '+stat+')':
-    'Следующий прирост от '+stat+': при '+next.value+
-     ' (ещё '+next.remaining+') получится +'+next.gain+' ОЗ'}));
+   const statText=()=>make('span',{class:'stage-heal-source-stat',text:stat});
+   const line=en?[
+    healingCaption('attributeLead'),' ',healingCaption('attributeOutcome'),' ',
+    healingValue('+'+next.gain,'attribute-gain'),' HP ',
+    healingCaption('attributeAt'),' ',statText(),' ',
+    healingValue(next.value,'attribute-value'),' (+',
+    healingValue(next.remaining,'attribute-remaining'),' ',statText(),')'
+   ]:[
+    healingCaption('attributeLead'),' ',statText(),': ',
+    healingCaption('attributeAt'),' ',
+    healingValue(next.value,'attribute-value'),' (',
+    healingCaption('nextRemaining'),' ',
+    healingValue(next.remaining,'attribute-remaining'),') ',
+    healingCaption('attributeOutcome'),' ',
+    healingValue('+'+next.gain,'attribute-gain'),' ОЗ'
+   ];
+   node.append(make('small',{class:'stage-heal-mastery-next'},line));
   }
   if(row.nextLevel&&Number.isSafeInteger(row.nextLevel.value)){
    const next=row.nextLevel;
    const pulse=periodic||row.kind==='hp'||row.kind==='mp';
    const unit=en?(row.kind==='mp'?'MP':'HP'):(row.kind==='mp'?'ОМ':'ОЗ');
-   node.append(make('small',{class:'stage-heal-mastery-next',text:en?
-    'Next +'+next.gain+' '+unit+(pulse?' per pulse':' per cast')+
-     ' at level '+next.value+' (+'+next.remaining+' levels)':
-    'Следующий прирост '+(pulse?'за срабатывание':'за применение')+
-     ': +'+next.gain+' '+unit+' на уровне '+next.value+
-     ' (ещё '+next.remaining+' ур.)'}));
+   const mode=healingCaption(pulse?'nextLevelPulse':'nextLevelCast');
+   const line=[healingCaption('nextLevelLead')];
+   if(en)line.push(
+    ' ',healingValue('+'+next.gain,'level-gain'),' '+unit+' ',
+    mode,' ',healingCaption('nextLevelAt'),' ',
+    healingValue(next.value,'level-value'),' (',
+    healingCaption('nextRemaining'),
+    healingValue(next.remaining,'level-remaining'),' ',
+    healingCaption('nextLevelUnit'),')'
+   );
+   else line.push(
+    ' ',mode,': ',healingValue('+'+next.gain,'level-gain'),
+    ' '+unit+' ',healingCaption('nextLevelAt'),' ',
+    healingValue(next.value,'level-value'),' (',
+    healingCaption('nextRemaining'),' ',
+    healingValue(next.remaining,'level-remaining'),' ',
+    healingCaption('nextLevelUnit'),')'
+   );
+   node.append(make('small',{class:'stage-heal-mastery-next'},line));
   }
  };
  const spells=(modifiers?.healingSpells?.rows||[]).filter(row=>row?.available===true);
@@ -1511,9 +1911,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     gameSkillBadge(sourceId,row.name,row.nameEn,gameTerms,en,skillIconForId,onSkill),
     make('strong',{text:amount})
    ]);
-   const more=make('details',{class:'stage-skill-gate-help stage-skill-more'},[
-    make('summary',{text:en?'More details':'Подробнее'})
-   ]);
+   const more=skillMore('healing',sourceId);
    appendActionEffects(more,action);
    showBaseManaBudget(more,action);
    // Combined capacity is defined only for direct, verified own heals.
@@ -1521,14 +1919,15 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    const totalHeal=!pulse?gates?.directHealingBudget?.({
     row,action,maxMana:modifiers?.mp}):null;
    if(totalHeal)more.append(make('small',{
-    class:'stage-heal-total-capacity',text:en?
-     'Up to '+healingNumber.format(totalHeal.total)+
-      ' HP per target for '+totalHeal.casts+' casts ('+
-      totalHeal.amount+' × '+totalHeal.casts+')':
-     'До '+healingNumber.format(totalHeal.total)+
-      ' ОЗ на одну цель за '+totalHeal.casts+' применений ('+
-      totalHeal.amount+' × '+totalHeal.casts+')'
-   }));
+    class:'stage-heal-total-capacity'},[
+    healingCaption('totalLead'),' ',
+    healingValue(healingNumber.format(totalHeal.total),'healing-total'),' ',
+    healingCaption('totalPerTarget'),' ',
+    healingValue(totalHeal.casts,'healing-casts'),' ',
+    healingCaption('totalCasts'),' (',
+    healingValue(totalHeal.amount,'healing-amount'),' × ',
+    healingValue(totalHeal.casts,'healing-expression-casts'),')'
+   ]));
    appendHealingMilestones(more,row,pulse);
    appendHealingBreakdown(more,row,pulse);
    if(more.childElementCount>1)preview.append(more);
@@ -1547,9 +1946,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     gameSkillBadge(entry.id,entry.name,null,gameTerms,en,skillIconForId,onSkill),
     make('strong',{text:String(entry.amount)+' '+(en?'MP every 2 sec':'ОМ каждые 2 сек.')})
    ]);
-   const more=make('details',{class:'stage-skill-gate-help stage-skill-more'},[
-    make('summary',{text:en?'More details':'Подробнее'})
-   ]);
+   const more=skillMore('mp',entry.id);
    const action=skillAction(entry.id);
    if(action){
     appendActionEffects(more,action);
@@ -1629,9 +2026,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     ...(amount!==null?[make('strong',{class:singlePart?
      'stage-skill-primary-coefficient':'',text:amount})]:[])
    ]);
-   const more=make('details',{class:'stage-skill-gate-help stage-skill-more'},[
-    make('summary',{text:en?'More details':'Подробнее'})
-   ]);
+   const more=skillMore('scaling-'+groupName,skill.id);
    // General skill descriptions are available via its tooltip and Wiki.
    if(modelParts.length&&!Number.isFinite(skill.amount)){
     // A single source-checked result is already the main line;
@@ -1640,17 +2035,23 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
      const parts=modelParts.map(part=>
       (en?part.labelEn:part.labelRu)+' '+
       (part.amount>0?'+':'')+part.amount+part.unit).join(' · ');
-     preview.append(make('small',{class:'stage-skill-os-coefficient-model',
-      text:(en?'Effects: ':'Эффекты: ')+parts}));
+     preview.append(make('small',{class:'stage-skill-os-coefficient-model'},[
+      scalingCaption('effectsLead'),' ',
+      make('span',{class:'stage-scaling-source-effects',text:parts})
+     ]));
     }
     for(const part of modelParts){
      const p=part.roundingParts;
      if(p?.method!=='floor-components')continue;
-     more.append(make('small',{class:'stage-skill-os-coefficient-model',text:en?
-      'Calculation (rounded down): '+p.base+' + INT '+p.int+
-       ' + mastery '+p.mastery+' = '+part.amount:
-      'Расчёт (с округлением вниз): '+
-       p.base+' + ИНТ '+p.int+' + мастерство '+p.mastery+' = '+part.amount}));
+     more.append(make('small',{class:'stage-skill-os-coefficient-model'},[
+      scalingCaption('calculationLead'),' ',
+      healingValue(p.base,'scaling-base'),' + ',
+      make('span',{class:'stage-scaling-source-stat',text:en?'INT':'ИНТ'}),' ',
+      healingValue(p.int,'scaling-int'),' + ',
+      scalingCaption('calculationMastery'),' ',
+      healingValue(p.mastery,'scaling-mastery'),' = ',
+      healingValue(part.amount,'scaling-total')
+     ]));
     }
    }
    // One next-step hint inside the existing disclosure, never a new panel.
@@ -1658,22 +2059,36 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     Number.isSafeInteger(skill.nextStat.value)&&
     Number.isSafeInteger(skill.nextStat.remaining)){
     const next=skill.nextStat;
-    more.append(make('small',{class:'stage-skill-coefficient-next',text:en?
-     'Next spell strength +'+next.gain+' at INT '+next.value+
-      ' (+'+next.remaining+' INT)':
-     'Следующий прирост силы заклинания: +'+next.gain+
-      ' при ИНТ '+next.value+' (ещё '+next.remaining+' ИНТ)'}));
+    const stat=en?'INT':'ИНТ';
+    const sourceStat=()=>make('span',{class:'stage-scaling-source-stat',text:stat});
+    more.append(make('small',{class:'stage-skill-coefficient-next'},[
+     scalingCaption('nextIntLead'),' ',
+     healingValue('+'+next.gain,'scaling-next-int-gain'),' ',
+     scalingCaption('nextIntAt'),' ',sourceStat(),' ',
+     healingValue(next.value,'scaling-next-int-value'),' (',
+     scalingCaption('nextIntRemaining'),...(en?[]:[' ']),
+     healingValue(next.remaining,'scaling-next-int-remaining'),' ',
+     sourceStat(),')'
+    ]));
    }
    if(skill.nextMastery&&Number.isSafeInteger(skill.nextMastery.value)&&
     Number.isSafeInteger(skill.nextMastery.remaining)){
     const next=skill.nextMastery;
     const branch=gameBranchName(next.branch,gameTerms,en);
-    more.append(make('small',{class:'stage-skill-coefficient-next',text:en?
-     'Next '+(next.effect==='strike'?'strike strength +1%':'spell strength +1')+
-      ' at '+branch+' '+next.value+' (+'+next.remaining+')':
-     'Следующий прирост '+(next.effect==='strike'?'силы удара: +1%':
-      'силы заклинания: +1')+' при мастерстве «'+branch+'» '+
-       next.value+' (ещё '+next.remaining+')'}));
+    const bonus=next.effect==='strike'?'+1%':'+1';
+    const phrase=next.effect==='strike'?'nextMasteryStrike':'nextMasterySpell';
+    more.append(make('small',{class:'stage-skill-coefficient-next'},[
+     scalingCaption('nextMasteryLead'),' ',
+     scalingCaption(phrase),' ',
+     healingValue(bonus,'scaling-mastery-gain'),' ',
+     scalingCaption('nextMasteryAt'),' ',
+     ...(en?[]:['«']),
+     make('span',{class:'stage-scaling-source-branch',text:branch}),
+     ...(en?[]:['»']),' ',
+     healingValue(next.value,'scaling-mastery-target'),' (',
+     scalingCaption('nextMasteryRemaining'),...(en?[]:[' ']),
+     healingValue(next.remaining,'scaling-mastery-remaining'),')'
+    ]));
    }
    const action=gates?.sourceAction?.({
     skillCatalog:gameTerms.skills,skillId:skill.id,
@@ -1688,13 +2103,13 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
      action,castTime:modifiers?.combat?.castTime
     });
     if(inspired)more.append(make('small',{
-     class:'stage-heal-cast-preview',text:en?
-      'With allied Inspiration: '+healingNumber.format(inspired.seconds)+
-       ' s casting (instead of '+healingNumber.format(inspired.baseSeconds)+' s)':
-      'С «Воодушевлением» от союзника: '+
-       healingNumber.format(inspired.seconds)+' сек. применения (вместо '+
-       healingNumber.format(inspired.baseSeconds)+' сек.)'
-    }));
+     class:'stage-heal-cast-preview'},[
+     scalingCaption('inspiredLead'),' ',
+     healingValue(healingNumber.format(inspired.seconds),'scaling-inspired-seconds'),' ',
+     scalingCaption('inspiredBefore'),' ',
+     healingValue(healingNumber.format(inspired.baseSeconds),'scaling-base-seconds'),' ',
+     scalingCaption('inspiredAfter')
+    ]));
    }
    // The same full-MP/base-cost calculation already used by healing:
    // show how many casts the CURRENT hero can afford, in this disclosure.
@@ -2006,8 +2421,8 @@ function appendChapterGroups(body,groups,english,emptyRu,emptyEn,options={}){
       'Здесь только прямые бонусы вещей и душ. Титулы, пассивные умения, комплекты и другие эффекты тоже могут влиять на итоговые значения выше.'}));
      for(const source of sources){
       const display=(source.amount>0?'+':'')+number.format(source.amount)+'%';
-      breakdown.append(make('div',{class:'stage-status-source-row',
-       text:source.label+': '+display+' · '+source.name}));
+      breakdown.append(sourceText('div',source.label+': '+display+' · '+source.name,
+       {class:'stage-status-source-row'}));
      }
      section.append(breakdown);
     }
@@ -2037,14 +2452,19 @@ function appendItemEvents(body,calc,english,kind,gameTerms={}){
  }
  if(!rows.length)return;
  const panel=make('details',{class:'stage-attribute-row stage-source-events'});
- panel.append(make('summary',{text:(english?'Item and Soul triggers':
-  'Срабатывания предметов и душ')+' · '+rows.length}));
+ // The source-derived event count is not an authorial translation.
+ // Keep its original bilingual Book text key separate from the live count.
+ panel.append(make('summary',{},[
+  make('span',{class:'stage-source-events-caption',text:english?
+   'Item and Soul triggers':'Срабатывания предметов и душ'}),
+  make('span',{class:'stage-book-live-count',text:' · '+rows.length})
+ ]));
  for(const row of rows){
   const skill=gameTerms.skills?.[String(row.skillId)];
   const valid=Number.isSafeInteger(row.skillId)&&row.skillId>0&&
    skill?.id===row.skillId;
   if(!valid){
-   panel.append(make('p',{text:row.source+' · '+(english?row.en:row.ru)}));
+   panel.append(sourceText('p',row.source+' · '+(english?row.en:row.ru)));
    continue;
   }
   const line=make('p',{class:'stage-source-proc-skill'});
@@ -2053,7 +2473,7 @@ function appendItemEvents(body,calc,english,kind,gameTerms={}){
   const translated=gameTerms.englishSkills?.[String(row.skillId)];
   const name=english?(translated?.n||row.skillNameEn||skill.name):
    (skill.name||row.skillName);
-  const skillLink=make('span',{class:'stage-consumable-skill-name',text:name});
+  const skillLink=sourceText('span',name,{class:'stage-consumable-skill-name'});
   // Identical icon, level, mastery and description to Path; no new style.
   root.PandoraSkillPreview?.attach(skillLink,row.skillId);
   line.append(skillLink);
@@ -2062,7 +2482,16 @@ function appendItemEvents(body,calc,english,kind,gameTerms={}){
  }
  body.append(panel);
 }
-function appendWeaponConditions(body,calc,items,english){
+function appendWeaponConditions(body,calc,items,english,options={}){
+ const procLabel=key=>{
+  const pair=bookPhoenixProcCopyRows.find(row=>row[0]===key);
+  if(!pair)throw Error('Unreviewed Phoenix result caption: '+key);
+  const node=make('span',{class:'stage-weapon-proc-caption',
+   text:english?pair[2]:pair[1]});
+  if(options.editable&&typeof options.onTextEdit==='function')node.tabIndex=0;
+  guideLabel(node,'attack.phoenix.'+key,pair[1],pair[2],options);
+  return node;
+ };
  const active=items.map(row=>({row,
   bonus:root.PandoraConditionalItemBonuses?.activeFor?.(row)}))
   .filter(x=>x.bonus&&(x.bonus.phoenix||x.bonus.rows.length));
@@ -2075,15 +2504,15 @@ function appendWeaponConditions(body,calc,items,english){
    'На экипированном оружии нет активных подтверждённых стихийных эффектов.'}));
  for(const {row,bonus}of active){
   const rec=row.record||{},name=rec.name||'Оружие';
-  panel.append(make('strong',{text:name+' · '+(english?'Fire +':'Огонь +')+
-   row.refinement}));
+  panel.append(sourceText('strong',name+' · '+(english?'Fire +':'Огонь +')+
+   row.refinement));
   // An itemForth fire-magic entry is already listed in Attack/Elemental Magic.
   const alreadyShown=(calc?.elementalRefinement?.entries||[])
    .some(e=>e.itemId===rec.id&&e.grade===row.refinement);
   for(const effect of bonus.rows){
    if(alreadyShown&&effect.name==='Магическая атака огнём')continue;
-   panel.append(make('p',{text:effect.name+': +'+effect.value+
-    (effect.unit==='%'?'%':'')}));
+   panel.append(sourceText('p',effect.name+': +'+effect.value+
+    (effect.unit==='%'?'%':'')));
   }
   if(bonus.phoenix){
    const outcome=root.PandoraConditionalItemBonuses.phoenixDamage(
@@ -2095,11 +2524,15 @@ function appendWeaponConditions(body,calc,items,english){
      'Пламя феникса · расчётный урон'}),
     make('strong',{text:outcome?format(outcome.damage):'—'})
    ]));
-   if(outcome)panel.append(make('small',{text:english?
-    'Trigger chance '+format(outcome.chance)+'% · Cooldown '+
-     format(outcome.cooldown)+' s':
-    'Шанс срабатывания '+format(outcome.chance)+'% · Откат '+
-     format(outcome.cooldown)+' с'}));
+   if(outcome)panel.append(make('small',{class:'stage-weapon-proc-metadata'},[
+    procLabel('triggerChance'),' ',
+    make('span',{class:'stage-weapon-proc-number',
+     'data-weapon-proc-number':'chance',text:format(outcome.chance)+'%'}),
+    ' · ',procLabel('cooldown'),' ',
+    make('span',{class:'stage-weapon-proc-number',
+     'data-weapon-proc-number':'cooldown',
+     text:format(outcome.cooldown)+(english?' s':' с')})
+   ]));
   }
  }
  body.append(panel);
@@ -2121,31 +2554,64 @@ function appendSkillAttackRange(body,calc,english,options={}){
  section.append(help);
  guideLabel(help,'attack.skillRangeHelp',helpRu,helpEn,options);
  const terms=options.gameTerms||{};
+ // These captions belong to the author; the underlying source skill, range
+ // numbers, branch name and unmet-requirement explanations do not. Reuse the
+ // Book's existing bilingual CAS editor without creating label pencils.
+ const authoredRange=(key,ru,en)=>{
+  const node=make('span',{class:'stage-skill-range-editorial',text:english?en:ru});
+  guideLabel(node,'attack.skillRange.'+key,ru,en,options);
+  return node;
+ };
  for(const row of rows){
   const skill=terms.skills?.[String(row.id)],official=terms.englishSkills?.[String(row.id)];
   if(skill?.id!==row.id)continue;
   const label=gameSkillBadge(row.id,row.name,official?.n,terms,english,
    options.skillIconForId||(()=>null));
-  const prefix=english?'Range bonus: ':'Прибавка к дальности: ';
   const size=Number.isSafeInteger(row.sourceBonus)?
    '+'+row.sourceBonus:'—';
-  const timing=english?(row.mode==='toggle'?'Only while toggled on':'Only when using this skill'):
-   (row.mode==='toggle'?'Только при включённом умении':'Только при применении умения');
-  const state=row.available?(english?'Requirements met':'Требования выполнены'):
-   (english?row.reasonEn:row.reasonRu);
+  const sourcePart=Number.isSafeInteger(row.sourceConstant)&&
+   Number.isSafeInteger(row.sourceMasteryPart);
+  const branchName=gameBranchName('archery',terms,english);
+  const timingToggle=row.mode==='toggle';
+  const timing=authoredRange(timingToggle?'timingToggle':'timingUse',
+   timingToggle?'Только при включённом умении':'Только при применении умения',
+   timingToggle?'Only while toggled on':'Only when using this skill');
+  const status=row.available?
+   authoredRange('requirementsMet','Требования выполнены','Requirements met'):
+   make('span',{class:'stage-skill-range-source-reason',
+    text:(english?row.reasonEn:row.reasonRu)??'—'});
+  const breakdown=sourcePart?make('small',{class:'stage-skill-range-breakdown'},[
+   authoredRange('fromSkill','От умения','From skill'),
+   make('span',{text:': '}),
+   make('span',{class:'stage-skill-range-source-value',text:'+'+row.sourceConstant}),
+   make('span',{text:' · '}),
+   authoredRange('from','от','from'),
+   make('span',{text:' '}),
+   ...(english?[
+    make('span',{class:'stage-skill-range-source-branch',text:branchName}),
+    make('span',{text:' '}),
+    authoredRange('mastery','мастерства','mastery')
+   ]:[
+    authoredRange('mastery','мастерства','mastery'),
+    make('span',{text:' «'}),
+    make('span',{class:'stage-skill-range-source-branch',text:branchName}),
+    make('span',{text:'»'})
+   ]),
+   make('span',{text:': '}),
+   make('span',{class:'stage-skill-range-mastery-value',text:'+'+row.sourceMasteryPart})
+  ]):null;
   section.append(make('div',{class:'stage-heal-row stage-skill-attack-range-row'+
    (row.available?'':' stage-book-unavailable'),'data-range-skill':String(row.id)},[
    make('strong',{},[label]),
-   make('small',{text:prefix+size}),
-   ...(Number.isSafeInteger(row.sourceConstant)&&
-    Number.isSafeInteger(row.sourceMasteryPart)?[
-    make('small',{text:english?
-     'From skill: +'+row.sourceConstant+' · from '+
-       gameBranchName('archery',terms,true)+' mastery: +'+row.sourceMasteryPart:
-     'От умения: +'+row.sourceConstant+' · от мастерства «'+
-       gameBranchName('archery',terms,false)+'»: +'+row.sourceMasteryPart})
-   ]:[]),
-   make('small',{text:timing+' · '+state})
+   make('small',{class:'stage-skill-range-bonus'},[
+    authoredRange('bonus','Прибавка к дальности','Range bonus'),
+    make('span',{text:': '}),
+    make('span',{class:'stage-skill-range-bonus-value',text:size})
+   ]),
+   ...(breakdown?[breakdown]:[]),
+   make('small',{class:'stage-skill-range-status'},[
+    timing,make('span',{text:' · '}),status
+   ])
   ]));
  }
  body.append(section);
@@ -2180,7 +2646,7 @@ function attackPage(body,calc,items,english,options={}){
   'Для этого билда нет рассчитанных дополнительных атакующих показателей.',
   'No additional attack metrics calculated for this build.',{...options,page:'attack'});
  appendSkillAttackRange(body,calc,english,options);
- appendWeaponConditions(body,calc,items,english);
+ appendWeaponConditions(body,calc,items,english,options);
  appendItemEvents(body,calc,english,'attack',options.gameTerms);
 }
 function defensePage(body,calc,english,options={}){
@@ -2191,8 +2657,11 @@ function defensePage(body,calc,english,options={}){
  const conditional=calc?.battleMapCloaks?.entries||[];
  if(conditional.length){
   const panel=make('details',{class:'stage-attribute-row stage-battle-map-cloaks'});
-  panel.append(make('summary',{text:(english?'Battle-map cloak effects':
-   'Эффекты плащей на военных картах')+' · '+conditional.length}));
+  panel.append(make('summary',{},[
+   make('span',{text:english?'Battle-map cloak effects':
+    'Эффекты плащей на военных картах'}),
+   make('span',{class:'stage-book-live-count',text:' · '+conditional.length})
+  ]));
   for(const entry of conditional){
    const line=english?['All attributes +'+entry.all,'DEF +'+entry.armor,
     'HP +'+entry.hp]:['Все характеристики +'+entry.all,
@@ -2203,7 +2672,7 @@ function defensePage(body,calc,english,options={}){
    if(entry.magic)line.push(english?
     'Magic resistance +'+entry.magic:
     'Сопротивление магии +'+entry.magic);
-   panel.append(make('p',{text:entry.source+' · '+line.join(' · ')}));
+   panel.append(sourceText('p',entry.source+' · '+line.join(' · ')));
   }
   body.append(panel);
  }
@@ -2212,8 +2681,11 @@ function defensePage(body,calc,english,options={}){
   body.append(make('section',{class:'stage-attribute-row stage-racial-survival'},[
    make('strong',{text:english?'Dwarven racial survival':
     'Расовая стойкость цверга'}),
-   make('p',{text:(english?'Stronghearted: ':'Упрямое сердце: ')+
-    survival.chance+(english?'% skill-source chance':'% шанс по данным навыка')})
+   make('p',{},[
+    make('span',{text:english?'Stronghearted':'Упрямое сердце'}),': ',
+    make('strong',{text:String(survival.chance)}),'% ',
+    make('span',{text:english?'skill-source chance':'шанс по данным навыка'})
+   ])
   ]));
  }
  const exp=calc?.experienceBonus?.entries||[];
@@ -2223,8 +2695,8 @@ function defensePage(body,calc,english,options={}){
  expPanel.append(make('summary',{text:english?'Experience gain bonuses':
   'Бонусы к опыту'}));
  if(exp.length){
-  for(const e of exp)expPanel.append(make('p',{text:e.source+': '+
-   (e.percent>0?'+':'')+e.percent+'%'}));
+  for(const e of exp)expPanel.append(sourceText('p',e.source+': '+
+   (e.percent>0?'+':'')+e.percent+'%'));
  }else expPanel.append(make('p',{class:'stage-attribute-note',
   text:english?'No experience bonuses are currently active.':
    'Сейчас нет активных бонусов к опыту.'}));
@@ -2304,11 +2776,17 @@ const chapterCaptionSpecs=Object.freeze([
  ['recovery','enabled','.stage-potion-book .stage-book-check > span','Показывать восстановление от зелий','Show potion recovery'],
  ['recovery','mana','.stage-mana-consumables > strong','Предметы восстановления ОМ','MP recovery items'],
  ['recovery','health','.stage-health-consumables > summary','Предметы восстановления ОЗ','HP recovery items'],
+ ['defense','sources','.stage-status-source-breakdown > summary',
+  'Вклад предметов и душ','Bonuses from equipment and Souls'],
  ['defense','experience','.stage-experience-effects > summary','Бонусы к опыту','Experience gain bonuses'],
  ['attack','elemental','.stage-active-elemental > summary','Эффекты стихийных оружий','Elemental weapon effects'],
  ['recovery','cures','.stage-status-cures > summary','Снятие состояний','Remove status effects'],
  ['recovery','skillItems','.stage-consumable-skills > summary','Предметы, активирующие умения','Items that activate skills']
 ]);
+// Source-only inventory of the ALREADY established guideedit.book keys.
+// A chapter heading must not receive a second generic ui-locale D1 identity.
+const bookChapterCaptionCopyRows=Object.freeze(chapterCaptionSpecs.map(
+ ([section,key,,ru,en])=>Object.freeze([section+'.caption.'+key,ru,en])));
 function decorateChapterCaptions(body,page,options){
  for(const [section,key,selector,ru,en] of chapterCaptionSpecs){
   if(page!==section)continue;
@@ -2339,6 +2817,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
  // Keep the same scrolling pane mounted on ordinary value changes: re-attaching
  // a newly animated pane used to reset scroll/focus and visibly flash the Book.
  const stablePanel=target.querySelector?.('.stage-book-page');
+ const pinnedOwnerPanel=target.querySelector?.('#ownerBookAccessibilityCopy');
  const reusePanel=stablePanel?.dataset.bookVisible===page;
  if(reusePanel&&page==='summary')
   for(const node of stablePanel.querySelectorAll?.('details.stage-result-section')||[]){
@@ -2359,32 +2838,38 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
     else expandedBookGroups.delete(key);
    }
   }
+ // Outer chapter groups already retain their state; keep each nested
+ // source skill disclosure stable during live stats, CAS edits and localization.
+ const skillMoreOpen=reusePanel&&page==='effects'?
+  new Map([...stablePanel.querySelectorAll('details[data-book-skill-more]')]
+   .map(detail=>[detail.dataset.bookSkillMore,detail.open])):null;
  const storedScroll=reusePanel?stablePanel.scrollTop:0;
  if(reusePanel){
-  for(const child of [...target.children])if(child!==stablePanel)child.remove();
+  for(const child of [...target.children])if(child!==stablePanel&&child!==pinnedOwnerPanel)child.remove();
+ }else if(pinnedOwnerPanel){
+  for(const child of [...target.children])if(child!==pinnedOwnerPanel)child.remove();
  }else target.replaceChildren();
  const copyOptions={overrides:copy,editable:canEdit,onTextEdit,onHonor};
- const chapterTitle=(key,ru)=>{
-  const en=bookEnglish[ru]||ru;
-  const localized=root.PandoraHonorGuide?.field(copy,'chapter.'+key,ru,en);
-  return document.documentElement?.lang==='en'?(localized?.en||en):(localized?.ru||ru);
- };
+ const chapterTitle=(key,ru)=>bookChapterTitle(key,ru,copy);
  const index=Math.max(0,bookPages.findIndex(([name])=>name===page));
  const chosen=bookPages[index][0],prior=bookPages[(index+bookPages.length-1)%bookPages.length][0],
   next=bookPages[(index+1)%bookPages.length][0];
  target.setAttribute('role','region');
- target.setAttribute('aria-label',document.documentElement?.lang==='en'?
-  'Hero Book. '+chapterTitle(chosen,bookPages[index][1])+'. Chapter '+(index+1)+' of 6':
-  'Книга героя. '+chapterTitle(chosen,bookPages[index][1])+'. Страница '+(index+1)+' из 6');
+ // The chapter count is generated state, not part of an editable D1 label.
+ const bookTitleText=make('span',{class:'stage-book-title-text',
+  text:document.documentElement?.lang==='en'?'HERO BOOK':'КНИГА ГЕРОЯ'});
+ if(bookTitleText.dataset?.bookEditorialKey)
+  bookTitleText.dataset.ownerCopyKey=bookTitleText.dataset.bookEditorialKey;
  const bookHeader=make('div',{class:'stage-attribute-head'},[
-  make('button',{type:'button',class:'stage-book-arrow',text:'‹',
+  make('button',{type:'button',class:'stage-book-arrow',text:'‹','data-book-aria-action':'previous',
    onclick:()=>onPage(prior),'aria-label':document.documentElement?.lang==='en'?'Previous page':'Предыдущая страница'}),
   make('div',{class:'stage-book-heading'},[
-   make('span',{text:(document.documentElement?.lang==='en'?'HERO BOOK':'КНИГА ГЕРОЯ')+' · '+(index+1)+' / 6'}),
+   make('span',{class:'stage-book-title-line'},[bookTitleText,
+    make('span',{class:'stage-book-title-count',text:' · '+(index+1)+' / 6'})]),
    make('strong',{text:chapterTitle(chosen,bookPages[index][1])})]),
-  make('button',{type:'button',class:'stage-book-arrow',text:'›',
+  make('button',{type:'button',class:'stage-book-arrow',text:'›','data-book-aria-action':'next',
    onclick:()=>onPage(next),'aria-label':document.documentElement?.lang==='en'?'Next page':'Следующая страница'}),
-  make('button',{type:'button',text:'✕',class:'stage-book-close',onclick:onClose,
+  make('button',{type:'button',text:'✕',class:'stage-book-close','data-book-aria-action':'close',onclick:onClose,
    'aria-label':document.documentElement?.lang==='en'?'Return to portrait':'Вернуть портрет'})
  ]);
  if(reusePanel)target.insertBefore(bookHeader,stablePanel);
@@ -2393,7 +2878,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
  if(headingTitle)guideLabel(headingTitle,'chapter.'+chosen,
   bookPages[index][1],bookEnglish[bookPages[index][1]]||bookPages[index][1],
   copyOptions);
- const nav=make('nav',{class:'stage-attribute-tabs',role:'tablist','aria-label':document.documentElement?.lang==='en'?'Hero Book chapters':'Разделы книги героя'});
+ const nav=make('nav',{class:'stage-attribute-tabs',role:'tablist','data-book-aria-action':'tabs','aria-label':document.documentElement?.lang==='en'?'Hero Book chapters':'Разделы книги героя'});
  for(const [name,label] of bookPages){
   const button=make('button',{
    type:'button',role:'tab',text:chapterTitle(name,label),id:'stageBookTab_'+name,
@@ -2401,7 +2886,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
    'aria-pressed':String(chosen===name),'data-book-page':name,
    class:chosen===name?'chosen':'',
    onclick:event=>{
-    if(event.target?.closest?.('.stage-book-tab-pencil,.wiki-inline-input'))return;
+    if(event.target?.closest?.('.wiki-inline-input'))return;
     onPage(name);
    }
   });
@@ -2415,6 +2900,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
      document.documentElement?.lang==='en'?'en':'ru',display);
    };
    caption.addEventListener('dblclick',edit);
+   root.PandoraOwnerTouchEdit?.(caption,edit,{interactive:true});
    caption.tabIndex=0;caption.setAttribute('aria-keyshortcuts','F2');
    caption.addEventListener('keydown',event=>{if(event.key==='F2')edit(event)});
    button.replaceChildren(caption);
@@ -2443,7 +2929,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
   gameTerms,remakedBuffRows,skillIconForId,nextMagicConcentrationPreview,...copyOptions});
  if(chosen==='effects')skillEffectsPage(body,{modifiers,gameTerms,skillIconForId,
   remakedBuffRows,availability,combatSkillCards,heroJobKey,heroLevel,heroMasteries,
-   heroBranchCaps,heroWeaponKind,heroHasShield,onItem,onSkill});
+   heroBranchCaps,heroWeaponKind,heroHasShield,onItem,onSkill,...copyOptions});
  if(chosen==='recovery'){
   const english=document.documentElement?.lang==='en';
   const percent=modifiers?.potion?.percent;
@@ -2462,9 +2948,13 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
   for(const entry of shown){
    const item=entry.id==null?null:itemById(entry.id);
    const row=make(item?'button':'div',{class:'stage-potion-item',
-    ...(item?{type:'button','aria-label':(english?'Open in encyclopedia: ':'Открыть в энциклопедии: ')+(item.name||entry.ru),
+    ...(item?{type:'button','data-book-source-aria':'itemEncyclopediaPrefix',
+     'data-book-source-name':item.name||entry.ru,
+     'aria-label':(english?'Open in encyclopedia: ':'Открыть в энциклопедии: ')+(item.name||entry.ru),
      onclick:()=>onItem(entry.id)}:{})});
-   const label=make('span',{class:'stage-potion-name',text:item?.name||(english?(entry.en||entry.ru):(entry.ru||entry.en))||(english?'Potion':'Зелье')});
+   const label=sourceText('span',item?.name||
+    (english?(entry.en||entry.ru):(entry.ru||entry.en))||
+    (english?'Potion':'Зелье'),{class:'stage-potion-name'});
    if(item){
     const source=icon(item);
     if(source){
@@ -2487,14 +2977,16 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
    for(const entry of manaItems){
     const item=itemById(entry.id);
     const row=make(item?'button':'div',{class:'stage-potion-item',
-     ...(item?{type:'button','aria-label':(english?'Open in encyclopedia: ':'Открыть в энциклопедии: ')+(item?.name||entry.name),
+     ...(item?{type:'button','data-book-source-aria':'itemEncyclopediaPrefix',
+      'data-book-source-name':item?.name||entry.name,
+      'aria-label':(english?'Open in encyclopedia: ':'Открыть в энциклопедии: ')+(item?.name||entry.name),
       onclick:()=>onItem(entry.id)}:{})});
     if(item){
      const src=icon(item);
      if(src){const picture=make('img',{src,alt:'',loading:'lazy'});
       picture.onerror=()=>picture.remove();row.append(picture);}
     }
-    row.append(make('span',{class:'stage-potion-name',text:item?.name||entry.name}),
+    row.append(sourceText('span',item?.name||entry.name,{class:'stage-potion-name'}),
      make('strong',{text:(entry.hp>0?entry.hp+(english?' HP + ':' ОЗ + '):'')+entry.mp+(english?' MP':' ОМ')}));
     mana.append(row);
    }
@@ -2509,14 +3001,16 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
    for(const entry of lifeItems){
     const item=itemById(entry.id);
     const row=make(item?'button':'div',{class:'stage-potion-item',
-     ...(item?{type:'button','aria-label':(english?'Open in encyclopedia: ':'Открыть в энциклопедии: ')+(item?.name||entry.name),
+     ...(item?{type:'button','data-book-source-aria':'itemEncyclopediaPrefix',
+      'data-book-source-name':item?.name||entry.name,
+      'aria-label':(english?'Open in encyclopedia: ':'Открыть в энциклопедии: ')+(item?.name||entry.name),
       onclick:()=>onItem(entry.id)}:{})});
     if(item){
      const src=icon(item);
      if(src){const picture=make('img',{src,alt:'',loading:'lazy'});
       picture.onerror=()=>picture.remove();row.append(picture)}
     }
-    row.append(make('span',{class:'stage-potion-name',text:item?.name||entry.name}),
+    row.append(sourceText('span',item?.name||entry.name,{class:'stage-potion-name'}),
      make('strong',{text:entry.hp+(english?' HP':' ОЗ')}));
     health.append(row);
    }
@@ -2532,15 +3026,17 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
    for(const entry of cures){
     const item=itemById(entry.id);
     const row=make(item?'button':'div',{class:'stage-potion-item',
-     ...(item?{type:'button','aria-label':(english?'Open in encyclopedia: ':'Открыть в энциклопедии: ')+(item?.name||entry.name),
+     ...(item?{type:'button','data-book-source-aria':'itemEncyclopediaPrefix',
+      'data-book-source-name':item?.name||entry.name,
+      'aria-label':(english?'Open in encyclopedia: ':'Открыть в энциклопедии: ')+(item?.name||entry.name),
       onclick:()=>onItem(entry.id)}:{})});
     if(item){
      const source=icon(item);
      if(source){const picture=make('img',{src:source,alt:'',loading:'lazy'});
       picture.onerror=()=>picture.remove();row.append(picture);}
     }
-    row.append(make('span',{class:'stage-potion-name',text:item?.name||entry.name}),
-     make('strong',{text:(english?entry.conditionsEn:entry.conditions).join(', ')}));
+    row.append(sourceText('span',item?.name||entry.name,{class:'stage-potion-name'}),
+     sourceText('strong',(english?entry.conditionsEn:entry.conditions).join(', ')));
     panel.append(row);
    }
    body.append(panel);
@@ -2557,7 +3053,9 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
     const row=make('div',{class:'stage-potion-item'});
     const itemLink=make(item?'button':'span',{
      class:'stage-potion-source',
-     ...(item?{type:'button','aria-label':(english?'Open item: ':
+     ...(item?{type:'button','data-book-source-aria':'itemOpenPrefix',
+      'data-book-source-name':displayName,
+      'aria-label':(english?'Open item: ':
       'Открыть предмет: ')+displayName,onclick:()=>onItem(entry.id)}:{})
     });
     if(item){
@@ -2565,7 +3063,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
      if(src){const picture=make('img',{src,alt:'',loading:'lazy'});
       picture.onerror=()=>picture.remove();itemLink.append(picture);}
     }
-    itemLink.append(make('span',{class:'stage-potion-name',text:displayName}));
+    itemLink.append(sourceText('span',displayName,{class:'stage-potion-name'}));
     // Each activated skill has its own OS source tooltip. A single
     // concatenated string cannot reveal individual descriptions on hover.
     const skillNames=make('strong',{class:'stage-consumable-skill-names'});
@@ -2575,8 +3073,8 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
      const translated=gameTerms.englishSkills?.[String(skill.id)];
      const name=english?(translated?.n||source?.name||skill.name):
       (source?.name||skill.name);
-     const badge=make('span',{class:'stage-consumable-skill-name',
-      tabindex:0,'data-triggered-skill-id':skill.id,text:name});
+     const badge=sourceText('span',name,{class:'stage-consumable-skill-name',
+      tabindex:0,'data-triggered-skill-id':skill.id});
      const description=english?(translated?.d||source?.desc):(source?.desc);
      if(!root.PandoraSkillPreview?.attach(badge,skill.id))
       root.PandoraGuideTooltip?.attach(badge,
@@ -2593,6 +3091,14 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
  }
  decorateChapterCaptions(body,chosen,copyOptions);
  collapseBookSections(body,chosen);
+ if(skillMoreOpen)for(const detail of body.querySelectorAll('details[data-book-skill-more]')){
+  if(skillMoreOpen.has(detail.dataset.bookSkillMore))
+   detail.open=skillMoreOpen.get(detail.dataset.bookSkillMore);
+ }
+ // Section headings may have been bound before collapseBookSections moved
+ // them into a native summary. Resolve ancestry after their final mount.
+ if(canEdit)for(const caption of body.querySelectorAll?.('summary [data-guide-key]')||[])
+  guardBookSummaryCaption(caption);
  // Existing chapter tabs and guide labels already own a dedicated editor.
  // Suppress generic pencils there and on actionable game/item controls.
  for(const node of body.querySelectorAll?.('[data-book-editorial-key]')||[]){
@@ -2606,9 +3112,50 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
   stablePanel.replaceChildren(...body.childNodes);
   stablePanel.scrollTop=storedScroll;
  }else target.append(body);
+ // Owner-only, collapsed accessibility editing; no label pencils or
+ // duplicate D1 action keys. Keep open drafts mounted on page/rerender.
+ let ownerPanel=pinnedOwnerPanel;
+ if(canEdit&&typeof onTextEdit==='function'){
+  const language=document.documentElement?.lang==='en'?'en':'ru';
+  if(ownerPanel&&ownerPanel.dataset.bookAriaLocale!==language&&
+   !ownerPanel.querySelector('.wiki-inline-input,[data-owner-text-field]')){
+   ownerPanel.remove();ownerPanel=null;
+  }
+  if(!ownerPanel){
+   ownerPanel=make('details',{class:'studio-owner-interface-editor stage-book-a11y-owner'});
+   ownerPanel.id='ownerBookAccessibilityCopy';
+   ownerPanel.dataset.bookAriaLocale=language;
+   const [,headingRu,headingEn]=bookA11yPanelCopyRows[0];
+   const ownerHeading=make('span',{class:'stage-book-a11y-panel-heading',
+    text:language==='en'?headingEn:headingRu});
+   ownerPanel.append(make('summary',{},[ownerHeading]));
+   guideLabel(ownerHeading,'book-aria.owner-panel-heading',
+    headingRu,headingEn,copyOptions);
+   ownerHeading.tabIndex=0;
+   const rows=make('div',{class:'studio-owner-interface-fields'});
+   for(const spec of bookAccessibilitySpecs()){
+    const caption=make('span',{class:'studio-owner-interface-value',
+     'data-book-a11y-owner':spec.id});
+    caption.tabIndex=0; // F2 must be reachable without a pointer.
+    guideLabel(caption,spec.key,spec.ru,spec.en,copyOptions);
+    rows.append(make('div',{class:'studio-owner-interface-row'},[
+     make('span',{class:'studio-owner-interface-name',
+      text:language==='en'?spec.en:spec.ru}),caption
+    ]));
+   }
+   ownerPanel.append(rows);
+  }
+  target.append(ownerPanel);
+ }else ownerPanel?.remove();
+ refreshBookAccessibility(target,copy,chosen);
 }
 root.PandoraStageAttributes=Object.freeze({render,bookPages,bookText,bookEditorialKey,
- bookEditorialDefaults:bookEnglish,resetDisclosureState,
+ bookEditorialDefaults:bookEnglish,buffStatusCopyRows,buffRequirementCopyRows,
+ bookRegionCopyRows,bookSourceActionCopyRows,bookPhoenixProcCopyRows,
+ bookHealingActionCopyRows,
+ bookScalingActionCopyRows,bookSkillDetailCopyRows,bookChapterCaptionCopyRows,
+ bookA11yPanelCopyRows,bookAccessibleAliasRows,
+ refreshAccessibility:refreshBookAccessibility,resetDisclosureState,
  summaryRows,attackChapterGroups,defenseChapterGroups,
  gameSkillName,gameBranchName,gameClassName});
 })(typeof window==='undefined'?globalThis:window);

@@ -38,8 +38,14 @@ test('realtime counts, field translations and GitHub actions stay noneditable',(
  assert.ok(start>0&&end>start);
  assert.match(view,/text:row\.title/);
  assert.match(view,/text:field\.ru\+' → '\+field\.en/);
- assert.match(view,/text:tr\('К сохранению: '/);
- assert.match(view,/text:tr\('Записей для копии: '/);
+ // Composed labels must remain source-editable without including the
+ // actual D1 count in a stored RU/EN field.
+ assert.match(view,/ownerDialogStatusCaption\('span','translationsReadyCount'\)/);
+ assert.match(view,/ownerDialogStatusCaption\('span','githubCount'\)/);
+ assert.match(view,/class:'owner-dialog-runtime-number',text:String\(fields\)/);
+ assert.match(view,/class:'owner-dialog-runtime-number',text:String\(info\.count\)/);
+ assert.match(view,/class:'owner-dialog-server-error',text:error\.message/);
+ assert.doesNotMatch(view,/ownerCopyLabel\(.*info\.count/);
  assert.match(view,/info\.count/);
  assert.match(view,/expectedFingerprint:info\.fingerprint/);
  assert.match(view,/if\(!info\.configured\)/);
@@ -63,14 +69,32 @@ test('D1 writes and Undo update a mounted caption, including the action label',(
  assert.match(styles,/\.owner-dialog-action-host>\.wiki-inline-input/);
 });
 
-test('English admin review statuses and titles do not reuse untranslated RU defaults',()=>{
- assert.match(app,/modal\(tr\('Английские переводы','English translations'\),body\)/);
- assert.match(app,/modal\(tr\('Необязательная копия энциклопедии в GitHub','Optional GitHub encyclopedia copy'\),panel\)/);
- assert.match(app,/tr\('Готово: ','Done: '\)/);
- assert.match(app,/tr\('Сохранено ','Saved '\)/);
- assert.match(app,/tr\('Открыть PR и проверить содержимое','Open PR and review the contents'\)/);
- assert.match(app,/Изменения через ✎ уже сохраняются в D1/);
- assert.match(app,/Зелёные проверки означают, что тесты прошли, но не объединяют PR/);
+test('English admin review copy retains distinct source locales, mounted title and safe actions',()=>{
+ const from=app.indexOf('const ownerDialogStatusCopyRows=Object.freeze(');
+ const end=app.indexOf('function ownerDialogHelp(',from);
+ const rows=app.slice(from,end);
+ assert.ok(from>0&&end>from);
+ for(const pair of [
+  ['translationsTitle','Английские переводы','English translations'],
+  ['githubTitle','Необязательная копия энциклопедии в GitHub',
+   'Optional GitHub encyclopedia copy'],
+  ['translationsSuccessLead','Готово:','Done:'],
+  ['translationsPartialLead','Сохранено','Saved'],
+  ['githubLink','Открыть PR и проверить содержимое','Open PR and review the contents']
+ ]){
+  const [key,ru,en]=pair;
+  assert.ok(rows.includes("['"+key+"','"+ru+"'"),key+' RU original');
+  assert.ok(rows.includes("'"+en+"'"),key+' EN original');
+ }
+ assert.match(app,/ownerDialogSourceModal\('translationsTitle',body\)/);
+ assert.match(app,/ownerDialogSourceModal\('githubTitle',panel\)/);
+ assert.match(app,/ownerCopyLabel\(heading,'owner-dialog',key,row\[1\],row\[2\]/);
+ assert.match(app,/ownerDockPatchAttr\(dialog,'aria-label',value\)/);
+ assert.match(app,/ownerDialogStatusCaption\('span','githubProposed'\)/);
+ assert.match(app,/ownerDialogStatusCaption\('span','githubFollowup'\)/);
+ assert.match(app,/ownerCaptionActionGuard\(link,linkCaption\)/);
+ assert.match(app,/GitHub export is OPTIONAL/);
+ assert.match(app,/не объединяет его/);
  assert.match(app,/Merge pull request/);
- assert.match(app,/Копия в GitHub/);
+ assert.doesNotMatch(app,/Изменения через ✎ уже сохраняются в D1/);
 });

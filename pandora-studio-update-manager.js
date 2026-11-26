@@ -137,16 +137,8 @@
       if (previous !== key) {
         if (key) node.setAttribute('data-owner-copy-key', key);
         else node.removeAttribute?.('data-owner-copy-key');
-        const pencil = node.nextElementSibling;
-        if (pencil?.dataset?.ownerCopyPencil &&
-            pencil.dataset.ownerCopyPencil !== key) pencil.remove();
       }
       if (node.textContent !== value) node.textContent = value;
-      const pencil = node.nextElementSibling;
-      if (pencil?.dataset?.ownerCopyPencil === key)
-        pencil.setAttribute('aria-label',
-          (document.documentElement.lang === 'en' ? 'Edit caption: ' :
-            'Изменить надпись: ') + value);
     }
     window.PandoraStudioBindUpdateCopyEditors?.();
   }

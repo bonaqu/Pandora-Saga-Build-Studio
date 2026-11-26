@@ -249,3 +249,118 @@ test('English NPC and map sources resolve their original Russian catalogue names
  assert.ok(location.title.includes(source.mapNames[mapId].name));
  assert.equal(location.uncertain,false);
 });
+
+test('English human-review summaries preserve source meaning and safety classification',()=>{
+ const metadata=describe(change('meta','@dataset',
+  {sha:{'monster/monster.csv':'old'}},{sha:{'monster/monster.csv':'new'}}),context);
+ assert.match(metadata.summaryEn,/Catalog checksums changed: 1 file/);
+ assert.match(metadata.cautionEn,/Service metadata should not be accepted separately/);
+ assert.match(metadata.summary,/контрольные сведения: 1 файл/);
+ assert.equal(metadata.uncertain,true);
+ const current=structuredClone(read('drops')['43730']),old=structuredClone(current);
+ old.d[0].p=100;
+ const drop=describe(change('drops','43730',old,current),context);
+ assert.match(drop.summaryEn,/monster loot table changed/);
+ assert.match(drop.summary,/таблица добычи монстра/);
+ assert.equal(drop.uncertain,false,'Only source evidence decides whether the record is safe');
+ const link=describe(change('items','1',
+  {desc:'Old <item 53002>'},{desc:'New <item 53006>'}),context);
+ assert.equal(link.uncertain,true);
+ assert.match(link.summaryEn,/item link in a game description changed/);
+ assert.match(link.cautionEn,/Verify its destination/);
+ assert.match(link.caution,/Изменилась игровая связь/);
+});
+
+test('English human-review fields translate only verified authorial labels, not game values',()=>{
+ const before={name:'Караван Союза',life:30000,resists:{fire:25,magic:30}};
+ const afterState={name:'Караван Союза',life:60000,resists:{fire:15,magic:15}};
+ const review=describe(change('monsters','43601',before,afterState),context);
+ assert.equal(review.rows.find(r=>r.label==='Очки здоровья (ОЗ)').labelEn,'Health points (HP)');
+ assert.equal(review.rows.find(r=>r.label==='Сопротивление огню').labelEn,'Resistance to fire');
+ assert.equal(review.rows.find(r=>r.label==='Сопротивление магии').labelEn,'Resistance to magic');
+ assert.equal(review.rows.find(r=>r.label==='Сопротивление огню').after,'15');
+ assert.equal(review.uncertain,false);
+ const unknown=describe(change('monsters','43601',{resists:{mystery:1}},
+  {resists:{mystery:2}}),context);
+ assert.equal(unknown.uncertain,true);
+ assert.equal(unknown.rows.length,0,'unverified mechanics must not become localized gameplay facts');
+});
+test('English detail labels preserve item identities, item links and independent extra socket values',()=>{
+ const old={d:[{i:53002,p:30,slotAdd:1}]};
+ const next={d:[{i:53002,p:45,slotAdd:2}]};
+ const review=describe(change('drops','43601',old,next),context);
+ const chance=review.rows.find(r=>r.label.endsWith('Шанс в таблице'));
+ const slots=review.rows.find(r=>r.label.endsWith('Доп. слоты'));
+ assert.ok(chance.labelEn.startsWith('Regular loot · '));
+ assert.ok(chance.labelEn.endsWith(' · Listed chance'));
+ assert.equal(chance.linkedItemId,'53002');
+ assert.equal(chance.after,'45');
+ assert.equal(slots.labelEn.endsWith(' · Extra sockets'),true);
+ assert.equal(slots.beforeEn,'1 extra socket');
+ assert.equal(slots.afterEn,'2 extra sockets');
+ assert.equal(slots.after,'2 дополнительных слота');
+ assert.equal(review.uncertain,false);
+});
+test('English detail captions use safe prefixes for named quest fields and checksum metadata',()=>{
+ const prev=[{id:1,name:'Известное задание',blurb:'Old description'}];
+ const next=[{id:1,name:'Известное задание',blurb:'New description'}];
+ const quest=describe(change('instances','@dataset',prev,next),context);
+ assert.equal(quest.rows.length,1);
+ assert.equal(quest.rows[0].labelEn,'Известное задание · English description');
+ const metadata=describe(change('meta','@dataset',{sha:{'a.csv':'old'}},
+  {sha:{'a.csv':'new'}}),context);
+ assert.equal(metadata.rows[0].labelEn,'File checksums');
+ assert.equal(metadata.service,true);
+ assert.equal(metadata.uncertain,true);
+});
+
+test('nested formula and mastery captions render known English schema without changing arithmetic',()=>{
+ const formula=describe(change('tables','@dataset',
+  {weaponPlus:{1:{ratio:2,flat:1}}},{weaponPlus:{1:{ratio:3,flat:2}}}),context);
+ assert.equal(formula.rows.length,2);
+ assert.ok(formula.rows.some(row=>row.labelEn===
+  'Weapon refinement · Refinement +1 · Relative parameter (ratio)'&&row.difference==='+1'));
+ assert.ok(formula.rows.some(row=>row.labelEn.endsWith(' · Flat modifier (flat)')));
+ assert.equal(formula.uncertain,true,'atomic formula publication remains manually reviewed');
+ const mastery=describe(change('expertise','@dataset',
+  {limit:{WARRIOR:{slash:2}}},{limit:{WARRIOR:{slash:3}}}),context);
+ assert.ok(mastery.rows.some(row=>row.labelEn.startsWith('Mastery limits · ')));
+ assert.equal(mastery.uncertain,true,'unknown class/source fields still require review');
+});
+test('unmapped source labels receive neutral English review summary without fictional mechanics',()=>{
+ const result=describe(change('items','555',
+  {unknownMechanic:1},{unknownMechanic:2}),context);
+ assert.equal(result.uncertain,true);
+ assert.equal(result.rows.length,0);
+ assert.match(result.summaryEn,/Source records differ/);
+ assert.match(result.summaryEn,/Manual review is required/);
+ assert.ok(result.technical.some(x=>x.includes('unknownMechanic')));
+});
+
+test('English review titles translate only source-owned category chrome',()=>{
+ const loot=describe(change('drops','43601',{d:[{i:53002,p:20}]},
+  {d:[{i:53002,p:30}]}),context);
+ assert.match(loot.title,/^Добыча · /);
+ assert.match(loot.titleEn,/^Loot · /);
+ assert.equal(loot.titleEn.slice(7),loot.title.slice(9),
+  'game monster name is not guessed or rewritten');
+ const instances=describe(change('instances','@dataset',[],[{id:1,name:'Задание'}]),context);
+ assert.equal(instances.titleEn,'Dungeons and quests');
+ const formulas=describe(change('tables','@dataset',{weaponPlus:{1:{ratio:1}}},
+  {weaponPlus:{1:{ratio:2}}}),context);
+ assert.equal(formulas.titleEn,'Game formulas');
+ assert.equal(formulas.uncertain,true);
+});
+test('English review membership and typed sentinels keep actual source data unchanged',()=>{
+ const added=describe(change('drops','43601',{d:[]},{d:[{i:53002,p:30}]}),context);
+ const membership=added.rows.find(row=>row.linkedItemId==='53002');
+ assert.equal(membership.before,'нет');
+ assert.equal(membership.after,'есть');
+ assert.equal(membership.beforeEn,'absent');
+ assert.equal(membership.afterEn,'present');
+ const monster=describe(change('monsters','43601',{life:null},{life:30}),context);
+ assert.equal(monster.rows[0].before,'не указано');
+ assert.equal(monster.rows[0].beforeEn,'not specified');
+ assert.equal(monster.rows[0].after,'30');
+ assert.equal(monster.rows[0].afterEn,null);
+});

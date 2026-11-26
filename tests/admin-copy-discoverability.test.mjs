@@ -44,7 +44,9 @@ test('origin and generic headings edit their own text without duplicate caption 
  assert.match(app,/node\.addEventListener\('dblclick',edit\)/);
  assert.match(app,/function bindStaticUICopyEditors\(/);
  assert.doesNotMatch(app,/class:'origin-copy-pencil'/);
- assert.doesNotMatch(app,/class:'ui-content-pencil','data-ui-content-for':key/);
+ assert.doesNotMatch(app,/class:'ui-content-pencil'/);
+ assert.match(app,/next\.length>locale\.copyLimit\(key\)/);
+ assert.match(app,/node\.classList\.toggle\('ui-content-editable',canEdit\)/);
  assert.match(app,/node\.dataset\.pathCopyBound==='1'/);
  assert.match(app,/bindAccountCopyEditors\(root\)/);
  assert.match(app,/const authoredKey=statusKey\?\.startsWith\('status'\)/);

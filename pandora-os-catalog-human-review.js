@@ -11,6 +11,20 @@ quest:'Задание',kind:'Тип',mobs:'Монстры',p:'Значение �
 slotAdd:'Дополнительные слоты',lo:'Нижняя граница',hi:'Верхняя граница'};
 const elements={physical:'физическому урону',fire:'огню',cold:'холоду',
 lightning:'молнии',poison:'яду',charm:'очарованию',magic:'магии',holy:'свету',dark:'тьме'};
+// EN review metadata is keyed to known source fields only. Do not translate
+// game item names, arbitrary source paths, player records or unknown fields.
+const namesEn={life:'Health points (HP)',level:'Level',vit:'Vitality',str:'Strength',
+ agi:'AGI (agility)',dex:'DEX (dexterity)',spi:'Spirit',int:'Intelligence',
+ warding:'Evasion',ac:'Defense',magicProtection:'Magic defense',
+ name:'Name',desc:'Description',nameEn:'English name',descEn:'English description',
+ d:'English description',classes:'Available classes',effects:'Effects',
+ slot:'Equipment slot',W:'Attack',PEN:'Penetration',n:'English name',
+ blurbRu:'Description',blurb:'English description',quest:'Quest',kind:'Type',
+ mobs:'Monsters',p:'Listed chance',slotAdd:'Extra sockets',
+ lo:'Lower bound',hi:'Upper bound'};
+const elementsEn={physical:'physical damage',fire:'fire',cold:'cold',
+ lightning:'lightning',poison:'poison',charm:'charm',magic:'magic',
+ holy:'holy',dark:'dark'};
 const plain=x=>x&&typeof x==='object'&&!Array.isArray(x);
 const plural=(count,one,few,many)=>{
  const n=Math.abs(count)%100,units=n%10;
@@ -35,6 +49,9 @@ const monsterName=(id,ctx)=>ctx?.upstream?.monsters?.[id]?.name||
 const fieldName=path=>path.startsWith('resists.')?
  (elements[path.slice(8)]?'Сопротивление '+elements[path.slice(8)]:null):
  names[path]||null;
+const fieldNameEn=path=>path.startsWith('resists.')?
+ (elementsEn[path.slice(8)]?'Resistance to '+elementsEn[path.slice(8)]:null):
+ namesEn[path]||null;
 
 const sectionNames={
  weaponPlus:'Усиление оружия',magicPlus:'Усиление магии',
@@ -45,6 +62,16 @@ const sectionNames={
  premium:'Премиум-параметры',forge:'Улучшение предметов',afk:'Параметры отсутствия',
  zoneDrops:'Добыча по локациям',limit:'Пределы мастерства',
  expCurve:'Опыт мастерства',get:'Начисление мастерства',branchNames:'Названия веток'
+};
+const sectionNamesEn={
+ weaponPlus:'Weapon refinement',magicPlus:'Magic refinement',
+ raceInit:'Race starting attributes',jobInit:'Class starting attributes',
+ abilityPoint:'Attribute points',exp:'Character experience',
+ lvModify:'Level adjustments',dropModify:'Loot adjustments',
+ levelCap:'Level cap',expCap:'Experience cap',
+ premium:'Premium parameters',forge:'Item upgrade settings',afk:'AFK settings',
+ zoneDrops:'Loot by location',limit:'Mastery limits',
+ expCurve:'Mastery experience',get:'Mastery gains',branchNames:'Branch names'
 };
 
 
@@ -99,9 +126,9 @@ function analyzeZoneLootImpact(oldZones,newZones,ctx){
   }
   return Math.round((1-noDrop)*100*1e4)/1e4;
  };
- const percent=(n,other)=>{
+ const percent=(n,other,locale='ru-RU')=>{
   const precision=Math.round(n*100)===Math.round(other*100)&&n!==other?4:2;
-  return new Intl.NumberFormat('ru-RU',
+  return new Intl.NumberFormat(locale,
    {minimumFractionDigits:precision,maximumFractionDigits:precision}).format(n)+'%';
  };
  const impacts=[],skipped=[];
@@ -128,6 +155,14 @@ function analyzeZoneLootImpact(oldZones,newZones,ctx){
   impact.preview=title+': соло '+percent(before[0],after[0])+' → '+percent(after[0],before[0])+
    '; 4 игрока '+percent(before[1],after[1])+' → '+percent(after[1],before[1])+
    '; 8 игроков '+percent(before[2],after[2])+' → '+percent(after[2],before[2]);
+  // Independent-roll estimates are unchanged, only the output locale differs.
+  // Original source map, monster and item names remain unchanged.
+  impact.previewEn=title+': solo '+percent(before[0],after[0],'en-US')+
+   ' → '+percent(after[0],before[0],'en-US')+
+   '; 4 players '+percent(before[1],after[1],'en-US')+
+   ' → '+percent(after[1],before[1],'en-US')+
+   '; 8 players '+percent(before[2],after[2],'en-US')+
+   ' → '+percent(after[2],before[2],'en-US');
   impacts.push(impact);
  }
  impacts.sort((x,y)=>x.mapName.localeCompare(y.mapName,'ru')||
@@ -356,6 +391,13 @@ function describeNestedTable(section,a,b,add,unknown){
   mod:'Поправка',atk:'Атака',def:'Защита',magicDef:'Магическая защита',
   plus:'Уровень заточки',weapon:'Оружие',armor:'Броня',
   thresholdSec:'Порог времени (секунды)',...names};
+ const labelsEn={ratio:'Relative parameter (ratio)',flat:'Flat modifier (flat)',
+  ability:'Attribute points',skill:'Skill points',skillLimit:'Skill cap',
+  expReq:'Experience to level',req:'Required value',cumulative:'Accumulated value',
+  normal:'Normal mode',special:'Special mode',diff:'Level difference',
+  mod:'Adjustment',atk:'Attack',def:'Defense',magicDef:'Magic defense',
+  plus:'Refinement level',weapon:'Weapon',armor:'Armor',
+  thresholdSec:'Time threshold (seconds)',...namesEn};
  const valueOf=x=>x===undefined?'не указано':x!==null&&typeof x==='object'?JSON.stringify(x):x;
  const labelFor=(key,position)=>key.startsWith('diff=')?'Разница уровней '+key.slice(5):
   key.startsWith('plus=')?'Заточка +'+key.slice(5):
@@ -366,9 +408,19 @@ function describeNestedTable(section,a,b,add,unknown){
   position===0&&['exp','abilityPoint'].includes(section)?'Уровень '+key:
   'Запись '+(Number(key)+1):'Исходный код «'+key+'»');
  const label=path=>[sectionNames[section]||section,...path.map((k,i)=>labelFor(String(k),i))].join(' · ');
+ const labelForEn=(key,position)=>key.startsWith('diff=')?'Level difference '+key.slice(5):
+  key.startsWith('plus=')?'Refinement +'+key.slice(5):
+  key.startsWith('map=')?'Location #'+key.slice(4):
+  key.startsWith('id=')?'Record #'+key.slice(3):
+  labelsEn[key]||(/^\d+$/.test(key)?
+   position===0&&['weaponPlus','magicPlus'].includes(section)?'Refinement +'+key:
+   position===0&&['exp','abilityPoint'].includes(section)?'Level '+key:
+   'Record '+(Number(key)+1):'Source code «'+key+'»');
+ const labelEn=path=>[sectionNamesEn[section]||section,
+  ...path.map((k,i)=>labelForEn(String(k),i))].join(' · ');
  const walk=(x,y,path=[],depth=0)=>{
   if(same(x,y))return;
-  if(depth>7){unknown(label(path)+': слишком глубокая структура');add(label(path),valueOf(x),valueOf(y));return}
+  if(depth>7){unknown(label(path)+': слишком глубокая структура');add(label(path),valueOf(x),valueOf(y),labelEn(path));return}
   if(plain(x)&&plain(y)){
    for(const k of new Set([...Object.keys(x),...Object.keys(y)]))
     walk(x[k],y[k],[...path,k],depth+1);
@@ -385,7 +437,8 @@ function describeNestedTable(section,a,b,add,unknown){
      walk(before.get(id),after.get(id),[...path,identity+'='+id],depth+1);
     if(![...before.keys()].every((id,i)=>[...after.keys()][i]===id)){
      unknown(label(path)+': порядок записей изменился; значение порядка не подтверждено');
-     add(label(path)+' · Порядок записей','прежний порядок','новый порядок');
+     add(label(path)+' · Порядок записей','прежний порядок','новый порядок',
+      labelEn(path)+' · Row order');
     }
    }else if(x.length===y.length&&x.every((entry,i)=>
     (entry===null||typeof entry!=='object')&&
@@ -393,7 +446,8 @@ function describeNestedTable(section,a,b,add,unknown){
     for(let i=0;i<x.length;i++)walk(x[i],y[i],[...path,String(i)],depth+1);
    }else{
     unknown(label(path)+': невозможно однозначно сопоставить строки массива');
-    add(label(path)+' · Состав записей',valueOf(x),valueOf(y));
+    add(label(path)+' · Состав записей',valueOf(x),valueOf(y),
+     labelEn(path)+' · Row composition');
    }
   }else{
    if(Array.isArray(x)||Array.isArray(y)||plain(x)||plain(y))
@@ -402,7 +456,7 @@ function describeNestedTable(section,a,b,add,unknown){
     !/^(diff|plus|map|id)=/.test(String(k))&&
     !['WARRIOR','SCOUT','MAGE','ACOLYTE','HUMAN','ELF','DWARF','MYLIN','ENKIDU','LAPIN'].includes(k))
      unknown(label(path)+': значение исходного кода «'+k+'» не подтверждено');
-   add(label(path),valueOf(x),valueOf(y));
+   add(label(path),valueOf(x),valueOf(y),labelEn(path));
   }
  };
  walk(a,b);
@@ -421,9 +475,9 @@ function describeCompound(kind,before,after,ctx,add,unknown){
  };
  const fields=(left,right)=>new Set([...Object.keys(left||{}),...Object.keys(right||{})]);
  let touched=0;
- const safeAdd=(title,a,b)=>{const limit=kind==='tables'&&old?.zoneDrops&&next?.zoneDrops?3000:60;
+ const safeAdd=(title,a,b,titleEn='')=>{const limit=kind==='tables'&&old?.zoneDrops&&next?.zoneDrops?3000:60;
    if(touched>=limit){if(touched===limit)unknown('Слишком много изменений: показаны первые '+limit+' строк');touched++;return}
-   const row=add(title,a,b);touched++;return row};
+   const row=add(title,a,b,titleEn);touched++;return row};
  const shortItem=id=>{
   const result=itemName(id,ctx);
   if(result==='Предмет без подтверждённого названия')
@@ -587,7 +641,7 @@ function describe(change,ctx={}){
    lookup(id)||(en?'Unknown item':'Неизвестный предмет'));
  };
  const shortened=text=>typeof text==='string'&&text.length>160?text.slice(0,157)+'…':text;
- const add=(label,a,b)=>{if(same(a,b))return;
+ const add=(label,a,b,labelEn='')=>{if(same(a,b))return;
   const beforeText=typeof a==='string'?readable(a,label):null;
   const afterText=typeof b==='string'?readable(b,label):null;
   const numeric=typeof a==='number'&&Number.isFinite(a)&&typeof b==='number'&&Number.isFinite(b);
@@ -596,6 +650,15 @@ function describe(change,ctx={}){
   const readableSlots=x=>x==null?'не указаны':Number.isFinite(x)?
    value(x)+' '+plural(x,'дополнительный слот','дополнительных слота','дополнительных слотов'):
    value(x);
+  const readableSlotsEn=x=>x==null?'not specified':Number.isFinite(x)?
+   new Intl.NumberFormat('en-US').format(x)+' extra socket'+(x===1?'':'s'):
+   value(x);
+  // Translate known display sentinels by the original value type, not by
+  // fuzzy matching against a game description that might contain the same word.
+  const valueEn=x=>x===undefined?'missing':x===null?'not specified':
+   typeof x==='boolean'?(x?'yes':'no'):
+   Array.isArray(x)?x.length+' records':
+   plain(x)?'record structure changed':null;
   const sourceLinks=text=>typeof text==='string'?
    [...text.matchAll(/<item\s+([0-9]{1,12})\s*\/?>/gi)].map(match=>match[1]).join(','):'';
   const beforeLinks=sourceLinks(a),afterLinks=sourceLinks(b);
@@ -606,9 +669,17 @@ function describe(change,ctx={}){
     beforeLinks&&!afterLinks?'Игровая ссылка на предмет удалена.':
     'Изменилась привязка игровой ссылки к предмету.'):
    sameVisible?'Видимый текст совпадает. Различие осталось только в исходной записи.':'';
-  rows.push({label,before:isSlots?readableSlots(a):beforeText===null?value(a):shortened(beforeText),
+  const noteEn=linkChanged?
+   (afterLinks&&!beforeLinks?'A game item reference was added to the source text.':
+    beforeLinks&&!afterLinks?'A game item reference was removed from the source text.':
+    'The game item reference now points to a different item.'):
+   sameVisible?'Visible text is unchanged, but the source records differ.':'';
+  rows.push({label,labelEn,
+   before:isSlots?readableSlots(a):beforeText===null?value(a):shortened(beforeText),
    after:isSlots?readableSlots(b):afterText===null?value(b):shortened(afterText),
-   numeric,delta,note,linkChanged,sameVisible,
+   beforeEn:isSlots?readableSlotsEn(a):beforeText===null?valueEn(a):null,
+   afterEn:isSlots?readableSlotsEn(b):afterText===null?valueEn(b):null,
+   numeric,delta,note,noteEn,linkChanged,sameVisible,
    sourceBefore:/описани/i.test(label)&&typeof a==='string'?a:null,
    sourceAfter:/описани/i.test(label)&&typeof b==='string'?b:null,
    beforeFull:beforeText===null?undefined:beforeText,
@@ -630,7 +701,7 @@ function describe(change,ctx={}){
   const label=fieldName(prefix);
   if(!label){unknown(prefix||'неизвестные данные');return}
   if(plain(a)||plain(b)||Array.isArray(a)||Array.isArray(b))uncertain=true;
-  add(label,a,b);
+  add(label,a,b,fieldNameEn(prefix));
  }
  const kind=change.dataset;
  if(kind==='meta'){
@@ -639,7 +710,7 @@ function describe(change,ctx={}){
   const sha=new Set([...Object.keys(old.sha||{}),...Object.keys(next.sha||{})]);
   const changed=[...sha].filter(k=>old.sha?.[k]!==next.sha?.[k]);
   if(changed.length)add('Проверочные сведения файлов',changed.length+' изменились',
-   changed.length+' файлов требуют проверки');
+   changed.length+' файлов требуют проверки','File checksums');
   for(const key of new Set([...Object.keys(old),...Object.keys(next)])){
    if(key!=='sha'&&!same(old[key],next[key]))walk(old[key],next[key],key);
   }
@@ -654,7 +725,9 @@ function describe(change,ctx={}){
   const old=change.before||{},next=change.after||{};
   if(title.includes('без подтверждённого названия'))
    unknown('Монстр отсутствует в каталоге: '+change.key);
-  for(const [group,groupName] of [['d','Обычная добыча'],['s','Дополнительная добыча']]){
+  for(const [group,groupName,groupNameEn] of [
+   ['d','Обычная добыча','Regular loot'],['s','Дополнительная добыча','Additional loot']
+  ]){
    const a=old[group]||[],b=next[group]||[];
    const byItem=list=>{const out=new Map();for(const entry of list){
     const key=String(entry?.i)+' / '+String(entry?.t||'');
@@ -681,13 +754,17 @@ function describe(change,ctx={}){
       }
      };
      if(!aa[i]||!bb[i]){
-      add(item,aa[i]?'есть':'нет',bb[i]?'есть':'нет');
+      const row=add(item,aa[i]?'есть':'нет',bb[i]?'есть':'нет',groupNameEn+' · '+itemTitle);
+      if(row){row.beforeEn=aa[i]?'present':'absent';row.afterEn=bb[i]?'present':'absent';}
       attachItem();
      }else for(const field of new Set([...Object.keys(aa[i]),...Object.keys(bb[i])])){
       if(field==='i'||field==='t'||same(aa[i][field],bb[i][field]))continue;
       const label={p:'Шанс в таблице',n:'Количество',slotAdd:'Доп. слоты',
        lo:'Нижняя граница',hi:'Верхняя граница'}[field];
-      if(label){add(item+' · '+label,aa[i][field],bb[i][field]);attachItem();}
+      const fieldEn={p:'Listed chance',n:'Quantity',slotAdd:'Extra sockets',
+       lo:'Lower bound',hi:'Upper bound'}[field];
+      if(label){add(item+' · '+label,aa[i][field],bb[i][field],
+       groupNameEn+' · '+itemTitle+' · '+fieldEn);attachItem();}
       else unknown(group+'.'+field);
      }
     }
@@ -703,11 +780,15 @@ function describe(change,ctx={}){
    if(same(a.get(id),b.get(id)))continue;
    const old=a.get(id),next=b.get(id);
    const name=next?.name||old?.name||'Задание №'+id;
-   if(!old||!next)add(name,old?'есть':'нет',next?'есть':'нет');
+   if(!old||!next){
+    const row=add(name,old?'есть':'нет',next?'есть':'нет',name);
+    if(row){row.beforeEn=old?'present':'absent';row.afterEn=next?'present':'absent';}
+   }
    else{
     for(const key of ['name','blurbRu','blurb','kind','quest','mobs'])if(!same(old[key],next[key])){
      const render=v=>key==='mobs'?(v||[]).map(x=>monsterName(x,ctx)).join(', '):v;
-     add(name+' · '+(names[key]||key),render(old[key]),render(next[key]));
+     add(name+' · '+(names[key]||key),render(old[key]),render(next[key]),
+      name+' · '+(namesEn[key]||key));
     }
     for(const key of new Set([...Object.keys(old),...Object.keys(next)]))
      if(!['id','name','blurbRu','blurb','kind','quest','mobs'].includes(key)&&!same(old[key],next[key]))
@@ -818,7 +899,75 @@ function describe(change,ctx={}){
  if(uncertain&&!caution)caution=unexplained?
    'Некоторые обозначения или соответствия строк не подтверждены. Проверь их перед публикацией.':
    'Расшифровка доступна, но изменение целого игрового раздела требует ручной проверки перед публикацией.';
- return {title,summary,rows,impacts,technical,uncertain,unexplained,caution,service:kind==='meta'};
+ // Supplement known Russian model-review copy with equivalent English.
+ // Do not guess translations for arbitrary game/source fields or change the
+ // classification of unknown mechanics. Original RU and source names survive.
+ let summaryEn='';
+ if(hasReferenceChange)
+  summaryEn='An item link in a game description changed. Inspect the linked item in the details.';
+ else if(hasInvisibleChange&&rows.length&&rows.every(row=>row.sameVisible))
+  summaryEn='Rendered text matches, but original source records differ. Review before selecting.';
+ else if(kind==='meta'){
+  const old=change.before||{},next=change.after||{};
+  const keys=new Set([...Object.keys(old.sha||{}),...Object.keys(next.sha||{})]);
+  const count=[...keys].filter(key=>old.sha?.[key]!==next.sha?.[key]).length;
+  summaryEn=count?'Catalog checksums changed: '+count+' file'+(count===1?'':'s')+
+   '. This does not change character attributes.':
+   'Catalog service metadata changed, not character attributes.';
+ }else if(kind==='drops')
+  summaryEn='The monster loot table changed. A listed drop chance does not guarantee a reward.';
+ else if(kind==='instances')
+  summaryEn='Dungeon or story quest records changed.';
+ else if(kind==='strings.en')
+  summaryEn='English names or descriptions changed.';
+ else if(rows.some(row=>/описани/i.test(row.label))&&
+  !['trades','chests','tables','expertise'].includes(kind))
+  summaryEn='A description changed. The full before-and-after text is available in the details.';
+ else if(kind==='tables'&&impacts.length){
+  const down=impacts.filter(effect=>effect.direction==='снизился').length;
+  const up=impacts.filter(effect=>effect.direction==='вырос').length;
+  summaryEn='Game formula tables changed. Estimated drop chances differ in '+
+   impacts.length+' modeled sources (decreased: '+down+', increased: '+up+
+   '). Inspect all changes in this atomic section.';
+ }
+ // Fallback for legitimate but source-generated diffs without a dedicated
+ // authored English summary. State only the change and review requirement:
+ // never invent a mechanic, hide a caution or translate a game record name.
+ if(!summaryEn){
+  const verified=rows.map(row=>row.labelEn).filter(Boolean);
+  const sampled=verified.slice(0,3);
+  const kindIntro=change.kind==='added'?'A record was added. ':
+   change.kind==='removed'?'A record was removed. ':'';
+  summaryEn=kindIntro+(sampled.length?
+   'Changed fields: '+sampled.join('; ')+(verified.length>3?'; …':'')+'. ':
+   'Source records differ. ')+
+   (uncertain?'Manual review is required.':'See the detailed source values below.');
+ }
+ let cautionEn='';
+ if(caution){
+  const notes=[];
+  if(hasReferenceChange)notes.push('An item reference changed. Verify its destination before approval.');
+  else if(hasInvisibleChange)notes.push('Visible text matches but raw source values differ; review manually.');
+  if(kind==='meta')notes.push('Service metadata should not be accepted separately from verified gameplay changes.');
+  if(kind==='tables')notes.push('Publishing replaces the entire Game formulas dataset in Build Studio D1, not the game. Real game-server mechanics are not verified by this estimate.');
+  if(kind==='trades')notes.push('NPC trades are published as one atomic dataset. Inspect all changes.');
+  if(kind==='chests')notes.push('Chest rewards are published as one atomic dataset. Inspect all groups.');
+  if(kind==='expertise')notes.push('Mastery data is published atomically. Inspect all limits and tables.');
+  if(unexplained)notes.push('Some source fields or row correspondences were not verified.');
+  if(!notes.length)notes.push('Manual review is required before publishing this section.');
+  cautionEn=notes.join(' ');
+ }
+ // Only translate fixed category chrome; a monster, item, player or quest
+ // name is still taken verbatim from the source and never machine-guessed.
+ const titleEn=kind==='meta'?'Catalog metadata':
+  kind==='drops'?'Loot · '+monsterName(change.key,ctx):
+  kind==='instances'?'Dungeons and quests':
+  change.key==='@dataset'?({
+   trades:'NPC trades',tables:'Game formulas',expertise:'Mastery',
+   chests:'Chest contents'
+  }[kind]||title):title;
+ return {title,titleEn,summary,summaryEn,rows,impacts,technical,uncertain,unexplained,
+  caution,cautionEn,service:kind==='meta'};
 }
 root.PandoraCatalogHumanReview=Object.freeze({describe});
 })(typeof window==='undefined'?globalThis:window);

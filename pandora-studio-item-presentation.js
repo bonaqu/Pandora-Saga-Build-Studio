@@ -37,13 +37,16 @@ function kind(record,lang='ru'){
  const fallback=lang==='en'?'Item':'Предмет';
  return record?(source[String(record.kind||'').toUpperCase()]||slotSource[record.slot]||fallback):fallback;
 }
-function displayName(record,fallback='Без названия',lang='ru'){
+function displayName(record,fallback,lang='ru'){
+ // A missing source name is presentation text, not a game item name or ID.
+ // Preserve every explicit caller fallback, including an empty string.
+ const unnamed=fallback===undefined?(lang==='en'?'Unnamed item':'Без названия'):fallback;
  const first=lang==='en'?'en':'ru',second=first==='en'?'ru':'en';
  const candidate=record?.name?.[first]||record?.names?.[first]||
   record?.name?.[second]||record?.names?.[second]||record?.name;
  const name=typeof candidate==='string'?candidate.trim():'';
  // Historical imported builds may have stored the database ID as the item's name.
- return name&&!/^\d{1,20}$/.test(name)?name:fallback;
+ return name&&!/^\d{1,20}$/.test(name)?name:unnamed;
 }
 let defaultItemLookup=null,defaultLanguage=()=> 'ru';
 function setReferenceResolver(lookup,language){
@@ -130,8 +133,9 @@ function restoreReferences(edited,source,lookupItem,lang='ru'){
  const replacements=[];
  for(const reference of references){
   const matches=wholeMatches(result,reference.text);
-  if(matches.length>1)throw Error('Название «'+reference.text+
-   '» встречается несколько раз. Уточни текст перед сохранением ссылки.');
+  if(matches.length>1)throw Error(lang==='en'?
+   'The name “'+reference.text+'” appears more than once. Clarify the text before saving the link.':
+   'Название «'+reference.text+'» встречается несколько раз. Уточни текст перед сохранением ссылки.');
   if(matches.length===1)
    replacements.push({start:matches[0],end:matches[0]+reference.text.length,
     reference});
@@ -141,7 +145,9 @@ function restoreReferences(edited,source,lookupItem,lang='ru'){
  replacements.sort((a,b)=>a.start-b.start);
  for(let i=1;i<replacements.length;i++)
   if(replacements[i].start<replacements[i-1].end)
-   throw Error('Ссылки на предметы пересекаются. Уточни названия перед сохранением.');
+   throw Error(lang==='en'?
+    'Item references overlap. Clarify the names before saving.':
+    'Ссылки на предметы пересекаются. Уточни названия перед сохранением.');
  for(const match of replacements.reverse())
   result=result.slice(0,match.start)+'<item '+match.reference.id+'>'+
    result.slice(match.end);

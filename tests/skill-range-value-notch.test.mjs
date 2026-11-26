@@ -79,7 +79,7 @@ test('allocation semantics remain untouched across numeric clearing, hover and s
   "const raw=input.value.trim(),requested=raw===''?0:Number(raw);",
   "const visualMax=90;",
   "tick.style.left=(threshold/visualMax*100).toFixed(4)+'%';",
-  "range.setAttribute('aria-valuetext'",
+  "bindPathCopy(api,range,'pathRangeValueAria'",
   "const setPotentialEdge=()=>{",
   "locked.style.left=positionOnRail(Math.max(0,Math.min(1,cap/visualMax)));"
  ])assert.ok(js.includes(statement),statement);

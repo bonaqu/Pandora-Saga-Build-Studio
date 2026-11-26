@@ -18,8 +18,9 @@ test('active build is highlighted independently from compare checkboxes',()=>{
 test('profession stage navigation supports revisiting prior and selected future stages',()=>{
  const app=read('pandora-studio-app.js'),css=read('pandora-studio-theme.css');
  assert.match(app,/const stageTargets=\[null,navigationPath\[0\]\?\.key\|\|null,navigationPath\[1\]\?\.key\|\|null\]/);
- assert.match(app,/attrs\.onclick=event=>/);
- assert.match(app,/if\(adminEditing&&adminToken&&event\.target\?\.closest\?\.\('\[data-origin-copy-key\]'\)\)return/);
+ assert.match(app,/attrs\.onclick=\(\)=>\{/);
+ assert.match(app,/if\(available&&adminEditing&&adminToken\)ownerCaptionActionGuard\(step,caption\)/);
+ assert.doesNotMatch(app,/if\(adminEditing&&adminToken&&event\.target\?\.closest\?\.\('\[data-origin-copy-key\]'\)\)return/);
  assert.match(app,/jobPathKey=stageTargets\[i\];renderJobs\(\);saveView\(\)/);
  assert.match(app,/const onChosenRoute=!path\.length\|\|path\.every/);
  assert.match(css,/\.class-wizard-step:is\(button\):focus-visible/);
@@ -31,7 +32,9 @@ test('obvious origin and hero path tabs do not show duplicate hover guides',()=>
  for(const selector of ['[data-origin-tab="race"]','[data-origin-tab="class"]','[data-origin-tab="stats"]','#pathGrowthTab','#pathSkillsTab']){
   assert.ok(app.includes("'"+selector+"'"));
  }
- assert.match(app,/if\(SELF_EXPLANATORY_TABS\.has\(selector\)\)/);
+ assert.match(app,/for\(const selector of SELF_EXPLANATORY_TABS\)/);
+ assert.match(app,/if\(node\.dataset\.guideHint\|\|node\.dataset\.workbenchGuideBound\)/);
+ assert.match(app,/PandoraGuideTooltip\?\.attach\?\.\(node,''\)/);
  assert.match(app,/node\.removeAttribute\('aria-description'\)/);
  assert.match(locale,/Развитие — вложить очки\. Умения — посмотреть доступные умения\./);
 });

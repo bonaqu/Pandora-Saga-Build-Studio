@@ -9,29 +9,6 @@
  display:flex;align-items:center;justify-content:center;gap:4px;
  flex:1 1 auto;min-width:0;width:100%;padding-inline-end:8px
 }
-.stage-attribute-tabs>.stage-book-tab-owner>.stage-book-tab-pencil,
-.path-sections>.path-tab-owner-wrap>.path-tab-pencil{
- position:absolute;z-index:2;top:50%;right:4px;transform:translateY(-50%);
- display:inline-flex;align-items:center;justify-content:center;
- width:20px;min-width:20px;height:22px;min-height:22px;
- margin:0;padding:1px;border:1px solid #957247;border-radius:4px;
- background:#392719;color:#f0cf99;cursor:pointer;
- font:650 11px/1 Manrope,Arial,sans-serif;opacity:.9
-}
-.stage-attribute-tabs>.stage-book-tab-owner>.stage-book-tab-pencil:focus-visible,
-.path-sections>.path-tab-owner-wrap>.path-tab-pencil:focus-visible{
- outline:2px solid #f2c989;outline-offset:1px
-}
-@media(max-width:390px){
- .stage-attribute-tabs>.stage-book-tab-owner>button[role="tab"],
- .path-sections>.path-tab-owner-wrap>button[role="tab"]{
-  padding-inline-end:8px
- }
- .stage-attribute-tabs>.stage-book-tab-owner>.stage-book-tab-pencil,
- .path-sections>.path-tab-owner-wrap>.path-tab-pencil{
-  width:17px;min-width:17px;height:20px;min-height:20px;right:2px
- }
-}
 .stage-copy-caption,.stage-book-tab-copy,.path-tab-copy{
  min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;
  white-space:nowrap
@@ -45,22 +22,6 @@
 .stage-attribute-head .stage-book-heading>strong:has([data-owner-text-field]){
  white-space:normal;overflow:visible;text-overflow:clip
 }
-.stage-copy-pencil,.stage-control-pencil,.stage-book-tab-pencil,
-.path-group-pencil,.path-tab-pencil{
- display:inline-flex;align-items:center;justify-content:center;
- flex:0 0 14px;width:14px;height:15px;
- margin-left:2px;border:1px solid #80613d;border-radius:3px;
- background:#312318b8;color:#cbaa7c;
- font:600 11px/1 Manrope,Arial,sans-serif;
- cursor:pointer;opacity:.72;vertical-align:middle
-}
-.stage-control-pencil:hover,.stage-control-pencil:focus-visible,
-.stage-book-tab-pencil:hover,.stage-book-tab-pencil:focus-visible,
-.path-group-pencil:hover,.path-group-pencil:focus-visible,
-.path-tab-pencil:hover,.path-tab-pencil:focus-visible{
- opacity:1;background:#513720;color:#ffe3b0;border-color:#efc181;
- outline-offset:1px
-}
 .stage-rich-body .origin-copy-editable,
 .stage-book-tab-copy,.path-tab-copy{
  cursor:text
@@ -68,48 +29,31 @@
 .stage-rich-body dt.origin-copy-editable{
  text-decoration:underline dotted #987b50;text-underline-offset:3px
 }
-/* Captions inside game buttons use an adjacent independent pencil. Keep the
-   original game action intact while preventing duplicate pseudo-actions. */
+/* Direct-editable captions keep native actions without duplicate pencils. */
 .stage-copy-caption.origin-copy-editable::after{content:none}
 .stage-action-edit-wrap{position:relative;display:flex;align-items:stretch;min-width:0}
-.stage-action-edit-wrap>button:not(.stage-control-pencil){flex:1 1 auto;width:100%;min-width:0;
- padding-inline-end:23px!important}
+.stage-action-edit-wrap>button{flex:1 1 auto;width:100%;min-width:0;
+ padding-inline-end:8px!important}
 .stage-rich-tabs>.stage-action-edit-wrap{width:100%;min-width:0}
-.stage-rich-tabs .stage-action-edit-wrap>button:not(.stage-control-pencil){
+.stage-rich-tabs .stage-action-edit-wrap>button{
  display:flex;align-items:center;justify-content:center;gap:3px}
 .stage-rich-body .stage-enchant-options.is-type-options>.stage-action-edit-wrap,
 .stage-rich-body .stage-enchant-options.is-element-options>.stage-action-edit-wrap{
  display:flex;align-items:stretch;min-width:0;position:relative}
-.stage-rich-body .stage-enchant-options.is-type-options>.stage-action-edit-wrap>button:not(.stage-control-pencil),
-.stage-rich-body .stage-enchant-options.is-element-options>.stage-action-edit-wrap>button:not(.stage-control-pencil){
+.stage-rich-body .stage-enchant-options.is-type-options>.stage-action-edit-wrap>button,
+.stage-rich-body .stage-enchant-options.is-element-options>.stage-action-edit-wrap>button{
  flex:1 1 auto;min-width:0;width:100%;box-sizing:border-box}
-.stage-rich-tabs .stage-action-edit-wrap>.stage-control-pencil,
-.stage-rich-body .stage-enchant-options .stage-action-edit-wrap>.stage-control-pencil,
-.stage-rich-body .stage-action-edit-wrap>.stage-control-pencil{
- position:absolute;z-index:2;right:3px;top:50%;transform:translateY(-50%);
- display:inline-flex;align-items:center;justify-content:center;
- width:18px;min-width:18px;min-height:20px;height:20px;padding:1px;
- margin:0;border:1px solid #957247;border-radius:3px;background:#382618;
- color:#e8c692;font:650 11px/1 Manrope,Arial,sans-serif;
- cursor:pointer;opacity:.9;box-shadow:none}
-.stage-rich-tabs .stage-action-edit-wrap>.stage-control-pencil:focus-visible,
-.stage-rich-body .stage-action-edit-wrap>.stage-control-pencil:focus-visible{
- outline:2px solid #f2c989;outline-offset:1px}
 .stage-rich-body .stage-enchant-options.is-element-options>.stage-action-edit-wrap:nth-child(7){
  grid-column:span 2}
-.stage-rich-body .stage-enchant-options.is-type-options>.stage-action-edit-wrap:first-child>button:not(.stage-control-pencil){
+.stage-rich-body .stage-enchant-options.is-type-options>.stage-action-edit-wrap:first-child>button{
  border-radius:4px 0 0 4px}
-.stage-rich-body .stage-enchant-options.is-type-options>.stage-action-edit-wrap:last-child>button:not(.stage-control-pencil){
+.stage-rich-body .stage-enchant-options.is-type-options>.stage-action-edit-wrap:last-child>button{
  border-radius:0 4px 4px 0}
 .stage-rich-body .stage-action-edit-wrap:has(>.stage-enchant-reset){
  align-self:flex-start;width:max-content;max-width:100%}
 .stage-rich-result-edit-wrap{position:relative;display:flex;align-items:stretch;min-width:0}
 .stage-rich-result-edit-wrap>.stage-rich-result{flex:1 1 auto;min-width:0;
- padding-inline-end:28px}
-.stage-rich-result-edit-wrap>.stage-control-pencil{position:absolute;right:7px;top:50%;
- transform:translateY(-50%);width:22px;height:24px;flex:none;margin:0}
-.stage-rich-result-edit-wrap>.stage-control-pencil:focus-visible{
- outline:2px solid #f2c989;outline-offset:2px}
+ padding-inline-end:8px}
 .stage-copy-caption.origin-copy-editable{text-decoration:none}
 .stage-rich-body .origin-copy-editable:focus-visible,
 .path-skill-metadata .origin-copy-editable:focus-visible,
@@ -121,13 +65,6 @@
 /* Owner-only help editors are one compact independent touch/keyboard button. */
 .path-owner-edit-row{display:flex;align-items:flex-start;gap:6px;min-width:0}
 .path-owner-edit-row>.path-owner-copy-text{flex:1 1 auto;min-width:0;overflow-wrap:anywhere}
-.path-owner-edit-row>.path-owner-pencil{flex:none;display:inline-flex;
- align-items:center;justify-content:center;width:24px;min-width:24px;
- height:24px;min-height:24px;padding:0;border:1px solid #987448;
- border-radius:4px;background:#3b2a1c;color:#efd1a0;
- font:650 11px/1 Manrope,Arial,sans-serif;cursor:pointer}
-.path-owner-edit-row>.path-owner-pencil:hover{background:#5b3c25;border-color:#dfb87c}
-.path-owner-edit-row>.path-owner-pencil:focus-visible{outline:2px solid #f4cc86;outline-offset:2px}
 .path-skill-metadata dt.path-owner-edit-row{align-items:center}
 .path-skill-prereqs>.path-owner-edit-row{margin-block:4px}
 /* The disclosure remains one continuous hit area. The admin editor is
@@ -136,31 +73,15 @@
  background:linear-gradient(#352519,#17120f)}
 .game-tree-head-row>.game-tree-head{flex:1 1 auto;width:auto;min-width:0;
  overflow:hidden;text-align:left}
-.game-tree-head-row>.path-group-pencil{flex:0 0 27px;width:27px;height:27px;
- align-self:center;margin:0 7px 0 2px;opacity:.9;
- border-color:#a27d50;background:#412b1b}
 .game-tree-head-row:has(>.game-tree-head.active){background:linear-gradient(#6d2c20,#2d1715)}
 .game-tree-head-row>.game-tree-head:focus-visible{outline:2px solid #edc38a;
  outline-offset:-2px}
-@media(max-width:700px){
- .game-tree-head-row>.path-group-pencil{flex-basis:30px;width:30px;height:30px}
-}
 .path-sections button .path-tab-copy{flex:0 1 auto}
 .stage-rich-body .wiki-inline-input,
 .stage-attribute-tabs .wiki-inline-input,
 .path-sections .wiki-inline-input{
  width:min(240px,100%);max-width:100%;font-size:11px
 }
-@media(max-width:390px){
- .stage-rich-tabs .stage-action-edit-wrap>.stage-control-pencil,
- .stage-enchant-options .stage-action-edit-wrap>.stage-control-pencil{
-  width:16px;min-width:16px;height:18px;min-height:18px;font-size:10px;right:1px
- }
- .stage-action-edit-wrap>button:not(.stage-control-pencil){
-  padding-inline-end:18px!important
- }
-}
-
 .stage-rich-result-edit-wrap>.stage-rich-result{
  display:flex;align-items:center;gap:7px
 }
@@ -168,7 +89,6 @@
  min-width:0;flex:1;text-align:left;
  overflow:hidden;text-overflow:ellipsis;white-space:nowrap
 }
-.stage-rich-result-edit-wrap>.stage-control-pencil{margin-left:0;flex-shrink:0}
 .stage-soul-search-caption{
  display:block;margin:5px 2px 0;
  color:#cdb084;font:600 10px/1.25 Manrope,Arial,sans-serif
@@ -177,15 +97,6 @@
 
 /* D1-backed interface labels: no modal dialogs or intrusive editor panels. */
 .ui-content-editable:not(button){cursor:text;text-decoration:underline dotted #8c7049;text-underline-offset:3px}
-.ui-content-pencil{
- display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;
- flex:0 0 auto;min-width:19px;width:19px;height:19px;padding:0;margin:0 3px;
- border:1px solid #82643d;border-radius:3px;background:#302219;color:#e8c38a;
- font-size:11px;line-height:1;cursor:pointer
-}
-.ui-content-pencil:hover,.ui-content-pencil:focus-visible{
- background:#624226;border-color:#efc68a;outline-offset:2px
-}
 /* A long editorial value must grow downward instead of disappearing into
    a 280px clipped single-line box. This changes editor mode only. */
 .ui-content-edit-host{display:inline-flex;flex:1 1 230px;
@@ -204,7 +115,7 @@
  height:auto;max-height:none;white-space:pre-wrap;
  overflow-wrap:anywhere;word-break:break-word;overflow:visible
 }
-.ui-content-pencil[hidden],.ui-content-edit-host[hidden]{display:none!important}
+.ui-content-edit-host[hidden]{display:none!important}
 
 
 /* Account descriptions and buttons are editable on their existing panel.
@@ -350,53 +261,25 @@
  .stage-guide-edit-name,.stage-guide-edit-hint{transition:none}
 }
 
-/* A real pencil is more discoverable than a dotted underline on the
-   Hero Path legend and auto mastery label, while remaining unobtrusive. */
-.path-inline-copy-pencil{
- display:inline-flex;align-items:center;justify-content:center;
- flex:0 0 17px;min-width:17px;width:17px;height:18px;
- padding:0;margin:0 2px;border:1px solid #8b6b44;border-radius:3px;
- background:#302117;color:#e4bd87;font:600 10px/1 Manrope,Arial,sans-serif;
- vertical-align:middle;cursor:pointer
+/* Direct-edit profile labels share the same mounted element as their input.
+   No pencil or obsolete wrapper column; allow wide RU/EN drafts on mobile. */
+.ps-profile-row>.ps-profile-copy,
+.ps-overview-card .ps-profile-copy,
+.ps-profile-placeholder-editor>.ps-profile-copy{
+ display:inline-block;min-width:0;max-width:100%;overflow-wrap:anywhere
 }
-.path-inline-copy-pencil:hover,.path-inline-copy-pencil:focus-visible{
- background:#52371f;border-color:#e9be7f;outline-offset:2px
-}
-.path-inline-copy-pencil[hidden]{display:none!important}
-
-/* Profile/character editorial labels: one compact pencil beside the caption,
-   never inside the real name/bio input; player text stays undisturbed. */
-.ps-profile-copy-host{
- display:inline-flex;align-items:center;justify-content:flex-start;
- min-width:0;max-width:100%;gap:5px;flex-wrap:wrap
-}
-.ps-profile-copy-host>.ps-profile-copy{min-width:0;overflow-wrap:anywhere}
-.ps-profile-copy-pencil{
- display:inline-grid;place-items:center;flex:0 0 19px;
- min-width:19px;width:19px;height:19px;box-sizing:border-box;
- margin:0;padding:0;border:1px solid #8d6e45;border-radius:4px;
- background:#2f2118;color:#e6c18b;font:600 11px/1 Manrope,Arial,sans-serif;
- cursor:pointer
-}
-.ps-profile-copy-pencil:hover,.ps-profile-copy-pencil:focus-visible{
- border-color:#f2c683;background:#543a23;color:#ffe6b6;outline-offset:2px
-}
-.ps-profile-row>.ps-profile-copy-host{
- display:inline-flex;align-self:center;min-width:0
-}
-.ps-overview-card .ps-profile-copy-host{display:inline-flex;flex-wrap:wrap}
 .ps-profile-placeholder-editor{
  display:flex;align-items:center;min-width:0;
  padding:2px 0 4px;margin-left:0;color:#bca27e;
  font:500 10px/1.4 Manrope,Arial,sans-serif
 }
-.ps-profile-copy-host .wiki-inline-input{
+.ps-profile-copy>.wiki-inline-input{
  display:block;width:min(100%,230px);min-width:0;max-width:100%;
  box-sizing:border-box;font:500 12px/1.35 Manrope,Arial,sans-serif
 }
 @media(max-width:700px){
- .ps-profile-row>.ps-profile-copy-host{width:100%}
- .ps-profile-copy-host .wiki-inline-input{width:100%}
+ .ps-profile-row>.ps-profile-copy{width:100%}
+ .ps-profile-copy>.wiki-inline-input{width:100%}
 }
 
 /* Toast editorial forms should stay inside the live notice and never
@@ -520,22 +403,16 @@
  .owner-dialog-editor{gap:4px}
 }
 
-/* Racial branch stays disabled; the site-copy pencil is a separate control. */
-.path-racial-owner-row{display:grid;grid-template-columns:minmax(0,1fr) 27px;align-items:stretch;gap:3px;min-width:0}
+/* Racial branch text overlays its disabled button, without the retired
+   extra 27px pencil track or truncated editable caption. */
+.path-racial-owner-row{display:grid;grid-template-columns:minmax(0,1fr);align-items:stretch;min-width:0}
 .path-racial-owner-row>.path-racial-unavailable{grid-column:1;grid-row:1;min-width:0;margin:0}
-.path-racial-owner-row>.path-racial-owner-caption{grid-column:1;grid-row:1;z-index:1;align-self:center;margin-inline:12px 28px;min-width:0;overflow-wrap:anywhere}
+.path-racial-owner-row>.path-racial-owner-caption{grid-column:1;grid-row:1;z-index:1;align-self:center;margin-inline:12px;min-width:0;overflow-wrap:anywhere}
 .path-racial-owner-row>.path-racial-owner-caption .wiki-inline-input{max-width:100%;min-width:0}
-.path-racial-owner-row>.path-racial-pencil{grid-column:2;grid-row:1}
-.path-racial-owner-row>.path-racial-pencil{flex:0 0 27px;align-self:center;width:27px;height:27px;border:1px solid #89643b;border-radius:4px;background:#302017;color:#e5c28b;cursor:pointer}
-.path-racial-owner-row>.path-racial-pencil:hover{background:#513520;border-color:#dcb477}
-.path-racial-owner-row>.path-racial-pencil:focus-visible{outline:2px solid #ecc88c;outline-offset:2px}
 
 /* The dynamic skill-count suffix stays outside the editable Show-more caption. */
 .path-more-owner-row{display:flex;align-items:stretch;gap:4px;min-width:0}
 .path-more-owner-row>.path-show-more{flex:1 1 auto;width:auto;min-width:0}
-.path-more-owner-row>.path-more-pencil{flex:0 0 28px;align-self:stretch;border:1px solid #85643d;border-radius:4px;background:#302017;color:#e5c28b;cursor:pointer}
-.path-more-owner-row>.path-more-pencil:hover{background:#513520;border-color:#dcb477}
-.path-more-owner-row>.path-more-pencil:focus-visible{outline:2px solid #ecc88c;outline-offset:2px}
 .path-more-owner-row .path-more-copy{overflow-wrap:anywhere}
 
 /* Hero Path prerequisite text: edit only the caption, not the linked skill. */
@@ -616,7 +493,6 @@
 .studio-owner-interface-name{color:#d4b389;overflow-wrap:anywhere}
 .studio-owner-interface-value{min-width:0;white-space:normal;overflow-wrap:anywhere;
  color:#efdac0}
-.studio-owner-interface-pencil{margin:0;justify-self:end}
 /* Editable Wiki options live only in this compact owner-only accordion.
    Long filter groups scroll locally without stretching the whole encyclopedia. */
 .wiki-filter-labels-editor .studio-owner-interface-fields{
@@ -852,13 +728,6 @@
 .stage-picker-head .stage-picker-slot-prefix{
  display:inline;white-space:pre-wrap
 }
-.stage-picker-head .stage-picker-slot-pencil{
- flex:0 0 auto;width:24px;min-width:24px;height:24px;min-height:24px;
- padding:2px 3px;border-radius:4px;font:650 12px/1 Manrope,Arial,sans-serif
-}
-.stage-picker-head .stage-picker-slot-pencil:focus-visible{
- outline:2px solid #f2c989;outline-offset:1px
-}
 .stage-picker-head .stage-picker-slot-prefix:has([data-owner-text-field]){
  white-space:pre-wrap;overflow:visible
 }
@@ -870,10 +739,6 @@
  align-items:baseline;vertical-align:baseline;min-width:0;gap:3px}
 .path-skill-count>.path-owner-edit-row>.path-owner-copy-text,
 .path-skill-version-note>.path-owner-edit-row>.path-owner-copy-text{flex:none;white-space:pre-wrap}
-.path-skill-count>.path-owner-edit-row>.path-owner-pencil,
-.path-skill-version-note>.path-owner-edit-row>.path-owner-pencil{
- width:18px;min-width:18px;height:18px;min-height:18px}
-
 /* 0.946: owner captions are the editing surface. No empty pencil track. */
 .path-sections>.path-tab-owner-wrap>button[role="tab"]{padding-inline-end:8px!important}
 .stage-attribute-tabs>button[role="tab"]{min-width:0}

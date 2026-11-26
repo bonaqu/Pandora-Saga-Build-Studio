@@ -63,14 +63,20 @@ test('owner edits just one fixed prefix; source-backed slot cannot be saved',()=
  assert.equal(host.PandoraHonorGuide.validOverride(
   'book.equipment.picker-slot-heading',JSON.stringify({ru:'Ячейка',en:'Socket position'})),true);
 });
-test('app passes localized game slot independently and refreshes owner pencil after Undo',()=>{
+test('app keeps localized game slot independent and refreshes owner caption after Undo',()=>{
  const app=read('pandora-studio-app.js');
  const equip=read('pandora-studio-equipment-ui.js');
  assert.match(app,/slotName:gearSlotName\(selectedSlot\)/);
  assert.match(equip,/const currentSlotName=api\.slotName\|\|/);
  assert.match(equip,/const titlePrefix=editable\(el\('span'/);
  assert.match(equip,/'pickerSlotHeading','Слот','Slot'\)/);
- assert.match(app,/section==='equipment'&&id==='pickerSlotHeading'/);
+ // Undo matches the same stable key via the generic mounted owner field
+ // and leaves the dynamic game slot suffix in the equipment component.
+ assert.match(app,/if\(ownerCopyKey\(section,id\)!==key/);
+ assert.match(app,/ownerDockPatchText\(node,value\)/);
+ assert.match(app,/if\(attr==='text'\)/);
+ assert.match(app,/ownerDockPatchAttr\(node,attr,value\)/);
+ assert.doesNotMatch(app,/stage-picker-slot-pencil/);
  assert.doesNotMatch(equip,/stage-picker-slot-pencil/);
  assert.doesNotMatch(equip,/data-edit-key=['"]slotName/);
 });

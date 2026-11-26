@@ -26,11 +26,135 @@
       hits.some(row=>row.kind==='verified')?'verified':'sourceOnly';
   }
 
+  // One pending owner click for the entire catalog dialog. A new action,
+  // another caption editor, or an unrelated pointer gesture cancels it.
+  // The queue owns no remote operation and never outlives its DOM target.
+  function createReviewActionQueue(schedule=setTimeout,unschedule=clearTimeout){
+    let pending=null;
+    const cancel=()=>{
+      if(!pending)return;
+      unschedule(pending.timer);
+      pending=null;
+    };
+    const cancelOutside=target=>{
+      if(pending&&!pending.target.contains(target))cancel();
+    };
+    const defer=(target,run)=>{
+      if(pending){
+        const same=pending.target===target;
+        cancel();
+        if(same)return;
+      }
+      const task={target,timer:null};
+      pending=task;
+      task.timer=schedule(()=>{
+        if(pending!==task)return;
+        pending=null;
+        if(target.isConnected&&!target.hidden&&!target.disabled)run();
+      },500);
+    };
+    return {cancel,cancelOutside,defer};
+  }
+
+  // Fixed editorial captions only. Never seed values, probabilities, source
+  // errors, game mechanics, risk approvals or any publish action as D1 copy.
+  // The versioned staging planner extracts this same closed source registry.
+  const catalogReviewDetailCopyRows=Object.freeze([
+    ['decisionHeading','Перед применением','Before publishing'],
+    ['formulaTitle','Как обновление повлияет на персонажа','How this update affects a character'],
+    ['changedParametersLead','Изменено параметров:','Changed parameters:'],
+    ['impactHeading','Как изменится расчётный шанс выпадения','How estimated drop chances change'],
+    ['moreImpactsLead','Ещё','And'],
+    ['moreImpactsSuffix','изменений — открой подробности ниже.','more changes — see details below.'],
+    ['heroNoChange','У текущего героя выбранные изменения не меняют перечисленные расчётные показатели.',
+      'The selected changes do not alter these modeled values for the current hero.'],
+    ['heroMoreChangesLead','Ещё изменений:','More changes:'],
+    ['heroSelectHelp','Выбери расу и профессию на главном экране, чтобы увидеть изменения именно своего героя.',
+      'Choose a race and class on the main screen to compare your own hero.'],
+    ['linkedReferenceContext','Связанный предмет · игровая ссылка в описании',
+      'Linked item · in-game description reference'],
+    ['linkedReferenceOpen','Открыть в энциклопедии (новая вкладка)',
+      'Open encyclopedia (new tab)'],
+    ['hintLinkedReference',
+      'Ссылка на связанный игровой предмет. Нажми, чтобы посмотреть его описание и открыть карточку энциклопедии.',
+      'Linked game item. Click to preview its description and open the encyclopedia entry.'],
+    ['unpublishedReference','Предмет пока не опубликован в энциклопедии.',
+      'This item has not yet been published in the encyclopedia.'],
+    ['emptyReviewFilter','По этому фильтру изменений нет. Измени запрос или выбери «Все».',
+      'No changes match this filter. Change the search or select “All”.'],
+    ['githubPrepared','Проверенный каталог подготовлен.','Verified catalog prepared.'],
+    ['searchClear','Очистить','Clear']
+  ]);
+  const catalogReviewDetailByKey=new Map(catalogReviewDetailCopyRows.map(row=>[row[0],row]));
+  // Source-only accessible action words. The linked item or review title,
+  // live checkbox state, caution and target URL must NEVER become D1 copy.
+  // The standard owner interface editor handles dblclick/F2/CAS/Undo.
+  const catalogAccessibleCopyRows=Object.freeze([
+    ['linkedPreviewAria','Показать связанный предмет:','Show linked item:',
+      'Предпросмотр предмета','Linked item preview'],
+    ['linkedOpenAria','Открыть связанный предмет:','Open linked item:',
+      'Открытие предмета','Open linked item'],
+    ['reviewSelectAria','Выбрать изменение','Select change',
+      'Выбор изменения','Select reviewed change'],
+    ['clearSearchAriaDescription','Очистить поиск по игровым изменениям',
+      'Clear game changes search','Очистка поиска','Clear search']
+  ]);
+  const catalogAccessibleByKey=new Map(catalogAccessibleCopyRows.map(row=>[row[0],row]));
+  // These are literal display captions of native <summary> controls.
+  // A visible caption belongs to D1/CAS, while any attached hover hint has
+  // its own key/pencil and the native disclosure stays fully functional.
+  const catalogDisclosureCopyRows=Object.freeze([
+    ['archiveSummary','Если сайт игры не отдаёт данные','When the game site is unavailable'],
+    ['advancedSummary','Дополнительные инструменты','Additional tools'],
+    ['russianPreviewSummary','Посмотреть русские тексты','Preview Russian texts'],
+    ['diagnosticsSummary','Технические сведения об ошибке','Technical error details'],
+    ['fieldDetailsSummary','Посмотреть подробно','View details'],
+    ['rawDetailsSummary','Технические сведения (для разработчика)','Technical details (developers)']
+  ]);
+  const catalogDisclosureByKey=new Map(catalogDisclosureCopyRows.map(row=>[row[0],row]));
+  // The same three authorial action names recur in every dataset panel.
+  // Filtered counts and selection state are NOT source-authored D1 values.
+  const catalogGroupActionCopyRows=Object.freeze([
+    ['groupTake','Выбрать понятные изменения раздела','Select understood changes in section'],
+    ['groupReject','Снять выбор раздела','Clear section selection'],
+    ['groupMatching','Выбрать найденное','Select matching'],
+    ['groupMore','Показать остальные изменения','Show remaining changes']
+  ]);
+  const catalogGroupActionByKey=new Map(catalogGroupActionCopyRows.map(row=>[row[0],row]));
+  // Dynamic review summaries have independently authored words AND immutable
+  // runtime counts. This inventory is strictly authorial: no game records,
+  // IDs, numbers, error diagnostics or publication approvals.
+  const catalogReviewStatusCopyRows=Object.freeze([
+    ['affectedSections','Затронутые разделы:','Affected sections:'],
+    ['selectionTotal','Всего выбрано:','Selected:'],
+    ['selectionRemaining','Осталось:','Remaining:'],
+    ['selectionNeedsReview','Требуют проверки:','Need review:'],
+    ['selectionSettings','Настроек игры найдено:','Game settings found:'],
+    ['lineBreaksIncluded','Переносы строк включены','Source line breaks included'],
+    ['foundChanges','Найдено изменений:','Changes found:'],
+    ['summaryTechnical','Служебных:','Technical:'],
+    ['summarySelected','Выбрано:','Selected:'],
+    ['summaryUnselected','Не выбрано:','Not selected:'],
+    ['summaryNeedsReview','Нужна проверка:','Needs review:'],
+    ['noChanges','Различий в игровых данных нет','No differences in game data'],
+    ['groupSelectedSuffix','выбрано','selected']
+  ]);
+  const catalogReviewStatusByKey=new Map(catalogReviewStatusCopyRows.map(row=>[row[0],row]));
+
   // Administrator-only review. UI selection is never a D1 write.
   // The Worker validates the auth token and the expected active snapshot.
   async function open({request, apiBase, modal, h, afterPublish, getHero=()=>null,
-    lang='ru',canEdit=false,copyLabel,editLabel,canCommit=()=>true}) {
+    lang='ru',canEdit=false,copyLabel,editLabel:bindEditor,
+    bindCopy:bindAccessibleCopy,createCopyEditor,canCommit=()=>true}) {
     const tr=(ru,en)=>lang==='en'?en:ru;
+    const actionQueue=createReviewActionQueue();
+    const cancelPending=()=>actionQueue.cancel();
+    // Every editor, including a separate hover hint, cancels any queued UI
+    // action before creating its editable control. Preserve its callbacks.
+    const editLabel=typeof bindEditor==='function'?(node,key,ru,en,callbacks={})=>
+      bindEditor(node,key,ru,en,{...callbacks,onStarted:()=>{
+        cancelPending();callbacks.onStarted?.();
+      }}):null;
     // Reports only confirmed source identity and availability. A source
     // preview is NOT a verified combat result on the live game server.
     const replaySourceLabel=module=>{
@@ -53,6 +177,35 @@
        tr('Игровая связь по каталогу','Catalog source relationship');
     };
     const copy=(key,ru,en)=>copyLabel?.(key,ru,en)||tr(ru,en);
+    // Reuse the application's exact semantic binding for Save and Undo.
+    // Attribute-only copy does not make the source button itself editable.
+    const accessible=(node,key,attribute='aria-label',suffix='',prefix='')=>{
+      const row=catalogAccessibleByKey.get(key);
+      if(!row)throw Error('Unreviewed catalog accessible copy: '+key);
+      if(typeof bindAccessibleCopy==='function')
+        bindAccessibleCopy(node,key,row[1],row[2],attribute,suffix,prefix);
+      else node.setAttribute(attribute,prefix+copy(key,row[1],row[2])+suffix);
+      return node;
+    };
+    // Direct caption dblclick/F2/blur uses the existing D1 CAS and Undo.
+    // An ordinary guest only sees text; dynamic numeric values live in
+    // independent siblings rather than inside a D1-edited string.
+    const reviewCaption=(tag,attrs,key)=>{
+      const row=catalogReviewDetailByKey.get(key);
+      if(!row)throw Error('Unreviewed catalog caption: '+key);
+      const node=h(tag,{...attrs,text:copy(key,row[1],row[2])});
+      if(canEdit&&typeof editLabel==='function')
+        editLabel(node,key,row[1],row[2]);
+      return node;
+    };
+    const statusCaption=key=>{
+      const row=catalogReviewStatusByKey.get(key);
+      if(!row)throw Error('Unreviewed catalog status copy: '+key);
+      const node=h('span',{class:'os-sync-status-copy',text:copy(key,row[1],row[2])});
+      if(canEdit&&typeof editLabel==='function')
+        editLabel(node,key,row[1],row[2]);
+      return node;
+    };
     const permitMutation=()=>typeof canCommit!=='function'||canCommit();
     // Only fixed author text is editable. The caption itself is the target:
     // a separate ✎ is reserved for independently authored hover tooltips.
@@ -62,6 +215,46 @@
       editLabel(node,key,ru,en);
       return h('div',{class:'os-sync-copy-field'},[node]);
     };
+    // Native <details>/<summary> must still toggle on a real single click.
+    // Owner double-click on ONLY the authored wording opens the D1 editor;
+    // its first click cannot accidentally collapse a panel or hide a draft.
+    const disclosureCaption=(key,{count=null}={})=>{
+      const row=catalogDisclosureByKey.get(key);
+      if(!row)throw Error('Unreviewed catalog disclosure: '+key);
+      const caption=h('span',{class:'os-sync-disclosure-caption',
+        text:copy(key,row[1],row[2])});
+      const summary=h('summary',{},[caption]);
+      if(count!==null)summary.append(h('span',{
+        class:'os-sync-disclosure-runtime-count',text:' · '+String(count)}));
+      bindDisclosureCaption(summary,caption,key,row);
+      return summary;
+    };
+    // Shared native disclosure guard for both simple headings and the
+    // independently editable suffix of a per-dataset selection count.
+    const bindDisclosureCaption=(summary,caption,key,row)=>{
+      if(!canEdit||typeof editLabel!=='function')return;
+      editLabel(caption,key,row[1],row[2],{onStarted:cancelPending});
+      summary.addEventListener('click',event=>{
+        if(event.target.closest?.('.wiki-inline-input,[data-owner-text-field],[contenteditable]'))
+          return;
+        // Non-pointer (keyboard) activation and clicks on the native arrow
+        // are kept immediate. Only the literal label needs disambiguation.
+        if(!event.detail||!caption.contains(event.target)){cancelPending();return}
+        event.preventDefault();event.stopPropagation();
+        actionQueue.defer(summary,()=>{
+          const details=summary.parentElement;
+          if(details?.tagName==='DETAILS')details.open=!details.open;
+        });
+      });
+      summary.addEventListener('keydown',event=>{
+        if(event.target===summary&&event.key==='F2'){
+          event.preventDefault();event.stopPropagation();
+          caption.dispatchEvent(new KeyboardEvent('keydown',{
+            key:'F2',bubbles:true,cancelable:true
+          }));
+        }
+      });
+    };
     // In player mode the caption stays inside a native label. In owner mode,
     // the same text is independent of a disabled checkbox, otherwise browsers
     // regard the nested editable text as disabled and block double-click.
@@ -69,27 +262,28 @@
     // both toggles from a genuine owner double-click on its written caption.
     const choiceEditor=(caption,key,ru,en)=>{
       if(!canEdit||typeof editLabel!=='function')return null;
-      editLabel(caption,key,ru,en);
+      editLabel(caption,key,ru,en,{onStarted:cancelPending});
       caption.tabIndex=0;
       caption.setAttribute('aria-keyshortcuts','F2');
-      let pending=null;
       caption.addEventListener('click',event=>{
         if(!event.detail||event.target.closest?.('.wiki-inline-input,[data-owner-text-field]'))return;
         event.preventDefault();event.stopPropagation();
-        if(pending){clearTimeout(pending);pending=null;return}
-        pending=setTimeout(()=>{
-          pending=null;
+        actionQueue.defer(caption,()=>{
           const box=caption.closest('.os-sync-formatting-option')?.querySelector('input[type="checkbox"]');
-          if(caption.isConnected&&box&&!box.disabled)box.click();
-        },500);
+          if(box&&!box.disabled)box.click();
+        });
       },true);
       return null; // no caption pencil
     };
     // An action's visible caption is editable even when the action is
     // disabled. The wrapper provides an F2 target in that case; ordinary
     // single clicks still execute the action after dblclick disambiguation.
-    const action=(button,key,ru,en)=>{
+    const action=(button,key,ru,en,{count=null}={})=>{
+      // The count is a separate DOM child: a D1 CAS edit updates only words.
+      const number=count===null?null:h('span',{
+        class:'os-sync-action-runtime-number',text:' · '+String(count)});
       button.textContent=copy(key,ru,en);
+      if(number)button.append(number);
       if(!canEdit||typeof editLabel!=='function')return button;
       const wrap=h('span',{class:'os-sync-action-editor',
         'aria-keyshortcuts':'F2'});
@@ -97,7 +291,10 @@
       if(button.disabled)wrap.tabIndex=0;
       button.id||='os-sync-copy-'+key;
       editLabel(host,key,ru,en,{
-        onCommitted:next=>{button.textContent=next},
+        onCommitted:next=>{
+          if(number&&button.firstChild?.nodeType===3)button.firstChild.nodeValue=next;
+          else button.textContent=next;
+        },
         onFinished:()=>{button.hidden=false;host.hidden=true}
       });
       for(const [keyName,value] of Object.entries({
@@ -105,23 +302,20 @@
         ownerCopyRu:ru,ownerCopyEn:en}))button.dataset[keyName]=value;
       const startEdit=event=>{
         if(!button.isConnected||!host.hidden||wrap.classList.contains('editing-hint'))return;
+        cancelPending();
         event?.preventDefault?.();event?.stopPropagation?.();
         button.hidden=true;host.hidden=false;
         host.textContent=copy(key,ru,en);
         host.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
       };
-      let pending=null;
       button.addEventListener('click',event=>{
-        if(!event.detail||event.target.closest?.('.wiki-inline-input,[data-owner-text-field]'))return;
+        if(!event.detail||number?.contains(event.target)){cancelPending();return}
+        if(event.target.closest?.('.wiki-inline-input,[data-owner-text-field]'))return;
         event.preventDefault();event.stopImmediatePropagation();
-        if(pending){clearTimeout(pending);pending=null;return}
-        pending=setTimeout(()=>{
-          pending=null;
-          if(button.isConnected&&!button.hidden&&!button.disabled)button.click();
-        },500);
+        actionQueue.defer(button,()=>button.click());
       },true);
       wrap.addEventListener('dblclick',event=>{
-        if(event.target.closest?.('.os-sync-hint-pencil,.os-sync-hint-edit-host,.os-sync-secondary-pencil,.wiki-inline-input,[data-owner-text-field]'))return;
+        if(event.target.closest?.('.os-sync-hint-pencil,.os-sync-hint-edit-host,.os-sync-secondary-pencil,.os-sync-action-runtime-number,.wiki-inline-input,[data-owner-text-field]'))return;
         startEdit(event);
       });
       wrap.addEventListener('keydown',event=>{
@@ -131,6 +325,16 @@
       });
       wrap.append(button,host);
       return wrap;
+    };
+    const groupAction=(button,key,dataset,options)=>{
+      const row=catalogGroupActionByKey.get(key);
+      if(!row)throw Error('Unreviewed catalog group action: '+key);
+      // A group action is rendered once PER dataset. Do not reuse the same
+      // document id for all sections; the editorial D1 key stays shared.
+      if(typeof dataset!=='string'||!dataset||/\s/.test(dataset))
+        throw Error('Invalid catalog group identity');
+      button.id='os-sync-copy-'+key+'-'+dataset;
+      return action(button,key,row[1],row[2],options);
     };
     // Reuse the game's hover/focus helper. All hints remain plain text;
     // owner-authored copy updates the existing tooltip, never HTML.
@@ -203,6 +407,8 @@
       throw Error('Catalog review modules are missing');
 
     const view = h('div', {class:'os-sync'});
+    if(canEdit)view.addEventListener('pointerdown',event=>
+      actionQueue.cancelOutside(event.target),true);
     const intro = h('div',{class:'os-sync-intro'},[
       authored('strong',{},'title','Обновление игрового каталога','Game catalog updates'),
       authored('p',{},'introExplanation',
@@ -215,7 +421,7 @@
     const archive = h('button', {type:'button',class:'button-action',
       text:'Сверить с сохранённой копией'});
     const archiveChoice=h('details',{class:'os-sync-archive-choice'},[
-      h('summary',{text:copy('archiveSummary','Если сайт игры не отдаёт данные','When the game site is unavailable')}),
+      disclosureCaption('archiveSummary'),
       authored('p',{},'archiveExplanation',
        'Архивная сверка берёт файлы из репозитория Build Studio, а не текущие данные игры. Она не проверяет свежесть игрового сервера: архив может быть старее. Не применяй изменения без отдельной проверки.',
        'Archive comparison uses a saved project snapshot, not current game data. It may be older: do not publish archived changes without verifying them.'),
@@ -260,8 +466,7 @@
      'Начни с проверки текущей игры. Если данные недоступны, используй сохранённую копию.',
      'Check the current game first. If it is unavailable, use the saved snapshot.');
     const diagnostic=h('details',{class:'os-sync-diagnostics'},[
-      h('summary',{text:copy('diagnosticsSummary',
-       'Технические сведения об ошибке','Technical error details')})
+      disclosureCaption('diagnosticsSummary')
     ]);
     diagnostic.hidden=true;
     const diagnosticText=h('p',{class:'muted'});
@@ -270,14 +475,53 @@
     // The main comparison summary is the sole live status region; avoid
     // shadowing it in the accessibility tree and established review flows.
     const selectionGuidance=h('p',{class:'os-sync-selection-guidance'});
+    // Mount the label nodes ONCE. A redraw of selected counts can update only
+    // numeric siblings; it must never blur, overwrite or unmount an active
+    // direct inline editor. Each prefix has a separate D1/CAS identity.
+    const countPart=(key,separator='')=>{
+      const wrap=h('span',{class:'os-sync-count-piece'});
+      if(separator)wrap.append(h('span',{text:separator}));
+      const value=h('span',{class:'os-sync-runtime-count',text:' 0'});
+      wrap.append(statusCaption(key),value);
+      return {wrap,value};
+    };
+    const setCountPart=(part,count,show=true)=>{
+      part.wrap.hidden=!show;
+      const value=' '+String(count);
+      if(part.value.textContent!==value)part.value.textContent=value;
+    };
+    const overviewCaption=statusCaption('affectedSections');
+    const overviewValues=h('span',{class:'os-sync-runtime-data'});
+    overview.append(overviewCaption,overviewValues);
+    const selectionParts={
+      total:countPart('selectionTotal'),
+      remaining:countPart('selectionRemaining',' · '),
+      needsReview:countPart('selectionNeedsReview',' · '),
+      settings:countPart('selectionSettings',' · ')
+    };
+    const selectionFormatting=h('span',{},[
+      h('span',{text:' · '}),statusCaption('lineBreaksIncluded')
+    ]);
+    selectionGuidance.append(...Object.values(selectionParts).map(row=>row.wrap),
+      selectionFormatting);
+    const summaryParts={
+      found:countPart('foundChanges'),
+      technical:countPart('summaryTechnical',' · '),
+      selected:countPart('summarySelected',' · '),
+      unselected:countPart('summaryUnselected',' · '),
+      needsReview:countPart('summaryNeedsReview',' · ')
+    };
+    const summaryEmpty=statusCaption('noChanges');
+    summary.append(...Object.values(summaryParts).map(row=>row.wrap),summaryEmpty);
+    for(const part of Object.values(summaryParts))part.wrap.hidden=true;
+    summaryEmpty.hidden=true;
     // One concise review of what the selected changes will actually affect.
     const decisionPreview=h('div',{class:'os-sync-decision-preview',hidden:true});
-    const decisionHeading=h('strong',{text:tr('Перед применением','Before publishing')});
+    const decisionHeading=reviewCaption('strong',{},'decisionHeading');
     const decisionSummary=h('p',{class:'os-sync-decision-summary'});
     const decisionWarnings=h('p',{class:'os-sync-decision-warnings'});
     const formulaPreview=h('div',{class:'os-sync-formula-preview',hidden:true});
-    const formulaTitle=h('strong',{text:tr(
-      'Как обновление повлияет на персонажа','How this update affects a character')});
+    const formulaTitle=reviewCaption('strong',{},'formulaTitle');
     const formulaStatus=h('p',{class:'os-sync-formula-status'});
     const formulaRows=h('div',{class:'os-sync-formula-rows'});
     const formulaNote=h('small',{class:'os-sync-formula-note',text:tr(
@@ -337,7 +581,7 @@
      'These descriptions come from the saved Build Studio snapshot and are offered only when the other fields match both the live game and D1. Other translations remain unchanged.');
     const russianList=h('div',{class:'os-sync-russian-list'});
     const russianDetails=h('details',{class:'os-sync-russian-preview'},[
-      h('summary',{text:copy('russianPreviewSummary','Посмотреть русские тексты','Preview Russian texts')}),russianList
+      disclosureCaption('russianPreviewSummary'),russianList
     ]);
     const russianOption=h(canEdit?'div':'label',{class:'os-sync-formatting-option'},
       [russianToggle,russianLabel,russianCountLabel]);
@@ -353,7 +597,7 @@
     // Never replace the pencil-containing explanation wrapper with textContent.
     const metaStatusDetail=h('p',{class:'muted os-sync-meta-detail',hidden:true});
     const advanced=h('details',{class:'os-sync-advanced'},[
-      h('summary',{text:copy('advancedSummary','Дополнительные инструменты','Additional tools')}),
+      disclosureCaption('advancedSummary'),
       metaStatus,metaStatusDetail,
       authored('p',{},'advancedExplanation',
        'Проверка сохранения не обновляет данные игры. GitHub нужен для фиксации уже опубликованной версии, а скачивание — для ручной работы с данными.',
@@ -365,6 +609,12 @@
        action(exportButton,'exportButton','Скачать выбранное для GitHub','Download selected for GitHub')
       ])
     ]);
+    // Shared compact owner panel; no per-item pencil, no source game edits.
+    if(canEdit&&typeof createCopyEditor==='function'){
+      const editor=createCopyEditor(catalogAccessibleCopyRows,
+        'Доступные подписи сверки','Review accessibility labels');
+      if(editor)advanced.append(editor);
+    }
     actions.append(action(live,'liveButton','Проверить изменения в текущей игре','Check live game updates'),
      secondaryHint(archiveChoice,'hintArchiveDisclosure',
        'Открыть отдельную сверку с архивом GitHub Pages. Архивная копия не подтверждает актуальные параметры на игровом сайте.',
@@ -412,10 +662,14 @@
        'Search changes by game-object names. Searching never changes selection or publishes data.');
     searchField.classList.add('os-sync-search-field');
     const clearSearch=h('button',{type:'button',class:'os-sync-search-clear',
-     text:tr('Очистить','Clear'),disabled:true,
-     'aria-label':tr('Очистить поиск по игровым изменениям','Clear game changes search'),
+     disabled:true,
+     'aria-description':tr('Очистить поиск по игровым изменениям','Clear game changes search'),
      onclick:()=>{search.value='';render();search.focus({preventScroll:true})}});
-    searchField.insertBefore(clearSearch,
+    accessible(clearSearch,'clearSearchAriaDescription','aria-description');
+    const clearRow=catalogReviewDetailByKey.get('searchClear');
+    const clearControl=action(clearSearch,clearRow[0],clearRow[1],clearRow[2]);
+    if(clearControl!==clearSearch)clearControl.classList.add('os-sync-search-clear-editor');
+    searchField.insertBefore(clearControl,
      searchField.querySelector('.os-sync-secondary-pencil'));
     view.append(intro,actions,sourceBanner,summary,status,diagnostic,progress,
       filters,overview,searchField,results);
@@ -556,28 +810,63 @@
       ['sameVisible','Текст совпадает','Same visible text'],
       ['readable','Расшифрованы','Explained']
     ];
+    // Each filter has a separate authored hover explanation; its own CAS
+    // key never aliases the visible label or the calculated result count.
+    // An owner pencil edits ONLY this tooltip, not the filter name.
+    const filterHintRows=Object.freeze([
+      ['all','Все найденные изменения.','All detected changes.'],
+      ['added','Объекты, добавленные в проверяемом источнике.','Entries added in the checked source.'],
+      ['changed','Объекты, чьи параметры отличаются.','Entries with changed parameters.'],
+      ['removed','Объекты, которых нет в проверяемом источнике.','Entries missing from the checked source.'],
+      ['accepted','Только изменения с поставленной галочкой.','Only selected changes.'],
+      ['declined','Изменения без галочки, не выбранные для применения.','Changes not selected for publication.'],
+      ['needsReview','Неоднозначные или неизвестные параметры — требуют ручного анализа.','Ambiguous or unknown fields require manual review.'],
+      ['links','Изменилась привязка ссылок на предметы. Такие записи нужно выбирать вручную.','Item reference links changed; review and select these manually.'],
+      ['sameVisible','Видимый текст одинаков, но исходные записи отличаются. Требуется ручная проверка.','Displayed text is the same, but the source differs. Review manually.'],
+      ['readable','Изменения, для которых доступны понятные названия и описания.','Changes with readable labels and descriptions.']
+    ]);
+    const filterHintMap=new Map(filterHintRows.map(row=>[row[0],row]));
     const filterButtons=new Map();
     for(const [id,ru,en]of filterChoices){
+      // Split the authorial filter word from the live category count.
+      // The D1 key is stable and never contains source data or the number.
+      const key='reviewFilter'+id[0].toUpperCase()+id.slice(1);
       const button=h('button',{type:'button',class:'os-sync-filter',
-       'aria-pressed':String(id===filterKind),text:tr(ru,en)});
-      button.onclick=()=>{
-        if(busy)return;
-        filterKind=id;render();
-      };
-      const tips={
-        all:['Все найденные изменения.','All detected changes.'],
-        added:['Объекты, добавленные в проверяемом источнике.','Entries added in the checked source.'],
-        changed:['Объекты, чьи параметры отличаются.','Entries with changed parameters.'],
-        removed:['Объекты, которых нет в проверяемом источнике.','Entries missing from the checked source.'],
-        accepted:['Только изменения с поставленной галочкой.','Only selected changes.'],
-        declined:['Изменения без галочки, не выбранные для применения.','Changes not selected for publication.'],
-        needsReview:['Неоднозначные или неизвестные параметры — требуют ручного анализа.','Ambiguous or unknown fields require manual review.'],
-        links:['Изменилась привязка ссылок на предметы. Такие записи нужно выбирать вручную.','Item reference links changed; review and select these manually.'],
-        sameVisible:['Видимый текст одинаков, но исходные записи отличаются. Требуется ручная проверка.','Displayed text is the same, but the source differs. Review manually.'],
-        readable:['Изменения, для которых доступны понятные названия и описания.','Changes with readable labels and descriptions.']
-      };
-      hint(button,tr(...tips[id]));
-      filters.append(button);filterButtons.set(id,button);
+       'data-review-filter':id,'aria-pressed':String(id===filterKind),
+       'aria-keyshortcuts':canEdit?'F2':null});
+      const caption=h('span',{class:'os-sync-filter-caption',
+       text:copy(key,ru,en)});
+      const total=h('span',{class:'os-sync-filter-count',
+       text:' · 0'});
+      button.append(caption,total);
+      if(canEdit&&typeof editLabel==='function')editLabel(caption,key,ru,en,{onStarted:cancelPending});
+      const choose=()=>{if(busy)return;filterKind=id;render();};
+      button.addEventListener('click',event=>{
+        if(busy||event.target.closest?.('[data-owner-text-field],.wiki-inline-input'))
+          return;
+        // Owner double-click on the written caption enters the editor.
+        // The first of those two clicks must not silently change the filter.
+        // Guest clicks, keyboard activation, and clicks on the numeric
+        // counter retain their immediate original action.
+        if(!canEdit||!event.detail||!caption.contains(event.target)){
+          cancelPending();choose();return;
+        }
+        event.preventDefault();event.stopPropagation();
+        actionQueue.defer(button,choose);
+      });
+      button.addEventListener('keydown',event=>{
+        if(canEdit&&event.target===button&&event.key==='F2'){
+          event.preventDefault();event.stopPropagation();
+          caption.dispatchEvent(new KeyboardEvent('keydown',{
+           key:'F2',bubbles:true,cancelable:true}));
+        }
+      });
+      const hintRow=filterHintMap.get(id);
+      if(!hintRow)throw Error('Missing reviewed filter tooltip '+id);
+      const wrapper=secondaryHint(button,'hintReviewFilter'+id[0].toUpperCase()+id.slice(1),
+       hintRow[1],hintRow[2]);
+      wrapper.classList.add('os-sync-filter-hint');
+      filters.append(wrapper);filterButtons.set(id,button);
     }
     function matchesFilter(change){
       if(filterKind==='accepted')return chosen.has(change.id);
@@ -590,6 +879,7 @@
       return filterKind==='all'||change.kind===filterKind;
     }
     function setBusy(value) {
+      if(value)cancelPending();
       busy = value;
       live.disabled = value;
       archive.disabled = value;
@@ -722,20 +1012,19 @@
              text:comparison.warning}));
           else if(comparison?.hasHero){
             if(!comparison.changes.length)
-              formulaRows.append(h('p',{text:tr(
-               'У текущего героя выбранные изменения не меняют перечисленные расчётные показатели.',
-               'The selected changes do not alter these modeled values for the current hero.')}));
+              formulaRows.append(reviewCaption('p',{},'heroNoChange'));
             for(const row of comparison.changes.slice(0,10))
               formulaRows.append(h('p',{class:'os-sync-formula-row'},[
                 h('span',{text:lang==='en'?row.en:row.ru}),
                 h('strong',{text:String(row.before??'—')+' → '+String(row.after??'—')})
               ]));
             if(comparison.changes.length>10)
-              formulaRows.append(h('small',{text:tr('Ещё изменений: ',
-               'More changes: ')+(comparison.changes.length-10)}));
-          }else formulaRows.append(h('p',{text:tr(
-           'Выбери расу и профессию на главном экране, чтобы увидеть изменения именно своего героя.',
-           'Choose a race and class on the main screen to compare your own hero.')}));
+              formulaRows.append(h('small',{},[
+                reviewCaption('span',{},'heroMoreChangesLead'),
+                h('span',{class:'os-sync-runtime-count',
+                  text:' '+(comparison.changes.length-10)})
+              ]));
+          }else formulaRows.append(reviewCaption('p',{},'heroSelectHelp'));
         }
       }
       publish.disabled=!ready||!acknowledged||preview?.validation?.ok!==true;
@@ -760,7 +1049,17 @@
       };
       for(const [id,ru,en]of filterChoices){
         const button=filterButtons.get(id);
-        button.textContent=tr(ru,en)+' · '+byKind[id];
+        const caption=button.querySelector('.os-sync-filter-caption');
+        // D1 save, re-filtering and count changes must never remove an
+        // owner input that is still being edited or replace a live count.
+        if(!caption.querySelector('[data-owner-text-field],.wiki-inline-input')){
+          const key='reviewFilter'+id[0].toUpperCase()+id.slice(1);
+          const value=copy(key,ru,en);
+          if(caption.textContent!==value)caption.textContent=value;
+        }
+        const count=button.querySelector('.os-sync-filter-count');
+        const value=' · '+byKind[id];
+        if(count.textContent!==value)count.textContent=value;
         button.classList.toggle('active',id===filterKind);
         button.setAttribute('aria-pressed',String(id===filterKind));
       }
@@ -768,7 +1067,7 @@
       // inside a large dashboard of decorative statistics.
       const groups=importer.files.filter(name=>changes.some(row=>row.dataset===name));
       const ordered=[...groups.filter(name=>name!=='meta'),...groups.filter(name=>name==='meta')];
-      overview.textContent=ordered.length?tr('Затронутые разделы: ','Affected sections: ')+
+      overviewValues.textContent=ordered.length?' '+
         ordered.map(name=>(review.labels[name]||name)+' · '+
           changes.filter(row=>row.dataset===name).length).join('   •   '):'';
       overview.hidden=!reviewing||!changes.length;
@@ -776,26 +1075,27 @@
         const name=panel.getAttribute('data-game-dataset');
         const count=changes.filter(row=>row.dataset===name&&chosen.has(row.id)).length;
         const total=changes.filter(row=>row.dataset===name).length;
-        const label=panel.querySelector('.os-sync-count');
-        if(label)label.textContent=count+' / '+total+tr(' выбрано',' selected');
+        const label=panel.querySelector('.os-sync-count > .os-sync-group-runtime-count');
+        const value=count+' / '+total;
+        if(label&&label.textContent!==value)label.textContent=value;
       }
       const service=changes.filter(row=>describe(row).service).length;
       const acceptedChanges=changes.filter(row=>chosen.has(row.id)).length;
       const remainingChanges=changes.length-acceptedChanges;
       const cautionSelected=changes.filter(row=>chosen.has(row.id)&&describe(row).uncertain).length;
-      selectionGuidance.textContent=tr('Всего выбрано: ','Selected: ')+
-        acceptedChanges+' / '+changes.length+
-        (remainingChanges?tr(' · Осталось: ',' · Remaining: ')+remainingChanges:'')+
-        (cautionSelected?tr(' · Требуют проверки: ',' · Need review: ')+cautionSelected:'')+
-        (service?tr(' · Настроек игры найдено: ',' · Game settings found: ')+service:'')+
-        (mode==='server'&&formattingToggle.checked?tr(' · Переносы строк включены',' · Source line breaks included'):'');
-      summary.textContent = changes.length
-        ? tr('Найдено изменений: ','Changes found: ')+changes.length+
-          (service?tr(' · Служебных: ',' · Technical: ')+service:'')+
-          tr(' · Выбрано: ',' · Selected: ')+selected+
-          tr(' · Не выбрано: ',' · Not selected: ')+(changes.length-selected)+
-          (byKind.needsReview?tr(' · Нужна проверка: ',' · Needs review: ')+byKind.needsReview:'')
-        : baseline ? tr('Различий в игровых данных нет','No differences in game data') : '';
+      setCountPart(selectionParts.total,acceptedChanges+' / '+changes.length);
+      setCountPart(selectionParts.remaining,remainingChanges,remainingChanges>0);
+      setCountPart(selectionParts.needsReview,cautionSelected,cautionSelected>0);
+      setCountPart(selectionParts.settings,service,service>0);
+      selectionFormatting.hidden=!(mode==='server'&&formattingToggle.checked);
+      const hasChanges=changes.length>0;
+      setCountPart(summaryParts.found,changes.length,hasChanges);
+      setCountPart(summaryParts.technical,service,hasChanges&&service>0);
+      setCountPart(summaryParts.selected,selected,hasChanges);
+      setCountPart(summaryParts.unselected,changes.length-selected,hasChanges);
+      setCountPart(summaryParts.needsReview,byKind.needsReview,
+        hasChanges&&byKind.needsReview>0);
+      summaryEmpty.hidden=hasChanges||!baseline;
     }
     const checked = change => chosen.has(change.id);
     // Search resolved descriptions and item names without exposing source IDs.
@@ -813,9 +1113,9 @@
         .replace(/<br\s*\/?>/gi,' ');
       const text=[
         review.labels[change.dataset]||change.dataset,
-        change.title,description.title,description.summary,
+        change.title,description.title,description.titleEn,description.summary,description.summaryEn,
         ...description.rows.flatMap(field=>[
-          field.label,field.linkedItemName||'',
+          field.label,field.labelEn||'',field.noteEn||'',field.linkedItemName||'',
           field.beforeFull??field.before,field.afterFull??field.after
         ])
       ].map(readable).join(' ').toLocaleLowerCase();
@@ -861,15 +1161,40 @@
         const refKey=referenceContext?
           referenceContext+'|'+segment.id+'|'+(occurrence++):null;
         const wasExpanded=refKey?expandedReferences.has(refKey):false;
-        const button=h('button',{type:'button',class:'os-sync-item-ref',
-          'aria-label':tr('Показать связанный предмет: ','Show linked item: ')+segment.text,
-          'aria-expanded':String(wasExpanded),text:segment.text});
-        hint(button,tr('Ссылка на связанный игровой предмет. Нажми, чтобы посмотреть его описание и открыть карточку энциклопедии.',
-         'Linked game item. Click to preview its description and open the encyclopedia entry.'));
+        const button=accessible(h('button',{type:'button',class:'os-sync-item-ref',
+          'aria-expanded':String(wasExpanded),text:segment.text}),
+        'linkedPreviewAria','aria-label',' '+segment.text);
+        // The tooltip is independently authored. Its editor pencil is NEVER
+        // a caption pencil, and never enters the source item button's click.
+        const tooltipRow=catalogReviewDetailByKey.get('hintLinkedReference');
+        const [tooltipKey,tooltipRu,tooltipEn]=tooltipRow;
+        hint(button,copy(tooltipKey,tooltipRu,tooltipEn));
+        button.dataset.guideOwnerKey=tooltipKey;
+        // Keyboard focus must encounter the source button before its help
+        // pencil: a focused button reveals the adjacent pencil for next Tab.
+        reference.append(button);
+        if(canEdit&&typeof editLabel==='function'){
+          const pencil=h('button',{type:'button',class:'os-sync-reference-hint-pencil',
+            text:'✎',title:tr('Изменить подсказку','Edit tooltip'),
+            'aria-label':tr('Изменить подсказку связанного предмета',
+              'Edit linked item tooltip')});
+          const host=h('span',{class:'os-sync-reference-hint-host',hidden:true});
+          editLabel(host,tooltipKey,tooltipRu,tooltipEn,{
+            onCommitted:next=>{button.dataset.guideHint=next},
+            onFinished:()=>{pencil.hidden=false;host.hidden=true}
+          });
+          pencil.addEventListener('click',event=>{
+            event.preventDefault();event.stopPropagation();
+            if(!button.isConnected)return;
+            pencil.hidden=true;host.hidden=false;
+            host.textContent=copy(tooltipKey,tooltipRu,tooltipEn);
+            host.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
+          });
+          reference.append(pencil,host);
+        }
         const preview=h('span',{class:'os-sync-reference-preview',hidden:!wasExpanded});
         preview.append(h('strong',{text:segment.text}),
-          h('small',{text:tr('Связанный предмет · игровая ссылка в описании',
-           'Linked item · in-game description reference')}));
+          reviewCaption('small',{},'linkedReferenceContext'));
         const record=upstream?.items?.[segment.id]||baseline?.items?.[segment.id];
         const sourceDesc=language==='en'?
           upstream?.['strings.en']?.items?.[segment.id]?.d||
@@ -880,14 +1205,30 @@
             text:root.PandoraItemPresentation.descriptionText(
               sourceDesc,names,language).slice(0,280)}));
         if(baseline?.items?.[segment.id]){
-          // A fresh tab preserves the current selection and scroll position.
-          preview.append(h('a',{
-            href:'#wiki/item/'+encodeURIComponent(segment.id),target:'_blank',
-            rel:'noopener noreferrer',class:'os-sync-reference-open',
-            text:tr('Открыть в энциклопедии (новая вкладка) ↗',
-             'Open encyclopedia (new tab) ↗')}));
-        }else preview.append(h('small',{text:tr('Предмет пока не опубликован в энциклопедии.',
-          'This item has not yet been published in the encyclopedia.')}));
+          // The player retains a normal clickable label. In owner mode, an
+          // editable label must not navigate on the FIRST click of dblclick:
+          // keep the direct D1/CAS caption beside a separate real link.
+          // Both paths preserve the same trusted, encoded in-app item URL.
+          const itemHref='#wiki/item/'+encodeURIComponent(segment.id);
+          const openRow=catalogReviewDetailByKey.get('linkedReferenceOpen');
+          if(canEdit&&typeof editLabel==='function'){
+            const opener=h('span',{class:'os-sync-reference-open-editor'});
+            opener.append(
+              reviewCaption('span',{class:'os-sync-reference-open-copy'},'linkedReferenceOpen'),
+              accessible(h('a',{href:itemHref,target:'_blank',rel:'noopener noreferrer',
+                // Preserve the original stable link selector/API; the new
+                // icon class is only for the split owner-edit presentation.
+                class:'os-sync-reference-open os-sync-reference-open-icon',
+                text:'↗'}),'linkedOpenAria','aria-label',' '+segment.text)
+            );
+            preview.append(opener);
+          }else{
+            preview.append(h('a',{
+              href:itemHref,target:'_blank',rel:'noopener noreferrer',
+              class:'os-sync-reference-open',
+              text:copy(openRow[0],openRow[1],openRow[2])+' ↗'}));
+          }
+        }else preview.append(reviewCaption('small',{},'unpublishedReference'));
         button.onclick=()=>{
           const expanded=preview.hidden;
           preview.hidden=!expanded;
@@ -897,7 +1238,7 @@
             else expandedReferences.delete(refKey);
           }
         };
-        reference.append(button,preview);
+        reference.append(preview);
         wrap.append(reference);
       }
       return wrap;
@@ -925,29 +1266,31 @@
     function fieldPreview(change,description) {
       const content=h('div',{class:'os-sync-explanation'});
       if(description.rows.length>1)content.append(h('small',{
-        class:'os-sync-result-count',
-        text:tr('Изменено параметров: ','Changed parameters: ')+description.rows.length}));
-      content.append(h('p',{class:'os-sync-change-summary',text:description.summary}));
+        class:'os-sync-result-count'},[
+        reviewCaption('span',{},'changedParametersLead'),
+        h('span',{class:'os-sync-runtime-count',text:' '+description.rows.length})
+      ]));
+      content.append(h('p',{class:'os-sync-change-summary',text:lang==='en'&&description.summaryEn?description.summaryEn:description.summary}));
       // Show the game-level meaning up front, not only technical field changes.
       const impacts=description.impacts||[];
       const notable=impactSamples(impacts);
       if(impacts.length){
         const panel=h('div',{class:'os-sync-impact-preview'});
-        panel.append(h('strong',{text:tr(
-          'Как изменится расчётный шанс выпадения',
-          'How estimated drop chances change')}));
+        panel.append(reviewCaption('strong',{},'impactHeading'));
         for(const effect of notable)
-          panel.append(h('p',{class:'os-sync-impact-line',text:effect.preview}));
-        if(impacts.length>4)panel.append(h('small',{class:'muted',
-          text:tr('Ещё ','And ')+(impacts.length-4)+
-            tr(' изменений — открой подробности ниже.',' more changes — see details below.')}));
+          panel.append(h('p',{class:'os-sync-impact-line',text:lang==='en'?effect.previewEn||effect.preview:effect.preview}));
+        if(impacts.length>4)panel.append(h('small',{class:'muted'},[
+          reviewCaption('span',{},'moreImpactsLead'),
+          h('span',{class:'os-sync-runtime-count',text:' '+(impacts.length-4)+' '}),
+          reviewCaption('span',{},'moreImpactsSuffix')
+        ]));
         panel.append(h('small',{class:'muted',text:tr(
           'Соло / 4 / 8 активных участников на карте. Только этот источник дропа; не подтверждение работы игрового сервера.',
           'Solo / 4 / 8 active party members on this map. This loot source only; not verified game-server behavior.')}));
         content.append(panel);
       }
       if(description.caution)content.append(h('p',{
-        class:'os-sync-change-caution',text:description.caution}));
+        class:'os-sync-change-caution',text:lang==='en'&&description.cautionEn?description.cautionEn:description.caution}));
       const details=h('details',{class:'os-sync-field-details'});
       details.open=expandedDetails.has(change.id);
       details.addEventListener('toggle',()=>{
@@ -955,8 +1298,8 @@
         if(details.open)expandedDetails.add(change.id);
         else expandedDetails.delete(change.id);
       });
-      details.append(h('summary',{
-        text:tr('Посмотреть подробно · ','View details · ')+description.rows.length}));
+      details.append(disclosureCaption('fieldDetailsSummary',{
+        count:description.rows.length}));
       if(description.rows.length){
         for(const field of description.rows){
           const language=change.dataset==='strings.en'?'en':'ru';
@@ -964,10 +1307,12 @@
           const newValue=h('span',{class:'os-sync-full-value os-sync-new'});
           oldValue.append(field.sourceBefore!==null&&field.sourceBefore!==undefined?
             linkedDescription(field.sourceBefore,language,change.id+'|'+field.label+'|old'):
-            document.createTextNode(String(field.beforeFull??field.before)));
+            document.createTextNode(String(lang==='en'&&field.beforeEn!==null&&field.beforeEn!==undefined?
+              field.beforeEn:(field.beforeFull??field.before))));
           newValue.append(field.sourceAfter!==null&&field.sourceAfter!==undefined?
             linkedDescription(field.sourceAfter,language,change.id+'|'+field.label+'|new'):
-            document.createTextNode(String(field.afterFull??field.after)));
+            document.createTextNode(String(lang==='en'&&field.afterEn!==null&&field.afterEn!==undefined?
+              field.afterEn:(field.afterFull??field.after))));
           if(field.difference){
             const delta=h('small',{class:'os-sync-value-delta',
               text:(field.delta>0?'▲ ':'▼ ')+field.difference});
@@ -975,14 +1320,15 @@
            'Change relative to the published version. The sign does not imply that the change is beneficial or harmful.'));
             newValue.append(delta);
           }
-          const label=h('strong',{text:field.label});
+          const displayLabel=lang==='en'&&field.labelEn?field.labelEn:field.label;
+          const label=h('strong',{text:displayLabel});
           if(/^[0-9]{1,12}$/.test(field.linkedItemId||'')&&field.linkedItemName){
-            const start=field.label.indexOf(field.linkedItemName);
+            const start=displayLabel.indexOf(field.linkedItemName);
             if(start>=0){
               label.replaceChildren(
-                document.createTextNode(field.label.slice(0,start)),
+                document.createTextNode(displayLabel.slice(0,start)),
                 linkedDescription('<item '+field.linkedItemId+'>','ru',change.id+'|'+field.label+'|label'),
-                document.createTextNode(field.label.slice(start+field.linkedItemName.length))
+                document.createTextNode(displayLabel.slice(start+field.linkedItemName.length))
               );
             }
           }
@@ -993,7 +1339,8 @@
             h('span',{class:'os-sync-field-arrow',text:'→'}),
             newValue
           ]);
-          if(field.note)line.append(h('p',{class:'os-sync-field-note',text:field.note}));
+          if(field.note)line.append(h('p',{class:'os-sync-field-note',
+            text:lang==='en'&&field.noteEn?field.noteEn:field.note}));
           if(/Доп\. слоты$/.test(field.label))line.append(h('p',{
             class:'os-sync-field-note',
             text:tr('Это параметр дополнительных слотов конкретного предмета в таблице добычи. «Не указаны» означает отсутствие поля в старом источнике, а не подтверждённый ноль.',
@@ -1004,8 +1351,7 @@
         text:tr('Нет подтверждённой расшифровки. Эти изменения требуют отдельной проверки.',
           'No verified explanation is available. Review these changes separately.')}));
       const raw=h('details',{class:'os-sync-raw-details'});
-      raw.append(h('summary',{text:tr('Технические сведения (для разработчика)',
-        'Technical details (developers)')}));
+      raw.append(disclosureCaption('rawDetailsSummary'));
       raw.append(h('small',{class:'os-sync-technical-code',text:'ID: '+change.key}));
       const humanizeValue=value=>{
         const source=String(value);
@@ -1033,6 +1379,7 @@
 
     function render() {
       clearSearch.disabled=busy||!search.value.trim();
+      if(clearControl!==clearSearch)clearControl.tabIndex=clearSearch.disabled?0:-1;
       results.replaceChildren();
       const query = search.value.trim().toLocaleLowerCase().replaceAll('ё','е');
       // The review uses the main modal's scrollbar, not a nested list.
@@ -1054,17 +1401,23 @@
           else expanded.delete(name);
         });
         const selected = group.filter(checked).length;
-        panel.append(h('summary',{class:'os-sync-group-heading'},[
+        const groupStatusKey='groupSelectedSuffix';
+        const groupStatusRow=catalogReviewStatusByKey.get(groupStatusKey);
+        const groupCaption=h('span',{class:'os-sync-status-copy',
+          text:copy(groupStatusKey,groupStatusRow[1],groupStatusRow[2])});
+        const groupHeading=h('summary',{class:'os-sync-group-heading'},[
           h('strong',{text:review.labels[name]||name}),
-          h('span',{class:'os-sync-count',
-            text:selected+' / '+group.length+tr(' выбрано',' selected')})
-        ]));
+          h('span',{class:'os-sync-count'},[
+            h('span',{class:'os-sync-group-runtime-count',text:selected+' / '+group.length}),
+            document.createTextNode(' '),groupCaption
+          ])
+        ]);
+        bindDisclosureCaption(groupHeading,groupCaption,groupStatusKey,groupStatusRow);
+        panel.append(groupHeading);
         const toolbar = h('div',{class:'os-sync-group-actions'});
         const take = h('button',{type:'button',class:'button-action',
-          text:tr('Выбрать понятные изменения раздела','Select understood changes in section'),
           disabled:busy||!group.some(safe)});
-        const reject = h('button',{type:'button',class:'button-action',
-          text:tr('Снять выбор раздела','Clear section selection'),disabled:busy});
+        const reject = h('button',{type:'button',class:'button-action',disabled:busy});
         take.addEventListener('click',()=> {
           if (busy) return;
           for (const item of group)if(safe(item))chosen.add(item.id);
@@ -1076,15 +1429,15 @@
           refreshActions(); render();
         });
         const takeVisible=h('button',{type:'button',class:'button-action',
-          text:tr('Выбрать найденное · ','Select matching · ')+filtered.filter(safe).length,
           disabled:busy||!filtered.some(safe)});
         takeVisible.onclick=()=>{
           if(busy)return;
           for(const item of filtered)if(safe(item))chosen.add(item.id);
           render();
         };
-        toolbar.append(take,reject);
-        if(query||filterKind!=='all')toolbar.append(takeVisible);
+        toolbar.append(groupAction(take,'groupTake',name),groupAction(reject,'groupReject',name));
+        if(query||filterKind!=='all')toolbar.append(
+          groupAction(takeVisible,'groupMatching',name,{count:filtered.filter(safe).length}));
         panel.append(toolbar);
         const variantTotal=new Map(),variantIndex=new Map(),variantOrder=new Map();
         for(const entry of group){
@@ -1118,9 +1471,11 @@
             helper.textContent+=tr(' · Вариант ',' · Variant ')+variantOrder.get(change.id)+
               tr(' из ',' of ')+variantTotal.get(description.title)+
               tr(' с этим названием',' with this name');
-          const input = h('input',{type:'checkbox',checked:checked(change),disabled:busy,
-            'aria-label':tr('Выбрать изменение ','Select change ')+description.title+
-              (hasLinks||visuallySame?tr(' — требуется отдельная проверка',' — requires separate review'):'')});
+          const visibleTitle=lang==='en'?description.titleEn||description.title:description.title;
+          const input = accessible(h('input',{type:'checkbox',checked:checked(change),
+            disabled:busy}),'reviewSelectAria','aria-label',' '+visibleTitle+
+              (hasLinks||visuallySame?tr(' — требуется отдельная проверка',
+                ' — requires separate review'):''));
           input.addEventListener('change',()=>{
             setChoice(change,input.checked);
             row.classList.toggle('os-sync-record-selected',input.checked);
@@ -1130,7 +1485,7 @@
           row.append(h('label',{class:'os-sync-record-label'},[
             input,
             h('span',{class:'os-sync-record-title'},[
-              h('strong',{text:description.title}),helper
+              h('strong',{text:visibleTitle}),helper
             ]),
             h('span',{class:'os-sync-kind '+change.kind,text:indicator})
            ]));
@@ -1153,17 +1508,15 @@
         }
         panel.append(list);
         if (limit<filtered.length) {
-          const more=h('button',{type:'button',class:'button-action',
-            text:tr('Показать остальные ','Show remaining ')+(filtered.length-limit)+
-             tr(' изменений',' changes')});
+          const more=h('button',{type:'button',class:'button-action'});
           more.onclick=()=>{full.add(name);expanded.add(name);render()};
-          panel.append(more);
+          panel.append(groupAction(more,'groupMore',name,{
+            count:filtered.length-limit}));
         }
         results.append(panel);
       }
-      if(!results.childElementCount&&baseline)results.append(h('p',{class:'os-sync-empty',
-        text:tr('По этому фильтру изменений нет. Измени запрос или выбери «Все».',
-         'No changes match this filter. Change the search or select “All”.')}));
+      if(!results.childElementCount&&baseline)
+        results.append(reviewCaption('p',{class:'os-sync-empty'},'emptyReviewFilter'));
       refreshActions();
       // Keep the reviewer's place after selection; only a new search or
       // category filter intentionally starts at the beginning.
@@ -1180,7 +1533,7 @@
         }
       }
       const response=await fetch('./data/os/'+name+'.json',{cache:'no-store'});
-      if (!response.ok) throw Error('Архив '+name+': HTTP '+response.status);
+      if (!response.ok) throw Error(tr('Архив ','Archive ')+name+': HTTP '+response.status);
       return response.json();
     };
 
@@ -1218,7 +1571,9 @@
       formattingCount=0;formattingToggle.checked=false;
       verifiedRussian=[];localInstances=null;russianToggle.checked=false;
       russianDetails.open=false;russianList.replaceChildren();
-      results.replaceChildren();summary.textContent='';
+      results.replaceChildren();
+      for(const part of Object.values(summaryParts))part.wrap.hidden=true;
+      summaryEmpty.hidden=true;
       progress.value=0;
       metaStatusDetail.textContent='';
       metaStatusDetail.hidden=true;
@@ -1239,10 +1594,10 @@
         if(from==='server') {
           const finalMeta=await sourceFile('meta','server');
           if(!review.equal(next.meta,finalMeta))
-            throw Error('Игровой каталог обновился во время проверки. Повтори сверку.');
+            throw Error(tr('Игровой каталог обновился во время проверки. Повтори сверку.','Game data changed during comparison. Run the check again.'));
         }
         const locales=await fetch('./data/localization/legacy-approved.v1.json',{cache:'no-store'});
-        if (!locales.ok) throw Error('Утверждённый архив перевода недоступен');
+        if (!locales.ok) throw Error(tr('Утверждённый архив перевода недоступен','The approved translation archive is unavailable'));
         const approved=await locales.json();
         importer.normalize(next,approved); // Reject incomplete live source before review.
         const versions=new Set();
@@ -1251,24 +1606,24 @@
           const alias=name==='strings.en'?'stringsEn':name;
           const response=await fetch(apiBase+'/api/catalog/'+alias+'.json',
             {cache:'no-store',signal:AbortSignal.timeout(15000)});
-          if (!response.ok) throw Error('Активная D1 '+name+': HTTP '+response.status);
+          if (!response.ok) throw Error(tr('Активная D1 ','Active D1 ')+name+': HTTP '+response.status);
           if(response.headers.get('x-ps-catalog')!=='d1')
-            throw Error('Не подтверждён источник D1 для '+name+'. Обнови страницу и повтори сверку.');
+            throw Error(tr('Не подтверждён источник D1 для ','D1 source was not verified for ')+name+tr('. Обнови страницу и повтори сверку.','. Refresh the page and compare again.'));
           const snapshot=response.headers.get('x-ps-catalog-snapshot');
-          if (!snapshot) throw Error('D1 не сообщает версию каталога');
+          if (!snapshot) throw Error(tr('D1 не сообщает версию каталога','D1 did not report a catalog revision'));
           versions.add(snapshot);
           old[name]=await response.json();
           progress.value=45+Math.round(55*(++compared)/importer.files.length);
         });
         const localeResponse=await fetch(apiBase+'/api/catalog/legacyLocale.json',
           {cache:'no-store',signal:AbortSignal.timeout(15000)});
-        if (!localeResponse.ok) throw Error('Не получен текущий перевод D1');
+        if (!localeResponse.ok) throw Error(tr('Не получен текущий перевод D1','Could not retrieve the active D1 translation'));
         if(localeResponse.headers.get('x-ps-catalog')!=='d1')
-          throw Error('Не подтверждён источник D1 для локализации. Публикация остановлена.');
+          throw Error(tr('Не подтверждён источник D1 для локализации. Публикация остановлена.','D1 translation source was not verified. Publishing is blocked.'));
         const localeSnapshot=localeResponse.headers.get('x-ps-catalog-snapshot');
-        if (!localeSnapshot) throw Error('Нет версии локализации D1');
+        if (!localeSnapshot) throw Error(tr('Нет версии локализации D1','D1 translation revision is missing'));
         versions.add(localeSnapshot);
-        if (versions.size!==1) throw Error('D1 изменилась во время проверки — повтори сверку');
+        if (versions.size!==1) throw Error(tr('D1 изменилась во время проверки — повтори сверку','D1 changed during comparison — run the check again'));
         const retained=review.retainLegacyRows(await localeResponse.json());
         importer.normalize(old,retained.locales); // Validate D1 itself, not the local backup.
         const oldSha=old.meta?.sha||{},newSha=next.meta?.sha||{};
@@ -1334,22 +1689,34 @@
           archiveChoice.open=true;
           const reason=String(error.reason||'');
           const code=/^http-(\d{3})$/.exec(reason)?.[1];
+          // The Worker's reason, source path and HTTP status are raw diagnostics.
+          // Only this fixed explanation is translated; it cannot edit D1.
           const issue=code==='403'||code==='401'
-            ?'Сайт игры не разрешил запрос Cloudflare Worker (HTTP '+code+'). Даже если адрес открывается в браузере, серверные запросы могут блокироваться.'
-            :code==='404'
-            ?'На сайте игры не найден один из файлов игровых данных (HTTP 404).'
-            :code==='429'
-            ?'Сайт игры временно ограничил число запросов (HTTP 429).'
-            :reason==='timeout'
-            ?'Истекло время ожидания ответа сайта игры.'
-            :reason==='network'
-            ?'Cloudflare Worker не смог установить соединение с сайтом игры.'
-            :reason==='invalid-json'||reason==='invalid-format'
-            ?'Сайт игры ответил данными, которые нельзя распознать как игровой JSON.'
-            :reason==='too-large'
-            ?'Ответ сайта игры превысил ограничение безопасности.'
-            :code?'Сайт игры ответил HTTP '+code+'.'
-            :'Не удалось получить открытые игровые данные через Cloudflare Worker.';
+           ?tr('Сайт игры не разрешил запрос Cloudflare Worker (HTTP ',
+               'The game site rejected the Cloudflare Worker request (HTTP ')+code+
+            tr('). Даже если адрес открывается в браузере, серверные запросы могут блокироваться.',
+               '). Server-side requests can be blocked even if the site opens in your browser.')
+           :code==='404'
+           ?tr('На сайте игры не найден один из файлов игровых данных (HTTP 404).',
+               'A game-data file was not found on the game site (HTTP 404).')
+           :code==='429'
+           ?tr('Сайт игры временно ограничил число запросов (HTTP 429).',
+               'The game site temporarily rate-limited requests (HTTP 429).')
+           :reason==='timeout'
+           ?tr('Истекло время ожидания ответа сайта игры.',
+               'The game site did not respond before the timeout.')
+           :reason==='network'
+           ?tr('Cloudflare Worker не смог установить соединение с сайтом игры.',
+               'Cloudflare Worker could not connect to the game site.')
+           :reason==='invalid-json'||reason==='invalid-format'
+           ?tr('Сайт игры ответил данными, которые нельзя распознать как игровой JSON.',
+               'The game site returned data that could not be parsed as game JSON.')
+           :reason==='too-large'
+           ?tr('Ответ сайта игры превысил ограничение безопасности.',
+               'The game site response exceeded the safety size limit.')
+           :code?tr('Сайт игры ответил HTTP ','The game site returned HTTP ')+code+'.'
+           :tr('Не удалось получить открытые игровые данные через Cloudflare Worker.',
+               'Public game data could not be retrieved through Cloudflare Worker.');
           status.textContent=issue+tr(
            ' Каталог Build Studio не изменён. Архивную копию можно сравнить отдельно, но она может быть старее.',
            ' The Build Studio catalog is unchanged. You can compare the archived copy separately, but it may be older.');
@@ -1362,9 +1729,12 @@
             'Сверка не завершена. Действующие данные остались прежними. Попробуй ещё раз или воспользуйся сохранённой копией.',
             'Comparison did not finish. Published data is unchanged. Try again or use the archived snapshot.');
         }
-        diagnosticText.textContent='Этап: '+(error.sourceDataset||'не определён')+
-          ' · Ответ Worker: '+(error.httpStatus??'нет HTTP-ответа')+
-          ' · Причина: '+(error.reason||'не указана')+
+        diagnosticText.textContent=tr('Этап: ','Stage: ')+
+          (error.sourceDataset||tr('не определён','unknown'))+
+          tr(' · Ответ Worker: ',' · Worker response: ')+
+          (error.httpStatus??tr('нет HTTP-ответа','no HTTP response'))+
+          tr(' · Причина: ',' · Reason: ')+
+          (error.reason||tr('не указана','not provided'))+
           ' · '+String(error.message||error);
         diagnostic.hidden=false;
         baseline=null;upstream=null;changes=[];impactCache=null;
@@ -1375,7 +1745,7 @@
 
     async function verifyPublishedForPlayers(snapshot,expected){
       await afterPublish();
-      return verifyPublishedSnapshot(apiBase,snapshot,expected);
+      return verifyPublishedSnapshot(apiBase,snapshot,expected,fetch,lang);
     }
 
     // The public release and GitHub fallback are distinct: a failed backup
@@ -1481,13 +1851,13 @@
       const syncFormatting=mode==='server'&&formattingToggle.checked&&formattingCount>0;
       const syncRussianInstances=mode==='server'&&russianToggle.checked&&verifiedRussian.length>0;
       if(!baseline||!upstream||(!chosen.size&&!syncFormatting&&!syncRussianInstances))
-       throw Error('Нет выбранных изменений для публикации');
+       throw Error(tr('Нет выбранных изменений для публикации','No changes selected for publication'));
       const combined=review.compose(baseline,upstream,chosen,importer.files,
         {syncFormatting,syncRussianInstances,localInstances});
       // Full structural and count validation is required after selective merging.
       const modelCheck=safety.check(combined);
       if(!modelCheck.ok)
-        throw Error('Проверка расчётов перед публикацией: '+modelCheck.issues.join(' · '));
+        throw Error(tr('Проверка расчётов перед публикацией: ','Pre-publication calculation check: ')+modelCheck.issues.join(' · '));
       const compatibility=safety.compatibility(baseline,combined);
       // Recheck immediately before confirmed publication, independently
       // of the cached UI preview. Do not silently discard old numeric models.
@@ -1497,46 +1867,46 @@
        .sort((a,b)=>b[1]-a[1]).slice(0,3)
        .map(([group,count])=>replaySourceLabel(group)+' · '+count);
       if(replay&&!replay.ok)throw Error(
-       'Проверка расчётов и источниковых связей: '+replay.lost+
-       ' ранее проверенных сценариев перестали подтверждаться. '+
-       (lossSummary.length?'Основные разделы: '+lossSummary.join(' · ')+'. ':'')+
+       tr('Проверка расчётов и источниковых связей: ','Calculation and source-link check: ')+replay.lost+
+       tr(' ранее проверенных сценариев перестали подтверждаться. ',' previously verified scenarios can no longer be confirmed. ')+
+       (lossSummary.length?tr('Основные разделы: ','Main sections: ')+lossSummary.join(' · ')+'. ':'')+
        [...replay.errors,...replay.samples.map(x=>x.name+' / '+
-        (x.module==='source-access-notice'?'доступность навыка':
-         x.module==='ally-recipient'?'усиление союзника':
-         x.module==='priest-cast'?'усиление жреца':
-         x.module.startsWith('source-recipe-')?'рецепт':
-         x.module==='source-ammunition'?'расход стрел':
-         x.module==='source-support-material'?'материалы умения':
+        (x.module==='source-access-notice'?tr('доступность навыка','skill availability'):
+         x.module==='ally-recipient'?tr('усиление союзника','ally buff'):
+         x.module==='priest-cast'?tr('усиление жреца','priest buff'):
+         x.module.startsWith('source-recipe-')?tr('рецепт','recipe'):
+         x.module==='source-ammunition'?tr('расход стрел','ammunition use'):
+         x.module==='source-support-material'?tr('материалы умения','skill materials'):
          x.module==='source-special-resource'||
-         x.module==='source-situational-material'?'особый ресурс':
+         x.module==='source-situational-material'?tr('особый ресурс','special resource'):
          x.module==='source-item-skill'||
-         x.module==='source-item-cure'?'связь расходника':
+         x.module==='source-item-cure'?tr('связь расходника','consumable link'):
          x.module.startsWith('source-')?replaySourceLabel(x.module):
-         x.job==='target'?'эффект цели':x.job)+
+         x.job==='target'?tr('эффект цели','target effect'):x.job)+
         (x.level?' / '+x.level:''))].slice(0,4).join(' · '));
       const graph=typeof safety.sourceGraphIntegrity==='function'?
        safety.sourceGraphIntegrity(baseline,combined):null;
       if(graph&&!graph.ok)throw Error(
-       'Проверка связей: обнаружено новых повреждённых ссылок: '+
+       tr('Проверка связей: обнаружено новых повреждённых ссылок: ','Game links: new broken references found: ')+
        graph.newBroken+' · '+graph.samples.map(x=>x.kind+' '+x.owner+
         ' / '+x.field+' → '+String(x.target??'—')).slice(0,4).join(' · '));
       const equipment=typeof safety.replayEquipmentEffects==='function'?
        safety.replayEquipmentEffects(baseline,combined):null;
       if(equipment&&!equipment.ok)throw Error(
-       'Проверка бонусов предметов и душ: '+equipment.lost+
-       ' известных числовых действий перестали рассчитываться. '+
+       tr('Проверка бонусов предметов и душ: ','Item and Soul bonus check: ')+equipment.lost+
+       tr(' известных числовых действий перестали рассчитываться. ',' known numeric effects are no longer calculated. ')+
        [...equipment.errors,...equipment.samples.map(x=>x.name+' / +'+
         x.grade+' / '+x.previous+' → '+x.next)].slice(0,4).join(' · '));
       const targets=typeof safety.replayMonsterTargets==='function'?
         safety.replayMonsterTargets(baseline,combined):null;
       if(targets&&!targets.ok)throw Error(
-        'Проверка игровых целей и разницы уровней: '+
-        targets.lost+' ранее доступных целей или расчётов перестали подтверждаться. '+
+        tr('Проверка игровых целей и разницы уровней: ','Target and level-difference check: ')+
+        targets.lost+tr(' ранее доступных целей или расчётов перестали подтверждаться. ',' previously available targets or calculations can no longer be confirmed. ')+
         [...targets.errors,...targets.samples.map(row=>
          row.name+' / '+row.detail)].slice(0,4).join(' · '));
       const normalized=importer.normalize(combined,legacy);
       if(!Array.isArray(legacyRows)||legacyRows.length!==normalized.counts.legacyLocale)
-        throw Error('Published D1 translation count changed during review');
+        throw Error(tr('Количество записей перевода D1 изменилось во время сверки','Published D1 translation count changed during review'));
       normalized.entries.legacyLocale=legacyRows; // Preserve exact IDs, payloads and source attribution.
       review.auditSelection(baseline,upstream,combined,chosen,importer.files,
         {syncRussianInstances});
@@ -1554,15 +1924,17 @@
         anchor.href=url;anchor.download='pandora-studio-reviewed-catalog.json';
         document.body.append(anchor);anchor.click();anchor.remove();
         URL.revokeObjectURL(url);
-        status.textContent='Выбранный снимок скачан. GitHub не изменён.';
-      }catch(error){status.textContent='Экспорт не выполнен: '+error.message}
+        editorialState(status,'exportDownloaded',
+         'Выбранный снимок скачан. GitHub не изменён.',
+         'Selected snapshot downloaded. GitHub was not changed.');
+      }catch(error){status.textContent=tr('Экспорт не выполнен: ','Export failed: ')+error.message}
     };
 
     publish.onclick=async()=>{
       if(busy||publish.disabled||!permitMutation())return;
       let publishingSnapshot=null;
       let staged;
-      try{staged=prepare()}catch(error){status.textContent='Нельзя публиковать: '+error.message;return}
+      try{staged=prepare()}catch(error){status.textContent=tr('Нельзя публиковать: ','Cannot publish: ')+error.message;return}
       const added=changes.filter(x=>checked(x)&&x.kind==='added').length;
       const changed=changes.filter(x=>checked(x)&&x.kind==='changed').length;
       const removed=changes.filter(x=>checked(x)&&x.kind==='removed').length;
@@ -1571,61 +1943,73 @@
       const unselectedSettings=changes.filter(x=>!checked(x)&&describe(x).service).length;
       const formatted=mode==='server'&&formattingToggle.checked?formattingCount:0;
       const ruCount=mode==='server'&&russianToggle.checked?verifiedRussian.length:0;
+      // A single confirmation path preserves all irreversible safety evidence
+      // across languages. Source-authored titles and estimates stay read-only.
       const sourceWarning=mode==='archive'
-        ?tr('\nИСТОЧНИК: архивная копия может быть устаревшей.',
-         '\nSOURCE: the archive may be outdated.'):
-         tr('\nИСТОЧНИК: доступные данные текущей игры.',
-          '\nSOURCE: currently available game data.');
+       ?tr('\nИСТОЧНИК: архивная копия может быть устаревшей.',
+           '\nSOURCE: the archive may be outdated.')
+       :tr('\nИСТОЧНИК: доступные данные текущей игры.',
+           '\nSOURCE: currently available game data.');
       const selectedChanges=changes.filter(checked);
       const selectedDescriptions=selectedChanges.map(describe);
       const selectedImpacts=selectedDescriptions.flatMap(d=>d.impacts||[]);
       const impactPreview=selectedImpacts.length?
-        '\n\nРАСЧЁТНОЕ ИЗМЕНЕНИЕ ШАНСОВ В BUILD STUDIO:\n'+
-        impactSamples(selectedImpacts).map(e=>'• '+e.preview).join('\n')+
-        (selectedImpacts.length>4?'\n• И ещё '+(selectedImpacts.length-4)+
-          ' изменений (смотри подробную сверку).':'')+
-        '\nЭто расчётная оценка; фактический результат на игровом сервере не проверен.':'';
+       tr('\n\nРАСЧЁТНОЕ ИЗМЕНЕНИЕ ШАНСОВ В BUILD STUDIO:\n',
+          '\n\nESTIMATED CHANCE CHANGES IN BUILD STUDIO:\n')+
+       impactSamples(selectedImpacts).map(e=>'• '+(lang==='en'?e.previewEn||e.preview:e.preview)).join('\n')+
+       (selectedImpacts.length>4?
+        tr('\n• И ещё ','\n• And ')+(selectedImpacts.length-4)+
+        tr(' изменений (смотри подробную сверку).',' more changes (see detailed comparison).'):'')+
+       tr('\nЭто расчётная оценка; фактический результат на игровом сервере не проверен.',
+          '\nThese are estimates; actual game-server results have not been verified.'):'';
       const otherPreview=selectedDescriptions.filter(d=>!(d.impacts||[]).length)
-        .slice(0,2).map(d=>'\n• '+d.title+': '+d.summary.slice(0,200)).join('');
+       .slice(0,2).map(d=>'\n• '+(lang==='en'?d.titleEn||d.title:d.title)+
+     ': '+(lang==='en'&&d.summaryEn?d.summaryEn:d.summary).slice(0,200)).join('');
       const atomicWarning=selectedChanges.some(e=>e.dataset==='tables')?
-        '\n\nВАЖНО: выбран весь набор «Игровые формулы», не один предмет. '+
-        'После подтверждения обновятся все таблицы этого раздела в D1. '+
-        'Применить только одну строку внутри невозможно.':'';
-      const uncertainWarning=uncertain
-        ?'\nВНИМАНИЕ: '+uncertain+' выбранных изменений требуют ручной проверки.':'';
+       tr('\n\nВАЖНО: выбран весь набор «Игровые формулы», не один предмет. '+
+          'После подтверждения обновятся все таблицы этого раздела в D1. '+
+          'Применить только одну строку внутри невозможно.',
+          '\n\nIMPORTANT: the entire game-formula table group was selected, not one item. '+
+          'Confirming replaces all tables in this D1 section. '+
+          'An individual row cannot be published separately.'):'';
+      const uncertainWarning=uncertain?
+       tr('\nВНИМАНИЕ: ','\nWARNING: ')+uncertain+
+       tr(' выбранных изменений требуют ручной проверки.',
+          ' selected changes require manual review.'):'';
       const compatibility=staged.compatibility;
       const mechanicWarning=compatibility?.requiresMechanicReview?
-       '\n\nПРОВЕРКА МЕХАНИК: '+compatibility.totals.needsReview+
-       ' изменений игровых свойств и эффектов требуют проверки совместимости. '+
-       'Новая формула не подтверждается одним обновлением D1. Примеры: '+
+       tr('\n\nПРОВЕРКА МЕХАНИК: ','\n\nMECHANICS REVIEW: ')+
+       compatibility.totals.needsReview+
+       tr(' изменений игровых свойств и эффектов требуют проверки совместимости. '+
+          'Новая формула не подтверждается одним обновлением D1. Примеры: ',
+          ' gameplay properties or effects need compatibility review. '+
+          'Publishing D1 alone does not validate a new formula. Examples: ')+
        compatibility.samples.needsReview.slice(0,3).map(x=>x.title).join('; ')+
-       '. Публикация не гарантирует численные результаты неизвестных эффектов.':'';
+       tr('. Публикация не гарантирует численные результаты неизвестных эффектов.',
+          '. Publishing does not guarantee numeric results for unknown effects.'):'';
       const verifiedNotice=compatibility?.totals.verified?
-       '\nБазовые расчёты и таблицы: проверено '+compatibility.totals.verified+
-       ' разделов (не полная проверка всех боевых механик).':'';
-      const confirmationRu='Применить выбранные изменения в каталог Build Studio?\n'+
-       'Новых: '+added+' · Изменённых: '+changed+' · Удалённых: '+removed+
-       ' · Переносов: '+formatted+' · Русских описаний: '+ruCount+'.'+
-       (notSelectedGame?'\nНе выбрано игровых изменений: '+notSelectedGame+'.':'')+
-       (unselectedSettings?'\nНе выбрано настроек: '+unselectedSettings+'.':'')+
-       sourceWarning+uncertainWarning+mechanicWarning+verifiedNotice+atomicWarning+impactPreview+otherPreview+
-       '\n\nМеняется каталог Build Studio, а НЕ сама игра. Проверь выбранное перед подтверждением. '+
-       'Ничего не опубликовано до этого подтверждения.';
-      const confirmationEn='Publish these changes to the Build Studio catalog?\n'+
-       'New: '+added+' · Changed: '+changed+' · Removed: '+removed+
-       ' · Line breaks: '+formatted+' · Russian descriptions: '+ruCount+'.'+
-       (notSelectedGame?'\nUnselected game changes: '+notSelectedGame+'.':'')+
-       (unselectedSettings?'\nUnselected settings: '+unselectedSettings+'.':'')+
-       sourceWarning+
-       (compatibility?.requiresMechanicReview?
-        '\nMECHANICS: '+compatibility.totals.needsReview+
-        ' effect/property changes require an independent model review. '+
-        'Publishing D1 does not prove unknown formulas.':'')+
-       (uncertain?'\nFlagged for manual review: '+uncertain+'.':'')+
-       (selectedChanges.some(x=>x.dataset==='tables')?
-         '\nGame formula tables, including level caps, are replaced together.':'')+
-       '\n\nOnly the Build Studio catalog changes, not the game. Review before confirming.';
-      if(!confirm(tr(confirmationRu,confirmationEn)))return;
+       tr('\nБазовые расчёты и таблицы: проверено ',
+          '\nBase calculations and tables: verified ')+compatibility.totals.verified+
+       tr(' разделов (не полная проверка всех боевых механик).',
+          ' sections (not a complete check of every combat mechanic).'):'';
+      const confirmation=tr('Применить выбранные изменения в каталог Build Studio?\n',
+                            'Publish these changes to the Build Studio catalog?\n')+
+       tr('Новых: ','New: ')+added+
+       tr(' · Изменённых: ',' · Changed: ')+changed+
+       tr(' · Удалённых: ',' · Removed: ')+removed+
+       tr(' · Переносов: ',' · Line breaks: ')+formatted+
+       tr(' · Русских описаний: ',' · Russian descriptions: ')+ruCount+'.'+
+       (notSelectedGame?
+        tr('\nНе выбрано игровых изменений: ','\nUnselected game changes: ')+notSelectedGame+'.':'')+
+       (unselectedSettings?
+        tr('\nНе выбрано настроек: ','\nUnselected settings: ')+unselectedSettings+'.':'')+
+       sourceWarning+uncertainWarning+mechanicWarning+verifiedNotice+
+       atomicWarning+impactPreview+otherPreview+
+       tr('\n\nМеняется каталог Build Studio, а НЕ сама игра. Проверь выбранное перед подтверждением. '+
+          'Ничего не опубликовано до этого подтверждения.',
+          '\n\nOnly the Build Studio catalog changes, NOT the game. Review before confirming. '+
+          'Nothing is published before you confirm.');
+      if(!confirm(confirmation))return;
       if(!permitMutation())return;
       publishing=true;
       const closeButton=view.closest('.modal')?.querySelector('button.close');
@@ -1659,12 +2043,12 @@
           failure.preflight=true;throw failure;
         }
         const current=await request('/api/admin/catalog/status',{});
-        if (current.active!==activeSnapshot) throw Error('D1 обновлена после проверки. Сверь данные заново.');
+        if (current.active!==activeSnapshot) throw Error(tr('D1 обновлена после проверки. Сверь данные заново.','D1 changed after comparison. Run the comparison again.'));
         await request('/api/admin/catalog/initialize',{});
         const snapshot='ps-'+crypto.randomUUID().replaceAll('-','');
         publishingSnapshot=snapshot;
         if(!/^[a-z0-9-]{8,64}$/.test(snapshot))
-          throw Error('Не удалось подготовить новую версию каталога');
+          throw Error(tr('Не удалось подготовить новую версию каталога','Could not prepare a new catalog revision'));
         const prepared=staged.normalized;
         const total=Object.values(prepared.counts).reduce((n,count)=>n+count,0);
         let done=0;
@@ -1674,14 +2058,15 @@
             const batch=[];let size=0;
             while (offset<rows.length && batch.length<30) {
               const entry=rows[offset],bytes=JSON.stringify(entry).length;
-              if (bytes>12000) throw Error('Запись слишком велика: '+name+'/'+entry.key);
+              if (bytes>12000) throw Error(tr('Запись слишком велика: ','Record exceeds size limit: ')+name+'/'+entry.key);
               if (batch.length && size+bytes>42000) break;
               batch.push(entry);size+=bytes;offset++;
             }
             await request('/api/admin/catalog/batch',{snapshot,dataset:name,records:batch});
             done+=batch.length;
             progress.value=Math.round(done/total*100);
-            status.textContent='Подготавливаю обновление · '+done+' из '+total;
+            status.textContent=tr('Подготавливаю обновление · ','Preparing update · ')+
+              done+tr(' из ',' of ')+total;
           }
         }
         const result=await request('/api/admin/catalog/publish',{
@@ -1717,9 +2102,11 @@
           }catch{}
         }
         status.textContent=error.httpStatus===401
-          ? 'Сеанс администратора истёк. Проверь активную версию D1 после повторного входа.'
-          : 'Не удалось завершить обновление: '+error.message+
-             '. Данные могли остаться прежними или уже обновиться. Сначала проверь каталог заново; не применяй тот же набор вслепую.';
+          ?tr('Сеанс администратора истёк. Проверь активную версию D1 после повторного входа.',
+              'The admin session expired. After signing in again, check the active D1 revision.')
+          :tr('Не удалось завершить обновление: ','Could not complete the update: ')+error.message+
+            tr('. Данные могли остаться прежними или уже обновиться. Сначала проверь каталог заново; не применяй тот же набор вслепую.',
+               '. Data may be unchanged or already published. Check the active catalog before retrying; never apply the same selection blindly.');
       }finally{
         publishing=false;
         if(closeButton?.isConnected)closeButton.disabled=false;
@@ -1731,7 +2118,9 @@
     // contents ever pass through the browser.
     testWrite.onclick=async()=>{
       if(busy||!permitMutation())return;
-      if(!confirm('Проверить, работают ли сохранение и удаление правок? Будут созданы и удалены две временные записи. Игровой каталог и билды не изменяются.'))return;
+      if(!confirm(tr(
+       'Проверить, работают ли сохранение и удаление правок? Будут созданы и удалены две временные записи. Игровой каталог и билды не изменяются.',
+       'Verify that saving and deleting edits works? Two temporary records will be created and deleted. The game catalog and builds will not change.')))return;
       setBusy(true);
       try{
         const result=await request('/api/admin/catalog/test-write',{});
@@ -1739,33 +2128,46 @@
            result.overrideReadback!==true||result.overrideCleaned!==true||
            result.activeCatalogUnchanged!==true)
           throw Error('D1 не подтвердила запись, чтение, очистку и неизменность каталога');
-        status.textContent='Сохранение работает: обе пробные записи созданы, прочитаны и удалены. Игровой каталог не изменился.';
+        editorialState(status,'testWriteSuccess',
+         'Сохранение работает: обе пробные записи созданы, прочитаны и удалены. Игровой каталог не изменился.',
+         'Saving works: both test records were created, read, and deleted. The game catalog is unchanged.');
       }catch(error){
         status.textContent=error.httpStatus===401
-          ? 'Сеанс администратора завершился. Войди заново.'
-          : 'Проверка записи D1 не пройдена: '+error.message;
+          ? tr('Сеанс администратора завершился. Войди заново.',
+              'The admin session ended. Sign in again.')
+          : tr('Проверка записи D1 не пройдена: ','D1 write verification failed: ')+
+            error.message;
       }finally{setBusy(false)}
     };
     testCAS.onclick=async()=>{
       if(busy||!permitMutation())return;
-      if(!confirm('Проверить конфликты правок? Будут временно записаны и удалены только две случайные тестовые записи D1. Игровые данные и билды не меняются.'))return;
+      if(!confirm(tr(
+       'Проверить конфликты правок? Будут временно записаны и удалены только две случайные тестовые записи D1. Игровые данные и билды не меняются.',
+       'Check edit conflicts? Only two random temporary D1 test records will be written and deleted. Game data and builds will not change.')))return;
       setBusy(true);
       try{
         const result=await request('/api/admin/catalog/test-owner-cas',{});
         if(result.ok!==true||result.casVerified!==true||result.qaCleaned!==true||
            result.activeCatalogUnchanged!==true)
           throw Error('Не подтверждены конфликты, очистка и неизменность каталога');
-        status.textContent='Проверка пройдена: устаревшие правки отклоняются, обе тестовые записи удалены, игровой каталог не изменился.';
+        editorialState(status,'testCasSuccess',
+         'Проверка пройдена: устаревшие правки отклоняются, обе тестовые записи удалены, игровой каталог не изменился.',
+         'Check passed: stale edits are rejected, both test records were removed, and the game catalog is unchanged.');
       }catch(error){
         status.textContent=error.httpStatus===401
-          ?'Сеанс администратора закончился. Войди заново.'
-          :'Проверка конфликтов D1 не пройдена: '+error.message;
+          ?tr('Сеанс администратора закончился. Войди заново.',
+              'The admin session ended. Sign in again.')
+          :tr('Проверка конфликтов D1 не пройдена: ','D1 conflict check failed: ')+
+            error.message;
       }finally{setBusy(false)}
     };
     github.onclick=async()=>{
       if(busy||!githubReady||!publishedSnapshot||!permitMutation())return;
-      if(!confirm('Создать отдельный GitHub PR из текущего опубликованного игрового каталога?\n'+
-        'Он не объединится с основной веткой автоматически.'))return;
+      if(!confirm(tr(
+       'Создать отдельный GitHub PR из текущего опубликованного игрового каталога?\n'+
+        'Он не объединится с основной веткой автоматически.',
+       'Create a separate GitHub PR from the currently published game catalog?\n'+
+        'It will not be merged into the main branch automatically.')))return;
       setBusy(true);
       try{
         const active=await request('/api/admin/catalog/status',{});
@@ -1774,16 +2176,20 @@
         const result=await request('/api/admin/catalog/github-pr',{
           expectedActive:publishedSnapshot});
         if(result.unchanged){
-          status.textContent='Каталог в GitHub уже совпадает с опубликованным. PR не требуется.';
+          editorialState(status,'githubNoChanges',
+           'Каталог в GitHub уже совпадает с опубликованным. PR не требуется.',
+           'The GitHub catalog already matches the published catalog. No PR is needed.');
         }else if(/^https:\/\/github\.com\/bonaqu\/Pandora-Saga-Build-Studio\/pull\/\d+$/.test(result.url||'')){
-          status.replaceChildren('Проверенный каталог подготовлен. ',
+          status.replaceChildren(reviewCaption('span',{},'githubPrepared'),
+            document.createTextNode(' '),
             h('a',{href:result.url,target:'_blank',rel:'noopener noreferrer',
-              text:'Открыть PR #'+result.number}));
+              text:tr('Открыть PR #','Open PR #')+result.number}));
         }else throw Error('Некорректный ответ интеграции GitHub');
       }catch(error){
         status.textContent=error.httpStatus===401
-          ? 'Сеанс администратора завершился. Войди заново.'
-          : 'Не удалось создать PR: '+error.message;
+          ? tr('Сеанс администратора завершился. Войди заново.',
+              'The admin session ended. Sign in again.')
+          : tr('Не удалось создать PR: ','Could not create PR: ')+error.message;
       }finally{setBusy(false)}
     };
     // Existing published snapshots can be sent to GitHub even if no new
@@ -1795,8 +2201,10 @@
       githubReady=settings.configured===true&&settings.connected===true&&settings.writeAccess===true;
       publishedSnapshot=current.active||null;
       github.setAttribute('aria-label',githubReady
-        ? 'Создать PR в GitHub из опубликованного каталога'
-        : 'Создать PR в GitHub — требуется настройка токена на сервере');
+        ? tr('Создать PR в GitHub из опубликованного каталога',
+             'Create a GitHub PR from the published catalog')
+        : tr('Создать PR в GitHub — требуется настройка токена на сервере',
+             'Create GitHub PR — server token configuration required'));
       refreshActions();
     }).catch(()=>{githubReady=false;refreshActions()});
 
@@ -1845,13 +2253,14 @@
 
   // Read-only. Each JSON value must match the reviewed selection, not merely
   // a version header, count, or two of the game's seventeen datasets.
-  async function verifyPublishedSnapshot(apiBase,snapshot,expected,fetcher=fetch){
+  async function verifyPublishedSnapshot(apiBase,snapshot,expected,fetcher=fetch,lang='ru'){
+    const tr=(ru,en)=>lang==='en'?en:ru;
     const files=root.PandoraCatalogImport?.files;
     const review=root.PandoraOSCatalogReview;
     const safety=root.PandoraCatalogSafety;
     if(!Array.isArray(files)||!files.length||
        !review?.strictEqual||!safety?.check)
-      throw Error('Не подключены модули проверки каталога');
+      throw Error(tr('Не подключены модули проверки каталога','Catalog verification modules are unavailable'));
     const received={},queue=[...files];
     async function read(name){
       const alias=name==='strings.en'?'stringsEn':name;
@@ -1860,10 +2269,10 @@
       });
       if(!response.ok||response.headers.get('x-ps-catalog')!=='d1'||
          response.headers.get('x-ps-catalog-snapshot')!==snapshot)
-        throw Error('Не подтверждена версия D1: '+name);
+        throw Error(tr('Не подтверждена версия D1: ','Published D1 revision not verified: ')+name);
       const data=await response.json();
       if(!review.strictEqual(data,expected?.[name]))
-        throw Error('Опубликованный раздел отличается от выбранного: '+name);
+        throw Error(tr('Опубликованный раздел отличается от выбранного: ','Published dataset differs from selection: ')+name);
       return data;
     }
     let failure=null;
@@ -1878,9 +2287,9 @@
     // Reject a concurrent publication even when all previous reads succeeded.
     await read('meta');
     const check=safety.check(received);
-    if(!check.ok)throw Error('Базовые расчёты после обновления: '+check.issues.join(' · '));
+    if(!check.ok)throw Error(tr('Базовые расчёты после обновления: ','Base calculations after publication: ')+check.issues.join(' · '));
     return {...check,verifiedDatasets:files.length};
   }
 
-  root.PandoraOSCatalogWorkbench=Object.freeze({open,verifyPublishedSnapshot,statusForSelection});
+  root.PandoraOSCatalogWorkbench=Object.freeze({open,verifyPublishedSnapshot,statusForSelection,createReviewActionQueue});
 })(typeof window === 'undefined' ? globalThis : window);

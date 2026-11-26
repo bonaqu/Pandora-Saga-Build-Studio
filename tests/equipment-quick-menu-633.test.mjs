@@ -56,3 +56,10 @@ test('single-scenario browser debugging remains manual and does not replace PR s
  assert.match(workflow,/elif \[\[ "\$\{\{ steps\.suite\.outputs\.mode \}\}" == 'quick'/);
  assert.match(workflow,/node tests\/browser-smoke\.mjs\s*$/m);
 });
+
+test('English gear context smoke waits for a rendered belt, not only document.lang',()=>{
+ const browser=read('tests/browser-equipment-quick-menu.mjs');
+ assert.match(browser,/getAttribute\('aria-label'\)\?\.startsWith\('Belt · '\)/);
+ assert.match(browser,/document\.documentElement\.lang==='en'/);
+ assert.match(browser,/await right\(belt\);/);
+});

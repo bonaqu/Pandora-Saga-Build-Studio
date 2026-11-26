@@ -197,6 +197,27 @@ export async function runWikiMaterialLinks752Smoke(browser,base){
    assert.match(roles,/Area:/);
    assert.match(roles,/Effect:/);
   }
+  // The real browser runtime must not leak Russian safety messages into EN.
+  // These rejection messages protect item IDs; they are never owner D1 copy.
+  const itemCopy=await page.evaluate(()=>{
+   const presenter=window.PandoraItemPresentation;
+   const lookup=id=>({'1':'A B','2':'B C'}[id]||null);
+   const single=id=>id==='1'?'Ring':null;
+   const check=work=>{try{work();return null}catch(error){return error.message}};
+   return {
+    fallback:presenter.displayName({name:'12345'},undefined,'en'),
+    ruFallback:presenter.displayName({name:'12345'}),
+    overlap:check(()=>presenter.restoreReferences('A B C',
+     '<item 1> and <item 2>.',lookup,'en')),
+    duplicate:check(()=>presenter.restoreReferences('Ring and Ring',
+     '<item 1>',single,'en'))
+   };
+  });
+  assert.equal(itemCopy.fallback,'Unnamed item');
+  assert.equal(itemCopy.ruFallback,'Без названия');
+  assert.match(itemCopy.overlap,/^Item references overlap\./);
+  assert.match(itemCopy.duplicate,/^The name “Ring” appears more than once\./);
+  assert.doesNotMatch(itemCopy.overlap+itemCopy.duplicate,/Ссылки|Название|встречается/);
   assert.deepEqual(errors,[]);
  }finally{await context.close()}
 }

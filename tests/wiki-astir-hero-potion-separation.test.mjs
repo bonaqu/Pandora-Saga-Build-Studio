@@ -97,7 +97,11 @@ test('Phoenix is shown active only for valid equipped fire-gem +7 weapon',()=>{
  assert.match(equipment,/if\(phoenix\)rows\.push/);
  const book=read('pandora-studio-hero-book.js');
  assert.match(book,/PandoraConditionalItemBonuses\?\.activeFor/);
- assert.match(book,/function appendWeaponConditions\(body,calc,items,english\)/);
+ assert.match(book,/function appendWeaponConditions\(body,calc,items,english,options=\{\}\)/);
+ assert.match(book,/appendWeaponConditions\(body,calc,items,english,options\)/);
+ assert.match(book,/PandoraConditionalItemBonuses\?\.activeFor/);
+ assert.match(book,/data-weapon-proc-number':'chance'/);
+ assert.match(book,/data-weapon-proc-number':'cooldown'/);
  assert.match(book,/Пламя феникса/);
  assert.match(book,/phoenixDamage\(/);
  assert.match(book,/calc\?\.stats/);

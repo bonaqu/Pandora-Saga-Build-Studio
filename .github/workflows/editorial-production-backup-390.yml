@@ -1,0 +1,77 @@
+# #390 protected production FULL SQL export only — ZERO remote writes.
+# Never upload unencrypted SQL or Cloudflare/recovery credentials.
+name: "#390 production D1 encrypted BACKUP (requires owner reviewer)"
+
+on:
+  pull_request:
+    types: [labeled]
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: pandora-issue390-production-backup
+  cancel-in-progress: false
+
+jobs:
+  production-backup:
+    if: >-
+      github.repository == 'bonaqu/Pandora-Saga-Build-Studio' &&
+      github.event.pull_request.number == 809 &&
+      github.event.pull_request.base.ref == 'bonaqu_projects' &&
+      github.event.pull_request.head.repo.full_name == 'bonaqu/Pandora-Saga-Build-Studio' &&
+      github.event.pull_request.head.ref == 'work/947-issue390-editorial-parity' &&
+      github.event.label.name == 'ps390-production-backup'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: editorial-production-390
+    env:
+      PS_EDITORIAL_EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+      GITHUB_TOKEN: ${{ github.token }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: 57ac934cd0f0a7f5e8533177d612f893
+      PS_D1_DATABASE_ID: 0f8fbcd8-be06-414c-844b-a2091fdf6784
+      PS390_PRODUCTION_BACKUP_KEY: ${{ secrets.PS390_PRODUCTION_BACKUP_KEY }}
+    steps:
+      - name: Checkout exact PR branch
+        uses: actions/checkout@v5
+        with:
+          ref: work/947-issue390-editorial-parity
+          persist-credentials: false
+      - name: Use Node 22
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Verify same-source immutable CI before sensitive D1 export
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$PS_EDITORIAL_EXPECTED_SHA"
+          test -z "$(git status --porcelain)"
+          node scripts/check-editorial-staging-approval.mjs ci
+      - name: Confirm owner-controlled recovery passphrase before touching D1
+        run: |
+          test -n "$PS390_PRODUCTION_BACKUP_KEY"
+          test "${#PS390_PRODUCTION_BACKUP_KEY}" -ge 32
+      - name: Place private SQL inside the actual runner HOME (0700)
+        run: |
+          set -euo pipefail
+          printf 'PS390_PRODUCTION_BACKUP_DIR=%s\n' "$HOME/.ps390-production-private" >> "$GITHUB_ENV"
+          printf 'PS390_PRODUCTION_CIPHER_DIR=%s\n' "$RUNNER_TEMP/ps390-production-encrypted" >> "$GITHUB_ENV"
+      - name: Export ALL production D1 data, restore-test, seal with AES-GCM
+        id: seal
+        run: node scripts/production-editorial-sealed-backup-390.mjs
+      - name: Publish ONLY authenticated ciphertext and nonsecret receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.seal.outputs.artifact_name }}
+          path: |
+            ${{ runner.temp }}/ps390-production-encrypted/*.enc
+            ${{ runner.temp }}/ps390-production-encrypted/receipt.json
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+      - name: Erase temporary plaintext export and ciphertext workspace
+        if: always()
+        run: |
+          rm -rf "$PS390_PRODUCTION_BACKUP_DIR" "$PS390_PRODUCTION_CIPHER_DIR"

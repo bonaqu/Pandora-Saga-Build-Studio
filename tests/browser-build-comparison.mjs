@@ -28,8 +28,42 @@ export async function runBuildComparisonSmoke(browser,base){
   localStorage.setItem('ps-build-owner-scope.v1','account:'+username);
   localStorage.setItem('ps-build-library.v1',JSON.stringify(library));
  },{secret,library,token,username});
- await context.route('**/*',route=>
-  route.request().url().startsWith(base+'/')?route.continue():route.abort());
+ // Actual owner D1 CAS over a strict in-memory fake. No production traffic.
+ const api='https://ps-build-studio-cloud.bonaqu.workers.dev';
+ const copyValues={},copyWrites=[],copyResets=[],copyConflicts=new Set();
+ await context.route('**/*',route=>{
+  const request=route.request(),url=request.url();
+  if(url.startsWith(base+'/'))return route.continue();
+  if(!url.startsWith(api+'/api/'))return route.abort();
+  const target=new URL(url).pathname;
+  const headers={'access-control-allow-origin':'*',
+   'access-control-allow-methods':'GET,POST,OPTIONS',
+   'access-control-allow-headers':'Authorization,Content-Type'};
+  const reply=(body,status=200)=>route.fulfill({status,headers,
+   contentType:'application/json',body:JSON.stringify(body)});
+  if(request.method()==='OPTIONS')return route.fulfill({status:204,headers});
+  if(target==='/api/overrides')return reply({values:copyValues});
+  if(target==='/api/admin/login')
+   return reply({token:'z'.repeat(43),expires:Date.now()+7200000});
+  if(target==='/api/admin/catalog/test-write')return reply({
+   ok:true,readback:true,cleaned:true,overrideReadback:true,
+   overrideCleaned:true,activeCatalogUnchanged:true
+  });
+  if(target==='/api/admin/override'||target==='/api/admin/reset'){
+   const data=request.postDataJSON(),existing=copyValues[data.key]??null;
+   assert.equal(request.headers().authorization,'Bearer '+'z'.repeat(43));
+   assert.equal(data.expectedValue,existing,'Owner CAS requires expected value');
+   if(copyConflicts.delete(data.key))
+    return reply({code:'OWNER_EDIT_CONFLICT',error:'Stale metric edit'},409);
+   if(target==='/api/admin/reset'){
+    delete copyValues[data.key];copyResets.push(data);
+    return reply({ok:true,key:data.key,deleted:true,conditional:true});
+   }
+   copyValues[data.key]=data.value;copyWrites.push(data);
+   return reply({ok:true,key:data.key,value:data.value,conditional:true});
+  }
+  return route.abort();
+ });
  const page=await context.newPage(),errors=[];
  page.on('pageerror',e=>errors.push(e.message));
  try{
@@ -80,7 +114,19 @@ export async function runBuildComparisonSmoke(browser,base){
   await panel.waitFor({state:'visible'});
   assert.equal(await page.locator('#modalRoot .modal').count(),0);
   await panel.getByRole('button',{name:'Развернуть сравнение'}).click();
-  const selects=panel.locator('[data-compare-select]');
+  // Fixed A/B captions are RU-authorial; A/B letters and selected IDs are not.
+   assert.deepEqual(await panel.locator('[data-owner-copy-key="compareBuildCaption"]')
+    .allTextContents(),['Билд','Билд']);
+   assert.deepEqual(await panel.locator('[data-compare-letter]').allTextContents(),[' A',' B']);
+   assert.deepEqual(await panel.locator('[data-compare-select]').evaluateAll(
+    fields=>fields.map(node=>node.getAttribute('aria-label'))),['Билд A','Билд B']);
+   assert.deepEqual(await panel.locator('[data-compare-select] option[value=""]').allTextContents(),
+    ['Выбери сохранённый билд','Выбери сохранённый билд']);
+   assert.equal(await panel.locator('.build-compare-table').getAttribute('aria-label'),
+    'Различающиеся итоговые характеристики билдов');
+   assert.equal(await panel.locator('.build-compare-swap').getAttribute('title'),
+    'Поменять билды A и B местами');
+   const selects=panel.locator('[data-compare-select]');
   await selects.nth(0).selectOption(idA);
   await selects.nth(1).selectOption(idB);
   const hp=panel.locator('[data-compare-row="stat.hp"]');
@@ -91,10 +137,172 @@ export async function runBuildComparisonSmoke(browser,base){
   const firstA=(await hpA.innerText()).trim();
   const firstB=(await hpB.innerText()).trim();
   assert.notEqual(firstA,firstB,'Different calculated health must be visible');
+  // #390: real source-authored A/B metric name editor; no extra pencil.
+  assert.equal(await hp.locator('[data-owner-text-field]').count(),0);
+  await page.keyboard.press('Control+Alt+Shift+P');
+  await page.getByRole('dialog',{name:'Служебный вход'}).waitFor({state:'visible'});
+  await page.locator('input[placeholder="Пароль администратора"]')
+   .fill('Correct admin password!');
+  await page.locator('.modal').getByRole('button',{name:'Войти',exact:true}).click();
+  await page.locator('#ownerDock').waitFor({state:'visible',timeout:15000});
+  await hp.waitFor({state:'visible'});
+  assert.equal(await hp.getAttribute('data-owner-copy-section'),'compare-metric');
+  assert.equal(await hp.getAttribute('data-owner-copy-id'),'hp');
+  assert.equal(await hp.getAttribute('aria-keyshortcuts'),'F2 Enter');
+  assert.equal(await panel.locator('.build-compare-table .ui-content-pencil').count(),0);
+  const beforeNumbers=[await hpA.textContent(),await hpB.textContent()];
+  const metricKey='guideedit.book.compare-metric.hp';
+  // Existing icon copy is F2-editable, with no caption pencil or A/B swap.
+  const swapIcon=panel.locator('.build-compare-swap');
+  assert.equal(await swapIcon.getAttribute('aria-keyshortcuts'),'F2');
+  const savedChoices=await selects.evaluateAll(nodes=>nodes.map(n=>n.value));
+  await swapIcon.focus();await swapIcon.press('F2');
+  const iconInput=panel.locator('.build-compare-controls .ui-content-edit-host [contenteditable]');
+  await iconInput.waitFor({state:'visible'});
+  await iconInput.fill('Поменять билды · редактура QA');
+  await iconInput.press('Tab');
+  await iconInput.waitFor({state:'detached',timeout:15000});
+  await page.waitForFunction(()=>document.querySelector('.build-compare-swap')?.title===
+   'Поменять билды · редактура QA',null,{timeout:15000});
+  const iconKey=await page.evaluate(()=>
+   'guideedit.book.'+window.PandoraUILocale.fieldKey('compareSwapAction'));
+  assert.equal(JSON.parse(copyValues[iconKey]).ru,'Поменять билды · редактура QA');
+  assert.equal(await swapIcon.getAttribute('aria-label'),'Поменять билды · редактура QA');
+  assert.equal((await swapIcon.textContent()).trim(),'⇄');
+  assert.equal(await panel.locator('.build-compare-controls .ui-content-pencil').count(),0);
+  assert.deepEqual(await selects.evaluateAll(nodes=>nodes.map(n=>n.value)),savedChoices);
+  await swapIcon.focus();await swapIcon.press('F2');
+  const cancelled=panel.locator('.build-compare-controls .ui-content-edit-host [contenteditable]');
+  await cancelled.waitFor({state:'visible'});await cancelled.fill('Не сохранять');
+  await cancelled.press('Escape');await cancelled.waitFor({state:'detached'});
+  assert.equal(JSON.parse(copyValues[iconKey]).ru,'Поменять билды · редактура QA');
+  if(await page.locator('#ownerDock').evaluate(el=>el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
+  await page.locator('#ownerDock [data-owner-undo]').click();
+  await page.waitForFunction(()=>document.querySelector('.build-compare-swap')?.title===
+   'Поменять билды A и B местами',null,{timeout:15000});
+  assert.equal(Object.hasOwn(copyValues,iconKey),false);
+  assert.deepEqual(await selects.evaluateAll(nodes=>nodes.map(n=>n.value)),savedChoices);
+  if(!await page.locator('#ownerDock').evaluate(el=>el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
+  const mountedMetric=await hp.elementHandle();
+  await hp.dblclick();
+  const metricInput=hp.locator('[data-owner-text-field]');
+  await metricInput.waitFor({state:'visible'});
+  await metricInput.fill('ОЗ · редактура QA');
+  await metricInput.press('Tab');
+  // The filled draft is already visible before D1 confirms the write.
+  // A second editor can open only after the previous input is removed.
+  await metricInput.waitFor({state:'detached',timeout:15000});
+  await page.waitForFunction(()=>document.querySelector(
+   '[data-compare-row="stat.hp"]')?.textContent==='ОЗ · редактура QA',
+   null,{timeout:15000});
+  assert.equal(JSON.parse(copyValues[metricKey]).ru,'ОЗ · редактура QA');
+  assert.deepEqual([await hpA.textContent(),await hpB.textContent()],beforeNumbers);
+  assert.equal(await mountedMetric.evaluate(node=>node.isConnected),true);
+  // The mock 409 must retain the full failed draft without clobbering CAS.
+  copyConflicts.add(metricKey);
+  await hp.focus();await hp.press('F2');
+  const failedMetric=hp.locator('[data-owner-text-field]');
+  await failedMetric.fill('Не сохранено после конфликта');
+  await failedMetric.press('Tab');
+  await hp.locator('.ui-content-inline-error').waitFor({
+   state:'visible',timeout:15000});
+  assert.equal(await failedMetric.textContent(),'Не сохранено после конфликта');
+  assert.equal(JSON.parse(copyValues[metricKey]).ru,'ОЗ · редактура QA');
+  await failedMetric.press('Escape');
+  assert.equal((await hp.innerText()).trim(),'ОЗ · редактура QA');
+  if(await page.locator('#ownerDock').evaluate(el=>el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
+  await page.locator('#ownerDock [data-owner-undo]').click();
+  await page.waitForFunction(()=>document.querySelector(
+   '[data-compare-row="stat.hp"]')?.textContent==='ОЗ',
+   null,{timeout:15000});
+  assert.equal(copyResets.at(-1)?.key,metricKey);
+  assert.equal(Object.hasOwn(copyValues,metricKey),false);
+  assert.deepEqual([await hpA.textContent(),await hpB.textContent()],beforeNumbers);
+  assert.equal(await mountedMetric.evaluate(node=>node.isConnected),true,
+   'Undo should patch the mounted A/B caption, not rebuild the result table');
+  await mountedMetric.dispose();
+  if(!await page.locator('#ownerDock').evaluate(el=>el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
+  // The same metric is edited in English under the same exact D1 key,
+  // never conflated with the Russian source lookup or the A/B values.
+  await page.locator('#locale [data-locale="en"]').focus();
+  await page.locator('#locale [data-locale="en"]').press('Enter');
+  await page.waitForFunction(()=>document.documentElement.lang==='en'&&
+   document.querySelector('[data-compare-row="stat.hp"]')?.textContent==='HP',
+   null,{timeout:15000});
+  await page.locator('#startupOverlay').waitFor({state:'hidden',timeout:15000});
+  const numbersEn=[await hpA.textContent(),await hpB.textContent()];
+  const englishCaptionState=await hp.evaluate(node=>({
+   visible:node.getBoundingClientRect().width>0&&
+    getComputedStyle(node).visibility!=='hidden',
+   tabIndex:node.tabIndex,
+   shortcuts:node.getAttribute('aria-keyshortcuts'),
+   ownerSection:node.dataset.ownerCopySection,
+   ownerId:node.dataset.ownerCopyId,
+   compareOpen:node.closest('[data-build-compare]')?.querySelector(
+    '.build-compare-content')?.hidden,
+   activeLocale:document.documentElement.lang,
+   editorPresent:Boolean(node.querySelector('[data-owner-text-field]'))
+  }));
+  console.log('#390 A/B English caption owner state:',
+   JSON.stringify(englishCaptionState));
+  assert.equal(englishCaptionState.compareOpen,false,
+   'Language switch must preserve the expanded comparison');
+  assert.equal(englishCaptionState.ownerSection,'compare-metric',
+   'Language switch must rebind the owner caption editor');
+  assert.equal(englishCaptionState.ownerId,'hp');
+  assert.equal(englishCaptionState.shortcuts,'F2 Enter');
+  await hp.focus();
+  const englishFocus=await hp.evaluate(node=>({
+   focused:document.activeElement===node,
+   connected:node.isConnected,
+   active:document.activeElement?.outerHTML?.slice(0,240),
+   inertAncestor:node.closest('[inert]')?.id||null,
+   hiddenAncestor:node.closest('[hidden]')?.id||null,
+   renderedRow:document.querySelector('[data-compare-row="stat.hp"]')===node,
+   tableVisible:node.closest('.build-compare-table')?.getBoundingClientRect().height>0,
+   dialogOpen:!document.getElementById('modalRoot')?.hidden,
+   ownerDockCollapsed:document.getElementById('ownerDock')?.classList.contains('owner-dock-collapsed')
+  }));
+  if(!englishFocus.focused)
+   console.error('#390 A/B English focus diagnostic:',JSON.stringify(englishFocus));
+  assert.equal(englishFocus.focused,true,
+   'English metric label must remain keyboard-focusable');
+  await hp.press('F2');
+  const enInput=hp.locator('[data-owner-text-field]');
+  await enInput.waitFor({state:'visible'});
+  await enInput.fill('Health · English QA');
+  await enInput.press('Tab');
+  await enInput.waitFor({state:'detached',timeout:15000});
+  await page.waitForFunction(()=>document.querySelector(
+   '[data-compare-row="stat.hp"]')?.textContent==='Health · English QA',
+   null,{timeout:15000});
+  assert.equal(JSON.parse(copyValues[metricKey]).en,'Health · English QA');
+  assert.deepEqual([await hpA.textContent(),await hpB.textContent()],numbersEn);
+  if(await page.locator('#ownerDock').evaluate(el=>el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
+  await page.locator('#ownerDock [data-owner-undo]').click();
+  await page.waitForFunction(()=>document.querySelector(
+   '[data-compare-row="stat.hp"]')?.textContent==='HP',
+   null,{timeout:15000});
+  assert.equal(Object.hasOwn(copyValues,metricKey),false);
+  assert.equal(copyResets.at(-1)?.key,metricKey);
+  if(!await page.locator('#ownerDock').evaluate(el=>el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
+  await page.locator('#locale [data-locale="ru"]').focus();
+  await page.locator('#locale [data-locale="ru"]').press('Enter');
+  await page.waitForFunction(()=>document.documentElement.lang==='ru'&&
+   document.querySelector('[data-compare-row="stat.hp"]')?.textContent==='ОЗ',
+   null,{timeout:15000});
   assert.equal(await hpB.getAttribute('data-compare-advantage'),'',
    'Higher HP in B should be bold');
   assert.equal(await hpA.getAttribute('data-compare-advantage'),null);
   assert.equal(await panel.locator('.build-compare-table thead th').count(),6);
+   assert.deepEqual(await panel.locator('[data-owner-copy-key="compareStatColumn"]')
+    .allTextContents(),['Характеристика','Характеристика']);
   assert.equal(await panel.locator('[data-compare-delta]').count(),0);
   assert.match(await panel.locator('.build-compare-summary').innerText(),/Отличий:/);
   const rows=panel.locator('[data-compare-row]'),count=await rows.count();
@@ -126,17 +334,51 @@ export async function runBuildComparisonSmoke(browser,base){
    JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')));
   assert.equal(persisted,original,'Comparison cannot rewrite saved builds');
   await panel.getByRole('button',{name:'Скрыть сравнение'}).click();
+  // Owner captions guard the first pointer click for 500ms so a second
+  // click can edit the label. Confirm the REAL action eventually completes,
+  // rather than asserting synchronously while that guarded click is queued.
+  await panel.locator('.build-compare-content').waitFor({state:'hidden',timeout:4000});
+  assert.equal(await panel.locator('.build-compare-expand').getAttribute('aria-expanded'),'false');
   assert.equal(await panel.locator('.build-compare-table').isVisible(),false);
+  assert.equal(await panel.locator('.ui-content-edit-host').count(),0);
   assert.equal(await page.locator('.build-card').count(),3);
   await page.setViewportSize({width:390,height:780});
   await assertCardGeometry();
   await page.screenshot({path:'artifacts/layout/saved-build-cards-mobile.jpg',
    type:'jpeg',quality:76,animations:'disabled'});
   await panel.getByRole('button',{name:'Развернуть сравнение'}).click();
+  await panel.locator('.build-compare-content').waitFor({state:'visible',timeout:4000});
+  assert.equal(await panel.locator('.build-compare-expand').getAttribute('aria-expanded'),'true');
+  assert.equal(await panel.locator('.ui-content-edit-host').count(),0);
   const overflow=await page.evaluate(()=>
    Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-
    document.documentElement.clientWidth);
   assert.ok(overflow<=14,'Comparison created page-level overflow: '+overflow);
+  // Source-authored owner caption must survive checkbox auto-expand, not be
+  // replaced by hardcoded RU/EN copy or an obsolete D1 identity.
+  await page.setViewportSize({width:1240,height:850});
+  const expandAction=panel.locator('.build-compare-expand');
+  await expandAction.dblclick();
+  const expandEditor=panel.locator('.build-compare-action-group [data-owner-text-field]');
+  await expandEditor.waitFor({state:'visible',timeout:10000});
+  await expandEditor.fill('Скрыть сравнение · QA');
+  await expandEditor.press('Tab');
+  await expandEditor.waitFor({state:'detached',timeout:15000});
+  await page.waitForFunction(()=>
+   document.querySelector('.build-compare-expand')?.textContent==='Скрыть сравнение · QA',
+   null,{timeout:15000});
+  const expandKey=await page.evaluate(()=>
+   'guideedit.book.'+window.PandoraUILocale.fieldKey('compareCollapse'));
+  assert.equal(JSON.parse(copyValues[expandKey]).ru,'Скрыть сравнение · QA');
+  await expandAction.click();
+  await panel.locator('.build-compare-content').waitFor({state:'hidden',timeout:4000});
+  await page.locator('.build-card-compare input').first().uncheck();
+  await panel.locator('.build-compare-content').waitFor({state:'visible',timeout:4000});
+  assert.equal(await expandAction.getAttribute('data-owner-copy-key'),'compareCollapse');
+  assert.equal(await expandAction.getAttribute('aria-expanded'),'true');
+  assert.equal((await expandAction.textContent()).trim(),'Скрыть сравнение · QA',
+   'Checkbox auto-expand must retain current D1 owner copy');
+  assert.equal(await panel.locator('.ui-content-edit-host').count(),0);
   assert.deepEqual(errors,[]);
   console.log('Chromium compact A/B passed: differences, swap, identical results, mobile');
  }finally{await context.close()}
@@ -190,7 +432,22 @@ export async function runSavedBuildEnglishSmoke(browser,base){
    'Character workshop');
   assert.equal(await page.locator('#dockClose').getAttribute('aria-label'),
    'Close workbench');
-  const cards=page.locator('.build-card');
+  const comparisonPanel=page.locator('[data-build-compare]');
+   await comparisonPanel.waitFor({state:'visible'});
+   assert.deepEqual(await comparisonPanel.locator('[data-owner-copy-key="compareBuildCaption"]')
+    .allTextContents(),['Build','Build']);
+   assert.deepEqual(await comparisonPanel.locator('[data-compare-letter]').allTextContents(),[' A',' B']);
+   assert.deepEqual(await comparisonPanel.locator('[data-compare-select]').evaluateAll(
+    fields=>fields.map(node=>node.getAttribute('aria-label'))),['Build A','Build B']);
+   assert.deepEqual(await comparisonPanel.locator('[data-compare-select] option[value=""]').allTextContents(),
+    ['Choose a saved build','Choose a saved build']);
+   assert.equal(await comparisonPanel.locator('.build-compare-swap').getAttribute('aria-label'),
+    'Swap builds A and B');
+   assert.equal(await comparisonPanel.locator('.build-compare-table').getAttribute('aria-label'),
+    'Different calculated stats of saved builds');
+   assert.deepEqual(await comparisonPanel.locator('[data-owner-copy-key="compareStatColumn"]')
+    .allTextContents(),['Stat','Stat']);
+   const cards=page.locator('.build-card');
   await cards.first().waitFor({state:'visible',timeout:20000});
   assert.equal(await cards.count(),6,'Six saved builds must be present');
   assert.equal(await page.locator('.build-signin-gate').count(),0);

@@ -846,6 +846,20 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(await liveAction.count(),1,
    'The live catalog button remains in a direct-edit wrapper');
   const expectedCalls=calls.filter(value=>value.startsWith('game-source:')).length;
+  // The real enabled download action must not fire after a fast keyboard
+  // edit/cancel, including when Escape restores the original button before
+  // the delayed pointer activation would have executed.
+  const queuedLiveButton=liveAction.locator('.os-sync-main-check');
+  await queuedLiveButton.click();
+  await queuedLiveButton.press('F2');
+  const queuedLiveEditor=liveAction.locator('.os-sync-action-edit-host [contenteditable]');
+  await queuedLiveEditor.waitFor({state:'visible',timeout:12000});
+  await queuedLiveEditor.press('Escape');
+  await queuedLiveEditor.waitFor({state:'detached',timeout:12000});
+  await page.waitForTimeout(650);
+  assert.equal(calls.filter(value=>value.startsWith('game-source:')).length,expectedCalls,
+   'F2/Escape must cancel a queued enabled catalog download action');
+  assert.equal(await queuedLiveButton.isVisible(),true);
   for(const caption of ['Проверить игровой источник QA','Проверить изменения в текущей игре']){
    await liveAction.locator('.os-sync-main-check').dblclick();
    const input=liveAction.locator('.os-sync-action-edit-host [contenteditable]');
@@ -862,10 +876,15 @@ export async function runAdminEntrySmoke(browser,base){
    expectedCalls,'Editing the button must not start a catalog download');
   assert.equal(await dialog.locator('.os-sync-main-check').count(),1);
   const liveSource=dialog.getByRole('button',{name:'Проверить изменения в текущей игре'});
+  // Previous inline-edit actions can leave the pointer already inside this
+  // button with a pending hint. Actually leave it first, cancelling that
+  // timer, then measure the delay from a fresh user pointerenter.
+  await page.mouse.move(2,2);
+  await page.getByRole('tooltip').waitFor({state:'hidden',timeout:3500});
   await liveSource.hover();
   await page.waitForTimeout(330);
   assert.equal(await page.getByRole('tooltip').isVisible(),false,
-   'Admin hints must not appear immediately after pointer entry');
+   'Admin hints must not appear immediately after a fresh pointer entry');
   await page.getByRole('tooltip').filter({hasText:/17 разделов доступных игровых данных/}).waitFor({state:'visible',timeout:3500});
   await page.mouse.move(2,2);
   await page.getByRole('tooltip').waitFor({state:'hidden'});
@@ -930,7 +949,7 @@ export async function runAdminEntrySmoke(browser,base){
    ?.dataset.guideHint==='Подсказка дополнительных инструментов QA.',null,{timeout:12000});
   assert.equal(JSON.parse(townOverrides.get('guideedit.book.catalog-sync.hint-advanced-disclosure')).ru,
    'Подсказка дополнительных инструментов QA.');
-  assert.equal(await advancedBlock.locator('details').evaluate(el=>el.open),false);
+  assert.equal(await advancedBlock.locator(':scope > details.os-sync-advanced').evaluate(el=>el.open),false);
   await dialog.locator('.os-sync-advanced>summary').click();
   const prButton=dialog.getByRole('button',{name:'Создать PR в GitHub'});
   await prButton.waitFor({state:'visible'});
@@ -940,10 +959,44 @@ export async function runAdminEntrySmoke(browser,base){
   await prButton.click();
   await dialog.getByRole('link',{name:'Открыть PR #246'}).waitFor({state:'visible'});
   assert.deepEqual(calls.filter(x=>x==='github-pr'),['github-pr']);
+  const preparedCopy=dialog.locator('[data-owner-copy-id="githubPrepared"]');
+  const preparedLink=dialog.getByRole('link',{name:'Открыть PR #246'});
+  const originalPrHref=await preparedLink.getAttribute('href');
+  await preparedCopy.dblclick();
+  const preparedEditor=preparedCopy.locator('[contenteditable]');
+  await preparedEditor.waitFor({state:'visible',timeout:12000});
+  await preparedEditor.fill('Каталог подготовлен · QA.');
+  await preparedEditor.press('Tab');
+  await preparedEditor.waitFor({state:'detached',timeout:15000});
+  const preparedKey='guideedit.book.catalog-sync.github-prepared';
+  for(let n=0;n<300&&!townOverrides.has(preparedKey);n++)
+   await page.waitForTimeout(40);
+  assert.equal(JSON.parse(townOverrides.get(preparedKey)).ru,'Каталог подготовлен · QA.');
+  assert.equal(await preparedLink.getAttribute('href'),originalPrHref);
+  assert.equal(await preparedLink.getAttribute('target'),'_blank');
+  assert.deepEqual(calls.filter(x=>x==='github-pr'),['github-pr'],
+   'Editing the result caption must not request another PR');
   page.once('dialog',confirmation=>confirmation.accept());
   await dialog.getByRole('button',{name:'Проверить сохранение правок'}).click();
   await page.waitForFunction(()=>Array.from(document.querySelectorAll('.os-sync [role=status]'))
     .some(node=>node.textContent?.includes('Сохранение работает')));
+  assert.deepEqual(calls.filter(x=>x==='d1-write-check'),['d1-write-check']);
+
+  // Only a confirmed success message is authorial D1 copy. A real inline
+  // blur-save must not touch the live game catalog or confirmation proof.
+  const writeSuccess=dialog.locator('.os-sync-status .os-sync-state-caption');
+  await writeSuccess.waitFor({state:'visible',timeout:12000});
+  await writeSuccess.dblclick();
+  const writeSuccessEditor=writeSuccess.locator('[contenteditable]');
+  await writeSuccessEditor.waitFor({state:'visible',timeout:6000});
+  await writeSuccessEditor.fill('Пробные записи безопасно проверены.');
+  await writeSuccessEditor.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '.os-sync-status .os-sync-state-caption')?.textContent===
+   'Пробные записи безопасно проверены.',null,{timeout:12000});
+  assert.equal(JSON.parse(townOverrides.get(
+   'guideedit.book.catalog-sync.test-write-success')).ru,
+   'Пробные записи безопасно проверены.');
   assert.deepEqual(calls.filter(x=>x==='d1-write-check'),['d1-write-check']);
 
   // A failed owner comparison must expose the real visible error rather
@@ -972,7 +1025,71 @@ export async function runAdminEntrySmoke(browser,base){
   await dialog.locator('.os-sync-archive-choice>summary').click();
   await dialog.getByRole('button',{name:'Сверить с сохранённой копией'}).click();
   await waitForCatalogResult('archive comparison',
-   () => document.querySelector('.os-sync [role=status]')?.textContent?.includes('Найдено изменений:'));
+   () => document.querySelector('.os-sync-summary')?.innerText?.includes('Найдено изменений:'));
+  // #390: stable RU D1 summary words must keep their runtime number sibling
+  // when edited. Refilter and comparison status remain separate and safe.
+  const summaryLabel=dialog.locator('.os-sync-summary [data-owner-copy-id="summarySelected"]');
+  assert.equal(await summaryLabel.count(),1);
+  const summarySelectedCount=dialog.locator('.os-sync-summary .os-sync-count-piece')
+   .nth(2).locator('.os-sync-runtime-count');
+  const summaryCountBefore=await summarySelectedCount.innerText();
+  await summaryLabel.dblclick();
+  const summaryEditor=dialog.locator('.os-sync-summary [data-owner-text-field]');
+  await summaryEditor.waitFor({state:'visible',timeout:12000});
+  await summaryEditor.fill('Отобрано QA:');
+  await summaryEditor.press('Tab');
+  await summaryEditor.waitFor({state:'detached',timeout:15000});
+  const summaryKey='guideedit.book.catalog-sync.summary-selected';
+  for(let n=0;n<300&&!townOverrides.has(summaryKey);n++)
+   await page.waitForTimeout(40);
+  assert.equal(JSON.parse(townOverrides.get(summaryKey)).ru,'Отобрано QA:');
+  assert.equal(await summaryLabel.innerText(),'Отобрано QA:');
+  assert.equal(await summarySelectedCount.innerText(),summaryCountBefore,
+   'D1 caption edit may not alter current numeric selected result');
+  assert.match(await dialog.locator('.os-sync-summary').innerText(),/Найдено изменений:/);
+  const overviewCopy=dialog.locator('.os-sync-overview [data-owner-copy-id="affectedSections"]');
+  assert.equal(await overviewCopy.count(),1);
+  const overviewGameCount=dialog.locator('.os-sync-overview .os-sync-runtime-data');
+  const sourceCountBefore=await overviewGameCount.innerText();
+  await overviewCopy.dblclick();
+  const overviewEditor=dialog.locator('.os-sync-overview [data-owner-text-field]');
+  await overviewEditor.waitFor({state:'visible',timeout:12000});
+  await overviewEditor.fill('Разделы QA:');
+  await overviewEditor.press('Tab');
+  await overviewEditor.waitFor({state:'detached',timeout:15000});
+  const overviewKey='guideedit.book.catalog-sync.affected-sections';
+  for(let n=0;n<300&&!townOverrides.has(overviewKey);n++)
+   await page.waitForTimeout(40);
+  assert.equal(JSON.parse(townOverrides.get(overviewKey)).ru,'Разделы QA:');
+  assert.equal(await overviewCopy.innerText(),'Разделы QA:');
+  assert.equal(await overviewGameCount.innerText(),sourceCountBefore,
+   'Current game sections and counts must stay immutable while editing words');
+  // #390: group disclosure count has independent authorial suffix. Editing
+  // it must not toggle the native details element or change numeric counts.
+  const group=dialog.locator('.os-sync-group').first();
+  const groupHeading=group.locator('summary.os-sync-group-heading');
+  const groupLabel=groupHeading.locator('[data-owner-copy-id="groupSelectedSuffix"]');
+  const groupCount=groupHeading.locator('.os-sync-group-runtime-count');
+  const groupCountBefore=await groupCount.innerText();
+  const groupOpenBefore=await group.evaluate(node=>node.open);
+  await groupLabel.dblclick();
+  const groupEditor=groupHeading.locator('[data-owner-text-field]');
+  await groupEditor.waitFor({state:'visible',timeout:12000});
+  await groupEditor.fill('отмечено QA');
+  await groupEditor.press('Tab');
+  await groupEditor.waitFor({state:'detached',timeout:15000});
+  const groupKey='guideedit.book.catalog-sync.group-selected-suffix';
+  for(let n=0;n<300&&!townOverrides.has(groupKey);n++)await page.waitForTimeout(40);
+  assert.equal(JSON.parse(townOverrides.get(groupKey)).ru,'отмечено QA');
+  assert.equal(await groupCount.innerText(),groupCountBefore);
+  assert.equal(await group.evaluate(node=>node.open),groupOpenBefore);
+  assert.equal(await groupLabel.innerText(),'отмечено QA');
+  // The native summary still toggles immediately from its unedited dataset
+  // title, with runtime counts and the saved caption left intact.
+  await groupHeading.locator('strong').click();
+  assert.equal(await group.evaluate(node=>node.open),!groupOpenBefore);
+  await groupHeading.locator('strong').click();
+  assert.equal(await group.evaluate(node=>node.open),groupOpenBefore);
   // 0.612: reloading results may update checksum evidence but must not
   // erase the directly editable D1 explanation.
   const checksumRow=dialog.locator(
@@ -1041,11 +1158,107 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(calls.filter(x=>x.startsWith('game-source:')).length,originalCompareCalls);
   assert.equal(await banner.locator('.os-sync-state-pencil').count(),0);
   assert.equal(await state.locator('.os-sync-state-pencil').count(),0);
-  await dialog.getByRole('button',{name:/Новые · 0/}).click();
+  // Owner filters distinguish a delayed single click from direct caption
+  // dblclick; wait for actual selected filter instead of inspecting the DOM
+  // before the first click's ordinary action has run.
+  const clickCatalogFilter=async id=>{
+   const control=dialog.locator('.os-sync-filter[data-review-filter="'+id+'"]');
+   await control.click();
+   await page.waitForFunction(value=>document.querySelector(
+    '.os-sync-filter[data-review-filter="'+value+'"]')?.getAttribute('aria-pressed')==='true',
+    id,{timeout:12000});
+  };
+  await clickCatalogFilter('added');
   assert.equal(await dialog.locator('.os-sync-record').count(),0,'No added records');
-  await dialog.getByRole('button',{name:/Изменённые · 1/}).click();
+  await clickCatalogFilter('changed');
   assert.equal(await dialog.locator('.os-sync-record').count(),1,'Only changed records');
-  await dialog.getByRole('button',{name:/Все · 1/}).click();
+  await clickCatalogFilter('all');
+  // #390: edit the visible name of a filter, not the live result count.
+  // Double click may not accidentally select this category; a real single
+  // click must still work, and F2/Escape must never write to D1.
+  const addedButton=dialog.locator('.os-sync-filter[data-review-filter="added"]');
+  const addedCaption=addedButton.locator('.os-sync-filter-caption');
+  assert.equal((await addedButton.locator('.os-sync-filter-count').innerText()).trim(),'· 0');
+  assert.equal(await dialog.locator('.os-sync-filter-pencil').count(),0);
+  // A pending single click must not switch the category after F2/Escape.
+  await addedCaption.click();
+  await addedButton.press('F2');
+  const pendingFilterEditor=addedButton.locator('[data-owner-text-field]');
+  await pendingFilterEditor.waitFor({state:'visible',timeout:12000});
+  await pendingFilterEditor.press('Escape');
+  await pendingFilterEditor.waitFor({state:'detached',timeout:12000});
+  await page.waitForTimeout(650);
+  assert.equal(await dialog.locator('.os-sync-filter[data-review-filter="all"]').getAttribute('aria-pressed'),'true',
+   'F2 followed by Escape cancels a queued filter click');
+  // Cross-control race: an earlier filter click must not redraw a second
+  // filter's editor, even when the second action is keyboard-only.
+  await addedCaption.click();
+  const otherFilter=dialog.locator('.os-sync-filter[data-review-filter="changed"]');
+  await otherFilter.press('F2');
+  const otherEditor=otherFilter.locator('[data-owner-text-field]');
+  await otherEditor.waitFor({state:'visible',timeout:12000});
+  await page.waitForTimeout(650);
+  assert.equal(await dialog.locator('.os-sync-filter[data-review-filter="all"]')
+   .getAttribute('aria-pressed'),'true');
+  assert.equal(await otherEditor.isVisible(),true);
+  await otherEditor.press('Escape');
+  await otherEditor.waitFor({state:'detached',timeout:12000});
+  await addedCaption.dblclick();
+  const addedEditor=addedButton.locator('[data-owner-text-field]');
+  await addedEditor.waitFor({state:'visible',timeout:12000});
+  assert.equal(await dialog.locator('.os-sync-filter[data-review-filter="all"]')
+   .getAttribute('aria-pressed'),'true','double click cannot switch filters');
+  await addedEditor.fill('Добавления QA');
+  await addedEditor.press('Tab');
+  await addedEditor.waitFor({state:'detached',timeout:15000});
+  const filterKey='guideedit.book.catalog-sync.review-filter-added';
+  for(let n=0;n<300&&!townOverrides.has(filterKey);n++)
+   await page.waitForTimeout(40);
+  assert.equal(JSON.parse(townOverrides.get(filterKey)).ru,'Добавления QA');
+  assert.equal(await addedCaption.innerText(),'Добавления QA');
+  assert.equal((await addedButton.locator('.os-sync-filter-count').innerText()).trim(),'· 0',
+   'D1 copy cannot change the number of matching records');
+  await clickCatalogFilter('added');
+  assert.equal(await dialog.locator('.os-sync-record').count(),0);
+  await clickCatalogFilter('all');
+  const allFilter=dialog.locator('.os-sync-filter[data-review-filter="all"]');
+  await allFilter.focus();
+  await page.keyboard.press('F2');
+  const allEditor=allFilter.locator('[data-owner-text-field]');
+  await allEditor.waitFor({state:'visible',timeout:12000});
+  await allEditor.press('Escape');
+  await allEditor.waitFor({state:'detached',timeout:12000});
+  assert.equal(townOverrides.has('guideedit.book.catalog-sync.review-filter-all'),false,
+   'Escape cancels filter caption without writing an override');
+  assert.equal((await allFilter.locator('.os-sync-filter-count').innerText()).trim(),'· 1');
+  assert.equal(await dialog.locator('.os-sync-record').count(),1);
+  // A real hover tooltip on each filter has ONE separate pencil. Editing
+  // the hint must neither edit the visible label nor select the category.
+  const hintWrap=dialog.locator(
+   '.os-sync-filter-hint:has(> .os-sync-filter[data-review-filter="changed"])');
+  assert.equal(await dialog.locator('.os-sync-filter-hint').count(),10);
+  assert.equal(await hintWrap.locator('.os-sync-secondary-pencil').count(),1);
+  assert.equal(await hintWrap.locator('.os-sync-filter-caption').innerText(),'Изменённые');
+  await hintWrap.locator('.os-sync-filter').hover();
+  await hintWrap.locator('.os-sync-secondary-pencil').click();
+  const filterHintEditor=hintWrap.locator('.os-sync-secondary-host [contenteditable]');
+  await filterHintEditor.waitFor({state:'visible',timeout:12000});
+  await filterHintEditor.fill('Проверка изменений без публикации QA.');
+  await filterHintEditor.press('Tab');
+  await filterHintEditor.waitFor({state:'detached',timeout:15000});
+  const savedHintKey='guideedit.book.catalog-sync.hint-review-filter-changed';
+  for(let n=0;n<300&&!townOverrides.has(savedHintKey);n++)
+   await page.waitForTimeout(40);
+  assert.equal(JSON.parse(townOverrides.get(savedHintKey)).ru,
+   'Проверка изменений без публикации QA.');
+  assert.equal(await hintWrap.locator('.os-sync-filter').getAttribute('data-guide-hint'),
+   'Проверка изменений без публикации QA.');
+  assert.equal(await hintWrap.locator('.os-sync-filter-caption').innerText(),'Изменённые');
+  assert.equal((await hintWrap.locator('.os-sync-filter-count').innerText()).trim(),'· 1');
+  assert.equal(await allFilter.getAttribute('aria-pressed'),'true',
+   'Tooltip edit must not change selected filter');
+  assert.equal(await dialog.locator('.os-sync-record').count(),1,
+   'Tooltip edit must not affect displayed game records');
   assert.equal(await dialog.locator('.os-sync-source-banner .os-sync-state-caption').textContent(),
    'Архивный источник проверен отдельно.',
    'After D1 edit, the authored archive message must remain visible');
@@ -1058,7 +1271,43 @@ export async function runAdminEntrySmoke(browser,base){
   await dialog.locator('.os-sync-search').fill('no-matching-catalog-entry-792');
   assert.equal(await catalogClear.isEnabled(),true);
   assert.equal(await dialog.locator('.os-sync-record').count(),0);
+  const emptyFilterCaption=dialog.locator('.os-sync-empty');
+  await emptyFilterCaption.waitFor({state:'visible',timeout:12000});
+  assert.equal(await emptyFilterCaption.locator('.os-sync-copy-pencil').count(),0,
+   'No redundant pencil belongs to a directly editable empty-state caption');
+  await emptyFilterCaption.dblclick();
+  const emptyReviewEditor=emptyFilterCaption.locator('[contenteditable]');
+  await emptyReviewEditor.waitFor({state:'visible',timeout:12000});
+  await emptyReviewEditor.fill('По выбранному запросу пока пусто · QA.');
+  await emptyReviewEditor.press('Tab');
+  await emptyReviewEditor.waitFor({state:'detached',timeout:15000});
+  const emptyKey='guideedit.book.catalog-sync.empty-review-filter';
+  for(let n=0;n<300&&!townOverrides.has(emptyKey);n++)
+   await page.waitForTimeout(40);
+  assert.equal(JSON.parse(townOverrides.get(emptyKey)).ru,
+   'По выбранному запросу пока пусто · QA.');
+  assert.equal(await dialog.locator('.os-sync-empty').innerText(),
+   'По выбранному запросу пока пусто · QA.');
+  assert.equal(await dialog.locator('.os-sync-record').count(),0,
+   'Editing a safe empty-state caption cannot make source records appear');
+  assert.equal(await dialog.locator('.os-sync-search').inputValue(),
+   'no-matching-catalog-entry-792','Direct D1 editor cannot change the search');
+  const clearEditorWrap=searchBlock.locator('.os-sync-search-clear-editor');
+  await catalogClear.dblclick();
+  const clearEditor=clearEditorWrap.locator('.os-sync-action-edit-host [contenteditable]');
+  await clearEditor.waitFor({state:'visible',timeout:12000});
+  await clearEditor.fill('Очистить запрос · QA');
+  await clearEditor.press('Tab');
+  await clearEditor.waitFor({state:'detached',timeout:15000});
+  const clearKey='guideedit.book.catalog-sync.search-clear';
+  for(let n=0;n<300&&!townOverrides.has(clearKey);n++)
+   await page.waitForTimeout(40);
+  assert.equal(JSON.parse(townOverrides.get(clearKey)).ru,'Очистить запрос · QA');
+  assert.equal(await catalogClear.innerText(),'Очистить запрос · QA');
+  assert.equal(await dialog.locator('.os-sync-search').inputValue(),
+   'no-matching-catalog-entry-792','Editing Clear must not erase the search');
   await catalogClear.click();
+  await page.waitForFunction(()=>document.querySelector('.os-sync-search')?.value==='');
   assert.equal(await dialog.locator('.os-sync-search').inputValue(),'');
   assert.equal(await dialog.locator('.os-sync-record').count(),1,
    'Clearing catalog search must restore the review without changing selection');
@@ -1082,13 +1331,13 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(await dialog.locator('.os-sync-record').count(),1);
   assert.equal(await dialog.locator('.os-sync-raw-details').isVisible(),false,
     'raw IDs and JSON are hidden until owner explicitly opens details');
-  await dialog.getByRole('button',{name:/Расшифрованы · 1/}).click();
+  await clickCatalogFilter('readable');
   assert.equal(await dialog.locator('.os-sync-record').count(),1,
     'readable changes can be shown independently');
-  await dialog.getByRole('button',{name:/Требует проверки · 0/}).click();
+  await clickCatalogFilter('needsReview');
   assert.equal(await dialog.locator('.os-sync-record').count(),0,
     'unknown fields have an independent review filter');
-  await dialog.getByRole('button',{name:/Все · 1/}).click();
+  await clickCatalogFilter('all');
   const groups=dialog.locator('.os-sync-group');
   assert.equal(await groups.count(),1,'Exactly one intentionally changed D1 item');
   await groups.locator('summary.os-sync-group-heading').click();
@@ -1105,6 +1354,30 @@ export async function runAdminEntrySmoke(browser,base){
    'Archived sources must require an explicit caution acknowledgement');
   await dialog.locator('.os-sync-risk-approval input').check();
   assert.equal(await dialog.locator('.os-sync-review-steps button').filter({hasText:'Применить выбранные изменения'}).isEnabled(),true);
+  // #390: the authorial heading edits directly, but the selected counts
+  // and high-risk approval are separate game/runtime values. A label-only
+  // CAS save must never invoke catalog publication.
+  const reviewHeading=dialog.locator(
+   '.os-sync-decision-preview [data-owner-copy-id="decisionHeading"]');
+  assert.equal(await reviewHeading.count(),1);
+  assert.equal(await dialog.locator('.os-sync-decision-preview .os-sync-review-pencil').count(),0);
+  const selectionBefore=await dialog.locator('.os-sync-decision-summary').innerText();
+  await reviewHeading.dblclick();
+  const reviewEdit=dialog.locator('.os-sync-decision-preview [data-owner-text-field]');
+  await reviewEdit.waitFor({state:'visible',timeout:10000});
+  await reviewEdit.fill('Проверено перед публикацией');
+  await reviewEdit.press('Tab');
+  await reviewEdit.waitFor({state:'detached',timeout:15000});
+  const reviewHeadingKey='guideedit.book.catalog-sync.decision-heading';
+  for(let n=0;n<300&&!townOverrides.has(reviewHeadingKey);n++)
+   await page.waitForTimeout(40);
+  assert.equal(JSON.parse(townOverrides.get(reviewHeadingKey)).ru,
+   'Проверено перед публикацией');
+  assert.equal(await reviewHeading.innerText(),'Проверено перед публикацией');
+  assert.equal(await dialog.locator('.os-sync-decision-summary').innerText(),selectionBefore,
+   'Owner review caption cannot change numeric selected counts');
+  assert.equal(await dialog.locator('.os-sync-review-steps button')
+   .filter({hasText:'Применить выбранные изменения'}).isEnabled(),true);
   // Owner copy actions defer one pointer click to distinguish it from
   // a double-click edit gesture. The browser confirmation is asynchronous:
   // do not inspect an empty variable before the 500 ms action fires.
@@ -1149,14 +1422,14 @@ export async function runAdminEntrySmoke(browser,base){
   for(let n=0;n<240&&calls.filter(x=>x==='game-source:meta').length<liveMetaBefore+2;n++)
    await page.waitForTimeout(50);
   await waitForCatalogResult('live source comparison',
-   () => document.querySelector('.os-sync [role=status]')?.textContent?.includes('Найдено изменений:'));
+   () => document.querySelector('.os-sync-summary')?.innerText?.includes('Найдено изменений:'));
   assert.equal(calls.filter(x=>x==='game-source:meta').length,2,
     'meta must be fetched twice to detect mixed server revisions');
   assert.equal(calls.filter(x=>x.startsWith('game-source:')).length,18,
     'all 17 datasets and one final meta revision check are required');
   assert.equal(await dialog.locator('.os-sync-review-steps button').filter({hasText:'Применить выбранные изменения'}).isDisabled(),true,
     'a fresh live comparison must reject all changes by default');
-  await dialog.getByRole('button',{name:/Игровые ссылки · 1/}).click();
+  await clickCatalogFilter('links');
   assert.equal(await dialog.locator('.os-sync-record').count(),1,
    'A changed item reference has its own review filter');
   await dialog.locator('.os-sync-group-heading').click();
@@ -1167,20 +1440,117 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(await linked.locator('input[type="checkbox"]').isChecked(),false,
    'Bulk approval must not accept a changed item reference');
   await linked.locator('.os-sync-field-details>summary').click();
+  const rawDetails=linked.locator('.os-sync-raw-details');
+  const rawCaption=rawDetails.locator('[data-owner-copy-id="rawDetailsSummary"]');
+  await rawCaption.waitFor({state:'visible',timeout:12000});
+  const rawId=await rawDetails.locator('.os-sync-technical-code').textContent();
+  assert.equal(await rawDetails.evaluate(el=>el.open),false);
+  await rawCaption.click();
+  await rawCaption.press('F2');
+  const pendingDisclosureEditor=rawCaption.locator('[contenteditable]');
+  await pendingDisclosureEditor.waitFor({state:'visible',timeout:12000});
+  await pendingDisclosureEditor.press('Escape');
+  await pendingDisclosureEditor.waitFor({state:'detached',timeout:12000});
+  await page.waitForTimeout(650);
+  assert.equal(await rawDetails.evaluate(el=>el.open),false,
+   'F2 followed by Escape must cancel a queued disclosure toggle');
+  await rawCaption.dblclick();
+  const rawEditor=rawCaption.locator('[contenteditable]');
+  await rawEditor.waitFor({state:'visible',timeout:12000});
+  await rawEditor.fill('Исходные технические поля · QA.');
+  await rawEditor.press('Tab');
+  await rawEditor.waitFor({state:'detached',timeout:15000});
+  const rawKey='guideedit.book.catalog-sync.raw-details-summary';
+  for(let n=0;n<300&&!townOverrides.has(rawKey);n++)
+   await page.waitForTimeout(40);
+  assert.equal(JSON.parse(townOverrides.get(rawKey)).ru,'Исходные технические поля · QA.');
+  assert.equal(await rawDetails.evaluate(el=>el.open),false);
+  await rawDetails.locator('summary').press('Enter');
+  await page.waitForFunction(()=>document.querySelector('.os-sync-raw-details')?.open===true);
+  assert.equal(await rawDetails.locator('.os-sync-technical-code').textContent(),rawId);
+  assert.equal(await linked.locator('input[type="checkbox"]').isChecked(),false);
+  await rawDetails.locator('summary').press('Enter');
   const reference=linked.locator('.os-sync-item-ref').first();
   await reference.click();
   assert.equal(await reference.getAttribute('aria-expanded'),'true');
   const goto=linked.locator('.os-sync-reference-open').first();
   assert.equal(await goto.getAttribute('href'),'#wiki/item/300001');
   assert.equal(await goto.getAttribute('target'),'_blank');
-  await dialog.getByRole('button',{name:/Требует проверки · 1/}).click();
+  // #390: real owner D1 CAS edit of four attribute-only captions. None may
+  // mutate linked item names/URLs, safety cues or the checkbox selection.
+  const accessPanel=dialog.locator('.os-sync-advanced > .studio-owner-interface-editor');
+  await accessPanel.waitFor({state:'attached'});
+  if(!await accessPanel.evaluate(el=>el.open))await accessPanel.locator('summary').click();
+  const keys=await accessPanel.locator('[data-owner-copy-id]')
+   .evaluateAll(nodes=>nodes.map(el=>el.dataset.ownerCopyId));
+  assert.deepEqual(keys,['linkedPreviewAria','linkedOpenAria','reviewSelectAria',
+   'clearSearchAriaDescription']);
+  const editAccessible=async(key,value)=>{
+   const label=accessPanel.locator('[data-owner-copy-id="'+key+'"]');
+   await label.dblclick();
+   const field=label.locator('[data-owner-text-field]');
+   await field.waitFor({state:'visible'});
+   await field.fill(value);await field.press('Tab');
+   await field.waitFor({state:'detached',timeout:15000});
+   const recordKey='guideedit.book.catalog-sync.'+
+    key.replace(/[A-Z]/g,ch=>'-'+ch.toLowerCase());
+   for(let n=0;n<300&&!townOverrides.has(recordKey);n++)
+    await page.waitForTimeout(40);
+   assert.equal(JSON.parse(townOverrides.get(recordKey)).ru,value);
+  };
+  const sourceReferenceLabel=await reference.getAttribute('aria-label');
+  assert.match(sourceReferenceLabel,/^Показать связанный предмет: /);
+  await editAccessible('linkedPreviewAria','Показать карточку:');
+  assert.equal(await reference.getAttribute('aria-label'),
+   sourceReferenceLabel.replace('Показать связанный предмет:','Показать карточку:'));
+  const sourceLinkLabel=await goto.getAttribute('aria-label');
+  assert.match(sourceLinkLabel,/^Открыть связанный предмет: /);
+  await editAccessible('linkedOpenAria','Открыть игровую запись:');
+  assert.equal(await goto.getAttribute('aria-label'),
+   sourceLinkLabel.replace('Открыть связанный предмет:','Открыть игровую запись:'));
+  const reviewCheckbox=linked.locator('input[type="checkbox"]');
+  const originalReviewName=await reviewCheckbox.getAttribute('aria-label');
+  assert.match(originalReviewName,/^Выбрать изменение /);
+  await editAccessible('reviewSelectAria','Выбор записи');
+  assert.equal(await reviewCheckbox.getAttribute('aria-label'),
+   originalReviewName.replace('Выбрать изменение','Выбор записи'));
+  await editAccessible('clearSearchAriaDescription','Очистить поиск по изменениям');
+  assert.equal(await dialog.locator('.os-sync-search-clear').first()
+   .getAttribute('aria-description'),'Очистить поиск по изменениям');
+  assert.equal(await goto.getAttribute('href'),'#wiki/item/300001');
+  assert.equal(await reference.getAttribute('aria-expanded'),'true');
+  assert.equal(await reviewCheckbox.isChecked(),false);
+  // This help describes the link; it must be independently editable without
+  // changing the source item's ID, href, preview open-state or safety review.
+  const linkedCopy=linked.locator('.os-sync-reference-preview '+
+   '[data-owner-copy-id="linkedReferenceContext"]').first();
+  await linkedCopy.waitFor({state:'visible',timeout:12000});
+  assert.equal(await linkedCopy.locator('.os-sync-copy-pencil').count(),0);
+  await linkedCopy.dblclick();
+  const linkedCopyEditor=linkedCopy.locator('[contenteditable]');
+  await linkedCopyEditor.waitFor({state:'visible',timeout:12000});
+  await linkedCopyEditor.fill('Связанная игровая вещь · редактор QA.');
+  await linkedCopyEditor.press('Tab');
+  await linkedCopyEditor.waitFor({state:'detached',timeout:15000});
+  const referenceContextKey='guideedit.book.catalog-sync.linked-reference-context';
+  for(let n=0;n<300&&!townOverrides.has(referenceContextKey);n++)
+   await page.waitForTimeout(40);
+  assert.equal(JSON.parse(townOverrides.get(referenceContextKey)).ru,
+   'Связанная игровая вещь · редактор QA.');
+  assert.equal(await linkedCopy.innerText(),'Связанная игровая вещь · редактор QA.');
+  assert.equal(await reference.getAttribute('aria-expanded'),'true');
+  assert.equal(await goto.getAttribute('href'),'#wiki/item/300001');
+  assert.equal(await goto.getAttribute('target'),'_blank');
+  assert.equal(await linked.locator('input[type="checkbox"]').isChecked(),false,
+   'Editing reference help cannot select an unsafe linked-item change');
+  await clickCatalogFilter('needsReview');
   assert.equal(await dialog.locator('.os-sync-record').count(),1);
-  await dialog.getByRole('button',{name:/Игровые ссылки · 1/}).click();
+  await clickCatalogFilter('links');
   await dialog.locator('.os-sync-search').fill('Билет испытаний');
   assert.equal(await dialog.locator('.os-sync-record').count(),1,
    'A source reference is searchable by its resolved item name');
   await dialog.locator('.os-sync-search').fill('');
-  await dialog.getByRole('button',{name:/Все · 2/}).click();
+  await clickCatalogFilter('all');
   // 0.793: reproduce the actual owner sequence with an isolated source:
   // Check the current game, Select all, review risks, and cancel publish.
   assert.equal(await dialog.locator('.os-sync-source-banner').getAttribute('data-source'),'server');
@@ -1253,6 +1623,39 @@ export async function runAdminEntrySmoke(browser,base){
   // page-level #nav is intentionally hidden while a workbench is open.
   await dialog.getByRole('button',{name:/Закрыть/}).click();
   await closeWorkbench();
+  // #390: English owner sees the real source failure and a complete,
+  // cancelable publication warning. Only the mocked Worker is involved.
+  await page.locator('#locale [data-locale="en"]').click();
+  await page.locator('#ownerDock').getByRole('button',{name:'Game catalog',exact:true}).click();
+  const enCatalog=page.getByRole('dialog',{name:/Game catalog updates/});
+  await enCatalog.waitFor({state:'visible'});
+  await enCatalog.getByRole('button',{name:'Check live game updates'}).click();
+  await page.waitForFunction(()=>document.querySelector('.os-sync-status')?.textContent
+    ?.includes('Cloudflare Worker could not connect to the game site.'),
+    null,{timeout:15000});
+  await enCatalog.locator('.os-sync-diagnostics>summary').click();
+  assert.match(await enCatalog.locator('.os-sync-diagnostics').innerText(),
+    /Stage: [a-zA-Z0-9_-]+[.]json · Worker response: 502 · Reason: network/);
+  assert.equal(await enCatalog.locator('.os-sync-review-steps').isHidden(),true);
+  const englishWritesBefore=calls.filter(x=>x==='catalog-publish'||x==='d1-import').length;
+  await enCatalog.getByRole('button',{name:'Compare saved snapshot'}).click();
+  await enCatalog.locator('.os-sync-review-steps').waitFor({state:'visible'});
+  await enCatalog.locator('.os-sync-group-heading').first().click();
+  await enCatalog.locator('.os-sync-record input[type="checkbox"]').first().check();
+  await enCatalog.locator('.os-sync-risk-approval input').check();
+  const englishConfirm=page.waitForEvent('dialog',{timeout:12000}).then(async confirmation=>{
+    const warning=confirmation.message();
+    assert.match(warning,/SOURCE: the archive may be outdated/);
+    assert.match(warning,/Only the Build Studio catalog changes, NOT the game/);
+    assert.match(warning,/Nothing is published before you confirm/);
+    await confirmation.dismiss();
+  });
+  await enCatalog.getByRole('button',{name:'Publish selected changes'}).click();
+  await englishConfirm;
+  assert.equal(calls.filter(x=>x==='catalog-publish'||x==='d1-import').length,
+    englishWritesBefore,'English cancellation must not write D1');
+  await enCatalog.getByRole('button',{name:/Close/}).click();
+  await page.locator('#locale [data-locale="ru"]').click();
   await page.locator('#nav [data-tab="wiki"]').click();
   // Do not inherit Honor from the preceding regression: item editing starts
   // in the equipment chapter, regardless of the user's last visited chapter.
@@ -1643,12 +2046,138 @@ export async function runAdminEntrySmoke(browser,base){
   await historyButton.click();
   const history=page.getByRole('dialog',{name:'Все ручные правки'});
   await history.waitFor({state:'visible'});
+  // History controls are owned RU/EN copy, not live record names or values.
+  const historySearch=history.locator('.owner-manager-search');
+  assert.equal(await historySearch.getAttribute('aria-label'),'Поиск среди ручных изменений');
+  assert.equal(await history.locator('.owner-manager-section').getAttribute('aria-label'),
+   'Раздел ручных правок');
+  // Two distinct owner panels are legitimate. Scope directly by the
+  // semantic source field instead of relying on visual position.
+  await history.locator(
+   '.studio-owner-interface-editor:has([data-owner-copy-id="searchPlaceholder"]) > summary'
+  ).click();
+  const placeholderCaption=history.locator('.studio-owner-interface-editor '+
+   '[data-owner-copy-id="searchPlaceholder"]');
+  await placeholderCaption.dblclick();
+  const placeholderInput=placeholderCaption.locator('[data-owner-text-field]');
+  await placeholderInput.waitFor({state:'visible'});
+  await placeholderInput.fill('Найти запись истории · QA');
+  await placeholderInput.press('Tab');
+  await page.waitForFunction(()=>
+   document.querySelector('.owner-manager-search')?.dataset.placeholder===
+   'Найти запись истории · QA',null,{timeout:15000});
+  assert.equal(JSON.parse(townOverrides.get('guideedit.book.owner-history.search-placeholder')).ru,
+   'Найти запись истории · QA');
+  // Owner-authored independent hover text must not mutate button caption
+  // or the user's actual search. Its accessible description tracks D1 CAS.
+  const hoverCopy=history.locator('.studio-owner-interface-editor '+
+   '[data-owner-copy-id="clearHelp"]');
+  await historySearch.fill('Поиск не должен исчезнуть при правке подсказки');
+  await hoverCopy.dblclick();
+  const hoverInput=hoverCopy.locator('[data-owner-text-field]');
+  await hoverInput.waitFor({state:'visible'});
+  await hoverInput.fill('Подсказка очистки истории · QA');
+  await hoverInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector('.owner-manager-search-clear')
+   ?.dataset.guideHint==='Подсказка очистки истории · QA',null,{timeout:15000});
+  assert.equal(JSON.parse(townOverrides.get('guideedit.book.owner-history.clear-help')).ru,
+   'Подсказка очистки истории · QA');
+  assert.equal(await history.locator('.owner-manager-search-clear').getAttribute('aria-description'),
+   'Подсказка очистки истории · QA');
+  assert.equal(await history.locator('.owner-history-clear-copy').textContent(),'Очистить');
+  assert.equal((await historySearch.textContent()).trim(),
+   'Поиск не должен исчезнуть при правке подсказки');
+  const sessionCaption=history.locator('.owner-history-session-copy');
+  assert.equal(await history.locator('.owner-manager-session input').isChecked(),false);
+  await sessionCaption.dblclick();
+  const sessionEditor=sessionCaption.locator('[data-owner-text-field]');
+  await sessionEditor.waitFor({state:'visible'});
+  await sessionEditor.fill('Правки этого сеанса · QA');
+  await sessionEditor.press('Tab');
+  await page.waitForFunction(()=>
+   document.querySelector('.owner-history-session-copy')?.textContent===
+   'Правки этого сеанса · QA',null,{timeout:15000});
+  assert.equal(JSON.parse(townOverrides.get('guideedit.book.owner-history.session')).ru,
+   'Правки этого сеанса · QA');
+  assert.equal(await history.locator('.owner-manager-session input').isChecked(),false,
+   'Double-click editing must not change the native checkbox');
+  assert.equal(await history.locator('.owner-manager-search-clear').getAttribute('aria-label'),
+   'Очистить поиск по правкам');
+  assert.equal(await history.locator('.owner-manager-section option[value=""]').textContent(),
+   'Все разделы');
+  // A normal click on the same authored caption must still toggle the filter.
+  await sessionCaption.click();
+  await page.waitForFunction(()=>document.querySelector('.owner-manager-session input')
+   ?.checked===true,null,{timeout:4000});
+  await history.locator('.owner-manager-session input').uncheck();
+  // Native search query remains editable and the button still clears it.
+  await historySearch.fill('Проверка настоящего поискового значения');
+  await history.locator('.owner-history-clear-copy').click();
+  await page.waitForFunction(()=>!document.querySelector('.owner-manager-search')
+   ?.value,null,{timeout:4500});
   const sections=history.locator('.owner-manager-section');
   const sessionFilter=history.locator('.owner-manager-session input');
   assert.ok(await sections.locator('option').count()>=1,
    'History needs a native section filter, even with an empty archive');
   assert.equal(await sessionFilter.isChecked(),false);
   const allHistory=await history.locator('.owner-review-row').count();
+  // #390: the real RU/EN catalog summary and the separately edited hover
+  // explanation must appear as *human-readable* owner history, not as
+  // "Other settings" or a raw JSON value. This is read-only: no reset/Undo.
+  assert.ok(townOverrides.has('guideedit.book.catalog-sync.summary-selected'));
+  const catalogHistoryRow=history.locator('.owner-review-row')
+   .filter({hasText:'Отобрано QA:'}).first();
+  assert.equal(await catalogHistoryRow.count(),1);
+  const catalogTitle=await catalogHistoryRow.locator(
+   '.owner-review-heading strong').innerText();
+  assert.match(catalogTitle,/Интерфейс · Проверка каталога · Надпись/);
+  assert.ok(!catalogTitle.includes('catalog-sync'));
+  if(!await catalogHistoryRow.evaluate(node=>node.open))
+   await catalogHistoryRow.locator('.owner-review-heading').click();
+  assert.deepEqual(await catalogHistoryRow.locator(
+   '.owner-review-field').allTextContents(),['Текст RU'],
+   'The real D1 save stores ONLY the edited RU field, never a fabricated EN override');
+  assert.deepEqual(await catalogHistoryRow.locator(
+   '.owner-review-after p').allTextContents(),['Отобрано QA:']);
+  assert.ok(!(await catalogHistoryRow.locator('.owner-review-after').innerText())
+   .includes('{"ru"'),'The underlying JSON override must not be dumped as a value');
+  const catalogHintHistoryRow=history.locator('.owner-review-row')
+   .filter({hasText:'Проверка изменений без публикации QA.'}).first();
+  assert.equal(await catalogHintHistoryRow.count(),1);
+  assert.match(await catalogHintHistoryRow.locator('.owner-review-heading strong').innerText(),
+   /Интерфейс · Проверка каталога · Подсказка/);
+  assert.equal(await history.locator('.owner-review-row').count(),allHistory,
+   'Viewing history must not add or reset any saved D1 records');
+  // Existing real Honor/Wiki inline editor saves happened earlier in this
+  // same Chromium journey. Inspect them without faking new D1 records or
+  // opening a game editor from the owner history.
+  assert.ok(townOverrides.has('guideedit.wiki.labels'));
+  const wikiHistoryRow=history.locator('.owner-review-row')
+   .filter({hasText:'Честь и ранги'}).first();
+  assert.equal(await wikiHistoryRow.count(),1);
+  assert.match(await wikiHistoryRow.locator('.owner-review-heading strong').innerText(),
+   /Энциклопедия · Подписи разделов/);
+  if(!await wikiHistoryRow.evaluate(node=>node.open))
+   await wikiHistoryRow.locator('.owner-review-heading').click();
+  const wikiHistoryFields=await wikiHistoryRow.locator('.owner-review-field').allTextContents();
+  assert.ok(wikiHistoryFields.includes('Глава · Честь · RU'));
+  assert.ok(wikiHistoryFields.includes('Честь · Получение · RU'));
+  assert.ok((await wikiHistoryRow.locator('.owner-review-after').allTextContents())
+   .some(text=>text.includes('Честь и ранги')));
+  assert.ok(townOverrides.has('guideedit.honor.rank.8'));
+  const rankHistoryRow=history.locator('.owner-review-row')
+   .filter({hasText:updatedBenefit}).first();
+  assert.equal(await rankHistoryRow.count(),1);
+  assert.match(await rankHistoryRow.locator('.owner-review-heading strong').innerText(),
+   /Честь · Ранг · Маркграф/);
+  if(!await rankHistoryRow.evaluate(node=>node.open))
+   await rankHistoryRow.locator('.owner-review-heading').click();
+  assert.deepEqual(await rankHistoryRow.locator('.owner-review-field').allTextContents(),
+   ['Преимущество RU'],'Rank points, gold and other game thresholds are not editable history fields');
+  assert.equal(await rankHistoryRow.locator('.owner-review-after p').innerText(),
+   updatedBenefit);
+  assert.equal(await history.locator('.owner-review-row').count(),allHistory,
+   'Browsing authorial Honor and Wiki history must not mutate saved D1 records');
   await sessionFilter.check();
   assert.ok(await history.locator('.owner-review-row').count()<=allHistory,
    'Session filter cannot add unrelated D1 edits');
@@ -1659,6 +2188,91 @@ export async function runAdminEntrySmoke(browser,base){
    await sections.selectOption('');
   }
   assert.match(await history.locator('.owner-manager-summary').innerText(),/Показано/);
+  const summaryHistory=history.locator('.owner-manager-summary');
+  const historyTotals=summaryHistory.locator('.owner-history-live-count');
+  const beforeTotalValues=await historyTotals.allTextContents();
+  assert.equal(beforeTotalValues.length,2);
+  // One real history record: edit only source captions, never counts or
+  // original before/after values. Dblclick on reset cannot delete the record.
+  const historyRow=history.locator('.owner-review-row').first();
+  assert.ok(await historyRow.count()>0,'History fixture must include an actual edit');
+  if(!await historyRow.evaluate(node=>node.open))
+   await historyRow.locator('.owner-review-heading').click();
+  const originalRowCount=await history.locator('.owner-review-row').count();
+  const fieldCount=historyRow.locator('.owner-history-field-count');
+  const originalFieldCount=await fieldCount.textContent();
+  const changedCaption=historyRow.locator('.owner-history-fields-copy');
+  await changedCaption.dblclick();
+  assert.equal(await historyRow.evaluate(node=>node.open),true,
+   'Editing count caption inside native summary must not collapse the row');
+  const changedInput=changedCaption.locator('[data-owner-text-field]');
+  await changedInput.waitFor({state:'visible'});
+  await changedInput.fill('Изменённые поля · QA');
+  await changedInput.press('Tab');
+  await page.waitForFunction(()=>
+   document.querySelector('.owner-history-fields-copy')?.textContent==='Изменённые поля · QA',
+   null,{timeout:15000});
+  assert.equal(JSON.parse(townOverrides.get('guideedit.book.owner-history.fields-changed')).ru,
+   'Изменённые поля · QA');
+  assert.equal(await fieldCount.textContent(),originalFieldCount);
+  const resetCaption=historyRow.locator('.owner-history-reset-copy');
+  await resetCaption.dblclick();
+  const resetInput=resetCaption.locator('[data-owner-text-field]');
+  await resetInput.waitFor({state:'visible'});
+  await resetInput.fill('Восстановить запись · QA');
+  await resetInput.press('Tab');
+  await page.waitForFunction(()=>
+   document.querySelector('.owner-history-reset-copy')?.textContent==='Восстановить запись · QA',
+   null,{timeout:15000});
+  assert.equal(JSON.parse(townOverrides.get('guideedit.book.owner-history.restore-original')).ru,
+   'Восстановить запись · QA');
+  assert.equal(await history.locator('.owner-review-row').count(),originalRowCount,
+   'Editing a reset caption must not reset any real D1 override');
+  assert.deepEqual(await historyTotals.allTextContents(),beforeTotalValues);
+  assert.equal(await history.locator('.owner-history-pencil').count(),0);
+  assert.equal(await history.locator('.owner-history-pending-saving').count(),1);
+  assert.equal(await history.locator('.owner-history-pending-error').count(),1);
+  const historyLead=summaryHistory.locator('[data-owner-copy-id="shownLead"]');
+  const historyLeadOriginal=await historyLead.textContent();
+  assert.equal(historyLeadOriginal,'Показано');
+  await historyLead.dblclick();
+  const liveEditor=historyLead.locator('[contenteditable]');
+  await liveEditor.waitFor({state:'visible',timeout:9000});
+  await liveEditor.fill('Найдено');
+  await liveEditor.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '.owner-manager-summary [data-owner-copy-id="shownLead"]')?.textContent==='Найдено',
+   null,{timeout:15000});
+  assert.equal(JSON.parse(townOverrides.get('guideedit.book.owner-history.shown-lead')).ru,
+   'Найдено');
+  assert.deepEqual(await historyTotals.allTextContents(),beforeTotalValues,
+   'Owner copy edits cannot change the live totals');
+  assert.match(await summaryHistory.innerText(),/^Найдено \d+ из \d+ правок$/);
+  assert.equal(await summaryHistory.locator('.owner-history-pencil').count(),0);
+  const compareCopy=history.locator('.owner-history-comparison-copy').first();
+  if(await compareCopy.count()){
+   const card=compareCopy.locator('xpath=ancestor::details[1]');
+   if(!await card.evaluate(node=>node.open))
+    await card.locator('.owner-review-heading').click();
+   await compareCopy.waitFor({state:'visible',timeout:9000});
+   const firstBefore=await history.locator('.owner-review-before p').first().textContent();
+   const firstAfter=await history.locator('.owner-review-after p').first().textContent();
+   await compareCopy.dblclick();
+   const headingEditor=compareCopy.locator('[contenteditable]');
+   await headingEditor.waitFor({state:'visible',timeout:8000});
+   await headingEditor.fill('Исходно');
+   await headingEditor.press('Tab');
+   await page.waitForFunction(()=>document.querySelector(
+    '.owner-history-comparison-copy[data-owner-copy-id="beforeHeading"]')
+    ?.textContent==='Исходно',null,{timeout:15000});
+   assert.equal(JSON.parse(townOverrides.get('guideedit.book.owner-history.before-heading')).ru,
+    'Исходно');
+   assert.equal(await history.locator('.owner-review-before p').first().textContent(),
+    firstBefore);
+   assert.equal(await history.locator('.owner-review-after p').first().textContent(),
+    firstAfter);
+  }
+
   const intro=history.locator('[data-owner-copy-section="owner-history"][data-owner-copy-id="intro"]');
   await intro.waitFor({state:'visible'});
   const introWrap=intro.locator('xpath=..');
@@ -1677,13 +2291,42 @@ export async function runAdminEntrySmoke(browser,base){
    historyCopy,'History copy saves via the established D1 override path');
   assert.equal(calls.filter(x=>x==='d1-import'||x.startsWith('game-source:')).length,
    beforeCatalogCalls,'History copy editing must not publish the game catalog');
-  await history.locator('button.close').click();
+  // A direct double click on the actual modal title must save D1 copy and
+  // synchronize the native dialog accessible name without remounting the form.
+  const titleCaption=page.locator('#modalRoot .modal h2').first();
+  await titleCaption.dblclick();
+  const titleInput=titleCaption.locator('[data-owner-text-field]');
+  await titleInput.waitFor({state:'visible'});
+  await titleInput.fill('История сохранённых правок · QA');
+  await titleInput.press('Tab');
+  await page.waitForFunction(()=>
+   document.querySelector('#modalRoot .modal[role="dialog"]')?.getAttribute('aria-label')===
+   'История сохранённых правок · QA',null,{timeout:15000});
+  assert.equal(JSON.parse(townOverrides.get('guideedit.book.owner-history.dialog-title')).ru,
+   'История сохранённых правок · QA');
+  await page.locator('#modalRoot .modal button.close').click();
   // Issue #390: real owner-export modal, with independent pencil and D1 save.
   // The publication endpoint must not run when the owner edits its caption.
   await ownerPanel.locator('.owner-dock-export').click();
   const exportModal=page.getByRole('dialog',{name:'Необязательная копия энциклопедии в GitHub'});
   await exportModal.waitFor({state:'visible'});
   assert.match(await exportModal.locator('.owner-dialog-live-count').innerText(),/2/);
+  const export390ExportCountValue=exportModal.locator('.owner-dialog-live-count .owner-dialog-runtime-number');
+  assert.equal((await export390ExportCountValue.textContent()).trim(),'2');
+  const export390CountCopy=exportModal.locator('.owner-dialog-live-count '+
+   '[data-owner-copy-id="githubCount"]');
+  await export390CountCopy.dblclick();
+  const export390CountInput=export390CountCopy.locator('[data-owner-text-field]');
+  await export390CountInput.waitFor({state:'visible'});
+  await export390CountInput.fill('Записей для резервной копии · QA:');
+  await export390CountInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '.owner-dialog-live-count [data-owner-copy-id="githubCount"]')
+   ?.textContent==='Записей для резервной копии · QA:',null,{timeout:15000});
+  assert.equal(JSON.parse(townOverrides.get('guideedit.book.owner-dialog.github-count')).ru,
+   'Записей для резервной копии · QA:');
+  assert.equal((await export390ExportCountValue.textContent()).trim(),'2',
+   'The real server record count is not included in D1 authorial text');
   const exportIntro=exportModal.locator('[data-owner-copy-section="owner-dialog"]'+
    '[data-owner-copy-id="githubExplanation"]');
   const introRow=exportIntro.locator('xpath=..');
@@ -1713,8 +2356,76 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(JSON.parse(townOverrides.get('guideedit.book.owner-dialog.github-create-button')).ru,
    'Создать PR после проверки');
   assert.equal(calls.filter(x=>x==='owner-pr').length,beforePRCalls,
-   'The export pencil must never invoke the publication endpoint');
-  await exportModal.locator('button.close').click();
+   'Editing an action label must never invoke the publication endpoint');
+  // A real independent hint is distinct from the visible Create-PR button.
+  const export390HintPanel=exportModal.locator(
+   '.studio-owner-interface-editor:has([data-owner-copy-id="githubCreateHint"])');
+  await export390HintPanel.locator(':scope > summary').click();
+  const export390HintCaption=export390HintPanel.locator('[data-owner-copy-id="githubCreateHint"]');
+  await export390HintCaption.dblclick();
+  const export390HintInput=export390HintCaption.locator('[data-owner-text-field]');
+  await export390HintInput.waitFor({state:'visible'});
+  await export390HintInput.fill('Создаст необязательный PR · QA');
+  await export390HintInput.press('Tab');
+  await page.waitForFunction(()=>
+   document.querySelector('.owner-dialog-action')?.dataset.guideHint===
+   'Создаст необязательный PR · QA',null,{timeout:15000});
+  assert.equal(JSON.parse(townOverrides.get('guideedit.book.owner-dialog.github-create-hint')).ru,
+   'Создаст необязательный PR · QA');
+  assert.equal(await exportAction.locator('button.owner-dialog-action').getAttribute('aria-description'),
+   'Создаст необязательный PR · QA');
+  assert.equal(await exportAction.locator('button.owner-dialog-action').innerText(),
+   'Создать PR после проверки','Help text must not change the button caption');
+  assert.equal(calls.filter(x=>x==='owner-pr').length,beforePRCalls,
+   'Editing the genuine hover hint cannot submit a GitHub PR');
+
+  // Only an explicit ordinary click may invoke the mocked publication
+  // endpoint; the real PR URL stays immutable even when its text changes.
+  await exportAction.locator('button.owner-dialog-action').click();
+  const export390CreatedLink=exportModal.locator('.inline-owner-error a[href]');
+  await export390CreatedLink.waitFor({state:'visible',timeout:15000});
+  assert.equal(calls.filter(x=>x==='owner-pr').length,beforePRCalls+1,
+   'Exactly one explicit click submits the export');
+  const export390OriginalHref=await export390CreatedLink.getAttribute('href');
+  assert.equal(export390OriginalHref,'https://github.com/bonaqu/Pandora-Saga-Build-Studio/pull/246');
+  const export390TextLink=export390CreatedLink.locator('[data-owner-copy-id="githubLink"]');
+  const export390PageCountBefore=context.pages().length;
+  await export390TextLink.dblclick();
+  const export390LinkEditor=export390TextLink.locator('[data-owner-text-field]');
+  await export390LinkEditor.waitFor({state:'visible'});
+  await export390LinkEditor.fill('Проверить предложенную копию · QA');
+  await export390LinkEditor.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '.owner-dialog-status-copy[data-owner-copy-id="githubLink"]')
+   ?.textContent==='Проверить предложенную копию · QA',
+   null,{timeout:15000});
+  assert.equal(JSON.parse(townOverrides.get('guideedit.book.owner-dialog.github-link')).ru,
+   'Проверить предложенную копию · QA');
+  assert.equal(await export390CreatedLink.getAttribute('href'),export390OriginalHref,
+   'Editing link words must never edit a returned GitHub URL');
+  assert.equal(context.pages().length,export390PageCountBefore,
+   'Double-click on owner link caption must not open the PR');
+  assert.equal(calls.filter(x=>x==='owner-pr').length,beforePRCalls+1);
+
+  // The real modal title edits by double-click. Keep its ARIA name in sync
+  // on the mounted dialog rather than replacing its native focus trap.
+  const export390TitleCopy=page.locator('#modalRoot .modal[role="dialog"] h2');
+  await export390TitleCopy.dblclick();
+  const export390TitleInput=export390TitleCopy.locator('[data-owner-text-field]');
+  await export390TitleInput.waitFor({state:'visible'});
+  await export390TitleInput.fill('Экспорт каталога · QA');
+  await export390TitleInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#modalRoot .modal[role="dialog"]')?.getAttribute('aria-label')===
+   'Экспорт каталога · QA',null,{timeout:15000});
+  assert.equal(JSON.parse(townOverrides.get('guideedit.book.owner-dialog.github-title')).ru,
+   'Экспорт каталога · QA');
+  // The old role/name locator intentionally stops matching after a D1
+  // edit of the modal's accessible name. Inspect the SAME mounted count node.
+  assert.equal((await page.locator('#modalRoot .modal[role="dialog"] '+
+   '.owner-dialog-live-count .owner-dialog-runtime-number').textContent()).trim(),'2',
+   'Changing a dialog title does not alter server-provided export counts');
+  await page.locator('#modalRoot .modal button.close').click();
   // EN localization is independent; editing the RU copy must not overwrite it.
   await page.locator('#locale [data-locale="en"]').click();
   await ownerPanel.locator('.owner-dock-export').click();

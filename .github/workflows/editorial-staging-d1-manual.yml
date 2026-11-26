@@ -1,0 +1,63 @@
+# #390: READ-ONLY isolated staging inventory. No production Worker, Pages or D1.
+# THIS workflow is read-only and never uploads source SQL.
+# Separate PR-label-only protected phases use independently retained
+# owner-downloaded encrypted backup BEFORE any remote staging write.
+# Never run an import or rollback from this workflow.
+name: Inspect isolated editorial D1 staging (read only)
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: 'Read-only preflight only; writes require the backed-up local runner'
+        type: choice
+        options: [preflight]
+        default: preflight
+        required: true
+      database_name:
+        description: 'Dedicated ps-editorial-staging-* D1 database name'
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pandora-editorial-staging-d1
+  cancel-in-progress: false
+
+jobs:
+  staging:
+    if: github.repository == 'bonaqu/Pandora-Saga-Build-Studio' && inputs.operation == 'preflight'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment: editorial-staging
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.EDITORIAL_STAGING_CF_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.EDITORIAL_STAGING_CF_ACCOUNT_ID }}
+      PS_EDITORIAL_STAGING_ID: ${{ secrets.EDITORIAL_STAGING_CF_DATABASE_ID }}
+      PS_EDITORIAL_STAGING_NAME: ${{ inputs.database_name }}
+      PS_EDITORIAL_OPERATION: ${{ inputs.operation }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Refuse production and verify read-only isolated target
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN"
+          node scripts/guard-editorial-staging-d1.mjs --validate
+          node scripts/guard-editorial-staging-d1.mjs --write-config "$RUNNER_TEMP/editorial-wrangler.toml"
+          node scripts/plan-editorial-d1-defaults.mjs --report
+      - name: Confirm remote D1 name, UUID and isolated table inventory
+        env:
+          STAGING_CONFIG: ${{ runner.temp }}/editorial-wrangler.toml
+        run: |
+          npx --yes wrangler@4 d1 list --json > "$RUNNER_TEMP/editorial-d1-list.json"
+          node scripts/guard-editorial-staging-d1.mjs --verify-list "$RUNNER_TEMP/editorial-d1-list.json"
+          npx --yes wrangler@4 d1 execute "$PS_EDITORIAL_STAGING_NAME" --remote --config "$STAGING_CONFIG" --command "SELECT type,name FROM sqlite_master WHERE type IN ('table','view','trigger','index') AND lower(name) NOT GLOB 'sqlite_*' AND name != '_cf_KV' ORDER BY type,name;" --json > "$RUNNER_TEMP/editorial-schema.json"
+          node scripts/guard-editorial-staging-d1.mjs --verify-schema "$RUNNER_TEMP/editorial-schema.json"
+          npx --yes wrangler@4 d1 execute "$PS_EDITORIAL_STAGING_NAME" --remote --config "$STAGING_CONFIG" --command "PRAGMA table_xinfo(editorial_default_rows);" --json > "$RUNNER_TEMP/editorial-rows-layout.json"
+          node scripts/guard-editorial-staging-d1.mjs --verify-columns editorial_default_rows "$RUNNER_TEMP/editorial-schema.json" "$RUNNER_TEMP/editorial-rows-layout.json"
+          npx --yes wrangler@4 d1 execute "$PS_EDITORIAL_STAGING_NAME" --remote --config "$STAGING_CONFIG" --command "PRAGMA table_xinfo(editorial_default_snapshots);" --json > "$RUNNER_TEMP/editorial-snapshots-layout.json"
+          node scripts/guard-editorial-staging-d1.mjs --verify-columns editorial_default_snapshots "$RUNNER_TEMP/editorial-schema.json" "$RUNNER_TEMP/editorial-snapshots-layout.json"

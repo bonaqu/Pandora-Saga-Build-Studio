@@ -95,6 +95,27 @@ test('Hero Path owner group has one disclosure and directly editable caption',()
  assert.ok(keys.some(x=>x.key.startsWith('group.')));
 });
 
+test('#390 Hero Path delegates every owner action caption to one shared app guard',()=>{
+ const {target,api}=fixture();api.canEdit=true;
+ const edits=[],guards=[];
+ api.editLabel=(node,key)=>edits.push({node,key});
+ api.guardAction=(button,caption)=>guards.push({button,caption});
+ root.PandoraHeroPath.viewGrowth(target,api);
+ const groups=walk(target).filter(node=>node.attributes?.['data-path-group']);
+ assert.equal(groups.length,5);
+ for(const group of groups){
+  const registered=guards.filter(row=>row.button===group);
+  assert.equal(registered.length,4,'One group title and three metric captions');
+  assert.equal(new Set(registered.map(row=>row.caption)).size,4);
+  assert.ok(registered.every(row=>edits.some(edit=>edit.node===row.caption)));
+ }
+ const app=sources['pandora-studio-app.js'];
+ assert.match(app,/guardAction:\(button,caption\)=>ownerCaptionActionGuard\(button,caption\)/);
+ assert.match(app,/onStarted:\(\)=>\{\s*pendingOwnerCaptionAction\?\.cancel\(\)/);
+ assert.match(app,/const sameCaption=queuedCaption===activeCaption/);
+ assert.doesNotMatch(sources['pandora-studio-hero-path.js'],/const guardCaptionAction=/);
+});
+
 test('45-level Cleric with 104 available points has actually ENABLED skill range',()=>{
  const {range,budget}=fixture();
  assert.equal(budget().remaining,104);assert.ok(range);
@@ -267,6 +288,50 @@ test('skill progress slider does not show a duplicate native text tooltip',()=>{
  assert.ok(tracks.length);
  assert.ok(tracks.every(el=>!el.title),'no native title');
  assert.match(f.range.attributes['aria-valuetext'],/вложено/);
+});
+
+test('#390 Path accessible RU/EN copy keeps three live branch numbers and full scale',()=>{
+ const f=fixture('CLERIC','prayer','benevolence');
+ const applied=[];
+ f.api.bindCopy=(node,key,ru,en,attribute='text',suffix='',prefix='')=>{
+  applied.push({key,ru,en,attribute,suffix,prefix});
+  const copy=key==='pathBranchStatsAria'?'Статистика QA:':
+   key==='pathClassLimitAria'?'Лимит QA:':ru;
+  if(attribute==='text')node.textContent=prefix+copy+suffix;
+  else node.setAttribute(attribute,prefix+copy+suffix);
+ };
+ root.PandoraHeroPath.viewGrowth(f.target,f.api);
+ const branch=walk(f.target).find(n=>n.attributes?.['data-path-branch']==='benevolence');
+ const count=walk(branch).find(n=>n.className==='count');
+ const locked=walk(f.target).find(n=>n.className==='inline-mastery-locked');
+ const range=walk(f.target).find(n=>n.tag==='input'&&n.attributes.type==='range');
+ assert.ok(count&&locked&&range);
+ assert.match(locked.attributes['aria-label'],/^Лимит QA: \d+ \/ 90$/);
+ const limit=locked.attributes['aria-label'];
+ const before=count.attributes['aria-label'];
+ assert.match(before,/^Статистика QA: \d+ \/ 0 \/ \d+$/);
+ range.value='15';range.listeners.input();
+ assert.match(count.attributes['aria-label'],/^Статистика QA: \d+ \/ 10 \/ \d+$/);
+ assert.notEqual(count.attributes['aria-label'],before);
+ assert.equal(locked.attributes['aria-label'],limit);
+ range.value='5';range.listeners.input();
+ assert.match(count.attributes['aria-label'],/^Статистика QA: \d+ \/ 0 \/ \d+$/);
+ assert.equal(locked.attributes['aria-label'],limit);
+ const last=applied.filter(v=>v.key==='pathBranchStatsAria').at(-1);
+ assert.deepEqual({ru:last.ru,en:last.en,attribute:last.attribute,prefix:last.prefix},{
+  ru:'Старт / вложено / мастерство:',
+  en:'Innate / invested / mastery:',attribute:'aria-label',prefix:''
+ });
+ assert.match(last.suffix,/^ \d+ \/ 0 \/ \d+$/);
+ // Actual invested points, trained mastery and 90-point visual scale are
+ // never part of the saved D1 RU/EN value or gameplay source.
+ assert.ok(!applied.some(v=>v.ru.includes('90')||v.en.includes('90')));
+ const en={...f.api,lang:'en',bindCopy:undefined,copyLabel:undefined};
+ const english=new BrowserElement('root');
+ root.PandoraHeroPath.viewGrowth(english,en);
+ const enBranch=walk(english).find(n=>n.attributes?.['data-path-branch']==='benevolence');
+ const enCount=walk(enBranch).find(n=>n.className==='count');
+ assert.match(enCount.attributes['aria-label'],/^Innate \/ invested \/ mastery: \d+ \/ \d+ \/ \d+$/);
 });
 
 test('class-limited skills keep individual numbers in the separate details list',()=>{
@@ -651,7 +716,9 @@ test('Path Show More edits the caption without changing live count or adding a p
  assert.ok(!walk(gallery).some(x=>x.className==='path-more-pencil'));
  // The fixture stores the last click listener; native DOM runs both the
  // owner click guard and its original action callback (real Chromium checks it).
- assert.match(sources['pandora-studio-hero-path.js'],/guardCaptionAction\(showMore,caption\)/);
+ assert.match(sources['pandora-studio-hero-path.js'],/api\.guardAction\?\.\(showMore,caption\)/);
+ assert.match(sources['pandora-studio-hero-path.js'],/showMore\.addEventListener\('keydown'/);
+ assert.match(sources['pandora-studio-hero-path.js'],/caption\.dispatchEvent\(new KeyboardEvent\('keydown'/);
  assert.equal(button.children[1].textContent,' (2)');
  const plain=new BrowserElement('div');f.api.canEdit=false;
  root.PandoraHeroPath.viewSkills(plain,new BrowserElement('div'),f.api);
@@ -719,17 +786,31 @@ test('Skill results pager uses stable filtered order, pins selection and keeps t
  const button=direction=>walk(details).find(node=>
   node.attributes?.['data-skill-list-direction']===direction);
  const position=()=>walk(details).find(node=>node.className==='path-skill-list-position');
+ const positionText=()=>position().children.map(node=>node.textContent).join('');
  const pinned=()=>walk(gallery).find(node=>node.attributes?.['data-skill-id'])?.attributes?.['data-skill-id'];
  render();
- assert.equal(position().textContent,'2 из 3');
+ assert.equal(positionText(),'2 из 3');
+ const pagerWord=()=>walk(position()).find(node=>node.className==='path-skill-pager-separator');
+ assert.equal(pagerWord()?.textContent,'из');
  assert.equal(pinned(),'910100002');
  assert.equal(walk(gallery).filter(n=>n.className?.includes('path-skill-card')).length,2);
  assert.match(button('previous').attributes['aria-label'],/Альфа удар/);
+ api.copyLabel=(key,ru)=>({skillPagerSeparator:'между QA',skillListPreviousAria:'Назад QA:',skillListNextAria:'Далее QA:',
+  skillCardAvailableAria:'доступно QA',skillCardUnavailableAria:'недоступно QA'}[key]||ru);
+ render();
+ assert.equal(button('previous').attributes['aria-label'],'Назад QA: Альфа удар');
+ assert.equal(pagerWord()?.textContent,'между QA');
+ assert.equal(positionText(),'2 между QA 3');
+ assert.equal(button('next').attributes['aria-label'],'Далее QA: Гамма удар');
+ const card=walk(gallery).find(n=>n.attributes?.['data-skill-id']==='910100002');
+ assert.match(card.attributes['aria-label'],/^Бета удар · (?:не)?доступно QA$/);
+ api.copyLabel=undefined;
  button('next').listeners.click();
  assert.equal(api.lastPagerDirection,'next');
  assert.equal(api.selectedSkill.id,910100003);
  assert.equal(pinned(),'910100003','a result beyond the first two is pinned, not lost');
- assert.equal(position().textContent,'3 из 3');
+ assert.equal(positionText(),'3 из 3');
+ assert.equal(pagerWord()?.textContent,'из');
  assert.equal(button('next').disabled,true);
  button('previous').listeners.click();
  assert.equal(api.lastPagerDirection,'previous');
@@ -738,7 +819,8 @@ test('Skill results pager uses stable filtered order, pins selection and keeps t
  assert.equal(api.filter,'all');
  assert.equal(api.shown,2);
  api.lang='en';render();
- assert.equal(position().textContent,'2 / 3');
+ assert.equal(positionText(),'2 / 3');
+ assert.equal(pagerWord()?.textContent,'/');
  assert.match(button('next').attributes['aria-label'],/Next in list: Гамма удар/);
  api.query='отсутствует';render();
  assert.equal(walk(details).some(n=>n.className==='path-skill-list-nav'),false);
@@ -798,18 +880,25 @@ test('Path help and skill-navigation copy bind bilingual D1 fields without touch
   {id:91003,name:'Original successor',classes:{WARRIOR:1},
    learnable:true,prereq:91002,reqs:[]}
  ];
+ const edits=[];
  const skillApi={...api,job:'WARRIOR',skillCatalog:source,catalogReady:true,
-  query:'',filter:'all',shown:24,selectedSkill:source[1],onInspect:()=>{}};
+  query:'',filter:'all',shown:24,selectedSkill:source[1],onInspect:()=>{},
+  canEdit:true,editLabel:(node,key)=>edits.push({node,key})};
  const gallery=new BrowserElement('root'),details=new BrowserElement('root');
  root.PandoraHeroPath.viewSkills(gallery,details,skillApi);
  for(const key of ['skillBrowseAria','skillWeaponRange','skillPreviousAria',
-  'skillLineageAria','skillNextAria','skillNextLink'])
+  'skillLineageAria','skillNextAria'])
   assert.ok(bound.some(row=>row.key===key),'Skill copy '+key+' is bound');
  const previous=bound.find(row=>row.key==='skillPreviousAria');
- const next=bound.find(row=>row.key==='skillNextLink');
+ const next=edits.find(row=>row.key==='skillNextLink');
  assert.equal(previous.suffix,' Original prerequisite');
- assert.equal(next.suffix,' Original successor');
- assert.equal(next.node.textContent,'Следующее → Original successor');
+ assert.ok(next,'The visible author caption is directly editable');
+ assert.equal(next.node.textContent,'Следующее →');
+ const lineage=walk(details).find(row=>row.className==='path-skill-lineage-link');
+ assert.equal(walk(lineage).find(row=>row.className==='path-skill-lineage-name')
+  ?.textContent,' Original successor');
+ assert.equal(bound.some(row=>row.key==='skillNextLink'),false,
+  'The whole button and catalog skill name must not be an owner-editable value');
  assert.equal(previous.node.textContent,'Original prerequisite');
  assert.equal(source[0].name,'Original prerequisite');
  assert.equal(source[2].name,'Original successor');
@@ -886,13 +975,10 @@ test('click and hold controls bind authorial aria texts without editing point co
 
 test('group totals update only numeric spans without deleting edited D1 captions',()=>{
  const {api,target,state}=fixture('CLERIC','prayer','benevolence');
+ api.canEdit=true;
  const copied=[];
- api.bindCopy=(node,key,ru,en,attr='text',suffix='',prefix='')=>{
-  copied.push({node,key,attr,suffix,prefix});
-  const customized=key.startsWith('pathGroup')?'CUSTOM_'+key:ru;
-  if(attr==='text')node.textContent=prefix+customized+suffix;
-  else node.setAttribute(attr,prefix+customized+suffix);
- };
+ api.copyLabel=(key,ru)=>key.startsWith('pathGroup')?'CUSTOM_'+key:ru;
+ api.editLabel=(node,key)=>copied.push({node,key});
  root.PandoraHeroPath.viewGrowth(target,api);
  const group=walk(target).find(el=>el.attributes?.['data-path-group']==='prayer');
  const summary=walk(group).find(el=>el.className==='path-group-summary');
@@ -900,8 +986,10 @@ test('group totals update only numeric spans without deleting edited D1 captions
  const labels=summary.children.filter(el=>el.className==='path-group-summary-copy');
  const values=summary.children.filter(el=>el.className==='path-group-summary-value');
  assert.deepEqual(labels.map(el=>el.textContent),[
-  'CUSTOM_pathGroupTrained ',' · CUSTOM_pathGroupLearned ',' · CUSTOM_pathGroupInvested '
+  'CUSTOM_pathGroupTrained','CUSTOM_pathGroupLearned','CUSTOM_pathGroupInvested'
  ]);
+ assert.equal(summary.children.filter(el=>el.tag==='#text').length,0,
+  'Punctuation is isolated in DOM spans, not part of D1 content');
  assert.equal(values.length,3);
  const originals=[...labels];const startCount=values.map(el=>el.textContent);
  const range=walk(target).find(el=>el.attributes?.['data-branch-control']==='benevolence:potential-range');
@@ -919,7 +1007,9 @@ test('group totals update only numeric spans without deleting edited D1 captions
 
 test('requirements use bilingual editable fragments while source numbers and branches are immutable',()=>{
  const {api}=fixture('CLERIC','prayer','benevolence');
+ api.canEdit=true;
  const bound=[];
+ api.editLabel=(node,key)=>bound.push({node,key,attr:'direct'});
  api.bindCopy=(node,key,ru,en,attr='text',suffix='',prefix='')=>{
   bound.push({node,key,attr,prefix,suffix});
   if(attr==='text')node.textContent=prefix+(api.lang==='en'?en:ru)+suffix;
@@ -944,7 +1034,8 @@ test('requirements use bilingual editable fragments while source numbers and bra
   String(points.branchMastery(api.state,'benevolence',api.innate,api.branchCaps))
  ]);
  assert.deepEqual(line.children.filter(el=>el.className==='path-requirement-caption')
-  .map(el=>el.textContent),[' · порог ',' · старт ',' · доступно ',' · освоено ']);
+  .map(el=>el.textContent),['порог','старт','доступно','освоено']);
+ assert.equal(line.children.filter(el=>el.className==='path-requirement-value').length,4);
  assert.deepEqual(bound.filter(x=>x.key.startsWith('pathReq')).map(x=>x.key),[
   'pathReqThreshold','pathReqInnate','pathReqPotential','pathReqTrained'
  ]);

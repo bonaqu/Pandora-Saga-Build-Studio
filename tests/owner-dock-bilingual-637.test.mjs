@@ -38,9 +38,55 @@ test('admin copy Undo and reset update the existing drawer, not the game catalog
  const app=get('pandora-studio-app.js');
  assert.match(app,/if\(key\.startsWith\('owner-dock\.'\)\)\{refreshOwnerUI\(\);return\}/);
  assert.match(app,/key\.startsWith\('book.owner-dock\.'\)/);
- assert.match(app,/guideedit\\\.book\\\.\(equipment\|path\|catalog-sync\|honor-view\|owner-dock\|owner-history\|owner-dialog\|wiki-ui\|skill-ui\|stats-ui\)/);
+ assert.match(app,/guideedit\\\.book\\\.\(equipment\|path\|catalog-sync\|honor-view\|owner-dock\|owner-history\|owner-dialog\|wiki-ui\|skill-ui\|stats-ui\|compare-metric\)/);
  assert.match(app,/record\.key\.startsWith\('guideedit.book.owner-dock\.'\)/);
  assert.match(app,/Saving to Cloudflare D1/);
  assert.match(app,/ownerDockCopy\('translations'\)/);
  assert.match(app,/data-owner-dock-static/);
+});
+
+test('#390 owner translation and GitHub export modals separate copy from records and actions',()=>{
+ const app=get('pandora-studio-app.js');
+ const guide={window:{}};guide.window=guide;
+ Function('window',get('pandora-studio-honor-guide.js'))(guide);
+ const match=app.match(/const ownerDialogStatusCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ assert.ok(match,'The fixed bilingual owner-dialog source inventory must exist');
+ const rows=Function('return ('+match[1]+')')();
+ assert.deepEqual(rows.map(row=>row[0]).sort(),[
+  'translationsNoPending','translationsReadyCount','translationsSuccessLead',
+  'translationsSuccessSuffix','translationsPartialLead','translationsPartialOf',
+  'translationsPartialSuffix','translationsTitle','translationsSaveHint',
+  'githubMissingToken','githubCount','githubProposed','githubLink','githubFollowup',
+  'githubUnchanged','githubNoLink','githubTitle','githubCreateHint'
+ ].sort());
+ for(const [key,ru,en] of rows){
+  assert.ok(ru?.trim()&&en?.trim(),'Missing authored locale '+key);
+  const id='book.owner-dialog.'+key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase());
+  assert.equal(guide.PandoraHonorGuide.validOverride(id,
+   JSON.stringify({ru,en})),true,'D1 CAS must accept both original locales '+id);
+ }
+ const from=app.indexOf('function ownerDialogStatusText(');
+ const end=app.indexOf('async function showOwnerLevelProgression()',from);
+ const owner=app.slice(from,end);
+ assert.match(owner,/ownerDialogStatusCaption\('span','translationsReadyCount'\)/);
+ assert.match(owner,/ownerDialogStatusCaption\('span','translationsSuccessLead'\)/);
+ assert.match(owner,/ownerDialogStatusCaption\('span','translationsPartialOf'\)/);
+ assert.match(owner,/ownerDialogStatusCaption\('span','githubCount'\)/);
+ assert.match(owner,/ownerDialogStatusCaption\('span','githubLink'\)/);
+ assert.match(owner,/class:'owner-dialog-runtime-number',text:String\(info\.count\)/);
+ assert.match(owner,/class:'owner-dialog-runtime-number',text:String\(planned\.length\)/);
+ assert.match(owner,/class:'owner-dialog-server-error',text:error\.message/);
+ assert.match(owner,/ownerCaptionActionGuard\(link,linkCaption\)/);
+ assert.match(owner,/href:result\.url,target:'_blank',rel:'noopener noreferrer'/);
+ assert.match(owner,/ownerDialogSourceModal\('translationsTitle',body\)/);
+ assert.match(owner,/ownerDialogSourceModal\('githubTitle',panel\)/);
+ assert.match(owner,/bindOwnerInterfaceText\(button,'owner-dialog',hintKey,row\[1\],row\[2\],/);
+ assert.match(owner,/ownerDialogStatusPanel\(/);
+ assert.match(app,/if\(node\.matches\('h2'\)\)\s*ownerDockPatchAttr\(node\.closest/);
+ // Do not replace tested and mandatory security boundaries with editor copy.
+ assert.match(owner,/helper\.pending\(remote\)/);
+ assert.match(owner,/expectedFingerprint:info\.fingerprint/);
+ assert.match(owner,/\/api\/admin\/override/);
+ assert.match(owner,/result\.url&&\/\^https:/);
+ assert.doesNotMatch(owner,/ownerDialogStatusCaption\('span','serverError'/);
 });

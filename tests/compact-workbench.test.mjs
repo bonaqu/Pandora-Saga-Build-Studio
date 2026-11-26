@@ -16,18 +16,22 @@ test('unused hero HUD, dummy name and experience disappear from the actual page'
 });
 
 test('HP and MP render in the Origin area and refresh when allocation/equipment changes',()=>{
- const first=app.indexOf('function renderOriginVitals(calculated=undefined){');
+ const first=app.indexOf('function refreshOriginVitalsAccessible(){');
  const last=app.indexOf('\nfunction setVitalsEnhancement(key,value){',first);
  assert.ok(first>0&&last>first);
  const fn=app.slice(first,last);
  const fake={
   originHp:{textContent:''},
   originMp:{textContent:''},
-  originVitals:{attrs:{},setAttribute(k,v){this.attrs[k]=v}}
+  originVitals:{attrs:{},setAttribute(k,v){this.attrs[k]=v},
+   querySelector(key){return {textContent:key.includes('hpShort')?'ОЗ':'ОМ'}}}
  };
  let estimate={hp:1630,mp:420};
- const render=Function('$','previewBaseStats','lang','refreshOpenHeroBook',fn+'\nreturn renderOriginVitals;')(
-  name=>fake[name]||null,()=>estimate,'ru',()=>{});
+ const render=Function('$','previewBaseStats','lang','refreshOpenHeroBook',
+  'ownerDockPatchAttr','statsUiText',fn+'\nreturn renderOriginVitals;')(
+  name=>fake[name]||null,()=>estimate,'ru',()=>{},
+  (node,key,value)=>node.setAttribute(key,value),
+  ()=> 'ОЗ и ОМ появятся после загрузки игровых данных.');
  render();
  assert.equal(fake.originHp.textContent,'1630');
  assert.equal(fake.originMp.textContent,'420');
@@ -38,6 +42,8 @@ test('HP and MP render in the Origin area and refresh when allocation/equipment 
  estimate=null;render();
  assert.equal(fake.originHp.textContent,'—');
  assert.equal(fake.originMp.textContent,'—');
+ assert.equal(fake.originVitals.attrs['aria-label'],
+  'ОЗ и ОМ появятся после загрузки игровых данных.');
  assert.match(app,/function setAttributePoints\([\s\S]*?persist\(\);renderOriginVitals\(\)/);
  assert.match(app,/function render\(\)[\s\S]*?renderOriginVitals\(calculated\);\s*renderOriginCopyLabels\(\);renderWorkbenchHintEditors\(\)/);
  assert.doesNotMatch(app,/renderVitalsEnhancements\(/);

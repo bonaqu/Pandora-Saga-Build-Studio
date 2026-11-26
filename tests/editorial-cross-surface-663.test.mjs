@@ -74,7 +74,8 @@ test('shared owner editor reuses CAS, blur and Escape without wrapping buttons',
  assert.match(app,/function bindOwnerInterfaceText\(node,section,key,ru,en,attribute='text'/);
  assert.match(app,/node\.dataset\.ownerInterfaceKey=key/);
  assert.match(app,/ownerCopyKey\(section,id\)!==key/);
- assert.match(app,/if\(attr==='text'\)node\.textContent=value/);
+ assert.match(app,/if\(attr==='text'\)\{\s*if\(!editingText\)node\.textContent=value/);
+ assert.match(app,/if\(attr==='text'\)\{\s*if\(!editingText\)ownerDockPatchText\(node,value\)/);
  assert.match(app,/node\.setAttribute\(attr,value\)/);
  assert.match(app,/key\.startsWith\('book\.wiki-ui\.'\)/);
  assert.match(app,/key\.startsWith\('book\.skill-ui\.'\)/);
@@ -89,6 +90,82 @@ test('shared owner editor reuses CAS, blur and Escape without wrapping buttons',
  assert.match(app,/panel=ownerInterfaceEditor\(section,rows,headingRu,headingEn\)/);
  assert.doesNotMatch(app,/\$\('ownerSkillSearchCopy'\)\?\.remove\(\)/);
  assert.match(app,/ownerInterfaceEditor\('stats-ui'/);
+});
+
+test('#390 Wiki authorial Save, Undo and mounted refresh accept only five text-only families',()=>{
+ const undo=app.slice(app.indexOf('async function undoOwnerEdit()'),
+  app.indexOf('function showOverrideManager()',app.indexOf('async function undoOwnerEdit()')));
+ const save=app.slice(app.indexOf('async function saveGuidePatchNow('),
+  app.indexOf('async function saveGuideList(',app.indexOf('async function saveGuidePatchNow(')));
+ const refresh=app.slice(app.indexOf('function refreshVisibleOwnerCopy(recordKey)'),
+  app.indexOf('function refreshVisibleProfileCopy()',app.indexOf('function refreshVisibleOwnerCopy(recordKey)')));
+ const marker='(?:map\\.text|monster\\.text|npc\\.trade|chest\\.text|item\\.text)';
+ for(const section of [save,undo,refresh])
+  assert.ok(section.includes(marker),'Exact Wiki family allowlist missing');
+ assert.match(save,/\/\^book\\\.wiki\\\./);
+ assert.match(undo,/\/\^guideedit\\\.book\\\.wiki\\\./);
+ assert.match(refresh,/if\(!\/\^wiki\\\./);
+ assert.doesNotMatch(save,/isWikiAuthorCopy\(/);
+ assert.doesNotMatch(undo,/isWikiAuthorCopy\(/);
+ assert.doesNotMatch(refresh,/isWikiAuthorCopy\(/);
+ assert.match(refresh,/\[data-owner-interface-bindings\]/);
+ assert.match(refresh,/ownerDockPatchText\(node,value\)/);
+ assert.match(undo,/refreshVisibleOwnerCopy\(last\.key\);saveView\(\)/);
+ assert.match(undo,/else await refreshOwnerCatalog\(\)/);
+});
+
+
+test('#390 Wiki static headings edit directly without wrapping game values or adding pencils',()=>{
+ const binder=app.slice(app.indexOf('function bindOwnerInterfaceText('),
+  app.indexOf('function applyOwnerInterfaceEditedValue(',app.indexOf('function bindOwnerInterfaceText(')));
+ assert.match(binder,/node\.tagName==='H4'/);
+ assert.match(binder,/!prefix&&!suffix/);
+ assert.match(binder,/!node\.childElementCount/);
+ for(const item of ['wiki\\.map\\.text','wiki\\.monster\\.text','wiki\\.npc\\.trade',
+  'wiki\\.chest\\.text','wiki\\.item\\.text'])
+  assert.ok(binder.includes(item),item);
+ assert.match(binder,/!node\.dataset\.wikiDirectCaption/);
+ assert.match(binder,/ownerCopyLabel\(node,section,key,ru,en,\{/);
+ assert.match(binder,/onCommitted:visible=>applyOwnerInterfaceEditedValue\(section,key,visible\)/);
+ assert.match(binder,/else if\(attribute!=='text'\)\{/);
+ assert.doesNotMatch(binder,/class:'.*pencil'/,
+  'Caption editor must not create an adjacent pencil button');
+});
+
+test('#390 only actual independent hint pencils remain across all affected runtime modules',()=>{
+ const hero=read('pandora-studio-hero-book.js');
+ const workbench=read('pandora-os-catalog-workbench.js');
+ for(const [module,source] of [['app',app],['equipment',itemUI],['heroBook',hero]]){
+  for(const dead of ['studio-owner-interface-pencil','path-tab-pencil',
+   'path-owner-pencil','stage-picker-slot-pencil','stage-control-pencil',
+   'stage-book-tab-pencil','profileCopyPencil']){
+   assert.ok(!source.includes(dead),'Retired caption pencil in '+module+': '+dead);
+  }
+ }
+ assert.match(app,/class:'wiki-hint-pencil'/);
+ assert.match(hero,/class:'stage-guide-edit-hint'/);
+ assert.match(workbench,/class:'os-sync-hint-pencil'/);
+ assert.match(workbench,/class:'os-sync-secondary-pencil'/);
+ assert.match(itemUI,/event\?\.target\?\.closest\?\.\('\.wiki-inline-input'\)/);
+ assert.match(app,/event\.target\?\.closest\?\.\('\.wiki-inline-input'\)/);
+});
+
+test('#390 no retired caption-pencil CSS reserves extra native button gutter',()=>{
+ const css=read('pandora-studio-owner-inline-ui.css');
+ const guide=read('pandora-studio-workbench-guidance.css');
+ for(const selector of ['stage-control-pencil','stage-book-tab-pencil',
+  'path-tab-pencil','path-owner-pencil','path-group-pencil',
+  'stage-picker-slot-pencil','ps-profile-copy-pencil','studio-owner-interface-pencil']){
+  assert.ok(!css.includes(selector),'Dead owner CSS: '+selector);
+  assert.ok(!guide.includes(selector),'Dead workbench CSS: '+selector);
+ }
+ assert.match(css,/\.stage-action-edit-wrap>button\{/);
+ assert.match(css,/padding-inline-end:8px!important/);
+ assert.doesNotMatch(css,/padding-inline-end:23px!important/);
+ assert.doesNotMatch(css,/padding-inline-end:28px\}/);
+ assert.match(guide,/\.stage-rich-tabs \.stage-rich-settings-group button\{/);
+ assert.match(css,/\.studio-owner-interface-value\{/);
+ assert.match(css,/\.stage-rich-body \.origin-copy-editable:focus-visible/);
 });
 
 test('search terms, actual item stats, skill packets, and character state remain unedited',()=>{
