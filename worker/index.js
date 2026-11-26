@@ -1,6 +1,6 @@
 import {accountApi,accountNeedsD1,principal as accountPrincipal} from './pandora-studio-account-api.js';
 import {readPublishedCatalog} from './pandora-studio-catalog-cache.js';
-import {createCatalogPullRequest,githubCatalogEnabled,githubCatalogReadiness,previewOwnerOverrides,createOwnerOverridesPullRequest} from './pandora-studio-github-catalog-pr.js';
+import {createCatalogPullRequest,githubCatalogEnabled,githubCatalogReadiness,githubCatalogBackupStage,previewOwnerOverrides,createOwnerOverridesPullRequest} from './pandora-studio-github-catalog-pr.js';
 import {BACKUP_OUTBOX_SCHEMA,queueBackupStatement,getBackupJob,completeBackupJob,deliverCatalogBackupJob} from './pandora-studio-catalog-backup-outbox.js';
 import {readVerifiedEditorialSnapshot} from './pandora-studio-editorial-defaults.js';
 // Cloudflare Worker backend for Pandora Saga Build Studio.
@@ -680,7 +680,10 @@ if(path==='/api/admin/catalog/backup-status'&&method==='GET'){
  if(!await auth(request,env))return no('Unauthorized',401);
  const active=await activeCatalog(env);
  const ready=await catalogBackupTableReady(env);
- return json({snapshot:active?.snapshot||null,job:active&&ready?await getBackupJob(env,active.snapshot):null},200,{'cache-control':'no-store'});
+ const job=active&&ready?await getBackupJob(env,active.snapshot):null;
+ const backup=await githubCatalogBackupStage(env,active?.snapshot||null,job);
+ return json({snapshot:active?.snapshot||null,job,backup},200,
+  {'cache-control':'no-store'});
 }
 if(path==='/api/admin/catalog/github-pr'&&method==='POST'){
  if(!await auth(request,env))return no('Unauthorized',401);

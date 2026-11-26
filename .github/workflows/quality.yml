@@ -22,14 +22,14 @@ jobs:
         uses: actions/checkout@v5
         with:
           fetch-depth: 2 # required to inspect actual synthetic merge parents
-      - name: Classify exact data-only catalog PR
-        id: catalog
-        shell: bash
-        run: echo "mode=$(node scripts/catalog-ci-mode.mjs)" >> "$GITHUB_OUTPUT"
       - name: Use Node 22
         uses: actions/setup-node@v5
         with:
           node-version: '22'
+      - name: Classify exact data-only catalog PR
+        id: catalog
+        shell: bash
+        run: echo "mode=$(node scripts/catalog-ci-mode.mjs)" >> "$GITHUB_OUTPUT"
       - name: Check release metadata and HTML asset versions
         run: npm run release:check
       - name: Verify catalog snapshot and publication contracts (data-only fast lane)
