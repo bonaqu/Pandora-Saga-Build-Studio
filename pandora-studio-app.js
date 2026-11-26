@@ -10660,8 +10660,14 @@ function refreshOwnerUI(){
   };
   const grid=h('div',{class:'owner-dock-action-grid'});
   for(const key of keys){const slot=actionSlots.get(key);if(slot)grid.append(slot)}
-  return h('section',{class:'owner-dock-action-group','data-owner-group':id},[
-   h('div',{class:'owner-dock-group-heading'},[
+  // Diagnostics and optional exports should not crowd routine editing.
+  // Native <details> keeps keyboard navigation, D1-editable copy and the
+  // actual button handlers; the expanded state survives status refreshes.
+  const advanced=id==='tools';
+  return h(advanced?'details':'section',{
+   class:'owner-dock-action-group'+(advanced?' owner-dock-advanced':''),
+   'data-owner-group':id},[
+   h(advanced?'summary':'div',{class:'owner-dock-group-heading'},[
     editorial(titleKey,'title'),editorial(hintKey,'hint')]),grid]);
  };
  const editGroup=group('editing','groupEditingTitle','groupEditingHint',
