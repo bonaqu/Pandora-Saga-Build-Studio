@@ -60,17 +60,17 @@ test('catalog security confirmations and runtime failure messages are bilingual,
  for(const russian of [
   'Проверить, работают ли сохранение и удаление правок?',
   'Проверить конфликты правок?',
-  'Создать отдельный GitHub PR из текущего опубликованного игрового каталога?'
+  'D1 обновлена. GitHub проверяет резерв; окно можно закрыть.'
  ]){
   assert.ok(workbench.includes(russian),russian);
  }
  for(const english of [
   'Verify that saving and deleting edits works?',
   'Check edit conflicts?',
-  'Create a separate GitHub PR from the currently published game catalog?',
+  'D1 is updated. GitHub is verifying the backup; you may close this window.',
   'Export failed: ','Cannot publish: ','Preparing update · ',
   'D1 write verification failed: ','D1 conflict check failed: ',
-  'Could not create PR: ','Create GitHub PR — server token configuration required'
+  'Could not create PR: ','GitHub backup unavailable: connection required'
  ])assert.ok(workbench.includes(english),english);
  assert.match(workbench,/status\.textContent=tr\('Экспорт не выполнен: '/);
  assert.match(workbench,/status\.textContent=tr\('Нельзя публиковать: '/);

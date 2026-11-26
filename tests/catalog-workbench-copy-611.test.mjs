@@ -73,7 +73,11 @@ test('catalog copy Undo refreshes only authored text and cannot rewrite D1 catal
  assert.match(app,/key\.startsWith\('book\.catalog-sync\.'\)/);
  assert.match(app,/!key\.startsWith\('book\.catalog-sync\.'\)/);
  assert.match(view,/request\('\/api\/admin\/catalog\/publish'/);
- assert.match(view,/if\(!confirm\(tr\(\s*'Создать отдельный GitHub PR/);
+ const ghHandler=view.slice(view.indexOf('github.onclick=async()=>{'),
+  view.indexOf('    // Existing published snapshots'));
+ assert.match(ghHandler,/if\(busy\|\|!githubReady\|\|!publishedSnapshot\|\|!permitMutation\(\)\)return/);
+ assert.match(ghHandler,/expectedActive:publishedSnapshot/);
+ assert.doesNotMatch(ghHandler,/if\(!confirm/);
  assert.match(view,/if\(!confirm\(tr\(\s*'Проверить конфликты правок/);
 });
 
