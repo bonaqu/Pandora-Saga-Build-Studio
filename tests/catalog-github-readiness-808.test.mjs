@@ -26,7 +26,7 @@ test('reviewed catalog D1 publication never depends on GitHub being online',()=>
  assert.doesNotMatch(part.slice(0,init),/github-status|github-pr|gitReady|GitHub-токен/);
  assert.doesNotMatch(part,/failure\.preflight|if\(error\?\.preflight\)/);
  assert.match(part,/expectedActive:activeSnapshot/);
- assert.match(part,/if\(current\.active!==activeSnapshot\)/);
+ assert.match(part,/if\s*\(current\.active!==activeSnapshot\)/);
 });
 test('published D1 result and background GitHub reserve are independent',()=>{
  const begin=source.indexOf('async function finalizePublication(');
