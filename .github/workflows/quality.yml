@@ -20,17 +20,36 @@ jobs:
     steps:
       - name: Checkout exact revision
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 2 # required to inspect actual synthetic merge parents
       - name: Use Node 22
         uses: actions/setup-node@v5
         with:
           node-version: '22'
+      - name: Classify exact data-only catalog PR
+        id: catalog
+        shell: bash
+        run: echo "mode=$(node scripts/catalog-ci-mode.mjs)" >> "$GITHUB_OUTPUT"
       - name: Check release metadata and HTML asset versions
         run: npm run release:check
-      - name: Run full Node test suite
+      - name: Verify catalog snapshot and publication contracts (data-only fast lane)
+        if: steps.catalog.outputs.mode == 'catalog'
+        run: |
+          node --test \
+            tests/catalog-data-only-ci.test.mjs \
+            tests/catalog-import.test.mjs \
+            tests/catalog-publication-complete-806.test.mjs \
+            tests/catalog-fallback-auto-merge-807.test.mjs \
+            tests/catalog-prepublish-mechanics-810.test.mjs \
+            tests/catalog-durable-backup-809.test.mjs
+      - name: Run full Node test suite (all code and unknown PR changes)
+        if: steps.catalog.outputs.mode != 'catalog'
         run: npm test
       - name: Syntax-check opt-in cloud lifecycle script without writing to D1
         run: node --check scripts/check-live-d1-ephemeral.mjs
       - name: Audit original local game icons (manifest and WebP)
+        if: steps.catalog.outputs.mode != 'catalog'
         run: npm run assets:audit
       - name: Report source-only RU/EN name coverage
+        if: steps.catalog.outputs.mode != 'catalog'
         run: npm run locales:audit

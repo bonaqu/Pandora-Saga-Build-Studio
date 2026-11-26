@@ -278,3 +278,43 @@ export async function createOwnerOverridesPullRequest(env,expectedFingerprint){
   throw fault('Unexpected PR URL');
  return {url:pull.html_url,number:pull.number,reused:false,count:source.count};
 }
+
+
+// Owner-only read-only backup status for the admin dashboard. Outbox "done"
+// means "PR created", NOT that Github's tested fallback reached main.
+export async function githubCatalogBackupStage(env,snapshot,job){
+ const common={snapshot};
+ if(!job)return {...common,state:'not_started'};
+ if(['pending','running','retry'].includes(job.state))
+  return {...common,state:'working'};
+ if(job.state==='attention')return {...common,state:'attention'};
+ if(job.state==='superseded')return {...common,state:'superseded'};
+ if(job.state!=='done')return {...common,state:'unavailable'};
+ if(job.result?.unchanged===true)return {...common,state:'synced'};
+ const number=job.result?.number;
+ if(!Number.isSafeInteger(number)||number<1||!githubCatalogEnabled(env))
+  return {...common,state:'unavailable'};
+ try{
+  const pr=await gh(env,'/pulls/'+number);
+  // Report a result only for the exact D1 snapshot/branch, never an
+  // unrelated PR or a different catalog revision.
+  if(pr?.number!==number||pr?.head?.ref!=='catalog/snapshot-'+snapshot||
+     pr?.base?.ref!==BASE||!validPull(pr))
+   return {...common,state:'attention'};
+  const result={...common,number,url:pr.html_url};
+  if(pr.merged===true)return {...result,state:'synced'};
+  if(pr.state!=='open')return {...result,state:'attention'};
+  const sha=pr.head?.sha;
+  if(!/^[0-9a-f]{40}$/.test(String(sha||'')))
+   return {...result,state:'unavailable'};
+  const params=new URLSearchParams({event:'pull_request',head_sha:sha,per_page:'60'});
+  const rows=(await gh(env,'/actions/runs?'+params.toString()))?.workflow_runs||[];
+  const names=['Studio quality checks','Chromium browser smoke'];
+  const latest=names.map(name=>rows.find(r=>r.name===name&&r.event==='pull_request'&&
+   r.head_sha===sha));
+  if(latest.some(r=>r?.status==='completed'&&
+   ['failure','timed_out','cancelled','action_required'].includes(r.conclusion)))
+   return {...result,state:'attention'};
+  return {...result,state:'checking'};
+ }catch{return {...common,state:'unavailable'}}
+}

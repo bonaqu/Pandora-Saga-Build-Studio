@@ -29,7 +29,7 @@ test('readiness preflight is performed before any D1 initialization or catalog w
 test('D1 post-publication copy and manual backup are disabled for unknown token permissions',()=>{
  assert.match(source,/integration\.connected!==true\|\|integration\.writeAccess!==true/);
  assert.match(source,/settings\.connected===true&&settings\.writeAccess===true/);
- assert.match(source,/автоматически, затем PR будет объединён при успехе/);
+ assert.match(source,/GitHub сам обновит резерв/);
 });
 test('the Worker returns unknown write scope rather than claiming a configured secret is enough',async()=>{
  const environment=env(),previous=globalThis.fetch;

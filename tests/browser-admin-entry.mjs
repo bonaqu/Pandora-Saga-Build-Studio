@@ -951,11 +951,11 @@ export async function runAdminEntrySmoke(browser,base){
    'Подсказка дополнительных инструментов QA.');
   assert.equal(await advancedBlock.locator(':scope > details.os-sync-advanced').evaluate(el=>el.open),false);
   await dialog.locator('.os-sync-advanced>summary').click();
-  const prButton=dialog.getByRole('button',{name:'Создать PR в GitHub'});
+  const prButton=dialog.getByRole('button',{name:'Проверить / повторить резерв GitHub'});
   await prButton.waitFor({state:'visible'});
   await page.waitForFunction(()=>!Array.from(document.querySelectorAll('.os-sync-actions button'))
-    .find(button=>button.textContent?.includes('Создать PR в GitHub'))?.disabled);
-  page.once('dialog',dialog=>dialog.accept());
+    .find(button=>button.textContent?.includes('Проверить / повторить резерв GitHub'))?.disabled);
+  // Backing up existing published D1 is idempotent, no extra confirmation.
   await prButton.click();
   await dialog.getByRole('link',{name:'Открыть PR #246'}).waitFor({state:'visible'});
   assert.deepEqual(calls.filter(x=>x==='github-pr'),['github-pr']);

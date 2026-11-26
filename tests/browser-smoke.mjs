@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
 import {runIndependentSmokes} from './browser-runner.mjs';
+import {runCatalogDataBrowserSmoke} from './browser-catalog-data-only.mjs';
 import {runShareLinkSmoke} from './browser-share-link.mjs';
 import {runBuildAuthGateSmoke} from './browser-build-auth-gate.mjs';
 import {runGuestGateEditorialSmoke} from './browser-guest-gate-editorial-640.mjs';
@@ -81,18 +82,20 @@ import {runEncyclopediaPerformanceSmoke} from './browser-encyclopedia-performanc
 
 const base='http://127.0.0.1:4173';
 const argv=new Set(process.argv.slice(2));
-for(const arg of argv)if(!['--quick','--layout','--serial'].includes(arg)&&
+for(const arg of argv)if(!['--quick','--layout','--serial','--catalog'].includes(arg)&&
  !/^--only=[a-z0-9-]+$/.test(arg))
  throw Error('Unsupported browser test option '+arg);
 const onlyOptions=[...argv].filter(arg=>arg.startsWith('--only='));
 if(onlyOptions.length>1)throw Error('Only one browser scenario may be selected');
 const only=onlyOptions[0]?.slice('--only='.length)||null;
-const quick=argv.has('--quick'),layout=argv.has('--layout');
-const reduced=quick||layout,concurrency=argv.has('--serial')?1:3;
-if(quick&&layout)throw Error('Choose either quick or layout browser mode');
+const quick=argv.has('--quick'),layout=argv.has('--layout'),catalog=argv.has('--catalog');
+const reduced=quick||layout||catalog,concurrency=argv.has('--serial')?1:3;
+if(Number(quick)+Number(layout)+Number(catalog)>1)
+ throw Error('Choose only one browser reduction mode');
 if(only&&reduced)throw Error('Single-scenario smoke cannot be combined with a reduced mode');
 const errors=[];
 const scenarios=[
+  ['catalog-data-only',runCatalogDataBrowserSmoke],
   ['build-account-gate',runBuildAuthGateSmoke],
   ['guest-gate-editorial',runGuestGateEditorialSmoke],
   ['modal-keyboard',runModalKeyboardSmoke],
@@ -749,7 +752,8 @@ async function main(){
  const quickCases=new Set(['build-account-gate','modal-keyboard','shared-library-import','draft-persistence-warning','guest-draft-continuity','share-link','cloud-conflict','cloud-save-failure','cross-tab-account','account-feedback-race','equipment-locale','soul-search-852','gem-option-aria-853','per-item-soul-capacity','equipment-quick-menu','equipment-forge-bonuses','conditional-fire-867','legacy-class-cap','innate-l1-mastery','hero-book-live-recalc','hero-book-monsters-785','origin-shared-snapshot',
   'manual-saved-overwrite','account-late-bootstrap','empty-account-reconnect','account-isolation','inline-skill-milestones',
   'build-comparison','chest-reward-layout','wiki-skill-filters','wiki-skill-label-editor','ui-content-inline','owner-equipment-copy-width','wiki-owner-english-sync','wiki-spawn-replace','wiki-icons-offline']);
- const selected=reduced?scenarios.filter(([name])=>quickCases.has(name)):scenarios;
+ const selected=catalog?scenarios.filter(([name])=>name==='catalog-data-only'):
+  reduced?scenarios.filter(([name])=>quickCases.has(name)):scenarios;
  // A storm of intentionally aborted F5 requests also contends for the
  // shared Chromium CPU/network scheduler. Keep that stress scenario and
  // the long owner-admin editor serial, AFTER regular UI interactions.
@@ -765,13 +769,13 @@ async function main(){
  const regular=selected.filter(([name])=>!isolatedNames.has(name));
  const report=[...await runIndependentSmokes(regular,browser,base,{concurrency}),
   ...await runIndependentSmokes(isolated,browser,base,{concurrency:1})];
- console.log('Chromium '+(layout?'layout':quick?'quick':'full')+' suite: '+
+ console.log('Chromium '+(catalog?'catalog':layout?'layout':quick?'quick':'full')+' suite: '+
   report.length+' isolated flows, concurrency '+concurrency+
   ', aggregate scenario time '+report.reduce((sum,row)=>sum+row.ms,0)+'ms');
  // Run large-list timings serially, outside the parallel smoke tasks, to
  // avoid measuring CPU contention from other Chromium contexts.
  if(!reduced)await runEncyclopediaPerformanceSmoke(browser,base);
  // 4K full-page screenshots are memory-heavy: run layout after regular flows.
- if(!quick)await runLayoutAudit(browser,base);
+ if(!quick&&!catalog)await runLayoutAudit(browser,base);
 }
 main().catch(error=>{console.error(error);process.exitCode=1}).finally(async()=>{await browser?.close()});

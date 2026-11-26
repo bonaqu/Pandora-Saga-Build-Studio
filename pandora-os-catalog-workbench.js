@@ -441,7 +441,7 @@
     const testCAS=h('button',{type:'button',class:'button-action',
       text:'Проверить конфликты правок',disabled:false});
     const github = h('button',{type:'button',class:'button-action',
-      text:'Создать PR в GitHub',disabled:true});
+      text:'Проверить / повторить резерв GitHub',disabled:true});
     const search = h('input', {type:'search',class:'os-sync-search',
       placeholder:copy('searchPlaceholder',
        'Поиск по названию, описанию и связанным предметам…',
@@ -455,6 +455,7 @@
     const summary = h('div', {class:'os-sync-summary',role:'status'});
     const sourceBanner=h('p',{class:'os-sync-source-banner',hidden:true});
     const status = h('p', {class:'os-sync-status',role:'status'});
+    const backupBanner=h('p',{class:'os-sync-backup-banner','aria-live':'polite',hidden:true});
     // Only fixed authorial status copy is editable; dynamic progress,
     // server errors, game values and diagnostics remain untouched.
     const editorialState=(target,key,ru,en)=>{
@@ -605,7 +606,7 @@
       h('div',{class:'os-sync-advanced-actions'},[
        action(testWrite,'testWriteButton','Проверить сохранение правок','Test D1 writes'),
        action(testCAS,'testCasButton','Проверить конфликты правок','Test edit conflicts'),
-       action(github,'githubButton','Создать PR в GitHub','Create GitHub PR'),
+       action(github,'githubButton','Проверить / повторить резерв GitHub','Check / retry GitHub backup'),
        action(exportButton,'exportButton','Скачать выбранное для GitHub','Download selected for GitHub')
       ])
     ]);
@@ -671,7 +672,7 @@
     if(clearControl!==clearSearch)clearControl.classList.add('os-sync-search-clear-editor');
     searchField.insertBefore(clearControl,
      searchField.querySelector('.os-sync-secondary-pencil'));
-    view.append(intro,actions,sourceBanner,summary,status,diagnostic,progress,
+    view.append(intro,actions,sourceBanner,summary,status,backupBanner,diagnostic,progress,
       filters,overview,searchField,results);
     for(const element of [filters,overview,searchField,results])element.hidden=true;
 
@@ -1743,6 +1744,51 @@
     }
 
 
+    // Read-only status of the durable GitHub backup, independent of live D1.
+    // Stop polling when the modal is closed; a server Cron owns retry delivery.
+    let backupPollSequence=0;
+    function startBackupTracking(snapshot){
+      if(!snapshot)return;
+      const generation=++backupPollSequence;
+      const tick=async(n=0)=>{
+        if(!view.isConnected||generation!==backupPollSequence)return;
+        let stage='unavailable',url=null;
+        try{
+          const response=await request('/api/admin/catalog/backup-status',null);
+          if(!view.isConnected||generation!==backupPollSequence)return;
+          stage=response?.snapshot===snapshot?
+            response?.backup?.state||'unavailable':'superseded';
+          url=response?.backup?.url;
+        }catch{}
+        const copyByState={
+          not_started:tr('GitHub-копия ещё не создана.','GitHub backup not created yet.'),
+          working:tr('D1 обновлена. Резерв создаётся в фоне; окно можно закрыть.',
+                     'D1 is updated. The backup is created in the background; you may close this window.'),
+          checking:tr('D1 обновлена. GitHub проверяет резерв; окно можно закрыть.',
+                      'D1 is updated. GitHub is verifying the backup; you may close this window.'),
+          synced:tr('Готово: резерв GitHub совпадает с работающим каталогом D1.',
+                    'Done: GitHub backup matches the live D1 catalog.'),
+          attention:tr('D1 работает, но GitHub-копия требует внимания. Никакого отката нет.',
+                       'D1 is live, but the GitHub backup needs attention. Nothing was rolled back.'),
+          superseded:tr('Уже опубликована другая версия каталога.',
+                        'A newer catalog snapshot has already been published.'),
+          unavailable:tr('D1 работает. Статус резерва пока недоступен; повторю проверку.',
+                         'D1 is live. Backup status is unavailable; retrying the status check.')
+        };
+        backupBanner.replaceChildren(document.createTextNode(
+          copyByState[stage]||copyByState.unavailable));
+        if(/^https:\/\/github\.com\/bonaqu\/Pandora-Saga-Build-Studio\/pull\/\d+$/.test(url||'')){
+          backupBanner.append(document.createTextNode(' '),
+            h('a',{href:url,target:'_blank',rel:'noopener noreferrer',
+              text:tr('Подробнее','Details')}));
+        }
+        backupBanner.hidden=false;
+        if(!['synced','attention','superseded'].includes(stage)&&n<30)
+          setTimeout(()=>tick(n+1),8000);
+      };
+      void tick();
+    }
+
     async function verifyPublishedForPlayers(snapshot,expected){
       await afterPublish();
       return verifyPublishedSnapshot(apiBase,snapshot,expected,fetch,lang);
@@ -1778,6 +1824,7 @@
           ' Another version is already active; its predecessor is not backed up.');
         return;
       }
+      startBackupTracking(snapshot);
       try {
         const integration=await request('/api/admin/catalog/github-status',null);
         if(integration.configured!==true){
@@ -1828,8 +1875,8 @@
             ' GitHub fallback already matches D1.');
         }else if(/^https:\/\/github\.com\/bonaqu\/Pandora-Saga-Build-Studio\/pull\/\d+$/.test(result.url||'')){
           status.append(document.createTextNode(tr(
-            ' Резервный PR создан; Node и Chromium запускаются автоматически, затем PR будет объединён при успехе: ',
-            ' Backup PR created; Node and Chromium run automatically, followed by merge if successful: ')),
+            ' Резервный PR создан; Node и Chromium проверят изменения, GitHub сам обновит резерв. Сайт уже обновлён, окно можно закрыть: ',
+            ' Backup PR created; Node and Chromium verify changes and GitHub updates the backup automatically. The site is already live; you may close this window: ')),
             h('a',{href:result.url,target:'_blank',rel:'noopener noreferrer',
               text:'PR #'+result.number}));
         }else throw Error('Некорректный ответ GitHub');
@@ -2163,11 +2210,6 @@
     };
     github.onclick=async()=>{
       if(busy||!githubReady||!publishedSnapshot||!permitMutation())return;
-      if(!confirm(tr(
-       'Создать отдельный GitHub PR из текущего опубликованного игрового каталога?\n'+
-        'Он не объединится с основной веткой автоматически.',
-       'Create a separate GitHub PR from the currently published game catalog?\n'+
-        'It will not be merged into the main branch automatically.')))return;
       setBusy(true);
       try{
         const active=await request('/api/admin/catalog/status',{});
@@ -2191,6 +2233,7 @@
               'The admin session ended. Sign in again.')
           : tr('Не удалось создать PR: ','Could not create PR: ')+error.message;
       }finally{setBusy(false)}
+      startBackupTracking(publishedSnapshot);
     };
     // Existing published snapshots can be sent to GitHub even if no new
     // game data arrived during this particular admin session.
@@ -2201,10 +2244,10 @@
       githubReady=settings.configured===true&&settings.connected===true&&settings.writeAccess===true;
       publishedSnapshot=current.active||null;
       github.setAttribute('aria-label',githubReady
-        ? tr('Создать PR в GitHub из опубликованного каталога',
-             'Create a GitHub PR from the published catalog')
-        : tr('Создать PR в GitHub — требуется настройка токена на сервере',
-             'Create GitHub PR — server token configuration required'));
+        ? tr('Проверить / повторить резерв GitHub',
+             'Check / retry GitHub backup')
+        : tr('Резерв GitHub недоступен: требуется подключение',
+             'GitHub backup unavailable: connection required'));
       refreshActions();
     }).catch(()=>{githubReady=false;refreshActions()});
 
@@ -2248,6 +2291,10 @@
     modal(copy('title','Обновление игрового каталога','Game catalog updates'),view,{
      canClose:()=>!publishing
     });
+    // Reopening the admin panel restores real status of the active snapshot.
+    request('/api/admin/catalog/backup-status',null).then(data=>{
+      if(view.isConnected&&data?.snapshot)startBackupTracking(data.snapshot);
+    }).catch(()=>{});
   }
 
 

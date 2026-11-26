@@ -75,10 +75,10 @@ export function buildEditorialDefaultsManifest(){
   !wiki?.key||!wiki?.validField)
   throw Error('Required audited authorial catalogs did not initialize');
 
- const packageInfo=JSON.parse(read('package.json'));
- const release=packageInfo.version;
- if(!/^[0-9]+\.[0-9]+\.[0-9]+$/.test(release))
-  throw Error('Invalid pinned source release');
+ // This is the immutable D1 snapshot already installed in production.
+ // Ordinary app releases must not rewrite or invalidate 2,734 stored defaults.
+ // A new authorial migration requires an explicit new snapshot and review.
+ const release='0.948.0';
  const records=[],seen=new Set(),cohorts=Object.create(null);
  function append(recordKey,field,value,cohort){
   if(!/^guideedit\.(?:book\.[a-z][a-zA-Z0-9._:-]{1,80}|honor\.(?:overview|rank\.(?:[0-9]|1[01]))|wiki\.labels)$/.test(recordKey))

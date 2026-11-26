@@ -202,7 +202,10 @@ test('#390 owner EN-translation/export dialogs stage only reviewed RU/EN copy',(
 test('issue 390: source-authored D1 default snapshot is stable and uses exact existing keys',()=>{
  const repeated=buildEditorialDefaultsManifest();
  assert.equal(manifest.schema,1);
- assert.equal(manifest.release,JSON.parse(read('package.json')).version);
+ assert.equal(manifest.release,'0.948.0',
+  'An installed D1 snapshot must outlive subsequent app version bumps');
+ assert.equal(manifest.snapshot,'0.948.0-5637e5c111eb4528',
+  'Do not change physical production snapshot simply by releasing new site code');
  assert.match(manifest.digest,/^[a-f0-9]{64}$/);
  assert.match(manifest.snapshot,/^0\.[0-9]+\.[0-9]+-[a-f0-9]{16}$/);
  assert.equal(manifest.digest,repeated.digest);
