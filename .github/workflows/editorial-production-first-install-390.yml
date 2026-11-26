@@ -1,0 +1,57 @@
+# #390: Explicit one-approval first install of authorial RU/EN defaults.
+# The owner separately retained the exact encrypted production backup.
+# Does NOT deploy Worker or Pages, alter game catalog or edit owner overrides.
+name: "#390 production D1 FIRST INSTALL (owner approval, 2734 editorial rows)"
+
+on:
+  pull_request:
+    types: [labeled]
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: ps390-production-first-install
+  cancel-in-progress: false
+
+jobs:
+  editorial-first-install:
+    if: >-
+      github.repository == 'bonaqu/Pandora-Saga-Build-Studio' &&
+      github.event.pull_request.number == 809 &&
+      github.event.pull_request.base.ref == 'bonaqu_projects' &&
+      github.event.pull_request.head.repo.full_name == 'bonaqu/Pandora-Saga-Build-Studio' &&
+      github.event.pull_request.head.ref == 'work/947-issue390-editorial-parity' &&
+      github.event.label.name == 'ps390-production-first-install'
+    name: One approved authorial-only production D1 first install
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    environment: editorial-production-390
+    env:
+      PS_EDITORIAL_EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+      PS390_PRODUCTION_IMPORT_APPROVED: CONFIRM-PS390-PRODUCTION-FIRST-INSTALL-0.948.0-5637e5c111eb4528
+      GITHUB_TOKEN: ${{ github.token }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: 57ac934cd0f0a7f5e8533177d612f893
+      PS_D1_DATABASE_ID: 0f8fbcd8-be06-414c-844b-a2091fdf6784
+      PS390_PRODUCTION_BACKUP_KEY: ${{ secrets.PS390_PRODUCTION_BACKUP_KEY }}
+    steps:
+      - name: Checkout exact reviewed source branch
+        uses: actions/checkout@v5
+        with:
+          ref: work/947-issue390-editorial-parity
+          persist-credentials: false
+      - name: Use Node 22
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Verify reviewed source and both complete CI checks before production work
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$PS_EDITORIAL_EXPECTED_SHA"
+          test "$(git branch --show-current)" = 'work/947-issue390-editorial-parity'
+          test -z "$(git status --porcelain)"
+          node scripts/check-editorial-staging-approval.mjs ci
+      - name: Verify original encrypted production backup and install only pinned RU/EN defaults
+        run: node scripts/run-editorial-production-first-install-390.mjs
