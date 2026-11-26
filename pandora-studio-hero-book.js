@@ -2083,7 +2083,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     more.append(make('small',{class:'stage-skill-coefficient-next'},[
      scalingCaption('nextMasteryLead'),' ',
      scalingCaption(phrase),' ',
-     ...(['strike','spell'].includes(next.effect))?[make('span',{class:'stage-skill-coefficient-uncertainty',
+     ...(['strike','spell'].includes(next.effect)?[make('span',{class:'stage-skill-coefficient-uncertainty',
       text:en?'(model)':'(модель)'})]:[]),' ',
      healingValue(bonus,'scaling-mastery-gain'),' ',
      scalingCaption('nextMasteryAt'),' ',
