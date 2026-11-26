@@ -1655,6 +1655,12 @@ export async function runAdminEntrySmoke(browser,base){
     /Stage: [a-zA-Z0-9_-]+[.]json · Worker response: 502 · Reason: network/);
   assert.equal(await enCatalog.locator('.os-sync-review-steps').isHidden(),true);
   const englishWritesBefore=calls.filter(x=>x==='catalog-publish'||x==='d1-import').length;
+  // The EN archive recovery is now behind the advanced disclosure, just
+  // like RU. Use the visible native summary rather than a hidden button.
+  const enAdvanced=enCatalog.locator('details.os-sync-advanced');
+  assert.equal(await enAdvanced.evaluate(node=>node.open),false);
+  await enAdvanced.locator(':scope > summary').click();
+  await enCatalog.locator('.os-sync-archive-choice').waitFor({state:'visible'});
   await enCatalog.getByRole('button',{name:'Compare saved snapshot'}).click();
   await enCatalog.locator('.os-sync-review-steps').waitFor({state:'visible'});
   await enCatalog.locator('.os-sync-group-heading').first().click();
