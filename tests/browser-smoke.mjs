@@ -68,6 +68,7 @@ import {runEffectItemsSmoke} from './browser-effect-items.mjs';
 import {runWikiSkillFiltersSmoke,runWikiIconManifestFallbackSmoke} from './browser-wiki-skill-filters.mjs';
 import {runWikiMaterialLinks752Smoke} from './browser-wiki-material-links-752.mjs';
 import {runWikiReturn799Smoke} from './browser-wiki-return-799.mjs';
+import {runWikiMobileArticleRevealSmoke} from './browser-wiki-mobile-article-815.mjs';
 import {runWikiSkillLabelEditorSmoke} from './browser-wiki-skill-label-editor.mjs';
 import {runUIContentInlineSmoke} from './browser-ui-content-inline.mjs';
 import {runOwnerEquipmentInlineSmoke} from './browser-owner-equipment-inline-632.mjs';
@@ -136,6 +137,7 @@ const scenarios=[
   ['path-skill-navigation-761',runPathSkillNavigation761Smoke],
   ['wiki-material-recipe-links-752',runWikiMaterialLinks752Smoke],
   ['wiki-back-scroll-799',runWikiReturn799Smoke],
+  ['wiki-mobile-article',runWikiMobileArticleRevealSmoke],
   ['remaked-buff-parity-669',runRemakedBuffParity669Smoke],
   ['origin-shared-snapshot',runOriginSharedSnapshotSmoke],
   ['two-handed-gear',runTwoHandedSmoke],
@@ -751,7 +753,7 @@ async function main(){
 
  const quickCases=new Set(['build-account-gate','modal-keyboard','shared-library-import','draft-persistence-warning','guest-draft-continuity','share-link','cloud-conflict','cloud-save-failure','cross-tab-account','account-feedback-race','equipment-locale','soul-search-852','gem-option-aria-853','per-item-soul-capacity','equipment-quick-menu','equipment-forge-bonuses','conditional-fire-867','legacy-class-cap','innate-l1-mastery','hero-book-live-recalc','hero-book-monsters-785','origin-shared-snapshot',
   'manual-saved-overwrite','account-late-bootstrap','empty-account-reconnect','account-isolation','inline-skill-milestones',
-  'build-comparison','chest-reward-layout','wiki-skill-filters','wiki-skill-label-editor','ui-content-inline','owner-equipment-copy-width','wiki-owner-english-sync','wiki-spawn-replace','wiki-icons-offline']);
+  'build-comparison','chest-reward-layout','wiki-skill-filters','wiki-skill-label-editor','ui-content-inline','owner-equipment-copy-width','wiki-owner-english-sync','wiki-spawn-replace','wiki-icons-offline','wiki-mobile-article']);
  const selected=catalog?scenarios.filter(([name])=>name==='catalog-data-only'):
   reduced?scenarios.filter(([name])=>quickCases.has(name)):scenarios;
  // A storm of intentionally aborted F5 requests also contends for the

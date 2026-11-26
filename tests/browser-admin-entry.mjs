@@ -411,8 +411,8 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(await edge.evaluate(node=>document.activeElement===node),true,
    'Closing with Escape should restore launcher focus');
   await edge.click();
-  assert.match(await ownerPanel.innerText(),/Cloudflare D1/);
-  assert.match(await ownerPanel.innerText(),/сохранение автоматически|сохранение автоматическое/);
+  assert.match(await ownerPanel.innerText(),/Автосохранение включено|✓ Сохранено/);
+  assert.match(await ownerPanel.innerText(),/Автосохранение включено|сохранится автоматически/);
   assert.equal(await ownerPanel.locator('.owner-workflow-guide[open]').count(),0,
    'The floating dock must start compact and not cover editable wiki rows');
   await ownerPanel.locator('.owner-workflow-guide>summary').click();
@@ -428,7 +428,7 @@ export async function runAdminEntrySmoke(browser,base){
   assert.match(await ownerPanel.innerText(),/Копия в GitHub/);
   assert.match(await ownerPanel.innerText(),/Проверить сохранение/);
   assert.match(await ownerPanel.innerText(),/За этот сеанс: 0/);
-  assert.match(await ownerPanel.innerText(),/записей в D1|запись в D1/);
+  assert.match(await ownerPanel.innerText(),/Сохранённых записей: \d+/);
   // D1 caption dblclick must never execute the diagnostic action.
   const d1Action=ownerPanel.locator('.owner-dock-action-slot[data-owner-dock-key="testD1"]');
   assert.equal(await d1Action.locator('.owner-dock-action-pencil').count(),0);
@@ -1778,7 +1778,7 @@ export async function runAdminEntrySmoke(browser,base){
   const status=ownerPanel.locator('[data-owner-save-state]');
   await page.waitForFunction(()=>document.querySelector(
    '#ownerDock [data-owner-save-state]')?.dataset.state==='saved',null,{timeout:15000});
-  assert.match(await status.textContent(),/Сохранено в Cloudflare D1/);
+  assert.match(await status.textContent(),/✓ Сохранено/);
   if(await edge.getAttribute('aria-expanded')==='false'){
    await edge.click();
    await status.waitFor({state:'visible'});
@@ -2027,7 +2027,7 @@ export async function runAdminEntrySmoke(browser,base){
    .waitFor({state:'visible',timeout:20000});
   // The drawer may be collapsed after Wiki navigation; textContent still
   // represents the saved D1 count, unlike hidden-element innerText.
-  assert.match(await ownerPanel.locator('[data-owner-count]').textContent(),/запис|D1 edits/);
+  assert.match(await ownerPanel.locator('[data-owner-count]').textContent(),/Сохранённых записей: \d+/);
   console.log('Chromium future-map NPC D1 passed: create, link and display bilingual owner NPC');
   console.log('Chromium future-map roster D1 passed: owner monster creation and cross-link');
   console.log('Chromium owner location created and edited through D1: RU/EN, tags, sections');
