@@ -1761,19 +1761,19 @@
           url=response?.backup?.url;
         }catch{}
         const copyByState={
-          not_started:tr('GitHub-копия ещё не создана.','GitHub backup not created yet.'),
-          working:tr('D1 обновлена. Резерв создаётся в фоне; окно можно закрыть.',
-                     'D1 is updated. The backup is created in the background; you may close this window.'),
-          checking:tr('D1 обновлена. GitHub проверяет резерв; окно можно закрыть.',
-                      'D1 is updated. GitHub is verifying the backup; you may close this window.'),
-          synced:tr('Готово: резерв GitHub совпадает с работающим каталогом D1.',
-                    'Done: GitHub backup matches the live D1 catalog.'),
-          attention:tr('D1 работает, но GitHub-копия требует внимания. Никакого отката нет.',
-                       'D1 is live, but the GitHub backup needs attention. Nothing was rolled back.'),
+          not_started:tr('Резервная копия ещё не создана.','Backup not created yet.'),
+          working:tr('Каталог обновлён. Резервная копия создаётся автоматически; окно можно закрыть.',
+                     'Catalog updated. Backup is prepared automatically; you may close this window.'),
+          checking:tr('Каталог обновлён. Резервная копия проверяется; окно можно закрыть.',
+                      'Catalog updated. Backup is being verified; you may close this window.'),
+          synced:tr('Готово: каталог обновлён, резервная копия сохранена.',
+                    'Done: catalog updated and backup saved.'),
+          attention:tr('Каталог обновлён, но резервная копия требует внимания. Данные не откатывались.',
+                       'Catalog updated, but the backup needs attention. Data was not rolled back.'),
           superseded:tr('Уже опубликована другая версия каталога.',
                         'A newer catalog snapshot has already been published.'),
-          unavailable:tr('D1 работает. Статус резерва пока недоступен; повторю проверку.',
-                         'D1 is live. Backup status is unavailable; retrying the status check.')
+          unavailable:tr('Каталог обновлён. Статус копии пока недоступен; проверка повторится автоматически.',
+                         'Catalog updated. Backup status is unavailable; a retry will run automatically.')
         };
         backupBanner.replaceChildren(document.createTextNode(
           copyByState[stage]||copyByState.unavailable));

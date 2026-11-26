@@ -49,6 +49,6 @@ test('new owner UI shows the real backup status when reopened, no token in JS',(
  const ui=readFileSync(new URL('../pandora-os-catalog-workbench.js',import.meta.url),'utf8');
  assert.match(worker,/githubCatalogBackupStage\(env,active\?\.snapshot\|\|null,job\)/);
  assert.match(ui,/startBackupTracking\(data\.snapshot\)/);
- assert.match(ui,/D1 обновлена\. GitHub проверяет резерв/);
+ assert.match(ui,/Каталог обновлён\. Резервная копия проверяется/);
  assert.doesNotMatch(ui,/GITHUB_CATALOG_TOKEN/);
 });

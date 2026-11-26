@@ -60,7 +60,7 @@ test('catalog security confirmations and runtime failure messages are bilingual,
  for(const russian of [
   'Проверить, работают ли сохранение и удаление правок?',
   'Проверить конфликты правок?',
-  'D1 обновлена. GitHub проверяет резерв; окно можно закрыть.'
+  'Каталог обновлён. Резервная копия проверяется; окно можно закрыть.'
  ]){
   assert.ok(workbench.includes(russian),russian);
  }
