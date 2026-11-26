@@ -19,7 +19,7 @@ test('#815 Undo failures use accessible bilingual non-blocking warning, retainin
  assert.doesNotMatch(undo,/\balert\s*\(/,'Native alerts must not block the owner workspace');
 });
 test('#815 history Escape clears search only without writing D1 or closing the modal',()=>{
- const history=between('function showOverrideManager(){','function wikiDataOrCatalogHasRecord(target){');
+ const history=between('function showOverrideManager(){','function allowedArtwork(value){');
  assert.match(history,/search\.addEventListener\('keydown',event=>/);
  assert.match(history,/event\.key!=='Escape'\|\|!search\.value/);
  assert.match(history,/event\.preventDefault\(\);event\.stopPropagation\(\)/);
