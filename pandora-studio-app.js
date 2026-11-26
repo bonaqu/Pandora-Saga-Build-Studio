@@ -4486,7 +4486,29 @@ function renderWiki(root){
   'Поиск по названию','Search by name','placeholder');
  bindOwnerInterfaceText(search,'wiki-ui','searchAria',
   'Поиск по энциклопедии','Search encyclopedia','aria-label');
- controls.append(categories,search);
+ // One-tap contextual clear, matching Builds and Equipment. No D1 writes.
+ const wikiSearchClear=h('button',{type:'button',class:'wiki-search-clear',
+  hidden:!wikiSearch,
+  'aria-label':lang==='en'?'Clear encyclopedia search':'Очистить поиск по энциклопедии',
+  title:lang==='en'?'Clear encyclopedia search':'Очистить поиск по энциклопедии',
+  text:'×'});
+ const wikiSearchRow=h('div',{class:'wiki-search-row'},[search,wikiSearchClear]);
+ const clearWikiQuery=()=>{
+  if(!search.value&&!wikiSearch)return;
+  search.value='';wikiSearch='';wikiShown=100;
+  globalThis.PandoraNonCredentialGuard?.sync(search);
+  wikiSearchClear.hidden=true;
+  // Route through existing Honor/general search listeners and browser history.
+  search.dispatchEvent(new Event('input',{bubbles:true}));
+  search.focus({preventScroll:true});
+ };
+ wikiSearchClear.addEventListener('click',clearWikiQuery);
+ search.addEventListener('keydown',event=>{
+  if(event.key!=='Escape'||!search.value)return;
+  event.preventDefault();event.stopPropagation();clearWikiQuery();
+ });
+ search.addEventListener('input',()=>{wikiSearchClear.hidden=!search.value});
+ controls.append(categories,wikiSearchRow);
  // Add owner-authored monster cards without asserting a nonexistent OS numeric ID.
  // Future-map reports can be linked to existing OR newly created encyclopedia cards.
  // Keep one candidate per active form; retrying uncertain D1 writes must

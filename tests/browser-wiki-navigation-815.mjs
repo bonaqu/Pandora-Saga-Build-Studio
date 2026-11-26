@@ -37,6 +37,31 @@ export async function runWikiChapterNavigation815Smoke(browser,base){
     },null,{timeout:10000});
     await page.locator('.wiki-open-first').waitFor({state:'visible'});
    }
+   // A filter never traps the owner/player in an empty Wiki result set.
+   const wikiQuery=page.locator('.wiki-search-row input[type="search"]');
+   const clear=page.locator('.wiki-search-clear');
+   assert.equal(await clear.isHidden(),true);
+   await wikiQuery.fill('___missing_encyclopedia_record___');
+   await clear.waitFor({state:'visible'});
+   assert.equal(await clear.getAttribute('aria-label'),'Очистить поиск по энциклопедии');
+   await clear.click();
+   assert.equal(await wikiQuery.inputValue(),'');
+   assert.equal(await wikiQuery.evaluate(n=>document.activeElement===n),true);
+   await wikiQuery.fill('___missing_encyclopedia_record___');
+   await wikiQuery.press('Escape');
+   assert.equal(await wikiQuery.inputValue(),'');
+   assert.equal(await wikiQuery.evaluate(n=>document.activeElement===n),true);
+   if(width===1366){
+    await page.locator('#locale [data-locale="en"]').click();
+    await page.waitForFunction(()=>document.documentElement.lang==='en');
+    const enSearch=page.locator('.wiki-search-row input[type="search"]');
+    await enSearch.fill('___missing_encyclopedia_record___');
+    const enClear=page.locator('.wiki-search-clear');
+    assert.equal(await enClear.getAttribute('aria-label'),'Clear encyclopedia search');
+    await enClear.click();
+    assert.equal(await enSearch.inputValue(),'');
+   }
+   await first.waitFor({state:'visible'});
    await first.click();
    await page.locator('.wiki-page h3').waitFor({state:'visible'});
    assert.match(new URL(page.url()).hash,/^#wiki\/(?:item|soul)\//);
