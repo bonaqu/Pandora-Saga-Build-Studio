@@ -1037,6 +1037,7 @@ function elementalSpellCoefficientPreview({skillCatalog,jobKey,level,
 // Direct strike coefficient projections for currently learnable OS skills.
 // The source coefficient is NOT a final damage number: hit count, weapon,
 // target defense, procs and stage rounding remain explicitly unknown.
+// A provisional scaling coefficient has no independently confirmed percent unit.
 function directStrikeCoefficientPreview({skillCatalog,jobKey,level,
  branchMasteries={},branchCaps={},branchLabels={},englishBranches={},
  weaponKind='BARE_HAND'}={}){
@@ -1133,8 +1134,8 @@ function directStrikeCoefficientPreview({skillCatalog,jobKey,level,
    detailRu:'Зависит от освоенного мастерства и оружия',
    detailEn:'Scales with trained mastery and equipped weapon',
    coefficientModels:[{
-    ep:'EP_ONHIT_DAMAGE_SCALE',labelRu:'Сила удара',
-    labelEn:'Strike strength',amount:coefficient,unit:'%',
+    ep:'EP_ONHIT_DAMAGE_SCALE',labelRu:'Коэффициент удара (модель)',
+    labelEn:'Strike coefficient (model)',amount:coefficient,unit:'',
     confidence:'coefficient-model'}],
    source:'current OS skill attack effect coefficient model'});
  }

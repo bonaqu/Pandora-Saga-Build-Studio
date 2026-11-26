@@ -2075,11 +2075,14 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     Number.isSafeInteger(skill.nextMastery.remaining)){
     const next=skill.nextMastery;
     const branch=gameBranchName(next.branch,gameTerms,en);
-    const bonus=next.effect==='strike'?'+1%':'+1';
+    // This is an increase of the modeled coefficient, not a proven +1% damage.
+    const bonus='+1';
     const phrase=next.effect==='strike'?'nextMasteryStrike':'nextMasterySpell';
     more.append(make('small',{class:'stage-skill-coefficient-next'},[
      scalingCaption('nextMasteryLead'),' ',
      scalingCaption(phrase),' ',
+     ...(next.effect==='strike'?[make('span',{class:'stage-skill-coefficient-uncertainty',
+      text:en?'(model)':'(модель)'})]:[]),' ',
      healingValue(bonus,'scaling-mastery-gain'),' ',
      scalingCaption('nextMasteryAt'),' ',
      ...(en?[]:['«']),

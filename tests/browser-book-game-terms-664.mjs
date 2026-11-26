@@ -356,20 +356,20 @@ export async function runHeroBookGameNames664Smoke(browser,base){
    };
    return {ru:render('ru'),en:render('en')};
   });
-  assert.equal(strikeSummary.ru?.main,'Сила удара +20%',
+  assert.equal(strikeSummary.ru?.main,'Коэффициент удара (модель) +20',
    'Show the hero’s calculated coefficient instead of a large empty dash');
   assert.equal(strikeSummary.ru.models.length,0,
    'Do not repeat the same coefficient in a second visual row');
   assert.match(strikeSummary.ru.next.join(' '),
-   /Следующий прирост силы удара: \+1%.*42 \(ещё 2\)/);
+   /Следующий прирост силы удара: \(модель\) \+1.*42 \(ещё 2\)/);
   assert.equal(strikeSummary.ru.actions,1,
    'Available mastery-derived strike retains its OS base-cost disclosure');
   assert.match(strikeSummary.ru.budget,/450 ОМ.*23 применени.*13 ОМ/);
-  assert.equal(strikeSummary.en?.main,'Strike strength +20%');
+  assert.equal(strikeSummary.en?.main,'Strike coefficient (model) +20');
   assert.equal(strikeSummary.en.models.length,0);
   assert.match(strikeSummary.en.budget,/450 MP.*23 casts.*13 MP/);
   assert.match(strikeSummary.en.next.join(' '),
-   /Next strike strength \+1%.*42 \(\+2\)/);
+   /Next strike strength \(model\) \+1.*42 \(\+2\)/);
   // Keep the independent target engine pinned in actual Chromium,
   // but the Hero Book no longer renders any target or hit preview.
   const targetSource=await page.evaluate(async()=>{

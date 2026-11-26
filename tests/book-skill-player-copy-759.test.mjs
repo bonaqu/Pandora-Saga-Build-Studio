@@ -29,8 +29,9 @@ test('OS-checked physical strike retains its actual coefficient and a short play
    accuracy:{base:120},dodge:{base:90}}});
  const row=model.offense.find(x=>x.id===142002001);
  assert.equal(row?.coefficientModels?.[0]?.amount,20);
- assert.equal(row?.coefficientModels?.[0]?.labelRu,'Сила удара');
- assert.equal(row?.coefficientModels?.[0]?.labelEn,'Strike strength');
+ assert.equal(row?.coefficientModels?.[0]?.labelRu,'Коэффициент удара (модель)');
+ assert.equal(row?.coefficientModels?.[0]?.labelEn,'Strike coefficient (model)');
+ assert.equal(row?.coefficientModels?.[0]?.unit,'','A model must not masquerade as confirmed damage percent');
  assert.equal(row?.detailRu,'Зависит от освоенного мастерства и оружия');
  assert.equal(row?.amount,null,'Do not fabricate target damage');
 });
