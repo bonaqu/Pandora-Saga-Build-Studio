@@ -18,7 +18,7 @@ test('six stable owner-only group captions have independently editable RU/EN fal
   groupGameTitle:['Игровые данные','Game data'],
   groupGameHint:['Каталог, очки и переводы','Catalog, points and translations'],
   groupToolsTitle:['Дополнительно','More tools'],
-  groupToolsHint:['Проверка D1 и резервная копия','D1 testing and optional backup']
+  groupToolsHint:['Проверки и резервные копии','Diagnostics and optional backups']
  };
  for(const [key,translated] of Object.entries(expected)){
   assert.deepEqual(defaults[key],translated);
