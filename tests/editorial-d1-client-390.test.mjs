@@ -536,7 +536,7 @@ test('#390 delayed staging responses cannot overtake reset or a newer version',a
   'A failed fetch never discards the previously verified snapshot');
 });
 
-test('#390 no implicit network fetch, Worker mutation or editor pencil is added',()=>{
+test('#390 client does not fetch on its own or mutate Worker, and released route remains pinned',()=>{
  const stage=read('pandora-studio-editorial-defaults-client.js');
  const html=read('index.html'),worker=read('worker/index.js');
  const locale=read('pandora-studio-ui-locale.js');
@@ -548,7 +548,8 @@ test('#390 no implicit network fetch, Worker mutation or editor pencil is added'
  assert.match(wiki,/PandoraEditorialDefaults\?\.value/);
  assert.doesNotMatch(stage,/fetch\(|XMLHttpRequest|localStorage|document\.cookie/);
  assert.match(stage,/credentials:'omit',cache:'no-store',redirect:'error'/);
- assert.match(worker,/env\.EDITORIAL_DEFAULTS_PREVIEW!=='enabled'/);
+ assert.match(worker,/env\.EDITORIAL_DEFAULTS_PREVIEW==='disabled'/);
+ assert.match(worker,/if\(snapshot!=='0\.948\.0-5637e5c111eb4528'\)/);
  assert.match(worker,/if\(path==='\/api\/overrides'&&method==='GET'\)/);
  assert.match(worker,/if\(path==='\/api\/admin\/override'&&method==='POST'\)/);
 });
