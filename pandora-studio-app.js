@@ -2944,6 +2944,12 @@ function renderStagePicker(focusSearch=false){
    'Закрыть выбор','Close item picker','aria-label')
  ]);
  const search=h('input',{type:'search',value:stageSlotQuery});
+ const clearPickerSearch=h('button',{type:'button',class:'stage-picker-search-clear',
+  hidden:!stageSlotQuery,
+  'aria-label':lang==='en'?'Clear equipment search':'Очистить поиск предметов',
+  title:lang==='en'?'Clear equipment search':'Очистить поиск предметов',
+  text:'×'});
+ const searchRow=h('div',{class:'stage-picker-search-row'},[search,clearPickerSearch]);
  bindOwnerInterfaceText(search,'equipment','pickerSearchPlaceholder',
   'Поиск по названию','Search by name','placeholder');
  bindOwnerInterfaceText(search,'equipment','pickerSearchAria',
@@ -3078,6 +3084,7 @@ function renderStagePicker(focusSearch=false){
   return firstNew;
  };
  const updateCounts=()=>{
+  clearPickerSearch.hidden=!stageSlotQuery;
   matchedCount.textContent=String(matches.length);
   shownCount.textContent=String(shown);
   more.hidden=shown>=matches.length;
@@ -3107,6 +3114,16 @@ function renderStagePicker(focusSearch=false){
  search.addEventListener('input',()=>{
   stageSlotQuery=search.value.slice(0,120);stageSlotShown=48;draw();saveView();
  });
+ const clearPickerQuery=()=>{
+  stageSlotQuery='';search.value='';stageSlotShown=48;draw();saveView();
+  search.focus({preventScroll:true});
+ };
+ clearPickerSearch.addEventListener('click',clearPickerQuery);
+ // Escape clears an active filter without closing the equipment picker.
+ search.addEventListener('keydown',event=>{
+  if(event.key!=='Escape'||!stageSlotQuery)return;
+  event.preventDefault();event.stopPropagation();clearPickerQuery();
+ });
  more.addEventListener('click',()=>{
   if(shown>=matches.length)return;
   const focused=document.activeElement===more,previous=shown;
@@ -3123,7 +3140,7 @@ function renderStagePicker(focusSearch=false){
  root.append(top);
  appendStageSlotNavigation(root);
  if(outfitNote)root.append(outfitNote);
- root.append(search,onlyAvailable);
+ root.append(searchRow,onlyAvailable);
  if(adminEditing&&adminToken)root.append(ownerInterfaceEditor('equipment',[
   ...equipmentPickerMetaCopyRows,
   ...equipmentPickerSelectionCopyRows
@@ -11160,7 +11177,12 @@ async function undoOwnerEdit(){
       /^guideedit\.book\.wiki\.(?:map\.text|monster\.text|npc\.trade|chest\.text|item\.text)\.[a-z][a-z0-9-]*$/.test(last.key)){
      refreshVisibleOwnerCopy(last.key);saveView();
     }else await refreshOwnerCatalog();
-  }catch(e){alert('Не удалось отменить изменение: '+e.message)}
+  }catch(e){
+   // Keep the owner workspace usable; the failed CAS request already marks
+   // the save state as an error, and Undo remains available for a safe retry.
+   showStudioToast((lang==='en'?'Could not undo the last edit: ':
+    'Не удалось отменить последнюю правку: ')+e.message,'warning');
+  }
   finally{editIsSaving=false;refreshOwnerUI()}
 }
 function showOverrideManager(){
@@ -11447,6 +11469,14 @@ function showOverrideManager(){
   return false;
  }
  search.addEventListener('input',draw);
+ // Escape clears only the current history filter; it does not close the
+ // editor, lose the selected section, or modify any saved D1 records.
+ search.addEventListener('keydown',event=>{
+  if(event.key!=='Escape'||!search.value)return;
+  event.preventDefault();event.stopPropagation();
+  search.value='';globalThis.PandoraNonCredentialGuard?.sync(search);
+  draw();search.focus({preventScroll:true});
+ });
  sectionFilter.addEventListener('change',draw);
  sessionOnly.addEventListener('change',draw);
  body.append(

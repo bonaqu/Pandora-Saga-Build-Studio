@@ -46,6 +46,8 @@ export async function runEquipmentPickerLiveCopy390Smoke(browser,base){
   const search=picker.locator('input[type="search"]');
   await search.click();
   await search.fill('___no-equipment-will-ever-have-this-name___');
+  assert.equal(await picker.locator('.stage-picker-search-clear').getAttribute('aria-label'),
+   'Очистить поиск предметов');
   assert.equal((await picker.locator('.stage-picker-count').innerText()).trim(),
    '0 подходящих · 0 показано');
   assert.equal(await checkbox.isChecked(),previousChecked);
@@ -67,6 +69,12 @@ export async function runEquipmentPickerLiveCopy390Smoke(browser,base){
    '___no-equipment-will-ever-have-this-name___','Locale switch keeps search query');
   assert.equal(await picker.locator('.stage-picker-only-available input').isChecked(),
    previousChecked,'Locale switch keeps checkbox state');
+  const enClear=picker.locator('.stage-picker-search-clear');
+  assert.equal(await enClear.getAttribute('aria-label'),'Clear equipment search');
+  await enClear.click();
+  assert.equal(await picker.locator('input[type="search"]').inputValue(),'');
+  assert.equal(await picker.locator('input[type="search"]').evaluate(node=>
+   document.activeElement===node),true,'Search clear must retain keyboard focus');
   assert.deepEqual(errors,[],'No browser JavaScript errors');
  }finally{await ctx.close()}
  // Exercise a second genuine local-catalog hero with >48 Warrior weapons.
