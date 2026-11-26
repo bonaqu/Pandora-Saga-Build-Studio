@@ -1691,7 +1691,9 @@
           /Game data source|Source unavailable|Failed to fetch|NetworkError/i.test(String(error.message))
         );
         if(unavailable){
-          archiveChoice.open=true;
+          // On a live-source outage, reveal the useful recovery action rather
+          // than hiding it behind two closed disclosure sections.
+          advanced.open=true;archiveChoice.open=true;
           const reason=String(error.reason||'');
           const code=/^http-(\d{3})$/.exec(reason)?.[1];
           // The Worker's reason, source path and HTTP status are raw diagnostics.

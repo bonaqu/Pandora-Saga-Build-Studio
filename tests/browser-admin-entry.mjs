@@ -1627,6 +1627,8 @@ export async function runAdminEntrySmoke(browser,base){
   assert.match(await dialog.locator('.os-sync-diagnostics').innerText(),
    /Этап: [a-zA-Z0-9_-]+[.]json · Ответ Worker: 502/);
   assert.equal(await dialog.locator('.os-sync-archive-choice').getAttribute('open'),'');
+  assert.equal(await dialog.locator('.os-sync-advanced').evaluate(node=>node.open),true,
+   'Unavailable live source must reveal the archival recovery action');
   assert.equal(await dialog.locator('.os-sync-review-steps').isHidden(),true,
     'a failed game-source check cannot leave publishing enabled');
   await dialog.getByRole('button',{name:'Сверить с сохранённой копией'}).click();
@@ -1658,8 +1660,8 @@ export async function runAdminEntrySmoke(browser,base){
   // The EN archive recovery is now behind the advanced disclosure, just
   // like RU. Use the visible native summary rather than a hidden button.
   const enAdvanced=enCatalog.locator('details.os-sync-advanced');
-  assert.equal(await enAdvanced.evaluate(node=>node.open),false);
-  await enAdvanced.locator(':scope > summary').click();
+  assert.equal(await enAdvanced.evaluate(node=>node.open),true,
+   'Unavailable live source must automatically reveal archive recovery');
   await enCatalog.locator('.os-sync-archive-choice').waitFor({state:'visible'});
   await enCatalog.getByRole('button',{name:'Compare saved snapshot'}).click();
   await enCatalog.locator('.os-sync-review-steps').waitFor({state:'visible'});

@@ -75,6 +75,20 @@ export async function runEquipmentEligibilitySmoke(browser,base){
    await search.fill(female);
    assert.ok(await page.locator('#stagePicker .stage-picker-item').count()>0,
     'Female elf must see '+female);
+   if(slot===3&&male==='Астирская куртка'){
+    const clear=page.locator('#stagePicker .stage-picker-search-clear');
+    await clear.waitFor({state:'visible'});
+    await clear.click();
+    assert.equal(await search.inputValue(),'');
+    assert.ok(await page.locator('#stagePicker .stage-picker-item').count()>0,
+     'Clearing equipment search restores compatible items');
+    await search.fill('___no-such-equipment___');
+    await search.press('Escape');
+    assert.equal(await search.inputValue(),'');
+    assert.equal(await search.evaluate(el=>document.activeElement===el),true,
+     'Escape clears search and retains keyboard focus');
+    assert.ok(await page.locator('#stagePicker .stage-picker-item').count()>0);
+   }
   }
   assert.deepEqual(errors,[]);
   console.log('Chromium gear eligibility smoke passed: saved underlevel gear grants no HP; +50 activates at required level');

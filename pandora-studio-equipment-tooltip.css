@@ -140,3 +140,14 @@
  .stage-picker-head>button:last-child{width:30px;min-width:30px;
   height:30px;min-height:30px;flex-basis:30px}
 }
+
+/* #815: keyboard-accessible one-tap clear for the equipment search. */
+.stage-picker-search-row{display:flex;align-items:stretch;gap:6px;min-width:0}
+.stage-picker-search-row>input[type="search"]{flex:1;min-width:0;width:100%;
+ padding:9px;background:#110d0b;color:#f3dbb3;border:1px solid #a17c4b}
+.stage-picker-search-clear{flex:0 0 38px;min-height:36px;padding:0;
+ border:1px solid #947047;border-radius:4px;background:#38271b;
+ color:#f0c990;font-size:23px;line-height:1;cursor:pointer}
+.stage-picker-search-clear[hidden]{display:none!important}
+.stage-picker-search-clear:hover{background:#54341f;border-color:#e0b471}
+.stage-picker-search-clear:focus-visible{outline:2px solid #eaca8b;outline-offset:2px}
