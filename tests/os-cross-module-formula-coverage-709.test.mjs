@@ -76,11 +76,19 @@ test('enemy-target resistance is counted without mislabeling it a permanent pass
   'Divine Blessing is a separate ally/party source');
  assert.equal(row(audit,330004001).sourceModules.includes('target-resistance'),true);
 });
-test('mutations of OS source coefficients remove only the affected coverage',()=>{
+test('valid official FV1 changes retain model coverage; invalid FV2 invalidates only the affected skill',()=>{
  const before=report();
  const changedHealing=structuredClone(skills);
  changedHealing['310004001'].funcs[0].fv1[0]+=1;
- const invalidHealing=report(changedHealing);
+ const replayed=report(changedHealing);
+ assert.equal(row(replayed,310004001).sourceModules.includes('healing-spells'),true,
+  'a valid updated OS FV1 must retain formula model support');
+ assert.equal(row(replayed,310004002).sourceModules.includes('healing-spells'),true);
+ assert.equal(replayed.summary.statuses['unmodeled-learnable'],
+  before.summary.statuses['unmodeled-learnable']);
+ const invalidSource=structuredClone(skills);
+ invalidSource['310004001'].funcs[0].fv2[3]=15;
+ const invalidHealing=report(invalidSource);
  assert.equal(row(invalidHealing,310004001).sourceModules.includes('healing-spells'),false);
  assert.equal(row(invalidHealing,310004002).sourceModules.includes('healing-spells'),true);
  assert.ok(invalidHealing.summary.statuses['unmodeled-learnable']>

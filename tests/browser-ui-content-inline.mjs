@@ -1786,10 +1786,10 @@ export async function runUIContentInlineSmoke(browser,base){
     'Calculation (rounded down): 4 + INT 3 + mastery 4 = 11':
     'Расчёт (с округлением вниз): 4 + ИНТ 3 + мастерство 4 = 11');
    assert.deepEqual(row.original.milestones,en?[
-    'Next spell strength +2 at INT 80 (+5 INT)',
+    'Next spell strength (model) +2 at INT 80 (+5 INT)',
     'Next strike strength (model) +1 at Archery 65 (+5)'
    ]:[
-    'Следующий прирост силы заклинания: +2 при ИНТ 80 (ещё 5 ИНТ)',
+    'Следующий прирост силы заклинания: (модель) +2 при ИНТ 80 (ещё 5 ИНТ)',
     'Следующий прирост силы удара: (модель) +1 при мастерстве «Стрельба» 65 (ещё 5)'
    ]);
    assert.equal(row.original.inspired,en?
