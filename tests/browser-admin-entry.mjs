@@ -955,8 +955,10 @@ export async function runAdminEntrySmoke(browser,base){
   // A PR is generated from the published D1 snapshot via Worker, not the
   // browser's downloaded JSON. No GitHub token enters the client.
   const advancedBlock=dialog.locator('.os-sync-secondary-hint:has(> .os-sync-advanced)');
-  await advancedBlock.locator('.os-sync-secondary-pencil').click();
-  const advancedHelp=advancedBlock.locator('.os-sync-secondary-host [contenteditable]');
+  // Advanced contains a nested archive hint. Target only this disclosure's
+  // own pencil/host, not its descendant editor controls.
+  await advancedBlock.locator(':scope > .os-sync-secondary-pencil').click();
+  const advancedHelp=advancedBlock.locator(':scope > .os-sync-secondary-host [contenteditable]');
   await advancedHelp.waitFor({state:'visible'});
   await advancedHelp.fill('Подсказка дополнительных инструментов QA.');
   await advancedHelp.press('Tab');
