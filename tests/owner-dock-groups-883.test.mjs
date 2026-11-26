@@ -18,7 +18,7 @@ test('six stable owner-only group captions have independently editable RU/EN fal
   groupGameTitle:['Игровые данные','Game data'],
   groupGameHint:['Каталог, очки и переводы','Catalog, points and translations'],
   groupToolsTitle:['Дополнительно','More tools'],
-  groupToolsHint:['Проверка D1 и резервная копия','D1 testing and optional backup']
+  groupToolsHint:['Проверки и резервные копии','Diagnostics and optional backups']
  };
  for(const [key,translated] of Object.entries(expected)){
   assert.deepEqual(defaults[key],translated);
@@ -132,13 +132,13 @@ test('drawer save/Undo/Finish share the actual queued-write guard and do not ann
  const queued=draw(true,'saved');
  assert.equal(queued.state.dataset.state,'saving',
   'A queued bilingual guide edit cannot be announced as saved');
- assert.match(queued.state.textContent,/Сохраняю в Cloudflare D1/);
+ assert.match(queued.state.textContent,/Сохраняю…/);
  assert.match(queued.footer.textContent,/Дождись сохранения/);
  assert.equal(queued.undo.disabled,true);
  assert.equal(queued.translations.disabled,true);
  const saved=draw(false,'saved');
  assert.equal(saved.state.dataset.state,'saved');
- assert.match(saved.state.textContent,/Сохранено в Cloudflare D1/);
+ assert.match(saved.state.textContent,/✓ Сохранено/);
  assert.equal(saved.undo.disabled,false);
  assert.equal(saved.translations.disabled,false);
  const failed=draw(false,'error');

@@ -4227,6 +4227,19 @@ function openWiki(type,id,highlight=null){
  else renderDetails();
  $('detailContent').scrollTo({top:0,behavior:'instant'});
  if(!$('detailPanel')?.classList.contains('is-open'))showWorkbench();
+ // On narrow screens the article is stacked BELOW a long entry list.
+ // Selecting a record should reveal the requested article without making
+ // readers manually scroll past the list. Desktop and history restoration
+ // stay unchanged. Keep the navigation guard if another record is selected.
+ if(window.matchMedia?.('(max-width: 640px)')?.matches){
+  const wanted=String(id);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+   if(activeTab!=='wiki'||wikiSelection.type!==type||
+      wikiSelection.id!==wanted||!$('detailPanel')?.classList.contains('is-open'))return;
+   $('detailContent')?.querySelector('.wiki-layout .wiki-page')?.scrollIntoView({
+    block:'start',inline:'nearest',behavior:'instant'});
+  }));
+ }
  saveView();
 }
 function openWikiChapterList(){
@@ -10341,22 +10354,22 @@ const ownerDockText=Object.freeze({
  groupGameTitle:['Игровые данные','Game data'],
  groupGameHint:['Каталог, очки и переводы','Catalog, points and translations'],
  groupToolsTitle:['Дополнительно','More tools'],
- groupToolsHint:['Проверка D1 и резервная копия','D1 testing and optional backup'],
+ groupToolsHint:['Проверки и резервные копии','Diagnostics and optional backups'],
  guide:['Как редактировать','How to edit'],
  step1:['Открой энциклопедию. Дважды нажми на подсвеченное значение или используй + для добавления.',
   'Open the encyclopedia. Double-click a highlighted value or use + to add an entry.'],
- step2:['Измени значение. Нажми Enter или выйди из поля — правка сохранится в Cloudflare D1.',
-  'Edit a value, then press Enter or leave the field to save it in Cloudflare D1.'],
- step3:['Дождись сообщения «Сохранено в Cloudflare D1». Кнопка «Завершить» лишь выключает редактор.',
-  'Wait for “Saved to Cloudflare D1”. Finish only turns off the editor.'],
+ step2:['Измени значение. Нажми Enter или щёлкни вне поля — правка сохранится автоматически.',
+  'Edit a value, press Enter or click outside the field — the change saves automatically.'],
+ step3:['Дождись отметки «✓ Сохранено». Отдельной кнопки сохранения нет: «Завершить» только выключает редактор.',
+  'Wait for “✓ Saved”. There is no separate Save button: Finish only turns off the editor.'],
  historyHelp:[' — найти правку и вернуть исходное значение.',
   ' — find saved edits and restore original values.'],
- catalogHelp:[' — сравнить игровые JSON с каталогом D1. Применение только после подтверждения.',
-  ' — compare public game JSON to D1. Applying changes requires confirmation.'],
+ catalogHelp:[' — сравнить свежие игровые данные с опубликованными. Применение только после подтверждения.',
+  ' — compare new game data with the published catalog. Applying changes requires confirmation.'],
  levelsHelp:[' — посмотреть и изменить начисления по уровням независимо от игрового каталога.',
   ' — view and edit level-up points independently from the game catalog.'],
- githubHelp:[' — необязательная копия уже сохранённых правок в GitHub. Сайту она не нужна.',
-  ' — optional GitHub copy of edits already saved in D1. The live site does not require it.'],
+ githubHelp:[' — необязательная резервная копия сохранённых правок. Для работы сайта не требуется.',
+  ' — optional backup of saved edits. The site works without it.'],
  d1Help:[' — проверить запись и удаление временных данных без изменения каталога и билдов.',
   ' — test D1 writes and cleanup without changing catalog data or builds.'],
  finishHelp:[' — выключить режим редактирования. Сохранённые правки останутся.',
@@ -10468,16 +10481,15 @@ function refreshOwnerUI(){
  const saving=ownerSaveInFlight();
  const visibleSaveState=saving?'saving':ownerSaveState;
  const saveText=saving?
-  (lang==='en'?'Saving to Cloudflare D1…':'Сохраняю в Cloudflare D1…'):
+  (lang==='en'?'Saving…':'Сохраняю…'):
   ownerSaveState==='error'?(lang==='en'?'Not saved: ':'Не сохранено: ')+
    (ownerSaveError||(lang==='en'?'server error':'ошибка сервера')):
-  ownerSaveState==='saved'?(lang==='en'?'✓ Saved to Cloudflare D1':'✓ Сохранено в Cloudflare D1'):
-  (lang==='en'?'✓ Cloudflare D1 connected · changes save automatically':
-   '✓ Подключено к Cloudflare D1 · сохранение автоматическое');
+  ownerSaveState==='saved'?(lang==='en'?'✓ Saved':'✓ Сохранено'):
+  (lang==='en'?'✓ Autosave is on':'✓ Автосохранение включено');
  const update=root=>{
   const counter=root.querySelector('[data-owner-count]');
-  ownerDockPatchText(counter,lang==='en'?count+' D1 edits':
-   count+' '+ownerRuRecordCount(count)+' в D1');
+  ownerDockPatchText(counter,lang==='en'?'Saved edits: '+count:
+   'Сохранённых записей: '+count);
   const recent=root.querySelector('[data-owner-recent]');
   ownerDockPatchText(recent,(lang==='en'?'This session: ':'За этот сеанс: ')+ownerEdits.length);
   const translations=root.querySelector('[data-owner-en-sync]');
@@ -10588,8 +10600,8 @@ function refreshOwnerUI(){
   h('summary',{text:'Как редактировать и когда нажимать кнопки'}),
   h('ol',{class:'owner-workflow-steps'},[
    h('li',{},[h('span',{'data-owner-dock-static':'step1',text:'В энциклопедии дважды нажми на подсвеченное значение или используй кнопку + для добавления.'})]),
-   h('li',{},[h('span',{'data-owner-dock-static':'step2',text:'Измени текст или связь. Нажми Enter либо уйди с поля: запись автоматически сохраняется в Cloudflare D1.'})]),
-   h('li',{},[h('span',{'data-owner-dock-static':'step3',text:'Убедись, что показано «Сохранено в Cloudflare D1», затем нажми «Завершить». Отдельной кнопки сохранения нет.'})])
+   h('li',{},[h('span',{'data-owner-dock-static':'step2',text:'Измени текст или связь, затем нажми Enter либо щёлкни вне поля. Сохранение автоматическое.'})]),
+   h('li',{},[h('span',{'data-owner-dock-static':'step3',text:'Убедись, что показано «✓ Сохранено». «Завершить» закрывает редактор, отдельной кнопки сохранения нет.'})])
   ]),
   h('div',{class:'owner-workflow-glossary'},[
    h('p',{},[h('strong',{'data-owner-dock-static':'history',text:'Все правки'}),h('span',{'data-owner-dock-static':'historyHelp',text:' — посмотреть сохранённые изменения и вернуть исходное.'})]),

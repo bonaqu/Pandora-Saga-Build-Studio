@@ -102,8 +102,8 @@ test('owner-reviewed GitHub export includes only owner data, not secrets',async(
 test('admin UI explains autosave semantics and every encyclopedia type offers edit affordances',()=>{
  const app=read('pandora-studio-app.js'),theme=read('pandora-studio-theme.css'),
   ownerCss=read('pandora-studio-item-owner-editor.css');
- assert.match(app,/Сохраняю в Cloudflare D1/);
- assert.match(app,/Сохранено в Cloudflare D1/);
+ assert.match(app,/Сохраняю…/);
+ assert.match(app,/✓ Сохранено/);
  assert.match(app,/записей/);
  assert.match(app,/За этот сеанс/);
  assert.match(app,/owner-workflow-guide/);

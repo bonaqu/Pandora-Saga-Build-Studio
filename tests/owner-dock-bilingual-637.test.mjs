@@ -40,7 +40,7 @@ test('admin copy Undo and reset update the existing drawer, not the game catalog
  assert.match(app,/key\.startsWith\('book.owner-dock\.'\)/);
  assert.match(app,/guideedit\\\.book\\\.\(equipment\|path\|catalog-sync\|honor-view\|owner-dock\|owner-history\|owner-dialog\|wiki-ui\|skill-ui\|stats-ui\|compare-metric\)/);
  assert.match(app,/record\.key\.startsWith\('guideedit.book.owner-dock\.'\)/);
- assert.match(app,/Saving to Cloudflare D1/);
+ assert.match(app,/Saving…/);
  assert.match(app,/ownerDockCopy\('translations'\)/);
  assert.match(app,/data-owner-dock-static/);
 });
