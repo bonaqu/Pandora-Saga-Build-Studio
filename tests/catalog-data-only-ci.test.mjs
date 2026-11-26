@@ -2,7 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
-import {FILES,catalogOnly} from '../scripts/catalog-ci-mode.mjs';
+import {FILES,catalogOnly,fromVerifiedMerge} from '../scripts/catalog-ci-mode.mjs';
+import {execFileSync} from 'node:child_process';
 const read=n=>JSON.parse(readFileSync(new URL('../data/os/'+n+'.json',import.meta.url),'utf8'));
 const root={};runInNewContext(readFileSync(
  new URL('../pandora-studio-encyclopedia-catalog.js',import.meta.url),'utf8'),{window:root});
@@ -46,4 +47,21 @@ test('all current JSON sources are structurally valid and meta counts are consis
  const game=Object.fromEntries(validate.keys.map(k=>[k,sources[k]]));
  assert.doesNotThrow(()=>validate.validate(game),
   'cross-linked current catalog must pass strict reader validation');
+});
+
+
+test('approved catalog PR has no newly broken item/skill/drop/monster references',()=>{
+ if(!fromVerifiedMerge())return; // Full-code PRs keep complete regression suite.
+ const git=args=>execFileSync('git',args,{encoding:'utf8',maxBuffer:16000000});
+ const parents=git(['rev-list','--parents','-n','1','HEAD']).trim().split(/\s+/);
+ assert.equal(parents.length,3);
+ const names=['skills','items','classes','tables','monsters','drops','maps','chests','trades'];
+ const previous=Object.fromEntries(names.map(n=>[n,JSON.parse(
+  git(['show',parents[1]+':data/os/'+n+'.json']))]));
+ const current=Object.fromEntries(names.map(n=>[n,read(n)]));
+ const context={};runInNewContext(readFileSync(
+  new URL('../pandora-studio-catalog-safety.js',import.meta.url),'utf8'),{window:context});
+ const report=context.PandoraCatalogSafety.sourceGraphIntegrity(previous,current);
+ assert.equal(report.ok,true,'New broken links are not allowed: '+JSON.stringify(report.samples));
+ assert.equal(report.newBroken,0);
 });

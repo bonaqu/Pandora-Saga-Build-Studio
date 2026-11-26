@@ -38,7 +38,6 @@ jobs:
           node --test \
             tests/catalog-data-only-ci.test.mjs \
             tests/catalog-import.test.mjs \
-            tests/catalog-cross-references-829.test.mjs \
             tests/catalog-publication-complete-806.test.mjs \
             tests/catalog-fallback-auto-merge-807.test.mjs \
             tests/catalog-prepublish-mechanics-810.test.mjs \
