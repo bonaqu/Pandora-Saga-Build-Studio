@@ -83,6 +83,10 @@ export async function runOwnerDualSessionCasSmoke(browser,base){
    await page.locator('.modal').getByRole('button',{name:'Войти',exact:true}).click();
    await page.locator('#ownerDock').waitFor({state:'visible',timeout:18000});
    await page.locator('#ownerDock [data-owner-collapse]').click();
+   // Optional diagnostics are deliberately collapsed for everyday editing.
+   const tools=page.locator('#ownerDock details[data-owner-group="tools"]');
+   assert.equal(await tools.getAttribute('open'),null);
+   await tools.locator(':scope > summary').click();
    const caption=page.locator('#ownerDock .owner-dock-d1-check');
    await caption.waitFor({state:'visible'});
    assert.equal((await caption.innerText()).trim(),'Проверить сохранение');
@@ -147,6 +151,9 @@ export async function runOwnerDualSessionCasSmoke(browser,base){
   await second.locator('.modal').getByRole('button',{name:'Войти',exact:true}).click();
   await second.locator('#ownerDock').waitFor({state:'visible'});
   await second.locator('#ownerDock [data-owner-collapse]').click();
+  const tools=second.locator('#ownerDock details[data-owner-group="tools"]');
+  if(await tools.getAttribute('open')===null)
+   await tools.locator(':scope > summary').click();
   await second.waitForFunction(text=>
    document.querySelector('#ownerDock .owner-dock-d1-check')?.textContent===text,
    'Первая подтверждённая подпись',{timeout:12000});
