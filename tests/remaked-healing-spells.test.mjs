@@ -61,8 +61,8 @@ test('healing preview respects OS skill catalog, race-independent class caps and
  assert.deepEqual(acolyte.rows.map(x=>x.available),[true,true,false,false,false]);
  const missing=preview(withJob('CLERIC',{skillCatalog:null}));
  assert.equal(missing.rows.every(x=>!x.available),true);
- assert.deepEqual(missing.rows.map(x=>x.amount),cleric.rows.map(x=>x.amount),
-  'lack of OS catalog must not alter preserved Remaked magnitudes');
+ assert.deepEqual(missing.rows.map(x=>x.amount),[null,null,null,null,null],
+  'mandatory online catalog: an unverified missing source cannot produce pretend live magnitudes');
  const tooLow=preview(withJob('CLERIC',{benevolenceCap:40}));
  assert.equal(tooLow.rows.every(x=>!x.available),true);
 });
