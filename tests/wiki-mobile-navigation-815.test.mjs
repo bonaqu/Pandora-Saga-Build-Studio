@@ -8,6 +8,9 @@ test('#815 wiki mobile categories remain accessible without impacting owner edit
  assert.match(css,/\.wiki-controls>\.wiki-categories:not\(\.wiki-skill-edit-list\)/);
  assert.match(css,/overflow-x:auto/);
  assert.match(css,/scroll-snap-type:x proximity/);
+ const audit=read('tests/browser-visual-coverage.mjs');
+ assert.match(audit,/intentionalWikiScroller/);
+ assert.match(audit,/info\.globalOverflow<=14/);
  assert.match(app,/aria-pressed':String\(\(key==='utility'/);
  assert.match(app,/categories\.scrollLeft=Math\.max/);
  assert.match(app,/class:'wiki-open-first'/);
