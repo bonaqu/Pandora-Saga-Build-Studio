@@ -53,6 +53,10 @@ export async function runOnlineOwnerDraft879Smoke(browser,base){
   await page.locator('.modal').getByRole('button',{name:'Войти',exact:true}).click();
   await page.locator('#ownerDock').waitFor({state:'visible',timeout:16000});
   await page.locator('#ownerDock [data-owner-collapse]').click();
+  const diagnostics=page.locator('#ownerDock details[data-owner-group="tools"]');
+  assert.equal(await diagnostics.getAttribute('open'),null,
+   'Diagnostic controls should start collapsed');
+  await diagnostics.locator(':scope > summary').click();
   const slot=page.locator('#ownerDock .owner-dock-action-slot[data-owner-dock-key="testD1"]');
   assert.equal(await slot.locator('.owner-dock-action-pencil').count(),0);
    await slot.locator('button').dblclick();
