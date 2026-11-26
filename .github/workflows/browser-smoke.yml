@@ -45,6 +45,10 @@ jobs:
           fi
           echo "mode=$mode" >> "$GITHUB_OUTPUT"
           echo "Chromium suite: $mode"
+      - name: Classify exact catalog data-only PR
+        id: catalog
+        shell: bash
+        run: echo "mode=$(node scripts/catalog-ci-mode.mjs)" >> "$GITHUB_OUTPUT"
       - name: Reuse pinned Playwright Chromium downloads
         uses: actions/cache@v4
         with:
@@ -71,6 +75,8 @@ jobs:
           if [[ "$GITHUB_EVENT_NAME" == 'workflow_dispatch' && -n "${BROWSER_SCENARIO:-}" ]]; then
             # Only manually requested diagnostic runs may select a single flow.
             node tests/browser-smoke.mjs "--only=$BROWSER_SCENARIO"
+          elif [[ "${{ steps.catalog.outputs.mode }}" == 'catalog' ]]; then
+            node tests/browser-smoke.mjs --catalog
           elif [[ "${{ steps.suite.outputs.mode }}" == 'quick' ]]; then
             node tests/browser-smoke.mjs --quick
           elif [[ "${{ steps.suite.outputs.mode }}" == 'layout' ]]; then
