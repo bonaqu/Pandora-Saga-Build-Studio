@@ -38,6 +38,12 @@ jobs:
         run: node scripts/check-build-account-only-live.mjs
       - name: Compare 16 published gameplay datasets against the same D1 snapshot (read-only)
         run: npm run catalog:parity:live
+      # This is an independent original OS website check, separate from
+      # the GitHub→D1 parity gate. Source outage/curated text must not block
+      # an unrelated safe UI release, but must be visible in the summary.
+      - name: Audit 17 official OS game files (read-only, advisory)
+        continue-on-error: true
+        run: node scripts/audit-official-os-source.mjs --observe
       # This inexpensive local identity check avoids spawning an entire
       # mirror workflow after every UI release with the same known 404 files.
       # A failed preflight errs toward running the trusted mirror, not losing

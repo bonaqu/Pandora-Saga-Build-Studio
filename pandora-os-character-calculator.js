@@ -2132,14 +2132,18 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
    activeBonus:actives.concentration?effect('concentration','EP_TOHIT_CONST'):0,
    thirdEye:otherBuffs.thirdEye?Math.floor(otherBuffs.thirdEye.flat+
     accuracyBase*otherBuffs.thirdEye.percent/100):0,
-   minstrel:priestMinstrel,known:accuracyKnown},
+   minstrel:priestMinstrel,known:accuracyKnown,
+   verified:false,confidence:'legacy-model',
+   source:"Remaked Calc('ACC') + current OS source-gated effect parameters"},
   dodge:{base:dodgeBase,agilityStep:dodgeStep,equipment:evEquip,
    passive:quickStep,honor:title.dodge||0,
    windAssist:supportSkills.windAssist?Math.floor(
     supportSkillValues.windAssist.EP_AVOIDANCE_CONST+
     dodgeBase*supportSkillValues.windAssist.EP_AVOIDANCE_SCALE/100):0,
    additionalSelf:(otherBuffs.quickStep?.dodge||0)+(otherBuffs.avoidance?.dodge||0),
-   minstrel:priestMinstrel,known:observedDodge},
+   minstrel:priestMinstrel,known:observedDodge,
+   verified:false,confidence:'legacy-model',
+   source:"Remaked Calc('Dodge') + current OS source-gated effect parameters"},
   critical:{base:critBase,equipment:critEquip,
    racial:racialPassiveId===900040001?5:0,
    coldBlood:otherBuffs.coldBlood?.critical||0,known:critical},

@@ -743,7 +743,9 @@ function summaryRows(calc){
  const num=value=>Number.isFinite(value)?value:null;
  const sum=(left,right)=>Number.isFinite(left)&&Number.isFinite(right)?
   left+right:null;
- const row=(ru,en,value,unit='',display=null)=>({ru,en,value:num(value),unit,display});
+ const row=(ru,en,value,unit='',display=null,confidence=null)=>({
+  ru,en,value:num(value),unit,display,...(confidence?{confidence}:{})
+ });
  const clientAttack=c.attack?.minimumVerified===true&&
   Number.isFinite(c.attack?.minimum)&&Number.isFinite(c.attack?.known)&&
   c.attack.minimum<=c.attack.known?
@@ -767,7 +769,8 @@ function summaryRows(calc){
    ...(Number(calc?.combat?.priestSong?.sageElementDamage)>0?[
     row('Песнь чар · стихийный урон','Sage Song · elemental damage',
      calc.combat.priestSong.sageElementDamage,'%')]:[]),
-   row('Точность','Accuracy',c.accuracy?.known),
+   row('Точность','Accuracy',c.accuracy?.known,'',null,
+    c.accuracy?.confidence==='legacy-model'?'legacy-model':null),
    row('Точн. спереди','Front accuracy',c.frontAccuracy?.known),
    row('Шанс крита','Critical chance',c.critical?.known,'%'),
    row('Крит. урон','Critical damage',c.criticalDamage,'%'),
@@ -788,7 +791,8 @@ function summaryRows(calc){
    row('Сопр. физ (ед.)','Physical mitigation (flat)',r.mitigation?.physicalFlat),
    row('Сопр. физ (%)','Physical damage change',r.mitigation?.physical,'%'),
    row('Сопр. маг. урону','Magic damage change',r.mitigation?.magic,'%'),
-   row('Уклонение','Evasion',c.dodge?.known),
+   row('Уклонение','Evasion',c.dodge?.known,'',null,
+    c.dodge?.confidence==='legacy-model'?'legacy-model':null),
    row('Сопр. криту','Critical resistance',
     c.criticalIncoming,'%'),
    row('Получ. крит. урон','Incoming critical damage',c.criticalIncomingDamage,'%'),
@@ -851,6 +855,16 @@ function summaryPage(body,calc,options={}){
     make('strong',{text})
    ]);
    guideLabel(tile.firstChild,'summary.'+summaryIndex++,result.ru,result.en,options);
+   if(result.confidence==='legacy-model'){
+    // Preserve editable D1 captions and the numeric result. A visible
+    // CSS label and accessible title clarify the unverified legacy model.
+    const notice=en?
+     'Remaked planning model with current OS source parameters. The final game-client accuracy/evasion result is not independently verified.':
+     'Модель планирования Remaked с текущими параметрами OS. Итоговая точность/уклонение игрового клиента отдельно не подтверждена.';
+    tile.setAttribute('data-source-confidence','legacy-model');
+    tile.setAttribute('title',notice);
+    tile.lastChild.setAttribute('aria-label',text+' — '+notice);
+   }
    grid.append(tile);
   }
   section.append(heading,grid);
