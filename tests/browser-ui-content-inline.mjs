@@ -196,6 +196,13 @@ export async function runUIContentInlineSmoke(browser,base){
   if(catalogDockWasCollapsed)
    await page.locator('#ownerDock [data-owner-collapse]').click();
   await catalogDock.click();
+  const advancedDetails=page.locator('.os-sync-advanced');
+  await advancedDetails.locator(':scope > summary').waitFor({state:'visible'});
+  assert.equal(await advancedDetails.evaluate(node=>node.open),false,
+   'Rare archive and diagnostics stay collapsed by default');
+  await advancedDetails.locator(':scope > summary').click();
+  assert.equal(await advancedDetails.evaluate(node=>node.open),true,
+   'Owner can reveal optional tools in one click');
   const archiveDetails=page.locator('.os-sync-archive-choice');
   await archiveDetails.waitFor({state:'visible',timeout:15000});
   const archiveCaption=archiveDetails.locator('summary .os-sync-disclosure-caption');
@@ -232,6 +239,7 @@ export async function runUIContentInlineSmoke(browser,base){
    'Native catalog caption Undo must issue a confirmed D1 reset');
   assert.equal(Object.hasOwn(values,archiveKey),false);
   await catalogDock.click();
+  await page.locator('.os-sync-advanced > summary').click();
   await page.locator('.os-sync-archive-choice').waitFor({state:'visible'});
   assert.equal(await page.locator(
    '.os-sync-archive-choice summary .os-sync-disclosure-caption'

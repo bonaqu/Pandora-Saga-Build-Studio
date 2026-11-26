@@ -9098,8 +9098,14 @@ function renderBuilds(root){
    ])
  ]):null;
  if(sort)sort.querySelector('select').value=buildSortMode;
+ // Visible touch/mouse affordance complements Escape without rebuilding
+ // the library, losing the focused field or changing saved build data.
+ const clearSearch=search?h('button',{type:'button',class:'build-library-clear',
+  hidden:!buildSearchQuery.trim(),'aria-label':tr('Очистить поиск','Clear search'),
+  title:tr('Очистить поиск','Clear search'),text:'×'}):null;
  if(search||sort)root.append(h('div',{class:'build-library-controls'},[
-  ...(search?[search]:[]),...(sort?[sort]:[])
+  ...(search?[h('div',{class:'build-library-search-wrap'},[search,clearSearch])]:[]),
+  ...(sort?[sort]:[])
  ]));
  // One game-style hint popup is shared across all buttons and the Hero Book.
  // Only authored RU/EN copy is passed to the read-only tooltip; never a
@@ -9283,6 +9289,7 @@ function renderBuilds(root){
    // Use the SAME RU/EN, ё/е, Unicode and unordered-word search behavior
    // as equipment and encyclopedia pickers, including player build names.
    const query=buildSearchQuery.trim();
+   clearSearch.hidden=!query;
    for(const row of searchable){
     row.box.hidden=!searchWords(row.searchText,query);
     if(!row.box.hidden)visible++;
@@ -9291,6 +9298,9 @@ function renderBuilds(root){
    none.hidden=!query||visible>0;
   };
   search.addEventListener('input',()=>{buildSearchQuery=search.value;apply()});
+  clearSearch.addEventListener('click',()=>{
+   search.value='';buildSearchQuery='';apply();search.focus({preventScroll:true});
+  });
   // Escape clears only an active search, keeping the library and focus open.
   search.addEventListener('keydown',event=>{
    if(event.key!=='Escape'||(!search.value&&!buildSearchQuery))return;
