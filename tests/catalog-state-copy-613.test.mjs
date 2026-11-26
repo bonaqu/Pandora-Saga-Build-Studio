@@ -53,7 +53,7 @@ test('issue #390: verified admin success states are exact bilingual inline D1 fi
  assert.doesNotMatch(workbench,/status\.textContent='Каталог в GitHub уже совпадает/);
  // Dynamic upstream response details are still not owner-editable.
  assert.match(workbench,/diagnosticText\.textContent=tr\('Этап: ','Stage: '\)/);
- assert.match(workbench,/status\.textContent=error\.message/);
+ assert.match(workbench,/status\.textContent=tr\('Нельзя публиковать: ','Cannot publish: '\)\+error\.message/);
 });
 
 test('catalog security confirmations and runtime failure messages are bilingual, but not D1-editable',()=>{
