@@ -6,7 +6,7 @@ import {FILES,catalogOnly} from '../scripts/catalog-ci-mode.mjs';
 const read=n=>JSON.parse(readFileSync(new URL('../data/os/'+n+'.json',import.meta.url),'utf8'));
 const root={};runInNewContext(readFileSync(
  new URL('../pandora-studio-encyclopedia-catalog.js',import.meta.url),'utf8'),{window:root});
-const validate=root.window.PandoraWikiCatalog;
+const validate=root.PandoraWikiCatalog;
 const branch='catalog/snapshot-ps-b9fcc323cce04cc0ba83e7760f5bd151';
 const eligible=paths=>catalogOnly({event:'pull_request',branch,parents:2,paths});
 test('only exact data-only PR merges use fast lane; code and security changes remain full',()=>{

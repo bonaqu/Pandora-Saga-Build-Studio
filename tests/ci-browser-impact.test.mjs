@@ -58,7 +58,9 @@ test('manual browser run keeps full coverage, while PR failures of classifier fa
  assert.match(wf,/node scripts\/select-browser-suite\.mjs/);
  assert.match(wf,/node tests\/browser-smoke\.mjs --quick/);
  assert.match(wf,/node tests\/browser-smoke\.mjs --layout/);
- assert.match(read('tests/browser-smoke.mjs'),/if\(!quick\)await runLayoutAudit\(browser,base\)/);
+ assert.match(wf,/node tests\/browser-smoke\.mjs --catalog/);
+ assert.match(wf,/node scripts\/catalog-ci-mode\.mjs/);
+ assert.match(read('tests/browser-smoke.mjs'),/if\(!quick&&!catalog\)await runLayoutAudit\(browser,base\)/);
  assert.match(wf,/node tests\/browser-smoke\.mjs\s*$/m);
  const runner=read('tests/browser-smoke.mjs');
  for(const scenario of ['cloud-conflict','cloud-save-failure','cross-tab-account','account-feedback-race'])

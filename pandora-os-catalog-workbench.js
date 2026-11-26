@@ -441,7 +441,7 @@
     const testCAS=h('button',{type:'button',class:'button-action',
       text:'Проверить конфликты правок',disabled:false});
     const github = h('button',{type:'button',class:'button-action',
-      text:'Создать PR в GitHub',disabled:true});
+      text:'Проверить / повторить резерв GitHub',disabled:true});
     const search = h('input', {type:'search',class:'os-sync-search',
       placeholder:copy('searchPlaceholder',
        'Поиск по названию, описанию и связанным предметам…',
@@ -606,7 +606,7 @@
       h('div',{class:'os-sync-advanced-actions'},[
        action(testWrite,'testWriteButton','Проверить сохранение правок','Test D1 writes'),
        action(testCAS,'testCasButton','Проверить конфликты правок','Test edit conflicts'),
-       action(github,'githubButton','Создать PR в GitHub','Create GitHub PR'),
+       action(github,'githubButton','Проверить / повторить резерв GitHub','Check / retry GitHub backup'),
        action(exportButton,'exportButton','Скачать выбранное для GitHub','Download selected for GitHub')
       ])
     ]);
@@ -2210,11 +2210,6 @@
     };
     github.onclick=async()=>{
       if(busy||!githubReady||!publishedSnapshot||!permitMutation())return;
-      if(!confirm(tr(
-       'Создать отдельный GitHub PR из текущего опубликованного игрового каталога?\n'+
-        'Он не объединится с основной веткой автоматически.',
-       'Create a separate GitHub PR from the currently published game catalog?\n'+
-        'It will not be merged into the main branch automatically.')))return;
       setBusy(true);
       try{
         const active=await request('/api/admin/catalog/status',{});
@@ -2238,6 +2233,7 @@
               'The admin session ended. Sign in again.')
           : tr('Не удалось создать PR: ','Could not create PR: ')+error.message;
       }finally{setBusy(false)}
+      startBackupTracking(publishedSnapshot);
     };
     // Existing published snapshots can be sent to GitHub even if no new
     // game data arrived during this particular admin session.
@@ -2248,10 +2244,10 @@
       githubReady=settings.configured===true&&settings.connected===true&&settings.writeAccess===true;
       publishedSnapshot=current.active||null;
       github.setAttribute('aria-label',githubReady
-        ? tr('Создать PR в GitHub из опубликованного каталога',
-             'Create a GitHub PR from the published catalog')
-        : tr('Создать PR в GitHub — требуется настройка токена на сервере',
-             'Create GitHub PR — server token configuration required'));
+        ? tr('Проверить или повторить автоматический резерв GitHub',
+             'Check or retry the automatic GitHub backup')
+        : tr('Резерв GitHub недоступен: требуется подключение',
+             'GitHub backup unavailable: connection required'));
       refreshActions();
     }).catch(()=>{githubReady=false;refreshActions()});
 
