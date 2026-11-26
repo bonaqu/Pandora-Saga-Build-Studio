@@ -2027,7 +2027,9 @@ export async function runAdminEntrySmoke(browser,base){
    .waitFor({state:'visible',timeout:20000});
   // The drawer may be collapsed after Wiki navigation; textContent still
   // represents the saved D1 count, unlike hidden-element innerText.
-  assert.match(await ownerPanel.locator('[data-owner-count]').textContent(),/Сохранённых записей: \d+/);
+  assert.match(await ownerPanel.locator('[data-owner-count]').textContent(),
+   /(?:Сохранённых записей|Saved edits): \d+/,
+   'The saved edit count must be visible in the current RU or EN locale');
   console.log('Chromium future-map NPC D1 passed: create, link and display bilingual owner NPC');
   console.log('Chromium future-map roster D1 passed: owner monster creation and cross-link');
   console.log('Chromium owner location created and edited through D1: RU/EN, tags, sections');
