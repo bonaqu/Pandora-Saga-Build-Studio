@@ -1809,89 +1809,19 @@
           ' Check the active version before retrying. This does not mean D1 rolled back. GitHub backup job is persisted on the server.');
         return;
       }
-      status.textContent=tr(
-        'Каталог обновлён. Проверены все опубликованные разделы (',
-        'Catalog published. All public datasets verified (')+
-        check.verifiedDatasets+'/'+importer.files.length+
-        tr('), базовые очки и ОЗ/ОМ. Неизвестные новые эффекты навыков автоматически не подтверждаются.',
-           '), base points and HP/MP. Unknown new skill-effect semantics are not verified automatically.');
+      // One simple success; the durable GitHub backup has independent status.
+      status.textContent=tr('✓ Каталог обновлён. Проверено разделов: ',
+       '✓ Catalog updated. Datasets verified: ')+
+       check.verifiedDatasets+'/'+importer.files.length+'.';
       if(recovered)status.textContent+=tr(
-        ' Ответ публикации потерялся, но действующая версия подтверждена.',
-        ' The publish response was lost, but the active revision was confirmed.');
+       ' Ответ сервера задержался, но публикация подтверждена.',
+       ' Server response was delayed, but publication was verified.');
       if(superseded){
-        status.textContent+=tr(
-          ' Уже доступна другая версия: копию этой версии не создаём.',
-          ' Another version is already active; its predecessor is not backed up.');
-        return;
+       status.textContent+=tr(' Уже опубликована следующая версия.',
+        ' A newer revision is already published.');
+       return;
       }
       startBackupTracking(snapshot);
-      try {
-        const integration=await request('/api/admin/catalog/github-status',null);
-        if(integration.configured!==true){
-          status.textContent+=tr(
-            ' GitHub-копия не настроена: резервная версия ещё не подтверждена.',
-            ' GitHub backup is not configured: the fallback has not been verified.');
-          return;
-        }
-        if(integration.connected!==true||integration.writeAccess!==true){
-          status.textContent+=tr(
-            ' GitHub не подтвердил подключение и право записи. Резервный PR не создан.',
-            ' GitHub connection or write access was not verified. No fallback PR was created.');
-          return;
-        }
-        const current=await request('/api/admin/catalog/status',{});
-        if(current.active!==snapshot){
-          status.textContent+=tr(
-            ' D1 изменилась в другой вкладке; резерв не создавался.',
-            ' D1 changed in another session; backup was skipped.');
-          return;
-        }
-        status.textContent+=tr(
-          ' Подготавливаю PR для обновления резерва GitHub…',
-          ' Preparing a GitHub fallback PR…');
-        let result;
-        try{
-          result=await request('/api/admin/catalog/github-pr',{
-            expectedActive:snapshot});
-        }catch(error){
-          // The GH branch may have been created before a response was lost.
-          // Retry the same snapshot automatically; the Worker independently
-          // verifies all 17 D1 blob hashes before reusing a stranded branch.
-          // Never retry authentication, permission or CAS conflicts.
-          const retryable=!error.httpStatus||error.httpStatus>=500&&
-            error.httpStatus!==503;
-          if(!retryable)throw error;
-          const now=await request('/api/admin/catalog/status',{});
-          if(now.active!==snapshot)throw error;
-          status.textContent+=tr(
-            ' GitHub не ответил; повторяю резервирование автоматически…',
-            ' GitHub response was interrupted; retrying the backup automatically…');
-          result=await request('/api/admin/catalog/github-pr',{
-            expectedActive:snapshot});
-        }
-        if(result.unchanged){
-          status.textContent+=tr(
-            ' Резерв GitHub уже совпадает с D1.',
-            ' GitHub fallback already matches D1.');
-        }else if(/^https:\/\/github\.com\/bonaqu\/Pandora-Saga-Build-Studio\/pull\/\d+$/.test(result.url||'')){
-          status.append(document.createTextNode(tr(
-            ' Резервный PR создан; Node и Chromium проверят изменения, GitHub сам обновит резерв. Сайт уже обновлён, окно можно закрыть: ',
-            ' Backup PR created; Node and Chromium verify changes and GitHub updates the backup automatically. The site is already live; you may close this window: ')),
-            h('a',{href:result.url,target:'_blank',rel:'noopener noreferrer',
-              text:'PR #'+result.number}));
-        }else throw Error('Некорректный ответ GitHub');
-      }catch(error){
-        const saved=await request('/api/admin/catalog/backup-status',null).catch(()=>null);
-        if(saved?.snapshot===snapshot&&['pending','retry','running'].includes(saved.job?.state)){
-          status.textContent+=tr(
-           ' GitHub временно недоступен. Сервер повторит создание резервной копии автоматически, даже после закрытия вкладки.',
-           ' GitHub is temporarily unavailable. The server will retry the backup automatically, even after the tab closes.');
-        }else{
-          status.textContent+=tr(
-           ' Резерв GitHub требует внимания. D1 опубликована; проверь подключение: ',
-           ' GitHub backup needs attention. D1 was published; check the connection: ')+String(error.message||error);
-        }
-      }
     }
 
     function prepare() {
@@ -2063,32 +1993,9 @@
       if(closeButton)closeButton.disabled=true;
       setBusy(true);
       try {
-        // Fail BEFORE any D1 catalog write if the owner requested fully
-        // automatic GitHub fallback but the real credential is unusable.
-        // Merely having a named Cloudflare Secret is not proof of write scope.
-        status.textContent=tr(
-          'Проверяю доступ GitHub для автоматической резервной копии…',
-          'Checking GitHub access for automatic backup…');
-        let gitReady;
-        try{gitReady=await request('/api/admin/catalog/github-status',null)}
-        catch(error){
-          const failure=new Error(tr(
-            'Не удалось проверить подключение GitHub. Игровой каталог не изменён. '+String(error.message||error),
-            'GitHub connection could not be verified. Game catalog was not changed. '+String(error.message||error)));
-          failure.preflight=true;throw failure;
-        }
-        if(gitReady?.configured!==true||gitReady?.connected!==true||
-           gitReady?.writeAccess!==true){
-          const reason=gitReady?.configured!==true?
-           tr('GitHub-токен не настроен.','GitHub token is not configured.'):
-           gitReady?.connected!==true?
-           tr('GitHub не подтвердил подключение.','GitHub connection was not verified.'):
-           tr('GitHub не подтвердил право записи.','GitHub write access was not verified.');
-          const failure=new Error(reason+tr(
-            ' Публикация остановлена до записи в D1. Проверь интеграцию, затем повтори применение.',
-            ' Publication was stopped before any D1 write. Check integration, then retry.'));
-          failure.preflight=true;throw failure;
-        }
+        // The reviewed D1 update is independent of the external GitHub
+        // connection. The Worker commits a durable backup job atomically,
+        // with background retries if GitHub is unavailable.
         const current=await request('/api/admin/catalog/status',{});
         if (current.active!==activeSnapshot) throw Error(tr('D1 обновлена после проверки. Сверь данные заново.','D1 changed after comparison. Run the comparison again.'));
         await request('/api/admin/catalog/initialize',{});
@@ -2131,10 +2038,6 @@
         refreshActions();
         await finalizePublication(result.active,staged.combined,{superseded});
       }catch(error){
-        if(error?.preflight){
-          status.textContent=error.message;
-          return;
-        }
         // A lost publish response is ambiguous: inspect D1 before any retry.
         if(publishingSnapshot){
           try{

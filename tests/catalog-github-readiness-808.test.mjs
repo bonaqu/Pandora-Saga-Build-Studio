@@ -12,24 +12,50 @@ function env(){
   prepare(query){return {bind(){return this},async first(){if(query.includes('FROM sessions'))return {id:1};throw Error(query)}}}
  }};
 }
-test('readiness preflight is performed before any D1 initialization or catalog writing',()=>{
- const begin=source.indexOf('publish.onclick=async()=>');
- const end=source.indexOf('    // A separate, authenticated server operation.',begin);
- assert.ok(begin>=0&&end>begin);
- const part=source.slice(begin,end);
- const status=part.indexOf("request('/api/admin/catalog/github-status',null)");
+test('reviewed catalog D1 publication never depends on GitHub being online',()=>{
+ const start=source.indexOf('publish.onclick=async()=>');
+ const end=source.indexOf('    // A separate, authenticated server operation.',start);
+ assert.ok(start>=0&&end>start);
+ const part=source.slice(start,end);
+ const cas=part.indexOf("request('/api/admin/catalog/status',{})");
  const init=part.indexOf("request('/api/admin/catalog/initialize'");
  const batch=part.indexOf("request('/api/admin/catalog/batch'");
- const pub=part.indexOf("request('/api/admin/catalog/publish'");
- assert.ok(status>=0&&status<init&&init<batch&&batch<pub);
- assert.match(part,/gitReady\?\.configured!==true\|\|gitReady\?\.connected!==true\|\|/);
- assert.match(part,/gitReady\?\.writeAccess!==true/);
- assert.match(part,/if\(error\?\.preflight\)/);
+ const publish=part.indexOf("request('/api/admin/catalog/publish'");
+ assert.ok(cas>=0&&cas<init&&init<batch&&batch<publish,
+  'The existing D1 CAS + data review must precede publication');
+ assert.doesNotMatch(part.slice(0,init),/github-status|github-pr|gitReady|GitHub-токен/);
+ assert.doesNotMatch(part,/failure\.preflight|if\(error\?\.preflight\)/);
+ assert.match(part,/expectedActive:activeSnapshot/);
+ assert.match(part,/if\s*\(current\.active!==activeSnapshot\)/);
 });
-test('D1 post-publication copy and manual backup are disabled for unknown token permissions',()=>{
- assert.match(source,/integration\.connected!==true\|\|integration\.writeAccess!==true/);
+test('published D1 result and background GitHub reserve are independent',()=>{
+ const begin=source.indexOf('async function finalizePublication(');
+ const end=source.indexOf('    function prepare()',begin);
+ const part=source.slice(begin,end);
+ assert.ok(begin>=0&&end>begin);
+ assert.match(part,/startBackupTracking\(snapshot\)/);
+ assert.match(part,/Каталог обновлён/);
+ assert.doesNotMatch(part,/request\('\/api\/admin\/catalog\/github-pr'/);
+ assert.doesNotMatch(part,/request\('\/api\/admin\/catalog\/github-status'/);
+ // The manual advanced retry still requires an owner session and a matching
+ // active revision; it is never required for the normal D1 publication.
  assert.match(source,/settings\.connected===true&&settings\.writeAccess===true/);
- assert.match(source,/GitHub сам обновит резерв/);
+ assert.match(source,/github\.onclick=async/);
+});
+test('Worker schedules immediate nonblocking backup only after the atomic D1 pointer switch',()=>{
+ const workerSource=readFileSync(new URL('../worker/index.js',import.meta.url),'utf8');
+ const begin=workerSource.indexOf("if(path==='/api/admin/catalog/publish')");
+ const end=workerSource.indexOf("return no('Unknown catalog operation',404)",begin);
+ const part=workerSource.slice(begin,end);
+ assert.ok(begin>=0&&end>begin);
+ const tx=part.indexOf('env.DB.batch([statement,backup])');
+ const status=part.indexOf("Published catalog changed during review");
+ const delivery=part.indexOf('ctx.waitUntil(task)');
+ assert.ok(tx>=0&&status>tx&&delivery>status,
+  'Backup must never run before a committed CAS revision');
+ assert.match(part,/queueBackupStatement\(env,data\.snapshot\)/);
+ assert.match(part,/githubCatalogEnabled\(env\)/);
+ assert.doesNotMatch(part,/await deliverCatalogBackupJob/);
 });
 test('the Worker returns unknown write scope rather than claiming a configured secret is enough',async()=>{
  const environment=env(),previous=globalThis.fetch;

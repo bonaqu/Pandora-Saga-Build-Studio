@@ -96,5 +96,9 @@ test('publish pointer/outbox batch, Cron and UI status are connected',()=>{
  assert.match(w,/async scheduled\(_event,env,ctx\)/);
  assert.match(w,/\/api\/admin\/catalog\/backup-status/);
  assert.match(c,/crons = \["\*\/5 \* \* \* \*"\]/);
- assert.match(ui,/Сервер повторит создание резервной копии автоматически/);
+ assert.match(ui,/startBackupTracking\(snapshot\)/);
+ assert.match(ui,/Каталог обновлён\. Проверено разделов:/);
+ assert.match(w,/ctx\.waitUntil\(task\)/,
+  'After a successful D1 CAS commit, the Worker immediately schedules the backup');
+ assert.match(w,/deliverCatalogBackupJob\(env,activeCatalog,createCatalogPullRequest\)/);
 });
