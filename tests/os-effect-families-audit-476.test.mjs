@@ -70,3 +70,52 @@ test('a source passive with null direction is counted without guessing target si
   ep:'EP_TEST',fv1:[0,0,0,1],fv2:[0,0,0,0]
  }])}),/Invalid EP/,'missing dir is not an intentional null');
 });
+
+test('source shape inventory separates direction and FV positions without inventing combat formulas',()=>{
+ const make=(dir,fv1,fv2)=>({ep:'EP_UNKNOWN_NEW',dir,fv1,fv2});
+ const source={
+  1:entry(1,[
+   make('TARGET',[0,0,0,8],[0,0,0,0]),
+   make('TARGET',[0,0,0,12],[0,0,0,0]),
+   make('TARGET',[0,0,0,8],[0,0,0,7]),
+   make('CASTER',[0,0,0,8],[0,0,0,0])
+  ]),
+  2:entry(2,[make('TARGET',[0,0,0,5],[0,0,0,0]),
+   make(null,[0,0,0,0],[0,0,0,0])])
+ };
+ const before=JSON.stringify(source);
+ const report=auditOsEffectFamilies(source);
+ const family=report.effectFamilies[0],shapes=family.sourceShapes;
+ assert.equal(report.summary.effectCount,6);
+ assert.equal(report.summary.zeroVectorEffects,1);
+ assert.equal(report.summary.sourceShapeCount,4);
+ assert.equal(report.summary.familiesWithMultipleSourceShapes,1);
+ assert.equal(shapes.reduce((count,row)=>count+row.effects,0),6);
+ assert.deepEqual(shapes.map(row=>row.signature),[
+  'CASTER;fv1=3;fv2=-',
+  'TARGET;fv1=3;fv2=-',
+  'TARGET;fv1=3;fv2=3',
+  'UNSPECIFIED;fv1=-;fv2=-'
+ ]);
+ const common=shapes.find(row=>row.signature==='TARGET;fv1=3;fv2=-');
+ assert.equal(common.effects,3);
+ assert.deepEqual(common.skillIds,[1,2]);
+ assert.deepEqual(common.fv1Slots,[3]);
+ assert.deepEqual(common.fv2Slots,[]);
+ assert.equal(family.certainty,'source-shape-only');
+ assert.equal(JSON.stringify(source),before,'audit must not edit source data');
+});
+test('all live EP vectors are assigned to a deterministic source-shape bucket',()=>{
+ const first=auditOsEffectFamilies(real),second=auditOsEffectFamilies(real);
+ assert.deepEqual(first,second);
+ assert.equal(first.summary.sourceShapeCount,
+  first.effectFamilies.reduce((n,f)=>n+f.sourceShapes.length,0));
+ assert.equal(first.summary.familiesWithMultipleSourceShapes,
+  first.effectFamilies.filter(f=>f.sourceShapes.length>1).length);
+ for(const family of first.effectFamilies){
+  assert.equal(family.sourceShapes.reduce((n,s)=>n+s.effects,0),family.effectCount);
+  assert.deepEqual(family.sourceShapes.map(s=>s.signature),
+   [...family.sourceShapes.map(s=>s.signature)].sort());
+  assert.ok(family.sourceShapes.every(s=>s.skillIds.every(id=>family.skillIds.includes(id))));
+ }
+});
