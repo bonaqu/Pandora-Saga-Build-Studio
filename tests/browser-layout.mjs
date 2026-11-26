@@ -31,7 +31,28 @@ export async function runLayoutAudit(browser,base){
      return{x:r.x,y:r.y,width:r.width,height:r.height,
       right:r.right,bottom:r.bottom};
     };
+    const railSlots=[...document.querySelectorAll(
+     '.workspace .equipment-rail .equipment-slot:not(.equipped)')]
+     .map(slot=>{
+      const glyph=slot.querySelector(':scope > .slot-glyph');
+      const caption=slot.querySelector(':scope > small');
+      if(!glyph||!caption)return null;
+      const tile=slot.getBoundingClientRect();
+      const icon=glyph.getBoundingClientRect();
+      const label=caption.getBoundingClientRect();
+      const middle=r=>r.left+r.width/2;
+      return{slot:slot.dataset.slotIndex,name:caption.textContent,
+       tileCenterX:middle(tile),glyphCenterX:middle(icon),
+       labelCenterX:middle(label),tileCenterY:tile.top+tile.height/2,
+       groupCenterY:(Math.min(icon.top,label.top)+Math.max(icon.bottom,label.bottom))/2,
+       gap:label.top-icon.bottom,
+       captionPosition:getComputedStyle(caption).position,
+       clippedX:Math.max(0,caption.scrollWidth-caption.clientWidth),
+       glyphInBounds:icon.left>=tile.left-1&&icon.right<=tile.right+1,
+       labelInBounds:label.left>=tile.left-1&&label.right<=tile.right+1};
+     }).filter(Boolean);
     return{
+     railSlots,
      viewport:document.documentElement.clientWidth,
      fullWidth:Math.max(document.body.scrollWidth,document.documentElement.scrollWidth),
      catalogStatus:rect('#catalogStatus'),releaseTag:rect('#siteVersion'),
@@ -64,6 +85,23 @@ export async function runLayoutAudit(browser,base){
     width+'px: pointer hand must not replace the portrait cursor');
    assert.equal(geometry.heroImage,'contain',
     width+'px: full race portrait should stay visible');
+   assert.ok(geometry.railSlots.length>=6,
+    width+'px: the hero appearance must render its empty slot rails');
+   for(const tile of geometry.railSlots){
+    const message=width+'px / slot '+tile.slot+' ('+tile.name+')';
+    assert.equal(tile.captionPosition,'static',
+     message+': caption must share the centered glyph flow');
+    assert.ok(Math.abs(tile.glyphCenterX-tile.tileCenterX)<=1.5,
+     message+': glyph must be horizontally centered');
+    assert.ok(Math.abs(tile.labelCenterX-tile.tileCenterX)<=1.5,
+     message+': caption must be horizontally centered');
+    assert.ok(Math.abs(tile.groupCenterY-tile.tileCenterY)<=2,
+     message+': glyph and caption must be vertically centered as one group');
+    assert.ok(tile.gap>=-1&&tile.gap<=5,
+     message+': caption must be under the glyph without overlap');
+    assert.ok(tile.glyphInBounds&&tile.labelInBounds,
+     message+': visual contents must stay inside the slot');
+   }
    if(width>=1250){
     assert.ok(left.right<=stage.x+5&&stage.right<=right.x+5,
      width+'px: main panels overlap');
