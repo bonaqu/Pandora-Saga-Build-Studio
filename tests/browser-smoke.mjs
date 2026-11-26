@@ -22,6 +22,7 @@ import {runGemOptionAria853Smoke} from './browser-gem-aria-853.mjs';
 import {runItemPropertiesArrow866Smoke} from './browser-item-properties-arrow-866.mjs';
 import {runZeroSoulTabs873Smoke} from './browser-zero-soul-tabs-873.mjs';
 import {runPublicD1Copy874Smoke} from './browser-public-d1-copy-874.mjs';
+import {runEditorialD1Bootstrap390Smoke} from './browser-editorial-d1-bootstrap-390.mjs';
 import {runOnlineD1Required878Smoke} from './browser-online-d1-required-878.mjs';
 import {runOnlineOwnerDraft879Smoke} from './browser-online-owner-draft-879.mjs';
 import {runOnlineStartupStorage880Smoke} from './browser-online-startup-storage-880.mjs';
@@ -61,6 +62,7 @@ import {runSavedBuildGridSmoke} from './browser-build-grid-640.mjs';
 import {runOwnerBuildHints660Smoke} from './browser-build-hint-editorial-660.mjs';
 import {runOwnerBuildSearch662Smoke} from './browser-build-search-editor-662.mjs';
 import {runCrossSurfaceEditorial663Smoke} from './browser-cross-surface-editorial-663.mjs';
+import {runProfileCaption390Smoke} from './browser-profile-caption-390.mjs';
 import {runEffectItemsSmoke} from './browser-effect-items.mjs';
 import {runWikiSkillFiltersSmoke,runWikiIconManifestFallbackSmoke} from './browser-wiki-skill-filters.mjs';
 import {runWikiMaterialLinks752Smoke} from './browser-wiki-material-links-752.mjs';
@@ -110,6 +112,7 @@ const scenarios=[
   ['item-properties-arrow-866',runItemPropertiesArrow866Smoke],
   ['zero-soul-tabs-873',runZeroSoulTabs873Smoke],
   ['public-d1-copy-874',runPublicD1Copy874Smoke],
+  ['editorial-d1-bootstrap-390',runEditorialD1Bootstrap390Smoke],
   ['online-d1-required-878',runOnlineD1Required878Smoke],
   ['online-owner-draft-879',runOnlineOwnerDraft879Smoke],
   ['online-startup-storage-880',runOnlineStartupStorage880Smoke],
@@ -150,6 +153,7 @@ const scenarios=[
   ['owner-build-hint-edit-660',runOwnerBuildHints660Smoke],
   ['owner-build-search-662',runOwnerBuildSearch662Smoke],
   ['cross-surface-editorial-663',runCrossSurfaceEditorial663Smoke],
+  ['profile-direct-copy-390',runProfileCaption390Smoke],
   ['build-comparison',runBuildComparisonSmoke],
   ['saved-builds-english',runSavedBuildEnglishSmoke],
   ['effect-items',runEffectItemsSmoke],
@@ -488,7 +492,9 @@ async function main(){
  assert.equal(await page.locator('#stageBookPanel .stage-result-section-head button').count(),0);
  assert.equal((await page.locator('#stageAttributes [data-book-page="recovery"]').innerText()).trim(),'Potion effects');
  assert.match(await page.locator('#stageAttributes').getAttribute('aria-label'),/Hero Book.*Chapter 1 of 6/);
- assert.equal(await page.locator('#stageAttributes .stage-book-arrow').first().getAttribute('aria-label'),'Previous page');
+ // Book arrows now share the published bilingual owner-copy keys.
+ assert.equal(await page.locator('#stageAttributes .stage-book-arrow').first().getAttribute('aria-label'),'Previous chapter');
+ assert.equal(await page.locator('#stageAttributes .stage-book-arrow').nth(1).getAttribute('aria-label'),'Next chapter');
  assert.equal(await page.locator('#stageAttributes .stage-book-close').getAttribute('aria-label'),'Return to portrait');
  await page.locator('#stageAttributes [data-book-page="buffs"]').click();
  assert.equal((await page.locator('#stageBookPanel').innerText()).includes('Settings apply to this build'),false,

@@ -35,5 +35,6 @@ test('item and Soul on-hit skill names are interactive rich Path skill reference
  assert.match(book,/appendItemEvents\(body,calc,english,'defense',options\.gameTerms\)/);
  // Unknown skill IDs are plain text, not incorrect or invented previews.
  assert.match(book,/if\(!valid\)\{/);
- assert.match(book,/panel\.append\(make\('p',\{text:row\.source/);
+ assert.match(book,/panel\.append\(sourceText\('p',row\.source/,
+  'Unknown proc source names stay plain text without the authorial Book translator');
 });

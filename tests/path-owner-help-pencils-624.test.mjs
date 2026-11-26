@@ -11,7 +11,9 @@ runInNewContext(read('pandora-studio-honor-guide.js'),scope);
 test('Path help is directly editable with stable D1 keys and no caption pencils',()=>{
  assert.match(hero,/const authored=\(api,key,ru,en,tag='p',cls='muted'\)=>/);
  assert.match(hero,/api\.editLabel\(node,key,ru,en\)/);
- assert.match(app,/editLabel:\(node,key,ru,en,callbacks\)=>ownerCopyLabel\(node,'path',key,ru,en,callbacks\)/);
+ assert.match(app,/editLabel:\(node,key,ru,en,callbacks\)=>ownerCopyLabel\(node,'path',key,ru,en,\{/);
+ assert.match(app,/applyOwnerInterfaceEditedValue\('path',key,visible\)/);
+ assert.match(app,/callbacks\?\.onCommitted\?\.\(visible\)/);
  assert.match(app,/node\.addEventListener\('dblclick',edit\)/);
  assert.doesNotMatch(hero,/class:'path-owner-pencil'/);
  assert.doesNotMatch(hero,/class:'path-group-pencil'/);
@@ -28,7 +30,17 @@ test('D1 editing never replaces source-backed skill values or invalid requiremen
  }
  assert.match(hero,/skill\.desc\?make\('p',\{text:skill\.desc\}\):/);
  assert.match(hero,/gate\.learned\?\s*authored\(api,'skillReady'/);
- assert.match(hero,/make\('p',\{class:'path-skill-no',text:'🔒 '\+gate\.problems\.join\(' · '\)\}\)/);
+ // The formerly monolithic locked status is now structured, so editing its
+ // authorial reason never sends class/skill names or game points to D1.
+ assert.match(hero,/class:'path-skill-no'/);
+ assert.match(hero,/class:'path-skill-lock-symbol',text:'🔒 '/);
+ assert.match(hero,/for\(const \[i,parts\] of gate\.problemParts\.entries\(\)\)/);
+ assert.match(hero,/class:'path-skill-reason-separator',text:' · '/);
+ assert.match(hero,/authored\(api,part\.key,part\.ru,part\.en,'span','path-skill-reason-copy'\)/);
+ assert.match(hero,/class:'path-skill-reason-source',text:part\.text/);
+ assert.match(hero,/const runtime=value=>\(\{text:String\(value\)\}\)/);
+ assert.match(hero,/const problems=\[\],problemParts=\[\],state=api\.state,job=api\.job/);
+ assert.doesNotMatch(hero,/make\('p',\{class:'path-skill-no',text:'🔒 '\+gate\.problems\.join/);
  assert.match(hero,/const dd=make\('dd',\{text:String\(value\)\}\)/);
  assert.match(hero,/if\(valueCopy\)bindPathCopy\(api,dd,\.\.\.valueCopy\)/);
  assert.match(hero,/stats\.append\(label,dd\)/);

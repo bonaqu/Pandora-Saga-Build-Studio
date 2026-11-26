@@ -46,6 +46,22 @@ const tr=value=>{
  return pair?pair[lang==='en'?1:0]:
   (root.PandoraUILocale?.ui(value,lang)||value);
 };
+// The guest trigger uses the exact semantic D1 profileAccess label, not a
+// separate hardcoded tooltip. For signed-in owners keep the real username
+// as a non-editorial suffix of the independent Profile title.
+const triggerLabel=()=>session?tr('Профиль')+' · '+session.username:
+ (root.PandoraUILocale?.text?.('profileAccess',document.documentElement.lang)||
+  tr('Войти или зарегистрироваться'));
+// The icon-only F2 editor reads the current D1 key at invocation time.
+// A guest and an authenticated account have different authorial captions.
+// The account username is appended separately and is never owner-copy D1.
+const syncTriggerCopy=()=>{
+ const key=session?'accountProfileTitle':'profileAccess';
+ trigger.setAttribute('data-i18n-title',key);
+ trigger.setAttribute('data-i18n-aria-label',key);
+ trigger.title=triggerLabel();
+ trigger.setAttribute('aria-label',trigger.title);
+};
 // Only exact human-readable messages emitted by the account API are allowed
 // through. Raw server exceptions, SQL details and arbitrary HTML are never
 // rendered in the guest/profile UI or offered to the D1 text editor.
@@ -114,14 +130,10 @@ function field(placeholder,type='text',auto='off',max=128){
 }
 function paintFeedback(){
  if(!errorLine||feedbackSource===null)return;
- const previous=errorLine.dataset.ownerCopyKey||null;
  // Never mistake a server-supplied error for a locally authored, editable
  // status—even when its text happens to resemble a known localized phrase.
  if(feedbackAuthoredKey)errorLine.dataset.ownerCopyKey=feedbackAuthoredKey;
  else errorLine.removeAttribute('data-owner-copy-key');
- if(previous&&previous!==feedbackAuthoredKey&&
-  errorLine.nextElementSibling?.dataset?.ownerCopyPencil===previous)
-  errorLine.nextElementSibling.remove();
  errorLine.textContent=tr(feedbackSource);
  errorLine.dataset.sourceMessage=feedbackSource;
 }
@@ -248,8 +260,7 @@ function render(){
  if(bootstrapPhase==='pending'&&session)
   panel.append(node('p','account-lead account-bootstrap-pending',
    'Проверяем учётную запись…'));
- trigger.title=session?tr('Профиль')+' · '+session.username:tr('Войти или зарегистрироваться');
- trigger.setAttribute('aria-label',trigger.title);
+ syncTriggerCopy();
  const title=node('h3','account-title',session?'Профиль':'Аккаунт');
  panel.append(title);
  const sub=node('p','account-lead',session?'Сохранённые билды доступны после входа на другом устройстве.':
@@ -639,8 +650,7 @@ function refresh(){
   }
   return;
  }
- trigger.title=session?tr('Профиль')+' · '+session.username:tr('Войти или зарегистрироваться');
- trigger.setAttribute('aria-label',trigger.title);
+ syncTriggerCopy();
  for(const node of (panel.querySelectorAll?.('[data-account-copy-source]')||[])){
   const value=tr(node.getAttribute('data-account-copy-source'));
   if(node.textContent!==value)node.textContent=value;
@@ -655,12 +665,6 @@ function refresh(){
  if(errorLine&&feedbackSource!==null&&
   feedbackToken===(session?.token||null)&&feedbackMode===mode)
   paintFeedback();
- for(const pencil of (panel.querySelectorAll?.('[data-owner-copy-pencil]')||[])){
-  const caption=pencil.previousElementSibling;
-  if(caption?.dataset?.ownerCopyKey!==pencil.dataset.ownerCopyPencil)continue;
-  const label=(document.documentElement.lang==='en'?'Edit caption: ':'Изменить надпись: ')+caption.textContent;
-  if(pencil.getAttribute('aria-label')!==label)pencil.setAttribute('aria-label',label);
- }
 }
 // The release manager must never discard the only recovery code or an
 // unfinished account request. Expose state, never the token or secret itself.

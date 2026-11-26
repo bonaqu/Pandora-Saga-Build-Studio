@@ -13,16 +13,20 @@ test('Origin labels show only ОЗ/ОМ, no icons or approximation marks',()=>{
  assert.match(css,/\.origin-vital\{[\s\S]*?min-height:66px/);
 });
 test('HP/MP are calculated integers and coverage limitations remain transparent',()=>{
- const a=app.indexOf('function renderOriginVitals(calculated=undefined){');
+ const a=app.indexOf('function refreshOriginVitalsAccessible(){');
  const b=app.indexOf('\nfunction setVitalsEnhancement(key,value){',a);
  assert.ok(a>=0&&b>a);
  const code=app.slice(a,b),nodes={
   originHp:{textContent:''},originMp:{textContent:''},
-  originVitals:{attributes:{},setAttribute(key,value){this.attributes[key]=value},title:'old'}
+  originVitals:{attributes:{},setAttribute(key,value){this.attributes[key]=value},title:'old',
+   querySelector(key){return {textContent:key.includes('hpShort')?'ОЗ':'ОМ'}}}
  };
  let calc={hp:2066,mp:543};
- const render=Function('$','previewBaseStats','lang','refreshOpenHeroBook',code+'\nreturn renderOriginVitals;')(
-  k=>nodes[k],()=>calc,'ru',()=>{});
+ const render=Function('$','previewBaseStats','lang','refreshOpenHeroBook',
+  'ownerDockPatchAttr','statsUiText',code+'\nreturn renderOriginVitals;')(
+  k=>nodes[k],()=>calc,'ru',()=>{},
+  (node,key,value)=>node.setAttribute(key,value),
+  ()=> 'ОЗ и ОМ появятся после загрузки игровых данных.');
  render();
  assert.equal(nodes.originHp.textContent,'2066');
  assert.equal(nodes.originMp.textContent,'543');
@@ -33,6 +37,8 @@ test('HP/MP are calculated integers and coverage limitations remain transparent'
  calc=null;render();
  assert.equal(nodes.originHp.textContent,'—');
  assert.equal(nodes.originMp.textContent,'—');
+ assert.equal(nodes.originVitals.attributes['aria-label'],
+  'ОЗ и ОМ появятся после загрузки игровых данных.');
  assert.doesNotMatch(code,/['"]≈['"]|≈\+/);
  const calculator=read('pandora-os-character-calculator.js');
  assert.match(calculator,/verified:false/,'server-game parity is not established');
@@ -63,11 +69,27 @@ function chosenProfession(){
  const state={job:jobKeys.indexOf('JUGGERNAUT')},grid=new El('div');
  assert.ok(state.job>=0);
  let saves=0;
- const runtime=Function('h','$','jobKeys','jobs','catalog','state','editableValue','saveView','lang','originCopy','originCopyLabel',
+ // The unit harness extracts renderJobs rather than the whole application.
+ // Import its REAL static registry, and preserve the original class routing.
+ const source=app.match(/const originClassWizardCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ const aria=app.match(/const originClassWizardAriaRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ assert.ok(source&&aria,'The real class wizard bilingual source registries must be available');
+ const rows=Function('return '+source[1])(),ariaRows=Function('return '+aria[1])();
+ const bind=(node,_section,_key,ru,_en,attr='text',suffix='',prefix='')=>{
+  const value=prefix+ru+suffix;
+  if(attr==='text')node.textContent=value;
+  else node.attributes[attr]=value;
+  return node;
+ };
+ const runtime=Function('h','$','jobKeys','jobs','catalog','state','editableValue',
+  'saveView','lang','originCopy','originCopyLabel','originClassWizardCopyRows',
+  'originClassWizardAriaRows','bindOwnerInterfaceText','document',
+  'adminEditing','adminToken','ownerCaptionActionGuard',
   fallback+'\nlet jobPathKey=null;\nfunction selectJob(index){state.job=index;renderJobs()}\n'+
   app.slice(start,end)+'\nreturn {renderJobs,state,get:()=>jobPathKey};')(
   h,()=>grid,jobKeys,jobs,{classes},state,(_,v)=>v,()=>saves++,'ru',
-  (_key,ru)=>ru,(node,_key,ru)=>{node.textContent=ru;return node});
+  (_key,ru)=>ru,(node,_key,ru)=>{node.textContent=ru;return node},
+  rows,ariaRows,bind,{createTextNode:value=>String(value)},false,'',()=>{});
  const buttons=()=>walk(grid).filter(x=>x.tag==='button');
  const matching=key=>buttons().find(x=>x.className.includes('class-wizard-choice')&&
   x.children[0]?.textContent===jobs[jobKeys.indexOf(key)]);
@@ -82,7 +104,9 @@ test('after selecting final class, root directions display the actual specializa
  assert.equal(root.attributes['aria-pressed'],'false','ancestor is not the actual selected leaf');
  assert.match(root.attributes['aria-label'],/выбранная специализация/);
  assert.ok(walk(f.grid).some(x=>x.className==='class-wizard-selected'&&
-  x.textContent.includes('Джаггернаут')));
+  x.children.some(child=>child instanceof El&&
+   child.className==='class-wizard-source-name'&&child.textContent==='Джаггернаут')),
+  'The actual selected profession must remain in a separate source-only node');
 });
 test('Back navigation retains the selection at every parent level',()=>{
  const f=chosenProfession();f.runtime.renderJobs();

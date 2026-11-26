@@ -61,8 +61,9 @@ test('Book skill range caption, tooltip and itemized terms share official locale
  assert.match(book,/guideLabel\(title,'attack\.caption\.skillRange'/);
  assert.match(book,/guideLabel\(help,'attack\.skillRangeHelp'/);
  assert.match(book,/gameSkillBadge\(row\.id,row\.name,official\?\.n,terms,english/);
- assert.match(book,/От умения: \+'/);
- assert.match(book,/gameBranchName\('archery',terms,false\)/);
+ assert.match(book,/authoredRange\('fromSkill','От умения','From skill'\)/);
+ assert.match(book,/class:'stage-skill-range-source-value',text:'\+'\+row\.sourceConstant/);
+ assert.match(book,/gameBranchName\('archery',terms,english\)/);
  assert.match(book,/skillIconForId\}/);
  assert.ok(host.PandoraStageAttributes);
 });

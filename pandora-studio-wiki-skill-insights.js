@@ -135,7 +135,8 @@ function poisonItemSource(skill){
   return null;
  return {notes:[{
   ru:'Эффект яда прекращается при смене оружия.',
-  en:'The poison effect ends when changing weapons.'
+  en:'The poison effect ends when changing weapons.',
+  editorialKey:'osSourcePoison'+skill.id
  }],paths:[],extra:[{type:'requiredItem',count:1,itemId:50056}],
   sourceOnly:true,finalAmount:null};
 }
@@ -200,7 +201,8 @@ function hymnChainEvidence(skill,catalog,classes){
   end.funcs?.length!==p.effects.length||
   !p.effects.every(([ep,vector],i)=>
    same(end.funcs[i],ep,'TARGET',vector)))return null;
- return {notes:[{ru:p.ru,en:p.en}],paths:[[skill.id,p.area,p.final]],
+ return {notes:[{ru:p.ru,en:p.en,editorialKey:'osSourceHymn'+skill.id}],
+  paths:[[skill.id,p.area,p.final]],
   extra:[],pathKind:'hymn',sourceOnly:true,finalAmount:null};
 }
 // An exact, source-only note for the current level-50 Saboteur passive.
@@ -227,7 +229,8 @@ function trapCapacityEvidence(skill,classes){
    JSON.stringify(expected))return null;
  return {notes:[{
   ru:'С 50-го уровня это пассивное умение влияет на предел установленных ловушек и усиливает взрывающиеся ловушки в зависимости от мастерства. Точное число дополнительных ловушек и итоговый урон не подтверждены.',
-  en:'From level 50, this passive affects the number of placed traps and strengthens explosive traps based on mastery. The exact extra trap count and final damage are not verified.'
+  en:'From level 50, this passive affects the number of placed traps and strengthens explosive traps based on mastery. The exact extra trap count and final damage are not verified.',
+  editorialKey:'osSourceTrap'+skill.id
  }],paths:[],extra:[],pathKind:'trap-passive',
   sourceOnly:true,finalAmount:null};
 }
@@ -290,7 +293,8 @@ function compositeActionEvidence(skill,skillCatalog){
   child.funcs.length!==spec.childEffects.length||
   !child.funcs.every((fx,i)=>sameGameEffect(fx,spec.childEffects[i]))))
   return null;
- return {notes:[{ru:spec.ru,en:spec.en}],
+ return {notes:[{ru:spec.ru,en:spec.en,
+  editorialKey:'osSourceComposite'+skill.id}],
   paths:child?[[skill.id,child.id]]:[],extra:[],
   sourceOnly:true,finalAmount:null};
 }
@@ -586,7 +590,7 @@ function sourceLinkedEvidence(skill,catalog,classes){
   ru:'Умение запускает связанное действие с прямым попаданием. Другие эффекты действуют отдельно.',
   en:'The skill triggers a linked direct hit. Other effects are separate.'
  };
- return {notes:[official],
+ return {notes:[{...official,editorialKey:'osSourceLinked'+skill.id}],
   paths:[spec.path.map(row=>row.id),...sidePaths],
   extra:[],pathKind:'damage',sourceOnly:true,finalAmount:null};
 }

@@ -26,6 +26,8 @@ test('Path reset is a localized inline two-step choice, not native confirm',()=>
  assert.match(app,/function renderBranches\(\)\{[\s\S]*?closePathResetConfirm\(\)/);
 });
 test('Origin portrait notices and item-loading fallback are bilingual without changing game data',()=>{
+ // Legacy hidden gender controls preserve their original RU/EN labels;
+ // this is not a new owner-editable surface or a staging D1 default.
  assert.match(app,/const genderNotes=lang==='en'\?/);
  assert.match(app,/Dwarf · gender selection unavailable/);
  assert.match(app,/Myrine · female/);

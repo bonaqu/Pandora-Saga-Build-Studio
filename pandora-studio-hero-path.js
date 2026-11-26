@@ -8,6 +8,31 @@ const ELEMENT_LABELS=Object.freeze({
  LIGHTNING:['Молния','Lightning'],CHARM:['Чары','Charm'],
  DARK:['Тьма','Dark'],POISON:['Яд','Poison']
 });
+// A blocked-skill reason is built from audited authorial RU/EN copy AND
+// separate runtime source data. No original class/skill names, points or
+// numerical thresholds are owned by these keys.
+const heroSkillReadinessCopyRows=Object.freeze([
+ ['skillGateCycle','Циклическая зависимость навыков','Cyclic skill prerequisite'],
+ ['skillGateWrongClass','Не подходит профессии','Unavailable to this class'],
+ ['skillGateUnknownLevel','Неизвестный уровень изучения','Unknown character level requirement'],
+ ['skillGateRequiredLevel','Требуется уровень','Requires level'],
+ ['skillGateBadRequirements','Неизвестные требования навыка','Unknown skill requirements'],
+ ['skillGateUnknownRequirement','Неизвестное условие','Unknown requirement'],
+ ['skillGateClassMaximum','предел профессии','class maximum'],
+ ['skillGateTrained','освоено','trained'],
+ ['skillGateClassUnavailable','недоступно для профессии','unavailable to this class'],
+ ['skillGateAllocated','вложено','allocated'],
+ ['skillGatePreviousMissing','Предыдущее умение не найдено','Required previous skill not found'],
+ ['skillGatePreviousRequired','Требуется предыдущее умение','Requires previous skill'],
+ ['skillGateLearningMethod','Особый способ изучения','Special learning method required'],
+ ['skillGateUnknownMethod','Неизвестный способ изучения','Unknown learning method'],
+ ['skillGateUnknownAdditional','Неизвестное дополнительное условие','Unknown additional requirement'],
+ ['skillGateAdditionalRequirement','Дополнительное условие','Unverified additional requirement']
+]);
+const heroSkillReadinessCopyByKey=new Map(
+ heroSkillReadinessCopyRows.map(([key,ru,en])=>[key,{key,ru,en}])
+);
+
 const elementLabel=(element,api)=>{
  if(typeof element!=='string')return null;
  const code=element.trim().toUpperCase();
@@ -55,20 +80,8 @@ const authored=(api,key,ru,en,tag='p',cls='muted')=>{
   api.editLabel(node,key,ru,en);
  return node;
 };
-// For disclosure/navigation buttons in owner mode, distinguish a real double
-// click on the caption from a single click that opens the section.
-const guardCaptionAction=(button,caption)=>{
- if(!button||!caption)return;
- let pending=null;
- button.addEventListener('click',event=>{
-  if(!event.detail||!caption.contains(event.target)||
-     event.target.closest?.('input,textarea,select'))return;
-  event.preventDefault();event.stopImmediatePropagation();
-  if(pending){clearTimeout(pending);pending=null;return}
-  pending=setTimeout(()=>{pending=null;if(button.isConnected&&!button.disabled)
-   button.click()},500);
- },true);
-};
+// Native action guards are shared with the other owner surfaces through
+// heroPathApi. One pending action per app, not one timer per caption.
 // Bind only author-written copy. Game levels and skill names are immutable
 // suffixes, never sent to the owner D1 string editor.
 const bindPathCopy=(api,node,key,ru,en,attribute='text',suffix='',prefix='')=>{
@@ -85,9 +98,11 @@ function requirementRow(api,name,metrics){
  const row=make('p',{class:'path-skill-requirement-row'});
  row.append(make('span',{class:'path-requirement-name',text:name}));
  for(const [key,ru,en,value] of metrics){
-  const caption=make('span',{class:'path-requirement-caption'});
-  bindPathCopy(api,caption,key,ru,en,'text',' ',' · ');
-  row.append(caption,make('span',{class:'path-requirement-value',text:String(value)}));
+  // Punctuation and the calculated requirement stay outside the author
+  // text node: double-click edits only the bilingual metric label.
+  const caption=authored(api,key,ru,en,'span','path-requirement-caption');
+  row.append(make('span',{text:' · '}),caption,make('span',{text:' '}),
+   make('span',{class:'path-requirement-value',text:String(value)}));
  }
  return row;
 }
@@ -181,17 +196,33 @@ function validSourceLevel(raw){
 }
 function readiness(skill,api,seen=new Set(),skillIndex){
  const byId=skillIndex||indexSkills(api.skillCatalog);
- const problems=[],state=api.state,job=api.job;
- if(seen.has(String(skill.id)))return {learned:false,problems:[tr(api,'Циклическая зависимость навыков','Cyclic skill prerequisite')]};
+ const problems=[],problemParts=[],state=api.state,job=api.job;
+ // Public 'problems' keeps the existing locale-specific plain strings used
+ // by callers and regression checks. problemParts is presentation metadata:
+ // only a {key,ru,en} part is authorial and D1-editable, never a runtime part.
+ const reason=key=>{
+  const row=heroSkillReadinessCopyByKey.get(key);
+  if(!row)throw Error('Unknown Hero Path skill reason: '+key);
+  return row;
+ };
+ const runtime=value=>({text:String(value)});
+ const add=(...parts)=>{
+  problemParts.push(parts);
+  problems.push(parts.map(part=>part.key?
+   tr(api,part.ru,part.en):part.text).join(''));
+ };
+ if(seen.has(String(skill.id))){
+  add(reason('skillGateCycle'));
+  return {learned:false,problems,problemParts};
+ }
  const chain=new Set(seen);chain.add(String(skill.id));
- if(!allowedForJob(skill,job))
-  problems.push(tr(api,'Не подходит профессии','Unavailable to this class'));
+ if(!allowedForJob(skill,job))add(reason('skillGateWrongClass'));
  if(skill.charLevel!==undefined&&!validSourceLevel(skill.charLevel))
-  problems.push(tr(api,'Неизвестный уровень изучения','Unknown character level requirement'));
+  add(reason('skillGateUnknownLevel'));
  else if(Number(skill.charLevel)>state.level)
-  problems.push(tr(api,'Требуется уровень ','Requires level ')+skill.charLevel);
+  add(reason('skillGateRequiredLevel'),runtime(' '),runtime(skill.charLevel));
  if(skill.reqs!==undefined&&!Array.isArray(skill.reqs))
-  problems.push(tr(api,'Неизвестные требования навыка','Unknown skill requirements'));
+  add(reason('skillGateBadRequirements'));
  const required=Array.isArray(skill.reqs)?skill.reqs:[];
  for(const req of required){
   const raw=req?.amount,need=Number(raw);
@@ -199,17 +230,17 @@ function readiness(skill,api,seen=new Set(),skillIndex){
    (typeof raw!=='number'&&typeof raw!=='string')||
    (typeof raw==='string'&&!/^\+?\d+(?:\.0+)?$/.test(raw.trim()))||
    !Number.isSafeInteger(need)||need<=0){
-   problems.push(tr(api,'Неизвестное условие','Unknown requirement'));continue;
+   add(reason('skillGateUnknownRequirement'));continue;
   }
   // The MELEE parent uses trained proficiency across five child branches,
   // rather than allocated points in the non-allocatable martial branch.
   if(req.branch==='martial'&&skill.branchRaw==='MELEE'){
    const name=api.branchName('melee'),cap=M.meleeGroupCap(api.branchCaps);
    const trained=M.meleeGroupTrained(state,api.innate,api.branchCaps);
-   if(cap<need)problems.push(name+tr(api,
-    ': предел профессии ',': class maximum ')+cap+'/'+need);
-   if(trained<need)problems.push(name+tr(api,
-    ': освоено ',': trained ')+trained+'/'+need);
+   if(cap<need)add(runtime(name),runtime(': '),reason('skillGateClassMaximum'),
+    runtime(' '),runtime(cap),runtime('/'),runtime(need));
+   if(trained<need)add(runtime(name),runtime(': '),reason('skillGateTrained'),
+    runtime(' '),runtime(trained),runtime('/'),runtime(need));
    continue;
   }
   const name=api.branchName(req.branch);
@@ -218,29 +249,33 @@ function readiness(skill,api,seen=new Set(),skillIndex){
   if(typeof api.cap==='function'){
    const cap=api.cap(req.branch);
    if(!Number.isInteger(cap)||cap===0)
-    problems.push(name+tr(api,': недоступно для профессии',': unavailable to this class'));
+    add(runtime(name),runtime(': '),reason('skillGateClassUnavailable'));
   }
   const points=M.branchPotential(state,req.branch,api.innate,api.branchCaps);
   // Unlocking a skill requires allocated branch points, not green proficiency:
   // otherwise the first skill could never be used to start training green.
-  if(points<need)problems.push(name+tr(api,': вложено ',' : allocated ')+points+'/'+need);
+  if(points<need)add(runtime(name),runtime(api.lang==='en'?' : ':': '),
+   reason('skillGateAllocated'),runtime(' '),runtime(points),runtime('/'),runtime(need));
  }
  if(skill.prereq){
   const previous=byId.get(String(skill.prereq));
-  if(!previous)problems.push(tr(api,'Предыдущее умение не найдено','Required previous skill not found'));
+  if(!previous)add(reason('skillGatePreviousMissing'));
   else{
    const prerequisite=readiness(previous,api,chain,byId);
-   if(!prerequisite.learned)problems.push(tr(api,'Требуется предыдущее умение «','Requires previous skill “')+previous.name+tr(api,'»','”'));
+   if(!prerequisite.learned)
+    add(reason('skillGatePreviousRequired'),runtime(' '),
+     runtime(api.lang==='en'?'“':'«'),runtime(previous.name),
+     runtime(api.lang==='en'?'”':'»'));
   }
  }
- if(skill.learnable===false)problems.push(tr(api,'Особый способ изучения','Special learning method required'));
+ if(skill.learnable===false)add(reason('skillGateLearningMethod'));
  else if(skill.learnable!==undefined&&skill.learnable!==true)
-  problems.push(tr(api,'Неизвестный способ изучения','Unknown learning method'));
+  add(reason('skillGateUnknownMethod'));
  if(skill.reqLevel!==undefined&&!validSourceLevel(skill.reqLevel))
-  problems.push(tr(api,'Неизвестное дополнительное условие','Unknown additional requirement'));
+  add(reason('skillGateUnknownAdditional'));
  else if(Number(skill.reqLevel)>0&&!required.length)
-  problems.push(tr(api,'Дополнительное условие ','Unverified additional requirement ')+skill.reqLevel);
- return {learned:!problems.length,problems};
+  add(reason('skillGateAdditionalRequirement'),runtime(' '),runtime(skill.reqLevel));
+ return {learned:!problems.length,problems,problemParts};
 }
 // A linked 50-level version is the same skill family in the character
 // planner, never a second simultaneous skill effect. A level threshold alone
@@ -370,11 +405,12 @@ function viewGrowth(target,api){
    ['pathGroupLearned','изучено','learned'],
    ['pathGroupInvested','вложено','invested']
   ]){
-   const caption=make('span',{class:'path-group-summary-copy'});
-   bindPathCopy(api,caption,copyKey,ru,en,'text',' ',
-    groupValues.length?' · ':'');
+   const caption=authored(api,copyKey,ru,en,'span','path-group-summary-copy');
    const value=make('span',{class:'path-group-summary-value'});
-   groupCount.append(caption,value);groupValues.push(value);
+   groupCount.append(make('span',{text:groupValues.length?' · ':''}),
+    caption,make('span',{text:' '}),value);
+   groupValues.push(value);
+   if(api.canEdit)api.guardAction?.(groupButton,caption);
   }
   const refreshGroupSummary=()=>{
    groupValues[0].textContent=String(branchKeys.reduce((total,key)=>total+M.branchMastery(state,key,innate,caps),0));
@@ -387,7 +423,7 @@ function viewGrowth(target,api){
    (api.lang==='en'?group.en:group.ru);
   const caption=make('strong',{text:name});
   api.editLabel?.(caption,captionKey,group.ru,group.en);
-  if(api.canEdit)guardCaptionAction(groupButton,caption);
+  if(api.canEdit)api.guardAction?.(groupButton,caption);
   groupButton.append(caption,groupCount);
   head.append(groupButton);
   wrap.append(head);
@@ -432,10 +468,16 @@ function viewGrowth(target,api){
     // Duplicating it in the header adds/removes a whole line at zero -> one.
 
     const branchCount=make('b',{class:'count',
-     text:cap>0?level+' / '+cap:points>0?points+' / 0':'—',
-     'aria-label':tr(api,'Старт ','Innate ')+base+
-      tr(api,', вложено ', ', invested ')+points+
-      tr(api,', мастерство ', ', mastery ')+trained});
+     text:cap>0?level+' / '+cap:points>0?points+' / 0':'—'});
+    const refreshBranchCountAria=(invested,mastery)=>{
+     // One bilingual D1 caption describes three independent live values.
+     // Rebinding on hold/drag updates only numbers, never the saved copy.
+     bindPathCopy(api,branchCount,'pathBranchStatsAria',
+      'Старт / вложено / мастерство:',
+      'Innate / invested / mastery:','aria-label',
+      ' '+base+' / '+invested+' / '+mastery);
+    };
+    refreshBranchCountAria(points,trained);
     info.append(make('strong',{text:api.branchName(key)}));
     branch.append(info,branchCount);wrap.append(branch);
     if(!isOpen)continue;
@@ -448,9 +490,7 @@ function viewGrowth(target,api){
     const visualMax=90; // fixed game-wide scale, never cap + budget
     const bed=make('div',{class:'inline-mastery-bed'}),gold=make('div',{class:'inline-mastery-fill'}),
           green=make('div',{class:'inline-mastery-green'}),
-          locked=make('div',{class:'inline-mastery-locked',
-           'aria-label':tr(api,'Предел профессии: ','Class branch limit: ')+cap+
-            tr(api,' из ',' of ')+visualMax});
+          locked=make('div',{class:'inline-mastery-locked'});
     // The active fill, class limit, value marker and native thumb all share
     // the same 21px rail inset (range inset 12px + 18px thumb / 2).
     const railInset=21;
@@ -464,14 +504,18 @@ function viewGrowth(target,api){
     const setPotentialEdge=()=>{
      locked.hidden=cap>=visualMax;
      locked.style.left=positionOnRail(Math.max(0,Math.min(1,cap/visualMax)));
-     locked.setAttribute('aria-label',tr(api,'Предел профессии: ','Class limit: ')+cap);
+     // The D1-bound caption and constant cap are not reset during a drag.
     };
+    // Retain both source numbers after owner D1 binding, not only the cap.
+    bindPathCopy(api,locked,'pathClassLimitAria','Предел профессии:',
+     'Class limit:','aria-label',' '+cap+' / '+visualMax);
     setPotentialEdge();
     const currentNotch=make('span',{class:'path-current-notch','aria-hidden':'true'});
     const milestonesOnTrack=[];
     const paint=()=>{
      const invested=M.potential(state,key),level=M.branchPotential(state,key,innate,caps);
      const mastery=M.branchMastery(state,key,innate,caps);
+     refreshBranchCountAria(invested,mastery);
      const goldFraction=Math.max(0,Math.min(1,level/visualMax));
      const greenFraction=Math.max(0,Math.min(1,mastery/visualMax));
      // Gold marks D + extra allocations, green marks actual learned
@@ -480,10 +524,12 @@ function viewGrowth(target,api){
      green.style.width=widthOnRail(greenFraction);
      currentNotch.style.left=positionOnRail(goldFraction);
      setPotentialEdge();
-     range.setAttribute('aria-valuetext',level+
-      tr(api,' очков ветки, ',' branch points, ')+mastery+
-      tr(api,' мастерство, ',' mastery, ')+invested+
-      tr(api,' вложено сверх старта, предел ',' extra spent, limit ')+cap);
+     // Preserve all four runtime numbers; only the source-authored prefix
+     // is eligible for RU/EN owner D1/CAS edits and undo.
+     bindPathCopy(api,range,'pathRangeValueAria',
+      'Очки ветки / мастерство / вложено сверх старта / предел:',
+      'Branch points / mastery / extra invested / limit:',
+      'aria-valuetext',' '+level+' / '+mastery+' / '+invested+' / '+cap);
      for(const entry of milestonesOnTrack)
       entry.tick.classList.toggle('reached',
        !entry.locked&&entry.skills.some(skill=>readiness(skill,api,new Set(),skillIndex).learned));
@@ -625,8 +671,21 @@ function viewGrowth(target,api){
      });
      // A separate collapsed list provides access to every skill without covering the drag surface.
      unlockDetails=make('details',{class:'path-unlock-details'});
-     unlockDetails.append(make('summary',{
-      text:(root.PandoraUILocale?.text('skillsOnTrack',api.lang)||'Умения на шкале')+' · '+marks.reduce((total,mark)=>total+mark.skills.length,0)}));
+     // The caption belongs to the author; the number of matching skills
+     // comes from the live catalog and must never be written as D1 copy.
+     const unlockSummary=make('summary');
+     // Keep previously saved shared UI translations as the fallback;
+     // this rail-specific caption has its own direct editor only when the
+     // owner deliberately overrides it.
+     const fallbackRu=root.PandoraUILocale?.text('skillsOnTrack','ru')||'Умения на шкале';
+     const fallbackEn=root.PandoraUILocale?.text('skillsOnTrack','en')||'Skills on track';
+     const unlockCaption=authored(api,'skillsOnTrackCaption',fallbackRu,
+      fallbackEn,'span','path-unlock-heading');
+     unlockSummary.append(unlockCaption,make('span',{
+      class:'path-unlock-count',
+      text:' · '+marks.reduce((total,mark)=>total+mark.skills.length,0)}));
+     if(api.canEdit)api.guardAction?.(unlockSummary,unlockCaption);
+     unlockDetails.append(unlockSummary);
      const list=make('div',{class:'path-unlock-list'});
      for(const mark of [...marks].sort((a,b)=>a.threshold-b.threshold)){
       for(const skill of mark.skills){
@@ -645,18 +704,22 @@ function viewGrowth(target,api){
        const copy=make('span',{class:'path-unlock-copy'});
        const status=make('small',{class:'path-unlock-status'});
        status.append(make('span',{text:String(mark.threshold)}));
-       const unit=make('span');
-       bindPathCopy(api,unit,'pathUnlockPoints','оч.','pts','text','',' ');
-       status.append(unit);
+       const unit=authored(api,'pathUnlockPoints','оч.','pts',
+        'span','path-unlock-unit');
+       status.append(make('span',{text:' '}),unit);
+       let word=null;
        if(mark.locked||gate.learned){
-        const word=make('span');
-        bindPathCopy(api,word,mark.locked?'pathUnlockOverCap':'pathUnlockReady',
+        word=authored(api,mark.locked?'pathUnlockOverCap':'pathUnlockReady',
          mark.locked?'выше лимита':'доступно',
-         mark.locked?'above limit':'available','text','',' · ');
-        status.append(word);
+         mark.locked?'above limit':'available','span','path-unlock-state');
+        status.append(make('span',{text:' · '}),word);
        }
        copy.append(make('strong',{text:skill.name||tr(api,'Умение','Skill')}),status);
        button.append(copy);list.append(button);
+       if(api.canEdit){
+        api.guardAction?.(button,unit);
+        if(word)api.guardAction?.(button,word);
+       }
       }
      }
      unlockDetails.append(list);
@@ -730,15 +793,22 @@ function viewGrowth(target,api){
       'greenMasteryHelp','Растёт при использовании умений этой ветки, а также соответствующих типов атак или оружия.',
       'Increases when using this branch’s skills or its corresponding attack or weapon types.',input,true)
     );
-    const baseline=base>0?make('span',{class:'path-innate-baseline',
-     text:tr(api,'Начально (оч.): ','Initially (pts): ')+base,
-     'aria-label':tr(api,'Начальная прокачка класса: ','Starting branch points: ')+base}):null;
+    // The owner edits captions, not the source-backed branch limit or
+    // starting points. Reuse existing bilingual D1 keys when available.
+    const baseline=base>0?make('span',{class:'path-innate-baseline'},[
+     authored(api,'innateBaselineLabel','Начально (оч.):',
+      'Initially (pts):','span','path-innate-copy'),
+     make('span',{class:'path-innate-value',text:' '+String(base)})]):null;
     if(baseline)bindPathCopy(api,baseline,'innateBaselineAria',
      'Начальная прокачка класса:','Starting branch points:','aria-label',' '+String(base));
-    const limitCaption=make('span',{class:'path-track-limit-value'});
-    bindPathCopy(api,limitCaption,'pathLimitPoints','Лимит (оч.):',
-     'Limit (pts):','text',' '+String(cap));
-    const legend=make('div',{class:'path-track-legend','aria-hidden':'true'},[
+    const limitCaption=make('span',{class:'path-track-limit-value'},[
+     authored(api,'pathLimitPoints','Лимит (оч.):',
+      'Limit (pts):','span','path-limit-copy'),
+     make('span',{class:'path-limit-number',text:' '+String(cap)})
+    ]);
+    // Focusable owner captions must not live inside an aria-hidden subtree.
+    const legend=make('div',{class:'path-track-legend',
+     'aria-hidden':api.canEdit?null:'true'},[
      make('span',{text:'0'}),
      make('span',{class:'path-track-limit'},[limitCaption,...(baseline?[baseline]:[])]),
      make('span',{text:String(visualMax)})
@@ -801,10 +871,14 @@ function viewSkills(target,details,api){
  for(const {skill,gate}of rows.slice(0,api.shown||24)){
   const item=make('button',{type:'button',class:'path-skill-card'+(gate.learned?' learned':' locked')+
     (selectedId===String(skill.id)?' active':''),
-      'aria-label':(skill.name||tr(api,'Умение без названия','Unnamed skill'))+' · '+(gate.learned?tr(api,'доступно','available'):tr(api,'недоступно','unavailable')),
    'data-skill-id':String(skill.id),
    'aria-current':String(skill.id)===selectedId?'true':'false',
    onclick:()=>api.onInspect(skill)});
+  const skillAriaPrefix=(skill.name||tr(api,'Умение без названия','Unnamed skill'))+' · ';
+  if(gate.learned)bindPathCopy(api,item,'skillCardAvailableAria','доступно','available',
+   'aria-label','',skillAriaPrefix);
+  else bindPathCopy(api,item,'skillCardUnavailableAria','недоступно','unavailable',
+   'aria-label','',skillAriaPrefix);
   const src=api.icon(skill.branch,skill);
   if(src){const img=make('img',{src,alt:''});img.onerror=()=>img.replaceWith(make('span',{text:'✦'}));item.append(img)}
   else item.append(make('span',{text:'✦'}));
@@ -832,7 +906,17 @@ function viewSkills(target,details,api){
    }},[caption,remain]);
   if(api.canEdit&&typeof api.editLabel==='function'){
    api.editLabel(caption,key,ru,en);
-   guardCaptionAction(showMore,caption);
+   api.guardAction?.(showMore,caption);
+   // F2 belongs to the focused native button; the nested caption is not
+   // a separate tab stop. Forward just the owner edit shortcut to the same
+   // direct-caption editor and cancel any pending click via onStarted.
+   showMore.addEventListener('keydown',event=>{
+    if(event.target!==showMore||event.key!=='F2')return;
+    event.preventDefault();event.stopPropagation();
+    caption.dispatchEvent(new KeyboardEvent('keydown',{
+     key:'F2',bubbles:true,cancelable:true
+    }));
+   });
    target.append(showMore);
   }else target.append(showMore);
  }
@@ -857,13 +941,23 @@ function viewSkills(target,details,api){
       disabled:!next,text:icon,
       onclick:()=>{if(next)api.onInspect(next,{pagerDirection:delta<0?'previous':'next'})}});
      // Skill names are current catalog data, not owner-edited descriptions.
-     return bindPathCopy(api,button,delta<0?'skillListPreviousAria':'skillListNextAria',
-      ru,en,'aria-label',next?' '+next.name:'');
+     const suffix=next?' '+next.name:'';
+     return delta<0?bindPathCopy(api,button,'skillListPreviousAria','Предыдущее в списке:',
+      'Previous in list:','aria-label',suffix):
+      bindPathCopy(api,button,'skillListNextAria','Следующее в списке:',
+       'Next in list:','aria-label',suffix);
    };
+   // Only the connecting word is authored copy; selected index and total
+   // remain immutable live search results. Keep the exact RU/EN visual
+   // defaults ('из' and '/') while enabling direct owner D1/CAS on the span.
+   const pager=make('span',{class:'path-skill-list-position'},[
+    make('span',{class:'path-skill-list-current',text:String(listIndex+1)}),
+    make('span',{text:' '}),
+    authored(api,'skillPagerSeparator','из','/','span','path-skill-pager-separator'),
+    make('span',{class:'path-skill-list-total',text:' '+String(ordered.length)})
+   ]);
    listNav.append(move(-1,'←','Предыдущее в списке:','Previous in list:'),
-    make('span',{class:'path-skill-list-position',text:
-     tr(api,(listIndex+1)+' из '+ordered.length,(listIndex+1)+' / '+ordered.length)}),
-    move(1,'→','Следующее в списке:','Next in list:'));
+    pager,move(1,'→','Следующее в списке:','Next in list:'));
    details.append(listNav);
   }
   details.append(skill.desc?make('p',{text:skill.desc}):
@@ -872,7 +966,17 @@ function viewSkills(target,details,api){
    gate.learned?
     authored(api,'skillReady','✓ Условия выполнены','✓ Requirements met',
      'p','path-skill-yes'):
-    make('p',{class:'path-skill-no',text:'🔒 '+gate.problems.join(' · ')}));
+    (()=>{// No gameplay string enters the D1 editor: only authorial spans do.
+     const line=make('p',{class:'path-skill-no'});
+     line.append(make('span',{class:'path-skill-lock-symbol',text:'🔒 '}));
+     for(const [i,parts] of gate.problemParts.entries()){
+      if(i)line.append(make('span',{class:'path-skill-reason-separator',text:' · '}));
+      for(const part of parts)line.append(part.key?
+       authored(api,part.key,part.ru,part.en,'span','path-skill-reason-copy'):
+       make('span',{class:'path-skill-reason-source',text:part.text}));
+     }
+     return line;
+    })());
   const stats=make('dl',{class:'path-skill-metadata'});
   const field=(key,ru,en,value,valueCopy=null)=>{
    if(value===null||value===undefined||value==='')return;
@@ -1000,12 +1104,16 @@ function viewSkills(target,details,api){
      class:'path-skill-lineage-link',
      'data-related-skill-id':String(related.id),
      'aria-label':tr(api,'Следующее умение: ','Next skill: ')+label,
-     text:tr(api,'Следующее → ','Next → ')+label,
      onclick:()=>navigate(related)});
     bindPathCopy(api,button,'skillNextAria','Следующее умение:',
      'Next skill:','aria-label',' '+label);
-    bindPathCopy(api,button,'skillNextLink','Следующее →',
-     'Next →','text',' '+label);
+    // The published skill name comes from the catalog. Only the short
+    // "Next" action caption belongs to the D1 author editor.
+    const nextCaption=authored(api,'skillNextLink','Следующее →',
+     'Next →','span','path-skill-lineage-caption');
+    button.append(nextCaption,make('span',{
+     class:'path-skill-lineage-name',text:' '+label}));
+    if(api.canEdit)api.guardAction?.(button,nextCaption);
     lineage.append(button);
    }
    details.append(lineage);

@@ -85,6 +85,8 @@ export async function runEquipmentQuickMenuSmoke(browser,base){
     'Выбрать другую вещь');
   assert.equal(await page.locator('#stagePicker [data-stage-tab="details"]')
    .getAttribute('aria-pressed'),'true');
+  assert.equal(await page.locator('#stagePicker .stage-rich-settings-group')
+   .getAttribute('aria-label'),'Свойства предмета');
   assert.equal(await page.locator('#stagePicker .stage-rich-fields dd[data-soul-fill]')
    .innerText(),'1/2');
   // The original renderer accidentally attached the help popup to the DOM root.
@@ -118,6 +120,9 @@ export async function runEquipmentQuickMenuSmoke(browser,base){
   assert.equal(await page.locator('#stagePicker [data-stage-tab="souls"]')
    .getAttribute('aria-pressed'),'true');
   assert.equal(await page.locator('#stagePicker [data-socket-index]').count(),2);
+  assert.match(await page.locator('#stagePicker [data-socket-index="0"]')
+   .getAttribute('aria-label'),/^Слот души 1: /,
+   'A Soul source name must not replace the immutable socket number');
   const soulInput=page.locator('#stagePicker [data-soul-query]');
   assert.equal(await soulInput.getAttribute('autocomplete'),'none');
   assert.equal(await soulInput.getAttribute('data-lpignore'),'true');
@@ -159,7 +164,13 @@ export async function runEquipmentQuickMenuSmoke(browser,base){
   assert.equal(await menu.count(),0,'Soul-tab navigation closes the context menu');
 
   await page.locator('#locale [data-locale="en"]').click();
-  await page.waitForFunction(()=>document.documentElement.lang==='en');
+  // The document lang changes before the equipment rail finishes its
+  // localized rerender. Only click the new belt when its real accessible
+  // label reflects EN; otherwise a detached old rail can lose contextmenu.
+  await page.waitForFunction(()=>document.documentElement.lang==='en'&&
+   document.querySelector('.equipment-slot[data-slot-index="11"]')
+    ?.getAttribute('aria-label')?.startsWith('Belt · '),
+   null,{timeout:15000});
   await right(belt);
   await menu.waitFor({state:'visible',timeout:5000});
   assert.match(await action('properties').innerText(),/Properties/);
@@ -182,6 +193,18 @@ export async function runEquipmentQuickMenuSmoke(browser,base){
   assert.match(await action('remove').innerText(),/Unequip item/);
   await page.keyboard.press('Escape');
 
+  await right(pants);
+  await menu.waitFor({state:'visible'});
+  await action('souls').click();
+  assert.equal(await page.locator('#stagePicker .stage-rich-settings-group')
+   .getAttribute('aria-label'),'Item properties');
+  const englishSoulLabel=await page.locator('#stagePicker [data-socket-index="0"]')
+   .getAttribute('aria-label');
+  assert.match(englishSoulLabel,/^Soul slot 1: /,
+   'English accessible socket name uses current interface language');
+  assert.doesNotMatch(englishSoulLabel,/103001/,
+   'Game IDs are never exposed as Soul names');
+  await closeSettings();
   await right(pants);
   await menu.waitFor({state:'visible'});
   // Removal has a real accessible keyboard path; using End+Enter avoids

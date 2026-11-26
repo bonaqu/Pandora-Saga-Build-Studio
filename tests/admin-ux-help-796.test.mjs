@@ -57,8 +57,13 @@ test('compact admin panel and other dialogs keep semantics and safety intact',()
  assert.match(dock,/#ownerDock \.owner-dock-actions \.owner-dock-levels/);
  assert.match(dock,/#ownerDock \.owner-dock-levels:before/);
  assert.match(app,/const restoreAction=actions\.querySelector|const reset=actions\.querySelector\('\.owner-review-reset'\)/);
- assert.match(app,/translationsSaveButton:\[/);
- assert.match(app,/githubCreateButton:\[/);
+ // The two genuine hover hints are now separate RU/EN CAS identities,
+ // not a second pencil or duplicated button caption.
+ assert.match(app,/\['translationsSaveHint','Сохранит проверенные EN-переводы/);
+ assert.match(app,/\['githubCreateHint','Создаст необязательный PR/);
+ assert.match(app,/bindOwnerInterfaceText\(button,'owner-dialog',hintKey,row\[1\],row\[2\],/);
+ assert.match(app,/ownerDialogStatusText\(hintKey\),\{hoverDelay:350\}/);
+ assert.match(app,/ownerDialogStatusPanel\(/);
  assert.match(app,/Копия правок в GitHub \(необязательно\)/);
  assert.match(catalog,/PandoraGuideTooltip\?\.attach\(node,description,\{hoverDelay:420\}\)/);
  assert.match(app,/ownerSaveInFlight\(\)/);

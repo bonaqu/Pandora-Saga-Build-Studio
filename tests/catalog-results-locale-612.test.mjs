@@ -43,10 +43,24 @@ test('catalog filters and linked item review keep English defaults while game va
   'Game links','Same visible text','Explained'])
   assert.ok(source.includes("'"+name+"'"),name);
  assert.match(source,/for\(const \[id,ru,en\]of filterChoices\)/);
- assert.match(source,/button\.textContent=tr\(ru,en\)\+' · '\+byKind\[id\]/);
- assert.match(source,/tr\('Найдено изменений: ','Changes found: '\)/);
+ assert.match(source,/const caption=h\('span',\{class:'os-sync-filter-caption'/);
+ assert.match(source,/const total=h\('span',\{class:'os-sync-filter-count'/);
+ assert.match(source,/text:copy\(key,ru,en\)/);
+ assert.match(source,/if\(canEdit&&typeof editLabel==='function'\)editLabel\(caption,key,ru,en,\{onStarted:cancelPending\}\)/);
+ assert.match(source,/const value=' · '\+byKind\[id\]/);
+ assert.match(source,/if\(count.textContent!==value\)count.textContent=value/);
+ assert.doesNotMatch(source,/button\.textContent=tr\(ru,en\)\+' · '\+byKind\[id\]/);
+ assert.match(source,/\['foundChanges','Найдено изменений:','Changes found:'\]/);
+ assert.match(source,/setCountPart\(summaryParts\.found,changes\.length,hasChanges\)/);
+ assert.match(source,/statusCaption\(key\)/);
+ assert.doesNotMatch(source,/summary\.textContent\s*=/);
  assert.match(source,/tr\('Связь с предметом изменилась · проверить вручную'/);
- assert.match(source,/tr\('Предмет пока не опубликован в энциклопедии\.'/);
+ // This is now authored RU/EN copy, not a hardcoded code path. The
+ // "published?" decision and original game item reference remain read-only.
+ assert.match(source,/\['unpublishedReference','Предмет пока не опубликован в энциклопедии\.'/);
+ assert.match(source,/reviewCaption\('small',\{\},'unpublishedReference'\)/);
+ assert.match(source,/reviewCaption\('small',\{\},'linkedReferenceContext'\)/);
+ assert.match(source,/results\.append\(reviewCaption\('p',\{class:'os-sync-empty'\},'emptyReviewFilter'\)\)/);
  assert.match(source,/const record=upstream\?\.items\?\.\[segment\.id\]\|\|baseline\?\.items\?\.\[segment\.id\]/);
  assert.match(source,/input\.addEventListener\('change',\(\)=>\{/);
  assert.match(source,/setChoice\(change,input\.checked\)/);

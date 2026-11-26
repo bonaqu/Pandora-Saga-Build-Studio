@@ -678,6 +678,9 @@ a.wiki-link:hover{text-decoration:none}
 .path-budget{display:grid;gap:5px;margin:4px 0 7px;padding:8px 10px}
 .path-overview-head strong{display:block;color:#efcb90;font:700 21px 'Cormorant Garamond',Georgia,serif}
 .path-budget-values>div{display:flex;gap:4px;align-items:baseline;justify-content:center}
+/* Hidden budget states must beat the grid/flex rules above and below. */
+#budgetState [hidden]{display:none!important}
+.path-budget-values>.path-budget-loading{grid-column:1/-1;margin:0;text-align:center;color:var(--muted);font-size:11px}
 .path-budget-values strong{font:700 17px Georgia,serif}
 .path-sections{margin:6px 0}
 .path-skill-details[hidden]{display:none!important}
@@ -1327,6 +1330,10 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 .stage-combat-buff-copy small{font-size:10px;font-weight:450;color:#bea783;
  overflow-wrap:anywhere;line-height:1.35}
 .stage-book-check.stage-combat-buff:has(input:disabled){opacity:.7}
+/* A disabled gameplay checkbox does not disable editable source captions. */
+.stage-book-check:has(input:disabled) .stage-buff-reason-copy.stage-guide-editable{
+ cursor:text;pointer-events:auto;text-decoration:underline dotted;text-underline-offset:2px
+}
 .stage-book-check.stage-combat-buff input[type=checkbox]{margin-right:2px}
 
 /* Read-only Remaked support-skill predictions, deliberately never toggled by inspection. */

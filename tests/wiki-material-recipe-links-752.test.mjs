@@ -53,7 +53,8 @@ test('Wiki uses the canonical navigation function and never invents material cou
  assert.match(rendering,/extra\.uses\.forEach/);
  assert.match(rendering,/Number\.isSafeInteger\(x\.quantity\)/);
  assert.match(rendering,/extra\.produces\.quantity/);
- assert.match(rendering,/materialLine\(wt\('Для применения нужно:/);
+ assert.match(rendering,/materialLine\('sourceRequiredItemLabel','Для применения нужно:'/);
+ assert.match(rendering,/sourcePrefix\(key,ru,en\),h\('span',\{text:count\+' × '\}\)/);
  assert.doesNotMatch(rendering,/currentInventory|state\.equipment|\.count\|\|1/);
  const book=read('pandora-studio-hero-book.js');
  assert.doesNotMatch(book,/wiki-skill-source-recipe|wiki-skill-source-material/,

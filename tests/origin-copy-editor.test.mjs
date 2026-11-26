@@ -88,3 +88,192 @@ test('guest receives approved custom caption but no editor pencil or editing aff
  assert.equal(adminHost.children.length,0);
  assert.equal(admin.classList.state,true);
 });
+
+test('#390 visible Origin labels expose editor shortcuts only for the owner',()=>{
+ assert.match(app,/node\.dataset\.originCopyShortcutAdded='1'/);
+ assert.match(app,/node\.dataset\.originCopyTabAdded='1'/);
+ assert.match(app,/if\(node\.dataset\.originCopyShortcutAdded==='1'\)/);
+ assert.match(app,/if\(node\.dataset\.originCopyTabAdded==='1'\)/);
+ assert.match(app,/originCopyLabel\(node,key,ru,en\)/);
+ assert.ok(html.includes('data-origin-copy-static="race"'));
+ assert.doesNotMatch(app,/originGenderNoteRows/,'Hidden legacy gender controls are not seeded');
+});
+
+test('#390 Workbench H2 is independent of the dynamic tab and supports RU/EN CAS Undo',()=>{
+ const scope={};
+ Function('window',read('pandora-studio-ui-locale.js'))(scope);
+ const locale=scope.PandoraUILocale;
+ for(const [key,ru,en] of [
+  ['workbenchTitleCharacter','Мастерская героя','Hero Workshop'],
+  ['workbenchTitleSkills','Дерево умений','Skill Tree'],
+  ['workbenchTitleStats','Характеристики','Attributes'],
+  ['workbenchTitleBuilds','Библиотека билдов','Build Library'],
+  ['workbenchTitleWiki','Энциклопедия Pandora Saga','Pandora Saga Encyclopedia']
+ ]){
+  assert.equal(locale.baseText(key,'ru'),ru);
+  assert.equal(locale.baseText(key,'en'),en);
+  assert.match(locale.fieldKey(key),/^ui\.label\.workbench-title-/);
+  const record='guideedit.book.'+locale.fieldKey(key);
+  locale.setOverrides({[record]:JSON.stringify({ru:'QA '+ru,en:'QA '+en})});
+  assert.equal(locale.text(key,'en'),'QA '+en);
+  assert.equal(locale.text(key,'ru'),'QA '+ru);
+  locale.setOverrides({});
+ }
+ assert.match(app,/heading\.dataset\.ownerCopyKey=titleKey/);
+ assert.match(app,/bindAccountCopyEditors\(heading\.parentElement\)/);
+ assert.match(app,/isWorkbench\?'#detailPanel \.detail-title/);
+ assert.match(app,/if\(node\.id==='detailTitle'\)/);
+});
+
+test('#390 13 class-wizard authorial keys support direct bilingual CAS and versioned defaults',async()=>{
+ const registry=app.match(/const originClassWizardCopyRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ assert.ok(registry,'One reviewed source registry for the actual class wizard');
+ const rows=Function('return '+registry[1])();
+ assert.equal(rows.length,13);
+ assert.equal(new Set(rows.map(row=>row[0])).size,13);
+ const manifest=(await import('../scripts/plan-editorial-d1-defaults.mjs'))
+  .buildEditorialDefaultsManifest();
+ assert.equal(manifest.stats.cohorts['origin-class-wizard'],26);
+ for(const [key,ru,en] of rows){
+  const id='guideedit.book.origin.'+
+   key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  assert.equal(manifest.records.find(row=>row.recordKey===id&&row.field==='ru')?.value,ru);
+  assert.equal(manifest.records.find(row=>row.recordKey===id&&row.field==='en')?.value,en);
+  assert.equal(guide.validOverride('book.origin.'+
+   key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase()),
+   JSON.stringify({ru:'Новая подпись',en:'New caption'})),true);
+  assert.equal(ru,ru.trim(),'Authorial RU copy must not rely on trailing whitespace: '+key);
+  assert.equal(en,en.trim(),'Authorial EN copy must not rely on trailing whitespace: '+key);
+  assert.doesNotMatch(ru,/Цверг|Мирина|Энкиду|Кролль|Эльф|Человек/,
+   'Never put a source race name inside authorial defaults');
+ }
+ assert.match(app,/const stepNames=originClassWizardCopyRows\.slice\(0,3\)/);
+ assert.match(app,/originCopyLabel\(back,'classBack'/);
+ assert.match(app,/originCopyLabel\(all,'classAllDirections'/);
+ assert.match(app,/originCopyLabel\(statusLabel,'classChosen'/);
+ assert.match(app,/originCopyLabel\(statusLabel,'classChoose'/);
+ assert.match(app,/ownerCaptionActionGuard\(choice,statusLabel\)/);
+ assert.match(app,/class:'class-wizard-source-name',text:selectedProfession\.name/);
+ assert.match(app,/class:'class-wizard-source-name',text:current\.name/);
+ assert.doesNotMatch(app,/originCopyLabel\(h\('span'\),'className'/);
+});
+
+test('#390 class wizard accessibility has six independent original RU/EN D1 fields',async()=>{
+ const source=app.match(/const originClassWizardAriaRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ assert.ok(source,'Source-authored screen-reader registry required');
+ const rows=Function('return '+source[1])();
+ assert.equal(rows.length,6);
+ assert.equal(new Set(rows.map(row=>row[0])).size,6);
+ const manifest=(await import('../scripts/plan-editorial-d1-defaults.mjs'))
+  .buildEditorialDefaultsManifest();
+ assert.equal(manifest.stats.cohorts['origin-class-wizard-aria'],12);
+ for(const [key,ru,en] of rows){
+  assert.ok(key.endsWith('Aria'),key);
+  const id='guideedit.book.origin.'+
+   key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+  assert.equal(manifest.records.find(r=>r.recordKey===id&&r.field==='ru')?.value,ru);
+  assert.equal(manifest.records.find(r=>r.recordKey===id&&r.field==='en')?.value,en);
+  assert.equal(guide.validOverride('book.origin.'+
+   key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase()),
+   JSON.stringify({ru:'Подсказка доступности',en:'Accessible wording'})),true);
+  assert.equal(ru,ru.trim(),'ARIA RU phrase must be safely trimmed: '+key);
+  assert.equal(en,en.trim(),'ARIA EN phrase must be safely trimmed: '+key);
+ }
+ assert.match(app,/bindOwnerInterfaceText\(choice,'origin',ariaKey,ariaRu,ariaEn,'aria-label'/);
+ assert.match(app,/selectedOnPath\?' '\+selectedProfession\.name:'',node\.name\+' — '\)/);
+ assert.match(app,/ownerInterfaceEditor\('origin',originClassWizardAriaRows/);
+ assert.match(app,/refreshVisibleOwnerCopy\(recordKey\)/);
+ assert.match(app,/key\.startsWith\('book\.origin\.'\)\)refreshVisibleOriginCopy/);
+});
+
+test('#390 a single stage caption click navigates while a double click edits',()=>{
+ const begin=app.indexOf('function renderJobs(){');
+ const end=app.indexOf('let workbenchReturnFocus',begin);
+ assert.ok(begin>0&&end>begin);
+ const wizard=app.slice(begin,end);
+ assert.doesNotMatch(wizard,/if\(adminEditing&&adminToken&&event\.target\?\.closest\?\.\('\[data-origin-copy-key\]'\)\)return/);
+ assert.match(wizard,/if\(available&&adminEditing&&adminToken\)ownerCaptionActionGuard\(step,caption\)/);
+ assert.match(wizard,/jobPathKey=stageTargets\[i\];renderJobs\(\);saveView\(\)/);
+ assert.match(app,/if\(!event\.detail\)\{/);
+});
+
+test('#390 race gallery exposes source-authored bilingual ARIA without changing game identity',async()=>{
+ const source=app.match(/const originRacePortraitAriaRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ assert.ok(source,'The live gallery needs one closed source registry');
+ const rows=Function('return '+source[1])();
+ assert.deepEqual(rows,[
+  ['racePortraitPreviousAria','Предыдущий портрет','Previous portrait'],
+  ['racePortraitNextAria','Следующий портрет','Next portrait'],
+  ['racePortraitChooseAria','Выбрать','Choose']
+ ]);
+ const manifest=(await import('../scripts/plan-editorial-d1-defaults.mjs'))
+  .buildEditorialDefaultsManifest();
+ assert.equal(manifest.stats.cohorts['origin-race-portrait-aria'],6);
+ for(const [key,ru,en] of rows){
+  const id='guideedit.book.origin.'+
+   key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase());
+  assert.deepEqual(manifest.records.filter(r=>r.recordKey===id)
+   .map(r=>r.field).sort(),['en','ru']);
+  assert.equal(manifest.records.find(r=>r.recordKey===id&&r.field==='ru').value,ru);
+  assert.equal(manifest.records.find(r=>r.recordKey===id&&r.field==='en').value,en);
+  assert.equal(guide.validOverride('book.origin.'+
+   key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase()),
+   JSON.stringify({ru:'Проверка',en:'Accessibility check'})),true);
+  assert.equal(ru,ru.trim(),'No invisible spaces in editable RU: '+key);
+  assert.equal(en,en.trim(),'No invisible spaces in editable EN: '+key);
+ }
+ const start=app.indexOf('function renderRaces(){'),
+  end=app.indexOf('const CLASS_PARENT_FALLBACK',start);
+ const carousel=app.slice(start,end);
+ assert.match(carousel,/bindOwnerInterfaceText\(img,'origin','racePortraitChooseAria'/);
+ assert.match(carousel,/'aria-label',' '\+raceName\+sexSuffix/);
+ assert.match(carousel,/'racePortraitPreviousAria'/);
+ assert.match(carousel,/'racePortraitNextAria'/);
+ assert.match(app,/ownerInterfaceEditor\('origin',originRacePortraitAriaRows/);
+ assert.doesNotMatch(carousel,/img\.setAttribute\('aria-label'/);
+ for(const unsafe of ['race-name','race-gender','portrait-index','race-image-url'])
+  assert.equal(manifest.records.some(r=>
+   r.recordKey==='guideedit.book.origin.'+unsafe),false,
+   'Original race identity must not be an owner D1 field: '+unsafe);
+});
+
+test('#390 Origin racial-passive dynamic RU/EN captions never become source game data',async()=>{
+ const source=app.match(/const originPassiveDynamicRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ assert.ok(source,'One closed bilingual source registry is required');
+ const rows=Function('return '+source[1])();
+ assert.deepEqual(rows.map(row=>row[0]),[
+  'passiveChooseRaceHelp','passiveLoadingHelp','passiveSelectCaption',
+  'passiveSelectedCaption','passiveSelectAria','passiveSelectedAria']);
+ const manifest=(await import('../scripts/plan-editorial-d1-defaults.mjs'))
+  .buildEditorialDefaultsManifest();
+ assert.equal(manifest.stats.cohorts['origin-racial-passive-dynamic'],12);
+ for(const [key,ru,en] of rows){
+  const id='guideedit.book.origin.'+
+   key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase());
+  assert.deepEqual(manifest.records.filter(row=>row.recordKey===id)
+   .map(row=>row.field).sort(),['en','ru'],key);
+  assert.equal(manifest.records.find(row=>row.recordKey===id&&row.field==='ru').value,ru);
+  assert.equal(manifest.records.find(row=>row.recordKey===id&&row.field==='en').value,en);
+  assert.equal(guide.validOverride('book.origin.'+
+   key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase()),
+   JSON.stringify({ru:'Выбрать вариант',en:'Select a trait'})),true);
+ }
+ const start=app.indexOf('function renderOriginPassives(){'),
+  end=app.indexOf('// One controller for all rich skill previews',start);
+ const live=app.slice(start,end);
+ assert.match(live,/originPassiveCaption\('passiveChooseRaceHelp'\)/);
+ assert.match(live,/originPassiveCaption\('passiveLoadingHelp'\)/);
+ assert.match(live,/bindOwnerInterfaceText\(/);
+ assert.match(live,/,'aria-label','',skill\.name\+' '\)/);
+ assert.match(live,/ownerCaptionActionGuard\(btn,badge\)/);
+ assert.match(live,/ownerCaptionActionGuard\(btn,label\)/);
+ assert.match(live,/event\.shiftKey/);
+ assert.doesNotMatch(live,/lang==='en'\?' — selected':' — выбрано'/);
+ assert.doesNotMatch(live,/lang==='en'\?'✓ Selected':'✓ Выбрано'/);
+ assert.match(app,/ownerInterfaceEditor\('origin',\s*originPassiveDynamicRows\.filter/);
+ for(const invalid of ['skill-id','skill-name','racial-passive-id','selected-id']){
+  assert.equal(manifest.records.some(row=>
+   row.recordKey==='guideedit.book.origin.'+invalid),false,
+   'Original source identity cannot be owner copy: '+invalid);
+ }
+});

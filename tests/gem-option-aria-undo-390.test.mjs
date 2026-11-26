@@ -4,6 +4,8 @@ import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const app=read('pandora-studio-app.js'),equipment=read('pandora-studio-equipment-ui.js');
+const sectionFromApp=()=>app.slice(app.indexOf('function refreshVisibleOwnerCopy('),
+ app.indexOf('function refreshVisibleProfileCopy('));
 const enchantHost={};
 runInNewContext(read('pandora-studio-enchantment.js'),{window:enchantHost});
 
@@ -11,11 +13,7 @@ function harness({kind='type',id='physical',lang='en'}={}){
  const option=enchantHost.PandoraEnchantModel[kind==='type'?'types':'elements']
   .find(row=>row.id===id);
  assert.ok(option);
- const changed=new Map(),attributes={},pencilAttributes={};
- const pencil={
-  getAttribute:key=>pencilAttributes[key]??null,
-  setAttribute:(key,value)=>pencilAttributes[key]=value
- };
+ const changed=new Map(),attributes={};
  const headingKey=kind==='type'?'gemTypeLabel':'gemElementLabel';
  const headline=kind==='type'?['Тип','Type']:['Стихия','Element'];
  const optionKey='gem.'+kind+'.'+id;
@@ -26,7 +24,7 @@ function harness({kind='type',id='physical',lang='en'}={}){
  };
  const button={
   dataset:{enchantKey:kind,enchantValue:id,ownerInterfaceBindings:JSON.stringify(bound)},
-  parentElement:{querySelector:()=>pencil},
+  parentElement:{querySelector:()=>null},
   querySelector(){return null},
   getAttribute(key){return attributes[key]??null},
   setAttribute(key,value){attributes[key]=String(value)}
@@ -53,7 +51,7 @@ function harness({kind='type',id='physical',lang='en'}={}){
   '\n({ownerDockPatchText,ownerDockPatchAttr,ownerDockPatchData});',{});
  const context={document,window:enchantHost,lang,ownerCopyKey,ownerCopy,...patches};
  const refresh=runInNewContext(section+'\nrefreshVisibleOwnerCopy;',context);
- return {button,attributes,pencilAttributes,changed,refresh,optionKey,headingKey,option,heading:headline};
+ return {button,attributes,changed,refresh,optionKey,headingKey,option,heading:headline};
 }
 
 test('type option aria reflects its own D1 rename, heading rename and both Undo operations',()=>{
@@ -61,7 +59,7 @@ test('type option aria reflects its own D1 rename, heading rename and both Undo 
  h.changed.set(h.optionKey,'Sleek Physical');
  h.refresh('guideedit.book.equipment.gem.type.physical');
  assert.equal(h.attributes['aria-label'],'Type: Sleek Physical');
- assert.equal(h.pencilAttributes['aria-label'],'Edit caption: Sleek Physical');
+ assert.doesNotMatch(sectionFromApp(),/stage-control-pencil/);
  assert.equal(JSON.parse(h.button.dataset.ownerInterfaceBindings)['aria-label'].suffix,
   ': Sleek Physical');
  h.changed.set(h.headingKey,'Weapon enhancement');
@@ -80,7 +78,7 @@ test('element option supports RU editing without replacing selected gem or root 
  h.changed.set(h.optionKey,'Мороз');
  h.refresh('guideedit.book.equipment.gem.element.ice');
  assert.equal(h.attributes['aria-label'],'Стихия: Мороз');
- assert.equal(h.pencilAttributes['aria-label'],'Изменить надпись: Мороз');
+ assert.equal(h.button.parentElement.querySelector('.stage-control-pencil'),null);
  h.changed.set(h.headingKey,'Элемент');
  h.refresh('guideedit.book.equipment.gem-element-label');
  assert.equal(h.attributes['aria-label'],'Элемент: Мороз');
@@ -95,7 +93,7 @@ test('unrelated D1 copy changes do not rewrite current gem option accessible nam
  const h=harness();
  h.refresh('guideedit.book.equipment.socket-capacity-heading');
  assert.deepEqual(h.attributes,{});
- assert.deepEqual(h.pencilAttributes,{});
+
 });
 test('live default option aria derives from exactly the same owner-edited copy as visible title',()=>{
  assert.match(equipment,/const name=copy\(captionKey,option.ru,option.en\)/);

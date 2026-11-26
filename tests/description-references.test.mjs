@@ -171,3 +171,22 @@ test('overlapping linked names do not produce nested or reassigned item tokens',
   /встречается несколько раз|пересекаются/,
   'A shorter item name appearing within another must not be assigned speculatively');
 });
+
+test('#390 source item fallback and conflict guidance respect RU/EN without weakening IDs',()=>{
+ assert.equal(presenter.displayName({name:'19022'}),'Без названия');
+ assert.equal(presenter.displayName({name:'19022'},undefined,'en'),'Unnamed item');
+ assert.equal(presenter.displayName(null,undefined,'en'),'Unnamed item');
+ assert.equal(presenter.displayName({name:'19022'},'Custom fallback','en'),'Custom fallback');
+ assert.equal(presenter.displayName({name:'19022'},'','en'),'');
+ const lookupEn=id=>({'1':'A B','2':'B C'}[id]||null);
+ const overlapSource='<item 1> and <item 2>.';
+ assert.throws(()=>presenter.restoreReferences('A B C',overlapSource,lookupEn,'en'),
+  /Item references overlap\. Clarify the names before saving\./);
+ assert.throws(()=>presenter.restoreReferences('A B C',overlapSource,lookupEn,'ru'),
+  /Ссылки на предметы пересекаются/);
+ const oneName=id=>id==='1'?'Ring':null;
+ assert.throws(()=>presenter.restoreReferences('Ring and Ring','<item 1>',oneName,'en'),
+  /The name “Ring” appears more than once/);
+ assert.equal(presenter.restoreReferences('Only Ring','Only <item 1>',oneName,'en'),
+  'Only <item 1>','An unchanged source item ID must remain intact');
+});

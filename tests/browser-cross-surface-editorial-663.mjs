@@ -150,8 +150,10 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   await chestPanel.locator('summary').click();
   const chestKeys=await chestPanel.locator('[data-owner-copy-id]').evaluateAll(
    nodes=>nodes.map(node=>node.dataset.ownerCopyId));
-  assert.equal(chestKeys.length,35,'All chest captions belong to one owner panel');
-  assert.equal(new Set(chestKeys).size,35,'No duplicate chest editor rows');
+  assert.equal(chestKeys.length,36,'All chest captions belong to one owner panel');
+  assert.equal(new Set(chestKeys).size,36,'No duplicate chest editor rows');
+  assert.ok(chestKeys.includes('goldAmountPrefix'),
+   'The gold-only authorial word shares the existing chest owner panel');
   const chestFilter=chest.locator('.wiki-chest-filter-type');
   const totalBefore=await chest.locator('.wiki-chest-filter-count').innerText();
   const countBefore=await chest.locator('.wiki-chest-reward').count();
@@ -331,32 +333,45 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   // Skills: work inside the real right-hand Hero Path instead of the
   // retired standalone skills workbench, which has no navigation tab.
   await page.locator('#dockClose').click();
-  // 864: fixed tooltips in all three workbench areas are owner-authored D1
-  // content. Editing must refresh the target without changing the hero.
+  // #390: meaningful hover explanations remain editable. Self-explanatory
+  // Origin/Path tabs cannot keep legacy phantom hint panels or hover copy.
   const hints=page.locator('.workbench-hint-editor');
-  assert.equal(await hints.count(),3);
+  assert.equal(await hints.count(),2);
+  assert.equal(await page.locator(
+   '[data-i18n="originGuide"] + .workbench-hint-editor').count(),0);
+  for(const selector of [
+   '[data-origin-tab="race"]','[data-origin-tab="class"]',
+   '[data-origin-tab="stats"]','#pathGrowthTab','#pathSkillsTab'
+  ]){
+   const tab=page.locator(selector);
+   assert.equal(await tab.getAttribute('data-guide-hint'),null,
+    'Self-explanatory tab must not expose phantom hover help: '+selector);
+   assert.equal(await tab.getAttribute('aria-description'),null);
+  }
   for(const [section,key,selector,newCopy] of [
-   ['origin','hintRace','[data-origin-tab="race"]','Помощь: раса'],
+   ['equipment','hintPortrait','#hero','Помощь: книга героя'],
    ['equipment','hintWeapon','#jumpEquipment','Помощь: выбор оружия'],
-   ['path','hintSkills','#pathSkillsTab','Помощь: умения героя']
+   ['equipment','hintNewBuild','#newBuildQuick','Помощь: новый билд'],
+   ['equipment','hintSaveBuild','#snapshot','Помощь: сохранить билд'],
+   ['path','hintReset','#pathResetPoints','Помощь: сброс веток']
   ]){
    const panel=page.locator('[data-i18n="'+
-    (section==='origin'?'originGuide':section==='equipment'?'appearanceGuide':'pathGuide')+
+    (section==='equipment'?'appearanceGuide':'pathGuide')+
     '"] + .workbench-hint-editor');
-   await panel.locator('summary').click();
+   assert.equal(await panel.count(),1,'Exactly one panel per real hint family');
+   if(!(await panel.evaluate(node=>node.open)))
+    await panel.locator('summary').click();
    const target=page.locator(selector);
-   const original=await target.getAttribute('data-guide-hint');
-   const redundant=section==='origin'||section==='path';
-   if(redundant)assert.equal(original,null,'Self-explanatory tabs must not have redundant hover help');
-   else assert.ok(original,'Useful action hints must remain visible');
+   assert.ok(await target.getAttribute('data-guide-hint'),
+    'A real hint target must expose independent hover help: '+selector);
    const beforeLevel=await page.locator('#levelOut').innerText();
    await edit(section,key,newCopy);
-   assert.equal(await target.getAttribute('data-guide-hint'),redundant?null:newCopy);
-   assert.equal(await target.getAttribute('aria-description'),redundant?null:newCopy);
+   assert.equal(await target.getAttribute('data-guide-hint'),newCopy);
+   assert.equal(await target.getAttribute('aria-description'),newCopy);
    assert.equal(await page.locator('#levelOut').innerText(),beforeLevel);
-   await panel.locator('summary').click();
   }
-  assert.equal(writes.filter(write=>/(origin|equipment|path)\.hint-/.test(write.key)).length,3);
+  assert.equal(writes.filter(write=>/(origin|equipment|path)\.hint-/.test(write.key)).length,5);
+  assert.equal(await hints.count(),2,'Saves must not duplicate hint panels');
   await page.locator('#pathSkillsTab').click();
   const pathSearch=page.locator('#pathSkillSearch');
   await pathSearch.waitFor({state:'visible'});
@@ -378,13 +393,36 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
 
   // Live Origin stats: D1 controls edit captions only, not remaining points.
   await page.locator('#originTabs [data-origin-tab="stats"]').click();
-  const stats=page.locator('#originStats .studio-owner-interface-editor');
+  const stats=page.locator('#ownerOriginStatsCopy');
   await stats.waitFor({state:'visible'});
   await stats.locator('summary').click();
-  assert.equal(await stats.locator('.studio-owner-interface-row').count(),2);
+  const expectedAria=['vitalsLoadingAria','holdStepAria','decreaseAria',
+   'increaseAria','excludeBonusesAria','baseAria','pointsAria',
+   'knownBonusesAria','costAria','maximumAria'];
+  const actualAria=await stats.locator('[data-owner-copy-id]')
+   .evaluateAll(nodes=>nodes.map(node=>node.dataset.ownerCopyId));
+  assert.deepEqual(actualAria.slice().sort(),expectedAria.slice().sort(),
+   'One owner-only panel for accessibility, visible stats edit directly');
   const originalSummary=await page.locator('#originStatSummary').innerText();
-  await edit('stats-ui','remainingPrefix','Осталось:');
-  await edit('stats-ui','spentPrefix','Распределено:');
+  // Both values are plain text inside the actual summary, not in the
+  // owner-only accessibility panel. Dblclick/blur must save the visible word.
+  const editSummary=async(key,value)=>{
+   const node=page.locator('#originStatSummary [data-owner-copy-id="'+key+'"]');
+   await node.dblclick();
+   const field=node.locator('[data-owner-text-field]');
+   await field.waitFor({state:'visible'});
+   await field.fill(value);
+   await field.press('Tab');
+   await field.waitFor({state:'detached',timeout:15000});
+   await page.waitForFunction(({key,value})=>
+    document.querySelector('#originStatSummary [data-owner-copy-id="'+key+'"]')
+     ?.textContent===value,{key,value},{timeout:15000});
+   const recordKey='guideedit.book.stats-ui.'+
+    key.replace(/[A-Z]/g,c=>'-'+c.toLowerCase());
+   assert.equal(JSON.parse(values[recordKey]).ru,value);
+  };
+  await editSummary('remainingPrefix','Осталось:');
+  await editSummary('spentPrefix','Распределено:');
   const updatedSummary=await page.locator('#originStatSummary').innerText();
   assert.match(updatedSummary,/Осталось:/);
   assert.match(updatedSummary,/Распределено:/);
@@ -471,6 +509,21 @@ export async function runCrossSurfaceEditorial663Smoke(browser,base){
   ])assert.ok(detailsKeys.includes(key),'Missing item-details D1 copy: '+key);
   assert.equal(new Set(detailsKeys).size,detailsKeys.length,
    'Details and Souls must not duplicate the same editor');
+  // The native control itself, not its nested caption, takes keyboard focus.
+  // F2 must open its owner-only D1 editor; ordinary Enter continues changing
+  // tabs and must never become an accidental editor hotkey.
+  const detailsTab=picker.locator('[data-stage-tab="details"]');
+  await detailsTab.focus();
+  assert.equal(await detailsTab.getAttribute('aria-keyshortcuts'),'F2');
+  await detailsTab.press('F2');
+  const gearCaptionDraft=detailsTab.locator('.stage-copy-caption [data-owner-text-field]');
+  await gearCaptionDraft.waitFor({state:'visible'});
+  await gearCaptionDraft.fill('Проверенные свойства');
+  await gearCaptionDraft.press('Escape');
+  assert.equal(await detailsTab.locator('[data-owner-text-field]').count(),0,
+   'Esc cancels the direct keyboard caption edit without writing to D1');
+  assert.equal(await detailsTab.getAttribute('aria-pressed'),'true',
+   'F2 and Esc must not switch equipment tabs or change Soul data');
   await edit('equipment','pickerItemSettings','Параметры экипировки');
   await edit('equipment','hint.souls','Подсказка слотов душ');
   assert.equal(await picker.locator('[data-stage-tab="souls"]')

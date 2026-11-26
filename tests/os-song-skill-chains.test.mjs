@@ -93,29 +93,34 @@ test('song preview never adds a toggle-only effect to ordinary HP/MP/combat stat
  assert.deepEqual(ready.stats,none.stats);
  assert.deepEqual(ready.combat.attack,none.combat.attack);
 });
-test('bilingual song UI stays collapsed and communicates preview-only conditions',()=>{
- const stage=read('pandora-studio-hero-book.js'),style=read('pandora-studio-theme.css'),calc=read('pandora-os-character-calculator.js');
- assert.match(stage,/make\('details',\{class:'stage-legacy-buff-previews stage-song-skills'\}\)/);
- assert.match(stage,/gameSkillBadge\(entry\.id,entry\.name,entry\.nameEn,gameTerms,english,skillIconForId\)/);
- assert.match(stage,/english\?entry.descriptionEn:entry.description/);
- assert.match(stage,/Бонусы не прибавляются к билду автоматически/);
- assert.match(stage,/Requirements met/);
- assert.match(stage,/Требования выполнены/);
- assert.match(style,/\.stage-song-skill-row/);
+test('OS song source is preview-only; Book keeps recipient buffs separate from source mechanics',()=>{
+ const stage=read('pandora-studio-hero-book.js'),
+  calc=read('pandora-os-character-calculator.js');
  assert.match(calc,/const songSkills=songSkillPreview/);
  assert.match(calc,/regeneration,legacyBuffs,priestApplied,priestCast,songSkills,otherEquipment/);
+ assert.match(stage,/const party=section\('Усиления от союзников','Ally buffs','party'\)/);
+ assert.match(stage,/selectedPriestIds\.has\(340003001\)/,
+  'Peace Song is an ally-origin skill, not a recipient-trained song');
+ assert.match(stage,/alliedPeaceSongPreview\?\.\(/,
+  'Live recipient protection is calculated from the existing OS model');
+ assert.doesNotMatch(stage,/function renderSongSkills\(/,
+  'Unreachable preview-only Song component must not be mistaken for verified active effects');
+ assert.doesNotMatch(stage,/stage-legacy-buff-previews/,
+  'Source previews do not silently create extra Book controls or numerical benefits');
 });
 
-test('Hero Book groups song effects with skill effects, not configuration controls',()=>{
+test('Hero Book keeps ally Peace Song in Buffs and calculated own skill effects separate',()=>{
  const book=read('pandora-studio-hero-book.js');
  const buffsStart=book.indexOf('function buffsPage(');
- const songsStart=book.indexOf('function renderSongSkills(');
  const skillsStart=book.indexOf('function skillEffectsPage(');
- assert.ok(buffsStart>=0&&songsStart>buffsStart&&skillsStart>songsStart);
- const buffs=book.slice(buffsStart,songsStart);
+ assert.ok(buffsStart>=0&&skillsStart>buffsStart);
+ const buffs=book.slice(buffsStart,skillsStart);
  const skills=book.slice(skillsStart,book.indexOf('function render(target,',skillsStart));
- assert.doesNotMatch(buffs,/const songRows=|stage-song-skills/);
+ assert.match(buffs,/const party=section\('Усиления от союзников','Ally buffs','party'\)/);
+ assert.match(buffs,/selectedPriestIds\.has\(340003001\)/);
+ assert.match(buffs,/toggle\(party,/);
  assert.match(skills,/scalingSkillPreview\?\.\(/);
- assert.doesNotMatch(skills,/renderSongSkills\(body,modifiers,gameTerms,skillIconForId\)/);
- assert.match(book.slice(songsStart,skillsStart),/stage-song-skills/);
+ assert.doesNotMatch(buffs,/renderSongSkills\(/);
+ assert.doesNotMatch(skills,/modifiers\?\.songSkills/,
+  'Preview-only songs cannot become a calculated current-hero buff by accident');
 });

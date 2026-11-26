@@ -38,19 +38,34 @@ test('EN race image and portrait arrow descriptions follow the chosen race/gende
  assert.match(races,/const raceName=races\[i\]\[lang==='en'\?1:0\]/);
  assert.match(races,/lang==='en'\?' · male':' · мужчина'/);
  assert.match(races,/lang==='en'\?' · female':' · женщина'/);
- assert.match(races,/lang==='en'\?'Previous portrait':'Предыдущий портрет'/);
- assert.match(races,/lang==='en'\?'Next portrait':'Следующий портрет'/);
- assert.match(races,/lang==='en'\?'Choose ':'Выбрать '/);
+ // Three authorial action phrases now come from the same bilingual D1/CAS
+ // registry, not a static inline lang ternary. Race/gender remain source data.
+ const registry=app.match(/const originRacePortraitAriaRows=Object\.freeze\((\[[\s\S]*?\])\);/);
+ assert.ok(registry,'Source-backed bilingual race ARIA registry must exist');
+ const rows=Function('return '+registry[1])();
+ assert.deepEqual(rows,[
+  ['racePortraitPreviousAria','Предыдущий портрет','Previous portrait'],
+  ['racePortraitNextAria','Следующий портрет','Next portrait'],
+  ['racePortraitChooseAria','Выбрать','Choose']
+ ]);
+ for(const [key,ru,en] of rows){
+  assert.ok(races.includes("'"+key+"'"),'Live race gallery binds '+key);
+  assert.notEqual(ru,en,'Both languages must be explicit: '+key);
+ }
+ assert.match(races,/bindOwnerInterfaceText\(img,'origin','racePortraitChooseAria'/);
+ assert.match(races,/'aria-label',' '\+raceName\+sexSuffix/);
+ assert.match(races,/'visual\.race\.'\+i\+'\.'\+\(gender\?'m':'f'\)/);
  assert.match(app,/window\.PandoraUILocale\.apply\(lang\)/);
 });
 
 test('calculated origin vitals use locale-specific HP/MP announcements',()=>{
- const from=app.indexOf('function renderOriginVitals(calculated=undefined){');
+ const from=app.indexOf('function refreshOriginVitalsAccessible(){');
  const to=app.indexOf('\nfunction setVitalsEnhancement(key,value){',from);
  assert.ok(from>=0&&to>from);
  const code=app.slice(from,to);
- assert.match(code,/lang==='en'\?'HP '\+calculated\.hp/);
- assert.match(code,/lang==='en'\?'HP and MP will appear when game data have loaded\.'/);
+ assert.match(code,/hpLabel\+' '\+hp\+', '\+mpLabel\+' '\+mp/);
+ assert.match(code,/statsUiText\('vitalsLoadingAria'\)/);
+ assert.match(app,/\['vitalsLoadingAria','ОЗ и ОМ появятся после загрузки игровых данных\.'/);
  assert.match(html,/<span data-i18n="hpShort">ОЗ<\/span>/);
  assert.match(html,/<span data-i18n="mpShort">ОМ<\/span>/);
 });

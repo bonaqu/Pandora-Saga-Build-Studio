@@ -1,0 +1,126 @@
+# #390: protected, manually labeled stages inside the SAME Draft PR.
+# Never upload plaintext staging D1 SQL or any credentials.
+name: "#390 isolated D1 staging — protected manual phase"
+
+on:
+  pull_request:
+    types: [labeled]
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: pandora-issue390-manual-staging-d1
+  cancel-in-progress: false
+
+jobs:
+  isolated-staging:
+    if: >-
+      github.repository == 'bonaqu/Pandora-Saga-Build-Studio' &&
+      github.event.pull_request.number == 809 &&
+      github.event.pull_request.base.ref == 'bonaqu_projects' &&
+      github.event.pull_request.head.repo.full_name == 'bonaqu/Pandora-Saga-Build-Studio' &&
+      github.event.pull_request.head.ref == 'work/947-issue390-editorial-parity' &&
+      contains(fromJSON('["ps390-backup-before","ps390-import","ps390-verify","ps390-backup-after","ps390-rollback"]'), github.event.label.name)
+    name: Explicit owner-approved isolated staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    environment: editorial-staging-390
+    env:
+      PS_EDITORIAL_EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+      PS_EDITORIAL_STAGING_NAME: ps-editorial-staging-390
+      PS_EDITORIAL_STAGING_ID: 56757608-3492-4fae-b698-27c76918cdc1
+      CLOUDFLARE_ACCOUNT_ID: 57ac934cd0f0a7f5e8533177d612f893
+      CLOUDFLARE_API_TOKEN: ${{ secrets.PS390_CF_TOKEN }}
+      PS390_BACKUP_ENCRYPTION_KEY: ${{ secrets.PS390_BACKUP_ENCRYPTION_KEY }}
+      PS390_RETAINED_BACKUP_SHA256: ${{ vars.PS390_RETAINED_BACKUP_SHA256 }}
+    steps:
+      - name: Checkout the exact authorized PR branch (not the merge commit)
+        uses: actions/checkout@v5
+        with:
+          ref: work/947-issue390-editorial-parity
+          persist-credentials: false
+      - name: Use Node.js 22
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Verify correct immutable HEAD, branch, two green CI workflows
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$PS_EDITORIAL_EXPECTED_SHA"
+          test "$(git branch --show-current)" = "work/947-issue390-editorial-parity"
+          test -z "$(git status --porcelain)"
+          node scripts/check-editorial-staging-approval.mjs ci
+      - name: Verify dedicated Cloudflare token is present
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test "$PS_EDITORIAL_STAGING_ID" != '0f8fbcd8-be06-414c-844b-a2091fdf6784'
+          test "$CLOUDFLARE_ACCOUNT_ID" = '57ac934cd0f0a7f5e8533177d612f893'
+      - name: Create throwaway private workspace for guarded independent export
+        run: |
+          set -euo pipefail
+          printf 'PS_EDITORIAL_BACKUP_DIR=%s\n' "$HOME/.ps390-independent-staging-backup" >> "$GITHUB_ENV"
+          mkdir -p "$HOME/.ps390-independent-staging-backup"
+          chmod 700 "$HOME/.ps390-independent-staging-backup"
+      - name: Back up isolated staging BEFORE import (no SQL writes)
+        if: github.event.label.name == 'ps390-backup-before'
+        env:
+          PS_EDITORIAL_BACKUP_PHASE: before
+        run: node scripts/run-editorial-staging-d1-premerge.mjs backup
+      - name: Back up isolated staging AFTER import (no SQL writes)
+        if: github.event.label.name == 'ps390-backup-after'
+        env:
+          PS_EDITORIAL_BACKUP_PHASE: after
+        run: node scripts/run-editorial-staging-d1-premerge.mjs backup
+      - name: Encrypt, authenticate and locally decrypt-test the SQL export
+        if: github.event.label.name == 'ps390-backup-before' || github.event.label.name == 'ps390-backup-after'
+        id: seal
+        env:
+          STAGE: ${{ github.event.label.name == 'ps390-backup-before' && 'before' || 'after' }}
+        run: |
+          set -euo pipefail
+          node scripts/seal-editorial-staging-backup.mjs \
+            "$PS_EDITORIAL_BACKUP_DIR" "$RUNNER_TEMP/ps390-ciphertext" "$STAGE"
+          test "$(find "$RUNNER_TEMP/ps390-ciphertext" -maxdepth 1 -type f | wc -l)" -eq 2
+          test -z "$(find "$RUNNER_TEMP/ps390-ciphertext" -maxdepth 1 -type f -name '*.sql' -print -quit)"
+      - name: Publish ONLY authenticated ENCRYPTED backup and nonsecret receipt
+        if: github.event.label.name == 'ps390-backup-before' || github.event.label.name == 'ps390-backup-after'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.seal.outputs.artifact_name }}
+          path: |
+            ${{ runner.temp }}/ps390-ciphertext/*.enc
+            ${{ runner.temp }}/ps390-ciphertext/receipt.json
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+      - name: Require matching artifact and operator-retained copy BEFORE import
+        if: github.event.label.name == 'ps390-import'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/check-editorial-staging-approval.mjs import
+      - name: Import ONLY pinned staging snapshot with independent prewrite SQL verification
+        if: github.event.label.name == 'ps390-import'
+        env:
+          PS_EDITORIAL_CONFIRMATION: CONFIRM-EDITORIAL-STAGING-ps-editorial-staging-390-import
+        run: node scripts/run-editorial-staging-d1-premerge.mjs import
+      - name: Independently verify the entire imported snapshot (read only)
+        if: github.event.label.name == 'ps390-verify'
+        run: node scripts/run-editorial-staging-d1-premerge.mjs verify
+      - name: Require matching post-import artifact and separately saved copy
+        if: github.event.label.name == 'ps390-rollback'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/check-editorial-staging-approval.mjs rollback
+      - name: Delete ONLY pinned staging snapshot after a separate approval
+        if: github.event.label.name == 'ps390-rollback'
+        env:
+          PS_EDITORIAL_CONFIRMATION: CONFIRM-EDITORIAL-STAGING-ps-editorial-staging-390-rollback
+        run: node scripts/run-editorial-staging-d1-premerge.mjs rollback
+      - name: Clear job-local plaintext SQL regardless of outcome
+        if: always()
+        run: |
+          rm -rf "$HOME/.ps390-independent-staging-backup" "$RUNNER_TEMP/ps390-ciphertext"

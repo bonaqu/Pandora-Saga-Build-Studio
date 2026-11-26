@@ -32,14 +32,18 @@ test('Hero Book UI and aria descriptions follow document language on rerender',(
  assert.match(code,/n\.textContent=bookText\(value\)/);
  assert.match(code,/document\.documentElement\?\.lang==='en'\?/);
  assert.match(code,/Hero Book\./);
- assert.match(code,/make\('span',\{text:\(document\.documentElement\?\.lang==='en'\?'HERO BOOK'/);
+ assert.match(code,/class:'stage-book-title-text'/);
+ assert.match(code,/bookTitleText\.dataset\?\.bookEditorialKey/);
+ assert.match(code,/class:'stage-book-title-count',text:' · '\+\(index\+1\)\+' \/ 6'/);
 });
 
 test('equipment effects, item procs and experience preview headings follow RU/EN selection',()=>{
  assert.match(code,/function appendItemEvents\(body,calc,english,kind,gameTerms=\{\}\)/);
  assert.match(code,/root\.PandoraSkillPreview\?\.attach\(skillLink,row\.skillId\)/);
  assert.match(code,/calc\?\.specialEquipment\?\.entries/);
- assert.match(code,/english\?'Item and Soul triggers'/);
+ assert.match(code,/class:'stage-source-events-caption',text:english\?/);
+ assert.match(code,/english\?\s*'Item and Soul triggers'/);
+ assert.match(code,/class:'stage-book-live-count',text:' · '\+rows\.length/);
  assert.match(code,/english\?'Experience gain bonuses'/);
  assert.match(code,/entry\.triggerEn\|\|entry\.trigger/);
  assert.match(code,/entry\.skillNameEn\|\|entry\.skillName/);
@@ -53,7 +57,10 @@ test('equipment sets and consumable recovery sections switch to RU/EN without to
  assert.match(code,/english\?'HP recovery items':'Предметы восстановления ОЗ'/);
  assert.match(code,/english\?'Remove status effects':'Снятие состояний'/);
  assert.match(code,/english\?entry\.conditionsEn:entry\.conditions/);
- assert.match(code,/text:item\?\.name\|\|entry\.name/);
+ assert.match(code,/sourceText\('span',item\?\.name\|\|entry\.name/,
+  'Game item names must stay literal source data in all recovery sections');
+ assert.doesNotMatch(code,/make\('span',\{class:'stage-potion-name',text:item\?\.name/,
+  'Source item captions must never acquire a generic UI edit identity');
  assert.doesNotMatch(code,/stage-combat-quick/);
 });
 

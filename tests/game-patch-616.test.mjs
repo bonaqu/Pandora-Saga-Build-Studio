@@ -80,7 +80,26 @@ test('ancient Muldia bosses and King chest are retained in the current game cata
  }
  const king=chests.boxes.find(x=>x.i===51036);
  assert.ok(king);
- assert.equal(king.rolls[0].length,127);
+ // Historical approved snapshot had 127 rewards. Newer D1 publications may
+ // add valid variants but must retain every old item/Soul combination.
+ const historicChests=JSON.parse(readFileSync(new URL(
+  '../data/catalog-review/ps-ca9a604163b54a2da5c83ea55077ef96/chests.json',
+  import.meta.url),'utf8'));
+ const historicKing=historicChests.boxes.find(row=>row.i===51036);
+ assert.ok(historicKing);
+ assert.equal(historicKing.rolls[0].length,127);
+ assert.ok(king.rolls[0].length>=historicKing.rolls[0].length,
+  'Current King chest cannot lose its historically reviewed reward coverage');
+ const key=row=>[row.i,row.n,row.soul??0].join(':');
+ const currentRewards=new Set(king.rolls[0].map(key));
+ for(const reward of historicKing.rolls[0])
+  assert.ok(currentRewards.has(key(reward)),
+   'A previously reviewed King reward must not silently disappear');
+ for(const reward of king.rolls[0]){
+  assert.ok(Number.isSafeInteger(reward.i)&&reward.i>0);
+  assert.ok(Number.isSafeInteger(reward.n)&&reward.n>0);
+  assert.ok(typeof reward.p==='number'&&reward.p>0&&reward.p<=100);
+ }
 });
 
 test('Honor includes exact permanent PvP rewards, weekly limits and Moscow schedule',()=>{

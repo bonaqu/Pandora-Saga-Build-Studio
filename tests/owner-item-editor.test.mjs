@@ -124,7 +124,10 @@ test('visible owner entry points and read-only-until-focus search guards are pre
  // now double-clicks the displayed skill label, without selecting the passive.
  assert.doesNotMatch(source,/class:'owner-race-passive-edit'/);
  assert.match(source,/ownerCaptionActionGuard\(btn,label\)/);
- assert.match(source,/btn\.setAttribute\('aria-keyshortcuts','F2'\)/);
+ assert.match(source,/btn\.setAttribute\('aria-keyshortcuts',lang==='ru'\?'F2 Shift\+F2':'Shift\+F2'\)/,
+  'F2 retains RU skill-name edit while Shift+F2 targets the new authorial status');
+ assert.match(source,/if\(event\.shiftKey\)/);
+ assert.match(source,/ownerCaptionActionGuard\(btn,badge\)/);
  assert.match(source,/inlineWikiText\(label\)/);
  assert.doesNotMatch(source,/class:'button-action wiki-owner-pencil'/);
   assert.match(source,/function guardOwnerInput/);

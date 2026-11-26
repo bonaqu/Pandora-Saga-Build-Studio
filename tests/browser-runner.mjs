@@ -14,7 +14,13 @@ export async function runIndependentSmokes(cases,browser,base,{concurrency=3}={}
     await run(browser,base);
     results[index]={name,ms:Date.now()-started};
    }catch(error){
-    failures.push(new Error('Browser scenario '+name+' failed: '+error.message,{cause:error}));
+    // A native Playwright TimeoutError nested inside AggregateError often
+    // loses the source line in GitHub Actions output. Keep the first in-repo
+    // frame in the failure message so owner regressions are actionable.
+    const source=String(error?.stack||'').split('\n').find(line=>
+     /\/tests\/browser-[^\s)]+\.mjs:\d+:\d+/.test(line))?.trim()||'';
+    failures.push(new Error('Browser scenario '+name+' failed: '+
+     error.message+(source?' ['+source+']':''),{cause:error}));
     failed=true;
    }
   }

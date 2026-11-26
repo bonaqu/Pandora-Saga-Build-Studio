@@ -105,12 +105,15 @@ test('NPC chest gold-only rewards retain exact source currency ranges in RU and 
  assert.equal(displayed,'Золото: 60 000–100 000');
  assert.equal(model.goldLabel(gold[0],'en'),'Gold: 60,000–100,000');
  assert.equal(model.goldLabel({gold:[500,500]},'en'),'Gold: 500');
+ assert.equal(model.goldAmount(gold[0],'en'),'60,000–100,000');
+ assert.equal(model.goldAmount({gold:[500,500]},'ru'),'500');
  assert.equal(JSON.stringify(chest),before,'The presentation must not mutate source rolls');
 });
 
 test('missing or malformed gold range is not presented as a fabricated item or amount',()=>{
  for(const range of [undefined,[],[100],[200,100],[0,-5],['100',200],[NaN,100],[1.4,10]]){
   assert.equal(model.goldLabel({gold:range},'ru'),null,String(range));
+  assert.equal(model.goldAmount({gold:range},'en'),null,String(range));
  }
  const app=readFileSync(new URL('pandora-studio-app.js',root),'utf8');
  const first=app.indexOf("const goldReward=Array.isArray(row.gold);");
@@ -118,7 +121,10 @@ test('missing or malformed gold range is not presented as a fabricated item or a
  assert.ok(first>=0&&second>first);
  const body=app.slice(first,second);
  assert.match(body,/row\.i!=null\?itemLink/);
- assert.match(body,/goldLabel\(row,lang\)/);
+ assert.match(body,/goldAmount\(row,lang\)/);
+ assert.match(body,/goldNode\|\|chestBind/);
+ assert.match(body,/ownerCopyLabel\(goldPrefix,'wiki\.chest\.text'/);
+ assert.match(body,/wiki-chest-gold-amount/);
  assert.match(body,/goldReward\?'goldMissing':'rewardMissing'/);
  assert.match(app,/\["rewardMissing","Награда не указана","Reward not listed"\]/);
  assert.match(app,/\["goldMissing","Золото · сумма не указана","Gold · amount not listed"\]/);

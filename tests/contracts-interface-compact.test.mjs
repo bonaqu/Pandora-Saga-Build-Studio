@@ -114,7 +114,9 @@ test('gear action opens the independent picker, grouped Properties/Souls are vis
  const css=read('pandora-studio-workbench-guidance.css');
  const app=read('pandora-studio-app.js');
  assert.match(ui,/const chooseGroup=el\('div',\{class:'stage-rich-choose-group'\}\)/);
- assert.match(ui,/const settingsGroup=el\('div',\{class:'stage-rich-settings-group',role:'group'/);
+ assert.match(ui,/const settingsGroup=bind\(el\('div',\{class:'stage-rich-settings-group',role:'group'\}\),/);
+  assert.match(ui,/'pickerPropertiesGroup','Свойства предмета','Item properties','aria-label'/,
+   'The same grouped layout uses the independent owner RU/EN accessibility caption');
  assert.match(ui,/key==='choose'\?chooseGroup:settingsGroup/);
  assert.match(css,/\.stage-rich-settings-group\{display:grid;grid-template-columns:minmax\(0,\.76fr\) minmax\(0,1\.24fr\)/);
  assert.match(css,/\.stage-rich-settings-group>:not\(:first-child\)\{border-left:1px solid/);

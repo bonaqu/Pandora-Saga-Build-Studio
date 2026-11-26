@@ -44,7 +44,12 @@ test('Russian skill requirements are retained by default and damaged sources do 
 
 test('selected game language is forwarded into the inspector without modifying progression',()=>{
  assert.doesNotMatch(app,/PandoraSkillResults\.create\(/);
- assert.match(app,/Requires '\+req.amount\+' '\+branchName\+' mastery/);
+ assert.match(app,/Requires '\+req.amount\+' '\+req.branchName\+' mastery/,
+  'Original English requirement wording must preserve source branch name');
+ assert.match(app,/return \{kind:'mastery',amount:req.amount,branchName\}/,
+  'Mastery branch and number remain source data, not D1 editor text');
+ assert.match(app,/reasonParts:buffRequirementParts\(ability,reason\)/,
+  'The current game rule supplies separate word/number rendering metadata');
  assert.doesNotMatch(app,/Нужно 26 очков мастерства рубящего оружия/);
  assert.match(app,/const reason=unavailableReason\(ability\)/);
  assert.match(app,/const reason=availability\[setting\]\?null/);

@@ -143,8 +143,14 @@ test('Book presents the model in readable, compact Russian and English',()=>{
  assert.match(book,/Как рассчитано лечение/);
  assert.match(book,/Next Healing mastery increase/);
  assert.match(book,/Следующий прирост от /);
- assert.match(book,/Расход ОМ: /);
- assert.match(book,/Перезарядка: /);
+ assert.match(book,/\['manaCostLead','Расход ОМ:','MP cost:'\]/);
+ assert.match(book,/\['cooldownLead','Перезарядка:','Cooldown:'\]/);
+ assert.match(book,/healingCaption\('manaCostLead'\)/);
+ assert.match(book,/healingCaption\('cooldownLead'\)/);
+ assert.match(book,/healingValue\(healingNumber\.format\(action\.manaRemainingIndex\)\+'%',\s*'mana-percent'\)/);
+ assert.match(book,/healingValue\(healingNumber\.format\(action\.cooldownIndex\)\+'%',\s*'cooldown-percent'\)/);
+ assert.doesNotMatch(book,/text:en\?\s*'MP cost: '\+/);
+ assert.doesNotMatch(book,/text:en\?\s*'Cooldown: '\+/);
  assert.doesNotMatch(book,/Точное время перезарядки с бонусами пока не установлено/);
  assert.match(book,/appendHealingBreakdown\(more,row,pulse\)/);
  assert.match(book,/stage-skill-more/);

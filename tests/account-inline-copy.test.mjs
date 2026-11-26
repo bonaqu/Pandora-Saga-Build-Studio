@@ -105,6 +105,77 @@ test('owner change review compares D1 copy against immutable RU/EN defaults',()=
  locale.setOverrides({});
 });
 
+test('#390 owner account copy cleans only its own keyboard affordances on logout',()=>{
+ const app=source('pandora-studio-app.js');
+ const block=app.slice(app.indexOf('function bindAccountCopyEditors(panel){'),
+  app.indexOf('// Release notices are mounted asynchronously',
+   app.indexOf('function bindAccountCopyEditors(panel){')));
+ assert.match(block,/node\.classList\.toggle\('ui-content-editable',enabled&&!isAction\)/);
+ assert.match(block,/node\.dataset\.accountCopyTabAdded==='1'/);
+ assert.match(block,/node\.dataset\.accountCopyShortcutAdded==='1'/);
+ assert.match(block,/if\(!isAction&&!node\.hasAttribute\('tabindex'\)\)/);
+ assert.match(block,/if\(!node\.hasAttribute\('aria-keyshortcuts'\)\)/);
+ assert.match(block,/node\.dataset\.accountCopyShortcutAdded='1'/);
+ assert.match(block,/node\.removeAttribute\('aria-keyshortcuts'\)/);
+ assert.match(block,/node\.removeAttribute\('tabindex'\)/);
+ assert.doesNotMatch(block,/else if\(!isAction&&node\.tabIndex===0\)node\.removeAttribute/);
+ assert.doesNotMatch(block,/class:'account-copy-pencil'/);
+});
+
+test('#390 owner-only account F2 and tabindex behave correctly across enable/disable/re-enable',()=>{
+ const app=source('pandora-studio-app.js');
+ const begin=app.indexOf('function bindAccountCopyEditors(panel){');
+ const end=app.indexOf('// Release notices are mounted asynchronously',begin);
+ assert.ok(begin>=0&&end>begin);
+ const scope={
+  adminEditing:true,adminToken:'test-owner',window:{
+   PandoraUILocale:{fieldKey:key=>key==='accountGuestLead'?'ui.label.account-guest-lead':null}
+  },
+  bindOwnerTouchCaption(){},
+  ownerCaptionActionGuard(){}
+ };
+ const bind=runInNewContext('('+app.slice(begin,end)+')',scope);
+ function fakeNode(authorTabIndex=false){
+  const attrs=new Map(authorTabIndex?[['tabindex','0']]:[]),listeners=[];
+  const node={
+   dataset:{ownerCopyKey:'accountGuestLead'},
+   classList:{toggle(){}},
+   nextElementSibling:null,
+   matches(){return false},
+   closest(){return null},
+   getAttribute(name){return name==='data-owner-copy-key'?'accountGuestLead':attrs.get(name)??null},
+   setAttribute(name,value){attrs.set(name,String(value))},
+   removeAttribute(name){attrs.delete(name)},
+   hasAttribute(name){return attrs.has(name)},
+   addEventListener(name,fn){listeners.push([name,fn])},
+   set tabIndex(n){attrs.set('tabindex',String(n))},
+   get tabIndex(){return attrs.has('tabindex')?Number(attrs.get('tabindex')):-1}
+  };
+  return {node,attrs,listeners};
+ }
+ for(const original of [true,false]){
+  const {node,attrs,listeners}=fakeNode(original);
+  const panel={id:'accountPanel',querySelectorAll:()=>[node]};
+  bind(panel);
+  assert.equal(attrs.get('aria-keyshortcuts'),'F2');
+  assert.equal(attrs.get('tabindex'),'0');
+  assert.equal(node.dataset.accountCopyTabAdded,original?undefined:'1');
+  assert.equal(node.dataset.accountCopyShortcutAdded,'1');
+  assert.equal(listeners.length,2,'Only one dblclick and keydown listener');
+  scope.adminEditing=false;
+  bind(panel);
+  assert.equal(attrs.has('aria-keyshortcuts'),false,
+   'A normal visitor must not see an owner-only F2 hint');
+  assert.equal(attrs.has('tabindex'),original,
+   'Author tabindex survives, owner-added tabindex is cleared');
+  scope.adminEditing=true;
+  bind(panel);
+  assert.equal(attrs.get('aria-keyshortcuts'),'F2');
+  assert.equal(attrs.get('tabindex'),'0');
+  assert.equal(listeners.length,2,'Re-entering owner mode never duplicates listeners');
+ }
+});
+
 test('account copy input marks only authored text, not secret value controls',()=>{
  const account=source('pandora-studio-account-ui.js');
  const app=source('pandora-studio-app.js');
@@ -229,4 +300,16 @@ test('compiled D1 UI text is parsed once, then invalidated on save, Undo and res
  assert.equal(parses,4,'Malformed D1 JSON is rejected once per refresh');
  assert.equal(ui.literalKey('Неверный пароль.'),null,
   'Runtime security errors cannot become editor fields');
+});
+
+test('#390 account icon F2 selects the actual guest or signed-in semantic D1 identity',()=>{
+ const account=source('pandora-studio-account-ui.js');
+ const app=source('pandora-studio-app.js');
+ assert.equal(locale.fieldKey('accountProfileTitle'),'ui.label.account-profile-title');
+ assert.match(account,/const key=session\?'accountProfileTitle':'profileAccess'/);
+ assert.match(account,/trigger\.setAttribute\('data-i18n-title',key\)/);
+ assert.match(account,/trigger\.setAttribute\('data-i18n-aria-label',key\)/);
+ assert.equal((account.match(/syncTriggerCopy\(\);/g)||[]).length,2);
+ assert.match(app,/const currentKey=node\.dataset\.i18nTitle,id=locale\.fieldKey\(currentKey\)/);
+ assert.match(account,/session\?tr\('Профиль'\)\+' · '\+session\.username/);
 });

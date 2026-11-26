@@ -138,3 +138,21 @@ test('the editor previews selected impacts before the explicit, atomic D1 public
  assert.match(editor,/Ничего не опубликовано до этого подтверждения/);
  assert.match(editor,/const current=await request\('\/api\/admin\/catalog\/status'/);
 });
+
+test('English loot preview preserves the same modeled probabilities and original names',()=>{
+ const r=compare(zone([roll({base:50,perMember:0,items:[{i:53002},{i:53006}]})]),
+  zone([roll({base:25,perMember:0,items:[{i:53002},{i:53006}]})]));
+ assert.equal(r.impacts.length,2);
+ for(const effect of r.impacts){
+  assert.match(effect.preview,/соло 25,00% → 12,50%/);
+  assert.match(effect.previewEn,/solo 25\.00% → 12\.50%/);
+  assert.match(effect.previewEn,/4 players 25\.00% → 12\.50%/);
+  assert.match(effect.previewEn,/8 players 25\.00% → 12\.50%/);
+  assert.ok(effect.previewEn.includes(effect.title),'Game-source names remain unchanged');
+  assert.equal(effect.before[0],25);
+  assert.equal(effect.after[0],12.5);
+ }
+ const editor=readFileSync(new URL('pandora-os-catalog-workbench.js',base),'utf8');
+ assert.match(editor,/lang==='en'\?effect\.previewEn\|\|effect\.preview:effect\.preview/);
+ assert.match(editor,/lang==='en'\?e\.previewEn\|\|e\.preview:e\.preview/);
+});

@@ -167,6 +167,12 @@ export async function runOwnerEquipmentInlineSmoke(browser,base){
   await history.locator('.owner-review-reset').waitFor({state:'visible'});
   page.once('dialog',dialog=>dialog.accept());
   await history.locator('.owner-review-reset').first().click();
+  // Double-click-safe pointer actions execute after the click guard delay.
+  // EN text was already "Soul slots": await the REAL CAS deletion, not that text.
+  for(let n=0;n<160&&Object.hasOwn(values,recordKey);n++)
+   await new Promise(resolve=>setTimeout(resolve,50));
+  assert.equal(Object.hasOwn(values,recordKey),false,
+   'History reset must complete real D1 CAS after guarded click');
   await page.waitForFunction(()=>document.querySelector(
    '#stagePicker .stage-rich-fields dt[data-owner-copy-id="field.slots"]')
    ?.textContent==='Soul slots',null,{timeout:12000});

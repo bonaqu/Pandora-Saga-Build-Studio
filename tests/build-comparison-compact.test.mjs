@@ -74,6 +74,42 @@ test('player-approved physical ATK comparison prioritizes maximum before minimum
  assert.deepEqual(compare(make(20,100),pack([['АТК','ATK',100]])),[]);
 });
 
+test('#390 compare labels are D1-authored without modifying A/B identities or computed metrics',()=>{
+ const app=read('pandora-studio-app.js'),src=read('pandora-studio-ui-locale.js');
+ const begin=app.indexOf('function renderBuildComparison(');
+ const end=app.indexOf('function restoreLoadedBuildUI(){',begin);
+ const ui=app.slice(begin,end);
+ const keys=['compareBuildCaption','compareChooseSavedBuild','compareSwapAction',
+  'compareTableAria','compareStatColumn'];
+ for(const key of keys){
+  assert.ok(src.includes(key+':['),'No bilingual D1 default: '+key);
+  assert.ok(ui.includes("copy('"+key+"')"),'Comparison not source-backed: '+key);
+ }
+ assert.match(ui,/'data-owner-copy-key':'compareBuildCaption'/);
+ assert.match(ui,/h\('span',\{class:'build-compare-label-text'\},\[/);
+ assert.match(read('pandora-studio-build-comparison.css'),
+  /\.build-compare-label-text\{display:block;min-width:0;overflow-wrap:anywhere\}/);
+ assert.match(ui,/'data-compare-letter':letter,text:' '\+letter/);
+ assert.equal((ui.match(/'data-owner-copy-key':'compareStatColumn'/g)||[]).length,2);
+ assert.match(ui,/bindAccountCopyEditors\(host\)/);
+ assert.match(ui,/'data-i18n-title':'compareSwapAction'/);
+ assert.match(ui,/'data-i18n-aria-label':'compareSwapAction'/);
+ assert.match(ui,/bindStaticUICopyEditors\(host\)/);
+ const iconBinder=app.slice(app.indexOf('function bindStaticUICopyEditors('),
+  app.indexOf('// Edit only semantically keyed authored labels'));
+ assert.match(iconBinder,/function bindStaticUICopyEditors\(scope=document\)/);
+ assert.equal((iconBinder.match(/scope\.querySelectorAll/g)||[]).length,2);
+ assert.match(ui,/'data-compare-select':letter/);
+ assert.match(ui,/text:build\.name/);
+ const refresh=app.slice(app.indexOf('function refreshVisibleUICopy('),
+  app.indexOf('function refreshVisibleOriginCopy(',app.indexOf('function refreshVisibleUICopy(')));
+ for(const key of ['compareBuildCaption','compareChooseSavedBuild',
+  'compareSwapAction','compareTableAria'])
+  assert.ok(refresh.includes("locale.fieldKey('"+key+"')"),'Missing in-place Undo: '+key);
+ assert.match(refresh,/select\.dataset\.compareSelect/);
+ assert.match(refresh,/option\[value=""\]/);
+});
+
 test('UI is compact and embedded in My Builds, without inventory/options matrix',()=>{
  const source=read('pandora-studio-app.js');
  const begin=source.indexOf('function renderBuildComparison(');

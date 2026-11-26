@@ -51,15 +51,20 @@ function chance(value,language='ru'){
 }
 // NPC chest rolls also award a source-listed interval of gold instead of
 // an item. Show its exact range without inventing an item link or quantity.
-function goldLabel(row,language='ru'){
+function goldAmount(row,language='ru'){
  const values=row?.gold;
  if(!Array.isArray(values)||values.length!==2||
    !values.every(x=>Number.isSafeInteger(x)&&x>=0)||
    values[1]<values[0])return null;
  const fmt=new Intl.NumberFormat(language==='en'?'en-US':'ru-RU');
- const amount=fmt.format(values[0])+(values[1]===values[0]?
+ return fmt.format(values[0])+(values[1]===values[0]?
   '':'–'+fmt.format(values[1]));
- return (language==='en'?'Gold: ':'Золото: ')+amount;
+}
+// Keep the existing combined display API without making numeric game data
+// part of an owner-editable literal in the mounted UI.
+function goldLabel(row,language='ru'){
+ const amount=goldAmount(row,language);
+ return amount===null?null:(language==='en'?'Gold: ':'Золото: ')+amount;
 }
 // These are UI-only facets of a chest reward, never a game mechanic. Group
 // chances, original editor indices and source records must remain untouched.
@@ -129,5 +134,5 @@ function rewardMatches(category,type='all',slot='all'){
  return type!=='equipment'||slot==='all'||category.slot===slot;
 }
 
-root.PandoraStudioChestPresentation=Object.freeze({analyze,chance,goldLabel,orderedRewards,orderedGroups,rewardCategory,rewardFilters,rewardMatches,equipmentSlots,categoryOrder});
+root.PandoraStudioChestPresentation=Object.freeze({analyze,chance,goldAmount,goldLabel,orderedRewards,orderedGroups,rewardCategory,rewardFilters,rewardMatches,equipmentSlots,categoryOrder});
 })(typeof window==='undefined'?globalThis:window);
