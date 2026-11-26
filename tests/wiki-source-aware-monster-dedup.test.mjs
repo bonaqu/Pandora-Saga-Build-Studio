@@ -73,7 +73,7 @@ test('real game encyclopedia hides unreferenced identical monster records withou
   instances:json('data/os/instances.json'),tables:json('data/os/tables.json')});
  const total=Object.keys(input.monsters).length,index=build(input);
  const shown=index.search('monster','');
- assert.equal(total,707);
+ assert.equal(total,json('data/os/meta.json').counts.monsters);
  assert.ok(shown.length<total-100,'Duplicate orphan clutter must be removed');
  assert.equal(index.search('monster','Гигантский питон').length,1);
  assert.equal(index.canonical('monster','72006'),'11205');
@@ -96,7 +96,7 @@ test('real game encyclopedia hides unreferenced identical monster records withou
  });
  assert.equal(build(historic).locations('43641').length,2,
   'Old event evidence remains available as a historical snapshot');
- assert.equal(Object.keys(input.monsters).length,707,
+ assert.equal(Object.keys(input.monsters).length,total,
   'Deduplication must never delete original OS game records');
 });
 
