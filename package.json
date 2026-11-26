@@ -18,6 +18,7 @@
     "connection:check": "node scripts/check-live-connections.mjs",
     "connection:check:full": "node scripts/check-live-connections.mjs --full",
     "catalog:parity:live": "node scripts/audit-live-catalog-parity.mjs",
+    "os:source:live": "node scripts/audit-official-os-source.mjs",
     "connection:check:ephemeral": "node scripts/check-live-d1-ephemeral.mjs",
     "test:browser": "node tests/browser-smoke.mjs",
     "test:quick": "node --test tests/skill-progression.test.mjs tests/hero-path-interactions.test.mjs tests/contracts-hero-equipment-884.test.mjs tests/build-scope.test.mjs tests/build-save-workflow.test.mjs tests/build-library-merge.test.mjs tests/user-account-security.test.mjs tests/equipment-plan.test.mjs tests/hero-branch-skill-index.test.mjs tests/hero-noop-persistence.test.mjs tests/hero-skill-snapshot.test.mjs",
