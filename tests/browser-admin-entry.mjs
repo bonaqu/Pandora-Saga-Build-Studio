@@ -925,6 +925,12 @@ export async function runAdminEntrySmoke(browser,base){
   await page.mouse.move(2,2);
   await page.getByRole('tooltip').waitFor({state:'hidden'});
   assert.match(await dialog.locator('.os-sync-intro').innerText(),/не ищет файлы на твоём компьютере/);
+  // The archive is intentionally nested in advanced tools in #815.
+  // Open the native disclosure as an owner would, then close it again.
+  const advancedDisclosure=dialog.locator('details.os-sync-advanced');
+  assert.equal(await advancedDisclosure.evaluate(node=>node.open),false);
+  await advancedDisclosure.locator(':scope > summary').click();
+  assert.equal(await advancedDisclosure.evaluate(node=>node.open),true);
   assert.match(await dialog.locator('.os-sync-archive-choice>summary').innerText(),/сайт игры/);
   // 0.615: disclosure help edits must not toggle the native <details> element
   // or invoke a catalog operation. The hover target remains the summary.
@@ -943,6 +949,9 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(await archiveDetails.evaluate(el=>el.open),false,
    'Editing a summary tooltip must not expand its details element');
   assert.equal(calls.filter(x=>x.startsWith('game-source:')).length,expectedCalls);
+  await advancedDisclosure.locator(':scope > summary').click();
+  assert.equal(await advancedDisclosure.evaluate(node=>node.open),false,
+   'Closing advanced tools leaves the live catalog button available');
   // A PR is generated from the published D1 snapshot via Worker, not the
   // browser's downloaded JSON. No GitHub token enters the client.
   const advancedBlock=dialog.locator('.os-sync-secondary-hint:has(> .os-sync-advanced)');
