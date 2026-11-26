@@ -74,15 +74,18 @@ export function productionPresenceSQL(manifest=MANIFEST){
 }
 export function checkedReadOnlySQL(query){
  const value=String(query||'').trim();
- // Exact generated full-content query is the only extra SQL allowed.
- // Reject caller-supplied alternative queries, even if read-only-looking.
+ // Absolute allowlist: no caller-supplied SQL families or generic SELECT.
  const fullReadback=renderEditorialDefaultsReadbackSQL(MANIFEST)
   .replace(/^\s*--[^\n]*(?:\n|$)/gm,'').trim();
- if(value===fullReadback)return value;
- if(value.includes('--')||value.includes('/*')||value.includes('\n')||
-  !/^(?:SELECT\s|PRAGMA table_xinfo\((?:editorial_default_rows|editorial_default_snapshots)\);$)/i.test(value)||
-  value.split(';').length!==2||value.indexOf(';')!==value.length-1)
-  throw Error('Unsafe or multiple-statement production SQL rejected');
+ const permitted=new Set([
+  "SELECT name,type FROM sqlite_master WHERE name IN ('editorial_default_rows','editorial_default_snapshots') ORDER BY name;",
+  'PRAGMA table_xinfo(editorial_default_rows);',
+  'PRAGMA table_xinfo(editorial_default_snapshots);',
+  productionPresenceSQL(MANIFEST),
+  fullReadback
+ ]);
+ if(!permitted.has(value))
+  throw Error('Unsafe or unreviewed production SQL rejected');
  return value;
 }
 function wrangler(args,{timeout=150000}={}){
