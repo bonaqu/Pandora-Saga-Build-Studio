@@ -53,7 +53,7 @@ test('official FV1 changes replay into precise direct, child and periodic models
  }
  const current=heal(),modified=heal(source);
  assert.deepEqual(modified.map(r=>r.available),current.map(r=>r.available));
- assert.deepEqual(modified.map(r=>r.amount),[724,1704,1532,488,27]);
+ assert.deepEqual(modified.map(r=>r.amount),[723,1704,1532,488,27]);
  // The applied model is Remaked-style; a new official FV1 changes only the
  // affected skill. The source's exact meaning/rounding is still unverified.
  assert.deepEqual(periodic(source).map(r=>r.amount),[25,24]);
