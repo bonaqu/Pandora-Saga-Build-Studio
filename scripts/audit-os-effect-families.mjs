@@ -12,13 +12,17 @@ const KNOWN_EXECUTION_REFERENCES=new Set([
  'EP_ATTACK_BLOCK_BREAK'
 ]);
 const asId=value=>Number.isSafeInteger(value)&&value>0?String(value):null;
+// Source shape tracks nonzero positions and direction, not combat semantics.
+const activeSlots=vector=>vector.flatMap((value,index)=>value!==0?[index]:[]);
+const shapeSignature=(direction,fv1Slots,fv2Slots)=>
+ [direction,'fv1='+ (fv1Slots.join(',')||'-'),'fv2='+(fv2Slots.join(',')||'-')].join(';');
 
 export function auditOsEffectFamilies(skills){
  if(!skills||typeof skills!=='object'||Array.isArray(skills))
   throw Error('Expected a complete OS skill object');
  const sourceIds=new Set(Object.keys(skills));
  const families=new Map();
- let skillCount=0,effectCount=0,sourceLinks=0,missingLinks=0;
+ let skillCount=0,effectCount=0,sourceLinks=0,missingLinks=0,zeroVectorEffects=0;
  const keys=[...sourceIds].sort((a,b)=>Number(a)-Number(b));
  for(const id of keys){
   const skill=skills[id],numeric=Number(id);
@@ -42,12 +46,21 @@ export function auditOsEffectFamilies(skills){
     skillCount:0,skillIds:[],directions:{},
     nonzeroPositionCounts:{fv1:[0,0,0,0],fv2:[0,0,0,0]},
     negativePositionCounts:{fv1:[0,0,0,0],fv2:[0,0,0,0]},
-    samples:[],executionReference:null
+    samples:[],executionReference:null,sourceShapeMap:new Map()
    });
    const family=families.get(effect.ep);
    family.effectCount++;
    const direction=effect.dir===null?'UNSPECIFIED':effect.dir;
    family.directions[direction]=(family.directions[direction]||0)+1;
+   const fv1Slots=activeSlots(effect.fv1),fv2Slots=activeSlots(effect.fv2);
+   if(!fv1Slots.length&&!fv2Slots.length)zeroVectorEffects++;
+   const signature=shapeSignature(direction,fv1Slots,fv2Slots);
+   if(!family.sourceShapeMap.has(signature))family.sourceShapeMap.set(signature,{
+    signature,direction,fv1Slots,fv2Slots,effects:0,skillIds:[]
+   });
+   const shape=family.sourceShapeMap.get(signature);
+   shape.effects++;
+   if(!shape.skillIds.includes(numeric))shape.skillIds.push(numeric);
    if(!seen.has(effect.ep)){
     seen.add(effect.ep);family.skillCount++;family.skillIds.push(numeric);
    }
@@ -77,11 +90,19 @@ export function auditOsEffectFamilies(skills){
   }
  }
  const effectFamilies=[...families.values()]
+  .map(({sourceShapeMap,...family})=>({
+   ...family,
+   sourceShapes:[...sourceShapeMap.values()]
+    .sort((a,b)=>a.signature<b.signature?-1:a.signature>b.signature?1:0)
+  }))
   .sort((a,b)=>a.ep<b.ep?-1:a.ep>b.ep?1:0);
  return {
   source:'checked-in current game skill snapshot; no D1 operations',
   certainty:'source-shape-only: FV slots, directions and references do not prove live server formulas',
   summary:{skillCount,effectCount,distinctFamilies:effectFamilies.length,
+   zeroVectorEffects,
+   sourceShapeCount:effectFamilies.reduce((n,f)=>n+f.sourceShapes.length,0),
+   familiesWithMultipleSourceShapes:effectFamilies.filter(f=>f.sourceShapes.length>1).length,
    executionReferences:sourceLinks,unresolvedExecutionReferences:missingLinks},
   effectFamilies
  };
@@ -96,7 +117,8 @@ if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
   summary:report.summary,
   families:report.effectFamilies.map(f=>({
    ep:f.ep,certainty:f.certainty,effects:f.effectCount,skills:f.skillCount,
-   dirs:f.directions,nonzeroFV1:f.nonzeroPositionCounts.fv1,
+   dirs:f.directions,sourceShapes:f.sourceShapes.length,
+   nonzeroFV1:f.nonzeroPositionCounts.fv1,
    nonzeroFV2:f.nonzeroPositionCounts.fv2,
    missingLinks:f.executionReference?.missingSkill||0
   }))
