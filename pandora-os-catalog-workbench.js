@@ -412,8 +412,8 @@
     const intro = h('div',{class:'os-sync-intro'},[
       authored('strong',{},'title','Обновление игрового каталога','Game catalog updates'),
       authored('p',{},'introExplanation',
-       'Проверка сравнивает открытые данные текущей игры с каталогом Build Studio. Она ничего не меняет до отдельного подтверждения и не ищет файлы на твоём компьютере. Доступные JSON не являются прямой проверкой игрового клиента.',
-       'Compare the currently available public game data with the Build Studio catalog. Nothing changes until you explicitly confirm; no local files are read. Public JSON is not a direct game-client verification.')
+       'Сравни текущие игровые данные с каталогом сайта, выбери нужные изменения и нажми «Применить». До подтверждения ничего не изменится.',
+       'Compare current game data with your site's catalog. Select changes and apply them when ready; nothing changes before confirmation.')
     ]);
     const actions = h('div', {class:'os-sync-actions'});
     const live = h('button', {type:'button',class:'button-action primary os-sync-main-check',
@@ -616,10 +616,12 @@
         'Доступные подписи сверки','Review accessibility labels');
       if(editor)advanced.append(editor);
     }
-    actions.append(action(live,'liveButton','Проверить изменения в текущей игре','Check live game updates'),
-     secondaryHint(archiveChoice,'hintArchiveDisclosure',
+    // Archive comparison is an optional fallback: ordinary publishing needs
+    // only the current-game comparison and its selected changes.
+    advanced.insertBefore(secondaryHint(archiveChoice,'hintArchiveDisclosure',
        'Открыть отдельную сверку с архивом GitHub Pages. Архивная копия не подтверждает актуальные параметры на игровом сайте.',
-       'Open a comparison with the GitHub Pages archive. An archived copy cannot verify current game-server values.'),
+       'Open a comparison with the GitHub Pages archive. An archived copy cannot verify current game-server values.'),metaStatus);
+    actions.append(action(live,'liveButton','Проверить изменения в текущей игре','Check live game updates'),
      reviewSteps,
      secondaryHint(advanced,'hintAdvancedDisclosure',
        'Дополнительные инструменты: диагностика D1, ручной экспорт и повторное создание резервного PR при ошибке автоматической отправки.',
@@ -1687,6 +1689,7 @@
           /Game data source|Source unavailable|Failed to fetch|NetworkError/i.test(String(error.message))
         );
         if(unavailable){
+          advanced.open=true; // Make fallback discoverable only when needed.
           archiveChoice.open=true;
           const reason=String(error.reason||'');
           const code=/^http-(\d{3})$/.exec(reason)?.[1];
