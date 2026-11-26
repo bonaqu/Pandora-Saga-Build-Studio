@@ -91,7 +91,8 @@ test('#390 production Worker disabled → no D1 queries and original RU/EN fallb
  let reads=0;
  const db={prepare(){reads++;throw Error('No D1 reads allowed')}};
  const loaded=await reader.loadPinned(manifest.snapshot,{
-  endpoint,fetcher:throughWorker({DB:db}),subtle:webcrypto.subtle
+  endpoint,fetcher:throughWorker({DB:db,EDITORIAL_DEFAULTS_PREVIEW:'disabled'}),
+  subtle:webcrypto.subtle
  });
  assert.equal(loaded,false);
  assert.equal(reads,0,'A disabled Worker must never query D1');

@@ -35,18 +35,32 @@ function stagingDB({marker=metadata,rows=records,tables=defaultTables}={}){
 const read=(db,snapshot=manifest.snapshot)=>
  readVerifiedEditorialSnapshot(db,snapshot,{subtle:webcrypto.subtle});
 
-test('#390 D1 authored defaults: Worker route defaults to off with zero database reads',async()=>{
+test('#390 released Worker owner kill switch disables route with zero database reads',async()=>{
  let queries=0;
- const env={DB:{prepare(){queries++;throw Error('Unexpected production query')}}};
+ const env={DB:{prepare(){queries++;throw Error('Unexpected production query')}},
+  EDITORIAL_DEFAULTS_PREVIEW:'disabled'};
  const request=new Request('https://ps-build-studio-cloud.bonaqu.workers.dev'+
   '/api/editorial-defaults?snapshot='+manifest.snapshot);
  const response=await worker.fetch(request,env,{});
  assert.equal(response.status,404);
- assert.equal(queries,0,'A non-enabled release must never touch the staging D1 tables');
+ assert.equal(queries,0,'A deliberately disabled release must never query production D1');
  const payload=await response.json();
  assert.equal(payload.error,'Not found');
  const source=readFileSync(new URL('../worker/index.js',import.meta.url),'utf8');
- assert.match(source,/env\.EDITORIAL_DEFAULTS_PREVIEW!=='enabled'/);
+ assert.match(source,/env\.EDITORIAL_DEFAULTS_PREVIEW==='disabled'/);
+});
+
+test('#390 released Worker exposes only the exact pinned public snapshot',async()=>{
+ const db=stagingDB();
+ const endpoint='https://ps-build-studio-cloud.bonaqu.workers.dev/api/editorial-defaults?snapshot=';
+ const mismatched=await worker.fetch(new Request(endpoint+'0.948.0-0000000000000000'),{DB:db},{});
+ assert.equal(mismatched.status,404,'Unknown snapshots are not public');
+ assert.equal(db.queries.length,0,'Unknown snapshot must be rejected before D1 reads');
+ const valid=await worker.fetch(new Request(endpoint+manifest.snapshot),{DB:db},{});
+ assert.equal(valid.status,200,'Reviewed pinned version is the only released snapshot');
+ assert.equal((await valid.json()).sha256,manifest.digest);
+ const source=readFileSync(new URL('../worker/index.js',import.meta.url),'utf8');
+ assert.match(source,/if\(snapshot!=='0\.948\.0-5637e5c111eb4528'\)/);
 });
 
 test('#390 D1 authored defaults: exact version read validates every source field',async()=>{

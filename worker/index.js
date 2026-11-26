@@ -772,12 +772,11 @@ if(path==='/api/health'&&method==='GET'){
   features:{sharing:sharingReady,catalog:catalogPublished,library:found.has('private_builds'),
    accounts:['user_accounts','user_sessions','user_registration_limits'].every(n=>found.has(n))}},ready?200:503);
 }
-// Optional authorial defaults staging: exact snapshot only, SELECT-only,
-// no production activation. Existing public overrides stay independent.
+// #390 released immutable authorial defaults: exact snapshot only, GET/SELECT.
+// The installed production D1 snapshot was independently backed up and verified.
+// An explicit operator kill switch safely falls back to source text in Pages.
 if(path==='/api/editorial-defaults'&&method==='GET'){
- // Disabled by default in every existing Worker environment: a future
- // staging import and explicit operator flag are prerequisites to reads.
- if(env.EDITORIAL_DEFAULTS_PREVIEW!=='enabled')return no('Not found',404);
+ if(env.EDITORIAL_DEFAULTS_PREVIEW==='disabled')return no('Not found',404);
  const params=new URL(request.url).searchParams;
  // A pinned snapshot is the ONLY accepted input. Duplicate query keys or
  // extra parameters cannot silently change which D1 data is displayed.
@@ -785,6 +784,8 @@ if(path==='/api/editorial-defaults'&&method==='GET'){
   return json({error:'Authorial defaults unavailable',
    code:'EDITORIAL_DEFAULTS_BAD_REQUEST'},400);
  const snapshot=params.get('snapshot');
+ // Do not expose any other snapshots from the shared production database.
+ if(snapshot!=='0.948.0-5637e5c111eb4528')return no('Not found',404);
  try{
   const outcome=await readVerifiedEditorialSnapshot(env.DB,snapshot);
   return json(outcome.payload,outcome.status);
