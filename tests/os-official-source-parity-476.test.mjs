@@ -89,7 +89,7 @@ test('bounded read-only inspection never sends credentials, writes, or arbitrary
  assert.ok(seen.every(([url])=>url.startsWith(OFFICIAL_GAME_URL)&&!url.includes('?')));
  assert.match(sourceParityMarkdown(report),/TEXT DRIFT/);
  assert.match(report.sourceMeaning,/not proof of server-side/);
- assert.throws(()=>inspectOfficialSources({names:['../admin']}),
+ await assert.rejects(inspectOfficialSources({names:['../admin']}),
   /Invalid bounded/);
 });
 
