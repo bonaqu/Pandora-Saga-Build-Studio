@@ -1771,7 +1771,7 @@ export async function runUIContentInlineSmoke(browser,base){
     ['scaling-inspired-seconds',en?'0.75':'0,75'],
     ['scaling-int','3'],['scaling-int','5'],
     ['scaling-mastery','4'],['scaling-mastery','5'],
-    ['scaling-mastery-gain','+1%'],['scaling-mastery-remaining','5'],
+    ['scaling-mastery-gain','+1'],['scaling-mastery-remaining','5'],
     ['scaling-mastery-target','65'],
     ['scaling-next-int-gain','+2'],['scaling-next-int-remaining','5'],
     ['scaling-next-int-value','80'],
@@ -1787,10 +1787,10 @@ export async function runUIContentInlineSmoke(browser,base){
     'Расчёт (с округлением вниз): 4 + ИНТ 3 + мастерство 4 = 11');
    assert.deepEqual(row.original.milestones,en?[
     'Next spell strength +2 at INT 80 (+5 INT)',
-    'Next strike strength +1% at Archery 65 (+5)'
+    'Next strike strength (model) +1 at Archery 65 (+5)'
    ]:[
     'Следующий прирост силы заклинания: +2 при ИНТ 80 (ещё 5 ИНТ)',
-    'Следующий прирост силы удара: +1% при мастерстве «Стрельба» 65 (ещё 5)'
+    'Следующий прирост силы удара: (модель) +1 при мастерстве «Стрельба» 65 (ещё 5)'
    ]);
    assert.equal(row.original.inspired,en?
     'With allied Inspiration: 0.75 s casting (instead of 1.5 s)':
@@ -1803,8 +1803,8 @@ export async function runUIContentInlineSmoke(browser,base){
     en?'Verified calculation:':'Проверенный расчёт:'
    ]);
    assert.equal(row.changedMastery,en?
-    'Next special strike power +1% at Archery 65 (+5)':
-    'Следующий прирост силы особого удара: +1% при мастерстве «Стрельба» 65 (ещё 5)');
+    'Next special strike power (model) +1 at Archery 65 (+5)':
+    'Следующий прирост силы особого удара: (модель) +1 при мастерстве «Стрельба» 65 (ещё 5)');
    assert.deepEqual(row.edits,[
     {key:'effects.scaling.calculationLead',field:row.lang,
      initial:en?'Calculation (rounded down):':'Расчёт (с округлением вниз):'},
