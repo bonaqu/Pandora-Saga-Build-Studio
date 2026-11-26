@@ -60,14 +60,14 @@ test('catalog security confirmations and runtime failure messages are bilingual,
  for(const russian of [
   'Проверить, работают ли сохранение и удаление правок?',
   'Проверить конфликты правок?',
-  'D1 обновлена. GitHub проверяет резерв; окно можно закрыть.'
+  'Каталог обновлён. Резервная копия проверяется; окно можно закрыть.'
  ]){
   assert.ok(workbench.includes(russian),russian);
  }
  for(const english of [
   'Verify that saving and deleting edits works?',
   'Check edit conflicts?',
-  'D1 is updated. GitHub is verifying the backup; you may close this window.',
+  'Catalog updated. Backup is being verified; you may close this window.',
   'Export failed: ','Cannot publish: ','Preparing update · ',
   'D1 write verification failed: ','D1 conflict check failed: ',
   'Could not create PR: ','GitHub backup unavailable: connection required'

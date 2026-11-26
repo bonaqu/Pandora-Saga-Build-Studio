@@ -124,6 +124,12 @@ export async function runSavedBuildGridSmoke(browser,base){
      term+': horizontal scrollbar occurs only when cards exceed available width');
     assert.ok(geo.overflow<=14,'No document-level horizontal overflow: '+geo.overflow);
    }
+   // Escape clears the filter in place instead of closing the build library.
+   await search.fill('two');
+   await search.press('Escape');
+   assert.equal(await search.inputValue(),'');
+   assert.equal(await grid.locator('.build-card:visible').count(),6);
+   assert.equal(await search.evaluate(el=>document.activeElement===el),true);
    // Additional RU/EN parity check after the real search/layout interactions.
    await page.locator('#dockClose').click();
    await page.locator('#locale [data-locale="en"]').click();
@@ -163,6 +169,13 @@ export async function runSavedBuildGridSmoke(browser,base){
    await englishSearch.fill('');
    // Filtering, hover and locale switching must not mutate saved player data.
    assert.equal(await page.evaluate(()=>localStorage.getItem('ps-build-library.v1')),original);
+   // Enter in the name field invokes the same explicit Save New operation.
+   const nameField=page.locator('.build-name-input');
+   await nameField.fill('QA keyboard saved build');
+   await nameField.press('Enter');
+   await page.locator('.build-card').filter({hasText:'QA keyboard saved build'})
+    .first().waitFor({state:'visible',timeout:10000});
+   assert.equal(await page.locator('.build-card').count(),7);
    assert.deepEqual(errors,[]);
   }finally{await context.close()}
  }

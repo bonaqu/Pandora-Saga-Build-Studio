@@ -8948,6 +8948,13 @@ function renderBuilds(root){
  const libraryText=key=>window.PandoraUILocale.text(key,lang);
  const toolbar=h('div',{class:'build-toolbar'});
  const name=h('input',{type:'text',class:'build-name-input',maxLength:'70',value:state.name||'Новый герой','aria-label':libraryText('libraryBuildNameAria')});
+ // Same operation as the visible "Save new" action, without an extra mouse
+ // movement. Never steal Enter during IME or while a new-hero prompt is open.
+ name.addEventListener('keydown',event=>{
+  if(event.key!=='Enter'||event.isComposing||event.repeat)return;
+  event.preventDefault();
+  if(!newBuildPromptOpen)saveBuild(name.value);
+ });
  const choice=h('div',{class:'new-build-choice',hidden:!newBuildPromptOpen});
  const draft=h('input',{type:'text',maxLength:'70',value:newBuildDraftName??(state.name||'Новый герой'),
   'aria-label':libraryText('libraryDraftNameAria')});
@@ -9284,6 +9291,12 @@ function renderBuilds(root){
    none.hidden=!query||visible>0;
   };
   search.addEventListener('input',()=>{buildSearchQuery=search.value;apply()});
+  // Escape clears only an active search, keeping the library and focus open.
+  search.addEventListener('keydown',event=>{
+   if(event.key!=='Escape'||(!search.value&&!buildSearchQuery))return;
+   event.preventDefault();event.stopPropagation();
+   search.value='';buildSearchQuery='';apply();
+  });
   apply();
  }
  if(!builds.length)root.append(h('p',{class:'muted',
