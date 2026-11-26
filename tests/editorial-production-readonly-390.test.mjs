@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {buildEditorialDefaultsManifest} from '../scripts/plan-editorial-d1-defaults.mjs';
+import {buildEditorialDefaultsManifest,renderEditorialDefaultsReadbackSQL,
+ parseWranglerEditorialReadback,verifyEditorialDefaultsReadback} from '../scripts/plan-editorial-d1-defaults.mjs';
 import {
  assertProductionIdentity,readProductionEditorialSchema,
  parseProductionPresence,productionPresenceSQL,checkedReadOnlySQL,
@@ -55,6 +56,20 @@ test('#390 exact production metadata/readback fail closed without reading privat
    /Production editorial|Invalid production|Unexpected production/);
  assert.match(productionPresenceSQL(),/AS marker_digest/);
  assert.equal(checkedReadOnlySQL(productionPresenceSQL()),productionPresenceSQL());
+ const full=renderEditorialDefaultsReadbackSQL(manifest).replace(/^\s*--[^\n]*(?:\n|$)/gm,'').trim();
+ assert.equal(checkedReadOnlySQL(full),full);
+ const raw=JSON.stringify([{success:true,results:[{staging_readback_json:JSON.stringify({
+  metadata:{snapshot:manifest.snapshot,source_release:manifest.release,
+   sha256:manifest.digest,expected_rows:manifest.records.length},
+  rows:manifest.records.map(x=>({record_key:x.recordKey,field:x.field,value:x.value}))
+ })}]}]);
+ const parsed=parseWranglerEditorialReadback(raw);
+ assert.equal(verifyEditorialDefaultsReadback(manifest,parsed.metadata,parsed.rows).digest,manifest.digest);
+ const damaged=parsed.rows.map((x,i)=>i===0?{...x,value:x.value+' corrupted'}:x);
+ assert.equal(verifyEditorialDefaultsReadback(manifest,parsed.metadata,damaged).ok,false);
+ for(const tamper of [full+' DROP TABLE overrides;',full.replace('editorial_default_rows','overrides'),
+  full+'\nSELECT 1;'])
+  assert.throws(()=>checkedReadOnlySQL(tamper),/Unsafe/);
  for(const bad of ['DELETE FROM editorial_default_rows;','SELECT * FROM users; DROP TABLE users;',
   'PRAGMA table_xinfo(user_accounts);','-- bypass\nSELECT 1;','SELECT 1;\nSELECT 2;'])
   assert.throws(()=>checkedReadOnlySQL(bad),/Unsafe/);
