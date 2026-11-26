@@ -46,15 +46,17 @@ export function assertPinnedProductionManifest(manifest){
 export function assertOnlyPinnedProductionSQL(sql,manifest){
  if(typeof sql!=='string'||sql!==renderEditorialDefaultsSQL(assertPinnedProductionManifest(manifest)))
   throw Error('SQL is not the exact generated authorial-only first-install plan');
- const commands=sql.split('\n').filter(line=>line&&!line.startsWith('--'));
- if(commands.length!==ROWS+5||
-  !commands[0].startsWith('CREATE TABLE IF NOT EXISTS editorial_default_rows (')||
-  !commands[1].startsWith('CREATE TABLE IF NOT EXISTS editorial_default_snapshots (')||
-  commands.slice(2,2+ROWS).some(line=>!line.startsWith('INSERT INTO editorial_default_rows('))||
-  !commands[2+ROWS].startsWith('INSERT INTO editorial_default_snapshots(')||
-  !commands[3+ROWS].startsWith('SELECT COUNT(*) AS actual_rows FROM editorial_default_rows')||
-  !commands[4+ROWS].startsWith('SELECT snapshot,source_release,sha256,expected_rows FROM editorial_default_snapshots'))
-  throw Error('Unexpected executable statements in D1 first-install SQL');
+ // SQL literals can include authored newlines: NEVER count raw lines as statements.
+ // Identity with the reviewed deterministic renderer above is the primary guard.
+ const inserts=(sql.match(/(?:^|\n)INSERT INTO editorial_default_rows\(snapshot,record_key,field,value\) VALUES \(/g)||[]).length;
+ const marker=(sql.match(/(?:^|\n)INSERT INTO editorial_default_snapshots\(/g)||[]).length;
+ if(!sql.startsWith('-- DRY RUN SQL ONLY.')||
+  !sql.includes('CREATE TABLE IF NOT EXISTS editorial_default_rows (')||
+  !sql.includes('CREATE TABLE IF NOT EXISTS editorial_default_snapshots (')||
+  inserts!==ROWS||marker!==1||
+  !sql.includes('SELECT COUNT(*) AS actual_rows FROM editorial_default_rows')||
+  !sql.includes('SELECT snapshot,source_release,sha256,expected_rows FROM editorial_default_snapshots'))
+  throw Error('Unexpected generated D1 first-install SQL structure');
  return true;
 }
 export function assertOriginalBackupMetadata(artifact){
