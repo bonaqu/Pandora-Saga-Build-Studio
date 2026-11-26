@@ -10,7 +10,7 @@ test('#815 archive comparison is an optional advanced action while live comparis
  assert.match(source,/actions\.append\(action\(live,'liveButton'[\s\S]*?reviewSteps,[\s\S]*?secondaryHint\(advanced,'hintAdvancedDisclosure'/);
  const topLevel=source.slice(source.indexOf('actions.append(action(live'),source.indexOf('    // Each action tooltip'));
  assert.doesNotMatch(topLevel,/secondaryHint\(archiveChoice/);
- assert.match(source,/const archive=h\('button'/);
+ assert.match(source,/const archive\s*=\s*h\('button'/);
  assert.match(source,/action\(archive,'archiveButton'/);
  assert.match(css,/\.build-library-search-wrap>\.build-library-clear\[hidden\]\{display:none\}/);
 });
