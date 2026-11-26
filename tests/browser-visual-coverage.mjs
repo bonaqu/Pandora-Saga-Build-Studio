@@ -61,6 +61,8 @@ export async function runVisualCoverageSmoke(browser,base){
       width:Math.round(box.width),
       contentWidth:group.scrollWidth,
       horizontalOverflow:Math.max(0,group.scrollWidth-group.clientWidth),
+      overflowX:getComputedStyle(group).overflowX,
+      flexWrap:getComputedStyle(group).flexWrap,
       collisions,
       buttons:children.filter(c=>c.tag==='BUTTON').length
      };
@@ -93,7 +95,11 @@ export async function runVisualCoverageSmoke(browser,base){
    assert.ok(info.globalOverflow<=14,
     prefix+' '+label+': page overflow '+JSON.stringify(info));
    for(const [key,g] of Object.entries(info.groups)){
-    assert.ok(g.horizontalOverflow<=14,
+    // The mobile chapter row is deliberately scrollable WITHIN its width.
+    // Global page overflow is still forbidden by the assertion above.
+    const intentionalWikiScroller=config.width<=700&&key==='.wiki-categories'&&
+     g.overflowX==='auto'&&g.flexWrap==='nowrap';
+    assert.ok(intentionalWikiScroller||g.horizontalOverflow<=14,
      prefix+' '+label+': overflowing '+key+' '+JSON.stringify(g));
     assert.deepEqual(g.collisions,[],
      prefix+' '+label+': controls overlap in '+key);

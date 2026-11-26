@@ -4327,7 +4327,10 @@ function renderWiki(root){
   'Прокрутить список энциклопедии к началу',
   'Scroll the encyclopedia list to the beginning','aria-label');
  listPanel.append(browse,listTop);
- const controls=h('div',{class:'wiki-controls'}),categories=h('div',{class:'wiki-categories'});
+ const controls=h('div',{class:'wiki-controls'}),
+  categories=h('div',{class:'wiki-categories',role:'group',
+   'aria-label':lang==='en'?'Encyclopedia chapters; scroll horizontally on mobile':
+    'Разделы Энциклопедии; на телефоне прокручиваются горизонтально'});
  const wt=(ru,en)=>lang==='en'?en:ru;
  const wikiTitle=(group,key,ru,en)=>
   window.PandoraWikiLabels?.value(override,group,key,lang)||wt(ru,en);
@@ -4421,6 +4424,9 @@ function renderWiki(root){
     key==='item'?wikiSelection.type==='item'&&wikiItemType!=='utility':
     wikiSelection.type===key)?'chosen':'',
    'data-wiki-chapter':key,
+   'aria-pressed':String((key==='utility'?wikiSelection.type==='item'&&wikiItemType==='utility':
+    key==='item'?wikiSelection.type==='item'&&wikiItemType!=='utility':
+    wikiSelection.type===key)),
    onclick:()=>{
     if(key==='item'||key==='utility'){
      wikiSelection={type:'item',id:null,highlight:null};
@@ -4791,6 +4797,18 @@ function renderWiki(root){
  }
  const layout=h('div',{class:'wiki-layout'});
  layout.append(listPanel,detail);root.append(controls,layout);
+ // Keep the selected chapter discoverable on narrow screens without
+ // scrolling the document or changing the chosen encyclopedia record.
+ if(window.matchMedia?.('(max-width:700px)').matches)
+  requestAnimationFrame(()=>{
+   if(!categories.isConnected)return;
+   const selected=categories.querySelector('[data-wiki-chapter].chosen');
+   if(!selected)return;
+   const menu=categories.getBoundingClientRect();
+   const item=selected.getBoundingClientRect();
+   categories.scrollLeft=Math.max(0,categories.scrollLeft+item.left-menu.left-
+    Math.max(0,(menu.width-item.width)/2));
+  });
  if(wikiSelection.type==='honor'){
   // Honor navigation sticks inside the encyclopedia's actual scroll viewport.
   layout.classList.add('wiki-layout-honor');
@@ -5526,7 +5544,16 @@ function renderWiki(root){
    else bindOwnerInterfaceText(empty,'wiki-ui','selectPrompt',
     'Выбери запись для просмотра характеристик и связанных источников.',
     'Select an entry to view its details and sources.');
-   detail.append(empty);return;
+   detail.append(empty);
+   // A small opt-in shortcut replaces the otherwise inert right-hand pane.
+   // The user still chooses whether to open a record.
+   if(results.length){
+    const firstId=String(results[0][0]);
+    detail.append(h('button',{type:'button',class:'wiki-open-first',
+     text:'→ '+dataName(type,firstId),
+     onclick:()=>openWiki(type,firstId)}));
+   }
+   return;
   }
   // The destination is the real origin, which may belong to another chapter.
   // A neutral label avoids falsely promising a category-specific destination.
@@ -5546,8 +5573,8 @@ function renderWiki(root){
    detail.append(heading);
    if(adminEditing&&adminToken){
     detail.append(h('p',{class:'wiki-owner-instruction',
-     text:wt('✎ Подчёркнутые значения: двойной клик или F2 — изменить. При выходе из поля — автосохранение в Cloudflare D1.',
-      '✎ Highlighted values: double-click or F2 to edit. Leaving the field saves automatically to Cloudflare D1.')}));
+     text:wt('✎ Двойной клик или F2 — изменить. При выходе из поля сохранится автоматически.',
+      '✎ Double-click or press F2 to edit. Changes save automatically when you leave the field.')}));
     if(['item','chest','map','monster','npc','skill','soul','instance'].includes(type))
      heading.tabIndex=0;
     if(['map','monster'].includes(type)&&

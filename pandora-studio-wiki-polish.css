@@ -573,3 +573,35 @@
 .wiki-page .wiki-trade-limit.is-limited .wiki-trade-limit-value{font-weight:650;color:#efd29c}
 .wiki-page .wiki-trade-limit-select{max-width:145px;padding:5px 7px}
 .wiki-page .wiki-trade-limit-count{width:64px;max-width:64px;padding:5px 7px}
+
+/* #815: one horizontally scrollable mobile chapter row; the owner-only
+   editing list below uses its separate .wiki-skill-edit-list grid. */
+@media(max-width:700px){
+ .wiki-controls>.wiki-categories:not(.wiki-skill-edit-list){
+  display:flex;flex-wrap:nowrap;gap:6px;min-width:0;max-width:100%;
+  overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;
+  scrollbar-width:thin;scroll-snap-type:x proximity;
+  -webkit-overflow-scrolling:touch;padding:3px 2px 9px;
+  border-bottom:1px solid #62492f;
+ }
+ .wiki-controls>.wiki-categories:not(.wiki-skill-edit-list)>.wiki-category-line{
+  flex:0 0 auto;max-width:none;scroll-snap-align:start;
+ }
+ .wiki-controls>.wiki-categories:not(.wiki-skill-edit-list) [data-wiki-chapter]{
+  white-space:nowrap;min-height:40px;max-width:none;
+ }
+}
+.wiki-page .wiki-open-first{
+ display:inline-flex;align-items:center;max-width:100%;min-height:42px;
+ margin:12px 0 3px;padding:9px 14px;overflow-wrap:anywhere;
+ border:1px solid #a57b49;border-radius:6px;
+ background:#433020;color:#f4d5aa;cursor:pointer;text-align:left;
+ font:600 13px/1.4 Manrope,Arial,sans-serif;
+}
+.wiki-page .wiki-open-first:hover{background:#5e3d22;border-color:#dbad6a}
+.wiki-page .wiki-open-first:focus-visible{
+ outline:2px solid #f3c580;outline-offset:3px;
+}
+@media(prefers-reduced-motion:reduce){
+ .wiki-controls>.wiki-categories{scroll-behavior:auto}
+}
