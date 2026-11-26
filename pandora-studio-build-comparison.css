@@ -174,8 +174,24 @@
 /* 0.798: lightweight library sorting without changing saved order. */
 .build-library-controls{display:flex;align-items:end;flex-wrap:wrap;gap:9px 12px;
  margin:8px 0 10px}
-.build-library-controls>.build-library-search{flex:1 1 230px;min-width:170px;
- width:auto;margin:0}
+.build-library-controls>.build-library-search-wrap{
+ position:relative;display:flex;align-items:center;flex:1 1 230px;
+ min-width:170px;max-width:100%;
+}
+.build-library-search-wrap>.build-library-search{
+ width:100%;min-width:0;margin:0;box-sizing:border-box;padding-right:48px
+}
+.build-library-search-wrap>.build-library-clear{
+ position:absolute;right:5px;top:50%;transform:translateY(-50%);
+ display:grid;place-items:center;width:34px;height:34px;padding:0;
+ border:1px solid #937044;border-radius:6px;background:#382819;color:#f6dcb1;
+ font:700 22px/1 Manrope,Arial,sans-serif;cursor:pointer
+}
+.build-library-search-wrap>.build-library-clear:hover{background:#543a22}
+.build-library-search-wrap>.build-library-clear:focus-visible{
+ outline:2px solid #eac184;outline-offset:2px
+}
+.build-library-search-wrap>.build-library-clear[hidden]{display:none}
 .build-library-sort{display:grid;gap:4px;flex:0 1 210px;min-width:145px;
  color:#d8bc94;font:600 11px Manrope,Arial,sans-serif}
 .build-library-sort-head{display:flex;align-items:center;justify-content:space-between;
@@ -186,7 +202,7 @@
  background:#241b13;color:#f3d3a5;font:12px Manrope,Arial,sans-serif}
 .build-library-sort-select:focus-visible{outline:2px solid #eac184;outline-offset:2px}
 @media(max-width:550px){.build-library-sort{flex:1 1 100%;max-width:none}
- .build-library-controls>.build-library-search{flex-basis:100%}}
+ .build-library-controls>.build-library-search-wrap{flex-basis:100%}}
 
 /* Owner labels wrap inside the original scrollable A/B metric cells, not in
    a new action or an extra column. */

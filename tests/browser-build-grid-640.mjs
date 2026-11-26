@@ -124,6 +124,17 @@ export async function runSavedBuildGridSmoke(browser,base){
      term+': horizontal scrollbar occurs only when cards exceed available width');
     assert.ok(geo.overflow<=14,'No document-level horizontal overflow: '+geo.overflow);
    }
+   // Mouse/touch clear is visible only when filtering and preserves focus.
+   const clear=page.locator('.build-library-clear');
+   assert.equal(await clear.isVisible(),false);
+   await search.fill('three');
+   assert.equal(await clear.isVisible(),true);
+   assert.equal(await clear.getAttribute('aria-label'),'Очистить поиск');
+   await clear.click();
+   assert.equal(await search.inputValue(),'');
+   assert.equal(await grid.locator('.build-card:visible').count(),6);
+   assert.equal(await search.evaluate(el=>document.activeElement===el),true);
+   assert.equal(await clear.isVisible(),false);
    // Escape clears the filter in place instead of closing the build library.
    await search.fill('two');
    await search.press('Escape');
@@ -166,7 +177,10 @@ export async function runSavedBuildGridSmoke(browser,base){
    await englishSort.selectOption('saved');
    await englishSearch.fill('no such build');
    assert.match(await page.locator('.build-grid + .muted').innerText(),/No builds match this search/);
-   await englishSearch.fill('');
+   assert.equal(await page.locator('.build-library-clear').getAttribute('aria-label'),'Clear search');
+   await page.locator('.build-library-clear').click();
+   assert.equal(await englishSearch.inputValue(),'');
+   assert.equal(await page.locator('.build-card:visible').count(),6);
    // Filtering, hover and locale switching must not mutate saved player data.
    assert.equal(await page.evaluate(()=>localStorage.getItem('ps-build-library.v1')),original);
    // Enter in the name field invokes the same explicit Save New operation.

@@ -616,10 +616,14 @@
         'Доступные подписи сверки','Review accessibility labels');
       if(editor)advanced.append(editor);
     }
-    actions.append(action(live,'liveButton','Проверить изменения в текущей игре','Check live game updates'),
+    // Archive comparison is a rare manual recovery tool, not the first step
+    // for daily updates. Keep its native disclosure, RU/EN copy and callbacks.
+    advanced.append(
      secondaryHint(archiveChoice,'hintArchiveDisclosure',
        'Открыть отдельную сверку с архивом GitHub Pages. Архивная копия не подтверждает актуальные параметры на игровом сайте.',
-       'Open a comparison with the GitHub Pages archive. An archived copy cannot verify current game-server values.'),
+       'Open a comparison with the GitHub Pages archive. An archived copy cannot verify current game-server values.')
+    );
+    actions.append(action(live,'liveButton','Проверить изменения в текущей игре','Check live game updates'),
      reviewSteps,
      secondaryHint(advanced,'hintAdvancedDisclosure',
        'Дополнительные инструменты: диагностика D1, ручной экспорт и повторное создание резервного PR при ошибке автоматической отправки.',
