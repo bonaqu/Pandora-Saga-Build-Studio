@@ -27,7 +27,8 @@ test('#815 history Escape clears search only without writing D1 or closing the m
  assert.match(history,/draw\(\);search\.focus\(\{preventScroll:true\}\)/);
  assert.match(history,/const clearSearch=h\('button'/);
 });
-\ntest('#815 equipment chooser offers one-tap and Escape search reset for RU/EN',()=>{
+
+test('#815 equipment chooser offers one-tap and Escape search reset for RU/EN',()=>{
  const css=readFileSync(new URL('../pandora-studio-equipment-tooltip.css',import.meta.url),'utf8');
  assert.match(app,/const clearPickerSearch=h\('button'/);
  assert.match(app,/aria-label':lang==='en'\?'Clear equipment search':'Очистить поиск предметов'/);
@@ -35,7 +36,8 @@ test('#815 history Escape clears search only without writing D1 or closing the m
  assert.match(app,/clearPickerSearch\.addEventListener\('click',clearPickerQuery\)/);
  assert.match(app,/search\.addEventListener\('keydown',event=>\{[\s\S]*?clearPickerQuery\(\)/);
  assert.match(css,/\.stage-picker-search-clear\[hidden\]\{display:none!important\}/);
-});\n
+});
+
 test('#815 source outage reveals archive recovery without making data changes',()=>{
  const source=readFileSync(new URL('../pandora-os-catalog-workbench.js',import.meta.url),'utf8');
  assert.match(source,/if\(unavailable\)\{[\s\S]*?advanced\.open=true;archiveChoice\.open=true/);
