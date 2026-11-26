@@ -2063,6 +2063,8 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     const sourceStat=()=>make('span',{class:'stage-scaling-source-stat',text:stat});
     more.append(make('small',{class:'stage-skill-coefficient-next'},[
      scalingCaption('nextIntLead'),' ',
+     make('span',{class:'stage-skill-coefficient-uncertainty',
+      text:en?'(model)':'(модель)'}),' ',
      healingValue('+'+next.gain,'scaling-next-int-gain'),' ',
      scalingCaption('nextIntAt'),' ',sourceStat(),' ',
      healingValue(next.value,'scaling-next-int-value'),' (',
@@ -2075,13 +2077,13 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     Number.isSafeInteger(skill.nextMastery.remaining)){
     const next=skill.nextMastery;
     const branch=gameBranchName(next.branch,gameTerms,en);
-    // This is an increase of the modeled coefficient, not a proven +1% damage.
+    // Next steps are increases of a hypothetical source coefficient, not proven damage percentages.
     const bonus='+1';
     const phrase=next.effect==='strike'?'nextMasteryStrike':'nextMasterySpell';
     more.append(make('small',{class:'stage-skill-coefficient-next'},[
      scalingCaption('nextMasteryLead'),' ',
      scalingCaption(phrase),' ',
-     ...(next.effect==='strike'?[make('span',{class:'stage-skill-coefficient-uncertainty',
+     ...(['strike','spell'].includes(next.effect))?[make('span',{class:'stage-skill-coefficient-uncertainty',
       text:en?'(model)':'(модель)'})]:[]),' ',
      healingValue(bonus,'scaling-mastery-gain'),' ',
      scalingCaption('nextMasteryAt'),' ',

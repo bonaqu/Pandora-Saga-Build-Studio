@@ -1026,7 +1026,8 @@ function elementalSpellCoefficientPreview({skillCatalog,jobKey,level,
    detailRu:'Зависит от ИНТ и освоенного мастерства',
    detailEn:'Scales with INT and trained mastery',
    coefficientModels:[{ep:'EP_ELEMENT_DAMAGE',
-    labelRu:'Сила заклинания',labelEn:'Spell strength',
+    labelRu:'Коэффициент заклинания (модель)',
+    labelEn:'Spell coefficient (model)',
     amount,unit:'',confidence:'coefficient-model',
     roundingParts:{base:fv1[3],int:fromInt,mastery:fromMastery,
      method:'floor-components'}}],
@@ -2807,24 +2808,30 @@ function healingActionPreview({skillCatalog=null,skillId=null,combat=null}={}){
 }
 
 const healingSourceSpecs=Object.freeze({
- firstAid:Object.freeze({standard:[310001001,'ALLY',0,8,null,[100,250,140,25]],
-  cleric:[310001002,'ALLY',50,8,310001001,[300,250,280,25]],
+ firstAid:Object.freeze({standard:[310001001,'ALLY',0,8,null],
+  cleric:[310001002,'ALLY',50,8,310001001],
   ep:'EP_HEAL_LIFE',nameEn:'First Aid'}),
- heal:Object.freeze({standard:[310004001,'ALLY',18,0,null,[600,200,300,50]],
-  cleric:[310004002,'ALLY',50,0,310004001,[1000,300,500,50]],
+ heal:Object.freeze({standard:[310004001,'ALLY',18,0,null],
+  cleric:[310004002,'ALLY',50,0,310004001],
   ep:'EP_HEAL_LIFE',nameEn:'Heal'}),
- healingAura:Object.freeze({standard:[310021001,'PARTY_ALL',0,54,null,[600,200,300,150]],
-  cleric:[310021002,'PARTY_ALL',50,54,310021001,[850,200,400,150]],
+ healingAura:Object.freeze({standard:[310021001,'PARTY_ALL',0,54,null],
+  cleric:[310021002,'PARTY_ALL',50,54,310021001],
   ep:'EP_HEAL_LIFE',nameEn:'Healing Aura'}),
- sanctuary:Object.freeze({standard:[310023001,'POINT',45,0,null,[0,0,0,310023002]],
+ sanctuary:Object.freeze({standard:[310023001,'POINT',45,0,null],
   ep:'EP_SKILL_EXEC',nameEn:'Sanctuary'}),
- restoration:Object.freeze({standard:[310022001,'PARTY_ALL',0,41,null,[20,5,5,5]],
+ restoration:Object.freeze({standard:[310022001,'PARTY_ALL',0,41,null],
   ep:'EP_HEAL_LIFE_REGENERATOR',nameEn:'Restoration'})
 });
+// Read the current OS skill catalog's exact FV1; preserve the historical
+// Remaked computation as an explicitly unverified coefficient model.
+// NEVER infer a numeric healing vector from a linked child-skill ID.
+const safeHealingFV=v=>Array.isArray(v)&&v.length===4&&
+ v.every((value,i)=>Number.isSafeInteger(value)&&value>=0&&
+  value<=(i===3?20000:5000))&&v.some(value=>value>0);
 function healingSourceGate({id,cleric,jobKey,level,benevolence,benevolenceCap,
  skillCatalog}){
  const spec=healingSourceSpecs[id];
- const [skillId,type,requiredLevel,requiredMastery,prereq,effectValues]=
+ const [skillId,type,requiredLevel,requiredMastery,prereq]=
   cleric&&spec?.cleric?spec.cleric:(spec?.standard||[]);
  const skill=skillCatalog?.[String(skillId)];
  if(!skill||Number(skill.id)!==skillId||skill.skillType!==type||
@@ -2842,7 +2849,9 @@ function healingSourceGate({id,cleric,jobKey,level,benevolence,benevolenceCap,
  const expectedFV2=id==='restoration'?[0,0,0,2]:[0,0,0,0];
  if(effect.ep!==spec.ep||effect.dir!=='TARGET'||
   !Array.isArray(effect.fv1)||effect.fv1.length!==4||
-  effect.fv1.some((n,i)=>n!==effectValues[i])||
+  (id==='sanctuary'?
+   JSON.stringify(effect.fv1)!=='[0,0,0,310023002]':
+   !safeHealingFV(effect.fv1))||
   !Array.isArray(effect.fv2)||effect.fv2.length!==4||
   effect.fv2.some((n,i)=>n!==expectedFV2[i]))return null;
  if(prereq!=null&&!skillCatalog?.[String(prereq)])return null;
@@ -2851,7 +2860,7 @@ function healingSourceGate({id,cleric,jobKey,level,benevolence,benevolenceCap,
   if(Number(linked?.id)!==310023002||!Array.isArray(linked.funcs)||
    linked.funcs.length!==1||linked.funcs[0].ep!=='EP_HEAL_LIFE'||
    linked.funcs[0].dir!=='TARGET'||
-   JSON.stringify(linked.funcs[0].fv1)!=='[200,0,200,100]'||
+   !safeHealingFV(linked.funcs[0].fv1)||
    JSON.stringify(linked.funcs[0].fv2)!=='[0,0,0,0]')return null;
  }
  return skillId;
@@ -2866,10 +2875,11 @@ function healingSpellsPreview({level,int,spi,benevolence=0,healingPercent=100,
  // constant]. The archival enhanced Heal and Sanctuary level terms are stale.
  // Preserve raw fractions until the final skill-healing percentage floor.
  const fv=key=>{
-  if(key==='sanctuary')return [200,0,200,100]; // OS triggered 310023002
   const spec=healingSourceSpecs[key];
   const option=cleric&&spec?.cleric?spec.cleric:spec?.standard;
-  return option?.[5]??null;
+  const sourceId=key==='sanctuary'?310023002:option?.[0];
+  const source=skillCatalog?.[String(sourceId)]?.funcs?.[0]?.fv1;
+  return safeHealingFV(source)?source:null;
  };
  const calc=(key,mastery=benevolence,healingInt=int,trialLevel=level)=>{
   const v=fv(key);
@@ -2880,8 +2890,9 @@ function healingSpellsPreview({level,int,spi,benevolence=0,healingPercent=100,
  };
  // Current OS FV2[3]=2 matches Remaked Calc('LPsec') «every 2 seconds».
  // Its duration/stacking in live OS still needs independent confirmation.
- const recoveryFV=healingSourceSpecs.restoration.standard[5];
- const restoreAt=(mastery,healingSpi=spi,trialLevel=level)=>recoveryFV[3]+Math.floor(healingSpi*recoveryFV[0]/100)+
+ const recoveryFV=fv('restoration');
+ const restoreAt=(mastery,healingSpi=spi,trialLevel=level)=>!recoveryFV?null:
+  recoveryFV[3]+Math.floor(healingSpi*recoveryFV[0]/100)+
   Math.floor(trialLevel*recoveryFV[1]/100)+
   Math.floor(mastery*recoveryFV[2]/100);
  const restore=restoreAt(benevolence);
@@ -3093,11 +3104,11 @@ function consumableRecoveryPreview({items=null,maxHp=null,maxMp=null,potionRate=
 // corresponding current OS skill is genuine and accessible to this class.
 const periodicSkillProof=Object.freeze({
  310002001:{skillType:'ALLY',charLevel:0,required:21,ep:'EP_HEAL_LIFE_REGENERATOR',
-  fv1:[10,10,10,10],fv2:[0,0,0,2]},
+  fv2:[0,0,0,2]},
  310022001:{skillType:'PARTY_ALL',charLevel:0,required:41,ep:'EP_HEAL_LIFE_REGENERATOR',
-  fv1:[20,5,5,5],fv2:[0,0,0,2]},
+  fv2:[0,0,0,2]},
  330005001:{skillType:'ALLY',charLevel:20,required:0,ep:'EP_HEAL_MANA_REGENERATOR',
-  fv1:[0,10,0,0],fv2:[0,0,0,2]}
+  fv2:[0,0,0,2]}
 });
 const naturalManaJobs=new Set(['ASCETIC','MONK','EXORCIST']);
 function periodicSourceMatches(skill,proof){
@@ -3109,9 +3120,9 @@ function periodicSourceMatches(skill,proof){
   !Array.isArray(skill.funcs)||skill.funcs.length!==1)return false;
  const effect=skill.funcs[0];
  return effect?.ep===proof.ep&&effect?.dir==='TARGET'&&
-  [effect.fv1,effect.fv2].every((vector,i)=>Array.isArray(vector)&&
-   vector.length===4&&vector.every((value,index)=>
-    value===(i===0?proof.fv1:proof.fv2)[index]));
+  safeHealingFV(effect.fv1)&&Array.isArray(effect.fv2)&&
+  effect.fv2.length===4&&effect.fv2.every((value,index)=>
+   value===proof.fv2[index]);
 }
 function periodicRecoveryPreview({level,spi,benevolence=0,jobKey=null,
  skillCatalog=null,benevolenceCap=null}={}){
@@ -3123,7 +3134,8 @@ function periodicRecoveryPreview({level,spi,benevolence=0,jobKey=null,
  // Separate Remaked floors, current OS coefficients. Matching FV2[3]=2
  // agrees with Remaked's «every 2 seconds» model, not live tick measurement.
  const osMagnitude=(id,mastery=benevolence,healingSpi=spi,heroLevel=level)=>{
-  const v=periodicSkillProof[id].fv1;
+  const v=skillCatalog?.[String(id)]?.funcs?.[0]?.fv1;
+  if(!safeHealingFV(v))return null;
   return v[3]+Math.floor(healingSpi*v[0]/100)+Math.floor(heroLevel*v[1]/100)+
    Math.floor(mastery*v[2]/100);
  };
@@ -3159,7 +3171,7 @@ function periodicRecoveryPreview({level,spi,benevolence=0,jobKey=null,
      remaining:rank-benevolence,gain:amount-candidate.amount};break;}
    }
   }
-  const v=proof.fv1;
+  const v=skill.funcs[0].fv1;
   const breakdown=available?{kind:'periodic',stat:'spi',flat:v[3],
    statPart:Math.floor(spi*v[0]/100),levelPart:Math.floor(level*v[1]/100),
    masteryPart:Math.floor(benevolence*v[2]/100),healingPercent:null}:null;

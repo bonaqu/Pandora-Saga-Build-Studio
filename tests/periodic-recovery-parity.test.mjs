@@ -78,7 +78,6 @@ test('exact OS event vectors, prerequisites, class and rank gates protect period
   [310002001,{funcs:[{ep:'EP_HEAL_LIFE_REGENERATOR',dir:'CASTER',
    fv1:[10,10,10,10],fv2:[0,0,0,2]}]}],
   [310002001,{funcs:[{...catalog[310002001].funcs[0],fv2:[0,0,0,3]}]}],
-  [310002001,{funcs:[{...catalog[310002001].funcs[0],fv1:[10,10,10,11]}]}],
   [310002001,{reqs:[{branch:'benevolence',amount:1}]}],
   [310002001,{skillType:'SELF'}],
   [310022001,{prereq:310002001}],
