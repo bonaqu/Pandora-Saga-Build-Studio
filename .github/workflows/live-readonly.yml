@@ -38,6 +38,14 @@ jobs:
         run: node scripts/check-build-account-only-live.mjs
       - name: Compare 16 published gameplay datasets against the same D1 snapshot (read-only)
         run: npm run catalog:parity:live
+      # OS game files are authoritative for exported coefficients, but their
+      # network availability is independent of our already-published release.
+      # Report differences on EVERY merge; never mutate D1 or block Pages
+      # if the game's upstream is temporarily unreachable.
+      - name: Compare official Pandora Saga OS game files (GET-only, nonblocking)
+        continue-on-error: true
+        timeout-minutes: 3
+        run: npm run os:source:live
       # This inexpensive local identity check avoids spawning an entire
       # mirror workflow after every UI release with the same known 404 files.
       # A failed preflight errs toward running the trusted mirror, not losing
