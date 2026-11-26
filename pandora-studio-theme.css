@@ -2347,3 +2347,42 @@ footer .footer-version{margin-inline-start:auto;align-self:center;white-space:no
 /* Author display rules must not override the hidden completed-page action. */
 .stage-soul-more-row>[hidden]{display:none!important}
 .stage-soul-progress{font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums}
+
+/* 0.959 · Hero appearance: center the EMPTY slot glyph and caption together.
+   Item images and corner badges keep their established independent layout. */
+.workspace .equipment-rail .equipment-slot:not(.equipped){
+ flex-direction:column;
+ align-items:center;
+ justify-content:center;
+ gap:2px;
+ padding:2px;
+ text-align:center;
+}
+.workspace .equipment-rail .equipment-slot:not(.equipped)>.slot-glyph{
+ display:block;
+ flex:0 0 auto;
+ width:100%;
+ margin:0;
+ font-size:clamp(18px,2.4vh,26px);
+ line-height:1;
+ text-align:center;
+}
+.workspace .equipment-rail .equipment-slot:not(.equipped)>small{
+ position:static;
+ display:block;
+ flex:0 0 auto;
+ box-sizing:border-box;
+ width:100%;
+ max-width:100%;
+ min-width:0;
+ margin:0;
+ padding:0;
+ background:transparent;
+ font:500 clamp(7px,.6vw,9px)/1.15 Manrope,Arial,sans-serif;
+ color:#dfc49a;
+ text-align:center;
+ white-space:nowrap;
+ overflow:hidden;
+ text-overflow:ellipsis;
+ pointer-events:none;
+}
