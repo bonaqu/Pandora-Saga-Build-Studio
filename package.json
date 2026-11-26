@@ -41,7 +41,8 @@
     "skills:chain-audit": "node scripts/audit-os-skill-execution-graph.mjs",
     "souls:effect-audit": "node scripts/audit-os-soul-effects.mjs",
     "skills:trap-target-audit": "node scripts/audit-os-trap-target.mjs",
-    "connection:check:release": "node scripts/check-live-connections.mjs --release"
+    "connection:check:release": "node scripts/check-live-connections.mjs --release",
+    "game-source:parity": "node scripts/audit-os-official-source-parity.mjs --strict"
   },
   "pandoraRelease": "2026.11.26.959"
 }

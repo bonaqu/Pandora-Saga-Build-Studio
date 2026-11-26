@@ -38,6 +38,12 @@ jobs:
         run: node scripts/check-build-account-only-live.mjs
       - name: Compare 16 published gameplay datasets against the same D1 snapshot (read-only)
         run: npm run catalog:parity:live
+      # Independent official game-site data: source drift is reported to the
+      # GitHub run summary, never treated as proof of server-side combat math.
+      # Transient external outages and text changes must NOT block Pages/D1.
+      - name: Audit 17 official OS game files against checked-in source (read-only, advisory)
+        continue-on-error: true
+        run: node scripts/audit-os-official-source-parity.mjs --observe
       # This inexpensive local identity check avoids spawning an entire
       # mirror workflow after every UI release with the same known 404 files.
       # A failed preflight errs toward running the trusted mirror, not losing
