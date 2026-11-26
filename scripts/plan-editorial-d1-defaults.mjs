@@ -1615,14 +1615,26 @@ export function buildEditorialDefaultsManifest(){
  if(records.length>3000||
   records.reduce((sum,row)=>sum+row.value.length,0)>450000)
   throw Error('Authored defaults exceed versioned D1 reader limits');
- const payload={schema:1,release,records};
- const digest=sha256(JSON.stringify(payload));
- return Object.freeze({...payload,digest,
-  snapshot:release+'-'+digest.slice(0,16),
-  stats:Object.freeze({
-   entries:records.length,recordKeys:new Set(records.map(r=>r.recordKey)).size,
-   cohorts,unmappedHints:unmappedHints.sort(byCodepoint)
-  })});
+ // This immutable snapshot was installed and independently re-read from
+ // production in #390. Never regenerate its content from newer UI labels:
+ // later releases may freely improve the site's text without migrating D1.
+ // The only way to introduce a different authorial baseline is an explicit,
+ // separately versioned snapshot with its own review and migration.
+ const archived=JSON.parse(read('data/editorial-defaults/snapshot-0.948.0.json'));
+ if(archived.sha256!=='5637e5c111eb452800609eb44f808f2f9d465277252595ad8e2c125f79cb6c8d'||
+    archived.snapshot!=='0.948.0-5637e5c111eb4528'||
+    archived.release!==release)
+  throw Error('Installed D1 snapshot archive differs from approved production');
+ const pinned={schema:archived.schema,release:archived.release,
+  records:archived.records,digest:archived.sha256,snapshot:archived.snapshot};
+ assertVerifiedManifest(pinned);
+ return Object.freeze({...pinned,stats:Object.freeze({
+  entries:pinned.records.length,
+  recordKeys:new Set(pinned.records.map(r=>r.recordKey)).size,
+  // Named cohorts remain a source-quality metric for the current editor;
+  // they are NOT the immutable D1 snapshot itself.
+  cohorts,unmappedHints:unmappedHints.sort(byCodepoint)
+ })});
 }
 
 // Wrangler D1 --json wraps the SELECT result in a one-query envelope.
