@@ -83,6 +83,10 @@
 .os-sync-review-actions .primary{margin-left:auto}
 .os-sync-advanced-actions .button-action{font-size:12px}
 .os-sync-status{margin:0;color:#e7d1ad;line-height:1.5;font-size:13px}
+.os-sync-backup-banner{margin:0;padding:9px 12px;border:1px solid #5d644a;
+ border-left:3px solid #a6b574;border-radius:7px;background:#27271d;
+ color:#e2dab9;font-size:12px;line-height:1.5;overflow-wrap:anywhere}
+.os-sync-backup-banner a{color:#e8c686;text-underline-offset:2px}
 .os-sync-diagnostics p{overflow-wrap:anywhere}
 .os-sync-technical-code{display:block;margin:8px 0;color:#a99577;font-size:10px;overflow-wrap:anywhere}
 @media(max-width:580px){

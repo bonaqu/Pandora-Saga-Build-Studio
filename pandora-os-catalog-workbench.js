@@ -455,7 +455,7 @@
     const summary = h('div', {class:'os-sync-summary',role:'status'});
     const sourceBanner=h('p',{class:'os-sync-source-banner',hidden:true});
     const status = h('p', {class:'os-sync-status',role:'status'});
-    const backupBanner=h('p',{class:'os-sync-backup-banner',role:'status',hidden:true});
+    const backupBanner=h('p',{class:'os-sync-backup-banner','aria-live':'polite',hidden:true});
     // Only fixed authorial status copy is editable; dynamic progress,
     // server errors, game values and diagnostics remain untouched.
     const editorialState=(target,key,ru,en)=>{
