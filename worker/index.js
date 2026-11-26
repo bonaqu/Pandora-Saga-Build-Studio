@@ -144,7 +144,7 @@ async function serveCatalog(env,dataset,ctx){
   }
  });
 }
-async function adminCatalog(request,env,path){
+async function adminCatalog(request,env,path,ctx){
  if(!await auth(request,env))return no('Unauthorized',401);
  if(path==='/api/admin/catalog/initialize'){
   for(const sql of SEED_SCHEMA)await env.DB.prepare(sql).run();
@@ -347,6 +347,13 @@ async function adminCatalog(request,env,path){
   const backup=queueBackupStatement(env,data.snapshot);
   const [published]=await env.DB.batch([statement,backup]);
   if(Number(published.meta?.changes)!==1)return no('Published catalog changed during review',409);
+  // The existing durable backup starts even if the browser closes now.
+  // Cron retries remain authoritative; backup failure cannot undo D1.
+  if(ctx?.waitUntil&&githubCatalogEnabled(env)){
+   const task=deliverCatalogBackupJob(env,activeCatalog,createCatalogPullRequest)
+    .catch(()=>console.warn('GitHub backup queued for scheduled retry'));
+   ctx.waitUntil(task);
+  }
   return json({ok:true,active:data.snapshot,counts,costumeItems:costumes.c});
  }
  return no('Unknown catalog operation',404);
@@ -756,7 +763,7 @@ if(method==='GET'&&path.startsWith('/api/admin/catalog/source/')){
  return json({error:'Game data source temporarily unavailable',
   code:result.code,sourceDataset:file,attempts:result.attempts},502);
 }
-if(method==='POST'&&path.startsWith('/api/admin/catalog/'))return adminCatalog(request,env,path);
+if(method==='POST'&&path.startsWith('/api/admin/catalog/'))return adminCatalog(request,env,path,ctx);
 
 if(path==='/api/runtime-capabilities'&&method==='GET')
  return json({codeRelease:'0.361.0',ownerEditors:[
