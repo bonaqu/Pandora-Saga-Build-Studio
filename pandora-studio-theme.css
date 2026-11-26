@@ -2386,3 +2386,15 @@ footer .footer-version{margin-inline-start:auto;align-self:center;white-space:no
  text-overflow:ellipsis;
  pointer-events:none;
 }
+
+/* 0.961.0 · Explicitly qualify unverified legacy ACC/Dodge results.
+   The numeric text stays untouched; only marked tiles receive the label. */
+.stage-result-tile[data-source-confidence="legacy-model"]>strong::after{
+ content:" · модель";
+ font:500 10px/1.2 Manrope,Arial,sans-serif;
+ color:#bea886;
+ white-space:nowrap;
+}
+html[lang="en"] .stage-result-tile[data-source-confidence="legacy-model"]>strong::after{
+ content:" · model";
+}
