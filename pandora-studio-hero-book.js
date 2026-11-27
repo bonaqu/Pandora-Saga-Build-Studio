@@ -1263,7 +1263,7 @@ function buffsPage(body,options){
  const naturalRecovery=root.PandoraOSCalculator?.alliedNaturalRecoveryPreview?.({
   skillCatalog:gameTerms.skills,casterLevel:Number(buffs.allyNaturalLevel??45)});
  const naturalKnown=osVector(330005001,'EP_HEAL_MANA_REGENERATOR',[0,10,0,0],[0,0,0,2]);
- const restKnown=osVector(320002001,'EP_HEAL_TIME_SCALE',[0,0,0,90]);
+ const restKnown=Number.isSafeInteger(allyPreviews.blessedRepose?.bonus);
  const despairKnown=osVector(100058001,'EP_DAMAGERATE_SCALE',[0,0,35,40])&&
   osVector(100058001,'EP_ONDAMAGE_FIN_DAMAGE_SCALE',[0,0,0,100]);
  const priest=section('Усиления жреца','Priest buffs');
@@ -1424,8 +1424,8 @@ function buffsPage(body,options){
     'Adds dark aura damage to attacks but also damages the wielder.'],
   168052001:['Уклонение −50%. Улучшает защиту от критических ударов.',
     'Evasion −50%; provides protection against critical hits.'],
-  320002001:['Скорость восстановления ОМ союзников +90 инд.',
-    'Allies’ MP recovery speed +90 idx.'],
+  320002001:['Ускоряет восстановление ОМ союзников по коэффициенту OS (модель).',
+    'Speeds up allies’ MP recovery using the current OS coefficient (model).'],
   320006001:['Время применения умений зависит от коэффициента OS (расчётная модель).',
     'Skill cast time follows the current OS coefficient (modeled).'],
   330005001:['Восстанавливает ОМ союзнику. Количество зависит от уровня применяющего союзника.',
@@ -1446,8 +1446,8 @@ function buffsPage(body,options){
   260005001:['Уклонение +10.','Evasion +10.'],
   260008001:['Уклонение +100 до двух полученных ударов.',
     'Evasion +100 until hit twice.'],
-  100055001:['Точность +20 и дополнительно +15%.',
-    'Accuracy +20 plus +15%.']
+  100055001:['Точность союзников зависит от плоского и процентного коэффициентов OS (модель).',
+    'Allied accuracy uses current OS flat and percentage coefficients (model).']
  };
  // One shared source model for Buffs and Skill Effects avoids misleading
  // old fixed "+10" text on skills that now scale with trained mastery/AGI.
@@ -1520,7 +1520,7 @@ function buffsPage(body,options){
       (english?'Accuracy +':'Точность +')+
        allyPreviews.massConcentration.bonus+
        (english?' (base ':' (база ')+allyPreviews.massConcentration.base+')':
-      (english?'Accuracy +20 and +15%':'Точность +20 и +15%'),
+      null,
      320002001:restKnown&&allyPreviews.blessedRepose?
       (english?'MP recovery-speed index +':'Скорость восстановления ОМ +')+
        allyPreviews.blessedRepose.bonus:null,

@@ -3451,48 +3451,54 @@ function alliedNaturalRecoveryPreview({skillCatalog=null,casterLevel=45}={}){
 // baseline is from the hero's actual current character sheet, not from
 // a hypothetical ally's class or mastery. Keep these previews read-only;
 // opt-in combat is handled separately by the same formula channels.
+// Read known target-side ally bonus lanes from the current official OS
+// catalog. Values are source-confirmed; combat stacking/floor stages are
+// still Remaked/client MODELS and not a server execution guarantee.
 function alliedRecipientPreviews({skillCatalog=null,combat=null}={}){
- const exact=(id,skillType,rows)=>{
+ const source=(id,type,expected)=>{
   const skill=skillCatalog?.[String(id)];
-  if(skill?.id!==id||skill.skillType!==skillType||
-   !Array.isArray(skill.funcs)||skill.funcs.length!==rows.length)return null;
-  const out={};
-  for(const [ep,vector] of rows){
-   const matches=skill.funcs.filter(f=>f.ep===ep&&f.dir==='TARGET');
-   if(matches.length!==1||JSON.stringify(matches[0].fv1)!==
-    JSON.stringify(vector)||JSON.stringify(matches[0].fv2)!=='[0,0,0,0]')
-    return null;
-   out[ep]=vector[3];
+  if(skill?.id!==id||skill.skillType!==type||
+   skill.learnable!==true||skill.prereq!==null||
+   !Number.isSafeInteger(skill.charLevel)||skill.charLevel<0||
+   skill.charLevel>plannerMaxLevel()||!Array.isArray(skill.reqs)||
+   !Array.isArray(skill.funcs)||skill.funcs.length!==expected.length)return null;
+  const values={};
+  for(const ep of expected){
+   const rows=skill.funcs.filter(f=>f?.ep===ep&&f.dir==='TARGET');
+   if(rows.length!==1)return null;
+   const f=rows[0],v=f.fv1;
+   if(!Array.isArray(v)||v.length!==4||!v.every(Number.isSafeInteger)||
+    v.slice(0,3).some(n=>n!==0)||v[3]<0||v[3]>100||
+    !Array.isArray(f.fv2)||f.fv2.length!==4||
+    f.fv2.some(n=>n!==0))return null;
+   values[ep]=v[3];
   }
-  return out;
+  return values;
  };
  const result={warCry:null,massConcentration:null,windAssist:null,
   windBlessing:null,divineBlessing:null,blessedRepose:null};
  const atk=Number(combat?.attack?.mountedBase??combat?.attack?.walkingBase);
  const acc=Number(combat?.accuracy?.base),ev=Number(combat?.dodge?.base);
- if(exact(320001001,'PARTY_ALL',[
-  ['EP_DAMAGERATE_CONST',[0,0,0,10]],
-  ['EP_DAMAGERATE_SCALE',[0,0,0,20]]])&&
-  Number.isFinite(atk)&&atk>=0)
-  result.warCry={base:atk,bonus:10+Math.floor(atk*.2)};
- if(exact(100055001,'PARTY_ALL',[
-  ['EP_TOHIT_CONST',[0,0,0,20]],
-  ['EP_TOHIT_SCALE',[0,0,0,15]]])&&
-  Number.isFinite(acc)&&acc>=0)
-  result.massConcentration={base:acc,bonus:Math.floor(20+acc*.15)};
- if(exact(260006001,'PARTY_ALL',[
-  ['EP_AVOIDANCE_CONST',[0,0,0,15]],
-  ['EP_AVOIDANCE_SCALE',[0,0,0,15]]])&&
-  Number.isFinite(ev)&&ev>=0)
-  result.windAssist={base:ev,bonus:Math.floor(15+ev*.15)};
- if(exact(320004001,'ALLY',[['EP_MOVESPEED_SCALE',[0,0,0,40]]]))
-  result.windBlessing={bonus:40};
- if(exact(330004001,'PARTY_ALL',[
-  ['EP_MAGIC_RESISTANCE_CONST',[0,0,0,25]]]))
-  result.divineBlessing={bonus:25};
- if(exact(320002001,'PARTY_ALL',[
-  ['EP_HEAL_TIME_SCALE',[0,0,0,90]]]))
-  result.blessedRepose={bonus:90};
+ const cry=source(320001001,'PARTY_ALL',
+  ['EP_DAMAGERATE_CONST','EP_DAMAGERATE_SCALE']);
+ if(cry&&Number.isFinite(atk)&&atk>=0)
+  result.warCry={base:atk,bonus:cry.EP_DAMAGERATE_CONST+
+   Math.floor(atk*cry.EP_DAMAGERATE_SCALE/100)};
+ const focus=source(100055001,'PARTY_ALL',['EP_TOHIT_CONST','EP_TOHIT_SCALE']);
+ if(focus&&Number.isFinite(acc)&&acc>=0)
+  result.massConcentration={base:acc,bonus:Math.floor(
+   focus.EP_TOHIT_CONST+acc*focus.EP_TOHIT_SCALE/100)};
+ const wind=source(260006001,'PARTY_ALL',
+  ['EP_AVOIDANCE_CONST','EP_AVOIDANCE_SCALE']);
+ if(wind&&Number.isFinite(ev)&&ev>=0)
+  result.windAssist={base:ev,bonus:Math.floor(
+   wind.EP_AVOIDANCE_CONST+ev*wind.EP_AVOIDANCE_SCALE/100)};
+ const blessing=source(320004001,'ALLY',['EP_MOVESPEED_SCALE']);
+ if(blessing)result.windBlessing={bonus:blessing.EP_MOVESPEED_SCALE};
+ const divine=source(330004001,'PARTY_ALL',['EP_MAGIC_RESISTANCE_CONST']);
+ if(divine)result.divineBlessing={bonus:divine.EP_MAGIC_RESISTANCE_CONST};
+ const repose=source(320002001,'PARTY_ALL',['EP_HEAL_TIME_SCALE']);
+ if(repose)result.blessedRepose={bonus:repose.EP_HEAL_TIME_SCALE};
  return result;
 }
 // OS-only allied movement buff: the only ordinary learnable caster is
