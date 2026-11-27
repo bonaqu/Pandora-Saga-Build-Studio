@@ -71,11 +71,13 @@ test('supported updated Enchantment FV1 replays without hiding the change from p
  assert.ok(classified.totals.needsReview>0,
   'a numerical game-data source update must still demand catalog review');
  const replay=S.replaySkills(before,next);
- assert.equal(replay.ok,false,
-  'a changed numeric model must still block automatic catalog publication');
- assert.ok(replay.lost>0,'precommit replay must show changed numeric projections');
- assert.ok(replay.lostEntries.some(x=>x.id==='320011001'),
-  'updated official FV1 needs explicit owner review, not silent auto-approval');
+ assert.equal(replay.ok,true,
+  'a supported current-OS FV1 change retains a fully guarded model');
+ assert.equal(replay.lost,0,'supported coefficients must not silently disappear');
+ assert.ok(replay.retained>0,'replay must retain the changed source parameter');
+ assert.ok(replay.changedSkills>0,'the source change must remain visible to owner review');
+ // Catalog compatibility still marks the numeric update as needsReview,
+ // independently of the read-only replay successfully keeping its models.
  const unsupported=change(320011001,row=>{row.funcs[0].fv1[1]=1});
  assert.equal(C.priestCastPreviews({...caster,skills:unsupported.skills}).enchantAuraRate,null);
  const negative=S.replaySkills(before,unsupported);

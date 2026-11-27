@@ -79,7 +79,9 @@ test('250 artificial legal mastery scenarios are deterministic, monotone and rea
 });
 test('changed OS source fails closed and unrelated skill remains available',()=>{
  const forged=structuredClone(skills);
- forged['100058001'].funcs.find(x=>x.ep==='EP_DAMAGERATE_SCALE').fv1[2]=99;
+ forged['100058001'].funcs.find(x=>x.ep==='EP_DAMAGERATE_SCALE').fv1[0]=99;
+ // New stat-scaling channel is outside the verified OS source shape; a
+ // bounded change of the existing mastery/flat lanes is tested in v0.971.
  const result=inspect('JUGGERNAUT',{slash:70},{skillCatalog:forged});
  assert.equal(result.offense.find(x=>x.id===100058001),undefined);
  assert.equal(model(row('JUGGERNAUT',142051001,{brush:50}),

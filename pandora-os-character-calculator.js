@@ -1856,8 +1856,8 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
   ()=>pct(unmountedAtk,despairModel.amount,Math.ceil),
   {completeSourceProof:true,modelOnly:true,unit:' АТК',
    models:[despairModel],
-   detailRu:'По общему тренированному мастерству MELEE (пять веток); входящий урон +100% и окончание после удара из OS',
-   detailEn:'From total trained MELEE mastery (five branches); incoming damage +100% and ends on attack (OS source)'});
+   detailRu:'По сумме тренированного мастерства пяти боевых веток (модель); получаемый урон +100%, эффект заканчивается после удара',
+   detailEn:'Modeled from the five trained melee branches; incoming damage +100%, ends after an attack'});
  // Swift Arrow is an attack-interval enhancement with fixed OS source
  // [0,0,0,30], not direct +30 weapon damage. The displayed percentage is
  // the skill effect coefficient; no unproven firing-frequency conversion.
