@@ -74,6 +74,7 @@ test('class, weapon, level, mastery gating and complete OS source contract fail 
 test('Hero Book never repeats static OS magnitudes in its player-visible self-buff summaries',()=>{
  const src=read('pandora-studio-hero-book.js');
  assert.match(src,/selfBuffSourcePreview\?\.\(\{/);
+ assert.match(src,/heroJobKey,heroLevel,heroMasteries,heroBranchCaps,heroWeaponKind,heroHasShield,\s*\.\.\.copyOptions\}\);/);
  assert.match(src,/260008001:buffEffectText\(260008001\)/);
  assert.match(src,/260002001:buffEffectText\(260002001\)/);
  assert.match(src,/213702001:buffEffectText\(213702001\)/);
