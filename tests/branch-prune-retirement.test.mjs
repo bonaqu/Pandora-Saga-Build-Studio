@@ -50,7 +50,7 @@ test('archives exact commit before deleting and verifies deletion', async () => 
   const post = calls.findIndex(x => x.method === 'POST');
   const del = calls.findIndex(x => x.method === 'DELETE');
   assert.ok(post >= 0 && del > post, 'tag must be created before deleting branch');
-  assert.match(calls[post].body, /branch-archive\\/2026-11-27\\/work\\/audited-old-branch/);
+  assert.ok(calls[post].body.includes('branch-archive/2026-11-27/work/audited-old-branch'));
 });
 
 test('does not delete a SHA-changed branch', async () => {
