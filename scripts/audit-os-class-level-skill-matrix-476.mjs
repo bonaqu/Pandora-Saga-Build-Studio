@@ -94,11 +94,14 @@ export function auditOsClassLevelSkillMatrix({
     if(row.amount!==null)totals.numericRows++;
     if(row.available===false)totals.unavailableRows++;
     if(row.modelOnly===true){modeled++;totals.modeledRows++;}
-    if(!Array.isArray(row.coefficientModels)){
-     report(job,level,'Missing coefficient evidence list '+id);
+    // Source-only previews need not construct a coefficient model at all.
+    // Validate present evidence, never turn its absence into a fake failure.
+    if(row.coefficientModels!==undefined&&
+     !Array.isArray(row.coefficientModels)){
+     report(job,level,'Malformed coefficient evidence list '+id);
      continue;
     }
-    for(const coefficient of row.coefficientModels){
+    for(const coefficient of row.coefficientModels||[]){
      if(coefficient?.confidence!=='coefficient-model'||
       !Number.isSafeInteger(coefficient.amount))
       report(job,level,'Non-model or invalid coefficient '+id);
