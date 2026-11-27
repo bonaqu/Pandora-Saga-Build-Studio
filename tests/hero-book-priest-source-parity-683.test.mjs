@@ -32,7 +32,7 @@ test('legacy and current OS priest magnitudes disagree; only OS values reach the
 
 test('invalid OS skill parameters cannot be presented as verified priest bonuses',()=>{
  const forged=structuredClone(skills);
- forged['320007001'].funcs.find(f=>f.ep==='EP_ATTACKINTERVAL_SCALE').fv1[0]=99;
+ forged['320007001'].funcs.find(f=>f.ep==='EP_ATTACKINTERVAL_SCALE').fv1[1]=1;
  const values=C.priestCastPreviews({spi:134,blessing:90,hymn:30,skills:forged});
  assert.equal(values.gratia,null);
  assert.equal(values.lapisMedio,12);

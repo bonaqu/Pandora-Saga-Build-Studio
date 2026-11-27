@@ -28,7 +28,7 @@ test('current OS and Remaked floors update priest per-cast values independently 
 test('source mismatch is fail-closed for each priest numeric line',()=>{
  const forged=structuredClone(skills);
  forged['320012001'].funcs.find(f=>f.ep==='EP_STRENGTH_CONST').fv1[2]=99;
- forged['320007001'].funcs.find(f=>f.ep==='EP_ATTACKINTERVAL_SCALE').fv1[3]=99;
+ forged['320007001'].funcs.find(f=>f.ep==='EP_ATTACKINTERVAL_SCALE').fv1[1]=1;
  const r=cast(134,90,30,forged);
  assert.equal(r.encouragement,null);
  assert.equal(r.gratia,null);

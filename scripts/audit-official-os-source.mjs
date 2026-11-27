@@ -39,7 +39,11 @@ export function reconcileOfficialGamedata(name,official,local,{maxDifferences=30
   localExtras.upstreamFileFingerprints=Object.keys(source.sha).length;
   delete source.sha;
   if(Object.hasOwn(snapshot,'curated')){
-   if(!asObject(snapshot.curated))throw Error('Invalid local curated metadata');
+   // The shipped Build Studio source marks editorial provenance with
+   // curated:true; older metadata may carry a detailed curated object.
+   // Neither variant is an upstream OS game parameter.
+   if(snapshot.curated!==true&&!asObject(snapshot.curated))
+    throw Error('Invalid local curated metadata');
    localExtras.localCuratedMetadata=true;
    delete snapshot.curated;
   }

@@ -25,14 +25,19 @@ test('selected active priest DEF and song bonuses equal same source-gated book p
  assert.equal(act.combat.priestSong.sageElementDamage,cast.sage);
  assert.deepEqual([cast.lapisMedio,cast.minstrel,cast.sage],[12,24,16]);
 });
-test('a changed OS Lapis effect cannot inject a stale Remaked buff into character DEF',()=>{
+test('valid updated OS Lapis FV1 reaches both Hero Book and actual selected DEF buff',()=>{
  const forged=structuredClone(skills);
  forged['320008001'].funcs[0].fv1[0]+=1;
- const off=ctx([],forged);
- assert.equal(off.priestCast.lapisMedio,null);
- assert.equal(off.combat.defense.priestBonus,0);
- assert.equal(off.priestCast.gratia,22);
- assert.equal(off.combat.attackSpeed.priestBonus,22);
+ const applied=ctx([],forged);
+ assert.equal(applied.priestCast.lapisMedio,13);
+ assert.equal(applied.combat.defense.priestBonus,13);
+ assert.equal(applied.priestCast.gratia,22);
+ assert.equal(applied.combat.attackSpeed.priestBonus,22);
+ const untrusted=structuredClone(forged);
+ untrusted['320008001'].funcs[0].fv1[1]=1;
+ const rejected=ctx([],untrusted);
+ assert.equal(rejected.priestCast.lapisMedio,null);
+ assert.equal(rejected.combat.defense.priestBonus,0);
 });
 test('unexpected second OS vector term fails closed for previews AND selected effects',()=>{
  const forgeries=[
