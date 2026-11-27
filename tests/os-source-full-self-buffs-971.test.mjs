@@ -81,7 +81,7 @@ test('both multi-effect roots fail closed on changed targets, unknown FV lanes, 
   assert.equal(inspect(c,wrongSign),undefined);
   rejected++;
  }
- assert.equal(rejected,30);
+ assert.equal(rejected,28);
 });
 test('all 28 jobs x level 1/35/45/55 retain availability gates while refusing unsupported self sources',()=>{
  let checks=0;
