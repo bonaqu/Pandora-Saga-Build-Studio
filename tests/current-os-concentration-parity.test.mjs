@@ -47,5 +47,6 @@ test('book gates Concentration by the same trained slash skill and saves it in l
  assert.match(app,/combatConcentration','nextMagicConcentration'\]/);
  assert.match(app,/nextMagicConcentration:false/);
  assert.match(book,/\['combatConcentration','Сосредоточенность'\]/);
- assert.match(book,/row\('Точность','Accuracy',c.accuracy\?\.known\)/);
+ assert.match(book,/row\('Точность','Accuracy',c.accuracy\?\.known,'',null,/);
+ assert.match(book,/c.accuracy\?\.confidence==='legacy-model'\?'legacy-model':null/);
 });

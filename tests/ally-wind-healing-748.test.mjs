@@ -93,7 +93,7 @@ test('Legacy allied-healing settings no longer affect the current hero',()=>{
  assert.deepEqual(historic.periodicRecovery,baseline.periodicRecovery);
 });
 
-test('HP source perturbations fail closed, including interval and all 4 FV1 slots',()=>{
+test('HP source invalid interval fails closed; changed valid FV1 replays rather than freezing coefficients',()=>{
  const changed=structuredClone(skills);
  changed['310002001'].funcs[0].fv2[3]=3;
  const after=C.alliedHpPulsePreview({
@@ -103,11 +103,22 @@ test('HP source perturbations fail closed, including interval and all 4 FV1 slot
  assert.equal(after.restoration.hpPerPulse,35);
  const other=structuredClone(skills);
  other['310022001'].funcs[0].fv1[2]=7;
- const missing=C.alliedHpPulsePreview({
+ const replay=C.alliedHpPulsePreview({
   skillCatalog:other,classCatalog:classes,casterLevel:45,casterSpi:134,
+  casterHealing:90});
+ const original=C.alliedHpPulsePreview({
+  skillCatalog:skills,classCatalog:classes,casterLevel:45,casterSpi:134,
+  casterHealing:90});
+ assert.equal(replay.regeneration.hpPerPulse,original.regeneration.hpPerPulse);
+ assert.equal(replay.restoration.hpPerPulse,original.restoration.hpPerPulse+2,
+  'Source healing mastery rate 5 -> 7 changes floor(90*rate/100) by 2');
+ const damaged=structuredClone(skills);
+ damaged['310022001'].funcs[0].fv1[2]='unknown';
+ const rejected=C.alliedHpPulsePreview({
+  skillCatalog:damaged,classCatalog:classes,casterLevel:45,casterSpi:134,
   casterHealing:41});
- assert.equal(missing.restoration,undefined);
- assert.equal(missing.regeneration.hpPerPulse,31);
+ assert.equal(rejected.restoration,undefined);
+ assert.equal(rejected.regeneration.hpPerPulse,31);
 });
 
 test('Hero Book renders self-healing but not ally healing controls',()=>{
