@@ -77,13 +77,19 @@ test('source-only song stage without class access still protects priest song pro
   row.funcs.find(x=>x.ep==='EP_SKILL_BENCH_FIN').fv1[3]-=1;
  });
  const updated=C.priestCastPreviews({...caster,skills:next.skills});
- assert.equal(updated.sageCooldownDelta,null);
- assert.equal(updated.sage,null,
-  'the exact signed song chain becomes unproven when either effect changes');
+ assert.equal(updated.sageCooldownDelta,original.sageCooldownDelta-1,
+  'signed live OS FV1 changes replay rather than silently keeping stale numbers');
+ assert.equal(updated.sage,original.sage,
+  'an unchanged elemental channel remains intact');
  const result=S.replaySkills(before,next);
- assert.equal(result.ok,false,'missing recipient cooldown model blocks precommit');
+ assert.equal(result.ok,false,'changed numeric model still requires catalog review');
  assert.ok(result.samples.some(x=>x.id===String(id)&&
   x.module==='priest-cast'&&x.detail.startsWith('sageCooldownDelta:')));
+ const invalid=change(id,row=>{
+  row.funcs.find(x=>x.ep==='EP_SKILL_BENCH_FIN').fv2[0]=1;
+ });
+ assert.equal(C.priestCastPreviews({...caster,skills:invalid.skills})
+  .sageCooldownDelta,null,'unknown secondary channel must fail closed');
 });
 test('changing a root song source checks its dependent recipient preview',()=>{
  const id=340004001;

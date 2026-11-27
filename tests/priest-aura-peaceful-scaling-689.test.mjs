@@ -23,7 +23,12 @@ test('OS priest vectors + Remaked separate floors produce source-gated peace and
  assert.equal(r.lapisMedio,12);
  const changed=structuredClone(skills);
  changed['340003003'].funcs[0].fv1[0]=99;
- assert.equal(C.priestCastPreviews({spi:134,blessing:90,hymn:30,skills:changed}).peaceful,null);
+ assert.equal(C.priestCastPreviews({spi:134,blessing:90,hymn:30,skills:changed}).peaceful,
+  10+Math.floor(134*.99)+Math.floor(30*.30),
+  'current OS numeric FV1 takes precedence over obsolete fixed Remaked inputs');
+ const unknown=structuredClone(changed);
+ unknown['340003003'].funcs[0].fv1[1]=1;
+ assert.equal(C.priestCastPreviews({spi:134,blessing:90,hymn:30,skills:unknown}).peaceful,null);
  const forged=structuredClone(skills);
  forged['320011001'].funcs.find(x=>x.ep==='EP_AURADAMAGE_SCALE').fv1[1]=1;
  const noEnchant=C.priestCastPreviews({spi:134,blessing:90,hymn:30,skills:forged});

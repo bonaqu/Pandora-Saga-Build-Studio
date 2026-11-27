@@ -41,7 +41,12 @@ test('Peace Song: only allied Cleric with Healing 61 can provide the source-base
  assert.equal(C.alliedPeaceSongPreview({...args,hymn:46}),null);
  const changed=structuredClone(skills);
  changed['340003003'].funcs.find(f=>f.ep==='EP_DAMAGE_CLEAR').fv1[3]=11;
- assert.equal(C.alliedPeaceSongPreview({...args,skills:changed}),null);
+ assert.equal(C.alliedPeaceSongPreview({...args,skills:changed})?.value,100,
+  'a same-shape official coefficient update must replay using Remaked floors');
+ const unsupported=structuredClone(changed);
+ unsupported['340003003'].funcs.find(f=>f.ep==='EP_DAMAGE_CLEAR').fv1[1]=1;
+ assert.equal(C.alliedPeaceSongPreview({...args,skills:unsupported}),null,
+  'new level dependency has no model and must fail closed');
 });
 
 test('Book keeps independent ally and priest setters with no redundant exorcism field',()=>{
