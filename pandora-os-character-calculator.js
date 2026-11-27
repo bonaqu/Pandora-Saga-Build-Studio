@@ -1978,22 +1978,25 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  const skillRangeSource=skillAttackRangePreview({skillCatalog,jobKey,level,
   branchMasteries,branchCaps,weapon:{slot:'weapon',kind:weaponKind}});
  const verifiedRangeSource=id=>skillRangeSource.rows.some(row=>row.id===id);
- if(verifiedRangeSource(213605001))add(213605001,'offense',[
-  ['EP_DAMAGERATE_SCALE',[0,0,30,20]],
-  ['EP_TOHIT_CONST',[0,0,30,20]]
- ],()=>Number.isFinite(unmountedAtk)?
-   Math.ceil(unmountedAtk*(20+Math.floor(mastery('archery')*.30))/100):null,
- {branch:'archery',modelOnly:true,unit:' АТК',
+ // Require all six Sniper action channels before projecting its source
+ // rates. A permitted FV1 update changes this model without freezing 20/30.
+ const sniperSourceValid=verifiedRangeSource(213605001);
+ const sniperAttackRate=sniperSourceValid?coefficientModel(213605001,
+  'EP_DAMAGERATE_SCALE',null,'archery',
+  'Усиление атаки','Attack bonus','%'):null;
+ if(sniperSourceValid&&sniperAttackRate)add(213605001,'offense',[],
+  ()=>Number.isFinite(unmountedAtk)?
+   Math.ceil(unmountedAtk*sniperAttackRate.amount/100):null,
+ {branch:'archery',completeSourceProof:true,modelOnly:true,unit:' АТК',
   models:[
-   coefficientModel(213605001,'EP_DAMAGERATE_SCALE',null,'archery',
-    'Усиление атаки','Attack bonus','%'),
+   sniperAttackRate,
    coefficientModel(213605001,'EP_TOHIT_CONST',null,'archery',
     'Точность','Accuracy'),
    coefficientModel(213605001,'EP_ATTACKRANGE_CONST',null,'archery',
     'Прибавка дальности','Range bonus')
   ],
-  detailRu:'Зависит от мастерства стрельбы',
-  detailEn:'Scales with Archery mastery'});
+  detailRu:'Зависит от мастерства стрельбы (модель)',
+  detailEn:'Scales with Archery mastery (model)'});
  const coldBloodFV=selfCoefficientFV(142051001);
  const coldBlood=coldBloodFV?coefficientModel(142051001,'EP_CRITICALRATE_CONST',
   null,'brush','Шанс критического удара','Critical chance','%'):null;
@@ -2820,7 +2823,7 @@ function racialUtilityPreview({racialPassiveId=null,skillCatalog=null}={}){
 // their own action is in force. The source vector is a modeled bonus, never
 // the permanent weapon reach or a proven final skill-specific distance.
 const skillRangeProofs=Object.freeze([
- {id:213605001,job:'SNIPER',level:45,type:'TOGGLE',
+ {id:213605001,job:'SNIPER',level:45,type:'TOGGLE',powerStat:'DEX',
   weapons:['BOW','CROSSBOW'],effects:[
    ['EP_DAMAGERATE_SCALE',[0,0,30,20],[0,0,0,0]],
    ['EP_TOHIT_CONST',[0,0,30,20],[0,0,0,0]],
@@ -2829,7 +2832,7 @@ const skillRangeProofs=Object.freeze([
    ['EP_UNABLE_MOVE',[0,0,0,0],[0,0,0,0]],
    ['EP_TOGGLE',[0,0,0,3],[0,0,-1,2]]
   ]},
- {id:213703001,job:'PREDATOR',level:50,type:'MYSELF',
+ {id:213703001,job:'PREDATOR',level:50,type:'MYSELF',powerStat:'STR',
   weapons:['CROSSBOW'],effects:[
    ['EP_DOUBLE_MISSILE',[20,0,30,-85],[0,0,0,0]],
    ['EP_ATTACKRANGE_CONST',[0,0,900,100],[0,0,0,0]],
@@ -2850,7 +2853,9 @@ function skillAttackRangePreview({skillCatalog=null,jobKey=null,level=1,
   const sourceValid=s?.id===proof.id&&s.learnable===true&&
    s.prereq===null&&s.charLevel===proof.level&&
    s.isLevelBased===true&&s.skillType===proof.type&&
-   s.branch==='archery'&&s.classes?.[jobKey]===1&&
+   s.branch==='archery'&&s.branchRaw==='TECHNIQUE_ARCHERY'&&
+   s.powerStat===proof.powerStat&&s.reqLevel===0&&
+   s.classes?.[jobKey]===1&&
    Object.keys(s.classes||{}).length===1&&
    Array.isArray(s.reqs)&&s.reqs.length===0&&
    Array.isArray(s.weaponUse)&&
@@ -2858,12 +2863,25 @@ function skillAttackRangePreview({skillCatalog=null,jobKey=null,level=1,
    s.weaponUse.every((kind,i)=>kind===proof.weapons[i])&&
    Array.isArray(s.funcs)&&s.funcs.length===proof.effects.length&&
    proof.effects.every(([ep,fv1,fv2],i)=>{
-    const f=s.funcs[i];
-    return f?.ep===ep&&f.dir==='TARGET'&&
-     Array.isArray(f.fv1)&&f.fv1.length===4&&
-     f.fv1.every((n,j)=>n===fv1[j])&&
-     Array.isArray(f.fv2)&&f.fv2.length===4&&
-     f.fv2.every((n,j)=>n===fv2[j]);
+    const f=s.funcs[i],v=f?.fv1;
+    if(f?.ep!==ep||f.dir!=='TARGET'||
+     Object.keys(f).sort().join(',')!=='dir,ep,fv1,fv2'||
+     !Array.isArray(v)||v.length!==4||
+     !v.every(Number.isSafeInteger)||
+     !Array.isArray(f.fv2)||f.fv2.length!==4||
+     !f.fv2.every((n,j)=>n===fv2[j]))return false;
+    if(ep==='EP_ATTACKRANGE_CONST'||ep==='EP_ATTACKCARRY_CONST'){
+     // Distinct fields, but the values MUST be identical: never add twice.
+     return v[0]===0&&v[1]===0&&v[2]>=0&&v[2]<=2000&&
+      v[3]>=0&&v[3]<=20000;
+    }
+    if(proof.id===213605001&&
+     (ep==='EP_DAMAGERATE_SCALE'||ep==='EP_TOHIT_CONST')){
+     // Only current non-negative mastery/flat lanes are understood.
+     return v[0]===0&&v[1]===0&&v[2]>=0&&v[2]<=100&&
+      v[3]>=0&&v[3]<=100;
+    }
+    return v.every((n,j)=>n===fv1[j]);
    });
   if(!sourceValid){output.rejected.push(proof.id);continue}
   const range=s.funcs.find(f=>f.ep==='EP_ATTACKRANGE_CONST');
