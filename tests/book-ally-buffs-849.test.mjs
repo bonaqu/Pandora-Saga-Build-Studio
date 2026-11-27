@@ -84,13 +84,28 @@ test('Enchantment modifies current weapon aura and elemental spell damage, NOT g
   'EP_ELEMENT_DAMAGE_SCALE']);
  assert.ok(!funcs.some(ep=>ep==='EP_DAMAGERATE_CONST'||ep==='EP_DAMAGERATE_SCALE'));
 });
-test('Enchantment fails closed if existing aura or elemental source changes',()=>{
- for(const ep of ['EP_AURADAMAGE_SCALE','EP_AURADAMAGE_CONST',
-  'EP_ELEMENT_DAMAGE_SCALE']){
-  const forged=structuredClone(skills);
-  forged['320011001'].funcs.find(x=>x.ep===ep).fv1[3]+=1;
-  const result=hero({selected:[320011001],skillCatalog:forged});
-  assert.equal(result.priestApplied.priestEnchantment,null,ep);
+test('supported OS Enchantment FV1 changes replay in active buffs; unknown FV2 fails closed',()=>{
+ const base=C.priestCastPreviews({...originalCaster,skills});
+ for(const [ep,key] of [
+  ['EP_AURADAMAGE_SCALE','rate'],
+  ['EP_AURADAMAGE_CONST','flat'],
+  ['EP_ELEMENT_DAMAGE_SCALE','magicRate']
+ ]){
+  const modified=structuredClone(skills);
+  modified['320011001'].funcs.find(x=>x.ep===ep).fv1[3]+=1;
+  const result=hero({selected:[320011001],skillCatalog:modified});
+  const enhanced=result.priestApplied.priestEnchantment;
+  assert.ok(enhanced,ep+' remains a complete source-backed modeled buff');
+  const label={rate:'enchantAuraRate',flat:'enchantAuraFlat',
+   magicRate:'enchantElementRate'}[key];
+  assert.equal(enhanced[key],base[label]+1,
+   ep+' new confirmed source value must reach the selected buff');
+  assert.equal(enhanced.verified,false,'server-stage parity remains unverified');
+  const unknown=structuredClone(modified);
+  unknown['320011001'].funcs.find(x=>x.ep===ep).fv2[0]=1;
+  const rejected=hero({selected:[320011001],skillCatalog:unknown});
+  assert.equal(rejected.priestApplied.priestEnchantment,null,
+   ep+' unknown extra channel must not leave partial Enchantment');
  }
 });
 test('recipient base, NOT caster attack, drives War Cry, Mass Focus and Speedy Gale',()=>{
