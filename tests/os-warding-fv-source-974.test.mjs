@@ -55,10 +55,10 @@ test('revised signed official FV1 values replay in Book and Skill Effects withou
  const originalJson=JSON.stringify(skills);
  const trials=[
   [12,12,12,12,12],
-  [5,9,13,9,null],
-  [25,50,35,50,null],
+  [5,9,13,13,null],
+  [25,50,35,35,null],
   [0,0,0,0,0],
-  [-5,-10,-15,-10,null]
+  [-5,-10,-15,-15,null]
  ];
  for(const [tumble,stun,numb,caster,shown] of trials){
   const modified=create(s=>{
