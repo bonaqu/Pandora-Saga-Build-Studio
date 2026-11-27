@@ -1415,7 +1415,7 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
   if(!Number.isSafeInteger(stat)||stat<0||
    !Number.isSafeInteger(rank)||rank<0||
    (branch&&(!Number.isSafeInteger(limit)||
-    limit<=0||rank>limit))))return null;
+    limit<=0||rank>limit)))return null;
   const amount=v[3]+Math.floor(stat*v[0]/100)+
    Math.floor(rank*v[2]/100);
   if(!Number.isSafeInteger(amount))return null;
