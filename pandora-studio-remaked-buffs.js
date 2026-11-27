@@ -45,6 +45,30 @@ const raw=[
 const definitions=Object.freeze(raw.map(([flag,id,scope,existing])=>
  Object.freeze({flag,id,scope,existing:existing||null})));
 const byId=new Map(definitions.map(row=>[row.id,row]));
+// The same six current-OS recipient roots are cast by another character.
+// Source quantities may change while this access shape stays supported.
+// Class, level, prerequisite or root-identity drift must fail closed instead
+// of allowing the recipient to apply a free/invalid buff.
+const osPartySourceAccess=Object.freeze({
+ 320001001:{branch:'martial',level:28,classes:['DRAGOON','GLADIATOR','JUGGERNAUT']},
+ 100055001:{branch:'archery',level:28,classes:['AGENT','ASSASSIN','DISTURBANCE']},
+ 260006001:{branch:'exorcism',level:28,classes:['ASCETIC','EXORCIST','MONK']},
+ 320004001:{branch:'archery',level:28,classes:['ARCHER','PREDATOR','SNIPER']},
+ 330004001:{branch:'martial',level:28,classes:['GENERAL','KNIGHT','PALADIN']},
+ 320002001:{branch:'blessing',level:20,classes:['CLERIC','ENCHANTER','PRIEST']}
+});
+function currentOsPartyAccess(record,id){
+ const access=osPartySourceAccess[id];
+ if(!access)return true;
+ const assigned=Object.keys(record?.classes||{}).sort();
+ return record?.id===id&&record.learnable===true&&
+  record.prereq===null&&record.charLevel===access.level&&
+  record.branch===access.branch&&
+  Array.isArray(record.reqs)&&record.reqs.length===0&&
+  assigned.length===access.classes.length&&assigned.every((key,index)=>
+   key===access.classes[index]&&record.classes[key]===1);
+}
+
 const readableWeapon=record=>{
  const kinds=record?.weaponUse;
  if(!Array.isArray(kinds)||!kinds.length)return null;
@@ -66,7 +90,18 @@ function enabled(row,{skills={},jobKey=null,level=1,weapon=null,branchMasteries=
  // A group/target spell may be cast BY a different party member.
  // Recipient eligibility MUST NOT be tested against caster class, level,
  // trained mastery, or weapon. Only self-cast skills need those checks.
- if(row.scope==='party')return {allowed:true,ru:'',en:''};
+ if(row.scope==='party'){
+  const sourceAccess=source.learnable===true&&source.prereq===null&&
+   Number.isSafeInteger(source.charLevel)&&source.charLevel>=0&&
+   source.charLevel<=55&&Array.isArray(source.reqs)&&
+   source.reqs.every(req=>typeof req?.branch==='string'&&req.branch.length>0&&
+    Number.isSafeInteger(req.amount)&&req.amount>=0)&&
+   Object.values(source.classes||{}).some(v=>v===1)&&
+   currentOsPartyAccess(source,row.id);
+  return sourceAccess?{allowed:true,ru:'',en:''}:{allowed:false,
+   ru:'Источник союзного умения изменён — требуется проверка',
+   en:'Allied skill source changed — verification required'};
+ }
  if(!source.classes?.[jobKey])return {allowed:false,
   ru:'Недоступно для этой профессии',en:'Unavailable to this class'};
  // Source class assignment is broader than actual trainable branch caps.
@@ -171,6 +206,7 @@ function sourceConstant(record,ep){
 // Book's modeled/pending status must agree with the actual applied-source
 // guard; a corrupted current-OS FV cannot be advertised as an active number.
 function numericSourceAvailable(record,id){
+ if(!currentOsPartyAccess(record,id))return false;
  if(id===260008001)return verifiedAvoidance(record);
  if(id===100055001)return record?.skillType==='PARTY_ALL'&&
   record.funcs?.length===2&&
