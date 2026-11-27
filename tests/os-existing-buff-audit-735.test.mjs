@@ -92,6 +92,7 @@ test('Book validates both casting-source actions, never inventing a tick or dama
  assert.match(calc,/const oldShape=skill\?\.funcs\?\.length===2/);
  assert.match(calc,/const currentShape=skill\?\.funcs\?\.length===1/);
  assert.match(calc,/exact\('EP_CANCEL_IDENTITY',\[0,0,0,0\]\)/);
- assert.match(calc,/exact\('EP_SKILL_DELAY_FIN',\[0,0,0,50\]\)/);
+ assert.match(calc,/const castTimePercent=fv\[3\]/);
+ assert.match(calc,/fv\[3\]<1\|\|fv\[3\]>100/);
  assert.match(src,/Время применения: /);
 });

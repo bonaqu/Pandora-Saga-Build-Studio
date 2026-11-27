@@ -26,8 +26,12 @@ test('Inspiration receives identical SOURCE 50 with one or two exact effects',()
  }
  assert.equal(older[320006001].funcs.length,2);
  assert.equal(live[320006001].funcs.length,1);
+ const future=structuredClone(live);
+ future[320006001].funcs[0].fv1[3]=49;
+ assert.equal(C.alliedInspirationPreview({skillCatalog:future})?.castTimePercent,49,
+  'a supported official FV1 revision must not be discarded');
  for(const change of [
-  row=>row.funcs[0].fv1[3]=49,
+  row=>row.funcs[0].fv1[0]=1,
   row=>row.funcs[0].fv2[3]=1,
   row=>row.funcs.push({...row.funcs[0],ep:'EP_CANCEL_IDENTITY'}),
   row=>row.reqs[0].amount=53,

@@ -3403,13 +3403,24 @@ function alliedInspirationPreview({skillCatalog=null}={}){
  const oldShape=skill?.funcs?.length===2&&
   exact('EP_CANCEL_IDENTITY',[0,0,0,0]);
  const currentShape=skill?.funcs?.length===1;
+ const effects=skill?.funcs?.filter(f=>f?.ep==='EP_SKILL_DELAY_FIN');
  if(skill?.id!==320006001||skill.skillType!=='ALLY'||
   skill.learnable!==true||skill.prereq!==null||
   JSON.stringify(skill.reqs)!=='[{"branch":"blessing","amount":54}]'||
-  !(oldShape||currentShape)||
-  !exact('EP_SKILL_DELAY_FIN',[0,0,0,50]))return null;
- return {id:320006001,castTimePercent:50,castTimeReductionPercent:50,
-  speedMultiplier:2,sourceConfirmed:true};
+  !(oldShape||currentShape)||effects?.length!==1)return null;
+ const effect=effects[0],fv=effect.fv1;
+ if(effect.dir!=='TARGET'||!Array.isArray(fv)||fv.length!==4||
+  !fv.every(Number.isSafeInteger)||fv.slice(0,3).some(n=>n!==0)||
+  fv[3]<1||fv[3]>100||
+  !Array.isArray(effect.fv2)||effect.fv2.length!==4||
+  effect.fv2.some(n=>n!==0))return null;
+ // The current OS final target index is confirmed; interpreting it as
+ // cast-time percent and reciprocally as speed is a Remaked model, not
+ // measured current-server cast time or effective attack speed.
+ const castTimePercent=fv[3];
+ return {id:320006001,castTimePercent,
+  castTimeReductionPercent:100-castTimePercent,
+  speedMultiplier:100/castTimePercent,sourceConfirmed:true};
 }
 // A separate ASCETIC/MONK/EXORCIST supplies this ally-targeted MP pulse.
 // The current OS vector uses the Level coefficient slot [1] = 10 and
@@ -3505,9 +3516,17 @@ function alliedFreeWindPreview({skillCatalog=null,classCatalog=null}={}){
    JSON.stringify(rows[0].fv1)===JSON.stringify(first)&&
    JSON.stringify(rows[0].fv2)==='[0,0,0,0]';
  };
- if(!exactly('EP_MOVESPEED_SCALE',[0,0,0,200])||
+ const movement=skill.funcs.filter(f=>f.ep==='EP_MOVESPEED_SCALE');
+ const first=movement[0]?.fv1;
+ if(movement.length!==1||movement[0].dir!=='TARGET'||
+  !Array.isArray(first)||first.length!==4||
+  !first.every(Number.isSafeInteger)||first.slice(0,3).some(n=>n!==0)||
+  first[3]<0||first[3]>1000||
+  JSON.stringify(movement[0].fv2)!=='[0,0,0,0]'||
   !exactly('EP_LOST_MAPCHANGE',[0,0,0,0]))return null;
- return {id:skill.id,bonus:200,source:'current OS EP_MOVESPEED_SCALE',
+ // Only OS flat movement index changes are supported. Any new percentage,
+ // stat, level, mastery or FV2 channel needs independent mechanics review.
+ return {id:skill.id,bonus:first[3],source:'current OS EP_MOVESPEED_SCALE',
   endsOnMapChange:true,sourceConfirmed:true};
 }
 
