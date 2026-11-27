@@ -1264,8 +1264,6 @@ function buffsPage(body,options){
   skillCatalog:gameTerms.skills,casterLevel:Number(buffs.allyNaturalLevel??45)});
  const naturalKnown=osVector(330005001,'EP_HEAL_MANA_REGENERATOR',[0,10,0,0],[0,0,0,2]);
  const restKnown=Number.isSafeInteger(allyPreviews.blessedRepose?.bonus);
- const despairKnown=osVector(100058001,'EP_DAMAGERATE_SCALE',[0,0,35,40])&&
-  osVector(100058001,'EP_ONDAMAGE_FIN_DAMAGE_SCALE',[0,0,0,100]);
  const priest=section('Усиления жреца','Priest buffs');
  if(priest.dataset)priest.dataset.bookSection='priest';
  else priest.setAttribute?.('data-book-section','priest');
@@ -1412,18 +1410,18 @@ function buffsPage(body,options){
  // already represented by Life Sign, priest and elemental resistance tools
  // deliberately stay in their original sections, without duplicate inputs.
  const readableBuffEffects={
-  100058001:['Атака усиливается в зависимости от мастерства. При этом персонаж получает на 100% больше урона.',
-    'Attack increases with mastery. Incoming damage also increases by 100%.'],
-  213702001:['Ускоряет стрельбу из арбалета на 30%.','Crossbow attack speed +30%.'],
+  100058001:['Атака усиливается в зависимости от мастерства; входящий урон зависит от отдельного эффекта.',
+    'Attack scales with mastery; incoming damage is a separate effect.'],
+  213702001:['Изменяет темп стрельбы из арбалета.','Changes crossbow firing rate.'],
   213605001:['Повышает атаку, точность и дальность стрельбы. Во время действия нельзя двигаться.',
     'Increases attack, accuracy and firing range; movement is disabled.'],
-  260002001:['Скорость передвижения +30%.','Movement speed +30%.'],
+  260002001:['Повышает индекс скорости передвижения.','Raises the movement-speed index.'],
   220001001:['Добавляет яд к атакам оружием. Сила эффекта зависит от мастерства.',
     'Adds poison aura damage to weapon attacks, scaling with mastery.'],
   430051001:['Добавляет урон тьмой к оружию, но наносит урон владельцу при атаках.',
     'Adds dark aura damage to attacks but also damages the wielder.'],
-  168052001:['Уклонение −50%. Улучшает защиту от критических ударов.',
-    'Evasion −50%; provides protection against critical hits.'],
+  168052001:['Уменьшает уклонение, улучшая защиту от критических ударов.',
+    'Reduces evasion while providing protection against critical hits.'],
   320002001:['Ускоряет восстановление ОМ союзников по коэффициенту OS (модель).',
     'Speeds up allies’ MP recovery using the current OS coefficient (model).'],
   320006001:['Время применения умений зависит от коэффициента OS (расчётная модель).',
@@ -1480,7 +1478,41 @@ function buffsPage(body,options){
     naturalRecovery.casterLevel:
    (english?'No MP recovery amount calculated for this build.':
     'Восстановление ОМ для этого билда не рассчитано.');
-  if(id===100058001&&!despairKnown)return '';
+  // The actual source-gated Skill Effects row is the only permission to
+  // show a numeric explanatory self-buff value. A different EP or new
+  // FV channel must suppress the number, not fall back to an old caption.
+  if(id===100058001||id===168052001){
+   const model=selfModelRows.find(row=>row.id===id&&
+    row.modelOnly===true&&row.available);
+   const source=gameTerms.skills?.[String(id)];
+   const ep=id===100058001?'EP_ONDAMAGE_FIN_DAMAGE_SCALE':'EP_AVOIDANCE_SCALE';
+   const effect=source?.funcs?.find(row=>row.ep===ep&&row.dir==='TARGET');
+   const value=effect?.fv1?.[3];
+   if(!model||!Number.isSafeInteger(value))return english?
+    'Effect magnitude is not calculated for this build.':
+    'Для этого билда величина эффекта не рассчитана.';
+   if(id===100058001)return (english?'Incoming damage coefficient +':
+    'Коэффициент входящего урона +')+value+'%'+
+    (english?' (model)':' (модель)');
+   return (english?'Base evasion reduction: ':'Снижение базового уклонения: ')+
+    (-value)+'%'+(english?' (model)':' (модель)');
+  }
+  if(id===213702001||id===260002001){
+   const choice=remakedBuffRows.find(row=>row.id===id);
+   const source=gameTerms.skills?.[String(id)];
+   const ep=id===213702001?'EP_ATTACKINTERVAL_SCALE':'EP_MOVESPEED_SCALE';
+   const effect=source?.funcs?.find(row=>row.ep===ep&&row.dir==='TARGET');
+   const value=effect?.fv1?.[3];
+   if(!choice?.counted||!choice.available||
+    !Number.isSafeInteger(value))return english?
+    'Effect magnitude is not calculated for this build.':
+    'Для этого билда величина эффекта не рассчитана.';
+   return id===213702001?
+    ((english?'Firing-rate coefficient: +':'Коэффициент темпа стрельбы: +')+
+     value+(english?' (model)':' (модель)')):
+    ((english?'Movement-speed index: +':'Индекс скорости передвижения: +')+
+     value+(english?' (model)':' (модель)'));
+  }
   return readableBuffEffects[id]?.[english?1:0]||'';
  };
  // A direct Hero Book render may not receive the higher-level Remaked
