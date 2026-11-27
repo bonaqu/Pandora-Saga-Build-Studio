@@ -117,3 +117,35 @@ test('no Book combat row and no item/soul or catalog mutation was created',()=>{
  assert.equal(viewsFinal(view),null);
 });
 const viewsFinal=v=>v?.finalAmount??null;
+
+test('Wiki cache rejects child source mutation on the SAME catalog object',()=>{
+ const mutable=clone(),id=420005001,child=420005004;
+ const initial=inspect(id,mutable);
+ assert.deepEqual(initial?.paths,[[id,child]]);
+ assert.strictEqual(inspect(id,mutable),initial,'Unchanged snapshots stay cached');
+ mutable[child].funcs[0].fv1[0]+=1;
+ assert.equal(inspect(id,mutable)?.paths?.length||0,0,
+  'An edited child must not keep an old validated navigation link');
+ mutable[child].funcs[0].fv1[0]-=1;
+ assert.deepEqual(inspect(id,mutable)?.paths,[[id,child]]);
+});
+
+test('Wiki cache refreshes after same-object class caps and root pointers change',()=>{
+ const mutable=clone(),liveClasses=structuredClone(classes),id=420005001;
+ const readCurrent=()=>W.inspect({
+  skillCatalog:mutable,classes:liveClasses,id,calculator:C
+ });
+ const original=readCurrent();
+ assert.deepEqual(original?.paths,[[id,420005004]]);
+ liveClasses.CONJURER.branchCaps.embody=0;
+ const changed=readCurrent();
+ assert.notStrictEqual(changed,original,
+  'Changed class caps must re-evaluate the cached source preview');
+ // Wiki navigation documents source links, not current-build learnability.
+ assert.deepEqual(changed?.paths,[[id,420005004]]);
+ liveClasses.CONJURER.branchCaps.embody=classes.CONJURER.branchCaps.embody;
+ assert.deepEqual(readCurrent()?.paths,[[id,420005004]]);
+ mutable[id].funcs.find(f=>f.ep==='EP_SKILL_EXEC_DIFFUSION').fv1[3]=420005003;
+ assert.equal(readCurrent()?.paths?.length||0,0,
+  'A swapped but existing child ID must invalidate the cached proof');
+});

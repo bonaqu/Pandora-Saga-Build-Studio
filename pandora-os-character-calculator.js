@@ -113,8 +113,8 @@ function sourceEffects(source,record,grade,itemForth=null){
  // The source and the canonical item/Soul record must agree before any
  // effects (including HP and MP) are used in character calculations.
  const exact=key.match(/^(item|soul):(\d+)$/);
- if(exact&&Number.isSafeInteger(record.id)&&
-  String(record.id)!==exact[2])return [];
+ if(exact&&(!Number.isSafeInteger(record.id)||
+  String(record.id)!==exact[2]))return [];
  // Imported or owner-edited structured data can be incomplete. A null
  // row must never crash the stat rebuild or be interpreted as an effect.
  const safeRows=rows=>Array.isArray(rows)?rows.filter(row=>

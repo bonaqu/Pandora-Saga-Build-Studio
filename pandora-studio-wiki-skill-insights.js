@@ -21,6 +21,37 @@ const methods=Object.freeze([
  ['songSkillPreview',null]
 ]);
 const cache=new WeakMap();
+// Source objects can be updated in place by the owner editor. Fingerprint the
+// reachable skill actions and relevant class caps to invalidate stale proofs
+// without scanning all catalog records for every Encyclopedia lookup.
+const evidenceLinkKinds=new Set([
+ 'EP_SKILL_EXEC','EP_SKILL_EXEC_COUNT','EP_SKILL_EXEC_DIFFUSION',
+ 'EP_SKILL_PARRY_COUNTER','EP_ATTACK_BLOCK_BREAK',
+ 'EP_ONHIT_SKILL_EXEC','EP_ONHIT_SKILL_EXEC_CHANGE_BA',
+ 'EP_ONHIT_CASTING_TARGET'
+]);
+function evidenceRevision(catalog,classes,id){
+ const seen=new Set(),pending=[id],nodes=[],jobs=new Set();
+ if(id===260006002)pending.push(260006001);
+ while(pending.length&&seen.size<128){
+  const current=pending.shift();
+  if(!Number.isSafeInteger(current)||current<=0||seen.has(current))continue;
+  seen.add(current);
+  const skill=catalog[String(current)];
+  nodes.push([current,skill??null]);
+  if(!skill||typeof skill!=='object')continue;
+  for(const job of Object.keys(skill.classes||{}))jobs.add(job);
+  if(Number.isSafeInteger(skill.prereq)&&skill.prereq>0)
+   pending.push(skill.prereq);
+  for(const fx of skill.funcs||[]){
+   if(!evidenceLinkKinds.has(fx?.ep))continue;
+   const target=fx.fv1?.[3];
+   if(Number.isSafeInteger(target)&&target>0)pending.push(target);
+  }
+ }
+ return JSON.stringify([nodes,[...jobs].sort().map(job=>
+  [job,classes[job]?.branchCaps??null])]);
+}
 // Official November 13 game patch: source-pinned gameplay explanations.
 // These are mechanics verified in news #9, NOT calculated final damage.
 function officialPatchNotes(skill,catalog){
@@ -598,39 +629,42 @@ function inspect({skillCatalog,classes,id,calculator}={}){
  const skill=skillCatalog?.[String(id)];
  if(!skill||skill.id!==Number(id)||!skill.learnable||
   !classes||typeof classes!=='object'||!calculator)return null;
+ const revision=evidenceRevision(skillCatalog,classes,skill.id);
  const old=cache.get(skillCatalog);
- if(old?.classes===classes&&old?.calculator===calculator&&old.values.has(skill.id))
-  return old.values.get(skill.id);
+ if(old?.classes===classes&&old?.calculator===calculator){
+  const saved=old.values.get(skill.id);
+  if(saved&&saved.revision===revision)return saved.value;
+ }
  const store=old?.classes===classes&&old?.calculator===calculator?old:
   {classes,calculator,values:new Map()};
  if(store!==old)cache.set(skillCatalog,store);
+ const remember=value=>{
+  store.values.set(skill.id,{revision,value});
+  return value;
+ };
  const notice=accessNotice(skill,skillCatalog,classes);
  // These exceptional source records have no ordinary playable build.
  // Don't run 28 exhaustive model inspectors just to render an access note.
  if(notice){
   const result={notes:[],paths:[],extra:[],accessNotice:notice,
    sourceOnly:true,finalAmount:null};
-  store.values.set(skill.id,result);return result;
+  return remember(result);
  }
  const poison=poisonItemSource(skill);
  if(poison){
-  store.values.set(skill.id,poison);
-  return poison;
+  return remember(poison);
  }
  const composite=compositeActionEvidence(skill,skillCatalog);
  if(composite){
-  store.values.set(skill.id,composite);
-  return composite;
+  return remember(composite);
  }
  const hymn=hymnChainEvidence(skill,skillCatalog,classes);
  if(hymn){
-  store.values.set(skill.id,hymn);
-  return hymn;
+  return remember(hymn);
  }
  const trapPassive=trapCapacityEvidence(skill,classes);
  if(trapPassive){
-  store.values.set(skill.id,trapPassive);
-  return trapPassive;
+  return remember(trapPassive);
  }
  const jobs=Object.keys(classes).filter(job=>
   skill.classes?.[job]===1&&classes[job]?.branchCaps);
@@ -728,8 +762,7 @@ function inspect({skillCatalog,classes,id,calculator}={}){
   {notes,paths,extra,
    ...(trapVerified?{pathKind:'trap'}:linked?{pathKind:'damage'}:{}),
    sourceOnly:true,finalAmount:null}:null;
- store.values.set(skill.id,result);
- return result;
+ return remember(result);
 }
 root.PandoraWikiSkillInsights=Object.freeze({inspect,officialPatchNotes});
 })(typeof window==='undefined'?globalThis:window);

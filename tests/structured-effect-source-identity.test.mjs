@@ -77,3 +77,16 @@ test('a forged imported ring cannot alter the verified Elf Warrior 149/44 vector
  assert.deepEqual([forged.hp,forged.mp],[149,44]);
  assert.equal(forged.effects.flat.vit,0);
 });
+
+test('canonical numeric item and Soul sources require a matching record ID',()=>{
+ const bare={effects:[{func:'EP_VITARITY_CONST',a:9000}]};
+ const stringId={id:'777',effects:bare.effects};
+ for(const source of ['item:777','soul:777']){
+  assert.deepEqual(C.sourceEffects(source,bare,0),[],source);
+  assert.deepEqual(C.sourceEffects(source,stringId,0),[],source);
+  assert.equal(C.gatherEffects([[source,bare,0]]).flat.vit,0,source);
+ }
+ assert.equal(C.gatherEffects([['item:fixture',bare,0]]).flat.vit,9000);
+ assert.deepEqual(C.sourceEffects('item:777',{id:777,effects:bare.effects},0),
+  bare.effects);
+});

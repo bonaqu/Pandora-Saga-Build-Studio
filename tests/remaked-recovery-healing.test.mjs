@@ -19,8 +19,8 @@ test('invalid vitals cannot produce a misleading recovery amount',()=>{
  assert.equal(calc.recoveryAmountPreview({maxHp:300,maxMp:1250,stats:{vit:-1,spi:30}}),null);
 });
 test('Honor2 and real healing scale gear stack in skill healing, not potions',()=>{
- const item={effects:[{func:'EP_CAST_HEAL_LIFE_SCALE',a:3}]};
- const soul={effects:[{func:'EP_CAST_HEAL_LIFE_SCALE',a:5,min:3,max:10}]};
+ const item={id:1,effects:[{func:'EP_CAST_HEAL_LIFE_SCALE',a:3}]};
+ const soul={id:1,effects:[{func:'EP_CAST_HEAL_LIFE_SCALE',a:5,min:3,max:10}]};
  const records=[['item:1',item,0],['soul:1',soul,4]];
  const out=calc.healingSkillPreview({honorTitle:2,records});
  assert.deepEqual([out.base,out.honor,out.equipment,out.percent],[100,10,8,118]);
