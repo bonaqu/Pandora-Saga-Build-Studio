@@ -288,8 +288,45 @@ function potionPreview({enabled=false,potionRate=null,maxHp=null}={}){
 // Status.Skill[0][0]+[1] is aggregate *trained* green melee mastery, not blue
 // potential plus trained. 10 points bonus per 10 green for warrior lineage Lv12+.
 const warriorLineage=new Set(['WARRIOR','GLADIATOR','JUGGERNAUT','DRAGOON','KNIGHT','GENERAL','PALADIN']);
+// Authoritative OS GAME-DATA channels for nine independent racial passives.
+// The values are source-confirmed; server application/rounding stays modeled.
+const racialCombatSourceContracts=Object.freeze({
+ 900040001:['EP_CRITICALRATE_CONST','fv1',0],
+ 900040002:['EP_TOHIT_SCALE','fv1',0],
+ 900040003:['EP_AVOIDANCE_SCALE','fv1',0],
+ 900020001:['EP_RACE_MANA_COSTCUT','fv1',0],
+ 900050003:['EP_ONHIT_CRITICAL_DAMAGERATE','fv1',0],
+ 900030003:['EP_CRITICAL_REGIST','fv1',0],
+ 900060003:['EP_CRITICAL_REGIST','fv2',0],
+ 900060002:['EP_HEAL_TIME_SCALE','fv1',0],
+  // FV2[3]=1 is required for potion, but never counted as a second bonus.
+ 900010003:['EP_MASTERY_POTION','fv1',1]
+});
+function racialCombatSourcePreview({racialPassiveId=null,skillCatalog=null}={}){
+ const contract=racialCombatSourceContracts[racialPassiveId];
+ const record=skillCatalog?.[String(racialPassiveId)];
+ if(!contract||record?.id!==racialPassiveId||
+  record.skillType!=='PASSIVE'||record.learnable!==false||
+  record.branch!=='race'||record.branchRaw!=='SPECIAL_RACE'||
+  record.charLevel!==0||record.reqLevel!==0||
+  record.prereq!==null||record.isLevelBased!==true||
+  !Array.isArray(record.reqs)||record.reqs.length!==0||
+  Object.keys(record.classes||{}).length!==0||
+  !Array.isArray(record.funcs)||record.funcs.length!==1)return null;
+ const [ep,position,aux]=contract,fx=record.funcs[0],a=fx?.fv1,b=fx?.fv2;
+ if(fx?.ep!==ep||fx.dir!=='TARGET'||!Array.isArray(a)||a.length!==4||
+  !Array.isArray(b)||b.length!==4||
+  !a.slice(0,3).every(n=>n===0)||
+  !b.slice(0,3).every(n=>n===0))return null;
+ const amount=position==='fv2'?b[3]:a[3];
+ if(!Number.isSafeInteger(amount)||amount<0||amount>100||
+  (position==='fv2'?a[3]!==0:b[3]!==aux))return null;
+ return {id:racialPassiveId,ep,sourcePosition:position+'[3]',
+  amount,source:'current OS racial passive',modelOnly:true,verified:false};
+}
 function potionRecovery({vit,records=[],honorTitle=0,runeJoEun=false,
- racialPassiveId=null,jobKey=null,level=null,meleeMastery=null,itemForth=null}={}){
+ racialPassiveId=null,jobKey=null,level=null,meleeMastery=null,itemForth=null,
+ skillCatalog=null}={}){
  if(!Number.isFinite(vit)||vit<0||!Number.isInteger(honorTitle)||
   honorTitle<0||honorTitle>=honorTitles.length)return null;
  const base=100+Math.floor(vit*vit*2/1000),honor=honorTitle===11?5:0;
@@ -303,7 +340,10 @@ function potionRecovery({vit,records=[],honorTitle=0,runeJoEun=false,
   }
  }
  const rune=runeJoEun===true?5:0;
- const racial=racialPassiveId===900010003?15:0;
+ const sourceAvailable=skillCatalog!==null&&typeof skillCatalog==='object';
+ const racial=racialPassiveId===900010003?(
+  sourceAvailable?(racialCombatSourcePreview({racialPassiveId,skillCatalog})?.amount??0):15
+ ):0;
  if(meleeMastery!==null&&(!Number.isInteger(meleeMastery)||meleeMastery<0))return null;
  const mastery=warriorLineage.has(jobKey)&&Number.isInteger(level)&&level>=12
   ?Math.floor((meleeMastery??0)/10)*10:0;
@@ -2190,12 +2230,16 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const accuracy=accuracyBase+accEquip+(title.accuracy||0);
  const dodge=dodgeBase+evEquip+(title.dodge||0);
  // Current OS EP_CRITICALRATE_CONST (Myrine +5) differs from old Remaked +2.
- const critical=critBase+critEquip+(racialPassiveId===900040001?5:0)+
+ const raceValue=(id,legacy)=>racialPassiveId===id?(
+  skillCatalog!==null&&typeof skillCatalog==='object'?
+   (racialCombatSourcePreview({racialPassiveId,skillCatalog})?.amount??0):legacy
+ ):0;
+ const critical=critBase+critEquip+raceValue(900040001,5)+
   (otherBuffs.coldBlood?.critical||0);
  // Current OS race skills are percentage effects; rounding/effect stage is
  // unknown, so do not fold them into the Legacy flat accuracy/dodge subtotal.
- const racialRate={accuracy:racialPassiveId===900040002?10:0,
-  dodge:racialPassiveId===900040003?5:0};
+ const racialRate={accuracy:raceValue(900040002,10),
+  dodge:raceValue(900040003,5)};
  const racialWeapon=racialWeaponPreview({racialPassiveId,skillCatalog,weapon});
  const incredibleStrength=incredibleStrengthPreview({skillCatalog,jobKey,level});
  const attack=weaponAttackPreview({str:stats.str,weapon,
@@ -2271,7 +2315,7 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  // EP_RACE_MANA_COSTCUT 900020001 = 15; equipped same-EP reductions stack.
  const intReduction=Number.isFinite(stats.int)&&stats.int>=0?
   Math.floor(stats.int*stats.int/1000):null;
- const elfReduction=racialPassiveId===900020001?15:0;
+ const elfReduction=raceValue(900020001,15);
  const manaCost=intReduction===null?null:{
   base:100-intReduction,intReduction,racial:elfReduction,
   equipment:equipped.manaDiscount,
@@ -2369,12 +2413,12 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  // Dwarf 900030003: EP_CRITICAL_REGIST fv1[3]=5 (incoming crit chance).
  // Rapin 900060003: EP_CRITICAL_REGIST fv2[3]=10 (incoming crit damage).
  // These are mutually exclusive racial selections, not always-on race traits.
- const criticalDamage=100+(racialPassiveId===900050003?10:0);
+ const criticalDamage=100+raceValue(900050003,10);
  const criticalIncoming=(title.incomingCriticalChance||0)-
   (Number(bonuses.incomingCriticalReduction)||0)-
-  (racialPassiveId===900030003?5:0);
+  raceValue(900030003,5);
  const criticalIncomingDamage=100+(title.incomingCriticalDamage||0)-
-  (racialPassiveId===900060003?10:0);
+  raceValue(900060003,10);
  return {attack:attackWithRange,magicAttack,defense:effectiveDefense,activeSkills:actives,
   racialWeapon,incredibleStrength,
   priestSong:{minstrel:priestMinstrel,
@@ -4211,7 +4255,8 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  const mpBonus=bonusFor('mp',mpBase,effects,enhancements);
  if(!hpBonus||!mpBonus)return null;
  const potion=potionRecovery({vit:stats.vit,records:combinedRecords,honorTitle:extra.honor.id,
-  level,itemForth,...potionContext,runeJoEun:false});
+  level,itemForth,...potionContext,runeJoEun:false,
+  skillCatalog:combatContext.skillCatalog});
  // Saved pre-670 Divine Blessing resistance selections remain valid.
  // Consolidate its single effect under Allied Buffs without double counting.
  const oldDivineBlessing=Array.isArray(attributeBuffs?.resistanceSkillIds)&&
@@ -4291,11 +4336,18 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   regeneration.mp.allyBuff=groupBuffs.blessedRepose.manaRecoverySpeed;
   regeneration.mp.total+=groupBuffs.blessedRepose.manaRecoverySpeed;
  }
- // OS Rapin passive 900060002: EP_HEAL_TIME_SCALE fv1[3]=18.
- // This is an MP recovery *speed* index, not MP gained per tick.
+ // Rapin EP_HEAL_TIME_SCALE modifies MP recovery SPEED index, not
+ // MP gained per tick. The production OS value is source-validated.
  if(regeneration&&potionContext?.racialPassiveId===900060002){
-  regeneration.mp.racial=18;
-  regeneration.mp.total+=18;
+  const hasSource=combatContext.skillCatalog!==null&&
+   typeof combatContext.skillCatalog==='object';
+  const amount=hasSource?(racialCombatSourcePreview({
+   racialPassiveId:900060002,skillCatalog:combatContext.skillCatalog
+  })?.amount??0):18;
+  if(amount){
+   regeneration.mp.racial=amount;
+   regeneration.mp.total+=amount;
+  }
  }
  // Armor gemstone resistances have an exact Remaked rule. Apply these to the
  // displayed elemental defense totals once; aura and spell damage stay
@@ -5722,7 +5774,7 @@ function supportEffectPreview({skillCatalog=null,jobKey=null,level=1,
   }
   return out;
  }
-root.PandoraOSCalculator=Object.freeze({alliedFreeWindPreview,alliedHpPulsePreview,alliedRecipientPreviews,alliedNaturalRecoveryPreview,alliedInspirationPreview,alliedPeaceSongPreview,skillExecutionChains,craftingSkillPreview,trapSkillCostPreview,tacticalSkillPreview,rangedAmmoPreview,combatTechniquePreview,specializedSkillPreview,supportEffectPreview,situationalSkillPreview,statusApplicationPreview,enemyDebuffPreview,complexSkillSourcePreview,priestCastPreviews,movementSkillSourcePreview,utilitySkillSourcePreview,scalingSkillPreview,directStrikeCoefficientPreview,elementalSpellCoefficientPreview,defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,racialStatusSourcePreview,
+root.PandoraOSCalculator=Object.freeze({racialCombatSourcePreview,alliedFreeWindPreview,alliedHpPulsePreview,alliedRecipientPreviews,alliedNaturalRecoveryPreview,alliedInspirationPreview,alliedPeaceSongPreview,skillExecutionChains,craftingSkillPreview,trapSkillCostPreview,tacticalSkillPreview,rangedAmmoPreview,combatTechniquePreview,specializedSkillPreview,supportEffectPreview,situationalSkillPreview,statusApplicationPreview,enemyDebuffPreview,complexSkillSourcePreview,priestCastPreviews,movementSkillSourcePreview,utilitySkillSourcePreview,scalingSkillPreview,directStrikeCoefficientPreview,elementalSpellCoefficientPreview,defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,racialStatusSourcePreview,
  base,characterSheetPhysicalAttackRange,classBase,classBaseComponents,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,racialWeaponPreview,incredibleStrengthPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
  recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,healingActionPreview,periodicRecoveryPreview,consumableRecoveryPreview,consumableSkillPreview,statusCurePreview,harmfulConsumablePreview,gemstonePreview,legacyBuffPreview,songSkillPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,skillAttackRangePreview,racialUtilityPreview,elementalMagicPreview,elementalRefinementPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive,dynamicSkillContracts,dynamicSkillSourceMatches
 });
