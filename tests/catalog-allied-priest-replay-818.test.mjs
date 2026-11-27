@@ -42,15 +42,27 @@ test('all six known allied-recipient buffs are exercised independently of hero c
    key+' regression includes the independent recipient model');
  }
 });
-test('multi-effect priest enchantment loss is caught independently of self-skill preview',()=>{
+test('supported updated Enchantment FV1 replays without hiding the change from precommit review',()=>{
  const original=C.priestCastPreviews({...caster,skills:before.skills});
  for(const key of ['enchantAuraRate','enchantAuraFlat','enchantElementRate'])
   assert.ok(Number.isFinite(original[key]),key+' old source coefficient');
  const next=change(320011001,row=>{row.funcs[0].fv1[3]+=1});
- assert.equal(C.priestCastPreviews({...caster,skills:next.skills}).enchantAuraRate,null);
- const result=S.replaySkills(before,next);
- assert.equal(result.ok,false);
- assert.ok(result.samples.some(x=>x.id==='320011001'&&
+ const preview=C.priestCastPreviews({...caster,skills:next.skills});
+ assert.equal(preview.enchantAuraRate,original.enchantAuraRate+1);
+ assert.equal(preview.enchantAuraFlat,original.enchantAuraFlat);
+ assert.equal(preview.enchantElementRate,original.enchantElementRate);
+ const classified=S.compatibility(before,next);
+ assert.ok(classified.totals.needsReview>0,
+  'a numerical game-data source update must still demand catalog review');
+ const replay=S.replaySkills(before,next);
+ assert.equal(replay.ok,true,
+  'the modeled coefficient survives a supported OS change without silent loss');
+ assert.equal(replay.lost,0);
+ const unsupported=change(320011001,row=>{row.funcs[0].fv1[1]=1});
+ assert.equal(C.priestCastPreviews({...caster,skills:unsupported.skills}).enchantAuraRate,null);
+ const negative=S.replaySkills(before,unsupported);
+ assert.equal(negative.ok,false);
+ assert.ok(negative.samples.some(x=>x.id==='320011001'&&
   x.module==='priest-cast'&&x.detail.startsWith('enchantAuraRate:')));
 });
 test('source-only song stage without class access still protects priest song projections',()=>{

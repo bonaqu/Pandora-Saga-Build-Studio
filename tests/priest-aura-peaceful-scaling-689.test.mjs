@@ -25,7 +25,7 @@ test('OS priest vectors + Remaked separate floors produce source-gated peace and
  changed['340003003'].funcs[0].fv1[0]=99;
  assert.equal(C.priestCastPreviews({spi:134,blessing:90,hymn:30,skills:changed}).peaceful,null);
  const forged=structuredClone(skills);
- forged['320011001'].funcs.find(x=>x.ep==='EP_AURADAMAGE_SCALE').fv1[0]=500;
+ forged['320011001'].funcs.find(x=>x.ep==='EP_AURADAMAGE_SCALE').fv1[1]=1;
  const noEnchant=C.priestCastPreviews({spi:134,blessing:90,hymn:30,skills:forged});
  assert.equal(noEnchant.enchantAuraRate,null);
  assert.equal(noEnchant.holyEnhanced,null);
@@ -113,7 +113,7 @@ test('real character-sheet pipeline combines Holy + Enchantment only when both e
    remakedSkillIds:[330051001,320011001]}});
  assert.deepEqual(noWeapon.auraDamage.elements,{});
  const changed=structuredClone(skills);
- changed['320011001'].funcs.find(x=>x.ep==='EP_AURADAMAGE_SCALE').fv1[0]=99;
+ changed['320011001'].funcs.find(x=>x.ep==='EP_AURADAMAGE_SCALE').fv1[1]=1;
  const badSource=C.base({...ctx,combatContext:{
   ...ctx.combatContext,skillCatalog:changed},
   attributeBuffs:{priestEnabled:true,

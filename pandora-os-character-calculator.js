@@ -3601,12 +3601,42 @@ function priestCastPreviews({spi,blessing,hymn,exorcism=26,skills=null}={}){
  // OS Enchantment is THREE independent caster-driven vectors. Historical
  // Remaked Calc('DAMAura') uses base+flat+ceil(base×rate/100) for auras.
  // The resulting combination remains a labeled source-derived model.
- if(exact(320011001,'EP_AURADAMAGE_SCALE',[20,0,20,10])&&
-  exact(320011001,'EP_AURADAMAGE_CONST',[5,0,10,5])&&
-  exact(320011001,'EP_ELEMENT_DAMAGE_SCALE',[0,0,20,10])){
-  result.enchantAuraRate=10+Math.floor(spi*.20)+Math.floor(blessing*.20);
-  result.enchantAuraFlat=5+Math.floor(spi*.05)+Math.floor(blessing*.10);
-  result.enchantElementRate=10+Math.floor(blessing*.20);
+ // One linked skill, three independently signed target effects.
+ // All three must remain a recognized source structure before displaying or
+ // applying any Enchantment result: partial replay would invent a mixed buff.
+ const enchant=skills['320011001'];
+ const enchantEP=['EP_AURADAMAGE_SCALE','EP_AURADAMAGE_CONST',
+  'EP_ELEMENT_DAMAGE_SCALE'];
+ const enchantValues=(()=>{
+  if(enchant?.id!==320011001||enchant.learnable!==true||
+   enchant.skillType!=='ALLY'||enchant.charLevel!==45||
+   enchant.prereq!==null||JSON.stringify(enchant.reqs)!=='[]'||
+   enchant.classes?.ENCHANTER!==1||
+   Object.keys(enchant.classes).filter(k=>enchant.classes[k]).length!==1||
+   !Array.isArray(enchant.funcs)||enchant.funcs.length!==3)return null;
+  const values={};
+  for(const ep of enchantEP){
+   const rows=enchant.funcs.filter(f=>f?.ep===ep);
+   if(rows.length!==1||rows[0].dir!=='TARGET'||!Array.isArray(rows[0].fv1)||
+    rows[0].fv1.length!==4||!rows[0].fv1.every((n,i)=>
+     Number.isSafeInteger(n)&&n>=0&&n<=(i===3?20000:5000))||
+    rows[0].fv1[1]!==0||
+    !Array.isArray(rows[0].fv2)||rows[0].fv2.length!==4||
+    rows[0].fv2.some(v=>v!==0))return null;
+   // Existing element-scale model has no caster-SPR channel. A new
+   // such channel requires separate semantic proof before prediction.
+   if(ep==='EP_ELEMENT_DAMAGE_SCALE'&&rows[0].fv1[0]!==0)return null;
+   values[ep]=rows[0].fv1;
+  }
+  return values;
+ })();
+ if(enchantValues){
+  const rate=enchantValues.EP_AURADAMAGE_SCALE;
+  const flat=enchantValues.EP_AURADAMAGE_CONST;
+  const element=enchantValues.EP_ELEMENT_DAMAGE_SCALE;
+  result.enchantAuraRate=staged(rate,spi,blessing);
+  result.enchantAuraFlat=staged(flat,spi,blessing);
+  result.enchantElementRate=element[3]+Math.floor(blessing*element[2]/100);
   if(Number.isFinite(result.holyWeapon))
    result.holyEnhanced=result.holyWeapon+result.enchantAuraFlat+
     Math.ceil(result.holyWeapon*result.enchantAuraRate/100);
