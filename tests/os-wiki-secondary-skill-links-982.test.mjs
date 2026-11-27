@@ -11,7 +11,7 @@ Function('window',read('pandora-os-character-calculator.js'))(host);
 Function('window',read('pandora-studio-wiki-skill-insights.js'))(host);
 const C=host.PandoraOSCalculator,W=host.PandoraWikiSkillInsights;
 const specs=[
- {id:142503001,child:142503002,job:'JUGGERNAUT',kind:'combatTechniquePreview',
+ {id:142503001,child:142503002,job:'EXORCIST',kind:'combatTechniquePreview',
   ep:'EP_ATTACK_BLOCK_BREAK',dir:'CASTER'},
  {id:161202001,child:161202050,job:'JUGGERNAUT',kind:'combatTechniquePreview',
   ep:'EP_SKILL_PARRY_COUNTER',dir:'TARGET'},
