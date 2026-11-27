@@ -410,6 +410,55 @@ function resistanceSkillPreview({skillCatalog=null,selected=[]}={}){
  }
  return {bonuses,rows,verified:false};
 }
+// Current OS racial source identities, NOT a reconstruction of server
+// chance rolls or mitigation timing. All effects of the selected racial
+// passive must be recognized or the entire racial result fails closed.
+const racialStatusSourceContracts=Object.freeze({
+ 900020003:[['EP_CHARM_RESISTANCE_CONST','charm',0,100]],
+ 900010002:[['EP_IMMUNE_VIT_TYPE','physicalState',0,100]],
+ 900050001:[['EP_ONDAMAGE_FIN_DAMAGE_SCALE','incomingPhysical',-100,0]],
+ 900060001:[['EP_ONDAMAGE_ELEM_SCALE','incomingMagic',-100,0]],
+ 900030001:[
+  ['EP_RACE_TOUGH_HEART','survivalUnapplied',0,100],
+  ['EP_IMMUNE_TUMBLE','tumble',0,100],
+  ['EP_IMMUNE_STUN','stun',0,100],
+  ['EP_IMMUNE_NUMB','numb',0,100]
+ ]
+});
+function racialStatusSourcePreview({racialPassiveId=null,skillCatalog=null}={}){
+ const expected=racialStatusSourceContracts[racialPassiveId];
+ const record=skillCatalog?.[String(racialPassiveId)];
+ if(!expected||record?.id!==racialPassiveId||
+  record.skillType!=='PASSIVE'||record.learnable!==false||
+  record.branch!=='race'||record.branchRaw!=='SPECIAL_RACE'||
+  record.charLevel!==0||record.reqLevel!==0||
+  record.prereq!==null||record.isLevelBased!==true||
+  !Array.isArray(record.reqs)||record.reqs.length!==0||
+  Object.keys(record.classes||{}).length!==0||
+  !Array.isArray(record.funcs)||record.funcs.length!==expected.length)
+  return null;
+ const values={};
+ for(let index=0;index<expected.length;index++){
+  const [ep,key,min,max]=expected[index],effect=record.funcs[index],
+   fv=effect?.fv1;
+  if(effect?.ep!==ep||effect.dir!=='TARGET'||
+   !Array.isArray(fv)||fv.length!==4||
+   !fv.slice(0,3).every(n=>n===0)||
+   !Number.isSafeInteger(fv[3])||fv[3]<min||fv[3]>max||
+   !Array.isArray(effect.fv2)||effect.fv2.length!==4||
+   !effect.fv2.every(n=>n===0))return null;
+  values[key]=fv[3];
+ }
+ return {id:racialPassiveId,charm:values.charm||0,
+  physicalState:values.physicalState||0,
+  incomingPhysical:values.incomingPhysical||0,
+  incomingMagic:values.incomingMagic||0,
+  status:{stun:values.stun||0,numb:values.numb||0,
+   tumble:values.tumble||0},
+  // The source survival value is observed, not an applied HP stat.
+  survivalChanceSource:values.survivalUnapplied??null,
+  modelOnly:true,verified:false};
+}
 function resistancePreview({stats={},bonuses={},honorTitle=0,racialPassiveId=null,
  jobKey=null,wardingMastery=0,wardingCap=null,skillCatalog=null}={}){
  if(!Number.isFinite(stats.vit)||!Number.isFinite(stats.spi)||
@@ -417,20 +466,35 @@ function resistancePreview({stats={},bonuses={},honorTitle=0,racialPassiveId=nul
  const title=honorTitles[honorTitle].effects,elementKeys=[
   'fire','ice','lightning','poison','charm','light','dark','magic'
  ];
- const racial={
-  charm:racialPassiveId===900020003?20:0, // Elf: Стойкость разума
-  physicalState:racialPassiveId===900010002?15:0, // Human: Приспособляемость
-  incomingPhysical:racialPassiveId===900050001?-10:0, // Enkidu: Каменная кожа
-  incomingMagic:racialPassiveId===900060001?-10:0 // Lapin: Антимагия
+ // Normal live mode reads CURRENT SOURCE FV1. The no-catalog branch
+ // preserves the older callable Remaked preview contract for isolated
+ // tests/legacy consumers only; production supplies skillCatalog from D1.
+ const hasSource=skillCatalog!==null&&typeof skillCatalog==='object';
+ const raceFromOS=hasSource?racialStatusSourcePreview({
+  racialPassiveId,skillCatalog
+ }):null;
+ const legacyRacial={
+  charm:racialPassiveId===900020003?20:0,
+  physicalState:racialPassiveId===900010002?15:0,
+  incomingPhysical:racialPassiveId===900050001?-10:0,
+  incomingMagic:racialPassiveId===900060001?-10:0
  };
+ const racial=hasSource?{
+  charm:raceFromOS?.charm||0,
+  physicalState:raceFromOS?.physicalState||0,
+  incomingPhysical:raceFromOS?.incomingPhysical||0,
+  incomingMagic:raceFromOS?.incomingMagic||0
+ }:legacyRacial;
  const elements={};
  const statusKeys=['burn','stun','numb','tumble','knockback','sleep',
   'silence','evil','curse','disease','madness','blockBreak'];
  const status={},passive=wardingStatusPassive({jobKey,wardingMastery,wardingCap,skillCatalog});
  const honorStatus={burn:honorTitle===3?5:0,numb:honorTitle===4?5:0,
   tumble:honorTitle===5?5:0};
- // OS skill 900030001 (Stronghearted): Stun, Numb/Frozen and Tumble each +10.
- const dwarfStatus=racialPassiveId===900030001?{stun:10,numb:10,tumble:10}:{};
+ // The dwarf's three TARGET statuses are independent current OS values.
+ // An unknown fourth survival action invalidates the entire source proof.
+ const dwarfStatus=hasSource?(raceFromOS?.status||{}):
+  (racialPassiveId===900030001?{stun:10,numb:10,tumble:10}:{});
  for(const key of statusKeys){
   const amount=Number(bonuses[key]??0);
   if(!Number.isFinite(amount))return null;
@@ -5658,7 +5722,7 @@ function supportEffectPreview({skillCatalog=null,jobKey=null,level=1,
   }
   return out;
  }
-root.PandoraOSCalculator=Object.freeze({alliedFreeWindPreview,alliedHpPulsePreview,alliedRecipientPreviews,alliedNaturalRecoveryPreview,alliedInspirationPreview,alliedPeaceSongPreview,skillExecutionChains,craftingSkillPreview,trapSkillCostPreview,tacticalSkillPreview,rangedAmmoPreview,combatTechniquePreview,specializedSkillPreview,supportEffectPreview,situationalSkillPreview,statusApplicationPreview,enemyDebuffPreview,complexSkillSourcePreview,priestCastPreviews,movementSkillSourcePreview,utilitySkillSourcePreview,scalingSkillPreview,directStrikeCoefficientPreview,elementalSpellCoefficientPreview,defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
+root.PandoraOSCalculator=Object.freeze({alliedFreeWindPreview,alliedHpPulsePreview,alliedRecipientPreviews,alliedNaturalRecoveryPreview,alliedInspirationPreview,alliedPeaceSongPreview,skillExecutionChains,craftingSkillPreview,trapSkillCostPreview,tacticalSkillPreview,rangedAmmoPreview,combatTechniquePreview,specializedSkillPreview,supportEffectPreview,situationalSkillPreview,statusApplicationPreview,enemyDebuffPreview,complexSkillSourcePreview,priestCastPreviews,movementSkillSourcePreview,utilitySkillSourcePreview,scalingSkillPreview,directStrikeCoefficientPreview,elementalSpellCoefficientPreview,defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,racialStatusSourcePreview,
  base,characterSheetPhysicalAttackRange,classBase,classBaseComponents,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,racialWeaponPreview,incredibleStrengthPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
  recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,healingActionPreview,periodicRecoveryPreview,consumableRecoveryPreview,consumableSkillPreview,statusCurePreview,harmfulConsumablePreview,gemstonePreview,legacyBuffPreview,songSkillPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,skillAttackRangePreview,racialUtilityPreview,elementalMagicPreview,elementalRefinementPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive,dynamicSkillContracts,dynamicSkillSourceMatches
 });
