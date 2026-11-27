@@ -135,10 +135,14 @@ test('Wiki cache refreshes after same-object class caps and root pointers change
  const readCurrent=()=>W.inspect({
   skillCatalog:mutable,classes:liveClasses,id,calculator:C
  });
- assert.deepEqual(readCurrent()?.paths,[[id,420005004]]);
+ const original=readCurrent();
+ assert.deepEqual(original?.paths,[[id,420005004]]);
  liveClasses.CONJURER.branchCaps.embody=0;
- assert.equal(readCurrent()?.paths?.length||0,0,
-  'Ineligible class must not retain an earlier learned action');
+ const changed=readCurrent();
+ assert.notStrictEqual(changed,original,
+  'Changed class caps must re-evaluate the cached source preview');
+ // Wiki navigation documents source links, not current-build learnability.
+ assert.deepEqual(changed?.paths,[[id,420005004]]);
  liveClasses.CONJURER.branchCaps.embody=classes.CONJURER.branchCaps.embody;
  assert.deepEqual(readCurrent()?.paths,[[id,420005004]]);
  mutable[id].funcs.find(f=>f.ep==='EP_SKILL_EXEC_DIFFUSION').fv1[3]=420005003;

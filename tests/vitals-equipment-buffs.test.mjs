@@ -23,7 +23,7 @@ test('current class formula reproduces audited Cleric lvl45 3145 HP / 1279 MP',(
  assert.equal(x.verified,false,'do not claim complete live server parity');
 });
 test('high Soul MP +8% uses separate base, not the final equipment-adjusted value',()=>{
- const necklace={effects:[{func:'EP_MAXMANA_CONST',a:50}]};
+ const necklace={id:20001,effects:[{func:'EP_MAXMANA_CONST',a:50}]};
  const x=cleric([['item:20001',necklace,0],['soul:104002',souls[104002],0]]);
  assert.equal(x.mp,1290+50+103);
  assert.equal(x.vitalsBonus.mp.percentParts[0].amount,103);

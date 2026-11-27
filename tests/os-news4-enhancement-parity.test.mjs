@@ -91,7 +91,7 @@ test('one +3 leggings correctly accumulates +3.6 and shows DEF 47',()=>{
 });
 test('defense percentage and active buffs use assembled raw total, final result truncates',()=>{
  const rows=[piece('head',3,100,12)];
- const boosted=[...rows,['soul:99',{effects:[
+ const boosted=[...rows,['soul:99',{id:99,effects:[
   {func:'EP_ARMORCLASS_SCALE',a:10} ]},0]];
  const defense=C.defensePreview({records:boosted});
  assert.equal(defense.directRaw,15.6);
