@@ -1722,10 +1722,10 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  {completeSourceProof:true,branch:'alchemy',
   predecessor:advancedPoison?220001001:null,
   modelOnly:true,unit:' урона ядом',
-  detailRu:advancedPoison?'Усиленный яд · мастерство Алхимии 61 · модель OS':
-   'Коэффициент OS от уровня и мастерства Алхимии · модель',
-  detailEn:advancedPoison?'Advanced poison · Alchemy mastery 61 · OS model':
-   'OS coefficients from level and Alchemy mastery · model'});
+  detailRu:advancedPoison?'Улучшенный яд · мастерство Алхимии 61 · модель':
+   'От уровня и мастерства Алхимии · модель',
+  detailEn:advancedPoison?'Advanced poison · Alchemy mastery 61 · model':
+   'Scales with level and Alchemy mastery · model'});
  // Elemental Absorption: this value is the source-scaled protection
  // parameter, not a claim about enemy damage or the final mitigation packet.
  const absorbParameter=coefficientModel(330002001,'EP_ABSOLUTE_MAGIC',
@@ -1814,9 +1814,9 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  ],()=>swiftArrowSource.EP_ATTACKINTERVAL_SCALE,
  {completeSourceProof:true,modelOnly:true,branch:'archery',
   unit:'% скорости стрельбы',
-  detailRu:'Коэффициент темпа стрельбы OS: +'+
+  detailRu:'Коэффициент темпа стрельбы: +'+
    swiftArrowSource.EP_ATTACKINTERVAL_SCALE+'% (модель)',
-  detailEn:'OS firing rate coefficient: +'+
+  detailEn:'Firing rate coefficient: +'+
    swiftArrowSource.EP_ATTACKINTERVAL_SCALE+'% (model)'});
  // Self-cast Dark Aura uses the modern OS source vector rather than the
  // historical Remaked 73–206 tier table (a different ruleset).
@@ -1904,11 +1904,7 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  ],()=>validStat('spi')?2+Math.floor(stats.spi*.06):null,
  {branch:'exorcism',unit:' урона светом',detailRu:'От СД заклинателя',
   detailEn:'From caster SPI'});
- add(430051001,'offense',[
-  ['EP_AURADARK_CONSTANT',[8,0,0,15]]
- ],()=>validStat('spi')?15+Math.floor(stats.spi*.08):null,
- {branch:'darkness',unit:' урона тьмой',detailRu:'От СД заклинателя',
-  detailEn:'From caster SPI'});
+
  // The real song is a three-hop effect chain; never trust a forged inner
  // record. The validated ROOT skill name provides the on-page identity.
  const songAvailable=id=>songSkillPreview({skillCatalog,jobKey,level,
