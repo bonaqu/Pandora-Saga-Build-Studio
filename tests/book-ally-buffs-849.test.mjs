@@ -56,16 +56,26 @@ test('caster SPR and Hymn affect Sage Song on same recipient; inactive or inelig
   assert.equal(testResult.combat.priestSong.sageElementDamage,0);
  }
 });
-test('a modified OS BENCH vector cannot keep stale Sage Song cooldown bonus',()=>{
+test('updated OS BENCH vector replays a new cooldown model; unknown channels fail closed',()=>{
  const forged=structuredClone(skills);
  const row=forged['340004003'].funcs.find(x=>x.ep==='EP_SKILL_BENCH_FIN');
  row.fv1[2]++;
  const check=C.priestCastPreviews({...originalCaster,skills:forged});
- assert.equal(check.sageCooldownDelta,null);
+ const previous=C.priestCastPreviews({...originalCaster,skills});
+ assert.equal(check.sageCooldownDelta,previous.sageCooldownDelta+1);
+ assert.equal(check.sage,previous.sage);
  const baseline=hero();
  const result=hero({selected:[340004001],skillCatalog:forged});
- assert.equal(result.combat.cooldown,baseline.combat.cooldown);
- assert.equal(result.combat.priestSong.sageCooldownDelta,0);
+ assert.equal(result.combat.cooldown,
+  baseline.combat.cooldown+check.sageCooldownDelta);
+ assert.equal(result.combat.priestSong.sageCooldownDelta,check.sageCooldownDelta);
+ const unsupported=structuredClone(forged);
+ unsupported['340004003'].funcs.find(x=>x.ep==='EP_SKILL_BENCH_FIN').fv2[0]=1;
+ assert.equal(C.priestCastPreviews({...originalCaster,skills:unsupported})
+  .sageCooldownDelta,null);
+ const rejected=hero({selected:[340004001],skillCatalog:unsupported});
+ assert.equal(rejected.combat.cooldown,baseline.combat.cooldown);
+ assert.equal(rejected.combat.priestSong.sageCooldownDelta,0);
 });
 test('Enchantment modifies current weapon aura and elemental spell damage, NOT general physical attack',()=>{
  const buff=hero({selected:[320011001]});

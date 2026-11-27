@@ -64,7 +64,7 @@ test('tampered song parent/middle/recipient skill cannot impersonate source-veri
   [340001002,{funcs:[{ep:'EP_SKILL_EXEC',dir:'TARGET',fv1:[0,0,0,340003003]}]},'minstrel'],
   [340001003,{funcs:[{ep:'EP_TOHIT_CONST',dir:'TARGET',fv1:[13,0,13,4]}]},'minstrel'],
   [340003001,{reqs:[{branch:'hymn',amount:30},{branch:'benevolence',amount:60}]},'peaceful'],
-  [340003003,{funcs:[{ep:'EP_DAMAGE_CLEAR',dir:'TARGET',fv1:[60,0,30,99]}]},'peaceful'],
+  [340003003,{funcs:[{ep:'EP_DAMAGE_CLEAR',dir:'TARGET',fv1:[60,1,30,10],fv2:[0,0,0,0]}]},'peaceful'],
   [340004001,{classes:{CLERIC:1}},'sage'],
   [340004003,{funcs:skills[340004003].funcs.map(f=>({...f,dir:'CASTER'}))},'sage']
  ];
