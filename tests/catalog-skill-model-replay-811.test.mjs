@@ -36,7 +36,7 @@ test('cast timing is a mechanical change and replays known previews without D1 w
  assert.equal(result.ok,true);
  assert.equal(root.PandoraCatalogSafety.compatibility(before,next).totals.sourceOnly,1);
 });
-test('known source-gated combat effect lost on an FV mutation blocks the selected snapshot',()=>{
+test('known same-shape OS coefficient updates replay, while unknown new channels block publishing',()=>{
  const next=amended();
  const record=structuredClone(before.skills['320001001']);
  const effect=record.funcs.find(row=>row.ep==='EP_DAMAGERATE_SCALE');
@@ -47,9 +47,20 @@ test('known source-gated combat effect lost on an FV mutation blocks the selecte
  const result=replay(before,next);
  assert.ok(result.scenarios>0,'actual representative hero models must be exercised');
  assert.ok(result.previouslyModeled>0,'the old catalog contained a numeric skill model');
- assert.equal(result.ok,false);
- assert.ok(result.lost>0,'a numeric calculation must not silently disappear');
- assert.ok(result.samples.some(row=>row.id==='320001001'));
+ assert.equal(result.ok,true,'valid source FV1 magnitude must keep source models');
+ assert.equal(result.lost,0,'a supported coefficient must not silently disappear');
+ assert.ok(result.retained>0,'the modified source model is still inspectable');
+ assert.equal(root.PandoraCatalogSafety.compatibility(before,next).totals.needsReview,1,
+  'a numeric gameplay change still needs explicit owner review');
+ const invalid=amended();
+ const invalidRow=structuredClone(before.skills['320001001']);
+ invalidRow.funcs.find(row=>row.ep==='EP_DAMAGERATE_SCALE').fv2[0]=1;
+ invalid.skills['320001001']=invalidRow;
+ const refused=replay(before,invalid);
+ assert.equal(refused.ok,false,'unrecognized FV2 changes cannot pass replay');
+ assert.ok(refused.lost>0,'unknown mechanic must lose old numeric preview');
+ assert.ok(refused.lostEntries.some(row=>row.id==='320001001'),
+  'unrecognized source must be identified in the report');
  assert.equal(JSON.stringify(before),beforeString,'never mutate published source');
  assert.equal(JSON.stringify(next),afterString,'never mutate selected update');
 });
