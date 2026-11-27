@@ -70,4 +70,12 @@ test('matrix fails closed for unverified outputs mislabeled as server verified',
   /Unverified coefficient displayed as certain/);
  assert.match(forbidden.problems.map(x=>x.reason).join(' '),
   /Non-model or invalid coefficient/);
+ const sourceOnly=()=>({verified:false,offense:[{
+  id:1,available:true,recipient:false,amount:null,
+  modelOnly:false,uncertain:true
+ }],defense:[],movement:[],utility:[]});
+ const accepted=auditOsClassLevelSkillMatrix({...basic,maxLevel:1,
+  calculator:{scalingSkillPreview:sourceOnly}});
+ assert.equal(accepted.totals.errors,0,
+  'A source-only preview is not obligated to invent a coefficient model');
 });
