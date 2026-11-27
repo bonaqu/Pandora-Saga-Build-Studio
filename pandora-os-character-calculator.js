@@ -5804,11 +5804,17 @@ function combatTechniquePreview({skillCatalog=null,jobKey=null,level=1,
    ru.push('Требуется подходящее оружие');
    en.push('Requires a compatible weapon');
   }
+  // This child was validated by the complete root/child signature above.
+  // Show its identity in Wiki, never a guaranteed parry or block-break roll.
+  const linkedPath=proof.childId&&skill.funcs.some(effect=>
+   ['EP_SKILL_PARRY_COUNTER','EP_ATTACK_BLOCK_BREAK'].includes(effect.ep)&&
+   effect.fv1?.[3]===proof.childId);
   out.rows.push({id:proof.id,name:skill.name,description:skill.desc||'',
    mana:skill.mana,cooldown:skill.cooldown,prerequisiteId:proof.parentId,
    noteRu:proof.noteRu,noteEn:proof.noteEn,requirementsMet:ru.length===0,
-   reasonRu:ru.join(' · '),reasonEn:en.join(' · '),sourceOnly:true,
-   finalAmount:null,appliedToHero:false});
+   reasonRu:ru.join(' · '),reasonEn:en.join(' · '),
+   paths:linkedPath?[[proof.id,proof.childId]]:[],
+   sourceOnly:true,finalAmount:null,appliedToHero:false});
  }
  return out;
 }
@@ -5876,6 +5882,11 @@ function specializedSkillPreview({skillCatalog=null,jobKey=null,level=1,
    ru.push('Нужно мастерство «'+(branchLabels?.[branch]||'Мастерство')+'»: '+amount);
    en.push('Requires '+(englishBranches?.[branch]||'mastery')+': '+amount);
   }
+  // Full identity, root/child actions and class gates were checked above.
+  // Diffusion is a link, NOT a source-confirmed hit, count or damage total.
+  const linkedPath=proof.childId&&source.funcs.some(effect=>
+   ['EP_SKILL_EXEC_DIFFUSION','EP_SKILL_EXEC'].includes(effect.ep)&&
+   effect.fv1?.[3]===proof.childId);
   out[proof.group].push({id:proof.id,name:source.name,description:source.desc||'',
    mana:source.mana,cooldown:source.cooldown,prerequisiteId:proof.parentId,
    noteRu:currentSilence?
@@ -5884,6 +5895,7 @@ function specializedSkillPreview({skillCatalog=null,jobKey=null,level=1,
     proof.noteEn+' A knockback effect is also listed; the final result is unknown.':proof.noteEn,
    requirementsMet:ru.length===0,
    reasonRu:ru.join(' · '),reasonEn:en.join(' · '),
+   paths:linkedPath?[[proof.id,proof.childId]]:[],
    sourceOnly:true,finalAmount:null,appliedToHero:false});
  }
  return out;
