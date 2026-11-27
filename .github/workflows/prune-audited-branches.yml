@@ -1,17 +1,22 @@
-name: Prune audited stale branches (one-time or manual)
+name: Archive and retire audited orphan branches
 
 on:
-  # Manual only. Old #615 experiments must not be deleted as a side effect
-  # of an unrelated editorial release or a failed CI retry.
+  push:
+    branches: [bonaqu_projects]
+    paths:
+      - '.github/workflows/prune-audited-branches.yml'
+      - 'scripts/prune-audited-branches.mjs'
+      - 'docs/BRANCH_RETENTION_POLICY.md'
   workflow_dispatch:
     inputs:
       confirm:
-        description: 'Type DELETE_AUDITED_BRANCHES after reviewing the SHA audit'
+        description: 'Type DELETE_AUDITED_BRANCHES to rerun the exact-SHA branch retirement'
         required: true
         type: string
 
 permissions:
   contents: write
+  pull-requests: read
 
 concurrency:
   group: prune-audited-branches
@@ -19,11 +24,11 @@ concurrency:
 
 jobs:
   prune:
-    if: ${{ github.repository == 'bonaqu/Pandora-Saga-Build-Studio' && github.ref == 'refs/heads/bonaqu_projects' && inputs.confirm == 'DELETE_AUDITED_BRANCHES' }}
+    if: ${{ github.repository == 'bonaqu/Pandora-Saga-Build-Studio' && github.ref == 'refs/heads/bonaqu_projects' && (github.event_name == 'push' || inputs.confirm == 'DELETE_AUDITED_BRANCHES') }}
     runs-on: ubuntu-latest
-    timeout-minutes: 4
+    timeout-minutes: 8
     steps:
-      - name: Checkout protected main
+      - name: Checkout protected production branch
         uses: actions/checkout@v5
         with:
           ref: bonaqu_projects
@@ -32,7 +37,19 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: '22'
-      - name: Delete only exact reviewed SHA refs and report mismatches
+      - name: Verify the SHA-pinned cleanup code
+        run: node --test tests/branch-prune-retirement.test.mjs
+      - name: Archive unique branch tips as Git tags and delete audited stale refs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node scripts/prune-audited-branches.mjs
+      - name: Verify only bonaqu_projects remains
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api --paginate repos/${{ github.repository }}/branches --jq '.[].name' > /tmp/remaining-branches
+          cat /tmp/remaining-branches
+          if [ "$(wc -l < /tmp/remaining-branches)" -ne 1 ] || ! grep -Fxq 'bonaqu_projects' /tmp/remaining-branches; then
+            echo 'Unreviewed or in-flight branches remain; do not delete them without a new SHA audit' >&2
+            exit 1
+          fi
