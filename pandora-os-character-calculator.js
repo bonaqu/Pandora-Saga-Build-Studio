@@ -1441,6 +1441,35 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
   }
   return values;
  };
+ // Poison and Dark Aura have different, explicitly sourced FV1 role maps:
+ // [unused, level %, green Alchemy %, flat] and [SPI %, unused, unused, flat].
+ // Only these two known forms may feed a Remaked coefficient model. A poison
+ // cost/loss event must match the complete OS root, not just its first effect.
+ const osAuraFV=(id,kind)=>{
+  const record=skill(id),poison=kind==='poison';
+  if(record?.id!==id||record.skillType!=='MYSELF'||
+   record.learnable!==true||
+   record.branch!==(poison?'alchemy':'darkness')||
+   !Array.isArray(record.funcs)||
+   record.funcs.length!==(poison?3:1))return null;
+  const effect=record.funcs[0],v=effect?.fv1;
+  if(effect?.ep!==(poison?'EP_AURAPOISON_CONSTANT':'EP_AURADARK_CONSTANT')||
+   effect.dir!=='TARGET'||!Array.isArray(v)||v.length!==4||
+   !v.every(Number.isSafeInteger)||v.some(x=>x<0||x>100)||
+   !Array.isArray(effect.fv2)||effect.fv2.length!==4||
+   !effect.fv2.every(x=>x===0)||
+   (poison?v[0]!==0:v[1]!==0||v[2]!==0))return null;
+  if(poison){
+   const cost=record.funcs[1],loss=record.funcs[2];
+   if(cost?.ep!=='EP_CONSUME_ITEM'||cost.dir!=='CASTER'||
+    JSON.stringify(cost.fv1)!=='[0,0,0,50056]'||
+    JSON.stringify(cost.fv2)!=='[0,0,0,1]'||
+    loss?.ep!=='EP_LOST_CHANGE_WEAPON'||loss.dir!=='TARGET'||
+    JSON.stringify(loss.fv1)!=='[0,0,0,0]'||
+    JSON.stringify(loss.fv2)!=='[0,0,0,0]')return null;
+  }
+  return v;
+ };
  const seen=new Set();
  const add=(id,group,required,compute,options={})=>{
   const record=skill(id);
@@ -1683,21 +1712,20 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
   detailRu:'Мастерство рубящих',detailEn:'Cleaving mastery'});
  // The same poison enchant has a mastery-61 OS variant. Show only the
  // version the current green mastery can actually cast, never both at once.
- if(mastery('alchemy')>=61)
-  add(220001003,'offense',[
-   ['EP_AURAPOISON_CONSTANT',[0,10,15,6]]
-  ],()=>5+1+Math.floor(level*.10)+Math.floor(mastery('alchemy')*.15),
- {branch:'alchemy',predecessor:220001001,modelOnly:true,
-  unit:' урона ядом',
-  detailRu:'Усиленный яд · мастерство Алхимии 61',
-   detailEn:'Advanced poison · Alchemy mastery 61'});
- else
-  add(220001001,'offense',[
-   ['EP_AURAPOISON_CONSTANT',[0,10,5,5]]
-  ],()=>5+Math.floor(level*.10)+Math.floor(mastery('alchemy')*.05),
- {branch:'alchemy',modelOnly:true,unit:' урона ядом',
-  detailRu:'Зависит от мастерства Алхимии',
-   detailEn:'Scales with Alchemy mastery'});
+ const advancedPoison=mastery('alchemy')>=61;
+ const poisonId=advancedPoison?220001003:220001001;
+ const poisonFV=osAuraFV(poisonId,'poison');
+ if(poisonFV)add(poisonId,'offense',[
+  ['EP_AURAPOISON_CONSTANT',advancedPoison?[0,10,15,6]:[0,10,5,5]]
+ ],()=>poisonFV[3]+Math.floor(level*poisonFV[1]/100)+
+  Math.floor(mastery('alchemy')*poisonFV[2]/100),
+ {completeSourceProof:true,branch:'alchemy',
+  predecessor:advancedPoison?220001001:null,
+  modelOnly:true,unit:' урона ядом',
+  detailRu:advancedPoison?'Усиленный яд · мастерство Алхимии 61 · модель OS':
+   'Коэффициент OS от уровня и мастерства Алхимии · модель',
+  detailEn:advancedPoison?'Advanced poison · Alchemy mastery 61 · OS model':
+   'OS coefficients from level and Alchemy mastery · model'});
  // Elemental Absorption: this value is the source-scaled protection
  // parameter, not a claim about enemy damage or the final mitigation packet.
  const absorbParameter=coefficientModel(330002001,'EP_ABSOLUTE_MAGIC',
@@ -1776,29 +1804,40 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  // Swift Arrow is an attack-interval enhancement with fixed OS source
  // [0,0,0,30], not direct +30 weapon damage. The displayed percentage is
  // the skill effect coefficient; no unproven firing-frequency conversion.
- add(213702001,'offense',[
-  ['EP_ATTACKINTERVAL_SCALE',[0,0,0,30]]
- ],()=>30,{modelOnly:true,branch:'archery',unit:'% скорости стрельбы',
-  detailRu:'Скорость стрельбы +30%',
-  detailEn:'Firing speed +30%'});
+ const swiftArrowSource=skill(213702001)?.skillType==='MYSELF'?
+  pairedSourceRates(213702001,[
+   ['EP_ATTACKINTERVAL_SCALE',0,100],['EP_LOST_CHANGE_WEAPON',0,0]
+  ]):null;
+ if(swiftArrowSource)add(213702001,'offense',[
+  ['EP_ATTACKINTERVAL_SCALE',[0,0,0,30]],
+  ['EP_LOST_CHANGE_WEAPON',[0,0,0,0]]
+ ],()=>swiftArrowSource.EP_ATTACKINTERVAL_SCALE,
+ {completeSourceProof:true,modelOnly:true,branch:'archery',
+  unit:'% скорости стрельбы',
+  detailRu:'Коэффициент темпа стрельбы OS: +'+
+   swiftArrowSource.EP_ATTACKINTERVAL_SCALE+'% (модель)',
+  detailEn:'OS firing rate coefficient: +'+
+   swiftArrowSource.EP_ATTACKINTERVAL_SCALE+'% (model)'});
  // Self-cast Dark Aura uses the modern OS source vector rather than the
  // historical Remaked 73–206 tier table (a different ruleset).
  // An exact NEXT breakpoint can be derived from the OS coefficient [8,0,0,15].
  // This is a threshold of the model, not verified on the live server.
- const darkAuraTier=Number.isSafeInteger(stats.spi)&&stats.spi>=0?
-  Math.floor(stats.spi*8/100):null;
- const darkAuraNextSpi=darkAuraTier===null?null:
-  Math.ceil((darkAuraTier+1)*100/8);
- add(430051001,'offense',[
+ const darkAuraFV=osAuraFV(430051001,'dark');
+ const darkAuraTier=darkAuraFV&&Number.isSafeInteger(stats.spi)&&stats.spi>=0?
+  Math.floor(stats.spi*darkAuraFV[0]/100):null;
+ const darkAuraNextSpi=darkAuraTier===null||darkAuraFV[0]===0?null:
+  Math.ceil((darkAuraTier+1)*100/darkAuraFV[0]);
+ if(darkAuraFV)add(430051001,'offense',[
   ['EP_AURADARK_CONSTANT',[8,0,0,15]]
- ],()=>darkAuraTier===null?null:15+darkAuraTier,
- {branch:'darkness',modelOnly:true,unit:' урона тьмой',
-  detailRu:'Тёмная аура: 15 + целая часть от 8% СД'+
-   (darkAuraNextSpi===null?'':'; следующий порог СД: '+darkAuraNextSpi)+
-   '',
-  detailEn:'Dark Aura: 15 + whole-number part of 8% Spirit'+
-   (darkAuraNextSpi===null?'':'; next SPI breakpoint: '+darkAuraNextSpi)+
-   ''});
+ ],()=>darkAuraTier===null?null:darkAuraFV[3]+darkAuraTier,
+ {completeSourceProof:true,branch:'darkness',modelOnly:true,
+  unit:' урона тьмой',
+  detailRu:'Тёмная аура (модель): '+darkAuraFV[3]+
+   ' + целая часть от '+darkAuraFV[0]+'% СД'+
+   (darkAuraNextSpi===null?'':'; следующий порог СД: '+darkAuraNextSpi),
+  detailEn:'Dark Aura (model): '+darkAuraFV[3]+
+   ' + whole-number part of '+darkAuraFV[0]+'% Spirit'+
+   (darkAuraNextSpi===null?'':'; next SPI breakpoint: '+darkAuraNextSpi)});
  // For multi-projectile attacks the source exposes multiple independent
  // coefficients. Never fold a secondary hit modifier into the character ATK,
  // infer shot count damage, or treat a range field as confirmed metres.
