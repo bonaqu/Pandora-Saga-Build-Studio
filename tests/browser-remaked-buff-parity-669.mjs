@@ -89,7 +89,53 @@ export async function runRemakedBuffParity669Smoke(browser,base){
   assert.equal(await ally.count(),1);
   assert.equal(await ally.locator('[data-book-setting="legacySkill:100055001"]').isChecked(),true);
   assert.equal(await ally.locator('[data-book-setting="legacySkill:330004001"]').isEnabled(),true);
+  // Three old static Book labels must follow a TEST-COPY of the official
+  // source FV1, never the number frozen in old Remaked descriptions.
+  const sourceProof=await page.evaluate(async()=>{
+   const classes=await (await fetch('data/os/classes.json')).json();
+   const local=structuredClone(window.__buffQATerms.skills);
+   local['260008001'].funcs[0].fv1[3]=107;
+   local['260002001'].funcs[0].fv1[3]=36;
+   local['213702001'].funcs[0].fv1[3]=44;
+   const self=[260008001,260002001,213702001];
+   const options={skills:local,jobKey:'SNIPER',level:45,
+    weapon:{kind:'CROSSBOW'},branchMasteries:{warding:41},
+    branchCaps:classes.SNIPER.branchCaps,stats:{agi:70}};
+   const rows=window.PandoraRemakedBuffs.choices({
+    ...options,englishSkills:window.__buffQATerms.englishSkills
+   });
+   const info={skills:local,englishSkills:window.__buffQATerms.englishSkills,
+    classes,branchLabels:window.__buffQATerms.branchLabels,
+    englishBranches:window.__buffQATerms.englishBranches};
+   const host=document.querySelector('#buff-parity-qa');
+   const render=(language)=>{
+    document.documentElement.lang=language;
+    window.PandoraStageAttributes.render(host,{
+     page:'buffs',remakedBuffRows:rows,modifiers:{stats:{agi:70}},
+     gameTerms:info,buffs:{remakedSkillIds:self,priestEnabled:false},
+     vitalsBuffs:{},heroJobKey:'SNIPER',heroLevel:45,
+     heroMasteries:{warding:41},heroBranchCaps:classes.SNIPER.branchCaps,
+     heroWeaponKind:'CROSSBOW',skillIconForId:()=>null
+    });
+    return Object.fromEntries(self.map(id=>{
+     const checkbox=host.querySelector('[data-book-setting="legacySkill:'+id+'"]');
+     return [id,checkbox?.parentElement?.textContent||''];
+    }));
+   };
+   return {ru:render('ru'),en:render('en')};
+  });
+  for(const [language,labels] of [
+   ['RU',[[260008001,'Уклонение +107'],[260002001,'Коэффициент передвижения +36'],
+    [213702001,'Коэффициент интервала атаки +44']]],
+   ['EN',[[260008001,'Evasion +107'],[260002001,'Movement coefficient +36'],
+    [213702001,'Attack-interval coefficient +44']]]
+  ])for(const [id,expected] of labels){
+   const text=sourceProof[language.toLowerCase()][id];
+   assert.ok(text.includes(expected),language+' source magnitude '+id+': '+text);
+   assert.ok(/модель OS|OS model/.test(text),language+' source confidence '+id);
+  }
   assert.deepEqual(errors,[]);
+  console.log('Chromium 975: 3 OS-sourced self-buff amounts and RU/EN copy follow edited FV1 test records');
   console.log('Chromium 669: 36 verified Remaked buff slots, 21 additional choices, any party recipient, self 21-mastery gate and RU/EN');
  }finally{await context.close()}
 }

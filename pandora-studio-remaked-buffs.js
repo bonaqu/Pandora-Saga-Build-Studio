@@ -307,5 +307,25 @@ function applied({selected=[],skills={},jobKey=null,level=1,weapon=null,
  }
  return result;
 }
-root.PandoraRemakedBuffs=Object.freeze({definitions,choices,enabled,selectedIds,applied});
+// One proven *source-value* for the displayed number and the applied buff.
+// The returned magnitude is a model of its OS EP channel, not a proof of
+// the game server's event timing, stacking or final attack interval.
+function selfBuffSourcePreview({id,skills={},jobKey=null,level=1,
+ weapon=null,branchMasteries={},branchCaps=null,stats={}}={}){
+ const models={
+  260008001:['avoidance','dodge','EP_AVOIDANCE_CONST'],
+  260002001:['lightness','movement','EP_MOVESPEED_SCALE'],
+  213702001:['swiftArrow','attackSpeed','EP_ATTACKINTERVAL_SCALE']
+ };
+ const spec=models[id];if(!spec)return null;
+ const computed=applied({selected:[id],skills,jobKey,level,weapon,
+  branchMasteries,branchCaps,stats});
+ const amount=computed?.[spec[0]]?.[spec[1]];
+ if(!Number.isSafeInteger(amount))return null;
+ return {id,amount,ep:spec[2],source:'current OS FV1[3]',
+  modelOnly:true,verified:false};
+}
+root.PandoraRemakedBuffs=Object.freeze({
+ definitions,choices,enabled,selectedIds,applied,selfBuffSourcePreview
+});
 })(typeof window==='undefined'?globalThis:window);
