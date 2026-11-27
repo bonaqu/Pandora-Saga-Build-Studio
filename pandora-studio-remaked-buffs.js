@@ -157,6 +157,18 @@ function scalingEffect(record,ep,values){
   Array.isArray(rows[0].fv2)&&rows[0].fv2.length===4&&
   rows[0].fv2.every(v=>v===0);
 }
+// Same signed, flat TARGET FV1 form as the independent Hero Book inspector.
+// A changed official number may flow through; any new unknown channel fails.
+function sourceConstant(record,ep){
+ const rows=(record?.funcs||[]).filter(f=>f?.ep===ep&&f.dir==='TARGET');
+ if(rows.length!==1)return null;
+ const f=rows[0],v=f.fv1;
+ if(!Array.isArray(v)||v.length!==4||!v.every(Number.isSafeInteger)||
+  v.slice(0,3).some(n=>n!==0)||v[3]<0||v[3]>100||
+  !Array.isArray(f.fv2)||f.fv2.length!==4||
+  f.fv2.some(n=>n!==0))return null;
+ return v[3];
+}
 // Current OS adds caster-mastery/recipient-attribute coefficient terms
 // to two legacy toggles marked "not implemented" in archived Remaked.
 // These are source-coefficient MODELS, not observed server action results.
@@ -171,14 +183,16 @@ function applied({selected=[],skills={},jobKey=null,level=1,weapon=null,
   if(row.id===100055001){
    // Both independent target effects and their FV2 vectors must match.
    // A corrupted or expanded source must not silently alter hero accuracy.
-   if(record.funcs.length===2&&
-    exactConstant(record,'EP_TOHIT_CONST',20)&&
-    exactConstant(record,'EP_TOHIT_SCALE',15))
-    result.thirdEye={flat:20,percent:15};
+   if(record.skillType==='PARTY_ALL'&&record.funcs.length===2){
+    const flat=sourceConstant(record,'EP_TOHIT_CONST');
+    const percent=sourceConstant(record,'EP_TOHIT_SCALE');
+    if(flat!==null&&percent!==null)result.thirdEye={flat,percent};
+   }
   }else if(row.id===330004001){
-   if(record.funcs.length===1&&
-    exactConstant(record,'EP_MAGIC_RESISTANCE_CONST',25))
-    result.providence={magic:25};
+   if(record.skillType==='PARTY_ALL'&&record.funcs.length===1){
+    const magic=sourceConstant(record,'EP_MAGIC_RESISTANCE_CONST');
+    if(magic!==null)result.providence={magic};
+   }
   }else if(row.id===142051001){
    const rank=branchMasteries?.brush;
    if(scalingEffect(record,'EP_CRITICALRATE_CONST',[0,0,20,10])&&
@@ -204,8 +218,10 @@ function applied({selected=[],skills={},jobKey=null,level=1,weapon=null,
   }else if(row.id===320002001){
    // An allied buff, never gated by the receiving hero's priest class.
    // This is a recovery-speed index, NOT +90 MP per tick.
-   if(exactConstant(record,'EP_HEAL_TIME_SCALE',90))
-    result.blessedRepose={manaRecoverySpeed:90};
+   if(record.skillType==='PARTY_ALL'&&record.funcs.length===1){
+    const manaRecoverySpeed=sourceConstant(record,'EP_HEAL_TIME_SCALE');
+    if(manaRecoverySpeed!==null)result.blessedRepose={manaRecoverySpeed};
+   }
   }
  }
  return result;
