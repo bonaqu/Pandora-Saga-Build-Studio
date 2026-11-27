@@ -114,9 +114,10 @@ function forthSnapshotAtGrade(itemForth,id,grade){
  // level or the fallback text: [] denotes no authoritative extra effects.
  if(Object.entries(byGrade).some(([key,rows])=>
    !/^(?:[1-9]|10)$/.test(key)||!Array.isArray(rows)||
-   rows.some(row=>!validEffectGradeBounds(row)||
-    typeof row.func!=='string'||!Number.isFinite(row.a)||
-    (Object.hasOwn(row,'b')&&!Number.isFinite(row.b)))))return [];
+   rows.some(row=>row&&typeof row==='object'&&!Array.isArray(row)&&
+    typeof row.func==='string'&&
+    (!validEffectGradeBounds(row)||!Number.isFinite(row.a)||
+    (Object.hasOwn(row,'b')&&!Number.isFinite(row.b))))))return [];
  let nearest=-1;
  for(const [key,rows] of Object.entries(byGrade)){
   const level=Number(key);
