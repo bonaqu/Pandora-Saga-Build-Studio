@@ -88,6 +88,20 @@ test('source restrictions that explicitly remove class access are not mistaken f
  assert.equal(root.PandoraCatalogSafety.compatibility(before,next).requiresMechanicReview,true,
   'class access is a gameplay change that still needs owner review');
 });
+test('revoking caster classes cannot conceal simultaneous unknown numeric skill changes',()=>{
+ const next=amended();
+ const record=structuredClone(before.skills['320001001']);
+ record.classes={};
+ record.funcs.find(f=>f.ep==='EP_DAMAGERATE_SCALE').fv2[0]=1;
+ next.skills['320001001']=record;
+ const result=replay(before,next);
+ assert.equal(result.ok,false,'class removal plus unknown FV must block precommit');
+ assert.ok(result.lost>0,'old target-side skill model was truly lost');
+ assert.ok(result.lostEntries.some(row=>row.id==='320001001'&&
+  row.module==='ally-recipient'));
+ assert.equal(root.PandoraCatalogSafety.compatibility(before,next).requiresMechanicReview,true);
+});
+
 test('both UI preview and final precommit gate use the same immutable model replay',()=>{
  const code=read('pandora-os-catalog-workbench.js');
  assert.match(code,/const replay=typeof safety\.replaySkills==='function'\?/);
