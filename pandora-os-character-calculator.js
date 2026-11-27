@@ -1626,29 +1626,32 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
    nextBase:Number.isSafeInteger(next)&&next>base?next:null,
    model:'flat-plus-floor-percent',applied:false};
  };
- // Party effects whose size uses the receiving hero's current stats.
- add(320001001,'offense',[
-  ['EP_DAMAGERATE_CONST',[0,0,0,10]],
-  ['EP_DAMAGERATE_SCALE',[0,0,0,20]]
- ],()=>Number.isFinite(unmountedAtk)?10+Math.floor(unmountedAtk*.20):null,
- {recipient:true,unit:' ATK',recipientBasis:partyBasis('physicalAttack',
-   unmountedAtk,10,20),
-  detailRu:'Прибавка при применении к этому герою',
-  detailEn:'Calculated for this recipient when cast'});
- add(100055001,'offense',[
-  ['EP_TOHIT_CONST',[0,0,0,20]],
-  ['EP_TOHIT_SCALE',[0,0,0,15]]
- ],()=>Number.isFinite(accuracyBase)?Math.floor(20+accuracyBase*.15):null,
- {recipient:true,unit:'',recipientBasis:partyBasis('accuracy',
-   accuracyBase,20,15),detailRu:'Точность получателя',
-  detailEn:'Recipient accuracy bonus'});
- add(260006001,'defense',[
-  ['EP_AVOIDANCE_CONST',[0,0,0,15]],
-  ['EP_AVOIDANCE_SCALE',[0,0,0,15]]
- ],()=>Number.isFinite(dodgeBase)?Math.floor(15+dodgeBase*.15):null,
- {recipient:true,recipientBasis:partyBasis('evasion',dodgeBase,15,15),
-  detailRu:'Уклонение получателя',
-  detailEn:'Recipient evasion bonus'});
+ // One official, fully source-validated OS pair for both Hero Book and
+ // Skill Effects. The source values are current; recipient rounding is a
+ // Remaked-model and the buff is NOT automatically applied to the hero.
+ const targetParty=alliedRecipientPreviews({
+  skillCatalog,combat,includeSource:true});
+ const warCry=targetParty.warCry;
+ if(warCry)add(320001001,'offense',[],()=>warCry.bonus,
+  {completeSourceProof:true,recipient:true,modelOnly:true,unit:' ATK',
+   recipientBasis:partyBasis('physicalAttack',warCry.base,
+    warCry.flat,warCry.percent),
+   detailRu:'Прибавка для получателя (модель)',
+   detailEn:'Recipient attack bonus (model)'});
+ const massFocus=targetParty.massConcentration;
+ if(massFocus)add(100055001,'offense',[],()=>massFocus.bonus,
+  {completeSourceProof:true,recipient:true,modelOnly:true,
+   recipientBasis:partyBasis('accuracy',massFocus.base,
+    massFocus.flat,massFocus.percent),
+   detailRu:'Точность получателя (модель)',
+   detailEn:'Recipient accuracy (model)'});
+ const windAssist=targetParty.windAssist;
+ if(windAssist)add(260006001,'defense',[],()=>windAssist.bonus,
+  {completeSourceProof:true,recipient:true,modelOnly:true,
+   recipientBasis:partyBasis('evasion',windAssist.base,
+    windAssist.flat,windAssist.percent),
+   detailRu:'Уклонение получателя (модель)',
+   detailEn:'Recipient evasion (model)'});
  // Purify is a two-step current OS cast. The root triggers a distinct
  // internal TARGET resistance effect; +100 is NOT permanent character status
  // resistance, nor proof of duration, proc probability or a server hit roll.
@@ -3600,7 +3603,7 @@ const osAllyRecipientAccess=Object.freeze({
  330004001:{branch:'martial',level:28,classes:['GENERAL','KNIGHT','PALADIN']},
  320002001:{branch:'blessing',level:20,classes:['CLERIC','ENCHANTER','PRIEST']}
 });
-function alliedRecipientPreviews({skillCatalog=null,combat=null}={}){
+function alliedRecipientPreviews({skillCatalog=null,combat=null,includeSource=false}={}){
  const source=(id,type,expected)=>{
   const skill=skillCatalog?.[String(id)],access=osAllyRecipientAccess[id];
   const actualClasses=Object.keys(skill?.classes||{}).sort();
@@ -3626,22 +3629,30 @@ function alliedRecipientPreviews({skillCatalog=null,combat=null}={}){
  };
  const result={warCry:null,massConcentration:null,windAssist:null,
   windBlessing:null,divineBlessing:null,blessedRepose:null};
+ // Default public shape is unchanged for existing Book/buff callers.
+ // Internal Skill Effects can request the SAME validated OS source pair
+ // instead of freezing a second copy of the flat and scaled FV1 values.
+ const expose=(base,bonus,flat,percent)=>includeSource===true?
+  {base,bonus,flat,percent}:{base,bonus};
  const atk=Number(combat?.attack?.mountedBase??combat?.attack?.walkingBase);
  const acc=Number(combat?.accuracy?.base),ev=Number(combat?.dodge?.base);
  const cry=source(320001001,'PARTY_ALL',
   ['EP_DAMAGERATE_CONST','EP_DAMAGERATE_SCALE']);
  if(cry&&Number.isFinite(atk)&&atk>=0)
-  result.warCry={base:atk,bonus:cry.EP_DAMAGERATE_CONST+
-   Math.floor(atk*cry.EP_DAMAGERATE_SCALE/100)};
+  result.warCry=expose(atk,cry.EP_DAMAGERATE_CONST+
+   Math.floor(atk*cry.EP_DAMAGERATE_SCALE/100),
+   cry.EP_DAMAGERATE_CONST,cry.EP_DAMAGERATE_SCALE);
  const focus=source(100055001,'PARTY_ALL',['EP_TOHIT_CONST','EP_TOHIT_SCALE']);
  if(focus&&Number.isFinite(acc)&&acc>=0)
-  result.massConcentration={base:acc,bonus:Math.floor(
-   focus.EP_TOHIT_CONST+acc*focus.EP_TOHIT_SCALE/100)};
+  result.massConcentration=expose(acc,Math.floor(
+   focus.EP_TOHIT_CONST+acc*focus.EP_TOHIT_SCALE/100),
+   focus.EP_TOHIT_CONST,focus.EP_TOHIT_SCALE);
  const wind=source(260006001,'PARTY_ALL',
   ['EP_AVOIDANCE_CONST','EP_AVOIDANCE_SCALE']);
  if(wind&&Number.isFinite(ev)&&ev>=0)
-  result.windAssist={base:ev,bonus:Math.floor(
-   wind.EP_AVOIDANCE_CONST+ev*wind.EP_AVOIDANCE_SCALE/100)};
+  result.windAssist=expose(ev,Math.floor(
+   wind.EP_AVOIDANCE_CONST+ev*wind.EP_AVOIDANCE_SCALE/100),
+   wind.EP_AVOIDANCE_CONST,wind.EP_AVOIDANCE_SCALE);
  const blessing=source(320004001,'ALLY',['EP_MOVESPEED_SCALE']);
  if(blessing)result.windBlessing={bonus:blessing.EP_MOVESPEED_SCALE};
  const divine=source(330004001,'PARTY_ALL',['EP_MAGIC_RESISTANCE_CONST']);
