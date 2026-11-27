@@ -93,9 +93,31 @@ function refinementEffects(record,grade){
 // bonus remains at +4 and +5, until a new breakpoint appears. The checked-in
 // 162 items never remove a previous effect channel at a higher breakpoint.
 // [] is authoritative zero below the first step; null means no OS Forth row.
+// Only validated grade boundaries may affect numeric character results.
+// Invalid source gates are excluded rather than treated as unrestricted.
+function validEffectGradeBounds(effect){
+ if(!effect||typeof effect!=='object'||Array.isArray(effect))return false;
+ for(const field of ['min','max']){
+  if(Object.hasOwn(effect,field)&&
+    (!Number.isSafeInteger(effect[field])||effect[field]<0||effect[field]>10))
+   return false;
+ }
+ return !(Object.hasOwn(effect,'min')&&Object.hasOwn(effect,'max')&&
+  effect.min>effect.max);
+}
 function forthSnapshotAtGrade(itemForth,id,grade){
  const byGrade=itemForth?.[String(id)];
- if(!byGrade||typeof byGrade!=='object'||Array.isArray(byGrade))return null;
+ if(!byGrade||typeof byGrade!=='object'||Array.isArray(byGrade))
+  return itemForth&&typeof itemForth==='object'&&
+   Object.hasOwn(itemForth,String(id))?[]:null;
+ // An incomplete/malformed grade must never silently use an older Forth
+ // level or the fallback text: [] denotes no authoritative extra effects.
+ if(Object.entries(byGrade).some(([key,rows])=>
+   !/^(?:[1-9]|10)$/.test(key)||!Array.isArray(rows)||
+   rows.some(row=>row&&typeof row==='object'&&!Array.isArray(row)&&
+    typeof row.func==='string'&&
+    (!validEffectGradeBounds(row)||!Number.isFinite(row.a)||
+    (Object.hasOwn(row,'b')&&!Number.isFinite(row.b))))))return [];
  let nearest=-1;
  for(const [key,rows] of Object.entries(byGrade)){
   const level=Number(key);
@@ -118,7 +140,7 @@ function sourceEffects(source,record,grade,itemForth=null){
  // Imported or owner-edited structured data can be incomplete. A null
  // row must never crash the stat rebuild or be interpreted as an effect.
  const safeRows=rows=>Array.isArray(rows)?rows.filter(row=>
-  row&&typeof row==='object'&&typeof row.func==='string'):[];
+  validEffectGradeBounds(row)&&typeof row.func==='string'):[];
  const primary=safeRows(record.effects);
  if(!key.startsWith('item:'))return primary;
  // A Forth snapshot is tied to the official ID, not to a synthetic record
