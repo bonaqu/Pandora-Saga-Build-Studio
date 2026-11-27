@@ -3454,13 +3454,28 @@ function alliedNaturalRecoveryPreview({skillCatalog=null,casterLevel=45}={}){
 // Read known target-side ally bonus lanes from the current official OS
 // catalog. Values are source-confirmed; combat stacking/floor stages are
 // still Remaked/client MODELS and not a server execution guarantee.
+// Current official OS root-skill access contracts for six externally cast
+// recipient effects. Their FV1 amounts stay live/source-driven. Changes to
+// caster lineage, class count, required mastery or skill level need review:
+// the recipient cannot treat a structurally unknown root as a proven buff.
+const osAllyRecipientAccess=Object.freeze({
+ 320001001:{branch:'martial',level:28,classes:['DRAGOON','GLADIATOR','JUGGERNAUT']},
+ 100055001:{branch:'archery',level:28,classes:['AGENT','ASSASSIN','DISTURBANCE']},
+ 260006001:{branch:'exorcism',level:28,classes:['ASCETIC','EXORCIST','MONK']},
+ 320004001:{branch:'archery',level:28,classes:['ARCHER','PREDATOR','SNIPER']},
+ 330004001:{branch:'martial',level:28,classes:['GENERAL','KNIGHT','PALADIN']},
+ 320002001:{branch:'blessing',level:20,classes:['CLERIC','ENCHANTER','PRIEST']}
+});
 function alliedRecipientPreviews({skillCatalog=null,combat=null}={}){
  const source=(id,type,expected)=>{
-  const skill=skillCatalog?.[String(id)];
-  if(skill?.id!==id||skill.skillType!==type||
+  const skill=skillCatalog?.[String(id)],access=osAllyRecipientAccess[id];
+  const actualClasses=Object.keys(skill?.classes||{}).sort();
+  if(!access||skill?.id!==id||skill.skillType!==type||
    skill.learnable!==true||skill.prereq!==null||
-   !Number.isSafeInteger(skill.charLevel)||skill.charLevel<0||
-   skill.charLevel>plannerMaxLevel()||!Array.isArray(skill.reqs)||
+   skill.branch!==access.branch||skill.charLevel!==access.level||
+   !Array.isArray(skill.reqs)||skill.reqs.length!==0||
+   actualClasses.length!==access.classes.length||
+   actualClasses.some((key,i)=>key!==access.classes[i]||skill.classes[key]!==1)||
    !Array.isArray(skill.funcs)||skill.funcs.length!==expected.length)return null;
   const values={};
   for(const ep of expected){
