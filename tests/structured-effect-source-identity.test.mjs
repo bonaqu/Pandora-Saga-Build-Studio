@@ -136,6 +136,12 @@ test('corrupted Forth breakpoints cannot fall back to older bonuses or narrative
   assert.equal(stats.health.mp,0);
   assert.equal(stats.flat.spi,1);
  }
+ // A present but malformed whole Forth entry is not an absent entry:
+ // neither a lower snapshot nor a textual bonus may be substituted.
+ for(const broken of [null, [], 'corrupted', 42]){
+  assert.deepEqual(C.sourceEffects('item:2',item,7,{2:broken}),
+   item.effects);
+ }
  // Without a structured Forth record, historical textual fallback remains.
  assert.ok(C.sourceEffects('item:2',item,7,null)
   .some(e=>e.func==='EP_MAXMANA_CONST'&&e.fromRefinement));
