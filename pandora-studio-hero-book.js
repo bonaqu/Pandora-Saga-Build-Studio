@@ -1256,7 +1256,8 @@ function buffsPage(body,options){
  };
  const inspiration=root.PandoraOSCalculator?.alliedInspirationPreview?.({
   skillCatalog:gameTerms.skills});
- const inspirationKnown=inspiration?.castTimePercent===50;
+ const inspirationKnown=Number.isSafeInteger(inspiration?.castTimePercent)&&
+  inspiration.castTimePercent>=1&&inspiration.castTimePercent<=100;
  const allyPreviews=root.PandoraOSCalculator?.alliedRecipientPreviews?.({
   skillCatalog:gameTerms.skills,combat:modifiers?.combat})||{};
  const naturalRecovery=root.PandoraOSCalculator?.alliedNaturalRecoveryPreview?.({
@@ -1425,8 +1426,8 @@ function buffsPage(body,options){
     'Evasion −50%; provides protection against critical hits.'],
   320002001:['Скорость восстановления ОМ союзников +90 инд.',
     'Allies’ MP recovery speed +90 idx.'],
-  320006001:['Время применения умений — 50% от обычного (вдвое быстрее).',
-    'Skill cast time is 50% of normal (twice as fast).'],
+  320006001:['Время применения умений зависит от коэффициента OS (расчётная модель).',
+    'Skill cast time follows the current OS coefficient (modeled).'],
   330005001:['Восстанавливает ОМ союзнику. Количество зависит от уровня применяющего союзника.',
     'Restores MP to an ally. The amount scales with the caster’s level.'],
   340003001:['Защищает союзника от слабых попаданий. Сила зависит от СД и Песнопения союзного Клирика.',
@@ -1470,7 +1471,7 @@ function buffsPage(body,options){
   }
   if(id===320006001)return inspirationKnown?
    (english?'Cast time: ':'Время применения: ')+inspiration.castTimePercent+
-    (english?'% of normal (twice as fast)':'% обычного (вдвое быстрее)'):
+    (english?'% of normal (model)':'% обычного (модель)'):
    (english?'No cast speed calculated for this build.':
     'Скорость применения для этого билда не рассчитана.');
   if(id===330005001)return naturalRecovery&&naturalKnown?
