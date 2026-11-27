@@ -970,23 +970,42 @@ const racialWeaponRules=Object.freeze({
  900050002:Object.freeze({kind:'twoHanded',ru:'Сильные руки',en:'Strong arms'})
 });
 const axeBluntKinds=new Set(['1H_AXE','2H_AXE','1H_BLUNT_WEAPON','2H_BLUNT_WEAPON']);
+// Only understood OS weapon categories can contribute a numeric racial model.
+// A new upstream weapon category requires review rather than guessed mapping.
+const racialWeaponSourceKinds=Object.freeze({
+ oneHanded:new Set(['1H_SWORD','LANCE','1H_AXE','1H_BLUNT_WEAPON','1H_TRUMP_WEAPON','WAND']),
+ axeBlunt:axeBluntKinds,
+ twoHanded:new Set(['BARE_HAND','2H_SWORD','POLE_ARM','2H_AXE',
+  '2H_BLUNT_WEAPON','2H_TRUMP_WEAPON','BOW','CROSSBOW','STAFF'])
+});
 function racialWeaponPreview({racialPassiveId=null,skillCatalog=null,weapon=null}={}){
  const rule=racialWeaponRules[racialPassiveId];
  if(!rule||!skillCatalog||typeof skillCatalog!=='object')return null;
  const skill=skillCatalog[String(racialPassiveId)];
+ // Require the complete PASSIVE/race identity and the exact single TARGET
+ // source action. A partial match is not a verified source contract.
  if(skill?.id!==Number(racialPassiveId)||skill.skillType!=='PASSIVE'||
-  !Array.isArray(skill.funcs))return null;
- const matches=skill.funcs.filter(row=>row.ep==='EP_SKILL_EQUIP_DAMAGERATE'&&
-  row.dir==='TARGET');
- if(matches.length!==1)return null;
- const effect=matches[0],flat=effect.fv1?.[3],percent=effect.fv2?.[3];
- if(!Number.isFinite(flat)||!Number.isFinite(percent)||flat<0||percent<0)return null;
+  skill.learnable!==false||skill.branch!=='race'||
+  skill.branchRaw!=='SPECIAL_RACE'||skill.charLevel!==0||
+  skill.reqLevel!==0||skill.prereq!==null||skill.isLevelBased!==true||
+  !Array.isArray(skill.reqs)||skill.reqs.length!==0||
+  Object.keys(skill.classes||{}).length!==0||
+  !Array.isArray(skill.funcs)||skill.funcs.length!==1)return null;
+ const effect=skill.funcs[0],a=effect?.fv1,b=effect?.fv2;
+ if(effect?.ep!=='EP_SKILL_EQUIP_DAMAGERATE'||effect.dir!=='TARGET'||
+  !Array.isArray(a)||a.length!==4||!Array.isArray(b)||b.length!==4||
+  !a.slice(0,3).every(n=>n===0)||!b.slice(0,3).every(n=>n===0))return null;
+ const flat=a[3],percent=b[3];
+ if(!Number.isSafeInteger(flat)||flat<0||flat>1000||
+  !Number.isSafeInteger(percent)||percent<0||percent>100)return null;
  const validWeapon=weapon?.slot==='weapon'&&typeof weapon.kind==='string'&&
   typeof weapon.twoHanded==='boolean';
  // The game catalog declares the allowed weapon kinds explicitly; a blanket
  // twoHanded test accepts unsupported kinds and misses future rule changes.
+ const categories=racialWeaponSourceKinds[rule.kind];
  const allowedKinds=Array.isArray(skill.weaponUse)&&skill.weaponUse.length>0&&
-  skill.weaponUse.every(kind=>typeof kind==='string')?skill.weaponUse:null;
+  new Set(skill.weaponUse).size===skill.weaponUse.length&&
+  skill.weaponUse.every(kind=>categories?.has(kind))?skill.weaponUse:null;
  if(!allowedKinds)return null;
  const matchesCategory=!validWeapon?null:allowedKinds.includes(weapon.kind)&&
   (rule.kind==='oneHanded'?weapon.twoHanded===false:
@@ -2708,31 +2727,47 @@ function experienceBonusPreview({records=[],itemForth=null}={}){
 // survivability is a skill-source preview, never guaranteed HP or block.
 function racialUtilityPreview({racialPassiveId=null,skillCatalog=null}={}){
  if(!skillCatalog||typeof skillCatalog!=='object')return null;
- const rule=racialPassiveId===900020002?
-  {id:900020002,eps:['EP_RACE_RANGE','EP_RACE_CARRY']}:racialPassiveId===900030001?
-  {id:900030001,eps:['EP_RACE_TOUGH_HEART']}:null;
- if(!rule)return null;
- const skill=skillCatalog[String(rule.id)];
- if(skill?.id!==rule.id||skill.skillType!=='PASSIVE'||
+ const id=racialPassiveId;
+ if(id!==900020002&&id!==900030001)return null;
+ const skill=skillCatalog[String(id)];
+ if(skill?.id!==id||skill.skillType!=='PASSIVE'||
+  skill.learnable!==false||skill.branch!=='race'||
+  skill.branchRaw!=='SPECIAL_RACE'||skill.charLevel!==0||
+  skill.reqLevel!==0||skill.prereq!==null||skill.isLevelBased!==true||
+  !Array.isArray(skill.reqs)||skill.reqs.length!==0||
+  Object.keys(skill.classes||{}).length!==0||
   !Array.isArray(skill.funcs))return null;
+ if(id===900030001){
+  // Four DWARF actions must agree with the same complete source contract
+  // used by resistancePreview; the survival chance is not unconditional HP.
+  if(skill.weaponUse!==null)return null;
+  const source=racialStatusSourcePreview({racialPassiveId:id,skillCatalog});
+  if(!source||!Number.isSafeInteger(source.survivalChanceSource))return null;
+  return {id,range:null,survival:{
+   chance:source.survivalChanceSource,trigger:'conditional survival',
+   verified:false
+  },verified:false};
+ }
+ // ELF range/carry are one paired bonus, not independent +500 additions.
+ // Unknown side actions, malformed FV2 or changed weapon eligibility fail closed.
+ if(skill.funcs.length!==2||!Array.isArray(skill.weaponUse)||
+  skill.weaponUse.length!==2||
+  [...skill.weaponUse].sort().join(',')!=='BOW,CROSSBOW')return null;
  const values={};
- for(const ep of rule.eps){
-  const matches=skill.funcs.filter(f=>f.ep===ep&&f.dir==='TARGET');
-  if(matches.length!==1||!Array.isArray(matches[0].fv1)||
-   matches[0].fv1.length<4||!Number.isFinite(matches[0].fv1[3])||
-   matches[0].fv1[3]<0)return null;
-  values[ep]=matches[0].fv1[3];
+ for(const effect of skill.funcs){
+  if(!['EP_RACE_RANGE','EP_RACE_CARRY'].includes(effect?.ep)||
+   Object.hasOwn(values,effect.ep)||effect.dir!=='TARGET'||
+   !Array.isArray(effect.fv1)||effect.fv1.length!==4||
+   !effect.fv1.slice(0,3).every(n=>n===0)||
+   !Number.isSafeInteger(effect.fv1[3])||effect.fv1[3]<0||
+   effect.fv1[3]>20000||!Array.isArray(effect.fv2)||
+   effect.fv2.length!==4||!effect.fv2.every(n=>n===0))return null;
+  values[effect.ep]=effect.fv1[3];
  }
- if(rule.id===900020002){
-  // Both fields are separately emitted by OS. They describe the same
-  // selected passive, not two independent additions to shooting distance.
-  if(values.EP_RACE_RANGE!==values.EP_RACE_CARRY)return null;
-  return {id:rule.id,range:{general:values.EP_RACE_RANGE,
-   carry:values.EP_RACE_CARRY},survival:null,verified:false};
- }
- return {id:rule.id,range:null,
-  survival:{chance:values.EP_RACE_TOUGH_HEART,
-   trigger:'conditional survival',verified:false},verified:false};
+ if(values.EP_RACE_RANGE===undefined||
+  values.EP_RACE_RANGE!==values.EP_RACE_CARRY)return null;
+ return {id,range:{general:values.EP_RACE_RANGE,
+  carry:values.EP_RACE_CARRY},survival:null,verified:false};
 }
 
 // Two class-specific OS skill effects affect shooting distance only while
