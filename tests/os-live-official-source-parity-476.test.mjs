@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {
  reconcileOfficialGamedata,fetchOfficialGamedata,auditOfficialOsSnapshot,
  OFFICIAL_GAMEDATA_SETS,OFFICIAL_SOURCE_HOSTS
@@ -49,6 +50,29 @@ test('souls, instances and source-file fingerprints have explicit narrowly-scope
  },ours).ok,false);
  assert.throws(()=>reconcileOfficialGamedata('meta',{counts:{skills:571}},ours),
   /missing file fingerprints/);
+});
+
+test('current checked-in meta curated:true is valid and source drift remains strict',()=>{
+ const local=JSON.parse(readFileSync(new URL('../data/os/meta.json',import.meta.url),'utf8'));
+ assert.equal(local.curated,true,'production catalog uses a boolean provenance flag');
+ const official=structuredClone(local);
+ delete official.curated;
+ official.sha={'skill/skill.csv':'5470e489b52a24aa'};
+ const report=reconcileOfficialGamedata('meta',official,local);
+ assert.equal(report.ok,true);
+ assert.equal(report.localExtras.localCuratedMetadata,true);
+ assert.equal(report.localExtras.upstreamFileFingerprints,1);
+ const changed=structuredClone(local);
+ changed.counts.skills++;
+ const drift=reconcileOfficialGamedata('meta',official,changed);
+ assert.equal(drift.ok,false);
+ assert.deepEqual(drift.differences.map(x=>x.path),['counts.skills']);
+ for(const wrong of [false,null,0,'true',[]]){
+  const broken=structuredClone(local);
+  broken.curated=wrong;
+  assert.throws(()=>reconcileOfficialGamedata('meta',official,broken),
+   /Invalid local curated metadata/);
+ }
 });
 
 test('official game files: allowlisted HTTPS GET, no redirects and bounded immutable report',async()=>{
