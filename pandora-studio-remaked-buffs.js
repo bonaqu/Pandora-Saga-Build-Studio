@@ -145,19 +145,54 @@ function enabled(row,{skills={},jobKey=null,level=1,weapon=null,branchMasteries=
 // legacy buff slots. The game-client stacking order remains unverified.
 const numericIds=new Set([100055001,330004001,142051001,260005001,260008001,
  260002001,213702001,320002001]);
-function exactConstant(record,ep,expected){
- const found=(record?.funcs||[]).filter(row=>row.ep===ep&&row.dir==='TARGET');
- return found.length===1&&Array.isArray(found[0].fv1)&&
-  found[0].fv1.length===4&&found[0].fv1.every((v,i)=>v===[0,0,0,expected][i])&&
-  Array.isArray(found[0].fv2)&&found[0].fv2.length===4&&
-  found[0].fv2.every(v=>v===0);
-}
-// Both the source Evasion bonus and its two-hit end condition must match OS.
-function verifiedAvoidance(record){
- return record?.id===260008001&&record.skillType==='MYSELF'&&
-  record.learnable===true&&Array.isArray(record.funcs)&&
-  record.funcs.length===2&&exactConstant(record,'EP_AVOIDANCE_CONST',100)&&
-  exactConstant(record,'EP_LOST_WARDING_DAMAGE',2);
+// Current official OS FV1 drives five self buffs, not frozen Remaked
+// constants. Math.floor stages remain MODELED (not proven server stacking).
+// Unknown target/secondary effects or new FV channels fail closed.
+const selfSourceSpecs=Object.freeze({
+ 142051001:{branch:'brush',level:0,reqs:[['brush',21]],
+  ep:'EP_CRITICALRATE_CONST',shape:'mastery',
+  extra:['EP_LOST_CHANGE_WEAPON',[0,0,0,0]]},
+ 260005001:{branch:'warding',level:0,reqs:[['warding',16]],
+  ep:'EP_AVOIDANCE_CONST',shape:'stat-mastery'},
+ 260008001:{branch:'warding',level:0,reqs:[['warding',41]],
+  ep:'EP_AVOIDANCE_CONST',shape:'constant',
+  extra:['EP_LOST_WARDING_DAMAGE',[0,0,0,2]]},
+ 260002001:{branch:'warding',level:12,reqs:[],
+  ep:'EP_MOVESPEED_SCALE',shape:'constant'},
+ 213702001:{branch:'archery',level:35,reqs:[],
+  ep:'EP_ATTACKINTERVAL_SCALE',shape:'constant',
+  extra:['EP_LOST_CHANGE_WEAPON',[0,0,0,0]]}
+});
+function selfSourceFV(record,id){
+ const spec=selfSourceSpecs[id];
+ if(!spec||record?.id!==id||record.skillType!=='MYSELF'||
+  record.learnable!==true||record.prereq!==null||
+  record.charLevel!==spec.level||record.branch!==spec.branch||
+  !Array.isArray(record.reqs)||record.reqs.length!==spec.reqs.length||
+  !spec.reqs.every(([branch,amount],i)=>record.reqs[i]?.branch===branch&&
+   record.reqs[i]?.amount===amount)||
+  !record.classes||!Object.values(record.classes).some(v=>v===1)||
+  !Array.isArray(record.funcs)||
+  record.funcs.length!==(spec.extra?2:1))return null;
+ const parts=record.funcs.filter(f=>f?.ep===spec.ep&&f.dir==='TARGET');
+ if(parts.length!==1)return null;
+ const primary=parts[0],v=primary.fv1;
+ if(!Array.isArray(v)||v.length!==4||!v.every(Number.isSafeInteger)||
+  v[1]!==0||v.some(x=>x<0)||v.some(x=>x>200)||
+  !Array.isArray(primary.fv2)||primary.fv2.length!==4||
+  primary.fv2.some(x=>x!==0))return null;
+ if(spec.shape==='constant'&&(v[0]!==0||v[2]!==0))return null;
+ if(spec.shape==='mastery'&&v[0]!==0)return null;
+ if(spec.shape==='stat-mastery'&&(v[0]>100||v[2]>100))return null;
+ if(spec.shape==='mastery'&&v[2]>100)return null;
+ if(spec.extra){
+  const [ep,expected]=spec.extra;
+  const extras=record.funcs.filter(f=>f?.ep===ep&&f.dir==='TARGET');
+  if(extras.length!==1||
+   JSON.stringify(extras[0].fv1)!==JSON.stringify(expected)||
+   JSON.stringify(extras[0].fv2)!=='[0,0,0,0]')return null;
+ }
+ return v;
 }
 function choices({skills={},englishSkills={},jobKey=null,level=1,weapon=null,
  branchMasteries={},branchCaps=null,branchLabels={},englishBranches={},selected=[]}={}){
@@ -184,13 +219,6 @@ function effect(record,ep){
  if(rows.length!==1||!Number.isFinite(rows[0].fv1?.[3]))return null;
  return rows[0].fv1[3];
 }
-function scalingEffect(record,ep,values){
- const rows=(record?.funcs||[]).filter(f=>f?.ep===ep&&f?.dir==='TARGET');
- return rows.length===1&&Array.isArray(rows[0].fv1)&&
-  rows[0].fv1.length===4&&rows[0].fv1.every((v,i)=>v===values[i])&&
-  Array.isArray(rows[0].fv2)&&rows[0].fv2.length===4&&
-  rows[0].fv2.every(v=>v===0);
-}
 // Same signed, flat TARGET FV1 form as the independent Hero Book inspector.
 // A changed official number may flow through; any new unknown channel fails.
 function sourceConstant(record,ep){
@@ -207,7 +235,7 @@ function sourceConstant(record,ep){
 // guard; a corrupted current-OS FV cannot be advertised as an active number.
 function numericSourceAvailable(record,id){
  if(!currentOsPartyAccess(record,id))return false;
- if(id===260008001)return verifiedAvoidance(record);
+ if(selfSourceSpecs[id])return selfSourceFV(record,id)!==null;
  if(id===100055001)return record?.skillType==='PARTY_ALL'&&
   record.funcs?.length===2&&
   sourceConstant(record,'EP_TOHIT_CONST')!==null&&
@@ -246,26 +274,28 @@ function applied({selected=[],skills={},jobKey=null,level=1,weapon=null,
    }
   }else if(row.id===142051001){
    const rank=branchMasteries?.brush;
-   if(scalingEffect(record,'EP_CRITICALRATE_CONST',[0,0,20,10])&&
-    Number.isSafeInteger(rank)&&rank>=0&&rank<=100)
-    result.coldBlood={critical:10+Math.floor(rank*20/100),modeled:true};
+   const vector=selfSourceFV(record,row.id);
+   if(vector&&Number.isSafeInteger(rank)&&rank>=0&&rank<=100)
+    result.coldBlood={critical:vector[3]+Math.floor(rank*vector[2]/100),
+     modeled:true};
   }else if(row.id===260005001){
    const rank=branchMasteries?.warding,agi=stats?.agi;
-   if(scalingEffect(record,'EP_AVOIDANCE_CONST',[5,0,15,10])&&
-    Number.isSafeInteger(rank)&&rank>=0&&rank<=100&&
+   const vector=selfSourceFV(record,row.id);
+   if(vector&&Number.isSafeInteger(rank)&&rank>=0&&rank<=100&&
     Number.isSafeInteger(agi)&&agi>=0&&agi<=500)
-    result.quickStep={dodge:10+Math.floor(agi*5/100)+
-     Math.floor(rank*15/100),modeled:true};
+    result.quickStep={dodge:vector[3]+Math.floor(agi*vector[0]/100)+
+     Math.floor(rank*vector[2]/100),modeled:true};
   }else if(row.id===260008001){
-   if(verifiedAvoidance(record))result.avoidance={dodge:100};
+   const vector=selfSourceFV(record,row.id);
+   if(vector)result.avoidance={dodge:vector[3]};
   }else if(row.id===260002001){
    // Remaked Flag 11_0, Calc(MoveSPD): additive +30 speed index.
-   if(exactConstant(record,'EP_MOVESPEED_SCALE',30))
-    result.lightness={movement:30};
+   const vector=selfSourceFV(record,row.id);
+   if(vector)result.lightness={movement:vector[3]};
   }else if(row.id===213702001){
    // Same OS EP_ATTACKINTERVAL_SCALE channel as the existing Lunge preview.
-   if(exactConstant(record,'EP_ATTACKINTERVAL_SCALE',30))
-    result.swiftArrow={attackSpeed:30};
+   const vector=selfSourceFV(record,row.id);
+   if(vector)result.swiftArrow={attackSpeed:vector[3]};
   }else if(row.id===320002001){
    // An allied buff, never gated by the receiving hero's priest class.
    // This is a recovery-speed index, NOT +90 MP per tick.
