@@ -1790,10 +1790,10 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
    unit:' сопротивления',
    detailRu:'Оглушение '+signed(wardingProof.stun)+
     ', заморозка '+signed(wardingProof.numb)+
-    ', падение '+signed(wardingProof.tumble)+' (параметры OS)',
+    ', падение '+signed(wardingProof.tumble),
    detailEn:'Stun '+signed(wardingProof.stun)+
     ', numb '+signed(wardingProof.numb)+
-    ', tumble '+signed(wardingProof.tumble)+' (OS source values)'
+    ', tumble '+signed(wardingProof.tumble)
   });
  }
  // Selected buffs already use these two OS coefficient vectors and the
