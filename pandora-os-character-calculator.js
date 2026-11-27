@@ -1408,11 +1408,14 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
    !f.fv2.every(Number.isSafeInteger))return null;
   if((!statKey&&v[0]!==0)||(!branch&&v[2]!==0))return null;
   const stat=statKey?stats[statKey]:0;
-  const rank=branch?mastery(branch):0;
+  // Source MELEE/martial is a sum of the five trained green branches, NOT
+  // Slash alone and NOT the zero-cap non-allocatable 'martial' pseudo-branch.
+  const rank=branch?sourceRank(skill(id),branch):0;
+  const limit=branch?sourceCap(skill(id),branch):0;
   if(!Number.isSafeInteger(stat)||stat<0||
    !Number.isSafeInteger(rank)||rank<0||
-   (branch&&(!Number.isSafeInteger(cap(branch))||
-    cap(branch)<=0||rank>cap(branch))))return null;
+   (branch&&(!Number.isSafeInteger(limit)||
+    limit<=0||rank>limit)))return null;
   const amount=v[3]+Math.floor(stat*v[0]/100)+
    Math.floor(rank*v[2]/100);
   if(!Number.isSafeInteger(amount))return null;
@@ -1469,6 +1472,61 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
     JSON.stringify(loss.fv2)!=='[0,0,0,0]')return null;
   }
   return v;
+ };
+ // Explicit full-root proof for the OS MELEE group skill "Despair".
+ // It has three coupled effects; ignoring incoming damage or the stop-on-hit
+ // channel would falsely turn an incomplete source into a usable coefficient.
+ // All three original FV2 vectors must remain zero and no new EP is allowed.
+ const sourceDespairFV=()=>{
+  const record=skill(100058001);
+  if(record?.id!==100058001||record.skillType!=='MYSELF'||
+   record.learnable!==true||record.branch!=='martial'||
+   record.branchRaw!=='MELEE'||record.charLevel!==45||
+   record.prereq!==null||!Array.isArray(record.reqs)||
+   record.reqs.length!==0||
+   JSON.stringify(record.classes)!=='{"JUGGERNAUT":1}'||
+   !Array.isArray(record.funcs)||record.funcs.length!==3)return null;
+  const [bonus,penalty,ending]=record.funcs;
+  const isZero=v=>Array.isArray(v)&&v.length===4&&v.every(n=>n===0);
+  if(bonus?.ep!=='EP_DAMAGERATE_SCALE'||bonus.dir!=='TARGET'||
+   !Array.isArray(bonus.fv1)||bonus.fv1.length!==4||
+   bonus.fv1[0]!==0||bonus.fv1[1]!==0||
+   !Number.isSafeInteger(bonus.fv1[2])||bonus.fv1[2]<0||
+   bonus.fv1[2]>100||
+   !Number.isSafeInteger(bonus.fv1[3])||bonus.fv1[3]<0||
+   bonus.fv1[3]>100||!isZero(bonus.fv2)||
+   penalty?.ep!=='EP_ONDAMAGE_FIN_DAMAGE_SCALE'||
+   penalty.dir!=='TARGET'||!Array.isArray(penalty.fv1)||
+   JSON.stringify(penalty.fv1)!=='[0,0,0,100]'||
+   !isZero(penalty.fv2)||
+   ending?.ep!=='EP_LOST_ATK_END'||ending.dir!=='TARGET'||
+   !isZero(ending.fv1)||!isZero(ending.fv2))return null;
+  return bonus.fv1;
+ };
+ // The three channels of Enchantment are independently source backed.
+ // This is a recipient coefficient preview, not confirmation of server-side
+ // aura application, stacking or elemental damage arithmetic.
+ const sourceEnchantmentFV=()=>{
+  const record=skill(320011001);
+  if(record?.id!==320011001||record.skillType!=='ALLY'||
+   record.learnable!==true||record.branch!=='blessing'||
+   record.charLevel!==45||record.prereq!==null||
+   !Array.isArray(record.reqs)||record.reqs.length!==0||
+   JSON.stringify(record.classes)!=='{"ENCHANTER":1}'||
+   !Array.isArray(record.funcs)||record.funcs.length!==3)return null;
+  const ep=['EP_AURADAMAGE_SCALE','EP_AURADAMAGE_CONST',
+   'EP_ELEMENT_DAMAGE_SCALE'],values=[];
+  for(let i=0;i<ep.length;i++){
+   const effect=record.funcs[i],v=effect?.fv1;
+   if(effect?.ep!==ep[i]||effect.dir!=='TARGET'||
+    !Array.isArray(v)||v.length!==4||
+    !v.every(n=>Number.isSafeInteger(n)&&n>=0&&n<=100)||
+    v[1]!==0||(i===2&&v[0]!==0)||
+    !Array.isArray(effect.fv2)||effect.fv2.length!==4||
+    !effect.fv2.every(n=>n===0))return null;
+   values.push(v);
+  }
+  return values;
  };
  const seen=new Set();
  const add=(id,group,required,compute,options={})=>{
@@ -1774,33 +1832,32 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
   unit:'',models:[windTrailParameter,windAdditional],
   detailRu:'СД и мастерство Воплощения',
   detailEn:'SPI and Embodiment mastery'});
- add(320011001,'offense',[
-  ['EP_AURADAMAGE_SCALE',[20,0,20,10]],
-  ['EP_AURADAMAGE_CONST',[5,0,10,5]],
-  ['EP_ELEMENT_DAMAGE_SCALE',[0,0,20,10]]
- ],manual,{branch:'blessing',
+ const enchantmentFV=sourceEnchantmentFV();
+ if(enchantmentFV)add(320011001,'offense',[],manual,{
+  completeSourceProof:true,branch:'blessing',modelOnly:true,
   models:[
    coefficientModel(320011001,'EP_AURADAMAGE_SCALE','spi','blessing',
-    'Коэффициент ауры','Aura scaling','%'),
+    'Коэффициент ауры (модель)','Aura scaling (model)','%'),
    coefficientModel(320011001,'EP_AURADAMAGE_CONST','spi','blessing',
-    'Добавка к ауре','Aura flat parameter'),
+    'Добавка к ауре (модель)','Aura parameter (model)'),
    coefficientModel(320011001,'EP_ELEMENT_DAMAGE_SCALE',null,'blessing',
-    'Коэффициент стихийного урона','Elemental damage scaling','%')
+    'Коэффициент стихийного урона (модель)','Elemental scaling (model)','%')
   ],
-  detailRu:'Зависит от СД и Благословения',
-  detailEn:'Scales with SPI and Blessing mastery'});
+  detailRu:'Три исходных FV1 OS; расчётные коэффициенты СД и Благословения, применение ауры не подтверждено',
+  detailEn:'Three OS FV1 channels; modeled SPI and Blessing coefficients, aura application not verified'});
  // Further independently verified VARIABLE self-cast effect vectors.
  // Current OS proves scaling but not damage packet semantics; do not
  // manufacture arithmetic by assuming a fixed per-point denominator.
- add(100058001,'offense',[
-  ['EP_DAMAGERATE_SCALE',[0,0,35,40]]
- ],()=>Number.isFinite(unmountedAtk)?
-  Math.ceil(unmountedAtk*(40+Math.floor(mastery('slash')*.35))/100):null,
- {modelOnly:true,unit:' АТК',
-  models:[coefficientModel(100058001,'EP_DAMAGERATE_SCALE',
-   null,'slash','Коэффициент физической атаки','Physical attack scaling','%')],
-  detailRu:'Прибавка к атаке зависит от мастерства; получаемый урон +100%',
-  detailEn:'Attack bonus scales with mastery; incoming damage +100%'});
+ const despairFV=sourceDespairFV();
+ const despairModel=despairFV?coefficientModel(100058001,
+  'EP_DAMAGERATE_SCALE',null,'martial',
+  'Коэффициент атаки (модель)','Attack coefficient (model)','%'):null;
+ if(despairModel)add(100058001,'offense',[],
+  ()=>pct(unmountedAtk,despairModel.amount,Math.ceil),
+  {completeSourceProof:true,modelOnly:true,unit:' АТК',
+   models:[despairModel],
+   detailRu:'По сумме тренированного мастерства пяти боевых веток (модель); получаемый урон +100%, эффект заканчивается после удара',
+   detailEn:'Modeled from the five trained melee branches; incoming damage +100%, ends after an attack'});
  // Swift Arrow is an attack-interval enhancement with fixed OS source
  // [0,0,0,30], not direct +30 weapon damage. The displayed percentage is
  // the skill effect coefficient; no unproven firing-frequency conversion.

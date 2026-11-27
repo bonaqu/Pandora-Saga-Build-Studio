@@ -73,7 +73,13 @@ test('replay protects source coefficients of manual multi-effect previews',()=>{
  assert.equal(S.compatibility(before,after).totals.needsReview,1);
  const replay=S.replaySkills(before,after);
  assert.ok(replay.previouslyModeled>0);
- assert.ok(replay.lost>0,'unknown new coefficient must not quietly remove old preview');
+ assert.equal(replay.ok,true,'valid same-shape source update keeps its models');
+ assert.equal(replay.lost,0,'known coefficient change must not erase the preview');
+ assert.ok(replay.retained>0,'each known source parameter remains inspectable');
+ const unsupported=change(id,skill=>{skill.funcs[1].fv2[0]=1});
+ const rejected=S.replaySkills(before,unsupported);
+ assert.equal(rejected.ok,false,'unknown secondary FV channel needs review');
+ assert.ok(rejected.lost>0,'unsupported new mechanics must fail closed');
 });
 test('known source metadata remains source-only, unknown mechanics need review',()=>{
  for(const field of ['mana','cast','cooldown','motion','range','unrecognizedFutureField']){
