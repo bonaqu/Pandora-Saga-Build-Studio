@@ -1663,6 +1663,51 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
   }
   return values;
  };
+ // Two personal coefficients now use current validated FV1 channels rather
+ // than freezing their original numbers. Check the COMPLETE effect record:
+ // Cold Blood also stops after changing weapons. New/unknown channels or
+ // changed access metadata must not masquerade as an ordinary coefficient.
+ // These remain read-only Remaked-style arithmetic, not measured server rolls.
+ const selfCoefficientFV=id=>{
+  const proof={
+   260005001:{ep:'EP_AVOIDANCE_CONST',branch:'warding',
+    branchRaw:'TECHNIQUE_WARDING',req:16,powerStat:'AGI',
+    weaponUse:null,loss:false,stat:true},
+   142051001:{ep:'EP_CRITICALRATE_CONST',branch:'brush',
+    branchRaw:'MELEE_BRUSH',req:21,powerStat:'STR',
+    weaponUse:['1H_AXE','2H_AXE'],loss:true,stat:false}
+  }[id];
+  const s=skill(id);
+  if(!proof||s?.id!==id||s.skillType!=='MYSELF'||
+   s.learnable!==true||s.isLevelBased!==false||
+   s.prereq!==null||s.charLevel!==0||s.reqLevel!==proof.req||
+   s.branch!==proof.branch||s.branchRaw!==proof.branchRaw||
+   s.powerStat!==proof.powerStat||
+   !Array.isArray(s.reqs)||s.reqs.length!==1||
+   s.reqs[0]?.branch!==proof.branch||
+   s.reqs[0]?.amount!==proof.req||
+   !s.classes||Object.keys(s.classes).length!==28||
+   !Object.values(s.classes).every(v=>v===1)||
+   JSON.stringify(s.weaponUse)!==JSON.stringify(proof.weaponUse)||
+   !Array.isArray(s.funcs)||s.funcs.length!==(proof.loss?2:1))
+   return null;
+  const effect=s.funcs[0],v=effect?.fv1;
+  if(effect?.ep!==proof.ep||effect.dir!=='TARGET'||
+   Object.keys(effect).sort().join(',')!=='dir,ep,fv1,fv2'||
+   !Array.isArray(v)||v.length!==4||
+   !v.every(Number.isSafeInteger)||v[1]!==0||
+   v[0]<0||v[0]>(proof.stat?100:0)||
+   v[2]<0||v[2]>100||v[3]<0||v[3]>200||
+   JSON.stringify(effect.fv2)!=='[0,0,0,0]')return null;
+  if(proof.loss){
+   const loss=s.funcs[1];
+   if(loss?.ep!=='EP_LOST_CHANGE_WEAPON'||loss.dir!=='TARGET'||
+    Object.keys(loss).sort().join(',')!=='dir,ep,fv1,fv2'||
+    JSON.stringify(loss.fv1)!=='[0,0,0,0]'||
+    JSON.stringify(loss.fv2)!=='[0,0,0,0]')return null;
+  }
+  return v;
+ };
  const seen=new Set();
  const add=(id,group,required,compute,options={})=>{
   const record=skill(id);
@@ -1921,14 +1966,15 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  }
  // Selected buffs already use these two OS coefficient vectors and the
  // matching floor stages. Share those exact results with Skill Effects.
- const quickDodge=coefficientModel(260005001,'EP_AVOIDANCE_CONST',
-  'agi','warding','Уклонение','Evasion');
- add(260005001,'defense',[
-  ['EP_AVOIDANCE_CONST',[5,0,15,10]]
- ],()=>quickDodge?.amount??null,{branch:'warding',modelOnly:true,
+ const quickDodgeFV=selfCoefficientFV(260005001);
+ const quickDodge=quickDodgeFV?coefficientModel(260005001,'EP_AVOIDANCE_CONST',
+  'agi','warding','Уклонение','Evasion'):null;
+ if(quickDodgeFV)add(260005001,'defense',[],
+  ()=>quickDodge?.amount??null,{branch:'warding',
+  completeSourceProof:true,modelOnly:true,
   unit:' уклонения',models:[quickDodge],
-  detailRu:'ПРВ и мастерство уклонения',
-  detailEn:'AGI and Warding mastery'});
+  detailRu:'ПРВ и мастерство уклонения (модель)',
+  detailEn:'AGI and Warding mastery (model)'});
  const skillRangeSource=skillAttackRangePreview({skillCatalog,jobKey,level,
   branchMasteries,branchCaps,weapon:{slot:'weapon',kind:weaponKind}});
  const verifiedRangeSource=id=>skillRangeSource.rows.some(row=>row.id===id);
@@ -1948,13 +1994,13 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
   ],
   detailRu:'Зависит от мастерства стрельбы',
   detailEn:'Scales with Archery mastery'});
- const coldBlood=coefficientModel(142051001,'EP_CRITICALRATE_CONST',
-  null,'brush','Шанс критического удара','Critical chance','%');
- add(142051001,'offense',[
-  ['EP_CRITICALRATE_CONST',[0,0,20,10]]
- ],()=>coldBlood?.amount??null,{branch:'brush',modelOnly:true,
-  unit:'%',models:[coldBlood],
-  detailRu:'Мастерство рубящих',detailEn:'Cleaving mastery'});
+ const coldBloodFV=selfCoefficientFV(142051001);
+ const coldBlood=coldBloodFV?coefficientModel(142051001,'EP_CRITICALRATE_CONST',
+  null,'brush','Шанс критического удара','Critical chance','%'):null;
+ if(coldBloodFV)add(142051001,'offense',[],
+  ()=>coldBlood?.amount??null,{branch:'brush',
+  completeSourceProof:true,modelOnly:true,unit:'%',models:[coldBlood],
+  detailRu:'Мастерство рубящих (модель)',detailEn:'Cleaving mastery (model)'});
  // The same poison enchant has a mastery-61 OS variant. Show only the
  // version the current green mastery can actually cast, never both at once.
  const advancedPoison=mastery('alchemy')>=61;
