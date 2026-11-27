@@ -4661,7 +4661,128 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   verified:false,excluded:['unstructured refinement bonuses','unpublished set effects',
     'unverified passive and conditional skills','other group/temporary buffs']};
 }
-// Current OS skill-execution graph: links are not automatic combat bonuses.
+// Pinned execution-link identities from the current catalog. These prove
+// only which action calls which record, not proc rate, target selection,
+// tick count, final damage, or how the engine applies downstream effects.
+// Keep cross-branch, class-assigned and learnable-child exceptions intact;
+// do not substitute a different existing skill when an EP points elsewhere.
+// 91 known parents, 99 positive ordinary edges; two disconnected zero
+// placeholders are intentionally not treated as executable child skills.
+const ordinarySkillExecLinks=Object.freeze({
+ 100059001:[[100059004,0]],
+ 100059004:[[100059003,0]],
+ 121703501:[[121703512,0]],
+ 121707001:[[121707003,0]],
+ 168005001:[[168005050,0]],
+ 213603002:[[213603003,0]],
+ 213603501:[[213603521,0]],
+ 213608001:[[213608002,0]],
+ 213700501:[[213700550,0]],
+ 233006002:[[100052001,0]],
+ 240001001:[[240001050,0]],
+ 240002001:[[240002050,0]],
+ 240002002:[[240002051,0]],
+ 240003001:[[240003002,0]],
+ 240004001:[[240004050,0]],
+ 240005001:[[240005002,0]],
+ 240005002:[[240005003,0]],
+ 240008001:[[240008002,0]],
+ 240010001:[[240010002,0]],
+ 240010002:[[240010003,0]],
+ 300004003:[[300004004,0]],
+ 310014001:[[310014002,0]],
+ 310023001:[[310023002,0]],
+ 330061001:[[330061002,0]],
+ 330081001:[[330081002,0]],
+ 340001002:[[340001003,0]],
+ 340001005:[[340001006,0]],
+ 340003002:[[340003003,0]],
+ 340004002:[[340004003,0]],
+ 410000201:[[410000202,0]],
+ 410002001:[[500000005,9]],
+ 410005002:[[410005003,0]],
+ 410014001:[[410014002,0]],
+ 410014003:[[410014004,0]],
+ 410022001:[[410022050,0]],
+ 410026001:[[410026002,0]],
+ 410026002:[[410026004,0]],
+ 420001002:[[420001003,0]],
+ 420007001:[[420007002,0]],
+ 420007101:[[420007102,0]],
+ 430001003:[[430001004,0]],
+ 430052002:[[430052003,0]],
+ 430053001:[[430053002,0]],
+ 430053003:[[430053004,0]],
+ 430053004:[[430053005,0]],
+ 430056001:[[430056002,0]],
+ 430058001:[[430058002,0]],
+ 430058002:[[430058003,0]],
+ 430058003:[[500000004,9],[500000003,9]],
+ 430059001:[[230001002,0]],
+ 440002002:[[440002003,0]],
+ 440003001:[[440003002,0],[440003003,0]],
+ 440004002:[[440004003,0]],
+ 440004003:[[440004004,0]],
+ 440009001:[[440009002,0]],
+ 440011001:[[440011002,0]],
+ 500000016:[[320005001,0],[320004001,0],[330004001,0],[100055001,0],[320001001,0],[260006001,0]],
+ 500000020:[[500000021,0]],
+ 500000027:[[500000022,0],[500000028,0]],
+ 600000201:[[610000201,0]],
+ 600000202:[[610000202,0]],
+ 600000203:[[610000203,0]],
+ 600000204:[[610000204,0]],
+ 600000205:[[610000205,0]],
+ 600000211:[[610000211,0]],
+ 600000212:[[610000212,0]],
+ 600000213:[[610000213,0]],
+ 600000214:[[610000214,0]],
+ 600000215:[[610000215,0]],
+ 600000221:[[610000221,0]],
+ 600000222:[[610000222,0]],
+ 600000223:[[610000223,0]],
+ 600000224:[[610000224,0]],
+ 600000225:[[610000225,0]],
+ 600000231:[[610000231,0]],
+ 600000232:[[610000232,0]],
+ 600000233:[[610000233,0]],
+ 600000234:[[610000234,0]],
+ 600000235:[[610000235,0]],
+ 620002011:[[620002012,0]],
+ 620002012:[[620002013,0]],
+ 620002031:[[620002032,0]],
+ 620002032:[[620002033,0]],
+ 620002041:[[620002042,0]],
+ 620002042:[[620002043,0]],
+ 620002051:[[620002052,0]],
+ 620002071:[[620002072,0]],
+ 700000011:[[700000012,0]],
+ 700000021:[[700000022,0]],
+ 700000023:[[700000024,0]],
+ 700000025:[[700000026,0]]
+});
+// Keep the internal contracts immutable: an unrelated feature must not be
+// able to mutate a verified edge through a public calculator reference.
+for(const rows of Object.values(ordinarySkillExecLinks)){
+ for(const entry of rows)Object.freeze(entry);
+ Object.freeze(rows);
+}
+function ordinarySkillExecMatches(parentId,calls){
+ const expected=ordinarySkillExecLinks[parentId];
+ return Array.isArray(expected)&&Array.isArray(calls)&&
+  calls.length===expected.length&&calls.every((f,i)=>{
+   const [target,mode]=expected[i];
+   return f?.ep==='EP_SKILL_EXEC'&&f.dir==='TARGET'&&
+    Object.keys(f).sort().join(',')==='dir,ep,fv1,fv2'&&
+    Array.isArray(f.fv1)&&f.fv1.length===4&&
+    f.fv1[0]===0&&f.fv1[1]===0&&f.fv1[2]===0&&
+    f.fv1[3]===target&&
+    Array.isArray(f.fv2)&&f.fv2.length===4&&
+    f.fv2[0]===0&&f.fv2[1]===0&&f.fv2[2]===mode&&
+    f.fv2[3]===mode;
+  });
+}
+// Skill-execution graph: linked actions are not automatic combat bonuses.
 function skillExecutionChains({skillCatalog=null,jobKey=null,level=1,onHit=false,
  branchMasteries={},branchCaps={},branchLabels={},englishBranches={},
  weaponKind='BARE_HAND'}={}){
@@ -4689,6 +4810,11 @@ function skillExecutionChains({skillCatalog=null,jobKey=null,level=1,onHit=false
   // Conditional on-hit root, then any ordinary OS internal child links.
   const calls=s.funcs.filter(f=>f?.ep===(onHit&&visited.size===0?rootEP:'EP_SKILL_EXEC'));
   if(!calls.length)return [[id]];
+  // Every ordinary parent (including nested internal children) must
+  // preserve its exact current outgoing links and control FV2 fields.
+  // On-hit roots retain the separate four-skill on-hit contract below.
+  if((!onHit||visited.size>0)&&
+   !ordinarySkillExecMatches(id,calls))return null;
   // Sandstorm must execute its own source-confirmed inner action, not
   // merely another existing (but unrelated) skill ID. The exact child
   // effect vectors are catalog parameters, NOT a final damage formula.
@@ -5873,7 +5999,7 @@ function supportEffectPreview({skillCatalog=null,jobKey=null,level=1,
   }
   return out;
  }
-root.PandoraOSCalculator=Object.freeze({racialCombatSourcePreview,alliedFreeWindPreview,alliedHpPulsePreview,alliedRecipientPreviews,alliedNaturalRecoveryPreview,alliedInspirationPreview,alliedPeaceSongPreview,skillExecutionChains,craftingSkillPreview,trapSkillCostPreview,tacticalSkillPreview,rangedAmmoPreview,combatTechniquePreview,specializedSkillPreview,supportEffectPreview,situationalSkillPreview,statusApplicationPreview,enemyDebuffPreview,complexSkillSourcePreview,priestCastPreviews,movementSkillSourcePreview,utilitySkillSourcePreview,scalingSkillPreview,directStrikeCoefficientPreview,elementalSpellCoefficientPreview,defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,racialStatusSourcePreview,
+root.PandoraOSCalculator=Object.freeze({ordinarySkillExecLinks,ordinarySkillExecMatches,racialCombatSourcePreview,alliedFreeWindPreview,alliedHpPulsePreview,alliedRecipientPreviews,alliedNaturalRecoveryPreview,alliedInspirationPreview,alliedPeaceSongPreview,skillExecutionChains,craftingSkillPreview,trapSkillCostPreview,tacticalSkillPreview,rangedAmmoPreview,combatTechniquePreview,specializedSkillPreview,supportEffectPreview,situationalSkillPreview,statusApplicationPreview,enemyDebuffPreview,complexSkillSourcePreview,priestCastPreviews,movementSkillSourcePreview,utilitySkillSourcePreview,scalingSkillPreview,directStrikeCoefficientPreview,elementalSpellCoefficientPreview,defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,racialStatusSourcePreview,
  base,characterSheetPhysicalAttackRange,classBase,classBaseComponents,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,racialWeaponPreview,incredibleStrengthPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
  recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,healingActionPreview,periodicRecoveryPreview,consumableRecoveryPreview,consumableSkillPreview,statusCurePreview,harmfulConsumablePreview,gemstonePreview,legacyBuffPreview,songSkillPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,skillAttackRangePreview,racialUtilityPreview,elementalMagicPreview,elementalRefinementPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive,dynamicSkillContracts,dynamicSkillSourceMatches
 });
