@@ -1470,6 +1470,54 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
   }
   return v;
  };
+ // Both self skills have additional protective/penalty channels, so no
+ // single-EP success may be treated as a complete authoritative root.
+ const guardedMultiSelf=(id)=>{
+  const record=skill(id),despair=id===100058001;
+  if(![100058001,100057001].includes(id)||
+   record?.id!==id||record.branch!=='martial'||
+   record.branchRaw!=='MELEE'||record.learnable!==true||
+   record.prereq!==null||
+   record.skillType!==(despair?'MYSELF':'TOGGLE')||
+   record.charLevel!==(despair?45:0)||
+   !Array.isArray(record.reqs)||record.reqs.length!==(despair?0:1)||
+   !despair&&(record.reqs[0]?.branch!=='martial'||
+    record.reqs[0]?.amount!==100)||
+   !Array.isArray(record.funcs)||
+   record.funcs.length!==(despair?3:5))return null;
+  if(despair&&(Object.keys(record.classes||{}).length!==1||
+   record.classes.JUGGERNAUT!==1))return null;
+  const target=(index,ep,first,second,third,range)=>{
+   const fx=record.funcs[index],v=fx?.fv1;
+   if(fx?.ep!==ep||fx.dir!=='TARGET'||!Array.isArray(v)||
+    v.length!==4||!v.every(Number.isSafeInteger)||
+    v[0]!==first||v[1]!==second||v[2]!==third||
+    v[3]<range[0]||v[3]>range[1]||
+    !Array.isArray(fx.fv2)||fx.fv2.length!==4||
+    !fx.fv2.every(x=>x===0))return null;
+   return v[3];
+  };
+  if(despair){
+   const attack=record.funcs[0],coeff=attack?.fv1;
+   if(attack?.ep!=='EP_DAMAGERATE_SCALE'||attack.dir!=='TARGET'||
+    !Array.isArray(coeff)||coeff.length!==4||
+    !coeff.every(Number.isSafeInteger)||coeff[0]!==0||coeff[1]!==0||
+    coeff[2]<0||coeff[2]>100||coeff[3]<0||coeff[3]>200||
+    JSON.stringify(attack.fv2)!=='[0,0,0,0]')return null;
+   const received=target(1,'EP_ONDAMAGE_FIN_DAMAGE_SCALE',0,0,0,[1,200]);
+   const lost=target(2,'EP_LOST_ATK_END',0,0,0,[0,0]);
+   if(received===null||lost===null)return null;
+   return {attackFlat:coeff[3],attackMastery:coeff[2],
+    incomingRate:received};
+  }
+  const numb=target(0,'EP_PROTECTION_NUMB',0,0,0,[100,100]);
+  const tumble=target(1,'EP_PROTECTION_TUMBLE',0,0,0,[100,100]);
+  const attack=target(2,'EP_DAMAGERATE_SCALE',0,0,0,[-100,-1]);
+  const motion=target(3,'EP_PROTECTION_MOVEBAN',0,0,0,[0,0]);
+  const toggle=target(4,'EP_TOGGLE',0,0,0,[0,0]);
+  if([numb,tumble,attack,motion,toggle].some(x=>x===null))return null;
+  return {attackRate:attack,protectionNumb:numb,protectionTumble:tumble};
+ };
  const seen=new Set();
  const add=(id,group,required,compute,options={})=>{
   const record=skill(id);
@@ -1646,11 +1694,15 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
    (-defenderRates.EP_DAMAGERATE_SCALE)+'%',
   detailEn:'Modeled base defense bonus; attack decreases by '+
    (-defenderRates.EP_DAMAGERATE_SCALE)+'%'});
- add(100057001,'defense',[
+ const painless=guardedMultiSelf(100057001);
+ if(painless)add(100057001,'defense',[
   ['EP_DAMAGERATE_SCALE',[0,0,0,-50]]
- ],()=>pct(unmountedAtk,-50),
- {unit:' АТК',detailRu:'Снижение от базовой атаки; защитные состояния не имеют числовой шкалы',
-  detailEn:'Attack penalty from base attack; protection states are not numeric'});
+ ],()=>pct(unmountedAtk,painless.attackRate),
+ {completeSourceProof:true,modelOnly:true,unit:' АТК',
+  detailRu:'Снижение от базовой атаки на '+(-painless.attackRate)+
+   '% (модель); защита от состояний — отдельный эффект',
+  detailEn:'Modeled '+(-painless.attackRate)+
+   '% base attack reduction; status protection is separate'});
  const ironScaleRates=pairedSourceRates(168052001,[
   ['EP_CRITICAL_SAFE',0,0],['EP_AVOIDANCE_SCALE',-100,-1]
  ]);
@@ -1792,15 +1844,19 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  // Further independently verified VARIABLE self-cast effect vectors.
  // Current OS proves scaling but not damage packet semantics; do not
  // manufacture arithmetic by assuming a fixed per-point denominator.
- add(100058001,'offense',[
+ const despair=guardedMultiSelf(100058001);
+ if(despair)add(100058001,'offense',[
   ['EP_DAMAGERATE_SCALE',[0,0,35,40]]
- ],()=>Number.isFinite(unmountedAtk)?
-  Math.ceil(unmountedAtk*(40+Math.floor(mastery('slash')*.35))/100):null,
- {modelOnly:true,unit:' АТК',
+ ],()=>Number.isFinite(unmountedAtk)&&Number.isSafeInteger(mastery('slash'))?
+  Math.ceil(unmountedAtk*(despair.attackFlat+
+   Math.floor(mastery('slash')*despair.attackMastery/100))/100):null,
+ {completeSourceProof:true,modelOnly:true,unit:' АТК',
   models:[coefficientModel(100058001,'EP_DAMAGERATE_SCALE',
    null,'slash','Коэффициент физической атаки','Physical attack scaling','%')],
-  detailRu:'Прибавка к атаке зависит от мастерства; получаемый урон +100%',
-  detailEn:'Attack bonus scales with mastery; incoming damage +100%'});
+  detailRu:'Моделируемая прибавка к атаке; входящий урон +'+
+   despair.incomingRate+'% (коэффициент источника)',
+  detailEn:'Modeled attack gain; incoming damage +'+
+   despair.incomingRate+'% (source coefficient)'});
  // Swift Arrow is an attack-interval enhancement with fixed OS source
  // [0,0,0,30], not direct +30 weapon damage. The displayed percentage is
  // the skill effect coefficient; no unproven firing-frequency conversion.
