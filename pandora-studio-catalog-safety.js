@@ -2229,6 +2229,18 @@ function replaySkills(before,after){
  for(const [key,old] of prior.found){
   const itemProof=old.job==='item';
   const latest=itemProof?newItems[old.id.slice(5)]:newSkills[old.id];
+  // A source owner may explicitly revoke EVERY caster class without changing
+  // the numeric OS effect. That is a catalog-access change requiring the
+  // existing compatibility review, not a hidden formula regression. Never
+  // let an access removal conceal a simultaneous FV, EP or other edit.
+  const previous=oldSkills[old.id];
+  const sourceAccessRemoved=old.job==='target'&&old.module==='ally-recipient'&&
+   previous&&latest&&Array.isArray(previous.funcs)&&
+   Object.keys(previous.classes||{}).some(key=>previous.classes[key]===1)&&
+   latest.classes&&Object.keys(latest.classes).length===0&&
+   [...new Set([...Object.keys(previous),...Object.keys(latest)])]
+    .every(field=>field==='classes'||same(previous[field],latest[field]));
+  if(sourceAccessRemoved)continue;
   // Explicit removals and changed class/level permissions remain separate
   // owner-review changes; they are not silently counted as formula regressions.
   if(!latest||!itemProof&&old.job!=='target'&&
