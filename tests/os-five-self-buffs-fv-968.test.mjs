@@ -95,9 +95,12 @@ test('five numerical models fail closed on unknown FV2, target, reqs and extra e
 
 test('five self effects require the actual hero class, mastery and equipment',()=>{
  for(const c of candidates){
-  const s=skills[c.id],invalid=Object.keys(classes).find(key=>!s.classes?.[key]);
-  assert.ok(invalid,'at least one class does not learn '+c.id);
+  const s=skills[c.id],invalid=Object.keys(classes).find(key=>
+   !s.classes?.[key]||(s.reqs||[]).some(req=>
+    Number(classes[key].branchCaps?.[req.branch]??0)<req.amount));
+  assert.ok(invalid,'at least one class cannot satisfy '+c.id+' requirements');
   const changed=B.applied({skills,selected:[c.id],jobKey:invalid,
+   branchCaps:classes[invalid].branchCaps,
    level:55,branchMasteries:c.ctx.branchMasteries,weapon:c.ctx.weapon,
    stats:c.ctx.stats});
   assert.equal(changed[c.key],undefined);
