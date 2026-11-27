@@ -3548,17 +3548,56 @@ function priestCastPreviews({spi,blessing,hymn,exorcism=26,skills=null}={}){
    Array.isArray(effects[0].fv2)&&effects[0].fv2.length===4&&
    effects[0].fv2.every(v=>v===0);
  };
- if(exact(320007001,'EP_ATTACKINTERVAL_SCALE',[10,0,5,5]))
-  result.gratia=5+Math.floor(spi*10/100)+Math.floor(blessing*5/100);
- if(exact(320008001,'EP_ARMORCLASS_CONST',[3,0,4,5]))
-  result.lapisMedio=5+Math.floor(spi*3/100)+Math.floor(blessing*4/100);
+ // Read the current OS coefficient vector; the Remaked floor stages below
+ // remain a model. Unknown level/extra-effect dependencies fail closed.
+ const modelFv=(id,ep,{type,branch,required,kind='positive'})=>{
+  const skill=skills[String(id)];
+  if(skill?.id!==id||skill.skillType!==type||
+   skill.learnable!==true||skill.prereq!==null||skill.charLevel!==0||
+   skill.classes?.CLERIC!==1||
+   JSON.stringify(skill.reqs)!==JSON.stringify([{branch,amount:required}])||
+   !Array.isArray(skill.funcs))return null;
+  const found=skill.funcs.filter(f=>f?.ep===ep);
+  if(found.length!==1||found[0].dir!=='TARGET'||!Array.isArray(found[0].fv1)||
+   found[0].fv1.length!==4||!found[0].fv1.every((v,i)=>
+    Number.isSafeInteger(v)&&Math.abs(v)<=(i===3?20000:5000))||
+   !Array.isArray(found[0].fv2)||found[0].fv2.length!==4||
+   !found[0].fv2.every(v=>v===0))return null;
+  // Gratia contains a separate, source-known weapon-change cancellation
+  // effect, not another numeric coefficient. New unrelated effects need review.
+  if(id===320007001){
+   const other=skill.funcs.filter(f=>f!==found[0]);
+   if(other.length!==1||other[0].ep!=='EP_LOST_CHANGE_WEAPON'||
+    other[0].dir!=='TARGET'||JSON.stringify(other[0].fv1)!=='[0,0,0,0]'||
+    JSON.stringify(other[0].fv2)!=='[0,0,0,0]')return null;
+  }else if(skill.funcs.length!==1)return null;
+  const fv=found[0].fv1;
+  if(fv[1]!==0)return null; // No caster level input in this preview.
+  if(kind==='positive'&&[fv[0],fv[2],fv[3]].some(v=>v<0))return null;
+  if(kind==='holy'&&(fv[0]<0||fv[2]!==0||fv[3]<0))return null;
+  if(kind==='barrier'&&(fv[0]!==0||fv[2]>0||fv[3]>0))return null;
+  return fv;
+ };
+ const staged=(fv,attribute,mastery)=>fv[3]+
+  Math.floor(attribute*fv[0]/100)+Math.floor(mastery*fv[2]/100);
+ const gratiaFv=modelFv(320007001,'EP_ATTACKINTERVAL_SCALE',{
+  type:'ALLY',branch:'blessing',required:8});
+ if(gratiaFv)result.gratia=staged(gratiaFv,spi,blessing);
+ const lapisFv=modelFv(320008001,'EP_ARMORCLASS_CONST',{
+  type:'PARTY_ALL',branch:'blessing',required:12});
+ if(lapisFv)result.lapisMedio=staged(lapisFv,spi,blessing);
  if(['EP_STRENGTH_CONST','EP_AGILITY_CONST','EP_INTELIGENCE_CONST']
   .every(ep=>exact(320012001,ep,[0,0,10,0])))
   result.encouragement=Math.floor(blessing/10);
- if(exact(320003001,'EP_ONDAMAGE_FIN_DAMAGE_SCALE',[0,0,-20,-10]))
-  result.groupBarrier=-10-Math.floor(blessing/5);
- if(exorcism>=26&&exact(330051001,'EP_AURAHOLY_CONSTANT',[6,0,0,2]))
-  result.holyWeapon=2+Math.floor(spi*6/100);
+ const barrierFv=modelFv(320003001,'EP_ONDAMAGE_FIN_DAMAGE_SCALE',{
+  type:'PARTY_ALL',branch:'blessing',required:26,kind:'barrier'});
+ if(barrierFv)
+  // Floor magnitude BEFORE applying a minus; floor(negative) is different.
+  result.groupBarrier=barrierFv[3]-Math.floor(blessing*(-barrierFv[2])/100);
+ const holyFv=modelFv(330051001,'EP_AURAHOLY_CONSTANT',{
+  type:'ALLY',branch:'exorcism',required:26,kind:'holy'});
+ if(exorcism>=26&&holyFv)
+  result.holyWeapon=holyFv[3]+Math.floor(spi*holyFv[0]/100);
  // OS Enchantment is THREE independent caster-driven vectors. Historical
  // Remaked Calc('DAMAura') uses base+flat+ceil(base×rate/100) for auras.
  // The resulting combination remains a labeled source-derived model.
@@ -3987,26 +4026,13 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  // barrier EP_ONDAMAGE_FIN_DAMAGE_SCALE [0,0,-20,-10] and holy aura
  // EP_AURAHOLY_CONSTANT [6,0,0,2]. Only the receiving hero's explicitly
  // selected external-priest buff is applied, never all available spells.
- const priestSourceMatches=(id,ep,expected)=>{
-  const record=combatContext.skillCatalog?.[String(id)];
-  if(Number(record?.id)!==id)return false;
-  const matches=(record?.funcs||[]).filter(x=>x?.ep===ep&&x.dir==='TARGET');
-  return matches.length===1&&Array.isArray(matches[0].fv1)&&
-   matches[0].fv1.length===expected.length&&
-   matches[0].fv1.every((v,i)=>v===expected[i])&&
-   Array.isArray(matches[0].fv2)&&matches[0].fv2.length===4&&
-   matches[0].fv2.every(v=>v===0);
- };
- // Remaked SkillView uses floor steps from caster stats/mastery. Modern OS
- // changes Gratia to [10,0,5,5]; the historical nested 6%*1.9 shortcut
- // must not be used for an active buff with the new OS coefficients.
+ // The selected buff and the Hero Book MUST use the same OS FV1 replay.
+ // Old independent fixed-vector guards made valid source updates disagree.
  const gratiaPreview=priestCanCast(320007001)&&
-  priestSourceMatches(320007001,'EP_ATTACKINTERVAL_SCALE',[10,0,5,5])?
-  5+Math.floor(priest.spi*10/100)+Math.floor(priest.blessing*5/100):null;
+  Number.isSafeInteger(priestCast.gratia)?priestCast.gratia:null;
  const groupBarrier=priestCanCast(320003001)&&
   chosenPriestSong.has(320003001)&&
-  priestSourceMatches(320003001,'EP_ONDAMAGE_FIN_DAMAGE_SCALE',[0,0,-20,-10])?
-  -10-Math.floor(priest.blessing/5):0;
+  Number.isSafeInteger(priestCast.groupBarrier)?priestCast.groupBarrier:0;
  const holyWeapon=priestCanCast(330051001)&&combatContext.weapon&&
   chosenPriestSong.has(330051001)&&
   Number.isSafeInteger(priestCast.holyWeapon)?

@@ -40,7 +40,7 @@ test('legacy reference remains an archive, not the active current OS amount',()=
 
 test('invalid source and disabled or undertrained priest cannot add attack speed',()=>{
  const forged=structuredClone(skills);
- forged['320007001'].funcs.find(x=>x.ep==='EP_ATTACKINTERVAL_SCALE').fv1[0]=99;
+ forged['320007001'].funcs.find(x=>x.ep==='EP_ATTACKINTERVAL_SCALE').fv1[1]=1;
  assert.equal(preview({source:forged}).priestApplied.gratiaPreview,null);
  assert.equal(preview({source:forged}).combat.attackSpeed.priestBonus,0);
  assert.equal(preview({external:{...priest,enabled:false}}).combat.attackSpeed.priestBonus,0);

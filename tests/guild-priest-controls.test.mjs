@@ -71,7 +71,7 @@ test('external priest buffs require correct Blessing mastery and valid numbers',
  assert.equal(skills['320007001'].reqs.find(x=>x.branch==='blessing').amount,8);
  assert.equal(skills['320008001'].reqs.find(x=>x.branch==='blessing').amount,12);
  assert.match(engine,/priestCanCast\(320007001\)/);
- assert.match(engine,/priestSourceMatches\(320007001,'EP_ATTACKINTERVAL_SCALE',\[10,0,5,5\]\)/);
+ assert.match(engine,/Number.isSafeInteger\(priestCast.gratia\)/);
  assert.match(engine,/attributeBuffs\?\.priestGratia===true&&Number\.isFinite\(gratiaPreview\)/);
  assert.match(engine,/priestCanCast\(320008001\)&&\s*attributeBuffs\?\.priestLapisMedio/);
  assert.match(engine,/Number\.isFinite\(priestCast\.lapisMedio\)/);
