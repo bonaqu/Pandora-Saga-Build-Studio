@@ -21,7 +21,7 @@ function change(id,edit){
 const combat={attack:{walkingBase:180},accuracy:{base:135},dodge:{base:110}};
 const caster={spi:105,blessing:90,hymn:70,exorcism:40};
 
-test('all six known allied-recipient buffs are exercised independently of hero class',()=>{
+test('all six modeled ally values replay approved OS FV1 revisions without masking unknown fields',()=>{
  const expected=new Map([
   [320001001,'warCry'],[100055001,'massConcentration'],
   [260006001,'windAssist'],[320004001,'windBlessing'],
@@ -31,15 +31,21 @@ test('all six known allied-recipient buffs are exercised independently of hero c
  for(const [id,key] of expected){
   assert.ok(Number.isFinite(old[key]?.bonus),key+' exists on current source');
   const next=change(id,row=>{row.funcs[0].fv1[3]+=1});
-  assert.equal(C.alliedRecipientPreviews({
-   skillCatalog:next.skills,combat})[key],null,key+' now outside old signed vector');
+  const replayed=C.alliedRecipientPreviews({skillCatalog:next.skills,combat})[key];
+  assert.ok(replayed,key+' retains a source-backed model');
+  assert.notDeepEqual(replayed,old[key],key+' uses updated OS numbers');
   assert.equal(S.compatibility(before,next).totals.needsReview,1);
   const result=S.replaySkills(before,next);
-  assert.equal(result.ok,false,key+' must block before D1');
-  assert.ok(result.lost>0,key+' loses a numeric recipient model');
-  assert.ok(result.samples.some(x=>x.id===String(id)&&
+  assert.equal(result.ok,true,key+' must retain the supported model');
+  assert.equal(result.lost,0,key+' may not lose previously known effects');
+  const unknown=change(id,row=>{row.funcs[0].fv2[0]=1});
+  assert.equal(C.alliedRecipientPreviews({skillCatalog:unknown.skills,combat})[key],
+   null,key+' unknown secondary vector fails closed');
+  const rejected=S.replaySkills(before,unknown);
+  assert.equal(rejected.ok,false,key+' unrecognized new source cannot publish');
+  assert.ok(rejected.samples.some(x=>x.id===String(id)&&
    x.module==='ally-recipient'&&x.detail.startsWith(key+':')),
-   key+' regression includes the independent recipient model');
+   key+' unknown source must be diagnosed');
  }
 });
 test('supported updated Enchantment FV1 replays without hiding the change from precommit review',()=>{
