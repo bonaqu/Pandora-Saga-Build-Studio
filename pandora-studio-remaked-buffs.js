@@ -135,8 +135,7 @@ function choices({skills={},englishSkills={},jobKey=null,level=1,weapon=null,
    record?.name||'',description:record?.desc||'',
    selected:active.has(row.id),available:gate.allowed,
    reason:gate.ru,reasonEn:gate.en,
-   counted:numericIds.has(row.id)&&
-     (row.id!==260008001||verifiedAvoidance(record))};
+   counted:numericIds.has(row.id)&&numericSourceAvailable(record,row.id)};
  });
 }
 function selectedIds(value){
@@ -168,6 +167,22 @@ function sourceConstant(record,ep){
   !Array.isArray(f.fv2)||f.fv2.length!==4||
   f.fv2.some(n=>n!==0))return null;
  return v[3];
+}
+// Book's modeled/pending status must agree with the actual applied-source
+// guard; a corrupted current-OS FV cannot be advertised as an active number.
+function numericSourceAvailable(record,id){
+ if(id===260008001)return verifiedAvoidance(record);
+ if(id===100055001)return record?.skillType==='PARTY_ALL'&&
+  record.funcs?.length===2&&
+  sourceConstant(record,'EP_TOHIT_CONST')!==null&&
+  sourceConstant(record,'EP_TOHIT_SCALE')!==null;
+ if(id===330004001)return record?.skillType==='PARTY_ALL'&&
+  record.funcs?.length===1&&
+  sourceConstant(record,'EP_MAGIC_RESISTANCE_CONST')!==null;
+ if(id===320002001)return record?.skillType==='PARTY_ALL'&&
+  record.funcs?.length===1&&
+  sourceConstant(record,'EP_HEAL_TIME_SCALE')!==null;
+ return true;
 }
 // Current OS adds caster-mastery/recipient-attribute coefficient terms
 // to two legacy toggles marked "not implemented" in archived Remaked.
