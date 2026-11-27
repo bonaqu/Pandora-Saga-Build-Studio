@@ -58,7 +58,9 @@ test('tampered FV1/FV2, requirements, class and duplicate TARGET fail closed',()
  }
  const caster=structuredClone(src);
  caster['260007001'].funcs.find(x=>x.ep==='EP_IMMUNE_NUMB'&&x.dir==='CASTER').fv1[3]=99;
- assert.equal(passive(26,caster)?.numb,15);
+ assert.equal(passive(26,caster),null,
+  'unknown independent CASTER coefficient cannot inherit a three-TARGET proof');
+ assert.equal(row(26,caster),undefined);
 });
 
 test('invalid profession cap and impossible green mastery cannot apply',()=>{
