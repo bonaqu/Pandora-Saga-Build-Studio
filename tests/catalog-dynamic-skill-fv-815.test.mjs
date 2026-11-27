@@ -96,8 +96,10 @@ test('cross-module Cold Blood remains review-gated despite a safe updated Skill 
   'Read-only preview must use allowed current FV1 rather than freeze the old value');
  assert.equal(updated?.modelOnly,true);
  assert.equal(updated?.uncertain,true);
- assert.ok(S.replaySkills(before,next).lost>0,
-  'Full-catalog replay remains conservatively blocked until every consumer agrees');
+ const replay=S.replaySkills(before,next);
+ assert.equal(replay.ok,true);
+ assert.equal(replay.lost,0,
+  'Safe preview calculations can replay, while cross-module compatibility still needs review');
 });
 test('unknown changed skill identity cannot receive numeric source contract',()=>{
  const next=amended(330002001,skill=>{skill.funcs[0].ep='EP_NOT_MODELED'});
