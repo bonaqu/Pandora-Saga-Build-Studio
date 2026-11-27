@@ -118,3 +118,14 @@ test('all 28 jobs x Lv1–55: recipient-model preview is independent of caster c
  assert.equal(checked,1540);
  assert.equal(JSON.stringify(skills),source);
 });
+
+test('Hero Book never pins old 20/15/90 text after the official catalog changes',()=>{
+ const book=read('pandora-studio-hero-book.js');
+ assert.match(book,/const restKnown=Number\.isSafeInteger\(allyPreviews\.blessedRepose\?\.bonus\)/);
+ assert.match(book,/allyPreviews\.massConcentration\.bonus/);
+ assert.match(book,/allyPreviews\.divineBlessing\.bonus/);
+ assert.match(book,/allyPreviews\.blessedRepose\.bonus/);
+ assert.doesNotMatch(book,/const restKnown=osVector\(320002001/);
+ assert.doesNotMatch(book,/Accuracy \+20 and \+15%/);
+ assert.doesNotMatch(book,/Скорость восстановления ОМ союзников \+90 инд/);
+});
