@@ -96,6 +96,10 @@ test('new FV dependencies and source kind are rejected, without poisoning other 
   assert.equal(inspect(unrecognized)[item.key],null,item.key+' out-of-contract amount');
   const other=entries.find(x=>x.id!==item.id);
   assert.ok(inspect(invalid)[other.key],other.key+' remains independent');
+  if([100055001,330004001,320002001].includes(item.id)){
+   const choice=B.choices({skills:invalid}).find(row=>row.id===item.id);
+   assert.equal(choice.counted,false,'Book cannot count an unsupported FV');
+  }
   if(item.id===100055001){
    assert.equal(B.applied({selected:[item.id],skills:invalid}).thirdEye,undefined);
   }
