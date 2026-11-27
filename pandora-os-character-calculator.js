@@ -1420,6 +1420,27 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
    // Model assumption, not a confirmed server result.
    confidence:'coefficient-model'};
  };
+ // A paired self skill is safe only when EVERY original TARGET effect
+ // preserves its OS channel/position/direction. Do not ignore a changed
+ // penalty or a newly added side effect just because the bonus still parses.
+ // Its live FV1[3] magnitude may change, but gameplay rounding is modeled.
+ const pairedSourceRates=(id,contracts)=>{
+  const record=skill(id);
+  if(!Array.isArray(record?.funcs)||record.funcs.length!==contracts.length)
+   return null;
+  const values={};
+  for(let i=0;i<contracts.length;i++){
+   const [ep,min,max]=contracts[i],effect=record.funcs[i],v=effect?.fv1;
+   if(effect?.ep!==ep||effect.dir!=='TARGET'||
+    !Array.isArray(v)||v.length!==4||
+    !v.slice(0,3).every(n=>n===0)||
+    !Number.isSafeInteger(v[3])||v[3]<min||v[3]>max||
+    !Array.isArray(effect.fv2)||effect.fv2.length!==4||
+    !effect.fv2.every(n=>n===0))return null;
+   values[ep]=v[3];
+  }
+  return values;
+ };
  const seen=new Set();
  const add=(id,group,required,compute,options={})=>{
   const record=skill(id);
@@ -1435,8 +1456,9 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
    predecessor?.classes?.[jobKey]===1;
   if(!record||Number(record.id)!==id||record.learnable!==true||
    !sourceChainValid||!Array.isArray(record.reqs)||
-   !Array.isArray(record.funcs)||!required.every(([ep,coeff])=>
-    exact(record,ep,coeff)||dynamicSkillSourceMatches(record,ep,coeff))||
+   !Array.isArray(record.funcs)||
+   !(options.completeSourceProof===true||required.every(([ep,coeff])=>
+    exact(record,ep,coeff)||dynamicSkillSourceMatches(record,ep,coeff)))||
    seen.has(id))return;
   const recipient=options.recipient===true;
   if(!recipient&&!record.classes?.[jobKey])return;
@@ -1571,27 +1593,47 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
   detailEn:'Purify from an ally. These values are not permanent status resistance bonuses'});
  // Personal combat effects: previews use the unbuffed weapon/armor/dodge
  // kernel already available in the calculator, without activating anything.
- add(100052001,'offense',[
-  ['EP_DAMAGERATE_SCALE',[0,0,0,30]]
- ],()=>pct(unmountedAtk,30,Math.ceil),
- {unit:' АТК',detailRu:'От базовой физической атаки',
-  detailEn:'From base physical attack'});
- add(100053001,'defense',[
+ const ragingRates=pairedSourceRates(100052001,[
+  ['EP_DAMAGERATE_SCALE',1,100],['EP_ARMORCLASS_SCALE',-100,-1]
+ ]);
+ if(ragingRates)add(100052001,'offense',[
+  ['EP_DAMAGERATE_SCALE',[0,0,0,30]],
+  ['EP_ARMORCLASS_SCALE',[0,0,0,-60]]
+ ],()=>pct(unmountedAtk,ragingRates.EP_DAMAGERATE_SCALE,Math.ceil),
+ {completeSourceProof:true,modelOnly:true,unit:' АТК',
+  detailRu:'Прибавка к базовой атаке (модель); защита снижается на '+
+   (-ragingRates.EP_ARMORCLASS_SCALE)+'%',
+  detailEn:'Modeled base attack bonus; defense decreases by '+
+   (-ragingRates.EP_ARMORCLASS_SCALE)+'%'});
+ const defenderRates=pairedSourceRates(100053001,[
+  ['EP_DAMAGERATE_SCALE',-100,-1],['EP_ARMORCLASS_SCALE',1,100]
+ ]);
+ if(defenderRates)add(100053001,'defense',[
   ['EP_ARMORCLASS_SCALE',[0,0,0,40]],
   ['EP_DAMAGERATE_SCALE',[0,0,0,-20]]
- ],()=>pct(baseDef,40),
- {shield:true,unit:' защиты',detailRu:'Прибавка от базовой защиты; атака снижается на 20%',
-  detailEn:'From base defense; attack is reduced by 20%'});
+ ],()=>pct(baseDef,defenderRates.EP_ARMORCLASS_SCALE),
+ {completeSourceProof:true,modelOnly:true,shield:true,unit:' защиты',
+  detailRu:'Прибавка от базовой защиты (модель); атака снижается на '+
+   (-defenderRates.EP_DAMAGERATE_SCALE)+'%',
+  detailEn:'Modeled base defense bonus; attack decreases by '+
+   (-defenderRates.EP_DAMAGERATE_SCALE)+'%'});
  add(100057001,'defense',[
   ['EP_DAMAGERATE_SCALE',[0,0,0,-50]]
  ],()=>pct(unmountedAtk,-50),
  {unit:' АТК',detailRu:'Снижение от базовой атаки; защитные состояния не имеют числовой шкалы',
   detailEn:'Attack penalty from base attack; protection states are not numeric'});
- add(168052001,'defense',[
+ const ironScaleRates=pairedSourceRates(168052001,[
+  ['EP_CRITICAL_SAFE',0,0],['EP_AVOIDANCE_SCALE',-100,-1]
+ ]);
+ if(ironScaleRates)add(168052001,'defense',[
+  ['EP_CRITICAL_SAFE',[0,0,0,0]],
   ['EP_AVOIDANCE_SCALE',[0,0,0,-50]]
- ],()=>pct(dodgeBase,-50),
- {unit:' уклонения',detailRu:'Снижение от базового уклонения; защита от крита не является числом',
-  detailEn:'Reduced base evasion; critical protection is not a numeric magnitude'});
+ ],()=>pct(dodgeBase,ironScaleRates.EP_AVOIDANCE_SCALE),
+ {completeSourceProof:true,modelOnly:true,unit:' уклонения',
+  detailRu:'Уклонение снижается на '+
+   (-ironScaleRates.EP_AVOIDANCE_SCALE)+'% (модель); защита от критов без числовой шкалы',
+  detailEn:'Evasion decreases by '+
+   (-ironScaleRates.EP_AVOIDANCE_SCALE)+'% (model); critical protection has no numeric magnitude'});
  // Warding 26 is applied to Defense separately. Skill Effects is read-only,
  // and reuses the identical three-TARGET source gate, ignoring CASTER Numb.
  const wardingProof=wardingStatusPassive({jobKey,wardingMastery:26,
