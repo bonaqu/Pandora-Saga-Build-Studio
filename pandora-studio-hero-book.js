@@ -1414,10 +1414,10 @@ function buffsPage(body,options){
  const readableBuffEffects={
   100058001:['Атака усиливается в зависимости от мастерства. При этом персонаж получает на 100% больше урона.',
     'Attack increases with mastery. Incoming damage also increases by 100%.'],
-  213702001:['Ускоряет стрельбу из арбалета на 30%.','Crossbow attack speed +30%.'],
+  213702001:['Изменяет интервал выстрела из арбалета по параметру OS.','Changes crossbow firing interval according to the OS source.'],
   213605001:['Повышает атаку, точность и дальность стрельбы. Во время действия нельзя двигаться.',
     'Increases attack, accuracy and firing range; movement is disabled.'],
-  260002001:['Скорость передвижения +30%.','Movement speed +30%.'],
+  260002001:['Изменяет передвижение по параметру OS.','Changes movement according to the OS source.'],
   220001001:['Добавляет яд к атакам оружием. Сила эффекта зависит от мастерства.',
     'Adds poison aura damage to weapon attacks, scaling with mastery.'],
   430051001:['Добавляет урон тьмой к оружию, но наносит урон владельцу при атаках.',
@@ -1444,8 +1444,8 @@ function buffsPage(body,options){
     'Increases allies’ magical damage and reduces skill cooldown.'],
   142051001:['Шанс критического удара +10%.','Critical hit chance +10%.'],
   260005001:['Уклонение +10.','Evasion +10.'],
-  260008001:['Уклонение +100 до двух полученных ударов.',
-    'Evasion +100 until hit twice.'],
+  260008001:['Улучшает уклонение; эффект прекращается после полученного урона.',
+    'Raises evasion; the effect ends after incoming hits.'],
   100055001:['Точность союзников зависит от плоского и процентного коэффициентов OS (модель).',
     'Allied accuracy uses current OS flat and percentage coefficients (model).']
  };
@@ -1460,7 +1460,32 @@ function buffsPage(body,options){
    combat:modifiers?.combat});
   return [...(rows?.offense||[]),...(rows?.defense||[])];
  })();
+ // Cross-module source path: the Buffs page must display exactly the
+ // coefficient admitted by the same OS guard that applies the buff.
+ // Never display frozen +100/+30 when a game source changes.
+ const selfSourceNotes=new Map([260008001,260002001,213702001].map(id=>[
+  id,root.PandoraRemakedBuffs?.selfBuffSourcePreview?.({
+   id,skills:gameTerms.skills,jobKey:options.heroJobKey,
+   level:options.heroLevel,weapon:{kind:options.heroWeaponKind},
+   branchMasteries:options.heroMasteries,
+   branchCaps:options.heroBranchCaps,stats:modifiers?.stats
+  })||null
+ ]));
  const buffEffectText=id=>{
+  if([260008001,260002001,213702001].includes(id)){
+   const proof=selfSourceNotes.get(id),amount=proof?.amount;
+   if(Number.isSafeInteger(amount)){
+    const label={
+     260008001:english?'Evasion':'Уклонение',
+     260002001:english?'Movement coefficient':'Коэффициент передвижения',
+     213702001:english?'Attack-interval coefficient':'Коэффициент интервала атаки'
+    }[id];
+    return label+' '+(amount>=0?'+':'')+amount+
+     (english?' (OS model)':' (модель OS)');
+   }
+   return english?'OS coefficient not calculated for this build.':
+    'Коэффициент OS для этого билда не рассчитан.';
+  }
   if(id===142051001||id===260005001){
    const skill=selfModelRows.find(row=>row.id===id&&row.available);
    const model=skill?.coefficientModels?.[0];
@@ -1529,7 +1554,9 @@ function buffsPage(body,options){
        allyPreviews.divineBlessing.bonus:null,
      142051001:buffEffectText(142051001),
      260005001:buffEffectText(260005001),
-     260008001:english?'Evasion +100':'Уклонение +100'
+     260008001:buffEffectText(260008001),
+     260002001:buffEffectText(260002001),
+     213702001:buffEffectText(213702001)
     }[row.id]):
      // Game-client description is useful even where current OS stacking is
      // not confirmed. Never present historical previews as final damage.
@@ -2945,7 +2972,9 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
   {...copyOptions,buffs,gameTerms});
  if(chosen==='buffs')buffsPage(body,{buffs,vitalsBuffs,onBuff,onVital,
   honorTitles,availability,combatSkillCards,resistanceSkillChoices,modifiers,
-  gameTerms,remakedBuffRows,skillIconForId,nextMagicConcentrationPreview,...copyOptions});
+  gameTerms,remakedBuffRows,skillIconForId,nextMagicConcentrationPreview,
+  heroJobKey,heroLevel,heroMasteries,heroBranchCaps,heroWeaponKind,heroHasShield,
+  ...copyOptions});
  if(chosen==='effects')skillEffectsPage(body,{modifiers,gameTerms,skillIconForId,
   remakedBuffRows,availability,combatSkillCards,heroJobKey,heroLevel,heroMasteries,
    heroBranchCaps,heroWeaponKind,heroHasShield,onItem,onSkill,...copyOptions});
