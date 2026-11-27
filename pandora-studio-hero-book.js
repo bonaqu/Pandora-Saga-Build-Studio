@@ -2972,7 +2972,9 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
   {...copyOptions,buffs,gameTerms});
  if(chosen==='buffs')buffsPage(body,{buffs,vitalsBuffs,onBuff,onVital,
   honorTitles,availability,combatSkillCards,resistanceSkillChoices,modifiers,
-  gameTerms,remakedBuffRows,skillIconForId,nextMagicConcentrationPreview,...copyOptions});
+  gameTerms,remakedBuffRows,skillIconForId,nextMagicConcentrationPreview,
+  heroJobKey,heroLevel,heroMasteries,heroBranchCaps,heroWeaponKind,heroHasShield,
+  ...copyOptions});
  if(chosen==='effects')skillEffectsPage(body,{modifiers,gameTerms,skillIconForId,
   remakedBuffRows,availability,combatSkillCards,heroJobKey,heroLevel,heroMasteries,
    heroBranchCaps,heroWeaponKind,heroHasShield,onItem,onSkill,...copyOptions});
