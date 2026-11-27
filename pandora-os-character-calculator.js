@@ -3260,6 +3260,35 @@ function songFunctionsMatch(funcs,expected){
     JSON.stringify(row.fv2)===JSON.stringify(expectedFv2);
   }));
 }
+// These live FV1 vectors drive *modeled* recipient magnitudes. Only a
+// previously known song, exact root and intermediate execution graph, and
+// unchanged FV direction/channels permit source-coefficient updates.
+// A new level dependency, signed family, FV2 meaning, or extra effect fails closed.
+function songFinalSourceModelsMatch(funcs,spec){
+ if(!Array.isArray(funcs)||funcs.length!==spec.final.length)return false;
+ const values=[];
+ for(const [ep,dir] of spec.final){
+  const found=funcs.filter(f=>f?.ep===ep&&f.dir===dir);
+  if(dir!=='TARGET'||found.length!==1)return false;
+  const f=found[0],v=f.fv1;
+  if(!Array.isArray(v)||v.length!==4||
+   !v.every(Number.isSafeInteger)||v[1]!==0||
+   !Array.isArray(f.fv2)||f.fv2.length!==4||
+   f.fv2.some(n=>n!==0))return false;
+  const negative=ep==='EP_SKILL_BENCH_FIN';
+  if(negative){
+   if(v[0]>0||v[0]<-500||v[2]>0||v[2]<-500||
+    v[3]>0||v[3]<-500)return false;
+  }else if(v[0]<0||v[0]>500||v[2]<0||v[2]>500||
+   v[3]<0||v[3]>5000)return false;
+  values.push(v);
+ }
+ // The Book has one shared Minstrel value for both accuracy and evasion;
+ // never misrepresent divergent OS vectors as an equal pair.
+ if(spec.key==='minstrel'&&
+  JSON.stringify(values[0])!==JSON.stringify(values[1]))return false;
+ return true;
+}
 function songSourceMatches(catalog,spec){
  const root=catalog?.[String(spec.id)],
   middle=catalog?.[String(spec.middle)],last=catalog?.[String(spec.last)];
@@ -3274,7 +3303,7 @@ function songSourceMatches(catalog,spec){
   !songFunctionsMatch(middle.funcs,[['EP_SKILL_EXEC','TARGET',[0,0,0,spec.last]]]))return false;
  if(!last||last.id!==spec.last||last.skillType!=='ALLY'||
   last.learnable!==false||!Array.isArray(last.reqs)||last.reqs.length||
-  !songFunctionsMatch(last.funcs,spec.final))return false;
+  !songFinalSourceModelsMatch(last.funcs,spec))return false;
  return true;
 }
 function songSkillPreview({skillCatalog=null,jobKey=null,level=1,
@@ -3539,15 +3568,7 @@ function priestCastPreviews({spi,blessing,hymn,exorcism=26,skills=null}={}){
   enchantElementRate:null,holyEnhanced:null,verified:false};
  if(![spi,blessing,hymn,exorcism].every(n=>Number.isSafeInteger(n)&&n>=0&&n<=500)||
   !skills||typeof skills!=='object')return result;
- const exact=(id,ep,values)=>{
-  const source=skills[String(id)];
-  const effects=(source?.funcs||[]).filter(f=>f?.dir==='TARGET'&&f.ep===ep);
-  return source?.id===id&&effects.length===1&&
-   Array.isArray(effects[0].fv1)&&effects[0].fv1.length===4&&
-   effects[0].fv1.every((v,i)=>v===values[i])&&
-   Array.isArray(effects[0].fv2)&&effects[0].fv2.length===4&&
-   effects[0].fv2.every(v=>v===0);
- };
+
  // Read the current OS coefficient vector; the Remaked floor stages below
  // remain a model. Unknown level/extra-effect dependencies fail closed.
  const modelFv=(id,ep,{type,branch,required,kind='positive'})=>{
@@ -3586,9 +3607,34 @@ function priestCastPreviews({spi,blessing,hymn,exorcism=26,skills=null}={}){
  const lapisFv=modelFv(320008001,'EP_ARMORCLASS_CONST',{
   type:'PARTY_ALL',branch:'blessing',required:12});
  if(lapisFv)result.lapisMedio=staged(lapisFv,spi,blessing);
- if(['EP_STRENGTH_CONST','EP_AGILITY_CONST','EP_INTELIGENCE_CONST']
-  .every(ep=>exact(320012001,ep,[0,0,10,0])))
-  result.encouragement=Math.floor(blessing/10);
+ // Encouragement grants equal STR/AGI/INT values. Replay the current
+ // official OS mastery FV1; never infer equality if one effect changes shape.
+ const encourage=skills['320012001'];
+ const encourageEps=['EP_STRENGTH_CONST','EP_AGILITY_CONST','EP_INTELIGENCE_CONST'];
+ const encourageFv=(()=>{
+  if(encourage?.id!==320012001||encourage.skillType!=='ALLY'||
+   encourage.learnable!==true||encourage.prereq!==null||
+   encourage.charLevel!==0||encourage.branch!=='blessing'||
+   encourage.classes?.CLERIC!==1||
+   JSON.stringify(encourage.reqs)!=='[{"branch":"blessing","amount":61}]'||
+   !Array.isArray(encourage.funcs)||encourage.funcs.length!==3)return null;
+  let common=null;
+  for(const ep of encourageEps){
+   const matches=encourage.funcs.filter(f=>f?.ep===ep&&f.dir==='TARGET');
+   if(matches.length!==1)return null;
+   const f=matches[0],v=f.fv1;
+   if(!Array.isArray(v)||v.length!==4||
+    !v.every(Number.isSafeInteger)||v[0]!==0||v[1]!==0||
+    v[2]<0||v[2]>500||v[3]<0||v[3]>5000||
+    !Array.isArray(f.fv2)||f.fv2.length!==4||
+    f.fv2.some(n=>n!==0))return null;
+   if(common&&JSON.stringify(common)!==JSON.stringify(v))return null;
+   common=v;
+  }
+  return common;
+ })();
+ if(encourageFv)result.encouragement=encourageFv[3]+
+  Math.floor(blessing*encourageFv[2]/100);
  const barrierFv=modelFv(320003001,'EP_ONDAMAGE_FIN_DAMAGE_SCALE',{
   type:'PARTY_ALL',branch:'blessing',required:26,kind:'barrier'});
  if(barrierFv)
@@ -3641,24 +3687,26 @@ function priestCastPreviews({spi,blessing,hymn,exorcism=26,skills=null}={}){
    result.holyEnhanced=result.holyWeapon+result.enchantAuraFlat+
     Math.ceil(result.holyWeapon*result.enchantAuraRate/100);
  }
- const peaceful=songChains.find(x=>x.id===340003001);
- if(peaceful&&songSourceMatches(skills,peaceful)&&
-  exact(340003003,'EP_DAMAGE_CLEAR',[60,0,30,10]))
-  result.peaceful=10+Math.floor(spi*.60)+Math.floor(hymn*.30);
- const minstrel=songChains.find(x=>x.id===340001001);
- if(songSourceMatches(skills,minstrel)&&
-  exact(340001003,'EP_TOHIT_CONST',[13,0,13,4])&&
-  exact(340001003,'EP_AVOIDANCE_CONST',[13,0,13,4]))
-  result.minstrel=4+Math.floor(spi*13/100)+Math.floor(hymn*13/100);
- const sage=songChains.find(x=>x.id===340004001);
- if(songSourceMatches(skills,sage)){
-  if(exact(340004003,'EP_ELEMENT_DAMAGE_SCALE',[8,0,8,4]))
-   result.sage=4+Math.floor(spi*8/100)+Math.floor(hymn*8/100);
-  // Separate recipient-side current OS EP_SKILL_BENCH_FIN index model.
-  // Actual server cooldown seconds and buff stacking order are unverified.
-  if(exact(340004003,'EP_SKILL_BENCH_FIN',[-28,0,-17,-5]))
-   result.sageCooldownDelta=-(5+Math.floor(spi*28/100)+Math.floor(hymn*17/100));
- }
+ // Song roots and intermediate executions must still pass their exact
+ // source graph. The final FV1 coefficients are read from current OS instead
+ // of repeating old Remaked numbers, preserving independent floor stages.
+ const songRecipientFv=(rootId,ep)=>{
+  const spec=songChains.find(x=>x.id===rootId);
+  if(!spec||!songSourceMatches(skills,spec))return null;
+  return skills[String(spec.last)].funcs.find(f=>f.ep===ep&&f.dir==='TARGET')?.fv1??null;
+ };
+ const peacefulFv=songRecipientFv(340003001,'EP_DAMAGE_CLEAR');
+ if(peacefulFv)result.peaceful=staged(peacefulFv,spi,hymn);
+ const minstrelFv=songRecipientFv(340001001,'EP_TOHIT_CONST');
+ if(minstrelFv)result.minstrel=staged(minstrelFv,spi,hymn);
+ const sageFv=songRecipientFv(340004001,'EP_ELEMENT_DAMAGE_SCALE');
+ if(sageFv)result.sage=staged(sageFv,spi,hymn);
+ // This signed index is a theoretical recipient-side cooldown coefficient,
+ // not verified server seconds or proven stacking behavior.
+ const cooldownFv=songRecipientFv(340004001,'EP_SKILL_BENCH_FIN');
+ if(cooldownFv)result.sageCooldownDelta=cooldownFv[3]-
+  Math.floor(spi*(-cooldownFv[0])/100)-
+  Math.floor(hymn*(-cooldownFv[2])/100);
  return result;
 }
 // An independent CLERIC ally may give Peace Song to any recipient,
