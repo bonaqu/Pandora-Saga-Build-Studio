@@ -56,7 +56,8 @@ test('book controls are built from both actual skill records and saved choices',
  assert.match(app,/rawAttributes\[key\]===true/);
  assert.match(book,/\['combatWindAssist','Помощь ветра','windAssist'\]/);
  assert.match(book,/\['combatWindBlessing','Благословение ветра','windBlessing'\]/);
- assert.match(book,/row\('Уклонение','Evasion',c.dodge\?\.known\)/);
+ assert.match(book,/row\('Уклонение','Evasion',c.dodge\?\.known,'',null,/);
+ assert.match(book,/c.dodge\?\.confidence==='legacy-model'\?'legacy-model':null/);
  assert.match(book,/c.movementSpeed\?\.known/);
 });
 

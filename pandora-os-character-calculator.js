@@ -2133,14 +2133,18 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
    activeBonus:actives.concentration?effect('concentration','EP_TOHIT_CONST'):0,
    thirdEye:otherBuffs.thirdEye?Math.floor(otherBuffs.thirdEye.flat+
     accuracyBase*otherBuffs.thirdEye.percent/100):0,
-   minstrel:priestMinstrel,known:accuracyKnown},
+   minstrel:priestMinstrel,known:accuracyKnown,
+   verified:false,confidence:'legacy-model',
+   source:"Remaked Calc('ACC') + current OS source-gated effect parameters"},
   dodge:{base:dodgeBase,agilityStep:dodgeStep,equipment:evEquip,
    passive:quickStep,honor:title.dodge||0,
    windAssist:supportSkills.windAssist?Math.floor(
     supportSkillValues.windAssist.EP_AVOIDANCE_CONST+
     dodgeBase*supportSkillValues.windAssist.EP_AVOIDANCE_SCALE/100):0,
    additionalSelf:(otherBuffs.quickStep?.dodge||0)+(otherBuffs.avoidance?.dodge||0),
-   minstrel:priestMinstrel,known:observedDodge},
+   minstrel:priestMinstrel,known:observedDodge,
+   verified:false,confidence:'legacy-model',
+   source:"Remaked Calc('Dodge') + current OS source-gated effect parameters"},
   critical:{base:critBase,equipment:critEquip,
    racial:racialPassiveId===900040001?5:0,
    coldBlood:otherBuffs.coldBlood?.critical||0,known:critical},
@@ -3393,12 +3397,14 @@ function alliedNaturalRecoveryPreview({skillCatalog=null,casterLevel=45}={}){
   return null;
  const effect=skill.funcs[0];
  if(effect?.ep!=='EP_HEAL_MANA_REGENERATOR'||effect.dir!=='TARGET'||
-  JSON.stringify(effect.fv1)!=='[0,10,0,0]'||
+  !safeHealingFV(effect.fv1)||effect.fv1[0]!==0||effect.fv1[2]!==0||
   JSON.stringify(effect.fv2)!=='[0,0,0,2]')return null;
- // Snapshot coefficient: level 20 -> +2; 45 -> +4; 55 -> +5.
+ // Current official FV1 supplies level/base terms, while a new SPI or
+ // mastery dependency is rejected: this preview has no such caster inputs.
  // The 2-second interval agrees with legacy Remaked MPsec and OS FV2[3].
  // Do not infer total duration or server-side stacking.
- return {id:330005001,mpPerPulse:Math.floor(casterLevel*.10),
+ return {id:330005001,mpPerPulse:effect.fv1[3]+
+   Math.floor(casterLevel*effect.fv1[1]/100),
   casterLevel,intervalSourceValue:2,intervalSeconds:2,modeled:true};
 }
 // Existing party skills are received by the current hero. Their relevant
@@ -3490,10 +3496,8 @@ function alliedHpPulsePreview({skillCatalog=null,classCatalog=null,
   !Number.isSafeInteger(cleric?.branchCaps?.benevolence)||
   casterHealing>cleric.branchCaps.benevolence)return null;
  const specs=[
-  {id:310002001,key:'regeneration',required:21,type:'ALLY',
-   fv1:[10,10,10,10]},
-  {id:310022001,key:'restoration',required:41,type:'PARTY_ALL',
-   fv1:[20,5,5,5]}
+  {id:310002001,key:'regeneration',required:21,type:'ALLY'},
+  {id:310022001,key:'restoration',required:41,type:'PARTY_ALL'}
  ];
  const result={};
  for(const spec of specs){
@@ -3509,7 +3513,7 @@ function alliedHpPulsePreview({skillCatalog=null,classCatalog=null,
    cleric.branchCaps.benevolence<spec.required)continue;
   const fx=skill.funcs[0];
   if(fx?.ep!=='EP_HEAL_LIFE_REGENERATOR'||fx.dir!=='TARGET'||
-   JSON.stringify(fx.fv1)!==JSON.stringify(spec.fv1)||
+   !safeHealingFV(fx.fv1)||
    JSON.stringify(fx.fv2)!=='[0,0,0,2]')continue;
   const [spiRate,levelRate,healingRate,flat]=fx.fv1;
   result[spec.key]={id:spec.id,hpPerPulse:flat+

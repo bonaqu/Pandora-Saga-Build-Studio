@@ -2,7 +2,7 @@
 // #476: exact live source-value parity; HTML breaks and local translations
 // are deliberately kept separate from upstream numeric/mechanical fields.
 // No SQL, worker credentials, login or HTTP writes.
-import {readFileSync} from 'node:fs';
+import {readFileSync,appendFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
 import {isDeepStrictEqual} from 'node:util';
 import {fileURLToPath} from 'node:url';
@@ -156,10 +156,30 @@ export async function auditOfficialOsSnapshot({
   datasets:result};
 }
 
+// Render only provenance/counts and a bounded set of paths, never tokens or player data.
+export function officialSourceSummaryMarkdown(report){
+ if(!Array.isArray(report?.datasets)||!report?.summary)
+  throw Error('Expected official source audit report');
+ const table=report.datasets.map(row=>{
+  const status=row.ok?'MATCH':row.sourceUnavailable?'UNAVAILABLE':'DRIFT';
+  return '| '+row.name+' | '+status+' | '+(row.officialRecords??'-')+
+   ' | '+(row.localRecords??'-')+' | '+
+   (row.localExtras?.formattedDescriptions??0)+' | '+
+   (row.differences?.length??0)+' |';
+ }).join('\n');
+ return ['### Original Pandora Saga OS source vs current Build Studio catalog',
+  'Checked: '+report.checkedAt+' · **read-only**, no D1 SQL/write.',
+  '| Dataset | Status | Official records | Local records | Local line-break formatting | Differences |',
+  '|---|---|---:|---:|---:|---:|',table,
+  'Summary: '+JSON.stringify(report.summary),
+  'Confirmed source fields are authoritative; this does not prove hidden server hit/rounding mechanics.'
+ ].join('\n')+'\n';
+}
+
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
  const args=process.argv.slice(2);
- if(args.some(x=>x!=='--all')||args.length>1)
-  throw Error('Usage: node scripts/audit-official-os-source.mjs [--all]');
+ if(args.some(x=>!['--all','--observe'].includes(x))||args.length>1)
+  throw Error('Usage: node scripts/audit-official-os-source.mjs [--all|--observe]');
  const local=name=>JSON.parse(readFileSync(new URL('../data/os/'+name+'.json',import.meta.url),'utf8'));
  const report=await auditOfficialOsSnapshot({readLocal:local});
  console.log(JSON.stringify(args.includes('--all')?report:{
@@ -167,5 +187,10 @@ if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
    ...rest,differences:differences?.slice(0,5)
   }))
  },null,2));
- if(report.summary.matched!==report.summary.requested)process.exitCode=1;
+ if(process.env.GITHUB_STEP_SUMMARY)
+  appendFileSync(process.env.GITHUB_STEP_SUMMARY,officialSourceSummaryMarkdown(report));
+ if(report.summary.matched!==report.summary.requested){
+  console.log('::warning::Official OS source differs or is unavailable; inspect original JSON before changing the catalog. No D1 writes.');
+  if(!args.includes('--observe'))process.exitCode=1;
+ }
 }

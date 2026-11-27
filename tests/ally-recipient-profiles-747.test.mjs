@@ -86,7 +86,12 @@ test('Natural Recovery uses hypothetical caster level and is not standing MP reg
  assert.equal(selected.mp,base.mp);
  const corrupt=structuredClone(skills);
  corrupt['330005001'].funcs[0].fv1[1]=11;
- assert.equal(C.alliedNaturalRecoveryPreview({skillCatalog:corrupt,casterLevel:45}),null);
+ assert.equal(C.alliedNaturalRecoveryPreview({skillCatalog:corrupt,casterLevel:55})?.mpPerPulse,6,
+  'valid official level coefficient revisions replay; no hardcoded 10% gate');
+ const extra=structuredClone(skills);
+ extra['330005001'].funcs[0].fv1[0]=1;
+ assert.equal(C.alliedNaturalRecoveryPreview({skillCatalog:extra,casterLevel:45}),null,
+  'new SPI dependency must remain unmodeled without caster SPI input');
 });
 
 test('unknown OS secondary vectors never silently alter allied recipient effects',()=>{
