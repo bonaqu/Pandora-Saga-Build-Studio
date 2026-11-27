@@ -1549,11 +1549,11 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
    seen.has(id))return;
   const recipient=options.recipient===true;
   if(!recipient&&!record.classes?.[jobKey])return;
-  // Require the FULL signed OS root for the shared-mastery Ossify skill,
-  // including all linked protection actions, before calculating its ATK cost.
-  if(id===100057001&&!combatTechniquePreview({
-   skillCatalog,jobKey,level,branchMasteries,branchCaps,weaponKind
-  }).rows.some(row=>row.id===id))return;
+  // Painlessness now has a dedicated full five-effect OS proof below.
+  // The archival technique inspector pins FV1[3]=-50 and therefore cannot
+  // gate a legitimate supported signed source revision of that same field.
+  // Never allow this skill without the complete new source proof.
+  if(id===100057001&&options.completeSourceProof!==true)return;
   if(!recipient&&record.reqs.some(req=>typeof req?.branch!=='string'||
    !Number.isInteger(req.amount)||req.amount<0||
    !Number.isSafeInteger(sourceCap(record,req.branch))||
@@ -1707,11 +1707,50 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
    (-defenderRates.EP_DAMAGERATE_SCALE)+'%',
   detailEn:'Modeled base defense bonus; attack decreases by '+
    (-defenderRates.EP_DAMAGERATE_SCALE)+'%'});
- add(100057001,'defense',[
-  ['EP_DAMAGERATE_SCALE',[0,0,0,-50]]
- ],()=>pct(unmountedAtk,-50),
- {unit:' АТК',detailRu:'Снижение от базовой атаки; защитные состояния не имеют числовой шкалы',
-  detailEn:'Attack penalty from base attack; protection states are not numeric'});
+ // Five simultaneous current OS TARGET effects make up "Painlessness":
+ // resist Numb, resist Tumble, a signed ATK penalty, movement protection,
+ // and a Toggle marker. Never extrapolate one field without the other four.
+ // The exported FV1 magnitude is source-confirmed; applying/rounding the
+ // final attack penalty is still a Remaked candidate model.
+ const painlessRate=(()=>{
+  const record=skill(100057001);
+  if(record?.id!==100057001||record.skillType!=='TOGGLE'||
+   record.learnable!==true||record.prereq!==null||
+   record.branchRaw!=='MELEE'||record.branch!=='martial'||
+   record.charLevel!==0||record.reqLevel!==100||
+   !Array.isArray(record.reqs)||record.reqs.length!==1||
+   record.reqs[0]?.branch!=='martial'||record.reqs[0]?.amount!==100||
+   Object.keys(record.classes||{}).length!==28||
+   !Object.values(record.classes).every(v=>v===1)||
+   !Array.isArray(record.funcs)||record.funcs.length!==5)return null;
+  const expected=[
+   ['EP_PROTECTION_NUMB',[0,0,0,100]],
+   ['EP_PROTECTION_TUMBLE',[0,0,0,100]],
+   ['EP_DAMAGERATE_SCALE',null],
+   ['EP_PROTECTION_MOVEBAN',[0,0,0,0]],
+   ['EP_TOGGLE',[0,0,0,0]]
+  ];
+  for(let i=0;i<expected.length;i++){
+   const fx=record.funcs[i],v=fx?.fv1;
+   if(fx?.ep!==expected[i][0]||fx.dir!=='TARGET'||
+    !Array.isArray(v)||v.length!==4||
+    !Array.isArray(fx.fv2)||fx.fv2.length!==4||
+    !fx.fv2.every(x=>x===0))return null;
+   if(i===2){
+    if(!v.slice(0,3).every(x=>x===0)||
+     !Number.isSafeInteger(v[3])||v[3]<-100||v[3]>=0)return null;
+   }else if(v.some((x,k)=>x!==expected[i][1][k]))return null;
+  }
+  return record.funcs[2].fv1[3];
+ })();
+ if(painlessRate!==null)add(100057001,'defense',[],
+  ()=>pct(unmountedAtk,painlessRate),
+  {completeSourceProof:true,modelOnly:true,unit:' АТК',
+   models:[{ep:'EP_DAMAGERATE_SCALE',
+    labelRu:'Снижение атаки (модель)',labelEn:'Attack penalty (model)',
+    amount:painlessRate,unit:'%',confidence:'coefficient-model'}],
+   detailRu:'Снижение физической атаки (модель); защита от состояний и включение навыка проверены по исходным данным',
+   detailEn:'Modeled physical attack penalty; source verifies the protection states and toggle'});
  const ironScaleRates=pairedSourceRates(168052001,[
   ['EP_CRITICAL_SAFE',0,0],['EP_AVOIDANCE_SCALE',-100,-1]
  ]);
