@@ -314,6 +314,10 @@ function potionRecovery({vit,records=[],honorTitle=0,runeJoEun=false,
 }
 // Current OS skill 260007001 requires Warding 26 and supplies exactly
 // three TARGET resistance effects. The duplicate CASTER Numb is not additive.
+// Read the *complete* current OS four-channel passive, not a stale +15 constant.
+// Three distinct TARGET channels enter the character's status breakdown;
+// CASTER Numb is an independent source record and must never add a fourth bonus.
+// The paired CASTER parameter is validated, but its activation is not inferred.
 function wardingStatusPassive({jobKey=null,wardingMastery=0,wardingCap=null,skillCatalog=null}={}){
  if(!Number.isSafeInteger(wardingMastery)||wardingMastery<26||
   !Number.isSafeInteger(wardingCap)||wardingCap<26||
@@ -321,21 +325,29 @@ function wardingStatusPassive({jobKey=null,wardingMastery=0,wardingCap=null,skil
  const skill=skillCatalog['260007001'];
  if(skill?.id!==260007001||skill.learnable!==true||
   skill.skillType!=='PASSIVE'||skill.branch!=='warding'||
-  skill.charLevel!==0||skill.prereq!==null||!skill.classes?.[jobKey]||
+  skill.charLevel!==0||skill.reqLevel!==26||
+  skill.prereq!==null||!skill.classes?.[jobKey]||
   !Array.isArray(skill.reqs)||skill.reqs.length!==1||
   skill.reqs[0]?.branch!=='warding'||skill.reqs[0]?.amount!==26||
-  !Array.isArray(skill.funcs))return null;
- const keys={EP_IMMUNE_STUN:'stun',EP_IMMUNE_NUMB:'numb',EP_IMMUNE_TUMBLE:'tumble'};
+  !Array.isArray(skill.funcs)||skill.funcs.length!==4)return null;
+ const contract=[
+  ['EP_IMMUNE_TUMBLE','TARGET','tumble'],
+  ['EP_IMMUNE_STUN','TARGET','stun'],
+  ['EP_IMMUNE_NUMB','TARGET','numb'],
+  ['EP_IMMUNE_NUMB','CASTER',null]
+ ];
  const values={};
- for(const [ep,key] of Object.entries(keys)){
-  // CASTER Numb is not another TARGET effect.
-  const rows=skill.funcs.filter(x=>x.ep===ep&&x.dir==='TARGET');
-  if(rows.length!==1||!Array.isArray(rows[0].fv1)||
-   !Array.isArray(rows[0].fv2)||rows[0].fv1.length!==4||
-   rows[0].fv2.length!==4||
-   rows[0].fv1.some((v,i)=>v!==(i===3?15:0))||
-   rows[0].fv2.some(v=>v!==0))return null;
-  values[key]=15;
+ for(let index=0;index<contract.length;index++){
+  const [ep,dir,key]=contract[index],effect=skill.funcs[index],
+   fv=effect?.fv1;
+  if(effect?.ep!==ep||effect.dir!==dir||
+   !Array.isArray(fv)||fv.length!==4||
+   !fv.slice(0,3).every(n=>n===0)||
+   !Number.isSafeInteger(fv[3])||fv[3]<-100||fv[3]>100||
+   !Array.isArray(effect.fv2)||effect.fv2.length!==4||
+   !effect.fv2.every(n=>n===0))return null;
+  if(key)values[key]=fv[3];
+  else if(fv[3]!==values.numb)return null;
  }
  return values;
 }
@@ -1767,13 +1779,23 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  // and reuses the identical three-TARGET source gate, ignoring CASTER Numb.
  const wardingProof=wardingStatusPassive({jobKey,wardingMastery:26,
   wardingCap:cap('warding'),skillCatalog});
- if(wardingProof)add(260007001,'defense',[
-  ['EP_IMMUNE_STUN',[0,0,0,15]],
-  ['EP_IMMUNE_NUMB',[0,0,0,15]],
-  ['EP_IMMUNE_TUMBLE',[0,0,0,15]]
- ],()=>wardingProof.stun,{branch:'warding',unit:' сопротивления',
-  detailRu:'По +15 к оглушению, заморозке и падению',
-  detailEn:'+15 each to stun, numb and tumble resistance'});
+ if(wardingProof){
+  // If the three source coefficients diverge, do not report the first one
+  // as a universal resistance. List all three individually instead.
+  const uniform=wardingProof.stun===wardingProof.numb&&
+   wardingProof.stun===wardingProof.tumble;
+  const signed=n=>n>=0?'+'+n:String(n);
+  add(260007001,'defense',[],()=>uniform?wardingProof.stun:null,{
+   branch:'warding',completeSourceProof:true,modelOnly:true,
+   unit:' сопротивления',
+   detailRu:'Оглушение '+signed(wardingProof.stun)+
+    ', заморозка '+signed(wardingProof.numb)+
+    ', падение '+signed(wardingProof.tumble),
+   detailEn:'Stun '+signed(wardingProof.stun)+
+    ', numb '+signed(wardingProof.numb)+
+    ', tumble '+signed(wardingProof.tumble)
+  });
+ }
  // Selected buffs already use these two OS coefficient vectors and the
  // matching floor stages. Share those exact results with Skill Effects.
  const quickDodge=coefficientModel(260005001,'EP_AVOIDANCE_CONST',
