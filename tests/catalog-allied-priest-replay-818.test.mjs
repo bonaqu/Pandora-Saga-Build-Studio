@@ -81,10 +81,15 @@ test('source-only song stage without class access still protects priest song pro
   'signed live OS FV1 changes replay rather than silently keeping stale numbers');
  assert.equal(updated.sage,original.sage,
   'an unchanged elemental channel remains intact');
+ const classified=S.compatibility(before,next);
+ assert.equal(classified.totals.needsReview,1,
+  'a changed numeric source is still classified before catalog publication');
  const result=S.replaySkills(before,next);
- assert.equal(result.ok,false,'changed numeric model still requires catalog review');
- assert.ok(result.samples.some(x=>x.id===String(id)&&
-  x.module==='priest-cast'&&x.detail.startsWith('sageCooldownDelta:')));
+ assert.equal(result.ok,true,
+  'supported revised FV1 retains its old modeled skill instead of disappearing');
+ assert.equal(result.lost,0);
+ assert.ok(result.changedSkills>0,'child-only change replays linked parents');
+ assert.ok(result.retained>0,'the revised recipient effect remains modeled');
  const invalid=change(id,row=>{
   row.funcs.find(x=>x.ep==='EP_SKILL_BENCH_FIN').fv2[0]=1;
  });
