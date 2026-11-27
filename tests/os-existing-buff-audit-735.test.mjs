@@ -16,7 +16,7 @@ const selected=(source=skills)=>({
  selected:[260008001],skills:source,jobKey:'ARCHER',level:45,
  branchCaps:classes.ARCHER.branchCaps,branchMasteries:{warding:41}
 });
-test('the existing +100 Evasion model requires both exact OS effects',()=>{
+test('Evasion requires its exact source loss condition while dynamic FV1 magnitudes remain modeled',()=>{
  const record=skills['260008001'];
  assert.equal(record.name,'Ускользание');
  assert.deepEqual(record.funcs.map(x=>x.ep),
@@ -24,8 +24,13 @@ test('the existing +100 Evasion model requires both exact OS effects',()=>{
  assert.deepEqual(B.applied(selected()).avoidance,{dodge:100});
  assert.equal(B.choices({...selected()}).find(x=>x.id===260008001).counted,true);
  const before=JSON.stringify(skills);
+ const supported=structuredClone(skills);
+ supported['260008001'].funcs[0].fv1[3]=101;
+ assert.deepEqual(B.applied(selected(supported)).avoidance,{dodge:101},
+  'a same-shape official FV1 change is a modeled magnitude, not a new mechanic');
+ assert.equal(B.choices({...selected(supported)}).find(x=>x.id===260008001).counted,true);
  const variants=[
-  s=>{s.funcs[0].fv1[3]=101},
+  s=>{s.funcs[0].fv2[0]=1},
   s=>{s.funcs[1].fv1[3]=3},
   s=>{s.funcs[1].fv2[0]=1},
   s=>{s.funcs[1].dir='CASTER'},

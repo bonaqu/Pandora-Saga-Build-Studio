@@ -76,7 +76,7 @@ test('Skill Effects and selected buffs agree in 250 mastery/AGI cases',()=>{
 
 test('invalid OS vector, stat, class and weapon fail closed',()=>{
  const forged=structuredClone(skills);
- forged['142051001'].funcs.find(f=>f.ep==='EP_CRITICALRATE_CONST').fv1[2]=99;
+ forged['142051001'].funcs.find(f=>f.ep==='EP_CRITICALRATE_CONST').fv1[1]=1;
  forged['260005001'].funcs.find(f=>f.ep==='EP_AVOIDANCE_CONST').fv2[0]=1;
  assert.equal(B.applied({...base,jobKey:'WARRIOR',selected:[142051001],
   branchMasteries:{brush:21},skills:forged}).coldBlood,undefined);
