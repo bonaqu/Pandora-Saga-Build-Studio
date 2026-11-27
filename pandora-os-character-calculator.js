@@ -107,7 +107,9 @@ function validEffectGradeBounds(effect){
 }
 function forthSnapshotAtGrade(itemForth,id,grade){
  const byGrade=itemForth?.[String(id)];
- if(!byGrade||typeof byGrade!=='object'||Array.isArray(byGrade))return null;
+ if(!byGrade||typeof byGrade!=='object'||Array.isArray(byGrade))
+  return itemForth&&typeof itemForth==='object'&&
+   Object.hasOwn(itemForth,String(id))?[]:null;
  // An incomplete/malformed grade must never silently use an older Forth
  // level or the fallback text: [] denotes no authoritative extra effects.
  if(Object.entries(byGrade).some(([key,rows])=>
