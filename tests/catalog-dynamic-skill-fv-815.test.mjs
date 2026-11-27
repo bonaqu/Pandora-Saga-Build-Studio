@@ -85,12 +85,19 @@ test('FV2 semantic changes and additional effects stay outside data-only contrac
  assert.equal(C.dynamicSkillSourceMatches(added.skills['330002001'],
   'EP_ABSOLUTE_MAGIC',[20,0,20,10]),false);
 });
-test('a buff coupled to Remaked remains strictly source-gated',()=>{
+test('cross-module Cold Blood remains review-gated despite a safe updated Skill Effects model',()=>{
  const next=amended(142051001,skill=>{skill.funcs[0].fv1[3]+=5});
  assert.equal(S.compatibility(before,next).totals.needsReview,1,
-  'Cold Blood impacts a second buff model; do not declare it auto-compatible');
- assert.equal(sample(next.skills,142051001,'JUGGERNAUT')?.amount,undefined);
- assert.ok(S.replaySkills(before,next).lost>0);
+  'Other combat consumers are not proven compatible with this FV change');
+ const previous=sample(before.skills,142051001,'JUGGERNAUT');
+ const updated=sample(next.skills,142051001,'JUGGERNAUT');
+ assert.ok(Number.isSafeInteger(previous?.amount));
+ assert.equal(updated?.amount,previous.amount+5,
+  'Read-only preview must use allowed current FV1 rather than freeze the old value');
+ assert.equal(updated?.modelOnly,true);
+ assert.equal(updated?.uncertain,true);
+ assert.ok(S.replaySkills(before,next).lost>0,
+  'Full-catalog replay remains conservatively blocked until every consumer agrees');
 });
 test('unknown changed skill identity cannot receive numeric source contract',()=>{
  const next=amended(330002001,skill=>{skill.funcs[0].ep='EP_NOT_MODELED'});
