@@ -5,16 +5,10 @@
 ## Процесс работы и выпуск
 
 - Работать крупными связанными пакетами, исправлять причины, переиспользовать код и убирать мёртвые пути. Не открывать отдельный PR ради одной текстовой строки или одного regex-теста. Не заявлять о полной безошибочности без доказательств.
-- Основная ветка — `bonaqu_projects`; защищённый GitHub Ruleset требует `Unit regressions and release consistency` и `browser` на **точном** HEAD PR. Для JS/gameplay изменений нужен полный реальный Chromium, полный Node, release/source/asset/locale audits. После merge — GitHub Pages, Worker и каталог D1 **только чтение**. Не объединять pending/failed PR.
+- Основная ветка — `bonaqu_projects`; хранить только её, временные PR-ветки удалять после завершения (см. [политику](docs/BRANCH_RETENTION_POLICY.md)); защищённый GitHub Ruleset требует `Unit regressions and release consistency` и `browser` на **точном** HEAD PR. Для JS/gameplay изменений нужен полный реальный Chromium, полный Node, release/source/asset/locale audits. После merge — GitHub Pages, Worker и каталог D1 **только чтение**. Не объединять pending/failed PR.
 - Проверки запускаются на PR и публикации, без периодических cron. Для диагностики одного дефекта сначала профильный тест / browser `--only`, затем полный обязательный CI. Не дублировать тестовые entrypoints и не заменять живую регрессию поиском строки.
 - Согласованное обновление версий — `scripts/release-version.mjs`: `package.json`, `site-version.json`, `index.html`, JS/CSS cache keys, OG/X-превью, `ROADMAP.md`, `CHANGELOG.md`. Историю релизов хранить в `docs/changelog/`, не раздувать корневые README/ROADMAP/CHANGELOG.
 - Дополнительно: [операционные правила](docs/REPOSITORY_OPERATIONS_AND_FAST_DELIVERY.md), [архитектура](docs/STUDIO_ARCHITECTURE.md), [UX](docs/APPROVED_UI_UX_GUIDELINES.md).
-
-## Обязательная гигиена веток
-
-- **Единственная постоянная ветка — `bonaqu_projects`.** Рабочие PR-ветки допустимы только временно: обязательные Node/Chromium, merge, подтверждение публикации, затем **обязательная проверка удаления head-ветки**. Не считать включённый GitHub auto-delete доказательством её удаления.
-- Не оставлять orphan-ветки после завершения или прерывания работы. Для закрытых/необъединённых PR сначала зафиксировать точный HEAD SHA, статус PR и сохранить уникальные коммиты в Git archive tag; только затем безопасно удалить ref. Открытые PR, SHA-изменения и production main удалять запрещено.
-- Аудит 29 исторических веток 27.11.2026 и автоматизированный одноразовый archive-before-delete: [политика](docs/BRANCH_RETENTION_POLICY.md), [workflow](.github/workflows/prune-audited-branches.yml), [скрипт](scripts/prune-audited-branches.mjs). По завершении КАЖДОЙ крупной задачи повторно сверять список refs GitHub и оставлять только `bonaqu_projects`, кроме активно проверяемых временных PR-веток.
 
 ## Источники данных, D1 и сохранения
 
