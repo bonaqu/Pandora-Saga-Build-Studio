@@ -10,6 +10,12 @@
 - Согласованное обновление версий — `scripts/release-version.mjs`: `package.json`, `site-version.json`, `index.html`, JS/CSS cache keys, OG/X-превью, `ROADMAP.md`, `CHANGELOG.md`. Историю релизов хранить в `docs/changelog/`, не раздувать корневые README/ROADMAP/CHANGELOG.
 - Дополнительно: [операционные правила](docs/REPOSITORY_OPERATIONS_AND_FAST_DELIVERY.md), [архитектура](docs/STUDIO_ARCHITECTURE.md), [UX](docs/APPROVED_UI_UX_GUIDELINES.md).
 
+## Обязательная гигиена веток
+
+- **Единственная постоянная ветка — `bonaqu_projects`.** Рабочие PR-ветки допустимы только временно: обязательные Node/Chromium, merge, подтверждение публикации, затем **обязательная проверка удаления head-ветки**. Не считать включённый GitHub auto-delete доказательством её удаления.
+- Не оставлять orphan-ветки после завершения или прерывания работы. Для закрытых/необъединённых PR сначала зафиксировать точный HEAD SHA, статус PR и сохранить уникальные коммиты в Git archive tag; только затем безопасно удалить ref. Открытые PR, SHA-изменения и production main удалять запрещено.
+- Аудит 29 исторических веток 27.11.2026 и автоматизированный одноразовый archive-before-delete: [политика](docs/BRANCH_RETENTION_POLICY.md), [workflow](.github/workflows/prune-audited-branches.yml), [скрипт](scripts/prune-audited-branches.mjs). По завершении КАЖДОЙ крупной задачи повторно сверять список refs GitHub и оставлять только `bonaqu_projects`, кроме активно проверяемых временных PR-веток.
+
 ## Источники данных, D1 и сохранения
 
 - **Публичный сайт работает только после полной проверки актуального снимка Cloudflare D1.** Нет публичного offline/archive fallback, Service Worker-кэша каталога или расчётов на неподтверждённых данных. `localhost`/`127.0.0.1` — изолированные тестовые fixture-среды, не альтернативный источник для игроков.
