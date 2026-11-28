@@ -55,15 +55,19 @@ test('a set must own both its root identity and canonical equipped items',()=>{
 
 test('guild enhancement ranks require explicit integer numbers',()=>{
  const effects={health:{hp:0,mp:0},percent:{hp:[],mp:[]}};
- for(const rank of [true,false,'2',[2],{value:2},NaN,2.5])
+ for(const rank of [true,false,[2],{value:2},NaN,2.5,'0x2','2e0','2.0',''])
   assert.equal(C.bonusFor('hp',1000,effects,{guildHp:rank}),null,
    'false rank '+String(rank));
+ assert.equal(C.bonusFor('hp',1000,effects,{guildHp:'2'}).guild,40,
+  'legacy decimal text must preserve known rank');
  for(let rank=0;rank<=6;rank++)
   assert.equal(C.bonusFor('hp',1000,effects,{guildHp:rank}).guildRate,
    C.guildRates[rank]);
- for(const rank of [true,false,'5',[5],{},NaN])
+ for(const rank of [true,false,[5],{},NaN,'0x5','5e0','5.0',''])
   assert.equal(C.attributeBuffBonus({guildAll:rank}),null,
    'false all-attribute rank '+String(rank));
+ assert.equal(C.attributeBuffBonus({guildAll:'5'}).flat.vit,5,
+  'verified legacy rank in decimal text must remain valid');
  for(let rank=0;rank<=5;rank++)
   assert.equal(C.attributeBuffBonus({guildAll:rank}).flat.str,rank);
 });
@@ -74,7 +78,9 @@ test('a malformed guild level cannot create character EXP rewards',()=>{
   allocation:{vit:0,str:0,agi:0,dex:0,spi:0,int:0},
   combatContext:{jobKey:'WARRIOR',skillCatalog:{}}};
  const exp=attrs=>C.base({...base,attributeBuffs:attrs}).experienceBonus.entries;
- assert.deepEqual(exp({guildLevel:'6'}),exp({guildLevel:0}));
+ assert.deepEqual(exp({guildLevel:'6'}),exp({guildLevel:6}),
+  'legacy level text retains its verified passive');
+ assert.deepEqual(exp({guildLevel:'6e0'}),exp({guildLevel:0}));
  assert.deepEqual(exp({guildLevel:true}),exp({guildLevel:0}));
  assert.ok(exp({guildLevel:6}).some(e=>e.percent===4));
  for(const key of ['guildExperience','guildMagicReduction','guildPhysicalReduction']){
