@@ -43,7 +43,7 @@ function evidenceRevision(catalog,classes,id){
   for(const job of Object.keys(skill.classes||{}))jobs.add(job);
   if(Number.isSafeInteger(skill.prereq)&&skill.prereq>0)
    pending.push(skill.prereq);
-  for(const fx of skill.funcs||[]){
+  for(const fx of Array.isArray(skill.funcs)?skill.funcs:[]){
    if(!evidenceLinkKinds.has(fx?.ep))continue;
    const target=fx.fv1?.[3];
    if(Number.isSafeInteger(target)&&target>0)pending.push(target);
@@ -55,8 +55,21 @@ function evidenceRevision(catalog,classes,id){
 // Official November 13 game patch: source-pinned gameplay explanations.
 // These are mechanics verified in news #9, NOT calculated final damage.
 function officialPatchNotes(skill,catalog){
- const id=Number(skill?.id),effects=skill?.funcs||[];
- const has=ep=>effects.some(x=>x.ep===ep);
+ const id=Number(skill?.id),effects=Array.isArray(skill?.funcs)?skill.funcs:[];
+ const has=ep=>effects.some(x=>x?.ep===ep);
+ // Linked source-only claims need the exact canonical child, not merely a
+ // similarly shaped record placed under its map key.
+ const childHas=(target,ep)=>{
+  const child=catalog?.[String(target)];
+  return child?.id===target&&child.learnable===false&&
+   Array.isArray(child.funcs)&&child.funcs.some(x=>x?.ep===ep);
+ };
+ // Comparative release notes must retain their verified original duration.
+ const previous=(target,cast,cooldown=null)=>{
+  const parent=catalog?.[String(target)];
+  return parent?.id===target&&parent.learnable===true&&
+   parent.cast===cast&&(cooldown===null||parent.cooldown===cooldown);
+ };
  const note=(ru,en)=>[{ru,en,editorialKey:'osPatch'+id}],none=[];
  if([320006001,320006002].includes(id)&&skill.name==='Воодушевление'&&
     skill.skillType==='ALLY'&&has('EP_SKILL_DELAY_FIN'))
@@ -67,28 +80,33 @@ function officialPatchNotes(skill,catalog){
   return note('Во время действия этой песни теперь разрешено использовать зелья.',
    'Potions can now be used while this song is active.');
  if(id===440009001&&skill.name==='Немая буря'&&
-    effects.some(x=>x.ep==='EP_SKILL_EXEC'&&x.fv1?.[3]===440009002)&&
-    catalog?.['440009002']?.funcs?.some(x=>x.ep==='EP_DESTINED_KNOCKBACK'))
+    effects.some(x=>x?.ep==='EP_SKILL_EXEC'&&x.fv1?.[3]===440009002)&&
+    childHas(440009002,'EP_DESTINED_KNOCKBACK'))
   return note('Умение периодически стягивает противников к центру. Число срабатываний зависит от мастерства и достигает трёх при 87 ед. мастерства. Потеря ОМ за одно срабатывание уменьшена.',
    'This skill periodically pulls enemies toward the center. The number of triggers scales with mastery, reaching three at 87 mastery. MP loss per trigger was reduced.');
  if(id===440011001&&skill.name==='Чума'&&skill.skillType==='ENEMY'&&
-    effects.some(x=>x.ep==='EP_SKILL_EXEC'&&x.fv1?.[3]===440011002))
+    effects.some(x=>x?.ep==='EP_SKILL_EXEC'&&x.fv1?.[3]===440011002)&&
+    childHas(440011002,'EP_CAUSE_EVIL')&&
+    childHas(440011002,'EP_CAUSE_DISEASE'))
   return note('Умение теперь применяется на выбранного противника.',
    'This skill now targets a selected enemy.');
  if(id===420004002&&skill.name==='По следам ветра'&&
     skill.charLevel===50&&skill.prereq===420004001&&skill.cast===1&&
-    skill.classes?.CONJURER===1&&has('EP_ALL_RESISTANCE_CONST'))
+    skill.classes?.CONJURER===1&&has('EP_ALL_RESISTANCE_CONST')&&
+    previous(420004001,5))
   return note('Улучшенная версия Заклинателя с 50-го уровня: подготовка 1 с вместо 5 с; дополнительное сопротивление стихиям растёт с Духом (СД). Точное итоговое сопротивление проверяйте в расчётах персонажа.',
    'Conjurer level-50 upgrade: 1 s cast instead of 5 s; additional elemental resistance scales with Spirit. See character calculations for the actual result.');
  if(id===420005002&&skill.name==='Летящее лезвие'&&
     skill.charLevel===50&&skill.prereq===420005001&&
-    skill.cast===2&&skill.cooldown===12)
+    skill.cast===2&&skill.cooldown===12&&skill.classes?.CONJURER===1&&
+    previous(420005001,3.5,10))
   return note('Улучшенная версия Заклинателя с 50-го уровня: подготовка 2 с вместо 3,5 с; перезарядка 12 с вместо 10 с.',
    'Conjurer level-50 upgrade: cast reduced from 3.5 s to 2 s; cooldown increased from 10 s to 12 s.');
  if(id===420007101&&skill.name==='Песчаная буря'&&
     skill.charLevel===50&&skill.prereq===420007001&&skill.cast===4&&
-    effects.some(x=>x.ep==='EP_SKILL_EXEC'&&x.fv1?.[3]===420007102)&&
-    catalog?.['420007102']?.funcs?.some(x=>x.ep==='EP_ELEMENT_DAMAGE'))
+    effects.some(x=>x?.ep==='EP_SKILL_EXEC'&&x.fv1?.[3]===420007102)&&
+    childHas(420007102,'EP_ELEMENT_DAMAGE')&&
+    previous(420007001,7))
   return note('На 50-м уровне Заклинателю доступна усиленная версия: время подготовки 4 с вместо 7 с и повышенный урон.',
    'At level 50, Conjurer gains an improved version with a 4 s cast instead of 7 s and increased damage.');
  return none;
@@ -628,7 +646,8 @@ function sourceLinkedEvidence(skill,catalog,classes){
 function inspect({skillCatalog,classes,id,calculator}={}){
  const skill=skillCatalog?.[String(id)];
  if(!skill||skill.id!==Number(id)||!skill.learnable||
-  !classes||typeof classes!=='object'||!calculator)return null;
+  !Array.isArray(skill.funcs)||!classes||typeof classes!=='object'||
+  !calculator)return null;
  const revision=evidenceRevision(skillCatalog,classes,skill.id);
  const old=cache.get(skillCatalog);
  if(old?.classes===classes&&old?.calculator===calculator){
