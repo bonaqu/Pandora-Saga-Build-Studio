@@ -1142,26 +1142,31 @@ function defensiveSkillPreview({skillCatalog=null,jobKey=null,level=1,
  branchMasteries={},weaponKind='BARE_HAND',hasShield=false,
  branchLabels={},englishBranches={}}={}){
  if(!skillCatalog||typeof skillCatalog!=='object'||typeof jobKey!=='string'||
-  !Number.isInteger(level)||level<1)return [];
+  !Number.isSafeInteger(level)||level<1||level>plannerMaxLevel())return [];
  return defensivePreviewSkillIds.flatMap(id=>{
   const record=skillCatalog[String(id)];
   if(!record||record.id!==id||record.classes?.[jobKey]!==1||
+   !Number.isSafeInteger(record.charLevel)||record.charLevel<0||
+   record.charLevel>plannerMaxLevel()||
    !Array.isArray(record.funcs)||!Array.isArray(record.reqs)||
+   !record.reqs.every(req=>req&&typeof req.branch==='string'&&
+    req.branch.length>0&&Number.isSafeInteger(req.amount)&&req.amount>=0)||
+   (record.weaponUse!=null&&!Array.isArray(record.weaponUse))||
    !['MYSELF','TOGGLE','PASSIVE'].includes(record.skillType))return [];
   const effects=(record.funcs||[]).filter(f=>f?.dir==='TARGET'&&
    defensiveEffectIds.has(f.ep));
   if(!effects.length)return [];
   const reasons=[],reasonsEn=[];
-  if(Number(record.charLevel||0)>level){
+  if(record.charLevel>level){
    reasons.push('Требуется уровень '+record.charLevel);
    reasonsEn.push('Requires level '+record.charLevel);
   }
-  for(const req of record.reqs||[]){
-   if(!req||typeof req.branch!=='string'||!Number.isInteger(req.amount))continue;
-   if(Number(branchMasteries?.[req.branch]||0)<req.amount){
+  for(const req of record.reqs){
+   const mastery=branchMasteries?.[req.branch];
+   if(!Number.isSafeInteger(mastery)||mastery<req.amount){
     reasons.push('Требуется мастерство «'+
-     (branchLabels[req.branch]||req.branch)+'»: '+req.amount);
-    reasonsEn.push('Requires '+(englishBranches[req.branch]||req.branch)+
+     (branchLabels?.[req.branch]||req.branch)+'»: '+req.amount);
+    reasonsEn.push('Requires '+(englishBranches?.[req.branch]||req.branch)+
      ' mastery '+req.amount);
    }
   }
@@ -1177,7 +1182,7 @@ function defensiveSkillPreview({skillCatalog=null,jobKey=null,level=1,
    reasons.push('Необходимо экипировать щит');
    reasonsEn.push('A shield must be equipped');
   }
-  if(record.learnable===false||record.prereq!=null){
+  if(record.learnable!==true||record.prereq!=null){
    reasons.push('Изучение умения не подтверждено');
    reasonsEn.push('Skill learning not confirmed');
   }
@@ -2361,7 +2366,8 @@ function incredibleStrengthPreview({skillCatalog=null,jobKey=null,level=null}={}
  const skill=skillCatalog?.['910110001'];
  if(!skill||skill.id!==910110001||skill.skillType!=='PASSIVE'||
   skill.learnable!==true||skill.classes?.[jobKey]!==1||
-  !Number.isInteger(level)||level<skill.charLevel||
+  !Number.isSafeInteger(level)||level<1||level>plannerMaxLevel()||
+  level<skill.charLevel||
   !Array.isArray(skill.reqs)||skill.reqs.length!==0||
   !Array.isArray(skill.funcs)||skill.funcs.length!==1)return null;
  const row=skill.funcs[0];
@@ -3360,6 +3366,7 @@ function healingSourceGate({id,cleric,jobKey,level,benevolence,benevolenceCap,
   cleric&&spec?.cleric?spec.cleric:(spec?.standard||[]);
  const skill=skillCatalog?.[String(skillId)];
  if(!skill||skill.id!==skillId||skill.skillType!==type||
+  skill.branch!=='benevolence'||skill.branchRaw!=='PRAYER_HEALING'||
   !Number.isInteger(benevolenceCap)||benevolenceCap<0||
   !Number.isInteger(benevolence)||benevolence<0||
   benevolence>benevolenceCap||requiredMastery>benevolenceCap||
@@ -3379,10 +3386,36 @@ function healingSourceGate({id,cleric,jobKey,level,benevolence,benevolenceCap,
    !safeHealingFV(effect.fv1))||
   !Array.isArray(effect.fv2)||effect.fv2.length!==4||
   effect.fv2.some((n,i)=>n!==expectedFV2[i]))return null;
- if(prereq!=null&&!skillCatalog?.[String(prereq)])return null;
+ if(prereq!=null){
+  // Enhanced CLERIC heals must reference a genuine learnable root, not
+  // just a truthy object under the expected catalog key.
+  const previous=skillCatalog?.[String(prereq)],standard=spec.standard;
+  if(!Array.isArray(standard)||prereq!==standard[0]||
+   previous?.id!==prereq||previous.learnable!==true||
+   previous.prereq!==null||previous.skillType!==type||
+   previous.branch!=='benevolence'||
+   previous.branchRaw!=='PRAYER_HEALING'||
+   previous.classes?.[jobKey]!==1||
+   previous.charLevel!==standard[2]||
+   !Array.isArray(previous.reqs)||
+   previous.reqs.length!==(standard[3]?1:0)||
+   (standard[3]&&(previous.reqs[0]?.branch!=='benevolence'||
+    previous.reqs[0]?.amount!==standard[3]))||
+   !Array.isArray(previous.funcs)||previous.funcs.length!==1||
+   previous.funcs[0]?.ep!==spec.ep||
+   previous.funcs[0].dir!=='TARGET'||
+   !safeHealingFV(previous.funcs[0].fv1)||
+   JSON.stringify(previous.funcs[0].fv2)!=='[0,0,0,0]')return null;
+ }
  if(id==='sanctuary'){
   const linked=skillCatalog?.['310023002'];
-  if(linked?.id!==310023002||!Array.isArray(linked.funcs)||
+  if(linked?.id!==310023002||linked.learnable!==true||
+   linked.skillType!=='SPHERE'||linked.branch!=='benevolence'||
+   linked.branchRaw!=='PRAYER_HEALING'||linked.prereq!==null||
+   linked.charLevel!==0||!linked.classes||
+   typeof linked.classes!=='object'||Array.isArray(linked.classes)||
+   Object.keys(linked.classes).length!==0||
+   !Array.isArray(linked.funcs)||
    linked.funcs.length!==1||linked.funcs[0]?.ep!=='EP_HEAL_LIFE'||
    linked.funcs[0].dir!=='TARGET'||
    !safeHealingFV(linked.funcs[0].fv1)||
