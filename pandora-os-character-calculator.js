@@ -2379,8 +2379,9 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const secondary=secondaryEffectsPreview({records,itemForth});
  if(!defense||!equipped||!secondary)return null;
  const actives=activeCombatSkills({selected:combatBuffs,jobKey,level,skillCatalog,weapon,branchMasteries,
-  hasShield:records.some(([source,record])=>String(source).startsWith('item:')&&
-   record?.slot==='shield')});
+  hasShield:Array.isArray(records)&&records.some(tuple=>
+   Array.isArray(tuple)&&tuple.length>=3&&
+   String(tuple[0]).startsWith('item:')&&tuple[1]?.slot==='shield')});
  const supportSkills=supportSkillAvailability({selected:combatBuffs,skillCatalog,jobKey,level,
   branchMasteries});
  const supportSkillValues=Object.fromEntries(Object.keys(supportSkillIds).map(kind=>
@@ -4396,8 +4397,11 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  unisonCatalog=null,supplementalFlat={},supplementalSource=null,
  enhancements={},attributeBuffs={},potionContext={},combatContext={},gemSelections=[]}={}){
  if(!classData||!raceData||!jobData||!Number.isInteger(level)||level<1||level>plannerMaxLevel())return null;
- const unison=unisonPreview({records,catalog:unisonCatalog});
- const combinedRecords=[...records,...unison.supplemental];
+ // Older or partially restored builds may supply a null/non-array gear list.
+ // Normalize only the outer container; preserve each valid tuple unchanged.
+ const equippedRecords=Array.isArray(records)?records:[];
+ const unison=unisonPreview({records:equippedRecords,catalog:unisonCatalog});
+ const combinedRecords=[...equippedRecords,...unison.supplemental];
  const effects=gatherEffects(combinedRecords,itemForth),basic={},stats={},extra=attributeBuffBonus(attributeBuffs,{externalPriest:combatContext.externalPriest,skillCatalog:combatContext.skillCatalog});
  if(!extra)return null;
  for(const key of keys){
