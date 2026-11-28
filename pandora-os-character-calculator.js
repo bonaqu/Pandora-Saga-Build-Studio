@@ -190,8 +190,13 @@ function unisonPreview({records=[],catalog=null}={}){
   const matched=companionIds.filter(key=>equipped.has(key));
   const effects=[],conditions=[];
   for(const row of set.rows){
-   if(!Number.isInteger(row.minC)||!Number.isInteger(row.maxC)||
-    !Number.isInteger(row.minL)||!Number.isInteger(row.maxL)||
+   // A damaged/partial set entry is not an implicit grade-0 bonus. Ignore
+   // only that row, retaining independently verified companion effects.
+   if(!row||typeof row!=='object'||Array.isArray(row)||
+    !Number.isSafeInteger(row.minC)||!Number.isSafeInteger(row.maxC)||
+    !Number.isSafeInteger(row.minL)||!Number.isSafeInteger(row.maxL)||
+    row.minC<0||row.minC>row.maxC||row.maxC>companionIds.length||
+    row.minL<0||row.minL>row.maxL||row.maxL>10||
     count<row.minC||count>row.maxC||
     root.grade<row.minL||root.grade>row.maxL)continue;
    const a=row.a,b=row.b;
@@ -221,7 +226,11 @@ function unisonPreview({records=[],catalog=null}={}){
 function gatherEffects(records=[],itemForth=null){
  const flat=Object.fromEntries(keys.map(k=>[k,0]));
  const health={hp:0,mp:0},percent={hp:[],mp:[]},bonuses={},ignored=new Set(),trace=[];
- for(const [source,record,grade] of records){
+ // Imported, saved and catalog-backed lists must not let one malformed
+ // tuple interrupt every other legitimate numeric character effect.
+ for(const tuple of Array.isArray(records)?records:[]){
+  if(!Array.isArray(tuple)||tuple.length<3)continue;
+  const [source,record,grade]=tuple;
   for(const eff of sourceEffects(source,record,grade,itemForth)){
    if(Number.isFinite(eff.min)&&grade<eff.min)continue;
    if(Number.isFinite(eff.max)&&grade>eff.max)continue;
