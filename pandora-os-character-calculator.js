@@ -3460,7 +3460,11 @@ function statusCurePreview({items=null,skills=null}={}){
  const rows=[];
  for(const [key,item] of Object.entries(items)){
   const id=Number(key);
-  if(!Number.isSafeInteger(id)||id<0||!item||!Array.isArray(item.effects))continue;
+  // Keys with leading zeros and a mismatched owned item ID are not catalog
+  // identities; ID-less synthetic fixtures remain usable in isolated tests.
+  if(!Number.isSafeInteger(id)||id<0||String(id)!==key||!item||
+   (Object.hasOwn(item,'id')&&(!Number.isSafeInteger(item.id)||item.id!==id))||
+   !Array.isArray(item.effects))continue;
   const targeted=item.effects.filter(e=>e?.dir==='TARGET');
   const conditions=[...new Set(targeted.filter(e=>
    Object.hasOwn(statusCureCodes,e.func)).map(e=>statusCureCodes[e.func]))];
@@ -3468,9 +3472,15 @@ function statusCurePreview({items=null,skills=null}={}){
    Object.hasOwn(statusCureCodesEn,e.func)).map(e=>statusCureCodesEn[e.func]))];
   // An on-use item can trigger a cleansing skill instead of having an
   // EP_RECOVERY_* modifier. Only a resolved EP_REMOVE_BAD_EFFECT proves it.
-  if(targeted.some(e=>e.func==='EP_SKILL_EXEC'&&
-   Number.isSafeInteger(e.a)&&skills?.[String(e.a)]?.funcs?.some(f=>
-    f.ep==='EP_REMOVE_BAD_EFFECT'&&f.dir==='TARGET'))){
+  // A swapped linked skill ID or malformed effect list must never promise
+  // a cleansing result that the published skill actually cannot provide.
+  const resolvesCure=id=>{
+   if(!Number.isSafeInteger(id)||id<1)return false;
+   const skill=skills?.[String(id)];
+   return skill?.id===id&&Array.isArray(skill.funcs)&&
+    skill.funcs.some(f=>f?.ep==='EP_REMOVE_BAD_EFFECT'&&f.dir==='TARGET');
+  };
+  if(targeted.some(e=>e?.func==='EP_SKILL_EXEC'&&resolvesCure(e.a))){
    conditions.push('Один отрицательный эффект');
    conditionsEn.push('One negative status effect');
   }
@@ -3514,7 +3524,7 @@ function consumableSkillPreview({items=null,skills=null}={}){
   !skills||typeof skills!=='object'||Array.isArray(skills))return {rows,verified:false};
  for(const [key,item] of Object.entries(items)){
   const id=Number(key);
-  if(!Number.isSafeInteger(id)||id<0||item?.id!==id||
+  if(!Number.isSafeInteger(id)||id<0||String(id)!==key||item?.id!==id||
    !['POTION','BALM'].includes(item.kind)||!Array.isArray(item.effects))continue;
   const triggered=[],seen=new Set();
   for(const effect of item.effects){
@@ -3522,7 +3532,7 @@ function consumableSkillPreview({items=null,skills=null}={}){
     effect.dir!=='TARGET'||!Number.isSafeInteger(effect.a)||
     effect.a<1||seen.has(effect.a))continue;
    const skill=skills[String(effect.a)];
-   if(!skill||Number(skill.id)!==effect.a||typeof skill.name!=='string'||
+   if(!skill||skill.id!==effect.a||typeof skill.name!=='string'||
     !skill.name.trim()||!Array.isArray(skill.funcs))continue;
    triggered.push({id:effect.a,name:skill.name});
    seen.add(effect.a);
@@ -3547,14 +3557,16 @@ function consumableSkillPreview({items=null,skills=null}={}){
 
 function consumableRecoveryPreview({items=null,maxHp=null,maxMp=null,potionRate=null,
  applyHpPotionBonus=false}={}){
- if(!items||typeof items!=='object'||!Number.isFinite(maxHp)||maxHp<0||
+ if(!items||typeof items!=='object'||Array.isArray(items)||
+  !Number.isFinite(maxHp)||maxHp<0||
   !Number.isFinite(maxMp)||maxMp<0||
   (applyHpPotionBonus&&(!Number.isFinite(potionRate)||potionRate<0)))return null;
  const rows=[],healthRows=[],allRows=[];
  for(const [key,item] of Object.entries(items)){
   const id=Number(key);
-  if(!Number.isSafeInteger(id)||id<0||item?.kind!=='POTION'||
-   !Array.isArray(item.effects))continue;
+  if(!Number.isSafeInteger(id)||id<0||String(id)!==key||
+   (Object.hasOwn(item,'id')&&(!Number.isSafeInteger(item.id)||item.id!==id))||
+   item?.kind!=='POTION'||!Array.isArray(item.effects))continue;
   const effects=[];
   let hp=0,mp=0;
   for(const effect of item.effects){
