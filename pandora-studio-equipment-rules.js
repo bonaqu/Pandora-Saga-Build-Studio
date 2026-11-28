@@ -14,23 +14,40 @@ function branchCap(classes,job,branch){
 }
 function readiness(skill,{job,level,points}={}){
 const missing=[],unknown=[],gates=[];
-if(!skill)return{status:"unknown",missing,unknown:["Нет данных навыка"],gates};
-if(skill.classes&&!Object.hasOwn(skill.classes,job))missing.push("Недоступно этому классу");
-if(n(skill.charLevel)>n(level))missing.push("Уровень "+skill.charLevel);
+if(!skill||typeof skill!=='object'||Array.isArray(skill)||
+ !Number.isSafeInteger(skill.id)||skill.id<=0)
+ return{status:"unknown",missing,unknown:["Нет данных навыка"],gates};
+if(!skill.classes||typeof skill.classes!=='object'||
+ Array.isArray(skill.classes)||!Object.hasOwn(skill.classes,job)||
+ skill.classes[job]!==1)missing.push("Недоступно этому классу");
+if(!Number.isSafeInteger(skill.charLevel)||skill.charLevel<0)
+ unknown.push("Некорректный уровень навыка");
+else if(!Number.isSafeInteger(level)||level<1)
+ unknown.push("Некорректный уровень героя");
+else if(skill.charLevel>level)missing.push("Уровень "+skill.charLevel);
 if(Array.isArray(skill.reqs))for(const req of skill.reqs){
-if(!req||typeof req.branch!=="string"||!Number.isFinite(Number(req.amount))){unknown.push("Неизвестное требование ветки");continue}
-const current=n(points?.[req.branch]),required=n(req.amount);
+if(!req||typeof req.branch!=='string'||!req.branch.trim()||
+ !Number.isSafeInteger(req.amount)||req.amount<0){
+ unknown.push("Неизвестное требование ветки");continue;
+}
+const raw=points?.[req.branch],current=raw==null?0:raw,required=req.amount;
+if(!Number.isSafeInteger(current)||current<0){
+ unknown.push("Некорректное мастерство ветки");continue;
+}
 gates.push({branch:req.branch,current,required,met:current>=required});
 if(current<required)missing.push(req.branch+" "+current+"/"+required);
-}else if(skill.reqs!=null)unknown.push("Неизвестный формат требований");
-if(skill.learnable===false)unknown.push("Не изучается обычным распределением очков");
+}else unknown.push("Неизвестный формат требований");
+if(skill.learnable!==true)unknown.push("Не изучается обычным распределением очков");
 if(skill.prereq)unknown.push("Дополнительное условие не проверено");
-if(n(skill.reqLevel)>0)unknown.push("Требование reqLevel ещё не подтверждено");
+if(!Number.isSafeInteger(skill.reqLevel)||skill.reqLevel<0||
+ skill.reqLevel>0)unknown.push("Требование reqLevel ещё не подтверждено");
 return {status:missing.length?"locked":unknown.length?"unknown":"eligible",missing,unknown,gates};
 }
 function equipment(item,{job,level,slot}={}){
 const missing=[];if(!item)return{allowed:false,missing:["Нет данных"]};
-if(item.slot&&slot&&item.slot!==slot)missing.push("Другой слот");
+// A caller choosing an equipment slot cannot equip a record with NO slot
+ // (e.g. consumables or unrelated mount items), regardless of class flags.
+ if(slot&&item.slot!==slot)missing.push("Другой слот");
 // An absent or falsified class/level field must not grant an item to a hero.
 // A null required item level is the explicit level-free form (e.g. arrows).
 if(!item.classes||typeof item.classes!=='object'||Array.isArray(item.classes)||
