@@ -1581,7 +1581,8 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  const validStat=key=>Number.isFinite(stats[key])&&stats[key]>=0;
  const skill=id=>skillCatalog[String(id)];
  const exact=(record,ep,values)=>{
-  const rows=(record?.funcs||[]).filter(f=>f?.dir==='TARGET'&&f.ep===ep);
+  const rows=(Array.isArray(record?.funcs)?record.funcs:[]).filter(f=>
+   f?.dir==='TARGET'&&f.ep===ep);
   return rows.length===1&&Array.isArray(rows[0].fv1)&&
    rows[0].fv1.length===4&&rows[0].fv1.every((n,i)=>n===values[i])&&
    Array.isArray(rows[0].fv2)&&rows[0].fv2.length===4&&
@@ -1611,7 +1612,9 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  // the known Remaked coefficient families. Unknown server rounding/stacking is
  // explicitly NOT asserted: these models never feed character/combat totals.
  const coefficientModel=(id,ep,statKey,branch,labelRu,labelEn,unit='')=>{
-  const matches=(skill(id)?.funcs||[]).filter(f=>f?.ep===ep&&f?.dir==='TARGET');
+  const funcs=skill(id)?.funcs;
+  const matches=(Array.isArray(funcs)?funcs:[]).filter(f=>
+   f?.ep===ep&&f?.dir==='TARGET');
   if(matches.length!==1)return null;
   const f=matches[0],v=f.fv1;
   if(!Array.isArray(v)||v.length!==4||
@@ -1798,7 +1801,7 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
    predecessor?.branchRaw===record?.branchRaw&&
    predecessor?.skillType===record?.skillType&&
    predecessor?.classes?.[jobKey]===1;
-  if(!record||Number(record.id)!==id||record.learnable!==true||
+  if(!record||record.id!==id||record.learnable!==true||
    !sourceChainValid||!Array.isArray(record.reqs)||
    !Array.isArray(record.funcs)||
    !(options.completeSourceProof===true||required.every(([ep,coeff])=>
@@ -2747,7 +2750,7 @@ function battleMapCloakPreview({records=[],skills=null,itemForth=null}={}){
    desc.includes('Resistance to all damage types +'+expected.resistance+
     ', Magic +'+expected.magic+'.')))continue;
   const skill=skills[String(skillId)];
-  if(!skill||Number(skill.id)!==skillId||!Array.isArray(skill.funcs))continue;
+  if(!skill||skill.id!==skillId||!Array.isArray(skill.funcs))continue;
   const effects={
    EP_ABILITY_ALL_CONST:expected.all,
    EP_ARMORCLASS_CONST:expected.armor,
@@ -2759,7 +2762,7 @@ function battleMapCloakPreview({records=[],skills=null,itemForth=null}={}){
   };
   if(skill.funcs.length!==Object.keys(effects).length||
    Object.entries(effects).some(([ep,value])=>{
-    const found=skill.funcs.filter(row=>row.ep===ep&&row.dir==='TARGET');
+    const found=skill.funcs.filter(row=>row?.ep===ep&&row.dir==='TARGET');
     return found.length!==1||found[0].fv1?.[3]!==value;
    }))continue;
   entries.push({source:String(record.name||source),itemId:record.id,skillId,
@@ -3320,7 +3323,7 @@ function healingSourceGate({id,cleric,jobKey,level,benevolence,benevolenceCap,
  const [skillId,type,requiredLevel,requiredMastery,prereq]=
   cleric&&spec?.cleric?spec.cleric:(spec?.standard||[]);
  const skill=skillCatalog?.[String(skillId)];
- if(!skill||Number(skill.id)!==skillId||skill.skillType!==type||
+ if(!skill||skill.id!==skillId||skill.skillType!==type||
   !Number.isInteger(benevolenceCap)||benevolenceCap<0||
   !Number.isInteger(benevolence)||benevolence<0||
   benevolence>benevolenceCap||requiredMastery>benevolenceCap||
@@ -3333,7 +3336,7 @@ function healingSourceGate({id,cleric,jobKey,level,benevolence,benevolenceCap,
   !Array.isArray(skill.funcs)||skill.funcs.length!==1)return null;
  const effect=skill.funcs[0];
  const expectedFV2=id==='restoration'?[0,0,0,2]:[0,0,0,0];
- if(effect.ep!==spec.ep||effect.dir!=='TARGET'||
+ if(effect?.ep!==spec.ep||effect.dir!=='TARGET'||
   !Array.isArray(effect.fv1)||effect.fv1.length!==4||
   (id==='sanctuary'?
    JSON.stringify(effect.fv1)!=='[0,0,0,310023002]':
@@ -3343,8 +3346,8 @@ function healingSourceGate({id,cleric,jobKey,level,benevolence,benevolenceCap,
  if(prereq!=null&&!skillCatalog?.[String(prereq)])return null;
  if(id==='sanctuary'){
   const linked=skillCatalog?.['310023002'];
-  if(Number(linked?.id)!==310023002||!Array.isArray(linked.funcs)||
-   linked.funcs.length!==1||linked.funcs[0].ep!=='EP_HEAL_LIFE'||
+  if(linked?.id!==310023002||!Array.isArray(linked.funcs)||
+   linked.funcs.length!==1||linked.funcs[0]?.ep!=='EP_HEAL_LIFE'||
    linked.funcs[0].dir!=='TARGET'||
    !safeHealingFV(linked.funcs[0].fv1)||
    JSON.stringify(linked.funcs[0].fv2)!=='[0,0,0,0]')return null;
