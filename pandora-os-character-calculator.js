@@ -253,14 +253,23 @@ function gatherEffects(records=[],itemForth=null){
  }
  return {flat,health,percent,bonuses,ignored:[...ignored],trace};
 }
+// Old browser drafts may store integer ranks as decimal text. Parse only
+// canonical decimal integers; never coerce booleans, arrays, objects, hex,
+ // exponent notation or fractions into granted skill/passive levels.
+function guildRank(raw){
+ if(Number.isSafeInteger(raw))return raw;
+ if(typeof raw!=='string'||!/^(?:0|[1-9][0-9]*)$/.test(raw.trim()))return null;
+ const n=Number(raw.trim());
+ return Number.isSafeInteger(n)?n:null;
+}
 function bonusFor(kind,base,effects,enhancements){
  const flat=effects.health[kind];
  const percentParts=effects.percent[kind].map(p=>({
   source:p.source,rate:p.value,amount:Math.floor(base*p.value/100)
  }));
- const level=enhancements?.[kind==='hp'?'guildHp':'guildMp']??0;
- // An imported boolean, numeric string or array is not a verified rank.
- if(!Number.isSafeInteger(level)||level<0||level>=guildRates.length)return null;
+ const level=guildRank(enhancements?.[kind==='hp'?'guildHp':'guildMp']??0);
+ // Retain legacy decimal text, never coerce booleans or arrays to levels.
+ if(level===null||level<0||level>=guildRates.length)return null;
  const guildRate=guildRates[level];
  const guild=Math.floor(base*guildRate/100);
  const lifeSign=kind==='hp'&&enhancements?.lifeSign===true?
@@ -2595,8 +2604,8 @@ function attributeBuffBonus(options={},context={}){
  const out=Object.fromEntries(keys.map(k=>[k,0])),trace=[];
  const selected=selectedHonor(options);
  if(!selected)return null;
- const guild=options.guildAll??0;
- if(!Number.isSafeInteger(guild)||guild<0||guild>5)return null;
+ const guild=guildRank(options.guildAll??0);
+ if(guild===null||guild<0||guild>5)return null;
  if(guild){
   for(const key of keys)out[key]+=guild;
   trace.push({source:'Remaked SelBuffClan_9',amount:guild,keys:keys.slice()});
@@ -4435,15 +4444,15 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  const experienceBonus=experienceBonusPreview({records:combinedRecords,itemForth});
  // Guild passives are selected together at a guild level, not just displayed
  // as a reference. Their mitigation and EXP effects are independent of HP/MP.
- const rawGuildLevel=attributeBuffs?.guildLevel??0;
- const guildLevel=Number.isSafeInteger(rawGuildLevel)&&rawGuildLevel>=0&&
+ const rawGuildLevel=guildRank(attributeBuffs?.guildLevel??0);
+ const guildLevel=rawGuildLevel!==null&&rawGuildLevel>=0&&
   rawGuildLevel<=12?rawGuildLevel:0;
  const guildPassives=guildPassiveAtLevel(guildLevel);
  // Manual mode lets players choose every passive independently. Use the
  // published OS guild-skill ranks; automatic mode uses the Remaked unlocks.
  const guildManualRate=(key,values)=>{
-  const rank=attributeBuffs?.[key]??0;
-  return Number.isSafeInteger(rank)&&rank>=0&&rank<values.length?values[rank]:0;
+  const rank=guildRank(attributeBuffs?.[key]??0);
+  return rank!==null&&rank>=0&&rank<values.length?values[rank]:0;
  };
  const guildPhysical=guildLevel>0?(guildPassives?.physicalReduction||0):
   guildManualRate('guildPhysicalReduction',[0,3,6,10]);
