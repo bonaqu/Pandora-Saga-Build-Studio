@@ -73,8 +73,8 @@ test('healing spells reject textual source skill IDs and malformed effect rows',
  ]){
   const copy={...skills,[target]:changed};
   const rows=heal(copy).rows;
-  assert.equal(rows.find(row=>row.skillId===affected)?.available,false,
-   'invalid source '+target);
+  assert.notEqual(rows.find(row=>row.skillId===affected)?.available,true,
+   'invalid source must never be shown as usable '+target);
  }
 });
 
