@@ -17,7 +17,13 @@ test('verified game-patch skill notes have stable owner-editable RU/EN D1 keys',
   id:420007101,name:'Песчаная буря',charLevel:50,prereq:420007001,cast:4,
   funcs:[{ep:'EP_SKILL_EXEC',fv1:[0,0,0,420007102]}]
  };
- const catalog={'420007102':{funcs:[{ep:'EP_ELEMENT_DAMAGE'}]}};
+ // Preserve the genuine parent/child identities that prove this note:
+ // an unrelated skill inserted under the expected catalog key is not enough.
+ const catalog={
+  '420007001':{id:420007001,learnable:true,cast:7},
+  '420007102':{id:420007102,learnable:false,
+   funcs:[{ep:'EP_ELEMENT_DAMAGE'}]}
+ };
  const [note]=inspectWindow.PandoraWikiSkillInsights.officialPatchNotes(sandstorm,catalog);
  assert.equal(note.editorialKey,'osPatch420007101');
  assert.match(note.ru,/повышенный урон/);
