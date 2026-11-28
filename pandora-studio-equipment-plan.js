@@ -78,6 +78,19 @@ function reconcileSoulOwnership(state,equipmentCatalog,soulCatalog){
    if(id==null){delete state.souls[slot];delete state.soulOwners[slot];changed=true}
    continue;
   }
+  // A stale or corrupted catalog entry must not ERASE a player's saved
+  // socket layout. Defer reconciliation until the selected item and Souls
+  // can be identified; independent numeric effects still require their own
+  // canonical IDs before being applied.
+  if(typeof item!=='object'||Array.isArray(item))continue;
+  if(Object.hasOwn(item,'id')&&
+   (!Number.isSafeInteger(item.id)||String(item.id)!==String(id)))continue;
+  if(existing.some(entry=>{
+   const soul=soulCatalog[String(entry.id)];
+   return soul&&(typeof soul!=='object'||Array.isArray(soul)||
+    (Object.hasOwn(soul,'id')&&
+     (!Number.isSafeInteger(soul.id)||String(soul.id)!==String(entry.id))));
+  }))continue;
   const owner=state.soulOwners[slot],cap=equippedSocketCapacity(
    state,Number(slot),equipment,item);
   const validTypes=supportsSoulSlot(item.slot)&&existing.every(entry=>{
