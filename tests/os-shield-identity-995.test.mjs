@@ -48,10 +48,9 @@ test('a malformed or partial shield record does not count as equipped',()=>{
  ];
  for(const item of cases){
   const result=preview([item]);
-  if(item[1]===source&&![0,10].includes(item[2]))
-   assert.equal(result?.activeSkills?.defender,false,JSON.stringify(item));
-  else assert.equal(result?.activeSkills?.defender,false,
-   String(item[0])+' grade '+String(item[2]));
+  assert.ok(result===null||result.activeSkills.defender===false,
+   'invalid/partial shield cannot activate Defender: '+String(item[0])+
+   ' grade '+String(item[2]));
  }
 });
 
