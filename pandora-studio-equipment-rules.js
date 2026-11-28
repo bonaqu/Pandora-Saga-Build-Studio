@@ -24,7 +24,8 @@ if(item.slot&&slot&&item.slot!==slot)missing.push("Другой слот");
 // An absent or falsified class/level field must not grant an item to a hero.
 // A null required item level is the explicit level-free form (e.g. arrows).
 if(!item.classes||typeof item.classes!=='object'||Array.isArray(item.classes)||
-   item.classes[job]!==1)missing.push("Не подходит классу");
+   !Object.hasOwn(item.classes,job)||item.classes[job]!==1)
+ missing.push("Не подходит классу");
 const heroLevelValid=Number.isSafeInteger(level)&&level>=1;
 if(!heroLevelValid)missing.push("Некорректный уровень героя");
 if(item.level!==null&&(!Number.isSafeInteger(item.level)||item.level<0))
