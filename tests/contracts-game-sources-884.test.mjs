@@ -210,7 +210,7 @@ test('unrelated skills never receive the patch-specific claims',()=>{
 const sandbox={window:{}};
 vm.runInNewContext(readFileSync(new URL('../pandora-studio-equipment-rules.js',import.meta.url),'utf8'),sandbox);
 const r=sandbox.window.PandoraStudioRules;
-test('known class and branch requirements',()=>{const s={id:310001002,learnable:true,reqLevel:0,classes:{CLERIC:1},charLevel:20,reqs:[{branch:'brush',amount:8}]};
+test('known class and branch requirements',()=>{const s={id:310001002,learnable:true,reqLevel:0,prereq:null,classes:{CLERIC:1},charLevel:20,reqs:[{branch:'brush',amount:8}]};
 assert.equal(r.readiness(s,{job:'CLERIC',level:50,points:{brush:7}}).status,'locked');
 assert.equal(r.readiness(s,{job:'CLERIC',level:50,points:{brush:8}}).status,'eligible');
 assert.equal(r.readiness(s,{job:'WARRIOR',level:50,points:{brush:8}}).status,'locked');
