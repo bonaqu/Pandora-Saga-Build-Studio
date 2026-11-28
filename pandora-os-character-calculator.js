@@ -1293,7 +1293,7 @@ function directStrikeCoefficientPreview({skillCatalog,jobKey,level,
  const cap=b=>Number(branchCaps?.[b]??0);
  const validRecord=s=>s?.learnable===true&&
   Number.isSafeInteger(s.id)&&s.id>0&&
-  skillCatalog[String(s.id)]===s&&s.classes?.[jobKey]&&
+  skillCatalog[String(s.id)]===s&&s.classes?.[jobKey]===1&&
   typeof s.branch==='string'&&Number.isSafeInteger(cap(s.branch))&&
   cap(s.branch)>0&&
   Array.isArray(s.reqs)&&s.reqs.every(req=>typeof req?.branch==='string'&&
@@ -1328,7 +1328,7 @@ function directStrikeCoefficientPreview({skillCatalog,jobKey,level,
   if(s.prereq!=null){
    const previous=skillCatalog[String(s.prereq)];
    if(!previous||previous.id!==s.prereq||previous.learnable!==true||
-    previous.branch!==s.branch)continue;
+    previous.branch!==s.branch||previous.classes?.[jobKey]!==1)continue;
    // An advanced skill is a REPLACEMENT, not an extra theoretical rank:
    // show it only after its current OS level/mastery conditions are met.
    if(level<Number(s.charLevel||0)||
@@ -1498,7 +1498,7 @@ function movementSkillSourcePreview({skillCatalog=null,jobKey=null,level=1,
    const parent=skillCatalog[String(prereq)];
    if(parent?.id!==prereq||parent.learnable!==true||
     parent.name!==record.name||parent.skillType!==type||
-    !parent.classes?.[jobKey])continue;
+    parent.classes?.[jobKey]!==1)continue;
   }
   const effects=record.funcs.filter(f=>f?.ep==='EP_MOVESPEED_SCALE');
   if(effects.length!==1||effects[0].dir!==direction)continue;
@@ -1509,8 +1509,12 @@ function movementSkillSourcePreview({skillCatalog=null,jobKey=null,level=1,
    effect.fv2.some(n=>n!==0))continue;
   const recipient=type==='ALLY',hostile=type==='ENEMY',
    cap=Number(branchCaps?.[branch]??0);
-  if(!recipient&&(!record.classes?.[jobKey]||
-   !Number.isSafeInteger(cap)||cap<=0))continue;
+  // Allied recipients need no caster mastery; the *source* must still
+  // belong to real numeric caster classes at its current OS level.
+  if(recipient?(!ownedAllyCasterClasses(record,id)||
+    record.charLevel!==osAllyRecipientAccess[id].level):
+   (record.classes?.[jobKey]!==1||
+    !Number.isSafeInteger(cap)||cap<=0))continue;
   if(!record.reqs.every(req=>typeof req?.branch==='string'&&
    Number.isSafeInteger(req.amount)&&req.amount>=0&&
    (recipient||(Number.isSafeInteger(branchCaps[req.branch])&&
@@ -3992,6 +3996,7 @@ const osAllyRecipientAccess=Object.freeze({
  100055001:{branch:'archery',level:28,classes:['AGENT','ASSASSIN','DISTURBANCE']},
  260006001:{branch:'exorcism',level:28,classes:['ASCETIC','EXORCIST','MONK']},
  320004001:{branch:'archery',level:28,classes:['ARCHER','PREDATOR','SNIPER']},
+ 260010001:{branch:'warding',level:0,classes:["ACOLYTE","AGENT","ARCHER","ASCETIC","ASSASSIN","CALAMITY","CLERIC","CONJURER","DARKROAR","DISTURBANCE","DRAGOON","ENCHANTER","EXORCIST","GENERAL","GLADIATOR","JESTER","JUGGERNAUT","KNIGHT","MAGE","MONK","PALADIN","PREDATOR","PRIEST","SCOUT","SNIPER","WARLOCK","WARRIOR","WIZARD"]},
  330004001:{branch:'martial',level:28,classes:['GENERAL','KNIGHT','PALADIN']},
  320002001:{branch:'blessing',level:20,classes:['CLERIC','ENCHANTER','PRIEST']}
 });
@@ -5023,7 +5028,7 @@ function skillExecutionChains({skillCatalog=null,jobKey=null,level=1,onHit=false
  };
  for(const idString of Object.keys(skillCatalog).sort((a,b)=>Number(a)-Number(b))){
   const id=Number(idString),s=get(id);
-  if(!s||idString!==String(id)||s.learnable!==true||!s.classes?.[jobKey]||
+  if(!s||idString!==String(id)||s.learnable!==true||s.classes?.[jobKey]!==1||
    !s.funcs.some(f=>f?.ep===rootEP))continue;
   if(!Array.isArray(s.reqs)||!s.reqs.every(r=>typeof r?.branch==='string'&&
    Number.isSafeInteger(r.amount)&&r.amount>=0))continue;
@@ -5031,7 +5036,7 @@ function skillExecutionChains({skillCatalog=null,jobKey=null,level=1,onHit=false
    branchCaps[r.branch]<r.amount))continue;
   if(Number.isSafeInteger(s.prereq)&&s.prereq>0){
    const parent=get(s.prereq);
-   if(!parent||parent.learnable!==true||!parent.classes?.[jobKey])continue;
+   if(!parent||parent.learnable!==true||parent.classes?.[jobKey]!==1)continue;
   }
   const paths=trace(id,new Set());
   if(!paths){out.rejected.push(id);continue;}
@@ -5076,7 +5081,7 @@ function craftingSkillPreview({skillCatalog=null,jobKey=null,level=1,
   const skill=skillCatalog[String(recipe.id)];
   if(skill?.id!==recipe.id||skill.learnable!==true||
    skill.skillType!=='MYSELF'||skill.prereq!==null||skill.charLevel!==0||
-   skill.branch!==recipe.branch||!skill.classes?.[jobKey]||
+   skill.branch!==recipe.branch||skill.classes?.[jobKey]!==1||
    !Array.isArray(skill.reqs)||skill.reqs.length!==1||
    skill.reqs[0]?.branch!==recipe.branch||
    skill.reqs[0]?.amount!==recipe.rank||
