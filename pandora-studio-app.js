@@ -8239,7 +8239,7 @@ const profileAuthorialCopy=Object.freeze({
   'Hero bio — saved with the build'],
  'profile-notes':[
   'Поля профиля — пользовательские заметки в билде. Нация, честь и ранг не сверяются с игровым сервером и не участвуют в расчётах.',
-  'Profile fields are notes saved with the build. Nation, honor and rank are not verified against the game server and do not affect calculations.'
+  'Profile fields are notes saved with the build. Nation, honor and rank do not affect calculations.'
  ],
  'overview-race':['Раса','Race'],
  'overview-class':['Профессия','Class'],
