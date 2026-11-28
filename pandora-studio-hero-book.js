@@ -152,7 +152,7 @@ const bookEnglish=Object.freeze({
  'Сила атаки': "Attack power",
  'Верховая езда': "Riding",
  'Верхом': 'Mounted',
- 'Верхом: предварительный расчёт по Remaked. Защита и скорость обычной атаки верхом не отображаются.': 'Mounted: preliminary Remaked estimate. Defense and normal attack speed are unavailable while riding.',
+ 'Верхом: предварительная модель расчёта. Защита и скорость обычной атаки верхом не отображаются.': 'Mounted: preliminary model estimate. Defense and normal attack speed are unavailable while riding.',
  'Характеристики верхом': 'Mounted attributes',
  'Бонусы дальности от снаряжения': "Equipment range bonuses",
  'Усиление стихийной магии': "Elemental magic bonus",
@@ -858,8 +858,8 @@ function summaryPage(body,calc,options={}){
    if(result.confidence==='legacy-model'){
     // Preserve editable D1 captions and numeric results; show source status.
     const notice=en?
-     'Remaked planning model with current OS source parameters. The final game-client accuracy/evasion result is not independently verified.':
-     'Модель планирования Remaked с текущими параметрами OS. Итоговая точность/уклонение игрового клиента отдельно не подтверждена.';
+     'Planning model. Final in-game accuracy and evasion are not independently verified.':
+     'Предварительная модель расчёта. Итоговые точность и уклонение в игре отдельно не подтверждены.';
     tile.setAttribute('data-source-confidence','legacy-model');
     tile.setAttribute('title',notice);
     tile.lastChild.setAttribute('aria-label',text+' — '+notice);
@@ -1416,7 +1416,7 @@ function buffsPage(body,options){
   Boolean(windGust),{
    id:260010001,name:wild?.name,nameEn:wildEn?.n,
    desc:wild?.desc,descEn:wildEn?.d,icon:skillIconForId(260010001),
-   reason:english?'Current OS skill unavailable':'Умение недоступно в игровых данных',
+   reason:english?'Skill unavailable in game data':'Умение недоступно в игровых данных',
    summary:windGust?(english?'Movement-speed index +200 · ends on map change':
     'Скорость передвижения +200 · исчезает при смене карты'):null
   });
@@ -1430,20 +1430,20 @@ function buffsPage(body,options){
  const readableBuffEffects={
   100058001:['Атака усиливается в зависимости от мастерства. При этом персонаж получает на 100% больше урона.',
     'Attack increases with mastery. Incoming damage also increases by 100%.'],
-  213702001:['Изменяет интервал выстрела из арбалета по параметру OS.','Changes crossbow firing interval according to the OS source.'],
+  213702001:['Модель изменения интервала выстрела из арбалета.','Models changes to crossbow firing interval.'],
   213605001:['Повышает атаку, точность и дальность стрельбы. Во время действия нельзя двигаться.',
     'Increases attack, accuracy and firing range; movement is disabled.'],
-  260002001:['Изменяет передвижение по параметру OS.','Changes movement according to the OS source.'],
+  260002001:['Модель изменения скорости передвижения.','Models changes in movement speed.'],
   220001001:['Добавляет яд к атакам оружием. Сила эффекта зависит от мастерства.',
     'Adds poison aura damage to weapon attacks, scaling with mastery.'],
   430051001:['Добавляет урон тьмой к оружию, но наносит урон владельцу при атаках.',
     'Adds dark aura damage to attacks but also damages the wielder.'],
   168052001:['Уклонение −50%. Улучшает защиту от критических ударов.',
     'Evasion −50%; provides protection against critical hits.'],
-  320002001:['Ускоряет восстановление ОМ союзников по коэффициенту OS (модель).',
-    'Speeds up allies’ MP recovery using the current OS coefficient (model).'],
-  320006001:['Время применения умений зависит от коэффициента OS (расчётная модель).',
-    'Skill cast time follows the current OS coefficient (modeled).'],
+  320002001:['Модель ускорения восстановления ОМ союзников.',
+    'Models faster MP recovery for allies.'],
+  320006001:['Модель изменения времени применения умений.',
+    'Models changes in skill cast time.'],
   330005001:['Восстанавливает ОМ союзнику. Количество зависит от уровня применяющего союзника.',
     'Restores MP to an ally. The amount scales with the caster’s level.'],
   340003001:['Защищает союзника от слабых попаданий. Сила зависит от СД и Песнопения союзного Клирика.',
@@ -1462,8 +1462,8 @@ function buffsPage(body,options){
   260005001:['Уклонение +10.','Evasion +10.'],
   260008001:['Улучшает уклонение; эффект прекращается после полученного урона.',
     'Raises evasion; the effect ends after incoming hits.'],
-  100055001:['Точность союзников зависит от плоского и процентного коэффициентов OS (модель).',
-    'Allied accuracy uses current OS flat and percentage coefficients (model).']
+  100055001:['Модель точности союзников с отдельными плоскими и процентными прибавками.',
+    'Models allied accuracy with separate flat and percentage bonuses.']
  };
  // One shared source model for Buffs and Skill Effects avoids misleading
  // old fixed "+10" text on skills that now scale with trained mastery/AGI.
@@ -1497,10 +1497,10 @@ function buffsPage(body,options){
      213702001:english?'Attack-interval coefficient':'Коэффициент интервала атаки'
     }[id];
     return label+' '+(amount>=0?'+':'')+amount+
-     (english?' (OS model)':' (модель OS)');
+     (english?' (model)':' (модель)');
    }
-   return english?'OS coefficient not calculated for this build.':
-    'Коэффициент OS для этого билда не рассчитан.';
+   return english?'Coefficient not calculated for this build.':
+    'Коэффициент для этого билда не рассчитан.';
   }
   if(id===142051001||id===260005001){
    const skill=selfModelRows.find(row=>row.id===id&&row.available);

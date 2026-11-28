@@ -47,7 +47,7 @@ test('Book lists all supported ally numeric summaries and distinct priest stat b
  assert.match(engine,/const castTimePercent=fv\[3\]/);
  assert.match(book,/const inspirationKnown=Number\.isSafeInteger/);
  assert.match(book,/const naturalKnown=osVector\(330005001,'EP_HEAL_MANA_REGENERATOR'/);
- assert.match(book,/Время применения умений зависит от коэффициента OS/);
+ assert.match(book,/Модель изменения времени применения умений/);
  assert.match(book,/naturalRecovery\.mpPerPulse/);
  assert.match(book,/Уровень союзника/);
  assert.match(book,/Атака усиливается в зависимости от мастерства/);

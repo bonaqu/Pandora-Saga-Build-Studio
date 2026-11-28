@@ -132,7 +132,8 @@ export async function runRemakedBuffParity669Smoke(browser,base){
   ])for(const [id,expected] of labels){
    const text=sourceProof[language.toLowerCase()][id];
    assert.ok(text.includes(expected),language+' source magnitude '+id+': '+text);
-   assert.ok(/модель OS|OS model/.test(text),language+' source confidence '+id);
+   assert.ok((language==='RU'?/\(модель\)/:/\(model\)/).test(text),
+    language+' explicit model confidence '+id);
   }
   assert.deepEqual(errors,[]);
   console.log('Chromium 975: 3 OS-sourced self-buff amounts and RU/EN copy follow edited FV1 test records');

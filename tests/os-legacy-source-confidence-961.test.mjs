@@ -55,8 +55,8 @@ test('RU/EN Hero Book labels expose Legacy status without editing D1 source capt
  assert.match(book,/row\('Уклонение','Evasion',c\.dodge\?\.known,'',null,/);
  assert.match(book,/result\.confidence==='legacy-model'/);
  assert.match(book,/setAttribute\('data-source-confidence','legacy-model'\)/);
- assert.match(book,/Модель планирования Remaked/);
- assert.match(book,/Remaked planning model/);
+ assert.match(book,/Предварительная модель расчёта/);
+ assert.match(book,/Planning model\. Final in-game accuracy/);
  assert.match(css,/data-source-confidence="legacy-model"/);
  assert.match(css,/content:" · модель"/);
  assert.match(css,/content:" · model"/);

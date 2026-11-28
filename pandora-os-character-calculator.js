@@ -4430,11 +4430,25 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  const combinedRecords=[...equippedRecords,...unison.supplemental];
  const effects=gatherEffects(combinedRecords,itemForth),basic={},stats={},extra=attributeBuffBonus(attributeBuffs,{externalPriest:combatContext.externalPriest,skillCatalog:combatContext.skillCatalog});
  if(!extra)return null;
+ // Boolean, null and array values in a partially restored build must not
+ // silently become 0, 1 or 7 through Number() coercion.
+ const safeNumeric=value=>{
+  if((typeof value!=='number'&&typeof value!=='string')||
+   (typeof value==='string'&&!value.trim()))return NaN;
+  return Number(value);
+ };
  for(const key of keys){
-  const race=Number(raceData[key]),job=Number(jobData[key]),spent=Number(allocation?.[key]||0);
-  if(!Number.isFinite(race)||!Number.isFinite(job)||!Number.isInteger(spent)||spent<0)return null;
+  const race=safeNumeric(raceData[key]),job=safeNumeric(jobData[key]);
+  const rawSpent=allocation?.[key];
+  const spent=rawSpent==null||
+   (typeof rawSpent==='string'&&!rawSpent.trim())?0:safeNumeric(rawSpent);
+  if(!Number.isFinite(race)||!Number.isFinite(job)||
+   !Number.isInteger(spent)||spent<0)return null;
+  const rawSupplement=supplementalFlat[key];
+  const parsedSupplement=rawSupplement==null?0:safeNumeric(rawSupplement);
+  const added=Number.isFinite(parsedSupplement)?parsedSupplement:0;
   basic[key]=race+job+spent;
-  stats[key]=effectiveAbility(basic[key],effects.flat[key]+extra.flat[key]+(Number(supplementalFlat[key])||0),0);
+  stats[key]=effectiveAbility(basic[key],effects.flat[key]+extra.flat[key]+added,0);
  }
  const rawHp=classData.hp,rawMp=classData.mp;
  const hpFormula=classBaseComponents(rawHp,level,stats.vit,'vit');

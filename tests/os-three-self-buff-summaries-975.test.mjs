@@ -81,5 +81,5 @@ test('Hero Book never repeats static OS magnitudes in its player-visible self-bu
  assert.doesNotMatch(src,/260008001:english\?'Evasion \+100'/);
  assert.doesNotMatch(src,/213702001:\['Ускоряет стрельбу из арбалета на 30%/);
  assert.doesNotMatch(src,/260002001:\['Скорость передвижения \+30%/);
- assert.match(src,/Коэффициент OS для этого билда не рассчитан/);
+ assert.match(src,/Коэффициент для этого билда не рассчитан/);
 });
