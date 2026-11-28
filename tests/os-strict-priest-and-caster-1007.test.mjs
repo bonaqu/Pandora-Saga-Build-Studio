@@ -89,13 +89,18 @@ test('forged incoming critical reductions cannot become a resistance via Number 
 });
 
 test('malformed direct combat source containers do not throw',()=>{
- for(const field of ['stats','bonuses']){
-  for(const bad of [null,false,[],{},'bad']){
-   const payload={stats,bonuses:{},[field]:bad};
-   assert.doesNotThrow(()=>combat({},payload));
-   assert.equal(combat({},payload),null);
-  }
+ for(const bad of [null,false,[],{},'bad']){
+  const payload={stats:bad,bonuses:{}};
+  assert.doesNotThrow(()=>combat({},payload));
+  assert.equal(combat({},payload),null);
  }
+ for(const bad of [null,false,[],'bad']){
+  const payload={stats,bonuses:bad};
+  assert.doesNotThrow(()=>combat({},payload));
+  assert.equal(combat({},payload),null);
+ }
+ assert.ok(combat({}, {bonuses:{}}),
+  'An empty well-formed bonus dictionary is a valid zero-bonus source');
 });
 
 test('real selected priest effects still match canonical source FV and caster gates',()=>{
