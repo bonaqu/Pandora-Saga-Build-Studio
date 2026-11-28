@@ -54,7 +54,9 @@ function classBase(classPart,level,attribute,key){
 function refinementEffects(record,grade){
  // Keep numeric fallback stable when a localized item description replaces RU text.
  const description=record?.sourceDesc??record?.desc;
- if(!record||!Number.isInteger(grade)||grade<1||typeof description!=='string')return [];
+ if(!record||!Number.isInteger(grade)||grade<1||typeof description!=='string'||
+  (Object.hasOwn(record,'effects')&&!Array.isArray(record.effects)))return [];
+ const structured=Array.isArray(record.effects)?record.effects:[];
  const result=[],candidates=[
   [/ОЗ\s*([+-])\s*(\d+)\s*(%)?/g,'hp'],
   [/ОМ\s*([+-])\s*(\d+)\s*(%)?/g,'mp'],
@@ -80,7 +82,8 @@ function refinementEffects(record,grade){
     const rate=Boolean(match[3]),func=kinds[kind][rate?1:0];
     if(!func)continue;
     // A structured grade-gated effect takes precedence over textual fallback.
-    if((record.effects||[]).some(e=>e.func===func&&Number.isFinite(e.min)&&e.min>0))continue;
+    if(structured.some(e=>e&&typeof e==='object'&&!Array.isArray(e)&&
+      e.func===func&&Number.isFinite(e.min)&&e.min>0))continue;
     const sign=match[1]==='-'?-1:1;
     result.push({func,a:sign*Number(match[2])*times,fromRefinement:true});
    }
@@ -165,7 +168,9 @@ function unisonPreview({records=[],catalog=null}={}){
  if(!catalog||typeof catalog!=='object'||!Array.isArray(records))
   return {active,supplemental,pending};
  const equipped=new Map();
- for(const [source,item,grade] of records){
+ for(const tuple of records){
+  if(!Array.isArray(tuple)||tuple.length<3)continue;
+  const [source,item,grade]=tuple;
   // Invalid or mismatched imported records must never count as set pieces.
   // Equipment eligibility (slot, class, race, level) is checked upstream.
   if(!item||!Number.isInteger(item.id)||item.id<0||
@@ -174,7 +179,9 @@ function unisonPreview({records=[],catalog=null}={}){
   equipped.set(String(item.id),{item,grade});
  }
  for(const [id,set] of Object.entries(catalog)){
-  if(!Array.isArray(set?.members)||!Array.isArray(set?.rows))continue;
+  if(!Array.isArray(set?.members)||!Array.isArray(set?.rows)||
+   !Number.isSafeInteger(set.id)||String(set.id)!==id||
+   !set.members.every(member=>Number.isSafeInteger(member)&&member>0))continue;
   const root=equipped.get(id);
   if(!root)continue;
   // The item itself cannot also count as one of its set companions.

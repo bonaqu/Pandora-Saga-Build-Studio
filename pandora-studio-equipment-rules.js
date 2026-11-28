@@ -21,8 +21,17 @@ return {status:missing.length?"locked":unknown.length?"unknown":"eligible",missi
 function equipment(item,{job,level,slot}={}){
 const missing=[];if(!item)return{allowed:false,missing:["Нет данных"]};
 if(item.slot&&slot&&item.slot!==slot)missing.push("Другой слот");
-if(item.classes&&!Object.hasOwn(item.classes,job))missing.push("Не подходит классу");
-if(n(item.level)>n(level))missing.push("Требуется уровень "+item.level);
+// An absent or falsified class/level field must not grant an item to a hero.
+// A null required item level is the explicit level-free form (e.g. arrows).
+if(!item.classes||typeof item.classes!=='object'||Array.isArray(item.classes)||
+   !Object.hasOwn(item.classes,job)||item.classes[job]!==1)
+ missing.push("Не подходит классу");
+const heroLevelValid=Number.isSafeInteger(level)&&level>=1;
+if(!heroLevelValid)missing.push("Некорректный уровень героя");
+if(item.level!==null&&(!Number.isSafeInteger(item.level)||item.level<0))
+ missing.push("Некорректный уровень предмета");
+else if(heroLevelValid&&item.level!==null&&item.level>level)
+ missing.push("Требуется уровень "+item.level);
 return {allowed:!missing.length,missing};
 }
 root.PandoraStudioRules=Object.freeze({branchCap,readiness,equipment});
