@@ -146,7 +146,8 @@ test('status applications require numeric ASCETIC class, preserve other source r
  for(const bad of ['1',true,{},null,0]){
   const copy=forged(142501101,'ASCETIC',bad);
   assert.equal(row(status(copy),142501101),undefined);
-  assert.ok(row(status(copy),168005001));
+  assert.ok(row(complex(copy),410012001),
+   'An unrelated source-only elemental spell remains visible');
  }
 });
 
