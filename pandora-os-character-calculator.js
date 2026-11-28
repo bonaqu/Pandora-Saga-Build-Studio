@@ -138,8 +138,8 @@ function sourceEffects(source,record,grade,itemForth=null){
  // The source and the canonical item/Soul record must agree before any
  // effects (including HP and MP) are used in character calculations.
  const exact=key.match(/^(item|soul):(\d+)$/);
- if(exact&&(!Number.isSafeInteger(record.id)||
-  String(record.id)!==exact[2]))return [];
+ if(exact&&(!Object.hasOwn(record,'id')||
+  !Number.isSafeInteger(record.id)||String(record.id)!==exact[2]))return [];
  // Imported or owner-edited structured data can be incomplete. A null
  // row must never crash the stat rebuild or be interpreted as an effect.
  const safeRows=rows=>Array.isArray(rows)?rows.filter(row=>
@@ -173,14 +173,15 @@ function unisonPreview({records=[],catalog=null}={}){
   const [source,item,grade]=tuple;
   // Invalid or mismatched imported records must never count as set pieces.
   // Equipment eligibility (slot, class, race, level) is checked upstream.
-  if(!item||!Number.isInteger(item.id)||item.id<0||
+  if(!item||typeof item!=='object'||Array.isArray(item)||
+   !Object.hasOwn(item,'id')||!Number.isSafeInteger(item.id)||item.id<0||
    String(source)!=='item:'+item.id||
    !Number.isInteger(grade)||grade<0||grade>10)continue;
   equipped.set(String(item.id),{item,grade});
  }
  for(const [id,set] of Object.entries(catalog)){
   if(!Array.isArray(set?.members)||!Array.isArray(set?.rows)||
-   !Number.isSafeInteger(set.id)||String(set.id)!==id||
+   !Object.hasOwn(set,'id')||!Number.isSafeInteger(set.id)||String(set.id)!==id||
    !set.members.every(member=>Number.isSafeInteger(member)&&member>0))continue;
   const root=equipped.get(id);
   if(!root)continue;
@@ -252,13 +253,23 @@ function gatherEffects(records=[],itemForth=null){
  }
  return {flat,health,percent,bonuses,ignored:[...ignored],trace};
 }
+// Old browser drafts may store integer ranks as decimal text. Parse only
+// canonical decimal integers; never coerce booleans, arrays, objects, hex,
+ // exponent notation or fractions into granted skill/passive levels.
+function guildRank(raw){
+ if(Number.isSafeInteger(raw))return raw;
+ if(typeof raw!=='string'||!/^(?:0|[1-9][0-9]*)$/.test(raw.trim()))return null;
+ const n=Number(raw.trim());
+ return Number.isSafeInteger(n)?n:null;
+}
 function bonusFor(kind,base,effects,enhancements){
  const flat=effects.health[kind];
  const percentParts=effects.percent[kind].map(p=>({
   source:p.source,rate:p.value,amount:Math.floor(base*p.value/100)
  }));
- const level=Number(enhancements?.[kind==='hp'?'guildHp':'guildMp']||0);
- if(!Number.isInteger(level)||level<0||level>=guildRates.length)return null;
+ const level=guildRank(enhancements?.[kind==='hp'?'guildHp':'guildMp']??0);
+ // Retain legacy decimal text, never coerce booleans or arrays to levels.
+ if(level===null||level<0||level>=guildRates.length)return null;
  const guildRate=guildRates[level];
  const guild=Math.floor(base*guildRate/100);
  const lifeSign=kind==='hp'&&enhancements?.lifeSign===true?
@@ -685,11 +696,11 @@ function defensePreview({records=[],honorTitle=0,itemForth=null}={}){
   // Structured EP bonuses already reject mismatched numeric item sources.
   // Base AC and armor refinement must obey the SAME identity requirement.
   const sourceId=String(source).match(/^item:(\d+)$/);
-  if(sourceId&&(!Number.isSafeInteger(record.id)||
-    String(record.id)!==sourceId[1]))continue;
+  if(sourceId&&(!Object.hasOwn(record,'id')||
+    !Number.isSafeInteger(record.id)||String(record.id)!==sourceId[1]))continue;
   // Only equipped items carry the armor-class field. Souls provide effects
   // but their own item metadata must never inflate physical armor totals.
-  if(String(source).startsWith('item:')&&record.AC!=null){
+  if(String(source).startsWith('item:')&&Object.hasOwn(record,'AC')&&record.AC!=null){
    if(!Number.isFinite(record.AC))return null;
    armor+=record.AC;
    // The six OS forgeable armor slots: shield, helmet, body, gloves,
@@ -2593,8 +2604,8 @@ function attributeBuffBonus(options={},context={}){
  const out=Object.fromEntries(keys.map(k=>[k,0])),trace=[];
  const selected=selectedHonor(options);
  if(!selected)return null;
- const guild=Number(options.guildAll??0);
- if(!Number.isInteger(guild)||guild<0||guild>5)return null;
+ const guild=guildRank(options.guildAll??0);
+ if(guild===null||guild<0||guild>5)return null;
  if(guild){
   for(const key of keys)out[key]+=guild;
   trace.push({source:'Remaked SelBuffClan_9',amount:guild,keys:keys.slice()});
@@ -4433,13 +4444,15 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  const experienceBonus=experienceBonusPreview({records:combinedRecords,itemForth});
  // Guild passives are selected together at a guild level, not just displayed
  // as a reference. Their mitigation and EXP effects are independent of HP/MP.
- const guildLevel=Number(attributeBuffs?.guildLevel||0);
+ const rawGuildLevel=guildRank(attributeBuffs?.guildLevel??0);
+ const guildLevel=rawGuildLevel!==null&&rawGuildLevel>=0&&
+  rawGuildLevel<=12?rawGuildLevel:0;
  const guildPassives=guildPassiveAtLevel(guildLevel);
  // Manual mode lets players choose every passive independently. Use the
  // published OS guild-skill ranks; automatic mode uses the Remaked unlocks.
  const guildManualRate=(key,values)=>{
-  const rank=Number(attributeBuffs?.[key]||0);
-  return Number.isInteger(rank)&&rank>=0&&rank<values.length?values[rank]:0;
+  const rank=guildRank(attributeBuffs?.[key]??0);
+  return rank!==null&&rank>=0&&rank<values.length?values[rank]:0;
  };
  const guildPhysical=guildLevel>0?(guildPassives?.physicalReduction||0):
   guildManualRate('guildPhysicalReduction',[0,3,6,10]);
