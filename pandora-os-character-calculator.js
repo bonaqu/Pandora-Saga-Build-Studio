@@ -138,6 +138,9 @@ function sourceEffects(source,record,grade,itemForth=null){
  // The source and the canonical item/Soul record must agree before any
  // effects (including HP and MP) are used in character calculations.
  const exact=key.match(/^(item|soul):(\d+)$/);
+ // Malformed reserved equipment/Soul labels must not bypass source identity.
+ // Synthetic test-only source labels without these prefixes remain supported.
+ if((key.startsWith('item:')||key.startsWith('soul:'))&&!exact)return [];
  if(exact&&(!Object.hasOwn(record,'id')||
   !Number.isSafeInteger(record.id)||String(record.id)!==exact[2]))return [];
  // Imported or owner-edited structured data can be incomplete. A null
@@ -223,6 +226,13 @@ function unisonPreview({records=[],catalog=null}={}){
   }
  }
  return {active,supplemental,pending};
+}
+// Read only genuine [source, record, grade] tuples across all individual
+// equipment previews. A damaged saved entry cannot suppress the valid ones.
+function* equippedTuples(records){
+ if(!Array.isArray(records))return;
+ for(const tuple of records)
+  if(Array.isArray(tuple)&&tuple.length>=3)yield tuple;
 }
 function gatherEffects(records=[],itemForth=null){
  const flat=Object.fromEntries(keys.map(k=>[k,0]));
@@ -380,7 +390,7 @@ function potionRecovery({vit,records=[],honorTitle=0,runeJoEun=false,
   honorTitle<0||honorTitle>=honorTitles.length)return null;
  const base=100+Math.floor(vit*vit*2/1000),honor=honorTitle===11?5:0;
  let equipment=0;
- for(const [source,record,grade] of records){
+ for(const [source,record,grade] of equippedTuples(records)){
   for(const effect of sourceEffects(source,record,grade,itemForth)){
    if(effect.func!=='EP_MASTERY_POTION')continue;
    if(Number.isFinite(effect.min)&&grade<effect.min)continue;
@@ -628,7 +638,7 @@ function recoveryAmountPreview({maxHp,maxMp,stats={}}={}){
 function healingSkillPreview({honorTitle=0,records=[],itemForth=null}={}){
  if(!Number.isInteger(honorTitle)||honorTitle<0||honorTitle>=honorTitles.length)return null;
  let equipment=0;
- for(const [source,record,grade] of records)
+ for(const [source,record,grade] of equippedTuples(records))
   for(const effect of sourceEffects(source,record,grade,itemForth)){
    if(effect.func!=='EP_CAST_HEAL_LIFE_SCALE')continue;
    if(Number.isFinite(effect.min)&&grade<effect.min)continue;
@@ -691,11 +701,12 @@ function defensePreview({records=[],honorTitle=0,itemForth=null}={}){
  let armor=0,equipment=0,refinementTenths=0,armorPieces=0;
  const percentage=[];
  const enhanceable=new Set(['shield','head','body','gloves','legs','feet']);
- for(const [source,record,grade] of records){
+ for(const [source,record,grade] of equippedTuples(records)){
   if(!record||typeof record!=='object')continue;
   // Structured EP bonuses already reject mismatched numeric item sources.
   // Base AC and armor refinement must obey the SAME identity requirement.
   const sourceId=String(source).match(/^item:(\d+)$/);
+  if(String(source).startsWith('item:')&&!sourceId)continue;
   if(sourceId&&(!Object.hasOwn(record,'id')||
     !Number.isSafeInteger(record.id)||String(record.id)!==sourceId[1]))continue;
   // Only equipped items carry the armor-class field. Souls provide effects
@@ -787,7 +798,7 @@ function equippedCombatModifiers(records=[],itemForth=null){
   EP_CASTINGCANCEL_RESISTANCE_CONST:'castInterruptResist',
   EP_HEAL_TIME_SCALE:'mpRecoveryRate',
   EP_SKILL_DELAY_FIN:'skillDelayFinal'};
- for(const [source,record,grade] of records){
+ for(const [source,record,grade] of equippedTuples(records)){
   if(!record||typeof record!=='object')continue;
   for(const effect of sourceEffects(source,record,grade,itemForth)){
    const target=lookup[effect.func];
@@ -829,7 +840,7 @@ function secondaryEffectsPreview({records=[],itemForth=null}={}){
  if(!Array.isArray(records))return null;
  const stats=Object.fromEntries(Object.values(secondaryEffectTargets).map(x=>[x,0]));
  const traces=[];
- for(const [source,record,grade] of records){
+ for(const [source,record,grade] of equippedTuples(records)){
   for(const effect of sourceEffects(source,record,grade,itemForth)){
    const field=secondaryEffectTargets[effect.func];
    if(!field)continue;
@@ -2696,7 +2707,7 @@ function battleMapCloakPreview({records=[],skills=null,itemForth=null}={}){
  const entries=[];
  if(!Array.isArray(records)||!skills||typeof skills!=='object')
   return {entries,verified:false};
- for(const [source,record,grade] of records){
+ for(const [source,record,grade] of equippedTuples(records)){
   if(!record||!Number.isInteger(record.id)||
    !Object.hasOwn(battleMapCloakSkills,record.id)||
    source!=='item:'+record.id||record.slot!=='cloak'||
@@ -2773,7 +2784,7 @@ const procIdentity=(source,effect)=>JSON.stringify([
 function conditionalProcPreview({records=[],itemForth=null,skills=null}={}){
  if(!Array.isArray(records))return null;
  const entries=[];
- for(const [source,record,grade] of records){
+ for(const [source,record,grade] of equippedTuples(records)){
   if(!record||!Number.isInteger(grade)||grade<0||grade>10)continue;
   for(const effect of sourceEffects(source,record,grade,itemForth)){
    const trigger=procTriggers[effect?.func];
@@ -2812,7 +2823,7 @@ function conditionalProcPreview({records=[],itemForth=null,skills=null}={}){
 function experienceBonusPreview({records=[],itemForth=null}={}){
  if(!Array.isArray(records))return null;
  const entries=[];
- for(const [source,record,grade] of records){
+ for(const [source,record,grade] of equippedTuples(records)){
   if(!record||!Number.isInteger(grade)||grade<0||grade>10)continue;
   for(const effect of sourceEffects(source,record,grade,itemForth)){
    if(effect?.func!=='EP_VOLUME_EXP'||!Number.isFinite(effect.a))continue;
@@ -2975,7 +2986,7 @@ const rangeEffectKeys=Object.freeze({EP_RACE_RANGE:'general',EP_BOW_RANGE:'bow'}
 function attackRangePreview({records=[],itemForth=null,weapon=null,racialEffects=null}={}){
  if(!Array.isArray(records))return null;
  const totals={general:0,bow:0},entries=[];
- for(const [source,record,grade] of records){
+ for(const [source,record,grade] of equippedTuples(records)){
   if(!record||!Number.isInteger(grade)||grade<0||grade>10)continue;
   for(const effect of sourceEffects(source,record,grade,itemForth)){
    const key=rangeEffectKeys[effect?.func];
@@ -3113,7 +3124,7 @@ function matchesCorroboratedProc(source,record,effect){
 function specialEquipmentPreview({records=[],itemForth=null}={}){
  if(!Array.isArray(records))return null;
  const entries=[];
- for(const [source,record,grade] of records){
+ for(const [source,record,grade] of equippedTuples(records)){
   if(!record||!Number.isInteger(grade)||grade<0||grade>10)continue;
   for(const effect of sourceEffects(source,record,grade,itemForth)){
    if(!effect)continue;
@@ -3183,7 +3194,7 @@ const previewCodes=new Set([
 function effectCoverage({records=[],itemForth=null}={}){
  const counts={calculated:0,preview:0,conditional:0,missing:0,inactive:0};
  const pending=[],sources=new Set();
- for(const [source,record,grade] of records){
+ for(const [source,record,grade] of equippedTuples(records)){
   if(!record)continue;
   const label=String(record.name||source||'Предмет');
   for(const effect of sourceEffects(source,record,grade,itemForth)){
@@ -4333,7 +4344,7 @@ function elementalRefinementPreview({records=[],itemForth=null,gemSelections=[]}
  const entries=[],seen=new Set();
  if(!Array.isArray(records)||!Array.isArray(gemSelections)||
   !itemForth||typeof itemForth!=='object')return {entries,verified:false};
- for(const [source,item,grade] of records){
+ for(const [source,item,grade] of equippedTuples(records)){
   if(item?.id!==1862||source!=='item:1862'||item.slot!=='weapon'||
    !Number.isInteger(grade)||grade<7||grade>10||seen.has(item.id))continue;
   const hasFireGem=gemSelections.some(row=>row?.slot==='weapon'&&
