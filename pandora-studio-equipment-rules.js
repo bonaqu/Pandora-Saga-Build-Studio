@@ -1,7 +1,17 @@
 (function rulesImpl(root){
 "use strict";
 const n=(v,def=0)=>Number.isFinite(Number(v))?Number(v):def;
-function branchCap(classes,job,branch){const caps=classes?.[job]?.branchCaps;if(!caps||!Object.hasOwn(caps,branch))return null;const v=n(caps[branch],-1);return Number.isInteger(v)&&v>=0?v:null}
+function branchCap(classes,job,branch){
+ // The class and its branch limit must be real own numeric source fields.
+ // String, boolean, array and inherited values cannot grant spendable skills.
+ if(!classes||typeof classes!=='object'||Array.isArray(classes)||
+  !Object.hasOwn(classes,job))return null;
+ const caps=classes[job]?.branchCaps;
+ if(!caps||typeof caps!=='object'||Array.isArray(caps)||
+  !Object.hasOwn(caps,branch))return null;
+ const value=caps[branch];
+ return Number.isSafeInteger(value)&&value>=0?value:null;
+}
 function readiness(skill,{job,level,points}={}){
 const missing=[],unknown=[],gates=[];
 if(!skill)return{status:"unknown",missing,unknown:["Нет данных навыка"],gates};
