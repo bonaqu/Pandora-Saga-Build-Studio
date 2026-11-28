@@ -76,7 +76,7 @@ test('fake class grants and noninteger prerequisites never become eligible',()=>
  assert.ok(denied.missing.includes('Недоступно этому классу'));
  assert.ok(denied.unknown.includes('Неизвестное требование ветки'));
  assert.ok(denied.unknown.includes('Некорректный уровень навыка'));
- const clean={...source,charLevel:1,classes:{WARRIOR:1},
+ const clean={...source,charLevel:1,prereq:null,classes:{WARRIOR:1},
   reqs:[{branch:'slash',amount:3}]};
  const valid=R.readiness(clean,{job:'WARRIOR',level:55,points:{slash:3}});
  assert.equal(valid.status,'eligible');
