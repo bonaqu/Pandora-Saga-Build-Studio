@@ -573,7 +573,9 @@ function racialStatusSourcePreview({racialPassiveId=null,skillCatalog=null}={}){
 }
 function resistancePreview({stats={},bonuses={},honorTitle=0,racialPassiveId=null,
  jobKey=null,wardingMastery=0,wardingCap=null,skillCatalog=null}={}){
- if(!Number.isFinite(stats.vit)||!Number.isFinite(stats.spi)||
+ if(!stats||typeof stats!=='object'||Array.isArray(stats)||
+  !bonuses||typeof bonuses!=='object'||Array.isArray(bonuses)||
+  !Number.isFinite(stats.vit)||!Number.isFinite(stats.spi)||
   !Number.isInteger(honorTitle)||honorTitle<0||honorTitle>=honorTitles.length)return null;
  const title=honorTitles[honorTitle].effects,elementKeys=[
   'fire','ice','lightning','poison','charm','light','dark','magic'
@@ -600,6 +602,14 @@ function resistancePreview({stats={},bonuses={},honorTitle=0,racialPassiveId=nul
  const elements={};
  const statusKeys=['burn','stun','numb','tumble','knockback','sleep',
   'silence','evil','curse','disease','madness','blockBreak'];
+ const safeBonus=key=>{
+  const value=bonuses[key];
+  return value===undefined?0:Number.isFinite(value)?value:null;
+ };
+ // A damaged saved bonus must never become +1 via Boolean coercion, an
+ // arbitrary string/array number, or silently disappear from the total.
+ if([...statusKeys,...elementKeys,'physicalStatus','mentalStatus'].some(
+  key=>safeBonus(key)===null))return null;
  const status={},passive=wardingStatusPassive({jobKey,wardingMastery,wardingCap,skillCatalog});
  const honorStatus={burn:honorTitle===3?5:0,numb:honorTitle===4?5:0,
   tumble:honorTitle===5?5:0};
@@ -608,21 +618,21 @@ function resistancePreview({stats={},bonuses={},honorTitle=0,racialPassiveId=nul
  const dwarfStatus=hasSource?(raceFromOS?.status||{}):
   (racialPassiveId===900030001?{stun:10,numb:10,tumble:10}:{});
  for(const key of statusKeys){
-  const amount=Number(bonuses[key]??0);
+  const amount=safeBonus(key);
   if(!Number.isFinite(amount))return null;
   status[key]=amount+(honorStatus[key]||0)+(dwarfStatus[key]||0)+(passive?.[key]||0);
  }
  for(const key of elementKeys){
-  const equip=Number(bonuses[key]??0);
+  const equip=safeBonus(key);
   if(!Number.isFinite(equip))return null;
   elements[key]=equip+(Number(title[key])||0)+(Number(racial[key])||0);
  }
  return {elements,status,wardingPassive:passive,
   states:{
    physical:Math.floor(stats.vit/28)*7+(Number(title.physicalState)||0)+
-    racial.physicalState+(Number(bonuses.physicalStatus)||0),
+    racial.physicalState+safeBonus('physicalStatus'),
    mental:Math.floor(stats.spi/28)*7+(Number(title.mentalState)||0)+
-    (Number(bonuses.mentalStatus)||0)
+    safeBonus('mentalStatus')
   },
   mitigation:{
    physical:(Number(title.incomingPhysical)||0)+racial.incomingPhysical,
@@ -636,7 +646,8 @@ function resistancePreview({stats={},bonuses={},honorTitle=0,racialPassiveId=nul
 // Legacy Calc('LPSkill','LPRec','MPRec'): the ordinary standing recovery
 // amount and healing-skill efficiency are independent from speed indices.
 function recoveryAmountPreview({maxHp,maxMp,stats={}}={}){
- if(!Number.isFinite(maxHp)||maxHp<0||!Number.isFinite(maxMp)||maxMp<0||
+ if(!stats||typeof stats!=='object'||Array.isArray(stats)||
+  !Number.isFinite(maxHp)||maxHp<0||!Number.isFinite(maxMp)||maxMp<0||
   !Number.isFinite(stats.vit)||stats.vit<0||
   !Number.isFinite(stats.spi)||stats.spi<0)return null;
  return {hp:{maxContribution:Math.floor(maxHp/35),
@@ -663,7 +674,9 @@ function healingSkillPreview({honorTitle=0,records=[],itemForth=null}={}){
   excluded:['active healing skills','special healing conversions']};
 }
 function regenerationPreview({stats={},guild={}}={}){
- if(!Number.isFinite(stats.vit)||!Number.isFinite(stats.spi))return null;
+ if(!stats||typeof stats!=='object'||Array.isArray(stats)||
+  !guild||typeof guild!=='object'||Array.isArray(guild)||
+  !Number.isFinite(stats.vit)||!Number.isFinite(stats.spi))return null;
  const recovery=[0,5,8,11,15],healing=[0,10,20,30,40,50];
  const keys=['guildLifeRecovery','guildManaRecovery','guildHealing'];
  const levels=keys.map((key,i)=>guild[key]??0);
