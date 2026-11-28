@@ -112,7 +112,9 @@ test('healing spells keep valid CLERIC numbers and disable forged learned spell'
 
 test('HP and MP periodic effect models require their own numeric class',()=>{
  assert.equal(row(periodic(skills),310002001)?.amount,24);
- assert.equal(row(periodic(skills,'ASCETIC'),330005001)?.amount,2);
+ assert.equal(row(periodic(skills,'ASCETIC'),330005001)?.amount,4);
+ // At Lv45 the live FV1 level term contributes two additional points;
+ // the Lv20/zero-mastery baseline remains 2 in periodic-recovery-parity.
  for(const bad of ['1',true,{},null,0]){
   const copy=forged(310002001,'CLERIC',bad);
   assert.equal(row(periodic(copy),310002001),undefined);
