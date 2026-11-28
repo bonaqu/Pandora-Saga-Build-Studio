@@ -29,6 +29,10 @@ test('bad item levels and class flags cannot create usable equipment',()=>{
   assert.equal(R.equipment(item,ctx(item,'WARRIOR',55)).allowed,false,
    'unverified class grant '+JSON.stringify(classes));
  }
+ const inherited=Object.create({WARRIOR:1});
+ assert.equal(R.equipment({...source,classes:inherited},
+  ctx(source,'WARRIOR',55)).allowed,false,
+  'inherited prototype values cannot authorize an item');
  for(const level of [null,undefined,'55',false,0,NaN,1.5])
   assert.equal(R.equipment(source,ctx(source,'WARRIOR',level)).allowed,false,
    'invalid hero level '+String(level));
