@@ -120,9 +120,14 @@ test('malformed standing recovery and regeneration structures return null, not a
   assert.equal(C.recoveryAmountPreview({...recovery,stats:value}),null);
   assert.doesNotThrow(()=>C.regenerationPreview({stats:value,guild:{}}));
   assert.equal(C.regenerationPreview({stats:value,guild:{}}),null);
+ }
+ for(const value of [null,false,[],'bad']){
   assert.doesNotThrow(()=>C.regenerationPreview({stats,guild:value}));
   assert.equal(C.regenerationPreview({stats,guild:value}),null);
  }
+ const noGuild=C.regenerationPreview({stats,guild:{}});
+ assert.equal(noGuild.hp.total,5,'An empty valid guild selector is no bonuses');
+ assert.equal(noGuild.mp.total,8);
 });
 
 test('genuine regeneration guild level selectors and negative equipment resistance are unaffected',()=>{
