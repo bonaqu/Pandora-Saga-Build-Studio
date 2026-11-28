@@ -673,6 +673,11 @@ function defensePreview({records=[],honorTitle=0,itemForth=null}={}){
  const enhanceable=new Set(['shield','head','body','gloves','legs','feet']);
  for(const [source,record,grade] of records){
   if(!record||typeof record!=='object')continue;
+  // Structured EP bonuses already reject mismatched numeric item sources.
+  // Base AC and armor refinement must obey the SAME identity requirement.
+  const sourceId=String(source).match(/^item:(\d+)$/);
+  if(sourceId&&(!Number.isSafeInteger(record.id)||
+    String(record.id)!==sourceId[1]))continue;
   // Only equipped items carry the armor-class field. Souls provide effects
   // but their own item metadata must never inflate physical armor totals.
   if(String(source).startsWith('item:')&&record.AC!=null){

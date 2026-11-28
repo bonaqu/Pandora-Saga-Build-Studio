@@ -8,15 +8,16 @@ const forth=JSON.parse(read('data/os/itemForth.json')),items=JSON.parse(read('da
 const stats={vit:40,str:50,agi:70,dex:35,spi:30,int:50};
 test('current OS armor and shield +7 retain tenths until final DEF floor',()=>{
  const slots=['shield','head','body','gloves','legs','feet'];
- const rows=slots.map((slot,i)=>['item:'+i,{id:5000+i,slot,name:'Броня',AC:10},7]);
+ const rows=slots.map((slot,i)=>['item:'+(5000+i),
+  {id:5000+i,slot,name:'Броня',AC:10},7]);
  const out=calc.defensePreview({records:rows,honorTitle:11});
  assert.deepEqual([out.armor,out.refinementRaw,out.refinement,out.honor,out.known],
   [60,50.4,50,5,115]);
 });
 test('Legacy shields refine but jewelry, Souls and names with hyphen do not',()=>{
- const rows=[['item:1',{name:'Кольцо',slot:'ring',AC:4},10],
- ['item:2',{name:'-',slot:'head',AC:7},10],
- ['soul:42',{name:'Душа',slot:'head',AC:99},10]];
+ const rows=[['item:1',{id:1,name:'Кольцо',slot:'ring',AC:4},10],
+ ['item:2',{id:2,name:'-',slot:'head',AC:7},10],
+ ['soul:42',{id:42,name:'Душа',slot:'head',AC:99},10]];
  const out=calc.defensePreview({records:rows});
  assert.equal(out.refinement,0);assert.equal(out.armor,11);
 });
