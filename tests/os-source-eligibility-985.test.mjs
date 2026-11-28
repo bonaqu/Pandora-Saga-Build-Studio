@@ -34,8 +34,8 @@ test('bad item levels and class flags cannot create usable equipment',()=>{
   ctx(source,'WARRIOR',55)).allowed,false,
   'inherited prototype values cannot authorize an item');
  for(const level of [null,undefined,'55',false,0,NaN,1.5])
-  assert.equal(R.equipment(source,ctx(source,'WARRIOR',level)).allowed,false,
-   'invalid hero level '+String(level));
+  assert.equal(R.equipment(source,{slot:source.slot,job:'WARRIOR',level})
+   .allowed,false,'invalid hero level '+String(level));
  const arrow=items['65002'];
  assert.equal(arrow.level,null);
  assert.equal(R.equipment(arrow,ctx(arrow,'WARRIOR',1)).allowed,true,
