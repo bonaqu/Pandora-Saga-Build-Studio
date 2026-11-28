@@ -176,9 +176,12 @@ test('all 28 jobs x Lv1..55 retain source-only numeric state and never invent fi
     stats:{vit:50,str:50,agi:60,dex:50,spi:50,int:50},combat:basis});
    for(const group of ['offense','defense','movement','utility']){
     for(const entry of r[group]){
-     assert.equal(entry.modelOnly,true);
-     assert.equal(entry.uncertain,true);
-     assert.notEqual(entry.finalDamage,0);
+     const source=skills[String(entry.id)];
+     assert.ok(source,'Every source-backed model has a known numeric ID');
+     assert.equal(Number.isSafeInteger(source.charLevel),true);
+     if(entry.modelOnly===true)assert.equal(entry.uncertain,true);
+     assert.equal('finalDamage' in entry,false,
+      'Source-only coefficients are not verified final target damage');
     }
    }
    compared++;
