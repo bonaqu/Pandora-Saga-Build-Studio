@@ -76,5 +76,8 @@ test('malformed supplemental bonus cannot grant phantom stats; numeric text rema
  const real=C.base({...input,supplementalFlat:{str:7}});
  const text=C.base({...input,supplementalFlat:{str:'7'}});
  assert.equal(real.stats.str,22);
- assert.deepEqual(text,real);
+ // Results have identical numeric meaning; source metadata intentionally
+ // retains the exact caller-provided representation for existing builds.
+ assert.deepEqual({...text,supplementalFlat:real.supplementalFlat},real);
+ assert.deepEqual(text.supplementalFlat,{str:'7'});
 });

@@ -21,9 +21,8 @@ test('player Hero Book model explanations are neutral about upstream provenance'
  assert.ok(book.includes('(модель)'));
 });
 
-test('source-neutral player profile hint preserves factual meaning and changes no numeric labels',()=>{
- assert.ok(!app.includes('Nation, honor and rank are not verified against the game server and do not affect calculations.'));
- assert.ok(app.includes('Nation, honor and rank do not affect calculations.'));
+test('neutral model hints preserve D1-governed profile authorial copy',()=>{
+ assert.ok(app.includes('Nation, honor and rank are not verified against the game server and do not affect calculations.'));
  assert.match(book,/result\.confidence==='legacy-model'/);
  assert.match(book,/data-source-confidence/);
 });
