@@ -899,27 +899,44 @@ const combatSkillDefaults=Object.freeze({
  concentration:{EP_TOHIT_CONST:100}
 });
 function combatSkillSource(skillCatalog,kind){
+ const id=combatSkillIds[kind],required=combatSkillRequirements[kind];
+ if(!Number.isSafeInteger(id)||!Array.isArray(required))return null;
  if(!skillCatalog)return {effects:combatSkillDefaults[kind],fromCatalog:false};
- const skill=skillCatalog[String(combatSkillIds[kind])];
- if(!skill||!Array.isArray(skill.funcs))return null;
- // An external War Cry is valid for every recipient job, but every
- // source action must still match its known target-side formula shape.
- if(kind==='warCry'&&(skill.id!==combatSkillIds.warCry||
-  skill.skillType!=='PARTY_ALL'||skill.funcs.length!==2))return null;
- const effects={};
- for(const name of combatSkillRequirements[kind]){
-  const rows=skill.funcs.filter(x=>x.ep===name&&x.dir==='TARGET');
-  if(rows.length!==1||!Array.isArray(rows[0].fv1))return null;
-  if(kind==='warCry'&&(rows[0].fv1.length!==4||
-   !rows[0].fv1.slice(0,3).every(v=>v===0)||
-   JSON.stringify(rows[0].fv2)!=='[0,0,0,0]'))return null;
-  const value=rows[0].fv1[3];
-  if(!Number.isFinite(value)||Math.abs(value)>100)return null;
-  effects[name]=value;
+ const skill=skillCatalog[String(id)];
+ // Every source needs its exact numeric ID and permitted action channels.
+ // Known 'lost on...' actions are not independent stat bonuses.
+ const contract={
+  lunge:{type:'MYSELF',branch:'martial',extra:'EP_LOST_CHANGE_WEAPON'},
+  warCry:{type:'PARTY_ALL',branch:'martial',extra:null},
+  raging:{type:'TOGGLE',branch:'martial',extra:null},
+  defender:{type:'MYSELF',branch:'martial',extra:null},
+  concentration:{type:'MYSELF',branch:'slash',extra:'EP_LOST_ATK_END'}
+ }[kind];
+ if(!contract||skill?.id!==id||skill.skillType!==contract.type||
+  skill.branch!==contract.branch||skill.learnable!==true||
+  skill.prereq!==null||!Array.isArray(skill.funcs)||
+  skill.funcs.length!==required.length+(contract.extra?1:0))return null;
+ const effects={},seen=new Set();
+ for(const row of skill.funcs){
+  if(!row||typeof row!=='object'||Array.isArray(row)||
+   typeof row.ep!=='string'||row.dir!=='TARGET'||seen.has(row.ep)||
+   !Array.isArray(row.fv1)||row.fv1.length!==4||
+   !row.fv1.every(Number.isFinite)||row.fv1.slice(0,3).some(x=>x!==0)||
+   !Array.isArray(row.fv2)||row.fv2.length!==4||
+   row.fv2.some(x=>x!==0))return null;
+  seen.add(row.ep);
+  if(row.ep===contract.extra){
+   if(row.fv1[3]!==0)return null;
+  }else if(required.includes(row.ep)){
+   const value=row.fv1[3];
+   if(Math.abs(value)>100)return null;
+   effects[row.ep]=value;
+  }else return null;
  }
+ if(required.some(ep=>!seen.has(ep))||
+  (contract.extra&&!seen.has(contract.extra)))return null;
  return {effects,fromCatalog:true,record:skill};
 }
-
 const evasionLineage=new Set(['AGENT','ASSASSIN','DISTURBANCE']);
 
 // Two further OS skill records match explicit live effects and retained Remaked
@@ -938,7 +955,7 @@ function supportSkillSource(skillCatalog,kind){
   record.funcs.length!==required.length)return null;
  const values={};
  for(const ep of required){
-  const found=record.funcs.filter(x=>x.ep===ep&&x.dir==='TARGET');
+  const found=record.funcs.filter(x=>x?.ep===ep&&x.dir==='TARGET');
   if(found.length!==1||!Array.isArray(found[0].fv1)||
    found[0].fv1.length!==4||
    !found[0].fv1.slice(0,3).every(x=>x===0)||
@@ -960,8 +977,8 @@ function supportSkillAvailability({selected={},skillCatalog=null,jobKey=null,lev
   // Both wind skills can be cast by an ally. Requirements gate the caster,
   // not the hero receiving the chosen party effect.
   result[kind]=Boolean(selected?.[setting]===true&&source&&
-   skill?.id===supportSkillIds[kind]&&skill.learnable!==false&&
-   skill.prereq==null&&Number.isInteger(skill.charLevel)&&
+   skill?.id===supportSkillIds[kind]&&skill.learnable===true&&
+   skill.prereq===null&&Number.isInteger(skill.charLevel)&&
    skill.charLevel>=0&&skill.charLevel<=plannerMaxLevel()&&
    Array.isArray(skill.reqs)&&skill.reqs.every(req=>
     typeof req?.branch==='string'&&Number.isInteger(req.amount)&&req.amount>=0));
@@ -1004,7 +1021,7 @@ function activeCombatSkills({selected={},jobKey=null,level=1,hasShield=false,
    const record=source?.record;
    if(!source||!record?.classes?.[jobKey]||
     !Number.isInteger(record.charLevel)||level<record.charLevel||
-    record.learnable===false||record.prereq!=null)return false;
+    record.learnable!==true||record.prereq!==null)return false;
    // A branch-gated skill is not learned until the green Adeptness
    // requirement is met. Potential/blue points do not substitute for it.
    if(!Array.isArray(record.reqs)||!record.reqs.every(req=>
@@ -1024,8 +1041,8 @@ function activeCombatSkills({selected={},jobKey=null,level=1,hasShield=false,
  const warCry=validLevel&&selected?.combatWarCry===true&&
   (skillCatalog?(()=>{
    const rec=combatSkillSource(skillCatalog,'warCry')?.record;
-   return Boolean(rec?.id===combatSkillIds.warCry&&rec.learnable!==false&&
-    rec.prereq==null&&Number.isInteger(rec.charLevel)&&
+   return Boolean(rec?.id===combatSkillIds.warCry&&rec.learnable===true&&
+    rec.prereq===null&&Number.isInteger(rec.charLevel)&&
     rec.charLevel>=0&&rec.charLevel<=plannerMaxLevel()&&Array.isArray(rec.reqs)&&
     rec.reqs.every(req=>typeof req?.branch==='string'&&
      Number.isInteger(req.amount)&&req.amount>=0));
@@ -3891,7 +3908,8 @@ function guildPassiveAtLevel(level=0){
 function alliedInspirationPreview({skillCatalog=null}={}){
  const skill=skillCatalog?.['320006001'];
  const exact=(ep,values)=>{
-  const f=skill?.funcs?.filter(f=>f.ep===ep&&f.dir==='TARGET')||[];
+  const f=Array.isArray(skill?.funcs)?
+   skill.funcs.filter(f=>f?.ep===ep&&f.dir==='TARGET'):[];
   return f.length===1&&Array.isArray(f[0].fv1)&&f[0].fv1.length===4&&
    f[0].fv1.every((n,i)=>n===values[i])&&
    Array.isArray(f[0].fv2)&&f[0].fv2.length===4&&
@@ -4037,12 +4055,12 @@ function alliedFreeWindPreview({skillCatalog=null,classCatalog=null}={}){
   sniper.branchCaps.warding<66||
   !Array.isArray(skill.funcs)||skill.funcs.length!==2)return null;
  const exactly=(ep,first)=>{
-  const rows=skill.funcs.filter(f=>f.ep===ep&&f.dir==='TARGET');
+  const rows=skill.funcs.filter(f=>f?.ep===ep&&f.dir==='TARGET');
   return rows.length===1&&
    JSON.stringify(rows[0].fv1)===JSON.stringify(first)&&
    JSON.stringify(rows[0].fv2)==='[0,0,0,0]';
  };
- const movement=skill.funcs.filter(f=>f.ep==='EP_MOVESPEED_SCALE');
+ const movement=skill.funcs.filter(f=>f?.ep==='EP_MOVESPEED_SCALE');
  const first=movement[0]?.fv1;
  if(movement.length!==1||movement[0].dir!=='TARGET'||
   !Array.isArray(first)||first.length!==4||
