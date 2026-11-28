@@ -2546,7 +2546,8 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  // is enabled. Current OS confirms the same target-side 50 effect vector.
  // The recipient's selected ally buff changes the displayed percentage;
  // neither caster mastery nor recipient job is involved.
- const inspiration=combatBuffs?.remakedSkillIds?.includes(320006001)?
+ const inspiration=Array.isArray(combatBuffs?.remakedSkillIds)&&
+  combatBuffs.remakedSkillIds.includes(320006001)?
   alliedInspirationPreview({skillCatalog}):null;
  const castTime={known:inspiration?.castTimePercent??100,base:100,
   allyReduction:inspiration?.castTimeReductionPercent??0,verified:false,
@@ -4411,6 +4412,17 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  unisonCatalog=null,supplementalFlat={},supplementalSource=null,
  enhancements={},attributeBuffs={},potionContext={},combatContext={},gemSelections=[]}={}){
  if(!classData||!raceData||!jobData||!Number.isInteger(level)||level<1||level>plannerMaxLevel())return null;
+ // Optional build inputs may be null or corrupt in older saved snapshots.
+ // Normalize locally; never mutate the original persisted build object.
+ const plain=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
+ if(!plain(attributeBuffs))attributeBuffs={};
+ if(!plain(combatContext))combatContext={};
+ if(!plain(supplementalFlat))supplementalFlat={};
+ if(!Array.isArray(gemSelections))gemSelections=[];
+ const selectedResistanceIds=Array.isArray(attributeBuffs.resistanceSkillIds)?
+  attributeBuffs.resistanceSkillIds:[];
+ const selectedRemakedIds=Array.isArray(attributeBuffs.remakedSkillIds)?
+  attributeBuffs.remakedSkillIds:[];
  // Older or partially restored builds may supply a null/non-array gear list.
  // Normalize only the outer container; preserve each valid tuple unchanged.
  const equippedRecords=Array.isArray(records)?records:[];
@@ -4437,16 +4449,14 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   skillCatalog:combatContext.skillCatalog});
  // Saved pre-670 Divine Blessing resistance selections remain valid.
  // Consolidate its single effect under Allied Buffs without double counting.
- const oldDivineBlessing=Array.isArray(attributeBuffs?.resistanceSkillIds)&&
-  attributeBuffs.resistanceSkillIds.includes(330004001);
- const mergedBuffIds=new Set(Array.isArray(attributeBuffs?.remakedSkillIds)?
-  attributeBuffs.remakedSkillIds:[]);
+ const oldDivineBlessing=selectedResistanceIds.includes(330004001);
+ const mergedBuffIds=new Set(selectedRemakedIds);
  if(oldDivineBlessing)mergedBuffIds.add(330004001);
  const resistanceSkills=resistanceSkillPreview({
   skillCatalog:combatContext.skillCatalog,
   selected:root.PandoraRemakedBuffs?.applied?
-   (attributeBuffs.resistanceSkillIds||[]).filter(id=>id!==330004001):
-   (attributeBuffs.resistanceSkillIds||[])
+   selectedResistanceIds.filter(id=>id!==330004001):
+   selectedResistanceIds
  });
  const resistanceBonuses={...effects.bonuses};
  const groupBuffs=root.PandoraRemakedBuffs?.applied({
@@ -4624,7 +4634,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  });
  // This is an INDEPENDENT pulse applied by a hypothetical allied caster.
  // Keep it outside standing MP recovery and never reuse recipient level.
- const allyNaturalRecovery=attributeBuffs?.remakedSkillIds?.includes(330005001)?
+ const allyNaturalRecovery=selectedRemakedIds.includes(330005001)?
   alliedNaturalRecoveryPreview({
    skillCatalog:combatContext.skillCatalog,
    casterLevel:Number(attributeBuffs.allyNaturalLevel??45)
@@ -4640,8 +4650,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  // Active songs must use the SAME current-OS-source-gated values as the
  // priest skill rows; a syntactically valid but different effect vector must
  // not become an unintended attack-speed, accuracy or magic-damage bonus.
- const chosenPriestSong=new Set(Array.isArray(attributeBuffs?.remakedSkillIds)?
-  attributeBuffs.remakedSkillIds:[]);
+ const chosenPriestSong=new Set(selectedRemakedIds);
  // The two current OS coefficients extend the original Remaked step formula:
  // barrier EP_ONDAMAGE_FIN_DAMAGE_SCALE [0,0,-20,-10] and holy aura
  // EP_AURAHOLY_CONSTANT [6,0,0,2]. Only the receiving hero's explicitly
