@@ -1237,6 +1237,8 @@ function elementalSpellCoefficientPreview({skillCatalog,jobKey,level,
   const id=Number(key),skill=skillCatalog[key];
   if(!skill||skill.id!==id||skill.learnable!==true||
    skill.prereq!=null||skill.branch!==branch||
+   !Number.isSafeInteger(skill.charLevel)||skill.charLevel<0||
+   skill.charLevel>plannerMaxLevel()||
    skill.classes?.[jobKey]!==1||
    !['BOLT','RADIATION','ENEMY'].includes(skill.skillType)||
    !Array.isArray(skill.reqs)||!Array.isArray(skill.funcs))continue;
@@ -1262,7 +1264,7 @@ function elementalSpellCoefficientPreview({skillCatalog,jobKey,level,
   const amount=fv1[3]+fromInt+fromMastery;
   if(!Number.isSafeInteger(amount))continue;
   const reasons=[],reasonsEn=[];
-  if(level<Number(skill.charLevel||0)){
+  if(level<skill.charLevel){
    reasons.push('Требуется уровень '+skill.charLevel);
    reasonsEn.push('Requires level '+skill.charLevel);
   }
@@ -1875,6 +1877,10 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
    seen.has(id))return;
   const recipient=options.recipient===true;
   if(!recipient&&record.classes?.[jobKey]!==1)return;
+  // Source metadata must contain a real numeric learn level. A string
+  // such as "0" is not proof of an owned/available self skill.
+  if(!recipient&&(!Number.isSafeInteger(record.charLevel)||
+   record.charLevel<0||record.charLevel>plannerMaxLevel()))return;
   // Painlessness now has a dedicated full five-effect OS proof below.
   // The archival technique inspector pins FV1[3]=-50 and therefore cannot
   // gate a legitimate supported signed source revision of that same field.
@@ -1895,7 +1901,7 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
     mastery(options.branch)<0||mastery(options.branch)>cap(options.branch)))
    {issues.push('Мастерство превышает предел профессии');
     issuesEn.push('Mastery exceeds class maximum');}
-  if(!recipient&&level<Number(record.charLevel||0)){
+  if(!recipient&&level<record.charLevel){
    issues.push('Требуется уровень '+record.charLevel);
    issuesEn.push('Requires level '+record.charLevel);
   }
@@ -3209,7 +3215,7 @@ const matchesOriginalDescription=(record,rule)=>typeof record?.desc==='string'&&
 function matchesCorroboratedProc(source,record,effect){
  const rule=Object.hasOwn(corroboratedProcRules,String(source))?
   corroboratedProcRules[String(source)]:null;
- return Boolean(rule&&Number(record?.id)===rule.id&&
+ return Boolean(rule&&record?.id===rule.id&&
   effect?.func===rule.func&&effect.a===rule.a&&effect.b===rule.b&&
   effect.dir===rule.dir&&matchesOriginalDescription(record,rule));
 }
@@ -4100,8 +4106,11 @@ function alliedRecipientPreviews({skillCatalog=null,combat=null,includeSource=fa
  // instead of freezing a second copy of the flat and scaled FV1 values.
  const expose=(base,bonus,flat,percent)=>includeSource===true?
   {base,bonus,flat,percent}:{base,bonus};
- const atk=Number(combat?.attack?.mountedBase??combat?.attack?.walkingBase);
- const acc=Number(combat?.accuracy?.base),ev=Number(combat?.dodge?.base);
+ // The receiving hero's actual numeric sheet is the only allowed basis.
+ // Do not turn a damaged string/array/Boolean into source-proven attack,
+ // accuracy or avoidance for another character's ally buff.
+ const atk=combat?.attack?.mountedBase??combat?.attack?.walkingBase;
+ const acc=combat?.accuracy?.base,ev=combat?.dodge?.base;
  const cry=source(320001001,'PARTY_ALL',
   ['EP_DAMAGERATE_CONST','EP_DAMAGERATE_SCALE']);
  if(cry&&Number.isFinite(atk)&&atk>=0)
@@ -4505,10 +4514,13 @@ function elementalRefinementPreview({records=[],itemForth=null,gemSelections=[]}
 // Do not convert this to direct attack or a simulated OS damage packet.
 function auraDamagePreview({gemstones=null,records=[],itemForth=null}={}){
  const extras=secondaryEffectsPreview({records,itemForth});
- if(!extras||!gemstones||typeof gemstones.auras!=='object')return null;
+ if(!extras||!gemstones||!gemstones.auras||
+  typeof gemstones.auras!=='object'||Array.isArray(gemstones.auras))return null;
  const names=['fire','ice','lightning','poison','light','dark'],elements={};
  for(const element of names){
-  const base=Number(gemstones.auras[element]||0);
+  const base=gemstones.auras[element];
+  // Preserve genuine neighboring auras, but never manufacture a weapon
+  // source magnitude from a numeric-looking string or array.
   if(!Number.isFinite(base)||base===0)continue;
   const flat=extras.auraFlat;
   const percent=Math.ceil(base*extras.auraPercent/100);
