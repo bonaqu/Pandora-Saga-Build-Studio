@@ -13,8 +13,10 @@ function socketCapacity(record,override=null){
  if(record.slot&&!supportsSoulSlot(record.slot))return 0;
  if(Number.isInteger(override)&&override>=0&&override<=3)return override;
  if(record.soulslot===null||record.soulslot===undefined)return null;
- const n=Number(record.soulslot);
- return Number.isInteger(n)&&n>=0&&n<=32?n:null;
+ // Game-source capacity is an explicit integer, never coerced from a string,
+ // boolean or array. Preserve valid 0..32 source range and 0..3 copy overrides.
+ const n=record.soulslot;
+ return Number.isSafeInteger(n)&&n>=0&&n<=32?n:null;
 }
 function equippedSocketCapacity(state,slot,equipment,record){
  const key=refinementKey(slot,equipment);
@@ -25,8 +27,12 @@ function validSoul(soul,slot){
 }
 function socketReport(souls,capacity){
  const all=asSocketArray(souls),count=all.filter(Boolean).length;
- const excess=capacity===null?count:all.slice(capacity).filter(Boolean).length;
- return {all,count,excess,capacity,unknown:capacity===null};
+ // An invalid cached capacity is UNKNOWN, not implicit 0/1/2 slots.
+ // Preserve every stored Soul; report inactive/extra positions separately.
+ const valid=Number.isSafeInteger(capacity)&&capacity>=0&&capacity<=32;
+ const normalized=valid?capacity:null;
+ const excess=normalized===null?count:all.slice(normalized).filter(Boolean).length;
+ return {all,count,excess,capacity:normalized,unknown:normalized===null};
 }
 // All customizations belong to the *equipped copy*, never permanently to its
 // catalog name/ID. Removal or replacement invalidates Souls, refinement,
@@ -107,7 +113,10 @@ const FORGE_SLOTS=Object.freeze(new Set(['weapon','shield','head','body','gloves
 const SOUL_SLOTS=Object.freeze(new Set(['weapon','shield','head','body','gloves','legs','feet','belt']));
 function supportsSoulSlot(slot){return SOUL_SLOTS.has(slot)}
 function canSocket(slot,record,override=null){
- return supportsSoulSlot(slot)&&socketCapacity(record,override)>0;
+ // A belt Soul cannot be inserted into leggings (or vice versa) simply
+ // because both slot categories accept Souls.
+ return supportsSoulSlot(slot)&&record?.slot===slot&&
+  socketCapacity(record,override)>0;
 }
 function canRefine(slot){return FORGE_SLOTS.has(slot)}
 // A two-handed weapon occupies the shield/offhand. Never erase a saved shield:
