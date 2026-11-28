@@ -1030,10 +1030,10 @@ function setAttributeBuff(key,value){
   const cap=Number(catalog.classes?.CLERIC?.branchCaps?.hymn||45);
   current[key]=key==='allyPeaceSpi'?n:Math.min(cap,Math.max(active?30:0,n));
  }else if(key==='guildArouse'){
-  const n=Number(value);if(!Number.isInteger(n)||n<0||n>3)return;
+  const n=Number(value);if(!Number.isInteger(n)||n<0||n>5)return;
   current.guildArouse=n;
  }else if(key==='guildAll'){
-  const n=Number(value);if(!Number.isInteger(n)||n<0||n>6)return;
+  const n=Number(value);if(!Number.isInteger(n)||n<0||n>5)return;
   current.guildAll=n;
  }else if(key==='proeliumPotency'){
   const n=Number(value);if(!Number.isInteger(n)||n<0||n>100)return;
@@ -1041,9 +1041,9 @@ function setAttributeBuff(key,value){
  }else if(['guildLifeRecovery','guildManaRecovery','guildHealing',
   'guildPhysicalReduction','guildMagicReduction','guildExperience'].includes(key)){
   if(key!=='guildHealing'&&Number(current.guildLevel)>0)return;
-  const n=Number(value),limit=key==='guildHealing'?3:
+  const n=Number(value),limit=key==='guildHealing'?5:
    key==='guildExperience'?8:
-   ['guildPhysicalReduction','guildMagicReduction'].includes(key)?3:2;
+   ['guildPhysicalReduction','guildMagicReduction'].includes(key)?3:4;
   if(!Number.isInteger(n)||n<0||n>limit)return;
   current[key]=n;
  }else return;
@@ -9457,13 +9457,13 @@ function sanitizeSharedState(original){
  const rawAttributes=original.attributeBuffs;
  if(rawAttributes&&typeof rawAttributes==='object'&&!Array.isArray(rawAttributes)){
   const guild=rawAttributes.guildAll,potency=rawAttributes.proeliumPotency;
-  if(Number.isInteger(guild)&&guild>=0&&guild<=6)safe.attributeBuffs.guildAll=guild;
+  if(Number.isInteger(guild)&&guild>=0&&guild<=5)safe.attributeBuffs.guildAll=guild;
   if(Number.isInteger(potency)&&potency>=0&&potency<=100)safe.attributeBuffs.proeliumPotency=potency;
   if(['ENCHANTER','CLERIC'].includes(rawAttributes.priestClass))
    safe.attributeBuffs.priestClass=rawAttributes.priestClass;
   for(const [key,limit] of [['guildLevel',12],['priestSpi',500],['priestBlessing',500],['priestHymn',500],['priestBenevolence',500],['priestExorcism',500],['allyPeaceSpi',500],['allyPeaceHymn',45],['allyNaturalLevel',55],
    ['allyHealingLevel',55],['allyHealingSpi',500],['allyHealingMastery',90],
-   ['guildLifeRecovery',2],['guildManaRecovery',2],['guildHealing',3],['guildArouse',3],
+   ['guildLifeRecovery',4],['guildManaRecovery',4],['guildHealing',5],['guildArouse',5],
    ['guildPhysicalReduction',3],['guildMagicReduction',3],['guildExperience',8]]){
    const level=rawAttributes[key];
    if(Number.isInteger(level)&&level>=0&&level<=limit&&

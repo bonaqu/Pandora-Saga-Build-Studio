@@ -61,9 +61,9 @@ test('Remaked HP/MP natural recovery guild selectors and Healing stack exactly',
  assert.equal(make({guildHealing:2}).regeneration.mp.total,28);
 });
 test('invalid guild indices cannot create fake recovery or contaminate shared builds',()=>{
- assert.equal(make({guildLifeRecovery:3}),null);
+ assert.equal(make({guildLifeRecovery:5}),null);
  assert.equal(make({guildManaRecovery:-1}),null);
- assert.equal(make({guildHealing:4}),null);
+ assert.equal(make({guildHealing:6}),null);
  assert.equal(make({guildHealing:'2'}),null);
  const app=read('pandora-studio-app.js'),book=read('pandora-studio-hero-book.js');
  for(const name of ['guildLifeRecovery','guildManaRecovery','guildHealing']){

@@ -18,7 +18,7 @@ test('shared builds safely validate and persist combat choices',()=>{
  const app=get('pandora-studio-app.js');
  assert.match(app,/rawAttributes\[key\]===true/);
  assert.match(app,/safe\.attributeBuffs\.combatDefender=false/);
- assert.match(app,/\['guildArouse',3\]/);
+ assert.match(app,/\['guildArouse',5\]/);
  assert.match(app,/current\.combatRage/);
  assert.match(app,/current\.combatDefender/);
 });

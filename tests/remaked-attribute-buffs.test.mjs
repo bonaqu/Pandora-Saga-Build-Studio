@@ -39,6 +39,7 @@ test('item attribute buffs combine with guild and honor before HP/MP calculation
 });
 test('guild and potion parameters reject out-of-range values',()=>{
  assert.equal(make({guildAll:7}),null);
+ assert.equal(make({guildAll:6}),null,'no sixth published leader attribute rank');
  assert.equal(make({guildAll:-1}),null);
  assert.ok(make({proelium:true,proeliumPotency:101}));
  assert.ok(make({proelium:true,proeliumPotency:-5}));
