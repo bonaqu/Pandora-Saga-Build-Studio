@@ -1644,8 +1644,8 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
     ['EP_MANA_SHIELD','EP_CASTINGCANCEL_RESISTANCE_CONST'].includes(ep)?
      [0,0,0,15]:[0,0,0,0])[i]);
  };
- const mastery=branch=>Number(branchMasteries?.[branch]??0);
- const cap=branch=>Number(branchCaps?.[branch]??0);
+ const mastery=branch=>branchMasteries?.[branch]??0;
+ const cap=branch=>branchCaps?.[branch]??0;
  // The user's verified MELEE parent uses combined TRAINED green mastery,
  // not the zero-sized internal `martial` branch (0.741.0 class source).
  const sourceRank=(skill,branch)=>skill?.branchRaw==='MELEE'&&
@@ -5075,10 +5075,11 @@ function skillExecutionChains({skillCatalog=null,jobKey=null,level=1,onHit=false
  for(const idString of Object.keys(skillCatalog).sort((a,b)=>Number(a)-Number(b))){
   const id=Number(idString),s=get(id);
   if(!s||idString!==String(id)||s.learnable!==true||s.classes?.[jobKey]!==1||
-   !s.funcs.some(f=>f?.ep===rootEP))continue;
+   (!Number.isSafeInteger(s.charLevel)||s.charLevel<0||
+    s.charLevel>plannerMaxLevel()||!s.funcs.some(f=>f?.ep===rootEP)))continue;
   if(!Array.isArray(s.reqs)||!s.reqs.every(r=>typeof r?.branch==='string'&&
    Number.isSafeInteger(r.amount)&&r.amount>=0))continue;
-  if(s.reqs.some(r=>!Number.isFinite(branchCaps?.[r.branch])||
+  if(s.reqs.some(r=>!Number.isSafeInteger(branchCaps?.[r.branch])||
    branchCaps[r.branch]<r.amount))continue;
   if(Number.isSafeInteger(s.prereq)&&s.prereq>0){
    const parent=get(s.prereq);
@@ -5087,12 +5088,12 @@ function skillExecutionChains({skillCatalog=null,jobKey=null,level=1,onHit=false
   const paths=trace(id,new Set());
   if(!paths){out.rejected.push(id);continue;}
   const ru=[],en=[];
-  if(level<Number(s.charLevel||0)){
+  if(level<s.charLevel){
    ru.push('Нужен уровень '+s.charLevel);
    en.push('Requires level '+s.charLevel);
   }
   for(const r of s.reqs){
-   const points=Number(branchMasteries?.[r.branch]??0);
+   const points=branchMasteries?.[r.branch]??0;
    if(Number.isSafeInteger(points)&&points>=r.amount&&
     points<=branchCaps[r.branch])continue;
    ru.push('Нужно мастерство «'+(branchLabels?.[r.branch]||r.branch)+'»: '+r.amount);
