@@ -539,6 +539,39 @@ async function main(){
   panel===window.__psBookStablePanel),true,
   'Changing guild settings must not remount the entire scrolling Hero Book');
  assert.equal(await page.locator('#stageBookPanel').evaluate(panel=>panel.scrollTop),oldScroll);
+ // Published guild ranks III–V must be selectable, saved to the active hero
+ // and displayed in EN from the current catalog, not old short lists.
+ for(const [key,rank] of [
+  ['guildLifeRecovery',4],['guildManaRecovery',3],
+  ['guildHealing',5],['guildAll',5],['guildArouse',5]
+ ]){
+  const field=page.locator('#stageBookPanel [data-book-setting="'+key+'"]');
+  assert.equal(await field.locator('option[value="'+rank+'"]').count(),1,
+   'Missing a catalog-defined guild rank: '+key+' '+rank);
+  await field.selectOption(String(rank));
+  assert.equal(await field.inputValue(),String(rank),
+   'A guild rank must remain selected after live recalculation: '+key);
+  assert.equal(await page.evaluate(property=>
+   JSON.parse(localStorage.getItem('ps-build-studio.v1')||'{}')
+    .attributeBuffs?.[property],key),rank,
+   'Guild rank was not saved to the active draft: '+key);
+ }
+ for(const [key,rank,rate] of [
+  ['guildLifeRecovery',4,'15%'],['guildManaRecovery',3,'11%'],
+  ['guildHealing',5,'50%'],['guildArouse',5,'10%']
+ ]){
+  const option=page.locator('#stageBookPanel [data-book-setting="'+key+
+   '"] option[value="'+rank+'"]');
+  assert.match(await option.getAttribute('title')||'',new RegExp(rate),
+   'Later ranks must have a real source-backed EN description');
+ }
+ for(const [key,rank] of [
+  ['guildLifeRecovery','0'],['guildManaRecovery','0'],
+  ['guildHealing','0'],['guildAll','1'],['guildArouse','0']
+ ]){
+  await page.locator('#stageBookPanel [data-book-setting="'+key+'"]')
+   .selectOption(rank);
+ }
  await page.locator('#stageBookPanel [data-book-setting="guildLevel"]').selectOption('10');
  const guildPassives=page.locator('#stageBookPanel .stage-guild-passive-row');
  assert.equal(await guildPassives.count(),7,'Guild Lv.10 grants seven individual passive effects');

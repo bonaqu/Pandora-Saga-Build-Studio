@@ -1039,14 +1039,30 @@ function buffsPage(body,options){
  const guildLevel=Number(buffs.guildLevel)||0;
  const guildPreview=root.PandoraOSCalculator?.guildPassiveAtLevel(guildLevel);
  const guildSource=root.PandoraGuildSkillSource||[];
- const sourceSkill=(i,rank)=>guildSource[i]?.levels?.[Math.max(0,rank-1)]||{};
+ const sourceSkill=(i,rank)=>{
+  const prior=guildSource[i]?.levels?.[Math.max(0,rank-1)];
+  if(prior)return prior;
+  // Later guild ranks exist in the loaded catalog even when an older
+  // presentation list stops early. Display verified gameplay descriptions
+  // without inventing their unlock level or a final combat calculation.
+  const starts={1:600000001,2:600000011,3:600000021,4:600000031,
+   5:600000071,6:600000081,7:600000061,8:610000211,9:610000221,10:610000231};
+  const first=starts[i];
+  if(!Number.isSafeInteger(first)||!Number.isSafeInteger(rank)||rank<1)return {};
+  const id=first+rank-1,record=gameTerms.skills?.[String(id)];
+  if(record?.id!==id)return {};
+  const clean=value=>typeof value==='string'?value.replace(/<[^>]*>/g,' ').trim():'';
+  const ru=clean(record.desc),en=clean(gameTerms.englishSkills?.[String(id)]?.d);
+  return {ru,en:en||ru};
+ };
  const guildRate=[0,2,4,6,9,12,15];
  const guildRatesBySkill={
   guildHp:[0,2,4,6,9,12,15],guildMp:[0,2,4,6,9,12,15],
-  guildLifeRecovery:[0,5,8],guildManaRecovery:[0,5,8],
+  guildLifeRecovery:[0,5,8,11,15],guildManaRecovery:[0,5,8,11,15],
   guildPhysicalReduction:[0,3,6,10],guildMagicReduction:[0,3,6,10],
   guildExperience:[0,2,3,4,5,6,7,8,10],
-  guildHealing:[0,10,20,30],guildAll:[0,1,2,3],guildArouse:[0,2,4,6]
+  guildHealing:[0,10,20,30,40,50],guildAll:[0,1,2,3,4,5],
+  guildArouse:[0,2,4,6,8,10]
  };
  const guildChoice=(parent,key,sourceIndex,firstSkillId,vital=false)=>{
   const source=guildSource[sourceIndex]||{},rates=guildRatesBySkill[key];

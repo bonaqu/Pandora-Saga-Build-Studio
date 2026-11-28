@@ -630,7 +630,7 @@ function healingSkillPreview({honorTitle=0,records=[],itemForth=null}={}){
 }
 function regenerationPreview({stats={},guild={}}={}){
  if(!Number.isFinite(stats.vit)||!Number.isFinite(stats.spi))return null;
- const recovery=[0,5,8],healing=[0,10,20,30];
+ const recovery=[0,5,8,11,15],healing=[0,10,20,30,40,50];
  const keys=['guildLifeRecovery','guildManaRecovery','guildHealing'];
  const levels=keys.map((key,i)=>guild[key]??0);
  if(levels.some((value,i)=>!Number.isInteger(value)||value<0||value>=(i===2?healing.length:recovery.length)))return null;
@@ -938,7 +938,7 @@ function magicAttackPreview({int,jobKey=null,magicMastery=0,weapon=null,guildAro
  weaponGrade=0,weaponEnhancementType='physical',magicPlus=null}={}){
  if(!Number.isFinite(int)||int<0||
   !Number.isInteger(magicMastery)||magicMastery<0||
-  !Number.isInteger(guildArouse)||guildArouse<0||guildArouse>3)return null;
+  !Number.isInteger(guildArouse)||guildArouse<0||guildArouse>5)return null;
  const step=magicSteps.find(([n])=>int>=n)?.[1]??0;
  const passive=magicLineage.has(jobKey)?10+Math.floor(magicMastery/10):0;
  // Remaked Legacy Cursed Rod / Iron Staff / Might Staff exceptions.
@@ -946,7 +946,7 @@ function magicAttackPreview({int,jobKey=null,magicMastery=0,weapon=null,guildAro
  const staffId=Number(weapon?.id);
  const staff=weapon?.kind==='WAND'?10:weapon?.kind==='STAFF'?
   (staffId===2841?20:(staffId===2802||staffId===2812)?0:15):0;
- const guild=[0,2,4,6][guildArouse],baseExact=100+step+passive+staff+guild;
+ const guild=[0,2,4,6,8,10][guildArouse],baseExact=100+step+passive+staff+guild;
  // OS news #4: magical weapon refinement adds MATK percent points from
  // tables.magicPlus[grade].ratio. The source's additional "flat" column is
  // a different undocumented field; never count it as a second MATK bonus.
@@ -2373,7 +2373,7 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const walkingBaseAtk=attack?.raw??attack?.known??null;
  const baseAtk=walkingBaseAtk===null?null:
   (mounted?Math.ceil(walkingBaseAtk*mountedRate):walkingBaseAtk);
- const guildRate=[0,.02,.04,.06][guildArouse];
+ const guildRate=[0,.02,.04,.06,.08,.10][guildArouse];
  if(guildRate===undefined)return null;
  const guildAtk=baseAtk===null?null:Math.ceil(baseAtk*guildRate);
  const activeAtk=baseAtk===null?null:
@@ -2594,7 +2594,7 @@ function attributeBuffBonus(options={},context={}){
  const selected=selectedHonor(options);
  if(!selected)return null;
  const guild=Number(options.guildAll??0);
- if(!Number.isInteger(guild)||guild<0||guild>6)return null;
+ if(!Number.isInteger(guild)||guild<0||guild>5)return null;
  if(guild){
   for(const key of keys)out[key]+=guild;
   trace.push({source:'Remaked SelBuffClan_9',amount:guild,keys:keys.slice()});
