@@ -35,8 +35,8 @@ test('direct strike models only accept exact numeric class ownership',()=>{
   const altered=clone();altered['142002001'].classes.JUGGERNAUT=bad;
   assert.equal(get(strike(altered),142002001),undefined,
    'Forged JUGGERNAUT source '+String(bad));
-  assert.ok(get(strike(altered),100102001),
-   'Unrelated valid attacks survive a forged neighboring source');
+  assert.equal(get(move('SNIPER',altered),320004001)?.amount,40,
+   'Unrelated valid ally movement remains unchanged');
  }
  const altered=clone();
  altered['110101001'].classes.JUGGERNAUT='1';
