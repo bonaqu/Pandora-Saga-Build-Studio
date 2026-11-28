@@ -898,6 +898,17 @@ const combatSkillDefaults=Object.freeze({
  defender:{EP_DAMAGERATE_SCALE:-20,EP_ARMORCLASS_SCALE:40},
  concentration:{EP_TOHIT_CONST:100}
 });
+// Ally effects are cast by a valid current-game class, but received by any
+// party member. Validate the caster's source-defined classes, never require
+// the recipient to learn another class's skill.
+function ownedAllyCasterClasses(skill,id){
+ const contract=osAllyRecipientAccess[id],classes=skill?.classes;
+ if(!contract||!classes||typeof classes!=='object'||Array.isArray(classes)||
+  skill.branch!==contract.branch)return false;
+ const keys=Object.keys(classes).sort();
+ return keys.length===contract.classes.length&&
+  keys.every((key,i)=>key===contract.classes[i]&&classes[key]===1);
+}
 function combatSkillSource(skillCatalog,kind){
  const id=combatSkillIds[kind],required=combatSkillRequirements[kind];
  if(!Number.isSafeInteger(id)||!Array.isArray(required))return null;
@@ -914,6 +925,7 @@ function combatSkillSource(skillCatalog,kind){
  }[kind];
  if(!contract||skill?.id!==id||skill.skillType!==contract.type||
   skill.branch!==contract.branch||skill.learnable!==true||
+  (kind==='warCry'&&!ownedAllyCasterClasses(skill,id))||
   skill.prereq!==null||!Array.isArray(skill.funcs)||
   skill.funcs.length!==required.length+(contract.extra?1:0))return null;
  const effects={},seen=new Set();
@@ -951,6 +963,7 @@ function supportSkillSource(skillCatalog,kind){
  const required=supportRequirements[kind];
  if(!record||!Array.isArray(record.funcs)||!required||
   record.id!==supportSkillIds[kind]||
+  !ownedAllyCasterClasses(record,supportSkillIds[kind])||
   record.skillType!==(kind==='windAssist'?'PARTY_ALL':'ALLY')||
   record.funcs.length!==required.length)return null;
  const values={};
@@ -989,12 +1002,13 @@ function magicAttackPreview({int,jobKey=null,magicMastery=0,weapon=null,guildAro
  weaponGrade=0,weaponEnhancementType='physical',magicPlus=null}={}){
  if(!Number.isFinite(int)||int<0||
   !Number.isInteger(magicMastery)||magicMastery<0||
-  !Number.isInteger(guildArouse)||guildArouse<0||guildArouse>5)return null;
+  !Number.isInteger(guildArouse)||guildArouse<0||guildArouse>5||
+  !Number.isSafeInteger(weaponGrade)||weaponGrade<0||weaponGrade>10)return null;
  const step=magicSteps.find(([n])=>int>=n)?.[1]??0;
  const passive=magicLineage.has(jobKey)?10+Math.floor(magicMastery/10):0;
  // Remaked Legacy Cursed Rod / Iron Staff / Might Staff exceptions.
  // Current OS uses stable IDs; names are translated by the RU/EN selector.
- const staffId=Number(weapon?.id);
+ const staffId=Number.isSafeInteger(weapon?.id)?weapon.id:null;
  const staff=weapon?.kind==='WAND'?10:weapon?.kind==='STAFF'?
   (staffId===2841?20:(staffId===2802||staffId===2812)?0:15):0;
  const guild=[0,2,4,6,8,10][guildArouse],baseExact=100+step+passive+staff+guild;
@@ -1019,7 +1033,7 @@ function activeCombatSkills({selected={},jobKey=null,level=1,hasShield=false,
   if(skillCatalog){
    const source=combatSkillSource(skillCatalog,key);
    const record=source?.record;
-   if(!source||!record?.classes?.[jobKey]||
+   if(!source||record?.classes?.[jobKey]!==1||
     !Number.isInteger(record.charLevel)||level<record.charLevel||
     record.learnable!==true||record.prereq!==null)return false;
    // A branch-gated skill is not learned until the green Adeptness
