@@ -61,7 +61,7 @@ test('scaling self-skill source levels require numeric proof, unlike recipient b
  for(const bad of ['0',true,[0],{},null,56,-1,NaN]){
   const altered=clone();altered['260007001'].charLevel=bad;
   assert.equal(by(scaling(altered).defense,260007001),undefined);
-  assert.equal(by(scaling(altered).defense,320004001)?.recipient,true,
+  assert.equal(by(scaling(altered).movement,320004001)?.recipient,true,
    'External movement applies to a recipient, not a self skill');
  }
 });
