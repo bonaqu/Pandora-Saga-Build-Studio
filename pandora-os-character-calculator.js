@@ -438,7 +438,7 @@ function wardingStatusPassive({jobKey=null,wardingMastery=0,wardingCap=null,skil
  if(skill?.id!==260007001||skill.learnable!==true||
   skill.skillType!=='PASSIVE'||skill.branch!=='warding'||
   skill.charLevel!==0||skill.reqLevel!==26||
-  skill.prereq!==null||!skill.classes?.[jobKey]||
+  skill.prereq!==null||skill.classes?.[jobKey]!==1||
   !Array.isArray(skill.reqs)||skill.reqs.length!==1||
   skill.reqs[0]?.branch!=='warding'||skill.reqs[0]?.amount!==26||
   !Array.isArray(skill.funcs)||skill.funcs.length!==4)return null;
@@ -1145,7 +1145,8 @@ function defensiveSkillPreview({skillCatalog=null,jobKey=null,level=1,
   !Number.isInteger(level)||level<1)return [];
  return defensivePreviewSkillIds.flatMap(id=>{
   const record=skillCatalog[String(id)];
-  if(!record||record.id!==id||!record.classes?.[jobKey]||
+  if(!record||record.id!==id||record.classes?.[jobKey]!==1||
+   !Array.isArray(record.funcs)||!Array.isArray(record.reqs)||
    !['MYSELF','TOGGLE','PASSIVE'].includes(record.skillType))return [];
   const effects=(record.funcs||[]).filter(f=>f?.dir==='TARGET'&&
    defensiveEffectIds.has(f.ep));
@@ -1217,7 +1218,7 @@ function elementalSpellCoefficientPreview({skillCatalog,jobKey,level,
   const id=Number(key),skill=skillCatalog[key];
   if(!skill||skill.id!==id||skill.learnable!==true||
    skill.prereq!=null||skill.branch!==branch||
-   !skill.classes?.[jobKey]||
+   skill.classes?.[jobKey]!==1||
    !['BOLT','RADIATION','ENEMY'].includes(skill.skillType)||
    !Array.isArray(skill.reqs)||!Array.isArray(skill.funcs))continue;
   const cap=branchCaps?.[branch],rank=branchMasteries?.[branch]??0;
@@ -1843,7 +1844,7 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
     exact(record,ep,coeff)||dynamicSkillSourceMatches(record,ep,coeff)))||
    seen.has(id))return;
   const recipient=options.recipient===true;
-  if(!recipient&&!record.classes?.[jobKey])return;
+  if(!recipient&&record.classes?.[jobKey]!==1)return;
   // Painlessness now has a dedicated full five-effect OS proof below.
   // The archival technique inspector pins FV1[3]=-50 and therefore cannot
   // gate a legitimate supported signed source revision of that same field.
@@ -2359,7 +2360,7 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
 function incredibleStrengthPreview({skillCatalog=null,jobKey=null,level=null}={}){
  const skill=skillCatalog?.['910110001'];
  if(!skill||skill.id!==910110001||skill.skillType!=='PASSIVE'||
-  skill.learnable!==true||!skill.classes?.[jobKey]||
+  skill.learnable!==true||skill.classes?.[jobKey]!==1||
   !Number.isInteger(level)||level<skill.charLevel||
   !Array.isArray(skill.reqs)||skill.reqs.length!==0||
   !Array.isArray(skill.funcs)||skill.funcs.length!==1)return null;
@@ -3362,7 +3363,7 @@ function healingSourceGate({id,cleric,jobKey,level,benevolence,benevolenceCap,
   !Number.isInteger(benevolenceCap)||benevolenceCap<0||
   !Number.isInteger(benevolence)||benevolence<0||
   benevolence>benevolenceCap||requiredMastery>benevolenceCap||
-  benevolence<requiredMastery||!skill.classes?.[jobKey]||
+  benevolence<requiredMastery||skill.classes?.[jobKey]!==1||
   skill.learnable!==true||skill.charLevel!==requiredLevel||
   level<requiredLevel||skill.prereq!==prereq||
   !Array.isArray(skill.reqs)||skill.reqs.length!==(requiredMastery?1:0)||
@@ -3687,7 +3688,7 @@ function periodicRecoveryPreview({level,spi,benevolence=0,jobKey=null,
  for(const candidate of candidates){
   const proof=periodicSkillProof[candidate.id],skill=skillCatalog?.[String(candidate.id)];
   // A mutated ID, direction or effect vector is not a verified skill.
-  if(!skill?.classes?.[jobKey]||skill.id!==candidate.id||
+  if(skill?.classes?.[jobKey]!==1||skill.id!==candidate.id||
    !periodicSourceMatches(skill,proof))continue;
   if(candidate.kind==='mp'&&!naturalManaJobs.has(jobKey))continue;
   const capValid=Number.isInteger(benevolenceCap)&&benevolenceCap>=proof.required;
@@ -3849,7 +3850,7 @@ function songSkillPreview({skillCatalog=null,jobKey=null,level=1,
    Number.isInteger(branchCaps?.[branch])&&branchCaps[branch]>=amount);
   if(!capsValid)continue; // Never offer an impossible song for this class.
   const root=skillCatalog[String(spec.id)];
-  if(!root?.classes?.[jobKey]||!songSourceMatches(skillCatalog,spec))continue;
+  if(root?.classes?.[jobKey]!==1||!songSourceMatches(skillCatalog,spec))continue;
   const masteryValid=requirements.every(({branch})=>
    Number.isInteger(branchMasteries?.[branch])&&branchMasteries[branch]>=0&&
    branchMasteries[branch]<=branchCaps[branch]);
@@ -5528,7 +5529,7 @@ function trapSkillCostPreview({skillCatalog=null,jobKey=null,level=1,
   const record=skillCatalog[String(id)],cap=branchCaps?.trap;
   if(record?.id!==id||record.learnable!==true||record.skillType!=='POINT'||
    record.branch!=='trap'||record.prereq!==null||record.charLevel!==0||
-   !record.classes?.[jobKey]||!Array.isArray(record.reqs)||
+   record.classes?.[jobKey]!==1||!Array.isArray(record.reqs)||
    record.reqs.length!==1||record.reqs[0]?.branch!=='trap'||
    record.reqs[0]?.amount!==required||
    !Number.isSafeInteger(cap)||cap<required)continue;
@@ -5633,7 +5634,7 @@ function statusApplicationPreview({skillCatalog=null,jobKey=null,level=1,
   const s=skillCatalog[String(proof.id)];
   if(s?.id!==proof.id||s.learnable!==true||s.prereq!==null||
    s.skillType!==proof.type||s.branch!==proof.branch||s.charLevel!==proof.level||
-   !s.classes?.[jobKey]||!Array.isArray(s.reqs)||s.reqs.length!==proof.reqs.length||
+   s.classes?.[jobKey]!==1||!Array.isArray(s.reqs)||s.reqs.length!==proof.reqs.length||
    !proof.reqs.every(([branch,amount],i)=>s.reqs[i]?.branch===branch&&s.reqs[i]?.amount===amount)||
    proof.reqs.some(([branch,amount])=>!Number.isSafeInteger(branchCaps?.[branch])||branchCaps[branch]<amount))continue;
   const valid=Array.isArray(s.funcs)&&s.funcs.length===proof.funcs.length&&
@@ -5696,7 +5697,7 @@ function complexSkillSourcePreview({skillCatalog=null,jobKey=null,level=1,
   const r=skillCatalog[String(ref.id)];
   if(r?.id!==ref.id||r.learnable!==true||r.skillType!==ref.type||
    r.branch!==ref.branch||r.prereq!==null||r.charLevel!==ref.level||
-   !r.classes?.[jobKey]||!Array.isArray(r.reqs)||
+   r.classes?.[jobKey]!==1||!Array.isArray(r.reqs)||
    r.reqs.length!==ref.reqs.length||
    !ref.reqs.every(([branch,amount],i)=>r.reqs[i]?.branch===branch&&
     r.reqs[i]?.amount===amount))continue;
