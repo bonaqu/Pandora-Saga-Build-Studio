@@ -90,7 +90,10 @@ test('valid official FV1 changes retain model coverage; invalid FV2 invalidates 
  invalidSource['310004001'].funcs[0].fv2[3]=15;
  const invalidHealing=report(invalidSource);
  assert.equal(row(invalidHealing,310004001).sourceModules.includes('healing-spells'),false);
- assert.equal(row(invalidHealing,310004002).sourceModules.includes('healing-spells'),true);
+ assert.equal(row(invalidHealing,310004002).sourceModules.includes('healing-spells'),false,
+  'An invalid base Heal source can no longer authorize its upgraded CLERIC child');
+ assert.equal(row(invalidHealing,310001002).sourceModules.includes('healing-spells'),true,
+  'Unrelated enhanced First Aid stays valid when Heal is corrupted');
  assert.ok(invalidHealing.summary.statuses['unmodeled-learnable']>
   before.summary.statuses['unmodeled-learnable']);
  const changedResistance=structuredClone(skills);
