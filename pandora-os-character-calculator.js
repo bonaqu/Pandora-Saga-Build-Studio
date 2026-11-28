@@ -2410,7 +2410,9 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  techniqueTrained=0,guildArouse=0,combatBuffs={},skillCatalog=null,
  priestEffects={},branchMasteries={},branchCaps=null,ridingMastery=0,
  allyClasses=null}={}){
- if(!Number.isInteger(level)||level<1||level>plannerMaxLevel()||
+ if(!stats||typeof stats!=='object'||Array.isArray(stats)||
+  !bonuses||typeof bonuses!=='object'||Array.isArray(bonuses)||
+  !Number.isInteger(level)||level<1||level>plannerMaxLevel()||
   !['dex','agi','str'].every(key=>Number.isFinite(stats[key])&&stats[key]>=0)||
   !Number.isInteger(honorTitle)||honorTitle<0||honorTitle>=honorTitles.length)return null;
  // Remaked Calc(ATK/ACC/Dodge/MoveSPD/CastSPD/Cooldown) uses a
@@ -2420,6 +2422,10 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const mountedStatus=mountedReleasePreview({jobKey,ridingMastery,honorTitle});
  if(mounted&&!mountedStatus)return null;
  const mountedRate=mounted?Math.min(100,Math.max(0,mountedStatus.known))/100:1;
+ // Forged saved values are not source-proven numeric priest modifiers.
+ // Keep signed valid Sage/holy values, while invalid data contributes zero.
+ const priestValue=key=>Number.isFinite(priestEffects?.[key])?
+  priestEffects[key]:0;
  const title=honorTitles[honorTitle].effects,read=key=>{
   const n=bonuses[key]??0;return Number.isFinite(n)?n:null;
  };
@@ -2487,7 +2493,7 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const directDef=defense.directRaw;
  const activeDef=(actives.raging?Math.ceil(directDef*effect('raging','EP_ARMORCLASS_SCALE')/100):0)+
   (actives.defender?Math.floor(directDef*effect('defender','EP_ARMORCLASS_SCALE')/100):0);
- const priestDefense=Math.max(0,Number(priestEffects?.lapisMedio)||0);
+ const priestDefense=Math.max(0,priestValue('lapisMedio'));
  const effectiveDefense={...defense,activeBonus:activeDef,
   priestBonus:priestDefense,raw:defense.raw+activeDef+priestDefense,
   known:mounted?null:Math.floor(defense.raw+activeDef+priestDefense)};
@@ -2510,9 +2516,8 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  // Legacy Calc('ATKSPD'): 100 + 2*floor(AGI/10) +
  // 3*floor(AGI/20) + floor(AGI/10); typed as a speed index, not hits/sec.
  const speedBase=100+3*Math.floor(stats.agi/10)+3*Math.floor(stats.agi/20);
- const priestSpeed=Math.max(0,Number(priestEffects?.gratia)||0);
- const priestMinstrel=Number.isFinite(priestEffects?.minstrel)?
-  Math.max(0,Number(priestEffects.minstrel)):0;
+ const priestSpeed=Math.max(0,priestValue('gratia'));
+ const priestMinstrel=Math.max(0,priestValue('minstrel'));
  const swiftArrow=otherBuffs.swiftArrow?.attackSpeed||0;
  const attackSpeed={base:speedBase,equipment:equipped.attackSpeedFlat,
   lunge:actives.lunge?effect('lunge','EP_ATTACKINTERVAL_SCALE'):0,
@@ -2629,16 +2634,21 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  // Rapin 900060003: EP_CRITICAL_REGIST fv2[3]=10 (incoming crit damage).
  // These are mutually exclusive racial selections, not always-on race traits.
  const criticalDamage=100+raceValue(900050003,10);
+ // Damaged item/Soul critical-reduction data must not fabricate a new
+ // character-sheet resistance via Boolean or single-element array coercion.
+ const incomingCriticalReduction=bonuses.incomingCriticalReduction;
+ if(incomingCriticalReduction!==undefined&&
+  !Number.isFinite(incomingCriticalReduction))return null;
  const criticalIncoming=(title.incomingCriticalChance||0)-
-  (Number(bonuses.incomingCriticalReduction)||0)-
+  (incomingCriticalReduction??0)-
   raceValue(900030003,5);
  const criticalIncomingDamage=100+(title.incomingCriticalDamage||0)-
   raceValue(900060003,10);
  return {attack:attackWithRange,magicAttack,defense:effectiveDefense,activeSkills:actives,
   racialWeapon,incredibleStrength,
   priestSong:{minstrel:priestMinstrel,
-   sageElementDamage:Number(priestEffects?.sageElementDamage)||0,
-   sageCooldownDelta:Number(priestEffects?.sageCooldownDelta)||0,
+   sageElementDamage:priestValue('sageElementDamage'),
+   sageCooldownDelta:priestValue('sageCooldownDelta'),
    verified:false,source:'Remaked SPR/Hymn scaling + current OS skill function'},
   activeSkillValues:activeValues,secondary,supportSkills,supportSkillValues,
   guildArouse,guildAtk,attackSpeed,castingSpeed,castTime,manaCost,
@@ -4762,7 +4772,8 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  const allyNaturalRecovery=selectedRemakedIds.includes(330005001)?
   alliedNaturalRecoveryPreview({
    skillCatalog:combatContext.skillCatalog,
-   casterLevel:Number(attributeBuffs.allyNaturalLevel??45)
+   casterLevel:attributeBuffs.allyNaturalLevel===undefined?
+     45:attributeBuffs.allyNaturalLevel
   }):null;
  // Historic allied-healing fields no longer apply to the built character.
  // Own Regeneration and Restoration are shown in Skill Effects only.
