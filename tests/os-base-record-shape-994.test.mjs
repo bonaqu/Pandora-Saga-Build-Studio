@@ -66,3 +66,21 @@ test('empty default, malformed and normal gear leave base numeric formulas uncha
  assert.equal(equipped.hp, C.base({...shared,
   records:[null,['item:13041',items['13041'],0]]}).hp);
 });
+
+test('shield eligibility ignores broken neighbors without disabling a real shield',()=>{
+ const shield={id:1,slot:'shield',AC:40,name:'Щит'};
+ const common={stats:attrs,level:45,jobKey:'KNIGHT',
+  combatBuffs:{combatDefender:true},weapon:{W:48}};
+ const valid=[['item:1',shield,0]];
+ const baseline=C.combatPreview({...common,records:valid});
+ const withDamage=C.combatPreview({...common,records:[
+  null,undefined,5,{},[],['item:1',shield],...valid
+ ]});
+ assert.ok(baseline&&baseline.activeSkills.defender,
+  'a valid equipped shield still enables defender');
+ assert.deepEqual(withDamage,baseline);
+ assert.equal(C.combatPreview({...common,records:[
+  null,{},['item:1',shield]
+ ]})?.activeSkills.defender,false,
+  'a partial shield tuple is not equipped armor');
+});

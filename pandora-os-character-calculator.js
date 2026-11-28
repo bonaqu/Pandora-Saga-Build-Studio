@@ -2379,8 +2379,9 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const secondary=secondaryEffectsPreview({records,itemForth});
  if(!defense||!equipped||!secondary)return null;
  const actives=activeCombatSkills({selected:combatBuffs,jobKey,level,skillCatalog,weapon,branchMasteries,
-  hasShield:records.some(([source,record])=>String(source).startsWith('item:')&&
-   record?.slot==='shield')});
+  hasShield:Array.isArray(records)&&records.some(tuple=>
+   Array.isArray(tuple)&&tuple.length>=3&&
+   String(tuple[0]).startsWith('item:')&&tuple[1]?.slot==='shield')});
  const supportSkills=supportSkillAvailability({selected:combatBuffs,skillCatalog,jobKey,level,
   branchMasteries});
  const supportSkillValues=Object.fromEntries(Object.keys(supportSkillIds).map(kind=>
