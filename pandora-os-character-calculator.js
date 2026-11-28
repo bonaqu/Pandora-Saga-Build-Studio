@@ -1028,6 +1028,7 @@ function magicAttackPreview({int,jobKey=null,magicMastery=0,weapon=null,guildAro
 function activeCombatSkills({selected={},jobKey=null,level=1,hasShield=false,
  weapon=null,skillCatalog=null,branchMasteries={}}={}){
  const validLevel=Number.isInteger(level)&&level>=1&&level<=plannerMaxLevel();
+ const trained=branch=>branchMasteries?.[branch]===undefined?0:branchMasteries[branch];
  const permitted=(key,selectedKey,legacyClasses,minLevel)=>{
   if(!validLevel||selected?.[selectedKey]!==true)return false;
   if(skillCatalog){
@@ -1040,7 +1041,7 @@ function activeCombatSkills({selected={},jobKey=null,level=1,hasShield=false,
    // requirement is met. Potential/blue points do not substitute for it.
    if(!Array.isArray(record.reqs)||!record.reqs.every(req=>
     typeof req.branch==='string'&&Number.isInteger(req.amount)&&req.amount>=0&&
-    Number(branchMasteries?.[req.branch]??0)>=req.amount))return false;
+    Number.isSafeInteger(trained(req.branch))&&trained(req.branch)>=req.amount))return false;
    if(record.prereq!=null)return false; // unverified prerequisites fail closed
    // OS skill 100051001 (Lunge) explicitly lists compatible weapon kinds.
    // With no equipped weapon the source lists BARE_HAND as a valid kind.
@@ -1295,12 +1296,18 @@ function directStrikeCoefficientPreview({skillCatalog,jobKey,level,
   typeof jobKey!=='string'||!Number.isSafeInteger(level)||level<1||level>plannerMaxLevel())
   return [];
  const entries=Object.values(skillCatalog),output=[];
- const branchRank=b=>Number(branchMasteries?.[b]??0);
- const cap=b=>Number(branchCaps?.[b]??0);
+ const branchRank=b=>branchMasteries?.[b]===undefined?0:branchMasteries[b];
+ const cap=b=>branchCaps?.[b]===undefined?0:branchCaps[b];
+ const trainedAt=(b,min=0)=>Number.isSafeInteger(branchRank(b))&&
+  branchRank(b)>=min&&branchRank(b)<=cap(b);
  const validRecord=s=>s?.learnable===true&&
   Number.isSafeInteger(s.id)&&s.id>0&&
   skillCatalog[String(s.id)]===s&&s.classes?.[jobKey]===1&&
-  typeof s.branch==='string'&&Number.isSafeInteger(cap(s.branch))&&
+  typeof s.branch==='string'&&
+  Number.isSafeInteger(s.charLevel)&&s.charLevel>=0&&
+  s.charLevel<=plannerMaxLevel()&&
+  (s.weaponUse==null||Array.isArray(s.weaponUse))&&
+  Array.isArray(s.funcs)&&Number.isSafeInteger(cap(s.branch))&&
   cap(s.branch)>0&&
   Array.isArray(s.reqs)&&s.reqs.every(req=>typeof req?.branch==='string'&&
    Number.isSafeInteger(req.amount)&&req.amount>=0&&
@@ -1309,7 +1316,8 @@ function directStrikeCoefficientPreview({skillCatalog,jobKey,level,
  // Validate the strike effect and its triggering attack as one source
  // signature, including successor validity before suppressing a predecessor.
  const strikeVector=s=>{
-  const hit=(s?.funcs||[]).filter(x=>x?.ep==='EP_ONHIT_DAMAGE_SCALE'&&
+  if(!Array.isArray(s?.funcs))return null;
+  const hit=s.funcs.filter(x=>x?.ep==='EP_ONHIT_DAMAGE_SCALE'&&
    x?.dir==='CASTER');
   if(hit.length!==1||!Array.isArray(hit[0].fv1)||
    hit[0].fv1.length!==4||
@@ -1337,24 +1345,24 @@ function directStrikeCoefficientPreview({skillCatalog,jobKey,level,
     previous.branch!==s.branch||previous.classes?.[jobKey]!==1)continue;
    // An advanced skill is a REPLACEMENT, not an extra theoretical rank:
    // show it only after its current OS level/mastery conditions are met.
-   if(level<Number(s.charLevel||0)||
-    s.reqs.some(req=>branchRank(req.branch)<req.amount))continue;
+   if(level<s.charLevel||
+    s.reqs.some(req=>!trainedAt(req.branch,req.amount)))continue;
   }
   // A learned successor with the same supported source family replaces
   // its predecessor, as in Double Slash -> Cut. It does not add a second hit.
   const upgraded=entries.some(next=>next?.prereq===s.id&&
    validRecord(next)&&strikeVector(next)&&next.branch===s.branch&&
-   level>=Number(next.charLevel||0)&&
-   next.reqs.every(req=>branchRank(req.branch)>=req.amount));
+   level>=next.charLevel&&
+   next.reqs.every(req=>trainedAt(req.branch,req.amount)));
   if(upgraded)continue;
   const coefficient=constant+Math.floor(rank*masteryPart/100);
   if(!Number.isSafeInteger(coefficient))continue;
   const reasons=[],reasonsEn=[];
-  if(level<Number(s.charLevel||0)){
+  if(level<s.charLevel){
    reasons.push('Требуется уровень '+s.charLevel);
    reasonsEn.push('Requires level '+s.charLevel);
   }
-  for(const req of s.reqs)if(branchRank(req.branch)<req.amount){
+  for(const req of s.reqs)if(!trainedAt(req.branch,req.amount)){
    reasons.push('Требуется мастерство «'+(branchLabels[req.branch]||req.branch)+'»: '+req.amount);
    reasonsEn.push('Requires '+(englishBranches[req.branch]||req.branch)+' mastery: '+req.amount);
   }
@@ -1369,9 +1377,10 @@ function directStrikeCoefficientPreview({skillCatalog,jobKey,level,
    Math.ceil((Math.floor(rank*masteryPart/100)+1)*100/masteryPart):null;
   const replacedAtStep=Number.isSafeInteger(step)&&entries.some(next=>
    next?.prereq===s.id&&validRecord(next)&&strikeVector(next)&&
-   next.branch===s.branch&&level>=Number(next.charLevel||0)&&
-   next.reqs.every(req=>
-    (req.branch===s.branch?step:branchRank(req.branch))>=req.amount));
+   next.branch===s.branch&&level>=next.charLevel&&
+   next.reqs.every(req=>req.branch===s.branch?
+    Number.isSafeInteger(step)&&step>=req.amount&&step<=cap(req.branch):
+    trainedAt(req.branch,req.amount)));
   const nextMastery=reasons.length===0&&Number.isSafeInteger(step)&&
    step>rank&&step<=cap(s.branch)&&
    constant+Math.floor(step*masteryPart/100)>coefficient&&!replacedAtStep?
@@ -1514,7 +1523,7 @@ function movementSkillSourcePreview({skillCatalog=null,jobKey=null,level=1,
    !Array.isArray(effect.fv2)||effect.fv2.length!==4||
    effect.fv2.some(n=>n!==0))continue;
   const recipient=type==='ALLY',hostile=type==='ENEMY',
-   cap=Number(branchCaps?.[branch]??0);
+   cap=branchCaps?.[branch]??0;
   // Allied recipients need no caster mastery; the *source* must still
   // belong to real numeric caster classes at its current OS level.
   if(recipient?(!ownedAllyCasterClasses(record,id)||
@@ -1525,7 +1534,7 @@ function movementSkillSourcePreview({skillCatalog=null,jobKey=null,level=1,
    Number.isSafeInteger(req.amount)&&req.amount>=0&&
    (recipient||(Number.isSafeInteger(branchCaps[req.branch])&&
     branchCaps[req.branch]>=req.amount))))continue;
-  const reasons=[],reasonsEn=[],rank=Number(branchMasteries?.[branch]??0);
+  const reasons=[],reasonsEn=[],rank=branchMasteries?.[branch]??0;
   if(!recipient){
    if(!Number.isSafeInteger(rank)||rank<0||rank>cap){
     reasons.push('Мастерство вне пределов профессии');
@@ -1535,9 +1544,12 @@ function movementSkillSourcePreview({skillCatalog=null,jobKey=null,level=1,
     reasons.push('Требуется уровень '+record.charLevel);
     reasonsEn.push('Requires level '+record.charLevel);
    }
-   for(const req of record.reqs)if(Number(branchMasteries?.[req.branch]??0)<req.amount){
-    const ru=branchLabels[req.branch]||req.branch;
-    const en=englishBranches[req.branch]||ru;
+   for(const req of record.reqs){
+    const trained=branchMasteries?.[req.branch]??0;
+    if(Number.isSafeInteger(trained)&&trained>=req.amount&&
+     trained<=branchCaps?.[req.branch])continue;
+    const ru=branchLabels?.[req.branch]||req.branch;
+    const en=englishBranches?.[req.branch]||ru;
     reasons.push('Требуется мастерство «'+ru+'»: '+req.amount);
     reasonsEn.push('Requires '+en+' mastery: '+req.amount);
    }
@@ -1632,8 +1644,8 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
     ['EP_MANA_SHIELD','EP_CASTINGCANCEL_RESISTANCE_CONST'].includes(ep)?
      [0,0,0,15]:[0,0,0,0])[i]);
  };
- const mastery=branch=>Number(branchMasteries?.[branch]??0);
- const cap=branch=>Number(branchCaps?.[branch]??0);
+ const mastery=branch=>branchMasteries?.[branch]??0;
+ const cap=branch=>branchCaps?.[branch]??0;
  // The user's verified MELEE parent uses combined TRAINED green mastery,
  // not the zero-sized internal `martial` branch (0.741.0 class source).
  const sourceRank=(skill,branch)=>skill?.branchRaw==='MELEE'&&
@@ -5063,10 +5075,11 @@ function skillExecutionChains({skillCatalog=null,jobKey=null,level=1,onHit=false
  for(const idString of Object.keys(skillCatalog).sort((a,b)=>Number(a)-Number(b))){
   const id=Number(idString),s=get(id);
   if(!s||idString!==String(id)||s.learnable!==true||s.classes?.[jobKey]!==1||
-   !s.funcs.some(f=>f?.ep===rootEP))continue;
+   (!Number.isSafeInteger(s.charLevel)||s.charLevel<0||
+    s.charLevel>plannerMaxLevel()||!s.funcs.some(f=>f?.ep===rootEP)))continue;
   if(!Array.isArray(s.reqs)||!s.reqs.every(r=>typeof r?.branch==='string'&&
    Number.isSafeInteger(r.amount)&&r.amount>=0))continue;
-  if(s.reqs.some(r=>!Number.isFinite(branchCaps?.[r.branch])||
+  if(s.reqs.some(r=>!Number.isSafeInteger(branchCaps?.[r.branch])||
    branchCaps[r.branch]<r.amount))continue;
   if(Number.isSafeInteger(s.prereq)&&s.prereq>0){
    const parent=get(s.prereq);
@@ -5075,12 +5088,12 @@ function skillExecutionChains({skillCatalog=null,jobKey=null,level=1,onHit=false
   const paths=trace(id,new Set());
   if(!paths){out.rejected.push(id);continue;}
   const ru=[],en=[];
-  if(level<Number(s.charLevel||0)){
+  if(level<s.charLevel){
    ru.push('Нужен уровень '+s.charLevel);
    en.push('Requires level '+s.charLevel);
   }
   for(const r of s.reqs){
-   const points=Number(branchMasteries?.[r.branch]??0);
+   const points=branchMasteries?.[r.branch]??0;
    if(Number.isSafeInteger(points)&&points>=r.amount&&
     points<=branchCaps[r.branch])continue;
    ru.push('Нужно мастерство «'+(branchLabels?.[r.branch]||r.branch)+'»: '+r.amount);
