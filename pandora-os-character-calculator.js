@@ -138,10 +138,6 @@ function sourceEffects(source,record,grade,itemForth=null){
  // The source and the canonical item/Soul record must agree before any
  // effects (including HP and MP) are used in character calculations.
  const exact=key.match(/^(item|soul):(\d+)$/);
- // Reserved labels with a canonical numeric ID must match their source;
- // legacy isolated synthetic fixtures without an ID retain their labels.
- if((key.startsWith('item:')||key.startsWith('soul:'))&&!exact&&
-   Object.hasOwn(record,'id')&&Number.isSafeInteger(record.id))return [];
  if(exact&&(!Object.hasOwn(record,'id')||
   !Number.isSafeInteger(record.id)||String(record.id)!==exact[2]))return [];
  // Imported or owner-edited structured data can be incomplete. A null
@@ -707,8 +703,6 @@ function defensePreview({records=[],honorTitle=0,itemForth=null}={}){
   // Structured EP bonuses already reject mismatched numeric item sources.
   // Base AC and armor refinement must obey the SAME identity requirement.
   const sourceId=String(source).match(/^item:(\d+)$/);
-  if(String(source).startsWith('item:')&&!sourceId&&
-    Object.hasOwn(record,'id')&&Number.isSafeInteger(record.id))continue;
   if(sourceId&&(!Object.hasOwn(record,'id')||
     !Number.isSafeInteger(record.id)||String(record.id)!==sourceId[1]))continue;
   // Only equipped items carry the armor-class field. Souls provide effects

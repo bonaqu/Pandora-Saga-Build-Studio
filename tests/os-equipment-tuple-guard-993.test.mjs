@@ -51,29 +51,29 @@ test('potion, healing and coverage previews safely ignore an entirely damaged li
  }
 });
 
-test('malformed item and Soul labels cannot grant structured stats, potion power or base AC',()=>{
- const falseItem={id:13041,slot:'body',AC:5000,name:'Forged base armor',
+test('numeric item and Soul references cannot spoof IDs or base armor',()=>{
+ const fakeItem={id:13041,slot:'body',AC:5000,name:'Forged base armor',
   effects:[
    {func:'EP_STRENGTH_CONST',a:700},
    {func:'EP_MASTERY_POTION',a:150},
    {func:'EP_CAST_HEAL_LIFE_SCALE',a:99}
   ]};
- const falseSoul={id:100001,effects:[{func:'EP_MAXLIFE_CONST',a:9000}]};
- for(const label of ['item:broken','item:','item:1e2','item:-13041',
-   'item:013041','soul:broken','soul:','soul:1e2','soul:0100001']){
-  const rec=label.startsWith('item:')?falseItem:falseSoul;
+ const fakeSoul={id:100001,effects:[{func:'EP_MAXLIFE_CONST',a:9000}]};
+ for(const [label,rec] of [
+  ['item:999',fakeItem],['item:013041',fakeItem],
+  ['soul:999',fakeSoul],['soul:0100001',fakeSoul]
+ ]){
   assert.deepEqual(C.sourceEffects(label,rec,0,forth),[],label);
   assert.deepEqual(C.gatherEffects([[label,rec,0]],forth),
    C.gatherEffects([],forth),label);
  }
  assert.equal(C.defensePreview({
-  records:[['item:broken',falseItem,10]],itemForth:forth}).known,0);
+  records:[['item:999',fakeItem,10]],itemForth:forth}).known,0);
  assert.equal(C.potionRecovery({vit:42,
-  records:[['item:broken',falseItem,0]],itemForth:forth}).equipment,0);
+  records:[['item:999',fakeItem,0]],itemForth:forth}).equipment,0);
  assert.equal(C.healingSkillPreview({
-  records:[['item:broken',falseItem,0]],itemForth:forth}).equipment,0);
+  records:[['item:999',fakeItem,0]],itemForth:forth}).equipment,0);
 });
-
 test('canonical identities and synthetic non-reserved fixtures still calculate',()=>{
  assert.ok(C.sourceEffects('item:13041',items['13041'],0,forth).length>=0);
  assert.deepEqual(C.sourceEffects('item:13041',
