@@ -231,6 +231,22 @@ function* equippedTuples(records){
  for(const tuple of records)
   if(Array.isArray(tuple)&&tuple.length>=3)yield tuple;
 }
+// Active shield-only skills must use the same canonical item identity and
+// grade boundaries as the displayed armor preview. Synthetic ID-less source
+// labels in isolated legacy tests retain their established compatibility.
+function hasEquippedShield(records){
+ for(const [source,record,grade] of equippedTuples(records)){
+  if(!String(source).startsWith('item:')||!record||
+   typeof record!=='object'||Array.isArray(record)||
+   record.slot!=='shield'||record.name==='-'||
+   !Number.isSafeInteger(grade)||grade<0||grade>10)continue;
+  const exact=String(source).match(/^item:(\d+)$/);
+  if(exact&&(!Number.isSafeInteger(record.id)||
+   String(record.id)!==exact[1]))continue;
+  return true;
+ }
+ return false;
+}
 function gatherEffects(records=[],itemForth=null){
  const flat=Object.fromEntries(keys.map(k=>[k,0]));
  const health={hp:0,mp:0},percent={hp:[],mp:[]},bonuses={},ignored=new Set(),trace=[];
@@ -2379,9 +2395,7 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const secondary=secondaryEffectsPreview({records,itemForth});
  if(!defense||!equipped||!secondary)return null;
  const actives=activeCombatSkills({selected:combatBuffs,jobKey,level,skillCatalog,weapon,branchMasteries,
-  hasShield:Array.isArray(records)&&records.some(tuple=>
-   Array.isArray(tuple)&&tuple.length>=3&&
-   String(tuple[0]).startsWith('item:')&&tuple[1]?.slot==='shield')});
+  hasShield:hasEquippedShield(records)});
  const supportSkills=supportSkillAvailability({selected:combatBuffs,skillCatalog,jobKey,level,
   branchMasteries});
  const supportSkillValues=Object.fromEntries(Object.keys(supportSkillIds).map(kind=>
